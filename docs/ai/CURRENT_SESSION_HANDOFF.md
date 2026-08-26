@@ -1,6 +1,60 @@
 # RavRadar - aktuelt Codex-handoff
 
-## Produktionslukket arbejdscheckpoint – 2026-08-26 4.0.283
+## AKTUELT CHECKPOINT EFTER TVUNGEN WINDOWS-GENSTART - 2026-08-26 - 4.0.284
+
+Dette afsnit er den aktuelle overdragelse. De senere afsnit i filen er historiske checkpoints.
+
+### Sikker arbejdsplacering
+
+- Arbejd kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284`.
+- Aktiv gren er `codex/stability-security-4.0.284` med base `a6c42c7d13a125233a7c2cf5084dd217c613a89b`.
+- Rod-worktree'et `C:\Users\Lenovo T14\Documents\GitHub\RavRadar` indeholder beskyttede, eksisterende ændringer. Det må ikke ryddes, stages eller blandes ind i sikkerhedsarbejdet.
+- Recovery-worktree'ets `.recovery-*`-filer er ligeledes urørte og skal forblive urørte.
+
+### Integritet efter genstarten
+
+- Den tvungne genstart efterlod ingen Git-lock, halv merge, rebase eller cherry-pick.
+- Før dette checkpoint havde sikkerheds-worktree'et fortsat 20 ændrede, sporede filer og 9 nye filer; checkpointfilen er nu den 21. ændrede fil. Der er ikke fundet tomme ændringsfiler eller tegn på delvis skrivning.
+- Intet af dette arbejde er endnu committet, pushet eller merget. Det må derfor først afsluttes efter fornyet diff-gennemgang og de relevante kontroller.
+
+### Aktuelt arbejdsafsnit
+
+- Ejeren har forkastet den risikable ide om at fjerne beskyttede filer og omskrive offentlig Git-historik. Den opgave skal ikke genoptages.
+- Det aktive arbejde er den godkendte drifts- og sikkerhedshærdning i 4.0.284: sikker HTML-visning, smallere profil-/rettighedslæsning, sikrere indsendelse af observationer, hærdning af RavRadar-assistentens Edge-gateway, CORS/gateway-kontrakt, Supabase-RLS og målrettede sikkerhedstests.
+- Den brede sikkerhedsmigration blev anvendt i live Supabase før genstarten. Den efterfølgende smallere `experts_manage`-policy er nu også anvendt og dataminimeret verificeret uden private payloads.
+- Supabase Edge-funktionerne er nu deployet gennem browsereditoren, efter at Windows Application Control/Windows Sikkerhed blokerede den officielle Supabase CLI. Windows-sikkerheden blev ikke og må ikke svækkes eller omgås.
+- Supabase-projektet viste desuden en kvoteadvarsel med mulig begrænsning fra 9. september 2026. Det skal indgå i driftsvurderingen.
+
+### Næste sikre trin
+
+1. Læs `AGENTS.md` og hele den obligatoriske RDKS-startkæde på ny samt dette checkpoint og den oprindelige sikkerhedsvurdering i `C:\Users\Lenovo T14\.codex\attachments\54e3874e-3c74-4b8a-b52e-75f481141b08\pasted-text.txt`.
+2. Start med read-only `git status`, worktree-kontrol og en fuld gennemgang af alle sikkerhedsdiffs. Bekræft især om de flere `public-gateway.ts`-kopier er bevidste eller bør samles; antag ikke svaret.
+3. Bevar den allerede grønne, smallere live-RLS og Edge-kontrakt; vis ingen private rækker eller payloads, og opret ingen unødvendig testobservation.
+4. Udgiv assistenten local-only med `ravAssistantRemoteEnabled=false`. Fjernaktivering er en senere separat secret-/omkostningsbeslutning.
+5. Kør kun målrettede tests under arbejdet. Færdiggør RDKS, implementeringsstatus, åbne issues, changelog og relevante håndbøger. Kør derefter exact-head source gate i GitHub og de fulde produktionsgates efter central hydrering og friske data.
+6. Først når alle konkrete usikkerheder er lukket, må Codex committe, pushe, oprette PR, merge og følge deployet til grøn offentlig verifikation under den permanente PR-/mergeautoritet.
+
+Ingen del af 4.0.284 er ved dette checkpoint erklæret færdig, stabil eller produktionsverificeret.
+
+### Fortsættelse efter genstarten - 2026-08-26
+
+- Ejeren skiftede fra Sol/Let til den krævede **GPT-5.6 Sol / Ekstra høj** før det kritiske integrationsarbejde.
+- Worktree, branch og base er igen verificeret. Der er fortsat ingen Git-lock, merge, rebase eller cherry-pick, og rod-worktree'et samt recovery-, geometri-, punkt- og privatdata er urørte.
+- Hele sikkerhedsdiffen er genoptaget og de målrettede kontrakter for sikkerhed, turbevis, fleksibel kontoindberetning, assistent og Pages-modullukning er grønne.
+- De tre byte-identiske `public-gateway.ts`-filer var ikke en dokumenteret nødvendig deploykontrakt. Kilden bruger nu kun `supabase/functions/_shared/public-gateway.ts`; begge Edge-entrypoints importerer den, de to lokale kopier er fjernet, og sikkerhedstesten forbyder ny duplikation.
+- Den smallere live-RLS er anvendt gennem den indloggede Supabase SQL-editor. En dataminimeret katalogkontrol viste præcis én policy på hver af `profiles` og `user_permissions`, begge smallere ekspert-scope, ingen legacy-policy og ingen `anon`-SELECT. Ingen private rækker eller payloads blev åbnet.
+- Supabase viser aktuelt cirka 455 MB/5 GB egress og 86 MB/500 MB database, men organisationens banner varsler fortsat mulig projektbegrænsning fra **9. september 2026** på grund af forrige billingcyklus. Dette er fortsat en driftsrisiko, selv om den aktuelle periode ligger under grænserne.
+- Supabases browsereditor er en godkendt kanal uden lokal CLI eller ændring af Windows-sikkerhed. Ejeren aktiverede den første deployknap manuelt; derefter kunne Codex se og styre resultatet. Både `submit-observation` og `ravradar-assistant` er nu deployet. **Verify JWT with legacy secret** er slået fra på begge, fordi RavRadar bruger en moderne `sb_publishable_`-nøgle og gateways selv håndhæver CORS, payload, rate limit og brugerbinding.
+- De første browserdeploys indeholdt en dubleret editorblok og gav `503 BOOT_ERROR`. Bootloggen viste den præcise dobbelte `ALLOWED_FIELDS`-deklaration. Begge funktioner er derefter erstattet med én eksakt samlet kildeblok og deploybekræftelsen er eksplicit accepteret. Det efterfølgende livebevis er grønt for boot og CORS: tilladt `https://ravradar.dk` giver `204` og eksakt allow-origin; fremmed origin giver `403 ORIGIN_NOT_ALLOWED` uden allow-origin; tom observation giver `400 INVALID_ZONE`; tomt assistentspørgsmål giver `400 QUESTION_REQUIRED`.
+- En syntaktisk gyldig, men gammel anonym kontraktrapport gav `403 LOGIN_REQUIRED_FOR_HISTORICAL_REPORT` før insert. Det beviser samtidig, at rate-limit-RPC'en er tilgængelig. Ingen observationsrække blev oprettet.
+- Et almindeligt assistentspørgsmål nåede gennem CORS og rate limit, men gav `503 {"answer":null}`. Det beviste, at `OPENAI_API_KEY` ikke er installeret i Edge-miljøet.
+- Ejeren bad Codex vælge den bedste løsning. Beslutningen er local-only i 4.0.284: `ravAssistantRemoteEnabled=false`, og en målrettet test beviser nul fjernkald. Opret ikke Supabase access token, GitHub secret eller OpenAI-secret som del af denne release.
+- DEC-0080, RDKS, issues, changelog og begge håndbøger beskriver nu kontrakten.
+- Versionen er synkroniseret til 4.0.284. Særskilt diff viser kun topversionsfeltet `4.0.283 → 4.0.284` i `data/kystdata.json` og `data/zones.geojson`; ingen geometri eller land-/vandpunkter er ændret.
+- Lokal `scripts/validate-source.ps1` er grøn inklusive releasegate. Den målrettede browserkontrol viste 4.0.284, fungerende kort/appstart, håndbogens sikkerhedsafsnit, Om-sidens QR-kode, dokumenthentning, nul inline scripts/overflow og nul Edge-kald fra den lokale assistent.
+- Næste sikre trin er sidste diff/secret-kontrol, commit/push, GitHub exact-head-gate, PR/merge og fuld produktion/offentlig kontrol.
+
+## Produktionslukket arbejdscheckpoint - 2026-08-26 4.0.283
 
 - Den afsluttende audit mistede moderzonens nøgle ved udfladning og genkendte derfor kun 665/673, selv om produktionskæden havde 673/673 scoreklare Candidate G-kyststrækninger.
 - 4.0.283 bevarer den autoritative moderzone i den flade kontrolvisning. Datakrav, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.

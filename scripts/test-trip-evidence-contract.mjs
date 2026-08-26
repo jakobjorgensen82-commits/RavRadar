@@ -430,11 +430,13 @@ assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
 assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
 
 const observationServiceSource = fs.readFileSync('js/services/observation-service.js', 'utf8');
+const submitObservationFunctionSource = fs.readFileSync('supabase/functions/submit-observation/index.ts', 'utf8');
 assert.match(observationServiceSource, /export async function submitTripEvidenceObservation/);
 assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
 assert.match(observationServiceSource, /id:existing\?\.id\|\|columns\.trip_id/);
-assert.match(observationServiceSource, /on_conflict=client_observation_id/);
-assert.match(observationServiceSource, /resolution=ignore-duplicates/);
+assert.match(observationServiceSource, /\/functions\/v1\/submit-observation/);
+assert.match(submitObservationFunctionSource, /on_conflict=client_observation_id/);
+assert.match(submitObservationFunctionSource, /resolution=ignore-duplicates/);
 assert.match(observationServiceSource, /client_observation_id:clientObservationId/);
 assert.match(observationServiceSource, /route,track,position,coordinates,latitude,longitude,location/);
 assert.match(observationServiceSource, /gps:null/);

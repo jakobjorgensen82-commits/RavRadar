@@ -1,5 +1,16 @@
 # Aktive krav – samlet register
 
+## Drifts- og sikkerhedsgrænser – bindende fra 4.0.284
+
+- **REQ-HTML-TRUST-BOUNDARY-001 – BINDENDE:** Centralt eller på anden måde dynamisk HTML må kun vises gennem den fælles allowlist-sanitizer. Scripts, styles, embeds, iframes, objekter, event handlers, DOM-id'er, ukendte attributter og farlige URL-protokoller skal fjernes. Offentlige sider skal have CSP uden `unsafe-eval` og må ikke genindføre inline JavaScript.
+- **REQ-EXPERT-MANAGEMENT-SCOPE-001 – BINDENDE:** `experts_manage` må kun læse og administrere profiler med rollen `expert` og kun rettighederne `admin_access`, `handbook_view` og `handbook_review`. Ejer- og administratorprofiler samt øvrige rettigheder kræver ejer eller `full_admin`. Grænsen skal ligge i RLS og RPC, ikke kun i browseren.
+- **REQ-OBSERVATION-EDGE-WRITE-001 – BINDENDE:** `anon` og `authenticated` må ikke have direkte INSERT på `observations`. Offentlig indsendelse går gennem `submit-observation`, som håndhæver feltallowlist, payload-/strukturgrænser, privatliv, brugerbinding, tidsgrænse, rate limit og idempotent klient-id før service-role-insert.
+- **REQ-PUBLIC-EDGE-GATEWAY-001 – BINDENDE:** Offentlige Edge-funktioner skal genbruge den kanoniske `_shared/public-gateway.ts` og håndhæve origin-allowlist, CORS, POST/OPTIONS, sikre fejl, upstream-timeout og server-side rate limit. Funktionslokale kopier må ikke genindføres.
+- **REQ-ASSISTANT-PUBLIC-CONTEXT-001 – BINDENDE:** En eventuel fjernassistent må kun modtage det dokumenterede lille offentlige kontekstobjekt. Rå U/V, koordinater, komplet zone-/conditionsbestand, regler, interne diagnostikfelter og private data er forbudt.
+- **REQ-ASSISTANT-REMOTE-ACTIVATION-001 – BINDENDE:** Fjernassistenten er deaktiveret som standard. Aktivering kræver en særskilt godkendt secret-/omkostningsbeslutning, positiv Edge-kontrakt, fallbacktest og dokumenteret driftsansvar. Manglende secret må ikke skabe skjulte 503-kald fra den offentlige side.
+- **REQ-WINDOWS-SECURITY-NO-BYPASS-001 – BINDENDE:** Windows Application Control eller anden værtsbeskyttelse må ikke svækkes for at køre Supabase CLI. Brug en godkendt browser-, CI- eller CLI-kanal.
+- **REQ-SUPABASE-QUOTA-OPERATIONS-001 – AKTIV OVERVÅGNING:** Varslet om mulig Supabase-begrænsning fra 9. september 2026 skal indgå i driften. Kvote- eller omkostningspres må ikke bruges til at springe RLS, rate limits, validering eller releasegates over.
+
 ## Offentlig Om RavRadar-side – bindende fra 4.0.279
 
 - **REQ-PUBLIC-ABOUT-001 – BINDENDE:** Forsidens topmenu skal linke til en offentlig Om RavRadar-side, der præsenterer Jakob Jørgensen, projektets formål, kontaktmulighed og at RavRadar er et frivilligt, gratis værktøj uden fundgaranti.

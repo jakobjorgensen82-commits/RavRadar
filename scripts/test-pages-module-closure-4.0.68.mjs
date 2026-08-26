@@ -22,7 +22,7 @@ if(rsync.error?.code==='ENOENT'){
   if(/^CHANGELOG.*\.md$/i.test(rel)||/^DELIVERY.*\.md$/i.test(rel)||/^INSTALLATION-GUIDE.*\.md$/i.test(rel))return true;
   return excludes.some(item=>rel===item.replace(/\/$/,'')||rel.startsWith(item));
  };
- const tracked=spawnSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8'});
+ const tracked=spawnSync('git',['ls-files','--cached','--others','--exclude-standard','-z'],{cwd:root,encoding:'utf8'});
  if(tracked.status!==0)throw new Error(`Kunne ikke finde projektfiler: ${tracked.stderr||tracked.stdout}`);
  const projectFiles=new Set([...tracked.stdout.split('\0').filter(Boolean),'js/services/visit-counter.js','js/services/visitor-report-service.js']);
  for(const rel of projectFiles){

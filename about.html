@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://services.arcgisonline.com https://server.arcgisonline.com; connect-src 'self' https://afqhhdrkjfjtpadntdzo.supabase.co; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#073b4c">
   <meta name="description" content="Mød Jakob Jørgensen, og læs om ideen og det frivillige arbejde bag RavRadar.">
   <title>Om RavRadar</title>
-  <link rel="stylesheet" href="about.css?v=4.0.283">
+  <link rel="stylesheet" href="about.css?v=4.0.284">
 </head>
 <body>
   <header class="site-header">
@@ -115,13 +116,7 @@
     </section>
   </main>
 
-  <script src="assets/about/qrcode.min.js?v=4.0.283"></script>
-  <script>
-    const mobilePayUrl = "https://qr.mobilepay.dk/box/8f2b226a-fd43-43f2-8610-1fa0df857c63/pay-in";
-    const qrTarget = document.getElementById("mobilepay-qr");
-    if (window.QRCode && qrTarget) {
-      new QRCode(qrTarget, { text: mobilePayUrl, width: 260, height: 260, colorDark: "#2f1557", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
-    }
-  </script>
+  <script src="assets/about/qrcode.min.js?v=4.0.284"></script>
+  <script src="js/ui/about.js?v=4.0.284"></script>
 </body>
 </html>

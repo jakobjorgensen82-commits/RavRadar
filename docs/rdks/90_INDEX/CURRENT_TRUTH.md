@@ -1,5 +1,18 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.284 – smallere tillid og server-side sikkerhedsgrænser
+
+- Alle offentlige HTML-sider har en lukket CSP, inline JavaScript er flyttet til versionsstyrede moduler, og centralt håndbogs-HTML saniteres med en allowlist før visning.
+- `experts_manage` er afgrænset i RLS, RPC og UI til ekspertprofiler og de tre rettigheder `admin_access`, `handbook_view` og `handbook_review`. Kun ejer/`full_admin` kan administrere hele rettighedsmatricen og reviewkøen.
+- Direkte observationsinsert er tilbagekaldt fra browserrollerne. `submit-observation` validerer feltliste, størrelse, struktur, tidsrum, brugerbinding og privatliv, rate-limiter server-side og skriver idempotent gennem service role.
+- Edge-funktionerne deler én kanonisk `public-gateway.ts` med origin-allowlist, CORS, sikre fejl og timeouts. De er deployet gennem Supabase-browsereditoren uden at svække Windows Application Control; legacy-JWT er slået fra på begge.
+- Den smallere live-RLS og de negative/pre-store Edge-kontrakter er dataminimeret verificeret uden private rækker og uden oprettede observationer.
+- Fjernassistenten mangler `OPENAI_API_KEY` og er derfor bevidst deaktiveret i Pages. Den lokale Candidate G-assistent er 4.0.284-adfærden og laver ingen skjulte 503-kald.
+- Supabases varsel om mulig begrænsning fra 9. september 2026 er fortsat en åben driftsrisiko. Aktuel måling var cirka 455 MB/5 GB egress og 86 MB/500 MB database.
+- Exact-head, fuld produktionskæde og offentlig Pages-verifikation af kandidaten udestår. Se DEC-0080.
+
+Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter og private data er uændrede.
+
 ## Produktionsverificeret 4.0.283 – slutkontrollen bevarer kystdelens moderzone
 
 - Produktion `32912103679` dokumenterede 673/673 scoreklare kyststrækninger i livepiloten og Candidate G-state, men slutkontrollen genkendte kun 665/673 og stoppede korrekt før deploy.

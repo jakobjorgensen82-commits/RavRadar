@@ -1,3 +1,11 @@
+## 2026-08-26 – kandidat 4.0.284 drifts- og sikkerhedshærdning
+
+- Offentlige sider har CSP, eksterne scripts og saniteret dynamisk HTML.
+- Ekspertadministration er smallere i live RLS, RPC og UI; direkte observationstabelinsert er erstattet af en validerende, rate-limited Edge-gateway.
+- Én delt Edge-gateway håndhæver CORS, origin, payload, timeout og sikre fejl. Begge funktioner er deployet uden omgåelse af Windows Application Control, og negative/pre-store livekontroller er grønne uden oprettede rækker.
+- Fjernassistenten er bevidst deaktiveret; den lokale Candidate G-assistent er releaseadfærden. Supabase-kvotevarslet 9. september 2026 overvåges.
+- Målrettede kontrakter er grønne. Exact-head, fuld produktion og offentlig efterkontrol mangler. Se DEC-0080 og `CHANGELOG-4.0.284.md`.
+
 ## 2026-08-26 – 4.0.283 bevarer moderzonen i slutkontrollen, produktionsverificeret
 
 - Produktion `32912103679` havde 673/673 scoreklare kyststrækninger i livepilot og Candidate G-state, men slutkontrollen tabte moderzonekonteksten og genkendte kun 665/673.

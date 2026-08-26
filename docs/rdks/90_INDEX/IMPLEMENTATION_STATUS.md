@@ -1,4 +1,22 @@
-# Implementeringsstatus – produktionsverificeret 4.0.283
+# Implementeringsstatus – kandidat 4.0.284
+
+## Kandidat 4.0.284 – drifts- og sikkerhedshærdning
+
+- [x] Lås offentlige sider med CSP, fjern inline scripts/event handlers og saniter centralt HTML med allowlist.
+- [x] Afgræns ekspertprofil- og rettighedslæsning i både RLS, RPC og UI.
+- [x] Flyt observationsskrivning fra direkte tabelinsert til en validerende, rate-limited Edge-gateway uden fjern-GPS.
+- [x] Hærd assistentgatewayen med lille offentlig kontekst, origin-allowlist, størrelsesgrænse, timeout, rate limit og sikre fejl.
+- [x] Saml de tre `public-gateway.ts`-kopier til én kanonisk delt kilde og forbyd nye funktionslokale kopier i testen.
+- [x] Anvend og dataminimeret verificér den smallere live-RLS uden at åbne private rækker.
+- [x] Deploy begge Edge-funktioner gennem en godkendt browserkanal uden at svække Windows Application Control; slå inkompatibel legacy-JWT-verifikation fra.
+- [x] Verificér CORS, afvist fremmed origin, payloadfejl, rate-limit-tilgængelighed og afvist gammel anonym rapport uden databaseinsert.
+- [x] Vælg lokal Candidate G-assistent som releaseadfærd og lås fjernflaget til `false`, fordi ingen godkendt OpenAI-secret er installeret.
+- [x] Kør målrettede sikkerheds-, assistent-, tur-, konto- og Pages-modultests.
+- [x] Sæt releaseversion, synkronisér RDKS/håndbøger/changelog og bevis kun versionsfeltændring i beskyttet geodata.
+- [x] Bestå lokal `scripts/validate-source.ps1`, inklusive releasegate, samt målrettet browserkontrol af CSP, håndbog, Om-side, dokumentation og lokal assistent uden fjernkald.
+- [ ] Bestå GitHub exact-head `validate:source`, merge, fuld frisk produktionskæde og offentlig efterkontrol.
+
+Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko. Fjernassistenten kan senere aktiveres som en særskilt ændring med secret-, omkostnings- og positiv kontraktverifikation; den er ikke en releaseafhængighed i 4.0.284. Se DEC-0080.
 
 ## Produktionsverificeret 4.0.283 – bevar moderzone i slutkontrollen
 

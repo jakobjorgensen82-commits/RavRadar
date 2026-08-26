@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.283",
+  "version": "4.0.284",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -100,7 +100,7 @@
     "build:constrained-coastlines": "python scripts/refine-coastlines-constrained-4.0.48.py",
     "test:production-coastline-integration": "node scripts/test-production-coastline-integration-4.0.47.mjs",
     "test:coastline-editor": "node scripts/test-coastline-editor-4.0.49.mjs",
-    "validate:rdks": "node scripts/validate-rdks.mjs",
+    "validate:rdks": "node scripts/validate-rdks.mjs && npm run test:security-hardening",
     "test:workflow-action-contracts": "node scripts/test-github-action-versions.mjs && node scripts/test-workflow-validation-order-4.0.108.mjs && node scripts/test-cache-and-station-integrity-4.0.19.mjs && node scripts/test-copernicus-cache-preservation-4.0.232.mjs && node scripts/test-dmi-bulk-model-download.mjs && node scripts/test-supabase-admin-rest.mjs && node scripts/test-ravscore-active-shadow-workflow-4.0.250.mjs",
     "test:ravscore-national-shadow-contract": "node scripts/test-national-weather-shadow-contract.mjs && node scripts/validate-national-shadow-score.mjs --self-test && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test",
     "validate:source": "npm run validate:rdks && npm run test:feedback-learning && npm run test:observation-db-privacy && npm run test:trip-evidence-contract && npm run test:user-account-trip-log && npm run test:observation-production-mapping && npm run test:adaptive-prediction && npm run test:feedback-zone-ui && npm run test:mobile-live-cache && npm run test:admin-feature-reachability && npm run test:public-about && node scripts/test-protected-handbook-merge-4.0.270.mjs && npm run test:current-transport-history && npm run test:ravscore-sensitivity && npm run test:ravscore-comparison-report && npm run test:ravscore-regime-memory && npm run test:ravscore-mobilisation-memory && npm run test:ravscore-candidate-g && npm run test:ravscore-candidate-g-state-pipeline && npm run test:ravscore-candidate-g-analysis && npm run test:ravscore-candidate-g-scenarios && npm run test:ravscore-candidate-g-readiness && npm run test:ravscore-candidate-g-mobilisation-readiness && npm run test:ravscore-mode-huntability && npm run test:mode-specific-rankings && npm run test:ravscore-national-shadow-contract && npm run test:production-hour-lock && npm run test:dmi-acquisition && npm run test:dmi-bulk-forecast-integration && npm run test:copernicus-target-registry && npm run test:live-current-pilot && npm run test:water-source-production-chain && npm run test:workflow-action-contracts && npm run test:active-wave-approach && npm run test:score-presentation && npm run test:zone-ranking-broad-support && npm run test:state-explanations && npm run test:provisional-score-weights && npm run test:ravscore-observed-ablation && npm run test:huntability-safety-copy && python -m py_compile scripts/build-ravscore-historical-wave-pilot.py scripts/test-ravscore-historical-wave-pilot.py && node --check scripts/audit-online-browser-playwright-4.0.237.mjs && npm run release:gate",
@@ -122,6 +122,7 @@
     "test:hydrated-zone-pruning": "node scripts/test-hydrated-retired-zone-pruning-4.0.65.mjs",
     "test:auth-bootstrap": "node scripts/test-auth-bootstrap-4.0.66.mjs",
     "test:rav-assistant": "node scripts/test-rav-assistant-4.0.66.mjs",
+    "test:security-hardening": "node scripts/test-security-hardening-4.0.284.mjs",
     "test:current-direction-audit": "node scripts/test-current-direction-audit-4.0.66.mjs",
     "test:fresh-startup": "node scripts/test-fresh-startup-4.0.66.mjs",
     "test:browser-regression": "python scripts/test-browser-regression-4.0.66.py",

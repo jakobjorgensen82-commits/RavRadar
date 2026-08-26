@@ -1,5 +1,6 @@
-import { submitHandbookReview, exportLocalHandbookDrafts, centralReviewStorageEnabled } from '../services/handbook-review-store.js?v=4.0.283';
-import { currentSession, getCurrentRole, signInAsExpert, signOut, expertLoginConfig } from '../services/auth-service.js?v=4.0.283';
+import { submitHandbookReview, exportLocalHandbookDrafts, centralReviewStorageEnabled } from '../services/handbook-review-store.js?v=4.0.284';
+import { currentSession, getCurrentRole, signInAsExpert, signOut, expertLoginConfig } from '../services/auth-service.js?v=4.0.284';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.284';
 const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const content=document.querySelector('#handbookContent');
 const toc=document.querySelector('#handbookToc');
@@ -42,7 +43,7 @@ async function boot(){
 function render(sections){
   const authenticated=Boolean(currentSession()?.access_token&&['expert','owner'].includes(currentRole));
   toc.innerHTML=sections.map(s=>`<a href="#${esc(s.id)}">${esc(s.title)}</a>`).join('');
-  content.innerHTML=`<section class="handbook-intro"><span class="eyebrow">Version ${esc(book.handbookVersion)}</span><h2>${esc(book.title)}</h2><p>Opdateret ${esc(book.updatedAt)}. ${authenticated?'Brug “Foreslå rettelse” ved det relevante afsnit.':'Håndbogen kan læses frit. Ekspertlogin kræves kun for at indsende rettelser.'}</p><p class="storage-state ${centralReviewStorageEnabled()?'ok':'warning'}">${centralReviewStorageEnabled()?'Central ekspertlagring er aktiv.':'Ingen ekspert er logget ind.'}</p></section>`+sections.map(s=>`<article id="${esc(s.id)}" data-search="${esc((s.title+' '+s.summary+' '+s.body.replace(/<[^>]+>/g,' ')).toLowerCase())}"><header><div><span class="eyebrow">Håndbog</span><h2>${esc(s.title)}</h2><p>${esc(s.summary)}</p></div><button class="review-button" data-review="${esc(s.id)}" ${authenticated?'':'disabled'}>${authenticated?'Foreslå rettelse':'Ekspertlogin kræves'}</button></header><div class="handbook-copy">${s.body}</div></article>`).join('');
+  content.innerHTML=`<section class="handbook-intro"><span class="eyebrow">Version ${esc(book.handbookVersion)}</span><h2>${esc(book.title)}</h2><p>Opdateret ${esc(book.updatedAt)}. ${authenticated?'Brug “Foreslå rettelse” ved det relevante afsnit.':'Håndbogen kan læses frit. Ekspertlogin kræves kun for at indsende rettelser.'}</p><p class="storage-state ${centralReviewStorageEnabled()?'ok':'warning'}">${centralReviewStorageEnabled()?'Central ekspertlagring er aktiv.':'Ingen ekspert er logget ind.'}</p></section>`+sections.map(s=>`<article id="${esc(s.id)}" data-search="${esc((s.title+' '+s.summary+' '+s.body.replace(/<[^>]+>/g,' ')).toLowerCase())}"><header><div><span class="eyebrow">Håndbog</span><h2>${esc(s.title)}</h2><p>${esc(s.summary)}</p></div><button class="review-button" data-review="${esc(s.id)}" ${authenticated?'':'disabled'}>${authenticated?'Foreslå rettelse':'Ekspertlogin kræves'}</button></header><div class="handbook-copy">${sanitizeTrustedHtml(s.body)}</div></article>`).join('');
   document.querySelectorAll('[data-review]').forEach(b=>b.onclick=()=>openReview(b.dataset.review));
 }
 function openReview(id){

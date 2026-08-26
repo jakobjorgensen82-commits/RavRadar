@@ -1,5 +1,15 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.284 – sikkerhed ligger på servergrænsen
+
+Dynamisk håndbogs-HTML skal gennem `sanitizeTrustedHtml`; CSP og fravær af inline script er en separat browserbarriere. Ekspertens `experts_manage` er ikke fuld administration: RLS, RPC og UI må kun vise ekspertprofiler og `admin_access`, `handbook_view`, `handbook_review`.
+
+Browserroller må ikke indsætte direkte i `observations`. `submit-observation` er den eneste offentlige skrivevej og skal validere allowlist, størrelse, struktur, privatliv, brugerbinding, tidspunkt, idempotens og rate limit før service-role-insert. Offentlige Edge-funktioner deler `_shared/public-gateway.ts`; CORS er ikke autentifikation, men origin-afvisning, payloadkontrol, rate limiting og brugerbinding skal virke sammen.
+
+Rav-assistenten er lokal-only i 4.0.284. `ravAssistantRemoteEnabled` er `false`, så en manglende OpenAI-secret ikke skaber skjulte 503-kald. Senere aktivering kræver en særskilt godkendt secret-, omkostnings- og positiv kontraktverifikation. Se DEC-0080.
+
+Supabase har varslet mulig begrænsning fra 9. september 2026 efter tidligere egressoverskridelse. Kvoteovervågning er drift, men må aldrig lempe sikkerheds- eller releasegates.
+
 ## 4.0.283 – moderzonekobling i den afsluttende Candidate G-kontrol
 
 `data/live/coastal-parts-v2.json` gemmer den autoritative moderzone som nøglen i `zones`; de enkelte kystdelsobjekter behøver derfor ikke et eget `zoneId`. Når en kontrol skal bruge en flad liste, skal moderzonen kopieres fra denne nøgle med `flattenCoastalPartsWithParentZoneId`. En almindelig `Object.values(...).flat()` mister koblingen og må ikke bruges, hvor evidens matches på både zone og kystdel.

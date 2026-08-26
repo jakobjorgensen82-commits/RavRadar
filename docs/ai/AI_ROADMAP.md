@@ -1,4 +1,17 @@
-# AI Roadmap – RavRadar 4.0.283+
+# AI Roadmap – RavRadar 4.0.284+
+
+## P0 – afslut 4.0.284 sikkerhedsrelease
+
+- [x] Hærd HTML/CSP, ekspert-RLS/RPC/UI, observation-Edge og assistent-Edge.
+- [x] Saml fælles Edge-gateway og deploy/verificér funktionerne uden Windows-sikkerhedsomgåelse.
+- [x] Vælg og test lokal assistent som standard uden fjernkald.
+- [x] Anvend og dataminimeret kontrollér smallere live-RLS uden private rækker.
+- [x] Synkronisér version, RDKS, håndbøger og changelog; bevis ren geodataversiondiff.
+- [x] Bestå lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
+- [ ] Bestå exact-head, fuld produktion og offentlig efterkontrol.
+- [ ] Overvåg Supabase-egress og varslet om mulig begrænsning 9. september 2026.
+
+Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.
 
 ## P0 – bevar moderzone i Candidate G-slutkontrollen
 
