@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.282",
+  "handbookVersion": "4.0.283",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "candidate-g-parent-zone-audit-binding-4-0-283",
+      "chapter": "67",
+      "title": "Moderzonen bevares i Candidate G-slutkontrollen",
+      "summary": "Slutkontrollen beholder nu den autoritative moderzone, når 210 zonegrupper foldes ud til 673 kyststrækninger.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Produktionen havde 673/673 scoreklare kyststrækninger, men slutkontrollen mistede moderzonen under udfladning og kunne derfor ikke genkende otte gyldige native-kadencereferencer.</div><div class=\"handbook-stack\"><p><strong>Samme autoritative kobling:</strong> Moderzonen står som nøglen i kystdelsfilens zonegrupper. Kontrollen kopierer nu denne nøgle med ind i sin flade liste.</p><p><strong>Ingen lempelse:</strong> Rettelsen opfinder ingen måling, historik, retning, pil eller mobilisering. Manglende verificeret strøm stopper fortsat den konkrete kystdel lokalt.</p><p>Candidate G 20/50/30, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se <code>DEC-0079</code>.</p></div>"
+    },
     {
       "id": "candidate-g-native-window-reference-4-0-282",
       "chapter": "66",

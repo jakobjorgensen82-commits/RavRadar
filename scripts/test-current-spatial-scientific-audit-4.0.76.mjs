@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import {directionFromComponents,arrowDirection} from '../js/core/current-direction-audit.js';
 import {
+  flattenCoastalPartsWithParentZoneId,
   verifiedLivePilotSource,
   verifiedNativeCadenceReferenceForPart,
 } from './lib/live-current-pilot.mjs';
@@ -83,7 +84,7 @@ for(const feature of active){
 }
 if(verifiedGridZones<Math.floor(active.length*.9))failures.push(`Kun ${verifiedGridZones}/${active.length} zoner har verificerede marine u/v-gitterpunkter.`);
 if(verifiedHours<1000)failures.push(`Kun ${verifiedHours} prognosetimer kunne verificeres direkte fra u/v.`);
-const expectedParts=Object.values(coastalParts.zones||{}).flat();
+const expectedParts=flattenCoastalPartsWithParentZoneId(coastalParts);
 let verifiedPartGridPoints=0;
 let verifiedNativeCadenceHeldParts=0;
 const verifiedPartsBySource={'dmi-local':0,'copernicus-local':0,'dmi-regional-proxy':0};

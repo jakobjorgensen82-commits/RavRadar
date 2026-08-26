@@ -1,3 +1,10 @@
+## 4.0.283 – Moderzonen bevares i Candidate G-slutkontrollen (2026-08-26)
+
+- Retter en afgrænset fejl i den afsluttende videnskabelige kontrol, som mistede kystdelens moderzone, når 210 zoner blev foldet ud til 673 kyststrækninger.
+- Produktion `32912103679` dokumenterede allerede 673/673 scoreklare kyststrækninger, heraf otte godkendte native-kadencereferencer, men slutkontrollen kunne kun genkende 665/673 uden moderzonekoblingen og stoppede derfor korrekt før deploy.
+- En fælles hjælpefunktion bevarer nu den autoritative zone-nøgle under udfladning. En regressionstest låser, at også en kystdel uden indlejret `zoneId` kan matches til sin verificerede native-kadencereference.
+- Datakravene lempes ikke: der opfindes ingen måling, historik, pil eller retning. Candidate G 20/50/30, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. De beskyttede geodatafiler ændrer kun topversionsfelt til 4.0.283. Se DEC-0079.
+
 ## 4.0.282 – Eksakt Candidate G-reference ved native vinduesskift (2026-08-26)
 
 - Lukker de sidste falske **Mangler/Ukendt** for de otte godkendte tretimers-regionalproxyer, når seneste ægte prøve ligger umiddelbart før beregningsvinduet.

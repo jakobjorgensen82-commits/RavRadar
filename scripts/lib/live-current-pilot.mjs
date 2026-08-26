@@ -49,6 +49,17 @@ export function controlledLiveCurrentEnabled(document) {
     && document?.credentialsIncluded === false;
 }
 
+/**
+ * The coastal-parts source stores the parent zone as the key in `zones`.
+ * Preserve that authoritative binding when consumers need a flat part list;
+ * otherwise native-cadence evidence cannot be matched to its parent zone.
+ */
+export function flattenCoastalPartsWithParentZoneId(document) {
+  return Object.entries(document?.zones ?? {}).flatMap(([zoneId, parts]) => (
+    Array.isArray(parts) ? parts.map(part => ({ ...part, zoneId })) : []
+  ));
+}
+
 export function verifiedLivePilotSource(source, expectedSamplingPoint, { requireStatus = false } = {}) {
   if (!source || (requireStatus && source.status !== 'verified')) return null;
   if (source.controlledLivePilot !== true || Number(source.vectorSemanticsVersion) !== 4) return null;

@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.283 – moderzonekobling i den afsluttende Candidate G-kontrol
+
+`data/live/coastal-parts-v2.json` gemmer den autoritative moderzone som nøglen i `zones`; de enkelte kystdelsobjekter behøver derfor ikke et eget `zoneId`. Når en kontrol skal bruge en flad liste, skal moderzonen kopieres fra denne nøgle med `flattenCoastalPartsWithParentZoneId`. En almindelig `Object.values(...).flat()` mister koblingen og må ikke bruges, hvor evidens matches på både zone og kystdel.
+
+Fejlen berørte kun slutkontrollens genkendelse af de otte godkendte native-kadencereferencer. Den byggede Candidate G-state og livepiloten havde allerede 673/673 scoreklare kyststrækninger. Kravene til eksakt strøm, godkendt native kadence, dataminimering og lokal fail-closed adfærd er uændrede. Se DEC-0079.
+
 ## 4.0.282 – eksakt reference ved native vinduesskift
 
 De otte godkendte `dkss_lf`-regionalproxyer har ægte tretimerskadence. Hvis et Candidate G-beregningsvindue starter efter den seneste verificerede prøve, må state-pipelinen bruge den eksakte prøve som transportreference, men kun når den ligger før vinduet og højst tre timer tilbage. Prøven reduceres straks til `time` og kystrelativ `strength`.

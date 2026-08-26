@@ -1,3 +1,10 @@
+## 2026-08-26 – kandidat 4.0.283 bevarer moderzonen i slutkontrollen
+
+- Produktion `32912103679` havde 673/673 scoreklare kyststrækninger i livepilot og Candidate G-state, men slutkontrollen tabte moderzonekonteksten og genkendte kun 665/673.
+- En fælles udfladningsfunktion bevarer nu moderzonen fra den autoritative zone-nøgle. En målrettet regression låser koblingen uden krav om et indlejret `zoneId`.
+- Datakravene er uændrede; der opfindes ingen måling, historik, retning eller pil.
+- Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se DEC-0079.
+
 ## 2026-08-26 – kandidat 4.0.282 lukker native vinduesgrænsen
 
 - Produktion `32907678721` stoppede fail-closed ved 665/673, fordi de otte godkendte regionalproxyers seneste ægte prøve kunne ligge lige før beregningsvinduet uden endnu at være del af den kompakte state.

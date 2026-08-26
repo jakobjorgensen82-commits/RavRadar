@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Moderzonekobling i Candidate G-slutkontrollen – 4.0.283
+
+RavRadars kystdelsfil grupperer 673 kyststrækninger under 210 moderzoner. Moderzonen står som gruppens nøgle og behøver ikke gentages inde i hver kystdel. Den afsluttende kontrol mistede tidligere denne kobling, når den lavede én flad liste. Derfor kunne otte gyldige native-kadencereferencer ikke genkendes, selv om produktionen allerede havde 673/673 scoreklare kyststrækninger.
+
+Kontrollen bevarer nu moderzonen fra den autoritative gruppe. Det lemper ingen datakrav og skaber ingen ny måling, historik, retning eller pil. Candidate G 20/50/30, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se [DEC-0079](docs/rdks/10_DECISIONS/DEC-0079-CANDIDATE-G-PARENT-ZONE-AUDIT-BINDING.md).
+
 ## Eksakt native reference ved beregningsvinduets begyndelse – 4.0.282
 
 Nogle af de godkendte regionale strømkilder leverer en ægte måling hver tredje time. Hvis et nyt Candidate G-beregningsvindue begynder mellem to målinger, kan den seneste verificerede måling ligge lige før vinduet. RavRadar bruger nu denne eksakte måling som reference for den fortsatte transporttilstand i højst tre timer.
@@ -527,7 +533,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.282
+**Håndbogsversion:** 4.0.283
 
 **Opdateret:** 19. august 2026
 

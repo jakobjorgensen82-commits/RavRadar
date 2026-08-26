@@ -1,4 +1,15 @@
-# Implementeringsstatus – kandidat 4.0.282
+# Implementeringsstatus – kandidat 4.0.283
+
+## Kandidat 4.0.283 – bevar moderzone i slutkontrollen
+
+- [x] Afgræns fejlen til kontrolkonteksten; den byggede livepilot og Candidate G-state var allerede 673/673 scoreklare.
+- [x] Bevar den autoritative moderzone, når kystdelskilden foldes ud.
+- [x] Brug samme hjælpefunktion i regression og afsluttende videnskabelig kontrol.
+- [x] Bevar alle krav til verificeret strøm, native kadence og lokal fail-closed adfærd.
+- [x] Dokumentér DEC-0079, version 4.0.283 og kun topversionsændring i de beskyttede geodatafiler.
+- [ ] Bestå exact-head-kildegate, merge, fuld produktionskæde og offentlig 673-kystdelskontrol.
+
+Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede.
 
 ## Kandidat 4.0.282 – luk native vinduesgrænsen uden kunstig historik
 

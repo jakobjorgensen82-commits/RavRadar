@@ -1,4 +1,13 @@
-# AI Roadmap – RavRadar 4.0.282+
+# AI Roadmap – RavRadar 4.0.283+
+
+## P0 – bevar moderzone i Candidate G-slutkontrollen
+
+- [x] Bevis i produktion, at livepiloten og Candidate G-state havde 673/673 scoreklare kyststrækninger.
+- [x] Afgræns 665/673-fejlen til slutkontrollens tab af moderzone under udfladning.
+- [x] Indfør én fælles udfladning, hvor den autoritative zone-nøgle bevares.
+- [x] Lås med regression, at native-kadencereferencen matches uden et indlejret `zoneId`.
+- [x] Dokumentér DEC-0079 og versionér til 4.0.283 uden anden geodataændring end topversionsfelterne.
+- [ ] Bestå exact-head, fuld produktion og offentlig 673-kystdelskontrol.
 
 ## P0 – eksakt native reference ved Candidate G-vinduesskift
 

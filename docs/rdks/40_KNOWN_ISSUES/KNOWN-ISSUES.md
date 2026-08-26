@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## Kandidat 4.0.283 – moderzonekobling i slutkontrollen
+
+- **ISSUE-CANDIDATE-G-FINAL-AUDIT-PARENT-ZONE – LØST I KANDIDAT:** Slutkontrollen mistede moderzonen, da 210 zonegrupper blev foldet ud til 673 kystdele. Derfor kunne otte gyldige native-kadencereferencer ikke matches, selv om livepiloten og Candidate G-state allerede var 673/673 scoreklare. Den fælles udfladning bevarer nu den autoritative zone-nøgle.
+- **ISSUE-4.0.282-PRODUCTION-NOT-DEPLOYED – DOKUMENTERET:** Produktion `32912103679` stoppede korrekt ved slutkontrollens 665/673-resultat. Intet nyt artifact blev deployet, og den eksisterende offentlige runtime forblev urørt.
+- **ISSUE-CANDIDATE-G-PARENT-ZONE-PRODUCTION-CLOSURE – ÅBEN:** Exact-head, fuld produktion og offentlig 673-kystdelskontrol udestår for 4.0.283.
+
 ## Kandidat 4.0.282 – native reference ved vinduesskift
 
 - **ISSUE-CANDIDATE-G-NATIVE-WINDOW-REFERENCE – LØST I KANDIDAT:** De otte godkendte tretimers-regionalproxyer kunne ved et nyt beregningsvindue have en eksakt verificeret prøve lige før vinduet, uden at prøven endnu stod i den kompakte state. Kildehistorikken var intakt, men første mellemtime blev fejlagtigt `UNVERIFIED_PAUSE`. 4.0.282 fører kun den eksakte prøve videre som dataminimeret transportreference i højst tre timer.

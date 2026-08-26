@@ -1,5 +1,13 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.283 – slutkontrollen bevarer kystdelens moderzone
+
+- Produktion `32912103679` dokumenterede 673/673 scoreklare kyststrækninger i livepiloten og Candidate G-state, men slutkontrollen genkendte kun 665/673 og stoppede korrekt før deploy.
+- Kystdelskilden gemmer moderzonen som nøglen i `zones`. Slutkontrollen mistede denne nøgle ved udfladning, så de otte godkendte native-kadencereferencer ikke kunne matches.
+- 4.0.283 bruger en fælles hjælpefunktion, som kopierer den autoritative zone-nøgle ind i den flade kontrolvisning. Regressionen beviser koblingen også uden indlejret `zoneId`.
+- Datakravene lempes ikke, og der opfindes ingen strøm, historik, retning eller pil.
+- Candidate G 20/50/30, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se DEC-0079.
+
 ## Kandidat 4.0.282 – eksakt native reference lukker sidste vindueshul
 
 - Produktion `32907678721` stoppede korrekt ved 665/673, fordi de otte godkendte regionalproxyers seneste ægte tretimersmåling kunne ligge lige før det aktuelle beregningsvindue uden endnu at være i den kompakte Candidate G-state.

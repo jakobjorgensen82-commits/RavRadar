@@ -1,5 +1,16 @@
 # RavRadar - aktivt roadmap
 
+## P0 – 4.0.283 bevar moderzone i Candidate G-slutkontrollen
+
+- [x] Bevis, at produktionens livepilot og Candidate G-state havde 673/673 scoreklare kyststrækninger.
+- [x] Afgræns 665/673 til tab af moderzone i den afsluttende kontrol.
+- [x] Bevar den autoritative zone-nøgle ved udfladning af kystdele.
+- [x] Lås koblingen med en målrettet regression uden indlejret `zoneId`.
+- [x] Dokumentér DEC-0079 og kun topversionsændring i beskyttet geodata.
+- [ ] Bestå exact-head, merge, fuld produktion og offentlig 673-kystdelskontrol.
+
+Dette ændrer ikke strømkrav, Candidate G 20/50/30, scorekurver, zoner, geometri eller land-/vandpunkter.
+
 ## P0 – 4.0.282 luk sidste falske Mangler/Ukendt ved native vinduesskift
 
 - [x] Afgræns stoppet til de otte godkendte regionalproxyers eksakte måling umiddelbart før beregningsvinduet.
