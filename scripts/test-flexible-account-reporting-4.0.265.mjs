@@ -131,6 +131,7 @@ const dialog = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
 const account = fs.readFileSync('js/ui/account-panel.js', 'utf8');
 const observationService = fs.readFileSync('js/services/observation-service.js', 'utf8');
 const submitObservationFunction = fs.readFileSync('supabase/functions/submit-observation/index.ts', 'utf8');
+const tripStore = fs.readFileSync('supabase/functions/_shared/trip-store.ts', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
 
 for (const marker of [
@@ -149,9 +150,11 @@ assert.match(dialog, /openTripEvidenceDialog[\s\S]*appendReportQuestions/);
 assert.match(dialog, /openAccountTripReportDialog[\s\S]*appendReportQuestions/);
 assert.match(account, /submitAccountTripReportObservation\(toAccountObservationColumns\(report\)\)/);
 assert.match(observationService, /\/functions\/v1\/submit-observation/);
-assert.match(submitObservationFunction, /rest\/v1\/observations\?on_conflict=client_observation_id/);
+assert.match(submitObservationFunction, /storeObservation/);
+assert.match(tripStore, /rest\/v1\/observations\?on_conflict=client_observation_id/);
+assert.match(tripStore, /tripStorageMode\(\) === "supabase"/);
 assert.doesNotMatch(observationService, /rest\/v1\/(?:manual_reports|account_reports|trip_reports)/);
 assert.match(observationService, /historicalSnapshotStatus:HISTORICAL_SNAPSHOT_UNAVAILABLE/);
 assert.match(app, /status==='discarded'/);
 
-console.log('Fleksibel kontoindberetning: samme observationsrække, valgt tid, ingen opdigtet vejrsnapshot og sikkert fravalg består.');
+console.log('Fleksibel kontoindberetning: samme turpost, valgt tid, ingen opdigtet vejrsnapshot og sikkert fravalg består.');
