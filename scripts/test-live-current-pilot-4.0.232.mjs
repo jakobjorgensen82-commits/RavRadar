@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
+  flattenCoastalPartsWithParentZoneId,
   latestVerifiedNativeCadenceSampleForPart,
   mergeLiveCurrentPilotIntoRecord,
   nativeCadenceHoldHoursForPart,
@@ -38,6 +39,15 @@ const regionalEntry = {
   uMps: 0.1, vMps: 0.2,
 };
 const regionalLive = { ...live, entries: [regionalEntry] };
+const flattenedRegionalParts = flattenCoastalPartsWithParentZoneId({
+  zones: { ZR: [{ partId: 'R1', zoneId: 'STALE', waterPoint: regionalPart.waterPoint }] },
+});
+assert.equal(flattenedRegionalParts.length, 1);
+assert.equal(flattenedRegionalParts[0].zoneId, 'ZR',
+  'the authoritative parent-zone map key must survive flattening and override stale embedded context');
+assert.equal(verifiedNativeCadenceReferenceForPart(
+  flattenedRegionalParts[0], regionalLive, '2026-08-18T12:00:00.000Z'), true,
+  'the final audit must recognize native-cadence evidence after flattening coastal parts');
 assert.equal(nativeCadenceHoldHoursForPart(regionalPart, regionalLive), 3);
 const regionalReferenceSample = latestVerifiedNativeCadenceSampleForPart(
   { ...regionalPart, onshoreDirectionDeg: 45 },

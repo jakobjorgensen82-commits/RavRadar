@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Kandidat 4.0.283 – slutkontrollen bevarer moderzonen
+
+- Produktion `32912103679` byggede 673/673 scoreklare kyststrækninger, inklusive de otte ejer-godkendte native-kadencereferencer, men den afsluttende videnskabelige kontrol rapporterede 665/673 og stoppede sikkert før deploy.
+- Rodårsagen var ikke manglende strøm eller historik. Kontrollen foldede de 210 zonegrupper ud til 673 kystdele uden at bevare den autoritative moderzone fra JSON-nøglen.
+- `flattenCoastalPartsWithParentZoneId` bevarer nu zonekoblingen, og både regressionen og slutkontrollen bruger den samme hjælpefunktion.
+- Kravet til verificeret strøm er uændret. Der tilføjes ingen måling, mellemtime, retning, pil eller mobilisering.
+- Candidate G 20/50/30, scorekurver, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. De beskyttede geodatafiler ændrer kun topversionsfelt 4.0.282 → 4.0.283. Se DEC-0079.
+- Næste trin er målrettede kontroller, exact-head, fuld produktion og offentlig kontrol af alle 673 kyststrækninger.
+
 ## Kandidat 4.0.282 – eksakt native reference ved nyt beregningsvindue
 
 - Den fulde produktion `32907678721` stoppede korrekt ved 665/673: de otte ejer-godkendte `dkss_lf`-regionalproxyer havde en ægte verificeret tretimersmåling umiddelbart før det aktuelle Candidate G-beregningsvindue, men den var endnu ikke en del af vinduets kompakte state.

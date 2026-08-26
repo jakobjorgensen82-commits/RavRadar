@@ -1,5 +1,13 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.283 moderzonekobling i slutkontrollen
+
+1. Ejeren bad om at få **Mangler/Ukendt** skubbet helt videre og derefter få en særskilt drifts- og sikkerhedsanalyse.
+2. Produktion `32912103679` nåede 673/673 scoreklare kyststrækninger, men den afsluttende kontrol stoppede ved 665/673.
+3. De otte afvigelser var ikke datahuller. Kontrollen havde mistet moderzonen, da zonegrupperne blev foldet ud til en flad kystdelsliste.
+4. 4.0.283 bevarer moderzonen fra den autoritative JSON-nøgle og låser adfærden med en regression.
+5. Datakrav, Candidate G 20/50/30, vejr, geometri og land-/vandpunkter er uændrede. Se DEC-0079.
+
 ## 2026-08-26 – kandidat 4.0.282 native reference ved vinduesskift
 
 1. Ejeren bad om at få de resterende tekniske **Mangler/Ukendt** skubbet helt videre på tværs af zoner og kyststrækninger.
