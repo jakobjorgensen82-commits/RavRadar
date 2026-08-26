@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## Produktionslukket arbejdscheckpoint – 2026-08-26 4.0.283
+
+- Den afsluttende audit mistede moderzonens nøgle ved udfladning og genkendte derfor kun 665/673, selv om produktionskæden havde 673/673 scoreklare Candidate G-kyststrækninger.
+- 4.0.283 bevarer den autoritative moderzone i den flade kontrolvisning. Datakrav, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.
+- PR #153 bestod exact-head `32914734446`, blev merged som `1caad399`, og produktion `32914887586` bestod fuld validering, releasegate, artifact og Pages.
+- Offentlig 4.0.283 er komplet på 210 zoner og 673 kyststrækninger med Candidate G 20/50/30 som eneste profil, tom rollbackprofil og forbudt legacyfallback.
+- 657 kyststrækninger har komplet transporthukommelse. 16 har 30–48 timers naturlig historik uden reset; de fem berørte moderzoner er ærligt lokalt utilgængelige. Den falske **Mangler/Ukendt**-fejl er lukket.
+- Næste aktive arbejdsafsnit er den aftalte dybe drifts- og sikkerhedsrevision før flytning til ravradar.dk. Se DEC-0079. Senere arbejdscheckpoints i denne fil er historik.
+
 ## Produktionslukket arbejdscheckpoint – 2026-08-25 4.0.277
 
 - Rodårsag: Ved mellemtimer for de otte ejerallowlistede `dkss_lf`-regionalproxyer kunne en fremtidig prøve tælles som aktuel readiness, mens den timeskarpe audit korrekt afviste den. Candidate G skrev samtidig den naturlige mellemtime som manglende evidens. Historikken var ikke tabt.

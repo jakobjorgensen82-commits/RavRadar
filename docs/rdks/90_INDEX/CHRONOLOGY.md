@@ -1,12 +1,14 @@
 # Rekonstrueret chatkronologi
 
-## 2026-08-26 – kandidat 4.0.283 moderzonekobling i slutkontrollen
+## 2026-08-26 – 4.0.283 moderzonekobling produktionsverificeret
 
 1. Ejeren bad om at få **Mangler/Ukendt** skubbet helt videre og derefter få en særskilt drifts- og sikkerhedsanalyse.
 2. Produktion `32912103679` nåede 673/673 scoreklare kyststrækninger, men den afsluttende kontrol stoppede ved 665/673.
 3. De otte afvigelser var ikke datahuller. Kontrollen havde mistet moderzonen, da zonegrupperne blev foldet ud til en flad kystdelsliste.
 4. 4.0.283 bevarer moderzonen fra den autoritative JSON-nøgle og låser adfærden med en regression.
 5. Datakrav, Candidate G 20/50/30, vejr, geometri og land-/vandpunkter er uændrede. Se DEC-0079.
+6. PR #153 bestod exact-head `32914734446`, blev merged som `1caad399`, og produktion `32914887586` bestod hele kæden og udgav 4.0.283.
+7. Offentlig kontrol beviste 673/673 kyststrækninger. 657 havde komplet hukommelse; 16 havde 30–48 timers naturlig historik uden reset og gjorde kun fem moderzoner ærligt utilgængelige.
 
 ## 2026-08-26 – kandidat 4.0.282 native reference ved vinduesskift
 

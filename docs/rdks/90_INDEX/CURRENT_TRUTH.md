@@ -1,20 +1,24 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.283 – slutkontrollen bevarer kystdelens moderzone
+## Produktionsverificeret 4.0.283 – slutkontrollen bevarer kystdelens moderzone
 
 - Produktion `32912103679` dokumenterede 673/673 scoreklare kyststrækninger i livepiloten og Candidate G-state, men slutkontrollen genkendte kun 665/673 og stoppede korrekt før deploy.
 - Kystdelskilden gemmer moderzonen som nøglen i `zones`. Slutkontrollen mistede denne nøgle ved udfladning, så de otte godkendte native-kadencereferencer ikke kunne matches.
 - 4.0.283 bruger en fælles hjælpefunktion, som kopierer den autoritative zone-nøgle ind i den flade kontrolvisning. Regressionen beviser koblingen også uden indlejret `zoneId`.
 - Datakravene lempes ikke, og der opfindes ingen strøm, historik, retning eller pil.
 - Candidate G 20/50/30, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se DEC-0079.
+- PR #153 bestod exact-head `32914734446`, blev merged som `1caad399`, og produktion `32914887586` bestod fuld validering, releasegate, artifact og Pages-deploy.
+- Offentlig 4.0.283 er komplet på 210 zoner og 673/673 kyststrækninger. Den aktive/ønskede profil er Candidate G 20/50/30, rollbackprofilen er tom, og legacyfallback er forbudt.
+- 657 kyststrækninger har komplet transporthukommelse. De sidste 16 har 30–48 timers ægte naturlig historik uden reset; kun deres fem moderzoner er midlertidigt utilgængelige med en ærlig brugerforklaring. Det er ikke den tidligere falske **Mangler/Ukendt**-fejl.
 
-## Kandidat 4.0.282 – eksakt native reference lukker sidste vindueshul
+## Produktionsverificeret 4.0.282 – eksakt native reference lukker sidste vindueshul
 
 - Produktion `32907678721` stoppede korrekt ved 665/673, fordi de otte godkendte regionalproxyers seneste ægte tretimersmåling kunne ligge lige før det aktuelle beregningsvindue uden endnu at være i den kompakte Candidate G-state.
 - Målingen var ikke tabt. 4.0.282 giver state-pipelinen den eksakte foregående verificerede kilderække som transportreference, men kun når den er højst tre timer gammel.
 - Referencen reduceres straks til tid og kystrelativ styrke. Den skaber ingen ny måling, pil, mellemtime, bevægelse eller mobilisering og indeholder ingen rå U/V, koordinater eller punkt-id'er.
 - Mere end tre timers afstand eller ugyldig reference forbliver lokalt fail-closed.
 - Candidate G 20/50/30, scorekurver, 48-timershukommelse, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. Se DEC-0078.
+- 4.0.283's grønne fulde produktion og offentlige 673-kystdelskontrol beviser samtidig 4.0.282-referencevejen i den virkelige kæde.
 
 ## Produktionsverificeret 4.0.281 – Candidate G-native teknisk kontrolvisning
 

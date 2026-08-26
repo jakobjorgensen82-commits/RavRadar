@@ -4,6 +4,8 @@
 - Produktion `32912103679` dokumenterede allerede 673/673 scoreklare kyststrækninger, heraf otte godkendte native-kadencereferencer, men slutkontrollen kunne kun genkende 665/673 uden moderzonekoblingen og stoppede derfor korrekt før deploy.
 - En fælles hjælpefunktion bevarer nu den autoritative zone-nøgle under udfladning. En regressionstest låser, at også en kystdel uden indlejret `zoneId` kan matches til sin verificerede native-kadencereference.
 - Datakravene lempes ikke: der opfindes ingen måling, historik, pil eller retning. Candidate G 20/50/30, vejr, zoner, geometri, land-/vandpunkter, admin-data og brugerdata er uændrede. De beskyttede geodatafiler ændrer kun topversionsfelt til 4.0.283. Se DEC-0079.
+- PR #153 bestod exact-head `32914734446`, blev merged som `1caad399`, og produktion `32914887586` bestod hele kæden inklusive releasegate og Pages.
+- Offentlig kontrol beviser 210 zoner og 673/673 kyststrækninger på Candidate G-only. 657 dele har komplet transporthukommelse; 16 dele er ærligt lokalt utilgængelige med 30–48 timers naturlig historik og nul reset. Den falske **Mangler/Ukendt**-fejl er lukket uden kunstig historik.
 
 ## 4.0.282 – Eksakt Candidate G-reference ved native vinduesskift (2026-08-26)
 
