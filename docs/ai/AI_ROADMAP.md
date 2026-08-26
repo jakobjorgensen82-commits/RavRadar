@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.287+
 
-## P0 nu – færdigt hybridt konto- og turlager
+## P0 afsluttet – færdigt hybridt konto- og turlager
 
 - [x] Bevar Supabase til Auth, profiler, rettigheder, rate limit og Edge; flyt normal turvækst til ti EU-låste Cloudflare D1-shards.
 - [x] Send kun HMAC-pseudonymiseret ejerskab og allowlistede turdata til Cloudflare; forbyd rå ID, mail, navn, JWT, GPS og rute.
@@ -9,8 +9,8 @@
 - [x] Overvåg lager uden payloads ved 70/85 % og understøt eksplicit ejersletning på tværs af begge lagre.
 - [x] Opret live Cloudflare-konto, mindst-mulige credentials og krypterede GitHub-secrets efter godkendelse; bestå infrastrukturens exact-head/merge og rollback-Edge-deploy.
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér ti live EU-shards og deploy Worker; stop første cutover sikkert før migration/Edge på health-udbredelsesforsinkelsen.
-- [ ] Bestå bounded-retry-opfølgningens exact-head/merge, privat Worker-grænse, migration og normal D1-drift på eksakt `main`.
-- [ ] Bestå fuld produktion og offentlig verifikation.
+- [x] Bestå bounded-retry-opfølgningens exact-head `33019805663`, merge PR #166 som `2d12c085`, privat Worker-grænse, idempotent 4/4-migration og normal D1-drift på eksakt `main` gennem `33019868542`.
+- [x] Bestå fuld produktion `33019856228`, Pages-job `98351206091`, offentlig `rr-20260826224651-210`-verifikation og payloadfri kapacitetsmonitor `33021364240`.
 
 Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 

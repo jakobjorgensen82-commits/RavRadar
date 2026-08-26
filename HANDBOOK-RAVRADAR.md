@@ -38,7 +38,7 @@ Observationer sendes gennem en server-side Edge-gateway. Browseren kan ikke læn
 
 Rav-assistenten bruger fortsat den lokale Candidate G-beregning. Fjernassistenten er slået fra, så RavRadar ikke sender spørgsmål eller kontekst til en ekstern model uden en særskilt godkendt nøgle-, omkostnings- og driftbeslutning. En senere aktivering må kun sende det lille dokumenterede offentlige kontekstobjekt.
 
-Supabase varsler mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Det overvåges som drift; privatliv, RLS, rate limits og releasegates må ikke lempes for at spare kvote. Kandidat 4.0.287 flytter normal turvækst til EU-D1, men Auth-/Edge-egress bliver i Supabase. Se [DEC-0080](docs/rdks/10_DECISIONS/DEC-0080-SECURITY-BOUNDARIES-AND-PUBLIC-EDGE-GATEWAYS.md) og [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
+Supabase varsler mulig begrænsning fra 9. september 2026 efter en tidligere egressoverskridelse. Det overvåges som drift; privatliv, RLS, rate limits og releasegates må ikke lempes for at spare kvote. Produktionsverificeret 4.0.287 flytter normal turvækst til EU-D1, men Auth-/Edge-egress bliver i Supabase. Se [DEC-0080](docs/rdks/10_DECISIONS/DEC-0080-SECURITY-BOUNDARIES-AND-PUBLIC-EDGE-GATEWAYS.md) og [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
 ## Moderzonekobling i Candidate G-slutkontrollen – 4.0.283
 

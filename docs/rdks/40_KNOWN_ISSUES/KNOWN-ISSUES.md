@@ -1,16 +1,17 @@
 # Kendte åbne og overvågede forhold
 
-## Åbent i kandidat 4.0.287 – D1-cutover og produktionslukning for EU-turlager
+## Produktionsverificeret 4.0.287 – D1-cutover og EU-turlager
 
-- Kode, migrationsflow, rollback, privacy, idempotens, kapacitetskontrol og målrettede tests er implementeret lokalt.
-- Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og Edge-deploy i eksplicit Supabase-rollback er verificeret uden credential- eller payloadudskrift. Der findes endnu ingen verificeret live Worker/D1-shardkæde eller migration.
+- Kode, migrationsflow, rollback, privacy, idempotens, kapacitetskontrol og målrettede tests er implementeret og produktionsverificeret.
+- Dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets, Edge-deploy i eksplicit Supabase-rollback og den aktive Worker/D1-shardkæde er verificeret uden credential- eller payloadudskrift.
 - Supabase-PAT roteres før 25. september 2026. Cloudflare deploy-/audit-tokens roteres før 27. august 2027. Pseudonym-secret må ikke roteres blindt.
 - Supabase-banneret varsler fortsat mulig projektbegrænsning fra 9. september 2026. Flytning af fremtidige ture reducerer databasevæksten, men ikke Auth-/Edge-egress eller tidligere billinghistorik.
 - Under eksplicit Supabase-rollback er ældre D1-ture bevaret, men kan være midlertidigt usynlige, indtil D1 er tilgængelig igen. Nye rollback-ture migreres idempotent ved tilbagevenden.
 - Turso Free er forkastet som normalmål, fordi en DPA ikke fremgår tydeligt af gratisplanen. Genindfør ikke Turso uden ny juridisk og teknisk beslutning.
-- **ISSUE-CLOUDFLARE-WORKER-HEALTH-PROPAGATION-RACE – LØST I OPFØLGNINGSKANDIDAT:** D1-run `33019198166` bestod sourcegate, EU-shards, skema, kapacitet, secret og Worker-deploy, men det umiddelbare health-kald ramte kort udbredelsesforsinkelse og stoppede før migration/Edge. Endepunktet svarede derefter korrekt. Health-verifikationen genprøver nu bounded i højst 53 sekunder og kræver fortsat eksakt 200, skemaversion 1 og ti shards.
+- **ISSUE-CLOUDFLARE-WORKER-HEALTH-PROPAGATION-RACE – PRODUKTIONSVERIFICERET LØST:** D1-run `33019198166` bestod sourcegate, EU-shards, skema, kapacitet, secret og Worker-deploy, men det umiddelbare health-kald ramte kort udbredelsesforsinkelse og stoppede før migration/Edge. Bounded retry gennem PR #166/exact-head `33019805663` og merge `2d12c085` kræver fortsat eksakt 200, skemaversion 1 og ti shards; fuld cutover `33019868542` bestod.
+- **ISSUE-HYBRID-TRIP-STORAGE-PRODUCTION-CLOSURE – PRODUKTIONSVERIFICERET LUKKET:** Cutover `33019868542` migrerede fire rækker og beviste fire idempotente dubletter ved andet gennemløb. Produktion `33019856228`, Pages-job `98351206091`, offentlig `rr-20260826224651-210` og read-only monitor `33021364240` er grønne. Normal mode er D1; Supabase-rollbackkontrakten er bevaret.
 
-Se DEC-0082. Issue lukkes først efter live EU-jurisdiktion, migration, konto/turlog, rollback og offentlig produktion er grønne.
+Se DEC-0082. Implementeringsissue er lukket. De åbne driftsforhold er Supabase-varslet og credential-rotationerne ovenfor; rollbackens midlertidigt usynlige ældre D1-ture er en dokumenteret begrænsning, ikke en skjult fallback.
 
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet
 

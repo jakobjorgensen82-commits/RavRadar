@@ -1,11 +1,13 @@
-## 2026-08-26 – kandidat 4.0.287 flytter normal turvækst til EU-D1
+## 2026-08-26–27 – 4.0.287 flytter normal turvækst til EU-D1, produktionsverificeret
 
 - Ejeren besluttede en færdig hybridarkitektur fra første dag med eksplicit Supabase-rollback.
 - Supabase bevarer Auth/Edge; ti EU-låste D1-shards modtager kun HMAC-pseudonym og allowlistede turdata gennem en privat signeret Worker.
 - Idempotent migration kører før og efter cutover uden at slette Supabase-kilden. Daglig payloadfri kapacitetskontrol og eksplicit ejersletning er implementeret.
 - Turso Free blev forkastet på uklart DPA-grundlag. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og blev merged som `27cebfd0`/`94b58e41`.
-- Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets er verificeret uden værdier. Rollback-Edge-deploy `33014772035` er grøn; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og produktion afventer. Se DEC-0082.
+- Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets er verificeret uden værdier. Rollback-Edge-deploy `33014772035` er grøn. Se DEC-0082.
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-cutover `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede før migration/Edge på en kort health-udbredelsesforsinkelse. Payloadfri health blev derefter grøn, og verifikationen har nu bounded retry uden svagere krav.
+- PR #166/exact-head `33019805663` blev merged som `2d12c085`. D1-cutover `33019868542` bestod med fire migrerede kilderækker, fire idempotente dubletter ved andet gennemløb, aktiv D1-Edge og grøn ikke-skrivende grænsekontrol.
+- Produktion `33019856228`, Pages-job `98351206091` og offentlig `rr-20260826224651-210` er grønne på 210/673/420/2.100, 210/210 aktive zoner, befolket rangliste og nul fejl. Read-only monitor `33021364240` verificerede ti shards og 0 % forbrug uden turlæsning.
 
 ## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 
