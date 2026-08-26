@@ -27,8 +27,9 @@ Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er h
 ### Kontroller og næste trin
 
 - De målrettede regime-, statepipeline-, recovery-, shadow- og workflowtests er grønne. Den nye faktiske gate afviser det offentlige 4.0.285-artifact som forventet.
-- Færdiggør 4.0.286-version, RDKS, håndbøger og changelog; verificér særskilt geodatadiff og kør lokal source gate.
-- Commit/push, exact-head, PR/merge og fuld frisk produktion. Den nye faktiske shadowaudit skal være grøn før deploy.
+- 4.0.286-version, RDKS, håndbøger, changelog, særskilt geodatadiff og lokal source gate blev færdiggjort. PR #157 bestod exact-head `32995801418` og blev merged som `2f2fd14883fbb974b331774858a61473ca06acc4`.
+- Produktion `32995888183` anvendte recovery, frisk DMI/Copernicus og byggede runtime, men den nye faktiske shadowaudit stoppede korrekt før fuld validering, Supabase-sync, artifact og Pages. Offentlig 4.0.285 forblev urørt og sort.
+- Den første gateversion skrev kun exitkode i loggen. Kandidaten skriver nu kun fejlkoder og summerede ready/warmup/replay-/diagnostikoptællinger, aldrig del-ID'er, rå U/V, koordinater eller private felter. Kør ny exact-head/produktion, brug den sikre evidens til rodårsag, og ret før deploy.
 - Offentlig slutkontrol skal kræve en befolket aktuel rangliste samt ingen browser-, side- eller HTTP-fejl.
 - Supabases mulige begrænsning fra 9. september 2026 forbliver en separat driftsrisiko; sikkerhed eller releasegates må ikke lempes. GitHub Pages er fortsat kanonisk, mens `ravradar.dk` ikke er løst.
 

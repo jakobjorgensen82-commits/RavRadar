@@ -11,7 +11,10 @@
 - [x] Bevis, at den nye gate afviser det offentlige 4.0.285-artifact med 665/673-masseregressionen.
 - [x] Bevis recovery mod de virkelige offentlige artifacts: 672/673 `READY`, én ærligt umoden del og derefter inaktiv recovery.
 - [x] Løft appversion, synkronisér RDKS/håndbøger/changelog og bevis ren topversionsdiff i de beskyttede geodatafiler.
-- [ ] Bestå exact-head-kildegate, merge, fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+- [x] Bestå PR #157 exact-head `32995801418` og merge som `2f2fd14883fbb974b331774858a61473ca06acc4`.
+- [x] Stop produktion `32995888183` fail-closed i den nye faktiske runtimegate før Supabase-sync, artifact og Pages; offentlig 4.0.285 forblev urørt.
+- [x] Tilføj dataminimeret gatefejlrapportering med kun fejlkoder og summerede optællinger, ingen del-ID'er, rådata, koordinater eller private felter.
+- [ ] Bestå ny exact-head-kildegate, diagnosticér/reparer den faktiske runtimeafvigelse, gennemfør fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
 
 ## Udgivet men funktionelt afvist 4.0.285 – første cadencefaselukning
 
