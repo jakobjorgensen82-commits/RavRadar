@@ -1,5 +1,19 @@
 # Current truth – gældende projektviden
 
+## Kandidat 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
+
+- Supabase forbliver Auth-, profil-, rettigheds-, rate-limit- og Edge-grænse. Normal lagring af ture flyttes til ti EU-låste Cloudflare D1-shards, så fremtidig turvækst ikke rammer Supabases 500 MB-databaseloft.
+- Edge verificerer Supabase-sessionen og erstatter bruger-/anonym-id med en versionsbåret HMAC-SHA-256-pseudonymnøgle. Cloudflare modtager aldrig rå bruger-id, mail, navn, JWT, GPS eller rute.
+- Supabase Edge → Cloudflare Worker er en privat HMAC-kontrakt over metode, sti, body-hash og højst fem minutter gammelt tidsstempel. Ture er kanonisk hashet og idempotente på klient-/tur-id.
+- Eksisterende Supabase-ture migreres uden payloadlog og uden kildesletning. Workflowet rekonsilierer både før og efter cutover, så deploymentvinduet er dækket.
+- `TRIP_STORAGE_MODE=supabase` er en eksplicit manuel rollback uden skjult fallback eller normal dual-write. Tilbagevenden til D1 migrerer rollback-perioden idempotent.
+- Et payloadfrit dagligt kapacitetsjob kontrollerer ti shards, EU-jurisdiktion og lager; det advarer ved 70 % og stopper ved 85 %. En eksplicit driftskommando kan slette en ejers ture i både D1 og Supabase uden payloadudskrift.
+- Cloudflare Free oplyser 5 GB samlet D1-lager, 500 MB pr. database, 100.000 Worker-kald/dag, 5 mio. læste rækker/dag og 100.000 skrevne rækker/dag. RavRadars smallere globale gates holder normaltrafik klart under disse dagsgrænser.
+- Supabase-varselet om mulig begrænsning fra 9. september 2026 forbliver aktivt, fordi Auth/Edge/egress stadig bruger Supabase. Aktuel officiel Free-kvote er 50.000 MAU, 500.000 Edge-kald/måned, 500 MB database og 5 GB egress.
+- Målrettet kontrakt og fuld lokal `validate:source` inklusive releasegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og er merged som `27cebfd0`/`94b58e41`. Dedikeret Cloudflare-konto, mindst-mulige tokens og krypterede GitHub-secrets er verificeret uden værdier; rollback-Edge-deploy `33014772035` er grøn. Live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og offentlig verifikation mangler endnu. Se DEC-0082.
+
+Candidate G, score, vejr, zoner, geometri, land-/vandpunkter og private payloads er uændrede.
+
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet og faktisk predeploy-audit
 
 - PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` udgav 4.0.285 gennem recovery, frisk runtime, fuld validering, releasegate, Supabase-sync og Pages.

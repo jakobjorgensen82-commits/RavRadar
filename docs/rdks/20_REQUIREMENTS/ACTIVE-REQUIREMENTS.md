@@ -1,5 +1,16 @@
 # Aktive krav – samlet register
 
+## Kontoidentitet og turlager
+
+- **REQ-TRIP-020 – IMPLEMENTERET LOKALT / AFVENTER LIVE:** Supabase er fortsat Auth- og Edge-sandhed, mens normale turposter lagres i ti EU-låste Cloudflare D1-shards. Browseren må ikke kalde D1 direkte.
+- **REQ-TRIP-021 – BINDENDE:** Cloudflare må kun modtage versionsbåret HMAC-pseudonym, allowlistede turfelter og grov zone/kystdel. Rå Supabase-/anonym-id, mail, navn, JWT, GPS, rute, fri tekst og billeder er forbudt.
+- **REQ-TRIP-022 – BINDENDE:** Servicekald skal være HMAC-signerede over metode, sti, body-hash og højst fem minutter gammelt tidsstempel. Samme klient-/tur-id med ændret indhold skal stoppes; sikkert genforsøg må ikke oprette dublet.
+- **REQ-TRIP-023 – IMPLEMENTERET LOKALT / AFVENTER LIVE:** Cutover migrerer idempotent før og efter Edge-skift uden at slette Supabase-kilden. Normal drift må ikke dual-write. `TRIP_STORAGE_MODE=supabase` er den eneste eksplicitte rollback.
+- **REQ-TRIP-024 – BINDENDE:** Kapacitet kontrolleres payloadfrit dagligt med advarsel ved 70 % og stop ved 85 % af en shard eller samlet D1. Supabase-banneret fra 9. september 2026 overvåges separat.
+- **REQ-TRIP-025 – IMPLEMENTERET LOKALT / AFVENTER DRIFTSPRØVE:** En eksplicit bekræftet driftsvej skal slette en ejers ture i både D1 og Supabase uden at logge id eller payload og derefter verificere tomt resultat.
+
+Se DEC-0082. DEC-0063–0066's direkte Supabase-lagring er erstattet kun for fysisk lagerplacering; deres ene logiske tur, valgfri login, private ejerskab og dataminimering består.
+
 ## Drifts- og sikkerhedsgrænser – bindende fra 4.0.284
 
 - **REQ-HTML-TRUST-BOUNDARY-001 – BINDENDE:** Centralt eller på anden måde dynamisk HTML må kun vises gennem den fælles allowlist-sanitizer. Scripts, styles, embeds, iframes, objekter, event handlers, DOM-id'er, ukendte attributter og farlige URL-protokoller skal fjernes. Offentlige sider skal have CSP uden `unsafe-eval` og må ikke genindføre inline JavaScript.

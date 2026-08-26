@@ -1,5 +1,19 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT ARBEJDSCHECKPOINT – 2026-08-27 – kandidat 4.0.287 EU-turlager
+
+- Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/stability-security-4.0.284`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- Ejeren kræver en færdig normalarkitektur fra første dag og en eksplicit Supabase-rollback. DEC-0082 vælger Supabase Auth/Edge plus ti EU-låste Cloudflare D1-shards.
+- Kode, målrettede tests og fuld lokal `validate:source` inklusive releasegate er grønne for HMAC-pseudonym, identitets-/GPS-fravær, service-HMAC, idempotens, privat turlog, ti shards, migrations-cutover før/efter, ejersletning, kapacitetskontrol og `TRIP_STORAGE_MODE=supabase`.
+- Turso Free er forkastet, fordi gratisplanens DPA-status ikke er tydelig. Cloudflares DPA omfatter self-serve-aftalen, og D1 understøtter uforanderlig EU-jurisdiktion.
+- Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og er merged som `27cebfd0`/`94b58e41`. Dedikeret Cloudflare-konto, præcis to mindst-mulige API-tokens og nødvendige krypterede GitHub-secrets er oprettet og verificeret uden at vise værdier. Supabase-PAT roteres før 25. september 2026; Cloudflare-tokens før 27. august 2027.
+- Rollback-deploy `33014772035` satte `TRIP_STORAGE_MODE=supabase`, deployede alle versionsstyrede Edge-funktioner gennem CI og bestod ikke-skrivende CORS-, login- og feltkontrol. Der er fortsat ingen D1-shards, deployet Worker eller migrerede liveposter før det endelige main-cutover.
+- Normal D1-deploy må først ske fra eksakt `main` efter grøn source gate. Workflowet opretter/verificerer EU-shards, deployer Worker, migrerer Supabase, skifter Edge, migrerer igen og kører ikke-skrivende grænsekontrol.
+- Supabase-banneret om mulig begrænsning fra 9. september 2026 er stadig åbent. Turlagerflytningen stopper fremtidig turvækst i Postgres, men ikke Auth-/Edge-egress.
+- Næste trin: færdiggør 4.0.287-dokument/version, lokal målrettet gate, commit/push og kandidatens exact-head/PR/merge; kør straks derefter D1-workflowet på eksakt `main`, migration, fuld frisk produktion og offentlig 210/673/420/2.100-kontrol.
+
+Se DEC-0082. Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
+
 ## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-26 – 4.0.286
 
 Dette er den aktuelle overdragelse. Alle efterfølgende checkpoints i filen er historik.

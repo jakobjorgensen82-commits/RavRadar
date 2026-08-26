@@ -1,5 +1,14 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.287 endeligt hybridt turlager
+
+1. Ejeren afviste en senere halv implementering og krævede den endelige løsning fra dag ét plus Supabase-rollback.
+2. Turso Free blev forkastet, fordi en DPA ikke fremgår tydeligt. Cloudflare D1 blev valgt med ti EU-låste shards og self-serve-DPA.
+3. Supabase Edge verificerer login og HMAC-pseudonymiserer ejerskab; Cloudflare modtager ingen rå identitet, JWT, GPS eller rute.
+4. Worker-kontrakten er HMAC-signeret, tidsafgrænset og idempotent. Migration kører før/efter cutover, og rollback er eksplicit uden normal dual-write.
+5. Lokal målrettet kontrakt og fuld sourcegate er grøn. Infrastruktur-PR #162/#163 bestod exact-head `33014102652`/`33014672254` og blev merged som `27cebfd0`/`94b58e41`.
+6. Dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets blev oprettet gennem den godkendte kanal uden at vise værdier. Rollback-Edge-deploy `33014772035` bestod; live EU-shards/Worker, migration, kandidatens endelige exact-head/merge og offentlig verifikation afventer. Se DEC-0082.
+
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 
 1. PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` bestod recovery, frisk runtime, fuld validering, releasegate, Supabase-sync, artifact og Pages.

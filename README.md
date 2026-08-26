@@ -10,7 +10,7 @@ RavRadar er en mobilvenlig dansk PWA til planlægning af ravjagt.
 - 5-dages farveprognose under hver zone.
 - Vandstand time for time, opdelt i fem klikbare ugedage.
 - 5-dages oversigt på forsiden over de bedste zoner pr. dag.
-- Valgfri Supabase-login, lokal ravtur med GPS kun mens appen er åben og anonym fundregistrering.
+- Valgfri Supabase-login, lokal ravtur med GPS kun mens appen er åben og pseudonymiseret turlagring i EU; præcis position forlader ikke enheden.
 - Udviklertilstand: tryk logoet 10 gange, PIN 1931.
 
 ## Vejrdata

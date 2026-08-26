@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.286",
+  "handbookVersion": "4.0.287",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "hybrid-auth-eu-trip-storage-4-0-287",
+      "chapter": "71",
+      "title": "Supabase-login og EU-turlager med rollback",
+      "summary": "Supabase bevarer login og Edge, mens HMAC-pseudonymiserede ture lagres i ti EU-låste D1-shards med eksplicit Supabase-rollback.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Login bliver i Supabase. Normale ture gemmes i et større EU-lager uden rå bruger-id, mail, navn, JWT, GPS eller rute.</div><div class=\"handbook-stack\"><p><strong>Identitetsgrænse:</strong> Supabase Edge verificerer login og erstatter bruger-/anonym-id med et versionsbåret HMAC-pseudonym, før en tur sendes til Cloudflare.</p><p><strong>Færdigt normalspor:</strong> Ti EU-låste D1-shards giver op til 5 GB samlet gratis lager. Servicekaldet er privat HMAC-signeret og tidsbegrænset; kanonisk payload-hash og klient-/tur-id gør sikre genforsøg idempotente.</p><p><strong>Kontrolleret skift:</strong> Eksisterende ture migreres både før og efter Edge-cutover uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke.</p><p><strong>Rollback:</strong> <code>TRIP_STORAGE_MODE=supabase</code> sender nye writes og læsninger tilbage til Supabase. Ældre D1-ture bevares og bliver synlige igen, når D1 genåbnes; rollback-perioden migreres idempotent ved tilbagevenden.</p><p><strong>Drift:</strong> Et payloadfrit dagligt job advarer ved 70 % og stopper ved 85 %. Supabase-varslet fra 9. september 2026 overvåges fortsat, fordi Auth/Edge-egress bliver i Supabase. Se <code>DEC-0082</code>.</p></div>"
+    },
     {
       "id": "candidate-g-rolling-boundary-continuity-4-0-286",
       "chapter": "70",
@@ -105,15 +112,15 @@
     {
       "id": "production-auth-and-trip-log-4-0-266",
       "chapter": "56",
-      "title": "Login og Mine ture og fund",
-      "summary": "Magic links skal vende tilbage til den rigtige RavRadar-adresse, og en indlogget bruger må kun læse sine egne eksisterende turposter.",
+      "title": "Historisk 4.0.266: Login og Mine ture og fund",
+      "summary": "Magic-link- og ejerskabskravet består; den tidligere direkte Supabase-turlæsning er erstattet af DEC-0082's private Edge-/D1-vej.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Et magic link er et tidsbegrænset engangslink via mail. Det skal føre tilbage til den RavRadar-side, hvor det blev bestilt. <strong>Mine ture og fund</strong> viser de samme eksisterende turposter og opretter ingen kopi.</div><p>Supabase skal have hjemmesidens kanoniske adresse som både standardadresse og tilladt login-returadresse. Den aktuelle adresse er <code>https://jakobjorgensen82-commits.github.io/RavRadar/</code>. Når siden flyttes til <code>https://ravradar.dk/</code>, skal begge indstillinger ændres i samme deployment, og et nyt magic link skal prøves på den nye adresse.</p><p>Kun en indlogget ejer må læse observationer med sit eget bruger-id. Listen henter højst de seneste 100 ture. Kvalitetsmarkørerne fortæller blandt andet, om en tur er indtastet bagefter og ikke har et sikkert historisk vejrgrundlag; de må ikke indeholde mail, navn, GPS, rute eller fri tekst.</p><div class=\"callout\"><strong>Afventende tur:</strong> Hvis en tur ikke kunne sendes færdigt, bliver den i den lokale leveringskø på enheden og prøves igen med samme klient-id ved næste sideindlæsning. Det opretter ikke en dublet.</div><p>Hvis listen midlertidigt ikke kan hentes, bruger RavRadar en enkel brugerforklaring og viser ikke interne leverandørnavne.</p>"
     },
     {
       "id": "account-trip-reporting-and-log-4-0-265",
       "chapter": "55",
-      "title": "Indberet tur eller fund fra kontoen",
-      "summary": "Brugeren vælger selv dato og klokkeslæt for en tidligere tur, og RavRadar bruger aldrig nutidens vejr som historisk erstatning.",
+      "title": "Historisk 4.0.265: Indberet tur eller fund fra kontoen",
+      "summary": "Rapportflowet består, men den fysiske Supabase-lagring er erstattet af DEC-0082's ene logiske post i det aktive EU-turlager.",
       "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En indlogget bruger kan vælge <strong>Indberet tur eller fund</strong> uden først at starte en tur. Brugeren vælger dato og klokkeslæt for turens start samt varigheden. De samme enkle spørgsmål om jagtform, område, kyststrækning, søgning og fund bruges i begge rapportveje.</div><p>RavRadar sætter aldrig dagens vejr på en ældre tur. Hvis et sikkert historisk vejr- og scoresnapshot ikke findes, gemmes turen stadig som erfaring, men den bruges ikke direkte til at ændre scorereglerne eller den aktuelle beregnede fundchance.</p><p>Efterregistreringen gemmes som én turpost i den eksisterende <code>observations</code>-tabel og vises under <strong>Mine ture og fund</strong>. Der oprettes ingen ny tabel eller særskilt fundpost. Listen hentes først ved brugerens klik, viser højst de seneste 100 ture og kan kun læses af ejeren gennem Supabases adgangsregler.</p><div class=\"callout\"><strong>Tre valg ved afslutning:</strong> <strong>Indsend tur</strong> gemmer rapporten. <strong>Svar senere</strong> bevarer turen på enheden. <strong>Afslut uden at indberette</strong> kræver bekræftelse og rydder turen uden at sende en rapport.</div><p>RavRadar indsamler ikke GPS-spor, rute, præcis position, fri tekst eller billeder. Mailadresse og navn gemmes ikke i turposten. Candidate G, 20/50/30, geometri og vejrruntime er uændrede.</p><div class=\"callout\"><strong>Magic link:</strong> Et magic link er et engangslink sendt til brugerens mail. Det logger brugeren ind uden adgangskode. Adgangskodelogin er fortsat muligt.</div>"
     },
     {

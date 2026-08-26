@@ -1,6 +1,6 @@
 # RavRadar – gældende systemspecifikation
 
-Denne specifikation beskriver den aktive 4.0.278-arkitektur og den score-neutrale 4.0.279-kandidat. RDKS er fortsat bindende ved konflikt. Releaseversionens topfelt synkroniseres automatisk i de to beskyttede geodatafiler under en stående ejergodkendelse, men kun når særskilt diffkontrol beviser, at intet andet geodata ændres.
+Denne specifikation beskriver den aktive Candidate G-arkitektur og kandidat 4.0.287's turlager. RDKS er fortsat bindende ved konflikt. Releaseversionens topfelt synkroniseres automatisk i de to beskyttede geodatafiler under en stående ejergodkendelse, men kun når særskilt diffkontrol beviser, at intet andet geodata ændres.
 
 ## Offentlig projektinformation
 
@@ -63,7 +63,7 @@ Det tidligere Regelværksted er pensioneret. Centralt gemte regeludkast slettes 
 
 ## Brugerdata og læring
 
-Brugere kan gemme ture og fund i Supabase. Turens relevante vejrsnapshot gemmes sammen med indberetningen til senere, pseudonymiseret analyse. Den præcise GPS-rute gemmes ikke.
+Supabase håndterer login, profiler, rettigheder, rate limit og den offentlige Edge-gateway. Normale ture og fund gemmes i ti EU-låste Cloudflare D1-shards med HMAC-pseudonym; Cloudflare modtager ingen rå bruger-id, mail, navn, JWT, GPS eller rute. Supabase-tabellen er migrationskilde og eksplicit manuel rollback uden normal dual-write. Turens relevante, allowlistede vejrsnapshot kan gemmes til senere pseudonymiseret analyse. Se DEC-0082.
 
 Læringsmodulet måler aktuelt kun datadækning. Det ændrer ikke automatisk vægte, regler, zoner eller score. En fremtidig kalibrering kræver dokumenteret søgeindsats, uforanderligt forecastlink, tidsmæssig test, geografisk hold-out og en særskilt RDKS-godkendelse.
 

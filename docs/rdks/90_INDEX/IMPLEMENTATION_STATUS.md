@@ -1,4 +1,24 @@
-# Implementeringsstatus – produktionsverificeret 4.0.286
+# Implementeringsstatus – kandidat 4.0.287 oven på produktionsverificeret 4.0.286
+
+## Kandidat 4.0.287 – endeligt EU-turlager med Supabase-rollback
+
+- [x] Bevar Supabase som Auth-, profil-, rettigheds-, rate-limit- og offentlig Edge-grænse.
+- [x] Pseudonymisér ejer-id med en separat versionsbåret HMAC-secret og fjern rå identitet, JWT, GPS og rute før ekstern lagring.
+- [x] Implementér privat HMAC-signering mellem Supabase Edge og Cloudflare Worker med body-hash og tidsgrænse.
+- [x] Fordel tur-id'er deterministisk over ti EU-låste D1-shards og saml privat ejerlog uden direkte identitet.
+- [x] Lås kanonisk payload-hash, klient-/tur-idempotens og konfliktstop.
+- [x] Migrér Supabase idempotent uden kildesletning og rekonsiliér både før og efter Edge-cutover.
+- [x] Bevar eksplicit `TRIP_STORAGE_MODE=supabase` uden automatisk fallback eller normal dual-write.
+- [x] Tilføj daglig payloadfri 70/85 %-kapacitetskontrol og manuel, eksplicit bekræftet ejersletning i begge lagre.
+- [x] Lås D1-, HMAC-, privatlivs-, turlog-, workflow-, CORS- og rollbackkontrakten med målrettede tests.
+- [x] Bestå fuld lokal `scripts/validate-source.ps1` inklusive releasegate på den færdige kandidat.
+- [x] Opret/godkend dedikeret Cloudflare-konto, mindst-mulige D1/Worker-credentials og krypterede GitHub-secrets gennem den godkendte kanal uden at vise værdier.
+- [x] Bestå infrastrukturens exact-head-gates `33014102652`/`33014672254`, merge PR #162/#163 og deployér/verificér Edge i eksplicit Supabase-rollback gennem `33014772035`.
+- [ ] Bestå kandidatens endelige exact-head source gate, merge og den manuelle D1-deploy/migration.
+- [ ] Verificér live D1-normaldrift, konto/turlog, dataminimerede tællinger og den eksplicitte rollbackkontrakt.
+- [ ] Bestå fuld frisk produktionsgate og offentlig 210/673/420/2.100-kontrol på merged head.
+
+Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åbent driftskrav. Supabase-PAT roteres før 25. september 2026, og begge Cloudflare-tokens før 27. august 2027. Se DEC-0082.
 
 ## Produktionsverificeret 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate
 
