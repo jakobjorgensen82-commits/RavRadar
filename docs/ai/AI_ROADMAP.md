@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.286+
 
-## P0 – afslut 4.0.286 rullende cadencefase
+## P0 afsluttet – 4.0.286 rullende cadencefase
 
 - [x] Bevis offentlig 4.0.285-masseregression efter grøn produktion.
 - [x] Bevar det kompakte grænsebevis til næste rullende reference uden replay eller ekstra dækning.
@@ -9,7 +9,7 @@
 - [x] Simulér recovery til 672/673 `READY` mod de offentlige artifacts.
 - [x] Afgræns #3620's 1.328/1.344 modes til otte gyldige native holds og ret kun den hukommelsesbaserede Candidate G-vej.
 - [x] Bevis begge modes og fail-closed-modtilfælde samt 16/16 faktisk offentligt fejlpunktsreplay uden rådata.
-- [ ] Bestå exact-head, fuld produktion og positiv offentlig current-ranking/readiness-kontrol.
+- [x] Bestå PR #159/exact-head `33001615758`, merge `c0f42b33`, fuld produktion `33001743118` og positiv offentlig kontrol med 210/210 aktive zoner og befolket **Bedste områder**.
 
 ## Afsluttet men funktionelt afvist – 4.0.285 cadencefase-recovery
 
@@ -32,28 +32,28 @@ Se DEC-0081.
 - [x] Synkronisér version, RDKS, håndbøger og changelog; bevis ren geodataversiondiff.
 - [x] Bestå lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
 - [x] Bestå exact-head `32986025916`, merge `a92e2704`, produktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
-- [ ] Luk den særskilte rullende Candidate G-cadencefase gennem 4.0.286-punktet ovenfor.
+- [x] Luk den særskilte rullende Candidate G-cadencefase gennem den produktionsverificerede 4.0.286 ovenfor.
 - [ ] Overvåg Supabase-egress og varslet om mulig begrænsning 9. september 2026.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.
 
-## P0 – bevar moderzone i Candidate G-slutkontrollen
+## Produktionsverificeret – bevar moderzone i Candidate G-slutkontrollen
 
 - [x] Bevis i produktion, at livepiloten og Candidate G-state havde 673/673 scoreklare kyststrækninger.
 - [x] Afgræns 665/673-fejlen til slutkontrollens tab af moderzone under udfladning.
 - [x] Indfør én fælles udfladning, hvor den autoritative zone-nøgle bevares.
 - [x] Lås med regression, at native-kadencereferencen matches uden et indlejret `zoneId`.
 - [x] Dokumentér DEC-0079 og versionér til 4.0.283 uden anden geodataændring end topversionsfelterne.
-- [ ] Bestå exact-head, fuld produktion og offentlig 673-kystdelskontrol.
+- [x] Bestå PR #153/exact-head `32914734446`, merge `1caad399`, fuld produktion `32914887586` og offentlig 673-kystdelskontrol.
 
-## P0 – eksakt native reference ved Candidate G-vinduesskift
+## Produktionsverificeret – eksakt native reference ved Candidate G-vinduesskift
 
 - [x] Afgræns 665/673 til de otte godkendte tretimers-regionalproxyer og bevis, at kildehistorikken ikke var tabt.
 - [x] Før kun den eksakte foregående verificerede prøve ind i state-pipelinen i højst tre timer.
 - [x] Dataminimér til tid og kystrelativ styrke uden rå U/V, koordinater eller punkt-id.
 - [x] Lås ingen-interpolation, ingen ny måling/pil og ingen mobilisering med målrettede tests.
 - [x] Dokumentér DEC-0078 og versionér til 4.0.282 med kun topversionsændring i beskyttet geodata.
-- [ ] Bestå exact-head, fuld produktion og offentlig 673-kystdelskontrol.
+- [x] Bestå exact-head, merge og den efterfølgende 4.0.283-produktion `32914887586`, som verificerede alle 673 kystdele.
 
 ## Produktionsverificeret – Candidate G-native tekniske forklaringer i 4.0.281
 
@@ -67,13 +67,13 @@ Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er u
 
 Candidate G 20/50/30, scorekurver, vejrdata, zoner, geometri og land-/vandpunkter ændres ikke.
 
-## P0 nu – korrekt orienteret Om RavRadar-billede i 4.0.280
+## Produktionsverificeret – korrekt orienteret Om RavRadar-billede i 4.0.280
 
 - [x] Afgræns fejlen til EXIF-orientering i den tidligere billedkonvertering.
 - [x] Bevar originalen urørt og indarbejd portrætretningen i tre komprimerede billedvarianter.
 - [x] Tilpas pc- og mobillayout uden vandret rulning.
 - [x] Opdatér appskal, målrettet test og RDKS.
-- [ ] Bestå exact-head, merge, fuld produktion og offentlig pc-/mobilkontrol.
+- [x] Bestå exact-head og merge PR #149 som `42b7058f`; ejeren verificerede efter udgivelsen både pc- og mobilvisningen.
 
 Ingen Candidate G-, score-, vejr-, zone-, geometri-, punkt- eller adminadfærd ændres.
 
@@ -89,13 +89,13 @@ Ingen Candidate G-, score-, vejr-, zone-, geometri-, punkt- eller adminadfærd �
 
 Produktionslukningen viser 673/673 accepterede Candidate G-states, nul resets og 12–45 timers naturlig historik. Der kræves ikke en ny 48-timers realtidstest. Den eksisterende overvågning følger kun, at zonerne åbner ved ægte 48 timer; der opbygges ingen kunstig historik, og ingen zone, geometri eller land-/vandpunkt ændres.
 
-## P0 nu – Candidate G alene og lokal utilgængelighed i 4.0.273
+## Historisk og erstattet – Candidate G alene og lokal utilgængelighed i 4.0.273
 
 - Candidate G `20/50/30` er eneste offentlige scoremodel. Offentlig `25/40/35`-fallback er fjernet.
 - Hvis en konkret zone, søgemåde eller time ikke har et gyldigt Candidate G-grundlag, vises ingen score dér, og posten udelades fra aktuelle og femdøgns-ranglister. Resten af landet fortsætter på Candidate G.
 - Adminforsiden skal gøre det tydeligt, om alle zone-/søgemådekombinationer er aktive, og ellers vise hvilke der mangler og hvorfor.
 - Ingen legacy-, moderzone-, nabozone- eller anden-timescore må udfylde et hul. Produktionens state-, provenance- og releasegates forbliver strenge.
-- Lokal implementering og målrettede tests er gennemført. Exact-head CI, frisk produktionsbygning, releasegate og offentlig kontrol udestår. Se DEC-0072.
+- 4.0.273 blev ikke deployet. Den korrigerede Candidate G-only-kontrakt blev produktionsverificeret i 4.0.275 via PR #136/exact-head `32778118765`, merge `59ea4546` og produktion `32778269487`. Se DEC-0072.
 - Ældre roadmap-punkter om global rollback eller automatisk skift til `25/40/35` er historiske og erstattet af dette punkt.
 
 ## 4.0.269 – aktuelle scoreforklaringer
