@@ -1,6 +1,17 @@
-# AI Roadmap – RavRadar 4.0.284+
+# AI Roadmap – RavRadar 4.0.285+
 
-## P0 – afslut 4.0.284 sikkerhedsrelease
+## P0 – afslut 4.0.285 cadencefase-recovery
+
+- [x] Sammenlign kun offentlige Pages-artifacts og lokaliser 672→8 `READY`-faldet til første 4.0.284-build.
+- [x] Ret vinduesgrænsen med dokumenteret forgænger og højst tre timers kadence uden interpolation.
+- [x] Lås et ægte 47-timersdatasæt og større huller fail-closed.
+- [x] Hash-lås og simuler compact-only recovery til 672/673 `READY`.
+- [x] Bevar geodataenes versionsfelter og alle punkter urørte.
+- [ ] Bestå exact-head, fuld produktion og positiv offentlig current-ranking/readiness-kontrol.
+
+Se DEC-0081.
+
+## Udgivet – 4.0.284 sikkerhedsrelease
 
 - [x] Hærd HTML/CSP, ekspert-RLS/RPC/UI, observation-Edge og assistent-Edge.
 - [x] Saml fælles Edge-gateway og deploy/verificér funktionerne uden Windows-sikkerhedsomgåelse.
@@ -8,7 +19,8 @@
 - [x] Anvend og dataminimeret kontrollér smallere live-RLS uden private rækker.
 - [x] Synkronisér version, RDKS, håndbøger og changelog; bevis ren geodataversiondiff.
 - [x] Bestå lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
-- [ ] Bestå exact-head, fuld produktion og offentlig efterkontrol.
+- [x] Bestå exact-head `32986025916`, merge `a92e2704`, produktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
+- [ ] Luk den særskilte Candidate G-cadencefase gennem 4.0.285-punktet ovenfor.
 - [ ] Overvåg Supabase-egress og varslet om mulig begrænsning 9. september 2026.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.

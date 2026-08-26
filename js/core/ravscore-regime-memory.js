@@ -170,13 +170,32 @@ export function buildBoundedCurrentTransportMemory(
     ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
     ...profile,
   };
+  const bridgeEvidence = normalizedTransportEvidence(
+    evidence,
+    reference,
+    safeWindowHours + safeMaximumGapHours,
+  );
   const retainedEvidence = normalizedTransportEvidence(evidence, reference, safeWindowHours);
   const referenceMs = Date.parse(reference);
   const cutoffMs = referenceMs - (safeWindowHours * 3_600_000);
   const latestAtReference = Date.parse(retainedEvidence.at(-1)?.time ?? '') === referenceMs;
-  const startsAtBoundary = Date.parse(retainedEvidence[0]?.time ?? '') === cutoffMs;
+  const firstEvidenceMs = Date.parse(retainedEvidence[0]?.time ?? '');
+  const precedingBoundaryEvidence = [...bridgeEvidence]
+    .reverse()
+    .find(item => Date.parse(item.time) < cutoffMs) ?? null;
+  const precedingBoundaryMs = Date.parse(precedingBoundaryEvidence?.time ?? '');
+  const boundaryGapHours = Number.isFinite(firstEvidenceMs)
+    ? (firstEvidenceMs - cutoffMs) / 3_600_000
+    : Number.POSITIVE_INFINITY;
+  const startsAtBoundary = Math.abs(boundaryGapHours) <= EPSILON;
+  const bridgedAcrossBoundary = Number.isFinite(precedingBoundaryEvidence?.strength)
+    && Number.isFinite(precedingBoundaryMs)
+    && Number.isFinite(firstEvidenceMs)
+    && (cutoffMs - precedingBoundaryMs) / 3_600_000 <= safeMaximumGapHours + EPSILON
+    && (firstEvidenceMs - precedingBoundaryMs) / 3_600_000 <= safeMaximumGapHours + EPSILON;
+  const startsWithinBoundaryCadence = startsAtBoundary || bridgedAcrossBoundary;
   const containsMissing = retainedEvidence.some(item => !Number.isFinite(item.strength));
-  let maximumObservedGapHours = 0;
+  let maximumObservedGapHours = Math.max(0, boundaryGapHours);
   for (let index = 1; index < retainedEvidence.length; index += 1) {
     maximumObservedGapHours = Math.max(
       maximumObservedGapHours,
@@ -185,7 +204,10 @@ export function buildBoundedCurrentTransportMemory(
   }
   const cadenceComplete = retainedEvidence.length > 1
     && maximumObservedGapHours <= safeMaximumGapHours + EPSILON;
-  const memoryReady = latestAtReference && startsAtBoundary && cadenceComplete && !containsMissing;
+  const memoryReady = latestAtReference
+    && startsWithinBoundaryCadence
+    && cadenceComplete
+    && !containsMissing;
   const suffix = latestAtReference
     ? continuousVerifiedSuffix(retainedEvidence, safeMaximumGapHours)
     : [];
@@ -205,19 +227,28 @@ export function buildBoundedCurrentTransportMemory(
   const rows = buildCurrentTransportPotential(replaySamples, {
     ...transportProfile,
     initialPotential: safeBoundaryPotential,
+    ...(memoryReady ? {
+      initialState: {
+        time: new Date(cutoffMs).toISOString(),
+        transportPotential: safeBoundaryPotential,
+        outboundEpisodeEffectiveHours: 0,
+      },
+    } : {}),
     getTime: sample => sample.time,
     getSpeed: sample => sample.currentSpeedMps,
     getAlignment: sample => sample.currentAlignment,
     isVerified: sample => sample.currentVerified === true,
   });
   const result = rows.at(-1) ?? null;
-  const coverageHours = suffix.length > 1
+  const coverageHours = memoryReady
+    ? safeWindowHours
+    : suffix.length > 1
     ? (Date.parse(suffix.at(-1).time) - Date.parse(suffix[0].time)) / 3_600_000
     : 0;
   let status = 'READY';
   if (!latestAtReference) status = 'LATEST_SAMPLE_MISSING';
   else if (containsMissing) status = 'WINDOW_HAS_MISSING_EVIDENCE';
-  else if (!startsAtBoundary) status = 'WINDOW_INCOMPLETE';
+  else if (!startsWithinBoundaryCadence) status = 'WINDOW_INCOMPLETE';
   else if (!cadenceComplete) status = 'WINDOW_HAS_TIME_GAP';
 
   return {

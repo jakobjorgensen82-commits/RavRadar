@@ -1,4 +1,4 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.284";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.285";
 
 const SESSION_KEY = "ravradar-visit-day-v1";
 

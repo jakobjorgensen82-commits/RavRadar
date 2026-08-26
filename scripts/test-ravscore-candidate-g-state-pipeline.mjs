@@ -136,6 +136,21 @@ assert.equal(nativeSecondRun.initialStateAccepted, true);
 assert.deepEqual(nativeSecondRun.continuationState, nativeThreeHourlyWindow.continuationState,
   'split and continuous native-cadence replays must be identical');
 
+const nativeReferencePhaseShift = buildCandidateGDerivedStateSeries([
+  sample(49),
+], {
+  stateKey: 'sha256:native-three-hour-window',
+  initialState: nativeThreeHourlyWindow.continuationState,
+});
+assert.equal(nativeReferencePhaseShift.initialStateAccepted, true);
+assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryReady, true,
+  'a verified reference between native three-hour boundaries must retain READY memory');
+assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryStatus, 'READY');
+assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryCoverageHours, 48);
+assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence.length, 17);
+assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence[0].time, hour(3),
+  'the phase shift must retain only real compact evidence');
+
 const nativeReferenceBootstrap = buildCandidateGDerivedStateSeries([
   sample(52, { currentSpeedMps: null, currentAlignment: null, currentVerified: false }),
 ], {

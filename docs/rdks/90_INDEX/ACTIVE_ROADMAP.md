@@ -1,6 +1,18 @@
 # RavRadar - aktivt roadmap
 
-## P0 – luk 4.0.284 drifts- og sikkerhedshærdning
+## P0 – luk 4.0.285 Candidate G-cadencefase
+
+- [x] Bevis artifact-for-artifact, at første 4.0.284-build ændrede 672/673 `READY` til 8/673 og 209/210 aktive zoner til 0/210.
+- [x] Ret kun 48-timersgrænsens cadencefase inden for den eksisterende tretimersgrænse.
+- [x] Bevar fail-closed for et ægte kort vindue og alle større/interne datagab.
+- [x] Hash-lås sidste sunde offentlige compact state og gendan kun afledte transportbeviser.
+- [x] Bevis 672/673 `READY` i en lokal simulation med de virkelige offentlige artifacts.
+- [x] Opdatér RDKS, håndbøger, changelog og 4.0.285-version uden geodataændring.
+- [ ] Bestå exact-head, merge, fuld frisk produktion og positiv offentlig aktuel-ranglistekontrol.
+
+Se DEC-0081. Ingen scorekurve, zone, geometri eller land-/vandpunkt ændres.
+
+## Udgivet – 4.0.284 drifts- og sikkerhedshærdning
 
 - [x] CSP, eksterne scripts og sikker allowlist-visning af centralt HTML.
 - [x] Smallere ekspertprofil-/rettighedsscope gennem RLS, RPC og UI.
@@ -10,7 +22,8 @@
 - [x] Lokal assistent er standard; fjernassistentflaget er lukket, indtil en separat secret-/omkostningsbeslutning er positivt verificeret.
 - [x] Versions-/RDKS-/håndbogs-/changeloglukning og særskilt geodatadiff.
 - [x] Lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
-- [ ] Exact-head-kildegate, merge, fuld frisk produktionskæde og offentlig efterkontrol.
+- [x] Exact-head `32986025916`, PR #155, merge `a92e2704`, fuld pushproduktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
+- [ ] Candidate G-cadencefasen fra den funktionelle efterkontrol lukkes særskilt i P0 4.0.285 ovenfor.
 - [ ] Følg Supabase-egress og varslet om mulig begrænsning fra 9. september 2026 uden at lempe sikkerhedskrav.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uden for ændringen.

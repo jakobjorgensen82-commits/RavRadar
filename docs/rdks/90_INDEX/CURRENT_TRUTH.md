@@ -1,6 +1,18 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.284 – smallere tillid og server-side sikkerhedsgrænser
+## Kandidat 4.0.285 – korrekt Candidate G-vinduesgrænse og engangsrecovery
+
+- Den offentlige 4.0.284-struktur bestod 210/673/420/2.100-kontrollen, men den aktuelle rangliste var tom. Artifactet havde 0/210 aktive zoner og kun 8/673 `READY`-kystdele.
+- Den sidste offentlige 4.0.283-produktion havde 209/210 aktive zoner og 672/673 `READY`. Faldet opstod allerede i første 4.0.284-build, ikke i det efterfølgende deploy-kapløb.
+- Rodårsagen var et eksakt lighedskrav ved 48-timersgrænsen. En én-times referencefase fjernede det verificerede bevis lige før grænsen og gjorde 665 sammenhængende forløb til falske 46-timersvinduer.
+- 4.0.285 accepterer kun grænsekrydsningen, når både et verificeret kompakt bevis før grænsen og den efterfølgende højst tre timer lange kadence findes. Et ægte 47-timersdatasæt uden forgænger forbliver lukket.
+- Den deployede fejllinje samles én gang med den eksakte hash-låste offentlige state fra workflow `32978542594`. En lokal prøve mod de virkelige artifacts genskabte 672/673 `READY` og gjorde recoveryen inaktiv bagefter.
+- Der kopieres ingen rå U/V, koordinater, vejr, scoreoutput, geometri, land-/vandpunkter eller private payloads. De to beskyttede geodatafiler ændrer kun topversionsfeltet 4.0.284 → 4.0.285 under DEC-0076.
+- Målrettede state-, recovery- og fail-closed-tests er grønne. Exact-head, fuld frisk produktion og offentlig aktuel-ranglistekontrol afventer. Se DEC-0081.
+
+Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede.
+
+## Udgivet 4.0.284 – smallere tillid og server-side sikkerhedsgrænser
 
 - Alle offentlige HTML-sider har en lukket CSP, inline JavaScript er flyttet til versionsstyrede moduler, og centralt håndbogs-HTML saniteres med en allowlist før visning.
 - `experts_manage` er afgrænset i RLS, RPC og UI til ekspertprofiler og de tre rettigheder `admin_access`, `handbook_view` og `handbook_review`. Kun ejer/`full_admin` kan administrere hele rettighedsmatricen og reviewkøen.
@@ -9,7 +21,8 @@
 - Den smallere live-RLS og de negative/pre-store Edge-kontrakter er dataminimeret verificeret uden private rækker og uden oprettede observationer.
 - Fjernassistenten mangler `OPENAI_API_KEY` og er derfor bevidst deaktiveret i Pages. Den lokale Candidate G-assistent er 4.0.284-adfærden og laver ingen skjulte 503-kald.
 - Supabases varsel om mulig begrænsning fra 9. september 2026 er fortsat en åben driftsrisiko. Aktuel måling var cirka 455 MB/5 GB egress og 86 MB/500 MB database.
-- Exact-head, fuld produktionskæde og offentlig Pages-verifikation af kandidaten udestår. Se DEC-0080.
+- PR #155 bestod exact-head `32986025916`, blev merged som `a92e270419404f249c526ed06d821cc2c2cf5cb2`, og pushproduktionen `32987875007` bestod central hydrering, frisk data, fuld validering, releasegate, artifact og Pages.
+- Den fulde offentlige strukturaudit bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden browserfejl. Den efterfølgende funktionskontrol fandt Candidate G-cadencefasefejlen, som gør 4.0.285 nødvendig før baseline kan kaldes stabil. Se DEC-0080 og DEC-0081.
 
 Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter og private data er uændrede.
 

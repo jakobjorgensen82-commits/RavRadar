@@ -134,7 +134,105 @@ try {
     restoreContinuation({ root: targetRoot, sourceRoot }),
     /matcher ikke den godkendte integritet/,
   );
-  console.log('OK: kun kompakt, eksakt verificeret Candidate G-fortsættelse genoptages.');
+
+  const phaseTime = hour => new Date(Date.parse('2026-08-24T15:00:00.000Z')
+    + (hour * 3_600_000)).toISOString();
+  const healthyPhaseState = partId => ({
+    ...state(partId),
+    time: phaseTime(48),
+    transportReferenceAt: phaseTime(48),
+    transportMemoryReady: true,
+    transportMemoryStatus: 'READY',
+    transportMemoryCoverageHours: 48,
+    transportEvidence: Array.from({ length: 17 }, (_, index) => ({
+      time: phaseTime(index * 3),
+      strength: partId === 'part-a' ? 0.2 : -0.1,
+    })),
+  });
+  const poisonedPhaseState = partId => ({
+    ...healthyPhaseState(partId),
+    time: phaseTime(49),
+    transportReferenceAt: phaseTime(49),
+    transportMemoryReady: false,
+    transportMemoryStatus: 'WINDOW_INCOMPLETE',
+    transportMemoryCoverageHours: 46,
+    transportEvidence: [
+      ...healthyPhaseState(partId).transportEvidence.slice(1),
+      { time: phaseTime(49), strength: partId === 'part-a' ? 0.2 : -0.1 },
+    ],
+  });
+  const phaseSourceRows = ['part-a', 'part-b']
+    .map(partId => [partId, healthyPhaseState(partId)]);
+  const phaseSourceHash = crypto.createHash('sha256')
+    .update(JSON.stringify(phaseSourceRows)).digest('hex');
+  const phaseSourceConditions = {
+    datasetId: 'source-before-phase-shift',
+    coastalParts: {
+      parts: Object.fromEntries(phaseSourceRows.map(([partId, currentState]) => [partId, {
+        candidateG: { initialStateAccepted: true, currentState },
+      }])),
+    },
+  };
+  const phaseTargetConditions = {
+    datasetId: 'target-after-phase-shift',
+    generatedAt: '2026-08-26T16:30:00.000Z',
+    coastalParts: {
+      parts: Object.fromEntries(['part-a', 'part-b'].map(partId => [partId, {
+        candidateG: {
+          initialStateAccepted: true,
+          initialStateResetReason: null,
+          currentState: poisonedPhaseState(partId),
+        },
+      }])),
+    },
+  };
+  const phaseConfig = {
+    schemaVersion: 1,
+    enabled: true,
+    restoreStrategy: 'merge-transport-evidence',
+    targetDatasetId: 'target-after-phase-shift',
+    minimumRecoveredReadyPartRatio: 1,
+    poisonedLineage: {
+      kind: 'accepted-cadence-phase-window-incomplete',
+      datasetGeneratedAtNotBefore: '2026-08-26T16:00:00.000Z',
+      datasetGeneratedAtBefore: '2026-08-27T00:00:00.000Z',
+      minimumAffectedPartRatio: 1,
+      minimumCoverageHours: 45,
+      maximumCoverageHoursExclusive: 48,
+    },
+    sourceRunId: '67890',
+    sourceDatasetId: 'source-before-phase-shift',
+    sourcePartCount: 2,
+    sourceStateSha256: phaseSourceHash,
+  };
+  await fs.writeFile(path.join(targetRoot, 'data', 'admin', 'candidate-g-continuation-recovery.json'),
+    JSON.stringify(phaseConfig));
+  await fs.writeFile(path.join(targetRoot, 'data', 'live', 'conditions.json'),
+    JSON.stringify(phaseTargetConditions));
+  await fs.writeFile(path.join(sourceRoot, 'data', 'live', 'manifest.json'),
+    JSON.stringify({ datasetId: 'source-before-phase-shift' }));
+  await fs.writeFile(path.join(sourceRoot, 'data', 'live', 'conditions.json'),
+    JSON.stringify(phaseSourceConditions));
+
+  const phaseAssessment = await assessRecovery({ root: targetRoot });
+  assert.equal(phaseAssessment.required, true);
+  const phaseRestored = await restoreContinuation({ root: targetRoot, sourceRoot });
+  assert.equal(phaseRestored.strategy, 'merge-transport-evidence');
+  assert.equal(phaseRestored.recoveredReadyPartCount, 2);
+  const phaseResult = JSON.parse(await fs.readFile(
+    path.join(targetRoot, 'data', 'live', 'conditions.json'), 'utf8'));
+  for (const part of Object.values(phaseResult.coastalParts.parts)) {
+    assert.equal(part.candidateG.currentState.transportMemoryReady, true);
+    assert.equal(part.candidateG.currentState.transportMemoryStatus, 'READY');
+    assert.equal(part.candidateG.currentState.transportMemoryCoverageHours, 48);
+    assert.equal(part.candidateG.currentState.transportEvidence.length, 17,
+      'recovery must retain only real compact evidence inside the active window');
+  }
+  const phasePostAssessment = await assessRecovery({ root: targetRoot });
+  assert.equal(phasePostAssessment.required, false,
+    'the cadence-phase recovery must become dormant after READY coverage is restored');
+
+  console.log('OK: kun kompakt, eksakt verificeret Candidate G-fortsættelse genoptages eller cadence-samles.');
 } finally {
   await fs.rm(targetRoot, { recursive: true, force: true });
   await fs.rm(sourceRoot, { recursive: true, force: true });

@@ -1,5 +1,39 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT CHECKPOINT – 2026-08-26 – KANDIDAT 4.0.285
+
+Dette er den aktuelle overdragelse. Alle senere checkpoints i filen er historik.
+
+### Placering og beskyttelse
+
+- Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/stability-security-4.0.284`.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte. De to beskyttede geodatafiler ændrer kun deres topversionsfelt 4.0.284 → 4.0.285 under den stående metadata-godkendelse i DEC-0076.
+
+### 4.0.284 er udgivet, men baseline er ikke erklæret stabil
+
+- Sikkerhedscommitten `064e5168` og triggercommitten `a1b9c44f` blev pushet i PR #155. Exact-head `32986025916` bestod, PR'en blev merged som `a92e270419404f249c526ed06d821cc2c2cf5cb2`, og pushproduktionen `32987875007` bestod fuld validering, releasegate, artifact og Pages.
+- GitHub Actions/Pages havde en driftsforstyrrelse. Den manuelt startede produktion `32986561787` byggede grønt, men dens deploy blev afløst af den forsinkede pushkørsel. Det viste sig ikke at være årsagen til Candidate G-fejlen.
+- Offentlig 4.0.284 bestod CSP, normal appstart, version, 210 zoner, 673 kystdele, 420 aktuelle visninger, 2.100 prognosevisninger og nul browserfejl. Den aktuelle rangliste forblev dog tom.
+
+### Rodårsag og implementeret kandidat
+
+- Kun offentlige `github-pages`-artifacts fra workflow `32978542594` (sidste 4.0.283), `32986561787` (første 4.0.284-build) og `32987875007` (deployet 4.0.284) blev sammenlignet. Supportpakker og private data blev ikke åbnet.
+- Sidste 4.0.283 havde 672/673 `READY` og 209/210 aktive zoner. Første og deployede 4.0.284 havde 8/673 `READY` og 0/210 aktive zoner.
+- Referencefasen flyttede fra 15:00 til 16:00. Det eksakte randkrav fjernede målingen umiddelbart før `reference - 48h`; 665 forløb blev falsk 46 timer, selv om `initialStateAccepted=true` og ingen reset var registreret.
+- `ravscore-regime-memory.js` accepterer nu kun fasekrydsningen, når et verificeret compact bevis før grænsen og første bevis efter grænsen ligger inden for den eksisterende tretimerskadence. Der indsættes intet kunstigt evidencepunkt.
+- En eksisterende selftest stoppede den første for brede variant, som kunne godkende et ægte 47-timersdatasæt. Den endelige variant består både gammel fail-closed og ny faseregression.
+- Den deployede lineage gendannes én gang fra workflow `32978542594`, datasæt `rr-20260826142942-210`, 673 dele og SHA-256 `d5877f8a0945619b700efa3a97807ac9552033d244ab117e92d8fea87f1877d5`. Kun kompakte transportbeviser flettes, og mindst 99 % skal blive `READY`.
+- En lokal prøve mod de virkelige source-/target-artifacts genskabte 672/673 `READY` og gjorde recoveryen inaktiv. Den kendte ene umodne del forblev korrekt fail-closed.
+
+### Kontroller og næste trin
+
+- Målrettede regime-, statepipeline-, recovery-, public-shadow- og ablationstests er grønne.
+- DEC-0081, aktive krav, RDKS-indekser, issues, roadmap, AI-hukommelse, changelog og begge håndbøger skal være synkroniserede før source gate.
+- Kør exact-head source gate, PR/merge og den fulde friske produktion. Offentlig slutkontrol skal kræve en faktisk befolket aktuel rangliste/readiness og må ikke nøjes med at acceptere korrekt fail-closed UI.
+- Supabases mulige begrænsning fra 9. september 2026 forbliver en separat åben driftsrisiko. Sikkerhedsgates må ikke lempes.
+
+Se DEC-0080 og DEC-0081. 4.0.285 er ikke færdig eller produktionsverificeret ved dette checkpoint.
+
 ## AKTUELT CHECKPOINT EFTER TVUNGEN WINDOWS-GENSTART - 2026-08-26 - 4.0.284
 
 Dette afsnit er den aktuelle overdragelse. De senere afsnit i filen er historiske checkpoints.

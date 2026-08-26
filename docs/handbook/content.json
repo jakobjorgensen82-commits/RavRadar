@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.284",
+  "handbookVersion": "4.0.285",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "candidate-g-cadence-phase-boundary-recovery-4-0-285",
+      "chapter": "69",
+      "title": "Candidate G ved en forskudt 48-timersgrænse",
+      "summary": "Et komplet verificeret tretimersforløb bevares, når den aktuelle reference ligger mellem native prøver, uden at RavRadar opfinder en måling.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Candidate G kræver 48 timers sammenhængende verificeret strøm. Når den aktuelle reference ligger mellem to native tretimersprøver, må et komplet forløb ikke blive falsk kort alene på grund af klokketimens fase.</div><div class=\"handbook-stack\"><p><strong>Dokumenteret grænse:</strong> Der skal både findes et verificeret kompakt bevis umiddelbart før 48-timersgrænsen og et efter grænsen inden for højst tre timer.</p><p><strong>Ingen interpolation:</strong> Beviset før grænsen dokumenterer kun sammenhæng. Det føjes ikke til det aktive vindue som en ny måling, og den faste rand er fortsat 0 på det eksakte grænsetidspunkt.</p><p><strong>Fortsat fail-closed:</strong> Et ægte 47-timersdatasæt uden forgænger, missing, manglende seneste bevis eller et internt hul over tre timer giver ingen score.</p><p><strong>Engangsrecovery:</strong> Den fejlramte 4.0.284-lineage samles kun med afledte transportbeviser fra den eksakte hash-låste sidste sunde offentlige state. Vejr, rå strøm, koordinater, scoreoutput, geometri, land-/vandpunkter og private data kopieres ikke.</p><p>Candidate G 20/50/30 og dens fysiske regler er uændrede. Se <code>DEC-0081</code>.</p></div>"
+    },
     {
       "id": "security-boundaries-public-edge-gateways-4-0-284",
       "chapter": "68",

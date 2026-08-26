@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.285 – 48-timersgrænsen skal tåle en dokumenteret cadencefase
+
+`buildBoundedCurrentTransportMemory` må ikke kræve, at første bevarede bevis ligger præcis på `referenceAt - 48h`. Hvis referencen ligger mellem native prøver, er vinduet komplet, når et verificeret compact bevis umiddelbart før grænsen og første bevis efter grænsen sammen dokumenterer højst tre timers kadence. Den faste rand er fortsat 0 ved den eksakte grænse; forgængeren er sammenhængsbevis, ikke en ny måling i vinduet.
+
+Nærhed til grænsen er ikke nok. Et selvstændigt 47-timersdatasæt uden et verificeret bevis før grænsen skal fortsat være `WINDOW_INCOMPLETE`, og et internt hul over tre timer forbliver `WINDOW_HAS_TIME_GAP`.
+
+Den offentlige 4.0.284-state havde allerede mistet forgængeren. Recovery må derfor kun sammenflette de kompakte afledte transportbeviser fra den eksakte hash-låste sunde Pages-kilde med den nyere public state. Den må ikke kopiere vejr, rå vektorer, koordinater, scoreoutput, geometri, punkter eller private data. Se DEC-0081.
+
 ## 4.0.284 – sikkerhed ligger på servergrænsen
 
 Dynamisk håndbogs-HTML skal gennem `sanitizeTrustedHtml`; CSP og fravær af inline script er en separat browserbarriere. Ekspertens `experts_manage` er ikke fuld administration: RLS, RPC og UI må kun vise ekspertprofiler og `admin_access`, `handbook_view`, `handbook_review`.

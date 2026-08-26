@@ -1,5 +1,16 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.285 efter offentlig 4.0.284-kontrol
+
+1. PR #155 bestod exact-head `32986025916` og blev merged som `a92e2704`. GitHub Actions/Pages havde en driftsforstyrrelse, så den manuelt startede fulde produktion blev afløst af den forsinkede pushkørsel `32987875007`, som bestod hele kæden og deployede 4.0.284.
+2. Den fulde offentlige browseraudit bestod 210 zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden browserfejl, men den synlige aktuelle rangliste forblev fail-closed.
+3. Dataminimeret artifact-sammenligning viste 672/673 `READY` og 209/210 aktive zoner i sidste 4.0.283-build, men 8/673 og 0/210 allerede i første 4.0.284-build. Deploy-kapløbet var derfor ikke årsagen.
+4. Rodårsagen var det eksakte krav til første tidspunkt i 48-timersvinduet. En én-times faseændring fjernede beviset lige før grænsen og reducerede 665 forløb kunstigt til 46 timer.
+5. Første kodeforslag blev korrekt stoppet af en eksisterende selftest, fordi det også kunne godkende et ægte 47-timersdatasæt. Den endelige regel kræver derfor både et verificeret kompakt bevis før grænsen og højst tre timers ubrudt kadence over den.
+6. Det deployede datasæt har allerede mistet grænsebeviset. Engangsrecoveryen bruger kun det hash-låste offentlige artifact fra workflow `32978542594`, fletter kun kompakte transportbeviser og kræver mindst 99 % `READY`.
+7. En lokal simulation med de virkelige offentlige source-/target-artifacts genskabte 672/673 `READY`; den ene kendte umodne del forblev lukket, og recoveryen blev straks inaktiv.
+8. Version 4.0.285 ændrer kun de to beskyttede geodatafilers topversionsfelt 4.0.284 → 4.0.285 under DEC-0076 og ændrer ingen geometri, land-/vandpunkter, scorekurver eller private data. Exact-head og offentlig produktionslukning udestår. Se DEC-0081.
+
 ## 2026-08-26 – kandidat 4.0.284 drifts- og sikkerhedshærdning
 
 1. Ejeren bestilte en samlet hærdning før domæneflytning: HTML, ekspertadgange, observationer, assistentgateway, CORS, RLS og sikkerhedstests.
@@ -8,7 +19,8 @@
 4. Tre ens Edge-gatewayfiler blev samlet til én delt kilde. Begge funktioner blev deployet gennem Supabase-browsereditoren, fordi Windows Application Control blokerede CLI'en. Windows-sikkerheden blev ikke omgået.
 5. CORS-, payload-, rate-limit- og gammel-anonym-rapportkontrollerne bestod uden databaseinsert. Legacy-JWT blev slået fra på begge funktioner.
 6. Fjernassistenten manglede en godkendt OpenAI-secret. Ejeren bad Codex vælge den bedste vej; 4.0.284 vælger lokal Candidate G-assistent som standard og forbyder skjulte fjernkald via et eksplicit `false`-flag.
-7. Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko. Exact-head, produktion og offentlig Pages-lukning udestår. Se DEC-0080.
+7. Supabases mulige begrænsning fra 9. september 2026 forbliver en åben driftsrisiko.
+8. PR #155 bestod exact-head `32986025916`, blev merged som `a92e2704`, og pushproduktionen `32987875007` bestod fulde gates og Pages. Sikkerhedskæden blev offentlig verificeret; den efterfølgende Candidate G-cadencefase følges i 4.0.285. Se DEC-0080 og DEC-0081.
 
 ## 2026-08-26 – 4.0.283 moderzonekobling produktionsverificeret
 

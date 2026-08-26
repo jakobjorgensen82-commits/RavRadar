@@ -57,7 +57,9 @@ if (typeof window !== 'undefined') {
       parts:Object.keys(state.conditions?.coastalParts?.parts||{}).length,
       partZones:Object.keys(state.conditions?.coastalParts?.zones||{}).length,
       detailsAvailable:state.conditions?.detailsAvailable===true,
-      datasetId:state.conditions?.datasetId||null
+      datasetId:state.conditions?.datasetId||null,
+      activeZoneCount:finite(state.conditions?.coastalParts?.scoreAvailability?.activeZoneCount)
+        ?Number(state.conditions.coastalParts.scoreAvailability.activeZoneCount):null
     }),
     failures:()=>failures,
     zoneIds:()=>[...new Set((state.zones?.features||[]).map(item=>item.properties?.id).filter(id=>state.conditions?.zones?.[id]))],
@@ -221,7 +223,7 @@ async def main():
             kind = failure.get("kind", "unknown")
             result["failureKinds"][kind] = result["failureKinds"].get(kind, 0) + 1
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        if state.get("version") != EXPECTED_VERSION or len(zone_ids) != 210 or totals != {"currentViews": 420, "forecastViews": 2100, "partReferences": 673} or failures or page_errors:
+        if state.get("version") != EXPECTED_VERSION or len(zone_ids) != 210 or not isinstance(state.get("activeZoneCount"), (int, float)) or state.get("activeZoneCount") <= 0 or totals != {"currentViews": 420, "forecastViews": 2100, "partReferences": 673} or failures or page_errors:
             raise SystemExit(1)
     finally:
         await browser.close()

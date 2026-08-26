@@ -1,5 +1,15 @@
 # AI Architecture Map – RavRadar
 
+## Candidate G-cadencefase og state-recovery
+
+- `js/core/ravscore-regime-memory.js` – fast 48-timersrand, højst tre timers verificeret kompakt kadence og fail-closed ved manglende forgænger eller internt hul.
+- `js/core/ravscore-candidate-g-state-pipeline.js` – fortsætter kun kompatibel model-/profil-/kystkontekst og gemmer den dataminimerede transportstate.
+- `scripts/restore-candidate-g-continuation.mjs` – eksakt artifact-/hash-låst engangsrecovery; 4.0.285-strategien sammenfletter kun compact transport evidence og kræver mindst 99 % `READY`.
+- `data/admin/candidate-g-continuation-recovery.json` – tids-, datasæt-, run-, delantal- og SHA-256-binding for den aktuelle engangshændelse.
+- `scripts/test-ravscore-regime-memory.mjs`, `test-ravscore-candidate-g-state-pipeline.mjs` og `test-candidate-g-continuation-recovery-4.0.272.mjs` – fase-, kort-vindue-, split-run- og recoverykontrakter.
+
+Se DEC-0081. Recoveryen må ikke kopiere rå strøm, vejr, scoreoutput, koordinater, geometri, punkter eller private payloads.
+
 ## Sikkerhedsgrænser og offentlige Edge-funktioner
 
 - `js/services/html-sanitizer.js` – allowlist for dynamisk, centralt HTML før DOM-visning.

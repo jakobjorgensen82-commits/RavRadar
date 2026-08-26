@@ -134,6 +134,7 @@ export function auditCandidateGPublicShadow(document, {
   let bandChangeCount = 0;
   let memoryReadyPartCount = 0;
   let warmupPartCount = 0;
+  let acceptedNearBoundaryIncompletePartCount = 0;
   let technicalDiagnosticsModeCount = 0;
   let transportStateReplayMismatchCount = 0;
   const persistedTransportPotentials = [];
@@ -239,6 +240,14 @@ export function auditCandidateGPublicShadow(document, {
     add(finite(state?.mobilisationPotential) && Number(state.mobilisationPotential) >= 0 && Number(state.mobilisationPotential) <= 100, 'MOBILISATION_STATE_INVALID');
     if (candidate?.initialStateAccepted === true) acceptedStateCount += 1;
     else resetStateCount += 1;
+    if (candidate?.initialStateAccepted === true
+      && state?.transportMemoryReady === false
+      && state?.transportMemoryStatus === 'WINDOW_INCOMPLETE'
+      && Number(state?.transportMemoryCoverageHours) >= 45
+      && Number(state?.transportMemoryCoverageHours) < 48
+      && (state?.transportEvidence ?? []).every(item => Number.isFinite(item?.strength))) {
+      acceptedNearBoundaryIncompletePartCount += 1;
+    }
 
     const compactKeys = Object.keys(state ?? {}).sort();
     add(JSON.stringify(compactKeys) === JSON.stringify([
@@ -323,6 +332,8 @@ export function auditCandidateGPublicShadow(document, {
   add(scoreReconstructionMismatchCount === 0, 'CANDIDATE_SCORE_RECONSTRUCTION_MISMATCH');
   add(technicalDiagnosticsModeCount === memoryReadyPartCount * MODES.length,
     'CANDIDATE_G_PUBLIC_DIAGNOSTICS_COVERAGE_INCOMPLETE');
+  add(acceptedNearBoundaryIncompletePartCount / Math.max(1, parts.length) < 0.98,
+    'ACCEPTED_STATE_MASS_WINDOW_INCOMPLETE');
 
   const modeSummary = Object.fromEntries(MODES.map(mode => [mode, {
     active: summarize(modeRows[mode].map(row => row.active)),
@@ -369,6 +380,7 @@ export function auditCandidateGPublicShadow(document, {
       resetStateCount,
       memoryReadyPartCount,
       warmupPartCount,
+      acceptedNearBoundaryIncompletePartCount,
       transportStateReplayMismatchCount,
       persistedTransportPotential: summarize(persistedTransportPotentials),
       replayedTransportPotential: summarize(replayedTransportPotentials),
@@ -531,6 +543,22 @@ async function main() {
     Object.values(leakDocument.coastalParts.parts)[0].current.waders = { available: true, score: 50 };
     assert.equal(auditCandidateGPublicShadow(leakDocument).status, 'failed',
       'En gammel eller opfundet offentlig score må ikke lække ud, når Candidate G-historikken mangler.');
+    const cadencePhaseRegressionDocument = syntheticDocument();
+    const cadencePhaseEvidence = Array.from({ length: 16 }, (_, index) => ({
+      time: new Date(Date.parse(cadencePhaseRegressionDocument.generatedAt)
+        - (45 - index * 3) * 3_600_000).toISOString(),
+      strength: 0,
+    }));
+    for (const part of Object.values(cadencePhaseRegressionDocument.coastalParts.parts)) {
+      part.candidateG.initialStateAccepted = true;
+      part.candidateG.initialStateResetReason = null;
+      part.candidateG.transportMemoryCoverageHours = 45;
+      part.candidateG.currentState.transportMemoryCoverageHours = 45;
+      part.candidateG.currentState.transportEvidence = structuredClone(cadencePhaseEvidence);
+    }
+    const cadencePhaseRegressionReport = auditCandidateGPublicShadow(cadencePhaseRegressionDocument);
+    assert.deepEqual(cadencePhaseRegressionReport.errors, ['ACCEPTED_STATE_MASS_WINDOW_INCOMPLETE'],
+      'En bred accepteret 45-48-timers WINDOW_INCOMPLETE-regression skal afvises entydigt.');
     console.log('Candidate G-only lokal fail-closed public-audit-self-test: OK');
     return;
   }

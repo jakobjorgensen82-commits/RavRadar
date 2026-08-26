@@ -72,6 +72,23 @@ assert.equal(firstNativeContinuation.coverageHours, 3);
 assert.equal(firstNativeContinuation.result.transportPotential, 30,
   'the first native continuation must integrate its actual three elapsed hours');
 
+const phaseShiftedNativeEvidence = [
+  ...threeHourlyInboundEvidence,
+  { time: new Date(Date.UTC(2024, 0, 3, 1)).toISOString(), strength: 1 },
+];
+const phaseShiftedNativeMemory = buildBoundedCurrentTransportMemory(phaseShiftedNativeEvidence, {
+  referenceTime: phaseShiftedNativeEvidence.at(-1).time,
+});
+assert.equal(phaseShiftedNativeMemory.memoryReady, true,
+  'a one-hour reference shift must preserve a complete native-cadence window');
+assert.equal(phaseShiftedNativeMemory.status, 'READY');
+assert.equal(phaseShiftedNativeMemory.coverageHours, 48);
+assert.equal(phaseShiftedNativeMemory.maximumObservedGapHours, 3);
+assert.equal(phaseShiftedNativeMemory.evidence.length, 17);
+assert.equal(phaseShiftedNativeMemory.evidence[0].time, threeHourlyInboundEvidence[1].time,
+  'the cadence boundary must not add an invented current sample');
+assert.equal(phaseShiftedNativeMemory.result.transportPotential, 100);
+
 const fourHourGapEvidence = Array.from({ length: 49 }, (_, index) => ({
   time: new Date(Date.UTC(2024, 0, 1) + (index * 3_600_000)).toISOString(),
   strength: 1,
