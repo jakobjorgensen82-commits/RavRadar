@@ -1,6 +1,6 @@
-# Implementeringsstatus – kandidat 4.0.287 oven på produktionsverificeret 4.0.286
+# Implementeringsstatus – produktionsverificeret 4.0.287
 
-## Kandidat 4.0.287 – endeligt EU-turlager med Supabase-rollback
+## Produktionsverificeret 4.0.287 – endeligt EU-turlager med Supabase-rollback
 
 - [x] Bevar Supabase som Auth-, profil-, rettigheds-, rate-limit- og offentlig Edge-grænse.
 - [x] Pseudonymisér ejer-id med en separat versionsbåret HMAC-secret og fjern rå identitet, JWT, GPS og rute før ekstern lagring.
@@ -15,9 +15,10 @@
 - [x] Opret/godkend dedikeret Cloudflare-konto, mindst-mulige D1/Worker-credentials og krypterede GitHub-secrets gennem den godkendte kanal uden at vise værdier.
 - [x] Bestå infrastrukturens exact-head-gates `33014102652`/`33014672254`, merge PR #162/#163 og deployér/verificér Edge i eksplicit Supabase-rollback gennem `33014772035`.
 - [x] Bestå kandidatens exact-head `33019055639`, merge PR #164 som `e9cd20ee` og opret/skema-verificér ti EU-shards samt deploy Worker i det sikkert stoppede D1-run `33019198166`.
-- [ ] Bestå udbredelsesrettelsens exact-head/merge og den fulde manuelle D1-migration/cutover.
-- [ ] Verificér live D1-normaldrift, konto/turlog, dataminimerede tællinger og den eksplicitte rollbackkontrakt.
-- [ ] Bestå fuld frisk produktionsgate og offentlig 210/673/420/2.100-kontrol på merged head.
+- [x] Bestå udbredelsesrettelsens exact-head `33019805663`, merge PR #166 som `2d12c085c8178c4b89e8b00bf00ca43abe15129f` og den fulde D1-migration/cutover `33019868542`.
+- [x] Verificér live D1-normaldrift, privat Worker-/Edge-grænse, idempotent 4/4-rækkemigration, dataminimerede tællinger og den eksplicitte rollbackkontrakt.
+- [x] Bestå fuld frisk produktionsgate `33019856228`, Pages-job `98351206091` og offentlig `rr-20260826224651-210`-kontrol med 210/210 aktive zoner, befolket rangliste, 210/673/420/2.100 og nul fejl.
+- [x] Bestå separat read-only monitor `33021364240`/`98352259752` med ti shards, 0 MB afrundet og 0 % lagerforbrug uden turlæsning.
 
 Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åbent driftskrav. Supabase-PAT roteres før 25. september 2026, og begge Cloudflare-tokens før 27. august 2027. Se DEC-0082.
 

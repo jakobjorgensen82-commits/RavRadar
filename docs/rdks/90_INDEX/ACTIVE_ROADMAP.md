@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 nu – kandidat 4.0.287 EU-turlager og Supabase-rollback
+## P0 afsluttet – 4.0.287 EU-turlager og Supabase-rollback
 
 - [x] Vælg endelig gratis normalarkitektur: Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards.
 - [x] Hold rå identitet og præcis lokation ude af Cloudflare gennem HMAC-pseudonymisering og streng feltallowlist.
@@ -10,8 +10,8 @@
 - [x] Opret dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets gennem godkendt brugerkanal; verificér DPA/self-serve-kontrakt uden at vise værdier.
 - [x] Bestå infrastrukturens exact-head/merge og deployér Edge grønt i eksplicit Supabase-rollback.
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér alle ti EU-shards og deploy Worker; stop sikkert før migration/Edge på første health-udbredelsesforsinkelse.
-- [ ] Bestå bounded-retry-opfølgningens exact-head/merge, privat Worker-grænse, migration og D1-aktivering.
-- [ ] Bestå fuld frisk produktion og offentlig ende-til-ende-verifikation.
+- [x] Bestå bounded-retry-opfølgningens exact-head `33019805663`, merge PR #166 som `2d12c085`, privat Worker-grænse, idempotent 4/4-migration og D1-aktivering i `33019868542`.
+- [x] Bestå fuld frisk produktion `33019856228`, Pages-job `98351206091`, offentlig 210/673/420/2.100-verifikation og read-only kapacitetsmonitor `33021364240`.
 - [ ] Følg Supabase-banneret frem mod 9. september 2026; turlagerflytningen fjerner ikke Auth-/Edge-egress.
 
 Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikke.
