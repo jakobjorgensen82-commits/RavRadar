@@ -32,7 +32,7 @@ jobs:
       CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
       TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
       TRIP_PSEUDONYM_SECRET_V1: ${{ secrets.TRIP_PSEUDONYM_SECRET_V1 }}
-      TRIP_WRANGLER_CONFIG_PATH: ${{ runner.temp }}/ravradar-trip-wrangler.json
+      TRIP_WRANGLER_CONFIG_PATH: /tmp/ravradar-trip-wrangler.json
     steps:
       - name: Require the exact main head
         run: |
