@@ -225,8 +225,8 @@ try {
     assert.equal(part.candidateG.currentState.transportMemoryReady, true);
     assert.equal(part.candidateG.currentState.transportMemoryStatus, 'READY');
     assert.equal(part.candidateG.currentState.transportMemoryCoverageHours, 48);
-    assert.equal(part.candidateG.currentState.transportEvidence.length, 17,
-      'recovery must retain only real compact evidence inside the active window');
+    assert.equal(part.candidateG.currentState.transportEvidence.length, 18,
+      'recovery must retain the real compact predecessor for the next rolling boundary');
   }
   const phasePostAssessment = await assessRecovery({ root: targetRoot });
   assert.equal(phasePostAssessment.required, false,

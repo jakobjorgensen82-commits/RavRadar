@@ -6,16 +6,16 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://services.arcgisonline.com https://server.arcgisonline.com; connect-src 'self' https://afqhhdrkjfjtpadntdzo.supabase.co; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#073b4c">
   <title>RavRadar administration</title>
-  <link rel="stylesheet" href="style.css?v=4.0.285">
+  <link rel="stylesheet" href="style.css?v=4.0.286">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
-  <link rel="stylesheet" href="admin.css?v=4.0.285">
+  <link rel="stylesheet" href="admin.css?v=4.0.286">
   <style>.admin-locked .admin-header,.admin-locked .admin-shell{visibility:hidden}.admin-auth-gate{padding:2rem;font-family:system-ui}.admin-unlocked .admin-auth-gate{display:none}</style>
 </head>
 <body class="admin-body admin-locked">
   <div class="admin-auth-gate">Kontrollerer sikker adgang via Supabase…</div>
   <header class="admin-header">
     <div><span class="eyebrow">RavRadar</span><h1>Administration</h1></div>
-    <div class="admin-header-actions"><span class="admin-version">4.0.285</span><span id="adminSupabaseHeader" class="admin-connection-pill">Supabase kontrolleres…</span><a class="admin-button secondary" href="./">Til kortet</a></div>
+    <div class="admin-header-actions"><span class="admin-version">4.0.286</span><span id="adminSupabaseHeader" class="admin-connection-pill">Supabase kontrolleres…</span><a class="admin-button secondary" href="./">Til kortet</a></div>
   </header>
   <main class="admin-shell">
     <nav class="admin-tabs" aria-label="Administration">
@@ -36,6 +36,6 @@
     <section id="adminContent" class="admin-content" aria-live="polite"></section>
   </main>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-  <script type="module" src="js/ui/admin-dashboard.js?v=4.0.285"></script>
+  <script type="module" src="js/ui/admin-dashboard.js?v=4.0.286"></script>
 </body>
 </html>

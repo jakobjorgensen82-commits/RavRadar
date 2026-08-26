@@ -147,9 +147,21 @@ assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryReady, true,
   'a verified reference between native three-hour boundaries must retain READY memory');
 assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryStatus, 'READY');
 assert.equal(nativeReferencePhaseShift.rows[0].transportMemoryCoverageHours, 48);
-assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence.length, 17);
-assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence[0].time, hour(3),
-  'the phase shift must retain only real compact evidence');
+assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence.length, 18);
+assert.equal(nativeReferencePhaseShift.rows[0].transportEvidence[0].time, hour(0),
+  'the phase shift must retain the real compact predecessor for the next rolling boundary');
+
+const nativeReferenceSecondPhaseShift = buildCandidateGDerivedStateSeries([
+  sample(50),
+], {
+  stateKey: 'sha256:native-three-hour-window',
+  initialState: nativeReferencePhaseShift.continuationState,
+});
+assert.equal(nativeReferenceSecondPhaseShift.initialStateAccepted, true);
+assert.equal(nativeReferenceSecondPhaseShift.rows[0].transportMemoryReady, true,
+  'the retained compact predecessor must keep a second phase-shifted production run READY');
+assert.equal(nativeReferenceSecondPhaseShift.rows[0].transportMemoryStatus, 'READY');
+assert.equal(nativeReferenceSecondPhaseShift.rows[0].transportMemoryCoverageHours, 48);
 
 const nativeReferenceBootstrap = buildCandidateGDerivedStateSeries([
   sample(52, { currentSpeedMps: null, currentAlignment: null, currentVerified: false }),

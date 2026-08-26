@@ -150,6 +150,7 @@ const positions = {
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
+  publicAudit: text.indexOf('name: Audit actual Candidate G public runtime before deploy'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
@@ -158,13 +159,28 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','reference','validate','gate','artifact'];
+const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
   if (!(positions[before] < positions[after])) {
     throw new Error(`Forkert rækkefølge: ${before} skal ligge før ${after}`);
   }
+}
+const publicAuditBlockEnd = text.indexOf('\n\n', positions.publicAudit);
+const publicAuditBlock = text.slice(positions.publicAudit,
+  publicAuditBlockEnd < 0 ? text.length : publicAuditBlockEnd);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
+  '--input data/live/conditions.json',
+]) {
+  if (!publicAuditBlock.includes(marker)) {
+    throw new Error(`Den faktiske Candidate G public runtime-gate mangler ${marker}`);
+  }
+}
+if (publicAuditBlock.includes('continue-on-error')) {
+  throw new Error('Den faktiske Candidate G public runtime-gate må ikke være vejledende.');
 }
 const beforeWeather = text.slice(0, positions.weather);
 if (/run:\s+npm run validate(?:\n|$)/.test(beforeWeather) || beforeWeather.includes('npm run release:gate')) {

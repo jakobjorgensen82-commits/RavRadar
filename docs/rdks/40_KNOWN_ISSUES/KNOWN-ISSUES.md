@@ -1,12 +1,19 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat 4.0.285 – Candidate G-cadencefase
+## Kandidat 4.0.286 – rullende Candidate G-kontinuitet
+
+- **ISSUE-CANDIDATE-G-BOUNDARY-PREDECESSOR-NOT-PERSISTED – LØST I KANDIDAT / PRODUKTION AFVENTER:** 4.0.285 brugte forgængeren før den faseskudte grænse i samme beregning, men publicerede kun evidensen inde i vinduet. Næste reference mistede derfor igen sammenhængen. 4.0.286 bevarer den virkelige kompakte forgænger til næste reference uden at afspille eller tælle den i det aktuelle vindue.
+- **ISSUE-PRODUCTION-SHADOW-ONLY-SELF-TESTED – LØST I KANDIDAT:** Den fulde validering kørte Candidate G-shadowauditens syntetiske `--self-test`, men auditerede ikke den nybyggede public runtime. Workflowet kører nu den faktiske `data/live/conditions.json` fail-closed før deploy.
+- **ISSUE-4.0.285-FUNCTIONAL-PRODUCTION-CLOSURE – AFVIST:** Exact-head, merge og produktion var grønne, men offentlig audit fandt 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`. 4.0.285 er udgivet, men ikke funktionelt stabil.
+- **ISSUE-4.0.286-PRODUCTION-CLOSURE – ÅBEN:** Exact-head, merge, fuld frisk produktion og positiv offentlig aktuel-ranglistekontrol udestår.
+
+## Udgivet 4.0.285 – Candidate G-cadencefase, erstattet af 4.0.286
 
 - **ISSUE-CANDIDATE-G-WINDOW-BOUNDARY-PHASE – LØST I KANDIDAT:** En fælles reference én time forskudt fra native tretimerskadence fjernede beviset lige før 48-timersgrænsen. 665 sammenhængende forløb blev derfor fejlagtigt `WINDOW_INCOMPLETE` med 46 timer. Kandidaten bruger forgængeren alene som sammenhængsbevis og beholder kun reelle målepunkter i vinduet.
 - **ISSUE-CANDIDATE-G-SHORT-WINDOW-FALSE-POSITIVE – REGRESSION LÅST:** Den første rettelse kunne have godkendt et ægte 47-timersdatasæt uden historik før grænsen. Den eksisterende bounded-memory-selftest stoppede dette. Den endelige kontrakt kræver et verificeret kompakt bevis før grænsen og består både den gamle og den nye test.
 - **ISSUE-CANDIDATE-G-PHASE-LINEAGE-RECOVERY – LØST I KANDIDAT / PRODUKTION AFVENTER:** Den deployede state har allerede mistet grænsebeviset. En hash-låst engangsrecovery sammenfletter kun kompakte transportbeviser fra workflow `32978542594`. Virkelig artifactprøve gav 672/673 `READY` og blev derefter logisk inaktiv.
 - **ISSUE-PUBLIC-AUDIT-ACCEPTS-ALL-CURRENT-UNAVAILABLE – LØST I KANDIDAT:** Den fulde 420-visningsaudit accepterede korrekt lokal fail-closed, men kunne derfor være grøn med 0/210 aktive zoner. Begge onlineaudits kræver nu mindst én aktiv aktuel zone, og Candidate G-shadowgaten afviser en bred accepteret 45–48-timers `WINDOW_INCOMPLETE`-linje. En syntetisk regressionsprøve og det deployede 4.0.284-artifact beviser stoppet.
-- **ISSUE-4.0.285-PRODUCTION-CLOSURE – ÅBEN:** Exact-head, merge, fuld frisk produktion og offentlig positiv aktuel-ranglistekontrol udestår.
+- **ISSUE-4.0.285-PRODUCTION-CLOSURE – LUKKET SOM FUNKTIONELT AFVIST:** PR #156, exact-head `32993055324`, merge `de6b7844` og produktion `32993270783` er gennemført. Offentlig positiv kontrol var rød og krævede 4.0.286.
 
 ## Udgivet 4.0.284 – sikkerheds- og driftslukning
 
@@ -17,7 +24,7 @@
 - **ISSUE-SUPABASE-CLI-WINDOWS-APPLICATION-CONTROL – DRIFTSBEGRÆNSNING:** Den lokale Supabase CLI blev blokeret af Windows Application Control. Begge funktioner er deployet gennem Supabases godkendte browsereditor. Windows-sikkerheden blev ikke og må ikke svækkes; en fremtidig automatiseret Edge-deploykanal skal være særskilt godkendt.
 - **ISSUE-REMOTE-ASSISTANT-SECRET-MISSING – BEVIDST LOCAL-ONLY:** Edge-funktionen har ingen `OPENAI_API_KEY` og svarede derfor kontrolleret 503. 4.0.284 sætter `ravAssistantRemoteEnabled=false`; den offentlige side bruger kun lokal Candidate G-assistent og foretager intet fjernkald. Senere aktivering er en separat feature, ikke en releaseblokering.
 - **ISSUE-SUPABASE-EGRESS-GRACE – ÅBEN DRIFTSRISIKO:** Aktuel måling var cirka 455 MB/5 GB egress og 86 MB/500 MB database, men organisationens banner varsler fortsat mulig begrænsning fra 9. september 2026 efter forrige betalingsperiode. Overvågning og eventuelt planvalg udestår.
-- **ISSUE-SECURITY-4.0.284-PRODUCTION-CLOSURE – LUKKET FOR SIKKERHED / STABILITET FØLGES I 4.0.285:** PR #155, exact-head `32986025916`, merge `a92e2704` og produktion `32987875007` er grønne. CSP, Edge og den offentlige 210/673-struktur er liveverificeret. Candidate G's særskilte cadencefase gjorde den aktuelle rangliste tom og blokerer betegnelsen stabil baseline, indtil 4.0.285 er offentlig grøn.
+- **ISSUE-SECURITY-4.0.284-PRODUCTION-CLOSURE – LUKKET FOR SIKKERHED / STABILITET FØLGES I 4.0.286:** PR #155, exact-head `32986025916`, merge `a92e2704` og produktion `32987875007` er grønne. CSP, Edge og den offentlige 210/673-struktur er liveverificeret. Candidate G's særskilte rullende cadencefase blokerer betegnelsen stabil baseline, indtil 4.0.286 er offentlig grøn.
 
 ## Kandidat 4.0.283 – moderzonekobling i slutkontrollen
 

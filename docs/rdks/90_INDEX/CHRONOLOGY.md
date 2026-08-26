@@ -1,5 +1,15 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-26 – kandidat 4.0.286 efter offentlig 4.0.285-afvisning
+
+1. PR #156 bestod exact-head `32993055324`, blev merged som `de6b7844`, og produktion `32993270783` bestod recovery, frisk runtime, fuld validering, releasegate, Supabase-sync, artifact og Pages.
+2. Den skærpede offentlige kontrol bestod struktur og browser-/HTTP-kontrakt, men afviste korrekt 0/210 aktive zoner. 665/673 dele var igen `WINDOW_INCOMPLETE`; 4.0.285 blev ikke erklæret stabil.
+3. Rodårsagen var, at grænsebeviset før det faseskudte 48-timersvindue blev brugt i samme beregning, men ikke bevaret i den kompakte state til næste rullende reference.
+4. 4.0.286 gemmer dette virkelige kompakte kontinuitetsbevis, men holder det ude af replay og dækningssum. Det skaber ingen måling, interpolation, rå U/V eller koordinat.
+5. To-trins regime- og statepipeline-tests beviser, at næste reference fortsat er `READY` med 48 timers dækning, mens ægte korte vinduer og huller fortsat stopper.
+6. Den faktiske public runtime auditeres nu i produktionsworkflowet før Supabase-sync, artifact og Pages. Gaten afviser det offentlige 4.0.285-artifact med 665/673-signaturen.
+7. Recoverysimulation mod de virkelige offentlige artifacts gav 672/673 `READY` og efterfølgende inaktiv recovery. Exact-head og offentlig produktionslukning afventer. Se DEC-0081.
+
 ## 2026-08-26 – kandidat 4.0.285 efter offentlig 4.0.284-kontrol
 
 1. PR #155 bestod exact-head `32986025916` og blev merged som `a92e2704`. GitHub Actions/Pages havde en driftsforstyrrelse, så den manuelt startede fulde produktion blev afløst af den forsinkede pushkørsel `32987875007`, som bestod hele kæden og deployede 4.0.284.

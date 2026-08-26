@@ -1,3 +1,11 @@
+## 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate (2026-08-26)
+
+- Den offentlige positive audit afviste 4.0.285 korrekt efter ellers grønne gates: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
+- Grænsebeviset før et faseskudt 48-timersvindue bevares nu kompakt til næste rullende reference. Det afspilles ikke i det aktuelle vindue og tæller ikke som måling, interpolation eller ekstra dækning.
+- To-trins regressionstests kræver fortsat `READY` og 48 timers dækning ved næste reference.
+- Produktionsworkflowet auditerer den faktisk genererede `data/live/conditions.json` før Supabase-sync, artifact og Pages og stopper på den dokumenterede masseregression.
+- Candidate G 20/50/30, fysik, sikkerhed, vejr, zoner, geometri og land-/vandpunkter er uændrede. Geodatafilerne ændrer kun topversionsfeltet til 4.0.286. Se DEC-0081 og `CHANGELOG-4.0.286.md`.
+
 ## 4.0.285 – Candidate G-cadencefase ved 48-timersgrænsen (2026-08-26)
 
 - Den offentlige 4.0.284-strukturaudit var grøn, men den aktuelle rangliste var tom. Pages-artifacts viste 672/673 `READY` og 209/210 aktive zoner i sidste 4.0.283-build mod 8/673 og 0/210 allerede i første 4.0.284-build.

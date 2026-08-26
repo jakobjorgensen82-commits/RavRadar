@@ -1,6 +1,19 @@
-# Implementeringsstatus – kandidat 4.0.285
+# Implementeringsstatus – kandidat 4.0.286
 
-## Kandidat 4.0.285 – Candidate G-cadencefase og offentlig funktionslukning
+## Kandidat 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate
+
+- [x] Verificér 4.0.285 exact-head `32993055324`, merge `de6b78444bf1d9bd19beb6100ceb193fe40a8d85` og fuld produktion `32993270783` uden at forveksle grøn struktur med funktionel stabilitet.
+- [x] Afvis offentlig 4.0.285 på den positive kontrol: 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
+- [x] Afgræns regressionen til, at et nødvendigt virkeligt grænsebevis ikke blev bevaret til næste rullende reference.
+- [x] Bevar grænsebeviset kompakt uden at afspille eller tælle det i det aktuelle 48-timersvindue.
+- [x] Lås to efterfølgende faseskudte referencer med regime- og statepipeline-tests.
+- [x] Kør Candidate G-shadowaudit på den faktisk genererede runtime før deploy, ikke kun som `--self-test` i fuld validering.
+- [x] Bevis, at den nye gate afviser det offentlige 4.0.285-artifact med 665/673-masseregressionen.
+- [x] Bevis recovery mod de virkelige offentlige artifacts: 672/673 `READY`, én ærligt umoden del og derefter inaktiv recovery.
+- [x] Løft appversion, synkronisér RDKS/håndbøger/changelog og bevis ren topversionsdiff i de beskyttede geodatafiler.
+- [ ] Bestå exact-head-kildegate, merge, fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+
+## Udgivet men funktionelt afvist 4.0.285 – første cadencefaselukning
 
 - [x] Sammenlign det sidste 4.0.283-, første 4.0.284- og deployede 4.0.284-Pages-artifact uden supportpakker eller private data.
 - [x] Afgræns faldet til første 4.0.284-build: 672/673 → 8/673 `READY` og 209/210 → 0/210 aktive zoner.
@@ -11,7 +24,9 @@
 - [x] Kør målrettede regime-, statepipeline-, recovery-, shadow- og ablationstests.
 - [x] Gør den positive offentlige funktionskontrol permanent: onlineaudits kræver mindst én aktiv zone, og shadowgaten afviser den brede accepterede 45–48-timers fejlsignatur.
 - [x] Løft appversionen til 4.0.285; præcis diff beviser kun topversionsfelt 4.0.284 → 4.0.285 i de to beskyttede geodatafiler og ingen ændret geometri eller land-/vandpunkter.
-- [ ] Bestå exact-head-kildegate, merge, fuld frisk produktion og offentlig kontrol af faktisk befolket aktuel rangliste.
+- [x] Bestå exact-head-kildegate `32993055324`, merge PR #156 som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85` og fuld frisk produktion `32993270783`.
+- [x] Kør skærpet offentlig kontrol; den afviste korrekt 4.0.285 med 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.
+- [ ] Erstattes funktionelt af 4.0.286; 4.0.285 må ikke kaldes stabil baseline.
 
 Se DEC-0081. Den sikkerhedsrelaterede 4.0.284-kode forbliver uændret i patchen.
 

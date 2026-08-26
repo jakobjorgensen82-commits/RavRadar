@@ -1,14 +1,16 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.285 – korrekt Candidate G-vinduesgrænse og engangsrecovery
+## Kandidat 4.0.286 – rullende Candidate G-kontinuitet og faktisk predeploy-audit
 
-- Den offentlige 4.0.284-struktur bestod 210/673/420/2.100-kontrollen, men den aktuelle rangliste var tom. Artifactet havde 0/210 aktive zoner og kun 8/673 `READY`-kystdele.
-- Den sidste offentlige 4.0.283-produktion havde 209/210 aktive zoner og 672/673 `READY`. Faldet opstod allerede i første 4.0.284-build, ikke i det efterfølgende deploy-kapløb.
-- Rodårsagen var et eksakt lighedskrav ved 48-timersgrænsen. En én-times referencefase fjernede det verificerede bevis lige før grænsen og gjorde 665 sammenhængende forløb til falske 46-timersvinduer.
-- 4.0.285 accepterer kun grænsekrydsningen, når både et verificeret kompakt bevis før grænsen og den efterfølgende højst tre timer lange kadence findes. Et ægte 47-timersdatasæt uden forgænger forbliver lukket.
-- Den deployede fejllinje samles én gang med den eksakte hash-låste offentlige state fra workflow `32978542594`. En lokal prøve mod de virkelige artifacts genskabte 672/673 `READY` og gjorde recoveryen inaktiv bagefter.
-- Der kopieres ingen rå U/V, koordinater, vejr, scoreoutput, geometri, land-/vandpunkter eller private payloads. De to beskyttede geodatafiler ændrer kun topversionsfeltet 4.0.284 → 4.0.285 under DEC-0076.
-- Målrettede state-, recovery- og fail-closed-tests er grønne. Exact-head, fuld frisk produktion og offentlig aktuel-ranglistekontrol afventer. Se DEC-0081.
+- PR #156 bestod exact-head `32993055324`, blev merged som `de6b78444bf1d9bd19beb6100ceb193fe40a8d85`, og produktion `32993270783` udgav 4.0.285 gennem recovery, frisk runtime, fuld validering, releasegate, Supabase-sync og Pages.
+- Den skærpede offentlige funktionskontrol afviste resultatet korrekt: 0/210 aktive zoner, 665/673 `WINDOW_INCOMPLETE`, 8/673 `READY` og ellers komplet 210/673/420/2.100-struktur uden browser- eller HTTP-fejl. 4.0.285 er derfor ikke en stabil baseline.
+- Rodårsagen var en rullende statefejl: det virkelige kompakte bevis før en faseskudt 48-timersgrænse gjorde samme beregning `READY`, men blev ikke bevaret til næste reference.
+- 4.0.286 bevarer forgængeren kompakt til næste rullende reference. Den afspilles ikke i det aktuelle vindue og tæller ikke som måling, interpolation eller ekstra dækning.
+- To efterfølgende forskudte referencer er låst af regime- og statepipeline-tests. Et ægte 47-timersdatasæt uden forgænger og huller over tre timer forbliver fail-closed.
+- Produktionsworkflowet auditerer nu den faktisk genererede `data/live/conditions.json` før Supabase-sync, artifact og Pages. Den nye gate afviser det offentlige 4.0.285-artifact med den dokumenterede 665/673-masseregression.
+- En ny lokal recoveryprøve mod det offentlige 4.0.285-mål og den hash-låste kilde genskabte 672/673 `READY` og blev derefter inaktiv.
+- Der kopieres ingen rå U/V, koordinater, vejr, scoreoutput, geometri, land-/vandpunkter eller private payloads. De beskyttede geodatafiler må kun ændre topversionsfelt 4.0.285 → 4.0.286 under DEC-0076.
+- Exact-head, fuld frisk produktion og positiv offentlig ranglistekontrol afventer. Se DEC-0081.
 
 Candidate G 20/50/30 og dens fysiske +10/-8-/13-timersregler er uændrede.
 

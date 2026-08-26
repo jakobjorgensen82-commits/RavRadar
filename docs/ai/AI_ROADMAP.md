@@ -1,13 +1,23 @@
-# AI Roadmap – RavRadar 4.0.285+
+# AI Roadmap – RavRadar 4.0.286+
 
-## P0 – afslut 4.0.285 cadencefase-recovery
+## P0 – afslut 4.0.286 rullende cadencefase
+
+- [x] Bevis offentlig 4.0.285-masseregression efter grøn produktion.
+- [x] Bevar det kompakte grænsebevis til næste rullende reference uden replay eller ekstra dækning.
+- [x] Lås to efterfølgende faseskudte referencer.
+- [x] Auditér den faktiske public runtime før deploy og afvis 4.0.285-artifactet med den nye gate.
+- [x] Simulér recovery til 672/673 `READY` mod de offentlige artifacts.
+- [ ] Bestå exact-head, fuld produktion og positiv offentlig current-ranking/readiness-kontrol.
+
+## Afsluttet men funktionelt afvist – 4.0.285 cadencefase-recovery
 
 - [x] Sammenlign kun offentlige Pages-artifacts og lokaliser 672→8 `READY`-faldet til første 4.0.284-build.
 - [x] Ret vinduesgrænsen med dokumenteret forgænger og højst tre timers kadence uden interpolation.
 - [x] Lås et ægte 47-timersdatasæt og større huller fail-closed.
 - [x] Hash-lås og simuler compact-only recovery til 672/673 `READY`.
 - [x] Bevar geodataenes versionsfelter og alle punkter urørte.
-- [ ] Bestå exact-head, fuld produktion og positiv offentlig current-ranking/readiness-kontrol.
+- [x] Bestå exact-head `32993055324`, merge `de6b7844` og produktion `32993270783`.
+- [x] Kør positiv offentlig kontrol; 4.0.285 blev afvist med 0/210 aktive zoner og erstattes af 4.0.286.
 
 Se DEC-0081.
 
@@ -20,7 +30,7 @@ Se DEC-0081.
 - [x] Synkronisér version, RDKS, håndbøger og changelog; bevis ren geodataversiondiff.
 - [x] Bestå lokal source-/releasegate og målrettet browserkontrol uden fjernassistentskald.
 - [x] Bestå exact-head `32986025916`, merge `a92e2704`, produktion `32987875007` og offentlig sikkerheds-/strukturkontrol.
-- [ ] Luk den særskilte Candidate G-cadencefase gennem 4.0.285-punktet ovenfor.
+- [ ] Luk den særskilte rullende Candidate G-cadencefase gennem 4.0.286-punktet ovenfor.
 - [ ] Overvåg Supabase-egress og varslet om mulig begrænsning 9. september 2026.
 
 Se DEC-0080. Candidate G, score, vejr, zoner, geometri og land-/vandpunkter er uændrede.

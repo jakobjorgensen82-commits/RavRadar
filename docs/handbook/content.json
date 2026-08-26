@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.285",
+  "handbookVersion": "4.0.286",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
+    {
+      "id": "candidate-g-rolling-boundary-continuity-4-0-286",
+      "chapter": "70",
+      "title": "Rullende Candidate G-kontinuitet og kontrol før udgivelse",
+      "summary": "Et virkeligt kompakt grænsebevis følger til næste reference, og den faktisk nybyggede runtime kontrolleres før deploy.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En prøve lige før et faseskudt 48-timersvindue kan bevise sammenhæng og skal bevares til næste rullende reference, men tæller aldrig som en ny måling i det aktuelle vindue.</div><div class=\"handbook-stack\"><p><strong>Rullende kontinuitet:</strong> Det virkelige kompakte grænsebevis følger transporthukommelsen til næste reference, så en dokumenteret 48-timerskæde ikke falsk bliver kort ved næste produktion.</p><p><strong>Ingen interpolation:</strong> Beviset før grænsen afspilles ikke, giver ingen ekstra dækningsminutter og ændrer ikke den faste begyndelsestilstand 0. Et reelt kort vindue uden forgænger og huller over tre timer forbliver utilgængelige.</p><p><strong>Kontrol før udgivelse:</strong> Produktionskæden auditerer den faktisk nybyggede offentlige Candidate G-runtime, før Supabase-sync, artifact og Pages. En landsdækkende accepteret, men for kort state stopper før deploy.</p><p>Candidate G 20/50/30, fysikken, vejr, zoner, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0081</code>.</p></div>"
+    },
     {
       "id": "candidate-g-cadence-phase-boundary-recovery-4-0-285",
       "chapter": "69",

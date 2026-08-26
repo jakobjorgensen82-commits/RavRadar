@@ -250,6 +250,9 @@ export function buildBoundedCurrentTransportMemory(
   else if (containsMissing) status = 'WINDOW_HAS_MISSING_EVIDENCE';
   else if (!startsWithinBoundaryCadence) status = 'WINDOW_INCOMPLETE';
   else if (!cadenceComplete) status = 'WINDOW_HAS_TIME_GAP';
+  const persistedEvidence = memoryReady && !startsAtBoundary && bridgedAcrossBoundary
+    ? [precedingBoundaryEvidence, ...retainedEvidence]
+    : retainedEvidence;
 
   return {
     memoryReady,
@@ -257,7 +260,7 @@ export function buildBoundedCurrentTransportMemory(
     windowHours: safeWindowHours,
     coverageHours,
     maximumObservedGapHours,
-    evidence: retainedEvidence,
+    evidence: persistedEvidence,
     rows,
     result,
   };

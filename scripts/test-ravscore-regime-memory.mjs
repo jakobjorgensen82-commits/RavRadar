@@ -84,10 +84,23 @@ assert.equal(phaseShiftedNativeMemory.memoryReady, true,
 assert.equal(phaseShiftedNativeMemory.status, 'READY');
 assert.equal(phaseShiftedNativeMemory.coverageHours, 48);
 assert.equal(phaseShiftedNativeMemory.maximumObservedGapHours, 3);
-assert.equal(phaseShiftedNativeMemory.evidence.length, 17);
-assert.equal(phaseShiftedNativeMemory.evidence[0].time, threeHourlyInboundEvidence[1].time,
-  'the cadence boundary must not add an invented current sample');
+assert.equal(phaseShiftedNativeMemory.evidence.length, 18);
+assert.equal(phaseShiftedNativeMemory.evidence[0].time, threeHourlyInboundEvidence[0].time,
+  'the real compact predecessor must remain available for the next rolling boundary');
 assert.equal(phaseShiftedNativeMemory.result.transportPotential, 100);
+
+const rolledPhaseShiftedNativeMemory = buildBoundedCurrentTransportMemory([
+  ...phaseShiftedNativeMemory.evidence,
+  { time: new Date(Date.UTC(2024, 0, 3, 2)).toISOString(), strength: 1 },
+], {
+  referenceTime: new Date(Date.UTC(2024, 0, 3, 2)).toISOString(),
+});
+assert.equal(rolledPhaseShiftedNativeMemory.memoryReady, true,
+  'a phase-shifted READY window must stay ready across the next production reference');
+assert.equal(rolledPhaseShiftedNativeMemory.status, 'READY');
+assert.equal(rolledPhaseShiftedNativeMemory.coverageHours, 48);
+assert.equal(rolledPhaseShiftedNativeMemory.evidence[0].time, threeHourlyInboundEvidence[0].time,
+  'the predecessor is persisted only as compact continuity evidence, not replayed as a new sample');
 
 const fourHourGapEvidence = Array.from({ length: 49 }, (_, index) => ({
   time: new Date(Date.UTC(2024, 0, 1) + (index * 3_600_000)).toISOString(),
