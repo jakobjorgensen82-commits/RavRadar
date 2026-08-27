@@ -1,6 +1,6 @@
-# Implementeringsstatus – kandidat 4.0.289 oven på produktionsverificeret 4.0.288
+# Implementeringsstatus – produktionsverificeret 4.0.289
 
-## Kandidat P0 – årsagstro produktion og robust recovery i 4.0.289
+## Afsluttet P0 – årsagstro produktion og robust recovery i 4.0.289
 
 - [x] Dokumentér rodårsagen: DMI lykkedes med 622/673, mens den gamle resolver valgte en fremtidig 09 UTC-time og Copernicus derefter timeoutede.
 - [x] Forbyd fremtidige DMI-prognosetimer som produktionstime; vælg kun bedst dækkede/nærmeste verificerede time på eller før den låste reference.
@@ -10,7 +10,7 @@
 - [x] Tilføj ét automatisk retry efter en fejlet, timeoutet eller før-start-fejlet planlagt kørsel og et payloadfrit 45-minutters stilheds-watchdog uden parallelle tunge builds; dokumentér total GitHub-schedulerstilhed som ekstern overvågningsrisiko.
 - [x] Bestå målrettede time-, retry-, checkpoint-, fallback-, data-service-, watchdog-, heartbeat- og workflowtests samt fuld lokal `validate:source` og releasegate.
 - [x] Synkronisér 4.0.289, RDKS, håndbøger og changelog; bestå RDKS/version/geodatadiff.
-- [ ] Bestå PR'ens exact-head `validate:source`, merge, frisk fuld produktion, faktisk runtimeaudit, releasegate, Pages og offentlig kontrol.
+- [x] Bestå PR #181 exact-head `33076656266`, merge `6c8acf08`, frisk produktion `33076772432`, faktisk runtimeaudit/releasegate i build `98532962269`, Pages `98538133039` og offentlig 210/673/420/2.100-kontrol uden fejl.
 
 Se DEC-0085. Candidate G 20/50/30, fysik, DMI-først, vejrberegning, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 

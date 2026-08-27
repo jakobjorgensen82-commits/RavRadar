@@ -4,7 +4,8 @@
 - Run `33051959643` beviser DMI-success med 622/673 og en efterfølgende Copernicus-timeout. Den korrigerbare systemfejl var, at en 07:58-run måtte bindes til fremtidig 09 UTC ved den gamle tie-break.
 - DEC-0085 gør den workflowlåste time til kausal øvre grænse, giver Copernicus to seksminutters forsøg, bevarer kompakt 673-deles state mellem fejlede runs og udvider fallback til højst 72 timer uden at passere dens egen prognosehorisont.
 - En fejlet, timeoutet eller før-start-fejlet schedule-run får ét retry; watchdoget bruger kun workflowmetadata og offentligt manifest og dispatch'er efter 45 minutters stilhed uden aktiv produktion. Total GitHub-schedulerstilhed er fortsat en ekstern overvågningsrisiko.
-- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, frisk produktion og offentlig verifikation afventer. Ingen score, vejrberegning, geometri, land-/vandpunkter eller private data er ændret.
+- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger blev grønne. PR #181 bestod exact-head `33076656266` og blev merged som `6c8acf08`.
+- Produktion `33076772432`, build `98532962269` og Pages `98538133039` bestod kausal timebinding, frisk DMI/Copernicus, 673-deles checkpoint, faktisk runtimeaudit, fulde gates, Supabase og deploy. Liveauditten består 210/673/420/2.100 uden fejl. Ingen score, vejrberegning, geometri, land-/vandpunkter eller private data er ændret.
 
 ## 2026-08-27 – automatisk Candidate G-genopretning efter fejlhentning
 

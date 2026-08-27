@@ -1,13 +1,13 @@
 # Kendte åbne og overvågede forhold
 
-## Kandidat P0 4.0.289 – den oprindelige datagap-trigger og recoveryoverlap
+## Produktionsverificeret P0 4.0.289 – den oprindelige datagap-trigger og recoveryoverlap
 
-- **ISSUE-PRODUCTION-RESOLVER-PREFERS-FUTURE-DMI-HOUR – LØST LOKALT / AFVENTER PRODUKTION:** Run `33051959643` startede 07:58 UTC, men den historiske 4.0.246-tie-break valgte prognosetimen 09 UTC. Resolveren tillader nu kun DMI-timer på eller før den låste reference.
-- **ISSUE-COPERNICUS-PRODUCTION-CALL-UNBOUNDED – LØST LOKALT / AFVENTER PRODUKTION:** Den fejlede Copernicus-proces brugte cirka 11,5 minutter og gav en tom fejltekst. Produktionskaldet har nu to procesisolerede forsøg med seks minutters hard timeout og 20 sekunders pause; fortsat fejl stopper før deploy.
-- **ISSUE-CANDIDATE-G-FAILED-RUN-CHECKPOINT-ONE-OFF – LØST LOKALT / AFVENTER PRODUKTION:** 4.0.288 kunne kun gendanne det kendte 09-checkpoint gennem en engangskonfiguration. 4.0.289 gemmer generisk præcis 673 kompakte, hash- og modelbundne states straks efter runtimegenerering.
-- **ISSUE-CANDIDATE-G-FALLBACK-RECOVERY-OVERLAP – LØST LOKALT / AFVENTER PRODUKTION:** Den aktuelle 48-timers fallback kunne udløbe cirka ti timer før den langsomste del havde 48 timers frisk sammenhæng. Grænsen er nu højst 72 timer og altid yderligere afskåret af datasættets egen prognosehorisont.
+- **ISSUE-PRODUCTION-RESOLVER-PREFERS-FUTURE-DMI-HOUR – PRODUKTIONSVERIFICERET LØST:** Run `33051959643` startede 07:58 UTC, men den historiske 4.0.246-tie-break valgte prognosetimen 09 UTC. Produktion `33076772432` bandt en 13 UTC-kørsel kausalt til verificeret 12 UTC.
+- **ISSUE-COPERNICUS-PRODUCTION-CALL-UNBOUNDED – PRODUKTIONSVERIFICERET LØST:** Den fejlede Copernicus-proces brugte cirka 11,5 minutter og gav en tom fejltekst. Produktion `33076772432` gennemførte supplementet under to procesisolerede seksminutters forsøg og 20 sekunders pause.
+- **ISSUE-CANDIDATE-G-FAILED-RUN-CHECKPOINT-ONE-OFF – PRODUKTIONSVERIFICERET LØST:** 4.0.288 kunne kun gendanne det kendte 09-checkpoint gennem en engangskonfiguration. Build `98532962269` gemte generisk præcis 673 kompakte, hash- og modelbundne states straks efter runtimegenerering.
+- **ISSUE-CANDIDATE-G-FALLBACK-RECOVERY-OVERLAP – PRODUKTIONSVERIFICERET LØST:** Den tidligere 48-timers fallback kunne udløbe cirka ti timer før den langsomste del havde 48 timers frisk sammenhæng. Live 4.0.289 bruger højst 72 timer, egen prognosehorisont og atomisk komplet fallback.
 - **ISSUE-GITHUB-SCHEDULE-SILENCE – DELVIST AFBØDET LOKALT / EKSTERN RISIKO ÅBEN:** Native schedule-events kan forsinkes eller droppes. En fejlet, timeoutet eller før-start-fejlet planlagt kørsel får ét retry, og et separat 45-minutters watchdog dispatch'er kun ved gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion. Watchdoget bruger selv GitHubs scheduler og kan derfor ikke opdage total stilhed i hele scheduleren; en gratis ekstern overvågning kræver en senere, afgrænset ejerbeslutning.
-- **ISSUE-4.0.289-PRODUCTION-CLOSURE – ÅBEN:** Målrettede lokale tests, fuld lokal `validate:source`, releasegate og dokumentationssynkronisering er grønne. Exact-head, frisk fuld produktion, live fallback/checkpoint og offentlig browserkontrol afventer.
+- **ISSUE-4.0.289-PRODUCTION-CLOSURE – PRODUKTIONSVERIFICERET LUKKET:** PR #181/exact-head `33076656266`, merge `6c8acf08`, produktion `33076772432`, build `98532962269`, Pages `98538133039`, live fallback/checkpoint og 210/673/420/2.100-browserkontrol er grønne.
 
 ## Tidligere produktionsverificeret P0 4.0.288 – Candidate G-selvrecovery
 

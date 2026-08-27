@@ -5,7 +5,7 @@
 - Gemmer et generisk hash-/modelbundet checkpoint med præcis 673 kompakte Candidate G-states før de sidste gates, uden vejr, scoreoutput, rå vektorer, koordinater eller private data.
 - Udvider komplet nødvisning til højst 72 timer, men aldrig efter egen prognosehorisont, så Candidate G's 48-timers genopbygning har et sikkert overlap.
 - Tilføjer ét automatisk retry efter fejlet, timeoutet eller før-start-fejlet schedule-run og et payloadfrit 45-minutters watchdog uden parallelle tunge builds; total GitHub-schedulerstilhed kræver fortsat ekstern overvågning.
-- Målrettede lokale tests er grønne; exact-head, frisk produktion og offentlig efterkontrol afventer. Se DEC-0085 og `CHANGELOG-4.0.289.md`.
+- PR #181/exact-head `33076656266`, merge `6c8acf08` og produktion `33076772432`/build `98532962269`/Pages `98538133039` er grønne. Liveauditten består 4.0.289 med 210/673/420/2.100 og nul funktions-, konsol-, side- eller HTTP-fejl. Se DEC-0085 og `CHANGELOG-4.0.289.md`.
 - Candidate G 20/50/30, fysik, DMI-først, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
 ## 4.0.288 – automatisk Candidate G-genopretning (2026-08-27)
