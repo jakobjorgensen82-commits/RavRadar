@@ -9,6 +9,7 @@
 - PR #166 bestod exact-head `33019805663` og blev merged som `2d12c085`. D1-cutover `33019868542` migrerede fire eksisterende rækker, beviste idempotent genkørsel og aktiverede D1-normaldrift gennem grøn Worker-, Edge- og CORS-kontrol uden payloadlog.
 - Produktion `33019856228` og Pages-job `98351206091` udgav `rr-20260826224651-210`: 210/210 aktive zoner, befolket **Bedste områder**, 210/673/420/2.100-struktur og nul browser-/HTTP-fejl. Read-only monitor `33021364240` viste ti shards og 0 % lagerforbrug. Se DEC-0082 og `CHANGELOG-4.0.287.md`.
 - Cloudflare deploy-/audit-token er nu uden udløb og med uændrede mindst-mulige rettigheder. Supabase-PAT'et er udskiftet til udløb 25. august 2027 og ende-til-ende-verificeret i D1-run `33024408547`, før de gamle PAT'er blev tilbagekaldt. Et secret-frit, issue-baseret GitHub-mailvarsel starter 60 dage før næste udløb.
+- Credential-varslet bestod PR #169/exact-head `33025102301`, merge `1e402834` og manuel main-prøve `33025289153` uden for tidlig issue. Produktion `33025210517`/Pages `98367528389` og offentlig `rr-20260827000855-210` er grønne på 210/210 aktive zoner, fem ranglisterækker og den fulde 210/673/420/2.100-browseraudit.
 - En intern, score-neutral Ravudsigten-sammenligning er planlagt i RDKS/roadmap. Den er forbudt i app, offentlig håndbog, ekspert-/adminflader og public runtime, indtil en særskilt beslutning eventuelt ændrer det.
 
 ## 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate (2026-08-26)

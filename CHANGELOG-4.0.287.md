@@ -34,6 +34,8 @@ Dato: 2026-08-26
 - Payloadfri Cloudflare-audit `33024621109`/`98362935528` genbekræftede efter udløbsændringen ti shards, 0 MB afrundet og 0 % forbrug uden turlæsning.
 - En første verifikation `33023652174` stoppede sikkert ved Supabase-tokenets formatkontrol, fordi browserens og Windows' udklipsholdere var adskilte. Ingen tokenværdi blev logget, det gamle PAT blev bevaret, og den korrigerede overførsel brugte en lokal engangskanal uden fil eller kommandolinjeværdi.
 - Et secret-frit GitHub-workflow varsler via en tildelt issue og mail fra 60 dage før Supabase-udløb med opfølgning ved 30/14/7/3/1/0 dage. Det har kun `issues: write` og kan hverken læse tokens, ture eller deploye.
+- PR #169 bestod exact-head `33025102301` på `ba8e8f03` og blev merged som `1e402834`. Manuel main-prøve `33025289153` bestod uden at oprette en for tidlig issue, fordi der er mere end 60 dage til udløb.
+- Frisk pushproduktion `33025210517`/Pages-job `98367528389` bestod hele data-, runtime-, validerings-, release-, Supabase- og deploykæden. Offentlig `rr-20260827000855-210` er 4.0.287 med 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle visninger, 2.100 prognosevisninger og nul kontrol-, side- eller HTTP-fejl.
 
 ## Intern analyseopgave
 

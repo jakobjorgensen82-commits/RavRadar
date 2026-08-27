@@ -16,6 +16,8 @@
 12. Første rotationsprøve `33023652174` stoppede sikkert ved formatkontrollen på grund af adskilte browser-/Windows-udklipsholdere. Ingen værdi blev logget; korrigeret overførsel brugte en lokal engangskanal uden fil eller kommandolinjeværdi. Audit `33024621109`/`98362935528` genbekræftede ti shards og 0 % uden turlæsning.
 13. Ejeren afviste Codex-kalenderpåmindelse og valgte GitHub-mail. Et secret-frit workflow med kun `issues: write` opretter/tildeler en issue fra 60 dage før udløb og følger op ved 30/14/7/3/1/0 dage. GitHub-kontoens levering for deltagelse/tildeling er verificeret som GitHub + mail.
 14. En senere Ravudsigten-sammenligning er godkendt som intern roadmapopgave baseret på offentligt synlige resultater og uafhængige fund. Den har `scoreImpact=false`/`publicRuntime=false` og må kun omtales i RDKS, roadmap og changelog, ikke i bruger-/ekspertrettede flader.
+15. Credential-workflowet bestod PR #169/exact-head `33025102301` på `ba8e8f03` og blev merged som `1e402834`. Manuel main-prøve `33025289153` bestod uden at oprette en for tidlig issue.
+16. Frisk produktion `33025210517` og Pages-job `98367528389` bestod. Offentlig `rr-20260827000855-210` viste 4.0.287, 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle visninger, 2.100 prognosevisninger og nul auditfejl.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 
