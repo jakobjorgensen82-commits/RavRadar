@@ -5,8 +5,8 @@ assert.match(bulk,/def collection_schedule\(previous: dict\[str, Any\], active_z
 assert.match(bulk,/coverageDenominator": "current-active-zone-and-coastal-part-registry"/);
 assert.match(
   bulk,
-  /active_zones_config = \[\s*zone for zone in zones\s*if not zone\.get\("waterSource"\) and not zone\.get\("researchCurrent"\)\s*\]/,
-  'Lokale kystdele skal indgå i schedulerens reelle DMI-dækningsnævner, mens private forskningspunkter holdes udenfor.',
+  /active_zones_config = \[\s*zone for zone in zones\s*if not zone\.get\("waterSource"\) and not zone\.get\("researchCurrent"\) and not zone\.get\("privateStage"\)\s*\]/,
+  'Lokale aktive kystdele skal indgå i schedulerens reelle DMI-dækningsnævner, mens vandkilder, forskningspunkter og private punktkandidater holdes udenfor.',
 );
 assert.match(bulk,/active_zones = \{zone_id: \(previous\.get\("zones"\) or \{\}\)\.get\(zone_id, \{\}\) for zone_id in active_ids\}/);
 assert.match(bulk,/missing_marine_zone_ids = \[/);

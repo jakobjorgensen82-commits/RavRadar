@@ -9,6 +9,7 @@
 - Det tidligere aktive punkt bevares til rollback og kan genindsættes efter et deployproblem. Den komplette senest verificerede nødvisning accepterer desuden højst seks lokale warmups uden at blande gamle og nye zoner.
 - Ingen eksisterende punkter eller geometri flyttes i denne version. Se DEC-0090.
 - Gør punktstaging-testens syntetiske reference eksplicit, så workflowets låste produktionstime ikke kan ændre testfixturet. Første post-merge-kørsel stoppede derfor sikkert før DMI og deploy; hotfixen ændrer ikke runtimevalget af produktionstime.
+- Opdaterer schedulerens kildekontrakt til den nye tilsigtede nævner: aktive zoner og kystdele tæller, mens vandkilder, forskningspunkter og private punktkandidater ikke tæller. Den målrettede test indgår nu i punktstagingens PR-kildegate.
 
 ## Mobil retur til forsiden
 

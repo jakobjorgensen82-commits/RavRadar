@@ -1,6 +1,7 @@
 # Rekonstrueret chatkronologi
 
 - 2026-08-28: 4.0.292 PR #189 bestod exact-head `33124945636` og blev merged som `8b3668b7`. Produktion `33125043019` stoppede før DMI/deploy, fordi punktstagingens syntetiske READY-test arvede workflowets låste produktionstime. En afgrænset hotfix gør fixture-reference eksplicit og bevarer produktionens normale miljølåste reference.
+- 2026-08-28: PR #190 bestod exact-head `33125466599` og blev merged som `6906ee5a`. Produktion `33125529746` byggede frisk DMI/Copernicus/runtime, men stoppede før deploy på en gammel scheduler-kildetest. Kontrakten kræver nu den tilsigtede udelukkelse af `privateStage` og kører i PR-kildegaten.
 
 ## 2026-08-28 – sikker fremtidig flytning af Sibirien-punkter
 

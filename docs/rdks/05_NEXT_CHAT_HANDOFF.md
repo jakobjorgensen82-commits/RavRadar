@@ -8,6 +8,7 @@
 - Senest verificeret hel-datasæt-fallback må dække 0/673 global warmup eller højst seks lokale warmups; intet blandet datasæt.
 - Målrettede tests er grønne. Næste trin er samlet 4.0.292-kildevalidering, PR/exact-head, frisk produktion og fysisk iPhone-returtest. Se DEC-0089/0090.
 - PR #189/exact-head `33124945636` blev merged som `8b3668b7`; første produktion `33125043019` stoppede før DMI/deploy på en testfixture, der arvede workflowets produktionstime. Den afgrænsede hotfix tilføjer en eksplicit referenceparameter og miljøisoleret regression; ny exact-head og produktion afventes.
+- PR #190/exact-head `33125466599` blev merged som `6906ee5a`. Produktion `33125529746` nåede gennem frisk DMI/Copernicus/runtime, men fuld validate stoppede på en gammel scheduler-regex, der ikke kendte private punktkandidater. Den rettede kontrakt kræver nu eksplicit, at `privateStage` holdes ude af offentlig nævner, og kører også på PR-head.
 
 ## 4.0.292-kandidat – mobil retur genopretter forsiden
 
