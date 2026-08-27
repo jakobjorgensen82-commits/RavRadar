@@ -64,7 +64,13 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
     // Når en hovedzone slettes, forsvinder dens kystdele også, medmindre ejeren
     // udtrykkeligt har flyttet dem til en anden aktiv hovedzone først.
     if(!activeZoneIds.has(zoneId))continue;
-    const partOverride=directionReviewZones[zoneId]?.status==='verified'?directionReviewZones[zoneId]?.partOverrides?.[id]:null;
+    const directionReview=directionReviewZones[zoneId]??{};
+    const activePartOverrides=directionReview.activePartOverrides
+      ?? (directionReview.status==='verified'?directionReview.partOverrides:null)
+      ?? {};
+    // stagedChange is intentionally ignored. Candidate coordinates remain
+    // private and cannot replace the active public point before READY + CAS.
+    const partOverride=activePartOverrides[id]??null;
     const landPoint=partOverride?.landPoint||p.landPoint,waterPoint=partOverride?.waterPoint||p.waterPoint;
     if(!Array.isArray(landPoint)||!Array.isArray(waterPoint)||landPoint.length<2||waterPoint.length<2)throw new Error(`${id}: centralt land-/vandreview er ugyldigt`);
     // Runtime-retningen har én sandhed: den geografiske retning fra det blå

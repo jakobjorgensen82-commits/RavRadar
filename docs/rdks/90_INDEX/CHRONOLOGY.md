@@ -1,5 +1,21 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-28 – sikker fremtidig flytning af Sibirien-punkter
+
+1. Ejeren spurgte, hvad der sker, når land-/vandpunktet ved Sibirien senere flyttes, og krævede som minimum intet nedbrud eller fejlscore under en mulig 48-timers genopbygning.
+2. Kodeaudit viste, at punktændringen korrekt nulstiller Candidate G-kontekst lokalt, men at et centralt verificeret override blev anvendt før ny gridvalidering. Én manglende kystdel kunne derefter gøre hele moderzonen utilgængelig. Den historiske Sibirien-proof viste 5,045 km mod den aktive 5,0 km-strømgrænse og kunne ikke genbruges til en ny koordinat.
+3. Ejeren godkendte implementering sammen med 4.0.292. Ingen konkret markør blev flyttet.
+4. Kandidat/aktiv er nu adskilt. Kandidaten samples privat, kræver U/V ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory; READY kræver særskilt ejeraktivering.
+5. Aktiveringen bruger varm DMI/state, fulde gates og central compare-and-swap. Gammel active override og kandidatcache bevares til rollback/recovery. Hel fallback dækker desuden højst seks lokale warmups uden datasætblanding. Se DEC-0090.
+
+## 2026-08-27 – mobil returfejl og krav om klogere lokal assistent
+
+1. Ejeren observerede på iPhone, at retur fra **Om RavRadar** kunne efterlade kort, **Bedste områder** og **5-dages RavRadar** tomme, og præciserede senere, at den lokale Spørg RavRadar var alt for begrænset.
+2. Mobilfejlen tages først som kritisk særskilt release. Den offentlige forside havde ingen `pageshow`-recovery, selv om Safari/WebKit kan gendanne en halvfærdig side fra back/forward-cache og afbryde en aktiv fetch ved navigation.
+3. 4.0.292-kandidaten installerer et værn før første bootstrap-await, genindlæser ufuldstændig/afbrudt opstart og genoptegner ellers kort, rangliste, valgt zone og femdøgnsvisning fra eksisterende state.
+4. En testbar controller dækker normal load, tidlig ufuldstændighed, færdig resume, ventende detaljer, timeout/fejl og dublerede hændelser. Lokal 390 px-retur udløser korrekt ren genstart i den ikke-hydrerede kildeworktree.
+5. Det næste spor er en markant bredere, versionsbundet DA/DE/EN-ravvidensbase med evals før implementering. Den lokale og den eksterne assistent er begge read-only og kan aldrig påvirke prognoser, RavScore eller andre data.
+
 ## 2026-08-27 – ejer-go til offentlig GPT-OSS-assistent
 
 1. Ejeren bad om at få AI-delen af **Spørg RavRadar** offentliggjort nu og ønskede en ordentlig tekst i feltet om den begrænsede kvote, som holder siden gratis.

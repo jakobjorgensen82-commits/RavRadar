@@ -1,3 +1,11 @@
+## 4.0.292 – mobil sidecache- og punktskifte-selvrecovery (2026-08-28)
+
+- Genopretter forsiden efter Safari/WebKit back/forward-cache: en færdig visning genoptegnes, mens ufuldstændig eller afbrudt opstart genindlæses rent.
+- Dækker kort, **Bedste områder**, valgt zone og **5-dages RavRadar** gennem ét idempotent `pageshow`-forløb med dubletværn og fail-safe reload.
+- Indfører staged land-/vandpunktkandidater: aktivt punkt bevares, kandidaten DMI-valideres og opvarmes privat, og kun en særskilt ejeraktivering kan skifte atomisk efter fulde gates og central versionskontrol.
+- Udvider hel-datasæt-fallbacken til højst seks lokale Candidate G-warmups; gamle og nye zoner blandes aldrig.
+- Tilføjer målrettede livscyklus-, privatheds-, DMI-, state-, aktiverings-, versionskonflikt- og recoveryregressioner uden at flytte et faktisk punkt eller ændre score, vejr, sortering, brugerdata eller geometri. Se DEC-0089/0090 og `CHANGELOG-4.0.292.md`.
+
 ## 4.0.291 – offentlig gratis Spørg RavRadar (2026-08-27)
 
 - Aktiverer den valgte Cloudflare GPT-OSS 20B gennem den hærdede server-side Edge-gateway efter ejerens udtrykkelige go.

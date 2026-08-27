@@ -1,5 +1,23 @@
 # RavRadar Håndbog
 
+## Sikker ændring af land-/vandpunkter – 4.0.292
+
+Når et land- eller vandpunkt flyttes i administrationen, ændres produktionen ikke længere ved den første gemning. Ændringen bliver en kandidat med egen revision, mens det hidtidige punkt fortsat leverer kort, **Bedste områder**, femdøgnsprognose og Candidate G.
+
+Kandidaten læses i de samme DMI-filer som den offentlige drift, men resultatet gemmes kun privat. Før den kan blive READY, skal RavRadar bevise en fælles strøm-U/V-vandkolonne højst 5 km fra det nye vandpunkt, mindst 96 timers komplet vejrhorisont og 48 timers sammenhængende Candidate G-hukommelse for den nye punkt-/retningskontekst. Offentlig status viser kun fremdrift og årsagskoder – aldrig kandidatkoordinater eller rå strømværdier.
+
+READY skifter ikke automatisk. Ejeren vælger særskilt **Aktivér klar ændring**. Produktionskørslen indlæser da den allerede opvarmede DMI-serie og kompakte state, bygger den nye runtime og kræver fuld validering. Først derefter skrives den centrale ændring med versionskontrol; en nyere administratorredigering stopper skiftet. Det tidligere aktive punkt bevares til rollback, og den private kandidat kan genbruges, hvis selve deployet fejler efter den centrale skrivning.
+
+Som sidste sikkerhedsnet vises det seneste komplette, auditerede datasæt ved op til seks lokale warmups. RavRadar publicerer aldrig en blanding, hvor enkelte zoner er nye og andre gamle. 4.0.292 flytter ingen faktiske punkter; mekanismen er forberedt til en senere ejerstyret ændring, herunder Sibirien. Se [DEC-0090](docs/rdks/10_DECISIONS/DEC-0090-STAGED-COASTAL-POINT-ACTIVATION.md).
+
+## Mobil retur og browserens sidecache – 4.0.292
+
+Mobil Safari kan gemme en hel webside i sin tilbage-/fremcache og senere vise den igen uden at starte JavaScript-modulerne forfra. Hvis brugeren forlader forsiden, mens en datahentning eller den progressive femdøgnsberegning stadig er i gang, kan browseren derfor vende tilbage til en halvfærdig visning.
+
+RavRadar installerer nu et livscyklusværn før den første asynkrone opstart. Er kortgrundlaget eller de fulde offentlige detaljer ikke færdige ved retur, genindlæses forsiden automatisk. Er alt indlæst, genopfriskes Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand. Flere samtidige returhændelser samles, og en genoptegningsfejl giver en ren genindlæsning.
+
+Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md).
+
 ## Offentlig gratis Spørg RavRadar – 4.0.291
 
 Hele den offentlige RavRadar-flade findes nu på dansk, tysk og engelsk gennem ét centralt tekstsystem. Dansk er standard og fallback. Sprog vælges med et stabilt flagikon og tydeligt navn, og valget huskes lokalt mellem hovedsiden, **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt**. Tekster med tal og dynamiske værdier bruger faste nøgler og parametre, så oversættelse ikke ændrer data. Admin-, ekspert-, PIN-, debug- og øvrige interne flader er fortsat danske.
@@ -593,7 +611,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.291
+**Håndbogsversion:** 4.0.292
 
 **Opdateret:** 19. august 2026
 

@@ -1,5 +1,21 @@
 # RavRadar – overlevering til næste chat
 
+## 4.0.292-kandidat – staged land-/vandpunkter uden driftsudfald
+
+- Ingen faktisk geometri eller land-/vandpunkt er flyttet. Sibirien er kun den kommende bruger-case.
+- Punktredigering gemmes som kandidat og påvirker ikke offentlig sampling. Privat DMI-cache kræver eksakt fælles U/V-grid ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory.
+- READY kræver en særskilt ejeraktivering. Den eksakte runtime bygges med varm DMI/state, fulde gates kører, og central promotion sker derefter med version-CAS. Gammel active override bevares til rollback.
+- Senest verificeret hel-datasæt-fallback må dække 0/673 global warmup eller højst seks lokale warmups; intet blandet datasæt.
+- Målrettede tests er grønne. Næste trin er samlet 4.0.292-kildevalidering, PR/exact-head, frisk produktion og fysisk iPhone-returtest. Se DEC-0089/0090.
+
+## 4.0.292-kandidat – mobil retur genopretter forsiden
+
+- Safari/WebKit kan gendanne forsiden fra back/forward-cache, mens tidligere asynkron opstart er halvfærdig eller afbrudt. Den manglende livscyklushåndtering passer til ejerens samlede symptom: kort, **Bedste områder** og **5-dages RavRadar** mangler efter retur fra **Om RavRadar**.
+- Et bootstrapværn genindlæser ved retur før app-import. Appens resumecontroller genindlæser ved ufuldstændig/afbrudt dataopstart og genoptegner ellers Leaflet, zonefarver, rangliste, valgt zone og femdøgnsvisning idempotent.
+- Målrettede lokale kontrakter og 390 px-returflow er grønne; exact-head, produktion, offentlig runtime og fysisk iPhone afventer.
+- Næste godkendte spor efter lukning er konkret evalscope for en markant bredere lokal DA/DE/EN-ravvidensbase. Den er read-only og må aldrig ændre prognoser, RavScore eller andre runtime-data.
+- Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller land-/vandpunkter. Se DEC-0089.
+
 ## Produktionsverificeret 4.0.291 – offentlig gratis Spørg RavRadar
 
 - Ejeren gav det særskilte aktiverings-go. Offentlig 4.0.291 viser en rolig DA/DE/EN-tekst om den begrænsede daglige AI-kvote og præciserer, at den kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.

@@ -1,4 +1,28 @@
-# Implementeringsstatus – 4.0.291 offentlig AI-aktiveringskandidat
+# Implementeringsstatus – 4.0.292 mobil- og punktskifte-selvrecovery
+
+## P1 aktiv – sikker land-/vandpunktændring
+
+- [x] Bevar aktiv sampling, mens en separat kandidat redigeres og gemmes centralt.
+- [x] Sample kandidat privat uden Pages-/supportlæk af koordinater eller rå strømdata.
+- [x] Kræv U/V-grid ≤5 km, 96 timers fuld horisont og 48 timers hashbundet Candidate G-memory.
+- [x] Kræv særskilt ejeraktivering, eksakt warm-state-injektion, fulde gates og central version-CAS.
+- [x] Bevar tidligere active override og genbrug kandidatcache efter deployfejl.
+- [x] Dæk højst seks lokale warmups med ét komplet senest verificeret fallbackdatasæt.
+- [x] Bestå målrettede isolation-, READY-, privacy-, aktiverings-, recovery-, versionskonflikt- og 672/1-tests.
+- [ ] Bestå exact-head, frisk produktion og offentlig adminstatuskontrol.
+
+Ingen faktiske punkter eller geometri er flyttet. Se DEC-0090.
+
+## P1 aktiv – mobil retur til forsiden
+
+- [x] Afgræns fællessymptomet for kort, **Bedste områder** og **5-dages RavRadar** til manglende recovery omkring Safari/WebKit back/forward-cache og afbrudt asynkron opstart.
+- [x] Installer tidligt bootstrapværn før første await.
+- [x] Genindlæs ved ufuldstændig kerne-/detaljetilstand; genoptegn ellers Leaflet, zonefarver, rangliste, valgt zone og femdøgnsvisning.
+- [x] Saml samtidige resumehændelser og brug ren reload som fail-safe ved genoptegningsfejl.
+- [x] Bestå målrettet livscyklus-, mobil-, første-paint-, progressiv prognose- og modulversionskontrol.
+- [ ] Bestå exact-head CI, frisk produktion, offentlig browserkontrol og fysisk iPhone-retur.
+
+Se DEC-0089. Candidate G 20/50/30, vejr, prognoseinput, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
 ## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
 

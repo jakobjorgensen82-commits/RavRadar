@@ -1,5 +1,20 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-28 – 4.0.292 mobil- og punktskifte-selvrecovery
+
+- Ejeren bad om, at en kommende flytning af Sibirien-land-/vandpunktet ikke kan give ny 48-timers nedetid eller fejlscore. Ingen konkret placering er flyttet i denne leverance.
+- Den tidligere direkte `verified partOverrides -> offentlig sampling`-kobling er erstattet af en staged kontrakt: aktivt punkt fortsætter, mens en revisionsbundet kandidat samples privat fra de samme DMI-GRIB-filer, beviser fælles U/V-grid højst 5 km væk, 96 timers fuld horisont og 48 timers Candidate G-state.
+- READY er ikke aktivering. Admin viser sikker fremdrift uden koordinater/U/V, og ejeren skal særskilt bestille skift. Produktionskørslen injicerer da kandidatens private DMI-serie og kompakte state, kører fulde gates og gennemfører først derefter en Supabase compare-and-swap. Nyere central redigering stopper deployet.
+- Tidligere aktiv override bevares som rollback. Den private kandidat kan genindsættes efter et deployproblem, og hel-datasæt-fallbacken tillader nu højst seks lokale warmups (672/673 er dækket) uden at blande gamle og nye zoner.
+- Målrettede kontrakttests for privat cache, offentlig ikke-aktivering, READY, statusprivacy, state-/DMI-injektion, post-deploy recovery, central versionskonflikt og 672/1-fallback er grønne. Exact-head, frisk produktionskæde og fysisk iPhone afventer. Se DEC-0090.
+
+- Efter den produktionsverificerede AI-release blev den kendte iPhone-returfejl taget først som aftalt. Forsiden havde ingen `pageshow`-håndtering, selv om WebKit kan gendanne en side fra back/forward-cache og afbryde en igangværende hentning under navigation.
+- 4.0.292 installerer et tidligt bootstrapværn og en idempotent genoptagelsescontroller. Ufuldstændig/afbrudt opstart genindlæses; en færdig tilstand genoptegner Leaflet, zonefarver, **Bedste områder**, valgt zone og **5-dages RavRadar**.
+- Den isolerede regression dækker normal load, tidlig afbrydelse, færdig resume, ventende detaljer, timeout, genoptegningsfejl og dublerede hændelser. Eksisterende mobil-, første-paint-, prognose- og modulversionskontroller er grønne.
+- Lokal 390 px Forside → Om → browsertilbage bekræfter ren genstart ved den bevidst ufuldstændige lokale datatilstand. Fysisk iPhone samt exact-head, produktion og offentlig runtime afventer.
+- Ejeren ønsker derefter en **meget** klogere lokal assistent. Det næste afgrænsede spor er fortsat en versionsbundet, evaldrevet DA/DE/EN-ravvidensbase, som kun læser offentlig kontekst og aldrig ændrer kort, prognoser, RavScore eller andre data.
+- Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er urørte. Geodatafilerne ændrer kun det tilladte topversionsfelt. Se DEC-0089.
+
 ## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-27 – offentlig GPT-OSS-aktivering i 4.0.291
 
 - Ejeren har udtrykkeligt godkendt, at **Spørg RavRadar** sættes i offentlig drift nu.

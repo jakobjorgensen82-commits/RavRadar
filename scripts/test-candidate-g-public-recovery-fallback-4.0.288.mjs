@@ -117,6 +117,26 @@ assert.equal(
 
 await fs.writeFile(auditPath, `${JSON.stringify({
   status: 'passed',
+  stateContinuation: { memoryReadyPartCount: 672, warmupPartCount: 1 },
+})}\n`);
+const boundedLocal = await publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs });
+assert.equal(boundedLocal.status, 'active-last-verified');
+assert.equal(
+  JSON.parse(await fs.readFile(manifestPath, 'utf8')).recoveryFallback.reason,
+  'candidate-g-bounded-local-context-warmup',
+);
+
+await fs.writeFile(auditPath, `${JSON.stringify({
+  status: 'passed',
+  stateContinuation: { memoryReadyPartCount: 666, warmupPartCount: 7 },
+})}\n`);
+await assert.rejects(
+  publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs }),
+  /Uventet delvis national Candidate G-recovery/,
+);
+
+await fs.writeFile(auditPath, `${JSON.stringify({
+  status: 'passed',
   stateContinuation: { memoryReadyPartCount: 673, warmupPartCount: 0 },
 })}\n`);
 const deactivated = await publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs });

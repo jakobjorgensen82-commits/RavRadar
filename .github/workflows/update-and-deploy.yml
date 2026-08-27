@@ -135,7 +135,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.291 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.292 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Inspect verified Candidate G continuation recovery
         id: candidate-g-recovery
@@ -187,7 +187,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.291 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.292 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -291,6 +291,19 @@ jobs:
           --checkpoint .cache/candidate-g-continuation-checkpoint/checkpoint.json
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
+      - name: Restore private staged coastal-point cache
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/coastal-point-staging
+          key: coastal-point-staging-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            coastal-point-staging-v1-${{ runner.os }}-
+
+      - name: Prepare only an explicitly requested READY point activation
+        if: steps.preflight.outputs.should_run == 'true'
+        run: node scripts/prepare-coastal-point-activation.mjs
+
       - name: Rebuild centrally reviewed coastal-part sampling points
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
@@ -388,12 +401,24 @@ jobs:
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
+          COASTAL_POINT_STAGE_PATH: .cache/coastal-point-staging/dmi.json
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.291 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.292 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Advance private point-candidate readiness without public score impact
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        run: node scripts/update-coastal-point-staging.mjs
+
+      - name: Save private staged coastal-point cache
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/coastal-point-staging
+          key: coastal-point-staging-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save progressed DMI GRIB download cache
         if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
@@ -522,8 +547,19 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.291 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.292 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Refuse a point activation without a successful exact-point weather rebuild
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          WEATHER_OUTCOME: ${{ steps.weather.outcome }}
+        run: |
+          if test -f .cache/coastal-point-staging/pending-promotion.json && test "$WEATHER_OUTCOME" != "success"; then
+            echo "A READY point activation was prepared, but the exact-point weather rebuild failed."
+            exit 1
+          fi
 
       - name: Attach scientific current provenance and exact DMI grid points
         if: steps.preflight.outputs.should_run == 'true'
@@ -580,6 +616,13 @@ jobs:
       - name: Validate updated weather cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: npm run validate:data
+
+      - name: Atomically promote the validated point candidate in central admin storage
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        run: python scripts/promote-coastal-point-activation.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Report cached fallback
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome != 'success'

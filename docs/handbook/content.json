@@ -1,9 +1,23 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.291",
+  "handbookVersion": "4.0.292",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-27",
+  "updatedAt": "2026-08-28",
   "sections": [
+    {
+      "id": "staged-coastal-point-activation-4-0-292",
+      "chapter": "75",
+      "title": "Sikker ændring af land-/vandpunkter",
+      "summary": "Det aktive punkt fortsætter, mens en privat kandidat DMI-valideres og opvarmes; først en særskilt ejeraktivering efter fulde gates kan skifte produktionen.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En flyttet markør bliver ikke længere aktiv ved første gemning. RavRadar holder det hidtidige punkt i drift, indtil den eksakte kandidat er bevist og ejeren særskilt aktiverer den.</div><div class=\"handbook-stack\"><p><strong>Privat kandidat:</strong> Kandidaten samples i de samme DMI-GRIB-filer, men koordinater og rå værdier gemmes kun i privat cache. Offentlig status viser kun revision, fremdrift og årsagskoder.</p><p><strong>READY-krav:</strong> En fælles strøm-U/V-vandkolonne skal ligge højst 5 km væk. Strøm, bølge, vind og vandstand skal have mindst 96 timers horisont, og den nye punkt-/retningskontekst skal have 48 timers sammenhængende Candidate G-hukommelse.</p><p><strong>Ejerstyret aktivering:</strong> READY skifter intet automatisk. Efter <em>Aktivér klar ændring</em> bygges den eksakte runtime og passerer fuld validering. Først derefter opdateres Supabase med versionskontrol; en nyere adminændring stopper skiftet.</p><p><strong>Recovery:</strong> Det tidligere aktive punkt bevares til rollback, og den opvarmede kandidat kan genbruges efter deployfejl. Ved højst seks lokale warmups vises hele det senest verificerede datasæt; gamle og nye zoner blandes aldrig.</p><p>4.0.292 flytter ingen faktiske punkter eller geometri. Se <code>DEC-0090</code>.</p></div>"
+    },
+    {
+      "id": "mobile-page-cache-self-recovery-4-0-292",
+      "chapter": "74",
+      "title": "Mobil retur og browserens sidecache",
+      "summary": "En halvfærdig Safari/WebKit-side genindlæses rent, mens en færdig forside genoptegner kort, ranglister og femdøgnsvisning fra eksisterende offentlig tilstand.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Mobil Safari kan vise en gemt forside igen uden at starte dens JavaScript forfra. RavRadar kontrollerer derfor aktivt, om siden er komplet, når brugeren vender tilbage.</div><div class=\"handbook-stack\"><p><strong>Ufuldstændig opstart:</strong> Hvis kortgrundlag eller fulde offentlige tilstandsdetaljer ikke blev færdige, genindlæses forsiden automatisk og rent.</p><p><strong>Færdig tilstand:</strong> Leaflet får nyt layout, og zonefarver, <em>Bedste områder</em>, valgt zone og <em>5-dages RavRadar</em> gengives idempotent fra den allerede indlæste tilstand.</p><p><strong>Fail-safe:</strong> Samtidige returhændelser samles. En genoptegningsfejl falder tilbage til ren genindlæsning i stedet for at efterlade tomme felter.</p><p><strong>Ingen faglig eller datamæssig ændring:</strong> Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se <code>DEC-0089</code>.</p></div>"
+    },
     {
       "id": "causal-production-bounded-recovery-4-0-289",
       "chapter": "73",

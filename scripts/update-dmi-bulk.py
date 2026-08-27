@@ -35,6 +35,13 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches
+from lib.coastal_point_staging import (
+    load_private_document as load_coastal_point_stage,
+    prune_hours as prune_coastal_point_stage_hours,
+    save_private_document as save_coastal_point_stage,
+    stage_asset_complete,
+    staged_targets as build_coastal_point_stage_targets,
+)
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -66,6 +73,11 @@ CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow
 CURRENT_COVERAGE_OWNER_AUDIT_PATH = ROOT / "data/diagnostics/current-coverage-owner-audit.json"
 CURRENT_REGIONAL_PROXY_POLICY_PATH = ROOT / "data/current-regional-proxy-policy.json"
 CURRENT_REGIONAL_PROXY_REPORT_PATH = ROOT / "data/diagnostics/current-regional-proxy-pilot.json"
+COASTAL_POINT_STAGE_REVIEWS_PATH = ROOT / "data/admin/direction-reviews.json"
+COASTAL_POINT_STAGE_PATH = pathlib.Path(os.getenv(
+    "COASTAL_POINT_STAGE_PATH",
+    str(ROOT / ".cache/coastal-point-staging/dmi.json"),
+))
 RAW_CACHE_MAX_BYTES = max(256 * 1024 * 1024, int(float(os.getenv("DMI_BULK_RAW_CACHE_MAX_MB", "4096")) * 1024 * 1024))
 STAC_ROOT = os.getenv("DMI_STAC_ROOT", "https://opendataapi.dmi.dk/v1/forecastdata")
 HOURS = max(1, int(os.getenv("DMI_BULK_HOURS", "120")))
@@ -1083,7 +1095,8 @@ def native_component_source(collection: str, model_run: str, valid_time: str, **
 
 def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any],
-                 current_shadow: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 current_shadow: dict[str, Any] | None = None,
+                 private_stage_output: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     selected_vector_choices: dict[tuple[str, str], dict[str, Any]] = {}
@@ -1178,7 +1191,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         if not prefer_vector_choice(previous_choice, candidate_choice):
                             continue
                         distance = float(candidate_choice["distanceKm"])
-                        point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
+                        destination = private_stage_output if zone.get("privateStage") else output
+                        if destination is None:
+                            continue
+                        point = destination["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
                         if family == "current":
                             search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                                 "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
@@ -1232,7 +1248,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 vector_search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                                 continue
                         selected_vector_choices[selection_key] = candidate_choice
-                        touched.add(zone["id"])
+                        if not zone.get("privateStage"):
+                            touched.add(zone["id"])
                         hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                         for key, candidate in ((first_key, first), (second_key, second)):
                             hour[key] = candidate["value"]
@@ -1264,7 +1281,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     nearest = resolved.get(zone["id"])
                     if not nearest:
                         continue
-                    point = output["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
+                    destination = private_stage_output if zone.get("privateStage") else output
+                    if destination is None:
+                        continue
+                    point = destination["zones"].setdefault(zone["id"], {"hourly": {}, "gridPoints": {}, "collections": {}})
                     if collection in MARINE_COLLECTIONS and parameter in MARINE_PARAMETERS:
                         search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                             "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
@@ -1288,7 +1308,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             search["rejectedReason"] = "BETTER_COLLECTION_SELECTED"
                             continue
                         search["selected"] = True
-                    touched.add(zone["id"])
+                    if not zone.get("privateStage"):
+                        touched.add(zone["id"])
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
                     source_extra = {}
@@ -2064,6 +2085,17 @@ def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: d
     write_ocean_diagnostics(result)
 
 
+def scrub_private_stage_diagnostics(diagnostics: dict[str, Any]) -> None:
+    """Keep candidate identities out of support/public diagnostic documents."""
+    for key in ("marineGridSearch",):
+        values = diagnostics.get(key)
+        if isinstance(values, dict):
+            diagnostics[key] = {
+                item_id: value for item_id, value in values.items()
+                if not str(item_id).startswith("STAGED::")
+            }
+
+
 def write_current_field_shadow_checkpoint(
     document: dict[str, Any],
     now_iso: str,
@@ -2306,6 +2338,21 @@ def main() -> int:
     cache_before = raw_cache_inventory()
     current_zone_registry_signature = sampling_registry_signature()
     previous = load_previous(current_zone_registry_signature)
+    zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))
+    part_doc: dict[str, Any] = {"zones": {}}
+    if COASTAL_PART_POINTS_PATH.exists():
+        part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
+    zone_coast_types = {
+        str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
+        for feature in zones_geo.get("features", [])
+        if (feature.get("properties") or {}).get("id")
+    }
+    direction_document = load_document(COASTAL_POINT_STAGE_REVIEWS_PATH)
+    coastal_point_stage_targets = build_coastal_point_stage_targets(
+        direction_document,
+        part_doc,
+        zone_coast_types,
+    )
     removed_unverified_temperature_points = sanitize_water_temperature_surface_integrity(previous)
     removed_obsolete_current_hours = invalidate_obsolete_current_semantics(previous)
     previous.setdefault("diagnostics", {})["removedUnverifiedWaterTemperaturePoints"] = removed_unverified_temperature_points
@@ -2341,6 +2388,7 @@ def main() -> int:
         and time.time() - previous_generated < REFRESH_MINUTES * 60
         and marine_cache_healthy
         and zone_registry_unchanged
+        and not coastal_point_stage_targets
     ):
         # Kun en både tidsmæssigt frisk og funktionelt sund marine-cache genbruges.
         # En nylig parserfejl må aldrig blokere et nyt DKSS-forsøg efter en kodeopdatering.
@@ -2369,7 +2417,6 @@ def main() -> int:
         }, ensure_ascii=False))
         return 0
 
-    zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))
     zones = []
     for feature in zones_geo.get("features", []):
         props, geometry = feature.get("properties") or {}, feature.get("geometry") or {}
@@ -2391,10 +2438,8 @@ def main() -> int:
     # GRIB-felter som hovedzonerne. Det øger kun lokale grid-opslag; det udløser
     # ikke et separat DMI-kald pr. kystdel. De offentlige kystdele indgår i den
     # reelle dækningsnævner; kun private forskningsmål holdes udenfor.
-    part_doc: dict[str, Any] = {"zones": {}}
     zone_coast_types = {zone["id"]: zone.get("coastType") or "east" for zone in zones}
     if COASTAL_PART_POINTS_PATH.exists():
-        part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
         for parent_zone_id, parts in (part_doc.get("zones") or {}).items():
             for part in parts or []:
                 part_id = part.get("partId")
@@ -2409,6 +2454,12 @@ def main() -> int:
                     "coastalPart": True,
                     "parentZoneId": parent_zone_id,
                 })
+
+    # Kandidater samples i samme hentede GRIB-filer, men skrives til en separat
+    # privat cache. De indgår aldrig i den offentlige registrering, dækningsnævner
+    # eller checkpoints, før en READY-kandidat aktiveres eksplicit.
+    zones.extend(coastal_point_stage_targets)
+    coastal_point_stage = load_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage_targets)
 
     # Privat, score-neutral forskningsopsamling. Det roterende udsnit belyser det
     # ydre felt. De otte ejer-godkendte Limfjordsdele tilføjes samtidig som en
@@ -2464,11 +2515,11 @@ def main() -> int:
     # for provenance/audits at skelne datamangler fra en brudt registreringskæde.
     active_output_ids = {
         str(zone["id"]) for zone in zones
-        if zone.get("id") and not zone.get("researchCurrent")
+        if zone.get("id") and not zone.get("researchCurrent") and not zone.get("privateStage")
     }
     zone_config_by_id = {
         str(zone["id"]): zone for zone in zones
-        if zone.get("id") and not zone.get("researchCurrent")
+        if zone.get("id") and not zone.get("researchCurrent") and not zone.get("privateStage")
     }
     initial_zone_records = {
         zone_id: {
@@ -2496,6 +2547,17 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
+    coastal_point_stage.update({
+        "generatedAt": generated,
+        "timeStrideHours": TIME_STRIDE_HOURS,
+        "currentVectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+        "currentVectorSelection": CURRENT_VECTOR_SELECTION,
+        "currentPreferredDistanceKm": CURRENT_PREFERRED_DISTANCE_KM,
+        "currentMaxDistanceKm": CURRENT_MAX_DISTANCE_KM,
+    })
+    prune_coastal_point_stage_hours(coastal_point_stage, generated)
+    if coastal_point_stage_targets:
+        save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     merge_previous(result, previous, active_output_ids)
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
     budget = {"bytes": 0}
@@ -2504,7 +2566,7 @@ def main() -> int:
     # scheduler to stop while most public local scores still lacked current.
     active_zones_config = [
         zone for zone in zones
-        if not zone.get("waterSource") and not zone.get("researchCurrent")
+        if not zone.get("waterSource") and not zone.get("researchCurrent") and not zone.get("privateStage")
     ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     result["diagnostics"]["scheduledCollections"] = scheduled
@@ -2587,6 +2649,32 @@ def main() -> int:
                 if asset["valid"] in previously_processed:
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
+                    if (
+                        coastal_point_stage_targets
+                        and not stage_asset_complete(coastal_point_stage, coastal_point_stage_targets, collection, asset["valid"])
+                        and not should_stop_work()
+                    ):
+                        cached_path = cached_asset_path(str(asset.get("href") or ""))
+                        if cached_path.is_file():
+                            private_diagnostics: dict[str, Any] = {
+                                "gribFieldInventory": {},
+                                "persistentFieldInventory": {},
+                                "marineGridSearch": {},
+                                "batchedGridReads": 0,
+                            }
+                            process_grib(
+                                cached_path,
+                                collection,
+                                run,
+                                asset["valid"],
+                                coastal_point_stage_targets,
+                                {"generatedAt": generated, "zones": {}},
+                                private_diagnostics,
+                                None,
+                                coastal_point_stage,
+                            )
+                            prune_coastal_point_stage_hours(coastal_point_stage, generated)
+                            save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
                     continue
                 if should_stop_work():
                     budget_stop = "bulk runtime budget reached"
@@ -2618,7 +2706,12 @@ def main() -> int:
                     result,
                     result["diagnostics"],
                     current_shadow,
+                    coastal_point_stage,
                 )
+                scrub_private_stage_diagnostics(result["diagnostics"])
+                if coastal_point_stage_targets:
+                    prune_coastal_point_stage_hours(coastal_point_stage, generated)
+                    save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
                 research_run_metrics["samplesWrittenThisRun"] = (
                     int(replay_summary.get("samplesWritten") or 0)
                     + int(result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0)
@@ -2771,6 +2864,10 @@ def main() -> int:
         regional_proxy_targets,
     )
     result["diagnostics"]["freshMarineZoneIds"] = sorted(fresh_marine_zone_ids)
+    scrub_private_stage_diagnostics(result["diagnostics"])
+    if coastal_point_stage_targets:
+        prune_coastal_point_stage_hours(coastal_point_stage, generated)
+        save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     clean_and_summarize(result, fresh_zone_ids, budget)
     result["diagnostics"]["currentCoverageOwnerAudit"] = write_current_coverage_owner_audit(
         current_shadow,

@@ -1,3 +1,18 @@
+## 2026-08-28 – 4.0.292 staged land-/vandpunktaktivering
+
+- Ejerens kommende Sibirien-flytning udløste en systemaudit af adminreview, public builder, DMI-cache, Candidate G-kontekst, moderzoneaggregering, fallback og workflowrækkefølge. Ingen faktisk geometri eller punktdata er ændret.
+- Direkte aktivering er erstattet af privat kandidatopvarmning med eksakt U/V ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory. Offentlig status er sanitiseret.
+- READY kræver særskilt ejerklik. Den eksakte kandidat injiceres før runtimebygning, fulde gates kører, og central promotion bruger version-CAS. Tidligere active override og privat recoverycache bevares.
+- Den komplette fallback accepterer 0/673 global warmup eller højst seks lokale warmups; større eller inkonsistente deltilstande stoppes.
+- Målrettede Python-/Node-kontrakter samt eksisterende DMI-, admin-, workflow- og recoverytests er grønne. Exact-head og produktion afventer. Se DEC-0090.
+
+## 2026-08-27 – 4.0.292 mobil sidecache-selvrecovery
+
+- Ejerens iPhone-symptom samler kort, **Bedste områder** og **5-dages RavRadar** i samme manglende livscyklus: den gamle forside havde kun én top-level opstart og intet `pageshow`-værn, mens WebKit kan genåbne en fetch-afbrudt side fra page cache.
+- Kandidaten installerer et tidligt bootstrapværn, genindlæser ufuldstændig eller afbrudt state og genoptegner ellers hele den offentlige visning idempotent. Samtidige resumehændelser samles; genoptegningsfejl falder tilbage til reload.
+- Målrettet livscyklus-, mobil-, første-paint-, progressiv prognose- og modulversionstest er grøn. Lokal 390 px-retur viser en ren ny opstart. Exact-head, produktion, offentlig runtime og fysisk iPhone afventer.
+- Ejeren ønsker derefter en meget klogere lokal ravassistent; det fortsat separate spor låser først DA/DE/EN-intents og evals og forbliver read-only. Se DEC-0089.
+
 ## 2026-08-27 – 4.0.291 offentlig GPT-OSS-aktivering
 
 - Ejeren gav særskilt go til at sætte **Spørg RavRadar** i offentlig drift med den allerede valgte GPT-OSS 20B-model.
