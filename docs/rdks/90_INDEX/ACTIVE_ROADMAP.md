@@ -7,6 +7,7 @@
 - [x] Genstart fra verificeret suffix efter huller over tre timer uden interpolation eller backfill.
 - [x] Lås engangsrecoveryen til det eksakte 09-checkpoint og kopier kun kompakt state.
 - [x] Bestå målrettede kode- og artifactsimulationer.
+- [x] Bevis den korrigerede produktionsrækkefølge gennem PR #178 og ret kun warmup-audittens modstridende råscorekrav; eksakt 3635-artifact og fallbackpublicering er grønne.
 - [ ] Bestå version/RDKS, exact-head, merge, fuld frisk produktion og offentlig funktionskontrol.
 
 P1-oversættelse og Spørg RavRadar afventer P0-lukning. Se DEC-0084.

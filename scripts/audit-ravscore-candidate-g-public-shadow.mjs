@@ -288,9 +288,18 @@ export function auditCandidateGPublicShadow(document, {
       const activePublic = part?.current?.[mode];
       const activeScore = activePublic?.score;
       const candidateMode = candidate?.modes?.[mode];
-      add(candidateMode?.available === true && finite(candidateMode?.score), 'CANDIDATE_SCORE_MISSING');
-      add(Object.keys(CANDIDATE_G_WEIGHTS).every(key => finite(candidateMode?.weightedContributions?.[key])), 'CANDIDATE_CONTRIBUTION_MISSING');
-      add(finite(candidateMode?.physicalGateFactor), 'CANDIDATE_PHYSICAL_GATE_MISSING');
+      const candidateModeReady = candidateMode?.available === true && finite(candidateMode?.score);
+      const candidateModeFailClosed = candidateMode?.available === false
+        && candidateMode?.score === null
+        && typeof candidateMode?.reason === 'string'
+        && candidateMode.reason.length > 0;
+      if (candidateModeReady || memoryReady) {
+        add(candidateModeReady, 'CANDIDATE_SCORE_MISSING');
+        add(Object.keys(CANDIDATE_G_WEIGHTS).every(key => finite(candidateMode?.weightedContributions?.[key])), 'CANDIDATE_CONTRIBUTION_MISSING');
+        add(finite(candidateMode?.physicalGateFactor), 'CANDIDATE_PHYSICAL_GATE_MISSING');
+      } else {
+        add(candidateModeFailClosed, 'NOT_READY_CANDIDATE_MODE_NOT_FAIL_CLOSED');
+      }
       if (!memoryReady) {
         add(activePublic?.available === false && !finite(activeScore), 'NOT_READY_CANDIDATE_EXPOSED_PUBLIC_SCORE');
         continue;
@@ -449,16 +458,9 @@ export function syntheticCandidateGPublicShadowDocument() {
     for (let local = 0; local < partCount; local += 1) {
       const partId = `part-${partNumber}`;
       const mode = {
-        available: true,
-        score: 50,
-        components: { huntability: 50, transport: 50, delivery: 50, transportAndDelivery: 50, mobilisation: 50 },
-        weightedContributions: { huntability: 10, transportAndDelivery: 25, mobilisation: 15 },
-        additiveScore: 50,
-        physicalGateFactor: 1,
-        wadersHuntabilityMaximum: null,
-        wadersHuntabilityLimitApplied: false,
-        outflowExhaustionGateApplied: false,
-        outflowExhaustionExplanationDa: null,
+        available: false,
+        score: null,
+        reason: 'MISSING_REQUIRED_PHASE_D_COMPONENT',
       };
       parts[partId] = {
         zoneId,
@@ -560,6 +562,15 @@ async function main() {
     assert.equal(verifiedGapRecoveryReport.status, 'passed',
       'a compact verified suffix restart must pass the production audit as fail-closed warmup');
     assert.equal(verifiedGapRecoveryReport.stateContinuation.verifiedTimeGapRecoveryPartCount, EXPECTED_PARTS);
+    const malformedWarmupDocument = syntheticCandidateGPublicShadowDocument();
+    Object.values(malformedWarmupDocument.coastalParts.parts)[0].candidateG.modes.waders = {
+      available: false,
+      score: 50,
+      reason: 'MISSING_REQUIRED_PHASE_D_COMPONENT',
+    };
+    assert.deepEqual(auditCandidateGPublicShadow(malformedWarmupDocument).errors,
+      ['NOT_READY_CANDIDATE_MODE_NOT_FAIL_CLOSED'],
+      'En umoden Candidate G-mode må hverken bære en score eller mangle en entydig fejlårsag.');
     const leakDocument = syntheticCandidateGPublicShadowDocument();
     Object.values(leakDocument.coastalParts.parts)[0].current.waders = { available: true, score: 50 };
     assert.equal(auditCandidateGPublicShadow(leakDocument).status, 'failed',

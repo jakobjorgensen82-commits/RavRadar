@@ -9,6 +9,7 @@
 - Engangsrecoveryen er låst til det kendte 09-checkpoint og højst tre timers genoptagelse. Den faktiske 673-deles prøve kopierede ingen vejr-, score- eller rå vektordata.
 - Lokal `validate:source` inklusive releasegate er grøn, og separat geodatakontrol viser kun topversionen 4.0.287 → 4.0.288. Bestå exact-head, merge, frisk produktion og offentlig browserkontrol, og opdatér derefter kandidatmarkører til produktionsverificeret evidens.
 - PR #176/exact-head `33066322196` er merged som `16ad8300`. Produktion `33066416034` beviste den eksakte 09-recovery, men stoppede før DMI/deploy ved korrekt fallbackaudit, fordi checkpointet var indlæst før fallbackkopien. Opfølgningen flytter kun checkpointblokken efter den sunde 00-fallbackstage og bevarer kildegaten før begge.
+- PR #178/exact-head `33066897710` er merged som `5f9ee093`. Produktion `33066980965` nåede gennem fallbackstage, checkpoint, DMI/Copernicus og frisk runtime, men den sidste audit havde et modstridende krav om rå kandidatscore under national fail-closed warmup. Artifact `RavRadar-support-3635` består den snævert korrigerede audit på 210/673 med 673 accepterede states, nul replaymismatch og 0/673 `READY`; den efterfølgende lokale publiceringsprøve aktiverer det komplette 00-fallbackdataset. Bestå nu ny exact-head, merge, produktion og offentlig browserkontrol.
 - P1-oversættelse og Edge-implementering af Spørg RavRadar må først fortsætte efter dette P0. Se DEC-0084.
 
 ## Aktiv afgrænset leverance – gratis Spørg RavRadar-evals
