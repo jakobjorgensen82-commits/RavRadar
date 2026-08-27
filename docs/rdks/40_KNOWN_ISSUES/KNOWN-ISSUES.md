@@ -1,5 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## Aktiv P0-kandidat 4.0.288 – Candidate G-selvrecovery
+
+- **ISSUE-CANDIDATE-G-GAP-DEPLOY-DEADLOCK – LØST I KANDIDAT / PRODUKTION AFVENTER:** Et nitimers hul gav korrekt 673 `WINDOW_HAS_TIME_GAP`, men checkpointet fra den fejlede produktion blev ikke næste hydrering, så normal drift kunne ikke begynde en frisk sammenhængende suffix. Statepipelinen genstarter nu eksplicit fra verificerede prøver efter hullet og modner uden backfill.
+- **ISSUE-PUBLIC-STALE-COMPLETE-DATA-COLLAPSE – LØST I KANDIDAT / PRODUKTION AFVENTER:** Browseren kasserede hele det seneste komplette 00-datasæt efter otte timer. Det gav sorte zoner og tomme ranglister, og den efterfølgende detaljelæsning beskrev misvisende et datasetmix. En hashkontrolleret 48-timers nødvisning bevarer nu ét sammenhørende dataset med tydelig aktualitetsadvarsel.
+- **ISSUE-CANDIDATE-G-GAP-CHECKPOINT-RECOVERY – TIDSAFGRÆNSET KANDIDAT:** Den verificerede 09-state fra run `33059522170` kan kun bruges ved den eksakte kendte 00-lineage, korrekt 673-deles hash og højst tre timers genoptagelse. Uden for vinduet er den automatisk inaktiv; vejr, scores, vektorer og private data kopieres aldrig.
+- **ISSUE-4.0.288-PRODUCTION-CLOSURE – ÅBEN:** Målrettede tests og virkelige dataminimerede artifactsimulationer er grønne. Exact-head, merge, fuld frisk produktion og positiv offentlig browserkontrol mangler endnu.
+
 ## Aktiv P1 – gratis AI-valg til Spørg RavRadar
 
 - **ISSUE-ASSISTANT-DOMAIN-GATE – KONTRAKT LÅST / PRODUKTIONSKODE ÅBEN:** Den historiske Edge blokerer interne sikkerhedsord, men ikke almindelige uvedkommende emner. DEC-0083 kræver fast afvisning før providerkald, struktureret modeldisposition og servervalidering. Offentlig remote forbliver deaktiveret.

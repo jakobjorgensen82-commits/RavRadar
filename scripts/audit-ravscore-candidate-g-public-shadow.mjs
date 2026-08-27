@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import assert from 'node:assert/strict';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_PROFILE_ID,
@@ -135,6 +136,7 @@ export function auditCandidateGPublicShadow(document, {
   let memoryReadyPartCount = 0;
   let warmupPartCount = 0;
   let acceptedNearBoundaryIncompletePartCount = 0;
+  let verifiedTimeGapRecoveryPartCount = 0;
   let technicalDiagnosticsModeCount = 0;
   let transportStateReplayMismatchCount = 0;
   const persistedTransportPotentials = [];
@@ -240,6 +242,14 @@ export function auditCandidateGPublicShadow(document, {
     add(finite(state?.mobilisationPotential) && Number(state.mobilisationPotential) >= 0 && Number(state.mobilisationPotential) <= 100, 'MOBILISATION_STATE_INVALID');
     if (candidate?.initialStateAccepted === true) acceptedStateCount += 1;
     else resetStateCount += 1;
+    if (candidate?.currentTransition === 'VERIFIED_TIME_GAP_RECOVERY') {
+      verifiedTimeGapRecoveryPartCount += 1;
+      add(state?.transportMemoryReady === false
+        && state?.transportMemoryStatus === 'WINDOW_INCOMPLETE'
+        && Number(state?.transportMemoryCoverageHours) >= 0
+        && Number(state?.transportMemoryCoverageHours) < 48,
+      'VERIFIED_TIME_GAP_RECOVERY_STATE_INVALID');
+    }
     if (candidate?.initialStateAccepted === true
       && state?.transportMemoryReady === false
       && state?.transportMemoryStatus === 'WINDOW_INCOMPLETE'
@@ -381,6 +391,7 @@ export function auditCandidateGPublicShadow(document, {
       memoryReadyPartCount,
       warmupPartCount,
       acceptedNearBoundaryIncompletePartCount,
+      verifiedTimeGapRecoveryPartCount,
       transportStateReplayMismatchCount,
       persistedTransportPotential: summarize(persistedTransportPotentials),
       replayedTransportPotential: summarize(replayedTransportPotentials),
@@ -400,7 +411,7 @@ export function auditCandidateGPublicShadow(document, {
   };
 }
 
-function syntheticDocument() {
+export function syntheticCandidateGPublicShadowDocument() {
   const referenceAt = '2026-08-23T10:00:00.000Z';
   const zones = {};
   const parts = {};
@@ -529,7 +540,7 @@ function syntheticDocument() {
 async function main() {
   const arguments_ = process.argv.slice(2);
   if (arguments_.includes('--self-test')) {
-    const report = auditCandidateGPublicShadow(syntheticDocument());
+    const report = auditCandidateGPublicShadow(syntheticCandidateGPublicShadowDocument());
     assert.equal(report.status, 'passed');
     assert.equal(report.coverage.zoneCount, EXPECTED_ZONES);
     assert.equal(report.coverage.partCount, EXPECTED_PARTS);
@@ -539,11 +550,21 @@ async function main() {
     assert.equal(report.stateContinuation.warmupPartCount, EXPECTED_PARTS);
     assert.equal(report.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
     assert.equal(report.privacy.partIdentifiersIncluded, false);
-    const leakDocument = syntheticDocument();
+    const verifiedGapRecoveryDocument = syntheticCandidateGPublicShadowDocument();
+    for (const part of Object.values(verifiedGapRecoveryDocument.coastalParts.parts)) {
+      part.candidateG.initialStateAccepted = true;
+      part.candidateG.initialStateResetReason = null;
+      part.candidateG.currentTransition = 'VERIFIED_TIME_GAP_RECOVERY';
+    }
+    const verifiedGapRecoveryReport = auditCandidateGPublicShadow(verifiedGapRecoveryDocument);
+    assert.equal(verifiedGapRecoveryReport.status, 'passed',
+      'a compact verified suffix restart must pass the production audit as fail-closed warmup');
+    assert.equal(verifiedGapRecoveryReport.stateContinuation.verifiedTimeGapRecoveryPartCount, EXPECTED_PARTS);
+    const leakDocument = syntheticCandidateGPublicShadowDocument();
     Object.values(leakDocument.coastalParts.parts)[0].current.waders = { available: true, score: 50 };
     assert.equal(auditCandidateGPublicShadow(leakDocument).status, 'failed',
       'En gammel eller opfundet offentlig score må ikke lække ud, når Candidate G-historikken mangler.');
-    const cadencePhaseRegressionDocument = syntheticDocument();
+    const cadencePhaseRegressionDocument = syntheticCandidateGPublicShadowDocument();
     const cadencePhaseEvidence = Array.from({ length: 16 }, (_, index) => ({
       time: new Date(Date.parse(cadencePhaseRegressionDocument.generatedAt)
         - (45 - index * 3) * 3_600_000).toISOString(),
@@ -578,6 +599,7 @@ async function main() {
       `ready=${report.stateContinuation.memoryReadyPartCount}`,
       `warmup=${report.stateContinuation.warmupPartCount}`,
       `acceptedNearBoundaryIncomplete=${report.stateContinuation.acceptedNearBoundaryIncompletePartCount}`,
+      `verifiedGapRecovery=${report.stateContinuation.verifiedTimeGapRecoveryPartCount}`,
       `replayMismatch=${report.stateContinuation.transportStateReplayMismatchCount}`,
       `modeEvaluations=${report.coverage.modeEvaluationCount}`,
       `technicalDiagnostics=${report.coverage.technicalDiagnosticsModeCount}`,
@@ -586,4 +608,6 @@ async function main() {
   if (report.status !== 'passed') process.exitCode = 1;
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  await main();
+}

@@ -143,8 +143,10 @@ for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.
 }
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
+  gapCheckpoint: text.indexOf('name: Inspect failed-run Candidate G gap checkpoint recovery'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
+  fallbackStage: text.indexOf('name: Stage audited last verified Candidate G public fallback'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
@@ -152,6 +154,7 @@ const positions = {
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
   publicAudit: text.indexOf('name: Audit actual Candidate G public runtime before deploy'),
+  fallbackPublish: text.indexOf('name: Publish bounded Candidate G recovery fallback when current runtime is warming up'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
@@ -160,7 +163,7 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','preflight','sourceGate','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','reference','validate','gate','artifact'];
+const expected = ['hydrate','gapCheckpoint','preflight','sourceGate','fallbackStage','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','fallbackPublish','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
@@ -226,6 +229,44 @@ for (const marker of [
 }
 if (publicAuditBlock.includes('continue-on-error')) {
   throw new Error('Den faktiske Candidate G public runtime-gate må ikke være vejledende.');
+}
+const gapCheckpointSection = text.slice(positions.gapCheckpoint, positions.preflight);
+for (const marker of [
+  'node scripts/restore-candidate-g-gap-checkpoint.mjs',
+  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'uses: actions/download-artifact@v8',
+  'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
+  'unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip',
+  'project/data/live/conditions.json',
+  'Restore only verified compact suffix from failed Candidate G run',
+]) {
+  if (!gapCheckpointSection.includes(marker)) throw new Error(`Candidate G-gapcheckpointet mangler ${marker}`);
+}
+const fallbackStageSection = text.slice(positions.fallbackStage, positions.dmiBulk);
+for (const marker of [
+  'uses: actions/cache/restore@v6',
+  'candidate-g-last-ready-public-v1-',
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
+  '--stage',
+  '--github-output "$GITHUB_OUTPUT"',
+  'uses: actions/cache/save@v6',
+  "steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true'",
+]) {
+  if (!fallbackStageSection.includes(marker)) throw new Error(`Candidate G-nødgrundlaget mangler ${marker}`);
+}
+const fallbackPublishBlockEnd = text.indexOf('\n\n', positions.fallbackPublish);
+const fallbackPublishBlock = text.slice(positions.fallbackPublish,
+  fallbackPublishBlockEnd < 0 ? text.length : fallbackPublishBlockEnd);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
+  '--publish',
+  '--audit .geometry-v2-work/candidate-g-public-runtime-audit.json',
+]) {
+  if (!fallbackPublishBlock.includes(marker)) throw new Error(`Candidate G-nødpubliceringen mangler ${marker}`);
+}
+if (fallbackPublishBlock.includes('continue-on-error')) {
+  throw new Error('Candidate G-nødpubliceringen må ikke skjule fejl.');
 }
 const beforeWeather = text.slice(0, positions.weather);
 if (/run:\s+npm run validate(?:\n|$)/.test(beforeWeather) || beforeWeather.includes('npm run release:gate')) {

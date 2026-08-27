@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "reason": "One-time recovery of the verified 09 UTC compact Candidate G checkpoint from failed production run 33059522170. Only the continuous verified suffix is retained; weather, scores, vectors, coordinates and private data are not copied.",
+  "targetDatasetId": "rr-20260827013448-210",
+  "targetProductionReferenceAt": "2026-08-27T00:00:00.000Z",
+  "sourceRunId": "33059522170",
+  "sourceArtifactName": "RavRadar-support-3633",
+  "sourceDatasetId": "rr-20260827095550-210",
+  "sourceProductionReferenceAt": "2026-08-27T09:00:00.000Z",
+  "sourcePartCount": 673,
+  "sourceStateSha256": "bca1fdb020a1f20b2b9621de6dfb89505ab37f1fe665ca019372dfd62fbfbc17",
+  "maximumResumeGapHours": 3
+}

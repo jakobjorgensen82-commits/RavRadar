@@ -1,5 +1,15 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-27 – sorte zoner og automatisk Candidate G-genopretning
+
+1. Ejeren bad om at stoppe AI-/oversættelsessporet og først forklare, hvorfor zonerne blev sorte, og **Bedste områder** samt **5-dages RavRadar** ikke virkede.
+2. Den sidste sunde produktion var `rr-20260827013448-210` ved 00 UTC med 210 zoner og 673/673 `READY`. Browserens otte-timersgrænse kasserede hele datasættet.
+3. Run `33059522170` byggede 09 UTC efter et nitimers hul og stoppede korrekt med 673 `WINDOW_HAS_TIME_GAP`; intet fejlet datasæt blev deployet.
+4. Ejeren krævede både størst mulig akut gendannelse og en permanent løsning, hvor én fejlhentning ikke vælter systemet.
+5. DEC-0084 låser et helt auditeret fallbackdataset i højst 48 timer med klar aktualitetsadvarsel, ingen blanding og atomisk skift ved 673/673 `READY`.
+6. Huller over tre timer genstarter fra reelle suffixprøver uden interpolation/backfill. Et eksakt hash- og tidslåst 09-checkpoint kan redde op til tre timers modning uden at kopiere vejr, scores, rå vektorer eller private data.
+7. Målrettede tests og dataminimerede virkelige artifactsimulationer er grønne. Exact-head, produktion og offentlig verifikation afventer.
+
 ## 2026-08-27 – gratis Spørg RavRadar-forundersøgelse
 
 1. Ejeren bad om en grundig analyse før bred implementering og præciserede derefter, at en eventuel AI skal være gratis og ikke kunne bruges til uvedkommende spørgsmål som en rouladeopskrift.

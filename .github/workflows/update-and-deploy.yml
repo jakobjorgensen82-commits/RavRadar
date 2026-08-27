@@ -135,7 +135,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.287 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Inspect verified Candidate G continuation recovery
         id: candidate-g-recovery
@@ -168,6 +168,41 @@ jobs:
           node scripts/restore-candidate-g-continuation.mjs
           --source-root .cache/candidate-g-recovery-source
 
+      - name: Inspect failed-run Candidate G gap checkpoint recovery
+        id: candidate-g-gap-checkpoint
+        run: >-
+          node scripts/restore-candidate-g-gap-checkpoint.mjs
+          --check
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Download verified failed-run Candidate G checkpoint
+        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.candidate-g-gap-checkpoint.outputs.source_artifact_name }}
+          run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-checkpoint-artifact
+
+      - name: Extract only failed-run Candidate G conditions checkpoint
+        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/candidate-g-gap-checkpoint-source/data/live
+          unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
+          test -s .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
+
+      - name: Restore only verified compact suffix from failed Candidate G run
+        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        run: >-
+          node scripts/restore-candidate-g-gap-checkpoint.mjs
+          --source-root .cache/candidate-g-gap-checkpoint-source
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
           mkdir -p .cache
@@ -187,7 +222,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.287 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -205,6 +240,37 @@ jobs:
       - name: Run fast source gate before expensive data refresh
         if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'
         run: npm run validate:source
+
+      - name: Restore last verified Candidate G public fallback
+        if: steps.preflight.outputs.should_run == 'true'
+        id: candidate-g-public-fallback-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/candidate-g-last-ready-public
+          key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            candidate-g-last-ready-public-v1-
+
+      - name: Stage audited last verified Candidate G public fallback
+        if: steps.preflight.outputs.should_run == 'true'
+        id: candidate-g-public-fallback-stage
+        env:
+          RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+        run: >-
+          node scripts/candidate-g-public-recovery-fallback.mjs
+          --stage
+          --source data/live/conditions.json
+          --manifest data/live/manifest.json
+          --cache-root .cache/candidate-g-last-ready-public
+          --deployed-base-url "$RAVRADAR_DEPLOYED_BASE_URL"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Save last verified Candidate G public fallback
+        if: steps.preflight.outputs.should_run == 'true' && (steps.candidate-g-public-fallback-cache.outputs.cache-matched-key == '' || steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true')
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/candidate-g-last-ready-public
+          key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Rebuild centrally reviewed coastal-part sampling points
         if: steps.preflight.outputs.should_run == 'true'
@@ -307,7 +373,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.287 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -433,7 +499,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.287 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points
@@ -450,6 +516,16 @@ jobs:
           node scripts/audit-ravscore-candidate-g-public-shadow.mjs
           --input data/live/conditions.json
           --output .geometry-v2-work/candidate-g-public-runtime-audit.json
+
+      - name: Publish bounded Candidate G recovery fallback when current runtime is warming up
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          node scripts/candidate-g-public-recovery-fallback.mjs
+          --publish
+          --audit .geometry-v2-work/candidate-g-public-runtime-audit.json
+          --manifest data/live/manifest.json
+          --cache-root .cache/candidate-g-last-ready-public
+          --output-root data/live
 
       - name: Generate and strictly validate production reference zones
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'

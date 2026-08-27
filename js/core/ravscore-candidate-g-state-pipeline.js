@@ -228,6 +228,7 @@ export function buildCandidateGDerivedStateSeries(
     const bounded = buildBoundedCurrentTransportMemory(transportEvidence, {
       ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
       referenceTime: transportReferenceAt,
+      restartAfterVerifiedTimeGap: true,
     });
     transportEvidence = bounded.evidence;
     const replayed = bounded.result;
@@ -247,7 +248,8 @@ export function buildCandidateGDerivedStateSeries(
         ),
     };
     let phase = bounded.memoryReady ? replayed?.phase ?? 'RETAINED_OR_NEUTRAL' : 'BOUNDED_MEMORY_WARMUP';
-    if (nativeCadenceHold) phase = 'NATIVE_CADENCE_HOLD';
+    if (bounded.recovery?.reason === 'VERIFIED_TIME_GAP_SUFFIX_RESTART') phase = 'VERIFIED_TIME_GAP_RECOVERY';
+    else if (nativeCadenceHold) phase = 'NATIVE_CADENCE_HOLD';
     else if (existingAtSample) phase = verified ? 'SAME_TIME_HOLD' : 'UNVERIFIED_PAUSE';
     else if (!verified) phase = 'UNVERIFIED_PAUSE';
     const row = {

@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Aktiv P0-kandidat 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
+
+- Senest verificerede offentlige datasæt er `rr-20260827013448-210` ved 00 UTC med 210/210 aktive zoner og 673/673 `READY`. Det er mere end otte timer gammelt og blev derfor helt forkastet i browseren, hvilket gjorde zoner sorte og tømte rangliste/femdøgnsvisning.
+- Run `33059522170` byggede 09 UTC efter et nitimers hul. Audit stoppede alle 673 states som `WINDOW_HAS_TIME_GAP`; intet fejlet artifact blev deployet.
+- 4.0.288-kandidaten viser det nyeste komplette, hashkontrollerede 210/673/1.346-datasæt i højst 48 timer med tydelig aktualitetsadvarsel. Startup og detaljer bindes til samme dataset-id.
+- Frisk Candidate G-state genstarter kun fra den verificerede suffix efter et hul over tre timer og bliver offentlig samlet ved 673/673 `READY`. Der opfindes ingen målinger, og en delvis eller fejlet ny runtime publiceres ikke.
+- Den engangsdefinerede 09-checkpointrecovery er hash-, dataset-, delantal- og tidslåst og kopierer alene kompakt afledt state. Vejr, scores, rå U/V, koordinater, geometri, land-/vandpunkter og private data kopieres ikke.
+- Målrettet kode- og artifactverifikation er grøn; exact-head, produktion og offentlig browserverifikation afventer. 4.0.287 er fortsat seneste produktionsverificerede baseline. Se DEC-0084.
+
 ## Aktiv P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
 
 - Ejeren kræver nul betaling. En eventuel fjernmodel må kun bruge et verificeret Free Tier-projekt uden billing eller betalt overflow; kvoteudløb og providerfejl skal falde tilbage lokalt.

@@ -1,5 +1,17 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P0-CHECKPOINT – 2026-08-27 – automatisk Candidate G-genopretning
+
+- Seneste komplette offentlige baseline er fortsat `rr-20260827013448-210` ved 00 UTC med 210 zoner og 673/673 `READY`. En senere kørsel `33059522170` byggede 09 UTC efter et nitimers hul og stoppede korrekt med 673 `WINDOW_HAS_TIME_GAP`; den blev ikke deployet.
+- Den sorte zonevisning samt tomme **Bedste områder** og **5-dages RavRadar** skyldes, at den offentlige datalæser kasserer hele den komplette 00-runtime efter otte timer. Det efterfølgende forkastede dataset-id gav desuden en misvisende blandingsfejl i detaljelaget.
+- 4.0.288-kandidaten bevarer ét komplet, auditeret fallbackdataset i højst 48 timer med tydelig **ikke aktuelle data**-advarsel. Startup, detaljer, rangliste og femdøgnsvisning bruger samme dataset; der blandes aldrig gammelt og nyt.
+- Candidate G genstarter efter et verificeret hul over tre timer fra den reelle sammenhængende suffix og modner i baggrunden uden interpolation eller backfill. Først ved 673/673 `READY` og grøn faktisk runtimeaudit fjernes fallbacken atomisk.
+- En engangsrecovery er låst til workflow `33059522170`, artifact `RavRadar-support-3633`, 09 UTC, 673 dele, eksakt statehash og højst tre timers genoptagelse. Den kopierer kun kompakt state, aldrig vejr, scores, rå vektorer, koordinater eller private data.
+- Målrettede tests, dataminimerede prøver mod de virkelige 00/09-artifacts og lokal `validate:source` inklusive releasegate er grønne. Versionssynkroniseringen ændrer kun topversionen i de to beskyttede geodatafiler. Exact-head, merge, frisk produktion og offentlig browserkontrol udestår; kald ikke 4.0.288 produktionsverificeret endnu.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte. Candidate G 20/50/30, fysik, vejrværdier, normal sortering og konto-/turdata ændres ikke. Se DEC-0084.
+
+Dette P0-spor går foran de planlagte P1-spor om oversættelse og Spørg RavRadar. Brug Sol/Ekstra høj gennem slutvalidering og produktion.
+
 ## AKTUELT P1-CHECKPOINT – 2026-08-27 – gratis Spørg RavRadar-modelvalg
 
 - Ejeren har fastlagt, at en eventuel fjern-AI skal være gratis og kun svare på ravrelevante spørgsmål. DEC-0083 kræver Free Tier uden billing eller betalt overflow; kvoteudløb giver lokal fallback.

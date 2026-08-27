@@ -1,3 +1,12 @@
+## 4.0.288 – automatisk Candidate G-genopretning (2026-08-27)
+
+- Bevarer det seneste komplette, auditerede Candidate G-datasæt ved fejlet eller ufuldstændig ny datahentning og publicerer aldrig en halv ny runtime.
+- Viser fallbacken som ét atomisk startup-/detaljedatasæt i højst 48 timer med tydelig besked om, at dataene ikke er aktuelle; **Bedste områder** og **5-dages RavRadar** kan derfor fortsætte sikkert.
+- Genstarter Candidate G fra den reelle verificerede suffix efter et hul over tre timer og modner ny state i baggrunden uden interpolation eller backfill. Automatisk skift sker først ved 673/673 `READY` og grøn faktisk runtimeaudit.
+- Tilføjer en eksakt hash- og tidslåst engangsrecovery af 09 UTC-checkpointet fra den fejlede produktion `33059522170`; kun kompakt afledt state kopieres.
+- Målrettede tests og virkelige, dataminimerede artifactsimulationer er grønne. Exact-head-, produktions- og browserlukning afventer. Se DEC-0084 og `CHANGELOG-4.0.288.md`.
+- Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
 ## Ikke udgivet – gratis Spørg RavRadar-forundersøgelse (2026-08-27)
 
 - Auditerer den nuværende lokale/Edge-assistent mod Candidate G og dokumenterer de åbne produktionshuller uden at aktivere fjern-AI.

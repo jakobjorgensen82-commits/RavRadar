@@ -84,6 +84,29 @@ ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versions
 for(const workflowVersion of workflowUserAgentVersions){
   ok(workflowVersion===version,`Produktionsworkflowets User-Agent viser ${workflowVersion}, men releaseversionen er ${version}`);
 }
+for(const marker of [
+  'node scripts/restore-candidate-g-gap-checkpoint.mjs',
+  'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
+  '--stage',
+  '--publish',
+  'candidate-g-last-ready-public-v1-',
+  'Audit actual Candidate G public runtime before deploy',
+]){
+  ok(workflow.includes(marker),`Produktionsworkflowet mangler Candidate G-selvrecovery: ${marker}`);
+}
+const candidateGMemory=await read('js/core/ravscore-regime-memory.js');
+const candidateGStatePipeline=await read('js/core/ravscore-candidate-g-state-pipeline.js');
+const publicRecovery=await read('scripts/candidate-g-public-recovery-fallback.mjs');
+const publicDataService=await read('js/services/data-service.js');
+const gapCheckpoint=JSON.parse(await read('data/admin/candidate-g-gap-checkpoint-recovery.json'));
+ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGMemory.includes('VERIFIED_TIME_GAP_SUFFIX_RESTART'),'Candidate G-hukommelsen mangler eksplicit opt-in til verificeret suffixgenstart');
+ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
+ok(publicRecovery.includes('maximumAgeHours: 48')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 48-timers hard cap eller fail-closed audit');
+ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
+ok(publicApp.includes('Dataene er ikke aktuelle'),'Den offentlige brugerflade advarer ikke om nøddriftens aktualitet');
+ok(String(gapCheckpoint.sourceRunId)==='33059522170'&&gapCheckpoint.sourceArtifactName==='RavRadar-support-3633'&&gapCheckpoint.maximumResumeGapHours===3,'Det engangs-godkendte Candidate G-gapcheckpoint er ikke låst til den verificerede kilde og tre timer');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md'),'RDKS mangler DEC-0084 om Candidate G-selvrecovery');
 for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }
