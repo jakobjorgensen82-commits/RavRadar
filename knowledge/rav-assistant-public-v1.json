@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "rav-assistant-public-knowledge-v1",
+  "releaseVersion": "4.0.287",
+  "scoreModel": {
+    "id": "candidate-g",
+    "publicOnly": true,
+    "weights": {
+      "huntability": 20,
+      "transport": 50,
+      "mobilisation": 30
+    }
+  },
+  "locales": ["da", "de", "en"],
+  "allowedTopics": [
+    "amber-identification",
+    "amber-hunting-equipment",
+    "amber-hunting-technique",
+    "public-ravradar-forecast",
+    "candidate-g-explanation",
+    "wind-waves-current-water-level",
+    "coastal-hunting-safety-boundary"
+  ],
+  "forbiddenContext": [
+    "account-data",
+    "trip-data",
+    "personal-data",
+    "precise-user-location",
+    "credentials",
+    "internal-rules",
+    "internal-diagnostics",
+    "raw-current-vectors",
+    "coordinates",
+    "complete-zone-or-conditions-datasets"
+  ],
+  "facts": [
+    {
+      "id": "score.candidate-g-only",
+      "text": "Candidate G is RavRadar's only public score model. Older score models must not be used as public fallback."
+    },
+    {
+      "id": "score.weights-20-50-30",
+      "text": "Candidate G combines 20 percent huntability, 50 percent transport towards the coast and 30 percent amber mobilisation."
+    },
+    {
+      "id": "score.local-missing",
+      "text": "If Candidate G lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from an older model, another zone, another coastal part or another hour."
+    },
+    {
+      "id": "score.no-find-guarantee",
+      "text": "RavScore describes modelled amber-hunting conditions. It never promises that amber will be found and is not statistically calibrated against enough representative find and no-find trips."
+    },
+    {
+      "id": "safety.not-a-safety-rating",
+      "text": "RavScore is not a safety assessment. The user must assess current, depth, seabed, water level, waves, weather and local conditions at the site."
+    },
+    {
+      "id": "huntability.waders-wind-led",
+      "text": "For waders hunting, wind is the main huntability signal. Huntability is 100 through 6 metres per second, then falls; significant wave height is only a soft downward correction. A waders score can never exceed waders huntability. Beach hunting has no corresponding huntability cap."
+    },
+    {
+      "id": "transport.current-led",
+      "text": "Verified current is the main transport signal. Transport towards the coast is favoured, but alongshore flow can still move amber and is not automatically worthless. Outflow must not be described as delivery towards the coast."
+    },
+    {
+      "id": "mobilisation.wave-memory",
+      "text": "Amber mobilisation is driven by one wave-energy state based on wave height squared times wave period. It builds over about four hours and decays with a 48-hour half-life, so the period after energetic weather can remain relevant. These are tested working rules, not universal natural limits."
+    },
+    {
+      "id": "water-level.context",
+      "text": "Water level can move or expose the wash line and affect access to hunting areas. It must be interpreted with the other conditions and is not by itself proof of amber."
+    },
+    {
+      "id": "public-context.selected-zone-only",
+      "text": "A remote assistant may explain only the small selected-zone public context supplied by RavRadar. National rankings and exact best-time calculations remain deterministic RavRadar functions and must not be invented by the model."
+    }
+  ],
+  "fixedRefusals": {
+    "da": "Jeg kan kun hjælpe med rav, ravjagt og forhold, der har betydning for en ravtur.",
+    "de": "Ich kann nur bei Fragen zu Bernstein, Bernsteinsuche und Bedingungen für eine Bernsteinsuche helfen.",
+    "en": "I can only help with amber, amber hunting, and conditions relevant to an amber-hunting trip."
+  }
+}

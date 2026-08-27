@@ -1,3 +1,11 @@
+## 2026-08-27 – gratis og domæneafgrænset modelvalg til Spørg RavRadar
+
+- Ejeren krævede nul betaling og et emnehegn, så assistenten ikke kan bruges til eksempelvis rouladeopskrifter. DEC-0083 låser Free Tier uden billing/betalt overflow, treleddet routing og lokal fallback.
+- Den offentlige videnspakke binder ti allowlistede Candidate G-fakta til 4.0.287. Evalpakken har 45 balancerede DA/DE/EN-cases, herunder åbne uvedkommende emner, der ikke matcher den faste afvisningsordliste.
+- Live-runneren er dobbelt opt-in, stateless med `store=false`, kalder som standard kun remote-kandidatcases og gemmer ingen nøgle eller komplette svar. Lokal credentialinstallation skete uden Git eller output.
+- `gemini-3.7-flash` gav fem timeouts ved 12/30 sekunder, inklusive low thinking, og blev afvist til chat-use-caset. `gemini-3.5-flash-lite`/low bestod den endelige 27-case suite 100 % med DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
+- Flash-Lite er valgt til næste, fortsat deaktiverede Edge-kandidat. Offentlig 4.0.287 forbliver local-only; gatewayimplementering, rate-limit/fallback/rollback og særskilt ejer-go til aktivering udestår. Score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+
 ## 2026-08-26–27 – 4.0.287 flytter normal turvækst til EU-D1, produktionsverificeret
 
 - Ejeren besluttede en færdig hybridarkitektur fra første dag med eksplicit Supabase-rollback.
@@ -2276,3 +2284,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Den globale current-dækning vurderede samtidig alle fremtidige prognoserækker. Den bindes nu til den fælles aktuelle reference, så et senere lokalt prognosehul ikke gør current-status falsk negativ.
 - Offentlig aktuel liste og alle fem prognosedage er sammenlignet for strand og waders. De bruger mode-specifikke værdier; nogle dage ændres rækkefølgen, og alle kontrollerede tidspunkter har mindst én scoreforskel. Overlapning er forventelig, fordi transport og rav i bevægelse er fælles.
 - Målrettede tests for readiness, central runtime og mode-specifik rangering er grønne. Versionen forbliver 4.0.278, og de beskyttede geodatafiler ændres ikke yderligere.
+## 2026-08-27 – gratis og domæneafgrænset Spørg RavRadar-evalkontrakt
+
+- Ejeren kræver en gratis fjern-AI, som kun håndterer spørgsmål med relevans for ravjagt.
+- Den eksisterende local-only/Edge-kæde er auditeret mod Candidate G. Remote-first-ruting, kun dansk fri tekst og manglende almindelig emneafvisning er dokumenterede aktiveringsstop.
+- DEC-0083 låser Free Tier uden billing eller betalt overflow, deterministisk Candidate G-dataansvar, fast afvisning, lille offentlig kontekst, struktureret output og lokal fallback.
+- `rav-assistant-public-v1` indeholder ti versionsbundne offentlige fakta. Evalpakken blev efter den første kontrakt udvidet til 45 symmetriske DA/DE/EN-cases og en offline self-test.
+- Målrettet eval-, lokal assistent-, Edge-sikkerheds-, RDKS-, knowledge-, kildeneutralitets- og releasegatekontrol er grøn.
+- Live-Gemini-eval kræver eksplicit lokal nøgle og `GEMINI_FREE_TIER_CONFIRMED=1`. Den efterfølgende eval afviste 3.7 Flash efter fem timeouts og valgte Flash-Lite/low efter 27/27; Edge-ændring, deploy og aktivering er fortsat åbne.
+- Offentlig 4.0.287, Candidate G, vejr, konto-/turdata, privatliv, geometri, land-/vandpunkter og private data er uændrede.

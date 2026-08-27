@@ -1,5 +1,15 @@
 # Current truth – gældende projektviden
 
+## Aktiv P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
+
+- Ejeren kræver nul betaling. En eventuel fjernmodel må kun bruge et verificeret Free Tier-projekt uden billing eller betalt overflow; kvoteudløb og providerfejl skal falde tilbage lokalt.
+- Den eksisterende 4.0.287-Edge er ikke aktiveringsklar: den er OpenAI-/danskbundet, returnerer fri tekst, mangler en almindelig out-of-scope-gate og kalder ved fjernaktivering modellen før deterministiske bedste sted/tid/score-svar.
+- `knowledge/rav-assistant-public-v1.json` er den første versionsbundne offentlige videnspakke: Candidate G-only, 20/50/30, lokal missing, ingen fund-/sikkerhedsgaranti, waders-jagtbarhed, strømtransport og bølgemobiliseringshukommelse.
+- `scripts/fixtures/rav-assistant-evals-v1.json` har 45 symmetriske cases, 15 pr. sprog på dansk, tysk og engelsk. Offline-runneren kontrollerer routes, evidens-ID'er, fast og åben emneafvisning samt prompt injection.
+- Live-runneren nægter at bruge Gemini uden både `GEMINI_API_KEY` og `GEMINI_FREE_TIER_CONFIRMED=1` og kalder som standard kun remote-kandidatcases. Nøglen er kun lokalt installeret og indgår ikke i Git eller rapporter.
+- `gemini-3.7-flash` er afvist til dette use case efter fem timeouts ved 12/30 sekunder, også med low thinking. `gemini-3.5-flash-lite`/low er valgt som næste, fortsat deaktiverede Edge-kandidat efter 27/27, DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
+- Offentlig `ravAssistantRemoteEnabled=false`, lokal fallback, version 4.0.287 og alle produktionsdata er uændrede. Se DEC-0083 og `docs/research/RAV_ASSISTANT_FREE_GEMINI_EVAL_DESIGN_2026-08-27.md`.
+
 ## Produktionsverificeret 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
 
 - Supabase forbliver Auth-, profil-, rettigheds-, rate-limit- og Edge-grænse. Normal lagring af ture flyttes til ti EU-låste Cloudflare D1-shards, så fremtidig turvækst ikke rammer Supabases 500 MB-databaseloft.

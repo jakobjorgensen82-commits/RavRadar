@@ -43,15 +43,18 @@ Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVU
 - [ ] Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere beslutter et særskilt udvidet scope.
 - [ ] Tilføj målrettede sprog-, fallback-, HTML-sikkerheds-, konto-/tur-, responsiv header- og browserregressioner for alle tre sprog før offentlig deploy.
 
-## P1 planlagt – modernisering og AI-valg til Spørg RavRadar
+## P1 aktiv – modernisering og AI-valg til Spørg RavRadar
 
-- [ ] Gennemgå den nuværende **Spørg RavRadar**-funktion mod RavRadars aktuelle Candidate G-model, offentlige scoreforklaringer, grundbog, konto-/turflow og sikkerhedsgrænser. Ældre hardcodet viden må ikke stå som aktuel sandhed uden kontrol.
-- [ ] Definér en versionsbundet offentlig videnspakke og en snæver kontekstkontrakt, så assistenten kan forklare aktuelle offentlige prognoser uden adgang til private data, interne regler, credentials eller rå diagnostik.
-- [ ] Opbyg en reproducerbar evalpakke med realistiske spørgsmål på dansk, tysk og engelsk. Den skal måle faglig korrekthed, brug af den valgte zones offentlige data, usikkerhed, sikkerhedsafgrænsning, afvisning af interne/sikkerhedsfølsomme spørgsmål, svartid og pris.
-- [ ] Sammenlign relevante AI-modeller ud fra evalresultater, flersproget kvalitet, stabilitet, latenstid, omkostning, rate limits, databehandling og egnethed til den hærdede Edge-gateway. Den nuværende modelstandard må ikke fortsætte alene af historiske grunde.
-- [ ] Vælg modellen på dokumenteret evidens, registrér beslutning og rollback, og implementér den bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren.
+- [x] Gennemgå den nuværende **Spørg RavRadar**-funktion mod RavRadars aktuelle Candidate G-model, offentlige scoreforklaringer, grundbog, konto-/turflow og sikkerhedsgrænser. Auditten viser især manglende domænegate, kun dansk fri tekst og usikker remote-first-ruting af deterministiske dataspørgsmål.
+- [x] Definér en versionsbundet offentlig videnspakke og en snæver kontekstkontrakt, så assistenten kan forklare aktuelle offentlige prognoser uden adgang til private data, interne regler, credentials eller rå diagnostik. `rav-assistant-public-v1` er bundet til 4.0.287/Candidate G.
+- [x] Opbyg en reproducerbar evalpakke med realistiske spørgsmål på dansk, tysk og engelsk. Pakken har 45 balancerede cases og måler faglig evidens, selected-zone-grænse, usikkerhed, fast og åben emneafvisning, prompt injection, sikkerhed, latenstid og tokens.
+- [x] Sammenlign relevante gratis AI-modeller ud fra evalresultater, flersproget kvalitet, stabilitet, latenstid, omkostning, rate limits, databehandling og egnethed til den hærdede Edge-gateway. Flash-Lite bestod den endelige remote-kandidatsuite 27/27; 3.7 Flash timeoutede i fem forsøg.
+- [x] Vælg `gemini-3.5-flash-lite` med low thinking på dokumenteret evidens og registrér beslutning og rollback. Valget gælder kun næste deaktiverede implementeringskandidat, ikke offentlig aktivering.
+- [ ] Implementér modellen bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren, når ejeren har bekræftet dette konkrete scope.
 - [ ] Bevar en sikker lokal fallback, rate limiting, input-/outputgrænser, locale-felt og samme-sprog-svar. Assistentfejl må aldrig blokere prognosen eller turflowet.
 - [ ] Deploy og verificér gatewayen gennem en godkendt kanal med målrettede sikkerheds-, CORS-, misbrugs-, flersprogs- og offentlig browserkontroller.
+
+Ejerkravet er nul betaling. DEC-0083 kræver et Free Tier-projekt uden billing eller betalt overflow. Offlinekontrakten og den endelige 27-case Flash-Lite-eval er grøn; konkret kvote og vilkår skal stadig genkontrolleres før release. Offentlig 4.0.287 forbliver local-only.
 
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 

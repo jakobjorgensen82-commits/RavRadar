@@ -1,5 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## Aktiv P1 – gratis AI-valg til Spørg RavRadar
+
+- **ISSUE-ASSISTANT-DOMAIN-GATE – KONTRAKT LÅST / PRODUKTIONSKODE ÅBEN:** Den historiske Edge blokerer interne sikkerhedsord, men ikke almindelige uvedkommende emner. DEC-0083 kræver fast afvisning før providerkald, struktureret modeldisposition og servervalidering. Offentlig remote forbliver deaktiveret.
+- **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – KONTRAKT LÅST / PRODUKTIONSKODE ÅBEN:** Remote-first kan ved aktivering overtage bedste sted/tid/score uden den deterministiske nationale Candidate G-kontekst. Disse intents skal blive lokale Candidate G-funktioner og må ikke opfindes af modellen.
+- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG LUKKET / EDGE ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. `gemini-3.7-flash` gav fem timeouts ved 12/30 sekunder. `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27 med median/p95 1.329/1.896 ms og er valgt til næste deaktiverede Edge-kandidat. Offentlig aktivering er ikke godkendt.
+- **ISSUE-GEMINI-FREE-TIER-TERMS-AND-QUOTA – GENKONTROL FØR RELEASE:** Aktuelle officielle vilkår har en EØS-undtagelse for databrug, men Free Tier-kvoter er projektspecifikke, ikke garanterede og kan ændres. Konto-/projektregion, vilkår og aktiv kvote skal genkontrolleres før offentlig aktivering; uanset vilkår sendes ingen private data.
+
 ## Produktionsverificeret 4.0.287 – D1-cutover og EU-turlager
 
 - Kode, migrationsflow, rollback, privacy, idempotens, kapacitetskontrol og målrettede tests er implementeret og produktionsverificeret.
