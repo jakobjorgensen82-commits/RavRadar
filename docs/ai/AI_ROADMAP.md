@@ -7,11 +7,11 @@
 - [x] Klargør offentligt aktiveringsflag med eksplicit `false`-rollback og målrettede remote-/fallback-/credentialtests.
 - [x] Deploy eksakt versionsstyret GPT-OSS Edge med server-only secrets gennem godkendt Supabase-kanal.
 - [x] Bestå live CORS, fast afvisning, DA/DE/EN-svar, rate limits, kvote-/providerfallback og rollback uden private payloads.
-- [ ] Bestå source/releasegate, exact-head CI, frisk produktion og offentlig browserkontrol før 4.0.291 kaldes produktionsverificeret.
+- [x] Bestå source/releasegate, exact-head CI, frisk produktion og offentlig browserkontrol før 4.0.291 kaldes produktionsverificeret.
 
 Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometri- eller punktændring er tilladt.
 
-## Næste afgrænsede spor efter 4.0.291 og mobilregressionen – klogere lokal assistent
+## Næste afgrænsede spor efter produktionsverificeret 4.0.291 og mobilregressionen – klogere lokal assistent
 
 - [ ] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
 - [ ] Dæk blandt andet vind, strøm, bølger, vandstand, mobilisering, transport, timing, kysttyper, sikkerhed, Candidate G og læsning af den valgte zones allerede beregnede offentlige data.
@@ -30,7 +30,7 @@ Den kritiske mobile tilbage-navigation, hvor kort, **Bedste områder** og **5-da
 - [x] Revider Gemini-valget mod aktuelle vilkår. Gratis Gemini er no-go til offentlig EØS-hjemmeside; Cloudflare Workers AI er kandidatsporet, mens Gemini 3.5 Flash-Lite 27/27 bevares som intern reference.
 - [x] Gør evalrunneren provider-neutral for tre Workers Free-kandidater og Gemini-reference med samme 45/27-case kontrakt, schema, målinger og hårde stop.
 - [x] Kør Cloudflare live-eval efter mindst-muligt Workers AI-token og bekræftet Workers Free-konto; vælg GPT-OSS 20B på den dokumenterede smoke-, mål- og fulde eval.
-- [x] Implementér og deploy den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Ejer-go og første live-smoke er grønne; Pages-aktivering og slutkontrol afventer.
+- [x] Implementér og deploy den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Ejer-go og første live-smoke blev lukket i 4.0.290; offentlig Pages-aktivering og slutkontrol er produktionsverificeret i 4.0.291.
 - [x] Fuld lokal kilde-/releasegate, exact-head CI, frisk produktion og offentlig DA/DE/EN-browserkontrol er grønne; 4.0.290 er produktionsverificeret.
 
 Se DEC-0086, DEC-0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.

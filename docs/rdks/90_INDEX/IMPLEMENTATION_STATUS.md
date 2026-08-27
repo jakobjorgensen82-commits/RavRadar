@@ -9,9 +9,11 @@
 - [x] Lås remote-succes, `429`-fallback, fravær af browsercredential, lokal emneafvisning og deterministisk Candidate G-routing med målrettede tests.
 - [x] Deploy den versionsstyrede GPT-OSS Edge og installer kun de to server-secrets gennem Supabases godkendte kanal.
 - [x] Bestå live CORS-, fast afvisnings-, DA/DE/EN-, provider-, timeout-/fallback- og afgrænset rate-limitkontrol før merge.
-- [ ] Bestå lokal source/releasegate, exact-head CI, frisk produktion og offentlig desktop-/mobilbrowserkontrol.
+- [x] Bestå lokal source/releasegate, exact-head CI, frisk produktion og offentlig desktop-/mobilbrowserkontrol.
 
 Se DEC-0088. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
+PR #187 bestod exact-head `33114501539` på `d781e464`, blev merged som `c6c9998c` og gennemførte produktion `33114598957`, build `98665953481` samt Pages `98668455689`. Offentlig 4.0.291-browserkontrol består version, farvet kort, fem aktuelle områder, fem dagsfaner, DA/DE/EN-kvotetekst, et rigtigt evidensbundet Edge-svar, fast rouladeafvisning og 390 px-visning. Vejrvisningen er fortsat tydeligt i bounded nøddrift, mens frisk Candidate G modnes; AI-releasen ændrer ikke dette.
 
 ## P1 produktionsverificeret – central DA/DE/EN og domæneafgrænset assistent i 4.0.290
 
@@ -23,7 +25,7 @@ Se DEC-0088. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, g
 - [x] Revider Gemini-produktionsvalget: historisk 27/27-reference, men gratis offentlig EØS-drift er no-go; Workers Free er kandidatsporet.
 - [x] Bestå målrettede i18n-, assistent-, konto-/tur-, 210/673/2.100-præsentations- og lokale desktop-/390 px-browserkontroller på alle tre offentlige sider.
 - [x] Kør Cloudflare-liveeval med mindst-muligt token på bekræftet Workers Free. Ejeren har valgt GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests; GLM/Gemma stoppede efter ikke-evaluerbare smoke-svar.
-- [x] Hærd og deploy Edge efter modelvalg med server-secrets, domænegate, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Ejer-go og første live-smoke er grønne; Pages-aktivering og slutkontrol afventer.
+- [x] Hærd og deploy Edge efter modelvalg med server-secrets, domænegate, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Offentlig Pages-aktivering og slutkontrol er produktionsverificeret i 4.0.291.
 - [x] Bestå fuld lokal kildegate/releasegate, PR #183/#184/#185 med exact-head CI og sikker fail-closed korrektion af tre gamle tekstbaserede gates.
 - [x] Bestå produktion `33107232593`, build `98640417925`, Pages `98643230518` og offentlig DA/DE/EN-kontrol af forside, Om-side, Grundbog, husket sprog, fem **Bedste områder** og fem færdige prognoserækker. Candidate G-fallback er fortsat tydeligt markeret, mens ny primærserie modnes.
 
