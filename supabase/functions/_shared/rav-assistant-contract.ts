@@ -138,7 +138,7 @@ export function normaliseAssistantTerminology(value, locale) {
   } else if (locale === "de") {
     text = text
       .replace(/\b(?:amber|rav)\s*[- ]?\s*(?:mobilisierung|mobilisation|mobilization)\b/gi, "Bernsteinmobilisierung")
-      .replace(/\b(?:huntability|jagtbarhed)\b/gi, "Suchbarkeit")
+      .replace(/\b(?:huntability|jagtbarhed|jagtbarheit)\b/gi, "Suchbarkeit")
       .replace(/\b(?:amber|rav)\b/gi, "Bernstein");
   } else if (locale === "en") {
     text = text

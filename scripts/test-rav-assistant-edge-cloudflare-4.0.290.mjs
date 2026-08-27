@@ -70,6 +70,7 @@ assert.match(assistantSystemInstruction(), /Bernsteinmobilisierung/);
 assert.match(assistantSystemInstruction(), /Never create hybrid words/);
 assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobilisering.', 'da'), '20 % jagtbarhed og 30 % ravmobilisering.');
 assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Bernsteinmobilisierung');
+assert.equal(normaliseAssistantTerminology('20 % Jagtbarheit und 30 % Bernsteinmobilisierung', 'de'), '20 % Suchbarkeit und 30 % Bernsteinmobilisierung');
 assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and amber mobilisation');
 
 const valid = {
