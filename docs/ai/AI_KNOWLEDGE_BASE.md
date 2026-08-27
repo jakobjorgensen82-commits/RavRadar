@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.291 – offentlig GPT-OSS kræver en dobbelt fail-safe grænse
+
+Ejeren har givet særskilt aktiverings-go. Cloudflare-kontoen er verificeret som Workers Free / $0 med 10.000 neuroner pr. døgn og fejl efter loftet. RavRadar må ikke aktivere Workers Paid, prepaid AI Gateway eller anden betalt overflow. Den interne dagsgrænse på 300 providerkandidater er en ekstra buffer, ikke en erstatning for Cloudflares eget loft.
+
+Browseren afviser kendte uvedkommende og sikkerhedsfølsomme spørgsmål før netværk og holder bedste sted/tid/score i Candidate G. Edge gentager domænegaten, minimerer konteksten, rate-limiter og validerer fem faste outputfelter. `429`, timeout, upstreamfejl, ugyldigt JSON, forkert locale/evidens eller manglende secrets giver lokal fallback. `ravAssistantRemoteEnabled=false` er øjeblikkelig rollback.
+
+Brugeren skal have en forståelig DA/DE/EN-tekst om den begrænsede dagskvote og om, at prognoser og lokale RavRadar-svar fortsætter. Teksten må ikke love, at der er kvote tilbage. Se DEC-0088.
+
 ## 4.0.286 – et faseskudt grænsebevis skal overleve næste rullende reference
 
 Den faktiske predeploy-gate fandt efter kontinuitetsrettelsen en separat 8-delsfejl: 672/673 states var `READY`, men de otte ejerallowlistede `dkss_lf`-dele ved `NATIVE_CADENCE_HOLD` manglede 16 modes, fordi Candidate G-evaluatorens ældre Phase D-fortrin krævede et nyt aktuelt strømfelt. En godkendt native hold må bruge den allerede afledte `READY` transport- og mobiliseringstilstand, men kun med eksakt tre-timers tilladelse, referencealder over 0 og højst 3 timer samt tomme U/V-, fart-, retnings- og alignmentfelter. Den må ikke foregive en aktuel vektor. Ordinary `UNVERIFIED`, for gammel eller ikke-READY forbliver lukket. Se DEC-0081.
@@ -26,7 +34,7 @@ Dynamisk håndbogs-HTML skal gennem `sanitizeTrustedHtml`; CSP og fravær af inl
 
 Browserroller må ikke indsætte direkte i `observations`. `submit-observation` er den eneste offentlige skrivevej og skal validere allowlist, størrelse, struktur, privatliv, brugerbinding, tidspunkt, idempotens og rate limit før service-role-insert. Offentlige Edge-funktioner deler `_shared/public-gateway.ts`; CORS er ikke autentifikation, men origin-afvisning, payloadkontrol, rate limiting og brugerbinding skal virke sammen.
 
-Rav-assistenten er fortsat local-only i 4.0.287. `ravAssistantRemoteEnabled` er `false`, så en manglende provider-secret ikke skaber skjulte 503-kald. DEC-0083 kræver nul betaling: Free Tier uden billing eller betalt overflow, domæneafvisning før providerkald, deterministiske bedste sted/tid/score-svar, struktureret output og DA/DE/EN-live-eval før en senere særskilt aktivering. `gemini-3.5-flash-lite`/low er valgt til næste deaktiverede Edge-kandidat efter 27/27 remote-kandidatcases og median/p95 1.329/1.896 ms; `gemini-3.7-flash` blev afvist efter fem 12/30-sekunders-timeouts. Dette er ikke offentlig aktivering.
+Rav-assistentens local-only 4.0.287/4.0.290-tilstand er historisk og erstattet af den ejer-godkendte 4.0.291-aktivering. DEC-0083's nulbetalings-, domæne-, data- og fallbackkrav består; DEC-0087 valgte GPT-OSS 20B og gjorde Gemini til historisk reference; DEC-0088 godkender aktiveringen med `false` som rollback.
 
 Supabase har varslet mulig begrænsning fra 9. september 2026 efter tidligere egressoverskridelse. Kvoteovervågning er drift, men må aldrig lempe sikkerheds- eller releasegates.
 

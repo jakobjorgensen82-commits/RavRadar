@@ -1,3 +1,11 @@
+## 4.0.291 – offentlig gratis Spørg RavRadar (2026-08-27)
+
+- Aktiverer den valgte Cloudflare GPT-OSS 20B gennem den hærdede server-side Edge-gateway efter ejerens udtrykkelige go.
+- Tilføjer synlig DA/DE/EN-kvotetekst i assistentdialogen: den begrænsede daglige AI-kvote holder RavRadar gratis og gælder kun Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
+- Registrerer som næste særskilte leverancer den mobile returfejl for kort/ranglister/femdøgnsvisning og ejerønsket om en væsentligt bredere, versionsbundet lokal ravfaglig assistent.
+- Cloudflare-dashboardet er kontrolleret som Workers Free / $0 med 10.000 neuroner/dag og fejl ved overskridelse; betalt overflow, Workers Paid og prepaid AI Gateway er forbudt.
+- Bevarer lokal domæneafvisning, deterministiske Candidate G-svar, server-only credentials, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Se DEC-0088 og `CHANGELOG-4.0.291.md`.
+
 ## 4.0.290 – central DA/DE/EN og sikker assistentgrænse (2026-08-27)
 
 - Tilføjer ét centralt offentligt tekstkatalog med dansk standard/fallback, parameteriserede nøgler, localeformatering og lokalt husket Dansk/Deutsch/English-valg med flag og tydelige navne.

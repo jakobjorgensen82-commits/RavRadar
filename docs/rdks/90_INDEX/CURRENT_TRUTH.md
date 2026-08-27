@@ -1,13 +1,22 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.290-kandidat – central offentlig DA/DE/EN og sikker assistentgrænse
+## Lokal 4.0.291-kandidat – offentlig gratis Spørg RavRadar
+
+- Ejeren har givet særskilt go til at aktivere Cloudflare `@cf/openai/gpt-oss-20b` gennem den hærdede Supabase Edge-gateway.
+- Cloudflare-dashboardet er aktuelt verificeret som Workers **Free / $0** med 10.000 neuroner pr. døgn og fejl efter loftet. Betalt overflow, Workers Paid og prepaid AI Gateway er ikke tilladt.
+- Assistentdialogen viser på dansk, tysk og engelsk, at den daglige AI-kvote er begrænset for at holde RavRadar gratis, og at kvoten kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
+- Offentlig konfiguration er klargjort med `ravAssistantRemoteEnabled=true`; `false` er den øjeblikkelige rollback. Edge- eller providerfejl falder lokalt tilbage og kan ikke blokere kort, prognoser, konto eller ture.
+- Den versionsstyrede Supabase-funktion og begge Cloudflare-secrets er installeret. Efter en før-merge, fail-closed Monaco-sammenfletning blev de tre filer erstattet atomisk; live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald er grønne. Promptordlisten kunne stadig danne danske hybridord, så Edge normaliserer nu en snæver testlåst fagordsliste. 4.0.291 må fortsat ikke merges før ny exact-head CI, ny Edge-smoke og fallbackkontrol er grøn; produktion kræver efterfølgende browserkontrol.
+- Domænegate, deterministic Candidate G-routing, dataminimering og forbuddet mod private data er uændrede. Se DEC-0088.
+
+## Produktionsverificeret 4.0.290 – central offentlig DA/DE/EN og sikker assistentgrænse
 
 - Dansk er standard og fallback. Dansk/Deutsch/English vælges med flag og navn, huskes lokalt og driver ét centralt tekstkatalog med parametre og localeformatering.
 - Hele den offentlige flade dækker hovedside, aktuelle/femdøgnsvisninger, områdepanel, konto/login, turformularer, lokal assistent, **Om RavRadar** og alle 12 sektioner i grundbogen. Admin/ekspert/internt forbliver dansk.
 - Uvedkommende og sikkerhedsfølsomme spørgsmål afvises før provider. National rangering, bedste tidspunkt og konkret score er fortsat deterministiske Candidate G-svar. Den tilladte AI-kontekst er offentlig og dataminimeret.
 - Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b` til den kommende gratis fjernfunktion. Gemini 3.5 Flash-Lite er kun historisk 27/27-reference under de aktuelle EØS-vilkår; GLM/Gemma gav ikke-evaluerbare smoke-svar. GPT-OSS bestod 1/1 smoke, 4/4 mål-gate og 25/26 evaluerbare fuldtests. Den observerede længdeafvigelse og timeout skal fejle lukket i Edge.
 - Den implementerede Edge-kontrakt bruger `json_object`, kontrolleret rekursiv svarudtrækning, fem faste felter, 800 completion-tokens/low reasoning, eksplicit disposition/evidens, syv sekunders timeout og 6/minut, 40/time samt 300/dag. Direkte `json_schema` og fri tekst er ikke godkendte providerkontrakter.
-- Ekstern AI er fortsat deaktiveret, så implementeringen er en rollback-klar kandidat og ikke livefunktion. Ingen credential findes i browseren eller repositoryet. Lokal desktop-/390 px-kontrol af alle tre offentlige sider og sprog er grøn. Se DEC-0086/0087.
+- 4.0.290 udgav den eksterne AI deaktiveret og uden credential i browser/repository. PR #185, produktion `33107232593`, build `98640417925`, Pages `98643230518` og offentlig DA/DE/EN-browserkontrol er grønne. Se DEC-0086/0087.
 
 ## Produktionsverificeret 4.0.289 – årsagstro produktionstime og bounded selvrecovery
 

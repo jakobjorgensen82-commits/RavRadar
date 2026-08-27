@@ -1,6 +1,27 @@
-# AI Roadmap – RavRadar 4.0.290+
+# AI Roadmap – RavRadar 4.0.291+
 
-## Aktiv releasekandidat – central DA/DE/EN og sikker assistentrouting i 4.0.290
+## Aktiv releasekandidat – offentlig gratis Spørg RavRadar i 4.0.291
+
+- [x] Modtag særskilt ejer-go og genbekræft den aktuelle Workers Free / $0-konto uden betalt overflow.
+- [x] Tilføj DA/DE/EN-kvotetekst i dialogen og bevar normal prognose-/lokal assistentfunktion ved kvoteudløb.
+- [x] Klargør offentligt aktiveringsflag med eksplicit `false`-rollback og målrettede remote-/fallback-/credentialtests.
+- [x] Deploy eksakt versionsstyret GPT-OSS Edge med server-only secrets gennem godkendt Supabase-kanal.
+- [x] Bestå live CORS, fast afvisning, DA/DE/EN-svar, rate limits, kvote-/providerfallback og rollback uden private payloads.
+- [ ] Bestå source/releasegate, exact-head CI, frisk produktion og offentlig browserkontrol før 4.0.291 kaldes produktionsverificeret.
+
+Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometri- eller punktændring er tilladt.
+
+## Næste afgrænsede spor efter 4.0.291 og mobilregressionen – klogere lokal assistent
+
+- [ ] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
+- [ ] Dæk blandt andet vind, strøm, bølger, vandstand, mobilisering, transport, timing, kysttyper, sikkerhed, Candidate G og læsning af den valgte zones allerede beregnede offentlige data.
+- [ ] Understøt flere formuleringer og relevante opfølgende spørgsmål uden at foregive viden, som den godkendte vidensbase ikke indeholder.
+- [ ] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI må aldrig ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
+- [ ] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
+
+Den kritiske mobile tilbage-navigation, hvor kort, **Bedste områder** og **5-dages RavRadar** kan forblive tomme efter besøg på **Om RavRadar**, undersøges og rettes først som særskilt release.
+
+## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 
 - [x] Implementér første offentlige oversættelsesscope som ét katalog med stabile nøgler/parametre, dansk standard/fallback, flag plus sprognavne og lokalt husket valg.
 - [x] Oversæt hovedside, kort/status, aktuelle/femdøgnsvisninger, områdepanel, konto/login, turformularer og lokal Spørg RavRadar-overflade uden at ændre data eller score.
@@ -9,8 +30,8 @@
 - [x] Revider Gemini-valget mod aktuelle vilkår. Gratis Gemini er no-go til offentlig EØS-hjemmeside; Cloudflare Workers AI er kandidatsporet, mens Gemini 3.5 Flash-Lite 27/27 bevares som intern reference.
 - [x] Gør evalrunneren provider-neutral for tre Workers Free-kandidater og Gemini-reference med samme 45/27-case kontrakt, schema, målinger og hårde stop.
 - [x] Kør Cloudflare live-eval efter mindst-muligt Workers AI-token og bekræftet Workers Free-konto; vælg GPT-OSS 20B på den dokumenterede smoke-, mål- og fulde eval.
-- [x] Implementér den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Deploy/aktivering afventer; `ravAssistantRemoteEnabled=false` bevares indtil særskilt ejer-go.
-- [ ] Fuld lokal kilde-/releasegate er grøn. Bestå derefter exact-head CI, frisk produktion og offentlig DA/DE/EN-browserkontrol før 4.0.290 kaldes produktionsverificeret.
+- [x] Implementér og deploy den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Ejer-go og første live-smoke er grønne; Pages-aktivering og slutkontrol afventer.
+- [x] Fuld lokal kilde-/releasegate, exact-head CI, frisk produktion og offentlig DA/DE/EN-browserkontrol er grønne; 4.0.290 er produktionsverificeret.
 
 Se DEC-0086, DEC-0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.
 

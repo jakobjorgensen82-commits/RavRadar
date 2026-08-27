@@ -1,6 +1,6 @@
 # DEC-0086 – én central offentlig DA/DE/EN-kontrakt
 
-**Status:** Godkendt og komplet implementeret på den offentlige lokale 4.0.290-flade; produktion afventer gates
+**Status:** Godkendt og produktionsverificeret i offentlig 4.0.290
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
 **Data-/geometripåvirkning:** Ingen ud over den stående rene versionsfeltsynkronisering ved release
@@ -25,4 +25,4 @@ Den offentlige RavRadar-flade var dansk og bestod af både statiske og dynamiske
 - `js/i18n.js` ejer DA/DE/EN-katalog, parametre, localeformatering, lokal lagring og dansk fallback.
 - `scripts/test-public-i18n-assistant-4.0.290.mjs` låser standardsprog, husket valg, parametre, fallback, dataminimering og den danske interne flade.
 - Lokal browserkontrol har verificeret DA/DE/EN på hovedside, Om-side og Grundbog ved desktop og 390 px, husket valg mellem sider, kortkreditering, konto, QR, syv faglige links, stabile CSS-flag og fast afvisning af en tysk rouladeforespørgsel uden fjernkald.
-- De eksisterende 210/673/2.100 offentlige præsentations- og Candidate G-regressioner består uden scoreændring. Den fulde release- og produktionsverifikation afventer.
+- De eksisterende 210/673/2.100 offentlige præsentations- og Candidate G-regressioner består uden scoreændring. PR #185, produktion `33107232593`, build `98640417925`, Pages `98643230518` og offentlig DA/DE/EN-browserkontrol er grønne.

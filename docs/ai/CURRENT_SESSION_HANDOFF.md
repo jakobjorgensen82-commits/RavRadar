@@ -1,5 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-27 – offentlig GPT-OSS-aktivering i 4.0.291
+
+- Ejeren har udtrykkeligt godkendt, at **Spørg RavRadar** sættes i offentlig drift nu.
+- Cloudflare-dashboardet viser Workers **Free** som aktuel plan, $0, 10.000 neuroner/dag og cirka 4.930/10.000 brugt efter evals. Officiel Free-adfærd er fejl efter loftet; Paid/upgrade/prepaid overflow er forbudt.
+- 4.0.291 viser en DA/DE/EN-kvotebesked inde i assistentdialogen og gør entydigt klart, at kvoten kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
+- Ejeren har efterfølgende vurderet, at den lokale fallback er for begrænset og ønsker en væsentligt bredere, versionsbundet ravfaglig DA/DE/EN-vidensbase. Den planlægges efter den kritiske mobile tilbage-navigation; begge assistentveje forbliver read-only.
+- Næste kritiske fejl efter AI-releasen er mobil retur fra **Om RavRadar** til forsiden, hvor kort, **Bedste områder** og **5-dages RavRadar** kan forblive tomme.
+- Det offentlige flag er klargjort som `ravAssistantRemoteEnabled=true`, mens `false` forbliver rollback. Regressioner dækker remote-succes, `429`-fallback, ingen providercredential i browseren og fortsat lokal afvisning/routing.
+- Den versionsstyrede GPT-OSS Edge og begge server-secrets er nu installeret. En første fail-closed `503 BOOT_ERROR` skyldtes, at browsereditoren havde lagt ny Monaco-tekst foran gammel kilde; atomisk erstatning af de tre filer rettede startfejlen. Live-smoke består nu CORS/OPTIONS, fremmed Origin, ugyldigt sprog, lokal rouladeafvisning, DA/DE/EN-providerkald og den reelle 6/minut-grænse med `429` på syvende kald. Promptordlisten alene stoppede ikke danske eller tyske hybridord; Edge har derfor snæver fagordsnormalisering og et fast evidensbundet 20/50/30-svar pr. sprog. Ét af flere livekald fik fail-safe `503 RATE_LIMIT_UNAVAILABLE`, mens efterfølgende kald lykkedes; klientfallback og normal lavtrafik skal browserverificeres. Ny exact-head/Edge-smoke og produktion mangler fortsat før lukning.
+- Arbejdet foregår på `codex/activate-assistant-4.0.291` fra eksakt `origin/main` i den isolerede Codex-worktree. Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er urørte. Se DEC-0088.
+
 ## AKTUELT P1-CHECKPOINT – 2026-08-27 – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret GPT-OSS Edge
 
 - Den komplette offentlige oversættelse er implementeret i den isolerede worktree: ét centralt katalog, dansk standard/fallback, stabile nøgler/parametre, localeformatering og lokalt husket valg med CSS-tegnede flag plus Dansk/Deutsch/English.

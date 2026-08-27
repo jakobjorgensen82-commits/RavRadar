@@ -10,7 +10,7 @@ globalThis.localStorage = {
   setItem:(key, value) => memory.set(String(key), String(value)),
 };
 
-const i18n = await import('../js/i18n.js?v=4.0.290');
+const i18n = await import('../js/i18n.js?v=4.0.291');
 const assistant = await import('../js/services/rav-assistant.js');
 
 const danishKeys = Object.keys(i18n.MESSAGES.da).sort();
@@ -40,7 +40,7 @@ assert.equal(i18n.getLocale(), 'de-DE');
 
 const requiredKeys = [
   'language.selector', 'mode.title', 'ranking.title', 'forecast.title', 'score.huntability',
-  'assistant.refusal', 'trip.form.privacy', 'account.privacy', 'map.osmAttribution',
+  'assistant.refusal', 'assistant.quota', 'trip.form.privacy', 'account.privacy', 'map.osmAttribution',
   'footer.weatherSea', 'footer.licenseSuffix'
 ];
 for (const language of ['da', 'de', 'en']) {
@@ -75,6 +75,30 @@ try {
   globalThis.fetch = originalFetch;
 }
 
+let remoteRequest = null;
+globalThis.fetch = async (url, options) => {
+  remoteRequest = { url:String(url), options, body:JSON.parse(options.body) };
+  return { ok:true, json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }) };
+};
+try {
+  const remoteAnswer = await assistant.askRavRadar('Hvor gammelt kan rav være?', {}, { language:'da' });
+  assert.match(remoteAnswer, /meget gammelt/i);
+  assert.match(remoteRequest.url, /\/functions\/v1\/ravradar-assistant$/);
+  assert.equal(remoteRequest.body.locale, 'da');
+  assert.equal(remoteRequest.body.question, 'Hvor gammelt kan rav være?');
+  assert.equal('authorization' in remoteRequest.options.headers, false, 'Den offentlige browser må ikke sende providercredential.');
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
+globalThis.fetch = async () => ({ ok:false, status:429, json:async () => ({ error:'RATE_LIMITED' }) });
+try {
+  const fallback = await assistant.askRavRadar('Hvor gammelt kan rav være?', {}, { language:'da' });
+  assert.equal(fallback, i18n.t('assistant.unknown', {}, 'da'), 'Kvoteudløb skal falde sikkert tilbage lokalt.');
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
 const publicContext = assistant.publicAssistantContext({
   locale:'en', privateNote:'must-not-leak', zone:{id:'west',name:'West coast',secret:'x'},
   result:{available:true,score:73,level:'fair',reasons:['internal wording']},
@@ -92,6 +116,10 @@ for (const [language, label] of [['da','Dansk'],['de','Deutsch'],['en','English'
 }
 assert.match(indexHtml, /data-i18n="ranking\.title"/);
 assert.match(indexHtml, /data-i18n="forecast\.title"/);
+assert.match(indexHtml, /class="assistant-quota" data-i18n="assistant\.quota"/);
+assert.match(indexHtml, /Kvoten gælder kun Spørg RavRadar og har ingen indflydelse på kort, prognoser, RavScore eller øvrige funktioner\./);
+assert.match(i18n.MESSAGES.de['assistant.quota'], /Dieses Kontingent gilt nur für Frag RavRadar und hat keinen Einfluss auf Karte, Prognosen, RavScore oder andere Funktionen\./);
+assert.match(i18n.MESSAGES.en['assistant.quota'], /This allowance applies only to Ask RavRadar and has no effect on the map, forecasts, RavScore, or other features\./);
 assert.match(indexHtml, /data-i18n="footer\.weatherSea"/);
 assert.match(indexHtml, /data-i18n="footer\.licenseSuffix"/);
 assert.doesNotMatch(indexHtml.match(/<dialog id="developerDialog"[\s\S]*?<\/dialog>/)?.[0] || '', /data-i18n/, 'Udviklerfladen skal forblive dansk.');

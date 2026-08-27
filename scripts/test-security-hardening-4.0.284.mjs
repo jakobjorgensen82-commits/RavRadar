@@ -82,7 +82,7 @@ assert.match(assistant,/validateAssistantResult/);
 assert.doesNotMatch(assistant,/OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 const publicConfig=await read('config.js');
 const assistantService=await read('js/services/rav-assistant.js');
-assert.match(publicConfig,/ravAssistantRemoteEnabled:\s*false/);
+assert.match(publicConfig,/ravAssistantRemoteEnabled:\s*true/);
 assert.match(assistantService,/PUBLIC_CONFIG\.ravAssistantRemoteEnabled\s*!==\s*true/);
 
 const submit=await read('supabase/functions/submit-observation/index.ts');
