@@ -5,6 +5,7 @@
 - Genstarter Candidate G fra den reelle verificerede suffix efter et hul over tre timer og modner ny state i baggrunden uden interpolation eller backfill. Automatisk skift sker først ved 673/673 `READY` og grøn faktisk runtimeaudit.
 - Tilføjer en eksakt hash- og tidslåst engangsrecovery af 09 UTC-checkpointet fra den fejlede produktion `33059522170`; kun kompakt afledt state kopieres.
 - Målrettede tests og virkelige, dataminimerede artifactsimulationer er grønne. Exact-head-, produktions- og browserlukning afventer. Se DEC-0084 og `CHANGELOG-4.0.288.md`.
+- PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` gendannede den låste 09-state, men stoppede før DMI/deploy, fordi fallbackstage lå efter stateændringen. Opfølgningen flytter kun fallbackkopien før checkpointet og låser rækkefølgen i workflowtesten.
 - Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
 ## Ikke udgivet – gratis Spørg RavRadar-forundersøgelse (2026-08-27)

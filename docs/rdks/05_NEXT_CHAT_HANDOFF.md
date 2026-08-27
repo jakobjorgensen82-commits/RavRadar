@@ -8,6 +8,7 @@
 - Et hul over tre timer genstarter fra reelle prøver efter hullet. Ingen interpolation, backfill eller opdigtet strøm er tilladt. Et hul på højst tre timer følger den eksisterende native-kadencekontrakt.
 - Engangsrecoveryen er låst til det kendte 09-checkpoint og højst tre timers genoptagelse. Den faktiske 673-deles prøve kopierede ingen vejr-, score- eller rå vektordata.
 - Lokal `validate:source` inklusive releasegate er grøn, og separat geodatakontrol viser kun topversionen 4.0.287 → 4.0.288. Bestå exact-head, merge, frisk produktion og offentlig browserkontrol, og opdatér derefter kandidatmarkører til produktionsverificeret evidens.
+- PR #176/exact-head `33066322196` er merged som `16ad8300`. Produktion `33066416034` beviste den eksakte 09-recovery, men stoppede før DMI/deploy ved korrekt fallbackaudit, fordi checkpointet var indlæst før fallbackkopien. Opfølgningen flytter kun checkpointblokken efter den sunde 00-fallbackstage og bevarer kildegaten før begge.
 - P1-oversættelse og Edge-implementering af Spørg RavRadar må først fortsætte efter dette P0. Se DEC-0084.
 
 ## Aktiv afgrænset leverance – gratis Spørg RavRadar-evals

@@ -4,6 +4,8 @@
 
 4.0.288 er implementeret og har bestået målrettede tests samt lokal `validate:source` inklusive releasegate. Exact-head-, produktions- og offentlig funktionsverifikation afventer.
 
+PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Første produktion `33066416034` gendannede den kompakte 09-state, men stoppede sikkert før DMI/deploy, fordi fallbackkopien blev taget efter stateændringen. Opfølgningen tager den komplette 00-fallback først og indlæser derefter 09-checkpointet.
+
 ## Ændringer
 
 - En fejlet eller ufuldstændig datahentning kan ikke erstatte det seneste komplette, auditerede offentlige datasæt.
