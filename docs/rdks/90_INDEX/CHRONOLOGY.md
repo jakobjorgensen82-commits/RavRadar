@@ -5,7 +5,7 @@
 1. Ejeren bad om at få AI-delen af **Spørg RavRadar** offentliggjort nu og ønskede en ordentlig tekst i feltet om den begrænsede kvote, som holder siden gratis.
 2. Cloudflare-dashboardet blev genkontrolleret: Workers Free er den aktuelle $0-plan, grænsen er 10.000 neuroner pr. døgn, og Free stopper med fejl efter loftet. Cirka 4.930 neuroner var brugt efter modeltestene.
 3. 4.0.291-kandidaten tilføjer DA/DE/EN-kvotetekst, aktiverer det offentlige remote-flag og låser remote-succes, `429`-fallback og fravær af browsercredential.
-4. Den versionsstyrede GPT-OSS Edge og begge Cloudflare-secrets blev installeret før merge. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering; atomisk filudskiftning rettede den, hvorefter CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning og DA/DE/EN-providerkald bestod live.
+4. Den versionsstyrede GPT-OSS Edge og begge Cloudflare-secrets blev installeret før merge. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering; atomisk filudskiftning rettede den, hvorefter CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald bestod live. Danske hybridord udløste derefter en snæver deterministisk fagordsnormalisering før den endelige smoke.
 5. DEC-0088 bevarer alle tidligere domæne-, Candidate G-, privatlivs-, CORS-, rate-limit-, timeout- og rollbackkrav.
 
 ## 2026-08-27 – DA/DE/EN-kandidat og Cloudflare mod Gemini

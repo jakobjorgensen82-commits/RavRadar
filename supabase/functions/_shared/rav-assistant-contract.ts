@@ -127,13 +127,35 @@ export function extractCloudflareAssistantResult(payload) {
   return findStructuredResult(payload?.result ?? payload);
 }
 
+export function normaliseAssistantTerminology(value, locale) {
+  let text = String(value || "");
+  if (locale === "da") {
+    text = text
+      .replace(/\b(?:amber|bernstein)\s*[- ]?\s*(?:mobilisering|mobilisation|mobilization)\b/gi, "ravmobilisering")
+      .replace(/\bberemobilisation\b/gi, "ravmobilisering")
+      .replace(/\bravjagtbarhed\b/gi, "jagtbarhed")
+      .replace(/\b(?:amber|bernstein)\b/gi, "rav");
+  } else if (locale === "de") {
+    text = text
+      .replace(/\b(?:amber|rav)\s*[- ]?\s*(?:mobilisierung|mobilisation|mobilization)\b/gi, "Bernsteinmobilisierung")
+      .replace(/\b(?:huntability|jagtbarhed)\b/gi, "Suchbarkeit")
+      .replace(/\b(?:amber|rav)\b/gi, "Bernstein");
+  } else if (locale === "en") {
+    text = text
+      .replace(/\b(?:Bernsteinmobilisierung|ravmobilisering)\b/gi, "amber mobilisation")
+      .replace(/\b(?:Suchbarkeit|jagtbarhed)\b/gi, "huntability")
+      .replace(/\b(?:Bernstein|rav)\b/gi, "amber");
+  }
+  return text.trim();
+}
+
 export function validateAssistantResult(value, locale) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const expectedKeys = ["answer", "disposition", "evidenceIds", "locale", "schemaVersion"];
   if (Object.keys(value).sort().join("|") !== expectedKeys.join("|")) return null;
   if (value.schemaVersion !== RAV_ASSISTANT_RESPONSE_SCHEMA || value.locale !== locale) return null;
   if (!["answer", "out_of_scope", "uncertain"].includes(value.disposition)) return null;
-  const answer = typeof value.answer === "string" ? value.answer.trim() : "";
+  const answer = typeof value.answer === "string" ? normaliseAssistantTerminology(value.answer, locale) : "";
   if (!answer || answer.length > 900 || SECURITY_PATTERN.test(answer)) return null;
   if (!Array.isArray(value.evidenceIds) || value.evidenceIds.length > RAV_ASSISTANT_FACTS.length) return null;
   const evidenceIds = [...new Set(value.evidenceIds)];

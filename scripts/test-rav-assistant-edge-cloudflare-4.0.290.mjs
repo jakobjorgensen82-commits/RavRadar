@@ -5,6 +5,7 @@ import {
   assistantSystemInstruction,
   extractCloudflareAssistantResult,
   normaliseAssistantLocale,
+  normaliseAssistantTerminology,
   publicAssistantContext,
   RAV_ASSISTANT_FACTS,
   RAV_ASSISTANT_MODEL,
@@ -67,6 +68,9 @@ assert.match(assistantSystemInstruction(), /huntability\.waders-wind-led/);
 assert.match(assistantSystemInstruction(), /ravmobilisering/);
 assert.match(assistantSystemInstruction(), /Bernsteinmobilisierung/);
 assert.match(assistantSystemInstruction(), /Never create hybrid words/);
+assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobilisering.', 'da'), '20 % jagtbarhed og 30 % ravmobilisering.');
+assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Bernsteinmobilisierung');
+assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and amber mobilisation');
 
 const valid = {
   schemaVersion: 'rav-assistant-response-v1', locale: 'en', disposition: 'answer',
