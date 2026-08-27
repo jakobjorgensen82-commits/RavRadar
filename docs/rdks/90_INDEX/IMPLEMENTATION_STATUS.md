@@ -22,7 +22,9 @@
 - [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration** uden værdiskift eller bredere rettigheder.
 - [x] Udskift Supabase-PAT'et til udløb 25. august 2027; bestå D1-verifikation `33024408547` før tilbagekaldelse af gammel og ubrugt mellem-token.
 - [x] Genbekræft audit-tokenet payloadfrit gennem `33024621109`/`98362935528` med ti shards og 0 % uden turlæsning.
-- [x] Implementér et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med kun `issues: write`; exact-head og manuel post-merge-prøve udestår.
+- [x] Implementér et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med kun `issues: write`.
+- [x] Bestå PR #169/exact-head `33025102301`, merge `1e402834` og manuel main-prøve `33025289153` uden for tidlig issue.
+- [x] Bestå frisk produktion `33025210517`, Pages-job `98367528389` og offentlig `rr-20260827000855-210`: 210/210 aktive zoner, fem ranglisterækker og 210/673/420/2.100 uden auditfejl.
 
 Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åbent driftskrav. Supabase-PAT'et roteres før 25. august 2027 efter GitHub-varslet; Cloudflare-token roteres kun ved kompromittering eller rettighedsændring. Se DEC-0082.
 

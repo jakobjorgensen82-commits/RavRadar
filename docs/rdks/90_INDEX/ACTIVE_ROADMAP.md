@@ -14,6 +14,7 @@
 - [x] Bestå fuld frisk produktion `33019856228`, Pages-job `98351206091`, offentlig 210/673/420/2.100-verifikation og read-only kapacitetsmonitor `33021364240`.
 - [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration**, udskift Supabase-PAT'et til udløb 25. august 2027 og bestå ende-til-ende-D1-verifikation `33024408547` før tilbagekaldelse af gamle PAT'er.
 - [x] Genbekræft auditadgangen payloadfrit i `33024621109` og tilføj et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb.
+- [x] Bestå PR #169/exact-head `33025102301`, merge `1e402834`, manuel main-prøve `33025289153`, frisk produktion `33025210517`/Pages `98367528389` og offentlig fuld browseraudit.
 - [ ] Følg Supabase-banneret frem mod 9. september 2026; turlagerflytningen fjerner ikke Auth-/Edge-egress.
 
 Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikke.

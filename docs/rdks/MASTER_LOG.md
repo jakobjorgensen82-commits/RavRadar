@@ -12,6 +12,8 @@
 - Første rotationsprøve `33023652174` stoppede sikkert ved tokenformatet på grund af adskilte browser-/Windows-udklipsholdere. Ingen værdi blev logget, og den korrigerede overførsel brugte en lokal engangskanal uden fil eller kommandolinjeværdi.
 - Ejeren ønskede ingen Codex-kalenderpåmindelse. Et secret-frit GitHub-workflow med kun `issues: write` opretter og tildeler i stedet en issue fra 60 dage før PAT-udløb og følger op ved 30/14/7/3/1/0 dage; GitHub-kontoens issuelevering er verificeret som GitHub + mail.
 - En senere analyse må sammenligne offentligt synlige Ravudsigten-resultater mod RavRadar over flere vejrsituationer og eventuelle uafhængige fund. Den er hypoteseorienteret, omgår ingen adgang, har `scoreImpact=false`/`publicRuntime=false` og må kun stå i RDKS, roadmap og changelog – aldrig i app, offentlig håndbog, ekspert-/adminflader eller public runtime.
+- Credential-varslet bestod PR #169/exact-head `33025102301` på `ba8e8f03`, merge `1e402834` og manuel main-prøve `33025289153`; prøven oprettede korrekt ingen issue før 60-dagesgrænsen.
+- Frisk produktion `33025210517` og Pages-job `98367528389` er grønne. Offentlig `rr-20260827000855-210` bestod version 4.0.287, 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden auditfejl.
 
 ## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 

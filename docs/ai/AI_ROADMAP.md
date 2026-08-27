@@ -14,6 +14,7 @@
 - [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration**, udskift Supabase-PAT'et til udløb 25. august 2027 og bestå ende-til-ende-D1-verifikation `33024408547` før tilbagekaldelse af gamle PAT'er.
 - [x] Genbekræft audit-tokenet gennem payloadfri `33024621109` med ti shards og 0 % forbrug.
 - [x] Tilføj et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med opfølgning ved 30/14/7/3/1/0 dage.
+- [x] Bestå PR #169/exact-head `33025102301`, merge `1e402834`, manuel main-prøve `33025289153`, frisk produktion `33025210517`/Pages `98367528389` og offentlig 210/673/420/2.100-kontrol.
 
 Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 
