@@ -2,6 +2,7 @@
 
 - PR #189/exact-head `33124945636` blev merged som `8b3668b7`. Første 4.0.292-produktion `33125043019` fejlede lukket før DMI og deploy på en ikke-isoleret syntetisk testreference; hotfixen tilføjer eksplicit fixture-reference uden at ændre den virkelige workflowlåste produktionstime.
 - PR #190/exact-head `33125466599` blev merged som `6906ee5a`. Produktion `33125529746` bestod frisk DMI/Copernicus og faktisk runtimeaudit, men fejlede lukket før sync/deploy, fordi en gammel scheduler-regex ikke tillod den nye private kandidatmarkør. Testen låser nu udelukkelsen og er tilføjet PR-kildegaten.
+- PR #191/exact-head `33126975042` blev merged som `01c443b8`. Produktion `33127032179` fejlede lukket før DMI/deploy, fordi den fremrykkede scheduleradfærdstest importerede `requests` før afhængighedsinstallationen. Testen stubber nu alene de ubrugte netværksklasser og bevarer den virkelige scheduleradfærd under test.
 
 - Ejerens kommende Sibirien-flytning udløste en systemaudit af adminreview, public builder, DMI-cache, Candidate G-kontekst, moderzoneaggregering, fallback og workflowrækkefølge. Ingen faktisk geometri eller punktdata er ændret.
 - Direkte aktivering er erstattet af privat kandidatopvarmning med eksakt U/V ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory. Offentlig status er sanitiseret.

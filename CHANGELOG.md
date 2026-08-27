@@ -2,6 +2,7 @@
 
 - CI-hotfix: punktstagingens syntetiske READY-test bruger nu en eksplicit reference og kan ikke overstyres af produktionsworkflowets låste time. Første post-merge-run stoppede sikkert før DMI/deploy; runtimekontrakten er uændret.
 - Gatehotfix: den eksisterende DMI-schedulertest accepterer og kræver nu, at private punktkandidater holdes uden for den offentlige dækningsnævner; testen er flyttet ind i punktstagingens PR-kildegate.
+- Den samme scheduler-adfærdstest er gjort selvstændig i den tidlige kildegate ved lokalt at stubbe ubrugte netværksafhængigheder; produktions-DMI installerer fortsat de virkelige pakker før dataarbejdet.
 
 - Genopretter forsiden efter Safari/WebKit back/forward-cache: en færdig visning genoptegnes, mens ufuldstændig eller afbrudt opstart genindlæses rent.
 - Dækker kort, **Bedste områder**, valgt zone og **5-dages RavRadar** gennem ét idempotent `pageshow`-forløb med dubletværn og fail-safe reload.
