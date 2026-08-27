@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 const app = await fs.readFile('app.js', 'utf8');
+const i18n = await fs.readFile('js/i18n.js', 'utf8');
 const ranking = app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')");
 const paintYield = app.indexOf('await yieldToBrowser();', ranking);
 const ready = app.indexOf("performance.mark?.('ravradar:ready')", paintYield);
@@ -10,7 +11,8 @@ const scheduled = app.indexOf('setTimeout(installArrows,0)', arrows);
 if ([ranking,paintYield,ready,details,forecast,arrows,scheduled].some(value=>value<0)) throw new Error('Opstartsmarkører, progressiv detaljehentning eller deterministisk pilinstallation mangler.');
 if (!(ranking < paintYield && paintYield < ready && ready < details && details < forecast && forecast < arrows && arrows < scheduled)) throw new Error('Kort/rangliste skal være klar før detaljehentning og prognose; pile skal planlægges sidst.');
 if (app.includes('requestIdleCallback(installArrows')) throw new Error('Pileinstallationen må ikke igen afhænge af requestIdleCallback.');
-if (!app.includes('async function renderNationalForecast()') || !app.includes('index%2===1') || !app.includes('Beregner 5-dages prognose… ${progress} %')) throw new Error('5-dages beregningen er ikke opdelt i browservenlige bidder.');
+if (!app.includes('async function renderNationalForecast()') || !app.includes('index%2===1') || !app.includes("t('forecast.calculating',{progress})")) throw new Error('5-dages beregningen er ikke opdelt i browservenlige bidder.');
+if (!i18n.includes("'forecast.calculating'") || !i18n.includes('Beregner 5-dages prognose… {progress} %')) throw new Error('Den danske status for 5-dages beregningen mangler i i18n-kontrakten.');
 const mapView = await fs.readFile('js/map/map-view.js', 'utf8');
 if (!mapView.includes('if (wasVisible) map.removeLayer(layer)') || !mapView.includes('layer.addTo(map);')) throw new Error('Pilelaget bygges ikke afkoblet fra kortet.');
 console.log('OK: Dagens rangliste kan males før prognosen, prognosen giver browseren kontrollen tilbage, og pile installeres deterministisk bagefter.');
