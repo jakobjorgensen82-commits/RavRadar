@@ -168,41 +168,6 @@ jobs:
           node scripts/restore-candidate-g-continuation.mjs
           --source-root .cache/candidate-g-recovery-source
 
-      - name: Inspect failed-run Candidate G gap checkpoint recovery
-        id: candidate-g-gap-checkpoint
-        run: >-
-          node scripts/restore-candidate-g-gap-checkpoint.mjs
-          --check
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --github-output "$GITHUB_OUTPUT"
-
-      - name: Download verified failed-run Candidate G checkpoint
-        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
-        uses: actions/download-artifact@v8
-        with:
-          name: ${{ steps.candidate-g-gap-checkpoint.outputs.source_artifact_name }}
-          run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-checkpoint-artifact
-
-      - name: Extract only failed-run Candidate G conditions checkpoint
-        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .cache/candidate-g-gap-checkpoint-source/data/live
-          unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip \
-            project/data/live/conditions.json \
-            > .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
-          test -s .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
-
-      - name: Restore only verified compact suffix from failed Candidate G run
-        if: steps.candidate-g-gap-checkpoint.outputs.required == 'true'
-        run: >-
-          node scripts/restore-candidate-g-gap-checkpoint.mjs
-          --source-root .cache/candidate-g-gap-checkpoint-source
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-
       - name: Preserve deployed DMI zone cache as safe fallback
         run: |
           mkdir -p .cache
@@ -271,6 +236,42 @@ jobs:
         with:
           path: .cache/candidate-g-last-ready-public
           key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Inspect failed-run Candidate G gap checkpoint recovery
+        if: steps.preflight.outputs.should_run == 'true'
+        id: candidate-g-gap-checkpoint
+        run: >-
+          node scripts/restore-candidate-g-gap-checkpoint.mjs
+          --check
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Download verified failed-run Candidate G checkpoint
+        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ steps.candidate-g-gap-checkpoint.outputs.source_artifact_name }}
+          run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-checkpoint-artifact
+
+      - name: Extract only failed-run Candidate G conditions checkpoint
+        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/candidate-g-gap-checkpoint-source/data/live
+          unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
+          test -s .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
+
+      - name: Restore only verified compact suffix from failed Candidate G run
+        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        run: >-
+          node scripts/restore-candidate-g-gap-checkpoint.mjs
+          --source-root .cache/candidate-g-gap-checkpoint-source
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Rebuild centrally reviewed coastal-part sampling points
         if: steps.preflight.outputs.should_run == 'true'

@@ -8,6 +8,7 @@
 - Candidate G genstarter efter et verificeret hul over tre timer fra den reelle sammenhængende suffix og modner i baggrunden uden interpolation eller backfill. Først ved 673/673 `READY` og grøn faktisk runtimeaudit fjernes fallbacken atomisk.
 - En engangsrecovery er låst til workflow `33059522170`, artifact `RavRadar-support-3633`, 09 UTC, 673 dele, eksakt statehash og højst tre timers genoptagelse. Den kopierer kun kompakt state, aldrig vejr, scores, rå vektorer, koordinater eller private data.
 - Målrettede tests, dataminimerede prøver mod de virkelige 00/09-artifacts og lokal `validate:source` inklusive releasegate er grønne. Versionssynkroniseringen ændrer kun topversionen i de to beskyttede geodatafiler. Exact-head, merge, frisk produktion og offentlig browserkontrol udestår; kald ikke 4.0.288 produktionsverificeret endnu.
+- PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Første produktion `33066416034` gendannede den kompakte 09-suffix korrekt, men stoppede sikkert før DMI/deploy, fordi fallbackgrundlaget først blev auditeret bagefter og derfor så warmup-staten. Opfølgningen låser rækkefølgen: auditér/kopiér komplet 00-fallback før 09-state indlæses.
 - Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte. Candidate G 20/50/30, fysik, vejrværdier, normal sortering og konto-/turdata ændres ikke. Se DEC-0084.
 
 Dette P0-spor går foran de planlagte P1-spor om oversættelse og Spørg RavRadar. Brug Sol/Ekstra høj gennem slutvalidering og produktion.

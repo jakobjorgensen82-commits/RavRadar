@@ -32,5 +32,6 @@ Den offentlige datalæser kasserede samtidig hele det mere end otte timer gamle,
 - Data-service-testen beviser, at startup og detaljer kommer fra samme fallbackdataset, og at udløbet fallback ikke bruges.
 - Engangsrecoverytesten beviser tretimersgrænsen, statehashen og fravær af kopieret vejr, score og rå vektorer.
 - En dataminimeret prøve mod de virkelige artifacts genskabte alle 673 kompakte suffixstates fra 09-checkpointet uden vejr-, score- eller vektorkopi. Det seneste sunde offentlige 00-datasæt bestod samtidig den nye fallbackaudit.
+- PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` gendannede checkpointet, men stoppede før DMI/deploy, fordi fallbackstage derefter auditerede warmup-staten. Den afgrænsede opfølgning låser sourcegate → komplet fallbackstage → checkpointrecovery.
 
 Exact-head-, produktions- og offentlig browserverifikation skal tilføjes, før 4.0.288 kaldes produktionsverificeret.
