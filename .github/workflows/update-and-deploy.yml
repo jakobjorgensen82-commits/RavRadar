@@ -135,7 +135,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.289 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Inspect verified Candidate G continuation recovery
         id: candidate-g-recovery
@@ -187,7 +187,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.289 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -271,6 +271,24 @@ jobs:
         run: >-
           node scripts/restore-candidate-g-gap-checkpoint.mjs
           --source-root .cache/candidate-g-gap-checkpoint-source
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+
+      - name: Restore latest compact Candidate G continuation checkpoint
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/candidate-g-continuation-checkpoint
+          key: candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            candidate-g-continuation-checkpoint-v1-
+
+      - name: Apply newer compact Candidate G continuation checkpoint
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          node scripts/candidate-g-continuation-checkpoint.mjs
+          --restore
+          --target data/live/conditions.json
+          --checkpoint .cache/candidate-g-continuation-checkpoint/checkpoint.json
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Rebuild centrally reviewed coastal-part sampling points
@@ -374,7 +392,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.289 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB download cache
@@ -464,7 +482,11 @@ jobs:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
-          python scripts/run-copernicus-current-pilot.py
+          python scripts/run-copernicus-current-pilot-with-retry.py
+          --attempts 2
+          --timeout-seconds 360
+          --backoff-seconds 20
+          --
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
@@ -500,7 +522,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.288 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.289 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach scientific current provenance and exact DMI grid points
@@ -510,6 +532,21 @@ jobs:
       - name: Rebuild deterministic public weather runtime before validation and deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
+
+      - name: Build compact Candidate G continuation checkpoint
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          node scripts/candidate-g-continuation-checkpoint.mjs
+          --save
+          --source data/live/conditions.json
+          --checkpoint .cache/candidate-g-continuation-checkpoint/checkpoint.json
+
+      - name: Save compact Candidate G continuation checkpoint before final gates
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/candidate-g-continuation-checkpoint
+          key: candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Audit actual Candidate G public runtime before deploy
         if: steps.preflight.outputs.should_run == 'true'

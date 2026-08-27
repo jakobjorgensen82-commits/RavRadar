@@ -5,6 +5,8 @@
 **Scorepåvirkning:** Ingen  
 **Offentlig runtimepåvirkning:** Ja, afgrænset nøddrift ved et landsdækkende datagab
 
+**Senere præcisering:** DEC-0085 erstatter 48-timersgrænsen i punkt 3 med højst 72 timer og aldrig efter fallbackdatasættets egen prognosehorisont. Den lukker desuden den fremtidige timebinding, indfører bounded Copernicus-retry, generisk kompakt checkpoint og scheduler-watchdog. 4.0.288-beviset nedenfor er historik.
+
 ## Problem
 
 Den senest fuldt verificerede produktion `rr-20260827013448-210` var komplet med 210 zoner og 673 `READY` kystdele ved 00 UTC. En senere produktion byggede et nyt datasæt ved 09 UTC efter et reelt nitimers hul. Den kompakte Candidate G-hukommelse bevarede korrekt hullet og blev derfor afvist med 673 `WINDOW_HAS_TIME_GAP`. Det fejlede checkpoint blev kun gemt i supportartefaktet, mens næste kørsel igen hydrerede den gamle 00-state. Kæden kunne derfor ikke selv komme videre.

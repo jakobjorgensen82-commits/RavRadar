@@ -5,7 +5,7 @@ on:
     - cron: "7,17,27,37,47,57 * * * *"
   workflow_run:
     workflows: ["Update weather and deploy RavRadar"]
-    types: [requested]
+    types: [requested, completed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   preserve:
+    if: github.event_name != 'workflow_run' || github.event.action == 'requested'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -41,7 +42,7 @@ jobs:
 
   dispatch-pilot:
     needs: preserve
-    if: github.event_name == 'workflow_run' && needs.preserve.outputs.current_hour_present != 'true'
+    if: github.event_name == 'workflow_run' && github.event.action == 'requested' && needs.preserve.outputs.current_hour_present != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 2
     permissions:
@@ -58,3 +59,60 @@ jobs:
             "repos/${{ github.repository }}/actions/workflows/validate-copernicus-current-pilot.yml/dispatches" \
             -f ref=main \
             -f "inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}"
+
+  retry-failed-production:
+    if: github.event_name == 'workflow_run' && github.event.action == 'completed' && github.event.workflow_run.event == 'schedule' && contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Retry one failed or timed-out scheduled production without forcing parallel work
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/dispatches" \
+            -f ref=main \
+            -F "inputs[force]=false"
+
+  production-watchdog:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Inspect production silence without reading private payloads
+        id: watchdog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/runs?branch=main&per_page=20" \
+            > "$RUNNER_TEMP/ravradar-production-runs.json"
+          node scripts/check-production-watchdog.mjs \
+            --runs "$RUNNER_TEMP/ravradar-production-runs.json" \
+            --manifest-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/manifest.json" \
+            --maximum-silence-minutes 45 \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Dispatch one production after verified silence
+        if: steps.watchdog.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/dispatches" \
+            -f ref=main \
+            -F "inputs[force]=false"

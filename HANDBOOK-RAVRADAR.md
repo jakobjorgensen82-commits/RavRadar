@@ -1,12 +1,14 @@
 # RavRadar Håndbog
 
-## Automatisk Candidate G-genopretning – 4.0.288
+## Årsagstro produktion og robust genopretning – 4.0.289
 
-Når en ny datahentning fejler eller kun bliver delvis, erstatter den ikke den seneste komplette prognose. RavRadar fortsætter i stedet på ét fuldt verificeret Candidate G-datasæt, mens nye data og den nødvendige 48-timers transporthukommelse genopbygges i baggrunden. Startfil, områdedetaljer, **Bedste områder** og **5-dages RavRadar** kommer altid fra samme dataset.
+RavRadar må aldrig vælge en prognosetime efter den UTC-time, som produktionskørslen blev låst til. Hvis den eksakte DMI-strømtime ikke findes, vælges kun den bedst dækkede, nærmeste time bagud inden for tre timer. Copernicus udfylder derefter kun de eksakte DMI-huller og får højst to forsøg på seks minutter. Fortsat fejl stopper den nye produktion uden at erstatte et fungerende datasæt.
 
-Nøddriften viser tydeligt, hvornår datasættet blev lavet, hvor gammelt det er, og at dataene ikke er aktuelle. Den er begrænset til 48 timer. Derefter lukker RavRadar sikkert i stedet for at vise en gammel prognose som frisk. Når alle 673 kystdele igen er `READY`, og den faktiske nye runtime har bestået kontrollen før deploy, skifter siden samlet over og fjerner nødvisningen.
+Når en runtime er bygget, gemmes kun dens kompakte afledte Candidate G-hukommelse i et privat, hashkontrolleret checkpoint. Et senere fejlet gate- eller deploytrin mister derfor ikke den virkelige recoveryfremdrift. Checkpointet indeholder ikke vejr, scoreoutput, rå strømvektorer, koordinater, geometri, land-/vandpunkter eller private data.
 
-Et reelt hul over tre timer nulstiller kun den berørte Candidate G-historik til de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke de manglende timer. Candidate G 20/50/30, scorefysikken, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0084](docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md).
+Nøddriften viser ét komplet, auditeret dataset med tydelig besked om, at dataene ikke er aktuelle. Den må højst bruges i 72 timer og aldrig efter datasættets egen seneste prognosetime. En fejlet, timeoutet eller før-start-fejlet planlagt kørsel får ét automatisk genforsøg; et separat watchdog reagerer først efter 45 minutters dokumenteret stilhed og starter aldrig et parallelt tungt build. Watchdoget er internt i GitHub og kan derfor ikke alene opdage total stilhed i hele GitHubs scheduler; det kræver fortsat ekstern overvågning. Når alle 673 kystdele igen er `READY`, og den faktiske runtimeaudit er grøn, skifter siden atomisk.
+
+Et reelt hul over tre timer genstarter Candidate G fra de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke manglende timer. Candidate G 20/50/30, scorefysikken, DMI-først, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0085](docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md).
 
 ## Supabase-login og EU-turlager med rollback – 4.0.287
 
@@ -581,7 +583,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.288
+**Håndbogsversion:** 4.0.289
 
 **Opdateret:** 19. august 2026
 

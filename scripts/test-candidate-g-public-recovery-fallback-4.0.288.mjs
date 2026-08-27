@@ -35,7 +35,7 @@ const descriptor = {
   generatedAt,
   productionReferenceAt: '2026-08-27T00:00:00.000Z',
   validUntil: '2026-08-29T00:00:00.000Z',
-  maximumAgeHours: 48,
+  maximumAgeHours: 72,
   publicConditionsSha256: sha256Text(compactJson(conditions)),
   publicConditionDetailsSha256: sha256Text(compactJson(details)),
   audit: {
@@ -59,8 +59,11 @@ assert.ok(validateRecoveryFallbackBundle({
   conditions: { ...conditions, generatedAt: '2026-08-27T02:00:00.000Z' },
 }, { nowMs }).errors.includes('GENERATED_AT_MISMATCH'));
 assert.ok(validateRecoveryFallbackBundle(bundle, {
-  nowMs: Date.parse(generatedAt) + 49 * 3_600_000,
+  nowMs: Date.parse(generatedAt) + 73 * 3_600_000,
 }).errors.includes('FALLBACK_TOO_OLD'));
+assert.ok(validateRecoveryFallbackBundle(bundle, {
+  nowMs: Date.parse(descriptor.validUntil) + 1,
+}).errors.includes('FALLBACK_FORECAST_EXPIRED'));
 const newerGeneratedAt = '2026-08-27T09:00:00.000Z';
 const newerConditions = { ...conditions, datasetId: 'rr-newest-ready-210', generatedAt: newerGeneratedAt };
 const newerDetails = { ...details, datasetId: newerConditions.datasetId, generatedAt: newerGeneratedAt };
@@ -105,7 +108,7 @@ assert.equal(activated.status, 'active-last-verified');
 const recoveryManifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
 assert.equal(recoveryManifest.datasetId, 'rr-primary-warmup-210');
 assert.equal(recoveryManifest.recoveryFallback.datasetId, conditions.datasetId);
-assert.equal(recoveryManifest.recoveryFallback.maximumAgeHours, 48);
+assert.equal(recoveryManifest.recoveryFallback.maximumAgeHours, 72);
 assert.equal(recoveryManifest.recoveryFallback.primaryMemoryReadyPartCount, 0);
 assert.equal(
   JSON.parse(await fs.readFile(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicConditionsName), 'utf8')).datasetId,

@@ -1,6 +1,18 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret automatisk Candidate G-genopretning
+## AKTUELT P0-CHECKPOINT – 2026-08-27 – kandidat 4.0.289
+
+- Efter 4.0.288-lukningen blev run `33051959643` læst i dybden. DMI-bulk lykkedes med 622/673; den gamle timeopløser bandt en 07:58 UTC-run til fremtidig 09 UTC, hvorefter Copernicus timeoutede. Samme providersti lykkedes senere, så DMI var ikke rodårsagen.
+- 4.0.289 tillader kun en DMI-time på eller før den workflowlåste reference, giver Copernicus to procesisolerede seksminutters forsøg og stopper fortsat før deploy ved dobbelt fejl.
+- Et generisk privat checkpoint gemmer præcis 673 kompakte Candidate G-states umiddelbart efter runtimegenerering og før de sidste gates. Hash, partantal, tidsretning og alle modelbindinger kontrolleres; vejr, scoreoutput, rå U/V, koordinater og private data er fraværende.
+- Komplet offentlig fallback er højst 72 timer og aldrig længere end egen prognosehorisont. Det konkrete cirka ti timers overlapshul i 4.0.288 er dermed lukket uden ubegrænset gammel prognose.
+- En fejlet, timeoutet eller før-start-fejlet planlagt produktion får ét retry. Watchdoget bruger kun workflowmetadata og offentligt manifest og dispatch'er efter 45 minutters stilhed uden aktiv produktion; alle tunge builds deler fortsat concurrency. Total stilhed i hele GitHubs scheduler kræver fortsat ekstern overvågning.
+- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, merge, frisk produktion og offentlig kontrol afventer. Se DEC-0085.
+- Arbejd kun i den isolerede worktree på `codex/harden-current-hour-recovery-4.0.289`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+
+P1-sporene er midlertidigt sat efter denne P0. Brug Sol/Ekstra høj gennem slutvalidering.
+
+## TIDLIGERE AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret automatisk Candidate G-genopretning
 
 - Seneste komplette offentlige baseline er fortsat `rr-20260827013448-210` ved 00 UTC med 210 zoner og 673/673 `READY`. En senere kørsel `33059522170` byggede 09 UTC efter et nitimers hul og stoppede korrekt med 673 `WINDOW_HAS_TIME_GAP`; den blev ikke deployet.
 - Den sorte zonevisning samt tomme **Bedste områder** og **5-dages RavRadar** skyldes, at den offentlige datalæser kasserer hele den komplette 00-runtime efter otte timer. Det efterfølgende forkastede dataset-id gav desuden en misvisende blandingsfejl i detaljelaget.

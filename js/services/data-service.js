@@ -1,10 +1,10 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.288';
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.288';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.289';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.289';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL='./data/live/public-condition-details.json';
 const MANIFEST_URL='./data/live/manifest.json';
 const COASTAL_PARTS_URL='./data/live/coastal-parts-v2.json';
-const MAX_RECOVERY_FALLBACK_AGE_HOURS=48;
+const MAX_RECOVERY_FALLBACK_AGE_HOURS=72;
 const memory=new Map();
 async function fetchJson(url,{ttlMs=0,noStore=false}={}){
   const cached=memory.get(url);if(cached&&Date.now()-cached.at<ttlMs)return cached.value;
@@ -48,6 +48,8 @@ export async function loadConditions({manifest=null}={}){try{
       const generated=Date.parse(fallback?.generatedAt||'');
       const ageHours=(Date.now()-generated)/3600000;
       if(!Number.isFinite(generated)||ageHours<0||ageHours>recoveryFallbackAgeLimit(manifest))throw new Error('Nødvisningen er udløbet.');
+      const validUntil=Date.parse(recovery?.validUntil||'');
+      if(!Number.isFinite(validUntil)||Date.now()>validUntil)throw new Error('Nødvisningens prognosehorisont er udløbet.');
       return {...fallback,available:true,recoveryFallbackActive:true,recoveryFallback:{...recovery,ageHours},latestDatasetId:manifest?.datasetId||null,latestGeneratedAt:manifest?.generatedAt||null};
     }catch(error){console.warn('Senest verificerede Candidate G-nødvisning kunne ikke bruges',error);}
   }

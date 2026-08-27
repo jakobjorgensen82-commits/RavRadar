@@ -1,6 +1,18 @@
-# AI Roadmap – RavRadar 4.0.288+
+# AI Roadmap – RavRadar 4.0.289+
 
-## P0 afsluttet – produktionsverificeret automatisk Candidate G-genopretning
+## P0 aktiv – årsagstro produktion og robust recovery
+
+- [x] Afgræns den oprindelige hændelse til RavRadars fremtidige timevalg plus en transient Copernicus-timeout; DMI-bulk var succes med 622/673.
+- [x] Forbyd fremtidig produktionstime og indfør to procesisolerede seksminutters Copernicus-forsøg.
+- [x] Bevar generisk 673-deles kompakt Candidate G-state mellem fejlede runs uden vejr, scoreoutput, rå vektorer, koordinater eller private data.
+- [x] Luk recoveryoverlap med højst 72 timers komplet fallback, altid afskåret af egen prognosehorisont.
+- [x] Tilføj ét automatisk retry efter schedule-fejl, timeout eller før-start-fejl og et payloadfrit 45-minutters stilheds-watchdog uden parallelle builds; behold total GitHub-schedulerstilhed som eksplicit ekstern overvågningsrisiko.
+- [x] Bestå målrettede lokale time-, retry-, checkpoint-, fallback-, data-service-, watchdog- og workflowtests samt fuld lokal `validate:source` og releasegate.
+- [ ] Bestå exact-head CI, merge, frisk produktion og offentlig runtime-/browserkontrol; opdater derefter checkpointet til produktionsverificeret.
+
+P1-oversættelse og Spørg RavRadar genoptages først efter denne P0-lukning. Se DEC-0085.
+
+## Tidligere P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
 
 - [x] Find rodårsagen til sorte zoner og tomme **Bedste områder**/**5-dages RavRadar**: komplet 00-runtime blev browserafvist efter otte timer, mens en ikke-deployeret 09-runtime korrekt blev afvist efter et nitimers hul.
 - [x] Bevar det nyeste komplette, auditerede 210/673/1.346-datasæt atomisk i højst 48 timer med tydelig **ikke aktuelle data**-advarsel.

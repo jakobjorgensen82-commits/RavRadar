@@ -106,14 +106,21 @@ def main() -> None:
     workflow = WORKFLOW.read_text(encoding="utf-8")
     for marker in (
         'workflows: ["Update weather and deploy RavRadar"]',
-        "types: [requested]",
+        "types: [requested, completed]",
         "branches: [main]",
         "python3 scripts/check-copernicus-current-hour.py",
-        "github.event_name == 'workflow_run'",
+        "github.event_name == 'workflow_run' && github.event.action == 'requested'",
         "needs.preserve.outputs.current_hour_present != 'true'",
         "actions: write",
         "validate-copernicus-current-pilot.yml/dispatches",
         "-f ref=main",
+        "retry-failed-production:",
+        "contains(fromJSON('[\"failure\",\"timed_out\",\"startup_failure\"]'), github.event.workflow_run.conclusion)",
+        "github.event.workflow_run.event == 'schedule'",
+        "production-watchdog:",
+        "node scripts/check-production-watchdog.mjs",
+        "--maximum-silence-minutes 45",
+        "steps.watchdog.outputs.dispatch == 'true'",
     ):
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")
     need("actions/cache/save@v6" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")

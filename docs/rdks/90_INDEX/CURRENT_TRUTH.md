@@ -1,6 +1,16 @@
 # Current truth – gældende projektviden
 
-## Produktionsverificeret 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
+## Kandidat 4.0.289 – årsagstro produktionstime og bounded selvrecovery
+
+- Ny logevidens viser, at run `33051959643` ikke fejlede i DMI: bulksteget lykkedes med 622/673 lokale strømdele. RavRadars resolver valgte 09 UTC allerede fra en 07:58 UTC-run, fordi den gamle lighedsregel foretrak en fremtidig prognosetime; den målrettede Copernicus-hentning timeoutede derefter. Samme providersti lykkedes senere, så der er ikke evidens for et varigt DMI- eller credentialnedbrud.
+- Produktionen må nu kun vælge en verificeret DMI-time på eller før den workflowlåste reference. Ved nul eksakt dækning vælges bedst dækkede, derefter nærmeste ikke-fremtidige time inden for tre timer.
+- Copernicus-supplementet har præcis to procesisolerede forsøg, seks minutters hard timeout og 20 sekunders pause. Fortsat fejl stopper før runtime og deploy.
+- Efter runtimegenerering gemmes 673 hashkontrollerede, kompakte Candidate G-states før de sidste gates. Næste run må kun anvende en nyere, ikke-fremtidig, højst 72 timer gammel og fuldt modelbundet state. Vejr, scoreoutput, rå U/V, koordinater og private data gemmes ikke i checkpointet.
+- Den komplette offentlige fallback er højst 72 timer gammel og må aldrig bruges efter sin egen seneste prognosetime. Det lukker det konkrete cirka ti timers overlapshul mellem 4.0.288's 48-timersgrænse og den fulde Candidate G-genopbygning uden at tillade ubegrænset gammel prognose.
+- En fejlet, timeoutet eller før-start-fejlet planlagt kørsel genbestilles højst én gang. Et separat payloadfrit watchdog dispatch'er først efter 45 minutters dokumenteret stilhed, gammelt manifest og fravær af aktiv produktion. Concurrency forbliver én tung vejrproduktion. Total stilhed i hele GitHubs scheduler kan ikke løses af endnu et internt schedule og kræver fortsat ekstern overvågning.
+- Målrettede lokale tests, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head CI, frisk produktion og offentlig runtimekontrol afventer. Candidate G 20/50/30, fysik, DMI-først, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0085.
+
+## Tidligere produktionsverificeret 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
 
 - Senest verificerede offentlige datasæt er `rr-20260827013448-210` ved 00 UTC med 210/210 aktive zoner og 673/673 `READY`. Det er mere end otte timer gammelt og blev derfor helt forkastet i browseren, hvilket gjorde zoner sorte og tømte rangliste/femdøgnsvisning.
 - Run `33059522170` byggede 09 UTC efter et nitimers hul. Audit stoppede alle 673 states som `WINDOW_HAS_TIME_GAP`; intet fejlet artifact blev deployet.
@@ -1743,7 +1753,7 @@ Den første 4.0.244-produktionskørsel stoppede korrekt ved 630/673 før release
 
 4.0.245 blev merged som `b461e7a5`, men den præcise produktion `32465245055` stoppede sikkert før livefletning, validering, release og deploy. Den låste 08:00-time fandtes i DMI-cachen for andre felter, men havde 0/673 lokale DMI-strømme; 09:00 havde 622/673. Målbyggeren afviste derfor korrekt en implicit landsdækkende Copernicus-kørsel.
 
-4.0.246 må kun ved nul eksakt DMI-strømdækning vælge den bedst dækkede og derefter nærmeste verificerede DMI-strømtime inden for tre timer. Ved tidsmæssig lighed foretrækkes den fremtidige prognosetime. Den valgte time bindes samlet til målregister, Copernicus, livefletning, vejr, score og forklaring. Findes ingen nærliggende DMI-time, stopper produktionen fortsat. DMI-først, 673/673-gaten, proxyer, score og alle punkter er uændrede.
+4.0.246 måtte ved nul eksakt DMI-strømdækning vælge den bedst dækkede og derefter nærmeste verificerede DMI-strømtime inden for tre timer; ved tidsmæssig lighed blev den fremtidige prognosetime historisk foretrukket. DEC-0085 erstatter denne tie-break i 4.0.289: den workflowlåste time er nu en kausal øvre grænse, og kun samme eller tidligere timer er tilladt. Den valgte time bindes fortsat samlet til målregister, Copernicus, livefletning, vejr, score og forklaring. Findes ingen nærliggende ikke-fremtidig DMI-time, stopper produktionen. DMI-først, 673/673-gaten, proxyer, score og alle punkter er uændrede.
 
 ## 4.0.247 - omkostningsbevidst testmatrix
 

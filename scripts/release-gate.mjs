@@ -87,6 +87,8 @@ for(const workflowVersion of workflowUserAgentVersions){
 for(const marker of [
   'node scripts/restore-candidate-g-gap-checkpoint.mjs',
   'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
+  'candidate-g-continuation-checkpoint-v1-',
+  'node scripts/candidate-g-continuation-checkpoint.mjs',
   'node scripts/candidate-g-public-recovery-fallback.mjs',
   '--stage',
   '--publish',
@@ -95,6 +97,27 @@ for(const marker of [
 ]){
   ok(workflow.includes(marker),`Produktionsworkflowet mangler Candidate G-selvrecovery: ${marker}`);
 }
+const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
+const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
+const continuationCheckpoint=await read('scripts/candidate-g-continuation-checkpoint.mjs');
+const productionWatchdog=await read('scripts/check-production-watchdog.mjs');
+const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-current-shadow.yml');
+ok(targetRegistry.includes('if candidate > requested_hour:'),'DMI-timeopløseren kan ikke bevise, at fremtidige modeltimer afvises');
+for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
+  ok(workflow.includes(marker),`Produktionsworkflowet mangler den bundne Copernicus-kontrakt: ${marker}`);
+}
+for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
+  ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
+}
+for(const marker of ['expectedPartCount: 673','maximumCheckpointAgeHours: 72','weatherIncluded: false','scoresIncluded: false','rawVectorsIncluded: false','coordinatesIncluded: false','privateDataIncluded: false','stateSha256']){
+  ok(continuationCheckpoint.includes(marker),`Candidate G-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
+}
+for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale']){
+  ok(productionWatchdog.includes(marker),`Produktions-watchdoget mangler fail-safe tilstanden: ${marker}`);
+}
+for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'production-watchdog:','--maximum-silence-minutes 45']){
+  ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
+}
 const candidateGMemory=await read('js/core/ravscore-regime-memory.js');
 const candidateGStatePipeline=await read('js/core/ravscore-candidate-g-state-pipeline.js');
 const publicRecovery=await read('scripts/candidate-g-public-recovery-fallback.mjs');
@@ -102,11 +125,12 @@ const publicDataService=await read('js/services/data-service.js');
 const gapCheckpoint=JSON.parse(await read('data/admin/candidate-g-gap-checkpoint-recovery.json'));
 ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGMemory.includes('VERIFIED_TIME_GAP_SUFFIX_RESTART'),'Candidate G-hukommelsen mangler eksplicit opt-in til verificeret suffixgenstart');
 ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
-ok(publicRecovery.includes('maximumAgeHours: 48')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 48-timers hard cap eller fail-closed audit');
+ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller fail-closed audit');
 ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
 ok(publicApp.includes('Dataene er ikke aktuelle'),'Den offentlige brugerflade advarer ikke om nøddriftens aktualitet');
 ok(String(gapCheckpoint.sourceRunId)==='33059522170'&&gapCheckpoint.sourceArtifactName==='RavRadar-support-3633'&&gapCheckpoint.maximumResumeGapHours===3,'Det engangs-godkendte Candidate G-gapcheckpoint er ikke låst til den verificerede kilde og tre timer');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md'),'RDKS mangler DEC-0084 om Candidate G-selvrecovery');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md'),'RDKS mangler DEC-0085 om årsagstro produktion og bundet selvrecovery');
 for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }

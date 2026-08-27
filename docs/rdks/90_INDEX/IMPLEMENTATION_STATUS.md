@@ -1,6 +1,20 @@
-# Implementeringsstatus – produktionsverificeret 4.0.288
+# Implementeringsstatus – kandidat 4.0.289 oven på produktionsverificeret 4.0.288
 
-## Produktionsverificeret P0 – automatisk Candidate G-genopretning i 4.0.288
+## Kandidat P0 – årsagstro produktion og robust recovery i 4.0.289
+
+- [x] Dokumentér rodårsagen: DMI lykkedes med 622/673, mens den gamle resolver valgte en fremtidig 09 UTC-time og Copernicus derefter timeoutede.
+- [x] Forbyd fremtidige DMI-prognosetimer som produktionstime; vælg kun bedst dækkede/nærmeste verificerede time på eller før den låste reference.
+- [x] Indfør præcis to procesisolerede Copernicus-forsøg med seks minutters hard timeout og 20 sekunders pause.
+- [x] Gem og genbrug et generisk, hashkontrolleret 673-deles Candidate G-checkpoint før de sidste gates uden vejr, scoreoutput, rå vektorer, koordinater eller private data.
+- [x] Udvid komplet fallback til højst 72 timer, men stop altid ved dens egen prognosehorisont og bevar atomisk datasetbinding.
+- [x] Tilføj ét automatisk retry efter en fejlet, timeoutet eller før-start-fejlet planlagt kørsel og et payloadfrit 45-minutters stilheds-watchdog uden parallelle tunge builds; dokumentér total GitHub-schedulerstilhed som ekstern overvågningsrisiko.
+- [x] Bestå målrettede time-, retry-, checkpoint-, fallback-, data-service-, watchdog-, heartbeat- og workflowtests samt fuld lokal `validate:source` og releasegate.
+- [x] Synkronisér 4.0.289, RDKS, håndbøger og changelog; bestå RDKS/version/geodatadiff.
+- [ ] Bestå PR'ens exact-head `validate:source`, merge, frisk fuld produktion, faktisk runtimeaudit, releasegate, Pages og offentlig kontrol.
+
+Se DEC-0085. Candidate G 20/50/30, fysik, DMI-først, vejrberegning, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
+## Tidligere produktionsverificeret P0 – automatisk Candidate G-genopretning i 4.0.288
 
 - [x] Afgræns hændelsen til en komplet, men browserafvist 00-runtime og et korrekt fail-closed 09-build med 673 `WINDOW_HAS_TIME_GAP`.
 - [x] Bevar det seneste komplette Candidate G-datasæt atomisk til startup, detaljer, rangliste og femdøgnsvisning i højst 48 timer med tydelig aktualitetsadvarsel.

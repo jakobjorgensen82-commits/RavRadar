@@ -1,3 +1,11 @@
+## 2026-08-27 – 4.0.289 lukker fremtidstime, retry-, checkpoint- og schedulerhuller
+
+- Ejeren godkendte den akutte P0-rettelse samt nødvendige styrkelser af orkestreringen, før P1-arbejdet fortsætter.
+- Run `33051959643` beviser DMI-success med 622/673 og en efterfølgende Copernicus-timeout. Den korrigerbare systemfejl var, at en 07:58-run måtte bindes til fremtidig 09 UTC ved den gamle tie-break.
+- DEC-0085 gør den workflowlåste time til kausal øvre grænse, giver Copernicus to seksminutters forsøg, bevarer kompakt 673-deles state mellem fejlede runs og udvider fallback til højst 72 timer uden at passere dens egen prognosehorisont.
+- En fejlet, timeoutet eller før-start-fejlet schedule-run får ét retry; watchdoget bruger kun workflowmetadata og offentligt manifest og dispatch'er efter 45 minutters stilhed uden aktiv produktion. Total GitHub-schedulerstilhed er fortsat en ekstern overvågningsrisiko.
+- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, frisk produktion og offentlig verifikation afventer. Ingen score, vejrberegning, geometri, land-/vandpunkter eller private data er ændret.
+
 ## 2026-08-27 – automatisk Candidate G-genopretning efter fejlhentning
 
 - Ejeren prioriterede P0-driften foran AI-/oversættelsessporene og krævede både akut gendannelse og permanent selvrecovery.

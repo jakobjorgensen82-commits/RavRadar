@@ -1,6 +1,14 @@
 # RavRadar – overlevering til næste chat
 
-## Afsluttet P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
+## Aktiv P0 – kandidat 4.0.289
+
+- Ny logevidens viser DMI-success med 622/673 i fejlkørsel `33051959643`; den korrigerbare systemfejl var et fremtidigt 09 UTC-valg fra en 07:58-run efterfulgt af en transient Copernicus-timeout.
+- Kandidaten forbyder fremtidig produktionstime, bruger to procesisolerede Copernicus-forsøg og bevarer et generisk hash-/modelbundet checkpoint med præcis 673 kompakte Candidate G-states mellem runs.
+- Komplet fallback er højst 72 timer og aldrig efter egen prognosehorisont. En fejlet, timeoutet eller før-start-fejlet schedule-run får ét retry; watchdoget dispatch'er først efter 45 minutters verificeret stilhed og ingen aktiv produktion. Total GitHub-schedulerstilhed er fortsat en ekstern overvågningsrisiko.
+- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, merge, frisk produktion og offentlig browserkontrol afventer. P1 genoptages først efter P0-lukning. Se DEC-0085.
+- Fortsæt kun i den isolerede worktree/branch `codex/harden-current-hour-recovery-4.0.289`; rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+
+## Tidligere afsluttet P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
 
 - Offentlig 4.0.287-baseline `rr-20260827013448-210` er komplet ved 00 UTC, men browseren kasserer den efter otte timer. Derfor blev zoner sorte, og **Bedste områder** samt **5-dages RavRadar** tomme.
 - Fejlkørsel `33059522170` nåede 09 UTC med et reelt nitimers hul. Candidate G afviste korrekt alle 673 states; det fejlede checkpoint blev ikke deployet, så næste run kunne ikke fortsætte fra suffixen.

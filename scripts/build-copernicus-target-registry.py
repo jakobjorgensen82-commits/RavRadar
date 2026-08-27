@@ -142,6 +142,11 @@ def resolve_dmi_hour(
         raise ValueError("Copernicus DMI-hour offset must be non-negative")
     candidates: list[tuple[datetime, set[str]]] = []
     for candidate in available_dmi_hours(document):
+        # The workflow-approved request is a causal ceiling. DMI forecast rows
+        # after that hour may be useful as forecasts, but they must never move
+        # a production build into the future.
+        if candidate > requested_hour:
+            continue
         offset_seconds = abs((candidate - requested_hour).total_seconds())
         if candidate == requested_hour or offset_seconds > max_hour_offset * 3600:
             continue
@@ -155,8 +160,7 @@ def resolve_dmi_hour(
         key=lambda item: (
             -len(item[1]),
             abs((item[0] - requested_hour).total_seconds()),
-            0 if item[0] >= requested_hour else 1,
-            item[0],
+            -item[0].timestamp(),
         ),
     )
 
