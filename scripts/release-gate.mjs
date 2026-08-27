@@ -73,6 +73,7 @@ ok(pythonAdminSync.includes('fetch_admin_rows')&&pythonAdminSync.includes('PGRST
 ok(pythonAdminSync.includes('is_candidate_g_only_selection')&&pythonAdminSync.includes('preserved-owner-approved-candidate-g-only-contract'),'Central adminhydrering kan genindføre en gammel offentlig RavScore-konfiguration');
 ok(sync.includes('assertCandidateGOnlySelection')&&sync.includes('candidate-g-local-fail-closed'),'Central adminpersistens mangler Candidate G-only-kontrakten');
 const publicApp=await read('app.js');
+const publicI18n=await read('js/i18n.js');
 const publicAssistant=await read('js/services/rav-assistant.js');
 const publicInfoPanel=await read('js/ui/info-panel.js');
 ok(!/calculateRavScore|selectBestTimeForDay|scoreFor\(/.test(publicApp),'Den offentlige app indeholder stadig en vej til den gamle RavScore-motor');
@@ -127,7 +128,7 @@ ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGM
 ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
 ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller fail-closed audit');
 ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
-ok(publicApp.includes('Dataene er ikke aktuelle'),'Den offentlige brugerflade advarer ikke om nøddriftens aktualitet');
+ok(publicApp.includes("t('data.emergency'")&&publicI18n.includes('Dataene er ikke aktuelle')&&publicI18n.includes('Die Daten sind nicht aktuell')&&publicI18n.includes('The data is not current'),'Den offentlige brugerflade advarer ikke på DA/DE/EN om nøddriftens aktualitet');
 ok(String(gapCheckpoint.sourceRunId)==='33059522170'&&gapCheckpoint.sourceArtifactName==='RavRadar-support-3633'&&gapCheckpoint.maximumResumeGapHours===3,'Det engangs-godkendte Candidate G-gapcheckpoint er ikke låst til den verificerede kilde og tre timer');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md'),'RDKS mangler DEC-0084 om Candidate G-selvrecovery');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md'),'RDKS mangler DEC-0085 om årsagstro produktion og bundet selvrecovery');

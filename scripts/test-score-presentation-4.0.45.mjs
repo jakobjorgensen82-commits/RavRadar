@@ -24,8 +24,8 @@ const browserAudit = fs.readFileSync(new URL("./audit-online-browser-4.0.238.py"
 assert.doesNotMatch(index, /Fremragende|legend-dot excellent|score-symbol excellent/);
 assert.match(index, /En stjerne viser usædvanligt gode forhold/);
 assert.match(app, /exceptionalScoreMark\(item\.rankingDisplayScore\)/);
-assert.match(app, /title="Områdescore"/);
+assert.match(app, /title="\$\{t\('ranking\.areaScore'\)\}"/);
 assert.doesNotMatch(css, /\.rank-score\.excellent|\.score-badge\.excellent/);
-assert.match(infoPanel, /Vandstandsændring på 3 timer/);
+assert.match(infoPanel, /t\('weather\.waterTrend'\)/);
 assert.match(browserAudit, /Vandstandsændring på 3 timer/);
 console.log("Scoresignatur valideret: fire kortfarver og stjerne kun ved usædvanligt god ranglistescore.");

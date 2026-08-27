@@ -1,5 +1,18 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-27 – lokal 4.0.290 DA/DE/EN- og assistentkandidat
+
+- Den komplette offentlige oversættelse er implementeret i den isolerede worktree: ét centralt katalog, dansk standard/fallback, stabile nøgler/parametre, localeformatering og lokalt husket valg med CSS-tegnede flag plus Dansk/Deutsch/English.
+- Hovedside, aktuelle/femdøgnsstatusser, kort-/områdepanel, konto/login, turformularer, lokal assistent, hele **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt** følger locale. Admin-, ekspert-, PIN-, debug- og interne flader er fortsat danske.
+- Spørg RavRadar afviser roulade, opskrift, fodbold og sikkerheds-/credentialforsøg før fjernkald; bedste sted/tid/score forbliver lokale Candidate G-funktioner. Kun ravrelevant ukendt fri tekst kan blive remote-kandidat. Offentlig `ravAssistantRemoteEnabled=false` er uændret.
+- Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b` til den kommende gratis fjernfunktion. Gemini 3.5 Flash-Lite 27/27 bevares kun som kvalitetsreference, fordi gratis offentlig EØS-brug ikke er tilladt under aktuelle vilkår. GLM og Gemma blev stoppet efter ikke-evaluerbare smoke-svar.
+- GPT-OSS bestod smoke 1/1, den målrettede tidligere-fejl-gate 4/4 og 25/26 evaluerbare svar i den fulde 27-case-suite. Median/p95 var 1.406/2.933 ms; 26 rapporterede svar brugte 32.835 tokens og estimeret mindst 623,63 neuroner. `de-waders` overskred kun længdegrænsen, og `en-open-travel` timeoutede; begge skal fejle lukket i Edge, og rejseemnet skal afvises før provider.
+- Brugbare svar krævede Cloudflare `json_object`, rekursiv kontrolleret payloadudtrækning, fem faste outputfelter, 800 completion-tokens/low reasoning, eksplicit disposition- og evidenssemantik med konkrete Candidate G-eksempler samt smoke → 4-case mål-gate → fuld eval. Fri tekst, ukendt schema og det fejlede direkte `json_schema`-spor må ikke genindføres.
+- Den fortsat deaktiverede server-side GPT-OSS-adapter er implementeret med Cloudflare-secrets kun på serveren, lokal og server-side domænegate, allowlistet kontekst, CORS, 6/minut, 40/time og 300/dag, syv sekunders timeout, `json_object`, rekursiv udtrækning, eksakt femfeltsvalidering, evidens-/locale-/længdekontrol samt lokal fallback/rollback.
+- Målrettet offlineeval, i18n-/assistent-/Edge-/sikkerhedstest, konto-/turkontrakter, 210/673/2.100-præsentation og lokal browserkontrol er grøn. Browseren beviser DA/DE/EN på forsiden, Om-siden og Grundbogen ved desktop og 390 px, lokalt valg på tværs af sider, QR, syv kilder og intet sidebreddebrud. Den manglende `data/live/public-condition-details.json` i en ikke-hydreret kildeworktree er fortsat forventet og må ikke fabrikeres.
+- Fuld lokal `scripts/validate-source.ps1` inklusive releasegate er grøn på den færdige kandidat. Næste trin er exact-head/PR og derefter frisk produktions-/offentlig browserkontrol. Offentlig AI-aktivering og Edge-deploy kræver fortsat særskilt ejer-go; flaget er derfor stadig `false`.
+- Beskyttet rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er urørte. Se DEC-0086/0087.
+
 ## AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret 4.0.289
 
 - Efter 4.0.288-lukningen blev run `33051959643` læst i dybden. DMI-bulk lykkedes med 622/673; den gamle timeopløser bandt en 07:58 UTC-run til fremtidig 09 UTC, hvorefter Copernicus timeoutede. Samme providersti lykkedes senere, så DMI var ikke rodårsagen.

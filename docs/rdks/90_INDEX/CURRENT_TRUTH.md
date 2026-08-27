@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Lokal 4.0.290-kandidat – central offentlig DA/DE/EN og sikker assistentgrænse
+
+- Dansk er standard og fallback. Dansk/Deutsch/English vælges med flag og navn, huskes lokalt og driver ét centralt tekstkatalog med parametre og localeformatering.
+- Hele den offentlige flade dækker hovedside, aktuelle/femdøgnsvisninger, områdepanel, konto/login, turformularer, lokal assistent, **Om RavRadar** og alle 12 sektioner i grundbogen. Admin/ekspert/internt forbliver dansk.
+- Uvedkommende og sikkerhedsfølsomme spørgsmål afvises før provider. National rangering, bedste tidspunkt og konkret score er fortsat deterministiske Candidate G-svar. Den tilladte AI-kontekst er offentlig og dataminimeret.
+- Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b` til den kommende gratis fjernfunktion. Gemini 3.5 Flash-Lite er kun historisk 27/27-reference under de aktuelle EØS-vilkår; GLM/Gemma gav ikke-evaluerbare smoke-svar. GPT-OSS bestod 1/1 smoke, 4/4 mål-gate og 25/26 evaluerbare fuldtests. Den observerede længdeafvigelse og timeout skal fejle lukket i Edge.
+- Den implementerede Edge-kontrakt bruger `json_object`, kontrolleret rekursiv svarudtrækning, fem faste felter, 800 completion-tokens/low reasoning, eksplicit disposition/evidens, syv sekunders timeout og 6/minut, 40/time samt 300/dag. Direkte `json_schema` og fri tekst er ikke godkendte providerkontrakter.
+- Ekstern AI er fortsat deaktiveret, så implementeringen er en rollback-klar kandidat og ikke livefunktion. Ingen credential findes i browseren eller repositoryet. Lokal desktop-/390 px-kontrol af alle tre offentlige sider og sprog er grøn. Se DEC-0086/0087.
+
 ## Produktionsverificeret 4.0.289 – årsagstro produktionstime og bounded selvrecovery
 
 - Ny logevidens viser, at run `33051959643` ikke fejlede i DMI: bulksteget lykkedes med 622/673 lokale strømdele. RavRadars resolver valgte 09 UTC allerede fra en 07:58 UTC-run, fordi den gamle lighedsregel foretrak en fremtidig prognosetime; den målrettede Copernicus-hentning timeoutede derefter. Samme providersti lykkedes senere, så der er ikke evidens for et varigt DMI- eller credentialnedbrud.
@@ -24,15 +33,15 @@
 - PR #179 bestod exact-head `33069307854` og blev merged som `653a9811`. Produktion `33069384084`, build `98507461295` og Pages `98512392768` bestod frisk DMI/Copernicus, faktisk runtimeaudit, fallbackpublicering, fuld validering, releasegate, Supabase-sync, artifact og deploy.
 - Live primær `rr-20260827121030-210` er ærligt 0/673 `READY`; manifestet vælger komplet fallback `rr-20260827013448-210` med 210 zoner, 673 dele, 673 `READY`, 1.346 modeevalueringer, 48-timersgrænse og matchende hashes for både startup og detaljer. Browserkontrollen viser 210 farvede zoner uden sorte zoner, fem **Bedste områder**, fem udfyldte prognosedage, fungerende områdedetaljer, tydelig nødtekst og nul konsolfejl/advarsler. Se DEC-0084.
 
-## Aktiv P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
+## Afsluttet P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
 
 - Ejeren kræver nul betaling. En eventuel fjernmodel må kun bruge et verificeret Free Tier-projekt uden billing eller betalt overflow; kvoteudløb og providerfejl skal falde tilbage lokalt.
 - Den eksisterende 4.0.287-Edge er ikke aktiveringsklar: den er OpenAI-/danskbundet, returnerer fri tekst, mangler en almindelig out-of-scope-gate og kalder ved fjernaktivering modellen før deterministiske bedste sted/tid/score-svar.
 - `knowledge/rav-assistant-public-v1.json` er den første versionsbundne offentlige videnspakke: Candidate G-only, 20/50/30, lokal missing, ingen fund-/sikkerhedsgaranti, waders-jagtbarhed, strømtransport og bølgemobiliseringshukommelse.
 - `scripts/fixtures/rav-assistant-evals-v1.json` har 45 symmetriske cases, 15 pr. sprog på dansk, tysk og engelsk. Offline-runneren kontrollerer routes, evidens-ID'er, fast og åben emneafvisning samt prompt injection.
 - Live-runneren nægter at bruge Gemini uden både `GEMINI_API_KEY` og `GEMINI_FREE_TIER_CONFIRMED=1` og kalder som standard kun remote-kandidatcases. Nøglen er kun lokalt installeret og indgår ikke i Git eller rapporter.
-- `gemini-3.7-flash` er afvist til dette use case efter fem timeouts ved 12/30 sekunder, også med low thinking. `gemini-3.5-flash-lite`/low er valgt som næste, fortsat deaktiverede Edge-kandidat efter 27/27, DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
-- Offentlig `ravAssistantRemoteEnabled=false` og lokal assistentfallback er uændrede i version 4.0.288. AI-videns-/evalgrundlaget er fortsat versionsbundet til den auditerede 4.0.287 Candidate G-kontrakt, indtil P1-scope bekræftes. Se DEC-0083 og `docs/research/RAV_ASSISTANT_FREE_GEMINI_EVAL_DESIGN_2026-08-27.md`.
+- `gemini-3.7-flash` er afvist efter fem timeouts; `gemini-3.5-flash-lite`/low bestod historisk 27/27, men er senere erstattet som produktionskandidat af ejerens GPT-OSS 20B-valg i DEC-0087. Gemini-resultatet er kun kvalitetsreference.
+- Lokal 4.0.290 har implementeret den hærdede GPT-OSS Edge på dette grundlag, mens offentlig `ravAssistantRemoteEnabled=false` og lokal assistentfallback er uændrede. Se DEC-0083/0087 og `docs/research/RAV_ASSISTANT_FREE_GEMINI_EVAL_DESIGN_2026-08-27.md`.
 
 ## Produktionsverificeret 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
 

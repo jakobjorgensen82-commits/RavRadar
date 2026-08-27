@@ -1,11 +1,13 @@
 # DEC-0083 – Spørg RavRadar skal være gratis og domæneafgrænset
 
-**Status:** Godkendt arkitektur- og evalkontrakt; Flash-Lite valgt til implementeringskandidat, offentlig aktivering ikke besluttet
+**Status:** Domæne-, data-, fallback- og evalkontrakt gælder; Gemini-produktionsvalget er erstattet af DEC-0087
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
 **Offentlig runtimepåvirkning:** Ingen ved dette checkpoint
 
 ## Problem
+
+**Revision 2026-08-27:** Det historiske Flash-Lite-resultat nedenfor bevares som kvalitetsreference. Googles nye vilkår gør gratis Gemini uegnet til en offentlig EØS-hjemmeside; Cloudflare Workers AI er nu produktionskandidatsporet. Se DEC-0087.
 
 Den eksisterende fjernassistent er deaktiveret og historisk bundet til OpenAI. Den gamle Edge-prompt har en sikkerhedsordliste, men ingen håndhævet afvisning af almindelige uvedkommende emner. Hvis den blev aktiveret uændret, kunne et spørgsmål om eksempelvis en roulade nå modellen, mens bedste sted/tid kunne blive besvaret af en model uden den nødvendige nationale Candidate G-kontekst.
 

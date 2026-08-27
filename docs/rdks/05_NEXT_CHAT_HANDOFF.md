@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv lokal 4.0.290-kandidat – komplet offentlig DA/DE/EN og hærdet GPT-OSS Edge
+
+- Hele den offentlige sprogflade er implementeret centralt: dansk standard/fallback, stabile CSS-flag+sprognavne, lokalt valg og stabile parameteriserede nøgler for hovedside, prognoser, områdepanel, konto/login, ture, lokal assistent, **Om RavRadar** og alle 12 afsnit i **Grundbog i ravjagt**.
+- Admin-, ekspert- og interne flader forbliver danske. Kandidaten ændrer ingen faglig model, vejr-, score-, sorterings-, konto-/tur-, privatlivs- eller geografidata.
+- Fast emnegate afviser bl.a. roulade før provider; bedste sted/tid/score forbliver deterministisk Candidate G. Ekstern AI er fortsat slukket.
+- Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b`; Gemini Flash-Lite 27/27 er kun kvalitetsreference under de aktuelle EØS-vilkår. GLM/Gemma blev stoppet efter ikke-evaluerbare smoke-svar. GPT-OSS bestod 1/1 smoke, 4/4 mål-gate og 25/26 evaluerbare fuldtests med median/p95 1.406/2.933 ms og estimeret mindst 623,63 neuroner.
+- Brugbare Cloudflare-svar krævede `json_object`, kontrolleret rekursiv svarudtrækning, fem faste outputfelter, 800 completion-tokens/low reasoning, konkrete disposition-/evidenseksempler og en smoke → mål-gate → fuld-eval-rækkefølge. Edge skal fejle lukket på længdeafvigelsen og timeoutcasen.
+- Den hærdede GPT-OSS Edge-kandidat er implementeret med server-secrets, domænegate, dataminimering, CORS, 6/minut, 40/time og 300/dag, syv sekunders timeout, eksakt JSON/evidensvalidering og lokal fallback. `ravAssistantRemoteEnabled=false` er uændret; deploy/aktivering er ikke godkendt.
+- Målrettede tests, lokal desktop-/390 px-browserkontrol for alle tre offentlige sider og sprog samt fuld lokal `validate:source`/releasegate er grønne. Næste trin er exact-head/PR og frisk offentlig kontrol. Se DEC-0086/0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.
+
 ## Afsluttet P0 – produktionsverificeret 4.0.289
 
 - Ny logevidens viser DMI-success med 622/673 i fejlkørsel `33051959643`; den korrigerbare systemfejl var et fremtidigt 09 UTC-valg fra en 07:58-run efterfulgt af en transient Copernicus-timeout.
@@ -27,8 +37,8 @@
 - DEC-0083 låser ejerkravet: nul betaling, Free Tier uden billing eller betalt overflow, ravrelevant domæne og lokal fallback ved kvote-/providerfejl.
 - Den nuværende Edge er auditeret, men ikke ændret eller aktiveret. Dens mangler er almindelig emneafvisning, DA/DE/EN, struktureret output og deterministisk routing før fjernmodel.
 - Den versionsbundne `rav-assistant-public-v1`-videnspakke og 45 balancerede DA/DE/EN-cases er oprettet. Offline self-test er grøn og adskiller fast afvisning, lokal deterministisk routing og remote-kandidat.
-- Live-eval er eksplicit opt-in og kræver `GEMINI_API_KEY` plus `GEMINI_FREE_TIER_CONFIRMED=1`. Nøglen er installeret lokalt uden Git/output. `gemini-3.7-flash` gav fem 12/30-sekunders-timeouts; `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27 med median 1.329 ms og p95 1.896 ms.
-- DEC-0083 vælger derfor Flash-Lite til næste, fortsat deaktiverede implementeringskandidat. Næste trin efter konkret ejerbekræftelse er provider-neutral integration i den eksisterende Edge med server-side credential, struktureret validering, CORS/rate limit/timeout, lokal fallback og rollback.
+- Gemini-liveevalen er nu historisk reference: `gemini-3.7-flash` gav fem 12/30-sekunders-timeouts, mens `gemini-3.5-flash-lite`/low bestod 27/27 med median/p95 1.329/1.896 ms. DEC-0087 erstatter Gemini-produktionsvalget på grund af de aktuelle EØS-vilkår.
+- Ejeren vælger GPT-OSS 20B til næste, fortsat deaktiverede implementeringskandidat. Næste trin er providerintegration i den eksisterende Edge med server-side credential, struktureret validering, CORS/rate limit/timeout, lokal fallback og rollback.
 - Spørg RavRadars versionsbundne viden/evalgrundlag forbliver 4.0.287 og local-only, indtil det afgrænsede P1-scope bekræftes; den offentlige app er produktionsverificeret i 4.0.288. Beskyttet rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
 
 ## Nyt planlagt P1-spor – flersproget UI og Spørg RavRadar

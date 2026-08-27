@@ -1,4 +1,19 @@
-# Implementeringsstatus – produktionsverificeret 4.0.289
+# Implementeringsstatus – produktionsverificeret 4.0.289 / lokal 4.0.290-kandidat
+
+## P1 kandidat – central DA/DE/EN og domæneafgrænset assistent i 4.0.290
+
+- [x] Centralt DA/DE/EN-katalog med stabile nøgler/parametre, dansk standard/fallback og localeformatering.
+- [x] Tilgængelig sprogvælger med flag+sprognavne og lokalt husket valg.
+- [x] Komplet offentlig flade gennem hovedside, prognoser, områdepanel, konto/login, ture, lokal assistent, Om-siden og hele Grundbogen; admin/ekspert/internt forbliver dansk.
+- [x] Fast flersproget afvisning før provider, deterministisk Candidate G-routing og dataminimeret offentlig kontekst.
+- [x] Provider-neutral Cloudflare/Gemini-evalrunner med samme DA/DE/EN-kontrakt, hard billing-opt-in og token-/latenstids-/neuronrapportering.
+- [x] Revider Gemini-produktionsvalget: historisk 27/27-reference, men gratis offentlig EØS-drift er no-go; Workers Free er kandidatsporet.
+- [x] Bestå målrettede i18n-, assistent-, konto-/tur-, 210/673/2.100-præsentations- og lokale desktop-/390 px-browserkontroller på alle tre offentlige sider.
+- [x] Kør Cloudflare-liveeval med mindst-muligt token på bekræftet Workers Free. Ejeren har valgt GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests; GLM/Gemma stoppede efter ikke-evaluerbare smoke-svar.
+- [x] Hærd Edge efter modelvalg med server-secrets, domænegate, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Deploy/aktivering afventer særskilt ejer-go.
+- [ ] Fuld lokal kildegate og releasegate er grønne; exact-head, frisk produktion og offentlig tværgående browserkontrol afventer.
+
+Se DEC-0086 og DEC-0087. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
 ## Afsluttet P0 – årsagstro produktion og robust recovery i 4.0.289
 
@@ -43,8 +58,8 @@ Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, 
 - [x] Bestå målrettet eval-, lokal assistent-, Edge-sikkerheds-, RDKS-, knowledge-, kildeneutralitets- og releasegatekontrol.
 - [x] Bekræft Free Tier uden billing/betalt overflow til live-runneren og installer nøglen lokalt uden Git eller credentialoutput. Faktisk projektkvote skal fortsat aflæses igen før release.
 - [x] Kør live-eval mod `gemini-3.7-flash` og `gemini-3.5-flash-lite`; dokumentér fejl, latenstid, tokens og modelvalg. 3.7 gav fem timeouts; Flash-Lite/low bestod 27/27 med median/p95 1.329/1.896 ms og 27.314 tokens.
-- [x] Vælg Flash-Lite som næste deaktiverede Edge-kandidat; dette er ikke offentlig aktivering.
-- [ ] Implementér først derefter provider-neutral Edge-routing, struktureret validering, fast afvisning og rollback bag fortsat deaktiveret standardflag.
+- [x] Bevar Flash-Lite 27/27 som historisk reference, men erstat produktionskandidaten med ejerens GPT-OSS 20B-valg i DEC-0087; dette er ikke offentlig aktivering.
+- [x] Implementér provider-neutral Edge-routing, struktureret validering, fast afvisning og rollback bag fortsat deaktiveret standardflag.
 - [ ] Aktiver kun efter særskilt ejer-go, positiv CORS/rate-limit/fallback/DA-DE-EN/browserkontrol og aktuel privatlivs-/vilkårskontrol.
 
 Der er ingen offentlig runtime-, score-, vejr-, konto-/tur-, geometri- eller dataændring i denne leverance. Se DEC-0083.

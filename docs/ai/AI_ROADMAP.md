@@ -1,4 +1,18 @@
-# AI Roadmap – RavRadar 4.0.289+
+# AI Roadmap – RavRadar 4.0.290+
+
+## Aktiv releasekandidat – central DA/DE/EN og sikker assistentrouting i 4.0.290
+
+- [x] Implementér første offentlige oversættelsesscope som ét katalog med stabile nøgler/parametre, dansk standard/fallback, flag plus sprognavne og lokalt husket valg.
+- [x] Oversæt hovedside, kort/status, aktuelle/femdøgnsvisninger, områdepanel, konto/login, turformularer og lokal Spørg RavRadar-overflade uden at ændre data eller score.
+- [x] Hold admin-, ekspert-, PIN-, debug- og øvrige interne flader danske; oversæt efter ejerens efterfølgende go også hele **Om RavRadar** og **Grundbog i ravjagt**.
+- [x] Indfør flersproget fast afvisning før provider, lokal deterministisk routing af bedste sted/tid/score og dataminimeret offentlig kontekst; ekstern AI forbliver deaktiveret.
+- [x] Revider Gemini-valget mod aktuelle vilkår. Gratis Gemini er no-go til offentlig EØS-hjemmeside; Cloudflare Workers AI er kandidatsporet, mens Gemini 3.5 Flash-Lite 27/27 bevares som intern reference.
+- [x] Gør evalrunneren provider-neutral for tre Workers Free-kandidater og Gemini-reference med samme 45/27-case kontrakt, schema, målinger og hårde stop.
+- [x] Kør Cloudflare live-eval efter mindst-muligt Workers AI-token og bekræftet Workers Free-konto; vælg GPT-OSS 20B på den dokumenterede smoke-, mål- og fulde eval.
+- [x] Implementér den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Deploy/aktivering afventer; `ravAssistantRemoteEnabled=false` bevares indtil særskilt ejer-go.
+- [ ] Fuld lokal kilde-/releasegate er grøn. Bestå derefter exact-head CI, frisk produktion og offentlig DA/DE/EN-browserkontrol før 4.0.290 kaldes produktionsverificeret.
+
+Se DEC-0086, DEC-0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.
 
 ## Afsluttet P0 – produktionsverificeret årsagstro produktion og robust recovery i 4.0.289
 
@@ -55,30 +69,32 @@ Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 
 Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
-## P1 planlagt – dansk, tysk og engelsk offentlig brugerflade
+## P1 aktiv – dansk, tysk og engelsk offentlig brugerflade
 
-- [ ] Indfør ét centralt oversættelsessystem i den eksisterende applikation; der må ikke vedligeholdes tre kopier af hjemmesiden.
-- [ ] Brug dansk som standard ved første besøg, og tilføj et tilgængeligt sprogvalg øverst med dansk, tysk og engelsk flag samt tydelige sprognavne. Brugerens valg skal huskes lokalt.
-- [ ] Første leverance omfatter hovedside, aktuelle prognoser, femdøgnsprognoser, områdevindue, konto, login og turformularer. Forventet omfang: cirka 4–8 aktive timer.
-- [ ] Den komplette offentlige leverance omfatter desuden **Om RavRadar**, hele den offentlige **Grundbog i ravjagt** og **Spørg RavRadar**. Forventet samlet omfang: cirka 8–16 aktive timer.
-- [ ] Datoer, klokkeslæt, statusser, fejltekster, tilgængelighedstekster og dynamiske RavScore-forklaringer skal følge det valgte sprog. Stednavne og andre egennavne skal bevares.
-- [ ] Dynamiske forklaringer skal bruge stabile betydnings-/tekstnøgler med parametre frem for skrøbelig ordret udskiftning af danske sætninger. Manglende oversættelser skal falde sikkert tilbage til dansk.
-- [ ] Oversættelsen må ikke ændre RavScore, vejrdata, områdesortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter.
-- [ ] Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere beslutter et særskilt udvidet scope.
-- [ ] Tilføj målrettede sprog-, fallback-, HTML-sikkerheds-, konto-/tur-, responsiv header- og browserregressioner for alle tre sprog før offentlig deploy.
+- [x] Indfør ét centralt oversættelsessystem i den eksisterende applikation; der må ikke vedligeholdes tre kopier af hjemmesiden.
+- [x] Brug dansk som standard ved første besøg, og tilføj et tilgængeligt sprogvalg øverst med dansk, tysk og engelsk flag samt tydelige sprognavne. Brugerens valg skal huskes lokalt.
+- [x] Første leverance omfatter hovedside, aktuelle prognoser, femdøgnsprognoser, områdevindue, konto, login og turformularer. Den er implementeret i lokal 4.0.290-kandidat og afventer release-/produktionsgates.
+- [x] Den komplette offentlige lokale leverance omfatter også **Om RavRadar**, hele den offentlige **Grundbog i ravjagt** og **Spørg RavRadar**.
+- [x] Datoer, klokkeslæt, statusser, fejltekster, tilgængelighedstekster og dynamiske RavScore-forklaringer følger det valgte sprog i første scope. Stednavne og andre egennavne bevares.
+- [x] Dynamiske forklaringer bruger stabile betydnings-/tekstnøgler med parametre frem for skrøbelig ordret udskiftning af danske sætninger. Manglende oversættelser falder sikkert tilbage til dansk.
+- [x] Oversættelsen ændrer ikke RavScore, vejrdata, områdesortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter.
+- [x] Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere beslutter et særskilt udvidet scope.
+- [x] Målrettede sprog-, fallback-, konto-/tur- og lokale browserregressioner er grønne på desktop og 390 px mobil. Exact-head og offentlig browserkontrol mangler før deploy.
 
 ## P1 aktiv – modernisering og AI-valg til Spørg RavRadar
 
 - [x] Gennemgå den nuværende **Spørg RavRadar**-funktion mod RavRadars aktuelle Candidate G-model, offentlige scoreforklaringer, grundbog, konto-/turflow og sikkerhedsgrænser. Auditten viser især manglende domænegate, kun dansk fri tekst og usikker remote-first-ruting af deterministiske dataspørgsmål.
 - [x] Definér en versionsbundet offentlig videnspakke og en snæver kontekstkontrakt, så assistenten kan forklare aktuelle offentlige prognoser uden adgang til private data, interne regler, credentials eller rå diagnostik. `rav-assistant-public-v1` er bundet til 4.0.287/Candidate G.
 - [x] Opbyg en reproducerbar evalpakke med realistiske spørgsmål på dansk, tysk og engelsk. Pakken har 45 balancerede cases og måler faglig evidens, selected-zone-grænse, usikkerhed, fast og åben emneafvisning, prompt injection, sikkerhed, latenstid og tokens.
-- [x] Sammenlign relevante gratis AI-modeller ud fra evalresultater, flersproget kvalitet, stabilitet, latenstid, omkostning, rate limits, databehandling og egnethed til den hærdede Edge-gateway. Flash-Lite bestod den endelige remote-kandidatsuite 27/27; 3.7 Flash timeoutede i fem forsøg.
-- [x] Vælg `gemini-3.5-flash-lite` med low thinking på dokumenteret evidens og registrér beslutning og rollback. Valget gælder kun næste deaktiverede implementeringskandidat, ikke offentlig aktivering.
-- [ ] Implementér modellen bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren, når ejeren har bekræftet dette konkrete scope.
-- [ ] Bevar en sikker lokal fallback, rate limiting, input-/outputgrænser, locale-felt og samme-sprog-svar. Assistentfejl må aldrig blokere prognosen eller turflowet.
+- [x] Bevar den historiske Gemini-sammenligning: Flash-Lite bestod 27/27; 3.7 Flash timeoutede i fem forsøg.
+- [x] Genkontrollér aktuelle vilkår og forkast gratis Gemini som offentlig EØS-produktionskandidat. En hjemmeside er udtrykkeligt et API Client, og offentlig EØS-brug kræver Paid Service.
+- [x] Udvid samme runner til Workers Free-kandidaterne GLM-4.7-Flash, Gemma 4 26B og GPT-OSS 20B med token-, latenstids- og neuronmåling.
+- [x] Kør den fælles live-eval og vælg en Cloudflare-model på evidens. GPT-OSS 20B er valgt som deaktiveret Edge-kandidat efter smoke 1/1, mål-gate 4/4 og 25/26 beståede evaluerbare fuldtests; GLM og Gemma gav ikke-evaluerbare smoke-svar. Én længdeafvigelse og én irrelevant timeout er låst som fail-closed gatewaycases.
+- [x] Implementér modellen bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren efter ejerens bekræftelse.
+- [x] Bevar en sikker lokal fallback, tre rate limits, input-/outputgrænser, locale-felt og samme-sprog-svar. Assistentfejl kan ikke blokere prognosen eller turflowet.
 - [ ] Deploy og verificér gatewayen gennem en godkendt kanal med målrettede sikkerheds-, CORS-, misbrugs-, flersprogs- og offentlig browserkontroller.
 
-Ejerkravet er nul betaling. DEC-0083 kræver et Free Tier-projekt uden billing eller betalt overflow. Offlinekontrakten og den endelige 27-case Flash-Lite-eval er grøn; konkret kvote og vilkår skal stadig genkontrolleres før release. Offentlig 4.0.287 forbliver local-only.
+Ejerkravet er nul betaling. DEC-0087 kræver Workers Free uden betalt overflow; dagskvoten skal fejle lukket og give lokal fallback. Gemini er kun sammenligningsreference. Offentlig 4.0.289 forbliver local-only, og 4.0.290-kandidaten har fortsat `ravAssistantRemoteEnabled=false`.
 
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 

@@ -5,19 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://services.arcgisonline.com https://server.arcgisonline.com; connect-src 'self' https://afqhhdrkjfjtpadntdzo.supabase.co; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#073b4c">
-  <meta name="description" content="Mød Jakob Jørgensen, og læs om ideen og det frivillige arbejde bag RavRadar.">
-  <title>Om RavRadar</title>
-  <link rel="stylesheet" href="about.css?v=4.0.289">
+  <meta name="description" data-i18n-content="about.meta.description" content="Mød Jakob Jørgensen, og læs om ideen og det frivillige arbejde bag RavRadar.">
+  <title data-i18n="about.meta.title">Om RavRadar</title>
+  <link rel="stylesheet" href="about.css?v=4.0.290">
 </head>
 <body>
   <header class="site-header">
-    <a class="back-link" href="./" aria-label="Tilbage til RavRadar"><span aria-hidden="true">←</span> RavRadar</a>
-    <span class="header-label">Om projektet</span>
+    <a class="back-link" href="./" data-i18n-aria-label="static.back"><span aria-hidden="true">←</span> RavRadar</a>
+    <span class="header-label" data-i18n="about.header">Om projektet</span>
+    <div class="static-language-switcher" role="group" data-i18n-aria-label="language.selector">
+      <button type="button" data-language="da"><span class="language-flag flag-da" aria-hidden="true"></span><span>Dansk</span></button>
+      <button type="button" data-language="de"><span class="language-flag flag-de" aria-hidden="true"></span><span>Deutsch</span></button>
+      <button type="button" data-language="en"><span class="language-flag flag-en" aria-hidden="true"></span><span>English</span></button>
+    </div>
   </header>
 
   <main>
     <section class="hero">
-      <div class="hero-copy">
+      <div class="hero-copy" data-i18n-html="about.hero">
         <p class="eyebrow">Frivilligt projekt · gratis at bruge</p>
         <h1>RavRadar er skabt for at give flere gode timer ved kysten</h1>
         <p>Et værktøj til dig, der gerne vil bruge mindre tid på at gætte og mere tid på at lede de steder, hvor forholdene ser mest lovende ud.</p>
@@ -25,12 +30,12 @@
       </div>
 
       <figure class="portrait-card">
-        <img src="assets/about/jakob-900.webp" srcset="assets/about/jakob-480.webp 480w, assets/about/jakob-900.webp 900w" sizes="(max-width: 860px) min(100vw - 26px, 620px), 430px" width="900" height="900" alt="Portræt af Jakob Jørgensen, som står bag RavRadar">
-        <figcaption class="portrait-caption"><strong>Jakob Jørgensen</strong><span>Ravjæger og personen bag RavRadar</span></figcaption>
+        <img src="assets/about/jakob-900.webp" srcset="assets/about/jakob-480.webp 480w, assets/about/jakob-900.webp 900w" sizes="(max-width: 860px) min(100vw - 26px, 620px), 430px" width="900" height="900" data-i18n-alt="about.portrait.alt" alt="Portræt af Jakob Jørgensen, som står bag RavRadar">
+        <figcaption class="portrait-caption" data-i18n-html="about.portrait"><strong>Jakob Jørgensen</strong><span>Ravjæger og personen bag RavRadar</span></figcaption>
       </figure>
     </section>
 
-    <section class="section intro-grid">
+    <section class="section intro-grid" data-i18n-html="about.intro">
       <div>
         <p class="eyebrow">Hvorfor RavRadar?</p>
         <h2>Fra mange enkeltoplysninger til ét brugbart overblik</h2>
@@ -42,13 +47,13 @@
       </div>
     </section>
 
-    <section class="principles" aria-label="Det kan du forvente af RavRadar">
+    <section class="principles" data-i18n-aria-label="about.principles.aria" data-i18n-html="about.principles" aria-label="Det kan du forvente af RavRadar">
       <article class="card"><span class="card-number">1</span><h3>En vurdering – ikke et løfte</h3><p>RavRadar beregner en RavScore ud fra vejr- og havdata. Lokale forhold kan altid afvige, og selv gode forhold er ingen garanti for fund.</p></article>
       <article class="card"><span class="card-number">2</span><h3>Bygget så grundigt som muligt</h3><p>Systemet er udviklet ved at samle faglig viden, data, praktiske erfaringer og mange timers analyse. Det bliver forbedret, når ny viden og virkelige ture viser, at noget kan gøres bedre.</p></article>
       <article class="card"><span class="card-number">3</span><h3>Gratis for alle</h3><p>RavRadar er gratis at bruge. Et frivilligt bidrag er altid valgfrit og giver hverken bedre scorer eller særlige funktioner.</p></article>
     </section>
 
-    <section class="context-panel" aria-label="Sådan skal RavScore forstås">
+    <section class="context-panel" data-i18n-aria-label="about.score.aria" data-i18n-html="about.score" aria-label="Sådan skal RavScore forstås">
       <div>
         <p class="eyebrow">Vigtigt om RavScore</p>
         <h2>Den højeste score betyder ikke nødvendigvis mest rav</h2>
@@ -60,7 +65,7 @@
       </div>
     </section>
 
-    <section class="context-panel" aria-label="Kompleksiteten bag RavRadar">
+    <section class="context-panel" data-i18n-aria-label="about.complexity.aria" data-i18n-html="about.complexity" aria-label="Kompleksiteten bag RavRadar">
       <div>
         <p class="eyebrow">En model af virkeligheden</p>
         <h2>Ikke alle lokale undtagelser kan skrives ind som regler</h2>
@@ -73,8 +78,8 @@
 
     <section class="section family-story">
       <div class="family-photo">
-        <img src="assets/about/ravjagt-med-boern-1200.jpg" srcset="assets/about/ravjagt-med-boern-720.jpg 540w, assets/about/ravjagt-med-boern-1200.jpg 900w, assets/about/ravjagt-med-boern-1800.jpg 1350w" sizes="(max-width: 860px) calc(100vw - 26px), (max-width: 1180px) 42vw, 470px" width="1350" height="1800" loading="lazy" alt="Jakob Jørgensen på ravjagt i vandet sammen med sine børn i måneskin">
-        <div class="family-caption">
+        <img src="assets/about/ravjagt-med-boern-1200.jpg" srcset="assets/about/ravjagt-med-boern-720.jpg 540w, assets/about/ravjagt-med-boern-1200.jpg 900w, assets/about/ravjagt-med-boern-1800.jpg 1350w" sizes="(max-width: 860px) calc(100vw - 26px), (max-width: 1180px) 42vw, 470px" width="1350" height="1800" loading="lazy" data-i18n-alt="about.family.alt" alt="Jakob Jørgensen på ravjagt i vandet sammen med sine børn i måneskin">
+        <div class="family-caption" data-i18n-html="about.family">
           <p class="eyebrow">Ravjagt er også tid sammen</p>
           <h2>Glæden ved jagten er større end selve fundet</h2>
           <p>Jeg bruger selv mange timer ved kysten – også sammen med mine børn, når de en sjælden gang har lyst. For mig handler ravjagt både om nysgerrighed, natur, fordybelse og de oplevelser, man får undervejs. RavRadar er lavet for at hjælpe både nye og erfarne ravjægere med at få mere ud af netop de timer.</p>
@@ -83,7 +88,7 @@
     </section>
 
     <section class="section project-panel" id="stoet">
-      <div class="project-copy">
+      <div class="project-copy" data-i18n-html="about.project">
         <p class="eyebrow">Et personligt fritidsprojekt</p>
         <h2>Lavet på frivillig basis</h2>
         <p>RavRadar er ikke blevet til som et hurtigt standardprojekt. Det har krævet rigtig mange timer at undersøge ravets bevægelse, opbygge modellerne, gennemgå kysterne, udvikle funktionerne og gøre forklaringerne forståelige.</p>
@@ -95,7 +100,7 @@
         <a class="support-link" href="https://qr.mobilepay.dk/box/8f2b226a-fd43-43f2-8610-1fa0df857c63/pay-in" target="_blank" rel="noopener">Åbn MobilePay-boksen</a>
         <p class="support-url">https://qr.mobilepay.dk/box/8f2b226a-fd43-43f2-8610-1fa0df857c63/pay-in</p>
       </div>
-      <div class="support-side">
+      <div class="support-side" data-i18n-html="about.support">
         <ul class="cost-list" aria-label="Det frivillige arbejde bag RavRadar">
           <li>Faglig research og udvikling af RavScore</li>
           <li>Gennemgang og vedligeholdelse af danske kyststrækninger</li>
@@ -110,13 +115,13 @@
       </div>
     </section>
 
-    <section class="section contact-card">
+    <section class="section contact-card" data-i18n-html="about.contact">
       <div><p class="eyebrow">Kontakt</p><h2>Har du ris, ros eller erfaringer fra kysten?</h2><p>Jeg vil gerne høre fra dig, hvis du opdager en fejl, har en idé eller vil dele en erfaring, som kan gøre RavRadar bedre.</p></div>
       <a class="mail-button" href="mailto:jakob.jorgensen82@gmail.com">Skriv til Jakob</a>
     </section>
   </main>
 
-  <script src="assets/about/qrcode.min.js?v=4.0.289"></script>
-  <script src="js/ui/about.js?v=4.0.289"></script>
+  <script src="assets/about/qrcode.min.js?v=4.0.290"></script>
+  <script type="module" src="js/ui/about.js?v=4.0.290"></script>
 </body>
 </html>

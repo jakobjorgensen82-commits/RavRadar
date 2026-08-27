@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Offentlige sprog og domæneafgrænset assistent – 4.0.290
+
+Hele den offentlige RavRadar-flade findes nu på dansk, tysk og engelsk gennem ét centralt tekstsystem. Dansk er standard og fallback. Sprog vælges med et stabilt flagikon og tydeligt navn, og valget huskes lokalt mellem hovedsiden, **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt**. Tekster med tal og dynamiske værdier bruger faste nøgler og parametre, så oversættelse ikke ændrer data. Admin-, ekspert-, PIN-, debug- og øvrige interne flader er fortsat danske.
+
+Spørg RavRadar afviser uvedkommende og sikkerhedsfølsomme spørgsmål før en model kan kaldes. Bedste sted, bedste tidspunkt og konkret RavScore beregnes fortsat lokalt af Candidate G. Kun en allowlistet, offentlig og dataminimeret beskrivelse af den valgte zone må nå serverens modelgateway; konto-/turdata, identitet, præcis position, credentials, rå strømvektorer og intern diagnostik er forbudt.
+
+Cloudflare `@cf/openai/gpt-oss-20b` er valgt efter samme reproducerbare dansk/tysk/engelsk-eval som Gemini-referencen. Brugbare svar krævede `json_object`, rekursiv kontrolleret svarudtrækning, fem faste felter, højst 800 completion-tokens, lav ræsonneringsindsats og tydelige disposition-/evidenseksempler. Serveren håndhæver CORS, inputgrænser, 6 kald/minut, 40/time og 300/dag, syv sekunders timeout samt eksakt locale-, evidens-, længde- og schema-validering. Enhver fejl falder tilbage til den lokale assistent og kan ikke blokere kort, prognose eller ture.
+
+Fjernassistenten er stadig slået fra i offentlig konfiguration og er ikke deployet som del af den lokale kandidat. Aktivering kræver særskilt ejer-go og frisk produktionskontrol. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se [DEC-0086](docs/rdks/10_DECISIONS/DEC-0086-CENTRAL-PUBLIC-I18N-FIRST-SLICE.md) og [DEC-0087](docs/rdks/10_DECISIONS/DEC-0087-FREE-WORKERS-AI-PRODUCTION-CANDIDATES.md).
+
 ## Årsagstro produktion og robust genopretning – 4.0.289
 
 RavRadar må aldrig vælge en prognosetime efter den UTC-time, som produktionskørslen blev låst til. Hvis den eksakte DMI-strømtime ikke findes, vælges kun den bedst dækkede, nærmeste time bagud inden for tre timer. Copernicus udfylder derefter kun de eksakte DMI-huller og får højst to forsøg på seks minutter. Fortsat fejl stopper den nye produktion uden at erstatte et fungerende datasæt.
@@ -583,7 +593,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.289
+**Håndbogsversion:** 4.0.290
 
 **Opdateret:** 19. august 2026
 
@@ -1097,6 +1107,14 @@ Feedback gemmer et uforanderligt vejrsnapshot, score, modelversion, zone, jagtfo
 Den aktive læringsanalyse måler i dag kun, om observationsgrundlaget er bredt og balanceret nok til senere analyse. Den har `calibrationLocked=true`, udsteder ingen automatiske scoreforslag og ændrer hverken hovedvægte, zoner eller målepunkter. En eventuel fremtidig kalibrering kræver et særskilt, versionsstyret beslutningsgrundlag med tidslig og geografisk hold-out.
 
 AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypoteser. AI må ikke selv ændre produktionsmodellen. En AI-konklusion er ikke faglig evidens.
+
+### Offentlige sprog og Spørg RavRadar – 4.0.290
+
+Hele den offentlige flade bruger ét centralt tekstkatalog til dansk, tysk og engelsk. Dansk er standard og fallback; brugeren vælger med et stabilt flagikon og tydeligt sprognavn, og valget huskes lokalt. Hovedside, prognoser, områdepanel, konto/login, turformularer, den lokale assistent, **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt** følger valget. Admin-, ekspert- og interne flader forbliver danske.
+
+Spørg RavRadar afviser uvedkommende emner og forsøg på at få credentials eller interne oplysninger både i browseren og igen i Edge, før en ekstern model kan kaldes. Bedste sted, bedste tidspunkt og konkret RavScore beregnes fortsat af Candidate G og må ikke opfindes af AI. Konto-/turdata, persondata, præcis position, rå vektorer og interne diagnoser må aldrig sendes til modellen.
+
+Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b` efter reproducerbare dansk/tysk/engelsk-evals; Gemini bruges kun som intern kvalitetsreference under de aktuelle EØS-vilkår. Den fortsat deaktiverede server-side Edge håndhæver CORS, inputgrænser, tre rate limits, syv sekunders timeout, struktureret output-/evidensvalidering og lokal fallback. Ingen leverandørcredential findes i browseren. Offentlig deploy og aktivering kræver særskilt ejer-go.
 
 
 ## 26. Administration, Supabase og ekspertrettigheder

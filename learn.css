@@ -4,6 +4,8 @@
 @media(max-width:640px){main{padding:20px 13px 48px}.hero{gap:24px;padding-top:20px}.hero-actions>*{width:100%}.chapter-nav{grid-template-columns:1fr 1fr}.section-card{padding:20px}.three-parts,.lesson-grid,.score-guide,.score-steps,.limits-grid,.coast-comparison{grid-template-columns:1fr}.lesson.wide{grid-column:auto}.event-timeline,.trip-flow{grid-template-columns:1fr}.event-timeline article{margin-top:12px}.model-facts{grid-template-columns:1fr}.finish-card{align-items:stretch;flex-direction:column}.primary-link.light{width:100%}}
 
 /* 4.0.268: Grundbogen prioriterer ravjagtens faglige sammenhæng før appen. */
+.static-language-switcher{display:flex;gap:5px;align-items:center}.static-language-switcher button{display:inline-flex;gap:5px;align-items:center;min-height:38px;padding:7px 9px;border:1px solid #ffffff4a;border-radius:9px;color:#fff;background:transparent;font:inherit;font-size:.78rem;font-weight:800;cursor:pointer}.static-language-switcher button.active{color:var(--brand);background:#fff}
+.language-flag{display:inline-block;width:18px;height:12px;flex:0 0 18px;border:1px solid rgba(0,0,0,.2);border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.12)}.flag-da{background:linear-gradient(90deg,transparent 0 29%,#fff 29% 41%,transparent 41%),linear-gradient(0deg,transparent 0 42%,#fff 42% 58%,transparent 58%),#c60c30}.flag-de{background:linear-gradient(#000 0 33.33%,#dd0000 33.33% 66.66%,#ffce00 66.66% 100%)}.flag-en{background:linear-gradient(33deg,transparent 43%,#fff 43% 57%,transparent 57%),linear-gradient(-33deg,transparent 43%,#fff 43% 57%,transparent 57%),linear-gradient(90deg,transparent 40%,#fff 40% 60%,transparent 60%),linear-gradient(0deg,transparent 34%,#fff 34% 66%,transparent 66%),linear-gradient(90deg,transparent 45%,#c8102e 45% 55%,transparent 55%),linear-gradient(0deg,transparent 42%,#c8102e 42% 58%,transparent 58%),#012169}
 .chapter-nav{grid-template-columns:repeat(7,1fr)}
 .quick-start{display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.28fr);gap:26px;align-items:start}
 .quick-start>.plain-note{grid-column:1/-1}
@@ -54,6 +56,7 @@
   .process-chain,.sign-grid,.regime-grid,.glossary dl{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:640px){
+  .learn-header{flex-wrap:wrap;gap:6px 12px}.header-label{display:none}.static-language-switcher{order:3;width:100%}.static-language-switcher button{flex:1;justify-content:center}
   .chapter-nav{grid-template-columns:1fr 1fr}
   .process-chain,.role-grid,.coast-explainer,.regime-grid,.sign-grid,.method-grid,.field-card,.case-grid,.glossary dl{grid-template-columns:1fr}
   .myth-strip{align-items:flex-start;flex-direction:column}

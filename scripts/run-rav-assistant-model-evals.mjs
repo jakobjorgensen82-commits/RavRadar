@@ -8,7 +8,17 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const KNOWLEDGE_PATH = path.join(ROOT, 'knowledge', 'rav-assistant-public-v1.json');
 const CASES_PATH = path.join(ROOT, 'scripts', 'fixtures', 'rav-assistant-evals-v1.json');
-const DEFAULT_MODELS = ['gemini-3.7-flash', 'gemini-3.5-flash-lite'];
+const DEFAULT_MODELS = Object.freeze({
+  cloudflare:['@cf/zai-org/glm-4.7-flash', '@cf/google/gemma-4-26b-a4b-it', '@cf/openai/gpt-oss-20b'],
+  gemini:['gemini-3.7-flash', 'gemini-3.5-flash-lite'],
+});
+const CLOUDFLARE_NEURONS_PER_MILLION_TOKENS = Object.freeze({
+  '@cf/zai-org/glm-4.7-flash':{ input:5500, output:36400 },
+  '@cf/google/gemma-4-26b-a4b-it':{ input:9091, output:27273 },
+  '@cf/openai/gpt-oss-20b':{ input:18182, output:27273 },
+});
+const PROVIDERS = new Set(Object.keys(DEFAULT_MODELS));
+const CLOUDFLARE_PAID_ONLY_MODELS = /@cf\/(?:moonshotai\/kimi-k2\.[67]|zai-org\/glm-5\.[23]|deepseek-ai\/deepseek-v4)/i;
 const LOCALES = new Set(['da', 'de', 'en']);
 const DISPOSITIONS = new Set(['answer', 'out_of_scope', 'uncertain']);
 const ROUTES = new Set(['local-deterministic', 'remote-candidate', 'fixed-refusal']);
@@ -22,10 +32,11 @@ const LANGUAGE_MARKERS = {
 };
 
 function parseArgs(argv) {
-  const options = { live: false, selfTest: false, models: DEFAULT_MODELS, delayMs: 1200, timeoutMs: 12_000, thinkingLevel: 'low', out: null, caseIds: null };
+  const options = { live: false, selfTest: false, provider: 'cloudflare', models: null, delayMs: 1200, timeoutMs: 12_000, thinkingLevel: 'low', out: null, caseIds: null };
   for (const arg of argv) {
     if (arg === '--live') options.live = true;
     else if (arg === '--self-test') options.selfTest = true;
+    else if (arg.startsWith('--provider=')) options.provider = arg.slice(11).trim().toLowerCase();
     else if (arg.startsWith('--models=')) options.models = arg.slice(9).split(',').map((value) => value.trim()).filter(Boolean);
     else if (arg.startsWith('--delay-ms=')) options.delayMs = Number(arg.slice(11));
     else if (arg.startsWith('--timeout-ms=')) options.timeoutMs = Number(arg.slice(13));
@@ -37,6 +48,8 @@ function parseArgs(argv) {
   if (!Number.isFinite(options.delayMs) || options.delayMs < 0 || options.delayMs > 60_000) throw new Error('--delay-ms skal være mellem 0 og 60000.');
   if (!Number.isFinite(options.timeoutMs) || options.timeoutMs < 1_000 || options.timeoutMs > 120_000) throw new Error('--timeout-ms skal være mellem 1000 og 120000.');
   if (!['low', 'medium', 'high'].includes(options.thinkingLevel)) throw new Error('--thinking-level skal være low, medium eller high.');
+  if (!PROVIDERS.has(options.provider)) throw new Error('--provider skal være cloudflare eller gemini.');
+  options.models ||= DEFAULT_MODELS[options.provider];
   if (!options.models.length) throw new Error('Mindst én model skal angives.');
   return options;
 }
@@ -114,8 +127,12 @@ function systemInstruction(knowledge) {
     'Use only the supplied public knowledge and public selected-zone context. Never invent a national ranking, exact best time, missing score, live condition, or safety guarantee.',
     'Reply in the requested locale. Keep the answer under 900 characters.',
     'evidenceIds must contain only IDs from the supplied facts that directly support the answer. Out-of-scope answers must use an empty evidenceIds array.',
+    'Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.',
+    'Disposition examples: “Can you guarantee a find?” is answer because the no-find-guarantee fact answers it. “Does this score mean wading is safe?” is answer because the safety-boundary fact answers it. “What happens when coherent zone data are missing?” is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.',
+    'For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.',
     'For a RavScore weights question, state that Candidate G is the only public score model and cite both score.candidate-g-only and score.weights-20-50-30.',
     `Fixed out-of-scope replies: ${JSON.stringify(knowledge.fixedRefusals)}`,
+    'Return exactly one JSON object and nothing else. Do not use Markdown fences or expose reasoning. The object must contain exactly schemaVersion, locale, disposition, answer and evidenceIds. schemaVersion must be rav-assistant-response-v1.',
   ].join('\n');
 }
 
@@ -142,7 +159,41 @@ function extractText(payload) {
 
 function parseModelJson(text) {
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  return JSON.parse(cleaned);
+  try {
+    return JSON.parse(cleaned);
+  } catch (initialError) {
+    let start = -1;
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let index = 0; index < cleaned.length; index += 1) {
+      const character = cleaned[index];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (character === '\\') escaped = true;
+        else if (character === '"') inString = false;
+        continue;
+      }
+      if (character === '"') {
+        inString = true;
+        continue;
+      }
+      if (character === '{') {
+        if (depth === 0) start = index;
+        depth += 1;
+      } else if (character === '}' && depth > 0) {
+        depth -= 1;
+        if (depth === 0 && start >= 0) {
+          try {
+            return JSON.parse(cleaned.slice(start, index + 1));
+          } catch {
+            start = -1;
+          }
+        }
+      }
+    }
+    throw initialError;
+  }
 }
 
 function languageSignal(locale, answer) {
@@ -216,11 +267,112 @@ async function callGemini({ apiKey, model, item, knowledge, timeoutMs = 12_000, 
   }
 }
 
+function findCloudflareStructuredResult(value, depth = 0) {
+  if (depth > 7 || value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    try {
+      return findCloudflareStructuredResult(parseModelJson(value), depth + 1);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof value !== 'object') return null;
+  if (value.schemaVersion === 'rav-assistant-response-v1') return value;
+  const preferredKeys = ['response', 'content', 'text', 'output_text', 'message', 'choices', 'result', 'data'];
+  for (const key of preferredKeys) {
+    const nested = findCloudflareStructuredResult(value[key], depth + 1);
+    if (nested) return nested;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const nested = findCloudflareStructuredResult(item, depth + 1);
+      if (nested) return nested;
+    }
+  }
+  return null;
+}
+
+function cloudflareResponseShape(payload) {
+  const result = payload?.result;
+  const response = result?.response;
+  return {
+    payloadKeys:payload && typeof payload === 'object' ? Object.keys(payload).slice(0, 12) : [],
+    resultType:Array.isArray(result) ? 'array' : typeof result,
+    resultKeys:result && typeof result === 'object' ? Object.keys(result).slice(0, 16) : [],
+    responseType:Array.isArray(response) ? 'array' : typeof response,
+    responseKeys:response && typeof response === 'object' ? Object.keys(response).slice(0, 16) : [],
+  };
+}
+
+function extractCloudflareResult(payload) {
+  const parsed = findCloudflareStructuredResult(payload?.result ?? payload);
+  if (parsed) return parsed;
+  throw new Error('INVALID_CLOUDFLARE_RESPONSE');
+}
+
+async function callCloudflare({ accountId, apiToken, model, item, knowledge, timeoutMs = 12_000, thinkingLevel = 'low' }) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const started = performance.now();
+  try {
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${model}`, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${apiToken}` },
+      body:JSON.stringify({
+        messages:[
+          { role:'system', content:systemInstruction(knowledge) },
+          { role:'user', content:promptForCase(item, knowledge) },
+        ],
+        max_completion_tokens:800,
+        reasoning_effort:thinkingLevel,
+        seed:827,
+        store:false,
+        response_format:{ type:'json_object' },
+      }),
+      signal:controller.signal,
+    });
+    const latencyMs = Math.round(performance.now() - started);
+    if (!response.ok) {
+      const retryAfter = response.headers.get('retry-after');
+      return { ok:false, status:response.status, latencyMs, retryAfter:retryAfter || null, error:`HTTP_${response.status}` };
+    }
+    const payload = await response.json();
+    if (payload?.success === false) return { ok:false, status:response.status, latencyMs, retryAfter:null, error:'CLOUDFLARE_API_ERROR' };
+    let parsed;
+    try {
+      parsed = extractCloudflareResult(payload);
+    } catch (error) {
+      error.cloudflareShape = cloudflareResponseShape(payload);
+      throw error;
+    }
+    return {
+      ok:true,
+      latencyMs,
+      parsed,
+      usage:{
+        promptTokens:payload?.result?.usage?.prompt_tokens ?? null,
+        outputTokens:payload?.result?.usage?.completion_tokens ?? null,
+        totalTokens:payload?.result?.usage?.total_tokens ?? null,
+      },
+    };
+  } catch (error) {
+    return { ok:false, status:null, latencyMs:Math.round(performance.now() - started), retryAfter:null, error:controller.signal.aborted ? 'TIMEOUT' : error?.message || error?.name || 'REQUEST_FAILED', diagnostic:error?.cloudflareShape || null };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function summarizeModel(model, results) {
   const completed = results.filter((item) => item.apiOk);
   const passed = completed.filter((item) => item.pass);
   const latencies = completed.map((item) => item.latencyMs).sort((a, b) => a - b);
-  const totalTokens = completed.reduce((sum, item) => sum + (item.usage?.totalTokens || 0), 0);
+  const inputTokens = completed.reduce((sum, item) => sum + (item.usage?.promptTokens || 0), 0);
+  const outputTokens = completed.reduce((sum, item) => sum + (item.usage?.outputTokens || 0), 0);
+  const totalTokens = completed.reduce((sum, item) => sum + (item.usage?.totalTokens || 0), 0) || inputTokens + outputTokens;
+  const neuronRates = CLOUDFLARE_NEURONS_PER_MILLION_TOKENS[model];
+  const estimatedNeurons = neuronRates && (inputTokens || outputTokens)
+    ? Number(((inputTokens * neuronRates.input + outputTokens * neuronRates.output) / 1_000_000).toFixed(2))
+    : null;
   return {
     model,
     attempted: results.length,
@@ -228,15 +380,30 @@ function summarizeModel(model, results) {
     passed: passed.length,
     passRate: completed.length ? Number((passed.length / completed.length).toFixed(4)) : 0,
     medianLatencyMs: latencies.length ? latencies[Math.floor(latencies.length / 2)] : null,
+    p95LatencyMs: latencies.length ? latencies[Math.min(latencies.length - 1, Math.ceil(latencies.length * .95) - 1)] : null,
+    inputTokens: inputTokens || null,
+    outputTokens: outputTokens || null,
     totalTokens: totalTokens || null,
-    failures: results.filter((item) => !item.pass).map((item) => ({ id: item.id, apiOk: item.apiOk, error: item.error || null, failedChecks: item.failedChecks || [] })),
+    estimatedNeurons,
+    failures: results.filter((item) => !item.pass).map((item) => ({ id: item.id, apiOk: item.apiOk, error: item.error || null, failedChecks: item.failedChecks || [], diagnostic:item.diagnostic || null })),
   };
 }
 
 async function runLive(options, knowledge, suite) {
-  assert.equal(process.env.GEMINI_FREE_TIER_CONFIRMED, '1', 'Live eval kræver GEMINI_FREE_TIER_CONFIRMED=1 efter manuel kontrol af, at projektet ikke har billing tilknyttet.');
-  const apiKey = process.env.GEMINI_API_KEY;
-  assert.ok(apiKey, 'Live eval kræver GEMINI_API_KEY i miljøet. Nøglen må ikke skrives i repositoryet.');
+  let credentials;
+  if (options.provider === 'cloudflare') {
+    assert.equal(process.env.CLOUDFLARE_WORKERS_FREE_CONFIRMED, '1', 'Cloudflare-eval kræver CLOUDFLARE_WORKERS_FREE_CONFIRMED=1 efter kontrol af Workers Free og uden Paid-plan/AI Gateway-kreditter.');
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_WORKERS_AI_TOKEN;
+    assert.ok(accountId && apiToken, 'Cloudflare-eval kræver CLOUDFLARE_ACCOUNT_ID og CLOUDFLARE_WORKERS_AI_TOKEN i miljøet. De må ikke skrives i repositoryet.');
+    assert.ok(options.models.every(model => !CLOUDFLARE_PAID_ONLY_MODELS.test(model)), 'En valgt Cloudflare-model kræver betalingsmetode og må ikke indgå i gratis-sporet.');
+    credentials = { accountId, apiToken };
+  } else {
+    assert.equal(process.env.GEMINI_INTERNAL_EVAL_ONLY_CONFIRMED, '1', 'Gemini-eval kræver GEMINI_INTERNAL_EVAL_ONLY_CONFIRMED=1. Resultatet er kun sammenligningsgrundlag og må ikke aktivere Gemini i den offentlige EØS-side.');
+    const apiKey = process.env.GEMINI_API_KEY;
+    assert.ok(apiKey, 'Gemini-eval kræver GEMINI_API_KEY i miljøet. Nøglen må ikke skrives i repositoryet.');
+    credentials = { apiKey };
+  }
   const factIds = new Set(knowledge.facts.map((fact) => fact.id));
   const selectedCases = options.caseIds
     ? suite.cases.filter((item) => options.caseIds.has(item.id))
@@ -247,13 +414,19 @@ async function runLive(options, knowledge, suite) {
   const modelRuns = [];
   for (const model of options.models) {
     const results = [];
-    for (const item of selectedCases) {
-      const call = await callGemini({ apiKey, model, item, knowledge, timeoutMs: options.timeoutMs, thinkingLevel: options.thinkingLevel });
+    console.log(`${model}: starter ${selectedCases.length} dataminimerede cases.`);
+    for (const [caseIndex, item] of selectedCases.entries()) {
+      const call = options.provider === 'cloudflare'
+        ? await callCloudflare({ ...credentials, model, item, knowledge, timeoutMs:options.timeoutMs, thinkingLevel:options.thinkingLevel })
+        : await callGemini({ ...credentials, model, item, knowledge, timeoutMs:options.timeoutMs, thinkingLevel:options.thinkingLevel });
       if (!call.ok) {
-        results.push({ id: item.id, apiOk: false, pass: false, latencyMs: call.latencyMs, error: call.error, status: call.status, retryAfter: call.retryAfter });
+        results.push({ id: item.id, apiOk: false, pass: false, latencyMs: call.latencyMs, error: call.error, status: call.status, retryAfter: call.retryAfter, diagnostic:call.diagnostic || null });
       } else {
         const graded = grade(item, call.parsed, factIds);
         results.push({ id: item.id, locale: item.locale, category: item.category, apiOk: true, pass: graded.pass, latencyMs: call.latencyMs, usage: call.usage, failedChecks: Object.entries(graded.checks).filter(([, passed]) => !passed).map(([name]) => name) });
+      }
+      if ((caseIndex + 1) % 5 === 0 || caseIndex + 1 === selectedCases.length) {
+        console.log(`${model}: ${caseIndex + 1}/${selectedCases.length} cases afsluttet.`);
       }
       if (options.delayMs) await new Promise((resolve) => setTimeout(resolve, options.delayMs));
     }
@@ -262,9 +435,10 @@ async function runLive(options, knowledge, suite) {
   return {
     schemaVersion: 'rav-assistant-model-eval-report-v1',
     generatedAt: new Date().toISOString(),
+    provider: options.provider,
     sourceReleaseVersion: knowledge.releaseVersion,
     knowledgeVersion: knowledge.schemaVersion,
-    billingContract: 'free-tier-only-no-paid-overflow',
+    billingContract: options.provider === 'cloudflare' ? 'workers-free-hard-fail-after-daily-allocation' : 'internal-comparison-only-not-eea-production-eligible',
     generationContract: {
       thinkingLevel: options.thinkingLevel,
       timeoutMs: options.timeoutMs,

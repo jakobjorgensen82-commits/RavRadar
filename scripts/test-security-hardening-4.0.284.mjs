@@ -33,9 +33,9 @@ const publicContext=publicAssistantContext({
   conditions:{private:'må ikke med'},
   knowledge_rules:['må ikke med'],
 });
-assert.deepEqual(Object.keys(publicContext).sort(),['mode','result','weather','zone']);
-assert.equal(publicContext.result.reasons.length,1);
-assert.equal(publicContext.result.reasons[0].length,180);
+assert.deepEqual(Object.keys(publicContext).sort(),['locale','mode','result','weather','zone']);
+assert.equal(publicContext.locale,'da');
+assert.equal('reasons' in publicContext.result,false);
 assert.equal('secret' in publicContext.zone,false);
 assert.equal('rawVector' in publicContext.weather,false);
 assert.equal(JSON.stringify(publicContext).includes('hemmelig'),false);
@@ -72,13 +72,18 @@ assert.doesNotMatch(gateway,/Access-Control-Allow-Origin['"]?\s*[:,]\s*['"]\*['"
 
 const assistant=await read('supabase/functions/ravradar-assistant/index.ts');
 assert.match(assistant,/readJsonObject\(request, 16 \* 1024\)/);
-assert.match(assistant,/minute: 6, hour: 40, globalDay: 500/);
+assert.match(assistant,/minute: 6, hour: 40, globalDay: 300/);
 assert.match(assistant,/fetchWithTimeout[\s\S]*7_000/);
 assert.doesNotMatch(assistant,/knowledge_rules/);
+assert.match(assistant,/CLOUDFLARE_ACCOUNT_ID/);
+assert.match(assistant,/CLOUDFLARE_WORKERS_AI_TOKEN/);
+assert.match(assistant,/response_format:\s*\{ type: "json_object" \}/);
+assert.match(assistant,/validateAssistantResult/);
+assert.doesNotMatch(assistant,/OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 const publicConfig=await read('config.js');
 const assistantService=await read('js/services/rav-assistant.js');
 assert.match(publicConfig,/ravAssistantRemoteEnabled:\s*false/);
-assert.match(assistantService,/PUBLIC_CONFIG\.ravAssistantRemoteEnabled!==true/);
+assert.match(assistantService,/PUBLIC_CONFIG\.ravAssistantRemoteEnabled\s*!==\s*true/);
 
 const submit=await read('supabase/functions/submit-observation/index.ts');
 const tripStore=await read('supabase/functions/_shared/trip-store.ts');
