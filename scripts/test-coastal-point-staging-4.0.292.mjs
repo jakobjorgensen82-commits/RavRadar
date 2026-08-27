@@ -123,7 +123,18 @@ try {
   const privateStatePath = await write('private/state.json', { schemaVersion: 1, stages: { [stageId]: { stateKey, continuationState: mature } } });
   const privateStatusPath = path.join(root, 'private/status.json');
   const publicStatusPath = path.join(root, 'public/status.json');
-  const status = await updateStaging({ now: reference, privateDmiPath, privateStatePath, privateStatusPath, publicStatusPath });
+  const inheritedProductionReference = process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+  process.env.RAVRADAR_PRODUCTION_TARGET_HOUR = '2026-08-27T23:00:00.000Z';
+  const status = await updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath,
+    privateStatePath,
+    privateStatusPath,
+    publicStatusPath,
+  });
+  if (inheritedProductionReference === undefined) delete process.env.RAVRADAR_PRODUCTION_TARGET_HOUR;
+  else process.env.RAVRADAR_PRODUCTION_TARGET_HOUR = inheritedProductionReference;
   assert.equal(status.entries[0].status, 'ready-for-activation');
   const publicStatusText = await fs.readFile(publicStatusPath, 'utf8');
   assert.equal(publicStatusText.includes(String(candidate.waterPoint[0])), false, 'Offentlig status må ikke lække kandidatkoordinater');

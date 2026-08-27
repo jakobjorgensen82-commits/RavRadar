@@ -1,5 +1,7 @@
 ## 2026-08-28 – 4.0.292 staged land-/vandpunktaktivering
 
+- PR #189/exact-head `33124945636` blev merged som `8b3668b7`. Første 4.0.292-produktion `33125043019` fejlede lukket før DMI og deploy på en ikke-isoleret syntetisk testreference; hotfixen tilføjer eksplicit fixture-reference uden at ændre den virkelige workflowlåste produktionstime.
+
 - Ejerens kommende Sibirien-flytning udløste en systemaudit af adminreview, public builder, DMI-cache, Candidate G-kontekst, moderzoneaggregering, fallback og workflowrækkefølge. Ingen faktisk geometri eller punktdata er ændret.
 - Direkte aktivering er erstattet af privat kandidatopvarmning med eksakt U/V ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory. Offentlig status er sanitiseret.
 - READY kræver særskilt ejerklik. Den eksakte kandidat injiceres før runtimebygning, fulde gates kører, og central promotion bruger version-CAS. Tidligere active override og privat recoverycache bevares.

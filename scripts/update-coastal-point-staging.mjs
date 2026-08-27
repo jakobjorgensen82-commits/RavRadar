@@ -107,12 +107,13 @@ function verifiedCurrent(sample, stage, dmiDocument) {
 
 export async function updateStaging({
   now = new Date().toISOString(),
+  productionReference = null,
   privateDmiPath = PRIVATE_DMI,
   privateStatePath = PRIVATE_STATE,
   privateStatusPath = PRIVATE_STATUS,
   publicStatusPath = PUBLIC_STATUS,
 } = {}) {
-  const referenceAt = floorHour(process.env.RAVRADAR_PRODUCTION_TARGET_HOUR || now);
+  const referenceAt = floorHour(productionReference ?? process.env.RAVRADAR_PRODUCTION_TARGET_HOUR ?? now);
   const [dmi, previousState] = await Promise.all([read(privateDmiPath), read(privateStatePath, { schemaVersion: 1, stages: {} })]);
   const stages = Object.entries(dmi?.candidates ?? {}).map(([stageId, value]) => ({ stageId, ...value }));
   const nextState = { schemaVersion: 1, updatedAt: now, stages: {} };
