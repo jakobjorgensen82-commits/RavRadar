@@ -1,9 +1,9 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT ARBEJDSCHECKPOINT – 2026-08-27 – intern sammenligning og behovsstyret Supabase-PAT
+## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-27 – intern sammenligning og behovsstyret Supabase-PAT
 
-- Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/internal-ravudsigten-pat-policy-4.0.287`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
-- Offentlig 4.0.287 `rr-20260827000855-210` forbliver den senest verificerede baseline med 210/210 aktive zoner, befolket **Bedste områder** og komplet 210/673/420/2.100-kontrol.
+- Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/close-internal-analysis-evidence-4.0.287`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- Offentlig 4.0.287 `rr-20260827013448-210` er den senest verificerede baseline: manifestet er komplet med 210 zoner, 210/210 aktive og 673/673 scoreklare kystdele. Målrettet browserkontrol viste fem **Bedste områder** og fem prognoserækker i både strand og waders uden synlig runtimefejl.
 - En intern, forståelig og tidsstemplet RavRadar-/Ravudsigten-journal er oprettet i `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`. Første snapshot sammenholder begge top-fem, Ravudsigtens synlige ikke-røde femdøgnssignaler og nærmeste logiske RavRadar-zoner med H/T/R-komponenter.
 - Første snapshot viser både semantiske og fysiske forskelle, men er ikke en nøjagtighedsdom. Analysen beskriver ti årsagsfamilier og åbne hypoteser, herunder Hirtshals, Bakkebølle, missing ved Egholm/Vallensbæk og den foreløbige 31. august-divergens. Der ændres ingen score, Candidate G, vejr, geometri eller public runtime.
 - Sammenligningen er kun intern RDKS/roadmap/changelog, `scoreImpact=false` og `publicRuntime=false`. Ingen adgang er omgået, ingen privat kode er hentet, og emnet må ikke nå app, offentlig håndbog, ekspert-/adminflader eller offentlige prognosedata.
@@ -12,7 +12,7 @@
 - Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver åbent, fordi Auth, Edge og egress stadig bruger Supabase. Cloudflare-tokenpolitikken og pseudonym-secret-kontrakten ændres ikke.
 - Den første kandidat bestod lokal `validate:source`, PR #171 exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` bestod frisk vejr, målrettet Copernicus, runtimeaudit og referencezoner, men stoppede fail-closed før Supabase-sync/artifact/Pages i fuld validering: den gamle globale kildeneutralitetstest tillod ikke den nu ejer-godkendte interne RDKS-kildeangivelse.
 - Opfølgningen undtager kun den eksakte interne analysefil og kræver samtidig dens interne, score-neutrale og ikke-offentlige sikkerhedsmarkører. Alle andre projektfiler, app-, håndbogs-, ekspert-, admin- og public-runtime-flader er fortsat omfattet af det globale forbud. Dette er en kontraktpræcisering, ikke en omgåelse eller offentliggørelse.
-- Opfølgningens målrettede test, RDKS-validering, exact-head source gate og ny produktionslukning skal registreres her, når de er gennemført. Indtil da forbliver offentlig `rr-20260827000855-210` urørt og grøn.
+- Opfølgningen bestod målrettet test, RDKS og fuld lokal `validate:source`, PR #172 exact-head `33030112665` og merge `7a234653`. Produktion `33030166104`/Pages `98382359708` bestod frisk DMI/Copernicus, faktisk runtimeaudit, fuld validering, releasegate, beskyttet Supabase-sync, artifact og Pages. Ingen Supabase-management-PAT-fornyelse var nødvendig for normalproduktionen.
 
 Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
 
