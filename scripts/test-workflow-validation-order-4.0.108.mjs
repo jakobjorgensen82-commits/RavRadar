@@ -5,7 +5,7 @@ const workflowDirectory = '.github/workflows';
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-credential-expiry.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
@@ -173,6 +173,7 @@ for (const marker of [
   'workflow_dispatch:',
   'permissions:\n  contents: read',
   'storage_mode:',
+  'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'npm run validate:source',
   'node scripts/prepare-cloudflare-trip-storage.mjs',
   'node scripts/audit-cloudflare-trip-storage.mjs',
@@ -192,6 +193,12 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(tripStorageDeployment)
 if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.includes('id-token: write') || tripStorageDeployment.includes('deploy-pages')) {
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
+const supabasePatConsumers = workflowFiles.filter((name) =>
+  fs.readFileSync(`${workflowDirectory}/${name}`, 'utf8').includes('SUPABASE_ACCESS_TOKEN')
+);
+if (JSON.stringify(supabasePatConsumers) !== JSON.stringify(['deploy-trip-storage.yml'])) {
+  throw new Error(`Supabase-PAT må kun bruges af det manuelle turlager-deployment, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
+}
 if (!tripStorageDeployment.includes("if: inputs.storage_mode == 'd1'") || tripStorageDeployment.includes('continue-on-error')) {
   throw new Error('D1-deploymentet skal være eksplicit og må ikke skjule fejl eller falde automatisk tilbage.');
 }
@@ -204,26 +211,6 @@ for (const marker of ['workflow_dispatch:', 'schedule:', 'permissions:\n  conten
 }
 if (tripStorageMonitor.includes('pages: write') || tripStorageMonitor.includes('id-token: write') || tripStorageMonitor.includes('deploy-pages')) {
   throw new Error('Turlager-overvågningen må ikke kunne deploye Pages.');
-}
-const credentialExpiryMonitor = fs.readFileSync(`${workflowDirectory}/monitor-credential-expiry.yml`, 'utf8').replace(/\r\n/g, '\n');
-for (const marker of [
-  'workflow_dispatch:',
-  'schedule:',
-  'permissions:\n  issues: write',
-  "const expiryIso = '2027-08-25T00:00:00Z'",
-  'const warningDays = 60',
-  'ravradar-supabase-pat-expiry-2027-08-25',
-  "assignees: [owner]",
-  "state: 'open'",
-  'for (const threshold of [30, 14, 7, 3, 1, 0])',
-]) {
-  if (!credentialExpiryMonitor.includes(marker)) throw new Error(`Credential-varslingen mangler ${marker}`);
-}
-if (/\b(?:push|pull_request|workflow_run):/.test(credentialExpiryMonitor)) {
-  throw new Error('Credential-varslingen må kun kunne starte manuelt eller på sin daglige tidsplan.');
-}
-if (credentialExpiryMonitor.includes('secrets.') || credentialExpiryMonitor.includes('contents: write') || credentialExpiryMonitor.includes('pages: write') || credentialExpiryMonitor.includes('id-token: write') || credentialExpiryMonitor.includes('deploy-pages')) {
-  throw new Error('Credential-varslingen må kun kunne skrive issues og må ikke læse secrets eller deploye.');
 }
 const publicAuditBlockEnd = text.indexOf('\n\n', positions.publicAudit);
 const publicAuditBlock = text.slice(positions.publicAudit,

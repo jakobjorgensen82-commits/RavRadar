@@ -13,18 +13,22 @@
 - [x] Bestå fuld produktion `33019856228`, Pages-job `98351206091`, offentlig `rr-20260826224651-210`-verifikation og payloadfri kapacitetsmonitor `33021364240`.
 - [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration**, udskift Supabase-PAT'et til udløb 25. august 2027 og bestå ende-til-ende-D1-verifikation `33024408547` før tilbagekaldelse af gamle PAT'er.
 - [x] Genbekræft audit-tokenet gennem payloadfri `33024621109` med ti shards og 0 % forbrug.
-- [x] Tilføj et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb med opfølgning ved 30/14/7/3/1/0 dage.
+- [x] Tilføj og verificér det daværende secret-frie GitHub-issue/mailvarsel fra 60 dage før PAT-udløb.
 - [x] Bestå PR #169/exact-head `33025102301`, merge `1e402834`, manuel main-prøve `33025289153`, frisk produktion `33025210517`/Pages `98367528389` og offentlig 210/673/420/2.100-kontrol.
+- [x] Erstat efter ejerbeslutningen kalenderrotation og -varsel med et behovsstyret management-PAT, som normal drift ikke afhænger af, og som kun oprettes kortvarigt til en konkret verificeret Supabase-deploy/migration/rollback.
 
 Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 
-## P1 planlagt – intern, score-neutral Ravudsigten-sammenligning
+## P1 aktiv – intern, score-neutral Ravudsigten-sammenligning
 
-- [ ] Indsaml skånsomt tidsstemplede, offentligt synlige resultater fra Ravudsigten og RavRadar for sammenlignelige kystområder over flere reelle vejrsituationer.
+- [x] Opret intern analysejournal og registrér første tidsstemplede snapshot af aktuelle top-fem, femdøgnssignaler, RavRadar-match og komponentforklaringer.
+- [ ] Fortsæt skånsom indsamling af tidsstemplede, offentligt synlige resultater fra Ravudsigten og RavRadar for sammenlignelige kystområder over flere reelle vejrsituationer.
 - [ ] Sammenlign enighed og forskydning i sted, starttid, varighed og styrke samt observerbare hypoteser om vind, strøm i flere lag, vandstand og historik.
 - [ ] Brug uafhængige tur-/fundobservationer som fasit, hvor datakvalitet og samtykke tillader det; et enkelt snapshot eller modellernes indbyrdes enighed er ikke validering.
 - [ ] Omgå ingen adgangskontrol, hent ingen privat kode, og beskriv sandsynlige regler som hypoteser frem for fakta.
 - [ ] Bevar `scoreImpact=false` og `publicRuntime=false`. Opgaven må kun være synlig i RDKS/roadmap/changelog og må ikke nå app, offentlig håndbog, ekspert-/adminflader eller offentlige prognosedata.
+
+Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 
