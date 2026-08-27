@@ -10,6 +10,8 @@
 - [x] Implementér og test hash-/tidslåst engangsrecovery af den kompakte 09-state uden vejr, scores eller rå vektorer.
 - [x] Bestå målrettede kodeprøver og dataminimerede 673-deles artifactsimulationer.
 - [x] Synkronisér 4.0.288, RDKS/håndbøger/changelog, bestå lokal `validate:source` og bevis kun topversionsændring i de beskyttede geodatafiler.
+- [x] Bestå PR #176 exact-head `33066322196`, merge `16ad8300` og bevis i produktion `33066416034`, at den låste 09-suffix gendannes; stop sikkert da fallbackkopien lå for sent.
+- [x] Flyt fallbackstage før checkpointindlæsning, så den komplette 00-runtime auditeres/kopieres før den hydrerede state bliver warmup.
 - [ ] Bestå exact-head sourcegate, merge, fuld frisk produktion og offentlig browserkontrol af zoner, **Bedste områder**, **5-dages RavRadar** og nødteksten.
 
 Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0084.

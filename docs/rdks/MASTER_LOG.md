@@ -6,6 +6,7 @@
 - Candidate G genstarter fra verificeret suffix efter et hul over tre timer uden interpolation/backfill og skifter først tilbage ved 673/673 `READY` samt grøn faktisk runtimeaudit.
 - Engangsrecoveryen er låst til 09-checkpointets run/artifact/dataset/hash og højst tre timer. Virkelig 673-deles simulation beviser kun kompakt statekopi og nul kopieret vejr, score eller rå vektorer.
 - Målrettede prøver er grønne; 4.0.288 exact-head, produktion og offentlig lukning afventer. Score, vejr, normal sortering, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+- PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` beviste checkpointrecoveryen, men stoppede sikkert før DMI/deploy ved fallbackstage, fordi fallbacken blev auditeret efter warmup-stateændringen. Opfølgningen kopierer det sunde 00-grundlag før 09-state indlæses.
 
 ## 2026-08-27 – gratis og domæneafgrænset modelvalg til Spørg RavRadar
 

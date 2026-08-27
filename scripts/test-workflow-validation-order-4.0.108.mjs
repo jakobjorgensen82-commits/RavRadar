@@ -163,7 +163,7 @@ const positions = {
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = ['hydrate','gapCheckpoint','preflight','sourceGate','fallbackStage','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','fallbackPublish','reference','validate','gate','artifact'];
+const expected = ['hydrate','preflight','sourceGate','fallbackStage','gapCheckpoint','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','fallbackPublish','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
@@ -230,8 +230,9 @@ for (const marker of [
 if (publicAuditBlock.includes('continue-on-error')) {
   throw new Error('Den faktiske Candidate G public runtime-gate må ikke være vejledende.');
 }
-const gapCheckpointSection = text.slice(positions.gapCheckpoint, positions.preflight);
+const gapCheckpointSection = text.slice(positions.gapCheckpoint, positions.dmiBulk);
 for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true'",
   'node scripts/restore-candidate-g-gap-checkpoint.mjs',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'uses: actions/download-artifact@v8',

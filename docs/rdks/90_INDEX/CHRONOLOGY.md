@@ -9,6 +9,7 @@
 5. DEC-0084 låser et helt auditeret fallbackdataset i højst 48 timer med klar aktualitetsadvarsel, ingen blanding og atomisk skift ved 673/673 `READY`.
 6. Huller over tre timer genstarter fra reelle suffixprøver uden interpolation/backfill. Et eksakt hash- og tidslåst 09-checkpoint kan redde op til tre timers modning uden at kopiere vejr, scores, rå vektorer eller private data.
 7. Målrettede tests og dataminimerede virkelige artifactsimulationer er grønne. Exact-head, produktion og offentlig verifikation afventer.
+8. PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` gendannede 09-state, men stoppede sikkert før DMI/deploy, fordi fallbackstage lå efter checkpointændringen; opfølgningen vender kun disse to sikre trin.
 
 ## 2026-08-27 – gratis Spørg RavRadar-forundersøgelse
 
