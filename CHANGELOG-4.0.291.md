@@ -3,7 +3,7 @@
 ## Offentlig Spørg RavRadar
 
 - Aktiverer den valgte Cloudflare `@cf/openai/gpt-oss-20b` gennem den server-side Supabase Edge-gateway efter ejerens udtrykkelige go.
-- Viser en rolig dansk/tysk/engelsk forklaring i assistentdialogen: den daglige AI-kvote er begrænset for at holde RavRadar gratis, mens prognoser og lokale RavRadar-svar fortsætter ved kvoteudløb.
+- Viser en rolig dansk/tysk/engelsk forklaring i assistentdialogen: den daglige AI-kvote er begrænset for at holde RavRadar gratis og gælder kun Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
 - Bevarer afvisning af uvedkommende og sikkerhedsfølsomme spørgsmål før provider samt lokale Candidate G-svar for bedste sted, bedste tid og konkret score.
 - Bevarer CORS, tre server-side rate limits, syv sekunders timeout, struktureret output-/evidensvalidering, dataminimering og lokal fallback. Ingen providercredential findes i browseren.
 - Låser og normaliserer fagord deterministisk pr. sprog efter live-smoke-testen. Candidate G-vægtspørgsmål får et fast evidensbundet DA/DE/EN-svar med `ravmobilisering`, `Bernsteinmobilisierung` eller `amber mobilisation`; sproglige modelhybrider kan derfor ikke nå brugeren.

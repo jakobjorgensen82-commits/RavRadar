@@ -5,11 +5,21 @@
 - [x] Modtag særskilt ejer-go og genbekræft den aktuelle Workers Free / $0-konto uden betalt overflow.
 - [x] Tilføj DA/DE/EN-kvotetekst i dialogen og bevar normal prognose-/lokal assistentfunktion ved kvoteudløb.
 - [x] Klargør offentligt aktiveringsflag med eksplicit `false`-rollback og målrettede remote-/fallback-/credentialtests.
-- [ ] Deploy eksakt versionsstyret GPT-OSS Edge med server-only secrets gennem godkendt Supabase-kanal.
-- [ ] Bestå live CORS, fast afvisning, DA/DE/EN-svar, rate limits, kvote-/providerfallback og rollback uden private payloads.
+- [x] Deploy eksakt versionsstyret GPT-OSS Edge med server-only secrets gennem godkendt Supabase-kanal.
+- [x] Bestå live CORS, fast afvisning, DA/DE/EN-svar, rate limits, kvote-/providerfallback og rollback uden private payloads.
 - [ ] Bestå source/releasegate, exact-head CI, frisk produktion og offentlig browserkontrol før 4.0.291 kaldes produktionsverificeret.
 
 Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometri- eller punktændring er tilladt.
+
+## Næste afgrænsede spor efter 4.0.291 og mobilregressionen – klogere lokal assistent
+
+- [ ] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
+- [ ] Dæk blandt andet vind, strøm, bølger, vandstand, mobilisering, transport, timing, kysttyper, sikkerhed, Candidate G og læsning af den valgte zones allerede beregnede offentlige data.
+- [ ] Understøt flere formuleringer og relevante opfølgende spørgsmål uden at foregive viden, som den godkendte vidensbase ikke indeholder.
+- [ ] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI må aldrig ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
+- [ ] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
+
+Den kritiske mobile tilbage-navigation, hvor kort, **Bedste områder** og **5-dages RavRadar** kan forblive tomme efter besøg på **Om RavRadar**, undersøges og rettes først som særskilt release.
 
 ## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 

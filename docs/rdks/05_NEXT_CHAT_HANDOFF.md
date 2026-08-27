@@ -2,7 +2,7 @@
 
 ## Aktiv 4.0.291 – offentlig gratis Spørg RavRadar
 
-- Ejeren har givet det særskilte aktiverings-go. 4.0.291-kandidaten viser en rolig DA/DE/EN-tekst om den begrænsede daglige AI-kvote og fortsat fungerende prognoser/lokale svar.
+- Ejeren har givet det særskilte aktiverings-go. 4.0.291-kandidaten viser en rolig DA/DE/EN-tekst om den begrænsede daglige AI-kvote og præciserer, at den kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
 - Cloudflare-kontoen er verificeret som Workers Free / $0 med 10.000 neuroner pr. døgn og fejl efter loftet. Betalt overflow er forbudt.
 - Offentlig `ravAssistantRemoteEnabled=true` er klargjort; `false` er rollback. Domænegate, lokale Candidate G-dataintents, dataminimering, CORS, rate limits, syv sekunders timeout og lokal fallback bevares.
 - Den levende Supabase-funktion er endnu den ældre kode og mangler de to Cloudflare-secrets. Deploy Edge gennem den godkendte dashboardkanal og bestå live sikkerheds-/DA-DE-EN-kontrol før merge og Pages-deploy.

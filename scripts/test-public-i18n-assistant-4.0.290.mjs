@@ -117,6 +117,9 @@ for (const [language, label] of [['da','Dansk'],['de','Deutsch'],['en','English'
 assert.match(indexHtml, /data-i18n="ranking\.title"/);
 assert.match(indexHtml, /data-i18n="forecast\.title"/);
 assert.match(indexHtml, /class="assistant-quota" data-i18n="assistant\.quota"/);
+assert.match(indexHtml, /Kvoten gælder kun Spørg RavRadar og har ingen indflydelse på kort, prognoser, RavScore eller øvrige funktioner\./);
+assert.match(i18n.MESSAGES.de['assistant.quota'], /Dieses Kontingent gilt nur für Frag RavRadar und hat keinen Einfluss auf Karte, Prognosen, RavScore oder andere Funktionen\./);
+assert.match(i18n.MESSAGES.en['assistant.quota'], /This allowance applies only to Ask RavRadar and has no effect on the map, forecasts, RavScore, or other features\./);
 assert.match(indexHtml, /data-i18n="footer\.weatherSea"/);
 assert.match(indexHtml, /data-i18n="footer\.licenseSuffix"/);
 assert.doesNotMatch(indexHtml.match(/<dialog id="developerDialog"[\s\S]*?<\/dialog>/)?.[0] || '', /data-i18n/, 'Udviklerfladen skal forblive dansk.');

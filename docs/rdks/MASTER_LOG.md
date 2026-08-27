@@ -2,8 +2,9 @@
 
 - Ejeren gav særskilt go til at sætte **Spørg RavRadar** i offentlig drift med den allerede valgte GPT-OSS 20B-model.
 - Cloudflare-dashboardet viste Workers Free som aktuel $0-plan, 10.000 neuroner/dag og cirka 4.930 neuroner brugt efter evals. Betalt overflow er ikke tilladt.
-- Kandidaten tilføjer en synlig DA/DE/EN-kvotetekst, aktiverer browserflaget og bevarer lokale prognoser/svar ved `429`, timeout, ugyldigt output eller providerfejl.
-- Den versionsstyrede assistent-Edge og begge Cloudflare-secrets er installeret. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering før merge; atomisk filudskiftning rettede den. Live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald er grønne. To danske prøver beviste behovet for snæver deterministisk fagordsnormalisering; ny exact-head/Edge-smoke, browserfallback og produktion mangler. Se DEC-0088.
+- Kandidaten tilføjer en synlig DA/DE/EN-kvotetekst, aktiverer browserflaget og bevarer lokale svar ved `429`, timeout, ugyldigt output eller providerfejl. Efter ejerens præcisering siger teksten nu entydigt, at kvoten kun gælder Spørg RavRadar og ikke påvirker kort, prognoser, RavScore eller øvrige funktioner.
+- Den versionsstyrede assistent-Edge og begge Cloudflare-secrets er installeret. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering før merge; atomisk filudskiftning rettede den. Live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald er grønne. Snæver deterministisk fagordsnormalisering og et evidensbundet Candidate G-vægtsvar er efterfølgende deployet og liveverificeret på tysk sammen med en engelsk providerprøve. Ny exact-head, offentlig browserfallback og produktion mangler. Se DEC-0088.
+- Ejeren ønsker desuden en væsentligt klogere lokal assistent. Det er registreret som et særskilt evaldrevet DA/DE/EN-vidensspor efter den kritiske mobile returfejl; det udvider ikke 4.0.291-scope og ændrer ingen prognosedata.
 - Candidate G, vejr, sortering, konto-/turdata, privatliv, geometri, land-/vandpunkter og private data er urørte.
 
 ## 2026-08-27 – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI

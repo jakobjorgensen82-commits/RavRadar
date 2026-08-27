@@ -9,7 +9,7 @@
 
 1. Ejeren har udtrykkeligt godkendt offentlig aktivering af **Spørg RavRadar** med Cloudflare `@cf/openai/gpt-oss-20b` gennem Supabase Edge.
 2. Cloudflare-kontoen skal ved aktivering stå på **Workers Free / $0**. Den officielle og viste grænse er 10.000 neuroner pr. døgn; yderligere kald skal fejle. Upgrade, Workers Paid og prepaid AI Gateway-kreditter er ikke tilladt i dette nulbetalingsspor.
-3. Den offentlige dialog oplyser på dansk, tysk og engelsk, at den daglige AI-kvote er begrænset for at holde RavRadar gratis, og at prognoser og lokale RavRadar-svar fortsætter ved kvoteudløb.
+3. Den offentlige dialog oplyser på dansk, tysk og engelsk, at den daglige AI-kvote er begrænset for at holde RavRadar gratis. Teksten siger entydigt, at kvoten kun gælder Spørg RavRadar og ikke har indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
 4. Browserflaget må først udgives som `ravAssistantRemoteEnabled=true`, når den versionsstyrede GPT-OSS Edge er deployet med server-only secrets og består live CORS-, domæne-, rate-limit-, timeout-, output- og fallbackkontrol.
 5. Åbenlyst uvedkommende og sikkerhedsfølsomme spørgsmål afvises før provider. Bedste sted, bedste tid og konkret RavScore forbliver lokale Candidate G-funktioner.
 6. Konto-/turdata, identitet, præcis position, credentials, interne regler/diagnoser, rå vektorer, koordinater og komplette datasæt må ikke sendes til modellen.

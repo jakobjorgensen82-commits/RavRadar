@@ -4,10 +4,18 @@
 
 - [x] Ejer-go, aktuel Workers Free-kontrol og DA/DE/EN-kvotetekst.
 - [x] Offentligt aktiveringsflag med sikker `false`-rollback og målrettet remote-/`429`-fallbacktest.
-- [ ] Deploy versionsstyret GPT-OSS Edge med server-only secrets og bestå live CORS/domæne/rate-limit/fallback.
+- [x] Deploy versionsstyret GPT-OSS Edge med server-only secrets og bestå live CORS/domæne/rate-limit/fallback.
 - [ ] Bestå exact-head, produktion og offentlig DA/DE/EN-browserkontrol.
 
 Se DEC-0088.
+
+## Næste P1-rækkefølge efter 4.0.291
+
+1. Ret og reproducer mobil tilbage-navigation fra **Om RavRadar**, hvor kort, **Bedste områder** og **5-dages RavRadar** kan mangle efter retur til forsiden.
+2. Udvid derefter den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data, relevante opfølgende spørgsmål og fortsat fast emneafvisning.
+3. Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
+
+Det brede lokale vidensscope låses med konkrete intents og evals før implementering.
 
 ## P1 afsluttet – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI
 
