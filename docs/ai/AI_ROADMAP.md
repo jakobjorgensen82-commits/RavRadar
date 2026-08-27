@@ -1,4 +1,15 @@
-# AI Roadmap – RavRadar 4.0.287+
+# AI Roadmap – RavRadar 4.0.288+
+
+## P0 aktiv – automatisk Candidate G-genopretning før P1-sporene
+
+- [x] Find rodårsagen til sorte zoner og tomme **Bedste områder**/**5-dages RavRadar**: komplet 00-runtime blev browserafvist efter otte timer, mens en ikke-deployeret 09-runtime korrekt blev afvist efter et nitimers hul.
+- [x] Bevar det nyeste komplette, auditerede 210/673/1.346-datasæt atomisk i højst 48 timer med tydelig **ikke aktuelle data**-advarsel.
+- [x] Genstart efter huller over tre timer fra reelle verificerede suffixprøver uden interpolation eller backfill; skift først samlet ved 673/673 `READY` og grøn faktisk runtimeaudit.
+- [x] Lås en engangsrecovery til 09-checkpointets run, artifact, dataset, 673 dele, hash og tretimersvindue; kopier kun kompakt afledt state.
+- [x] Bestå målrettede tests og dataminimerede prøver mod de virkelige 00/09-artifacts.
+- [ ] Bestå 4.0.288-version/RDKS, exact-head, merge, fuld frisk produktion og positiv offentlig browserkontrol.
+
+P1-oversættelse og Spørg RavRadar fortsætter først efter P0-lukning. Se DEC-0084.
 
 ## P0 afsluttet – færdigt hybridt konto- og turlager
 

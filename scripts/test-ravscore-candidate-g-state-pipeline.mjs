@@ -109,6 +109,47 @@ assert.equal(fullInboundWindow.rows.at(-1).transportMemoryCoverageHours, 48);
 assert.equal(fullInboundWindow.rows.at(-1).transportPotential, 100);
 assert.equal(fullInboundWindow.continuationState.transportEvidence.length, 49);
 
+const recoveredAfterNineHourProductionGap = buildCandidateGDerivedStateSeries([
+  sample(57),
+], {
+  stateKey: 'sha256:full-inbound-window',
+  initialState: fullInboundWindow.continuationState,
+});
+assert.equal(recoveredAfterNineHourProductionGap.initialStateAccepted, true,
+  'a valid pre-gap state must remain type-compatible');
+assert.equal(recoveredAfterNineHourProductionGap.rows[0].currentTransition, 'VERIFIED_TIME_GAP_RECOVERY');
+assert.equal(recoveredAfterNineHourProductionGap.rows[0].transportMemoryReady, false);
+assert.equal(recoveredAfterNineHourProductionGap.rows[0].transportMemoryStatus, 'WINDOW_INCOMPLETE');
+assert.equal(recoveredAfterNineHourProductionGap.rows[0].transportMemoryCoverageHours, 0);
+assert.deepEqual(recoveredAfterNineHourProductionGap.continuationState.transportEvidence, [{
+  time: hour(57),
+  strength: 1,
+}], 'recovery must retain only the new verified suffix and never invent the missing hours');
+
+const firstRecoveryContinuation = buildCandidateGDerivedStateSeries([sample(58)], {
+  stateKey: 'sha256:full-inbound-window',
+  initialState: recoveredAfterNineHourProductionGap.continuationState,
+});
+assert.equal(firstRecoveryContinuation.initialStateAccepted, true);
+assert.equal(firstRecoveryContinuation.rows[0].transportMemoryStatus, 'WINDOW_INCOMPLETE');
+assert.equal(firstRecoveryContinuation.rows[0].transportMemoryCoverageHours, 1);
+assert.equal(firstRecoveryContinuation.continuationState.transportEvidence.length, 2);
+
+const naturallyMaturedRecovery = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 48 }, (_, index) => sample(index + 58)),
+  {
+    stateKey: 'sha256:full-inbound-window',
+    initialState: recoveredAfterNineHourProductionGap.continuationState,
+  },
+);
+assert.equal(naturallyMaturedRecovery.initialStateAccepted, true);
+assert.equal(naturallyMaturedRecovery.rows.at(-1).transportMemoryReady, true,
+  'the restarted lineage must return to READY automatically after 48 real continuous hours');
+assert.equal(naturallyMaturedRecovery.rows.at(-1).transportMemoryStatus, 'READY');
+assert.equal(naturallyMaturedRecovery.rows.at(-1).transportMemoryCoverageHours, 48);
+assert.equal(naturallyMaturedRecovery.continuationState.transportEvidence.length, 49);
+assert.equal(naturallyMaturedRecovery.continuationState.transportEvidence[0].time, hour(57));
+
 const nativeThreeHourlyWindow = buildCandidateGDerivedStateSeries(
   Array.from({ length: 17 }, (_, index) => sample(index * 3)),
   { stateKey: 'sha256:native-three-hour-window' },

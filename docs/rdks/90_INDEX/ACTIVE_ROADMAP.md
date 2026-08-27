@@ -1,5 +1,16 @@
 # RavRadar - aktivt roadmap
 
+## P0 aktiv – 4.0.288 automatisk Candidate G-genopretning
+
+- [x] Bevar det seneste komplette, auditerede datasæt ved fejlhentning og bind startup/detaljer/ranglister til samme dataset.
+- [x] Begræns tydeligt markeret nødvisning til 48 timer og stop derefter fail-safe.
+- [x] Genstart fra verificeret suffix efter huller over tre timer uden interpolation eller backfill.
+- [x] Lås engangsrecoveryen til det eksakte 09-checkpoint og kopier kun kompakt state.
+- [x] Bestå målrettede kode- og artifactsimulationer.
+- [ ] Bestå version/RDKS, exact-head, merge, fuld frisk produktion og offentlig funktionskontrol.
+
+P1-oversættelse og Spørg RavRadar afventer P0-lukning. Se DEC-0084.
+
 ## P0 afsluttet – 4.0.287 EU-turlager og Supabase-rollback
 
 - [x] Vælg endelig gratis normalarkitektur: Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards.

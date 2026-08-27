@@ -1,5 +1,19 @@
 # Implementeringsstatus – produktionsverificeret 4.0.287
 
+## Aktiv P0-kandidat – automatisk Candidate G-genopretning i 4.0.288
+
+- [x] Afgræns hændelsen til en komplet, men browserafvist 00-runtime og et korrekt fail-closed 09-build med 673 `WINDOW_HAS_TIME_GAP`.
+- [x] Bevar det seneste komplette Candidate G-datasæt atomisk til startup, detaljer, rangliste og femdøgnsvisning i højst 48 timer med tydelig aktualitetsadvarsel.
+- [x] Vælg altid det nyeste gyldige fallbackgrundlag og lås 210 zoner, 673 dele, 673 `READY`, 1.346 modes, dataset-id og hashes.
+- [x] Genstart statepipelinen fra den virkelige verificerede suffix efter huller over tre timer uden interpolation/backfill; bevar standard-memory fail-closed uden eksplicit opt-in.
+- [x] Fjern fallback atomisk, når den faktiske nye runtime igen er 673/673 `READY`; stop ved uventet delvis national recovery.
+- [x] Implementér og test hash-/tidslåst engangsrecovery af den kompakte 09-state uden vejr, scores eller rå vektorer.
+- [x] Bestå målrettede kodeprøver og dataminimerede 673-deles artifactsimulationer.
+- [x] Synkronisér 4.0.288, RDKS/håndbøger/changelog, bestå lokal `validate:source` og bevis kun topversionsændring i de beskyttede geodatafiler.
+- [ ] Bestå exact-head sourcegate, merge, fuld frisk produktion og offentlig browserkontrol af zoner, **Bedste områder**, **5-dages RavRadar** og nødteksten.
+
+Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0084.
+
 ## P1 aktiv – gratis og domæneafgrænset Spørg RavRadar
 
 - [x] Auditér lokal og Edge-assistent mod Candidate G, offentlig scoreforklaring, sikkerhedsgrænse og deterministisk dataansvar.

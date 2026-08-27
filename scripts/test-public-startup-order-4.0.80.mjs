@@ -3,7 +3,7 @@ const app = await fs.readFile('app.js', 'utf8');
 const ranking = app.indexOf("renderRanking();performance.mark?.('ravradar:ranking-ready')");
 const paintYield = app.indexOf('await yieldToBrowser();', ranking);
 const ready = app.indexOf("performance.mark?.('ravradar:ready')", paintYield);
-const details = app.indexOf('conditionDetailsPromise=loadConditionDetails({manifest})', ready);
+const details = app.indexOf('conditionDetailsPromise=loadConditionDetails({manifest,conditions:state.conditions})', ready);
 const forecast = app.indexOf('const completed=await renderNationalForecast()', details);
 const arrows = app.indexOf('const installArrows=()=>');
 const scheduled = app.indexOf('setTimeout(installArrows,0)', arrows);

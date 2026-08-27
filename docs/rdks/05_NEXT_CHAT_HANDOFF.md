@@ -1,5 +1,15 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv P0 – automatisk Candidate G-genopretning i 4.0.288
+
+- Offentlig 4.0.287-baseline `rr-20260827013448-210` er komplet ved 00 UTC, men browseren kasserer den efter otte timer. Derfor blev zoner sorte, og **Bedste områder** samt **5-dages RavRadar** tomme.
+- Fejlkørsel `33059522170` nåede 09 UTC med et reelt nitimers hul. Candidate G afviste korrekt alle 673 states; det fejlede checkpoint blev ikke deployet, så næste run kunne ikke fortsætte fra suffixen.
+- Kandidaten publicerer kun det seneste hele, auditerede dataset som tydeligt markeret nødvisning i højst 48 timer. Den nye warmup-runtime ligger separat, og der skiftes først atomisk ved 673/673 `READY` og grøn faktisk runtimeaudit.
+- Et hul over tre timer genstarter fra reelle prøver efter hullet. Ingen interpolation, backfill eller opdigtet strøm er tilladt. Et hul på højst tre timer følger den eksisterende native-kadencekontrakt.
+- Engangsrecoveryen er låst til det kendte 09-checkpoint og højst tre timers genoptagelse. Den faktiske 673-deles prøve kopierede ingen vejr-, score- eller rå vektordata.
+- Lokal `validate:source` inklusive releasegate er grøn, og separat geodatakontrol viser kun topversionen 4.0.287 → 4.0.288. Bestå exact-head, merge, frisk produktion og offentlig browserkontrol, og opdatér derefter kandidatmarkører til produktionsverificeret evidens.
+- P1-oversættelse og Edge-implementering af Spørg RavRadar må først fortsætte efter dette P0. Se DEC-0084.
+
 ## Aktiv afgrænset leverance – gratis Spørg RavRadar-evals
 
 - DEC-0083 låser ejerkravet: nul betaling, Free Tier uden billing eller betalt overflow, ravrelevant domæne og lokal fallback ved kvote-/providerfejl.

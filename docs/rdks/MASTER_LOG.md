@@ -1,3 +1,12 @@
+## 2026-08-27 – automatisk Candidate G-genopretning efter fejlhentning
+
+- Ejeren prioriterede P0-driften foran AI-/oversættelsessporene og krævede både akut gendannelse og permanent selvrecovery.
+- Sidste komplette 00-runtime havde 210/210 aktive zoner og 673/673 `READY`, men blev kasseret af browserens otte-timersgrænse. En fejlet 09-runtime havde 673 ærlige `WINDOW_HAS_TIME_GAP` efter et nitimers hul og blev ikke deployet.
+- DEC-0084 bevarer det nyeste hele, auditerede datasæt i højst 48 timer med tydelig **ikke aktuelle data**-advarsel. Startup, detaljer, rangliste og femdøgnsvisning deler dataset-id; ingen blanding tillades.
+- Candidate G genstarter fra verificeret suffix efter et hul over tre timer uden interpolation/backfill og skifter først tilbage ved 673/673 `READY` samt grøn faktisk runtimeaudit.
+- Engangsrecoveryen er låst til 09-checkpointets run/artifact/dataset/hash og højst tre timer. Virkelig 673-deles simulation beviser kun kompakt statekopi og nul kopieret vejr, score eller rå vektorer.
+- Målrettede prøver er grønne; 4.0.288 exact-head, produktion og offentlig lukning afventer. Score, vejr, normal sortering, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+
 ## 2026-08-27 – gratis og domæneafgrænset modelvalg til Spørg RavRadar
 
 - Ejeren krævede nul betaling og et emnehegn, så assistenten ikke kan bruges til eksempelvis rouladeopskrifter. DEC-0083 låser Free Tier uden billing/betalt overflow, treleddet routing og lokal fallback.

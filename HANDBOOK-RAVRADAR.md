@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Automatisk Candidate G-genopretning – 4.0.288
+
+Når en ny datahentning fejler eller kun bliver delvis, erstatter den ikke den seneste komplette prognose. RavRadar fortsætter i stedet på ét fuldt verificeret Candidate G-datasæt, mens nye data og den nødvendige 48-timers transporthukommelse genopbygges i baggrunden. Startfil, områdedetaljer, **Bedste områder** og **5-dages RavRadar** kommer altid fra samme dataset.
+
+Nøddriften viser tydeligt, hvornår datasættet blev lavet, hvor gammelt det er, og at dataene ikke er aktuelle. Den er begrænset til 48 timer. Derefter lukker RavRadar sikkert i stedet for at vise en gammel prognose som frisk. Når alle 673 kystdele igen er `READY`, og den faktiske nye runtime har bestået kontrollen før deploy, skifter siden samlet over og fjerner nødvisningen.
+
+Et reelt hul over tre timer nulstiller kun den berørte Candidate G-historik til de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke de manglende timer. Candidate G 20/50/30, scorefysikken, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0084](docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md).
+
 ## Supabase-login og EU-turlager med rollback – 4.0.287
 
 Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadars offentlige Edge-gateway. Normale ture gemmes i ti Cloudflare D1-databaser, som er låst til EU. Det giver op til 5 GB samlet gratis turlager i stedet for at lade turene vokse mod Supabases 500 MB-databaseloft.
@@ -573,7 +581,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.287
+**Håndbogsversion:** 4.0.288
 
 **Opdateret:** 19. august 2026
 

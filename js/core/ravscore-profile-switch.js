@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '2.0.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.287',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.288',
   requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   rollbackProfileId: null,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,

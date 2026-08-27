@@ -114,6 +114,20 @@ assert.equal(fourHourGapMemory.status, 'WINDOW_HAS_TIME_GAP');
 assert.equal(fourHourGapMemory.maximumObservedGapHours, 4,
   'a missed native production step must remain a real fail-closed gap');
 
+const recoveredFourHourGapMemory = buildBoundedCurrentTransportMemory(fourHourGapEvidence, {
+  referenceTime: fourHourGapEvidence.at(-1).time,
+  restartAfterVerifiedTimeGap: true,
+});
+assert.equal(recoveredFourHourGapMemory.memoryReady, false);
+assert.equal(recoveredFourHourGapMemory.status, 'WINDOW_INCOMPLETE');
+assert.equal(recoveredFourHourGapMemory.recovery?.reason, 'VERIFIED_TIME_GAP_SUFFIX_RESTART');
+assert.equal(recoveredFourHourGapMemory.recovery?.maximumObservedGapHours, 4);
+assert.ok(recoveredFourHourGapMemory.evidence.every((item, index, rows) => index === 0
+  || (Date.parse(item.time) - Date.parse(rows[index - 1].time)) / 3_600_000 <= 3),
+'an opted-in production recovery must persist only the verified continuous suffix');
+assert.equal(recoveredFourHourGapMemory.evidence[0].time, fourHourGapEvidence[24].time,
+  'the evidence before the real gap must not leak into the restarted warmup lineage');
+
 const strongOutbound = Array.from({ length: 14 }, (_, hour) => ({
   time: new Date(Date.UTC(2024, 0, 1, hour)).toISOString(),
   currentSpeedMps: 0.2,

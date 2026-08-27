@@ -151,6 +151,7 @@ export function buildBoundedCurrentTransportMemory(
     windowHours = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours,
     maximumGapHours = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours,
     boundaryPotential = CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.boundaryPotential,
+    restartAfterVerifiedTimeGap = false,
     ...profile
   } = {},
 ) {
@@ -202,15 +203,38 @@ export function buildBoundedCurrentTransportMemory(
       (Date.parse(retainedEvidence[index].time) - Date.parse(retainedEvidence[index - 1].time)) / 3_600_000,
     );
   }
+  const suffix = latestAtReference
+    ? continuousVerifiedSuffix(retainedEvidence, safeMaximumGapHours)
+    : [];
   const cadenceComplete = retainedEvidence.length > 1
     && maximumObservedGapHours <= safeMaximumGapHours + EPSILON;
+  const verifiedTimeGapRecovery = restartAfterVerifiedTimeGap === true
+    && latestAtReference
+    && !containsMissing
+    && suffix.length > 0
+    && suffix.length < retainedEvidence.length
+    && maximumObservedGapHours > safeMaximumGapHours + EPSILON;
+  if (verifiedTimeGapRecovery) {
+    const restarted = buildBoundedCurrentTransportMemory(suffix, {
+      referenceTime: reference,
+      windowHours: safeWindowHours,
+      maximumGapHours: safeMaximumGapHours,
+      boundaryPotential: safeBoundaryPotential,
+      ...profile,
+    });
+    return {
+      ...restarted,
+      recovery: {
+        reason: 'VERIFIED_TIME_GAP_SUFFIX_RESTART',
+        discardedEvidenceCount: retainedEvidence.length - suffix.length,
+        maximumObservedGapHours,
+      },
+    };
+  }
   const memoryReady = latestAtReference
     && startsWithinBoundaryCadence
     && cadenceComplete
     && !containsMissing;
-  const suffix = latestAtReference
-    ? continuousVerifiedSuffix(retainedEvidence, safeMaximumGapHours)
-    : [];
   const deadband = Number(transportProfile.deadbandNormalSpeedMps);
   const fullStrength = Number(transportProfile.fullStrengthNormalSpeedMps);
   const replaySamples = suffix.map(item => {
