@@ -1,3 +1,12 @@
+## 2026-08-27 – lokal 4.0.290 DA/DE/EN- og gratis Workers AI-kandidat
+
+- Hele den offentlige oversættelse er implementeret gennem ét centralt katalog med dansk standard/fallback, lokalt husket flag+sprognavn og stabile parameternøgler. Den omfatter også **Om RavRadar** og alle 12 sektioner i grundbogen; admin/ekspert/internt forbliver dansk.
+- Assistenten afviser kendte uvedkommende og sikkerhedsfølsomme spørgsmål før provider, holder bedste sted/tid/score deterministisk i Candidate G og minimerer den mulige fjernkontekst. Ekstern AI forbliver deaktiveret.
+- Gemini Flash-Lite 27/27 bevares som kvalitetsreference, men Googles aktuelle vilkår kræver Paid Service til en offentlig EØS-hjemmeside. Cloudflare Workers Free er nu produktionssporet.
+- Evalrunneren sammenlignede GLM-4.7-Flash, Gemma 4 26B og GPT-OSS 20B på samme DA/DE/EN-suite. GLM/Gemma blev stoppet efter ikke-evaluerbare smoke-svar; GPT-OSS bestod 1/1 smoke, 4/4 mål-gate og 25/26 evaluerbare fuldtests. Ejeren valgte GPT-OSS som kommende gratis model; offentlig remote er fortsat deaktiveret.
+- Brugbare svar krævede `json_object`, kontrolleret rekursiv svarudtrækning, fem faste felter, 800 completion-tokens/low reasoning, eksplicit disposition/evidens og gated testprogression. Det tyske længdebrud og den irrelevante timeout er låst som Edge-fallbackcases.
+- En fortsat deaktiveret GPT-OSS Edge-kandidat er implementeret med server-only credentials, domænegate, dataminimering, CORS, tre rate limits, timeout, eksakt outputvalidering og lokal fallback. Lokal desktop-/390 px-browserkontrol, målrettede kontrakter og fuld `validate:source`/releasegate er grønne. Se DEC-0086/0087. Ingen faglig model, data, geometri, land-/vandpunkt eller private data er ændret.
+
 ## 2026-08-27 – 4.0.289 lukker fremtidstime, retry-, checkpoint- og schedulerhuller
 
 - Ejeren godkendte den akutte P0-rettelse samt nødvendige styrkelser af orkestreringen, før P1-arbejdet fortsætter.
@@ -25,7 +34,7 @@
 - Den offentlige videnspakke binder ti allowlistede Candidate G-fakta til 4.0.287. Evalpakken har 45 balancerede DA/DE/EN-cases, herunder åbne uvedkommende emner, der ikke matcher den faste afvisningsordliste.
 - Live-runneren er dobbelt opt-in, stateless med `store=false`, kalder som standard kun remote-kandidatcases og gemmer ingen nøgle eller komplette svar. Lokal credentialinstallation skete uden Git eller output.
 - `gemini-3.7-flash` gav fem timeouts ved 12/30 sekunder, inklusive low thinking, og blev afvist til chat-use-caset. `gemini-3.5-flash-lite`/low bestod den endelige 27-case suite 100 % med DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
-- Flash-Lite er valgt til næste, fortsat deaktiverede Edge-kandidat. Offentlig 4.0.287 forbliver local-only; gatewayimplementering, rate-limit/fallback/rollback og særskilt ejer-go til aktivering udestår. Score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+- Flash-Lite blev på dette historiske trin valgt til næste deaktiverede Edge-kandidat. Valget er senere erstattet af ejerens GPT-OSS 20B-beslutning i DEC-0087; Gemini-resultatet forbliver reference.
 
 ## 2026-08-26–27 – 4.0.287 flytter normal turvækst til EU-D1, produktionsverificeret
 

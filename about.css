@@ -20,6 +20,13 @@ img { display: block; max-width: 100%; }
 .site-header { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 64px; padding: 10px max(18px, calc((100vw - 1180px) / 2)); color: #fff; background: rgba(7, 59, 76, .96); backdrop-filter: blur(10px); }
 .back-link { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #fff; font-weight: 850; text-decoration: none; }
 .header-label { font-size: .8rem; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; opacity: .78; }
+.static-language-switcher { display: flex; gap: 5px; align-items: center; }
+.static-language-switcher button { display: inline-flex; gap: 5px; align-items: center; min-height: 38px; padding: 7px 9px; border: 1px solid #ffffff4a; border-radius: 9px; color: #fff; background: transparent; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.static-language-switcher button.active { color: var(--brand); background: #fff; }
+.language-flag { display: inline-block; width: 18px; height: 12px; flex: 0 0 18px; border: 1px solid rgba(0,0,0,.2); border-radius: 2px; box-shadow: 0 0 0 1px rgba(255,255,255,.12); }
+.flag-da { background: linear-gradient(90deg,transparent 0 29%,#fff 29% 41%,transparent 41%),linear-gradient(0deg,transparent 0 42%,#fff 42% 58%,transparent 58%),#c60c30; }
+.flag-de { background: linear-gradient(#000 0 33.33%,#dd0000 33.33% 66.66%,#ffce00 66.66% 100%); }
+.flag-en { background: linear-gradient(33deg,transparent 43%,#fff 43% 57%,transparent 57%),linear-gradient(-33deg,transparent 43%,#fff 43% 57%,transparent 57%),linear-gradient(90deg,transparent 40%,#fff 40% 60%,transparent 60%),linear-gradient(0deg,transparent 34%,#fff 34% 66%,transparent 66%),linear-gradient(90deg,transparent 45%,#c8102e 45% 55%,transparent 55%),linear-gradient(0deg,transparent 42%,#c8102e 42% 58%,transparent 58%),#012169; }
 
 main { width: min(1180px, 100%); margin: 0 auto; padding: 28px 18px 76px; }
 .eyebrow { margin: 0 0 8px; color: #c76710; font-size: .78rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
@@ -88,6 +95,12 @@ a:focus-visible { outline: 3px solid #f2ae49; outline-offset: 4px; }
   .mail-button { width: 100%; }
   .family-photo { grid-template-columns: 1fr; }
   .family-photo img { height: auto; min-height: 0; aspect-ratio: 3 / 4; }
+}
+@media (max-width: 640px) {
+  .site-header { flex-wrap: wrap; gap: 6px 12px; }
+  .header-label { display: none; }
+  .static-language-switcher { order: 3; width: 100%; }
+  .static-language-switcher button { flex: 1; justify-content: center; }
 }
 
 @media (max-width: 600px) {

@@ -8,6 +8,7 @@ const learningCss = read('learn.css');
 const serviceWorker = read('service-worker.js');
 const infoPanel = read('js/ui/info-panel.js');
 const assistant = read('js/services/rav-assistant.js');
+const i18n = read('js/i18n.js');
 const auth = read('js/services/auth-service.js');
 const account = read('js/ui/account-panel.js');
 const app = read('app.js');
@@ -75,12 +76,20 @@ for (const internalTerm of ['lokal score uden blandede vejrdata', 'fælles kompl
 }
 assert.ok(!infoPanel.includes('RavScore vurderer ravmuligheden, ikke om turen er sikker.'), 'Zonepanelet skal forklare søgeforhold uden gentagne sikkerhedsadvarsler');
 assert.ok(!assistant.includes("'Er forholdene sikre?'"), 'En sikkerhedsadvarsel må ikke være et fremhævet standardspørgsmål');
-assert.match(assistant, /RavScore er en vurdering af ravforholdene, ikke en sikkerhedsvurdering/, 'Et direkte sikkerhedsspørgsmål skal stadig få et ærligt svar');
+assert.match(assistant, /t\('assistant\.local\.safety'/, 'Et direkte sikkerhedsspørgsmål skal bruge den stabile sikkerhedsnøgle');
+for (const safetyText of [
+  'RavScore er en vurdering af ravforholdene, ikke en sikkerhedsvurdering',
+  'Der RavScore bewertet Bernsteinbedingungen, nicht die Sicherheit',
+  'RavScore assesses amber conditions, not safety',
+]) assert.ok(i18n.includes(safetyText), `Sikkerhedssvaret mangler i det offentlige sprogkatalog: ${safetyText}`);
 assert.doesNotMatch(index, />Fallback-data/, 'Kildeafsnittet skal forklare reservekilder uden internt fagsprog');
 assert.doesNotMatch(app, /Seneste datasæt/, 'Den offentlige status skal sige, hvornår siden er opdateret, ikke omtale et datasæt');
 assert.doesNotMatch(auth, /new Error\(['"]Supabase|message:['"]Supabase/, 'Loginfejl må ikke vise leverandørnavnet til brugeren');
 assert.match(auth, /E-mail eller adgangskode er forkert/, 'En almindelig loginfejl skal oversættes til forståeligt dansk');
 assert.doesNotMatch(account, /RavRadars database/, 'Kontoen skal forklare lagring uden unødigt teknisk sprog');
-assert.match(account, /Kyststrækning ikke angivet/, 'Kontoen skal bruge samme forståelige kystord som rapporteringen');
+assert.match(account, /t\('account\.coastMissing'\)/, 'Kontoen skal bruge den stabile nøgle for manglende kyststrækning');
+for (const coastMissingText of ['Kyststrækning ikke angivet', 'Küstenabschnitt nicht angegeben', 'Coastal section not provided']) {
+  assert.ok(i18n.includes(coastMissingText), `Kontoens tekst for manglende kyststrækning mangler: ${coastMissingText}`);
+}
 
 console.log('Offentligt læringsmodul og almindeligt brugersprog valideret.');

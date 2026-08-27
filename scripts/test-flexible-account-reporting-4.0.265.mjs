@@ -135,13 +135,13 @@ const tripStore = fs.readFileSync('supabase/functions/_shared/trip-store.ts', 'u
 const app = fs.readFileSync('app.js', 'utf8');
 
 for (const marker of [
-  'Indberet tur eller fund',
-  'Vælg dato og tidspunkt for turens start',
-  'Hvor mange minutter ledte du?',
-  'Afslut uden at indberette',
-  'Svar senere',
-  'Hvilken kyststrækning søgte du på?',
-  'RavRadar sætter aldrig dagens vejr på en ældre tur'
+  'trip.form.reportTitle',
+  'trip.form.startedAt',
+  'trip.form.minutes',
+  'trip.form.discard',
+  'trip.form.answerLater',
+  'trip.form.actualCoast',
+  'trip.form.reportIntro'
 ]) assert.ok(dialog.includes(marker), `Turformularen mangler teksten: ${marker}`);
 assert.match(dialog, /name:\s*'startedAt',\s*type:\s*'datetime-local'/, 'Efterregistrering skal have ét tydeligt felt med både dato og klokkeslæt.');
 assert.doesNotMatch(dialog, /name:\s*'startedAt'[^}\n]*\bvalue\s*:/, 'Dato og klokkeslæt må ikke være forudfyldt; brugeren skal selv vælge dem.');

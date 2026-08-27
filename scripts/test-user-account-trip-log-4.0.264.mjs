@@ -11,13 +11,13 @@ const uploadContract = fs.readFileSync('supabase/migrations/20260823_observation
 const app = fs.readFileSync('app.js', 'utf8');
 
 for (const marker of [
-  'Mine ture og fund',
-  'Loginlink uden adgangskode',
-  'Her ser du de ture, som du har indsendt til RavRadar.',
+  'account.history',
+  'account.magicTitle',
+  'account.historyIntro',
   'getOwnTripObservations',
   'mergeOwnRows',
   'client_observation_id',
-  'Venter på at blive sendt'
+  'account.pending'
 ]) assert.match(account, new RegExp(marker));
 
 assert.doesNotMatch(account, /Der oprettes ikke en ekstra kopi i databasen/, 'Turloggen må ikke vise intern databaseforklaring.');
@@ -29,7 +29,7 @@ assert.match(observations, /JSON\.stringify\(\{ limit: safeLimit \}\)/);
 assert.match(observations, /Math\.min\(200/);
 assert.doesNotMatch(observations, /schema_version=eq\.2/, 'Ældre egne fund skal også kunne vises.');
 assert.doesNotMatch(account, /Number\(row\?\.schema_version\)\s*!==\s*2/, 'Ældre lokale egne fund må ikke skjules fra loggen.');
-assert.match(account, /String\(fallback \|\| id \|\| 'Ukendt sted'\)/, 'Ældre ture skal foretrække et forståeligt områdenavn frem for et internt id.');
+assert.match(account, /String\(fallback \|\| id \|\| t\('account\.unknownPlace'\)\)/, 'Ældre ture skal foretrække et forståeligt områdenavn frem for et internt id.');
 assert.match(observations, /active\?\.user\?\.id!==payload\.user_id/, 'En kontoejet outbox-tur må kun sendes som den samme bruger.');
 assert.match(observations, /session\?\.access_token&&!session\?\.user\?\.id/);
 assert.doesNotMatch(observations, /rest\/v1\/observations\?select=/i);
@@ -52,7 +52,7 @@ assert.match(accountContract, /forecast_target_at: report\.observedAt/);
 assert.match(accountContract, /report_accuracy: 'exact'/);
 
 assert.doesNotMatch(account, /Supabase kunne ikke hentes/, 'Brugeren skal møde RavRadar-sprog og ikke leverandørnavnet ved en læsefejl.');
-assert.match(account, /RavRadar kunne ikke hente dine gemte ture lige nu/);
+assert.match(account, /t\('account\.historyLoadError'\)/);
 
 assert.match(auth, /authRequest\("\/user"\)/);
 assert.match(auth, /redirect_to=\$\{encodeURIComponent\(redirectTo\)\}/);

@@ -422,10 +422,10 @@ assert.doesNotMatch(migration, /\b(?:delete|update)\s+(?:from\s+)?observations\b
 assert.doesNotMatch(migration, /\b(?:latitude|longitude|gps|route|track)\b/i);
 
 const dialogSource = fs.readFileSync('js/ui/trip-evidence-dialog.js', 'utf8');
-for (const text of ['Hvordan gik ravturen?', 'Fandt du rav?', 'Hvilken kyststrækning søgte du på?', 'Kun en lille del', 'En almindelig tur', 'Det meste grundigt', 'Svar senere', 'Afslut uden at indberette', 'Indsend tur', 'Start en ravtur', 'Hvordan vil du søge?', 'Start tur']) {
-  assert.match(dialogSource, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+for (const key of ['trip.form.resultTitle', 'trip.form.found', 'trip.form.actualCoast', 'trip.form.coveragePartial', 'trip.form.coverageNormal', 'trip.form.coverageThorough', 'trip.form.answerLater', 'trip.form.discard', 'trip.form.submit', 'trip.form.startTitle', 'trip.form.howWillSearch', 'trip.form.start']) {
+  assert.match(dialogSource, new RegExp(`t\\(['\"]${key.replaceAll('.', '\\.')}['\"]\\)`));
 }
-assert.match(dialogSource, /ikke din præcise position eller GPS-rute/);
+assert.match(dialogSource, /t\('trip\.form\.privacy'\)/);
 assert.doesNotMatch(dialogSource, /\.innerHTML\s*=/);
 assert.doesNotMatch(dialogSource, /\b(?:fetch|geolocation|localStorage)\b/);
 

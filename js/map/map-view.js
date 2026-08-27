@@ -1,3 +1,5 @@
+import { t } from "../i18n.js?v=4.0.290";
+
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
 function zoneLineStyle(level = "unavailable", selected = false, zoom = 7) {
@@ -110,13 +112,13 @@ export function sharedMainZoneBoundaries(rows, maximumDistanceKm = .35) {
 
 export function createMap(elementId) {
   const map = L.map(elementId, { zoomControl: true }).setView([56.45, 10.15], 7);
-  const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "&copy; OpenStreetMap-bidragsydere" });
-  const satelliteMap = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics og GIS-brugerfællesskabet" });
+  const streetMap = L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: `&copy; ${t('map.osmAttribution')}` });
+  const satelliteMap = L.tileLayer("https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", { maxZoom: 19, attribution: t('map.imageryAttribution') });
   const saved = localStorage.getItem("ravradar-basemap");
   (saved === "satellite" ? satelliteMap : streetMap).addTo(map);
-  const control = L.control.layers({ "🗺️ Standard": streetMap, "🛰️ Satellit": satelliteMap }, null, { position: "topright", collapsed: true }).addTo(map);
+  const control = L.control.layers({ [t('map.standard')]: streetMap, [t('map.satellite')]: satelliteMap }, null, { position: "topright", collapsed: true }).addTo(map);
   const toggle = control.getContainer()?.querySelector(".leaflet-control-layers-toggle");
-  if (toggle) { toggle.title = "Skift kortvisning"; toggle.setAttribute("aria-label", "Skift kortvisning"); }
+  if (toggle) { toggle.title = t('map.switch'); toggle.setAttribute("aria-label", t('map.switch')); }
   map.on("baselayerchange", event => { localStorage.setItem("ravradar-basemap", event.layer === satelliteMap ? "satellite" : "street"); control.collapse(); });
   return map;
 }
@@ -179,7 +181,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
     const startReference = nearestBoundaryReference(coastLines, parentCoastLine[0], false);
     const endReference = nearestBoundaryReference(coastLines, parentCoastLine[parentCoastLine.length - 1], true);
 
-    hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`, { direction: "top", sticky: true });
+    hit.bindTooltip(`${escapeHtml(zone.name)} · ${result?.available ? `${result.score}/100` : t('map.noData')}`, { direction: "top", sticky: true });
     hit.on("click", () => onSelect(zone));
     hit.on("mouseover", () => visible.setStyle({ weight: visible.options.weight + 1, opacity: 1 }));
     hit.on("mouseout", () => visible.setStyle(zoneLineStyle(hit.options.ravLevel, hit.options.ravSelected, map.getZoom())));
@@ -220,7 +222,7 @@ export function renderZones(map, featureCollection, scoreForZone, onSelect) {
       const isHighlighted = highlighted.has(part.partId);
       const color = isHighlighted ? '#0a7b4f' : ['#1769aa','#8b5cf6','#b45309','#0f766e'][index % 4];
       const layer = L.polyline(latLngLines.length === 1 ? latLngLines[0] : latLngLines, {pane:'zoneBoundaryPane',color,weight:isHighlighted?9:7,opacity:1,lineCap:'round',lineJoin:'round',interactive:true}).addTo(localPartsLayer);
-      layer.bindTooltip(`${escapeHtml(part.name || 'Kystdel')}${isHighlighted ? ' · blandt de bedste' : ''}`, {permanent:true,direction:'top',className:`local-part-label${isHighlighted?' highlighted':''}`});
+      layer.bindTooltip(`${escapeHtml(part.name || t('map.coastalPart'))}${isHighlighted ? ` · ${t('map.amongBest')}` : ''}`, {permanent:true,direction:'top',className:`local-part-label${isHighlighted?' highlighted':''}`});
       partBounds.extend(layer.getBounds());
     });
     if (partBounds.isValid()) map.fitBounds(partBounds,{padding:[34,34],maxZoom:12});
@@ -276,7 +278,7 @@ export function refreshZoneStyles(layer, scoreForZone) {
     pair.hit.options.ravLevel = result?.level || "unavailable";
     pair.visible.setStyle(zoneLineStyle(pair.hit.options.ravLevel, pair.hit.options.ravSelected, layer.map.getZoom()));
     pair.casing.setStyle(zoneCasingStyle(pair.hit.options.ravSelected, layer.map.getZoom()));
-    pair.hit.setTooltipContent(`${escapeHtml(pair.hit.options.zoneTitle)} · ${result?.available ? `${result.score}/100` : "Ingen data"}`);
+    pair.hit.setTooltipContent(`${escapeHtml(pair.hit.options.zoneTitle)} · ${result?.available ? `${result.score}/100` : t('map.noData')}`);
   }
 }
 

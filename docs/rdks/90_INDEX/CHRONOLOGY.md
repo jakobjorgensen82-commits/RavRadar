@@ -1,5 +1,16 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-27 – DA/DE/EN-kandidat og Cloudflare mod Gemini
+
+1. Ejeren genoptog AI-/oversættelsessporene og bad udtrykkeligt om, at Cloudflare sammenlignes med Gemini under nulbetalingskravet.
+2. Første offentlige sprogscope blev implementeret centralt med dansk standard/fallback, flag+sprognavne og lokalt valg for hovedside, prognoser, områdepanel, konto/login, ture og lokal assistent. Ejeren godkendte derefter den brede fase, så **Om RavRadar** og hele grundbogen også blev oversat; admin/ekspert/internt forbliver dansk.
+3. Assistentens klientrouter afviser kendte uvedkommende/sikkerhedsfølsomme spørgsmål før provider, holder bedste sted/tid/score deterministisk og sender kun dataminimeret offentlig kontekst. Ekstern AI er fortsat slukket.
+4. Googles aktuelle vilkår blev genlæst: API Client omfatter en hjemmeside, og offentlig brug i EØS kræver Paid Service. Gemini Flash-Lite 27/27 kan derfor kun være intern reference under nulbetalingskravet.
+5. Cloudflare Workers Free giver 10.000 neuroner/dag og fejler efter loftet. GLM-4.7-Flash og Gemma 4 26B gav ikke-evaluerbare smoke-svar og blev stoppet tidligt. GPT-OSS 20B bestod smoke 1/1, mål-gate 4/4 og 25/26 evaluerbare fuldtests; ejeren valgte den som kommende gratis model.
+6. Brugbare GPT-OSS-svar krævede Cloudflare `json_object`, kontrolleret rekursiv payloadudtrækning, fem faste felter, 800 completion-tokens/low reasoning, eksplicit disposition/evidens med konkrete eksempler og smoke → mål-gate → fuld eval. Én længdeafvigelse og én irrelevant timeout er bevaret som fail-closed Edge-cases.
+7. Den valgte model blev implementeret bag den eksisterende, fortsat slukkede server-side Edge med dobbelte domænegates, server-only credentials, CORS, tre rate limits, syv sekunders timeout, eksakt output-/evidensvalidering og lokal fallback.
+8. Lokal desktop-/390 px-browserkontrol bestod alle tre offentlige sider og sprog, lokalt valg på tværs af sider, QR, syv kilder og sidebredde. Fuld lokal `validate:source` inklusive releasegate bestod derefter på den færdige kandidat. DEC-0086/0087 låser scope og modelvalg; ingen score, vejr, sortering, konto-/turdata, privatliv, geometri, land-/vandpunkter eller private data er ændret.
+
 ## 2026-08-27 – sorte zoner og automatisk Candidate G-genopretning
 
 1. Ejeren bad om at stoppe AI-/oversættelsessporet og først forklare, hvorfor zonerne blev sorte, og **Bedste områder** samt **5-dages RavRadar** ikke virkede.

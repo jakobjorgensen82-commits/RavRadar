@@ -1,3 +1,12 @@
+## 4.0.290 – central DA/DE/EN og sikker assistentgrænse (2026-08-27)
+
+- Tilføjer ét centralt offentligt tekstkatalog med dansk standard/fallback, parameteriserede nøgler, localeformatering og lokalt husket Dansk/Deutsch/English-valg med flag og tydelige navne.
+- Oversætter hele den offentlige flade: hovedside, aktuelle/femdøgnsstatusser, områdepanel, konto/login, turformularer, lokal Spørg RavRadar, **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt**. Admin-, ekspert- og interne flader forbliver danske.
+- Afviser kendte uvedkommende og sikkerhedsfølsomme spørgsmål før provider, holder bedste sted/tid/score deterministisk i Candidate G og reducerer mulig fjernkontekst til en offentlig allowlist.
+- Implementerer en fortsat deaktiveret server-side Cloudflare GPT-OSS Edge med credentials kun på serveren, CORS, domænegate, kvotebuffer, timeout, struktureret output-/evidensvalidering og lokal fallback. Gratis Gemini er forkastet som offentlig EØS-produktionskandidat under aktuelle vilkår, men Flash-Lite 27/27 bevares som reference.
+- Udvider den reproducerbare DA/DE/EN-runner til Cloudflare Workers Free-kandidaterne GLM-4.7-Flash, Gemma 4 26B og GPT-OSS 20B med samme schema/hårde stop samt latenstids-, token- og neuronmåling. GLM/Gemma blev stoppet efter ikke-evaluerbare smoke-svar; GPT-OSS er valgt som fortsat deaktiveret Edge-kandidat efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests. Én længdeafvigelse og én irrelevant timeout skal fejle lukket i gatewayen.
+- Målrettede sprog-, fallback-, assistent-, Edge-, sikkerheds-, konto-/tur-, 210/673/2.100-præsentations- og lokale desktop-/390 px-browserkontroller er grønne. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0086/0087.
+
 ## 4.0.289 – årsagstro produktion og robust genopretning (2026-08-27)
 
 - Forbyder, at en DMI-prognosetime efter den workflowlåste UTC-time bliver produktionstime; nærmeste fallbacktime vælges kun bagud inden for tre timer.
@@ -18,12 +27,12 @@
 - PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` gendannede den låste 09-state, men stoppede før DMI/deploy, fordi fallbackstage lå efter stateændringen. Opfølgningen flytter kun fallbackkopien før checkpointet og låser rækkefølgen i workflowtesten.
 - Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
-## Ikke udgivet – gratis Spørg RavRadar-forundersøgelse (2026-08-27)
+## Historisk forundersøgelse – gratis Gemini-reference til Spørg RavRadar (2026-08-27)
 
 - Auditerer den nuværende lokale/Edge-assistent mod Candidate G og dokumenterer de åbne produktionshuller uden at aktivere fjern-AI.
 - Tilføjer en versionsbundet offentlig Candidate G-videnspakke og 45 balancerede dansk/tysk/engelsk evalcases, herunder åbne uvedkommende emner uden fast ordlistematch.
 - Tilføjer en offline self-test og en eksplicit live-Gemini-runner, der kræver både lokal API-nøgle og bekræftet Free Tier uden billing.
-- Vælger `gemini-3.5-flash-lite`/low til næste deaktiverede Edge-kandidat efter 27/27 remote-kandidatcases, median/p95 1.329/1.896 ms og DA/DE/EN 9/9. `gemini-3.7-flash` afvises efter fem 12/30-sekunders-timeouts.
+- Valgte historisk `gemini-3.5-flash-lite`/low efter 27/27 remote-kandidatcases, median/p95 1.329/1.896 ms og DA/DE/EN 9/9. `gemini-3.7-flash` blev afvist efter fem 12/30-sekunders-timeouts. Produktionsvalget er senere erstattet af DEC-0087 på grund af aktuelle EØS-vilkår; resultatet er fortsat kvalitetsreference.
 - Låser DEC-0083: kun ravrelevante spørgsmål, deterministiske bedste sted/tid/score-svar, fast afvisning af uvedkommende/interne spørgsmål og lokal fallback uden betalt overflow.
 - Ingen offentlig runtime, version, RavScore, vejr, konto-/turdata, geometri, land-/vandpunkter eller private data er ændret.
 

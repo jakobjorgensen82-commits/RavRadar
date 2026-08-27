@@ -2,10 +2,12 @@
 
 **Dato:** 2026-08-27
 **Baseline:** produktionsverificeret 4.0.287 / commit `4046e23b0af582cc56116765f1ec921aacccae0e`
-**Status:** Free Tier-modelvalg afsluttet; Edge-implementering og offentlig AI-aktivering er ikke udført
+**Status:** Historisk Gemini-kvalitetsmåling; produktionskonklusionen er erstattet af DEC-0087
 **Påvirkning:** `scoreImpact=false`, `publicRuntime=false`, `privateData=false`, `geometryImpact=false`
 
 ## Konklusion
+
+> **Revision 2026-08-27:** 27/27-resultatet bevares som sammenligningsgrundlag, men gratis Gemini er ikke længere produktionskandidat. De aktuelle vilkår definerer en hjemmeside som et API Client og kræver Paid Services for brugere i EØS, Schweiz og Storbritannien. Se `RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md` og DEC-0087.
 
 Gemini er den relevante første modelkandidat, når ejerkravet er nul betaling. Googles aktuelle prisside viser gratis input og output for både den stabile `gemini-3.7-flash` og `gemini-3.5-flash-lite` inden for Free Tier. Den konkrete projektkvote er ikke garanteret og skal aflæses i Google AI Studio. Derfor er den eneste acceptable gratis driftskontrakt et projekt uden tilknyttet billing, ingen betalt overflow, egne lavere rate limits og lokal fallback ved `429`, timeout eller providerfejl.
 

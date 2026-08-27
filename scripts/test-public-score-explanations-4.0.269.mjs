@@ -120,8 +120,8 @@ const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 for (const removed of ['Fundprognose', 'Anvendte scorelofter', '<h4>Samlet score</h4>']) {
   assert.ok(!ui.includes(removed), `Den offentlige zonevisning indeholder stadig ${removed}`);
 }
-assert.ok(ui.includes('Bølgernes opbyggede virkning'));
-assert.ok(ui.includes('Vinden giver ikke point direkte; dens virkning sker gennem bølgerne.'));
+assert.ok(ui.includes("t('score.state.wavePotential')"));
+assert.ok(ui.includes("t('score.mobilisationDefinition')"));
 assert.ok(index.includes('<section id="infoPanel" class="info-panel" aria-live="polite" hidden></section>'));
 assert.ok(!index.includes('Vælg et område på kortet'));
 assert.ok(!app.includes('Vælg et område på kortet'));

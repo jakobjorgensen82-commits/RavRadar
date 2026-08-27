@@ -5,19 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://services.arcgisonline.com https://server.arcgisonline.com; connect-src 'self' https://afqhhdrkjfjtpadntdzo.supabase.co; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#073b4c">
-  <meta name="description" content="RavRadars grundbog i ravjagt: ravets oprindelse, mobilisering, strøm, vind, bølger, kystformer, felttegn, strandjagt og wadersjagt.">
-  <title>Lær ravjagt – RavRadar</title>
-  <link rel="stylesheet" href="learn.css?v=4.0.289">
+  <meta name="description" data-i18n-content="learn.meta.description" content="RavRadars grundbog i ravjagt: ravets oprindelse, mobilisering, strøm, vind, bølger, kystformer, felttegn, strandjagt og wadersjagt.">
+  <title data-i18n="learn.meta.title">Lær ravjagt – RavRadar</title>
+  <link rel="stylesheet" href="learn.css?v=4.0.290">
 </head>
 <body>
   <header class="learn-header">
-    <a class="back-link" href="./index.html" aria-label="Tilbage til RavRadar"><span aria-hidden="true">←</span> RavRadar</a>
-    <span class="header-label">Grundbog i ravjagt</span>
+    <a class="back-link" href="./index.html" data-i18n-aria-label="static.back"><span aria-hidden="true">←</span> RavRadar</a>
+    <span class="header-label" data-i18n="learn.header">Grundbog i ravjagt</span>
+    <div class="static-language-switcher" role="group" data-i18n-aria-label="language.selector">
+      <button type="button" data-language="da"><span class="language-flag flag-da" aria-hidden="true"></span><span>Dansk</span></button>
+      <button type="button" data-language="de"><span class="language-flag flag-de" aria-hidden="true"></span><span>Deutsch</span></button>
+      <button type="button" data-language="en"><span class="language-flag flag-en" aria-hidden="true"></span><span>English</span></button>
+    </div>
   </header>
 
   <main>
     <section class="hero">
-      <div>
+      <div data-i18n-html="learn.hero">
         <p class="eyebrow">Fra havbund til fund</p>
         <h1>Lær at læse havet og kysten</h1>
         <p class="hero-intro">Her samler vi den viden om ravjagt, som RavRadar bygger på. Du lærer, hvordan rav løsnes, flyttes og samles, hvilke spor du kan lede efter, og hvorfor det gode tidspunkt ofte kommer efter det hårdeste vejr.</p>
@@ -26,7 +31,7 @@
           <a class="secondary-link" href="#selve-jagten">Gå til selve jagten</a>
         </div>
       </div>
-      <div class="hero-illustration" role="img" aria-label="Bølger løsner materiale, strøm fører det langs bunden, og kysten samler noget af det i et opskyl">
+      <div class="hero-illustration" role="img" data-i18n-aria-label="learn.illustration.aria" aria-label="Bølger løsner materiale, strøm fører det langs bunden, og kysten samler noget af det i et opskyl">
         <svg viewBox="0 0 560 330" aria-hidden="true">
           <defs>
             <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#78c8dc"/><stop offset="1" stop-color="#0f6574"/></linearGradient>
@@ -38,14 +43,14 @@
           <path d="M36 178 C142 145 230 170 346 207" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" marker-end="url(#arrow)"/>
           <g fill="#d98827" stroke="#7d4b14" stroke-width="3"><path d="M134 252 q18-22 38 0 q-13 20-38 0Z"/><path d="M235 225 q14-18 30 0 q-11 17-30 0Z"/><path d="M348 230 q16-20 33 0 q-12 18-33 0Z"/></g>
           <g fill="#365f32"><path d="M93 269 q35-42 70 0 q-36-17-70 0Z"/><path d="M287 258 q31-34 59 0 q-31-14-59 0Z"/></g>
-          <text x="28" y="36">Bølger kan løsne</text><text x="28" y="61">rav og let materiale</text>
-          <text x="184" y="142">Strømmen transporterer</text>
-          <text x="401" y="228">Kysten kan</text><text x="401" y="253">samle materialet</text>
+          <text x="28" y="36" data-i18n="learn.svg.waves1">Bølger kan løsne</text><text x="28" y="61" data-i18n="learn.svg.waves2">rav og let materiale</text>
+          <text x="184" y="142" data-i18n="learn.svg.current">Strømmen transporterer</text>
+          <text x="401" y="228" data-i18n="learn.svg.coast1">Kysten kan</text><text x="401" y="253" data-i18n="learn.svg.coast2">samle materialet</text>
         </svg>
       </div>
     </section>
 
-    <nav class="chapter-nav" aria-label="Emner i grundbogen">
+    <nav class="chapter-nav" data-i18n-aria-label="learn.nav.aria" data-i18n-html="learn.nav" aria-label="Emner i grundbogen">
       <a href="#ravet"><span>1</span> Ravet</a>
       <a href="#havet"><span>2</span> Havet</a>
       <a href="#kysten"><span>3</span> Kysten</a>
@@ -55,7 +60,7 @@
       <a href="#ravscore"><span>7</span> RavRadar</a>
     </nav>
 
-    <section id="grundideen" class="quick-start section-card">
+    <section id="grundideen" class="quick-start section-card" data-i18n-html="learn.quick">
       <div><p class="eyebrow dark">Det vigtigste på ét minut</p><h2>Et fund kræver en hel kæde</h2><p>Godt ravvejr er ikke bare en bestemt vindretning. Flere ting skal lykkes i den rigtige rækkefølge.</p></div>
       <ol class="process-chain">
         <li><b>Rav skal være til stede</b><span>i et lokalt eller opstrøms lager.</span></li>
@@ -68,7 +73,7 @@
       <p class="plain-note"><strong>Den korte huskeregel:</strong> Bølgerne mobiliserer. Strømmen transporterer. Kysten sorterer og samler. Jægeren skal finde det rigtige sted i den rigtige fase.</p>
     </section>
 
-    <section id="ravet" class="learning-section">
+    <section id="ravet" class="learning-section" data-i18n-html="learn.amber">
       <div class="section-heading"><p class="eyebrow dark">Del 1</p><h2>Hvad er det egentlig, havet flytter?</h2><p>Rav opfører sig ikke som en sten, men heller ikke som en korkprop. Forskelle mellem ravstykker er en del af forklaringen på, at samme hændelse kan sortere dem forskelligt.</p></div>
       <div class="lesson-grid">
         <article class="lesson"><span class="lesson-number">1</span><h3>Fra harpiks til rav</h3><p>Rav er fossil harpiks fra fortidens træer. Det rav, der findes i Danmark, kan være flyttet og genaflejret mange gange gennem geologiske lag, istidsmateriale, havbund og ældre strandlagre.</p><details><summary>Hvor kommer et nyt strandfund fra?</summary><p>Ikke nødvendigvis direkte fra et fjernt oprindelsessted. Det kan være frigivet fra et lokalt eller regionalt sekundært lager, som tidligere hændelser har efterladt i havbunden, ved en revle eller på stranden.</p></details></article>
@@ -79,7 +84,7 @@
       <div class="myth-strip"><b>Koldt saltvand giver lidt mere opdrift:</b> Koldere saltvand kan give rav en smule større opdrift, fordi vandet normalt bliver lidt tættere. <span>Forskellen er dog for lille til at få det meste rav til at flyde. Vinterens bedre muligheder skyldes især kraftigere mobilisering, transport, vandstandsændringer og adgang til nye lag.</span></div>
     </section>
 
-    <section id="havet" class="learning-section section-card">
+    <section id="havet" class="learning-section section-card" data-i18n-html="learn.sea">
       <div class="section-heading"><p class="eyebrow dark">Del 2</p><h2>Vind, bølger, strøm og vandstand har forskellige job</h2><p>De påvirker hinanden, men de er ikke udskiftelige. Den vigtigste fejl er at tro, at én pil fortæller hele historien.</p></div>
       <div class="role-grid">
         <article><span class="role-icon">≈</span><h3>Bølger mobiliserer</h3><p>Bølgernes bevægelse og turbulens kan løsne rav fra bunden, vende let materiale og holde det i bevægelse. Højde, periode, varighed, dybde og bund betyder alle noget.</p></article>
@@ -95,7 +100,7 @@
       <p class="plain-note"><strong>Der findes ikke én dansk vind- eller strømretning, som altid er bedst.</strong> Vestenvind kan være pålandsvind ved en vestvendt kyst og fralandsvind ved en østvendt kyst. Den samme strømretning kan gå mod én kyststrækning, langs en anden og væk fra en tredje, fordi kysterne vender forskelligt. Forløbet før nu betyder også noget: En storm kan først have løsnet rav, hvorefter en ændret bundnær strøm kan føre det mod en bestemt kyst. Derfor skal retningen altid sammenlignes med den konkrete kyst og timerne eller dagene, der gik forud.</p>
     </section>
 
-    <section id="kysten" class="learning-section">
+    <section id="kysten" class="learning-section" data-i18n-html="learn.coast">
       <div class="section-heading"><p class="eyebrow dark">Del 3</p><h2>Kysten er en sorteringsmaskine</h2><p>Det sidste stykke fra hav til fund foregår i et meget lokalt system. Revler, render, høfder, odder, strandhældning og opskyl kan ændre både bane og ophobningssted.</p></div>
       <div class="coast-explainer">
         <article><h3>Revler</h3><p>En revle kan bremse bølger, samle materiale eller holde det ude. Når materialet kommer over revlen, kan det ende på plateauet inden for eller nå helt til stranden.</p></article>
@@ -118,7 +123,7 @@
       </div>
     </section>
 
-    <section id="felttegn" class="learning-section section-card">
+    <section id="felttegn" class="learning-section section-card" data-i18n-html="learn.signs">
       <div class="section-heading"><p class="eyebrow dark">Del 4</p><h2>Læs det, stranden viser dig</h2><p>Felttegn er spor efter sortering og aflevering. De er værdifulde, men ingen af dem er en garanti for rav.</p></div>
       <div class="sign-grid">
         <article><span>01</span><h3>Frisk, våd tanglinje</h3><p>En ny linje med vådt organisk materiale kan markere den seneste afleveringshøjde. Kig både i materialet, lige foran og bag linjen samt i små lommer langs kanten.</p><small>Tør tang længere oppe kan være gammel eller flyttet af vind.</small></article>
@@ -131,7 +136,7 @@
       <div class="myth-strip"><b>Husk:</b> Tang er et spor, ikke et bevis. <span>Friskhed, placering, det øvrige materiale og hele vejrhændelsen fortæller mere end ordet “tang” alene.</span></div>
     </section>
 
-    <section id="selve-jagten" class="learning-section">
+    <section id="selve-jagten" class="learning-section" data-i18n-html="learn.hunt">
       <div class="section-heading"><p class="eyebrow dark">Del 5</p><h2>Selve jagten: søg systematisk</h2><p>Den bedste metode afhænger af, hvor ravet forventes at være afleveret, og hvor let det er at se. Skift metode, når felttegnene skifter.</p></div>
       <div class="method-grid">
         <article><span class="method-label">Stranden</span><h3>Følg fraktionen</h3><ol><li>Find den friskeste tydelige opskylslinje.</li><li>Se efter tang, træ, frø, kul og skaller, der er sorteret sammen.</li><li>Følg linjen til steder, hvor materialet bliver tættere, møder en lavning eller stopper ved et kystknæk.</li><li>Søg også lidt foran og bag linjen; vandstand og vind kan have flyttet det lette materiale.</li></ol></article>
@@ -146,7 +151,7 @@
       <details class="find-check"><summary>Hvordan undersøger jeg, om et fund kan være rav?</summary><p>Se først på den lave vægt i forhold til størrelsen og den harpiksagtige overflade. Rav kan være hvidt, gult, orange, brunt eller næsten sort og ligner ikke altid et poleret smykke. Langbølget UV kan give tydelig fluorescens og er et godt spor, men ikke et endeligt ægthedsbevis. Saltvand kan sortere efter massefylde, men let plast kan også flyde. Undgå varme nåle, ild og andre ødelæggende hjemmetests; et værdifuldt eller usikkert fund bør vurderes fagligt.</p></details>
     </section>
 
-    <section id="forloeb" class="learning-section section-card">
+    <section id="forloeb" class="learning-section section-card" data-i18n-html="learn.sequence">
       <div class="section-heading"><p class="eyebrow dark">Del 6</p><h2>Det gode tidspunkt er ofte en fase</h2><p>Ravjagt handler mere om rækkefølgen af hændelser end om vejret i ét øjeblik.</p></div>
       <div class="event-timeline" aria-label="Et typisk vejrhændelsesforløb">
         <article><span>1</span><h3>Før hændelsen</h3><p>Rav kan ligge skjult i bund, tang, ældre opskyl eller et nærkystlager.</p></article>
@@ -163,7 +168,7 @@
       
     </section>
 
-    <section id="ravscore" class="learning-section">
+    <section id="ravscore" class="learning-section" data-i18n-html="learn.score">
       <div class="section-heading"><p class="eyebrow dark">Del 7 · værktøjet efter fagligheden</p><h2>Sådan omsætter RavRadar forløbet til en vurdering</h2><p>RavScore er et indeks over modellerede rav- og søgeforhold. Det er ikke en procentchance for fund. Brug delene til at forstå vurderingen — ikke kun farven.</p></div>
       <div class="three-parts">
         <article><span class="part-number">20 %</span><h3>Søgeforhold</h3><p>Hvor effektiv den valgte metode forventes at være. Strand og waders vurderes forskelligt.</p></article>
@@ -183,7 +188,7 @@
       <p class="plain-note"><strong>Model — ikke naturgrænse:</strong> Vægte, tider og tærskler er RavRadars nuværende testede arbejdsregler. De skal løbende prøves mod komplette ture med både fund og nul-fund.</p>
     </section>
 
-    <section id="viden" class="learning-section section-card">
+    <section id="viden" class="learning-section section-card" data-i18n-html="learn.knowledge">
       <div class="section-heading"><p class="eyebrow dark">Hvad ved vi sikkert?</p><h2>Viden, stærke analogier og åbne spørgsmål</h2><p>Direkte forskning i ravtransport er begrænset. Derfor skelner RavRadar mellem dokumenteret viden, stærk kystfysisk analogi, praktisk erfaring og arbejdshypoteser.</p></div>
       <div class="limits-grid">
         <article><h3>Godt underbygget</h3><ul><li>Rav varierer i tæthed, størrelse og form; det meste synker i almindeligt havvand.</li><li>Bølger, strøm, bundkontakt og turbulens påvirker mobilisering og transport.</li><li>Brændingszone, revler og strandprofil kan sortere og fastholde lette partikler meget forskelligt.</li><li>Stormens forløb og de foregående timer betyder mere end ét vejrtal.</li></ul></article>
@@ -193,17 +198,18 @@
       <article class="coast-note"><span class="lesson-number">!</span><div><h3>Én samlet grænse</h3><p>RavRadar beskriver rav- og søgeforhold, ikke om en tur er sikker. Lokale dybder, bundforhold, adgang og smalle strømme kan være anderledes end de modellerede forhold.</p></div></article>
     </section>
 
-    <section class="glossary learning-section">
+    <section class="glossary learning-section" data-i18n-html="learn.glossary">
       <div class="section-heading"><p class="eyebrow dark">Miniordbog</p><h2>De vigtigste ord</h2></div>
       <dl><div><dt>Mobilisering</dt><dd>At rav eller ledsagemateriale løsnes og sættes i bevægelse.</dd></div><div><dt>Transport</dt><dd>Den mere vedvarende flytning mod, langs eller væk fra kysten.</dd></div><div><dt>Brændingszone</dt><dd>Området, hvor bølger bryder og skaber stærk lokal blanding og strøm.</dd></div><div><dt>Swash og backwash</dt><dd>Vandet, der løber op ad stranden, og vandet, der løber tilbage.</dd></div><div><dt>Undertow</dt><dd>Den udadgående returbevægelse under bølgernes indgående vandtransport.</dd></div><div><dt>Opskylslinje</dt><dd>En synlig linje af materiale afleveret ved en bestemt vandstand eller hændelse.</dd></div></dl>
     </section>
 
-    <section class="finish-card">
+    <section class="finish-card" data-i18n-html="learn.finish">
       <div><p class="eyebrow">Tag viden med ud</p><h2>Læs forløbet — og læs derefter stranden</h2><p>Brug RavRadar til at vælge lovende sted og tid. Brug felttegnene til at finde den konkrete linje, lomme eller kyststrækning, hvor materialet faktisk er samlet.</p></div>
       <a class="primary-link light" href="./index.html">Tilbage til kortet</a>
     </section>
   </main>
 
-  <footer><p>Grundbogen samler RavRadars aktuelle faglige viden. Den skelner mellem dokumenteret viden, fysiske analogier og regler, som fortsat skal læres af ture.</p></footer>
+  <footer><p data-i18n="learn.footer">Grundbogen samler RavRadars aktuelle faglige viden. Den skelner mellem dokumenteret viden, fysiske analogier og regler, som fortsat skal læres af ture.</p></footer>
+  <script type="module" src="js/ui/learn-i18n.js?v=4.0.290"></script>
 </body>
 </html>

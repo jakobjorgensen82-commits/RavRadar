@@ -1,5 +1,11 @@
 # Kendte åbne og overvågede forhold
 
+## Aktiv 4.0.290-kandidat – sprog og gratis modelvalg
+
+- **ISSUE-ASSISTANT-CLOUDFLARE-LIVE-EVAL – MODELVALG OG LOKAL EDGE LUKKET / DEPLOY ÅBEN:** Ejeren har valgt GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests. GLM/Gemma gav ikke-evaluerbare smoke-svar. Den lokale Edge låser `json_object`, eksakt outputvalidering, syv sekunders timeout, fallback og tre gratis kvotegates; offentlig deploy/aktivering er fortsat ikke godkendt.
+- **ISSUE-GEMINI-FREE-EEA-PRODUCTION – LUKKET SOM NO-GO:** Googles aktuelle vilkår omfatter hjemmesider i API Client-begrebet og kræver Paid Service ved offentlige EØS-brugere. Gemini Flash-Lite 27/27 bevares kun som intern reference. Se DEC-0087.
+- **ISSUE-PUBLIC-I18N-BROAD-PAGES – LOKALT LØST / RELEASE ÅBEN:** Ejeren godkendte den brede fase. **Om RavRadar** og hele **Grundbog i ravjagt** er nu DA/DE/EN med stabile flag, dansk fallback og grøn desktop-/390 px-kontrol; exact-head og offentlig releasekontrol afventer.
+
 ## Produktionsverificeret P0 4.0.289 – den oprindelige datagap-trigger og recoveryoverlap
 
 - **ISSUE-PRODUCTION-RESOLVER-PREFERS-FUTURE-DMI-HOUR – PRODUKTIONSVERIFICERET LØST:** Run `33051959643` startede 07:58 UTC, men den historiske 4.0.246-tie-break valgte prognosetimen 09 UTC. Produktion `33076772432` bandt en 13 UTC-kørsel kausalt til verificeret 12 UTC.
@@ -20,10 +26,10 @@
 
 ## Aktiv P1 – gratis AI-valg til Spørg RavRadar
 
-- **ISSUE-ASSISTANT-DOMAIN-GATE – KONTRAKT LÅST / PRODUKTIONSKODE ÅBEN:** Den historiske Edge blokerer interne sikkerhedsord, men ikke almindelige uvedkommende emner. DEC-0083 kræver fast afvisning før providerkald, struktureret modeldisposition og servervalidering. Offentlig remote forbliver deaktiveret.
-- **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – KONTRAKT LÅST / PRODUKTIONSKODE ÅBEN:** Remote-first kan ved aktivering overtage bedste sted/tid/score uden den deterministiske nationale Candidate G-kontekst. Disse intents skal blive lokale Candidate G-funktioner og må ikke opfindes af modellen.
-- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG LUKKET / EDGE ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. `gemini-3.7-flash` gav fem timeouts ved 12/30 sekunder. `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27 med median/p95 1.329/1.896 ms og er valgt til næste deaktiverede Edge-kandidat. Offentlig aktivering er ikke godkendt.
-- **ISSUE-GEMINI-FREE-TIER-TERMS-AND-QUOTA – GENKONTROL FØR RELEASE:** Aktuelle officielle vilkår har en EØS-undtagelse for databrug, men Free Tier-kvoter er projektspecifikke, ikke garanterede og kan ændres. Konto-/projektregion, vilkår og aktiv kvote skal genkontrolleres før offentlig aktivering; uanset vilkår sendes ingen private data.
+- **ISSUE-ASSISTANT-DOMAIN-GATE – LOKALT LØST / DEPLOY ÅBEN:** 4.0.290-kandidaten afviser uvedkommende og sikkerhedsfølsomme spørgsmål både før provider i browseren og igen i Edge, holder bedste sted/tid/score lokalt og validerer provideroutput fail-closed. Offentlig remote forbliver deaktiveret.
+- **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – LOKALT LØST / PRODUKTIONSKONTROL ÅBEN:** Bedste sted/tid/score er låst til lokale Candidate G-funktioner; fjernmodellen får kun dataminimeret valgt-zone-kontekst. Exact-head og offentlig kontrol afventer.
+- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG LUKKET / EDGE ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. Gemini Flash-Lite 27/27 er reference; ejerens valgte gratis produktionskandidat er Cloudflare GPT-OSS 20B med 25/26 beståede evaluerbare fuldtests. Offentlig aktivering er ikke godkendt.
+- **ISSUE-GEMINI-FREE-TIER-TERMS-AND-QUOTA – LUKKET SOM PRODUKTIONS-NO-GO:** Gratis Gemini må ikke bruges til den offentlige EØS-hjemmeside under de kontrollerede vilkår. Genåbn kun ved dokumenteret vilkårsændring eller særskilt ejerbeslutning om betaling; uanset provider sendes ingen private data.
 
 ## Produktionsverificeret 4.0.287 – D1-cutover og EU-turlager
 
