@@ -12,6 +12,7 @@
 - Det daværende credential-varsel bestod PR #169/exact-head `33025102301`, merge `1e402834` og manuel main-prøve `33025289153` uden for tidlig issue. Ejerens senere driftspræcisering pensionerer varslet: Supabase-PAT er kun et behovsstyret management-token, må udløbe uden normaldriftseffekt og oprettes kortvarigt først ved en konkret verificeret deploy/migration/rollback.
 - Produktion `33025210517`/Pages `98367528389` og offentlig `rr-20260827000855-210` er grønne på 210/210 aktive zoner, fem ranglisterækker og den fulde 210/673/420/2.100-browseraudit.
 - Den interne, score-neutrale Ravudsigten-sammenligning er startet med en forståelig analysejournal og første tidsstemplede snapshot af aktuelle top-fem, femdøgnssignaler, zonematch og mulige forskelsårsager. Den er fortsat longitudinel og uvalideret efter ét vejrvindue og er forbudt i app, offentlig håndbog, ekspert-/adminflader og public runtime.
+- PR #171 bestod exact-head `33029393300` og blev merged som `f15f5892`. Første produktion `33029447510` stoppede sikkert før Supabase-sync/artifact/Pages, fordi den globale kildeneutralitetstest ikke havde den godkendte interne RDKS-undtagelse. Opfølgningen afgrænser undtagelsen til præcis analysefilen og kræver dens interne, score-neutrale og ikke-offentlige sikkerhedsmarkører.
 
 ## 4.0.286 – rullende Candidate G-kontinuitet og predeploy-funktionsgate (2026-08-26)
 

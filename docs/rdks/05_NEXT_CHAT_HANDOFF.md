@@ -13,6 +13,7 @@
 - Produktion `33025210517`/Pages `98367528389` og offentlig `rr-20260827000855-210` er grønne på 210/210 aktive zoner, fem ranglisterækker og fuld 210/673/420/2.100-audit.
 - Supabase-varslet 9. september 2026 forbliver en aktiv driftsopgave; ingen sikkerheds- eller releasegate må lempes. Cloudflare-token roteres kun ved kompromittering eller rettighedsændring.
 - Ravudsigten-sammenligningen er aktiv med første internt dokumenterede snapshot og er fortsat score-neutral og longitudinel: kun RDKS/roadmap/changelog, `scoreImpact=false`, `publicRuntime=false`, ingen app-, håndbogs-, ekspert-, admin- eller public-runtime-visning.
+- PR #171 bestod exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` stoppede fail-closed før Supabase/artifact/Pages på den globale kildeneutralitetstest. Opfølgningen må kun undtage den eksakte interne analysefil og skal testkræve dens interne, score-neutrale og ikke-offentlige markører, før ny exact-head og produktion.
 - Se DEC-0082 og øverste checkpoint i `docs/ai/CURRENT_SESSION_HANDOFF.md`.
 
 ## Produktionsverificeret 4.0.286 – faktisk runtimegate og native-hold-score
