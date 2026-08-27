@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Kandidat 4.0.289 – årsagstro produktionstime og bounded selvrecovery
+## Produktionsverificeret 4.0.289 – årsagstro produktionstime og bounded selvrecovery
 
 - Ny logevidens viser, at run `33051959643` ikke fejlede i DMI: bulksteget lykkedes med 622/673 lokale strømdele. RavRadars resolver valgte 09 UTC allerede fra en 07:58 UTC-run, fordi den gamle lighedsregel foretrak en fremtidig prognosetime; den målrettede Copernicus-hentning timeoutede derefter. Samme providersti lykkedes senere, så der er ikke evidens for et varigt DMI- eller credentialnedbrud.
 - Produktionen må nu kun vælge en verificeret DMI-time på eller før den workflowlåste reference. Ved nul eksakt dækning vælges bedst dækkede, derefter nærmeste ikke-fremtidige time inden for tre timer.
@@ -8,7 +8,9 @@
 - Efter runtimegenerering gemmes 673 hashkontrollerede, kompakte Candidate G-states før de sidste gates. Næste run må kun anvende en nyere, ikke-fremtidig, højst 72 timer gammel og fuldt modelbundet state. Vejr, scoreoutput, rå U/V, koordinater og private data gemmes ikke i checkpointet.
 - Den komplette offentlige fallback er højst 72 timer gammel og må aldrig bruges efter sin egen seneste prognosetime. Det lukker det konkrete cirka ti timers overlapshul mellem 4.0.288's 48-timersgrænse og den fulde Candidate G-genopbygning uden at tillade ubegrænset gammel prognose.
 - En fejlet, timeoutet eller før-start-fejlet planlagt kørsel genbestilles højst én gang. Et separat payloadfrit watchdog dispatch'er først efter 45 minutters dokumenteret stilhed, gammelt manifest og fravær af aktiv produktion. Concurrency forbliver én tung vejrproduktion. Total stilhed i hele GitHubs scheduler kan ikke løses af endnu et internt schedule og kræver fortsat ekstern overvågning.
-- Målrettede lokale tests, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head CI, frisk produktion og offentlig runtimekontrol afventer. Candidate G 20/50/30, fysik, DMI-først, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0085.
+- PR #181 bestod exact-head `33076656266` og blev merged som `6c8acf08`. Produktion `33076772432`/build `98532962269`/Pages `98538133039` bestod kausal 12 UTC-binding fra 13 UTC-kørslen, frisk DMI, bounded Copernicus, 673-deles checkpoint, faktisk runtimeaudit, fulde gates, Supabase og deploy.
+- Live primær `rr-20260827133918-210` er ærligt 0/673 i warmup; komplet fallback `rr-20260827013448-210` er aktivt, hashverificeret og tydeligt markeret. Browserauditten består 4.0.289, 210 aktive zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden funktions-, konsol-, side- eller HTTP-fejl.
+- Candidate G 20/50/30, fysik, DMI-først, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0085.
 
 ## Tidligere produktionsverificeret 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
 

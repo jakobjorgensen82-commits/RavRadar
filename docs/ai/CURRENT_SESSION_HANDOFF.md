@@ -1,16 +1,17 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-CHECKPOINT – 2026-08-27 – kandidat 4.0.289
+## AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret 4.0.289
 
 - Efter 4.0.288-lukningen blev run `33051959643` læst i dybden. DMI-bulk lykkedes med 622/673; den gamle timeopløser bandt en 07:58 UTC-run til fremtidig 09 UTC, hvorefter Copernicus timeoutede. Samme providersti lykkedes senere, så DMI var ikke rodårsagen.
 - 4.0.289 tillader kun en DMI-time på eller før den workflowlåste reference, giver Copernicus to procesisolerede seksminutters forsøg og stopper fortsat før deploy ved dobbelt fejl.
 - Et generisk privat checkpoint gemmer præcis 673 kompakte Candidate G-states umiddelbart efter runtimegenerering og før de sidste gates. Hash, partantal, tidsretning og alle modelbindinger kontrolleres; vejr, scoreoutput, rå U/V, koordinater og private data er fraværende.
 - Komplet offentlig fallback er højst 72 timer og aldrig længere end egen prognosehorisont. Det konkrete cirka ti timers overlapshul i 4.0.288 er dermed lukket uden ubegrænset gammel prognose.
 - En fejlet, timeoutet eller før-start-fejlet planlagt produktion får ét retry. Watchdoget bruger kun workflowmetadata og offentligt manifest og dispatch'er efter 45 minutters stilhed uden aktiv produktion; alle tunge builds deler fortsat concurrency. Total stilhed i hele GitHubs scheduler kræver fortsat ekstern overvågning.
-- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, merge, frisk produktion og offentlig kontrol afventer. Se DEC-0085.
-- Arbejd kun i den isolerede worktree på `codex/harden-current-hour-recovery-4.0.289`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- PR #181 bestod exact-head `33076656266` og blev merged som `6c8acf08`. Produktion `33076772432`, build `98532962269` og Pages `98538133039` beviser central hydrering, DMI/Copernicus, checkpoint-save, faktisk runtimeaudit, fulde gates, Supabase og deploy.
+- Live primær `rr-20260827133918-210` er ærligt 0/673 i warmup, mens komplet fallback `rr-20260827013448-210` fortsat leverer. Browserauditten består 4.0.289, 210 aktive zoner, 673 kystdele, 420 aktuelle og 2.100 prognosevisninger uden funktions-, konsol-, side- eller HTTP-fejl.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data blev ikke berørt.
 
-P1-sporene er midlertidigt sat efter denne P0. Brug Sol/Ekstra høj gennem slutvalidering.
+Næste arbejde er det allerede planlagte P1-scope: lås først den centrale DA/DE/EN-kontrakt, derefter den afgrænsede deaktiverede Spørg RavRadar Edge-kandidat. En bred fase kræver fortsat ejerbekræftet scope.
 
 ## TIDLIGERE AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret automatisk Candidate G-genopretning
 

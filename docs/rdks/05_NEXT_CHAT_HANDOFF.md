@@ -1,12 +1,13 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv P0 – kandidat 4.0.289
+## Afsluttet P0 – produktionsverificeret 4.0.289
 
 - Ny logevidens viser DMI-success med 622/673 i fejlkørsel `33051959643`; den korrigerbare systemfejl var et fremtidigt 09 UTC-valg fra en 07:58-run efterfulgt af en transient Copernicus-timeout.
 - Kandidaten forbyder fremtidig produktionstime, bruger to procesisolerede Copernicus-forsøg og bevarer et generisk hash-/modelbundet checkpoint med præcis 673 kompakte Candidate G-states mellem runs.
 - Komplet fallback er højst 72 timer og aldrig efter egen prognosehorisont. En fejlet, timeoutet eller før-start-fejlet schedule-run får ét retry; watchdoget dispatch'er først efter 45 minutters verificeret stilhed og ingen aktiv produktion. Total GitHub-schedulerstilhed er fortsat en ekstern overvågningsrisiko.
-- Målrettede lokale kontrakter, fuld lokal `validate:source`, releasegate, version/RDKS og håndbøger er grønne. Exact-head, merge, frisk produktion og offentlig browserkontrol afventer. P1 genoptages først efter P0-lukning. Se DEC-0085.
-- Fortsæt kun i den isolerede worktree/branch `codex/harden-current-hour-recovery-4.0.289`; rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- PR #181/exact-head `33076656266`, merge `6c8acf08`, produktion `33076772432`, build `98532962269` og Pages `98538133039` er grønne. Liveauditten består 4.0.289, 210 aktive zoner, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden fejl.
+- Primær `rr-20260827133918-210` modner med 0/673 `READY`; komplet fallback `rr-20260827013448-210` leverer fortsat med tydelig aktualitetsadvarsel. P1 kan genoptages efter konkret ejerscope. Se DEC-0085.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
 
 ## Tidligere afsluttet P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
 

@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.289+
 
-## P0 aktiv – årsagstro produktion og robust recovery
+## Afsluttet P0 – produktionsverificeret årsagstro produktion og robust recovery i 4.0.289
 
 - [x] Afgræns den oprindelige hændelse til RavRadars fremtidige timevalg plus en transient Copernicus-timeout; DMI-bulk var succes med 622/673.
 - [x] Forbyd fremtidig produktionstime og indfør to procesisolerede seksminutters Copernicus-forsøg.
@@ -8,9 +8,9 @@
 - [x] Luk recoveryoverlap med højst 72 timers komplet fallback, altid afskåret af egen prognosehorisont.
 - [x] Tilføj ét automatisk retry efter schedule-fejl, timeout eller før-start-fejl og et payloadfrit 45-minutters stilheds-watchdog uden parallelle builds; behold total GitHub-schedulerstilhed som eksplicit ekstern overvågningsrisiko.
 - [x] Bestå målrettede lokale time-, retry-, checkpoint-, fallback-, data-service-, watchdog- og workflowtests samt fuld lokal `validate:source` og releasegate.
-- [ ] Bestå exact-head CI, merge, frisk produktion og offentlig runtime-/browserkontrol; opdater derefter checkpointet til produktionsverificeret.
+- [x] Bestå PR #181 exact-head `33076656266`, merge `6c8acf08`, frisk produktion `33076772432`, build `98532962269`, Pages `98538133039` og offentlig 210/673/420/2.100-runtime-/browserkontrol uden fejl.
 
-P1-oversættelse og Spørg RavRadar genoptages først efter denne P0-lukning. Se DEC-0085.
+P0 er lukket. P1-oversættelse og Spørg RavRadar kan genoptages i den allerede anbefalede, ejerbekræftede rækkefølge. Se DEC-0085.
 
 ## Tidligere P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
 

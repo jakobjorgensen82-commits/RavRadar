@@ -1,6 +1,6 @@
 # DEC-0085 – Produktionstimen og genopretningen skal være årsagstro og tidsafgrænset
 
-**Status:** Godkendt af ejeren og implementeret lokalt i 4.0.289; exact-head, produktion og offentlig kontrol afventer
+**Status:** Godkendt, implementeret og produktionsverificeret i 4.0.289
 
 **Dato:** 2026-08-27
 
@@ -33,6 +33,14 @@ Run `33051959643` startede 07:58 UTC. DMI-bulksteget lykkedes og gav verificeret
 - Checkpointtesten beviser hash, part-/modelbinding, tidsretning, 72-timersgrænse og nul kopieret vejr, score, rå vektorer, koordinater eller private data.
 - Fallbacktestene beviser 72-timersgrænsen, udløb ved egen prognosehorisont, atomisk startup-/detaljevalg og fjernelse ved 673/673 `READY`.
 - Watchdogtesten beviser ingen dispatch ved aktiv eller nylig produktion og dispatch alene ved både gammelt manifest og gammel workflowhistorik.
-- Målrettede lokale kontrakter er grønne. Exact-head CI, frisk produktion og offentlig kontrol afventer.
+- Målrettede lokale kontrakter er grønne.
+
+## Produktionsbevis
+
+- PR #181 bestod exact-head `validate:source` i run `33076656266`/job `98532488505` og blev squash-merget som `6c8acf08`.
+- Push-produktion `33076772432` bandt den friske 13 UTC-kørsel til den kausale DMI-reference 12 UTC, gennemførte DMI-bulk og det målrettede Copernicus-supplement samt gemte det generiske 673-deles checkpoint før slutgates.
+- Build `98532962269` bestod faktisk Candidate G-runtimeaudit, komplet fallbackpublicering, fuld validering, releasegate, Supabase-sync og Pages-artifact. Deploy `98538133039` var grønt.
+- Live primærdatasæt `rr-20260827133918-210` er ærligt i 0/673 warmup, mens det hashverificerede komplette fallback `rr-20260827013448-210` vises med 72-timersgrænse, egen prognosehorisont og tydelig aktualitetsadvarsel.
+- Den aktuelle browseraudit bestod version 4.0.289, 210 aktive zoner, 673 kystdele, 420 aktuelle visninger og 2.100 prognosevisninger med nul funktions-, konsol-, side- eller HTTP-fejl.
 
 DEC-0085 erstatter DEC-0084 punkt 3's 48-timersgrænse med den smallere kombination **højst 72 timer og aldrig efter egen prognosehorisont**. DEC-0084's atomiske fallback, ærlige suffixgenstart og produktionsbevis for 4.0.288 består som historik.
