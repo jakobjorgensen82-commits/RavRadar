@@ -1,4 +1,23 @@
-# AI Roadmap – RavRadar 4.0.291+
+# AI Roadmap – RavRadar 4.0.292+
+
+## Aktiv kritisk datarelease – staged punktaktivering i 4.0.292
+
+- [x] Bevar gammel sampling, mens et ændret land-/vandpunkt er kandidat.
+- [x] Saml kandidatens DMI-serie og Candidate G-state privat med U/V ≤5 km, 96 timers fuld horisont og 48 timers memory.
+- [x] Kræv særskilt ejeraktivering, eksakt stateinjektion, fulde gates og central version-CAS.
+- [x] Bevar rollback/recovery og komplet fallback ved højst seks lokale warmups.
+- [ ] Bestå exact-head og frisk produktion uden at flytte et konkret punkt.
+
+Se DEC-0090. Dette mekanismearbejde ændrer ingen eksisterende geometri eller land-/vandpunkter.
+
+## Aktiv kritisk UI-release – mobil genoptagelse i 4.0.292
+
+- [x] Afgræns den fælles fejlklasse til manglende Safari/WebKit-`pageshow`-recovery omkring asynkron opstart og progressiv rendering.
+- [x] Genindlæs fail-safe efter ufuldstændig/afbrudt opstart og genoptegn ellers kort, rangliste, valgt zone og femdøgnsvisning fra eksisterende state.
+- [x] Tilføj deterministisk livscyklusregression og bevar eksisterende mobil-/første-paint-/prognosekontrakter.
+- [ ] Bestå exact-head, produktion, offentlig runtime og fysisk iPhone-returkontrol.
+
+Se DEC-0089. Dette spor ændrer ingen assistent-, score-, vejr- eller datakontrakt.
 
 ## Aktiv releasekandidat – offentlig gratis Spørg RavRadar i 4.0.291
 
@@ -19,7 +38,7 @@ Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometr
 - [ ] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI må aldrig ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
 - [ ] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
 
-Den kritiske mobile tilbage-navigation, hvor kort, **Bedste områder** og **5-dages RavRadar** kan forblive tomme efter besøg på **Om RavRadar**, undersøges og rettes først som særskilt release.
+Den kritiske mobile tilbage-navigation er implementeret i 4.0.292-kandidaten og lukkes i produktion før dette brede vidensscope starter.
 
 ## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 

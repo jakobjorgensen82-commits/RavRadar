@@ -1,5 +1,19 @@
 # Current truth – gældende projektviden
 
+## 4.0.292 releasekandidat – mobil browser- og punktskiftegenoptagelse
+
+- Et centralt gemt land-/vandpunkt er nu en revisionsbundet kandidat og kan ikke erstatte den aktive offentlige sampling direkte.
+- Kandidaten opbygges privat fra de samme DMI-GRIB-filer og skal bevise fælles U/V-grid ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-hukommelse. Offentlig status indeholder ingen koordinater eller rå U/V.
+- READY kræver særskilt ejeraktivering. Eksakt DMI/state injiceres før build; fulde gates kører før en central compare-and-swap. Tidligere aktiv override bevares, og privat state kan genbruges efter deployfejl.
+- Den komplette senest verificerede fallback accepterer nu også højst seks lokale warmups, men aldrig et blandet datasæt.
+- Ingen konkret geometri eller land-/vandpunkt, heller ikke Sibirien, er flyttet i 4.0.292. Se DEC-0090.
+
+- Den tidligere offentlige forside havde ingen `pageshow`-recovery. Safari/WebKit kan gendanne en side fra back/forward-cache uden normal modulopstart og kan afbryde en aktiv hentning under navigation; det kan bevare præcis den halvfærdige tilstand, hvor kort og begge ranglister er tomme.
+- Kandidaten genindlæser rent, hvis kernevisningen eller detaljerne ikke blev færdige, og genoptegner ellers kort, zonefarver, **Bedste områder**, valgt zone og **5-dages RavRadar** fra den allerede indlæste offentlige tilstand.
+- Et separat tidligt værn dækker retur før app-importen. Samtidige hændelser samles, og genoptegningsfejl giver fail-safe reload.
+- Målrettede regressioner og lokal 390 px-retur er grønne. Exact-head, produktion, offentlig runtime og fysisk iPhone-efterkontrol afventer; 4.0.292 må derfor endnu ikke kaldes produktionsverificeret.
+- Candidate G, vejr, prognoseinput, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0089.
+
 ## Produktionsverificeret 4.0.291 – offentlig gratis Spørg RavRadar
 
 - Ejeren har givet særskilt go til at aktivere Cloudflare `@cf/openai/gpt-oss-20b` gennem den hærdede Supabase Edge-gateway.

@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+SYNC_METADATA_PATH = ROOT / ".cache/admin-config-sync.json"
 URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ACTIVATION_KEY = "coastal-parts-v2-activation"
@@ -121,7 +122,7 @@ def fetch_admin_rows(url, key, opener=urllib.request.urlopen, sleeper=time.sleep
     """Read the central admin snapshot with one narrow secret-translation retry."""
     document_filter = ",".join(f'"{document_key}"' for document_key in MAP)
     query = urllib.parse.urlencode(
-        {"select": "document_key,payload,updated_at", "document_key": f"in.({document_filter})"}
+        {"select": "document_key,payload,version,updated_at", "document_key": f"in.({document_filter})"}
     )
     headers = {"apikey": key} if key.startswith("sb_secret_") else {
         "apikey": key,
@@ -158,11 +159,20 @@ def main():
     try:
         rows = fetch_admin_rows(URL, KEY)
         sources = {}
+        metadata = {"schemaVersion": 1, "documents": {}}
         for row in rows:
             document_key = row.get("document_key")
             if document_key not in MAP:
                 continue
             sources[document_key] = write_document(document_key, row["payload"])
+            metadata["documents"][document_key] = {
+                "version": row.get("version"),
+                "updatedAt": row.get("updated_at"),
+            }
+        SYNC_METADATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+        temporary = SYNC_METADATA_PATH.with_suffix(".json.tmp")
+        temporary.write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
+        temporary.replace(SYNC_METADATA_PATH)
         print(json.dumps({"status": "ok", "documents": list(sources), "sources": sources}))
     except Exception as error:
         print(json.dumps({"status": "error", "error": str(error)}))

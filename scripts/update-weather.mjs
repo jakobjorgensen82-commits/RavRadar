@@ -1,5 +1,4 @@
 import fs from 'node:fs/promises';
-import crypto from 'node:crypto';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
 import { calculateRavScore } from '../js/core/score-engine.js';
@@ -49,6 +48,7 @@ import {
 } from './lib/live-current-pilot.mjs';
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
+import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -66,6 +66,7 @@ const OFFICIAL_WATER_STATION_SUPPLEMENT_PATH = 'data/dmi-official-water-stations
 const WATER_STATION_ROUTING_AUDIT_PATH = 'data/live/water-station-routing-audit.json';
 const WATER_STATION_NOTIFICATIONS_PATH = 'data/live/water-station-notifications.json';
 const RAVSCORE_PROFILE_SELECTION_PATH = 'data/admin/ravscore-profile-selection.json';
+const COASTAL_POINT_STATE_INJECTION_PATH = '.cache/coastal-point-staging/activation-state-injection.json';
 const ACCEPTED_FORECAST_HOURS = 118;
 const SHORT_DMI_WATER_GAP_HOURS = 6;
 const WATER_LEVEL_JUMP_WARN_CM = 35;
@@ -1036,18 +1037,6 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
-function candidateGStateKey(part) {
-  const context = JSON.stringify({
-    partId: part.partId,
-    waterPoint: part.waterPoint,
-    onshoreDirectionDeg: part.onshoreDirectionDeg,
-    modelId: CANDIDATE_G_STATE_MODEL_ID,
-    variantId: CANDIDATE_G_STATE_VARIANT_ID,
-    profileId: CANDIDATE_G_STATE_PROFILE_ID,
-  });
-  return `sha256:${crypto.createHash('sha256').update(context).digest('hex')}`;
-}
-
 function compactCandidateGMode(result) {
   if (!result?.available || !Number.isFinite(result.score)) {
     return {
@@ -1078,6 +1067,7 @@ function scoreCoastalPartsRuntime(
   liveCurrentPilot,
   generatedAt,
   previousCoastalParts = null,
+  stateInjections = {},
 ) {
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
   const expectedByZone = new Map();
@@ -1143,7 +1133,9 @@ function scoreCoastalPartsRuntime(
         wavePeriodS: hour.wavePeriodS,
       })), {
         stateKey,
-        initialState: previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState ?? null,
+        initialState: stateInjections?.[part.partId]
+          ?? previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState
+          ?? null,
         nativeCadenceHoldHours,
         nativeCadenceReferenceSample,
       });
@@ -2005,6 +1997,17 @@ async function readPrevious() {
   catch { return { zones: {} }; }
 }
 
+async function readCoastalPointStateInjections() {
+  try {
+    const document = JSON.parse(await fs.readFile(COASTAL_POINT_STATE_INJECTION_PATH, 'utf8'));
+    return document?.schemaVersion === 1 && document?.states && typeof document.states === 'object'
+      ? document.states
+      : {};
+  } catch {
+    return {};
+  }
+}
+
 async function fallbackForZone(feature, generatedAt, previous, attempts) {
   for (const [name, provider] of [['open-meteo', fromOpenMeteo], ['met-norway', fromMetNorway]]) {
     try {
@@ -2157,6 +2160,7 @@ const coastalPartsContract = await buildPublicCoastalParts();
 if (coastalPartsContract.enabled && (coastalPartsContract.partCount < 1 || coastalPartsContract.zoneCount < 1)) throw new Error('Den aktive nationale kystdelskontrakt er ikke komplet');
 const coastCorridors = buildCoastCorridors(features);
 const previous = await readPrevious();
+const coastalPointStateInjections = await readCoastalPointStateInjections();
 const dmiForecastStore = await readDmiForecastStore();
 const dmiBulkCache = await readDmiBulkCache();
 const liveCurrentPilot = await readLiveCurrentPilot();
@@ -2563,6 +2567,7 @@ output.coastalParts = coastalPartsContract.enabled
     liveCurrentPilot,
     generatedAt,
     previous?.coastalParts ?? null,
+    coastalPointStateInjections,
   )
   : { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.

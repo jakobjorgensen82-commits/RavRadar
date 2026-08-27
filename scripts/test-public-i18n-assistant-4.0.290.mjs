@@ -4,13 +4,14 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const releaseVersion = JSON.parse(await fs.readFile(path.join(ROOT, 'package.json'), 'utf8')).version;
 const memory = new Map();
 globalThis.localStorage = {
   getItem:key => memory.get(String(key)) ?? null,
   setItem:(key, value) => memory.set(String(key), String(value)),
 };
 
-const i18n = await import('../js/i18n.js?v=4.0.291');
+const i18n = await import(`../js/i18n.js?v=${releaseVersion}`);
 const assistant = await import('../js/services/rav-assistant.js');
 
 const danishKeys = Object.keys(i18n.MESSAGES.da).sort();

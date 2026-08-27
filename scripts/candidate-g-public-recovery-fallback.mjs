@@ -14,6 +14,7 @@ export const CANDIDATE_G_RECOVERY_FALLBACK_POLICY = Object.freeze({
   schemaVersion: 1,
   expectedZoneCount: 210,
   expectedPartCount: 673,
+  maximumLocalWarmupPartCount: 6,
   maximumAgeHours: 72,
   cacheConditionsName: 'public-conditions.json',
   cacheDetailsName: 'public-condition-details.json',
@@ -247,7 +248,10 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
     await removeIfPresent(publicDetailsPath);
     return { status: 'inactive-current-runtime-ready', datasetId: manifest.datasetId };
   }
-  if (ready !== 0 || warmup !== policy.expectedPartCount) {
+  const completeAccounting = ready + warmup === policy.expectedPartCount;
+  const globalRecovery = ready === 0 && warmup === policy.expectedPartCount;
+  const boundedLocalRecovery = ready > 0 && warmup > 0 && warmup <= policy.maximumLocalWarmupPartCount;
+  if (!completeAccounting || (!globalRecovery && !boundedLocalRecovery)) {
     throw new Error(`Uventet delvis national Candidate G-recovery: ready=${ready}, warmup=${warmup}.`);
   }
   const bundle = await readCacheBundle(cacheRoot);
@@ -258,7 +262,9 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   manifest.recoveryFallback = {
     schemaVersion: 1,
     status: 'active-last-verified',
-    reason: 'candidate-g-verified-time-gap-recovery',
+    reason: globalRecovery
+      ? 'candidate-g-verified-time-gap-recovery'
+      : 'candidate-g-bounded-local-context-warmup',
     datasetId: bundle.descriptor.datasetId,
     generatedAt: bundle.descriptor.generatedAt,
     productionReferenceAt: bundle.descriptor.productionReferenceAt,

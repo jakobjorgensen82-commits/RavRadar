@@ -1,5 +1,23 @@
 # RavRadar - aktivt roadmap
 
+## P1 aktiv – sikker punktflytning i 4.0.292
+
+- [x] Adskil aktiv override og staged kandidat i admin-/buildkontrakten.
+- [x] Opbyg privat DMI- og Candidate G-state uden offentlig datalæk.
+- [x] Kræv READY, særskilt ejeraktivering, eksakte gates og central version-CAS.
+- [x] Bevar rollback/recovery og hel fallback ved højst seks lokale warmups.
+- [ ] Luk gennem exact-head og frisk produktion; flyt derefter først et konkret punkt efter ejerens visuelle placering.
+
+Se DEC-0090.
+
+## P1 aktiv – mobil retur-selvrecovery i 4.0.292
+
+- [x] Installer bootstrap- og `pageshow`-værn for Safari/WebKit page cache.
+- [x] Genindlæs ufuldstændig state og genoptegn ellers kort, rangliste, valgt zone og femdøgnsvisning idempotent.
+- [x] Lås forløbet med målrettet livscyklustest og eksisterende mobil-/prognosekontrakter.
+- [ ] Bestå exact-head, produktion, offentlig runtime og fysisk iPhone-retur.
+
+Se DEC-0089.
 ## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
 
 - [x] Ejer-go, aktuel Workers Free-kontrol og DA/DE/EN-kvotetekst.
@@ -11,7 +29,7 @@ Se DEC-0088.
 
 ## Næste P1-rækkefølge efter 4.0.291
 
-1. Ret og reproducer mobil tilbage-navigation fra **Om RavRadar**, hvor kort, **Bedste områder** og **5-dages RavRadar** kan mangle efter retur til forsiden.
+1. Luk de implementerede 4.0.292-rettelser gennem exact-head, produktion, offentlig runtime, adminstatus og fysisk iPhone.
 2. Udvid derefter den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data, relevante opfølgende spørgsmål og fortsat fast emneafvisning.
 3. Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
 
