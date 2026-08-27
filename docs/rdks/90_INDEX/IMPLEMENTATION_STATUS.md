@@ -10,6 +10,7 @@
 - [x] Dæk højst seks lokale warmups med ét komplet senest verificeret fallbackdatasæt.
 - [x] Bestå målrettede isolation-, READY-, privacy-, aktiverings-, recovery-, versionskonflikt- og 672/1-tests.
 - [x] Bestå PR #189 exact-head `33124945636`; første produktion stoppede før DMI/deploy på en miljøafhængig syntetisk test, som nu er isoleret med eksplicit referenceparameter.
+- [x] Bestå PR #190 exact-head `33125466599` og produktionens friske DMI/Copernicus/runtime; fuld validate stoppede før deploy på en forældet scheduler-regex, som nu låser den nye private kandidatgrænse i kildegaten.
 - [ ] Bestå hotfix-exact-head, frisk produktion og offentlig adminstatuskontrol.
 
 Ingen faktiske punkter eller geometri er flyttet. Se DEC-0090.
