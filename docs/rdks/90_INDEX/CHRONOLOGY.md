@@ -1,5 +1,17 @@
 # Rekonstrueret chatkronologi
 
+## 2026-08-27 – gratis Spørg RavRadar-forundersøgelse
+
+1. Ejeren bad om en grundig analyse før bred implementering og præciserede derefter, at en eventuel AI skal være gratis og ikke kunne bruges til uvedkommende spørgsmål som en rouladeopskrift.
+2. Aktuelle officielle kilder gjorde Gemini Free Tier til første kandidatspor. `gemini-3.7-flash` er kvalitetskandidat, og `gemini-3.5-flash-lite` er kapacitetskandidat; OpenAI GPT-5.6 Sol opfylder ikke nulbetalingskravet.
+3. Den eksisterende 4.0.287-assistent blev auditeret. Lokal Candidate G-rangering/fallback bevares, men Edge mangler almindelig domænegate, DA/DE/EN, struktureret output og sikker routing før modelkald.
+4. DEC-0083 låser Free Tier uden billing eller betalt overflow, fast afvisning, deterministiske bedste sted/tid/score-svar og forbud mod private/interne kontekster.
+5. `rav-assistant-public-v1` binder ti offentlige fakta til 4.0.287/Candidate G, og evalpakken blev udvidet til 45 cases fordelt ligeligt på dansk, tysk og engelsk, herunder åbne uvedkommende emner uden fast ordlistematch.
+6. Offline self-test er grøn. Live-eval kræver både lokal `GEMINI_API_KEY` og `GEMINI_FREE_TIER_CONFIRMED=1`; credentialværdien blev installeret lokalt og aldrig skrevet i Git, rapport eller output.
+7. `gemini-3.7-flash` leverede ingen evaluerbar respons i fem forsøg ved 12/30 sekunder, også med low thinking. `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27, DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
+8. DEC-0083 vælger Flash-Lite til den næste, fortsat deaktiverede Edge-implementeringskandidat. Provider-neutral gateway, fallback, rollback og offentlig aktivering er ikke udført.
+9. Offentlig baseline forbliver local-only 4.0.287. RavScore, vejr, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
 ## 2026-08-26–27 – 4.0.287 endeligt hybridt turlager, produktionsverificeret
 
 1. Ejeren afviste en senere halv implementering og krævede den endelige løsning fra dag ét plus Supabase-rollback.

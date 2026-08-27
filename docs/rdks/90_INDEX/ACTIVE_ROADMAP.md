@@ -32,6 +32,18 @@ Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikk
 
 Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
+## P1 aktiv – gratis og domæneafgrænset Spørg RavRadar
+
+- [x] Auditér den lokale og historiske Edge-assistent mod Candidate G, offentlig kontekst og sikkerhedsgrænser.
+- [x] Lås Free Tier uden billing/betalt overflow samt lokal fallback ved kvote- og providerfejl.
+- [x] Opret versionsbundet offentlig viden og 45 balancerede DA/DE/EN-evalcases.
+- [x] Gør normal self-test helt offline og live-eval dobbelt opt-in med lokal secret plus manuel Free Tier-bekræftelse.
+- [x] Kør samme kontrollerede Free Tier-eval mod `gemini-3.7-flash` og `gemini-3.5-flash-lite`; genkontrollér stadig den konkrete projektkvote før release.
+- [x] Vælg Flash-Lite/low på nul hårde fejl, 27/27 remote-kandidatcases, DA/DE/EN 9/9 og median/p95 1.329/1.896 ms; 3.7 blev afvist efter fem timeouts.
+- [ ] Implementér provider-neutral Edge-routing, struktureret outputkontrol, fast afvisning og sikker rollback før særskilt ejer-go til offentlig aktivering.
+
+Se DEC-0083. Offentlig 4.0.287 forbliver local-only; score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+
 ## P0 afsluttet – 4.0.286 rullende Candidate G-kontinuitet
 
 - [x] Afvis 4.0.285 funktionelt efter ellers grøn exact-head, merge og produktion; dokumentér 0/210 aktive zoner og 665/673 `WINDOW_INCOMPLETE`.

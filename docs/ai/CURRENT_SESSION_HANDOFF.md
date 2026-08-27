@@ -1,5 +1,18 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-27 – gratis Spørg RavRadar-modelvalg
+
+- Ejeren har fastlagt, at en eventuel fjern-AI skal være gratis og kun svare på ravrelevante spørgsmål. DEC-0083 kræver Free Tier uden billing eller betalt overflow; kvoteudløb giver lokal fallback.
+- Den eksisterende 4.0.287-assistent er auditeret. Lokal Candidate G-rangering og fallback er værdifuld, men Edge er historisk OpenAI-/danskbundet, returnerer fri tekst, mangler almindelig emneafvisning og er remote-first også for deterministiske bedste sted/tid/score-spørgsmål.
+- `knowledge/rav-assistant-public-v1.json` binder ti offentlige fakta til 4.0.287/Candidate G. Private data, konto/ture, position, credentials, interne regler/diagnoser, rå vektorer, koordinater og komplette datasæt er forbudt.
+- `scripts/fixtures/rav-assistant-evals-v1.json` indeholder 45 balancerede cases: 15 danske, 15 tyske og 15 engelske. Roulade/kage, fodbold, åbne cykel-/matematik-/rejseemner, prompt injection og credential-/adminforsøg er dækket.
+- `scripts/run-rav-assistant-model-evals.mjs --self-test` er offline og grøn. Live-tilstand kræver både `GEMINI_API_KEY` og `GEMINI_FREE_TIER_CONFIRMED=1`, bruger ingen Search-grounding, kalder som standard kun remote-kandidatcases og gemmer kun dataminimerede resultater.
+- `gemini-3.7-flash` er afvist til denne chatgateway efter fem timeouts ved 12/30 sekunder, også med low thinking. `gemini-3.5-flash-lite` med low thinking er valgt som næste implementeringskandidat efter 27/27: DA/DE/EN 9/9, median 1.329 ms, p95 1.896 ms, max 1.968 ms og 27.314 tokens.
+- Målrettet validering er grøn: ny evalkontrakt, eksisterende lokal Candidate G-assistent, Edge-sikkerhed, RDKS, knowledge, kildeneutralitet og releasegate. Den fulde `validate:source` køres efter projektets testmatrix én gang på PR'ens eksakte head.
+- Gemini-nøglen er kun installeret som lokal Windows-brugervariabel og er ikke skrevet i repository, rapporter eller output. Free Tier-kvote og aktuelle vilkår skal genkontrolleres før release.
+- Offentlig 4.0.287 er uændret local-only med `ravAssistantRemoteEnabled=false`. Ingen score, vejr, sortering, konto-/turdata, privatliv, geometri, land-/vandpunkter eller private data er ændret.
+- Næste afgrænsede trin, efter ejerens konkrete scopebekræftelse, er provider-neutral Flash-Lite-integration i den eksisterende Edge bag fortsat deaktiveret flag: server-side secret, treleddet routing, struktureret validering, CORS/rate limit/timeout, lokal fallback og rollback. Brug Sol/Høj; senere tværgående slutvalidering kræver Sol/Ekstra høj.
+
 ## AKTUELT PLANLÆGNINGSCHECKPOINT – 2026-08-27 – flersproget offentlig UI og Spørg RavRadar
 
 - Ejeren har godkendt, at to nye P1-spor registreres i roadmapet. Dette checkpoint planlægger arbejdet; det implementerer ingen ny offentlig funktion, ændrer ingen produktionsdata og ændrer ikke den produktionsverificerede 4.0.287-baseline nedenfor.

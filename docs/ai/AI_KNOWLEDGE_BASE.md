@@ -26,7 +26,7 @@ Dynamisk håndbogs-HTML skal gennem `sanitizeTrustedHtml`; CSP og fravær af inl
 
 Browserroller må ikke indsætte direkte i `observations`. `submit-observation` er den eneste offentlige skrivevej og skal validere allowlist, størrelse, struktur, privatliv, brugerbinding, tidspunkt, idempotens og rate limit før service-role-insert. Offentlige Edge-funktioner deler `_shared/public-gateway.ts`; CORS er ikke autentifikation, men origin-afvisning, payloadkontrol, rate limiting og brugerbinding skal virke sammen.
 
-Rav-assistenten er lokal-only i 4.0.284. `ravAssistantRemoteEnabled` er `false`, så en manglende OpenAI-secret ikke skaber skjulte 503-kald. Senere aktivering kræver en særskilt godkendt secret-, omkostnings- og positiv kontraktverifikation. Se DEC-0080.
+Rav-assistenten er fortsat local-only i 4.0.287. `ravAssistantRemoteEnabled` er `false`, så en manglende provider-secret ikke skaber skjulte 503-kald. DEC-0083 kræver nul betaling: Free Tier uden billing eller betalt overflow, domæneafvisning før providerkald, deterministiske bedste sted/tid/score-svar, struktureret output og DA/DE/EN-live-eval før en senere særskilt aktivering. `gemini-3.5-flash-lite`/low er valgt til næste deaktiverede Edge-kandidat efter 27/27 remote-kandidatcases og median/p95 1.329/1.896 ms; `gemini-3.7-flash` blev afvist efter fem 12/30-sekunders-timeouts. Dette er ikke offentlig aktivering.
 
 Supabase har varslet mulig begrænsning fra 9. september 2026 efter tidligere egressoverskridelse. Kvoteovervågning er drift, men må aldrig lempe sikkerheds- eller releasegates.
 

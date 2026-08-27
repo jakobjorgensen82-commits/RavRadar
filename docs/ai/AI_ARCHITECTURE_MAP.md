@@ -19,9 +19,13 @@ Se DEC-0081. Recoveryen må ikke kopiere rå strøm, vejr, scoreoutput, koordina
 - `supabase/functions/_shared/public-gateway.ts` – fælles origin/CORS, JSON-grænse, timeout, sikre fejl og rate limiting.
 - `supabase/functions/submit-observation/index.ts` – observationens server-side felt-, privatlivs-, bruger- og tidskontrakt.
 - `supabase/functions/ravradar-assistant/index.ts` – afgrænset offentlig assistentgateway; Pages bruger den ikke, mens `ravAssistantRemoteEnabled=false`.
+- `knowledge/rav-assistant-public-v1.json` – versionsbundet, offentlig Candidate G-vidensallowlist uden private eller interne felter.
+- `scripts/fixtures/rav-assistant-evals-v1.json` + `scripts/run-rav-assistant-model-evals.mjs` – 45-case balanceret DA/DE/EN-kontrakt og eksplicit Free Tier-only live-eval; ingen providerkald i normal self-test, og standard-live kalder kun remote-kandidatcases.
 - `supabase/migrations/20260826_security_hardening.sql` – RLS, privilege-revokes, smallere permissions-RPC og rate-limit-tabel/RPC.
 
 Windows Application Control må ikke omgås for Edge-deploy. Brug en godkendt browser-, CI- eller CLI-kanal. Se DEC-0080.
+
+En senere fjernassistent skal route fast afvisning og deterministiske Candidate G-dataintents før providerkald. Kun øvrige kandidater må nå provider med den lille offentlige kontekst; modellen skal også afvise åbne uvedkommende emner, og svar valideres mod locale, disposition og kendte evidens-ID'er. `gemini-3.5-flash-lite`/low er valgt til næste deaktiverede Edge-kandidat efter 27/27 live-cases; gratis kvoteudløb er en normal lokal fallback, ikke en fejl i prognose- eller turflow. Se DEC-0083.
 
 ## Data- og buildpipeline
 - `.github/workflows/update-and-deploy.yml` – samlet produktionsorkestrering og eneste repositoryworkflow med Pages-deploy. Det startes normalt eksternt via `workflow_dispatch` og auditerer den faktiske Candidate G-runtime efter generering og før fuld validering, Supabase-sync, artifact og Pages.

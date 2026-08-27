@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Aktiv afgrænset leverance – gratis Spørg RavRadar-evals
+
+- DEC-0083 låser ejerkravet: nul betaling, Free Tier uden billing eller betalt overflow, ravrelevant domæne og lokal fallback ved kvote-/providerfejl.
+- Den nuværende Edge er auditeret, men ikke ændret eller aktiveret. Dens mangler er almindelig emneafvisning, DA/DE/EN, struktureret output og deterministisk routing før fjernmodel.
+- Den versionsbundne `rav-assistant-public-v1`-videnspakke og 45 balancerede DA/DE/EN-cases er oprettet. Offline self-test er grøn og adskiller fast afvisning, lokal deterministisk routing og remote-kandidat.
+- Live-eval er eksplicit opt-in og kræver `GEMINI_API_KEY` plus `GEMINI_FREE_TIER_CONFIRMED=1`. Nøglen er installeret lokalt uden Git/output. `gemini-3.7-flash` gav fem 12/30-sekunders-timeouts; `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27 med median 1.329 ms og p95 1.896 ms.
+- DEC-0083 vælger derfor Flash-Lite til næste, fortsat deaktiverede implementeringskandidat. Næste trin efter konkret ejerbekræftelse er provider-neutral integration i den eksisterende Edge med server-side credential, struktureret validering, CORS/rate limit/timeout, lokal fallback og rollback.
+- Offentlig baseline forbliver produktionsverificeret 4.0.287 og local-only. Beskyttet rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+
 ## Nyt planlagt P1-spor – flersproget UI og Spørg RavRadar
 
 - `docs/ai/AI_ROADMAP.md` registrerer nu den ejer-godkendte plan for én central dansk/tysk/engelsk offentlig brugerflade og en separat modernisering af **Spørg RavRadar**. Dette er dokumentation og scope, ikke implementeret produktadfærd.

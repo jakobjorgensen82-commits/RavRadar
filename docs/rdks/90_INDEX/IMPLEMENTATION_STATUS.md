@@ -1,5 +1,22 @@
 # Implementeringsstatus – produktionsverificeret 4.0.287
 
+## P1 aktiv – gratis og domæneafgrænset Spørg RavRadar
+
+- [x] Auditér lokal og Edge-assistent mod Candidate G, offentlig scoreforklaring, sikkerhedsgrænse og deterministisk dataansvar.
+- [x] Dokumentér, at den nuværende Edge mangler DA/DE/EN, struktureret output, almindelig emneafvisning og sikker routing af bedste sted/tid/score.
+- [x] Lås nulbetalingskravet: Free Tier uden billing eller betalt overflow; kvote-/providerfejl giver lokal fallback.
+- [x] Opret `rav-assistant-public-v1` med ti allowlistede offentlige Candidate G-fakta og eksplicit forbud mod private/interne kontekster.
+- [x] Opret 45 balancerede DA/DE/EN-cases for faglighed, selected-zone-data, usikkerhed, sikkerhed, faste og åbne uvedkommende spørgsmål samt prompt injection.
+- [x] Opret offline self-test og eksplicit live-runner, som ikke foretager providerkald uden nøgle plus Free Tier-bekræftelse.
+- [x] Bestå målrettet eval-, lokal assistent-, Edge-sikkerheds-, RDKS-, knowledge-, kildeneutralitets- og releasegatekontrol.
+- [x] Bekræft Free Tier uden billing/betalt overflow til live-runneren og installer nøglen lokalt uden Git eller credentialoutput. Faktisk projektkvote skal fortsat aflæses igen før release.
+- [x] Kør live-eval mod `gemini-3.7-flash` og `gemini-3.5-flash-lite`; dokumentér fejl, latenstid, tokens og modelvalg. 3.7 gav fem timeouts; Flash-Lite/low bestod 27/27 med median/p95 1.329/1.896 ms og 27.314 tokens.
+- [x] Vælg Flash-Lite som næste deaktiverede Edge-kandidat; dette er ikke offentlig aktivering.
+- [ ] Implementér først derefter provider-neutral Edge-routing, struktureret validering, fast afvisning og rollback bag fortsat deaktiveret standardflag.
+- [ ] Aktiver kun efter særskilt ejer-go, positiv CORS/rate-limit/fallback/DA-DE-EN/browserkontrol og aktuel privatlivs-/vilkårskontrol.
+
+Der er ingen offentlig runtime-, score-, vejr-, konto-/tur-, geometri- eller dataændring i denne leverance. Se DEC-0083.
+
 ## Produktionsverificeret 4.0.287 – endeligt EU-turlager med Supabase-rollback
 
 - [x] Bevar Supabase som Auth-, profil-, rettigheds-, rate-limit- og offentlig Edge-grænse.

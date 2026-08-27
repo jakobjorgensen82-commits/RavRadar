@@ -1,3 +1,12 @@
+## Ikke udgivet – gratis Spørg RavRadar-forundersøgelse (2026-08-27)
+
+- Auditerer den nuværende lokale/Edge-assistent mod Candidate G og dokumenterer de åbne produktionshuller uden at aktivere fjern-AI.
+- Tilføjer en versionsbundet offentlig Candidate G-videnspakke og 45 balancerede dansk/tysk/engelsk evalcases, herunder åbne uvedkommende emner uden fast ordlistematch.
+- Tilføjer en offline self-test og en eksplicit live-Gemini-runner, der kræver både lokal API-nøgle og bekræftet Free Tier uden billing.
+- Vælger `gemini-3.5-flash-lite`/low til næste deaktiverede Edge-kandidat efter 27/27 remote-kandidatcases, median/p95 1.329/1.896 ms og DA/DE/EN 9/9. `gemini-3.7-flash` afvises efter fem 12/30-sekunders-timeouts.
+- Låser DEC-0083: kun ravrelevante spørgsmål, deterministiske bedste sted/tid/score-svar, fast afvisning af uvedkommende/interne spørgsmål og lokal fallback uden betalt overflow.
+- Ingen offentlig runtime, version, RavScore, vejr, konto-/turdata, geometri, land-/vandpunkter eller private data er ændret.
+
 ## 4.0.287 – Supabase-identitet og EU-D1-turlager (2026-08-26)
 
 - Supabase bevarer Auth/Edge, mens normale ture går til ti EU-låste Cloudflare D1-shards med HMAC-pseudonym og uden rå ID, mail, navn, JWT, GPS eller rute.
