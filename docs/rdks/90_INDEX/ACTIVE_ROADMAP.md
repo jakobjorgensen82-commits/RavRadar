@@ -1,6 +1,15 @@
 # RavRadar - aktivt roadmap
 
-## P1 aktiv – lokal 4.0.290 DA/DE/EN- og Workers AI-kandidat
+## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
+
+- [x] Ejer-go, aktuel Workers Free-kontrol og DA/DE/EN-kvotetekst.
+- [x] Offentligt aktiveringsflag med sikker `false`-rollback og målrettet remote-/`429`-fallbacktest.
+- [ ] Deploy versionsstyret GPT-OSS Edge med server-only secrets og bestå live CORS/domæne/rate-limit/fallback.
+- [ ] Bestå exact-head, produktion og offentlig DA/DE/EN-browserkontrol.
+
+Se DEC-0088.
+
+## P1 afsluttet – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI
 
 - [x] Implementér første offentlige DA/DE/EN-scope centralt med dansk standard/fallback, lokalt husket sprog og stabile parameteriserede nøgler.
 - [x] Bevar admin/ekspert/internt på dansk og udvid efter ejer-go oversættelsen til **Om RavRadar** og hele grundbogen.
@@ -8,7 +17,7 @@
 - [x] Gør modelrunneren provider-neutral og markér Gemini 27/27 som intern reference efter aktuelle EØS-vilkår.
 - [x] Kør samme 27 cases mod GLM-4.7-Flash, Gemma 4 26B og GPT-OSS 20B på bekræftet Workers Free; vælg GPT-OSS 20B på smoke 1/1, mål-gate 4/4 og 25/26 evaluerbare fuldtests.
 - [x] Byg hærdet Edge bag fortsat deaktiveret standard og særskilt ejer-go. Deploy/aktivering afventer.
-- [ ] Bestå release-, exact-head-, produktions- og offentlig DA/DE/EN-browserkontrol.
+- [x] Bestå release-, exact-head-, produktions- og offentlig DA/DE/EN-browserkontrol.
 
 Se DEC-0086/0087.
 

@@ -26,9 +26,10 @@
 
 ## Aktiv P1 – gratis AI-valg til Spørg RavRadar
 
-- **ISSUE-ASSISTANT-DOMAIN-GATE – LOKALT LØST / DEPLOY ÅBEN:** 4.0.290-kandidaten afviser uvedkommende og sikkerhedsfølsomme spørgsmål både før provider i browseren og igen i Edge, holder bedste sted/tid/score lokalt og validerer provideroutput fail-closed. Offentlig remote forbliver deaktiveret.
+- **ISSUE-ASSISTANT-DOMAIN-GATE – LOKALT LØST / LIVE DEPLOY ÅBEN:** 4.0.291-kandidaten afviser uvedkommende og sikkerhedsfølsomme spørgsmål både før provider i browseren og igen i Edge, holder bedste sted/tid/score lokalt og validerer provideroutput fail-closed. Ejer-go er givet; eksakt Edge-deploy og offentlig kontrol afventer.
 - **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – LOKALT LØST / PRODUKTIONSKONTROL ÅBEN:** Bedste sted/tid/score er låst til lokale Candidate G-funktioner; fjernmodellen får kun dataminimeret valgt-zone-kontekst. Exact-head og offentlig kontrol afventer.
-- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG LUKKET / EDGE ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. Gemini Flash-Lite 27/27 er reference; ejerens valgte gratis produktionskandidat er Cloudflare GPT-OSS 20B med 25/26 beståede evaluerbare fuldtests. Offentlig aktivering er ikke godkendt.
+- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG OG EJER-GO LUKKET / LIVE EDGE ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. Gemini Flash-Lite 27/27 er reference; Cloudflare GPT-OSS 20B er valgt og offentlig aktivering godkendt. Workers-dashboardet viser Free / $0 og 10.000 neuroner/dag; den levende Supabase-funktion er dog fortsat den ældre gateway uden Cloudflare-secrets og skal erstattes/verificeres før Pages-aktivering.
+- **ISSUE-ASSISTANT-QUOTA-EXHAUSTION – SIKKER FALLBACK LOKALT LÅST / LIVE ÅBEN:** 4.0.291 forklarer den begrænsede dagskvote på DA/DE/EN og falder lokalt tilbage ved `429`, timeout, ugyldigt output eller providerfejl. Live kvote- og fallbackkontrol afventer Edge-deploy.
 - **ISSUE-GEMINI-FREE-TIER-TERMS-AND-QUOTA – LUKKET SOM PRODUKTIONS-NO-GO:** Gratis Gemini må ikke bruges til den offentlige EØS-hjemmeside under de kontrollerede vilkår. Genåbn kun ved dokumenteret vilkårsændring eller særskilt ejerbeslutning om betaling; uanset provider sendes ingen private data.
 
 ## Produktionsverificeret 4.0.287 – D1-cutover og EU-turlager

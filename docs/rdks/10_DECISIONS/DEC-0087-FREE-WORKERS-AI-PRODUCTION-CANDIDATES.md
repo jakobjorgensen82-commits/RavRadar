@@ -1,9 +1,9 @@
 # DEC-0087 – Cloudflare Workers AI er gratis produktionsspor; Gemini er reference
 
-**Status:** GPT-OSS 20B valgt og implementeret som deaktiveret Edge-kandidat; deploy og offentlig aktivering er åbne
+**Status:** GPT-OSS 20B valgt; ejer-go til offentlig 4.0.291-aktivering er givet i DEC-0088, live deploy/gates afventer
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
-**Offentlig fjern-AI:** Fortsat deaktiveret
+**Offentlig fjern-AI:** 4.0.291-aktiveringskandidat; offentlig produktion afventer live Edge-bevis
 **Erstatter:** Kun DEC-0083's valg af Gemini som produktionskandidat; domæne-, data-, fallback- og evalkontrakten i DEC-0083 bevares
 
 ## Problem
@@ -31,7 +31,7 @@
 - GLM-4.7-Flash og Gemma 4 26B: hver 0/1 evaluerbare smoke-svar og derfor stoppet før fuld eval.
 - Den provider-neutrale runner kræver dobbelt eksplicit opt-in og gemmer kun dataminimerede målinger. Den rapporterer beståelse, latenstid, tokens og estimerede neuroner.
 - Den lokale Edge implementerer den valgte model med server-only Cloudflare-secrets, dobbelte domænegates, dataminimeret zonekontekst, CORS, 6/minut, 40/time og 300/dag, syv sekunders timeout, `json_object`, rekursiv svarudtrækning og eksakt femfelts/evidens/locale/længdevalidering. Målrettet Edge- og sikkerhedstest er grøn.
-- `ravAssistantRemoteEnabled=false` forbliver den offentlige standard og rollback.
-- Før offentlig aktivering skal Edge deployes gennem godkendt kanal, den eksakte deploykontrakt bestå live afvigelsesprøver og den fulde suite, og offentlig browserkontrol være grøn. Offentlig aktivering kræver fortsat særskilt ejer-go.
+- `ravAssistantRemoteEnabled=false` forbliver rollback; 4.0.291-kandidaten sætter flaget `true` efter ejerens go i DEC-0088.
+- Før den aktiverende Pages-kode merges skal Edge deployes gennem godkendt kanal, den eksakte deploykontrakt bestå live afvigelsesprøver og den fulde suite, og offentlig browserkontrol skal efterfølgende være grøn.
 
 Se `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.

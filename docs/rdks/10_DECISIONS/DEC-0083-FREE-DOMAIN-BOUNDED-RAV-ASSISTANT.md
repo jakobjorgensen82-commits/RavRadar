@@ -1,6 +1,6 @@
 # DEC-0083 – Spørg RavRadar skal være gratis og domæneafgrænset
 
-**Status:** Domæne-, data-, fallback- og evalkontrakt gælder; Gemini-produktionsvalget er erstattet af DEC-0087
+**Status:** Domæne-, data-, fallback- og evalkontrakt gælder; GPT-OSS-valg følger DEC-0087 og aktiverings-go DEC-0088
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
 **Offentlig runtimepåvirkning:** Ingen ved dette checkpoint

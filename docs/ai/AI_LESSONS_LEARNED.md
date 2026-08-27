@@ -32,6 +32,9 @@ En gammel handoff kan sende en ny AI tilbage til en forældet baseline. Current 
 ## 10. Bevar historien uden at gøre den aktiv
 Chatarkiv og gamle changelogs er værdifulde til regressioner og begrundelser. De må ikke bruges som implicit krav. Nyere aktiv RDKS og verificeret kode/produktion vinder.
 
+## 11. Et aktiveringsflag er sidste trin, ikke første
+En versionsstyret Edge-kandidat er ikke det samme som den kode, der faktisk kører hos leverandøren. Før et offentligt klientflag aktiveres, skal den levende funktionskode, de nødvendige secret-navne, gratisplanen, CORS og fail-safe svar kontrolleres direkte. Ellers kan en grøn Pages-release sende brugere til en gammel eller ukonfigureret gateway.
+
 ## 11. Aktiv zonepopulation skal materialiseres i alle pipelineled
 Run #1753-lignende fejlbillede viste, at en aktiv zone kan være korrekt opbygget i central weather-cache, men stadig mangle helt i `dmi-bulk-cache.json`, hvis bulk-builderen kun opretter poster ved et direkte DMI-hit. Det er strukturelt forkert. Den aktuelle admin-zone-/kilderegistrering skal materialiseres som tomme, eksplicitte records før data flettes ind. Manglende direkte DMI-data skal være `missing`/unverified – aldrig et manglende zoneobjekt, kunstigt nul eller stale data. Tidligere bulkposter uden for den aktuelle registrering må ikke genindføres ved merge.
 

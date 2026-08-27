@@ -3,7 +3,7 @@ export const PUBLIC_CONFIG = Object.freeze({
   supabasePublishableKey: "sb_publishable_-SDQfYbgjG5ZVZSNTY7hrw_tUdeufYr",
   expertLoginUsername: "ekspert",
   expertAuthEmail: "ekspert@ravradar.dk",
-  ravAssistantRemoteEnabled: false
+  ravAssistantRemoteEnabled: true
 });
 export function saveLocalPublicConfig(){}
 export function clearLocalPublicConfig(){}

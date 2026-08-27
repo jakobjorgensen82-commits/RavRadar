@@ -104,6 +104,6 @@ assert.match(edge, /validateAssistantResult/);
 assert.match(edge, /routeAssistantQuestion/);
 assert.doesNotMatch(edge, /OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 assert.doesNotMatch(client, /CLOUDFLARE_ACCOUNT_ID|CLOUDFLARE_WORKERS_AI_TOKEN|Bearer\s/);
-assert.match(config, /ravAssistantRemoteEnabled:\s*false/);
+assert.match(config, /ravAssistantRemoteEnabled:\s*true/);
 
-console.log('GPT-OSS Edge: model, domænegate, dataminimering, JSON/evidensvalidering, kvotebuffer og lokal rollback er låst.');
+console.log('GPT-OSS Edge: offentlig aktivering, model, domænegate, dataminimering, JSON/evidensvalidering, kvotebuffer og lokal rollback er låst.');

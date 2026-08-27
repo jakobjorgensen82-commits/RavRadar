@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-27 – offentlig GPT-OSS-aktivering i 4.0.291
+
+- Ejeren har udtrykkeligt godkendt, at **Spørg RavRadar** sættes i offentlig drift nu.
+- Cloudflare-dashboardet viser Workers **Free** som aktuel plan, $0, 10.000 neuroner/dag og cirka 4.930/10.000 brugt efter evals. Officiel Free-adfærd er fejl efter loftet; Paid/upgrade/prepaid overflow er forbudt.
+- 4.0.291 viser en DA/DE/EN-kvotebesked inde i assistentdialogen og forklarer, at prognoser og lokale RavRadar-svar fortsætter, når dagens AI-kvote er brugt.
+- Det offentlige flag er klargjort som `ravAssistantRemoteEnabled=true`, mens `false` forbliver rollback. Regressioner dækker remote-succes, `429`-fallback, ingen providercredential i browseren og fortsat lokal afvisning/routing.
+- Supabase-dashboardet viser, at den levende `ravradar-assistant` stadig er den ældre gateway uden GPT-OSS-kontrakten; secretsoversigten mangler `CLOUDFLARE_ACCOUNT_ID` og `CLOUDFLARE_WORKERS_AI_TOKEN`. Edge skal derfor deployes og liveverificeres, før den aktiverende Pages-kode må merges.
+- Arbejdet foregår på `codex/activate-assistant-4.0.291` fra eksakt `origin/main` i den isolerede Codex-worktree. Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er urørte. Se DEC-0088.
+
 ## AKTUELT P1-CHECKPOINT – 2026-08-27 – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret GPT-OSS Edge
 
 - Den komplette offentlige oversættelse er implementeret i den isolerede worktree: ét centralt katalog, dansk standard/fallback, stabile nøgler/parametre, localeformatering og lokalt husket valg med CSS-tegnede flag plus Dansk/Deutsch/English.

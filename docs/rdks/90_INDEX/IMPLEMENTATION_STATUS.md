@@ -1,6 +1,19 @@
-# Implementeringsstatus – produktionsverificeret 4.0.290
+# Implementeringsstatus – 4.0.291 offentlig AI-aktiveringskandidat
 
-## P1 kandidat – central DA/DE/EN og domæneafgrænset assistent i 4.0.290
+## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
+
+- [x] Modtag særskilt ejer-go til offentlig GPT-OSS-aktivering.
+- [x] Genbekræft Cloudflare Workers Free / $0, 10.000 neuroner/dag og fejl uden betalt overflow.
+- [x] Tilføj synlig og stabil DA/DE/EN-kvotetekst i assistentdialogen.
+- [x] Sæt det versionsstyrede offentlige aktiveringsflag og bevar `false` som rollback.
+- [x] Lås remote-succes, `429`-fallback, fravær af browsercredential, lokal emneafvisning og deterministisk Candidate G-routing med målrettede tests.
+- [ ] Deploy den versionsstyrede GPT-OSS Edge og installer kun de to server-secrets gennem Supabases godkendte kanal.
+- [ ] Bestå live CORS-, fast afvisnings-, DA/DE/EN-, provider-, timeout-/fallback- og afgrænset rate-limitkontrol før merge.
+- [ ] Bestå lokal source/releasegate, exact-head CI, frisk produktion og offentlig desktop-/mobilbrowserkontrol.
+
+Se DEC-0088. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
+## P1 produktionsverificeret – central DA/DE/EN og domæneafgrænset assistent i 4.0.290
 
 - [x] Centralt DA/DE/EN-katalog med stabile nøgler/parametre, dansk standard/fallback og localeformatering.
 - [x] Tilgængelig sprogvælger med flag+sprognavne og lokalt husket valg.
