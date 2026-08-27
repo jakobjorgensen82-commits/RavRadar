@@ -10,6 +10,7 @@ import {
   RAV_ASSISTANT_FACTS,
   RAV_ASSISTANT_MODEL,
   RAV_ASSISTANT_REFUSALS,
+  RAV_ASSISTANT_WEIGHT_ANSWERS,
   routeAssistantQuestion,
   validateAssistantResult,
 } from '../supabase/functions/_shared/rav-assistant-contract.ts';
@@ -71,6 +72,13 @@ assert.match(assistantSystemInstruction(), /Never create hybrid words/);
 assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobilisering.', 'da'), '20 % jagtbarhed og 30 % ravmobilisering.');
 assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Bernsteinmobilisierung');
 assert.equal(normaliseAssistantTerminology('20 % Jagtbarheit und 30 % Bernsteinmobilisierung', 'de'), '20 % Suchbarkeit und 30 % Bernsteinmobilisierung');
+
+const fixedGermanWeights = validateAssistantResult({
+  schemaVersion: 'rav-assistant-response-v1', locale: 'de', disposition: 'answer',
+  answer: 'Candidate G: 20 % Jagdbarheit, 50 % Transport, 30 % Bernsteinmobilisierung.',
+  evidenceIds: ['score.candidate-g-only', 'score.weights-20-50-30'],
+}, 'de');
+assert.equal(fixedGermanWeights.answer, RAV_ASSISTANT_WEIGHT_ANSWERS.de);
 assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and amber mobilisation');
 
 const valid = {

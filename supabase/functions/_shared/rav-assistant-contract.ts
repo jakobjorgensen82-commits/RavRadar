@@ -21,6 +21,12 @@ export const RAV_ASSISTANT_REFUSALS = Object.freeze({
   en: "I can only help with amber, amber hunting, and conditions relevant to an amber-hunting trip.",
 });
 
+export const RAV_ASSISTANT_WEIGHT_ANSWERS = Object.freeze({
+  da: "Candidate G er RavRadars eneste offentlige scoremodel. RavScore vægter 20 % jagtbarhed, 50 % transport mod kysten og 30 % ravmobilisering.",
+  de: "Candidate G ist RavRadars einziges öffentliches Score-Modell. RavScore gewichtet 20 % Suchbarkeit, 50 % Transport zur Küste und 30 % Bernsteinmobilisierung.",
+  en: "Candidate G is RavRadar's only public score model. RavScore weights 20% huntability, 50% transport towards the coast, and 30% amber mobilisation.",
+});
+
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;
 const OUT_OF_SCOPE_PATTERN = /roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework|cykeldæk|fahrradreifen|bicycle tyre|weekendtur|wochenendreise|weekend trip|paris/i;
 const AMBER_DOMAIN_PATTERN = /\brav|bernstein|bernsteinsuche|amber|amber hunt|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|uv.?light|ravscore|fund|finde rav|bernstein find|find amber/i;
@@ -165,5 +171,8 @@ export function validateAssistantResult(value, locale) {
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return null;
+  if (value.disposition === "answer" && evidenceIds.includes("score.candidate-g-only") && evidenceIds.includes("score.weights-20-50-30")) {
+    return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
+  }
   return { answer, disposition: value.disposition, evidenceIds };
 }
