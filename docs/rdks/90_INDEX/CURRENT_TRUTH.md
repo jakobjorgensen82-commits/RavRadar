@@ -1,12 +1,14 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.291-kandidat – offentlig gratis Spørg RavRadar
+## Produktionsverificeret 4.0.291 – offentlig gratis Spørg RavRadar
 
 - Ejeren har givet særskilt go til at aktivere Cloudflare `@cf/openai/gpt-oss-20b` gennem den hærdede Supabase Edge-gateway.
 - Cloudflare-dashboardet er aktuelt verificeret som Workers **Free / $0** med 10.000 neuroner pr. døgn og fejl efter loftet. Betalt overflow, Workers Paid og prepaid AI Gateway er ikke tilladt.
 - Assistentdialogen viser på dansk, tysk og engelsk, at den daglige AI-kvote er begrænset for at holde RavRadar gratis, og at kvoten kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
-- Offentlig konfiguration er klargjort med `ravAssistantRemoteEnabled=true`; `false` er den øjeblikkelige rollback. Edge- eller providerfejl falder lokalt tilbage og kan ikke blokere kort, prognoser, konto eller ture.
-- Den versionsstyrede Supabase-funktion og begge Cloudflare-secrets er installeret. Efter en før-merge, fail-closed Monaco-sammenfletning blev de tre filer erstattet atomisk; live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald er grønne. Promptordlisten kunne stadig danne danske hybridord, så Edge normaliserer nu en snæver testlåst fagordsliste. 4.0.291 må fortsat ikke merges før ny exact-head CI, ny Edge-smoke og fallbackkontrol er grøn; produktion kræver efterfølgende browserkontrol.
+- Offentlig konfiguration bruger `ravAssistantRemoteEnabled=true`; `false` er den øjeblikkelige rollback. Edge- eller providerfejl falder lokalt tilbage og kan ikke blokere kort, prognoser, konto eller ture.
+- Den versionsstyrede Supabase-funktion og begge Cloudflare-secrets er installeret. Efter en før-merge, fail-closed Monaco-sammenfletning blev de tre filer erstattet atomisk; live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald, testlåst fagordsnormalisering og 6/minut med `429` på syvende kald er grønne.
+- PR #187 bestod exact-head `33114501539` på `d781e464`, merge `c6c9998c`, produktion `33114598957`, build `98665953481` og Pages `98668455689`. Offentlig browserkontrol består version 4.0.291, DA/DE/EN-kvotetekst, et rigtigt Candidate G Edge-svar, fast rouladeafvisning, farvet kort, fem aktuelle områder, fem dagsfaner og 390 px-dialog.
+- Vejrvisningen bruger fortsat tydeligt markeret bounded nøddrift fra det sidste komplette dataset, mens frisk Candidate G modnes. AI-aktiveringen påvirker eller forlænger ikke denne tilstand.
 - Domænegate, deterministic Candidate G-routing, dataminimering og forbuddet mod private data er uændrede. Se DEC-0088.
 
 ## Produktionsverificeret 4.0.290 – central offentlig DA/DE/EN og sikker assistentgrænse

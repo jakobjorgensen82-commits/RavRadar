@@ -1,9 +1,9 @@
 # DEC-0087 – Cloudflare Workers AI er gratis produktionsspor; Gemini er reference
 
-**Status:** GPT-OSS 20B valgt; ejer-go og live Edge-gates til offentlig 4.0.291-aktivering er grønne, Pages/produktion afventer
+**Status:** GPT-OSS 20B valgt og produktionsverificeret i offentlig 4.0.291
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
-**Offentlig fjern-AI:** 4.0.291-aktiveringskandidat; offentlig produktion afventer live Edge-bevis
+**Offentlig fjern-AI:** Aktiv i produktionsverificeret 4.0.291 med lokal fallback og `false`-rollback
 **Erstatter:** Kun DEC-0083's valg af Gemini som produktionskandidat; domæne-, data-, fallback- og evalkontrakten i DEC-0083 bevares
 
 ## Problem
@@ -32,7 +32,7 @@
 - GLM-4.7-Flash og Gemma 4 26B: hver 0/1 evaluerbare smoke-svar og derfor stoppet før fuld eval.
 - Den provider-neutrale runner kræver dobbelt eksplicit opt-in og gemmer kun dataminimerede målinger. Den rapporterer beståelse, latenstid, tokens og estimerede neuroner.
 - Den lokale Edge implementerer den valgte model med server-only Cloudflare-secrets, dobbelte domænegates, dataminimeret zonekontekst, CORS, 6/minut, 40/time og 300/dag, syv sekunders timeout, `json_object`, rekursiv svarudtrækning og eksakt femfelts/evidens/locale/længdevalidering. Målrettet Edge- og sikkerhedstest er grøn.
-- `ravAssistantRemoteEnabled=false` forbliver rollback; 4.0.291-kandidaten sætter flaget `true` efter ejerens go i DEC-0088.
-- Edge er deployet gennem Supabases godkendte kanal og har bestået live afvigelsesprøver, DA/DE/EN, terminologilås og afgrænset rate-limitkontrol. Før 4.0.291 kaldes produktionsverificeret skal den nye exact-head være grøn, Pages-koden merges, og offentlig browserkontrol bestå.
+- Offentlig 4.0.291 bruger `ravAssistantRemoteEnabled=true`; `false` forbliver rollback.
+- Edge er deployet gennem Supabases godkendte kanal og har bestået live afvigelsesprøver, DA/DE/EN, terminologilås og afgrænset rate-limitkontrol. PR #187/exact-head `33114501539`, merge `c6c9998c`, produktion `33114598957`, Pages `98668455689` og offentlig browserkontrol er grønne.
 
 Se `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.

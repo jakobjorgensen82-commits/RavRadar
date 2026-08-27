@@ -1,12 +1,12 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv 4.0.291 – offentlig gratis Spørg RavRadar
+## Produktionsverificeret 4.0.291 – offentlig gratis Spørg RavRadar
 
-- Ejeren har givet det særskilte aktiverings-go. 4.0.291-kandidaten viser en rolig DA/DE/EN-tekst om den begrænsede daglige AI-kvote og præciserer, at den kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
+- Ejeren gav det særskilte aktiverings-go. Offentlig 4.0.291 viser en rolig DA/DE/EN-tekst om den begrænsede daglige AI-kvote og præciserer, at den kun gælder Spørg RavRadar uden indflydelse på kort, prognoser, RavScore eller øvrige funktioner.
 - Cloudflare-kontoen er verificeret som Workers Free / $0 med 10.000 neuroner pr. døgn og fejl efter loftet. Betalt overflow er forbudt.
-- Offentlig `ravAssistantRemoteEnabled=true` er klargjort; `false` er rollback. Domænegate, lokale Candidate G-dataintents, dataminimering, CORS, rate limits, syv sekunders timeout og lokal fallback bevares.
-- Den levende Supabase-funktion er endnu den ældre kode og mangler de to Cloudflare-secrets. Deploy Edge gennem den godkendte dashboardkanal og bestå live sikkerheds-/DA-DE-EN-kontrol før merge og Pages-deploy.
-- Brug `codex/activate-assistant-4.0.291` i den isolerede worktree. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller land-/vandpunkter. Se DEC-0088.
+- Offentlig `ravAssistantRemoteEnabled=true` er udgivet; `false` er rollback. Domænegate, lokale Candidate G-dataintents, dataminimering, CORS, rate limits, syv sekunders timeout og lokal fallback er liveverificeret.
+- PR #187/exact-head `33114501539`, merge `c6c9998c`, produktion `33114598957`, build `98665953481`, Pages `98668455689` og offentlig desktop-/390 px-kontrol er grønne. Vejrvisningen forbliver ærligt i bounded nøddrift, mens frisk Candidate G modnes.
+- Næste rækkefølge er mobil returfejlen for kort/**Bedste områder**/**5-dages RavRadar**, derefter det evaldrevne scope for en væsentligt klogere lokal assistent. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller land-/vandpunkter. Se DEC-0088.
 
 ## Produktionsverificeret 4.0.290 – komplet offentlig DA/DE/EN og deaktiveret, hærdet GPT-OSS Edge
 

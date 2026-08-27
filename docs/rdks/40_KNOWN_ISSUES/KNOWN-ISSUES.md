@@ -1,12 +1,12 @@
 # Kendte åbne og overvågede forhold
 
-## Aktiv 4.0.290-kandidat – sprog og gratis modelvalg
+## Produktionsverificeret 4.0.291 – sprog og gratis modelvalg
 
-- **ISSUE-ASSISTANT-CLOUDFLARE-LIVE-EVAL – EDGE PRODUKTIONSKONTRAKT LUKKET / PAGES ÅBEN:** Ejeren har valgt GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests. GLM/Gemma gav ikke-evaluerbare smoke-svar. Den valgte Edge låser `json_object`, eksakt outputvalidering, syv sekunders timeout, fallback og tre gratis kvotegates; deploy, DA/DE/EN-smoke og rate-limitbevis er grønne, mens offentlig Pages-aktivering afventer.
+- **ISSUE-ASSISTANT-CLOUDFLARE-LIVE-EVAL – PRODUKTIONSVERIFICERET LUKKET:** Ejeren valgte GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests. Den valgte Edge låser `json_object`, eksakt outputvalidering, syv sekunders timeout, fallback og tre gratis kvotegates. PR #187, produktion `33114598957`, Pages og offentlig DA/DE/EN-kontrol er grønne.
 - **ISSUE-GEMINI-FREE-EEA-PRODUCTION – LUKKET SOM NO-GO:** Googles aktuelle vilkår omfatter hjemmesider i API Client-begrebet og kræver Paid Service ved offentlige EØS-brugere. Gemini Flash-Lite 27/27 bevares kun som intern reference. Se DEC-0087.
-- **ISSUE-PUBLIC-I18N-BROAD-PAGES – LOKALT LØST / RELEASE ÅBEN:** Ejeren godkendte den brede fase. **Om RavRadar** og hele **Grundbog i ravjagt** er nu DA/DE/EN med stabile flag, dansk fallback og grøn desktop-/390 px-kontrol; exact-head og offentlig releasekontrol afventer.
+- **ISSUE-PUBLIC-I18N-BROAD-PAGES – PRODUKTIONSVERIFICERET LUKKET:** **Om RavRadar**, hele **Grundbog i ravjagt** og den aktiverede assistent er DA/DE/EN med stabile flag, dansk fallback og grøn offentlig desktop-/390 px-kontrol.
 
-## Ny ejerobservation efter 4.0.291-kandidaten
+## Nye ejerobservationer efter produktionsverificeret 4.0.291
 
 - **ISSUE-MOBILE-HOME-RETURN-EMPTY – ÅBEN / NÆSTE KRITISKE RELEASE:** På iPhone, og muligvis andre mobiler, kan retur fra **Om RavRadar** til forsiden efterlade kort, **Bedste områder** og **5-dages RavRadar** tomme. Reproduktion skal omfatte browserens tilbage-navigation og bfcache/livscyklus; ingen geometri-, score- eller datapatch må antages før rodårsagen er bevist.
 - **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – ÅBEN / PLANLAGT EFTER MOBILFIX:** Den lokale fallback kan kun et lille sæt deterministiske intents. Ejeren ønsker en væsentligt klogere leverandøruafhængig assistent. Løsningen skal være versionsbundet, ravfaglig, DA/DE/EN, read-only og evaldrevet; den må ikke ændre prognoser, RavScore eller andre runtime-data.
@@ -29,12 +29,12 @@
 - **ISSUE-CANDIDATE-G-WARMUP-AUDIT-REQUIRES-SCORE – PRODUKTIONSVERIFICERET LØST:** Produktion `33066980965` nåede korrekt 0/673 `READY` og 210 utilgængelige primærzoner, men shadowauditten krævede samtidig rå score, bidrag og fysisk gate. Auditkontrakten kræver nu disse felter ved `READY`, mens warmup kun accepterer en entydigt utilgængelig mode med `score=null`, en ikke-tom fejlårsag og fortsat lukket offentlig score. Exact artifact, PR #179 og produktion `33069384084` er grønne.
 - **ISSUE-4.0.288-PRODUCTION-CLOSURE – PRODUKTIONSVERIFICERET LUKKET:** Exact-head `33069307854`, merge `653a9811`, produktion `33069384084`, build `98507461295`, Pages `98512392768`, live hash-/datasetkontrol og positiv browserkontrol er grønne.
 
-## Aktiv P1 – gratis AI-valg til Spørg RavRadar
+## Produktionsverificeret P1 4.0.291 – gratis AI-valg til Spørg RavRadar
 
-- **ISSUE-ASSISTANT-DOMAIN-GATE – EDGE LIVE GRØN / OFFENTLIG BROWSER ÅBEN:** 4.0.291-kandidaten afviser uvedkommende og sikkerhedsfølsomme spørgsmål både før provider i browseren og igen i Edge, holder bedste sted/tid/score lokalt og validerer provideroutput fail-closed. Edge-kode, secrets, origin-afvisning, rouladeafvisning, DA/DE/EN-kald, terminologilås og 6/minut med `429` på syvende kald er liveverificeret; merge og offentlig browserkontrol afventer.
-- **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – LOKALT LØST / PRODUKTIONSKONTROL ÅBEN:** Bedste sted/tid/score er låst til lokale Candidate G-funktioner; fjernmodellen får kun dataminimeret valgt-zone-kontekst. Exact-head og offentlig kontrol afventer.
-- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – MODELVALG, EJER-GO OG EDGE-SMOKE LUKKET / PAGES ÅBEN:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. Gemini Flash-Lite 27/27 er reference; Cloudflare GPT-OSS 20B er valgt og offentlig aktivering godkendt. Workers-dashboardet viser Free / $0 og 10.000 neuroner/dag; Supabase Edge, secrets, terminologilås og minutgrænse er liveverificeret. Offentlig browser- og produktionsbevis afventer slutkontrol.
-- **ISSUE-ASSISTANT-QUOTA-EXHAUSTION – EDGE OG LOKAL FALLBACK LÅST / PAGES ÅBEN:** 4.0.291 forklarer entydigt på DA/DE/EN, at kvoten kun gælder Spørg RavRadar uden indflydelse på prognoser eller andre funktioner. Edge returnerer fail-closed ved kvote/providerfejl, og browsertesten beviser lokal fallback ved `429`; offentlig Pages-kontrol afventer.
+- **ISSUE-ASSISTANT-DOMAIN-GATE – PRODUKTIONSVERIFICERET LUKKET:** 4.0.291 afviser uvedkommende og sikkerhedsfølsomme spørgsmål før provider, holder bedste sted/tid/score lokalt og validerer provideroutput fail-closed. Edge, origin-afvisning, rouladeafvisning, DA/DE/EN, terminologilås, 6/minut med `429` og offentlig browser er grønne.
+- **ISSUE-ASSISTANT-DETERMINISTIC-ROUTING – PRODUKTIONSVERIFICERET LUKKET:** Bedste sted/tid/score er låst til lokale Candidate G-funktioner; fjernmodellen får kun dataminimeret valgt-zone-kontekst. Offentlig kontrol består.
+- **ISSUE-ASSISTANT-FREE-MODEL-EVAL – PRODUKTIONSVERIFICERET LUKKET:** 45 DA/DE/EN-cases og ti versionsbundne offentlige fakta er self-testet. Gemini Flash-Lite 27/27 er reference; Cloudflare GPT-OSS 20B er valgt og udgivet på Workers Free / $0 med 10.000 neuroner/dag. Supabase Edge, secrets, terminologilås, minutgrænse, produktion og offentlig browser er verificeret.
+- **ISSUE-ASSISTANT-QUOTA-EXHAUSTION – PRODUKTIONSVERIFICERET LUKKET:** 4.0.291 forklarer entydigt på DA/DE/EN, at kvoten kun gælder Spørg RavRadar uden indflydelse på prognoser eller andre funktioner. Edge fejler lukket ved kvote/providerfejl, og browsertesten beviser lokal fallback ved `429`.
 - **ISSUE-GEMINI-FREE-TIER-TERMS-AND-QUOTA – LUKKET SOM PRODUKTIONS-NO-GO:** Gratis Gemini må ikke bruges til den offentlige EØS-hjemmeside under de kontrollerede vilkår. Genåbn kun ved dokumenteret vilkårsændring eller særskilt ejerbeslutning om betaling; uanset provider sendes ingen private data.
 
 ## Produktionsverificeret 4.0.287 – D1-cutover og EU-turlager

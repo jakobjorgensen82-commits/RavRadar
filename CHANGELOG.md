@@ -5,6 +5,7 @@
 - Registrerer som næste særskilte leverancer den mobile returfejl for kort/ranglister/femdøgnsvisning og ejerønsket om en væsentligt bredere, versionsbundet lokal ravfaglig assistent.
 - Cloudflare-dashboardet er kontrolleret som Workers Free / $0 med 10.000 neuroner/dag og fejl ved overskridelse; betalt overflow, Workers Paid og prepaid AI Gateway er forbudt.
 - Bevarer lokal domæneafvisning, deterministiske Candidate G-svar, server-only credentials, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Se DEC-0088 og `CHANGELOG-4.0.291.md`.
+- PR #187/exact-head `33114501539`, merge `c6c9998c`, produktion `33114598957`, build `98665953481`, Pages `98668455689` og offentlig desktop-/390 px-kontrol er grønne. Den fortsat markerede vejr-nøddrift er uafhængig af assistentaktiveringen.
 
 ## 4.0.290 – central DA/DE/EN og sikker assistentgrænse (2026-08-27)
 

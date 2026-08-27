@@ -7,6 +7,9 @@
 3. 4.0.291-kandidaten tilføjer DA/DE/EN-kvotetekst, aktiverer det offentlige remote-flag og låser remote-succes, `429`-fallback og fravær af browsercredential.
 4. Den versionsstyrede GPT-OSS Edge og begge Cloudflare-secrets blev installeret før merge. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering; atomisk filudskiftning rettede den, hvorefter CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning, DA/DE/EN-providerkald og 6/minut med `429` på syvende kald bestod live. Danske hybridord udløste derefter en snæver deterministisk fagordsnormalisering før den endelige smoke.
 5. DEC-0088 bevarer alle tidligere domæne-, Candidate G-, privatlivs-, CORS-, rate-limit-, timeout- og rollbackkrav.
+6. Ejeren præciserede, at AI-kvoten kun må gælde svarfunktionen og aldrig påvirke kort, prognoser, RavScore eller andre funktioner. DA/DE/EN-teksten og regressionen blev gjort entydig.
+7. PR #187 bestod exact-head `33114501539`, blev merged som `c6c9998c` og bestod produktion `33114598957`, build `98665953481` og Pages `98668455689`.
+8. Offentlig browserkontrol viste version 4.0.291, farvet kort, fem aktuelle områder, fem dagsfaner, DA/DE/EN-kvotetekst, evidensbundet Edge-svar, lokal rouladeafvisning og grøn 390 px-dialog. Vejrvisningen er fortsat tydeligt i bounded nøddrift, mens frisk Candidate G modnes.
 
 ## 2026-08-27 – DA/DE/EN-kandidat og Cloudflare mod Gemini
 
