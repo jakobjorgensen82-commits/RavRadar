@@ -27,6 +27,24 @@ const behavioral=`
 import importlib.util, sys, types
 from datetime import datetime, timezone, timedelta
 sys.path.insert(0, 'scripts')
+class DummySession:
+    def __init__(self): self.headers={}
+    def mount(self,*args,**kwargs): pass
+class DummyDependency:
+    def __init__(self,*args,**kwargs): pass
+requests=types.ModuleType('requests')
+requests.Session=DummySession
+requests_adapters=types.ModuleType('requests.adapters')
+requests_adapters.HTTPAdapter=DummyDependency
+urllib3=types.ModuleType('urllib3')
+urllib3_util=types.ModuleType('urllib3.util')
+urllib3_retry=types.ModuleType('urllib3.util.retry')
+urllib3_retry.Retry=DummyDependency
+sys.modules['requests']=requests
+sys.modules['requests.adapters']=requests_adapters
+sys.modules['urllib3']=urllib3
+sys.modules['urllib3.util']=urllib3_util
+sys.modules['urllib3.util.retry']=urllib3_retry
 eccodes=types.ModuleType('eccodes')
 for name in ('codes_get','codes_get_array','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
     setattr(eccodes,name,lambda *a,**k: None)
