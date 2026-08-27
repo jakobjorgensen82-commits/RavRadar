@@ -10,34 +10,41 @@ Browser → Supabase Auth/Edge → HMAC-pseudonym + allowlist → privat Cloudfl
 
 `TRIP_STORAGE_MODE=d1` er normal drift. `TRIP_STORAGE_MODE=supabase` er en bevidst rollback. Der findes ingen automatisk fallback og ingen normal dual-write.
 
-## Påkrævede secrets
+## Faste og behovsstyrede secrets
 
-GitHub Actions kræver:
+GitHub Actions har følgende faste secrets til de relevante manuelle og planlagte driftsflow:
 
-- `CLOUDFLARE_ACCOUNT_ID`;
-- `CLOUDFLARE_API_TOKEN` med kun D1 Write og Workers Scripts Edit for den valgte konto;
-- `CLOUDFLARE_AUDIT_API_TOKEN` med kun D1 Read;
-- `CLOUDFLARE_TRIP_GATEWAY_URL`, eksakt Worker-origin under `workers.dev`;
-- `TRIP_GATEWAY_SHARED_SECRET`, mindst 32 tilfældige bytes;
-- `TRIP_PSEUDONYM_SECRET_V1`, mindst 32 tilfældige bytes;
-- de eksisterende `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL` og `SUPABASE_SERVICE_ROLE_KEY`.
+- `CLOUDFLARE_ACCOUNT_ID` til Cloudflare-deploy og metadataaudit;
+- `CLOUDFLARE_API_TOKEN` med kun D1 Write og Workers Scripts Edit til det manuelle deployment;
+- `CLOUDFLARE_AUDIT_API_TOKEN` med kun D1 Read til den daglige payloadfri monitor;
+- `CLOUDFLARE_TRIP_GATEWAY_URL`, eksakt Worker-origin under `workers.dev`, til deploymentets grænsekontrol;
+- `TRIP_GATEWAY_SHARED_SECRET`, mindst 32 tilfældige bytes, til den private servicekontrakt;
+- `TRIP_PSEUDONYM_SECRET_V1`, mindst 32 tilfældige bytes, til stabil pseudonymisering;
+- de eksisterende `SUPABASE_URL` og `SUPABASE_SERVICE_ROLE_KEY` til afgrænsede migrations- og administrationsoperationer.
+
+`SUPABASE_ACCESS_TOKEN` er derimod kun et management-token til det manuelle **Deploy RavRadar trip storage**-workflow. Login, profil, Edge-runtime, indsendelse af ture, D1-lagring og den daglige D1-monitor bruger det ikke. Det må derfor være udløbet eller fraværende i normal drift.
 
 Secretværdier må aldrig skrives i PR, issue, log, artifact, dokumentation eller chat. `TRIP_PSEUDONYM_SECRET_V1` er en stabil identitetsnøgle: blind rotation gør eksisterende kontoture ulæselige. En nødvendig rotation kræver en særskilt versioneret v2-migration. Gateway-secret kan roteres koordineret gennem GitHub → Cloudflare → Supabase.
 
-Aktuel credential-status er:
+Aktuel credential-status og politik er:
 
-- `SUPABASE_ACCESS_TOKEN` er et dedikeret PAT, som udløber 25. august 2027. Supabase-dashboardet accepterede i den aktuelle konto højst en dato under ét år frem, selv om Supabases generelle produktbeskrivelse også omtaler tokens uden udløb;
+- det installerede `SUPABASE_ACCESS_TOKEN` udløber 25. august 2027, men skal ikke kalenderfornyes. Det kan udløbe uden at stoppe normal drift;
 - Cloudflare deploy-tokenet har kun D1 Write og Workers Scripts Write og er sat til **No expiration**;
 - Cloudflare audit-tokenet har kun D1 Read og er sat til **No expiration**;
 - gateway-secret kan roteres koordineret, mens pseudonym-secret kun må roteres gennem en særskilt v2-migration.
 
-Cloudflare-tokenværdierne ændrede sig ikke, da udløbet blev fjernet. De skal derfor ikke roteres efter en kalender, men straks ved mistanke om kompromittering eller en nødvendig rettighedsændring. Supabase-PAT'et skal udskiftes, fordi den installerede udløbsdato ikke kan forlænges som en del af RavRadars deploykæde.
+Cloudflare-tokenværdierne ændrede sig ikke, da udløbet blev fjernet. De skal derfor ikke roteres efter en kalender, men straks ved mistanke om kompromittering eller en nødvendig rettighedsændring. Pseudonym-secret må fortsat aldrig roteres blindt.
 
-Det separate **Warn before RavRadar credential expiry**-workflow har ingen adgang til secrets eller produktionsdata. Fra 60 dage før 25. august 2027 opretter det en tydeligt navngivet GitHub-issue, tildeler den til repositoryejeren og følger op ved 30, 14, 7, 3, 1 og 0 dage. GitHub-levering for tildelte/omtalte issues er kontrolleret som **on GitHub, Email**. Ved hver rotation skal dato og issue-markør opdateres i workflowet og denne runbook.
+Det tidligere kalenderbaserede **Warn before RavRadar credential expiry**-workflow er pensioneret. Der skal ikke oprettes mail-, GitHub-issue-, kalender- eller Codex-varsler om Supabase-PAT'ets udløb, fordi udløbet ikke er en runtimehændelse.
 
-Rotation skal ske gennem den godkendte interaktive kanal. Værdier, token-id'er, konto-id og fuld privat gateway-origin må ikke kopieres til dokumentation eller logs.
+Når en konkret Edge-deploy, migration eller rollback-deploy bliver nødvendig, er den sikre behovsstyrede proces:
 
-Sikker Supabase-rotation er: opret nyt PAT, opdatér GitHub-secretet gennem en lukket kanal, kør den fulde D1-deployverifikation, og tilbagekald først derefter det gamle PAT. En mislykket verifikation betyder, at det gamle PAT bevares, indtil årsagen er rettet og en ny kørsel er grøn.
+1. opret et nyt Supabase-PAT med kortest praktiske udløb gennem den godkendte interaktive kanal;
+2. opdatér GitHub-secretet `SUPABASE_ACCESS_TOKEN` uden at vise værdien;
+3. kør det manuelle workflow på eksakt `main` og bestå hele den relevante D1-/Edge-/CORS-/login-/feltverifikation;
+4. tilbagekald PAT'et efter grøn verifikation. Ved rød verifikation stoppes ændringen, men et aktivt token må kun bevares kortvarigt, mens den konkrete fejl undersøges.
+
+Værdier, token-id'er, konto-id og fuld privat gateway-origin må ikke kopieres til dokumentation eller logs. Processen kan udføres med Codex, men den kræver den godkendte brugerkanal til selve secretværdien; den kan ikke gøres permanent automatisk uden at genindføre et langlivet management-token.
 
 ## Første idriftsættelse og normal opdatering
 

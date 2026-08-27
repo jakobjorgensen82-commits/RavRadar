@@ -18,6 +18,8 @@
 14. En senere Ravudsigten-sammenligning er godkendt som intern roadmapopgave baseret på offentligt synlige resultater og uafhængige fund. Den har `scoreImpact=false`/`publicRuntime=false` og må kun omtales i RDKS, roadmap og changelog, ikke i bruger-/ekspertrettede flader.
 15. Credential-workflowet bestod PR #169/exact-head `33025102301` på `ba8e8f03` og blev merged som `1e402834`. Manuel main-prøve `33025289153` bestod uden at oprette en for tidlig issue.
 16. Frisk produktion `33025210517` og Pages-job `98367528389` bestod. Offentlig `rr-20260827000855-210` viste 4.0.287, 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle visninger, 2.100 prognosevisninger og nul auditfejl.
+17. Ejeren præciserede derefter, at Supabase-PAT'et ikke skal kalenderfornyes: normal Auth/Edge-/D1-drift bruger det ikke. Det verificerede udløbsworkflow pensioneres, og et kortlivet PAT oprettes kun til en konkret deploy/migration/rollback og tilbagekaldes efter grøn verifikation.
+18. Den interne Ravudsigten-sammenligning blev aktiveret. Første tidsstemplede snapshot registrerede begge tjenesters top-fem, Ravudsigtens ikke-røde femdøgnssignaler, de nærmeste logiske RavRadar-zoner og komponentforklaringer. Ét vejrvindue er observationsgrundlag, ikke modelvalidering.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 

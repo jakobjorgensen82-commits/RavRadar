@@ -1,6 +1,6 @@
 # DEC-0082: Supabase-identitet og færdigt eksternt EU-turlager med eksplicit rollback
 
-**Status:** Ejerbesluttet og implementeret i kandidat 4.0.287. Infrastrukturens exact-head/merge, dedikeret konto, mindst-mulige credentials, krypterede GitHub-secrets og Edge-deploy i Supabase-rollback er verificeret; EU-shards/Worker, migration, D1-cutover og offentlig ende-til-ende-verifikation afventer eksakt merged kandidat.
+**Status:** Ejerbesluttet, implementeret og produktionsverificeret i 4.0.287. Den efterfølgende driftspræcisering af 27. august 2026 gør Supabase-PAT'et behovsstyret i stedet for kalenderroteret.
 
 ## Baggrund
 
@@ -20,6 +20,7 @@ Ejeren har valgt den endelige arkitektur fra første dag og krævet en eksplicit
 8. `TRIP_STORAGE_MODE=supabase` er den eksplicitte rollback. Der findes ingen skjult automatisk fallback og ingen normal dual-write. Under rollback går nye writes og læsninger til Supabase; ældre D1-ture er bevaret, men kan være midlertidigt usynlige, indtil D1 er genåbnet. Ved tilbagevenden køres den idempotente migration igen før og efter skiftet.
 9. Ejerens turdata kan slettes på tværs af begge lagre gennem den eksplicit bekræftede, ikke-loggende driftskommando. D1 Time Travel kan fortsat bevare en slettet række i leverandørens syvdages gendannelsesvindue.
 10. Den normale deploy er manuel, kræver eksakt `main`, fuld `validate:source`, EU-shards/skema, privat Worker-verifikation, migration, Edge-deploy og ikke-skrivende slutkontrol. Windows Application Control må ikke svækkes; CI/browser er den godkendte kanal.
+11. `SUPABASE_ACCESS_TOKEN` er kun en management-credential til dette manuelle deploy-/migrations-/rollbackflow. Den offentlige Supabase Auth/Edge-runtime og D1-turlagringen må ikke afhænge af PAT'et. Et installeret PAT må udløbe uden rutinefornyelse eller udløbsvarsel. Før en konkret managementændring oprettes et kortlivet PAT gennem godkendt kanal, den fulde relevante kæde verificeres på eksakt `main`, og tokenet tilbagekaldes efter grøn verifikation.
 
 ## Kapacitet og driftsgrænser
 

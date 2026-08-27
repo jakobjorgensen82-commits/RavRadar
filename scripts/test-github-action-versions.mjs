@@ -12,7 +12,6 @@ const expected = new Map([
   ['actions/configure-pages', 'v6'],
   ['actions/upload-pages-artifact', 'v5'],
   ['actions/deploy-pages', 'v5'],
-  ['actions/github-script', 'v8'],
 ]);
 
 const files = [];

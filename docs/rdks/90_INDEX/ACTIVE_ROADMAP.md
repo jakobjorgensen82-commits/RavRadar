@@ -13,19 +13,23 @@
 - [x] Bestå bounded-retry-opfølgningens exact-head `33019805663`, merge PR #166 som `2d12c085`, privat Worker-grænse, idempotent 4/4-migration og D1-aktivering i `33019868542`.
 - [x] Bestå fuld frisk produktion `33019856228`, Pages-job `98351206091`, offentlig 210/673/420/2.100-verifikation og read-only kapacitetsmonitor `33021364240`.
 - [x] Sæt begge mindst-mulige Cloudflare-tokens til **No expiration**, udskift Supabase-PAT'et til udløb 25. august 2027 og bestå ende-til-ende-D1-verifikation `33024408547` før tilbagekaldelse af gamle PAT'er.
-- [x] Genbekræft auditadgangen payloadfrit i `33024621109` og tilføj et secret-frit GitHub-issue/mailvarsel fra 60 dage før PAT-udløb.
+- [x] Genbekræft auditadgangen payloadfrit i `33024621109` og verificér det daværende secret-frie GitHub-issue/mailvarsel.
 - [x] Bestå PR #169/exact-head `33025102301`, merge `1e402834`, manuel main-prøve `33025289153`, frisk produktion `33025210517`/Pages `98367528389` og offentlig fuld browseraudit.
+- [x] Erstat efter ejerens driftspræcisering kalenderrotationen med behovsstyret Supabase-PAT: normal drift må køre uden, udløbsvarslet pensioneres, og et kortlivet PAT oprettes kun til en konkret verificeret managementændring og tilbagekaldes bagefter.
 - [ ] Følg Supabase-banneret frem mod 9. september 2026; turlagerflytningen fjerner ikke Auth-/Edge-egress.
 
 Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikke.
 
-## P1 planlagt – intern, score-neutral Ravudsigten-sammenligning
+## P1 aktiv – intern, score-neutral Ravudsigten-sammenligning
 
-- [ ] Indsaml skånsomt offentligt synlige resultater fra Ravudsigten og RavRadar over flere sammenlignelige vejrsituationer.
+- [x] Opret intern analysejournal og registrér første tidsstemplede snapshot med aktuelle top-fem, alle synlige ikke-røde femdøgnssignaler, RavRadar-match og komponentforklaringer.
+- [ ] Fortsæt skånsom indsamling af offentligt synlige resultater fra Ravudsigten og RavRadar over flere sammenlignelige vejrsituationer.
 - [ ] Sammenlign sted, timing, varighed og styrke og behandl udledte regler som observerbare hypoteser, ikke som kendt intern logik.
 - [ ] Brug uafhængige tur-/fundobservationer som mulig fasit, når kvalitet og samtykke tillader det; modellernes indbyrdes enighed er ikke i sig selv validering.
 - [ ] Omgå ingen adgang, hent ingen privat kode, og bevar `scoreImpact=false`/`publicRuntime=false`.
 - [ ] Hold opgaven udelukkende i RDKS, roadmap og changelog; ingen app-, offentlig håndbogs-, ekspert-, admin- eller public-runtime-visning.
+
+Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
 ## P0 afsluttet – 4.0.286 rullende Candidate G-kontinuitet
 

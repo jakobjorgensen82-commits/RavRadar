@@ -1,6 +1,20 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-27 – 4.0.287 EU-turlager
+## AKTUELT ARBEJDSCHECKPOINT – 2026-08-27 – intern sammenligning og behovsstyret Supabase-PAT
+
+- Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/internal-ravudsigten-pat-policy-4.0.287`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- Offentlig 4.0.287 `rr-20260827000855-210` forbliver den senest verificerede baseline med 210/210 aktive zoner, befolket **Bedste områder** og komplet 210/673/420/2.100-kontrol.
+- En intern, forståelig og tidsstemplet RavRadar-/Ravudsigten-journal er oprettet i `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`. Første snapshot sammenholder begge top-fem, Ravudsigtens synlige ikke-røde femdøgnssignaler og nærmeste logiske RavRadar-zoner med H/T/R-komponenter.
+- Første snapshot viser både semantiske og fysiske forskelle, men er ikke en nøjagtighedsdom. Analysen beskriver ti årsagsfamilier og åbne hypoteser, herunder Hirtshals, Bakkebølle, missing ved Egholm/Vallensbæk og den foreløbige 31. august-divergens. Der ændres ingen score, Candidate G, vejr, geometri eller public runtime.
+- Sammenligningen er kun intern RDKS/roadmap/changelog, `scoreImpact=false` og `publicRuntime=false`. Ingen adgang er omgået, ingen privat kode er hentet, og emnet må ikke nå app, offentlig håndbog, ekspert-/adminflader eller offentlige prognosedata.
+- Ejeren har endeligt besluttet, at `SUPABASE_ACCESS_TOKEN` ikke skal kalenderfornyes. Normal Supabase Auth/Edge-runtime, login, turindsendelse, D1-lagring og daglig D1-monitor bruger ikke PAT'et; det installerede token må udløbe uden driftsafbrydelse eller varsel.
+- Det tidligere PAT-udløbsworkflow pensioneres. Workflowkontrakten låser, at kun det manuelle **Deploy RavRadar trip storage** må referere PAT'et. Ved en konkret Edge-deploy, migration eller rollback-deploy oprettes et kortlivet PAT gennem godkendt kanal, exact-main-kæden verificeres grønt, og tokenet tilbagekaldes derefter.
+- Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver åbent, fordi Auth, Edge og egress stadig bruger Supabase. Cloudflare-tokenpolitikken og pseudonym-secret-kontrakten ændres ikke.
+- De målrettede tests, RDKS-validering, exact-head source gate og eventuel PR-/merge-/produktionslukning skal registreres her, når de er gennemført. Indtil da er ændringerne en lokal kandidat, ikke en ny offentlig release.
+
+Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
+
+## HISTORISK PRODUKTIONSLUKKET CHECKPOINT – 2026-08-27 – 4.0.287 EU-turlager
 
 - Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/credential-expiry-guard-4.0.287`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
 - Ejeren kræver en færdig normalarkitektur fra første dag og en eksplicit Supabase-rollback. DEC-0082 vælger Supabase Auth/Edge plus ti EU-låste Cloudflare D1-shards.
@@ -17,7 +31,7 @@
 - Cloudflare-audit `33024621109`/`98362935528` beviste efter udløbsændringen fortsat ti EU-shards, 0 MB afrundet og 0 % forbrug uden turlæsning. Det nye **Warn before RavRadar credential expiry**-workflow har kun `issues: write`, ingen secrets og opretter/tildeler en GitHub-issue fra 60 dage før 25. august 2027. GitHub-maillevering for tildelte/omtalte issues er verificeret aktiveret.
 - PR #169 bestod exact-head `33025102301` på `ba8e8f03` og blev merged som `1e402834`. Manuel workflowprøve `33025289153` bestod på `main` og oprettede korrekt ingen issue endnu. Frisk produktion `33025210517` og Pages `98367528389` er grønne; offentlig `rr-20260827000855-210` bestod 4.0.287, 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle og 2.100 prognosevisninger med nul auditfejl.
 - Supabase-banneret om mulig begrænsning fra 9. september 2026 er stadig åbent. Turlagerflytningen stopper fremtidig turvækst i Postgres, men ikke Auth-/Edge-egress.
-- Næste drift: følg Supabase-banneret, behold daglig D1-monitor, reagér på GitHub-mailvarslet før PAT-udløb og brug kun den eksplicitte Supabase-rollback ved en verificeret D1-hændelse. Cloudflare-token roteres kun ved kompromittering eller rettighedsændring; pseudonym-secret må aldrig roteres blindt.
+- Daværende plan var at reagere på GitHub-mailvarslet før PAT-udløb. Den er erstattet af det øverste checkpoint: behold daglig D1-monitor, men opret kun et kortlivet Supabase-PAT ved en konkret managementændring. Brug kun den eksplicitte Supabase-rollback ved en verificeret D1-hændelse. Cloudflare-token roteres kun ved kompromittering eller rettighedsændring; pseudonym-secret må aldrig roteres blindt.
 - Ejeren ønsker en senere intern sammenligning af offentligt synlige Ravudsigten-resultater mod RavRadar. Den må dokumenteres i RDKS/roadmap/changelog, men har `scoreImpact=false`/`publicRuntime=false` og må ikke vises i app, offentlig håndbog, ekspert-/adminflader eller public runtime.
 
 Se DEC-0082. Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
