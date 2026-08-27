@@ -79,9 +79,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     )
     assert nearest.returncode == 0, nearest.stdout + nearest.stderr
     resolved = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
-    assert resolved["targetHour"] == NEXT_DMI_HOUR and resolved["partCount"] == 2
+    assert resolved["targetHour"] == AT and resolved["partCount"] == 2
     output_values = dict(line.split("=", 1) for line in github_output.read_text(encoding="utf-8").splitlines())
-    assert output_values == {"target_hour": NEXT_DMI_HOUR, "local_dmi_count": "1", "target_part_count": "2"}
+    assert output_values == {"target_hour": AT, "local_dmi_count": "1", "target_part_count": "2"}
+    assert NEXT_DMI_HOUR not in nearest.stdout, "A future DMI forecast hour must never become production time"
 
     full = run(folder, "--full-coast")
     assert full.returncode == 0, full.stdout + full.stderr
@@ -113,6 +114,9 @@ for marker in (
     "Bind production to resolved DMI current hour",
     "Inspect targeted Copernicus coverage after fresh DMI",
     "Fill only exact-hour DMI gaps from Copernicus",
+    "run-copernicus-current-pilot-with-retry.py",
+    "--attempts 2",
+    "--timeout-seconds 360",
     "--targets .cache/copernicus-current-targets.json",
     "Save targeted private Copernicus supplement",
 ):
@@ -120,5 +124,7 @@ for marker in (
 assert production.index("Update DMI bulk model cache") < production.index("Select exact-hour DMI gaps for targeted Copernicus supplement")
 assert production.index("Select exact-hour DMI gaps for targeted Copernicus supplement") < production.index("Bind production to resolved DMI current hour")
 assert production.index("Save targeted private Copernicus supplement") < production.index("Build public seven-day current history and controlled live selection")
+fill_block = production[production.index("Fill only exact-hour DMI gaps from Copernicus"):production.index("Save targeted private Copernicus supplement")]
+assert "python scripts/run-copernicus-current-pilot.py" not in fill_block, "Production must use the bounded process wrapper"
 
-print("OK: normal Copernicus collection targets only exact-hour DMI gaps; full coast is explicit and points are unchanged.")
+print("OK: normal Copernicus collection is causal, targets only DMI gaps, and leaves points unchanged.")

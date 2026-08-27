@@ -1,3 +1,13 @@
+## 4.0.289 – årsagstro produktion og robust genopretning (2026-08-27)
+
+- Forbyder, at en DMI-prognosetime efter den workflowlåste UTC-time bliver produktionstime; nærmeste fallbacktime vælges kun bagud inden for tre timer.
+- Giver målrettet Copernicus to procesisolerede forsøg med seks minutters hard timeout og 20 sekunders pause.
+- Gemmer et generisk hash-/modelbundet checkpoint med præcis 673 kompakte Candidate G-states før de sidste gates, uden vejr, scoreoutput, rå vektorer, koordinater eller private data.
+- Udvider komplet nødvisning til højst 72 timer, men aldrig efter egen prognosehorisont, så Candidate G's 48-timers genopbygning har et sikkert overlap.
+- Tilføjer ét automatisk retry efter fejlet, timeoutet eller før-start-fejlet schedule-run og et payloadfrit 45-minutters watchdog uden parallelle tunge builds; total GitHub-schedulerstilhed kræver fortsat ekstern overvågning.
+- Målrettede lokale tests er grønne; exact-head, frisk produktion og offentlig efterkontrol afventer. Se DEC-0085 og `CHANGELOG-4.0.289.md`.
+- Candidate G 20/50/30, fysik, DMI-først, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
 ## 4.0.288 – automatisk Candidate G-genopretning (2026-08-27)
 
 - Bevarer det seneste komplette, auditerede Candidate G-datasæt ved fejlet eller ufuldstændig ny datahentning og publicerer aldrig en halv ny runtime.

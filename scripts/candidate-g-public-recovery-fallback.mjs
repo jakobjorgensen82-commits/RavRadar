@@ -14,7 +14,7 @@ export const CANDIDATE_G_RECOVERY_FALLBACK_POLICY = Object.freeze({
   schemaVersion: 1,
   expectedZoneCount: 210,
   expectedPartCount: 673,
-  maximumAgeHours: 48,
+  maximumAgeHours: 72,
   cacheConditionsName: 'public-conditions.json',
   cacheDetailsName: 'public-condition-details.json',
   cacheDescriptorName: 'descriptor.json',
@@ -65,6 +65,9 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   const age = hoursOld(generatedAt, nowMs);
   if (!Number.isFinite(age) || age < 0) errors.push('GENERATED_AT_INVALID');
   if (enforceAge && age > policy.maximumAgeHours) errors.push('FALLBACK_TOO_OLD');
+  const validUntilMs = Date.parse(descriptor?.validUntil || '');
+  if (!Number.isFinite(validUntilMs)) errors.push('FORECAST_VALID_UNTIL_INVALID');
+  if (enforceAge && Number.isFinite(validUntilMs) && nowMs > validUntilMs) errors.push('FALLBACK_FORECAST_EXPIRED');
   const conditionsText = compactJson(conditions);
   const detailsText = compactJson(details);
   if (descriptor?.publicConditionsSha256 !== sha256Text(conditionsText)) errors.push('STARTUP_HASH_MISMATCH');
@@ -209,7 +212,7 @@ export async function stageRecoveryFallback({
   }
 
   const selected = selectNewestRecoveryFallbackCandidate(candidates, { nowMs });
-  if (!selected) throw new Error('Intet komplet, auditeret Candidate G-datasæt under 48 timer kunne klargøres til nødvisning.');
+  if (!selected) throw new Error('Intet komplet, auditeret Candidate G-datasæt inden for 72 timer og egen prognosehorisont kunne klargøres til nødvisning.');
   const cacheRefreshed = !cachedBundle
     || cachedBundle.descriptor?.publicConditionsSha256 !== selected.bundle.descriptor.publicConditionsSha256
     || cachedBundle.descriptor?.publicConditionDetailsSha256 !== selected.bundle.descriptor.publicConditionDetailsSha256;

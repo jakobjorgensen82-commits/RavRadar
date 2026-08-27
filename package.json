@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.288",
+  "version": "4.0.289",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -10,7 +10,7 @@
     "audit:deployed-zone-weather": "node scripts/audit-deployed-zone-weather.mjs",
     "audit:public-startup-payload": "node scripts/audit-public-startup-payload.mjs",
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
-    "test:candidate-g-public-recovery": "node scripts/test-candidate-g-gap-checkpoint-recovery-4.0.288.mjs && node scripts/test-candidate-g-public-recovery-fallback-4.0.288.mjs && node scripts/test-public-recovery-fallback-data-service-4.0.288.mjs",
+    "test:candidate-g-public-recovery": "node scripts/test-candidate-g-gap-checkpoint-recovery-4.0.288.mjs && node scripts/test-candidate-g-continuation-checkpoint-4.0.289.mjs && node scripts/test-candidate-g-public-recovery-fallback-4.0.288.mjs && node scripts/test-public-recovery-fallback-data-service-4.0.288.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",
     "validate:data": "npm run test:local-weather-snapshot && node scripts/validate-data.mjs",
     "test:score": "node scripts/test-score-engine.mjs && node scripts/audit-ravscore-sensitivity.mjs --self-test && node scripts/audit-ravscore-canonical-scenarios.mjs --self-test && node scripts/test-phase-d-wave-process-candidate.mjs && python scripts/select-ravscore-historical-events.py --self-test && node scripts/test-ravscore-regime-memory.mjs && node scripts/test-ravscore-mobilisation-memory.mjs && node scripts/test-ravscore-candidate-g.mjs && node scripts/test-ravscore-candidate-g-state-pipeline.mjs && node scripts/test-ravscore-candidate-g-central-runtime.mjs && node scripts/test-ravscore-profile-switch-4.0.260.mjs && node scripts/audit-ravscore-candidate-g-public-shadow.mjs --self-test && node scripts/audit-ravscore-candidate-g-mobilisation-readiness.mjs --self-test && node scripts/audit-ravscore-candidate-g-release-readiness.mjs --self-test && node scripts/audit-ravscore-mode-huntability.mjs --self-test && node scripts/analyze-ravscore-history-track-ablation.mjs --self-test && node scripts/test-active-wave-approach-4.0.241.mjs && node scripts/test-zone-ranking-broad-support-4.0.252.mjs",
@@ -141,8 +141,8 @@
     "build:current-provenance": "node scripts/enrich-current-provenance.mjs",
     "build:live-current-pilot": "python scripts/build-live-current-pilot.py",
     "test:copernicus-cache-preservation": "node scripts/test-copernicus-cache-preservation-4.0.232.mjs",
-    "test:copernicus-target-registry": "python scripts/test-copernicus-target-registry-4.0.244.py",
-    "test:copernicus-heartbeat": "python scripts/test-copernicus-heartbeat-4.0.232.py",
+    "test:copernicus-target-registry": "python scripts/test-copernicus-target-registry-4.0.244.py && python scripts/test-copernicus-bounded-retry-4.0.289.py",
+    "test:copernicus-heartbeat": "python scripts/test-copernicus-heartbeat-4.0.232.py && node scripts/test-production-watchdog-4.0.289.mjs",
     "test:production-hour-lock": "node scripts/test-production-hour-lock-4.0.236.mjs",
     "test:copernicus-shadow-retention": "python scripts/test-copernicus-shadow-retention-4.0.232.py",
     "test:live-current-pilot": "python scripts/test-live-current-pilot-4.0.232.py && node scripts/test-live-current-pilot-4.0.232.mjs",

@@ -1,15 +1,15 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.288",
+  "handbookVersion": "4.0.289",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-26",
   "sections": [
     {
-      "id": "candidate-g-automatic-gap-recovery-4-0-288",
-      "chapter": "72",
-      "title": "Automatisk Candidate G-genopretning",
-      "summary": "Et fejlet nyt datasæt kan ikke erstatte den seneste komplette prognose; RavRadar viser den verificerede helhed i højst 48 timer, mens frisk state genopbygges.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Hvis en ny datahentning fejler eller er ufuldstændig, fortsætter RavRadar på det seneste komplette og auditerede datasæt i stedet for at gøre zonerne sorte.</div><div class=\"handbook-stack\"><p><strong>Ét datasæt ad gangen:</strong> Startvisning, områdedetaljer, <em>Bedste områder</em> og <em>5-dages RavRadar</em> kommer fra samme dataset. Gamle og nye data blandes aldrig.</p><p><strong>Tydelig og begrænset nøddrift:</strong> Siden viser tidspunkt, alder og en klar besked om, at dataene ikke er aktuelle. Nødvisningen udløber hårdt efter 48 timer og går derefter fail-safe.</p><p><strong>Ærlig genopbygning:</strong> Et verificeret hul over tre timer starter Candidate G igen fra de virkelige prøver efter hullet. Manglende timer opfindes, interpoleres eller backfilles ikke. Når alle 673 kystdele er <code>READY</code> og den nye runtime består predeploy-audit, skifter siden atomisk.</p><p><strong>Uændret faglig model:</strong> Candidate G 20/50/30, +10/-8-/13-timersfysikken, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0084</code>.</p></div>"
+      "id": "causal-production-bounded-recovery-4-0-289",
+      "chapter": "73",
+      "title": "Årsagstro produktion og robust genopretning",
+      "summary": "RavRadar vælger aldrig en fremtidig produktionstime, bevarer kompakt recoveryfremdrift og viser kun et komplet fallback inden for 72 timer og dets egen prognosehorisont.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En fejlet provider eller slutkontrol må ikke gøre RavRadar sort, miste ægte Candidate G-fremdrift eller flytte produktionen ind i en fremtidig prognosetime.</div><div class=\"handbook-stack\"><p><strong>Årsagstro tid:</strong> Hvis den låste DMI-time mangler strøm, må produktionen kun vælge den bedst dækkede nærmeste time bagud inden for tre timer. Copernicus udfylder kun de eksakte huller og får højst to seksminutters forsøg.</p><p><strong>Kompakt checkpoint:</strong> Efter runtimebygningen gemmes præcis 673 hash- og modelbundne Candidate G-states. Vejr, scoreoutput, rå strømvektorer, koordinater, geometri, land-/vandpunkter og private data gemmes ikke.</p><p><strong>Ét komplet fallback:</strong> Startvisning, områdedetaljer, <em>Bedste områder</em> og <em>5-dages RavRadar</em> kommer fra samme auditerede dataset. Det må højst bruges i 72 timer og aldrig efter sin egen seneste prognosetime.</p><p><strong>Kontrolleret orkestrering:</strong> En fejlet, timeoutet eller før-start-fejlet planlagt kørsel får ét genforsøg. Et payloadfrit watchdog reagerer først efter 45 minutters stilhed og kun uden aktiv produktion; tunge builds kører aldrig parallelt. Watchdoget er internt i GitHub og kan ikke alene opdage total stilhed i hele GitHubs scheduler.</p><p><strong>Uændret faglig model:</strong> Candidate G 20/50/30, +10/-8-/13-timersfysikken, DMI-først, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0085</code>.</p></div>"
     },
     {
       "id": "hybrid-auth-eu-trip-storage-4-0-287",

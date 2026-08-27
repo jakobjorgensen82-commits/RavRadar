@@ -92,7 +92,7 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested]', 'python3 scripts/check-copernicus-current-hour.py', 'target_hour: ${{ steps.cache-state.outputs.target_hour }}', 'inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}', 'validate-copernicus-current-pilot.yml/dispatches']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'python3 scripts/check-copernicus-current-hour.py', 'target_hour: ${{ steps.cache-state.outputs.target_hour }}', 'inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}', 'validate-copernicus-current-pilot.yml/dispatches', 'retry-failed-production:', 'production-watchdog:', 'node scripts/check-production-watchdog.mjs']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
@@ -144,6 +144,7 @@ for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
   gapCheckpoint: text.indexOf('name: Inspect failed-run Candidate G gap checkpoint recovery'),
+  continuationRestore: text.indexOf('name: Restore latest compact Candidate G continuation checkpoint'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
   fallbackStage: text.indexOf('name: Stage audited last verified Candidate G public fallback'),
@@ -153,6 +154,8 @@ const positions = {
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
+  continuationBuild: text.indexOf('name: Build compact Candidate G continuation checkpoint'),
+  continuationSave: text.indexOf('name: Save compact Candidate G continuation checkpoint before final gates'),
   publicAudit: text.indexOf('name: Audit actual Candidate G public runtime before deploy'),
   fallbackPublish: text.indexOf('name: Publish bounded Candidate G recovery fallback when current runtime is warming up'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
@@ -243,6 +246,18 @@ for (const marker of [
 ]) {
   if (!gapCheckpointSection.includes(marker)) throw new Error(`Candidate G-gapcheckpointet mangler ${marker}`);
 }
+for (const marker of [
+  'uses: actions/cache/restore@v6',
+  'candidate-g-continuation-checkpoint-v1-',
+  'node scripts/candidate-g-continuation-checkpoint.mjs',
+  '--restore',
+  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+]) {
+  if (!gapCheckpointSection.includes(marker)) throw new Error(`Det generiske Candidate G-checkpoint mangler ${marker}`);
+}
+if (!(positions.gapCheckpoint < positions.continuationRestore && positions.continuationRestore < positions.dmiBulk)) {
+  throw new Error('Det generiske Candidate G-checkpoint skal anvendes efter engangsrecovery og før frisk DMI.');
+}
 const fallbackStageSection = text.slice(positions.fallbackStage, positions.dmiBulk);
 for (const marker of [
   'uses: actions/cache/restore@v6',
@@ -268,6 +283,20 @@ for (const marker of [
 }
 if (fallbackPublishBlock.includes('continue-on-error')) {
   throw new Error('Candidate G-nødpubliceringen må ikke skjule fejl.');
+}
+const continuationSaveSection = text.slice(positions.continuationBuild, positions.publicAudit);
+for (const marker of [
+  'node scripts/candidate-g-continuation-checkpoint.mjs',
+  '--save',
+  'uses: actions/cache/save@v6',
+  'candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  if (!continuationSaveSection.includes(marker)) throw new Error(`Candidate G-checkpointbevaringen mangler ${marker}`);
+}
+if (!(positions.runtime < positions.continuationBuild
+  && positions.continuationBuild < positions.continuationSave
+  && positions.continuationSave < positions.publicAudit)) {
+  throw new Error('Kompakt Candidate G-state skal gemmes umiddelbart efter runtimebygning og før de sidste gates.');
 }
 const beforeWeather = text.slice(0, positions.weather);
 if (/run:\s+npm run validate(?:\n|$)/.test(beforeWeather) || beforeWeather.includes('npm run release:gate')) {

@@ -30,7 +30,8 @@ const manifest = {
     status: 'active-last-verified',
     datasetId: fallbackDatasetId,
     generatedAt: '2026-08-27T01:34:48.669Z',
-    maximumAgeHours: 48,
+    validUntil: '2026-08-30T00:00:00.000Z',
+    maximumAgeHours: 72,
     conditionsPath: './candidate-g-last-verified-public-conditions.json',
     conditionDetailsPath: './candidate-g-last-verified-public-condition-details.json',
   },
@@ -67,16 +68,30 @@ assert.deepEqual(requests.slice(0, 2), [fallbackConditionsUrl, fallbackDetailsUr
 service.clearDataMemoryCache();
 documents.set(fallbackConditionsUrl, {
   datasetId: fallbackDatasetId,
-  generatedAt: '2026-08-25T00:00:00.000Z',
+  generatedAt: '2026-08-23T00:00:00.000Z',
   zones: { stale: {} },
 });
-manifest.recoveryFallback.generatedAt = '2026-08-25T00:00:00.000Z';
+manifest.recoveryFallback.generatedAt = '2026-08-23T00:00:00.000Z';
 const primaryAfterExpiry = await service.loadConditions({ manifest });
 assert.equal(primaryAfterExpiry.datasetId, primaryDatasetId);
 assert.equal(primaryAfterExpiry.recoveryFallbackActive, undefined);
 assert.equal(primaryAfterExpiry.available, true);
 assert.equal(warnings.length, 1);
 assert.match(warnings[0], /udløbet/);
+
+service.clearDataMemoryCache();
+documents.set(fallbackConditionsUrl, {
+  datasetId: fallbackDatasetId,
+  generatedAt: '2026-08-27T09:00:00.000Z',
+  zones: { forecastExpired: {} },
+});
+manifest.recoveryFallback.generatedAt = '2026-08-27T09:00:00.000Z';
+manifest.recoveryFallback.validUntil = '2026-08-27T09:59:59.000Z';
+const primaryAfterForecastExpiry = await service.loadConditions({ manifest });
+assert.equal(primaryAfterForecastExpiry.datasetId, primaryDatasetId);
+assert.equal(primaryAfterForecastExpiry.recoveryFallbackActive, undefined);
+assert.equal(warnings.length, 2);
+assert.match(warnings[1], /prognosehorisont/);
 
 Date.now = realNow;
 console.warn = realWarn;
