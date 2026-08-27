@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 aktiv – 4.0.288 automatisk Candidate G-genopretning
+## P0 afsluttet – 4.0.288 automatisk Candidate G-genopretning
 
 - [x] Bevar det seneste komplette, auditerede datasæt ved fejlhentning og bind startup/detaljer/ranglister til samme dataset.
 - [x] Begræns tydeligt markeret nødvisning til 48 timer og stop derefter fail-safe.
@@ -8,9 +8,9 @@
 - [x] Lås engangsrecoveryen til det eksakte 09-checkpoint og kopier kun kompakt state.
 - [x] Bestå målrettede kode- og artifactsimulationer.
 - [x] Bevis den korrigerede produktionsrækkefølge gennem PR #178 og ret kun warmup-audittens modstridende råscorekrav; eksakt 3635-artifact og fallbackpublicering er grønne.
-- [ ] Bestå version/RDKS, exact-head, merge, fuld frisk produktion og offentlig funktionskontrol.
+- [x] Bestå version/RDKS, PR #179 exact-head `33069307854`, merge `653a9811`, fuld frisk produktion `33069384084`, Pages og offentlig funktionskontrol uden browserfejl.
 
-P1-oversættelse og Spørg RavRadar afventer P0-lukning. Se DEC-0084.
+P1-oversættelse og Spørg RavRadar kan genoptages efter konkret ejerscope. Se DEC-0084.
 
 ## P0 afsluttet – 4.0.287 EU-turlager og Supabase-rollback
 

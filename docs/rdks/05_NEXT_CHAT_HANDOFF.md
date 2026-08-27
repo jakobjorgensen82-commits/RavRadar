@@ -1,16 +1,17 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv P0 – automatisk Candidate G-genopretning i 4.0.288
+## Afsluttet P0 – produktionsverificeret automatisk Candidate G-genopretning i 4.0.288
 
 - Offentlig 4.0.287-baseline `rr-20260827013448-210` er komplet ved 00 UTC, men browseren kasserer den efter otte timer. Derfor blev zoner sorte, og **Bedste områder** samt **5-dages RavRadar** tomme.
 - Fejlkørsel `33059522170` nåede 09 UTC med et reelt nitimers hul. Candidate G afviste korrekt alle 673 states; det fejlede checkpoint blev ikke deployet, så næste run kunne ikke fortsætte fra suffixen.
 - Kandidaten publicerer kun det seneste hele, auditerede dataset som tydeligt markeret nødvisning i højst 48 timer. Den nye warmup-runtime ligger separat, og der skiftes først atomisk ved 673/673 `READY` og grøn faktisk runtimeaudit.
 - Et hul over tre timer genstarter fra reelle prøver efter hullet. Ingen interpolation, backfill eller opdigtet strøm er tilladt. Et hul på højst tre timer følger den eksisterende native-kadencekontrakt.
 - Engangsrecoveryen er låst til det kendte 09-checkpoint og højst tre timers genoptagelse. Den faktiske 673-deles prøve kopierede ingen vejr-, score- eller rå vektordata.
-- Lokal `validate:source` inklusive releasegate er grøn, og separat geodatakontrol viser kun topversionen 4.0.287 → 4.0.288. Bestå exact-head, merge, frisk produktion og offentlig browserkontrol, og opdatér derefter kandidatmarkører til produktionsverificeret evidens.
+- Lokal releasegate og separate kode-/artifactprøver er grønne, og geodatakontrollen viser kun topversionen 4.0.287 → 4.0.288.
 - PR #176/exact-head `33066322196` er merged som `16ad8300`. Produktion `33066416034` beviste den eksakte 09-recovery, men stoppede før DMI/deploy ved korrekt fallbackaudit, fordi checkpointet var indlæst før fallbackkopien. Opfølgningen flytter kun checkpointblokken efter den sunde 00-fallbackstage og bevarer kildegaten før begge.
-- PR #178/exact-head `33066897710` er merged som `5f9ee093`. Produktion `33066980965` nåede gennem fallbackstage, checkpoint, DMI/Copernicus og frisk runtime, men den sidste audit havde et modstridende krav om rå kandidatscore under national fail-closed warmup. Artifact `RavRadar-support-3635` består den snævert korrigerede audit på 210/673 med 673 accepterede states, nul replaymismatch og 0/673 `READY`; den efterfølgende lokale publiceringsprøve aktiverer det komplette 00-fallbackdataset. Bestå nu ny exact-head, merge, produktion og offentlig browserkontrol.
-- P1-oversættelse og Edge-implementering af Spørg RavRadar må først fortsætte efter dette P0. Se DEC-0084.
+- PR #178/exact-head `33066897710` er merged som `5f9ee093`. Produktion `33066980965` nåede gennem fallbackstage, checkpoint, DMI/Copernicus og frisk runtime, men den sidste audit havde et modstridende krav om rå kandidatscore under national fail-closed warmup. Artifact `RavRadar-support-3635` består den snævert korrigerede audit på 210/673 med 673 accepterede states, nul replaymismatch og 0/673 `READY`; den efterfølgende lokale publiceringsprøve aktiverede det komplette 00-fallbackdataset.
+- PR #179/exact-head `33069307854`, merge `653a9811` og produktion `33069384084` er grønne gennem build `98507461295` og Pages `98512392768`. Live primær `rr-20260827121030-210` er 0/673 `READY`, mens fallback `rr-20260827013448-210` er hashverificeret 210/673/1.346 og højst 48 timer gammel.
+- Offentlig browserkontrol viser 210 farvede zoner uden sorte zoner, fem **Bedste områder**, fem færdigberegnede prognosedage, fungerende zonedetaljer, tydelig nødtekst og nul konsolfejl/advarsler. P0 er lukket; P1 kan genoptages efter konkret ejerscope. Se DEC-0084.
 
 ## Aktiv afgrænset leverance – gratis Spørg RavRadar-evals
 
@@ -19,7 +20,7 @@
 - Den versionsbundne `rav-assistant-public-v1`-videnspakke og 45 balancerede DA/DE/EN-cases er oprettet. Offline self-test er grøn og adskiller fast afvisning, lokal deterministisk routing og remote-kandidat.
 - Live-eval er eksplicit opt-in og kræver `GEMINI_API_KEY` plus `GEMINI_FREE_TIER_CONFIRMED=1`. Nøglen er installeret lokalt uden Git/output. `gemini-3.7-flash` gav fem 12/30-sekunders-timeouts; `gemini-3.5-flash-lite`/low bestod den endelige remote-kandidatsuite 27/27 med median 1.329 ms og p95 1.896 ms.
 - DEC-0083 vælger derfor Flash-Lite til næste, fortsat deaktiverede implementeringskandidat. Næste trin efter konkret ejerbekræftelse er provider-neutral integration i den eksisterende Edge med server-side credential, struktureret validering, CORS/rate limit/timeout, lokal fallback og rollback.
-- Offentlig baseline forbliver produktionsverificeret 4.0.287 og local-only. Beskyttet rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- Spørg RavRadars versionsbundne viden/evalgrundlag forbliver 4.0.287 og local-only, indtil det afgrænsede P1-scope bekræftes; den offentlige app er produktionsverificeret i 4.0.288. Beskyttet rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
 
 ## Nyt planlagt P1-spor – flersproget UI og Spørg RavRadar
 
@@ -32,7 +33,7 @@
 - Start næste opgave fra ren `main` efter dokumentations-PR'en. Læs AGENTS.md og hele den obligatoriske startkæde før analyse. Brug Sol/Høj til assistentarkitektur/evals/modelvalg og Sol/Ekstra høj til tværgående slutvalidering.
 - Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er fortsat beskyttede og må ikke berøres.
 
-## Produktionsverificeret 4.0.287 – aktuelt udgangspunkt
+## Produktionsverificeret 4.0.287 – lagerarkitekturens udgangspunkt
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
 - Lokal kontrakt er grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og eksplicit Supabase-rollback.

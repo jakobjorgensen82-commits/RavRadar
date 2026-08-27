@@ -1,12 +1,14 @@
 # RavRadar 4.0.288 – automatisk Candidate G-genopretning
 
-## Kandidatstatus
+## Produktionsstatus
 
-4.0.288 er implementeret og har bestået målrettede tests samt lokal `validate:source` inklusive releasegate. Exact-head-, produktions- og offentlig funktionsverifikation afventer.
+4.0.288 er produktionsverificeret. PR #179 bestod exact-head `33069307854`, blev merged som `653a9811`, og produktion `33069384084` bestod frisk data, faktisk runtimeaudit, fallbackpublicering, fuld validering, releasegate, Supabase-sync, Pages-artifact og deploy.
 
 PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Første produktion `33066416034` gendannede den kompakte 09-state, men stoppede sikkert før DMI/deploy, fordi fallbackkopien blev taget efter stateændringen. Opfølgningen tager den komplette 00-fallback først og indlæser derefter 09-checkpointet.
 
 PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` gennemførte den korrigerede rækkefølge og frisk runtime, men stoppede sikkert før deploy på et modstridende auditkrav om rå score under 0/673 `READY`. Den snævre rettelse bevarer de fulde scorekrav ved `READY` og accepterer under warmup kun `available=false`, `score=null`, en entydig fejlårsag og en fortsat lukket offentlig score. Det eksakte supportartifact og den efterfølgende fallbackpubliceringsprøve er grønne.
+
+Live primær `rr-20260827121030-210` modner separat med 0/673 `READY`, mens fallback `rr-20260827013448-210` leverer 210 zoner, 673 dele og 1.346 modeevalueringer med matchende startup-/detaljehashes. Offentlig kontrol viser 210 farvede zoner, fem **Bedste områder**, fem prognosedage og fungerende områdedetaljer uden browserfejl samt den tydelige nødtekst.
 
 ## Ændringer
 

@@ -1,6 +1,6 @@
-# Implementeringsstatus – produktionsverificeret 4.0.287
+# Implementeringsstatus – produktionsverificeret 4.0.288
 
-## Aktiv P0-kandidat – automatisk Candidate G-genopretning i 4.0.288
+## Produktionsverificeret P0 – automatisk Candidate G-genopretning i 4.0.288
 
 - [x] Afgræns hændelsen til en komplet, men browserafvist 00-runtime og et korrekt fail-closed 09-build med 673 `WINDOW_HAS_TIME_GAP`.
 - [x] Bevar det seneste komplette Candidate G-datasæt atomisk til startup, detaljer, rangliste og femdøgnsvisning i højst 48 timer med tydelig aktualitetsadvarsel.
@@ -14,7 +14,7 @@
 - [x] Flyt fallbackstage før checkpointindlæsning, så den komplette 00-runtime auditeres/kopieres før den hydrerede state bliver warmup.
 - [x] Bestå PR #178 exact-head `33066897710`, merge `5f9ee093` og produktion frem til den faktiske 210/673-runtime; dokumentér det sikre stop `33066980965` på auditkravet om kandidatscore under 0/673 `READY`.
 - [x] Ret auditten snævert, så `READY` fortsat kræver score/bidrag/fysisk gate, mens warmup kun accepterer en entydigt utilgængelig rå mode uden score og en fortsat lukket offentlig mode. Det eksakte `RavRadar-support-3635` består med 673 accepterede states og nul replaymismatch, og fallbackpublicering er lokalt verificeret.
-- [ ] Bestå exact-head sourcegate, merge, fuld frisk produktion og offentlig browserkontrol af zoner, **Bedste områder**, **5-dages RavRadar** og nødteksten.
+- [x] Bestå PR #179 exact-head `33069307854`, merge `653a9811`, fuld frisk produktion `33069384084`, build `98507461295`, Pages `98512392768` og offentlig browserkontrol af 210 farvede zoner, fem **Bedste områder**, fem prognosedage, zonedetaljer og nødteksten uden browserfejl.
 
 Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0084.
 

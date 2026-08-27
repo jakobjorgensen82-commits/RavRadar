@@ -8,10 +8,12 @@
 4. Ejeren krævede både størst mulig akut gendannelse og en permanent løsning, hvor én fejlhentning ikke vælter systemet.
 5. DEC-0084 låser et helt auditeret fallbackdataset i højst 48 timer med klar aktualitetsadvarsel, ingen blanding og atomisk skift ved 673/673 `READY`.
 6. Huller over tre timer genstarter fra reelle suffixprøver uden interpolation/backfill. Et eksakt hash- og tidslåst 09-checkpoint kan redde op til tre timers modning uden at kopiere vejr, scores, rå vektorer eller private data.
-7. Målrettede tests og dataminimerede virkelige artifactsimulationer er grønne. Exact-head, produktion og offentlig verifikation afventer.
+7. Målrettede tests og dataminimerede virkelige artifactsimulationer er grønne.
 8. PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` gendannede 09-state, men stoppede sikkert før DMI/deploy, fordi fallbackstage lå efter checkpointændringen; opfølgningen vender kun disse to sikre trin.
 9. PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` beviste den korrigerede rækkefølge og frisk runtime, men stoppede før deploy, fordi auditten krævede rå score samtidig med lovlig 0/673 `READY` fail-closed warmup.
 10. Den snævre auditrettelse kræver stadig score/bidrag/fysisk gate ved `READY`, men kræver under warmup en entydigt utilgængelig rå mode uden score samt lukket offentlig mode. Det eksakte artifact består 210/673 uden replaymismatch, og fallbackpubliceringen vælger det komplette 00-datasæt.
+11. PR #179 bestod exact-head `33069307854`, blev merged som `653a9811`, og produktion `33069384084`/Pages `98512392768` gennemførte hele kæden.
+12. Live fallback `rr-20260827013448-210` er hashverificeret 210/673/1.346 mod separat primær `rr-20260827121030-210`. Browseren viser 210 farvede zoner, fem **Bedste områder**, fem prognosedage, fungerende detaljer, tydelig nødtekst og nul konsolfejl/advarsler. 4.0.288 er produktionsverificeret.
 
 ## 2026-08-27 – gratis Spørg RavRadar-forundersøgelse
 

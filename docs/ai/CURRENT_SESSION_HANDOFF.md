@@ -1,19 +1,21 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-CHECKPOINT – 2026-08-27 – automatisk Candidate G-genopretning
+## AFSLUTTET P0-CHECKPOINT – 2026-08-27 – produktionsverificeret automatisk Candidate G-genopretning
 
 - Seneste komplette offentlige baseline er fortsat `rr-20260827013448-210` ved 00 UTC med 210 zoner og 673/673 `READY`. En senere kørsel `33059522170` byggede 09 UTC efter et nitimers hul og stoppede korrekt med 673 `WINDOW_HAS_TIME_GAP`; den blev ikke deployet.
 - Den sorte zonevisning samt tomme **Bedste områder** og **5-dages RavRadar** skyldes, at den offentlige datalæser kasserer hele den komplette 00-runtime efter otte timer. Det efterfølgende forkastede dataset-id gav desuden en misvisende blandingsfejl i detaljelaget.
 - 4.0.288-kandidaten bevarer ét komplet, auditeret fallbackdataset i højst 48 timer med tydelig **ikke aktuelle data**-advarsel. Startup, detaljer, rangliste og femdøgnsvisning bruger samme dataset; der blandes aldrig gammelt og nyt.
 - Candidate G genstarter efter et verificeret hul over tre timer fra den reelle sammenhængende suffix og modner i baggrunden uden interpolation eller backfill. Først ved 673/673 `READY` og grøn faktisk runtimeaudit fjernes fallbacken atomisk.
 - En engangsrecovery er låst til workflow `33059522170`, artifact `RavRadar-support-3633`, 09 UTC, 673 dele, eksakt statehash og højst tre timers genoptagelse. Den kopierer kun kompakt state, aldrig vejr, scores, rå vektorer, koordinater eller private data.
-- Målrettede tests, dataminimerede prøver mod de virkelige 00/09-artifacts og lokal `validate:source` inklusive releasegate er grønne. Versionssynkroniseringen ændrer kun topversionen i de to beskyttede geodatafiler. Exact-head, merge, frisk produktion og offentlig browserkontrol udestår; kald ikke 4.0.288 produktionsverificeret endnu.
+- Målrettede tests, dataminimerede prøver mod de virkelige 00/09-artifacts, lokal releasegate og GitHubs fulde exact-head-/produktionskæde er grønne. Versionssynkroniseringen ændrer kun topversionen i de to beskyttede geodatafiler.
 - PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Første produktion `33066416034` gendannede den kompakte 09-suffix korrekt, men stoppede sikkert før DMI/deploy, fordi fallbackgrundlaget først blev auditeret bagefter og derfor så warmup-staten. Opfølgningen låser rækkefølgen: auditér/kopiér komplet 00-fallback før 09-state indlæses.
 - PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` beviste den korrigerede rækkefølge, 673/673 checkpointrecovery og frisk DMI/Copernicus/runtime, men stoppede før deploy, fordi public-shadow-auditten stadig krævede en rå kandidatscore i en lovlig `0 READY / 673 WARMUP` fail-closed runtime. Den snævre auditrettelse kræver fortsat score, bidrag og fysisk gate ved `READY`; ved warmup tillades kun en entydigt utilgængelig rå mode uden score, og den offentlige mode skal fortsat være lukket.
-- Det eksakte supportartifact `RavRadar-support-3635` består den rettede audit med 210/210 zoner, 673/673 dele, 673 accepterede states, nul replaymismatch og 0/673 `READY`; en lokal publiceringsprøve aktiverer derefter den verificerede fallback `rr-20260827013448-210` mod primær `rr-20260827113739-210`. Ny exact-head/merge/produktion og offentlig browserkontrol udestår.
+- Det eksakte supportartifact `RavRadar-support-3635` består den rettede audit med 210/210 zoner, 673/673 dele, 673 accepterede states, nul replaymismatch og 0/673 `READY`; en lokal publiceringsprøve aktiverede derefter den verificerede fallback `rr-20260827013448-210` mod primær `rr-20260827113739-210`.
+- PR #179 bestod exact-head `33069307854` og blev merged som `653a9811`. Produktion `33069384084`/build `98507461295`/Pages `98512392768` bestod frisk DMI/Copernicus, faktisk 210/673-audit, fallbackpublicering, fuld `validate`, releasegate, Supabase-sync, artifact og deploy.
+- Live manifest `rr-20260827121030-210` holder primær 0/673 `READY` separat og vælger fallback `rr-20260827013448-210` med 210 zoner, 673 dele, 673 `READY`, 1.346 modeevalueringer, 48-timersgrænse og to matchende SHA-256-hashes. Browseren viser 210 farvede zoner uden sorte zoner, fem **Bedste områder**, fem udfyldte prognosedage, fungerende zonedetaljer, den tydelige nødtekst og nul konsolfejl/advarsler. 4.0.288 er produktionsverificeret.
 - Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte. Candidate G 20/50/30, fysik, vejrværdier, normal sortering og konto-/turdata ændres ikke. Se DEC-0084.
 
-Dette P0-spor går foran de planlagte P1-spor om oversættelse og Spørg RavRadar. Brug Sol/Ekstra høj gennem slutvalidering og produktion.
+P0-sporet er lukket. De planlagte P1-spor om oversættelse og Spørg RavRadar kan genoptages i den ejerbekræftede rækkefølge; bred implementering kræver fortsat konkret scopebekræftelse.
 
 ## AKTUELT P1-CHECKPOINT – 2026-08-27 – gratis Spørg RavRadar-modelvalg
 
