@@ -1,5 +1,22 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT PLANLÆGNINGSCHECKPOINT – 2026-08-27 – flersproget offentlig UI og Spørg RavRadar
+
+- Ejeren har godkendt, at to nye P1-spor registreres i roadmapet. Dette checkpoint planlægger arbejdet; det implementerer ingen ny offentlig funktion, ændrer ingen produktionsdata og ændrer ikke den produktionsverificerede 4.0.287-baseline nedenfor.
+- Det første spor er én central oversættelsesarkitektur til dansk, tysk og engelsk. Dansk er standard ved første besøg; et tilgængeligt sprogvalg øverst viser flag og tydelige sprognavne, og valget huskes lokalt. Der må ikke bygges tre kopier af hjemmesiden.
+- Første leverance omfatter hovedside, aktuelle prognoser, femdøgnsprognoser, områdevindue, konto, login og turformularer. Ejerens godkendte størrelsesorden er cirka 4–8 aktive timer.
+- Den komplette offentlige leverance omfatter desuden **Om RavRadar**, hele den offentlige **Grundbog i ravjagt** og **Spørg RavRadar**. Ejerens godkendte samlede størrelsesorden er cirka 8–16 aktive timer.
+- Datoer, klokkeslæt, statusser, fejl- og tilgængelighedstekster samt dynamiske RavScore-forklaringer skal følge sproget. Dynamisk tekst skal bruge stabile betydningsnøgler og parametre med sikker dansk fallback; stednavne og egennavne bevares. Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere udvider scopet.
+- Oversættelsesarbejdet må ikke ændre RavScore, vejrdata, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Det kræver målrettede sprog-, fallback-, HTML-sikkerheds-, konto-/tur-, responsiv header- og browserregressioner på alle tre sprog.
+- Det andet spor er en faglig og teknisk modernisering af **Spørg RavRadar**. Den nuværende viden skal kontrolleres mod Candidate G, de aktuelle offentlige scoreforklaringer, grundbogen og konto-/turflowet; historisk hardcodet viden må ikke antages at være aktuel.
+- Modelvalget skal afgøres med en reproducerbar dansk/tysk/engelsk evalpakke for korrekthed, offentlig zonekontekst, usikkerhed, sikker afvisning, svartid, pris, databehandling, rate limits og drift. Den nuværende model må ikke fortsætte alene af historiske grunde.
+- Den valgte model skal ligge bag den hærdede server-side Edge-gateway uden browsercredential. Lokal fallback, rate limiting, input-/outputgrænser, CORS, samme-sprog-svar, rollback og fail-safe adfærd skal bevares; en assistentfejl må aldrig blokere prognosen eller turflowet.
+- Arbejdet ligger på `codex/plan-i18n-assistant-roadmap` i den eksisterende isolerede worktree. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
+- RDKS-valideringen er grøn for 4.0.287. Diffen er afgrænset til roadmap og de to interne handoff-filer; changelog og offentlige håndbøger ændres ikke, fordi der ikke leveres en ny version eller offentlig produktadfærd.
+- Næste opgave skal starte fra ren `main` efter denne dokumentationsmerge, læse hele den obligatoriske RDKS-startkæde og tage stilling til rækkefølgen mellem de to P1-spor. Brug Sol/Høj til assistentarkitektur, evaldesign og modelvalg samt Sol/Ekstra høj til tværgående slutvalidering; afgrænset mekanisk oversættelsesarbejde kan udføres billigere, når kontrakten er låst.
+
+Det produktionslukkede checkpoint nedenfor er fortsat den aktuelle offentlige sandhed. Alle yderligere checkpoints er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
+
 ## AKTUELT PRODUKTIONSLUKKET CHECKPOINT – 2026-08-27 – intern sammenligning og behovsstyret Supabase-PAT
 
 - Arbejd fortsat kun i `C:\Users\Lenovo T14\Documents\GitHub\RavRadar\.codex-worktrees\stability-security-4.0.284` på `codex/close-internal-analysis-evidence-4.0.287`. Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er urørte.
