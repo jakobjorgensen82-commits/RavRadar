@@ -9,7 +9,8 @@
 - [x] Bevar tidligere active override og genbrug kandidatcache efter deployfejl.
 - [x] Dæk højst seks lokale warmups med ét komplet senest verificeret fallbackdatasæt.
 - [x] Bestå målrettede isolation-, READY-, privacy-, aktiverings-, recovery-, versionskonflikt- og 672/1-tests.
-- [ ] Bestå exact-head, frisk produktion og offentlig adminstatuskontrol.
+- [x] Bestå PR #189 exact-head `33124945636`; første produktion stoppede før DMI/deploy på en miljøafhængig syntetisk test, som nu er isoleret med eksplicit referenceparameter.
+- [ ] Bestå hotfix-exact-head, frisk produktion og offentlig adminstatuskontrol.
 
 Ingen faktiske punkter eller geometri er flyttet. Se DEC-0090.
 

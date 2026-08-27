@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-28: 4.0.292 PR #189 bestod exact-head `33124945636` og blev merged som `8b3668b7`. Produktion `33125043019` stoppede før DMI/deploy, fordi punktstagingens syntetiske READY-test arvede workflowets låste produktionstime. En afgrænset hotfix gør fixture-reference eksplicit og bevarer produktionens normale miljølåste reference.
+
 ## 2026-08-28 – sikker fremtidig flytning af Sibirien-punkter
 
 1. Ejeren spurgte, hvad der sker, når land-/vandpunktet ved Sibirien senere flyttes, og krævede som minimum intet nedbrud eller fejlscore under en mulig 48-timers genopbygning.
