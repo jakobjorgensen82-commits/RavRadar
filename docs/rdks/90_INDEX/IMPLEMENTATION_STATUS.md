@@ -1,4 +1,4 @@
-# Implementeringsstatus – produktionsverificeret 4.0.289 / lokal 4.0.290-kandidat
+# Implementeringsstatus – produktionsverificeret 4.0.290
 
 ## P1 kandidat – central DA/DE/EN og domæneafgrænset assistent i 4.0.290
 
@@ -11,7 +11,8 @@
 - [x] Bestå målrettede i18n-, assistent-, konto-/tur-, 210/673/2.100-præsentations- og lokale desktop-/390 px-browserkontroller på alle tre offentlige sider.
 - [x] Kør Cloudflare-liveeval med mindst-muligt token på bekræftet Workers Free. Ejeren har valgt GPT-OSS 20B efter 1/1 smoke, 4/4 mål-gate og 25/26 beståede evaluerbare fuldtests; GLM/Gemma stoppede efter ikke-evaluerbare smoke-svar.
 - [x] Hærd Edge efter modelvalg med server-secrets, domænegate, dataminimering, CORS, rate limits, timeout, struktureret validering og lokal fallback. Deploy/aktivering afventer særskilt ejer-go.
-- [ ] Fuld lokal kildegate og releasegate er grønne; exact-head, frisk produktion og offentlig tværgående browserkontrol afventer.
+- [x] Bestå fuld lokal kildegate/releasegate, PR #183/#184/#185 med exact-head CI og sikker fail-closed korrektion af tre gamle tekstbaserede gates.
+- [x] Bestå produktion `33107232593`, build `98640417925`, Pages `98643230518` og offentlig DA/DE/EN-kontrol af forside, Om-side, Grundbog, husket sprog, fem **Bedste områder** og fem færdige prognoserækker. Candidate G-fallback er fortsat tydeligt markeret, mens ny primærserie modnes.
 
 Se DEC-0086 og DEC-0087. Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
