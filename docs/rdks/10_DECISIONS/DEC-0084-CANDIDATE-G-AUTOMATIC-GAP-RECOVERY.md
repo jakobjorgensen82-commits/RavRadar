@@ -1,6 +1,6 @@
 # DEC-0084 – Candidate G skal overleve fejlhentninger atomisk
 
-**Status:** Godkendt og lokalt kildevalideret i 4.0.288-kandidat; produktionsverifikation afventer  
+**Status:** Godkendt og produktionsverificeret i 4.0.288
 **Dato:** 2026-08-27  
 **Scorepåvirkning:** Ingen  
 **Offentlig runtimepåvirkning:** Ja, afgrænset nøddrift ved et landsdækkende datagab
@@ -36,4 +36,6 @@ Den offentlige datalæser kasserede samtidig hele det mere end otte timer gamle,
 - PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` beviste den nye rækkefølge samt frisk DMI/Copernicus/runtime, men stoppede før deploy, fordi auditten krævede en rå kandidatscore samtidig med, at 0/673 `READY` korrekt lukkede alle offentlige scorer.
 - Auditkontrakten skelner nu eksplicit: `READY` kræver fortsat kandidatens score, vægtede bidrag og fysiske gate; ikke-`READY` accepteres kun med `available=false`, `score=null`, en ikke-tom fejlårsag og fortsat utilgængelig offentlig mode. Det eksakte `RavRadar-support-3635` består derefter med 210/673, 673 accepterede states, nul replaymismatch og nul modeevalueringer. En lokal prøve publicerer det komplette fallback `rr-20260827013448-210` mod den separate primære warmup `rr-20260827113739-210`.
 
-Exact-head-, produktions- og offentlig browserverifikation skal tilføjes, før 4.0.288 kaldes produktionsverificeret.
+PR #179 bestod exact-head `33069307854` og blev merged som `653a9811`. Produktion `33069384084`, build `98507461295` og Pages `98512392768` bestod hele den friske kæde. Live manifestet binder primær `rr-20260827121030-210` og fallback `rr-20260827013448-210` uden blanding; fallbackens startup-/detaljehashes matcher, og den har 210/673/1.346 komplet dækning.
+
+Den offentlige browserkontrol viser 210 farvede zoner uden sorte zoner, fem **Bedste områder**, fem udfyldte prognosedage, fungerende områdedetaljer, tydelig ikke-aktuel nødtekst og nul konsolfejl/advarsler. 4.0.288 er derfor produktionsverificeret.

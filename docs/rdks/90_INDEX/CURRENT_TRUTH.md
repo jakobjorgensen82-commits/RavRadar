@@ -1,14 +1,16 @@
 # Current truth – gældende projektviden
 
-## Aktiv P0-kandidat 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
+## Produktionsverificeret 4.0.288 – komplet fallback og automatisk Candidate G-genopbygning
 
 - Senest verificerede offentlige datasæt er `rr-20260827013448-210` ved 00 UTC med 210/210 aktive zoner og 673/673 `READY`. Det er mere end otte timer gammelt og blev derfor helt forkastet i browseren, hvilket gjorde zoner sorte og tømte rangliste/femdøgnsvisning.
 - Run `33059522170` byggede 09 UTC efter et nitimers hul. Audit stoppede alle 673 states som `WINDOW_HAS_TIME_GAP`; intet fejlet artifact blev deployet.
-- 4.0.288-kandidaten viser det nyeste komplette, hashkontrollerede 210/673/1.346-datasæt i højst 48 timer med tydelig aktualitetsadvarsel. Startup og detaljer bindes til samme dataset-id.
+- 4.0.288 viser det nyeste komplette, hashkontrollerede 210/673/1.346-datasæt i højst 48 timer med tydelig aktualitetsadvarsel. Startup og detaljer bindes til samme dataset-id.
 - Frisk Candidate G-state genstarter kun fra den verificerede suffix efter et hul over tre timer og bliver offentlig samlet ved 673/673 `READY`. Der opfindes ingen målinger, og en delvis eller fejlet ny runtime publiceres ikke.
 - Den engangsdefinerede 09-checkpointrecovery er hash-, dataset-, delantal- og tidslåst og kopierer alene kompakt afledt state. Vejr, scores, rå U/V, koordinater, geometri, land-/vandpunkter og private data kopieres ikke.
 - PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` beviste fallbackstage før checkpoint samt frisk DMI/Copernicus/runtime, men stoppede sikkert før deploy på et internt modstridende auditkrav om kandidatscore under national warmup.
-- Auditrettelsen ændrer ingen score- eller datalogik: `READY` kræver fortsat komplet score, bidrag og fysisk gate; warmup accepteres kun som råt entydigt utilgængelig uden score og offentligt fail-closed. Det eksakte artifact `RavRadar-support-3635` består derefter 210/673, 673 accepterede states og nul replaymismatch, og en lokal publiceringsprøve vælger det komplette 00-fallbackdataset. Ny exact-head, produktion og offentlig browserverifikation afventer; 4.0.287 er fortsat seneste produktionsverificerede baseline. Se DEC-0084.
+- Auditrettelsen ændrer ingen score- eller datalogik: `READY` kræver fortsat komplet score, bidrag og fysisk gate; warmup accepteres kun som råt entydigt utilgængelig uden score og offentligt fail-closed. Det eksakte artifact `RavRadar-support-3635` består derefter 210/673, 673 accepterede states og nul replaymismatch, og en lokal publiceringsprøve vælger det komplette 00-fallbackdataset.
+- PR #179 bestod exact-head `33069307854` og blev merged som `653a9811`. Produktion `33069384084`, build `98507461295` og Pages `98512392768` bestod frisk DMI/Copernicus, faktisk runtimeaudit, fallbackpublicering, fuld validering, releasegate, Supabase-sync, artifact og deploy.
+- Live primær `rr-20260827121030-210` er ærligt 0/673 `READY`; manifestet vælger komplet fallback `rr-20260827013448-210` med 210 zoner, 673 dele, 673 `READY`, 1.346 modeevalueringer, 48-timersgrænse og matchende hashes for både startup og detaljer. Browserkontrollen viser 210 farvede zoner uden sorte zoner, fem **Bedste områder**, fem udfyldte prognosedage, fungerende områdedetaljer, tydelig nødtekst og nul konsolfejl/advarsler. Se DEC-0084.
 
 ## Aktiv P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
 
@@ -18,7 +20,7 @@
 - `scripts/fixtures/rav-assistant-evals-v1.json` har 45 symmetriske cases, 15 pr. sprog på dansk, tysk og engelsk. Offline-runneren kontrollerer routes, evidens-ID'er, fast og åben emneafvisning samt prompt injection.
 - Live-runneren nægter at bruge Gemini uden både `GEMINI_API_KEY` og `GEMINI_FREE_TIER_CONFIRMED=1` og kalder som standard kun remote-kandidatcases. Nøglen er kun lokalt installeret og indgår ikke i Git eller rapporter.
 - `gemini-3.7-flash` er afvist til dette use case efter fem timeouts ved 12/30 sekunder, også med low thinking. `gemini-3.5-flash-lite`/low er valgt som næste, fortsat deaktiverede Edge-kandidat efter 27/27, DA/DE/EN 9/9, median/p95/max 1.329/1.896/1.968 ms og 27.314 tokens.
-- Offentlig `ravAssistantRemoteEnabled=false`, lokal fallback, version 4.0.287 og alle produktionsdata er uændrede. Se DEC-0083 og `docs/research/RAV_ASSISTANT_FREE_GEMINI_EVAL_DESIGN_2026-08-27.md`.
+- Offentlig `ravAssistantRemoteEnabled=false` og lokal assistentfallback er uændrede i version 4.0.288. AI-videns-/evalgrundlaget er fortsat versionsbundet til den auditerede 4.0.287 Candidate G-kontrakt, indtil P1-scope bekræftes. Se DEC-0083 og `docs/research/RAV_ASSISTANT_FREE_GEMINI_EVAL_DESIGN_2026-08-27.md`.
 
 ## Produktionsverificeret 4.0.287 – Supabase-identitet, EU-D1-turlager og eksplicit rollback
 

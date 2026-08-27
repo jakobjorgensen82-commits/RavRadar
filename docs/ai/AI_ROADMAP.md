@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.288+
 
-## P0 aktiv – automatisk Candidate G-genopretning før P1-sporene
+## P0 afsluttet – produktionsverificeret automatisk Candidate G-genopretning
 
 - [x] Find rodårsagen til sorte zoner og tomme **Bedste områder**/**5-dages RavRadar**: komplet 00-runtime blev browserafvist efter otte timer, mens en ikke-deployeret 09-runtime korrekt blev afvist efter et nitimers hul.
 - [x] Bevar det nyeste komplette, auditerede 210/673/1.346-datasæt atomisk i højst 48 timer med tydelig **ikke aktuelle data**-advarsel.
@@ -8,9 +8,9 @@
 - [x] Lås en engangsrecovery til 09-checkpointets run, artifact, dataset, 673 dele, hash og tretimersvindue; kopier kun kompakt afledt state.
 - [x] Bestå målrettede tests og dataminimerede prøver mod de virkelige 00/09-artifacts.
 - [x] Bevis PR #178/merge `5f9ee093` frem til frisk 210/673-runtime, og ret den modstridende warmupaudit uden at lempe `READY`- eller public-scorekrav; eksakt `RavRadar-support-3635` og lokal fallbackpublicering er grønne.
-- [ ] Bestå 4.0.288-version/RDKS, exact-head, merge, fuld frisk produktion og positiv offentlig browserkontrol.
+- [x] Bestå 4.0.288-version/RDKS, PR #179 exact-head `33069307854`, merge `653a9811`, fuld frisk produktion `33069384084`, Pages og positiv offentlig 210-zoners/browserkontrol.
 
-P1-oversættelse og Spørg RavRadar fortsætter først efter P0-lukning. Se DEC-0084.
+P1-oversættelse og Spørg RavRadar kan nu fortsætte i den ejerbekræftede rækkefølge. Se DEC-0084.
 
 ## P0 afsluttet – færdigt hybridt konto- og turlager
 
