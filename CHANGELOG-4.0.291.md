@@ -6,6 +6,7 @@
 - Viser en rolig dansk/tysk/engelsk forklaring i assistentdialogen: den daglige AI-kvote er begrænset for at holde RavRadar gratis, mens prognoser og lokale RavRadar-svar fortsætter ved kvoteudløb.
 - Bevarer afvisning af uvedkommende og sikkerhedsfølsomme spørgsmål før provider samt lokale Candidate G-svar for bedste sted, bedste tid og konkret score.
 - Bevarer CORS, tre server-side rate limits, syv sekunders timeout, struktureret output-/evidensvalidering, dataminimering og lokal fallback. Ingen providercredential findes i browseren.
+- Låser fagord pr. sprog efter live-smoke-testen: `ravmobilisering`, `Bernsteinmobilisierung` og `amber mobilisation`; modellen må ikke danne sproglige hybridord.
 - Cloudflare-kontoen er direkte kontrolleret som Workers Free / $0 med 10.000 neuroner pr. døgn og fejl ved overskridelse. Betalt overflow er ikke tilladt.
 
 Candidate G 20/50/30, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0088.

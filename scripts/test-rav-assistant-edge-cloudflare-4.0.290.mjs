@@ -64,6 +64,9 @@ assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);
 assert.match(assistantSystemInstruction(), /Can you guarantee a find/);
 assert.match(assistantSystemInstruction(), /safety\.not-a-safety-rating/);
 assert.match(assistantSystemInstruction(), /huntability\.waders-wind-led/);
+assert.match(assistantSystemInstruction(), /ravmobilisering/);
+assert.match(assistantSystemInstruction(), /Bernsteinmobilisierung/);
+assert.match(assistantSystemInstruction(), /Never create hybrid words/);
 
 const valid = {
   schemaVersion: 'rav-assistant-response-v1', locale: 'en', disposition: 'answer',

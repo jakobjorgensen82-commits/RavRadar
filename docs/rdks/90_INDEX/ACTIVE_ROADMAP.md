@@ -16,7 +16,7 @@ Se DEC-0088.
 - [x] Afvis kendte uvedkommende/sikkerhedsfølsomme spørgsmål før provider; behold bedste sted/tid/score lokalt i Candidate G.
 - [x] Gør modelrunneren provider-neutral og markér Gemini 27/27 som intern reference efter aktuelle EØS-vilkår.
 - [x] Kør samme 27 cases mod GLM-4.7-Flash, Gemma 4 26B og GPT-OSS 20B på bekræftet Workers Free; vælg GPT-OSS 20B på smoke 1/1, mål-gate 4/4 og 25/26 evaluerbare fuldtests.
-- [x] Byg hærdet Edge bag fortsat deaktiveret standard og særskilt ejer-go. Deploy/aktivering afventer.
+- [x] Byg og live-smoke-test hærdet Edge med server-secrets efter ejer-go. Pages-aktivering og slutkontrol afventer.
 - [x] Bestå release-, exact-head-, produktions- og offentlig DA/DE/EN-browserkontrol.
 
 Se DEC-0086/0087.
@@ -75,7 +75,7 @@ Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVU
 - [x] Bevar Flash-Lite/low som historisk reference på nul hårde fejl, 27/27 remote-kandidatcases, DA/DE/EN 9/9 og median/p95 1.329/1.896 ms; 3.7 blev afvist efter fem timeouts.
 - [x] Forkast gratis Gemini som offentlig EØS-produktionskandidat efter de aktuelle vilkår; en hjemmeside er også et API Client, og EØS-brug kræver Paid Service.
 - [x] Tilføj Workers Free-kandidater og samme kontrakt/målinger til den provider-neutrale runner.
-- [x] Vælg GPT-OSS 20B efter liveeval og implementér struktureret Edge-outputkontrol, tre rate limits, timeout og sikker lokal rollback. Deploy og offentlig aktivering afventer særskilt ejer-go.
+- [x] Vælg GPT-OSS 20B efter liveeval, implementér og deploy struktureret Edge-outputkontrol, tre rate limits, timeout og sikker lokal rollback. Ejer-go og første Edge-smoke er grønne; offentlig Pages-aktivering afventer.
 
 Se DEC-0083/0087. Offentlig 4.0.289 forbliver local-only; score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
 

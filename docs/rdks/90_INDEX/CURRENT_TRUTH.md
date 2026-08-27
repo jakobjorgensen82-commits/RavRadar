@@ -6,7 +6,7 @@
 - Cloudflare-dashboardet er aktuelt verificeret som Workers **Free / $0** med 10.000 neuroner pr. døgn og fejl efter loftet. Betalt overflow, Workers Paid og prepaid AI Gateway er ikke tilladt.
 - Assistentdialogen viser på dansk, tysk og engelsk, at den daglige AI-kvote er begrænset for at holde RavRadar gratis, og at prognoser samt lokale RavRadar-svar fortsætter ved kvoteudløb.
 - Offentlig konfiguration er klargjort med `ravAssistantRemoteEnabled=true`; `false` er den øjeblikkelige rollback. Edge- eller providerfejl falder lokalt tilbage og kan ikke blokere kort, prognoser, konto eller ture.
-- Den levende Supabase-funktion er endnu den ældre gateway og mangler Cloudflare-secrets. 4.0.291 må derfor ikke merges/deployes offentligt før versionsstyret Edge-deploy, live CORS-/rate-limit-/fallbackkontrol, exact-head CI og browserverifikation.
+- Den versionsstyrede Supabase-funktion og begge Cloudflare-secrets er installeret. Efter en før-merge, fail-closed Monaco-sammenfletning blev de tre filer erstattet atomisk; live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning og DA/DE/EN-providerkald er grønne. 4.0.291 må fortsat ikke merges før den nye exact-head CI samt live rate-limit-/fallbackkontrol er grøn; produktion kræver efterfølgende browserkontrol.
 - Domænegate, deterministic Candidate G-routing, dataminimering og forbuddet mod private data er uændrede. Se DEC-0088.
 
 ## Produktionsverificeret 4.0.290 – central offentlig DA/DE/EN og sikker assistentgrænse

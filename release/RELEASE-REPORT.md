@@ -1,7 +1,7 @@
 # Release-rapport 4.0.291
 
 - Status: **BESTÅET**
-- Kontrolleret: 2026-08-27T19:59:47.987Z
+- Kontrolleret: 2026-08-27T20:17:20.309Z
 - Versionskonsistens: OK
 - Håndbog og RDKS: OK
 - Supabase- og rettighedskæde: OK

@@ -1,6 +1,6 @@
 # DEC-0088 – offentlig aktivering af gratis GPT-OSS-assistent
 
-**Status:** Ejer-go givet; 4.0.291-kandidat implementeret, live Edge- og produktionsverifikation afventer
+**Status:** Ejer-go givet; Edge-kode, server-secrets og første live-smoke er grønne; rate-limit-/browser-/produktionsverifikation afventer
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
 **Data-/geometripåvirkning:** Ingen ud over ren versionsfeltsynkronisering
@@ -18,7 +18,8 @@
 ## Aktiveringsbevis
 
 - Cloudflare-dashboardet viste **Free** som aktuel Workers-plan, **$0**, 10.000 neuroner/dag og cirka 4.930/10.000 neuroner brugt efter model-evals den 27. august 2026.
-- Supabase-dashboardet viste den historiske `ravradar-assistant`-funktion, men den deployede kode var stadig den ældre gateway, og de to Cloudflare-secrets var endnu ikke installeret. Derfor aktiveres browserflaget ikke uden en ny eksakt Edge-deploy og livekontrol.
+- Den versionsstyrede Edge-kode og de to Cloudflare-secrets er installeret. Første browseredit indsatte fejlagtigt ny Monaco-tekst foran gammel kilde; `503 BOOT_ERROR` afslørede det før merge. Filerne blev derefter erstattet atomisk og genudgivet.
+- Direkte live-smoke består `OPTIONS 204` med eksakt GitHub-Origin, lokal rouladeafvisning `200`, fremmed Origin `403` uden CORS-header, ugyldigt sprog `400` og gyldige GPT-OSS-svar på dansk, tysk og engelsk. Den danske prøve udløste en yderligere kontraktlås for de eksakte fagord og forbud mod sproglige hybridord.
 - 4.0.291-kandidaten tilføjer synlig DA/DE/EN-kvotetekst, aktiveringsflag og regressioner for remote-succes, `429`-fallback, manglende browsercredential og fortsat lokal afvisning/routing.
 
 Se DEC-0083 og DEC-0087 for den bevarede domæne-, data-, eval- og modelkontrakt.

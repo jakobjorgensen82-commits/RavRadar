@@ -20,7 +20,7 @@ Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometr
 - [x] Revider Gemini-valget mod aktuelle vilkår. Gratis Gemini er no-go til offentlig EØS-hjemmeside; Cloudflare Workers AI er kandidatsporet, mens Gemini 3.5 Flash-Lite 27/27 bevares som intern reference.
 - [x] Gør evalrunneren provider-neutral for tre Workers Free-kandidater og Gemini-reference med samme 45/27-case kontrakt, schema, målinger og hårde stop.
 - [x] Kør Cloudflare live-eval efter mindst-muligt Workers AI-token og bekræftet Workers Free-konto; vælg GPT-OSS 20B på den dokumenterede smoke-, mål- og fulde eval.
-- [x] Implementér den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Deploy/aktivering afventer; `ravAssistantRemoteEnabled=false` bevares indtil særskilt ejer-go.
+- [x] Implementér og deploy den hærdede server-side Edge-adapter med domænegate, CORS, tre rate limits, timeout, struktureret outputvalidering og lokal fallback. Ejer-go og første live-smoke er grønne; Pages-aktivering og slutkontrol afventer.
 - [x] Fuld lokal kilde-/releasegate, exact-head CI, frisk produktion og offentlig DA/DE/EN-browserkontrol er grønne; 4.0.290 er produktionsverificeret.
 
 Se DEC-0086, DEC-0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.

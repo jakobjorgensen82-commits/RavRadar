@@ -3,7 +3,7 @@
 - Ejeren gav særskilt go til at sætte **Spørg RavRadar** i offentlig drift med den allerede valgte GPT-OSS 20B-model.
 - Cloudflare-dashboardet viste Workers Free som aktuel $0-plan, 10.000 neuroner/dag og cirka 4.930 neuroner brugt efter evals. Betalt overflow er ikke tilladt.
 - Kandidaten tilføjer en synlig DA/DE/EN-kvotetekst, aktiverer browserflaget og bevarer lokale prognoser/svar ved `429`, timeout, ugyldigt output eller providerfejl.
-- Supabase-auditten fandt, at den levende assistentfunktion stadig er den ældre gateway, og at Cloudflare-secrets endnu ikke er installeret. Edge-deploy og livekontrol skal derfor ske før merge/Pages-aktivering. Se DEC-0088.
+- Den versionsstyrede assistent-Edge og begge Cloudflare-secrets er installeret. En fail-closed `503 BOOT_ERROR` afslørede en sammenflettet Monaco-redigering før merge; atomisk filudskiftning rettede den. Live CORS, origin-afvisning, ugyldigt sprog, rouladeafvisning og DA/DE/EN-providerkald er grønne; rate-limit, browserfallback og produktion mangler. Se DEC-0088.
 - Candidate G, vejr, sortering, konto-/turdata, privatliv, geometri, land-/vandpunkter og private data er urørte.
 
 ## 2026-08-27 – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI
