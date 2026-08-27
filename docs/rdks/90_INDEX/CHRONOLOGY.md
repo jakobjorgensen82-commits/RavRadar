@@ -21,6 +21,7 @@
 17. Ejeren præciserede derefter, at Supabase-PAT'et ikke skal kalenderfornyes: normal Auth/Edge-/D1-drift bruger det ikke. Det verificerede udløbsworkflow pensioneres, og et kortlivet PAT oprettes kun til en konkret deploy/migration/rollback og tilbagekaldes efter grøn verifikation.
 18. Den interne Ravudsigten-sammenligning blev aktiveret. Første tidsstemplede snapshot registrerede begge tjenesters top-fem, Ravudsigtens ikke-røde femdøgnssignaler, de nærmeste logiske RavRadar-zoner og komponentforklaringer. Ét vejrvindue er observationsgrundlag, ikke modelvalidering.
 19. PR #171 bestod exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` stoppede før Supabase-sync/artifact/Pages, fordi den globale kildeneutralitetstest ikke skelnede den udtrykkeligt godkendte interne RDKS-kildeangivelse fra offentlig kildeomtale. Opfølgningen tillader kun den eksakte interne analysefil og kræver dens sikkerhedsmarkører.
+20. PR #172 bestod exact-head `33030112665` og blev merged som `7a234653`. Produktion `33030166104`/Pages `98382359708` bestod fuldt, og offentlig `rr-20260827013448-210` blev målrettet kontrolleret med 210/210 aktive zoner, 673/673 scoreklare kystdele samt fem rangliste- og prognoserækker i begge søgemåder uden synlig runtimefejl.
 
 ## 2026-08-26 – 4.0.286 fra kandidat til produktionsverificeret efter offentlig 4.0.285-afvisning
 

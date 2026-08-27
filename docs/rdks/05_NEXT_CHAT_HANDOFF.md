@@ -14,6 +14,7 @@
 - Supabase-varslet 9. september 2026 forbliver en aktiv driftsopgave; ingen sikkerheds- eller releasegate må lempes. Cloudflare-token roteres kun ved kompromittering eller rettighedsændring.
 - Ravudsigten-sammenligningen er aktiv med første internt dokumenterede snapshot og er fortsat score-neutral og longitudinel: kun RDKS/roadmap/changelog, `scoreImpact=false`, `publicRuntime=false`, ingen app-, håndbogs-, ekspert-, admin- eller public-runtime-visning.
 - PR #171 bestod exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` stoppede fail-closed før Supabase/artifact/Pages på den globale kildeneutralitetstest. Opfølgningen må kun undtage den eksakte interne analysefil og skal testkræve dens interne, score-neutrale og ikke-offentlige markører, før ny exact-head og produktion.
+- Opfølgningen bestod PR #172 exact-head `33030112665`, merge `7a234653` og produktion `33030166104`/Pages `98382359708`. Offentlig `rr-20260827013448-210` er komplet med 210/210 aktive zoner, 673/673 scoreklare kystdele og fem rangliste-/prognoserækker i begge søgemåder uden synlig runtimefejl.
 - Se DEC-0082 og øverste checkpoint i `docs/ai/CURRENT_SESSION_HANDOFF.md`.
 
 ## Produktionsverificeret 4.0.286 – faktisk runtimegate og native-hold-score

@@ -16,6 +16,7 @@
 - Frisk produktion `33025210517` og Pages-job `98367528389` er grønne. Offentlig `rr-20260827000855-210` bestod version 4.0.287, 210/210 aktive zoner, fem **Bedste områder**, 673 dele, 420 aktuelle og 2.100 prognosevisninger uden auditfejl.
 - Den kalenderbaserede PAT-varsling er fjernet fra aktivt workflowinventar, og workflowtesten kræver nu, at kun det manuelle turlager-deployment må referere `SUPABASE_ACCESS_TOKEN`.
 - PR #171 bestod exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` gennemførte frisk vejr, provenance og faktisk runtimeaudit, men stoppede sikkert i fuld validering før Supabase/artifact/Pages, fordi den globale kildeneutralitetstest også afviste den godkendte interne analysefil. Opfølgningen afgrænser undtagelsen til denne ene fil og kræver dens interne, score-neutrale og ikke-offentlige markører.
+- Opfølgningen bestod PR #172 exact-head `33030112665` og merge `7a234653`. Produktion `33030166104`/Pages `98382359708` gik gennem frisk DMI/Copernicus, faktisk runtimeaudit, fuld validering, releasegate, beskyttet Supabase-sync, artifact og Pages. Offentlig `rr-20260827013448-210` har 210/210 aktive zoner, 673/673 scoreklare kystdele og fem rangliste-/prognoserækker i begge søgemåder uden synlig fejl.
 
 ## 2026-08-26 – 4.0.286 lukker rullende Candidate G-regression, produktionsverificeret
 

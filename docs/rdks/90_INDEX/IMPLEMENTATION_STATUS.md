@@ -31,7 +31,7 @@ Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver et åben
 ## P1 aktiv – intern, longitudinel Ravudsigten-sammenligning
 
 - [x] Opret den interne, forståelige analysejournal og registrér første tidsstemplede snapshot af aktuelle top-fem, femdøgnssignaler og sammenlignelige RavRadar-zoner. Se `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
-- [ ] Luk den globale kildeneutralitetskonflikt efter PR #171/produktion `33029447510` med en enkeltfil-undtagelse, som selv kræver intern/score-neutral/ikke-offentlig markering, og bestå exact-head samt ny produktion.
+- [x] Luk den globale kildeneutralitetskonflikt efter PR #171/produktion `33029447510` med en enkeltfil-undtagelse, som selv kræver intern/score-neutral/ikke-offentlig markering; bestå PR #172 exact-head `33030112665`, merge `7a234653`, produktion `33030166104`/Pages `98382359708` og offentlig `rr-20260827013448-210`-kontrol.
 - [ ] Fortsæt skånsom sammenligning af kun offentligt synlige, tidsstemplede resultater over flere vejrsituationer og brug eventuelle uafhængige fund med dokumenteret kvalitet/samtykke.
 - [ ] Behandl mulige regler som hypoteser; ingen adgangsomgåelse eller privat kode.
 - [ ] Bevar `scoreImpact=false` og `publicRuntime=false`; synlighed er begrænset til RDKS, roadmap og changelog og forbudt i app, offentlig håndbog, ekspert-/adminflader og offentlige prognosedata.
