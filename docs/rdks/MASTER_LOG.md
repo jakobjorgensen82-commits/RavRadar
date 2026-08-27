@@ -7,6 +7,7 @@
 - Engangsrecoveryen er låst til 09-checkpointets run/artifact/dataset/hash og højst tre timer. Virkelig 673-deles simulation beviser kun kompakt statekopi og nul kopieret vejr, score eller rå vektorer.
 - Målrettede prøver er grønne; 4.0.288 exact-head, produktion og offentlig lukning afventer. Score, vejr, normal sortering, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
 - PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Produktion `33066416034` beviste checkpointrecoveryen, men stoppede sikkert før DMI/deploy ved fallbackstage, fordi fallbacken blev auditeret efter warmup-stateændringen. Opfølgningen kopierer det sunde 00-grundlag før 09-state indlæses.
+- PR #178 bestod exact-head `33066897710` og merge `5f9ee093`. Produktion `33066980965` beviste den rettede rækkefølge, 673 state-recoveries og frisk runtime, men stoppede på shadowaudittens modstridende scorekrav ved 0/673 `READY`. Den snævre auditrettelse er bevist mod det eksakte supportartifact og publicerer lokalt det komplette 00-fallback; ny exact-head/produktion afventer.
 
 ## 2026-08-27 – gratis og domæneafgrænset modelvalg til Spørg RavRadar
 

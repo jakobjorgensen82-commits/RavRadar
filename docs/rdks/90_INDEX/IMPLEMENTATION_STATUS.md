@@ -12,6 +12,8 @@
 - [x] Synkronisér 4.0.288, RDKS/håndbøger/changelog, bestå lokal `validate:source` og bevis kun topversionsændring i de beskyttede geodatafiler.
 - [x] Bestå PR #176 exact-head `33066322196`, merge `16ad8300` og bevis i produktion `33066416034`, at den låste 09-suffix gendannes; stop sikkert da fallbackkopien lå for sent.
 - [x] Flyt fallbackstage før checkpointindlæsning, så den komplette 00-runtime auditeres/kopieres før den hydrerede state bliver warmup.
+- [x] Bestå PR #178 exact-head `33066897710`, merge `5f9ee093` og produktion frem til den faktiske 210/673-runtime; dokumentér det sikre stop `33066980965` på auditkravet om kandidatscore under 0/673 `READY`.
+- [x] Ret auditten snævert, så `READY` fortsat kræver score/bidrag/fysisk gate, mens warmup kun accepterer en entydigt utilgængelig rå mode uden score og en fortsat lukket offentlig mode. Det eksakte `RavRadar-support-3635` består med 673 accepterede states og nul replaymismatch, og fallbackpublicering er lokalt verificeret.
 - [ ] Bestå exact-head sourcegate, merge, fuld frisk produktion og offentlig browserkontrol af zoner, **Bedste områder**, **5-dages RavRadar** og nødteksten.
 
 Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0084.

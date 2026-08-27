@@ -7,7 +7,8 @@
 - 4.0.288-kandidaten viser det nyeste komplette, hashkontrollerede 210/673/1.346-datasæt i højst 48 timer med tydelig aktualitetsadvarsel. Startup og detaljer bindes til samme dataset-id.
 - Frisk Candidate G-state genstarter kun fra den verificerede suffix efter et hul over tre timer og bliver offentlig samlet ved 673/673 `READY`. Der opfindes ingen målinger, og en delvis eller fejlet ny runtime publiceres ikke.
 - Den engangsdefinerede 09-checkpointrecovery er hash-, dataset-, delantal- og tidslåst og kopierer alene kompakt afledt state. Vejr, scores, rå U/V, koordinater, geometri, land-/vandpunkter og private data kopieres ikke.
-- Målrettet kode- og artifactverifikation er grøn; exact-head, produktion og offentlig browserverifikation afventer. 4.0.287 er fortsat seneste produktionsverificerede baseline. Se DEC-0084.
+- PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` beviste fallbackstage før checkpoint samt frisk DMI/Copernicus/runtime, men stoppede sikkert før deploy på et internt modstridende auditkrav om kandidatscore under national warmup.
+- Auditrettelsen ændrer ingen score- eller datalogik: `READY` kræver fortsat komplet score, bidrag og fysisk gate; warmup accepteres kun som råt entydigt utilgængelig uden score og offentligt fail-closed. Det eksakte artifact `RavRadar-support-3635` består derefter 210/673, 673 accepterede states og nul replaymismatch, og en lokal publiceringsprøve vælger det komplette 00-fallbackdataset. Ny exact-head, produktion og offentlig browserverifikation afventer; 4.0.287 er fortsat seneste produktionsverificerede baseline. Se DEC-0084.
 
 ## Aktiv P1-forundersøgelse – gratis og domæneafgrænset Spørg RavRadar
 

@@ -6,6 +6,8 @@
 
 PR #176 bestod exact-head `33066322196` og blev merged som `16ad8300`. Første produktion `33066416034` gendannede den kompakte 09-state, men stoppede sikkert før DMI/deploy, fordi fallbackkopien blev taget efter stateændringen. Opfølgningen tager den komplette 00-fallback først og indlæser derefter 09-checkpointet.
 
+PR #178 bestod exact-head `33066897710` og blev merged som `5f9ee093`. Produktion `33066980965` gennemførte den korrigerede rækkefølge og frisk runtime, men stoppede sikkert før deploy på et modstridende auditkrav om rå score under 0/673 `READY`. Den snævre rettelse bevarer de fulde scorekrav ved `READY` og accepterer under warmup kun `available=false`, `score=null`, en entydig fejlårsag og en fortsat lukket offentlig score. Det eksakte supportartifact og den efterfølgende fallbackpubliceringsprøve er grønne.
+
 ## Ændringer
 
 - En fejlet eller ufuldstændig datahentning kan ikke erstatte det seneste komplette, auditerede offentlige datasæt.

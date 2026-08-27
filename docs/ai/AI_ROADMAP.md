@@ -7,6 +7,7 @@
 - [x] Genstart efter huller over tre timer fra reelle verificerede suffixprøver uden interpolation eller backfill; skift først samlet ved 673/673 `READY` og grøn faktisk runtimeaudit.
 - [x] Lås en engangsrecovery til 09-checkpointets run, artifact, dataset, 673 dele, hash og tretimersvindue; kopier kun kompakt afledt state.
 - [x] Bestå målrettede tests og dataminimerede prøver mod de virkelige 00/09-artifacts.
+- [x] Bevis PR #178/merge `5f9ee093` frem til frisk 210/673-runtime, og ret den modstridende warmupaudit uden at lempe `READY`- eller public-scorekrav; eksakt `RavRadar-support-3635` og lokal fallbackpublicering er grønne.
 - [ ] Bestå 4.0.288-version/RDKS, exact-head, merge, fuld frisk produktion og positiv offentlig browserkontrol.
 
 P1-oversættelse og Spørg RavRadar fortsætter først efter P0-lukning. Se DEC-0084.
