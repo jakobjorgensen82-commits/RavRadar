@@ -10,7 +10,9 @@
 - Ejeren har endeligt besluttet, at `SUPABASE_ACCESS_TOKEN` ikke skal kalenderfornyes. Normal Supabase Auth/Edge-runtime, login, turindsendelse, D1-lagring og daglig D1-monitor bruger ikke PAT'et; det installerede token må udløbe uden driftsafbrydelse eller varsel.
 - Det tidligere PAT-udløbsworkflow pensioneres. Workflowkontrakten låser, at kun det manuelle **Deploy RavRadar trip storage** må referere PAT'et. Ved en konkret Edge-deploy, migration eller rollback-deploy oprettes et kortlivet PAT gennem godkendt kanal, exact-main-kæden verificeres grønt, og tokenet tilbagekaldes derefter.
 - Supabase-banneret om mulig begrænsning fra 9. september 2026 forbliver åbent, fordi Auth, Edge og egress stadig bruger Supabase. Cloudflare-tokenpolitikken og pseudonym-secret-kontrakten ændres ikke.
-- De målrettede tests, RDKS-validering, exact-head source gate og eventuel PR-/merge-/produktionslukning skal registreres her, når de er gennemført. Indtil da er ændringerne en lokal kandidat, ikke en ny offentlig release.
+- Den første kandidat bestod lokal `validate:source`, PR #171 exact-head `33029393300` og blev merged som `f15f5892`. Produktion `33029447510` bestod frisk vejr, målrettet Copernicus, runtimeaudit og referencezoner, men stoppede fail-closed før Supabase-sync/artifact/Pages i fuld validering: den gamle globale kildeneutralitetstest tillod ikke den nu ejer-godkendte interne RDKS-kildeangivelse.
+- Opfølgningen undtager kun den eksakte interne analysefil og kræver samtidig dens interne, score-neutrale og ikke-offentlige sikkerhedsmarkører. Alle andre projektfiler, app-, håndbogs-, ekspert-, admin- og public-runtime-flader er fortsat omfattet af det globale forbud. Dette er en kontraktpræcisering, ikke en omgåelse eller offentliggørelse.
+- Opfølgningens målrettede test, RDKS-validering, exact-head source gate og ny produktionslukning skal registreres her, når de er gennemført. Indtil da forbliver offentlig `rr-20260827000855-210` urørt og grøn.
 
 Alle checkpoints nedenfor er historik, medmindre et nyere punkt udtrykkeligt genbruger dem.
 

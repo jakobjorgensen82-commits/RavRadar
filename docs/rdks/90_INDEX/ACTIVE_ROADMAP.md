@@ -23,6 +23,7 @@ Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikk
 ## P1 aktiv – intern, score-neutral Ravudsigten-sammenligning
 
 - [x] Opret intern analysejournal og registrér første tidsstemplede snapshot med aktuelle top-fem, alle synlige ikke-røde femdøgnssignaler, RavRadar-match og komponentforklaringer.
+- [ ] Bestå opfølgningens exact-head og produktion efter det sikre stop `33029447510`; kun den eksakte interne analysefil må undtages fra kildeneutralitet, og dens sikkerhedsmarkører skal være obligatoriske.
 - [ ] Fortsæt skånsom indsamling af offentligt synlige resultater fra Ravudsigten og RavRadar over flere sammenlignelige vejrsituationer.
 - [ ] Sammenlign sted, timing, varighed og styrke og behandl udledte regler som observerbare hypoteser, ikke som kendt intern logik.
 - [ ] Brug uafhængige tur-/fundobservationer som mulig fasit, når kvalitet og samtykke tillader det; modellernes indbyrdes enighed er ikke i sig selv validering.

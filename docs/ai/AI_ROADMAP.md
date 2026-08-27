@@ -22,6 +22,7 @@ Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 ## P1 aktiv – intern, score-neutral Ravudsigten-sammenligning
 
 - [x] Opret intern analysejournal og registrér første tidsstemplede snapshot af aktuelle top-fem, femdøgnssignaler, RavRadar-match og komponentforklaringer.
+- [ ] Luk det sikre produktionsstop `33029447510` med en eksakt enkeltfil-undtagelse, som kræver analysens interne/score-neutrale/ikke-offentlige markører, og bestå ny exact-head/produktion.
 - [ ] Fortsæt skånsom indsamling af tidsstemplede, offentligt synlige resultater fra Ravudsigten og RavRadar for sammenlignelige kystområder over flere reelle vejrsituationer.
 - [ ] Sammenlign enighed og forskydning i sted, starttid, varighed og styrke samt observerbare hypoteser om vind, strøm i flere lag, vandstand og historik.
 - [ ] Brug uafhængige tur-/fundobservationer som fasit, hvor datakvalitet og samtykke tillader det; et enkelt snapshot eller modellernes indbyrdes enighed er ikke validering.
