@@ -31,6 +31,28 @@ Se DEC-0082. Supabase-varselet 9. september 2026 følges fortsat.
 
 Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
+## P1 planlagt – dansk, tysk og engelsk offentlig brugerflade
+
+- [ ] Indfør ét centralt oversættelsessystem i den eksisterende applikation; der må ikke vedligeholdes tre kopier af hjemmesiden.
+- [ ] Brug dansk som standard ved første besøg, og tilføj et tilgængeligt sprogvalg øverst med dansk, tysk og engelsk flag samt tydelige sprognavne. Brugerens valg skal huskes lokalt.
+- [ ] Første leverance omfatter hovedside, aktuelle prognoser, femdøgnsprognoser, områdevindue, konto, login og turformularer. Forventet omfang: cirka 4–8 aktive timer.
+- [ ] Den komplette offentlige leverance omfatter desuden **Om RavRadar**, hele den offentlige **Grundbog i ravjagt** og **Spørg RavRadar**. Forventet samlet omfang: cirka 8–16 aktive timer.
+- [ ] Datoer, klokkeslæt, statusser, fejltekster, tilgængelighedstekster og dynamiske RavScore-forklaringer skal følge det valgte sprog. Stednavne og andre egennavne skal bevares.
+- [ ] Dynamiske forklaringer skal bruge stabile betydnings-/tekstnøgler med parametre frem for skrøbelig ordret udskiftning af danske sætninger. Manglende oversættelser skal falde sikkert tilbage til dansk.
+- [ ] Oversættelsen må ikke ændre RavScore, vejrdata, områdesortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter.
+- [ ] Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere beslutter et særskilt udvidet scope.
+- [ ] Tilføj målrettede sprog-, fallback-, HTML-sikkerheds-, konto-/tur-, responsiv header- og browserregressioner for alle tre sprog før offentlig deploy.
+
+## P1 planlagt – modernisering og AI-valg til Spørg RavRadar
+
+- [ ] Gennemgå den nuværende **Spørg RavRadar**-funktion mod RavRadars aktuelle Candidate G-model, offentlige scoreforklaringer, grundbog, konto-/turflow og sikkerhedsgrænser. Ældre hardcodet viden må ikke stå som aktuel sandhed uden kontrol.
+- [ ] Definér en versionsbundet offentlig videnspakke og en snæver kontekstkontrakt, så assistenten kan forklare aktuelle offentlige prognoser uden adgang til private data, interne regler, credentials eller rå diagnostik.
+- [ ] Opbyg en reproducerbar evalpakke med realistiske spørgsmål på dansk, tysk og engelsk. Den skal måle faglig korrekthed, brug af den valgte zones offentlige data, usikkerhed, sikkerhedsafgrænsning, afvisning af interne/sikkerhedsfølsomme spørgsmål, svartid og pris.
+- [ ] Sammenlign relevante AI-modeller ud fra evalresultater, flersproget kvalitet, stabilitet, latenstid, omkostning, rate limits, databehandling og egnethed til den hærdede Edge-gateway. Den nuværende modelstandard må ikke fortsætte alene af historiske grunde.
+- [ ] Vælg modellen på dokumenteret evidens, registrér beslutning og rollback, og implementér den bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren.
+- [ ] Bevar en sikker lokal fallback, rate limiting, input-/outputgrænser, locale-felt og samme-sprog-svar. Assistentfejl må aldrig blokere prognosen eller turflowet.
+- [ ] Deploy og verificér gatewayen gennem en godkendt kanal med målrettede sikkerheds-, CORS-, misbrugs-, flersprogs- og offentlig browserkontroller.
+
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 
 - [x] Bevis offentlig 4.0.285-masseregression efter grøn produktion.

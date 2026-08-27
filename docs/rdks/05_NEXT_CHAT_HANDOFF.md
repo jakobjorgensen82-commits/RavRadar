@@ -1,5 +1,16 @@
 # RavRadar – overlevering til næste chat
 
+## Nyt planlagt P1-spor – flersproget UI og Spørg RavRadar
+
+- `docs/ai/AI_ROADMAP.md` registrerer nu den ejer-godkendte plan for én central dansk/tysk/engelsk offentlig brugerflade og en separat modernisering af **Spørg RavRadar**. Dette er dokumentation og scope, ikke implementeret produktadfærd.
+- Dansk er standard. Sprogvælgeren skal vise flag og sprognavne øverst og huske valget lokalt. Tekster styres gennem stabile nøgler med parametre og sikker dansk fallback; der må ikke vedligeholdes tre sidekopier.
+- Første UI-scope er hovedside, aktuelle og femdøgnsprognoser, områdevindue, konto, login og turformularer: cirka 4–8 aktive timer. Komplet offentligt scope tilføjer **Om RavRadar**, hele **Grundbog i ravjagt** og **Spørg RavRadar**: cirka 8–16 aktive timer samlet.
+- Admin-, ekspert- og interne udviklerflader forbliver danske. Score, vejr, sortering, bruger-/turdata, privatliv, geometri og land-/vandpunkter må ikke ændres som følge af oversættelsen.
+- Assistenten skal først auditeres mod den aktuelle Candidate G-viden og evalueres reproducerbart på dansk, tysk og engelsk. Sammenlign aktuelle modeller på faglig korrekthed, sikkerhed, privatliv, latenstid, pris, rate limits og drift; vælg ikke den nuværende model alene af historiske grunde.
+- Implementationen skal fortsat bruge den hærdede server-side Edge-gateway uden browsercredential og bevare sikker lokal fallback, CORS, rate limiting, grænser, rollback og fail-safe adfærd.
+- Start næste opgave fra ren `main` efter dokumentations-PR'en. Læs AGENTS.md og hele den obligatoriske startkæde før analyse. Brug Sol/Høj til assistentarkitektur/evals/modelvalg og Sol/Ekstra høj til tværgående slutvalidering.
+- Rod-worktree, `.recovery-*`, geometri, land-/vandpunkter og private data er fortsat beskyttede og må ikke berøres.
+
 ## Produktionsverificeret 4.0.287 – aktuelt udgangspunkt
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
