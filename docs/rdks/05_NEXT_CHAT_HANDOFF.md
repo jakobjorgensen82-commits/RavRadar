@@ -1,6 +1,6 @@
 # RavRadar – overlevering til næste chat
 
-## Aktiv lokal 4.0.290-kandidat – komplet offentlig DA/DE/EN og hærdet GPT-OSS Edge
+## Produktionsverificeret 4.0.290 – komplet offentlig DA/DE/EN og deaktiveret, hærdet GPT-OSS Edge
 
 - Hele den offentlige sprogflade er implementeret centralt: dansk standard/fallback, stabile CSS-flag+sprognavne, lokalt valg og stabile parameteriserede nøgler for hovedside, prognoser, områdepanel, konto/login, ture, lokal assistent, **Om RavRadar** og alle 12 afsnit i **Grundbog i ravjagt**.
 - Admin-, ekspert- og interne flader forbliver danske. Kandidaten ændrer ingen faglig model, vejr-, score-, sorterings-, konto-/tur-, privatlivs- eller geografidata.
@@ -8,7 +8,10 @@
 - Ejeren har valgt Cloudflare `@cf/openai/gpt-oss-20b`; Gemini Flash-Lite 27/27 er kun kvalitetsreference under de aktuelle EØS-vilkår. GLM/Gemma blev stoppet efter ikke-evaluerbare smoke-svar. GPT-OSS bestod 1/1 smoke, 4/4 mål-gate og 25/26 evaluerbare fuldtests med median/p95 1.406/2.933 ms og estimeret mindst 623,63 neuroner.
 - Brugbare Cloudflare-svar krævede `json_object`, kontrolleret rekursiv svarudtrækning, fem faste outputfelter, 800 completion-tokens/low reasoning, konkrete disposition-/evidenseksempler og en smoke → mål-gate → fuld-eval-rækkefølge. Edge skal fejle lukket på længdeafvigelsen og timeoutcasen.
 - Den hærdede GPT-OSS Edge-kandidat er implementeret med server-secrets, domænegate, dataminimering, CORS, 6/minut, 40/time og 300/dag, syv sekunders timeout, eksakt JSON/evidensvalidering og lokal fallback. `ravAssistantRemoteEnabled=false` er uændret; deploy/aktivering er ikke godkendt.
-- Målrettede tests, lokal desktop-/390 px-browserkontrol for alle tre offentlige sider og sprog samt fuld lokal `validate:source`/releasegate er grønne. Næste trin er exact-head/PR og frisk offentlig kontrol. Se DEC-0086/0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.
+- Målrettede tests, lokal desktop-/390 px-browserkontrol for alle tre offentlige sider og sprog samt fuld lokal `validate:source`/releasegate er grønne.
+- PR #183/exact-head `33104575862` blev merged som `4d6e0f6`. Produktion `33104888405` og efter PR #184 produktion `33106063695` stoppede sikkert før deploy på tre gamle tests, som stadig søgte flyttede danske tekster direkte i `app.js`. De snævre opfølgninger binder nu runtime til stabile i18n-nøgler og tester dansk fallback separat.
+- PR #185 bestod exact-head `33107136733` og blev merged som `50c1fc5`. Produktion `33107232593`, build `98640417925` og Pages `98643230518` er grønne gennem frisk vejr, fuld validering, releasegate, artifact og deploy.
+- Offentlig 4.0.290-browserkontrol består DA/DE/EN og husket sprog på forside, Om-side og Grundbog. **Bedste områder** og femdøgnsvisningen har fem færdige rækker. Den markerede Candidate G-fallback leverer fortsat, mens den friske primærserie modnes; systemet er derfor funktionelt, men endnu ikke helt ude af nødstatus. Se DEC-0086/0087 og `docs/research/RAV_ASSISTANT_CLOUDFLARE_GEMINI_COMPARISON_2026-08-27.md`.
 
 ## Afsluttet P0 – produktionsverificeret 4.0.289
 

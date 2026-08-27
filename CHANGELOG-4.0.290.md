@@ -2,7 +2,7 @@
 
 ## Status
 
-Lokal releasekandidat. Målrettede tests, desktop-/390 px-browserkontrol og fuld lokal `validate:source` inklusive releasegate er grønne; exact-head, frisk produktion og offentlig efterkontrol afventer.
+Produktionsverificeret. PR #183/#184/#185 bestod exact-head CI; de to første produktionsforsøg stoppede sikkert før deploy på tre gamle tests, som søgte flyttede danske tekster direkte i `app.js`. Den samlede rettelse binder nu runtime til stabile i18n-nøgler og dansk fallback separat. Produktion `33107232593`, build `98640417925` og Pages `98643230518` bestod frisk vejr, fuld validering, releasegate, artifact og deploy. Offentlig efterkontrol består DA/DE/EN og husket valg på forside, Om-side og Grundbog samt fem **Bedste områder** og fem færdige prognoserækker. Candidate G bruger fortsat tydeligt markeret fallback, mens den friske primærserie modnes.
 
 ## Ændringer
 
