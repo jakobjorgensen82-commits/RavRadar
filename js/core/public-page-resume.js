@@ -1,5 +1,6 @@
 export function createPublicPageResumeHandler({
   isCoreReady,
+  detailsRequired = () => true,
   isDetailsReady,
   waitForDetails,
   resume,
@@ -32,8 +33,8 @@ export function createPublicPageResumeHandler({
         return 'reloaded';
       }
 
-      if (!isDetailsReady()) await waitForDetailsOrTimeout();
-      if (!isDetailsReady()) {
+      if (detailsRequired() && !isDetailsReady()) await waitForDetailsOrTimeout();
+      if (detailsRequired() && !isDetailsReady()) {
         reload();
         return 'reloaded';
       }

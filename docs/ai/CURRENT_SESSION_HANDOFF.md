@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-28 – 4.0.295 offentlig opstartsydelse
+
+- Den offentlige 4.0.294-skal nåede DOM ready på cirka 0,57 sekunder, men normal opstart hentede derefter en 90–132 MB ukomprimeret Candidate G-detaljepakke. Observeret tid til femdøgnsvisningen var 25,19 sekunder koldt, 28,58 sekunder ved genindlæsning og 59,37 sekunder umiddelbart efter et nyt Pages-deploy. Cloudflare-assistenten indgik ikke i kæden.
+- 4.0.295 bygger fem eksakte nationale top-5-lister for begge søgemåder ind i den lille startpakke med den eksisterende Candidate G-bestetidsfunktion og nationale rangering. Den store detaljepakke hentes først ved område, konto, tur, assistent eller dybt zoom.
+- Manifest og ikke-adresserede livefiler forbliver friske med `no-store`. Kun prognosefiler bundet til både dataset-id og manifest-SHA må genbruges i browserens HTTP-cache. Dataset-, tids- og hashgates er bevaret.
+- Den komplette Candidate G-nødvisning opgraderes deterministisk med det kompakte indeks fra sit allerede auditerede offentlige datasæt. Dens detaljepakke, dataset, tider, scorer og state ændres ikke.
+- Målrettede paritets-, progressive runtime-, fallback-, mobilresume-, opstarts-, prognose-, rangering-, sitefunktions- og modulclosuretests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktion og offentlig cold/warm-måling afventer. Se DEC-0092.
+- Ejeren har gemt en ny Sibirien-land-/vandpunktrevision. Den behandles kun som privat staged kandidat: ingen koordinater er læst eller publiceret, ingen aktivering udføres, og ægte DMI-grid/96-timershorisont/48-timersstate skal modnes uden kunstig historik. Et senere skift kræver særskilt ejer-go.
+- Rod-worktree, `.recovery-*`, private data og faktisk geometri er urørte. De to geodatafiler ændrer kun topversionsfeltet 4.0.294 → 4.0.295.
+
 ## DRIFTSVERIFICERET CHECKPOINT – 2026-08-28 – Cloudflare-credential roteret uden release
 
 - Operationen startede fra den rene dokumentationslukkede 4.0.294-baseline på eksakt `origin/main` `989211265d0f338027452b5935d5def16dff3108`. Seneste læste produktions- og pilotkørsler var grønne før ændringen.

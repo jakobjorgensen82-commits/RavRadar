@@ -1,5 +1,16 @@
 # RavRadar - aktivt roadmap
 
+## P1 4.0.295-kildekandidat – offentlig opstartsydelse
+
+- [x] Afgræns den store detaljepakke og browserberegningen som flaskehals; frikend HTML-skallen og Spørg RavRadar.
+- [x] Byg eksakt kompakt top-5 for fem dage/begge modes og hent fulde detaljer behovsstyret.
+- [x] Lås dataset+SHA-cache uden at cache manifest, geometri eller ikke-adresserede livefiler.
+- [x] Bestå målrettede kontrakter og fuld lokal sourcegate/releasegate.
+- [ ] Bestå PR exact-head, frisk produktion og offentlig cold/warm ydelsesverifikation.
+- [ ] Lad den nye private Sibirien-punktrevision modne naturligt; aktivér kun efter et senere særskilt ejer-go.
+
+Se DEC-0092. Ingen score-, vejr-, bruger-, privatlivs- eller geokontrakt ændres.
+
 ## P1 produktionsverificeret 4.0.294 – bred read-only Spørg RavRadar-viden
 
 - [x] Lås og implementér 17 lokale grundbogsemner på DA/DE/EN.
@@ -7,7 +18,7 @@
 - [x] Bevar deterministic Candidate G for sted/tid/score samt Edge-/privacy-/kvote-/rollbackgrænser.
 - [x] Bestå fuld lokal sourcegate og releasegate.
 - [x] Bestå PR #194/#195 exact-head, frisk produktion og offentlig tre-sprogs kontrol inklusive naturlige oprindelsesformuleringer.
-- [ ] Rotér Cloudflare quick-start-tokenet som forsigtighed i et ejeraktivt vindue og genverificér Edge uden credentialoutput.
+- [x] Rotér Cloudflare quick-start-tokenet i et ejeraktivt vindue og genverificér Edge før/efter tilbagekaldelse uden credentialoutput.
 
 Begge assistentveje er read-only og isoleret fra prognoser, RavScore og alle bruger-/geodata. Se DEC-0091.
 

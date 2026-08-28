@@ -1,4 +1,4 @@
-import './about-i18n.js?v=4.0.294';
+import './about-i18n.js?v=4.0.295';
 
 const mobilePayUrl='https://qr.mobilepay.dk/box/8f2b226a-fd43-43f2-8610-1fa0df857c63/pay-in';
 const qrTarget=document.querySelector('#mobilepay-qr');

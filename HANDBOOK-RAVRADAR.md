@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Hurtigere kort og femdøgnsvisning – 4.0.295
+
+RavRadar åbner nu kortet, **Bedste områder** og **5-dages RavRadar** fra en lille startpakke. Femdagene er ikke en ny eller forenklet score: produktionsbygningen bruger præcis den samme Candidate G-bestetid og nationale rangering som tidligere og gemmer kun de fem viste zoner pr. dag og søgemåde i startpakken.
+
+De fulde oplysninger for alle 210 zoner og 673 kystdele bevares. Browseren henter dem først, når du vælger et område, åbner konto eller tur, stiller et assistentspørgsmål eller zoomer langt ind på kortet. Det fjerner den tidligere normale opstartshentning på cirka 90–132 MB ukomprimeret data uden at fjerne en funktion.
+
+RavRadar genbruger kun en prognosefil, når adressen indeholder både det præcise dataset-id og filens SHA-kontrolsum fra det friske manifest. Manifestet, kortgeometrien og andre ikke-indholdsbundne livefiler hentes fortsat frisk. Startpakke og detaljer skal stadig høre til samme dataset og tidspunkt.
+
+Candidate G-nødvisningen følger samme kontrakt: det lille top-5-indeks afledes fra dens allerede kontrollerede offentlige data, mens den komplette detaljepakke, scorerne og tilstanden er uændrede. Ændringen påvirker ikke Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se [DEC-0092](docs/rdks/10_DECISIONS/DEC-0092-CONTENT-ADDRESSED-LAZY-PUBLIC-DETAILS.md).
+
 ## Klogere Spørg RavRadar – også når AI-kvoten er brugt – 4.0.294
 
 Spørg RavRadar kan nu besvare almindelige ravspørgsmål direkte på dansk, tysk og engelsk uden at bruge den daglige AI-kvote. Den lokale viden dækker 17 emner: ravets oprindelse og massefylde, skjulte ravlagre, vind, bølger, strøm, vandstand, kystfælder, felttegn, identifikation og UV, waders, vejrforløb, Candidate G, manglende data, modellens begrænsninger, søgeteknik og udstyr.
@@ -30,7 +40,7 @@ Som sidste sikkerhedsnet vises det seneste komplette, auditerede datasæt ved op
 
 Mobil Safari kan gemme en hel webside i sin tilbage-/fremcache og senere vise den igen uden at starte JavaScript-modulerne forfra. Hvis brugeren forlader forsiden, mens en datahentning eller den progressive femdøgnsberegning stadig er i gang, kan browseren derfor vende tilbage til en halvfærdig visning.
 
-RavRadar installerer nu et livscyklusværn før den første asynkrone opstart. Er kortgrundlaget eller de fulde offentlige detaljer ikke færdige ved retur, genindlæses forsiden automatisk. Er alt indlæst, genopfriskes Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand. Flere samtidige returhændelser samles, og en genoptegningsfejl giver en ren genindlæsning.
+RavRadar installerer nu et livscyklusværn før den første asynkrone opstart. Er kortgrundlaget ikke færdigt ved retur, genindlæses forsiden automatisk. Hvis brugeren allerede havde bedt om områdedetaljer, gælder det samme, indtil den hentning er færdig. Ellers genopfriskes Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand uden at kræve den bevidst uanmodede detaljepakke. Flere samtidige returhændelser samles, og en genoptegningsfejl giver en ren genindlæsning.
 
 Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md).
 
@@ -627,7 +637,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.294
+**Håndbogsversion:** 4.0.295
 
 **Opdateret:** 19. august 2026
 

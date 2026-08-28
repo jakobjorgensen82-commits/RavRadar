@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.295-kildekandidat – hurtig offentlig start uden fuld detaljepakke
+
+- Den pludselige langsomhed var ikke HTML-skallen eller Spørg RavRadar. Normal 4.0.294-opstart hentede 90–132 MB ukomprimerede offentlige Candidate G-detaljer og beregnede fem nationale top-5-lister i browseren. Observeret prognosetid var 25–29 sekunder og cirka 59 sekunder lige efter Pages-deploy.
+- Produktionsprojektionen afleder nu et kompakt top-5-indeks med præcis samme `selectLocalBestForDay` og nationale rangering. Kort, aktuelle områder og femdøgnsvisning bruger kun startpakken; detaljer hentes ved faktisk behov.
+- Kun en liveprognosefil med både dataset-id og 64-tegns SHA fra manifestet må bruge HTTP-cache. Manifest, geometri og ikke-adresserede livefiler forbliver `no-store`; eksisterende dataset-/tids-/hashgates bevares.
+- Candidate G-fallbacken får samme indeks deterministisk fra sit auditerede offentlige datasæt uden ændring af detaljepakke, score, state eller tid. Den fulde detaljefil forbliver tilgængelig og integritetsbundet.
+- Målrettede paritets-, cache-, fallback-, resume-, opstarts-, rangerings-, site- og modulclosuretests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, frisk produktion og offentlig cold/warm-verifikation afventer. Se DEC-0092.
+- En ny Sibirien-punktrevision er privat staged. Ingen koordinater er læst/publiceret, og ingen aktivering er godkendt; ægte DMI-/48-timersmodning fortsætter under DEC-0090.
+
 ## Driftsverificeret credentialrotation – 2026-08-28
 
 - 4.0.294-koden og produktionsartifactet er uændrede. Rotationens kildebaseline var den rene `origin/main`-commit `989211265d0f338027452b5935d5def16dff3108`.

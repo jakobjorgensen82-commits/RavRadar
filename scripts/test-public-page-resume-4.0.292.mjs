@@ -8,6 +8,7 @@ function harness(overrides = {}) {
   let resumes = 0;
   const handler = createPublicPageResumeHandler({
     isCoreReady: () => overrides.coreReady ?? true,
+    detailsRequired: () => overrides.detailsRequired ?? true,
     isDetailsReady: () => detailsReady,
     waitForDetails: overrides.waitForDetails || (() => Promise.resolve()),
     resume: overrides.resume || (async () => { resumes += 1; }),
@@ -17,6 +18,12 @@ function harness(overrides = {}) {
     clearTimer: () => {}
   });
   return { handler, setDetailsReady:value=>{detailsReady=value;}, counts:()=>({reloads,resumes}) };
+}
+
+{
+  const test = harness({detailsReady:false,detailsRequired:false});
+  assert.equal(await test.handler({persisted:true}), 'resumed');
+  assert.deepEqual(test.counts(), {reloads:0,resumes:1});
 }
 
 {
@@ -74,6 +81,7 @@ assert.match(bootstrap,/event\.persisted && !appImported/);
 const app=await fs.readFile('app.js','utf8');
 assert.match(app,/createPublicPageResumeHandler/);
 assert.match(app,/isCoreReady:\(\)=>coreViewReady&&Boolean\(state\.zoneLayer&&state\.zones\)/);
+assert.match(app,/detailsRequired:\(\)=>conditionDetailsPromise!==null/);
 assert.match(app,/isDetailsReady:\(\)=>conditionDetailsReady/);
 assert.match(app,/map\.invalidateSize\(\{pan:false\}\)/);
 assert.match(app,/renderRanking\(\);renderSelectedZone\(\);[\s\S]*await renderNationalForecast\(\)/);
