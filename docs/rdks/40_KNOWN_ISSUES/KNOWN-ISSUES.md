@@ -2,12 +2,12 @@
 
 ## 4.0.303 – fysisk mobilopstartsydelse
 
-- **ISSUE-PUBLIC-MOBILE-STARTUP-REGRESSION – 4.0.303 KILDEKANDIDAT / FYSISK BEVIS AFVENTER:** 4.0.302's parallelle kort-/manifest-/conditions-start var grøn i desktop-CI, men fysisk iPhone Safari tog cirka 30 sekunder koldt og 7–8 sekunder varmt; første Om-navigation var også langsom. PR #208's rollback deployede ikke, fordi produktionsgaten korrekt stoppede på `INVALID_SWITCH_VERSION`, så offentlig side forblev 4.0.302. 4.0.303 gendanner sekventiel start, undgår første claim-reload og letter installationsprecache. Luk først efter exact-head, produktion, offentlig funktion og ejerens kolde/varme Safari-bevis. Se DEC-0099.
-- **ISSUE-FIRST-SERVICE-WORKER-INSTALL-RELOAD – 4.0.303 KILDEKANDIDAT:** Første `clients.claim()` kunne udløse den samme reload som en senere rigtig workeropdatering, mens installationen samtidig forhåndshentede kortfil og store Om-billeder. 4.0.303 skelner første claim fra senere controller-skift og fjerner de tunge installfetches. Målrettet kontrakttest er grøn; produktion og fysisk prøve afventer.
+- **ISSUE-PUBLIC-MOBILE-STARTUP-REGRESSION – PRODUKTIONS- OG FYSISK VERIFICERET LØST I 4.0.303:** 4.0.302's parallelle start gav cirka 30 sekunder koldt og 7–8 sekunder varmt på fysisk iPhone. 4.0.303 bestod PR #209/exact-head, fuld produktion/Pages og offentlig 210 + 5 × 5. Ejeren bekræftede korrekt version, fungerende Om-retur og både kold og varm Safari-start på 4–5 sekunder. Se DEC-0099.
+- **ISSUE-FIRST-SERVICE-WORKER-INSTALL-RELOAD – PRODUKTIONS- OG FYSISK VERIFICERET LØST I 4.0.303:** Første claim genindlæser ikke længere siden, og installationen forhåndshenter ikke kortfil/store Om-billeder. Kontrakt, produktion, offentlig runtime og ejerens kolde iPhone-prøve er grønne.
 
 ## 4.0.301 – fysisk mobilretur gennem RavRadars eget Om-link
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – 4.0.301 KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** Ejerens fysiske Safari-test var fortsat rød på bekræftet produktionsversion 4.0.300. Den tidligere 4.0.292-verifikation viste browsertilbage, ikke intern `./`-navigation; 4.0.300 genskabte derfor ikke den beviste hændelse. Offentlig referrer er verificeret samme-origin root. 4.0.301 lader den interne knap udføre `history.back()` i netop dette tilfælde og beholder statisk `./` ved direkte/fremmed åbning. Målrettede tests er grønne; exact-head, produktion og fysisk Safari-/Hjemmeskærm-bevis afventer. Se DEC-0098.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – PRODUKTIONS- OG FYSISK VERIFICERET LØST I 4.0.303:** 4.0.301 indførte den korrekte `history.back()`-vej efter 4.0.300's røde prøve. Den bevarede vej er nu både offentligt og fysisk iPhone Safari-verificeret i 4.0.303; kort og prognoser er til stede efter RavRadar-knappen fra **Om RavRadar**. Se DEC-0098/0099.
 
 ## 4.0.296 – offentlig opstartsydelse
 

@@ -1,12 +1,13 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.303 – prioriteret mobilopstart og let første installation
+## Produktions- og fysisk verificeret 4.0.303 – prioriteret mobilopstart og let første installation
 
 - 4.0.301 virkede på ejerens fysiske iPhone, inklusive intern Om-retur, men første load tog cirka 14 sekunder.
 - 4.0.302's parallelle kort-/manifest-/conditions-start bestod PR #207, exact-head og produktion på desktop. Fysisk iPhone Safari viste derimod cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation. 4.0.302 er derfor afvist.
 - PR #208's byteidentiske 4.0.301-rollback bestod exact-head og blev merged som `e155f42e`, men produktion `33177494546` stoppede fail-closed før deploy på `INVALID_SWITCH_VERSION`, fordi centralt valg fortsat bar 4.0.302. Offentlig side forblev 4.0.302.
 - 4.0.303 gendanner sekventiel kort → manifest → conditions, lader første service-worker-claim beholde den allerede startede side og fjerner kortfil/store Om-billeder fra installationens forhåndshentning. Senere reelle workeropdateringer genindlæser fortsat højst én gang.
-- DEC-0098's historikretur og DEC-0092/0093's kompakte, indholdsadresserede data bevares. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion, offentlig runtime og fysisk kold/varm Safari afventer. Se DEC-0099.
+- PR #209/exact-head `33178940206`, merge `19886fc0`, produktion `33179036658`, build `98875217073` og Pages `98877901727` er grønne. Offentlig side viser version 4.0.303, 210 zoner, fem aktuelle områder, fem gange fem prognoseresultater og fungerende Om-retur.
+- Ejeren bekræftede fysisk iPhone Safari med korrekt version, fungerende retur og 4–5 sekunders både kold og varm start. DEC-0098's historikretur og DEC-0092/0093's kompakte data bevares; problemet er lukket. Se DEC-0099.
 - Ingen faglig model, prognose, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
 
 ## Kildekandidat 4.0.301 – intern Om-knap bruger rigtig historikretur

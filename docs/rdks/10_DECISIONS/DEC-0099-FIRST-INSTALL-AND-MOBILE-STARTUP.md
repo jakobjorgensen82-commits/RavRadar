@@ -1,6 +1,6 @@
 # DEC-0099 – Én prioriteret mobilopstart og let første service-worker-installation
 
-- **Status:** Besluttet til 4.0.303; produktions- og fysisk ejerbevis afventer.
+- **Status:** Produktions- og fysisk verificeret i 4.0.303.
 - **Dato:** 2026-08-28
 - **Erstatter:** 4.0.302's parallelle manifest-/conditions-start.
 - **Bevarer:** DEC-0098's historikretur og DEC-0092/0093's kompakte, indholdsadresserede startdata.
@@ -18,6 +18,12 @@ Service workerens første installation kunne samtidig konkurrere med den synlige
 3. Første service-worker-installation må ikke forhåndshente den store kortfil eller Om-sidens responsive billeder. De hentes og cachelagres fortsat, når siden faktisk bruger dem.
 4. Om-returen fra DEC-0098 bevares. Ingen timer, watchdog, nonce-navigation eller mobil hard reload genindføres.
 5. Grøn desktop-CI er ikke fysisk mobilbevis. Kold og varm iPhone Safari samt den interne Om-retur skal godkendes af ejeren, før problemet lukkes.
+
+## Produktionsbevis
+
+PR #209 bestod exact-head `33178940206`/job `98874825239` på commit `23940e21` og blev merged som `19886fc0`. Produktion `33179036658`, build `98875217073` og Pages `98877901727` bestod central hydrering, frisk vejr/proveniens, fuld validering, releasegate, artifact og deploy. Offentlig 4.0.303 viste 210 interaktive zoner, fem **Bedste områder** og fem resultater på alle fem prognosedage; varm isoleret desktopstart var cirka 1,6 sekunder, første Om-åbning cirka 0,9 sekund og retur cirka 1,7 sekunder.
+
+Ejeren bekræftede derefter korrekt version og fungerende Om-retur på fysisk iPhone Safari. Både kold og varm start tog 4–5 sekunder mod 4.0.302's cirka 30 sekunder koldt og 7–8 sekunder varmt. Kravet i punkt 5 er dermed opfyldt.
 
 ## Afviste alternativer
 

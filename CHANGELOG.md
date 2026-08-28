@@ -3,6 +3,7 @@
 - Ruller 4.0.302's fysisk afviste parallelle opstart tilbage: ejerens iPhone viste cirka 30 sekunder koldt og 7–8 sekunder varmt trods grøn desktop-CI.
 - Første service-worker-overtagelse genindlæser ikke længere siden, og installationen forhåndshenter ikke kortfilen eller de store Om-billeder.
 - DEC-0098's fungerende historikretur bevares. Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0099 og `CHANGELOG-4.0.303.md`.
+- PR #209/exact-head, produktion og Pages er grønne; offentlig 210 + 5 × 5 og Om-retur består. Ejeren bekræfter fysisk iPhone Safari med 4–5 sekunders både kold og varm start, fungerende retur og korrekt 4.0.303-version.
 
 ## 4.0.302 – parallel opstart, fysisk afvist (2026-08-28)
 

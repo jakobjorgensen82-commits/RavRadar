@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.303-kandidat efter fysisk afvist 4.0.302-opstart
+# Implementeringsstatus – produktions- og fysisk verificeret 4.0.303
 
-## P1 kildekandidat – prioriteret mobilopstart og let første service-worker-installation
+## P1 produktionsverificeret – prioriteret mobilopstart og let første service-worker-installation
 
 - [x] Registrér 4.0.301 som fysisk funktionel med cirka 14 sekunders første iPhone-load.
 - [x] Registrér 4.0.302 som fysisk afvist trods grøn PR #207/produktion: cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation.
@@ -11,9 +11,9 @@
 - [x] Bevar DEC-0098's historikretur samt DEC-0092/0093's data-/fallbackkontrakter.
 - [x] Bestå målrettede startup-, worker-, Om-, resume-, fallback- og ydelseskontroller.
 - [x] Bestå fuld lokal RDKS/sourcegate og releasegate.
-- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Verificér offentlig 4.0.303, 210 zonelinjer, fem aktuelle områder, fem dage × fem resultater og intern Om-retur.
-- [ ] Få ejeren til at godkende en kold og en varm Safari-start på fysisk iPhone.
+- [x] Bestå PR #209 exact-head `33178940206`/job `98874825239`, merge `19886fc0`, produktion `33179036658`, build `98875217073` og Pages `98877901727`.
+- [x] Verificér offentlig 4.0.303, 210 zonelinjer, fem aktuelle områder, fem dage × fem resultater og intern Om-retur.
+- [x] Få ejeren til at godkende korrekt version, fungerende Om-retur og både kold og varm Safari-start på 4–5 sekunder på fysisk iPhone.
 
 Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0099.
 
