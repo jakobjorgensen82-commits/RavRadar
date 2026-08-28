@@ -38,15 +38,15 @@ READY skifter ikke automatisk. Ejeren vælger særskilt **Aktivér klar ændring
 
 Som sidste sikkerhedsnet vises det seneste komplette, auditerede datasæt ved op til seks lokale warmups. RavRadar publicerer aldrig en blanding, hvor enkelte zoner er nye og andre gamle. 4.0.292 flytter ingen faktiske punkter; mekanismen er forberedt til en senere ejerstyret ændring, herunder Sibirien. Se [DEC-0090](docs/rdks/10_DECISIONS/DEC-0090-STAGED-COASTAL-POINT-ACTIVATION.md).
 
-## Mobil retur og browserens sidecache – 4.0.298
+## Mobil retur og browserens sidecache – 4.0.299
 
 Mobil Safari kan gemme en hel webside i sin tilbage-/fremcache og senere vise den igen uden at starte JavaScript-modulerne forfra. Hvis brugeren forlader forsiden, mens en datahentning eller den progressive femdøgnsberegning stadig er i gang, kan browseren derfor vende tilbage til en halvfærdig visning.
 
 RavRadar installerer livscyklusværnet før den første asynkrone opstart. En persisted retur på mobil genindlæser forsiden rent. RavRadars egen knap på **Om RavRadar** bruger desuden en entydig, versionsbundet root-navigation med en unik nonce, så den ikke afhænger af browserens tilbageknap eller en bestemt bfcache-hændelse. Samme relative vej gælder i Safari og i den installerede Hjemmeskærm-app.
 
-På desktop genopfriskes fortsat Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand. Den direkte Om-retur får et særskilt lille værn før Leaflet og appopstart: efter seks sekunder kræves synligt kort, fem områder, fem dagsfaner og fem viste prognoserækker. Mangler noget, foretages højst én frisk retry; en fortsat fejl stopper uden reloadløkke.
+På desktop genopfriskes fortsat Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand. Den direkte Om-retur har ikke længere sit eget head-script, sin egen timer eller automatisk reload. Offentlig måling viste, at den friske retur allerede var komplet efter cirka ét sekund, hvorefter 4.0.298's fejlbehæftede værn genstartede den. 4.0.299 lader derfor den eksisterende hurtige appopstart fuldføre én gang.
 
-Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md), [DEC-0094](docs/rdks/10_DECISIONS/DEC-0094-MOBILE-BFCACHE-HARD-RELOAD-FAILSAFE.md) og [DEC-0095](docs/rdks/10_DECISIONS/DEC-0095-SAFARI-ABOUT-DIRECT-RETURN-GUARD.md).
+Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md), [DEC-0094](docs/rdks/10_DECISIONS/DEC-0094-MOBILE-BFCACHE-HARD-RELOAD-FAILSAFE.md), [DEC-0095](docs/rdks/10_DECISIONS/DEC-0095-SAFARI-ABOUT-DIRECT-RETURN-GUARD.md) og [DEC-0096](docs/rdks/10_DECISIONS/DEC-0096-DIRECT-RETURN-WITHOUT-FORCED-RELOAD.md).
 
 ## Offentlig gratis Spørg RavRadar – 4.0.291
 
@@ -641,7 +641,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.298
+**Håndbogsversion:** 4.0.299
 
 **Opdateret:** 19. august 2026
 

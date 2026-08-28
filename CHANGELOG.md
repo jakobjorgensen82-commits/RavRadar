@@ -1,9 +1,16 @@
+## 4.0.299 – én hurtig Om-retur uden tvungen reload (2026-08-28)
+
+- Bevarer den unikke versions-/noncebaserede Om-navigation, men fjerner 4.0.298's ekstra synkrone head-script, timer og automatiske reload.
+- Offentlig 4.0.298 var komplet efter cirka ét sekund med 210 zonelinjer og 5 + 5 + 5, hvorefter det fejlbehæftede værn genstartede den allerede færdige side. 4.0.299 lader den hurtige appopstart fuldføre præcis én gang.
+- Ændringen følger direkte offentlig evidens og ejerens røde fysiske iPhone-test. Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0096 og `CHANGELOG-4.0.299.md`.
+
 ## 4.0.298 – sikker direkte retur fra Om RavRadar (2026-08-28)
 
 - RavRadar-linket på **Om RavRadar** laver en entydig ny root-navigation med versionsmarkør og nonce i både Safari og Hjemmeskærm-app.
 - Et lille værn i sidens `<head>` kræver synligt kort, fem **Bedste områder**, fem dagsfaner og fem viste prognoserækker og må højst udføre én frisk retry efter seks sekunder.
 - Ændringen følger ejerens præcisering: den fejlede fysiske iPhone-rejse brugte den interne knap, ikke browserens tilbageknap. Den eksisterende bfcache-recovery bevares.
 - Candidate G, RavScore, vejr, scorer, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0095 og `CHANGELOG-4.0.298.md`.
+- PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896` var grønne, men den offentlige vagt genkendte ikke de 210 zonelinjer i custom panes og genindlæste derfor fejlagtigt. Fysisk iPhone-test var rød; følg DEC-0096/4.0.299.
 
 ## 4.0.297 – mobil bfcache-retur med fail-safe genindlæsning (2026-08-28)
 

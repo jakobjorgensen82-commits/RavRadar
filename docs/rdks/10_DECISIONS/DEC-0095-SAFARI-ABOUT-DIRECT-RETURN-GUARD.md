@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementeret kildekandidat til 4.0.298 efter ejerens præcisering og fysiske iPhone-test 2026-08-28. Målrettede tests og fuld lokal `validate:source`/releasegate er grønne; exact-head, produktion og fysisk kontrol i både Safari og Hjemmeskærm-app afventer.
+Produktionsudgivet i 4.0.298 gennem PR #203, exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`. Den unikke navigation virker, men offentlig DOM-måling og fysisk iPhone-test viste, at sundhedsværnets kortselector og sekssekundersbudget var fejlbehæftede. 4.0.298 må ikke kaldes fysisk løst; den afgrænsede korrektion står i DEC-0096/4.0.299.
 
 ## Problem
 
@@ -30,4 +30,4 @@ Den efterfølgende præcisering ændrer fejldiagnosen. Brugeren aktiverer ikke b
 - Fuld `validate:source` skal bestå på PR'ens eksakte head.
 - Et nyt produktionsartifact skal bestå fuld frisk produktion, releasegate og Pages.
 - Offentlig 4.0.298 skal vise farvet kort, fem **Bedste områder** og fem resultater på alle fem prognosedage med fortsat sund, tydeligt markeret Candidate G-nøddrift.
-- Ejeren skal efter liveudgivelsen kontrollere **Om RavRadar** → RavRadar på en fysisk iPhone først i Safari og derefter fra Hjemmeskærm-appen. Fejlen må ikke kaldes fysisk løst før begge krævede veje er grønne.
+- Ejeren skal efter liveudgivelsen kontrollere **Om RavRadar** → RavRadar på en fysisk iPhone først i Safari og derefter fra Hjemmeskærm-appen. 4.0.298-testen var rød; prøven gentages først efter DEC-0096's produktion. Fejlen må ikke kaldes fysisk løst før begge krævede veje er grønne.

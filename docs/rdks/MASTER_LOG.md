@@ -1,9 +1,16 @@
+## 2026-08-28 – 4.0.299 én hurtig Om-retur uden tvungen reload
+
+- 4.0.298 bestod PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`, men den fysiske iPhone-rejse er rød.
+- Offentlig Om-retur viste efter ét sekund 210 interaktive zonelinjer, fem aktuelle områder, fem dagsfaner og fem viste rækker. Værnet søgte fejlagtigt i standard-overlay-pane, stod derfor `pending`, genindlæste ved cirka seks sekunder og endte `failed`.
+- Ejeren oplevede samtidig meget langsom og derefter helt udeblevet side. 4.0.299 beholder kun den unikke direkte navigation og fjerner det ekstra head-script, timeren, service-worker-cacheposten og automatiske reload.
+- Målrettet test og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig cirka ét-sekundsretur uden senere URL-skift og fysisk Safari-/Hjemmeskærm-bevis afventer. Ingen faglig model, data, score, brugerdata, geometri eller punkt ændres. Se DEC-0096.
+
 ## 2026-08-28 – 4.0.298 direkte Safari-/Hjemmeskærm-retur
 
 - 4.0.297 bestod PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol, men ejerens fysiske iPhone-test var fortsat rød.
 - Ejeren præciserede, at retur sker gennem RavRadars eget link på **Om RavRadar**, ikke browserens tilbageknap. Den direkte navigation var derfor ikke sikkert omfattet af 4.0.297's `pageshow.persisted`-værn.
 - 4.0.298 bruger et statisk versionsbundet link, en unik nonce og et lille tidligt head-værn. Sundhed kræver kort, fem aktuelle områder, fem dagsfaner og fem viste rækker; efter seks sekunder tillades højst én frisk retry uden løkke.
-- Samme navigation gælder Safari og Hjemmeskærm-app. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion, offentlig kontrol og fysisk iPhone-bevis afventer. Ingen faglig model, data, score, brugerdata, geometri eller punkt ændres. Se DEC-0095.
+- Samme navigation gælder Safari og Hjemmeskærm-app. PR #203, exact-head, produktion og Pages var grønne, men den pane-afhængige sundhedskontrol var rød og udløste falsk reload. Fysisk iPhone-bevis fejlede; opfølgningen står i DEC-0096/4.0.299. Ingen faglig model, data, score, brugerdata, geometri eller punkt ændres.
 
 ## 2026-08-28 – 4.0.297 fysisk mobil bfcache-failsafe
 

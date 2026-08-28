@@ -1,4 +1,4 @@
-import './about-i18n.js?v=4.0.298';
+import './about-i18n.js?v=4.0.299';
 
 const homeLink=document.querySelector('.back-link');
 homeLink?.addEventListener('click',event=>{

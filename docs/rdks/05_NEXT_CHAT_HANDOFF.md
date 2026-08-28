@@ -1,11 +1,11 @@
 # RavRadar – overlevering til næste chat
 
-## Kildekandidat 4.0.298 – direkte Safari-/Hjemmeskærm-retur
+## Kildekandidat 4.0.299 – én hurtig Om-retur
 
-- Produktionsbaseline er 4.0.297 på merge `f1adf9b1`; PR #201/exact-head `33162270459`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol er grønne.
-- Ejerens fysiske iPhone-prøve fejlede fortsat. Den afgørende præcisering er, at retur sker gennem RavRadars eget link inde på **Om RavRadar**, ikke browserens tilbageknap. 4.0.297's bfcache-værn ramte derfor den forkerte hændelsesvej.
-- 4.0.298 laver en entydig root-navigation med `return=about`, version og nonce. Et tidligt selvhostet head-værn kræver kort, fem aktuelle områder, fem dagsfaner og fem viste rækker og må højst genindlæse én gang efter seks sekunder.
-- Samme vej er scope-sikker for både Safari og Hjemmeskærm-app. Målrettede tests og fuld lokal source-/releasegate er grønne; kør PR exact-head, fuld produktion og offentlig kontrol, og få derefter ejeren til at teste Safari først og Hjemmeskærm bagefter. Se DEC-0095.
+- 4.0.298 blev udgivet gennem PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`, men fysisk iPhone-test var rød.
+- Offentlig Om-retur var faktisk komplet efter ét sekund med 210 zonelinjer og 5 + 5 + 5, men værnet så nul linjer i den forkerte standard-overlay-pane, genindlæste ved cirka seks sekunder og endte `failed`.
+- 4.0.299 beholder den unikke versions-/noncebaserede navigation, men fjerner hele det ekstra synkrone head-værn, timeren, service-worker-cacheposten og den automatiske reload. Den eksisterende hurtige appopstart skal kun køre én gang.
+- Målrettet test og fuld lokal source-/releasegate er grønne. Kør PR exact-head, frisk produktion og offentlig cirka ét-sekundsretur uden senere URL-skift. Få derefter ejeren til at teste Safari først og Hjemmeskærm bagefter; kald intet løst før begge er grønne. Se DEC-0096.
 - Rør ikke Sibirien, koordinater, geometri, private data eller Candidate G-state. Den private staged punktrevision kræver fortsat separat modning og ejer-go.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startpakke

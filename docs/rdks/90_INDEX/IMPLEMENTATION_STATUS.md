@@ -1,19 +1,20 @@
-# Implementeringsstatus – 4.0.298-kandidat over produktionsverificeret 4.0.297
+# Implementeringsstatus – 4.0.299-kandidat efter fejlramt fysisk 4.0.298-retur
 
-## P1 kildekandidat – robust intern mobilretur
+## P1 kildekandidat – én hurtig direkte retur
 
-- [x] Luk 4.0.297 gennem PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol.
-- [x] Registrér ejerens fortsat røde fysiske iPhone-test og præciseringen: testen bruger RavRadars eget link, ikke browserens tilbageknap.
-- [x] Giv Om-linket en statisk versionsbundet `return=about`-vej og en unik nonce ved normal aktivering.
-- [x] Installer et tidligt selvhostet head-værn før Leaflet og async bootstrap.
-- [x] Kræv synligt kort, fem aktuelle områder, fem dagsfaner og fem viste prognoserækker; tillad højst én sekssekunders retry.
-- [x] Lås sund retur, timeout, præcis én retry, ingen løkke, fravær af returmarkør, statisk href, head-rækkefølge og service-worker-cache med målrettede tests.
-- [x] Bestå fuld lokal sourcegate og RDKS-/privacy-/releasekontrol efter versionsløftet.
+- [x] Luk 4.0.298 gennem PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`.
+- [x] Registrér offentlig modstridende evidens: komplet 210 + 5 + 5 + 5 efter ét sekund, men `pending`/retry/`failed` på grund af forkert pane-selector.
+- [x] Registrér ejerens røde fysiske iPhone-test med meget langsom og derefter udeblevet side.
+- [x] Bevar Om-linkets unikke versions-/noncebaserede navigation i Safari og Hjemmeskærm-app.
+- [x] Fjern det ekstra synkrone head-script, timeren og den automatiske reload, som genstartede den allerede komplette side.
+- [x] Fjern det forkastede værn fra service-workerens appskal og den aktive testkæde.
+- [x] Bestå målrettet 4.0.299-regression og fuld lokal sourcegate.
 - [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.298-version, hurtig startup, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
-- [ ] Få ejeren til at bekræfte **Om RavRadar** → RavRadar først i Safari og derefter i Hjemmeskærm-appen på fysisk iPhone.
+- [ ] Genverificér offentlig 4.0.299-version, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage.
+- [ ] Bevis offentlig cirka ét-sekunds Om-retur uden efterfølgende URL-skift eller reload.
+- [ ] Få ejeren til at bekræfte Safari og derefter Hjemmeskærm-appen på fysisk iPhone.
 
-Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094/0095.
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094–0096.
 
 ## P1 produktionsverificeret – minimal Candidate G-startprojektion
 
