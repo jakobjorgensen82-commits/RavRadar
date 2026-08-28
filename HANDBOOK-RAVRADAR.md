@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Ekstra høj genkontrol og langt større lokal ravviden – 4.0.307
+
+Genkontrollen af hele ejerpakken fandt, at 4.0.306 ikke var bred nok i **Spørg RavRadar**. Assistenten har derfor fået 152 kildeklassificerede lokale emner om geologi, materiale, identifikation, behandling, kystfysik, feltmetode, sikkerhed, regler og RavRadar. De ligger oven på de 17 eksisterende intent-kontrakter og kontrolleres med 456 DA/DE/EN-spørgsmål uden netværk eller AI-kvote. Grundbogen er suppleret med ekstern forskning, officielle kilder, RavRadars systematiske analyser og Rav Jagt som navngiven praktisk ekspert. Edge-pakken er udvidet fra 23 til 38 offentlige fakta.
+
+Gennemgangen fandt også en reel delstrengsfejl: **Skagen** kunne blive afvist, fordi navnet indeholder bogstaverne “kage”. Browser- og Edge-filteret kræver nu hele Unicode-ord. Lokale faktasvar afhænger ikke længere af prognosedetaljefilen, så eksempelvis ravlygtesvaret virker også under en detailfejl. Edge-assistentens UV-faktum er samtidig rettet fra 365 til **395 nm**, og Kyst B's pil peger op på dansk, tysk og engelsk. 5-dagesvisningen fjerner nu passerede kalenderdage fra et ældre nøddriftsdatasæt uden at flytte gamle prognoseværdier til nye datoer.
+
+Candidate G, RavScore, scoresemantik, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0105](docs/rdks/10_DECISIONS/DEC-0105-EXTRA-HIGH-OWNER-CORRECTION-AUDIT.md).
+
 ## Samlede ejerrettelser til læring og betjening – 4.0.306
 
 Grundbogen bruger nu **395 nm** som praktisk angivelse for ravlygten; tidligere aktiv omtale af 365 nm er erstattet. Koldt vands større betydning for ravets mobilisering forklares uden at gøre temperatur til et nyt RavScore-input. Forklaringen linker til Rav Jagts video, og et nyt responsivt kysttværsnit samler og krediterer Rav Jagts syv skitser i seks positioner fra havbund til strand.
@@ -673,7 +681,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.306
+**Håndbogsversion:** 4.0.307
 
 **Opdateret:** 19. august 2026
 

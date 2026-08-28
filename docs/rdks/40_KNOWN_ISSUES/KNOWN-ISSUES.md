@@ -1,5 +1,16 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.307-kandidat – ekstra høj genkontrol
+
+- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-STILL-TOO-NARROW – RETTET LOKALT / AFVENTER RELEASE:** 4.0.306 tilføjede kun seks emnefamilier. 4.0.307-kandidaten har nu 152 kildeklassificerede katalogemner og 456 DA/DE/EN-evals oven på de 17 eksisterende intent-kontrakter. Grundbogen er suppleret med ekstern forskning, officielle kilder, RavRadars større forskningsgrundlag og navngiven praktisk ekspertviden. Edge er udvidet fra 23 til 38 offentlige fakta. Source-, produktions- og offentlig slutkontrol afventer.
+- **ISSUE-ASSISTANT-SKAGEN-SUBSTRING-REFUSAL – RETTET LOKALT / AFVENTER RELEASE:** `kage` i udenfor-domænefilteret ramte `Skagen` i browser og Edge. Unicode-helordsgrænsen bevarer den reelle kageafvisning og accepterer ravspørgsmål om Skagen.
+- **ISSUE-ASSISTANT-EDGE-UV-365-DRIFT – RETTET LOKALT / AFVENTER RELEASE:** Den lokale assistent og Grundbogen sagde 395 nm, mens Edge-faktakontrakten fortsat sagde 365 nm. Begge aktive assistentveje er nu ensrettet til 395 nm og dækket af negativ regression.
+- **ISSUE-LEARN-COAST-B-TRANSLATED-ARROW – RETTET LOKALT / AFVENTER RELEASE:** Dansk Kyst B var korrekt, men DE/EN-skabelonerne brugte fortsat højrepil. Alle tre sprog viser nu pil op; visuel slutkontrol afventer.
+- **ISSUE-FORECAST-STALE-FIRST-DAY – RETTET LOKALT / AFVENTER RELEASE:** 5-dagesvisningen viste de første fem datoer fra et ældre nøddriftsdatasæt, også efter at de var udløbet. Visningen filtrerer nu efter dansk kalenderdag, beholder originale datoer og viser færre reelle dage eller en klar udløbsbesked. Ingen forecastværdi, Candidate G-logik eller recoverydata ændres.
+- **ISSUE-ASSISTANT-LOCAL-ANSWER-BLOCKED-BY-FORECAST-DETAILS – RETTET OG LOKALT BROWSERVERIFICERET / AFVENTER RELEASE:** Den mobile browser viste HTTP-fejl på “Hvad er en ravlygte?”, fordi UI'en altid ventede på prognosedetaljer før et assistentsvar. Fakta-, forsknings- og sikkerhedssvar går nu direkte til den lokale vidensbase; kun dynamisk sted/tid/score kræver detaljerne. Mobil 390 × 844 svarer lokalt med 395 nm samt på fosfor, succinit, revlehul og nøddriftsdatoer, selv om den lokale detaljefil mangler.
+
+Se DEC-0105.
+
 ## 4.0.306 – produktionslukket GitHub- og vejropdateringsgenopretning
 
 - **ISSUE-PREMATURE-NEXT-RAVSCORE-MERGE – PRODUKTIONSVERIFICERET TILBAGEFØRT / MODELARBEJDE FORTSAT ÅBENT:** PR #215 blev merged før DEC-0102's fulde rækkefølge, men nåede aldrig deploy. PR #217/merge `8ebbd4e7`, produktion `33212435923` og offentlig 4.0.306 beviser Candidate G som eneste offentlige model. Den næste model forbliver åben udvikling og har særskilte fysik-, missing-, rand- og evidensblokeringer.
@@ -58,7 +69,7 @@ Se DEC-0104.
 ## Nye ejerobservationer efter produktionsverificeret 4.0.291
 
 - **ISSUE-MOBILE-HOME-RETURN-EMPTY – HISTORISK 4.0.292-RETTELSE / SENERE FYSISK REGRESSION FLYTTET TIL 4.0.297:** Forsiden manglede oprindeligt `pageshow`-recovery for Safari/WebKit back/forward-cache. 4.0.292 bestod exact-head, produktion og offentlig 390 × 844-retur, men ejerens senere fysiske mobilevidens viste, at kontrakten ikke var robust nok efter den progressive opstartsændring. Den aktive opfølgning står ovenfor og i DEC-0094.
-- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – PRODUKTIONSVERIFICERET LØST:** 4.0.293/294 dækker 17 grundbogsbaserede DA/DE/EN-emner lokalt, 51 lokale nul-netværkscases, 23 Edge-fakta og 66 samlede evalcases. PR #194/#195, produktion og offentlig tre-sprogs kontrol er grønne; løsningen er read-only og ændrer ingen prognose-, score-, bruger- eller geodata.
+- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – HISTORISK DELLEVERANCE, GENÅBNET OG ERSTATTET AF 4.0.307-PUNKTET OVENFOR:** 4.0.293/294's 17 emner var produktionsverificerede, men ejerens senere krav og ekstra høje audit viste, at bredden fortsat var utilstrækkelig. De gamle tests bevares som basis og udbygges i 4.0.307.
 - **ISSUE-ASSISTANT-CLOUDFLARE-TOKEN-HYGIENE – DRIFTSVERIFICERET LUKKET:** Et nyt mindst-muligt Workers AI Read + Edit-token blev oprettet på den eksakte konto, og kun den eksisterende Supabase Edge-secret blev erstattet uden redeploy eller credentialoutput. DA/DE/EN, fast afvisning, CORS/origin, seks `200` + syvende `429` og offentlig lokal fallback var grønne før tilbagekaldelse. Efter særskilt ejer-go blev fire gamle generiske tokens tilbagekaldt; ét afgrænset retry efter en fail-closed transient i rate-limit-RPC'en beviste den nye vej med `200` efter tilbagekaldelsen. Ingen kode-, produkt-, privatlivs- eller geodataændring fandt sted.
 
 ## Produktionsverificeret P0 4.0.289 – den oprindelige datagap-trigger og recoveryoverlap

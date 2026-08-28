@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.307-kandidat – 152 kildeklassificerede lokale emner og rettet scopegrænse
+
+Den ekstra høje audit erstatter antagelsen om, at seks nye emnefamilier var en tilstrækkelig breddeudvidelse. Et deterministisk katalog giver nu 152 DA/DE/EN-emner oven på de 17 eksisterende intent-kontrakter og testes med 456 katalogspørgsmål uden netværk eller AI-kvote. Hvert emne har evidensklasse og kilde-ID. De 27 offentligt registrerede kilder omfatter ekstern ravforskning, fagfællebedømt kystanalogi, officielle kyst-/sikkerheds-/regelkilder, RavRadars større forskningsgrundlag og Rav Jagt som navngiven praktisk ekspert. Specifik lokal viden vælges før brede standardsvar; dynamiske sted-/tid-/scoresvar bevarer deres Candidate G-vej.
+
+Browser og Edge bruger Unicode-helordsgrænser, så `Skagen` ikke rammer det uvedkommende ord `kage`, og relevant specialviden har en bredere domænerute. Edge-pakken er udvidet fra 23 til 38 offentlige fakta, herunder geologi, saltation, koldt vand, identifikation, konservering, sikkerhed og aktuelle regelgrænser. Den versionsbundne Edge-UV-fakta bruger 395 nm. Providercredential, dataminimering, CORS, kvote, timeout, JSON/evidensvalidering og lokal fallback er uændrede. Se DEC-0105 og den eksterne researchaudit.
+
+Den visuelle mobilprøve fandt en skjult afhængighed: UI'en ventede tidligere på prognosedetaljer før alle spørgsmål. `ravQuestionNeedsConditionDetails` begrænser nu denne venten til dynamisk bedste sted, bedste tid og score. Katalogsvar, sikkerhed og generel forskning svarer lokalt, selv når detaljefilen er utilgængelig.
+
 ## 4.0.306-kandidat
 
 Det separate smårettelsesspor ændrer offentlig tekst/UI, Grundbogen og read-only Spørg RavRadar-viden. Aktiv UV-angivelse er 395 nm; koldt vand forklares tydeligere som mobiliseringsfaktor uden nyt scoreinput. Zonesøgning, pilesignatur, Rav Jagt-illustration og synlige BernsteinScore/AmberScore er tilføjet. Candidate G/modelsporet er urørt. Se DEC-0103.
