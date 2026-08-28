@@ -1,8 +1,15 @@
+## 2026-08-28 – 4.0.305 fjerner Leaflet-rasterflisegitter
+
+- Offentlig visuel kontrol reproducerede hårfine sømme mellem 256 px-kortfliser på et brøk-pixelplaceret Leaflet-lag. Det var ikke zoner, geometri eller vejrdata.
+- Et første 0,5 px-overlap med Leaflets additive blanding blev visuelt afvist. Den valgte løsning begrænser 0,5 px-overlap og normal blanding til rasterfliserne.
+- Lokal standard-/satellit-/zoomkontrol, 211 zonepaths og målrettede regressionstests er grønne. Ingen kortlogik eller data ændres. Se DEC-0101.
+
 ## 2026-08-28 – 4.0.304 fælles offentlig RavRadar-kontakt
 
 - Ejeren besluttede, at **Skriv til Jakob** under **Om RavRadar** skal erstattes af **Skriv til RavRadar**, og at destinationen skal være `RavRadar@outlook.dk`.
 - Dansk, tysk og engelsk bruger samme RavRadar-identitet og mailadresse; Om-sidekontrakten afviser de tidligere personlige værdier.
 - Kun kontakttekst/destination samt versions- og dokumentationslukning ændres. Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede. Se DEC-0100.
+- PR #211/exact-head `33183709302`, merge `e5eed868`, produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne; offentlig 4.0.304 og DA/DE/EN-kontaktlink er verificeret.
 
 ## 2026-08-28 – 4.0.303 retter den fysisk afviste 4.0.302-opstart
 

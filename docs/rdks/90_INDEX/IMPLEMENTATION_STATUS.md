@@ -1,13 +1,25 @@
-# Implementeringsstatus – 4.0.304 kontaktkandidat oven på produktionsverificeret 4.0.303
+# Implementeringsstatus – 4.0.305 flisesømskandidat oven på produktionsverificeret 4.0.304
 
-## P1 kildekandidat – fælles RavRadar-kontakt
+## P1 kildekandidat – fjern rasterflisegitter uden kortfølger
+
+- [x] Reproducer det offentlige gitter og mål 256 px-fliser på brøk-pixelplacering.
+- [x] Afvis visuelt 0,5 px-overlap med Leaflets additive blanding.
+- [x] Begræns 0,5 px-overlap og normal blanding til `leaflet-tile-pane`-rasterfliser.
+- [x] Lås selector, mål og uændrede standard-/satellit-/vektorlag i kontrakttest.
+- [x] Verificér lokalt standardkort, satellitkort, zoom, 211 zonepaths samt målrettet mobilresume/Om-retur.
+- [x] Bestå RDKS, geodatabevis, fuld sourcegate og releasegate.
+- [ ] Bestå PR exact-head, merge, produktion/Pages og offentlig visuel kontrol.
+
+Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0101.
+
+## P1 produktionsverificeret – fælles RavRadar-kontakt
 
 - [x] Skift dansk knaptekst til **Skriv til RavRadar**.
 - [x] Skift `mailto:` til `RavRadar@outlook.dk` på dansk, tysk og engelsk.
 - [x] Brug RavRadar-navnet i tysk og engelsk knaptekst.
 - [x] Udvid Om-sidekontrakten med positive DA/DE/EN-krav og negativ kontrol af tidligere kontaktværdier.
 - [x] Bestå geodatabevis, RDKS-, versions-, source- og releasekontroller.
-- [ ] Bestå PR exact-head, merge, produktion/Pages og offentlig DA/DE/EN-kontrol.
+- [x] Bestå PR #211 exact-head `33183709302`, merge `e5eed868`, produktion `33183809909`, build `98891543382`, Pages `98893788414` og offentlig DA/DE/EN-kontrol.
 
 Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0100.
 

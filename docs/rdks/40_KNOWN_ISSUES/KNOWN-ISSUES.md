@@ -1,8 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.305 – rasterkortets flisesømme
+
+- **ISSUE-PUBLIC-MAP-TILE-GRID – LØST I KILDEKANDIDAT:** Brøk-pixelplacering gjorde Leaflets rasterflisegrænser synlige som et hårfint gitter. Den afgrænsede 4.0.305-løsning overlapper kun 256 px-fliser 0,5 px og neutraliserer additiv blanding. Lokal standard-/satellit-/zoomkontrol og målrettede tests er grønne; produktion afventer. Se DEC-0101.
+
 ## 4.0.304 – offentlig kontaktidentitet
 
-- **ISSUE-PUBLIC-ABOUT-PERSONAL-CONTACT – LØST I KILDEKANDIDAT:** Om-siden brugte fortsat en personlig knaptekst og mailadresse. 4.0.304 bruger RavRadar-navnet og `RavRadar@outlook.dk` på dansk, tysk og engelsk og har en negativ regressionstest. Produktionslukning afventer exact-head og offentlig verifikation. Se DEC-0100.
+- **ISSUE-PUBLIC-ABOUT-PERSONAL-CONTACT – PRODUKTIONSVERIFICERET LØST:** Om-siden brugte fortsat en personlig knaptekst og mailadresse. 4.0.304 bruger RavRadar-navnet og `RavRadar@outlook.dk` på dansk, tysk og engelsk og har en negativ regressionstest. PR #211, exact-head, produktion/Pages og offentlig DA/DE/EN-kontrol er grønne. Se DEC-0100.
 
 ## 4.0.303 – fysisk mobilopstartsydelse
 

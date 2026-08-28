@@ -1,6 +1,6 @@
 # DEC-0100 – Fælles offentlig RavRadar-kontakt
 
-- **Status:** Kildevalideret kandidat til 4.0.304; produktion afventer.
+- **Status:** Produktionsverificeret i 4.0.304.
 - **Dato:** 2026-08-28
 - **Ejerbeslutning:** Kontaktknappen og mailadressen under **Om RavRadar** skal repræsentere RavRadar.
 
@@ -14,7 +14,7 @@
 
 ## Verifikation
 
-Om-sidekontrakten kontrollerer den danske tekst, de tyske og engelske oversættelser, tre ens `mailto:`-links samt fraværet af de tidligere kontaktværdier. Målrettede kontroller, RDKS, versionskontrol, fuld lokal sourcegate, releasegate og et særskilt geodatabevis er grønne. Exact-head-, produktions- og offentlig DA/DE/EN-verifikation afventer.
+Om-sidekontrakten kontrollerer den danske tekst, de tyske og engelske oversættelser, tre ens `mailto:`-links samt fraværet af de tidligere kontaktværdier. PR #211 bestod exact-head `33183709302`/job `98891147198` på `cb018775` og blev merged som `e5eed868`. Produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne. Offentlig 4.0.304 viste 210 zoner, fem aktuelle områder og fem prognosedage; alle tre kontaktknapper var synlige med samme godkendte destination.
 
 ## Grænser
 

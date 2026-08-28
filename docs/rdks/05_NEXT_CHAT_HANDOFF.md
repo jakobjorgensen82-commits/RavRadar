@@ -1,11 +1,18 @@
 # RavRadar – overlevering til næste chat
 
-## Øverste checkpoint – 4.0.304 fælles RavRadar-kontakt
+## Øverste checkpoint – 4.0.305 fjerner rasterflisegitter
+
+- Det synlige gitter er reproduceret som Leaflet-rasterflisesømme ved brøk-pixelplacering, ikke som zoner, geometri eller vejrdata.
+- Den valgte løsning rammer kun 256 px-fliser i `leaflet-tile-pane`: 0,5 px overlap og normal blanding. Et overlap med Leaflets additive blanding blev visuelt afvist før commit.
+- Standard- og satellitkort, zoom og 211 lokale zonepaths er kontrolleret uden kort-/tilefejl. Målrettede tests er grønne.
+- Rør ikke Leaflet-JavaScript, tileadresser, bounds, vektorlag, zoner, geometri, pile, labels, klikflader eller Sibirien-kandidaten. Næste trin er sourcegate, geodatabevis, exact-head, produktion og offentlig kontrol. Se DEC-0101.
+
+## Produktionsverificeret checkpoint – 4.0.304 fælles RavRadar-kontakt
 
 - Kontaktknappen under **Om RavRadar** er ændret til **Skriv til RavRadar** med `mailto:RavRadar@outlook.dk`.
 - Tysk og engelsk bruger tilsvarende RavRadar-branding og samme adresse. Kontrakttesten låser alle tre sprog og afviser de tidligere personlige kontaktværdier.
 - Kun kontakttekst/destination samt versions- og projekthukommelse ændres. Ingen faglig model, vejr-, score-, bruger- eller geodata ændres; Sibirien forbliver privat staged.
-- Før lukning kræves geodatabevis, sourcegate, exact-head, produktion/Pages og offentlig DA/DE/EN-verifikation. Se DEC-0100.
+- PR #211/exact-head `33183709302`, merge `e5eed868`, produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne. Offentlig 4.0.304, 210 + 5 + 5 og DA/DE/EN-kontaktlink er verificeret. Se DEC-0100.
 
 ## Øverste checkpoint – produktions- og fysisk verificeret 4.0.303
 

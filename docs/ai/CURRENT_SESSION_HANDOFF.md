@@ -1,12 +1,20 @@
 # RavRadar - aktuelt Codex-handoff
 
-## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.304 fælles RavRadar-kontakt
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.305 kort uden flisegitter
+
+- Offentlig kontrol reproducerede et hårfint gitter fra Leaflets rasterflisesømme. Fliserne var 256 px og kantstillede korrekt, men laget stod på brøk-pixels.
+- Et første 0,5 px-overlap alene blev visuelt afvist, fordi Leaflets additive blanding gjorde sømmen lysere. Den valgte løsning rammer kun 256 px-fliser i `leaflet-tile-pane`, overlapper 0,5 px og bruger normal blanding.
+- Lokal standard- og satellitvisning samt zoom er kontrolleret. 211 lokale zonepaths er bevaret, og ingen kort-/tilefejl opstår. Målrettede tile-, startup-, resume- og Om-returtests er grønne.
+- Ingen Leaflet-JavaScript, tileadresse, bounds, vektorlag, zone, geometri, pil, label, klikflade, Candidate G, score, vejr eller brugerdata ændres. Sibirien forbliver privat staged.
+- Næste trin: fuld RDKS/sourcegate, særskilt geodatabevis, PR exact-head, produktion/Pages og offentlig standard-/satellit-/zoomkontrol. Se DEC-0101.
+
+## PRODUKTIONSVERIFICERET P1 – 2026-08-28 – 4.0.304 fælles RavRadar-kontakt
 
 - Ejeren har besluttet, at kontaktknappen under **Om RavRadar** skal hedde **Skriv til RavRadar** og bruge `RavRadar@outlook.dk`.
 - Dansk, tysk og engelsk bruger nu samme RavRadar-identitet og `mailto:`-destination. Den tidligere personlige knaptekst og mailadresse er fjernet fra Om-kilderne og kontrakttesten afviser, at de genindføres.
 - Kodeændringen er afgrænset til `about.html`, `js/ui/about-i18n.js` og Om-sidekontrakten. Version/RDKS/changelog/håndbog følger 4.0.304.
 - Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Sibirien forbliver privat staged.
-- Næste trin: geodatabevis, målrettede kontroller, fuld sourcegate, PR exact-head, merge, fuld produktion/Pages og offentlig DA/DE/EN-kontrol. Se DEC-0100.
+- PR #211/exact-head `33183709302`/job `98891147198` på `cb018775`, merge `e5eed868`, produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne. Offentlig 4.0.304 viser 210 zoner, fem aktuelle områder og fem prognosedage; DA/DE/EN-knapperne er synlige med samme godkendte `mailto:`-destination. Se DEC-0100.
 
 ## PRODUKTIONS- OG FYSISK VERIFICERET P1 – 2026-08-28 – 4.0.303 mobilopstart
 
