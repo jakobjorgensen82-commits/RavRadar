@@ -1,4 +1,17 @@
-# Implementeringsstatus – produktionsverificeret 4.0.292 mobil- og punktskifte-selvrecovery
+# Implementeringsstatus – 4.0.293-kandidat for bred read-only assistentviden
+
+## P1 kandidat – klogere Spørg RavRadar med lokal fallback
+
+- [x] Lås 17 konkrete grundbogsbaserede intents for dansk, tysk og engelsk.
+- [x] Bevar bedste sted/tid/score som deterministiske Candidate G-funktioner og send kun åbne relevante specialspørgsmål til GPT-OSS.
+- [x] Tilføj 51 balancerede lokale evalcases uden netværk eller AI-kvote.
+- [x] Udvid Edge-viden fra 10 til 23 evidens-ID'er og den samlede provider-eval fra 45 til 66 cases.
+- [x] Bevar fast emneafvisning, server-only credential, dataminimering, CORS, rate limits, timeout, gratis kvoteloft, fallback og rollback.
+- [x] Bevis med målrettede tests, at DA/DE/EN, Edge-validering og eksisterende Candidate G-svar består.
+- [x] Bestå fuld lokal sourcegate og releasegate på kandidatens afsluttede kilde.
+- [ ] Bestå PR exact-head, frisk produktion og offentlig DA/DE/EN-browserkontrol.
+
+Ingen assistentvej kan skrive til eller ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se DEC-0091.
 
 ## P1 produktionsverificeret – sikker land-/vandpunktændring
 

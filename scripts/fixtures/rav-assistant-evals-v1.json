@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.287",
+  "releaseVersion": "4.0.293",
   "cases": [
     {
       "id": "da-weights",
@@ -410,6 +410,195 @@
       "expectedDisposition": "out_of_scope",
       "expectedRoute": "fixed-refusal",
       "requiredEvidenceIds": []
+    },
+    {
+      "id": "da-amber-origin",
+      "locale": "da",
+      "category": "amber-knowledge",
+      "question": "Hvor kommer rav fra, og kan man se alderen på et fund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
+    },
+    {
+      "id": "da-amber-density",
+      "locale": "da",
+      "category": "amber-knowledge",
+      "question": "Hvorfor synker det meste baltiske rav i havvand?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
+    },
+    {
+      "id": "da-wind-role",
+      "locale": "da",
+      "category": "coastal-physics",
+      "question": "Viser vindretningen også retningen på rav tæt ved bunden?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
+    },
+    {
+      "id": "da-coastal-traps",
+      "locale": "da",
+      "category": "hunting-technique",
+      "question": "Hvordan kan revler, render og høfder påvirke, hvor rav samles?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
+    },
+    {
+      "id": "da-field-signs",
+      "locale": "da",
+      "category": "hunting-technique",
+      "question": "Er frisk tang og let opskyl et sikkert bevis på rav?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
+    },
+    {
+      "id": "da-identification",
+      "locale": "da",
+      "category": "amber-identification",
+      "question": "Er UV-lys et sikkert bevis på rav, og bør jeg bruge en varm nål?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
+    },
+    {
+      "id": "da-event-sequence",
+      "locale": "da",
+      "category": "coastal-physics",
+      "question": "Hvorfor kan fasen efter kraftigt vejr være bedre end selve toppen?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
+    },
+    {
+      "id": "de-amber-origin",
+      "locale": "de",
+      "category": "amber-knowledge",
+      "question": "Woher kommt Bernstein, und kann man das Alter eines Fundes erkennen?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
+    },
+    {
+      "id": "de-amber-density",
+      "locale": "de",
+      "category": "amber-knowledge",
+      "question": "Warum sinkt der meiste baltische Bernstein im Meerwasser?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
+    },
+    {
+      "id": "de-wind-role",
+      "locale": "de",
+      "category": "coastal-physics",
+      "question": "Zeigt die Windrichtung auch die Richtung von Bernstein nahe dem Grund?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
+    },
+    {
+      "id": "de-coastal-traps",
+      "locale": "de",
+      "category": "hunting-technique",
+      "question": "Wie beeinflussen Sandbänke, Rinnen und Buhnen, wo sich Bernstein sammelt?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
+    },
+    {
+      "id": "de-field-signs",
+      "locale": "de",
+      "category": "hunting-technique",
+      "question": "Sind frischer Tang und leichtes Spülgut ein sicherer Beweis für Bernstein?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
+    },
+    {
+      "id": "de-identification",
+      "locale": "de",
+      "category": "amber-identification",
+      "question": "Ist UV-Licht ein sicherer Bernsteinbeweis, und sollte ich eine heiße Nadel verwenden?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
+    },
+    {
+      "id": "de-event-sequence",
+      "locale": "de",
+      "category": "coastal-physics",
+      "question": "Warum kann die Phase nach kräftigem Wetter besser sein als der Höhepunkt?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
+    },
+    {
+      "id": "en-amber-origin",
+      "locale": "en",
+      "category": "amber-knowledge",
+      "question": "Where does amber come from, and can I tell the age of a find?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
+    },
+    {
+      "id": "en-amber-density",
+      "locale": "en",
+      "category": "amber-knowledge",
+      "question": "Why does most Baltic amber sink in seawater?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
+    },
+    {
+      "id": "en-wind-role",
+      "locale": "en",
+      "category": "coastal-physics",
+      "question": "Does wind direction also show the direction of amber near the seabed?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
+    },
+    {
+      "id": "en-coastal-traps",
+      "locale": "en",
+      "category": "hunting-technique",
+      "question": "How can sandbars, channels, and groynes affect where amber gathers?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
+    },
+    {
+      "id": "en-field-signs",
+      "locale": "en",
+      "category": "hunting-technique",
+      "question": "Are fresh seaweed and light wash certain proof of amber?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
+    },
+    {
+      "id": "en-identification",
+      "locale": "en",
+      "category": "amber-identification",
+      "question": "Is UV light final proof of amber, and should I use a hot needle?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
+    },
+    {
+      "id": "en-event-sequence",
+      "locale": "en",
+      "category": "coastal-physics",
+      "question": "Why can the phase after energetic weather be better than the peak itself?",
+      "expectedDisposition": "answer",
+      "expectedRoute": "remote-candidate",
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
     }
   ]
 }

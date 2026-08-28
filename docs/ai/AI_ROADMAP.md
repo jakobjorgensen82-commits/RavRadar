@@ -1,4 +1,15 @@
-# AI Roadmap – RavRadar 4.0.292+
+# AI Roadmap – RavRadar 4.0.293+
+
+## 4.0.293-kandidat – bred lokal og ekstern grundbogsviden
+
+- [x] Udvid lokalt til 17 konkrete DA/DE/EN-emner uden netværk eller AI-kvote.
+- [x] Udvid den versionsbundne Edge-viden fra 10 til 23 evidens-ID'er.
+- [x] Udvid evalgrundlaget til 51 lokale og 66 samlede balancerede cases.
+- [x] Bevar Candidate G-dataintents, fast afvisning, servercredential, CORS, rate limits, timeout, fallback og rollback.
+- [x] Bestå fuld lokal sourcegate og releasegate.
+- [ ] Bestå exact-head, produktion og offentlig DA/DE/EN-kontrol.
+
+Assistenten er read-only og må ikke påvirke kort, prognoser, RavScore, vejr, sortering, brugerdata eller geodata. Se DEC-0091.
 
 ## Produktionsverificeret kritisk datarelease – staged punktaktivering i 4.0.292
 
@@ -31,15 +42,15 @@ Se DEC-0089. Dette spor ændrer ingen assistent-, score-, vejr- eller datakontra
 
 Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometri- eller punktændring er tilladt.
 
-## Næste afgrænsede spor efter produktionsverificeret 4.0.291 og mobilregressionen – klogere lokal assistent
+## Udført i 4.0.293-kandidaten – klogere lokal assistent
 
-- [ ] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
-- [ ] Dæk blandt andet vind, strøm, bølger, vandstand, mobilisering, transport, timing, kysttyper, sikkerhed, Candidate G og læsning af den valgte zones allerede beregnede offentlige data.
-- [ ] Understøt flere formuleringer og relevante opfølgende spørgsmål uden at foregive viden, som den godkendte vidensbase ikke indeholder.
-- [ ] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI må aldrig ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
-- [ ] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
+- [x] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
+- [x] Dæk vind, strøm, bølger, vandstand, mobilisering, transport, timing, kystfælder, felttegn, identifikation, sikkerhed, Candidate G og den valgte zones allerede beregnede offentlige data.
+- [x] Understøt flere formuleringer uden at foregive viden, som den godkendte vidensbase ikke indeholder.
+- [x] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI kan ikke ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
+- [x] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
 
-Den kritiske mobile tilbage-navigation er produktionsverificeret i 4.0.292. Det brede vidensscope er derfor næste afgrænsede leverance og skal fortsat låses med konkrete intents og evals før implementering.
+Den kritiske mobile tilbage-navigation er produktionsverificeret i 4.0.292. Det brede vidensscope er implementeret i 4.0.293-kandidaten og afventer tværgående releaseverifikation.
 
 ## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 

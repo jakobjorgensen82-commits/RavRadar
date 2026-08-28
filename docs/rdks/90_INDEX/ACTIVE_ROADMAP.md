@@ -1,5 +1,15 @@
 # RavRadar - aktivt roadmap
 
+## P1 4.0.293-kandidat – bred read-only Spørg RavRadar-viden
+
+- [x] Lås og implementér 17 lokale grundbogsemner på DA/DE/EN.
+- [x] Lås 51 lokale evals og 66 samlede providercases med 23 offentlige evidens-ID'er.
+- [x] Bevar deterministic Candidate G for sted/tid/score samt Edge-/privacy-/kvote-/rollbackgrænser.
+- [x] Bestå fuld lokal sourcegate og releasegate.
+- [ ] Bestå exact-head, frisk produktion og offentlig tre-sprogs kontrol.
+
+Begge assistentveje er read-only og isoleret fra prognoser, RavScore og alle bruger-/geodata. Se DEC-0091.
+
 ## P1 produktionsverificeret – sikker punktflytning i 4.0.292
 
 - [x] Adskil aktiv override og staged kandidat i admin-/buildkontrakten.
@@ -28,13 +38,13 @@ Se DEC-0089.
 
 Se DEC-0088.
 
-## Næste P1-rækkefølge efter produktionsverificeret 4.0.292
+## P1-rækkefølge efter produktionsverificeret 4.0.292 – udført i 4.0.293-kandidaten
 
-1. Udvid den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data, relevante opfølgende spørgsmål og fortsat fast emneafvisning.
-2. Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
-3. Følg sideløbende den naturlige Candidate G-modning og indhent ejerens fysiske iPhone-efterkontrol; ingen af delene må fremtvinges med kunstig historik eller en punktflytning.
+1. [x] Udvid den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data og fortsat fast emneafvisning.
+2. [x] Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
+3. [ ] Følg sideløbende den naturlige Candidate G-modning og indhent ejerens fysiske iPhone-efterkontrol; ingen af delene må fremtvinges med kunstig historik eller en punktflytning.
 
-Det brede lokale vidensscope låses med konkrete intents og evals før implementering.
+Det brede lokale vidensscope er låst med 17 konkrete intents og 51 lokale evals før slutvalidering.
 
 ## P1 afsluttet – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI
 
