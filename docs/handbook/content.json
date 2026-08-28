@@ -1,15 +1,22 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.306",
+  "handbookVersion": "4.0.307",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-28",
+  "updatedAt": "2026-08-29",
   "sections": [
+    {
+      "id": "owner-correction-extra-high-audit-4-0-307",
+      "chapter": "82",
+      "title": "Ekstra høj kontrol af ejerens mindre rettelser",
+      "summary": "Den samlede ejerpakke er gennemgået igen; Spørg RavRadar har fået 152 kildeklassificerede lokale emner, 395 nm er ensrettet, og udløbne prognosedage er fjernet.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den ekstra høje gennemgang fandt og lukkede reelle huller i 4.0.306 uden at ændre Candidate G eller scoresemantik.</div><div class=\"handbook-stack\"><p><strong>Langt større lokal viden:</strong> Spørg RavRadar har 152 kildeklassificerede emner oven på de 17 eksisterende intent-svar. De dækker geologi, materiale, identifikation, behandling, kystfysik, feltmetode, sikkerhed, regler og RavRadar. 456 reproducerbare DA/DE/EN-spørgsmål kører uden netværk eller AI-kvote. Grundbogen er suppleret med ekstern forskning, officielle kilder, RavRadars systematiske analyser og Rav Jagt som navngiven praktisk ekspert.</p><p><strong>Mindre restriktiv på det rigtige domæne:</strong> Det generelle afvisningsfilter bruger hele ord, så <em>Skagen</em> ikke længere rammer <em>kage</em>. Edge er udvidet fra 23 til 38 offentlige fakta, mens den private kontekst fortsat er lukket. Lokale fakta- og sikkerhedssvar virker også, hvis prognosedetaljefilen mangler.</p><p><strong>Én UV-sandhed:</strong> Både lokal vejledning og Edge-faktakontrakt bruger 395 nm. Den tidligere 365 nm-formulering er fjernet fra aktive svar.</p><p><strong>Rigtige prognosedatoer:</strong> Et ældre nøddriftsdatasæt viser kun de datoer, der endnu ikke er udløbet i dansk tid. Gamle værdier får aldrig nye datoetiketter.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vægte, kurver, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte.</p></div>"
+    },
     {
       "id": "owner-learning-ui-assistant-corrections-4-0-306",
       "chapter": "81",
       "title": "Mere viden og tydeligere betjening",
       "summary": "395 nm, koldt vands mobilisering, Rav Jagt-illustrationer, bredere lokal assistentviden, zonesøgning og tydelige kortpile samles i 4.0.306.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogen, Spørg RavRadar og de små offentlige betjeningsflader er gjort mere præcise og brugbare.</div><div class=\"handbook-stack\"><p><strong>Ravlygte:</strong> Den aktive vejledning bruger 395 nm. Tidligere aktiv tekst om 395 nm er erstattet.</p><p><strong>Koldt vand:</strong> Højere vandtæthed og opdrift kan gøre rav lettere at mobilisere, men temperaturen giver ingen fundgaranti og er ikke tilføjet som scoreinput. Rav Jagts video og krediterede kysttværsnit uddyber den praktiske forståelse.</p><p><strong>Spørg RavRadar:</strong> Lokal viden dækker nu flere spørgsmål om udstyr, fund, årstider, geologi og søgemetode. Åbne specialspørgsmål kan fortsat bruge den sikre, dataminimerede Edge-vej.</p><p><strong>Betjening:</strong> Zoner kan søges ved afslutning og manuel indberetning, kortsignaturen forklarer pilene, strømpilen er mørkere, og mobilknappen kan bryde over to linjer. Tysk og engelsk viser BernsteinScore og AmberScore.</p><p><strong>Uændrede grænser:</strong> Candidate G, scoresemantik, DMI/Copernicus, state, geometri og land-/vandpunkter er urørte. Se <code>DEC-0103</code>.</p></div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogen, Spørg RavRadar og de små offentlige betjeningsflader er gjort mere præcise og brugbare.</div><div class=\"handbook-stack\"><p><strong>Ravlygte:</strong> Den aktive vejledning bruger 395 nm. Tidligere aktiv tekst om 365 nm er erstattet.</p><p><strong>Koldt vand:</strong> Højere vandtæthed og opdrift kan gøre rav lettere at mobilisere, men temperaturen giver ingen fundgaranti og er ikke tilføjet som scoreinput. Rav Jagts video og krediterede kysttværsnit uddyber den praktiske forståelse.</p><p><strong>Spørg RavRadar:</strong> Lokal viden dækker nu flere spørgsmål om udstyr, fund, årstider, geologi og søgemetode. Åbne specialspørgsmål kan fortsat bruge den sikre, dataminimerede Edge-vej.</p><p><strong>Betjening:</strong> Zoner kan søges ved afslutning og manuel indberetning, kortsignaturen forklarer pilene, strømpilen er mørkere, og mobilknappen kan bryde over to linjer. Tysk og engelsk viser BernsteinScore og AmberScore.</p><p><strong>Uændrede grænser:</strong> Candidate G, scoresemantik, DMI/Copernicus, state, geometri og land-/vandpunkter er urørte. Se <code>DEC-0103</code>.</p></div>"
     },
     {
       "id": "map-tile-seam-removal-4-0-305",

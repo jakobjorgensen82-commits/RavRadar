@@ -1,3 +1,11 @@
+## 2026-08-29 – 4.0.307 ekstra høj genkontrol af ejerrettelser
+
+- Ejeren krævede en fuld gentagelse på Sol/Ekstra høj og præciserede, at Spørg RavRadar skal bygge på ekstern research og RavRadars større analysegrundlag – ikke kun Grundbogen.
+- Den lokale assistent er udvidet til 152 kildeklassificerede emner med 456 DA/DE/EN-katalogspørgsmål uden netværk eller AI-kvote. 27 offentligt registrerede kilder omfatter forskning, officielle myndigheder, RavRadars analyser og Rav Jagt. Edge er udvidet fra 23 til 38 fakta og har 66 balancerede evalcases.
+- Genkontrollen fandt fire konkrete restfejl efter 4.0.306: Edge sagde fortsat 365 nm, `Skagen` ramte `kage`, DE/EN Kyst B havde forkert pil, og lokale faktaspørgsmål kunne blokere på en manglende prognosedetaljefil. De er rettet og testet.
+- Et nyt ejerbevis viste desuden, at den gamle nøddriftsprognose fortsat viste torsdag 27. august som første dag den 29. august. Visningen filtrerer nu udløbne dage efter dansk kalender uden at ændre datoer, scorer eller forecastværdier; nøddrift må vise færre end fem gyldige dage.
+- Candidate G, RavScore, vægte, kurver, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Kildekandidaten afventer versionslukning, sourcegate, PR exact-head, frisk produktion og offentlig desktop/mobilkontrol. Se DEC-0105 og den eksterne vidensaudit.
+
 ## 2026-08-28 – 4.0.306 GitHub-genopretning produktionslukket
 
 - PR #217 bestod exact-head `33212348031` på `91dffaa3` og blev merged som `8ebbd4e7`. Produktion `33212435923` bestod checkpointovergang, frisk DMI/Copernicus/proveniens, faktisk Candidate G-runtimeaudit, fuld validering, releasegate, artifact og Pages-deployment `6148930627`.

@@ -15,9 +15,14 @@ Se DEC-0104.
 - **REQ-TRIP-ZONE-SUBSTRING-SEARCH-001 – BINDENDE:** Afsluttet tur og manuel indberetning kan finde zoner på hele eller dele af navnet og bevarer rullemenuen.
 - **REQ-PUBLIC-ARROW-LEGEND-001 – BINDENDE:** Kortsignaturen forklarer blå strømretning og hvid vindretning; strømpilen har tydelig kontrast.
 - **REQ-PUBLIC-LOCALIZED-SCORE-NAME-001 – BINDENDE:** Synlig tysk/engelsk tekst bruger BernsteinScore/AmberScore; interne RavScore-kontrakter ændres ikke.
-- **REQ-ASSISTANT-BROAD-LOCAL-KNOWLEDGE-002 – BINDENDE:** Almindelige ravfaglige spørgsmål besvares lokalt, når et sikkert svar findes; dataminimeret Edge og sikkerhedsgrænser bevares.
+- **REQ-ASSISTANT-BROAD-LOCAL-KNOWLEDGE-002 – BINDENDE / SKÆRPET I DEC-0105:** Almindelige ravfaglige spørgsmål besvares lokalt, når et sikkert svar findes. Mindst 150 afgrænsede katalogemner skal have evidensklasse, offentlig kildeproveniens og reproducerbare DA/DE/EN-spørgsmål og svare uden netværk eller AI-kvote. Grundbogen er én kilde blandt ekstern forskning, officielle kilder, RavRadars forskningsgrundlag og navngiven ekspertviden; dataminimeret Edge og sikkerhedsgrænser bevares.
+- **REQ-ASSISTANT-WHOLE-WORD-SCOPE-001 – BINDENDE:** Kendte udenfor-domæneord må kun afvises som hele Unicode-ord. Stednavne som Skagen må ikke afvises på en indlejret delstreng; browser og Edge skal følge samme grænseprincip.
+- **REQ-ASSISTANT-EDGE-UV-395-001 – BINDENDE:** Edge-assistentens versionsbundne offentlige UV-faktum bruger 395 nm og må ikke indeholde en aktiv 365 nm-anbefaling.
+- **REQ-PUBLIC-COAST-B-ALL-LANGUAGES-001 – BINDENDE:** Kyst B viser lodret gul kyst og opadgående pil i dansk, tysk og engelsk.
+- **REQ-FORECAST-CALENDAR-NO-RELABEL-001 – BINDENDE:** 5-dagesvisningen må kun vise datasættets aktuelle/fremtidige datoer efter dansk kalenderdag. Nøddrift må vise færre end fem dage, men må aldrig give gamle prognoseværdier nye datoetiketter.
+- **REQ-ASSISTANT-LOCAL-FACTS-NO-FORECAST-DEPENDENCY-001 – BINDENDE:** Lokale fakta-, forsknings- og sikkerhedssvar må ikke afhænge af prognosedetaljefilen. Kun dynamisk bedste sted, bedste tid og aktuel score må kræve de detaljer.
 
-Se DEC-0103.
+Se DEC-0103 og DEC-0105.
 
 ## Næste samlede RavScore-model – bindende fra DEC-0102
 

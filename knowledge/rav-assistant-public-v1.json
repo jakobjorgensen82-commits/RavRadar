@@ -22,7 +22,14 @@
     "public-ravradar-forecast",
     "candidate-g-explanation",
     "wind-waves-current-water-level",
-    "coastal-hunting-safety-boundary"
+    "coastal-hunting-safety-boundary",
+    "amber-geology-age-and-botanical-origin",
+    "amber-conservation-and-treatment",
+    "cold-water-and-amber-mobilisation",
+    "rip-current-and-cold-water-safety",
+    "white-phosphorus-lookalike",
+    "public-access-collection-and-danefae",
+    "research-evidence-and-uncertainty"
   ],
   "forbiddenContext": [
     "account-data",
@@ -111,7 +118,7 @@
     },
     {
       "id": "identification.uv-clue-not-proof",
-      "text": "Low weight for size and a resin-like surface are useful first clues. Long-wave ultraviolet light around 365 nanometres often makes Baltic amber fluoresce clearly, but other materials can also fluoresce, so UV is not final proof."
+      "text": "Low weight for size and a resin-like surface are useful first clues. Long-wave ultraviolet light around 395 nanometres often makes Baltic amber fluoresce clearly, but other materials can also fluoresce, so UV is not final proof."
     },
     {
       "id": "identification.avoid-destructive-tests",
@@ -124,6 +131,66 @@
     {
       "id": "sequence.release-transport-deposition",
       "text": "An amber-hunting event is a sequence: waves may first release material, current may then transport it, and a calmer or falling phase may improve deposition and searching. Prolonged strong outflow can carry material away again, so one current weather value never tells the whole story."
+    },
+    {
+      "id": "amber.resin-maturation",
+      "text": "Amber is not ordinary tree sap and resin does not become amber merely by drying. Resin must harden, be buried and undergo slow chemical maturation, including polymerisation and cross-linking over geological time."
+    },
+    {
+      "id": "amber.baltic-age-range",
+      "text": "The principal Baltic succinite horizon is late Eocene, around 36 to 35 million years old; loose Baltic amber without secure layer provenance is appropriately described with a broader roughly 37.7 to 34 million year range and cannot be dated from appearance alone."
+    },
+    {
+      "id": "amber.botanical-origin-uncertain",
+      "text": "Baltic amber came from conifer resin, but the exact resin-producing tree remains scientifically debated. A leading FTIR and fossil-based hypothesis is not a final identification."
+    },
+    {
+      "id": "amber.transport-saltation",
+      "text": "Controlled experiments with uniform amber particles document bed-load saltation, meaning repeated small hops along the bed. Exact measured density, settling speed and transport thresholds are sample-specific and must not be treated as universal values for natural pieces."
+    },
+    {
+      "id": "amber.cold-water-buoyancy",
+      "text": "Colder seawater is generally denser and gives amber more buoyancy. Most Baltic amber still sinks, but the smaller density difference can make it materially easier for waves and turbulence to lift and mobilise; this physical fact does not by itself change RavScore weights or guarantee delivery."
+    },
+    {
+      "id": "identification.fluorescence-varies",
+      "text": "Amber fluorescence varies with composition, weathering and treatment, and some imitations also fluoresce. RavRadar's practical hunting guidance is a long-wave amber light around 395 nanometres in dark conditions, followed by physical checking; fluorescence alone is not proof."
+    },
+    {
+      "id": "identification.treatments-and-imitations",
+      "text": "Plastic, glass, copal, pressed amber, composites, fillings, dyes and heat treatment can imitate or alter amber. No single home test reliably separates every case; combine non-destructive clues and seek qualified analysis for valuable or unusual material."
+    },
+    {
+      "id": "care.preventive-conservation",
+      "text": "Amber is soft, heat-sensitive and vulnerable to strong light, solvents and unstable conditions. Clean an ordinary robust find gently with lukewarm water, avoid hot needles, fire, alcohol, acetone and oils, and keep unusual inclusions stable for specialist assessment."
+    },
+    {
+      "id": "safety.rip-current",
+      "text": "A gap in a bar can concentrate seaward flow. Signs may include a darker calmer channel, fewer breaking waves and foam moving seaward; anyone caught should not fight directly against it but move parallel to shore and follow current authority guidance."
+    },
+    {
+      "id": "safety.cold-water",
+      "text": "Sudden cold-water immersion can cause involuntary gasping, rapid breathing and loss of physical capacity. Dress for water temperature, use suitable flotation, avoid wading alone and remember that waders are not safety equipment."
+    },
+    {
+      "id": "safety.white-phosphorus",
+      "text": "White phosphorus can resemble amber and may self-ignite as it dries. A suspicious amber-like find that smokes, smells chemical or becomes warm must be left in place; keep away and contact police following current Danish defence guidance."
+    },
+    {
+      "id": "rules.access-and-collection",
+      "text": "Many Danish beaches have general access and small natural objects may often be collected for private use, but ownership, reserves, military areas, local signs and current rules can change the position. Current official guidance and site restrictions control."
+    },
+    {
+      "id": "rules.danefae",
+      "text": "An ordinary natural amber piece is normally not danefæ, but unusual worked or archaeological amber objects may be. Do not polish them; preserve the find context and contact a local archaeological museum or the National Museum."
+    },
+    {
+      "id": "evidence.source-classes",
+      "text": "RavRadar distinguishes direct amber experiments, peer-reviewed coastal analogies, official rules and safety guidance, and named practitioner experience. These sources can complement each other but must not be presented as equally strong evidence."
+    },
+    {
+      "id": "forecast.expired-days",
+      "text": "In emergency operation an older verified forecast dataset may contain fewer than five calendar days that are still current or future. Expired days must be removed and old forecast values must never be relabelled with new dates."
     },
     {
       "id": "public-context.selected-zone-only",

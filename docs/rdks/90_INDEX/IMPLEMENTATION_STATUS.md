@@ -1,4 +1,19 @@
-# Implementeringsstatus – 4.0.306 Candidate G-genopretning produktionslukket
+# Implementeringsstatus – 4.0.307 ejerrettelser under ekstra høj slutkontrol
+
+## 4.0.307-kandidat – luk de fundne huller fra 4.0.306
+
+- [x] Gennemgå alle ejerkrav igen mod seneste produktionsverificerede `main`.
+- [x] Udvid lokalt med 152 kildeklassificerede emner og 456 DA/DE/EN-katalogevals oven på de eksisterende 17 intent-kontrakter; brug ekstern forskning, officielle kilder, RavRadars forskningsgrundlag og navngiven ekspertviden.
+- [x] Ensret Edge-faktakontrakten til 395 nm og fjern delstrengsafvisningen af Skagen i både browser og Edge.
+- [x] Ret Kyst B-pilen i de tyske og engelske læringsskabeloner og korrigér håndbogens historiske 365 nm-reference.
+- [x] Udvid Edge fra 23 til 38 offentlige fakta og gør relevant ravrouting bredere uden at åbne private eller modelinterne data.
+- [x] Filtrér udløbne 5-dagesdatoer i dansk tid uden at relabele prognoseværdier.
+- [x] Fjern prognosedetaljefilen som forudsætning for lokale fakta-/forsknings-/sikkerhedssvar og browserprøv 395 nm, fosfor, succinit, revlehul og nøddriftsdatoer ved manglende detaljefil.
+- [x] Luk samlet målrettet browserkontrol på desktop/mobil og alle relevante tests.
+- [x] Bestå lokal RDKS, geodatadiff, fuld sourcegate og releasegate på afsluttet head.
+- [ ] Bestå PR exact-head, merge, frisk produktion og offentlig slutkontrol.
+
+Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0105.
 
 ## P0 – genåbn GitHub/vejropdateringer uden at deploye den ufærdige model
 

@@ -1,3 +1,11 @@
+## 4.0.307 – ekstra høj genkontrol og større ravviden (2026-08-29)
+
+- Udvider Spørg RavRadar til 152 kildeklassificerede lokale emner med 456 DA/DE/EN-katalogspørgsmål, baseret på ekstern forskning, officielle kilder, RavRadars analyser, Grundbogen og Rav Jagt; svarene kræver hverken netværk eller AI-kvote.
+- Udvider den dataminimerede Edge-kontrakt fra 23 til 38 offentlige fakta, ensretter UV til 395 nm og gør domænefilteret bredere med Unicode-helord, så eksempelvis Skagen ikke afvises som `kage`.
+- Lader lokale fakta-, forsknings- og sikkerhedsspørgsmål svare uden prognosedetaljefilen; kun dynamisk bedste sted, bedste tid og aktuel score kræver den.
+- Filtrerer udløbne femdøgnsdatoer efter dansk kalenderdag uden at give gamle prognoseværdier nye datoer. Ældre nøddrift viser færre gyldige dage eller en tydelig udløbsbesked.
+- Bevarer 4.0.306's samlede ejerrettelser og retter Kyst B-pilen på dansk, tysk og engelsk. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se DEC-0105 og `CHANGELOG-4.0.307.md`.
+
 ## 4.0.306 – ejerrettelser til læring, assistent og betjening (2026-08-28)
 
 - Genopretter Candidate G som eneste offentlige model efter et for tidligt modelmerge og lukker den præcise schema-3→Candidate G-checkpointovergang uden private eller rå data. Se DEC-0104.

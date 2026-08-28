@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-29 – 4.0.307 ekstra høj ejerrettelsesrevision
+
+- Arbejdet ligger isoleret på `codex/owner-corrections-4.0.307` fra `origin/main` `5366a73781a5313b95119f91ea81a1e1d8498af7`. Candidate G, RavScore, 20/50/30, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte.
+- Alle 4.0.306-ejerrettelser er genkontrolleret. Derudover er Kyst B rettet på alle tre sprog, Edge-UV ensrettet til 395 nm, `Skagen` beskyttet mod delstrengsafvisningen `kage`, og lokale fakta-/forsknings-/sikkerhedssvar gjort uafhængige af prognosedetaljefilen.
+- Spørg RavRadar har 152 kildeklassificerede lokale emner oven på de 17 eksisterende intent-kontrakter. 456 DA/DE/EN-katalogspørgsmål kører uden netværk eller AI-kvote. De 27 registrerede offentlige kilder omfatter ekstern forskning, officielle kilder, RavRadars systematiske analyser og Rav Jagt; Edge-kontrakten har 38 offentlige fakta og 66 balancerede evalcases.
+- 5-dagesvisningen filtrerer udløbne datoer efter kalenderdagen i `Europe/Copenhagen`. Den bevarer datasættets originale dato/værdi-par og viser derfor færre dage eller en klar udløbsbesked under gammel nøddrift i stedet for at kalde torsdag for i dag.
+- Lokal browserkontrol er grøn ved 390 × 844 og 1440 × 900 for mobilombrydning, mørk strømpil/signatur, Kyst B, Rav Jagt-kysttværsnit/credit/video, 395 nm og BernsteinScore/AmberScore. Den fandt og lukkede detaljeafhængigheden på “Hvad er en ravlygte?”.
+- Målrettede katalog-, Edge-, sprog-, lærings-, forecast-, kort- og turzonesøgetests er grønne. RDKS/version/geodatadiff/sourcegate samt PR exact-head, frisk produktion og offentlig slutkontrol er næste gates; kald ikke 4.0.307 produktionsverificeret før de er lukket.
+- Autoritativ beslutning og kildeaudit: DEC-0105 og `docs/research/RAV_ASSISTANT_EXTERNAL_KNOWLEDGE_AUDIT_2026-08-29.md`. Fortsæt med Sol/Ekstra høj til den kritiske slutvalidering.
+
 ## GENSTARTSSIKKERT ARBEJDSCHECKPOINT – 2026-08-28 – to isolerede spor
 
 - Ren baseline er `main`/`origin/main` `d61c376f2302b8eb3eb3b535fa99605897470e2e`, produktionsverificeret version 4.0.305. Denne klargøring ændrer kun dokumentation og opretter ingen ny appversion eller produktionsartifact.

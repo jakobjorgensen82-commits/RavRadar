@@ -1,10 +1,11 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.306";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.306";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.306";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.307";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.307";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.307";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.307";
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
-const OUT_OF_SCOPE_PATTERN = /roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework/i;
-const AMBER_DOMAIN_PATTERN = /\brav|bernstein|bernsteinsuche|amber|amber hunt|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|ravlygte|bernsteinlampe|amber torch|uv.?light|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|rende|rinne|channel|høfde|buhne|groyne|harpiks|harz|resin|fluorescen|dichte|density|massefylde|geologi|geology|istid|ice age/i;
+const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;
+const AMBER_DOMAIN_PATTERN = /(?<![\p{L}\p{N}_])(?:rav\p{L}*|bernstein\p{L}*|succinit|succinite|copal|kopal|amber\p{L}*|harpiks|harz|resin|fossili[sz]|inklusion|einschluss|inclusion|fluorescen|fluoreszenz|fluorescen[ct]e|uv.?light|395\s*nm|fosfor|phosphor|phosphorus|danefæ|kesse|kescher|kyst|küste|coast|strand|beach|hav|meer|sea|bølge|welle|wave|strøm|strömung|current|vandstand|wasserstand|water level|wader|wathose|opskyl|spülsaum|wash line|tang|seegras|seaweed|revle|sandbank|sandbar|revlehul|brandungsrückstrom|rip current|rende|rinne|channel|høfde|buhne|groyne|opdrift|auftrieb|buoyancy|massefylde|dichte|density|saltation|sediment|geologi|geology|geologie|istid|eiszeit|ice age)(?![\p{L}\p{N}_])/iu;
 const INTENT_PATTERNS = Object.freeze({
   coast:/revle|sandbanke|rende|høfde|mole|kystknæk|læside|strandhældning|sandbank|rinne|buhne|küstenknick|leeseite|strandneigung|sandbar|channel|groyne|pier|coastal bend|lee side|beach slope/iu,
   'best-place':/bedste (?:sted|område)|hvor (?:skal|bør) (?:jeg|vi).*(?:lede|tage|køre)|hvor er (?:det )?bedst|køre hen|bester ort|bestes gebiet|wo (?:soll|sollte) (?:ich|wir).*(?:suchen|fahren)|wo ist es am besten|wohin fahren|best (?:place|area)|where should (?:i|we).*(?:search|go|drive)|where is best|drive to/iu,
@@ -56,6 +57,8 @@ function clock(iso, language) {
 export function classifyRavQuestion(question) {
   const text = String(question || '').trim();
   for (const [intent, pattern] of Object.entries(INTENT_PATTERNS)) if (pattern.test(text)) return intent;
+  const knowledge = matchLocalRavKnowledge(text);
+  if (knowledge) return `knowledge:${knowledge.id}`;
   return 'unknown';
 }
 
@@ -65,6 +68,11 @@ export function routeRavQuestion(question) {
   const intent = classifyRavQuestion(text);
   if (intent !== 'unknown') return 'local-deterministic';
   return AMBER_DOMAIN_PATTERN.test(text) ? 'remote-candidate' : 'fixed-refusal';
+}
+
+export function ravQuestionNeedsConditionDetails(question) {
+  if (matchLocalRavKnowledge(question)) return false;
+  return ['best-place', 'best-time', 'score'].includes(classifyRavQuestion(question));
 }
 
 function allScored(context, dayOffset = 0) {
@@ -144,6 +152,8 @@ function equipmentAnswer(context, language) {
 }
 
 function localAnswer(question, context, language) {
+  const knowledgeAnswer = localRavKnowledgeAnswer(question, language);
+  if (knowledgeAnswer) return knowledgeAnswer;
   const intent = classifyRavQuestion(question);
   if (intent === 'equipment') return equipmentAnswer(context, language);
   if (intent === 'best-place') return bestPlace(context, question, language);

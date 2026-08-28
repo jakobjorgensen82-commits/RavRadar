@@ -40,8 +40,13 @@ for (const question of [
 ]) assert.equal(routeAssistantQuestion(question), 'fixed-refusal', question);
 for (const question of [
   'Hvordan påvirker strøm ravjagt?',
+  'Hvad er særligt ved ravjagt nær Skagen?',
   'Warum beeinflusst Wind die Bernsteinsuche?',
   'Can waves move amber?',
+  'Hvad gør man ved mistanke om fosfor?',
+  'What is succinite?',
+  'Kann Copal wie Bernstein aussehen?',
+  'How dangerous is a rip current?',
 ]) assert.equal(routeAssistantQuestion(question), 'provider', question);
 
 const safeContext = publicAssistantContext({
@@ -61,7 +66,10 @@ assert.equal(JSON.stringify(safeContext).includes('provider'), false);
 const prompt = JSON.parse(assistantPrompt('Can waves move amber?', safeContext, 'en'));
 assert.equal(prompt.requestedLocale, 'en');
 assert.equal(prompt.question, 'Can waves move amber?');
-assert.equal(prompt.publicFacts.length, 23);
+assert.equal(prompt.publicFacts.length, 38);
+const uvFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'identification.uv-clue-not-proof');
+assert.match(uvFact?.text || '', /395 nanometres/);
+assert.doesNotMatch(uvFact?.text || '', /365 nanometres/);
 assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);
 assert.match(assistantSystemInstruction(), /Can you guarantee a find/);
 assert.match(assistantSystemInstruction(), /safety\.not-a-safety-rating/);

@@ -36,6 +36,8 @@ const DA = {
   'forecast.eyebrow':'De bedste zoner dag for dag', 'forecast.title':'5-dages RavRadar', 'forecast.loading':'Indlæser prognose…',
   'forecast.fetching':'Henter 5-dages prognosen…', 'forecast.calculating':'Beregner 5-dages prognose… {progress} %',
   'forecast.nextUpdate':'5-dages prognosen bliver vist efter næste vejr-opdatering.',
+  'forecast.expired':'Det seneste datasæt har ingen prognosedage tilbage fra i dag. 5-dages prognosen vises igen efter næste vejr-opdatering.',
+  'forecast.recoveryDays':'Nøddriften har kun {count} gyldige prognosedage tilbage. Udløbne dage vises ikke.',
   'forecast.noData':'Ingen prognosedata for dagen.', 'forecast.bestNow':'Bedst lige nu',
   'forecast.bestAt':'Bedste tidspunkt ca. {time}', 'forecast.seeHourly':'Se timeprognosen for forhold',
   'forecast.loadFailed':'5-dages prognosen kunne ikke hentes. Aktuelle forhold vises fortsat.',
@@ -249,6 +251,8 @@ const DE = {
   'forecast.eyebrow':'Die besten Zonen Tag für Tag', 'forecast.title':'5-Tage-RavRadar', 'forecast.loading':'Prognose wird geladen…',
   'forecast.fetching':'5-Tage-Prognose wird geladen…', 'forecast.calculating':'5-Tage-Prognose wird berechnet… {progress} %',
   'forecast.nextUpdate':'Die 5-Tage-Prognose erscheint nach der nächsten Wetteraktualisierung.',
+  'forecast.expired':'Der letzte Datensatz enthält ab heute keine Prognosetage mehr. Die 5-Tage-Prognose erscheint nach der nächsten Wetteraktualisierung wieder.',
+  'forecast.recoveryDays':'Im Notbetrieb sind nur noch {count} gültige Prognosetage vorhanden. Abgelaufene Tage werden nicht angezeigt.',
   'forecast.noData':'Keine Prognosedaten für diesen Tag.', 'forecast.bestNow':'Jetzt am besten',
   'forecast.bestAt':'Beste Zeit etwa {time}', 'forecast.seeHourly':'Stundenprognose für die Bedingungen ansehen',
   'forecast.loadFailed':'Die 5-Tage-Prognose konnte nicht geladen werden. Aktuelle Bedingungen werden weiterhin angezeigt.',
@@ -462,6 +466,8 @@ const EN = {
   'forecast.eyebrow':'Best zones day by day', 'forecast.title':'5-day RavRadar', 'forecast.loading':'Loading forecast…',
   'forecast.fetching':'Loading the 5-day forecast…', 'forecast.calculating':'Calculating the 5-day forecast… {progress}%',
   'forecast.nextUpdate':'The 5-day forecast will appear after the next weather update.',
+  'forecast.expired':'The latest dataset has no forecast days left from today. The 5-day forecast will return after the next weather update.',
+  'forecast.recoveryDays':'Emergency mode has only {count} valid forecast days left. Expired days are not shown.',
   'forecast.noData':'No forecast data for this day.', 'forecast.bestNow':'Best right now',
   'forecast.bestAt':'Best time around {time}', 'forecast.seeHourly':'See the hourly forecast for conditions',
   'forecast.loadFailed':'The 5-day forecast could not be loaded. Current conditions are still shown.',
@@ -689,7 +695,7 @@ export function setLanguage(language) {
 export function t(key, params = {}, language = getLanguage()) {
   const code = normaliseLanguage(language);
   const template = EXTENDED_MESSAGES[code]?.[key] ?? MESSAGES[code]?.[key] ?? EXTENDED_MESSAGES.da[key] ?? MESSAGES.da[key] ?? key;
-  const rendered = String(template).replace(/\{([A-Za-z0-9_]+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match).replace(/365 nm/g, '395 nm');
+  const rendered = String(template).replace(/\{([A-Za-z0-9_]+)\}/g, (match, name) => Object.hasOwn(params, name) ? String(params[name]) : match);
   if (code === 'de') return rendered.replace(/RavScore/g, 'BernsteinScore');
   if (code === 'en') return rendered.replace(/RavScore/g, 'AmberScore');
   return rendered;

@@ -1,10 +1,23 @@
-# AI Roadmap – RavRadar 4.0.305+
+# AI Roadmap – RavRadar 4.0.307+
+
+## Aktivt smårettelsesspor – ekstra høj 4.0.307-genkontrol
+
+- [x] Auditér hele 4.0.306-ejerpakken mod kode, tests, håndbøger og Edge-kontrakt.
+- [x] Udvid den netværksfri assistent til 152 kildeklassificerede emner og 456 DA/DE/EN-katalogevals med ekstern research og RavRadars større forskningsgrundlag.
+- [x] Ret 365→395-drift, Skagen-delstrengsafvisning og DE/EN Kyst B-pile.
+- [x] Udvid Edge fra 23 til 38 offentlige fakta og den relevante domænerute uden at udvide datakonteksten.
+- [x] Fjern udløbne 5-dagesdatoer i dansk tid uden at relabele gamle prognoseværdier.
+- [x] Fjern prognosedetaljefilen som blokering for lokale fakta-, forsknings- og sikkerhedssvar.
+- [ ] Luk lokal desktop-/mobilbrowserkontrol, sourcegate og geodatabevis.
+- [ ] Luk PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
+
+Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 
 ## Aktivt smårettelsesspor – 4.0.306
 
 - [x] Implementér ejerens ikke-modelrelaterede UI-, lærings-, oversættelses- og assistentrettelser.
-- [ ] Luk målrettede tests, source/RDKS, exact-head, produktion og offentlig kontrol.
-- [ ] Dokumentér merge, så DEC-0102-modelworktree kan integrere nyeste `origin/main`.
+- [x] Luk målrettede tests, source/RDKS, exact-head, produktion og offentlig kontrol.
+- [x] Dokumentér merge, så DEC-0102-modelworktree kan integrere nyeste `origin/main`.
 
 ## P0 ejer-godkendt – én integreret næste RavScore-generation
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og produktionsverificeret i 4.0.293/4.0.294. Den offentlige formuleringstest udløste og lukkede en afgrænset 4.0.294-hotfix.
+Besluttet og produktionsverificeret i 4.0.293/4.0.294. Den offentlige formuleringstest udløste og lukkede en afgrænset 4.0.294-hotfix. **Kildebegrænsningen i beslutningens punkt 1 er historisk og erstattet af DEC-0105**, som tillader kildeklassificeret ekstern forskning, officielle kilder, RavRadars systematiske forskningsgrundlag og navngiven praktisk ekspertviden. Read-only-, sikkerheds-, privacy- og modelgrænserne består.
 
 ## Problem
 

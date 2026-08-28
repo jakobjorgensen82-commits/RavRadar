@@ -5,6 +5,8 @@ const read = file => fs.readFileSync(file, 'utf8');
 const index = read('index.html');
 const learning = read('learn.html');
 const learningCss = read('learn.css');
+const learningDe = read('js/ui/learn-i18n-de.js');
+const learningEn = read('js/ui/learn-i18n-en.js');
 const serviceWorker = read('service-worker.js');
 const infoPanel = read('js/ui/info-panel.js');
 const assistant = read('js/services/rav-assistant.js');
@@ -50,6 +52,9 @@ assert.match(learning, /ikke offentligt oplyste bølgelængder/, 'Praktisk erfar
 assert.match(learning, /se rav gennem alger/, 'Erfaringen med speciallygter i vand skal være med');
 assert.match(learning, /flow-arrow">←<\/span><small>Strøm mod kysten/, 'Pilen skal pege ind mod Kyst A');
 assert.match(learning, /Kyst B[\s\S]*flow-arrow">↑<\/span><small>Strøm langs kysten/, 'Kyst B skal have lodret kyst og opadgående pil');
+assert.match(learningDe, /Küste B[\s\S]*flow-arrow">↑<\/span><small>Strömung entlang der Küste/, 'Tysk Kyst B skal have opadgående pil');
+assert.match(learningEn, /Coast B[\s\S]*flow-arrow">↑<\/span><small>Current along the coast/, 'Engelsk Kyst B skal have opadgående pil');
+assert.match(learningCss, /\.coast-b\{transform:rotate\(0\)/, 'Kyst B-stregen skal effektivt være lodret');
 assert.match(learning, /Koldt vand kan gøre rav lettere at mobilisere/, 'Koldt vands betydning for mobilisering skal forklares');
 assert.match(learning, /TiR96bdTRr0[\s\S]*Rav Jagt/, 'Temperaturforklaringen skal kreditere og linke til Rav Jagts video');
 assert.match(learning, /rav-jagt-where-is-amber\.svg/, 'Rav Jagts kysttværsnit skal indgå i læringskæden');

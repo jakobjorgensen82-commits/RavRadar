@@ -1,20 +1,21 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-engine.js?v=4.0.306";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.306";
-import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.306";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.306";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.306";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.306";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.306";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.306";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.306";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.306";
-import { askRavRadar, quickQuestions } from "./js/services/rav-assistant.js?v=4.0.306";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.306";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.306";
-import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.306";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.306";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.306';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.306';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-engine.js?v=4.0.307";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.307";
+import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.307";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.307";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.307";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.307";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.307";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.307";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.307";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.307";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.307";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.307";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.307";
+import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.307";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.307";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.307';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.307';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.307';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -101,9 +102,10 @@ function renderRanking() {
 }
 
 function groupHoursForZone(zone) {
-  if(state.forecastGroups.has(zone.id))return state.forecastGroups.get(zone.id);
+  const cacheKey=`${zone.id}:${forecastDateKeyInTimeZone()}`;
+  if(state.forecastGroups.has(cacheKey))return state.forecastGroups.get(cacheKey);
   const groups=new Map(); for(const hour of zoneCondition(zone).forecast?.hourly||[]){const date=String(hour.time||"").slice(0,10);if(!date)continue;if(!groups.has(date))groups.set(date,[]);groups.get(date).push(hour);}
-  const days=[...groups.entries()].slice(0,5).map(([date,hours])=>({date,hours}));state.forecastGroups.set(zone.id,days);return days;
+  const days=visibleForecastDays([...groups.entries()].map(([date,hours])=>({date,hours})));state.forecastGroups.set(cacheKey,days);return days;
 }
 function bestForDay(zone,date) {
   return selectLocalBestForDay({coastalParts:state.conditions.coastalParts,zoneId:zone.id,mode:state.mode,date});
@@ -120,13 +122,14 @@ async function renderNationalForecast() {
     try{await ensureConditionDetails();}catch(error){console.error('5-dages prognose og kystdelsdetaljer kunne ikke hentes',error);nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.loadFailed')}</p>`;return false;}
   }
   const preparedAfterLoad=state.conditions?.nationalForecast?.modes?.[state.mode];
-  const dates=Array.isArray(preparedAfterLoad)
-    ?preparedAfterLoad.map(day=>day.date)
+  const visiblePrepared=Array.isArray(preparedAfterLoad)?visibleForecastDays(preparedAfterLoad):null;
+  const dates=Array.isArray(visiblePrepared)
+    ?visiblePrepared.map(day=>day.date)
     :[...new Set(state.zones.features.flatMap(f=>groupHoursForZone(f.properties).map(day=>day.date)))].sort().slice(0,5);
-  if(!dates.length){nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.nextUpdate')}</p>`;return true;}
+  if(!dates.length){nationalForecast.innerHTML=`<p class="ranking-empty">${t('forecast.expired')}</p>`;return true;}
 
   // Vis strukturen straks og giv browseren en reel mulighed for at tegne dagens rangliste.
-  const data=Array.isArray(preparedAfterLoad)?preparedAfterLoad.map(day=>({
+  const data=Array.isArray(visiblePrepared)?visiblePrepared.map(day=>({
     date:day.date,
     rows:(day.rows||[]).flatMap(row=>{
       const zone=state.zones.features.find(feature=>feature.properties.id===row.zoneId)?.properties;
@@ -142,13 +145,14 @@ async function renderNationalForecast() {
       }];
     }),
   })):dates.map(date=>({date,rows:[]}));
-  nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat(getLocale(),{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat(getLocale(),{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div><div class="national-forecast-list"><p class="ranking-empty">${t('forecast.calculating',{progress:0})}</p></div>`;
+  const recoveryDaysNote=state.conditions?.recoveryFallbackActive&&data.length<5?`<p class="forecast-recovery-note">${t('forecast.recoveryDays',{count:data.length})}</p>`:'';
+  nationalForecast.innerHTML=`<div class="day-tabs national-day-tabs" role="tablist">${data.map((day,index)=>`<button type="button" class="national-day-tab ${index===0?"active":""}" data-day-index="${index}"><span>${new Intl.DateTimeFormat(getLocale(),{weekday:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</span><small>${new Intl.DateTimeFormat(getLocale(),{day:"numeric",month:"short"}).format(new Date(`${day.date}T12:00:00`)).replace(".","")}</small></button>`).join("")}</div>${recoveryDaysNote}<div class="national-forecast-list"><p class="ranking-empty">${t('forecast.calculating',{progress:0})}</p></div>`;
   await yieldToBrowser();
   if(renderId!==state.forecastRenderId)return false;
 
   // Beregn i små bidder. Den gamle synkrone løkke kunne blokere mobilbrowseren så
   // længe, at hverken dagens rangliste eller prognosen nogensinde blev malet.
-  if(!Array.isArray(preparedAfterLoad)){
+  if(!Array.isArray(visiblePrepared)){
     const features=state.zones.features;
     for(let index=0;index<features.length;index++){
       const zone=features[index].properties;
@@ -238,7 +242,7 @@ function enableDialogClose(dialog){dialog.querySelector(".dialog-close")?.addEve
 
 function assistantContext(){const zone=state.selectedZone;const condition=zoneCondition(zone);return {locale:getLanguage(),zone,weather:condition.current||{},history:condition.history||{},result:zone?resultFor(zone):null,mode:state.mode,zones:state.zones,conditions:state.conditions};}
 function addAssistantMessage(text,who="assistant",loading=false){const box=document.querySelector("#assistantMessages");const div=document.createElement("div");div.className=`assistant-message ${who}${loading?" loading":""}`;const p=document.createElement("p");p.textContent=text;div.appendChild(p);box.appendChild(div);box.scrollTop=box.scrollHeight;return div;}
-async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;addAssistantMessage(clean,"user");const pending=addAssistantMessage(t('assistant.working'),"assistant",true);try{await ensureConditionDetails();pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext());pending.classList.remove("loading");}catch(error){pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
+async function submitAssistantQuestion(question){const clean=String(question||"").trim();if(!clean)return;addAssistantMessage(clean,"user");const pending=addAssistantMessage(t('assistant.working'),"assistant",true);try{if(ravQuestionNeedsConditionDetails(clean))await ensureConditionDetails();pending.querySelector("p").textContent=await askRavRadar(clean,assistantContext());pending.classList.remove("loading");}catch(error){pending.querySelector("p").textContent=error.message;pending.classList.remove("loading");}}
 const quickBox=document.querySelector("#assistantQuickQuestions");quickBox.innerHTML=quickQuestions().map(q=>`<button type="button">${q}</button>`).join("");quickBox.querySelectorAll("button").forEach(button=>button.addEventListener("click",()=>submitAssistantQuestion(button.textContent)));document.querySelector("#assistantButton").addEventListener("click",()=>assistantDialog.showModal());document.querySelector("#assistantForm").addEventListener("submit",async event=>{event.preventDefault();const field=event.currentTarget.elements.question;const q=field.value;field.value="";await submitAssistantQuestion(q);});
 
 document.querySelectorAll(".mode-button").forEach(button=>button.addEventListener("click",()=>setMode(button.dataset.mode)));
@@ -326,11 +330,11 @@ try {
   syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.hidden=false;infoPanel.innerHTML=`<div class="notice">${t('data.couldNotLoad')}</div>`;dataStatus.textContent=t('data.loadError');}
 
-// RavRadar 4.0.306: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.307: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.306"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.307"; document.querySelector("#appVersion").textContent=version;
   let registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent=t('update.now');};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent=t('update.updating');(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
@@ -370,8 +374,8 @@ function publicTripEvidenceContext(selection = null) {
   const coastalPart = partsById[coastalPartId];
   if (!coastalPart) throw new Error('Den valgte kyststrækning findes ikke længere. Vælg område og kyststrækning igen.');
 
-  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.306');
-  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.306';
+  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.307');
+  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.307';
   return {
     mode: selection?.mode || state.mode,
     zoneId,
