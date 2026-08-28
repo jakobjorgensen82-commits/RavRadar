@@ -1,5 +1,23 @@
 # Implementeringsstatus – produktionsverificeret 4.0.305 uden flisesømme
 
+## Ejer-godkendt og ikke implementeret – integreret næste RavScore-generation
+
+- [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.
+- [x] Verificér mod aktuel kode, at Candidate G allerede adskiller jagtbarhed, strømstyret transport, bølgeenergimobilisering og afhængig bølgelanding.
+- [x] Lås arbejdsformen: én isoleret, autonom model-worktree, én samlet kandidat, ingen offentlig fragmentudgivelse og ingen ekstra offentlig shadowmodel.
+- [x] Lås genbrugsprincippet: alle aktive led auditeres og fungerende dele bevares, medmindre en dokumenteret analyse begrunder erstatning.
+- [x] Lås det parallelle smårettelsesspor til ikke-modelkode og kræv, at modelsporet integrerer seneste grønne `main` før slutvalidering.
+- [x] Lås plug-and-play som acceptkrav: kandidaten skal selv levere kompatibilitet, adaptere, state-migration og rollback til RavRadars eksisterende system; ingen senere RavRadar-ombygning må stå tilbage.
+- [x] Lås grænserne: ingen private payloads, geometri eller land-/vandpunkter; ingen påstand om empirisk bedre fundrate uden repræsentative funddata.
+- [ ] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN-matricen.
+- [ ] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
+- [ ] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
+- [ ] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
+- [ ] Model-worktree: gennemfør scenarie-, ablations-, følsomheds-, regressions-, integrations- og fuld releasevalidering mod seneste `main`.
+- [ ] Udgiv først efter samlet modelbeslutning, exact-head, frisk produktion og offentlig kontrol.
+
+Se DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig version forbliver 4.0.305.
+
 ## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 
 - [x] Reproducer det offentlige gitter og mål 256 px-fliser på brøk-pixelplacering.

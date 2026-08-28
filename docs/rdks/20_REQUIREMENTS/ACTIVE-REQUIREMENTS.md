@@ -1,5 +1,18 @@
 # Aktive krav – samlet register
 
+## Næste samlede RavScore-model – bindende fra DEC-0102
+
+- **REQ-RAVSCORE-NEXT-INTEGRATED-001 – EJER-GODKENDT:** Næste modelgeneration skal bygges ende til ende i en isoleret worktree og først integreres som én samlet kandidat. Ingen offentlig fragmentudgivelse eller ekstra offentlig shadowmodel er tilladt.
+- **REQ-RAVSCORE-PRESERVE-WORKING-001 – BINDENDE:** Før modelkode ændres, skal alle aktive Candidate G-led klassificeres som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**. Fungerende kode, state, provenance, fail-closed-adfærd og releasegates genbruges som udgangspunkt; enhver erstatning kræver dokumenteret begrundelse og regression.
+- **REQ-RAVSCORE-NEARSHORE-SEMANTICS-001 – BINDENDE:** Den verificerede bundnære modelstrøm må ikke beskrives som en direkte undertowmåling i surfzonen. Den nye model skal skelne tilførsel/transport, sidste nærkystlevering/retention, mobilisering og jagtbarhed samt markere usikkerhed, når batymetri, revler, render eller surfzoneopløsning mangler.
+- **REQ-RAVSCORE-NO-FIND-DEPENDENCY-001 – EJERBESLUTNING:** Brugerfund/nul-fund er ikke en forudsætning for denne leverance. Forskning, invariants, scenarier, ablation, følsomhed og datasikre replays kan bevise fysisk/teknisk forbedring; uden repræsentative funddata må modellen ikke kaldes empirisk bevist bedre til at forudsige fund.
+- **REQ-RAVSCORE-PARALLEL-MAIN-001 – BINDENDE:** Model-worktree henter `origin/main` ved checkpoints og integrerer seneste grønne `main` før slutvalidering. Det parallelle smårettelsesspor må ikke ændre Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden eller modelbeslutninger uden eksplicit koordinering.
+- **REQ-RAVSCORE-PLUG-AND-PLAY-001 – BINDENDE:** Den færdige kandidat skal passe direkte ind i seneste RavRadar-`main`. Eksisterende input-, 210/673-, state-, runtime-, UI-, admin-, privacy-, cache-, forklarings- og releasekontrakter skal understøttes af kandidaten selv, inklusive nødvendige adaptere, migration og rollback. En efterfølgende særskilt RavRadar-ombygning er ikke en accepteret restleverance.
+- **REQ-RAVSCORE-CONSUMER-MATRIX-001 – BINDENDE:** Før modeldesign oprettes en komplet producent-/forbrugermatrix. Før release skal den bevise kompatibilitet for DA/DE/EN, lokal og Edge-baseret **Spørg RavRadar**, evidens/faste svar, aktuelle/femdøgns-ranglister, bedste tidspunkt, zonedetaljer, konto-/tur-/observations-modelbinding, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, scheduler/workflows, audits, releasegates og offentlig browser.
+- **REQ-RAVSCORE-NO-GEO-001 – BINDENDE:** Modelsporet må ikke læse, flytte eller ændre geometri, land-/vandpunkter, koordinater, central geodata eller private payloads. Manglende lokal batymetri må ikke erstattes af opdigtede værdier.
+
+Se DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`.
+
 ## Kontoidentitet og turlager
 
 - **REQ-TRIP-020 – IMPLEMENTERET LOKALT / AFVENTER LIVE:** Supabase er fortsat Auth- og Edge-sandhed, mens normale turposter lagres i ti EU-låste Cloudflare D1-shards. Browseren må ikke kalde D1 direkte.

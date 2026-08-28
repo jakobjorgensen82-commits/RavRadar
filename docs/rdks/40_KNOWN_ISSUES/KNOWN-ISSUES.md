@@ -1,5 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## Næste RavScore-generation – åbne modelbegrænsninger
+
+- **ISSUE-RAVSCORE-SURF-ZONE-RESOLUTION – ÅBEN / EJER-GODKENDT MODELARBEJDE:** Den aktive bundnære modelstrøm ved nærmeste tilladte U/V-kolonne opløser ikke de sidste meter gennem revler, render, brydningszone, undertow, feeder-/langskyststrømme og ripstrømme. Den nye samlede model skal skelne disse betydninger og vise usikkerheden uden at opfinde batymetri eller flytte punkter.
+- **ISSUE-RAVSCORE-DELIVERY-DEPENDENCY – ÅBEN TIL SYSTEMISK ANALYSE:** Candidate G lader bølger modulere en levering, der fortsat er matematisk afledt af det eksisterende transportpotentiale. Det bevarer forbuddet mod at opfinde tilførsel, men kan være for groft i overgangen fra kystnært lager til sidste levering/retention. Afhængigheden skal testes som del af hele modellen, ikke patches isoleret.
+- **ISSUE-RAVSCORE-OWNER-PRIORS – ÅBEN TIL SYSTEMISK ANALYSE:** 20/50/30, strømgrænserne, +10/-8-forløbet, 13-timers nul-gaten, 4/48-timers mobilisering og den maksimale bølgelandingsandel er dokumenterede arbejdspriorer. De er testede mekanisk, men ikke fundkalibrerede naturkonstanter.
+- **ISSUE-RAVSCORE-EMPIRICAL-ACCURACY – KENDT BEGRÆNSNING:** Ejeren har fravalgt brugerfund som forudsætning for denne leverance. Modellen kan derfor dokumenteres mere fysisk sammenhængende og teknisk robust, men ikke empirisk bevist mere fundpræcis. Se DEC-0102.
+
 ## 4.0.305 – rasterkortets flisesømme
 
 - **ISSUE-PUBLIC-MAP-TILE-GRID – PRODUKTIONSVERIFICERET LØST:** Brøk-pixelplacering gjorde Leaflets rasterflisegrænser synlige som et hårfint gitter. Den afgrænsede 4.0.305-løsning overlapper kun 256 px-fliser 0,5 px og neutraliserer additiv blanding. PR #212, exact-head, produktion/Pages og offentlig standard-/satellit-/zoomkontrol er grønne; Om-retur er bevaret. Se DEC-0101.

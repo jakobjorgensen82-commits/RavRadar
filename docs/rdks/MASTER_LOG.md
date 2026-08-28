@@ -1,3 +1,13 @@
+## 2026-08-28 – godkendt todelt arbejdsform og næste samlede RavScore-model
+
+- Ejeren godkendte én autonom, integreret næste RavScore-generation i en isoleret worktree samt et separat worktree til mindre, ikke-modelrelaterede rettelser.
+- Modelsporet skal genbruge alt veldokumenteret fra Candidate G, klassificere alle led før ændring og kun erstatte dem efter dokumenteret analyse. Kandidaten bygges ende til ende og udgives ikke i offentlige fragmenter eller som ekstra offentlig shadowmodel.
+- Ekspertens spørgsmål om returvand er registreret som et reelt modelhul, ikke som bevis for en forkert model: den aktive bundnære gridstrøm er ikke en direkte undertow-/surfzonemåling. Den nye model skal skelne tilførsel, transport, levering/retention, mobilisering, jagtbarhed og usikkerhed.
+- Brugerfund er fravalgt som leverancekrav. Fysisk og teknisk forbedring valideres med forskning, invariants, scenarier, ablation og datasikre replays; empirisk bedre fundrate må ikke påstås.
+- Ejeren gjorde plug-and-play bindende: kandidaten tilpasses den eksisterende RavRadar-kæde og skal selv indeholde adaptere, state-migration, runtimeprojektioner og rollback. En senere særskilt ombygning af RavRadar er ikke en accepteret rest.
+- Omfanget blev præciseret til alle model-forbrugere: DA/DE/EN, lokal/Edge-assistent, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, state/cache/recovery, workflows, audits og releasegates. En producent-/forbrugermatrix er obligatorisk.
+- DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md` er oprettet. Version 4.0.305, kode, score, state, runtime, geometri, punkter og private data er uændrede.
+
 ## 2026-08-28 – 4.0.305 fjerner Leaflet-rasterflisegitter
 
 - Offentlig visuel kontrol reproducerede hårfine sømme mellem 256 px-kortfliser på et brøk-pixelplaceret Leaflet-lag. Det var ikke zoner, geometri eller vejrdata.
