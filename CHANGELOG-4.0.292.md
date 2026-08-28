@@ -21,3 +21,11 @@
 - Tilføjer en deterministisk livscyklustest og bevarer de eksisterende mobil-, første-paint-, progressive prognose- og modulversionskontrakter.
 
 Candidate G 20/50/30, vejr, prognoseinput, sortering, konto-/turdata, privatliv, geometri og de faktiske land-/vandpunkter er uændrede. Geodatafilerne ændrer kun topversionsfeltet. Se DEC-0089 og DEC-0090.
+
+## Produktionsverifikation
+
+- PR #192 bestod exact-head `33127353135` på `e555680f`, blev merged som `d22d0867` og gennemførte produktion `33127437790`, build `98708851478` samt Pages `98711255270`.
+- Offentlig 390 × 844-kontrol bestod **Om RavRadar** → tilbage med synligt kort, alle 210 zoner i scorefarver, fem **Bedste områder**, fem færdige 5-dagesresultater og nul konsolfejl/advarsler.
+- Dansk, tysk og engelsk skifter korrekt, og Spørg RavRadar viser den godkendte daglige kvotetekst samt isolation fra prognoser og RavScore.
+- Offentlig punktstatus er tom og saniteret med automatisk aktivering slået fra. Ingen kandidat, koordinat, rå U/V, faktisk punktflytning eller promotion indgik.
+- Den nye primær er fortsat i ærlig 0/673 `READY` warmup; den komplette tidligere prognose leverer atomisk og tydeligt markeret, indtil de virkelige 48 timer er modne.

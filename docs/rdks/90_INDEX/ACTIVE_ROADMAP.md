@@ -1,24 +1,25 @@
 # RavRadar - aktivt roadmap
 
-## P1 aktiv – sikker punktflytning i 4.0.292
+## P1 produktionsverificeret – sikker punktflytning i 4.0.292
 
 - [x] Adskil aktiv override og staged kandidat i admin-/buildkontrakten.
 - [x] Opbyg privat DMI- og Candidate G-state uden offentlig datalæk.
 - [x] Kræv READY, særskilt ejeraktivering, eksakte gates og central version-CAS.
 - [x] Bevar rollback/recovery og hel fallback ved højst seks lokale warmups.
-- [ ] Luk gennem exact-head og frisk produktion; flyt derefter først et konkret punkt efter ejerens visuelle placering.
+- [x] Luk gennem PR #192 exact-head `33127353135`, merge `d22d0867`, frisk produktion `33127437790` og offentlig saniteret status uden at flytte et konkret punkt.
 
 Se DEC-0090.
 
-## P1 aktiv – mobil retur-selvrecovery i 4.0.292
+## P1 produktionsverificeret – mobil retur-selvrecovery i 4.0.292
 
 - [x] Installer bootstrap- og `pageshow`-værn for Safari/WebKit page cache.
 - [x] Genindlæs ufuldstændig state og genoptegn ellers kort, rangliste, valgt zone og femdøgnsvisning idempotent.
 - [x] Lås forløbet med målrettet livscyklustest og eksisterende mobil-/prognosekontrakter.
-- [ ] Bestå exact-head, produktion, offentlig runtime og fysisk iPhone-retur.
+- [x] Bestå exact-head, produktion og offentlig 390 × 844-retur med synligt kort, fem aktuelle områder, fem prognoserækker og nul browserfejl.
+- [ ] Indhent supplerende fysisk iPhone-efterkontrol fra ejeren.
 
 Se DEC-0089.
-## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
+## P1 produktionsverificeret – offentlig gratis Spørg RavRadar i 4.0.291
 
 - [x] Ejer-go, aktuel Workers Free-kontrol og DA/DE/EN-kvotetekst.
 - [x] Offentligt aktiveringsflag med sikker `false`-rollback og målrettet remote-/`429`-fallbacktest.
@@ -27,11 +28,11 @@ Se DEC-0089.
 
 Se DEC-0088.
 
-## Næste P1-rækkefølge efter 4.0.291
+## Næste P1-rækkefølge efter produktionsverificeret 4.0.292
 
-1. Luk de implementerede 4.0.292-rettelser gennem exact-head, produktion, offentlig runtime, adminstatus og fysisk iPhone.
-2. Udvid derefter den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data, relevante opfølgende spørgsmål og fortsat fast emneafvisning.
-3. Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
+1. Udvid den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data, relevante opfølgende spørgsmål og fortsat fast emneafvisning.
+2. Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
+3. Følg sideløbende den naturlige Candidate G-modning og indhent ejerens fysiske iPhone-efterkontrol; ingen af delene må fremtvinges med kunstig historik eller en punktflytning.
 
 Det brede lokale vidensscope låses med konkrete intents og evals før implementering.
 
@@ -91,7 +92,7 @@ Se DEC-0082. Candidate G, score, vejr, geometri og land-/vandpunkter ændres ikk
 
 Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVUDSIGTEN-ANALYSE.md`.
 
-## P1 aktiv – gratis og domæneafgrænset Spørg RavRadar
+## P1 afsluttet – gratis og domæneafgrænset Spørg RavRadar
 
 - [x] Auditér den lokale og historiske Edge-assistent mod Candidate G, offentlig kontekst og sikkerhedsgrænser.
 - [x] Lås Free Tier uden billing/betalt overflow samt lokal fallback ved kvote- og providerfejl.
@@ -103,7 +104,7 @@ Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVU
 - [x] Tilføj Workers Free-kandidater og samme kontrakt/målinger til den provider-neutrale runner.
 - [x] Vælg GPT-OSS 20B efter liveeval, implementér og deploy struktureret Edge-outputkontrol, tre rate limits, timeout og sikker lokal rollback. Offentlig Pages-aktivering er produktionsverificeret i 4.0.291.
 
-Se DEC-0083/0087. Offentlig 4.0.289 forbliver local-only; score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
+Se DEC-0083/0087/0088. Offentlig 4.0.291 bruger GPT-OSS gennem Edge med lokal fallback; score, vejr, konto/ture, geometri, land-/vandpunkter og private data er uændrede.
 
 ## P0 afsluttet – 4.0.286 rullende Candidate G-kontinuitet
 

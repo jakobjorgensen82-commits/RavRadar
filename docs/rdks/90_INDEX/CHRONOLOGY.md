@@ -3,6 +3,7 @@
 - 2026-08-28: 4.0.292 PR #189 bestod exact-head `33124945636` og blev merged som `8b3668b7`. Produktion `33125043019` stoppede før DMI/deploy, fordi punktstagingens syntetiske READY-test arvede workflowets låste produktionstime. En afgrænset hotfix gør fixture-reference eksplicit og bevarer produktionens normale miljølåste reference.
 - 2026-08-28: PR #190 bestod exact-head `33125466599` og blev merged som `6906ee5a`. Produktion `33125529746` byggede frisk DMI/Copernicus/runtime, men stoppede før deploy på en gammel scheduler-kildetest. Kontrakten kræver nu den tilsigtede udelukkelse af `privateStage` og kører i PR-kildegaten.
 - 2026-08-28: PR #191 bestod exact-head `33126975042` og blev merged som `01c443b8`. Produktion `33127032179` stoppede før DMI/deploy, da den tidlige scheduleradfærdstest importerede endnu ikke installeret `requests`. Testen er gjort selvstændig med netværksstubs og tester fortsat den virkelige schedulerfunktion.
+- 2026-08-28: PR #192 bestod exact-head `33127353135` på `e555680f`, blev merged som `d22d0867`, og produktion `33127437790`/build `98708851478`/Pages `98711255270` bestod hele kæden. Offentlig 390 × 844-returkontrol viste synligt farvet kort, fem aktuelle områder og fem færdige prognoserækker uden browserfejl. Punktstatus var tom og saniteret; ingen markør blev flyttet. Primær `rr-20260827235556-210` er fortsat 0/673 `READY`, så fallback `rr-20260827013448-210` leverer korrekt under naturlig 48-timers modning.
 
 ## 2026-08-28 – sikker fremtidig flytning af Sibirien-punkter
 
