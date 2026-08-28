@@ -1,9 +1,16 @@
+## 4.0.297 – mobil bfcache-retur med fail-safe genindlæsning (2026-08-28)
+
+- Reagerer på ejerens fysiske mobilobservation: efter retur fra eksempelvis **Om RavRadar** kunne den genoptagne forside igen mangle kort og prognoser, selv om desktopretur var grøn.
+- Installerer et tidligt returværn og genindlæser en persisted mobilside rent. Desktop beholder genoptegning med et tresekunders watchdog og konkret sundhedskontrol af kort, **Bedste områder** og **5-dages RavRadar**.
+- Ændrer ingen faglig model, produktionsdata, score, sortering, brugerdata, geometri eller land-/vandpunkter. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk mobilkontrol afventer. Se DEC-0094 og `CHANGELOG-4.0.297.md`.
+
 ## 4.0.296 – minimal Candidate G-startpakke (2026-08-28)
 
 - Lukker restflaskehalsen efter 4.0.295: aktiv READY-nødvisning havde stadig 3.562.253 byte/23,36 sekunders startup trods behovsstyrede detaljer og cirka 3,67 sekunders varm cache.
 - Beholder kun aktuel score/status, dækningsfelter, tre komponenttal, kompakt vejr, minimale labels og vinderdelens lille DMI-`flowPoints`-bevis i startup; fulde forklaringer, timeforløb og state forbliver i detaljepakken.
 - Bevarer detaljepakke/hash, dataset, tider, scorer, bestetid og national rangering. Den opdaterede READY-lignende test falder 591.295 → 29.670 byte uden scoreafvigelse.
-- PR #199's exact-head var grøn og blev merged som `bdd23cc0`; første produktion `33157055276` stoppede fail-closed før deploy på manglende pilproveniens. Den afgrænsede korrektion bevarer kun de tre nødvendige `flowPoints`-felter og består den målrettede zoom-/piltest. Nyt produktionsbevis afventer. Se DEC-0093 og `CHANGELOG-4.0.296.md`.
+- PR #199's exact-head var grøn og blev merged som `bdd23cc0`; første produktion `33157055276` stoppede fail-closed før deploy på manglende pilproveniens. Den afgrænsede korrektion bevarer kun de tre nødvendige `flowPoints`-felter.
+- PR #200/exact-head `33158782786`, merge `f1cd5868`, produktion `33158840203`, build `98808126976` og Pages `98814032394` er grønne. Offentlig startup er 399.801 byte/1,37 sekunder no-cache og cirka 1,31 sekunder varm til komplet visning; farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage er verificeret. Se DEC-0093 og `CHANGELOG-4.0.296.md`.
 
 ## 4.0.295 – hurtig offentlig start og behovsstyrede detaljer (2026-08-28)
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og implementeret som 4.0.296-kildekandidat. PR #199's exact-head-kildegate var grøn, men første produktion stoppede korrekt før deploy, fordi startprojektionen ikke havde bevaret vinderdelens lille `flowPoints`-proveniens. Den afgrænsede korrektion bevarer kun `current`, `wind` og `sources`; målrettet pil-, score-, recovery- og størrelseskontrol er grøn. Nyt exact-head-, produktions- og offentligt cold/warm-bevis afventer.
+Besluttet, implementeret og produktionsverificeret i 4.0.296. PR #199's exact-head-kildegate var grøn, men første produktion stoppede korrekt før deploy, fordi startprojektionen ikke havde bevaret vinderdelens lille `flowPoints`-proveniens. Den afgrænsede korrektion bevarer kun `current`, `wind` og `sources`; PR #200, fuld produktion, Pages og offentlig cold/warm-kontrol er grønne.
 
 ## Problem
 
@@ -27,4 +27,4 @@ Resten kom fra `coastalParts`: hver zone bar stadig en fuld aktuel scorepost med
 
 ## Verifikation
 
-Den målrettede 4.0.296-regression sammenligner aktuel score, vinder, komponenter, vejr, dækningsrækker og national rangeringsscore før og efter projektionen for begge søgemåder. Den kræver fravær af tunge detaljefelter, uændret detaljeobjekt og detaljehash, korrekt ny startup-hash og bevaret minimal pilproveniens. Den syntetiske READY-lignende startpakke falder fra 591.295 til 29.670 byte, cirka 95 %, uden score- eller rangeringsafvigelse. Produktion `33157055276`/build `98802272478` stoppede fail-closed i den eksisterende zoom-/piltest før releasegate, Supabase og Pages; den målrettede piltest er grøn efter korrektionen.
+Den målrettede 4.0.296-regression sammenligner aktuel score, vinder, komponenter, vejr, dækningsrækker og national rangeringsscore før og efter projektionen for begge søgemåder. Den kræver fravær af tunge detaljefelter, uændret detaljeobjekt og detaljehash, korrekt ny startup-hash og bevaret minimal pilproveniens. Den syntetiske READY-lignende startpakke falder fra 591.295 til 29.670 byte, cirka 95 %, uden score- eller rangeringsafvigelse. Produktion `33157055276`/build `98802272478` stoppede fail-closed i den eksisterende zoom-/piltest før releasegate, Supabase og Pages. PR #200 bestod exact-head `33158782786`/job `98807893242`, merge `f1cd5868` og grøn produktion `33158840203`, build `98808126976` samt Pages `98814032394`. Offentlig startup er 399.801 byte/1,37 sekunder no-cache og cirka 1,31 sekunder varm til komplet visning med farvet kort og fem resultater på alle fem prognosedage.

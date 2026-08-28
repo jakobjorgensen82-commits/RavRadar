@@ -1,3 +1,9 @@
+## 2026-08-28 – 4.0.297 fysisk mobil bfcache-failsafe
+
+- Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme, selv om desktopretur og den historiske automatiserede 390 px-kontrol var grønne.
+- Et værn før async bootstrap genindlæser nu persisted mobilretur rent. Retur før appimport gør det samme; desktop beholder genoptegning med tresekunders watchdog og konkret DOM-sundhed for Leaflet, **Bedste områder** og **5-dages RavRadar**.
+- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig kontrol og fysisk mobilretur afventer. Ingen faglig model, produktionsdata, score, brugerdata, geometri eller punkt ændres. Se DEC-0094.
+
 ## 2026-08-28 – 4.0.295 offentlig opstartsydelse
 
 - Offentlig måling af 4.0.294 fandt 25–29 sekunder til femdøgnsvisningen og cirka 59 sekunder umiddelbart efter Pages-deploy. HTML-skallen var hurtig; normal opstart hentede 90–132 MB ukomprimerede Candidate G-detaljer og genberegnede fem nationale top-5-lister.

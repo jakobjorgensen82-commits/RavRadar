@@ -1,21 +1,21 @@
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.296';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.296';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.296';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.296';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.296';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.296';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.296';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.296';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.296';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.296';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.296';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.296';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.296';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.296';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.296';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.296';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.297';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.297';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.297';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.297';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.297';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.297';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.297';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.297';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.297';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.297';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.297';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.297';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.297';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.297';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.297';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.297';
 
-const VERSION='4.0.296';
+const VERSION='4.0.297';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -409,7 +409,7 @@ function renderVisitors(){
  const period=defaultVisitorPeriod();
  content.innerHTML=`<article class="admin-card"><div class="section-head"><div><h2>Privat besøgsstatistik</h2><p class="muted">Kun samlede dagstal. Ingen IP-adresser, præcis placering, browserfingeraftryk eller personprofiler.</p></div></div><form id="visitorPeriod" class="toolbar"><label>Fra <input type="date" name="from" value="${period.from}" required></label><label>Til <input type="date" name="to" value="${period.to}" required></label><button class="admin-button">Vis periode</button></form></article><div id="visitorReport"><article class="admin-card"><p>Henter besøgstal…</p></article></div>`;
  const form=document.querySelector('#visitorPeriod');
- const load=async()=>{const box=document.querySelector('#visitorReport');box.innerHTML='<article class="admin-card"><p>Henter besøgstal…</p></article>';try{const report=await loadVisitorReport(form.elements.from.value,form.elements.to.value);const rows=(report.days||[]).map(row=>`<tr><td>${new Date(`${row.day}T12:00:00`).toLocaleDateString('da-DK')}</td><td>${Number(row.pageViews).toLocaleString('da-DK')}</td><td>${Number(row.browserVisits).toLocaleString('da-DK')}</td></tr>`).join('');box.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Sidevisninger</h2><div class="metric">${Number(report.pageViews||0).toLocaleString('da-DK')}</div><p class="muted">Alle indlæsninger i perioden</p></article><article class="admin-card"><h2>Browserbesøg</h2><div class="metric">${Number(report.browserVisits||0).toLocaleString('da-DK')}</div><p class="muted">Første åbning pr. browserfane og dag – ikke unikke personer</p></article><article class="admin-card"><h2>Oprettede login</h2><div class="metric">${Number(report.registeredAccounts||0).toLocaleString('da-DK')}</div><p class="muted">${Number(report.activeAccounts||0).toLocaleString('da-DK')} aktive konti</p></article></div><article class="admin-card"><h2>Dag for dag</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Dato</th><th>Sidevisninger</th><th>Browserbesøg</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Ingen registrerede besøg i perioden.</td></tr>'}</tbody></table></div></article>`;}catch(error){box.innerHTML=`<article class="admin-card"><p class="status-bad"><b>Besøgstallene kunne ikke hentes.</b></p><p>${esc(error.message)}</p><p class="hint">RavRadar virker fortsat normalt. Kontrollér at databasemigreringen til 4.0.296 er installeret.</p></article>`;}};
+ const load=async()=>{const box=document.querySelector('#visitorReport');box.innerHTML='<article class="admin-card"><p>Henter besøgstal…</p></article>';try{const report=await loadVisitorReport(form.elements.from.value,form.elements.to.value);const rows=(report.days||[]).map(row=>`<tr><td>${new Date(`${row.day}T12:00:00`).toLocaleDateString('da-DK')}</td><td>${Number(row.pageViews).toLocaleString('da-DK')}</td><td>${Number(row.browserVisits).toLocaleString('da-DK')}</td></tr>`).join('');box.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Sidevisninger</h2><div class="metric">${Number(report.pageViews||0).toLocaleString('da-DK')}</div><p class="muted">Alle indlæsninger i perioden</p></article><article class="admin-card"><h2>Browserbesøg</h2><div class="metric">${Number(report.browserVisits||0).toLocaleString('da-DK')}</div><p class="muted">Første åbning pr. browserfane og dag – ikke unikke personer</p></article><article class="admin-card"><h2>Oprettede login</h2><div class="metric">${Number(report.registeredAccounts||0).toLocaleString('da-DK')}</div><p class="muted">${Number(report.activeAccounts||0).toLocaleString('da-DK')} aktive konti</p></article></div><article class="admin-card"><h2>Dag for dag</h2><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Dato</th><th>Sidevisninger</th><th>Browserbesøg</th></tr></thead><tbody>${rows||'<tr><td colspan="3">Ingen registrerede besøg i perioden.</td></tr>'}</tbody></table></div></article>`;}catch(error){box.innerHTML=`<article class="admin-card"><p class="status-bad"><b>Besøgstallene kunne ikke hentes.</b></p><p>${esc(error.message)}</p><p class="hint">RavRadar virker fortsat normalt. Kontrollér at databasemigreringen til 4.0.297 er installeret.</p></article>`;}};
  form.addEventListener('submit',event=>{event.preventDefault();load();});load();
 }
 

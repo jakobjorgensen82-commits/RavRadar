@@ -1,6 +1,20 @@
-# Implementeringsstatus – 4.0.296-kildekandidat over produktionsverificeret 4.0.295
+# Implementeringsstatus – 4.0.297-kandidat over produktionsverificeret 4.0.296
 
-## P1 implementeret – minimal Candidate G-startprojektion
+## P1 kildekandidat – robust fysisk mobilretur
+
+- [x] Registrér ejerens fysiske mobilobservation som modstridende evidens til den tidligere automatiserede 390 px-kontrol.
+- [x] Installer et tidligt `pageshow.persisted`-værn før asynkron bootstrap.
+- [x] Genindlæs mobilens persisted side rent og genindlæs også ved retur før appimport.
+- [x] Bevar desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
+- [x] Lås mobil reload, tidlig import, sund desktop, watchdog og usund DOM med målrettede tests.
+- [x] Bestå fuld lokal sourcegate og RDKS-/privacy-/releasekontrol efter versionsløftet.
+- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
+- [ ] Genverificér offentlig 4.0.297-version, hurtig startup, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
+- [ ] Få ejeren til at bekræfte **Om RavRadar** → tilbage på den fysiske mobil.
+
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094.
+
+## P1 produktionsverificeret – minimal Candidate G-startprojektion
 
 - [x] Luk 4.0.295 gennem PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641`, Pages `98794513908` og offentlig funktionskontrol.
 - [x] Bevis 4.0.295's varme start omkring 3,67 sekunder og afgræns den resterende kolde recovery-flaskehals til 3.562.253 byte/23,36 sekunder.
@@ -10,7 +24,10 @@
 - [x] Bestå fuld lokal sourcegate, RDKS/privacy/Edge/releasekontrol.
 - [x] Bestå PR #199 exact-head `33156988524` og merge som `bdd23cc0`.
 - [x] Bekræft fail-closed gate: produktion `33157055276`/build `98802272478` stoppede før releasegate/Supabase/Pages på manglende startup-pilproveniens; den målrettede korrektion er grøn.
-- [ ] Bestå nyt PR exact-head, frisk produktionsartifact og offentlig cold/warm ydelsesverifikation.
+- [x] Bestå PR #200 exact-head `33158782786`/job `98807893242` på `5dad21c6` og merge som `f1cd5868`.
+- [x] Bestå produktion `33158840203`, build `98808126976` og Pages `98814032394` med frisk data/proveniens, fuld validering, releasegate, Supabase, artifact og deploy.
+- [x] Verificér offentlig 4.0.296: 399.801 byte/1,37 sekunders no-cache startup, cirka 1,31 sekunders varm komplet browservisning, farvet kort, fem **Bedste områder** og fem rækker på alle fem prognosedage.
+- [x] Bevar tydelig sund Candidate G-recovery, mens ægte 48-timersstate modnes uden kunstig historik.
 
 Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og kræver ægte modning samt senere særskilt ejeraktivering. Se DEC-0092/0093.
 

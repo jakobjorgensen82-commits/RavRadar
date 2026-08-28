@@ -76,7 +76,8 @@ const bootstrap=await fs.readFile('bootstrap.js','utf8');
 const earlyGuard=bootstrap.indexOf("addEventListener('pageshow'");
 const storageAwait=bootstrap.indexOf('await initializeUserDataSafety()');
 assert.ok(earlyGuard>=0&&earlyGuard<storageAwait,'Bootstrapværnet skal være installeret før første asynkrone opstartstrin.');
-assert.match(bootstrap,/event\.persisted && !appImported/);
+assert.match(bootstrap,/createPublicPageReturnWatchdog/);
+assert.match(bootstrap,/isAppImported:\(\)=>appImported/);
 
 const app=await fs.readFile('app.js','utf8');
 assert.match(app,/createPublicPageResumeHandler/);

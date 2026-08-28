@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.296",
+  "version": "4.0.297",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -141,7 +141,7 @@
     "test:best-time-consistency": "node scripts/test-best-time-consistency-4.0.72.mjs",
     "test:release-integrity-4.0.73": "node scripts/test-release-integrity-4.0.73.mjs",
     "test:public-runtime": "node scripts/test-public-runtime-4.0.74.mjs",
-    "test:mobile-live-cache": "node scripts/test-mobile-start-and-live-cache-4.0.74.mjs && node scripts/test-public-page-resume-4.0.292.mjs && npm run test:public-load-performance",
+    "test:mobile-live-cache": "node scripts/test-mobile-start-and-live-cache-4.0.74.mjs && node scripts/test-public-page-resume-4.0.292.mjs && node scripts/test-mobile-return-failsafe-4.0.297.mjs && npm run test:public-load-performance",
     "test:public-runtime-pipeline": "node scripts/test-public-runtime-pipeline-4.0.75.mjs",
     "build:current-provenance": "node scripts/enrich-current-provenance.mjs",
     "build:live-current-pilot": "python scripts/build-live-current-pilot.py",

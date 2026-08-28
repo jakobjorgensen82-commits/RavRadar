@@ -1,12 +1,22 @@
 # Current truth – gældende projektviden
 
-## 4.0.296-kildekandidat – minimal startprojektion efter produktionsverificeret 4.0.295
+## Kildekandidat 4.0.297 – mobil bfcache-failsafe
+
+- 4.0.296 på merge `f1cd5868` er den aktuelle produktionsverificerede baseline med hurtig kompakt startup.
+- Ejerens fysiske mobil viser en regression: efter retur fra eksempelvis **Om RavRadar** kan kort og prognoser mangle. Desktopretur lykkes, så tidligere automatiseret viewportbevis er ikke tilstrækkeligt.
+- 4.0.297 genindlæser en persisted mobilretur rent fra et værn installeret før async bootstrap. Retur før appimport genindlæser også; desktop genoptegner fortsat med et tresekunders watchdog og konkret DOM-sundhed for Leaflet, rangliste og femdøgnsvisning.
+- Målrettede lokale tests og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig ydelse/funktion og fysisk mobilretur afventer. Se DEC-0094.
+- Ingen faglig model, data, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
+
+## Produktionsverificeret 4.0.296 – minimal Candidate G-startprojektion
 
 - 4.0.295 bestod PR #198/exact-head `33153155088` på `94621436`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig version, kort, fem aktuelle områder, fem prognosedage og konsol er grønne; varm start var cirka 3,67 sekunder.
 - Den fulde 90–132 MB detaljepakke og browserens nationale femdøgnsberegning er ikke længere normal opstart. Dataset+SHA-cache virker som besluttet i DEC-0092.
 - Aktiv READY-nødvisning afslørede et resthul: startup var 3.562.253 byte/23,36 sekunder, fordi aktuelle scoreposter og vinderobjekter stadig bar detaljediagnostik. Primær warmup-start var 694.288 byte/4,09 sekunder.
 - 4.0.296 bruger én minimal aktuel scoreprojektion i både primær og recovery. Kun startup/hash ændres; fulde detaljer/hash, dataset, tider, scorer, rangering og Candidate G-state bevares. Vinderdelens tre små `flowPoints`-felter bevares som dokumentation for kortets lokale DMI-pile.
-- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før releasegate og deploy, da zoomtesten fandt den først manglende pilproveniens. Den afgrænsede korrektion består piltesten og reducerer fortsat den syntetiske READY-startpakke cirka 95 %. Nyt exact-head, frisk produktion og offentlig cold/warm-verifikation af 4.0.296 afventer. Se DEC-0093.
+- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før releasegate og deploy, da zoomtesten fandt den først manglende pilproveniens. Den afgrænsede korrektion består piltesten og reducerer fortsat den syntetiske READY-startpakke cirka 95 %.
+- PR #200 bestod exact-head `33158782786`/job `98807893242` på `5dad21c6` og blev merged som `f1cd5868`. Produktion `33158840203`, build `98808126976` og Pages `98814032394` bestod hele den friske kæde inklusive den tidligere fejlende zoom-/piltest, fuld validering, releasegate, Supabase og deploy.
+- Offentlig 4.0.296 har 399.801 byte startup med matchende manifeststørrelse og datasetbinding. No-cache HTTP tog 1,37 sekunder mod 23,36 sekunder før rettelsen; varm komplet browservisning tog cirka 1,31 sekunder. Farvet kort, fem aktuelle områder og fem rækker på hver af fem prognosedage er grønne. Candidate G viser fortsat tydelig sund recovery; ny ægte 48-timersstate er ikke fremskyndet. Se DEC-0093.
 - En ny Sibirien-punktrevision er privat staged. Ingen koordinater er læst/publiceret, og ingen aktivering er godkendt; ægte DMI-/48-timersmodning fortsætter under DEC-0090.
 
 ## Driftsverificeret credentialrotation – 2026-08-28

@@ -4,6 +4,7 @@ export function createPublicPageResumeHandler({
   isDetailsReady,
   waitForDetails,
   resume,
+  isViewHealthy = () => true,
   reload,
   timeoutMs = 2000,
   setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
@@ -41,6 +42,10 @@ export function createPublicPageResumeHandler({
 
       try {
         await resume();
+        if (!isViewHealthy()) {
+          reload();
+          return 'reloaded';
+        }
         return 'resumed';
       } catch (error) {
         console.error('Forsiden kunne ikke genoprettes efter browserens sidecache', error);
@@ -50,5 +55,35 @@ export function createPublicPageResumeHandler({
     })().finally(() => { activeResume = null; });
 
     return activeResume;
+  };
+}
+
+export function createPublicPageReturnWatchdog({
+  isAppImported,
+  shouldReloadImmediately = () => false,
+  markPending = () => {},
+  isResumeHealthy,
+  reload,
+  timeoutMs = 3000,
+  setTimer = (callback, delay) => globalThis.setTimeout(callback, delay),
+  clearTimer = timer => globalThis.clearTimeout(timer)
+}) {
+  let watchdogTimer = null;
+
+  return event => {
+    if (!event?.persisted) return 'ignored';
+    markPending();
+
+    if (!isAppImported() || shouldReloadImmediately()) {
+      reload();
+      return 'reloaded';
+    }
+
+    if (watchdogTimer !== null) clearTimer(watchdogTimer);
+    watchdogTimer = setTimer(() => {
+      watchdogTimer = null;
+      if (!isResumeHealthy()) reload();
+    }, timeoutMs);
+    return 'watching';
   };
 }

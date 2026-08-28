@@ -1,5 +1,5 @@
 import { evaluatePhaseDProcessCandidate } from './phase-d-process-candidate.js';
-import { evaluateWaveApproachSupport } from './wave-approach.js?v=4.0.296';
+import { evaluateWaveApproachSupport } from './wave-approach.js?v=4.0.297';
 
 const number = value => value === null || value === undefined || value === '' || typeof value === 'boolean'
   ? null
