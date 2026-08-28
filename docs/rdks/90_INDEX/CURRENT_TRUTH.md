@@ -1,10 +1,11 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.305 – fjern rasterkortets flisegitter
+## Produktionsverificeret 4.0.305 – rasterkort uden flisegitter
 
 - Det offentlige standardkort reproducerede hårfine linjer ved Leaflets 256 px-flisegrænser. DOM-evidens viste brøk-pixelplacering; zoner, geometri og data var ikke årsagen.
 - Kun rasterfliserne i `leaflet-tile-pane` overlapper 0,5 px og bruger normal blanding. Leaflet-JavaScript, standard-/satellitadresser, bounds, zone-/geometri-/pile-/label-/kliklag er urørte.
-- Lokal visuel standard- og satellitkontrol, zoom, 211 zonepaths og målrettede regressionstests er grønne. Fuld sourcegate, exact-head og produktion afventer. Se DEC-0101.
+- Lokal visuel standard- og satellitkontrol, zoom, 211 zonepaths og målrettede regressionstests er grønne.
+- PR #212/exact-head `33188425818`/job `98907360210` på `2b1a3c78`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` er grønne. Offentlig 4.0.305 viser 210 zoner, fem Bedste områder og fem prognosedage; standard-/satellitkort samt zoom er uden flisesømme, og Om-retur er bevaret. Se DEC-0101.
 
 ## Produktionsverificeret 4.0.304 – fælles offentlig RavRadar-kontakt
 

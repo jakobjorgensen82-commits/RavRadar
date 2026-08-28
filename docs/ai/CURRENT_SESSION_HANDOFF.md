@@ -1,12 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
-## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.305 kort uden flisegitter
+## PRODUKTIONSVERIFICERET P1 – 2026-08-28 – 4.0.305 kort uden flisegitter
 
 - Offentlig kontrol reproducerede et hårfint gitter fra Leaflets rasterflisesømme. Fliserne var 256 px og kantstillede korrekt, men laget stod på brøk-pixels.
 - Et første 0,5 px-overlap alene blev visuelt afvist, fordi Leaflets additive blanding gjorde sømmen lysere. Den valgte løsning rammer kun 256 px-fliser i `leaflet-tile-pane`, overlapper 0,5 px og bruger normal blanding.
 - Lokal standard- og satellitvisning samt zoom er kontrolleret. 211 lokale zonepaths er bevaret, og ingen kort-/tilefejl opstår. Målrettede tile-, startup-, resume- og Om-returtests er grønne.
 - Ingen Leaflet-JavaScript, tileadresse, bounds, vektorlag, zone, geometri, pil, label, klikflade, Candidate G, score, vejr eller brugerdata ændres. Sibirien forbliver privat staged.
-- Næste trin: fuld RDKS/sourcegate, særskilt geodatabevis, PR exact-head, produktion/Pages og offentlig standard-/satellit-/zoomkontrol. Se DEC-0101.
+- PR #212/exact-head `33188425818`/job `98907360210` på `2b1a3c78`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` er grønne.
+- Offentlig 4.0.305 viser 210 zoner, fem Bedste områder og fem prognosedage. Standard- og satellitfliser er 256,5 px med normal blanding; gitteret er væk før/efter zoom, og Om-retur bevarer kort/prognoser. Se DEC-0101.
 
 ## PRODUKTIONSVERIFICERET P1 – 2026-08-28 – 4.0.304 fælles RavRadar-kontakt
 

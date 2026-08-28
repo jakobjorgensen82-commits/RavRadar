@@ -3,6 +3,7 @@
 - Offentlig visuel kontrol reproducerede hårfine sømme mellem 256 px-kortfliser på et brøk-pixelplaceret Leaflet-lag. Det var ikke zoner, geometri eller vejrdata.
 - Et første 0,5 px-overlap med Leaflets additive blanding blev visuelt afvist. Den valgte løsning begrænser 0,5 px-overlap og normal blanding til rasterfliserne.
 - Lokal standard-/satellit-/zoomkontrol, 211 zonepaths og målrettede regressionstests er grønne. Ingen kortlogik eller data ændres. Se DEC-0101.
+- PR #212/exact-head `33188425818` på `2b1a3c78`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` bestod. Offentlig 4.0.305 viser 210 zoner, fem Bedste områder og fem prognosedage; standard-/satellitkort samt zoom er uden flisesømme, og Om-retur er bevaret.
 
 ## 2026-08-28 – 4.0.304 fælles offentlig RavRadar-kontakt
 
