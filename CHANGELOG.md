@@ -1,3 +1,9 @@
+## 4.0.301 – Om-knappen udfører rigtig historikretur (2026-08-28)
+
+- Retter den afgørende forskel, som 4.0.300 overså: 4.0.292's tidligere bevis brugte browsertilbage, mens det interne `./`-link lavede en ny navigation.
+- Den interne knap bruger nu `history.back()` ved verificeret samme-origin root-referrer og bevarer `./` som sikker fallback ved direkte/fremmed åbning.
+- Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0098 og `CHANGELOG-4.0.301.md`.
+
 ## 4.0.300 – gendannet mobil sidecache-retur (2026-08-28)
 
 - Fysisk iPhone viste fortsat ingen kort/prognoser efter den interne Om-knap i produktionsgrøn 4.0.299; lås/oplåsning fik visningen frem.

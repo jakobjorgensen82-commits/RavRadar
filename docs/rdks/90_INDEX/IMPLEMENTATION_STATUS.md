@@ -1,21 +1,20 @@
-# Implementeringsstatus – 4.0.300-kandidat efter fejlramt fysisk 4.0.299-retur
+# Implementeringsstatus – 4.0.301-kandidat efter fejlramt fysisk 4.0.300-retur
 
-## P1 kildekandidat – gendan den fungerende sidecache-retur
+## P1 kildekandidat – intern knap udfører den beviste historikretur
 
-- [x] Luk 4.0.299 gennem PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`.
-- [x] Registrér offentlig desktop-evidens: komplet 210 + 5 + 5 + 5 og cirka 1,36 sekunders intern Om-retur uden senere reload.
-- [x] Registrér ejerens modstridende fysiske iPhone-evidens: kort og prognoser mangler efter intern Om-retur, men kommer frem efter lås/oplåsning.
-- [x] Sammenlign eksakt med 4.0.292 og identificér de senere regressioner: mobil hard reload samt unik versions-/nonce-navigation.
-- [x] Gendan statisk `./`-link og almindelig browsernavigation uden klikoverstyring.
-- [x] Fjern mobil hard reload, separat watchdog, DOM-sundhedsreload og resume-markører; bevar kun reload før færdig appimport.
-- [x] Bevar den nuværende behovsstyrede detaljelæsning og genoptegn samme state ved `pageshow.persisted`.
-- [x] Bestå målrettede resume-, retur-, startup-, ydelses-, versions- og geodatakontroller.
+- [x] Luk 4.0.300 gennem PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`.
+- [x] Registrér ejerens røde fysiske Safari-test på bekræftet version 4.0.300.
+- [x] Ret dokumentationsfejlen: 4.0.292's bevis var browsertilbage, ikke intern `./`-navigation.
+- [x] Bevis offentligt, at Om-sidens referrer er den kanoniske samme-origin-forside.
+- [x] Brug `history.back()` kun ved almindeligt klik efter den eksakte root-referrer; bevar statisk `./` ved direkte, fremmed eller modificeret åbning.
+- [x] Lås query, `/index.html`, fremmed/tom referrer, modified click, historikkald og fallback i målrettet test.
+- [x] Bevar eksisterende `pageshow.persisted`-redraw og 4.0.295/296's lazy startup uden timer/reload/watchdog.
+- [x] Bestå målrettede historik-, resume-, startup-, ydelses- og versionskontroller.
 - [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.300-version, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage.
-- [ ] Bevis offentlig Om-retur med det direkte `./`-link og uden tvungen ny navigation.
+- [ ] Genverificér offentlig 4.0.301-version, referrer, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage efter intern historikretur.
 - [ ] Få ejeren til at bekræfte Safari og derefter Hjemmeskærm-appen på fysisk iPhone.
 
-Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0097; DEC-0094–0096 er historiske, fysisk afviste forsøg.
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0098; DEC-0094–0097 er historiske, fysisk afviste forsøg.
 
 ## P1 produktionsverificeret – minimal Candidate G-startprojektion
 

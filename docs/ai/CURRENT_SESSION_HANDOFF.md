@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.301 rigtig historikretur fra Om-knappen
+
+- 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig intern Om-retur var komplet på cirka 1,29 sekunder med 210 + 5 + 5 + 5.
+- Ejeren bekræftede version 4.0.300 på fysisk iPhone Safari, men kort/prognoser manglede stadig efter den interne knap. 4.0.300 er derfor fysisk afvist.
+- Den kritiske dokumentationsfejl er rettet: 4.0.292 blev kun verificeret med browserens tilbagefunktion. Et statisk `./`-link laver en ny navigation og rammer ikke nødvendigvis `pageshow.persisted`-redraw.
+- Offentlig 4.0.300-navigation viser eksakt samme-origin root i `document.referrer` på Om-siden. 4.0.301 bruger `history.back()` kun ved et almindeligt klik med denne root-referrer; direkte/fremmed/modificeret åbning bruger fortsat det statiske `./`-link.
+- Målrettede historik-, referrer-, resume-, startup-, ydelses-, modulversions- og releaseversionskontroller er grønne. Ingen timer, reload, nonce eller watchdog er tilføjet.
+- Geodatafilerne ændrer kun topversion 4.0.300 → 4.0.301. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering er ændret; Sibirien forbliver privat staged.
+- Næste trin: fuld RDKS/sourcegate, PR exact-head, merge, frisk produktion/Pages, offentlig intern knap og fysisk iPhone Safari/Hjemmeskærm. Kald ikke fejlen løst før fysisk ejerbevis. Brug Sol/Ekstra høj.
+
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.300 gendannet iPhone-retur
 
 - 4.0.299 blev produktionsudgivet gennem PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`. Offentlig desktopkontrol viste 210 zonelinjer, 5 + 5 + 5 og cirka 1,36 sekunders intern Om-retur.
