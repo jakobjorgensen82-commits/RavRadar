@@ -5,4 +5,5 @@
 - Standardkort og satellitkort er visuelt kontrolleret før og efter rettelsen samt efter zoom.
 - 4.0.304's fælles RavRadar-kontakt er produktionsverificeret og bevares.
 - Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+- PR #212/exact-head `33188425818`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` er grønne. Offentlig 4.0.305 viser 210 zoner, fem Bedste områder og fem prognosedage; standard-/satellitkort, zoom og Om-retur er verificeret uden flisesømme.
 

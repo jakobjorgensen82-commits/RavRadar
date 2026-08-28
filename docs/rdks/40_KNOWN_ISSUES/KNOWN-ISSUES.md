@@ -2,7 +2,7 @@
 
 ## 4.0.305 – rasterkortets flisesømme
 
-- **ISSUE-PUBLIC-MAP-TILE-GRID – LØST I KILDEKANDIDAT:** Brøk-pixelplacering gjorde Leaflets rasterflisegrænser synlige som et hårfint gitter. Den afgrænsede 4.0.305-løsning overlapper kun 256 px-fliser 0,5 px og neutraliserer additiv blanding. Lokal standard-/satellit-/zoomkontrol og målrettede tests er grønne; produktion afventer. Se DEC-0101.
+- **ISSUE-PUBLIC-MAP-TILE-GRID – PRODUKTIONSVERIFICERET LØST:** Brøk-pixelplacering gjorde Leaflets rasterflisegrænser synlige som et hårfint gitter. Den afgrænsede 4.0.305-løsning overlapper kun 256 px-fliser 0,5 px og neutraliserer additiv blanding. PR #212, exact-head, produktion/Pages og offentlig standard-/satellit-/zoomkontrol er grønne; Om-retur er bevaret. Se DEC-0101.
 
 ## 4.0.304 – offentlig kontaktidentitet
 

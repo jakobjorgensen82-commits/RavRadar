@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.305 flisesømskandidat oven på produktionsverificeret 4.0.304
+# Implementeringsstatus – produktionsverificeret 4.0.305 uden flisesømme
 
-## P1 kildekandidat – fjern rasterflisegitter uden kortfølger
+## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 
 - [x] Reproducer det offentlige gitter og mål 256 px-fliser på brøk-pixelplacering.
 - [x] Afvis visuelt 0,5 px-overlap med Leaflets additive blanding.
@@ -8,7 +8,8 @@
 - [x] Lås selector, mål og uændrede standard-/satellit-/vektorlag i kontrakttest.
 - [x] Verificér lokalt standardkort, satellitkort, zoom, 211 zonepaths samt målrettet mobilresume/Om-retur.
 - [x] Bestå RDKS, geodatabevis, fuld sourcegate og releasegate.
-- [ ] Bestå PR exact-head, merge, produktion/Pages og offentlig visuel kontrol.
+- [x] Bestå PR #212 exact-head `33188425818`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285`.
+- [x] Verificér offentlig 4.0.305 med 210 zoner, fem Bedste områder, fem prognosedage, standard-/satellitkort og zoom uden flisesømme samt bevaret Om-retur.
 
 Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0101.
 

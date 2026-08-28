@@ -1,6 +1,6 @@
 # DEC-0101 – Fjern rasterkortets flisesømme uden at ændre kortdata
 
-- **Status:** Kildevalideret kandidat til 4.0.305; produktion afventer.
+- **Status:** Produktionsverificeret i 4.0.305.
 - **Dato:** 2026-08-28
 - **Ejerobservation:** Det offentlige kort viste pludselig et synligt gitter.
 
@@ -19,7 +19,9 @@ Et første lokalt forsøg med 0,5 px overlap alene gjorde sømmen lysere i Chrom
 
 ## Verifikation
 
-Målrettede tests for tilelag, mobilopstart og Om-retur er grønne. Lokal visuel kontrol viser ingen flisegitter på standardkortet efter rettelsen; satellitkort, zoom og 211 lokale zonepaths bevares uden kort-/tilekonsolfejl. RDKS, særskilt geodatabevis, fuld sourcegate og releasegate er grønne. Exact-head, produktion og offentlig kontrol afventer.
+Målrettede tests for tilelag, mobilopstart og Om-retur er grønne. Lokal visuel kontrol viser ingen flisegitter på standardkortet efter rettelsen; satellitkort, zoom og 211 lokale zonepaths bevares uden kort-/tilekonsolfejl. RDKS, særskilt geodatabevis, fuld sourcegate og releasegate er grønne.
+
+PR #212/exact-head `33188425818`/job `98907360210` på `2b1a3c78`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` bestod. Direkte offentlig kontrol viste 4.0.305, 210 zoner, fem Bedste områder og fem prognosedage. Standard- og satellitfliser havde den afgrænsede 256,5 px/normal-blanding før og efter zoom uden synligt gitter eller kort-/tilekonsolfejl; Om-retur bevarede kort og prognoser.
 
 ## Grænser
 

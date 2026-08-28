@@ -3,6 +3,7 @@
 - Fjerner hårfine sømme mellem Leaflets rasterkortfliser med et målrettet 0,5 px overlap og normal fliseblanding.
 - Standard- og satellitkort samt zoom er visuelt kontrolleret; zoner, pile, klikflader, Candidate G og alle data er urørte.
 - 4.0.304's fælles RavRadar-kontakt er produktionsverificeret gennem PR #211 og bevaret. Se DEC-0100/0101 og `CHANGELOG-4.0.305.md`.
+- PR #212/exact-head `33188425818`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` er grønne. Offentlig 4.0.305, standard-/satellitkort, zoom og Om-retur er verificeret uden flisesømme.
 
 ## 4.0.304 – fælles RavRadar-kontakt (2026-08-28)
 

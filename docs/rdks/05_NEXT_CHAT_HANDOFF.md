@@ -1,11 +1,12 @@
 # RavRadar – overlevering til næste chat
 
-## Øverste checkpoint – 4.0.305 fjerner rasterflisegitter
+## Produktionsverificeret checkpoint – 4.0.305 fjerner rasterflisegitter
 
 - Det synlige gitter er reproduceret som Leaflet-rasterflisesømme ved brøk-pixelplacering, ikke som zoner, geometri eller vejrdata.
 - Den valgte løsning rammer kun 256 px-fliser i `leaflet-tile-pane`: 0,5 px overlap og normal blanding. Et overlap med Leaflets additive blanding blev visuelt afvist før commit.
 - Standard- og satellitkort, zoom og 211 lokale zonepaths er kontrolleret uden kort-/tilefejl. Målrettede tests er grønne.
-- Rør ikke Leaflet-JavaScript, tileadresser, bounds, vektorlag, zoner, geometri, pile, labels, klikflader eller Sibirien-kandidaten. Næste trin er sourcegate, geodatabevis, exact-head, produktion og offentlig kontrol. Se DEC-0101.
+- PR #212/exact-head `33188425818`, merge `06ca96e9`, produktion `33190412990`, build `98914205954` og Pages `98916104285` er grønne. Offentlig 4.0.305 viser 210 zoner, fem Bedste områder, fem prognosedage og ingen flisesømme før/efter zoom; satellit og Om-retur er bevaret.
+- Rør ikke Leaflet-JavaScript, tileadresser, bounds, vektorlag, zoner, geometri, pile, labels, klikflader eller Sibirien-kandidaten. Se DEC-0101.
 
 ## Produktionsverificeret checkpoint – 4.0.304 fælles RavRadar-kontakt
 
