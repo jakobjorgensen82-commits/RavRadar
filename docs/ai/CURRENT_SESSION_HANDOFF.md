@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.302 én koldstart uden første service-worker-reload
+
+- 4.0.301 bestod PR #206/exact-head `33172111444`/job `98851532431` på `f1ca4677`, merge `21aac8f6`, produktion `33172186373`, build `98851836126` og Pages `98854056109`.
+- Offentlig intern Om → RavRadar-retur var komplet på cirka 1,27 sekunder med 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage. Ejeren bekræftede derefter fysisk iPhone Safari grøn; returfejlen er lukket.
+- Ejeren og en frisk offentlig browserkontrol reproducerede særskilt cirka 14 sekunders første load, mens efterfølgende faner var hurtige. Produktionsmålingen viste de forventede offentlige startfiler, men koden kørte første opstart igen: `clients.claim()` udløste `controllerchange`, som ubetinget kaldte `location.reload()`.
+- 4.0.302 springer kun reload over ved den første overgang fra ingen controller til første controller. En senere rigtig service-worker-opdatering genindlæser fortsat præcis én gang.
+- Manifest og prognosestart begynder nu parallelt med zone-/kystdelsgrenen; den synlige initialiseringsrækkefølge og alle data-/hashgates er uændrede.
+- Målrettede cold-start-, mobilresume-, Om-retur- og ydelseskontroller samt fuld lokal `validate:source`/releasegate er grønne. Næste trin: exact-head, produktion/Pages, offentlig funktion og en reelt cachekold efterprøve. Kald ikke koldstarten løst før sidste bevis. Se DEC-0099.
+- Geodatafilerne ændrer kun topversion 4.0.301 → 4.0.302. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering er ændret; Sibirien forbliver privat staged.
+
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.301 rigtig historikretur fra Om-knappen
 
 - 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig intern Om-retur var komplet på cirka 1,29 sekunder med 210 + 5 + 5 + 5.
@@ -8,7 +18,7 @@
 - Offentlig 4.0.300-navigation viser eksakt samme-origin root i `document.referrer` på Om-siden. 4.0.301 bruger `history.back()` kun ved et almindeligt klik med denne root-referrer; direkte/fremmed/modificeret åbning bruger fortsat det statiske `./`-link.
 - Målrettede historik-, referrer-, resume-, startup-, ydelses-, modulversions- og releaseversionskontroller er grønne. Ingen timer, reload, nonce eller watchdog er tilføjet.
 - Geodatafilerne ændrer kun topversion 4.0.300 → 4.0.301. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering er ændret; Sibirien forbliver privat staged.
-- Næste trin: fuld RDKS/sourcegate, PR exact-head, merge, frisk produktion/Pages, offentlig intern knap og fysisk iPhone Safari/Hjemmeskærm. Kald ikke fejlen løst før fysisk ejerbevis. Brug Sol/Ekstra høj.
+- 4.0.301 er efterfølgende lukket gennem PR #206/exact-head `33172111444`, merge `21aac8f6`, produktion `33172186373`, build `98851836126`, Pages `98854056109`, offentlig intern knap og grøn fysisk iPhone Safari. Hjemmeskærm kan fortsat efterkontrolleres særskilt. Se checkpointet ovenfor for koldstarten.
 
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.300 gendannet iPhone-retur
 

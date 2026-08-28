@@ -1,3 +1,10 @@
+## 2026-08-28 – 4.0.302 fjerner dobbelt førstegangsopstart
+
+- 4.0.301 blev lukket gennem PR #206/exact-head `33172111444`, merge `21aac8f6`, produktion `33172186373`, build `98851836126`, Pages `98854056109`, offentlig 210 + fem × fem-retur og grøn fysisk iPhone Safari.
+- Ejeren og offentlig browser reproducerede cirka 14 sekunders første load og hurtige efterfølgende faner. Koden genindlæste ubetinget efter første `clients.claim()`/`controllerchange`.
+- 4.0.302 springer første claim-reload over, bevarer senere update-reload og starter manifest/prognosestart parallelt med zone-/kystdelsgrenen. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head og produktion afventer. Se DEC-0099.
+- Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede; Sibirien forbliver privat staged.
+
 ## 2026-08-28 – 4.0.301 gør den interne Om-knap til browsertilbage
 
 - Ejerens fysiske Safari-test var fortsat rød på bekræftet 4.0.300 trods grøn PR, produktion, Pages og offentlig desktopretur.

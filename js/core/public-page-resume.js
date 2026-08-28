@@ -52,3 +52,23 @@ export function createPublicPageResumeHandler({
     return activeResume;
   };
 }
+
+export function createServiceWorkerControllerChangeHandler({
+  isControlled,
+  reload
+}) {
+  let hasControlledPage = Boolean(isControlled());
+  let reloading = false;
+
+  return () => {
+    const controlledNow = Boolean(isControlled());
+    if (!hasControlledPage) {
+      hasControlledPage = controlledNow;
+      return controlledNow ? 'claimed-first-install' : 'uncontrolled';
+    }
+    if (!controlledNow || reloading) return 'ignored';
+    reloading = true;
+    reload();
+    return 'reloaded';
+  };
+}
