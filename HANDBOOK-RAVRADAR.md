@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Samlede ejerrettelser til læring og betjening – 4.0.306
+
+Grundbogen bruger nu **395 nm** som praktisk angivelse for ravlygten; tidligere aktiv omtale af 365 nm er erstattet. Koldt vands større betydning for ravets mobilisering forklares uden at gøre temperatur til et nyt RavScore-input. Forklaringen linker til Rav Jagts video, og et nyt responsivt kysttværsnit samler og krediterer Rav Jagts syv skitser i seks positioner fra havbund til strand.
+
+Spørg RavRadar har fået lokale svar om ravlygte, ravfarver, behandling af fund, årstider, geologiske sekundærlagre og valg mellem strand og vand. Turens afslutning og manuel indberetning kan søge på hele eller dele af zonenavnet. Kortsignaturen forklarer de mørkere blå strømpile og de hvide vindpile. Mobilknappen kan bryde over to linjer. Tysk og engelsk viser **BernsteinScore** og **AmberScore**, mens interne modelkontrakter fortsat hedder `RavScore`.
+
+Candidate G, scoresemantik, DMI/Copernicus, state, geometri og land-/vandpunkter er uændrede. Se [DEC-0103](docs/rdks/10_DECISIONS/DEC-0103-OWNER-UI-LEARNING-AND-ASSISTANT-CORRECTIONS.md).
+
 ## Kort uden flisegitter – 4.0.305
 
 RavRadars standard- og satellitkort består af kvadratiske billedfliser. Ved brøk-pixelplacering kunne browseren tegne hårfine sømme mellem fliserne som et gitter. Kun rasterfliserne overlapper nu med 0,5 pixel, og Leaflets additive fliseblanding neutraliseres for dette lag. Zonefarver, kystlinjer, pile, klikflader, zoom og geografiske data ændres ikke. Se [DEC-0101](docs/rdks/10_DECISIONS/DEC-0101-MAP-TILE-SEAM-REMOVAL.md).
@@ -249,7 +257,7 @@ Grundbogens korte huskeregel er: **Bølger kan mobilisere. Strøm transporterer.
 
 Modulet forklarer blandt andet, hvorfor det meste rav synker i almindeligt dansk havvand, hvordan størrelse og form ændrer bevægelsen, og hvorfor vinterens storme er en bedre forklaring på vintersæsonen end påstanden om, at kulden får ravet til at flyde. Revler, render, opskyl, høfder, kystknæk og danske kystsystemer beskrives som lokale sorterings- og transportmiljøer.
 
-Felt- og metodeafsnittene dækker frisk opskyl, tang, træ, frø, kul, skaller, strandjagt, vandkant, waders og UV-lys. Langbølget UV omkring 365 nm kan være et godt spor, men ikke et endeligt ægthedsbevis; varme nåle, ild og andre ødelæggende hjemmetests frarådes.
+Felt- og metodeafsnittene dækker frisk opskyl, tang, træ, frø, kul, skaller, strandjagt, vandkant, waders og UV-lys. En ravlygte omkring 395 nm kan få baltisk rav til at fluorescere tydeligt, men lyset er ikke et endeligt ægthedsbevis; varme nåle, ild og andre ødelæggende hjemmetests frarådes.
 
 Candidate G forklares til sidst med den aktive vægtning **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse**. Waders er bedst under 6 m/s og falder til 0 ved 15 m/s. Kraftig udtransport trækker transporten ned fra første time og giver nul efter 13 timer. Disse tal er RavRadars testede arbejdsregler, ikke universelle naturgrænser.
 
@@ -663,7 +671,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.305
+**Håndbogsversion:** 4.0.306
 
 **Opdateret:** 19. august 2026
 

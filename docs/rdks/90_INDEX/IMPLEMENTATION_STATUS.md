@@ -1,5 +1,14 @@
 # Implementeringsstatus – produktionsverificeret 4.0.305 uden flisesømme
 
+## 4.0.306-kandidat – samlet smårettelsespakke
+
+- [x] Tekst, læring, illustration, lokal assistentviden, zonesøgning, kortsignatur, pilkontrast, mobilombrydning og synlige scorenavne implementeret.
+- [x] Version, beslutning og begge håndbøger opdateret.
+- [x] Målrettede tests, RDKS/sourcegate og geodatadiff på afsluttet head.
+- [ ] PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
+
+Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0103.
+
 ## Ejer-godkendt og ikke implementeret – integreret næste RavScore-generation
 
 - [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.

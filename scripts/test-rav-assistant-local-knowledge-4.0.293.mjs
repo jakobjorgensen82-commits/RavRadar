@@ -48,9 +48,21 @@ for (const [topic, count] of topics) assert.equal(count, 3, `${topic} skal have 
 assert.match(i18n.t('assistant.local.model', {}, 'da'), /20 %.*50 %.*30 %/);
 assert.match(i18n.t('assistant.local.model', {}, 'de'), /20 %.*50 %.*30 %/);
 assert.match(i18n.t('assistant.local.model', {}, 'en'), /20%.*50%.*30%/);
-assert.match(i18n.t('assistant.local.identification', {}, 'da'), /365 nm.*kun et indicium.*Undgå/is);
-assert.match(i18n.t('assistant.local.identification', {}, 'de'), /365 nm.*Vermeide/is);
-assert.match(i18n.t('assistant.local.identification', {}, 'en'), /365 nm.*Avoid/is);
+assert.match(i18n.t('assistant.local.identification', {}, 'da'), /395 nm.*kun et indicium.*Undgå/is);
+assert.match(i18n.t('assistant.local.identification', {}, 'de'), /395 nm.*Vermeide/is);
+assert.match(i18n.t('assistant.local.identification', {}, 'en'), /395 nm.*Avoid/is);
+for (const [question, intent, language, marker] of [
+  ['Hvad er en ravlygte?', 'lamp', 'da', /395 nm/],
+  ['Welche Farben kann Bernstein haben?', 'colours', 'de', /weiß.*gelb.*braun/is],
+  ['How should I clean amber?', 'care', 'en', /clean water/i],
+  ['Er vinteren bedst til rav?', 'seasons', 'da', /hele året/i],
+  ['Was ist ein sekundäres Bernsteinlager?', 'geology', 'de', /sekundäre Lager/i],
+  ['Should I search on the beach or in waders?', 'beach-or-water', 'en', /Beach.*Wading/is],
+]) {
+  assert.equal(assistant.classifyRavQuestion(question), intent);
+  assert.equal(assistant.routeRavQuestion(question), 'local-deterministic');
+  assert.match(await assistant.askRavRadar(question, {}, { language }), marker);
+}
 assert.match(i18n.t('assistant.local.limitations', {}, 'da'), /aldrig garantere/i);
 assert.match(i18n.t('assistant.local.limitations', {}, 'de'), /nie garantieren/i);
 assert.match(i18n.t('assistant.local.limitations', {}, 'en'), /never guarantee/i);

@@ -1,5 +1,9 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.306-kandidat
+
+Det separate smårettelsesspor ændrer offentlig tekst/UI, Grundbogen og read-only Spørg RavRadar-viden. Aktiv UV-angivelse er 395 nm; koldt vand forklares tydeligere som mobiliseringsfaktor uden nyt scoreinput. Zonesøgning, pilesignatur, Rav Jagt-illustration og synlige BernsteinScore/AmberScore er tilføjet. Candidate G/modelsporet er urørt. Se DEC-0103.
+
 ## 4.0.291 – offentlig GPT-OSS kræver en dobbelt fail-safe grænse
 
 Ejeren har givet særskilt aktiverings-go. Cloudflare-kontoen er verificeret som Workers Free / $0 med 10.000 neuroner pr. døgn og fejl efter loftet. RavRadar må ikke aktivere Workers Paid, prepaid AI Gateway eller anden betalt overflow. Den interne dagsgrænse på 300 providerkandidater er en ekstra buffer, ikke en erstatning for Cloudflares eget loft.

@@ -45,11 +45,15 @@ assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må
 assert.match(learning, /Strømmen transporterer/, 'Strøm og bølger skal have forskellige roller');
 assert.match(learning, /Bølgerne mobiliserer/, 'Mobilisering skal forklares i almindeligt dansk');
 assert.match(learning, /Der findes ikke én dansk vind- eller strømretning, som altid er bedst/, 'Modulet må ikke lære en falsk universel retning');
-assert.match(learning, /Langbølget UV omkring 365 nm/, 'UV-afsnittet skal angive det praktiske langbølgede område');
+assert.match(learning, /UV-lys omkring 395 nm/, 'UV-afsnittet skal angive ekspertens praktiske bølgelængde');
 assert.match(learning, /ikke offentligt oplyste bølgelængder/, 'Praktisk erfaring med andre speciallygter skal forklares uden at opfinde et tal');
 assert.match(learning, /se rav gennem alger/, 'Erfaringen med speciallygter i vand skal være med');
 assert.match(learning, /flow-arrow">←<\/span><small>Strøm mod kysten/, 'Pilen skal pege ind mod Kyst A');
-assert.match(learning, /Koldere saltvand kan give rav en smule større opdrift/, 'Koldt saltvands lille opdriftsforskel skal forklares');
+assert.match(learning, /Kyst B[\s\S]*flow-arrow">↑<\/span><small>Strøm langs kysten/, 'Kyst B skal have lodret kyst og opadgående pil');
+assert.match(learning, /Koldt vand kan gøre rav lettere at mobilisere/, 'Koldt vands betydning for mobilisering skal forklares');
+assert.match(learning, /TiR96bdTRr0[\s\S]*Rav Jagt/, 'Temperaturforklaringen skal kreditere og linke til Rav Jagts video');
+assert.match(learning, /rav-jagt-where-is-amber\.svg/, 'Rav Jagts kysttværsnit skal indgå i læringskæden');
+assert.match(learning, /På havbunden[\s\S]*I vandsøjlen uden for revlerne[\s\S]*På ydersiden af revlerne[\s\S]*Mellem revler og strand[\s\S]*I vandkanten[\s\S]*På stranden/, 'Rav Jagts seks positioner skal stå i faglig rækkefølge');
 assert.match(learning, /RavRadar koncentrerer sig derfor om en bundnær repræsentation af strømmen/, 'RavRadars bundnære fokus skal forklares');
 assert.match(learning, /vestvendt kyst[\s\S]*østvendt kyst/, 'Retning skal forklares med konkrete kysteksempler');
 assert.match(learning, /selve revlehullet[\s\S]*bagsiden af revlen/, 'De praktiske samlesteder ved revlehuller skal forklares');

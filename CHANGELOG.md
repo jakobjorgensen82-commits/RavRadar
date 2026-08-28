@@ -1,3 +1,10 @@
+## 4.0.306 – ejerrettelser til læring, assistent og betjening (2026-08-28)
+
+- Retter vejrforløb, 395 nm, koldt vands mobiliseringsforklaring, Kyst B og mobilknappen; tilføjer Rav Jagt-video og krediteret kysttværsnit.
+- Udvider lokal assistentviden, tilføjer delstrengssøgning med bevaret zonerullemenu, pilesignatur og mørkere strømpil.
+- Viser BernsteinScore/AmberScore uden at ændre interne RavScore-/Candidate G-kontrakter.
+- Candidate G, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se DEC-0103.
+
 ## 4.0.305 – kort uden flisegitter (2026-08-28)
 
 - Fjerner hårfine sømme mellem Leaflets rasterkortfliser med et målrettet 0,5 px overlap og normal fliseblanding.

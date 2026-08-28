@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## 4.0.306-kandidat – ejerrettelser uden modelændring
+
+- **Vejrforløb**, 395 nm, koldt vands mobiliseringsbetydning, Rav Jagt-video og et krediteret kysttværsnit er indarbejdet.
+- Spørg RavRadar har seks nye lokale emnefamilier. Zonesøgning, pilesignatur, mørkere strømpil, korrekt Kyst B, mobil tekstombrydning samt BernsteinScore/AmberScore er implementeret.
+- Candidate G, 20/50/30, DMI/Copernicus, state/cache/recovery, scoresemantik, geometri og land-/vandpunkter er uændrede. Se DEC-0103. Exact-head og produktion afventer.
+
 ## Ejer-godkendt næste spor – én samlet ny RavScore-model og et separat smårettelsesspor
 
 - Den offentlige baseline er fortsat produktionsverificeret 4.0.305. Dette checkpoint ændrer ingen kode, version, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter eller private data.
@@ -403,7 +409,7 @@ Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter og p
 
 - Den offentlige læring er nu en selvstændig **Grundbog i ravjagt**, ikke en vejledning i at trykke rundt i appen. Den lærer først ravets egenskaber, mobilisering, transport, vind, bølger, strøm, vandstand, kystformer, felttegn og selve jagten.
 - Grundforklaringen er: Bølger kan mobilisere, strøm transporterer, og kysten sorterer og samler. Vind virker især gennem bølger, vandlag, vandstand og søgeforhold; der findes ingen universel gunstig dansk vindretning.
-- Strand, vandkant, waders og UV omkring 365 nm beskrives som forskellige metoder. UV er et spor og ikke et endeligt ægthedsbevis; ødelæggende hjemmetests anbefales ikke.
+- Strand, vandkant, waders og UV omkring 395 nm beskrives som forskellige metoder. UV er et spor og ikke et endeligt ægthedsbevis; ødelæggende hjemmetests anbefales ikke.
 - RavRadar forklares først efter den praktiske og fysiske viden. Den aktive `20/50/30`-model, waders-vindkurven og 13-timers udtransportregel beskrives som testede RavRadar-regler, ikke universelle naturgrænser.
 - Centrale offentlige tekster om login, konto, tur, score, opdatering og datakilder er gjort mere forståelige. Interne standardord som fallback, datasæt, databaseleverandør og tekniske scorereferencer vises ikke som normal brugertekst.
 - Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.

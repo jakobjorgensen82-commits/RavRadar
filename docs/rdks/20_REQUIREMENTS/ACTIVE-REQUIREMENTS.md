@@ -1,5 +1,16 @@
 # Aktive krav – samlet register
 
+## Offentlige ejerrettelser – bindende fra 4.0.306
+
+- **REQ-PUBLIC-UV-395-001 – BINDENDE:** Aktiv Grundbog, Spørg RavRadar og håndbøger bruger 395 nm; tidligere 365 nm-tekst er erstattet.
+- **REQ-PUBLIC-COLD-WATER-COPY-001 – BINDENDE:** Koldt vands større betydning for mobilisering forklares uden nyt scoreinput eller fundgaranti.
+- **REQ-TRIP-ZONE-SUBSTRING-SEARCH-001 – BINDENDE:** Afsluttet tur og manuel indberetning kan finde zoner på hele eller dele af navnet og bevarer rullemenuen.
+- **REQ-PUBLIC-ARROW-LEGEND-001 – BINDENDE:** Kortsignaturen forklarer blå strømretning og hvid vindretning; strømpilen har tydelig kontrast.
+- **REQ-PUBLIC-LOCALIZED-SCORE-NAME-001 – BINDENDE:** Synlig tysk/engelsk tekst bruger BernsteinScore/AmberScore; interne RavScore-kontrakter ændres ikke.
+- **REQ-ASSISTANT-BROAD-LOCAL-KNOWLEDGE-002 – BINDENDE:** Almindelige ravfaglige spørgsmål besvares lokalt, når et sikkert svar findes; dataminimeret Edge og sikkerhedsgrænser bevares.
+
+Se DEC-0103.
+
 ## Næste samlede RavScore-model – bindende fra DEC-0102
 
 - **REQ-RAVSCORE-NEXT-INTEGRATED-001 – EJER-GODKENDT:** Næste modelgeneration skal bygges ende til ende i en isoleret worktree og først integreres som én samlet kandidat. Ingen offentlig fragmentudgivelse eller ekstra offentlig shadowmodel er tilladt.

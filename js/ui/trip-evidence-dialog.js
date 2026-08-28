@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.305";
+import { t } from "../i18n.js?v=4.0.306";
 
 const STYLE_ID = 'ravradar-trip-evidence-dialog-style';
 
@@ -31,7 +31,8 @@ function ensureStyles() {
     .trip-evidence-choice{display:grid;place-items:center;min-height:3rem;padding:.55rem;border:1px solid var(--border,#cad3ca);border-radius:.85rem;background:var(--surface-raised,#fff);font-weight:700;text-align:center;cursor:pointer}
     .trip-evidence-choice:has(input:checked){border-color:var(--accent,#b85f28);background:var(--accent-soft,#fff0df);box-shadow:0 0 0 2px #b85f2830}
     .trip-evidence-choice input{position:absolute;opacity:0;pointer-events:none}
-    .trip-evidence-form select,.trip-evidence-form input[type=number],.trip-evidence-form input[type=datetime-local]{width:100%;min-height:3rem;padding:.65rem .8rem;border:1px solid var(--border,#cad3ca);border-radius:.75rem;background:var(--surface-raised,#fff);color:inherit;font:inherit}
+    .trip-evidence-form select,.trip-evidence-form input[type=search],.trip-evidence-form input[type=number],.trip-evidence-form input[type=datetime-local]{width:100%;min-height:3rem;padding:.65rem .8rem;border:1px solid var(--border,#cad3ca);border-radius:.75rem;background:var(--surface-raised,#fff);color:inherit;font:inherit}
+    .trip-zone-search-status{min-height:1.25rem;color:var(--text-muted,#536057)}
     .trip-evidence-note{padding:.75rem .85rem;border-radius:.75rem;background:var(--info-soft,#eaf4ef);font-size:.92rem;line-height:1.4}
     .trip-evidence-actions{display:flex;justify-content:flex-end;gap:.65rem;padding-top:.25rem}
     .trip-evidence-actions button{min-height:2.85rem;padding:.65rem 1rem;border:0;border-radius:999px;font:inherit;font-weight:800;cursor:pointer}
@@ -58,6 +59,49 @@ function appendOptions(select, options, selectedId) {
   for (const option of options) {
     select.append(createElement('option', { value: option.id, selected: option.id === selectedId }, option.name || option.id));
   }
+}
+
+export function normaliseSearch(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
+}
+
+export function findZoneMatch(zones, query) {
+  const needle = normaliseSearch(query);
+  if (!needle) return null;
+  return zones.find(zone => normaliseSearch(zone.name || zone.id).includes(needle)) || null;
+}
+
+function appendSearchableZonePicker(label, zones, selectedId) {
+  const search = createElement('input', {
+    type: 'search',
+    className: 'trip-zone-search',
+    placeholder: t('trip.form.searchArea'),
+    autocomplete: 'off',
+    'aria-label': t('trip.form.searchArea')
+  });
+  const select = createElement('select', { name: 'zoneId', required: '' });
+  appendOptions(select, zones, selectedId || zones[0]?.id);
+  const status = createElement('small', { className: 'trip-zone-search-status', 'aria-live': 'polite' });
+  const findMatch = () => {
+    const query = normaliseSearch(search.value.trim());
+    status.textContent = '';
+    if (!query) return;
+    const match = findZoneMatch(zones, query);
+    if (!match) {
+      status.textContent = t('trip.form.noAreaMatch');
+      return;
+    }
+    select.value = match.id;
+    select.dispatchEvent(new Event('change', { bubbles:true }));
+    status.textContent = match.name || match.id;
+  };
+  search.addEventListener('input', findMatch);
+  select.addEventListener('change', () => {
+    const selected = zones.find(zone => zone.id === select.value);
+    status.textContent = selected?.name || selected?.id || '';
+  });
+  label.append(search, select, status);
+  return select;
 }
 
 function appendModeField(form, { mode = 'waders', question = t('trip.form.howSearched') } = {}) {
@@ -88,9 +132,7 @@ function appendReportQuestions(form, {
 
   const zoneLabel = createElement('label', { className: 'trip-evidence-field' });
   zoneLabel.append(createElement('span', {}, t('trip.form.actualArea')));
-  const zoneSelect = createElement('select', { name: 'zoneId', required: '' });
-  appendOptions(zoneSelect, zones, selectedZoneId || zones[0]?.id);
-  zoneLabel.append(zoneSelect);
+  const zoneSelect = appendSearchableZonePicker(zoneLabel, zones, selectedZoneId || zones[0]?.id);
   form.append(zoneLabel);
 
   const partLabel = createElement('label', { className: 'trip-evidence-field' });
@@ -229,9 +271,7 @@ export function openTripEvidenceStartDialog({
 
   const zoneLabel = createElement('label', { className: 'trip-evidence-field' });
   zoneLabel.append(createElement('span', {}, t('trip.form.startArea')));
-  const zoneSelect = createElement('select', { name: 'zoneId', required: '' });
-  appendOptions(zoneSelect, zones, zoneId || zones[0]?.id);
-  zoneLabel.append(zoneSelect);
+  const zoneSelect = appendSearchableZonePicker(zoneLabel, zones, zoneId || zones[0]?.id);
   form.append(zoneLabel);
 
   const partLabel = createElement('label', { className: 'trip-evidence-field' });

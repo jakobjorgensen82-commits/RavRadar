@@ -1,3 +1,9 @@
+## 2026-08-28 – 4.0.306 ejerrettelser i separat smårettelsesspor
+
+- Ejeren bestilte samlet korrektur, lærings-/illustrationsrettelser, bredere Spørg RavRadar-viden, zonesøgning, kortsignatur/pilkontrast, mobilombrydning og synlige tyske/engelske scorenavne.
+- Implementeringen er afgrænset fra DEC-0102: ingen Candidate G-, DMI/Copernicus-, state-, scoresemantik-, geometri- eller punktændring.
+- DEC-0103 registrerer den aktuelle kontrakt. Exact-head og produktion afventer.
+
 ## 2026-08-28 – godkendt todelt arbejdsform og næste samlede RavScore-model
 
 - Ejeren godkendte én autonom, integreret næste RavScore-generation i en isoleret worktree samt et separat worktree til mindre, ikke-modelrelaterede rettelser.

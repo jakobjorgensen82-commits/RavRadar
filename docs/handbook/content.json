@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.305",
+  "handbookVersion": "4.0.306",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-28",
   "sections": [
+    {
+      "id": "owner-learning-ui-assistant-corrections-4-0-306",
+      "chapter": "81",
+      "title": "Mere viden og tydeligere betjening",
+      "summary": "395 nm, koldt vands mobilisering, Rav Jagt-illustrationer, bredere lokal assistentviden, zonesøgning og tydelige kortpile samles i 4.0.306.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogen, Spørg RavRadar og de små offentlige betjeningsflader er gjort mere præcise og brugbare.</div><div class=\"handbook-stack\"><p><strong>Ravlygte:</strong> Den aktive vejledning bruger 395 nm. Tidligere aktiv tekst om 395 nm er erstattet.</p><p><strong>Koldt vand:</strong> Højere vandtæthed og opdrift kan gøre rav lettere at mobilisere, men temperaturen giver ingen fundgaranti og er ikke tilføjet som scoreinput. Rav Jagts video og krediterede kysttværsnit uddyber den praktiske forståelse.</p><p><strong>Spørg RavRadar:</strong> Lokal viden dækker nu flere spørgsmål om udstyr, fund, årstider, geologi og søgemetode. Åbne specialspørgsmål kan fortsat bruge den sikre, dataminimerede Edge-vej.</p><p><strong>Betjening:</strong> Zoner kan søges ved afslutning og manuel indberetning, kortsignaturen forklarer pilene, strømpilen er mørkere, og mobilknappen kan bryde over to linjer. Tysk og engelsk viser BernsteinScore og AmberScore.</p><p><strong>Uændrede grænser:</strong> Candidate G, scoresemantik, DMI/Copernicus, state, geometri og land-/vandpunkter er urørte. Se <code>DEC-0103</code>.</p></div>"
+    },
     {
       "id": "map-tile-seam-removal-4-0-305",
       "chapter": "80",
@@ -156,7 +163,7 @@
       "chapter": "58",
       "title": "Grundbog i ravjagt – fra havbund til fund",
       "summary": "Det offentlige læringsmodul lærer først ravjagtens fysiske kæde, felttegn og metoder og forklarer derefter RavRadar som værktøj.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogens huskeregel er: <strong>Bølger kan mobilisere. Strøm transporterer. Kysten sorterer og samler.</strong> Retninger skal altid ses i forhold til den konkrete kyst; der findes ikke én dansk vind- eller strømretning, som altid er bedst.</div><p>Grundbogen følger ravets egenskaber og mulige lagre gennem mobilisering, strømtransport, revler, render, opskyl og lokale kystfælder. Den forklarer felttegn som frisk tang, træ, frø, kul, skaller og sorterede linjer som spor frem for fundgaranti.</p><p>Metodeafsnittene dækker stranden, vandkanten, waders og UV-lys. Langbølget UV omkring 365 nm kan være et godt spor, men er ikke et endeligt ægthedsbevis. Varme nåle, ild og andre ødelæggende hjemmetests frarådes.</p><p>Først efter selve ravjagten forklares Candidate G som et værktøj med 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Waders-vindkurven og 13-timersreglen for kraftig udtransport er RavRadars testede arbejdsregler, ikke universelle naturgrænser.</p><div class=\"callout\"><strong>Viden og usikkerhed:</strong> Modulet skelner direkte forskning, stærk kystfysisk analogi, praktisk erfaring, myter og åbne lokale spørgsmål. RavRadar beskriver rav- og søgeforhold, ikke om en tur er sikker.</div><p>Den samtidige sproggennemgang erstatter tekniske standardord i normal status, login og konto med almindeligt dansk. Candidate G, score, vejr, geometri, land-/vandpunkter og private data er uændrede. Se DEC-0067.</p>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogens huskeregel er: <strong>Bølger kan mobilisere. Strøm transporterer. Kysten sorterer og samler.</strong> Retninger skal altid ses i forhold til den konkrete kyst; der findes ikke én dansk vind- eller strømretning, som altid er bedst.</div><p>Grundbogen følger ravets egenskaber og mulige lagre gennem mobilisering, strømtransport, revler, render, opskyl og lokale kystfælder. Den forklarer felttegn som frisk tang, træ, frø, kul, skaller og sorterede linjer som spor frem for fundgaranti.</p><p>Metodeafsnittene dækker stranden, vandkanten, waders og UV-lys. Langbølget UV omkring 395 nm kan være et godt spor, men er ikke et endeligt ægthedsbevis. Varme nåle, ild og andre ødelæggende hjemmetests frarådes.</p><p>Først efter selve ravjagten forklares Candidate G som et værktøj med 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Waders-vindkurven og 13-timersreglen for kraftig udtransport er RavRadars testede arbejdsregler, ikke universelle naturgrænser.</p><div class=\"callout\"><strong>Viden og usikkerhed:</strong> Modulet skelner direkte forskning, stærk kystfysisk analogi, praktisk erfaring, myter og åbne lokale spørgsmål. RavRadar beskriver rav- og søgeforhold, ikke om en tur er sikker.</div><p>Den samtidige sproggennemgang erstatter tekniske standardord i normal status, login og konto med almindeligt dansk. Candidate G, score, vejr, geometri, land-/vandpunkter og private data er uændrede. Se DEC-0067.</p>"
     },
     {
       "id": "observation-upload-closure-4-0-267",

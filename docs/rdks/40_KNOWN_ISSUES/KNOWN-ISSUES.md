@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.306-kandidat
+
+- De ejerobserverede tekst-, lærings-, zonesøgnings-, pile-, mobil- og assistentproblemer er rettet lokalt; exact-head, frisk produktion og offentlig kontrol mangler.
+- Candidate G/modelsporet er ikke berørt. En senere ændring af temperaturens scorebetydning skal koordineres særskilt med DEC-0102.
+
 ## Næste RavScore-generation – åbne modelbegrænsninger
 
 - **ISSUE-RAVSCORE-SURF-ZONE-RESOLUTION – ÅBEN / EJER-GODKENDT MODELARBEJDE:** Den aktive bundnære modelstrøm ved nærmeste tilladte U/V-kolonne opløser ikke de sidste meter gennem revler, render, brydningszone, undertow, feeder-/langskyststrømme og ripstrømme. Den nye samlede model skal skelne disse betydninger og vise usikkerheden uden at opfinde batymetri eller flytte punkter.

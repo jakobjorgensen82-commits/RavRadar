@@ -18,7 +18,7 @@ Læringsmodulet skal ikke først og fremmest lære brugeren at bruge RavRadar. D
 - Modulet må ikke lære én universel dansk vind- eller strømretning. Alle retninger skal forstås i forhold til den konkrete kyst og det forudgående forløb.
 - Myten om, at vinterens kolde vand i sig selv får det meste rav til at flyde, afvises. Densitet, størrelse, form, saltindhold og bundkontakt beskrives som et spænd.
 - Felttegn som frisk opskyl, tang, træ, frø, kul, skaller og sorterede linjer forklares som spor, ikke som fundgaranti.
-- Praktiske metoder dækker strand, vandkant, waders og langbølget UV omkring 365 nm. UV er et spor, ikke et endeligt ægthedsbevis; ødelæggende hjemmetests frarådes.
+- Praktiske metoder dækker strand, vandkant, waders og UV omkring 395 nm. UV er et spor, ikke et endeligt ægthedsbevis; ødelæggende hjemmetests frarådes. Bølgelængden er korrigeret af DEC-0103.
 - Candidate G forklares til sidst med den aktive `20/50/30`-vægtning, waders-vindkurven og den ejerbesluttede udtransportregel. Det fremgår, at disse er RavRadars testede arbejdsregler og ikke universelle naturgrænser.
 - Direkte forskning i naturlig ravtransport er begrænset. Modulet skal synligt skelne dokumenteret viden, stærk kystfysisk analogi, praktisk erfaring og åbne spørgsmål.
 - RavRadars grænse i forhold til sikkerhed forklares ét samlet sted. Der bygges ingen særskilt offentlig sikkerhedsscore, og delscoreforklaringerne må ikke gentage advarslen.
