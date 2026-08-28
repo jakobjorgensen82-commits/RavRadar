@@ -1,16 +1,18 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.306 – aktiv GitHub- og vejropdateringsgenopretning
+## 4.0.306 – produktionslukket GitHub- og vejropdateringsgenopretning
 
-- **ISSUE-PREMATURE-NEXT-RAVSCORE-MERGE – LOKALT TILBAGEFØRT / AFVENTER EXACT-HEAD OG PRODUKTION:** PR #215 blev merged før DEC-0102's fulde rækkefølge. To pushes stoppede før deploy; Candidate G genoprettes som eneste offentlige model. Den næste model forbliver åben udvikling og har særskilte fysik-, missing-, rand- og evidensblokeringer.
-- **ISSUE-RAVSCORE-CHECKPOINT-CROSS-MODEL-BLOCK – LOKALT RETTET / AFVENTER PRODUKTION:** Et nyere schema-3-checkpoint kunne ikke anvendes på deployet Candidate G og blokerede næste vejrbuild. Den præcise adapter genbruger kun hashkontrolleret signerede evidens og mobilisering og rekonstruerer straks Candidate G's egne transporttal; ukendt/blandet kontekst og tidsregression muterer intet. En realistisk 48-timers continuation- og 12/13/14-timers grænseregression består lokalt.
-- **ISSUE-PUBLIC-WEATHER-REFRESH-BLOCKED – AKTIV TIL LIVEBEVIS:** Offentlig 4.0.305 havde ved kontrollen komplet 210/673, gyldig primær prognose og gyldig auditeret recovery, men nye builds var blokeret. Først en fuldt gated frisk 4.0.306-produktion lukker forholdet.
+- **ISSUE-PREMATURE-NEXT-RAVSCORE-MERGE – PRODUKTIONSVERIFICERET TILBAGEFØRT / MODELARBEJDE FORTSAT ÅBENT:** PR #215 blev merged før DEC-0102's fulde rækkefølge, men nåede aldrig deploy. PR #217/merge `8ebbd4e7`, produktion `33212435923` og offentlig 4.0.306 beviser Candidate G som eneste offentlige model. Den næste model forbliver åben udvikling og har særskilte fysik-, missing-, rand- og evidensblokeringer.
+- **ISSUE-RAVSCORE-CHECKPOINT-CROSS-MODEL-BLOCK – PRODUKTIONSVERIFICERET LØST:** Den præcise adapter genbruger kun hashkontrolleret signeret evidens og mobilisering og rekonstruerer Candidate G's egne transporttal; ukendt/blandet kontekst og tidsregression muterer intet. Exact-head, 48-timers continuation, 12/13/14-timers grænser og den virkelige schema-3→Candidate G-restore i produktion `33212435923` er grønne.
+- **ISSUE-PUBLIC-WEATHER-REFRESH-BLOCKED – PRODUKTIONSVERIFICERET LØST:** 4.0.306-produktion `33212435923` byggede frisk primary, bestod fuld `validate`/`release:gate` og deployede Pages på eksakt mergecommit. Offentlig manifest- og browserkontrol er grøn på 210/673.
+- **ISSUE-CANDIDATE-G-RECOVERY-TO-READY-PROGRESSION – OVERVÅGET NORMAL DRIFT:** Frisk primary er årsagstro `0/673 READY` og `673/673 WINDOW_INCOMPLETE`; broen bevarede cirka 36/48 timers sammenhængende suffix. Forventet naturlig `673/673 READY` er cirka 2026-08-29T09:00:00Z, hvis der ikke kommer et nyt gab. Den komplette, tydeligt markerede recovery er aktiv med 673 memory-ready dele og nul rekonstruktionsafvigelser til den effektive grænse cirka 2026-08-30T01:34:48Z, cirka 16,5 timers margin. Det er ikke et aktuelt dækningshul og ændrer ikke P0-lukningen.
+- **ISSUE-CANDIDATE-G-CHECKPOINT-RESTORE-OBSERVABILITY-ORDER – ÅBEN HÆRDNING, IKKE P0:** Restoreprogrammet kan returnere `restored=false` med exit 0 uden et struktureret workflowbevis for `adaptedPartCount`, og checkpointet anvendes før den endelige DMI-produktionstime bindes. Den aktuelle restore er funktionelt bevist gennem accepteret initial state, cachekontinuitet og grøn runtimeaudit. Senere hærdning bør eksponere dataminimeret `restored/reason/adaptedPartCount`, kræve 673 ved den kendte schema-3-overgang og anvende state efter endelig timebinding.
 
 Se DEC-0104.
 
-## 4.0.306-kandidat
+## 4.0.306-ejerrettelser
 
-- De ejerobserverede tekst-, lærings-, zonesøgnings-, pile-, mobil- og assistentproblemer er rettet lokalt; exact-head, frisk produktion og offentlig kontrol mangler.
+- De ejerobserverede tekst-, lærings-, zonesøgnings-, pile-, mobil- og assistentproblemer er produktionsverificeret gennem PR #217, produktion `33212435923` og offentlig desktop-/390 px-kontrol.
 - Candidate G/modelsporet er ikke berørt. En senere ændring af temperaturens scorebetydning skal koordineres særskilt med DEC-0102.
 
 ## Næste RavScore-generation – åbne modelbegrænsninger

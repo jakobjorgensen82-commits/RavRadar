@@ -1,22 +1,24 @@
 # Current truth – gældende projektviden
 
-## 4.0.306-genopretning – Candidate G er igen eneste releasekandidat
+## Produktionsverificeret 4.0.306-genopretning – Candidate G er igen eneste offentlige model
 
 - PR #215/merge `cfb91420` var for tidlig. Produktion `33206467775` og den efterfølgende main-produktion `33208713861` stoppede begge før deploy; ingen schema-3-model blev offentlig.
-- Kildetræet er lokalt ført tilbage til den rene ejercommit `c53f5060`, så alle PR #216-rettelser bevares oven på Candidate G/20/50/30/schema 2. Den næste model forbliver under DEC-0102 og er ikke releaseklar.
+- Kildetræet er ført tilbage til den rene ejercommit `c53f5060`, så alle PR #216-rettelser bevares oven på Candidate G/20/50/30/schema 2. PR #217 bestod exact-head `33212348031` på `91dffaa3` og blev merged som `8ebbd4e7`. Den næste model forbliver under DEC-0102 og er ikke releaseklar.
 - Det nyere schema-3-checkpoint blokerede Candidate G-restoren. En eksakt model-/stateKey-bundet adapter genbruger kun den kendte signerede strømevidens og uændrede mobilisering og rekonstruerer Candidate G's +10/-8-/13-timerstransport; ukendte kontekster efterlader målet uændret.
-- Offentlig kontrol viste fortsat komplet 4.0.305 med 210 zoner/673 kystdele, primær prognose gyldig til 2. september og auditeret recovery gyldig til 31. august. Der var intet aktuelt hul, men frisk opdatering, exact-head, merge, fulde produktionsgates og offentlig kontrol udestår.
+- Pushproduktion `33212435923` på eksakt mergecommit bestod checkpointovergangen, frisk DMI/Copernicus/proveniens, Candidate G-runtimeaudit, fuld `validate`, `release:gate`, Pages-artifact og deploy. Pages-deployment `6148930627` er grøn.
+- Offentlig 4.0.306 viser frisk primary `rr-20260828213450-210`, komplet 210/673 og aktive hashes. Primary er årsagstro i global `0/673 READY`-warmup, mens den atomiske recovery `rr-20260827013448-210` består 210/673, 673 memory-ready dele, 1.346 modeevalueringer og nul rekonstruktionsafvigelser. Der er derfor ingen blanding og intet dækningshul.
+- Desktop 1440 x 900 og mobil 390 x 844 viser farvet kort, 5 aktuelle områder, 5 x 5 prognoseresultater, fungerende zonedetalje, korrekt version/recoverybesked, nul konsolfejl og ingen mobil vandret overflow. Checkpointbroen bevarede cirka 36/48 timers sammenhængende suffix; forventet naturlig primary-READY er cirka 2026-08-29T09:00:00Z, omkring 16,5 timer før recoveryens effektive grænse 2026-08-30T01:34:48Z.
 - Ingen modelmatematik, geometri, land-/vandpunkter, rå U/V, koordinater, credentials eller private payloads indgår i genopretningen. Se DEC-0104.
 
-## 4.0.306-kandidat – ejerrettelser uden modelændring
+## Produktionsverificerede 4.0.306-ejerrettelser uden modelændring
 
 - **Vejrforløb**, 395 nm, koldt vands mobiliseringsbetydning, Rav Jagt-video og et krediteret kysttværsnit er indarbejdet.
 - Spørg RavRadar har seks nye lokale emnefamilier. Zonesøgning, pilesignatur, mørkere strømpil, korrekt Kyst B, mobil tekstombrydning samt BernsteinScore/AmberScore er implementeret.
-- Candidate G, 20/50/30, DMI/Copernicus, state/cache/recovery, scoresemantik, geometri og land-/vandpunkter er uændrede. Se DEC-0103. Exact-head og produktion afventer.
+- Candidate G, 20/50/30, DMI/Copernicus, state/cache/recovery, scoresemantik, geometri og land-/vandpunkter er uændrede. Se DEC-0103. PR #217, produktion `33212435923`, Pages og offentlig desktop-/mobilkontrol er grønne.
 
 ## Ejer-godkendt næste spor – én samlet ny RavScore-model og et separat smårettelsesspor
 
-- Den offentlige baseline er fortsat produktionsverificeret 4.0.305. Dette checkpoint ændrer ingen kode, version, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter eller private data.
+- Den offentlige baseline er produktionsverificeret 4.0.306/Candidate G fra runtimecommit `8ebbd4e7`. Den tydeligt markerede hel-datasæt-recovery er aktiv, mens den friske primary modnes årsagstro; dette checkpoint ændrer ingen modelmatematik, geometri, land-/vandpunkter eller private data.
 - Næste modelgeneration bygges autonomt ende til ende i en ny isoleret worktree og udgives først som én samlet kandidat. Den er en analytisk videreudvikling: alt veldokumenteret i Candidate G skal først identificeres og genbruges; kun dokumenteret svage eller ufuldstændige led ændres.
 - Det faglige startpunkt er, at bølgeorbitaler, lokal modelstrøm og surfzonens undertow/rip-/langskyststrømme ikke er det samme. RavRadars nærmeste bundnære U/V-kolonne er et kystnært transportbevis, ikke en direkte måling af de sidste meter gennem revler, render og brydningszone.
 - Den nye model skal samle tilførsel, mobilisering, transport, nærkystlevering/retention, jagtbarhed og usikkerhed uden dobbelt-tælling. 20/50/30, +10/-8, 13-timers nul-gate, 4/48-timers mobilisering og bølgelandingsandelen er analysepunkter, ikke tavse naturkonstanter.

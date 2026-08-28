@@ -1,4 +1,4 @@
-# Implementeringsstatus – 4.0.306 Candidate G-genopretning under validering
+# Implementeringsstatus – 4.0.306 Candidate G-genopretning produktionslukket
 
 ## P0 – genåbn GitHub/vejropdateringer uden at deploye den ufærdige model
 
@@ -7,8 +7,10 @@
 - [x] Før source tilbage til den rene ejercommit `c53f5060` med Candidate G som eneste offentlige model.
 - [x] Tilføj præcis schema-3→Candidate G-checkpointadapter og negativ no-mutation-test.
 - [x] Bestå fuld lokal sourcegate og særskilt geodatadiff.
-- [ ] Bestå PR exact-head, merge, frisk produktion, fuld `validate`/`release:gate` og Pages.
-- [ ] Verificér offentlig 4.0.306 på desktop/mobil med 210 zoner/673 kystdele og frisk Candidate G-state.
+- [x] Bestå PR #217 exact-head `33212348031`, merge `8ebbd4e7`, frisk produktion `33212435923`, fuld `validate`/`release:gate` og Pages-deployment `6148930627`.
+- [x] Verificér offentlig 4.0.306 på desktop/mobil med frisk primary, komplet 210 zoner/673 kystdele og atomisk auditeret Candidate G-recovery.
+
+Driftsovervågning efter P0-lukning: den friske primary står ved `0/673 READY` og modnes naturligt uden kunstig historik. Broen bevarede cirka 36/48 timers sammenhængende suffix, så forventet `673/673 READY` er cirka 2026-08-29T09:00:00Z. Den komplette recovery står ved `673/673 READY` med nul replayafvigelser og dækker til den effektive grænse cirka 2026-08-30T01:34:48Z; planlagte produktioner skal fortsat følges til automatisk primary-overtagelse.
 
 Se DEC-0104.
 
@@ -17,7 +19,7 @@ Se DEC-0104.
 - [x] Tekst, læring, illustration, lokal assistentviden, zonesøgning, kortsignatur, pilkontrast, mobilombrydning og synlige scorenavne implementeret.
 - [x] Version, beslutning og begge håndbøger opdateret.
 - [x] Målrettede tests, RDKS/sourcegate og geodatadiff på afsluttet head.
-- [ ] PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
+- [x] PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0103.
 
