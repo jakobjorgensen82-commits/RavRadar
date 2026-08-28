@@ -1,3 +1,10 @@
+## 4.0.294 – driftslukning af Cloudflare-credentialrotation (2026-08-28)
+
+- Roterer Workers AI-credentialen med mindst-mulig kontoafgrænset Read + Edit og erstatter kun den eksisterende Supabase Edge-secret; ingen credentialværdi er vist eller gemt i repositoryet.
+- Beviser den nye vej på DA/DE/EN, fast emneafvisning, tilladt CORS, fremmed-origin-afvisning, seks minutkald + `429` på det syvende og offentlig lokal fallback.
+- Tilbagekalder efter særskilt ejerbekræftelse fire gamle generisk navngivne tokens. Et post-revoke-retry består `200` efter én fail-closed transient i Supabase-rate-limitlaget.
+- Ændrer ingen kode, version, Edge-deploy, produktionsartifact, RavScore, vejr, prognose, brugerdata, privatliv, geometri eller land-/vandpunkter. Se `CHANGELOG-4.0.294.md`.
+
 ## 4.0.294 – naturlige oprindelsesspørgsmål i Spørg RavRadar (2026-08-28)
 
 - Den offentlige 4.0.293-kontrol fandt, at den naturlige formulering **Hvordan opstod rav?** faldt uden for den ellers korrekte oprindelses-intent og derfor blev afvist.

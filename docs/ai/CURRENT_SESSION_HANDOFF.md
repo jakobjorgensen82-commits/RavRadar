@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## DRIFTSVERIFICERET CHECKPOINT – 2026-08-28 – Cloudflare-credential roteret uden release
+
+- Operationen startede fra den rene dokumentationslukkede 4.0.294-baseline på eksakt `origin/main` `989211265d0f338027452b5935d5def16dff3108`. Seneste læste produktions- og pilotkørsler var grønne før ændringen.
+- Cloudflare-erstatningstokenet blev oprettet med den officielle Workers AI quick-start-kontrakt: kun **Workers AI Read + Edit** på den eksakte RavRadar-konto. Tokenværdien blev aldrig læst ud, vist, logget, skrevet i terminal, Git, RDKS eller browserudtræk.
+- Kun den eksisterende Supabase Edge-secret `CLOUDFLARE_WORKERS_AI_TOKEN` blev erstattet gennem Supabase-dashboardets godkendte secret-kanal. Cloudflare-konto-id'et, Edge-koden, den offentlige konfiguration og alle øvrige secrets var urørte. Secret-opdateringen krævede ikke redeploy.
+- Før tilbagekaldelse bestod den nye vej ægte fjernsvar på DA/DE/EN, fast lokal rouladeafvisning, tilladt `OPTIONS 204` med eksakt GitHub-Origin, fremmed Origin `403`, seks tilladte minutkald og `429` på det syvende samt offentlig lokal browserfallback på det syvende fjernforsøg.
+- Efter særskilt ejerbekræftelse blev alle fire gamle, generisk navngivne **Workers AI**-tokens tilbagekaldt. Cloudflare-listen viste derefter nul gamle og præcis ét nyt RavRadar-token. Et første post-revoke-kald blev fail-closed før provider med den transiente Supabase-fejl `503 RATE_LIMIT_UNAVAILABLE`; ét afgrænset retry bestod `200` med et gyldigt dansk GPT-OSS-svar og beviste den nye credential efter tilbagekaldelsen.
+- Målrettet offentlig assistent-, Edge-, privacy-/sikkerheds- og lokalvidenskontrakt samt fuld lokal `validate:source` og releasegate er grøn på Sol/Ekstra høj. Ingen kode, version eller produktionsartifact blev ændret, og ingen deploy blev udløst. RavScore, Candidate G, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+- Næste trin er kun dokumentations-PR, exact-head-kildegate og mergekontrol. Candidate G-overvågningen fortsætter i den eksisterende plan; opret ingen dublet og fremskynd ikke den ægte 48-timersstate.
+
 ## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-28 – 4.0.294 naturlig oprindelsesformulering
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, blev merged som `25722abc` og gennemførte grøn produktion `33130425262`, build `98718434389` og Pages `98721765768`.

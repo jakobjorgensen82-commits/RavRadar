@@ -25,4 +25,10 @@
 - Offentlig 4.0.291 viser den entydige kvotetekst på dansk, tysk og engelsk, farvet kort, fem **Bedste områder** og fem dagsfaner. Browseren modtog det faste engelske Candidate G 20/50/30-svar gennem den levende Edge, mens rouladespørgsmålet blev afvist lokalt. 390 px-visningen er visuelt grøn.
 - Den offentlige vejrvisning er fortsat tydeligt markeret som bounded nøddrift fra sidste komplette dataset, mens frisk Candidate G modnes. Denne status er uafhængig af assistenten og må ikke beskrives som fuldt normaliseret vejrdrift.
 
+## Credentialrotation 2026-08-28
+
+- Den aktive Workers AI-credential blev roteret fra ren 4.0.294-`main` uden kode- eller artifactændring. Erstatningen har kun Workers AI Read + Edit på den eksakte konto, og kun den eksisterende Supabase Edge-secret blev opdateret uden redeploy.
+- Før tilbagekaldelse bestod den nye vej DA/DE/EN, fast afvisning, CORS/origin, seks minutkald + `429` og offentlig lokal fallback. Fire gamle tokens blev derefter tilbagekaldt efter særskilt ejerbekræftelse.
+- En første post-revoke-probe stoppede fail-closed i Supabases rate-limitlag før provider; ét afgrænset retry bestod `200`. Ingen credentialværdi blev læst ud, vist eller dokumenteret.
+
 Se DEC-0083 og DEC-0087 for den bevarede domæne-, data-, eval- og modelkontrakt.

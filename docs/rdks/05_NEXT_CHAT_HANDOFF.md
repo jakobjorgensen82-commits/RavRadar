@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Driftsverificeret 2026-08-28 – Cloudflare-tokenrotation lukket
+
+- Fra ren 4.0.294-baseline på `origin/main` `989211265d0f338027452b5935d5def16dff3108` blev et nyt mindst-muligt Workers AI-token oprettet med Read + Edit på den eksakte konto. Credentialværdien blev aldrig vist, læst ud eller skrevet i output/repository.
+- Kun Supabase-secret `CLOUDFLARE_WORKERS_AI_TOKEN` blev erstattet gennem dashboardets secret-kanal; kontrakten krævede intet Edge-redeploy.
+- Den nye vej bestod DA/DE/EN-fjernsvar, fast rouladeafvisning, tilladt CORS, fremmed Origin `403`, seks `200` og `429` på syvende minutkald samt offentlig lokal fallback. Efter særskilt ejer-go blev alle fire gamle **Workers AI**-tokens tilbagekaldt.
+- Første post-revoke-probe ramte fail-closed `503 RATE_LIMIT_UNAVAILABLE` før provider; ét afgrænset retry bestod `200` og beviste det nye token efter tilbagekaldelsen. Ingen kode, version, artifact, privat data, geometri eller land-/vandpunkt blev ændret.
+- Målrettede dokumentations-, håndbogs-, privacy-, Edge- og fallbacktests samt fuld lokal `validate:source`/releasegate er grønne på Sol/Ekstra høj. Næste trin er den korte docs-only PR, exact-head-kildegate og mergekontrol. Bevar den eksisterende Candidate G-overvågning uden dublet eller kunstig historik.
+
 ## Produktionsverificeret 4.0.294 – naturlig formulering om ravets dannelse
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
@@ -8,7 +16,7 @@
 - Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. PR #195/exact-head `33131976433`, head `80866ba8`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561` er grønne.
 - Offentlig 4.0.294 viser farvet kort, fem aktuelle områder og fem prognosedage. De tre naturlige DA/DE/EN-formuleringer giver lokale oprindelsessvar uden kvote; kvoteteksten er korrekt på alle tre sprog.
 - Den 23-fakta Edge-kilde er live. DA/DE/EN, rouladeafvisning, CORS/origin og reel 6/minut-browsergrænse med lokal fallback er verificeret. Ingen assistentvej kan ændre score-, vejr-, bruger- eller geodata.
-- Næste ejeraktive driftsopgave er en forsigtig rotation af Cloudflare quick-start-tokenet med efterfølgende Edge-smoke; ingen credentialværdi må skrives i repository eller output. Candidate G-nøddriften modnes fortsat naturligt og må ikke fremskyndes med kunstig historik.
+- Cloudflare quick-start-tokenet er efterfølgende roteret og liveverificeret som beskrevet ovenfor. Candidate G-nøddriften modnes fortsat naturligt og må ikke fremskyndes med kunstig historik.
 
 ## 4.0.293 – klogere Spørg RavRadar uden kvoteafhængighed
 
