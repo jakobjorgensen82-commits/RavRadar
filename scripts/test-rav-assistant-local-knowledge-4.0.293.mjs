@@ -97,6 +97,15 @@ for (const [question, intent, language, marker] of [
   assert.equal(assistant.routeRavQuestion(question), 'local-deterministic');
   assert.match(await assistant.askRavRadar(question, {}, { language }), marker);
 }
+for (const [question, language, marker] of [
+  ['Hvad er hvidt fosfor på stranden?', 'da', /selvantænde.*Rør det ikke/is],
+  ['Was ist weißer Phosphor am Strand?', 'de', /selbst entzünden.*Nicht berühren/is],
+  ['What is white phosphorus on the beach?', 'en', /self-ignite.*Do not touch/is],
+]) {
+  assert.equal(assistant.classifyRavQuestion(question), 'knowledge:white-phosphorus');
+  assert.equal(assistant.routeRavQuestion(question), 'local-deterministic');
+  assert.match(await assistant.askRavRadar(question, {}, { language }), marker);
+}
 assert.match(i18n.t('assistant.local.limitations', {}, 'da'), /aldrig garantere/i);
 assert.match(i18n.t('assistant.local.limitations', {}, 'de'), /nie garantieren/i);
 assert.match(i18n.t('assistant.local.limitations', {}, 'en'), /never guarantee/i);

@@ -197,7 +197,7 @@ export const RAV_ASSISTANT_RESEARCH_COAST = Object.freeze([
     'Prüfe aktuelle amtliche Wetter-, Sturmflut- und Zugangswarnungen vor der Tour und bei Ankunft. RavRadar ersetzt keine Behördenwarnung oder Beurteilung vor Ort.',
     'Check current official weather, surge and local-access warnings before the trip and again on arrival. RavRadar does not replace authority warnings or on-site judgement.',
     ['Hvilke varsler skal jeg tjekke før ravjagt?','Welche Warnungen soll ich vor der Bernsteinsuche prüfen?','Which warnings should I check before amber hunting?'], { volatile:true }),
-  fact('white-phosphorus', /fosfor.*(?:rav|ligne)|rav.*fosfor|phosphor.*bernstein|bernstein.*phosphor|phosphorus.*amber|amber.*phosphorus/iu, 'official-safety', ['forsvaret-phosphorus'],
+  fact('white-phosphorus', /hvidt?\s+fosfor|fosfor.*(?:rav|ligne|strand|fund)|rav.*fosfor|wei(?:ß|ss)(?:er|e|es)?\s+phosphor|phosphor.*(?:bernstein|strand|fund)|bernstein.*phosphor|white\s+phosphorus|phosphorus.*(?:amber|beach|find)|amber.*phosphorus/iu, 'official-safety', ['forsvaret-phosphorus'],
     'Hvidt fosfor kan ligne rav og selvantænde, når det tørrer. Rør det ikke, tag det ikke med, hold afstand, og kontakt politiet efter Forsvarets aktuelle vejledning.',
     'Weißer Phosphor kann Bernstein ähneln und sich beim Trocknen selbst entzünden. Nicht berühren oder mitnehmen, Abstand halten und nach aktueller Behördenanweisung die Polizei informieren.',
     'White phosphorus can resemble amber and may self-ignite as it dries. Do not touch or take it, keep clear and contact police following current defence guidance.',

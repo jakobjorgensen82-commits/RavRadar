@@ -1,5 +1,12 @@
 # Aktive krav – samlet register
 
+## Offentlig QA-opfølgning – bindende fra 4.0.308
+
+- **REQ-ASSISTANT-NATURAL-PHOSPHORUS-001 – BINDENDE:** Naturlige DA/DE/EN-spørgsmål om hvidt fosfor på stranden skal lokalt finde RavRadars officielle sikkerhedssvar, også uden ordet rav. Sikkerhedsindhold og kildeproveniens må ikke lempes.
+- **REQ-TRIP-ZONE-ALL-SUBSTRING-MATCHES-001 – BINDENDE:** Zonesøgningen ved afslut tur og manuel indberetning skal filtrere den bevarede rullemenu til alle matches på hele eller dele af navnet. Den må ikke skjule andre matches ved automatisk at låse første hit; rydning skal gendanne hele listen.
+
+Se DEC-0106.
+
 ## Candidate G-driftsgenopretning – bindende fra DEC-0104
 
 - **REQ-RAVSCORE-PUBLIC-CANDIDATE-G-ONLY-002 – BINDENDE:** Candidate G/schema 2 forbliver eneste offentlige model, mens DEC-0102-arbejdet genanalyseres. Ingen schema-3-kandidat må nå Pages gennem 4.0.306-hotfixet.

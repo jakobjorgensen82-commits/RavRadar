@@ -1,3 +1,10 @@
+## 4.0.308 – naturligt fosforspørgsmål og filtreret zonesøgning (2026-08-29)
+
+- Den offentlige 4.0.307-slutkontrol fandt, at “Hvad er hvidt fosfor på stranden?” blev afvist trods eksisterende kildeviden, og at `lyn` kun hoppede til den første matchende zone.
+- Naturlige DA/DE/EN-fosforspørgsmål svarer nu lokalt med den officielle sikkerhedsvejledning.
+- Afslut tur og manuel indberetning filtrerer den bevarede rullemenu til alle delstrengsmatches, så tvetydige søgninger kan vælges korrekt.
+- Ingen model-, vejr-, state- eller geometriændring. Se DEC-0106 og `CHANGELOG-4.0.308.md`.
+
 ## 4.0.307 – ekstra høj genkontrol og større ravviden (2026-08-29)
 
 - Udvider Spørg RavRadar til 152 kildeklassificerede lokale emner med 456 DA/DE/EN-katalogspørgsmål, baseret på ekstern forskning, officielle kilder, RavRadars analyser, Grundbogen og Rav Jagt; svarene kræver hverken netværk eller AI-kvote.

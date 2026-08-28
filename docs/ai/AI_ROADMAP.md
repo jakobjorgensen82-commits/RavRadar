@@ -1,6 +1,16 @@
-# AI Roadmap – RavRadar 4.0.307+
+# AI Roadmap – RavRadar 4.0.308+
 
-## Aktivt smårettelsesspor – ekstra høj 4.0.307-genkontrol
+## Aktivt smårettelsesspor – 4.0.308 offentlig QA-opfølgning
+
+- [x] Reproducer og ret den naturlige DA/DE/EN-fosforformulering med uændret officielt sikkerhedssvar.
+- [x] Vis alle delstrengsmatches i den bevarede zone-rullemenu ved afslut tur og manuel indberetning.
+- [x] Tilføj målrettede sprog- og fler-match-regressioner.
+- [x] Luk source/RDKS/geodatabevis.
+- [ ] Luk exact-head, produktion og offentlig browserkontrol.
+
+Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0106.
+
+## Produktionsverificeret smårettelsesspor – ekstra høj 4.0.307-genkontrol
 
 - [x] Auditér hele 4.0.306-ejerpakken mod kode, tests, håndbøger og Edge-kontrakt.
 - [x] Udvid den netværksfri assistent til 152 kildeklassificerede emner og 456 DA/DE/EN-katalogevals med ekstern research og RavRadars større forskningsgrundlag.
@@ -8,8 +18,8 @@
 - [x] Udvid Edge fra 23 til 38 offentlige fakta og den relevante domænerute uden at udvide datakonteksten.
 - [x] Fjern udløbne 5-dagesdatoer i dansk tid uden at relabele gamle prognoseværdier.
 - [x] Fjern prognosedetaljefilen som blokering for lokale fakta-, forsknings- og sikkerhedssvar.
-- [ ] Luk lokal desktop-/mobilbrowserkontrol, sourcegate og geodatabevis.
-- [ ] Luk PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
+- [x] Luk lokal desktop-/mobilbrowserkontrol, sourcegate og geodatabevis.
+- [x] Luk PR #219 exact-head, merge `6c0b6c49`, frisk produktion `33220124166` og offentlig mobilkontrol.
 
 Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 

@@ -1,3 +1,10 @@
+## 2026-08-29 – offentlig 4.0.307-kontrol udløser afgrænset 4.0.308
+
+- PR #219 bestod exact-head `33220047699` på `f53a7133bc3f978fe7fb9d2d129733efada8f794` og blev merged som `6c0b6c49230393a3e4306a867dd3f4c3e845d234`.
+- Produktion `33220124166` bestod frisk DMI/Copernicus/proveniens, Candidate G-runtimeaudit, fuld validate/releasegate, Supabase, Pages-artifact og deploy.
+- Offentlig 390 px-kontrol bekræftede 4.0.307, ingen overflow, mobilombrydning, mørk strømpil/signatur, 395 nm-ravlygtesvar og kun de tre gyldige nøddriftsdage 29.–31. august. Udløbne 27.–28. august blev ikke vist eller omdateret.
+- Samme kontrol fandt to rester: en naturlig fosforformulering blev afvist, og `lyn` skjulte øvrige delstrengsmatches bag første automatiske zonevalg. 4.0.308 gør fosforformuleringen lokal og filtrerer den bevarede rullemenu til alle matches. Se DEC-0106.
+
 ## 2026-08-29 – 4.0.307 ekstra høj genkontrol af ejerrettelser
 
 - Ejeren krævede en fuld gentagelse på Sol/Ekstra høj og præciserede, at Spørg RavRadar skal bygge på ekstern research og RavRadars større analysegrundlag – ikke kun Grundbogen.

@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.307";
+import { t } from "../i18n.js?v=4.0.308";
 
 const STYLE_ID = 'ravradar-trip-evidence-dialog-style';
 
@@ -66,9 +66,13 @@ export function normaliseSearch(value) {
 }
 
 export function findZoneMatch(zones, query) {
+  return findZoneMatches(zones, query)[0] || null;
+}
+
+export function findZoneMatches(zones, query) {
   const needle = normaliseSearch(query);
-  if (!needle) return null;
-  return zones.find(zone => normaliseSearch(zone.name || zone.id).includes(needle)) || null;
+  if (!needle) return [];
+  return zones.filter(zone => normaliseSearch(zone.name || zone.id).includes(needle));
 }
 
 function appendSearchableZonePicker(label, zones, selectedId) {
@@ -85,15 +89,23 @@ function appendSearchableZonePicker(label, zones, selectedId) {
   const findMatch = () => {
     const query = normaliseSearch(search.value.trim());
     status.textContent = '';
-    if (!query) return;
-    const match = findZoneMatch(zones, query);
-    if (!match) {
+    const previousId = select.value;
+    if (!query) {
+      appendOptions(select, zones, zones.some(zone => zone.id === previousId) ? previousId : selectedId || zones[0]?.id);
+      select.dispatchEvent(new Event('change', { bubbles:true }));
+      return;
+    }
+    const matches = findZoneMatches(zones, query);
+    if (!matches.length) {
+      appendOptions(select, zones, zones.some(zone => zone.id === previousId) ? previousId : selectedId || zones[0]?.id);
       status.textContent = t('trip.form.noAreaMatch');
       return;
     }
-    select.value = match.id;
+    appendOptions(select, matches, matches.some(zone => zone.id === previousId) ? previousId : matches[0].id);
     select.dispatchEvent(new Event('change', { bubbles:true }));
-    status.textContent = match.name || match.id;
+    status.textContent = matches.length === 1
+      ? matches[0].name || matches[0].id
+      : t('trip.form.areaMatches', { count:matches.length });
   };
   search.addEventListener('input', findMatch);
   select.addEventListener('change', () => {

@@ -1,13 +1,21 @@
 # Current truth – gældende projektviden
 
-## 4.0.307-kandidat – ekstra høj genkontrol af ejerrettelserne
+## 4.0.308-kandidat – naturligt sikkerhedsspørgsmål og alle zonehits
+
+- Den offentlige 4.0.307-kontrol fandt to afgrænsede restfejl: “Hvad er hvidt fosfor på stranden?” blev afvist, og en delstreng som `lyn` valgte kun første zonehit i stedet for at vise alle relevante zoner.
+- 4.0.308 genkender naturlige DA/DE/EN-formuleringer om hvidt fosfor og bruger det eksisterende officielt kildebundne sikkerhedssvar uden at kræve ordet rav.
+- Den fælles zonevælger ved både afslut tur og manuel indberetning filtrerer den bevarede rullemenu til alle matches. `lyn` kan derfor vise både Hundested og Lynæs samt navne med Lyngså; `voer` finder Voerså. Ryd søgningen for at få hele listen tilbage.
+- Candidate G, RavScore, scorevægte/-kurver, vejr, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se DEC-0106.
+
+## Produktionsverificeret 4.0.307 – ekstra høj genkontrol af ejerrettelserne
 
 - 4.0.306's synlige hovedrettelser er bevaret, men genkontrollen fandt, at den lokale assistentudvidelse var for lille, Edge-faktakontrakten stadig sagde 365 nm, `Skagen` kunne ramme delstrengen `kage`, og de tyske/engelske Kyst B-skabeloner havde en vandret pil.
 - Spørg RavRadar har nu 152 kildeklassificerede lokale emner oven på de 17 eksisterende intent-kontrakter. 456 katalogspørgsmål på DA/DE/EN beviser deterministiske svar uden AI-kvote eller netværk. De 27 offentligt registrerede kilder omfatter ekstern forskning, officielle kilder, RavRadars større forskningsgrundlag og Rav Jagt som navngiven praktisk ekspert; Grundbogen er ikke længere eneste faglige kilde.
 - Browser- og Edge-filteret bruger hele Unicode-ord, så reelt uvedkommende spørgsmål fortsat afvises, mens Skagen og et bredere relevant ravdomæne accepteres. Lokal og Edge-baseret UV-viden bruger 395 nm, og Edge-pakken er udvidet fra 23 til 38 fakta.
 - 5-dagesvisningen filtrerer udløbne datoer efter dansk kalenderdag uden at relabele gamle værdier. Et nøddriftsdatasæt må derfor vise færre end fem tilbageværende dage eller en klar udløbsbesked.
 - Netværksfri fakta-, forsknings- og sikkerhedssvar afhænger ikke længere af prognosedetaljefilen. Kun dynamisk bedste sted, bedste tid og aktuel score venter på de data; mobilbrowseren beviser det konkrete 395 nm-ravlygtesvar uden detaljefilen.
-- Kyst B viser opadgående pil på DA/DE/EN. Den samlede ejerpakke skal stadig gennem målrettet browserkontrol, exact-head, frisk produktion og offentlig desktop/mobil, før 4.0.307 kaldes produktionsverificeret.
+- Kyst B viser opadgående pil på DA/DE/EN. PR #219 bestod exact-head `33220047699` på `f53a7133bc3f978fe7fb9d2d129733efada8f794`, blev merged som `6c0b6c49230393a3e4306a867dd3f4c3e845d234`, og produktion `33220124166` bestod hele den friske gate- og deploykæde.
+- Offentlig 390 px-kontrol bekræftede version, ingen vandret overflow, mobilombrydning, mørk strømpil/signatur, lokalt 395 nm-svar og korrekt filtrering til de tre stadig gyldige nøddriftsdage 29.–31. august. De to efterfølgende 4.0.308-fund er beskrevet ovenfor og ændrer ikke denne produktionsverifikation.
 - Candidate G, RavScore, 20/50/30, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se DEC-0105.
 
 ## Produktionsverificeret 4.0.306-genopretning – Candidate G er igen eneste offentlige model
