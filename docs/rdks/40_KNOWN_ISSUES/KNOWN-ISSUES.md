@@ -1,13 +1,20 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.307-kandidat – ekstra høj genkontrol
+## 4.0.308-kandidat – offentlig QA-opfølgning
 
-- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-STILL-TOO-NARROW – RETTET LOKALT / AFVENTER RELEASE:** 4.0.306 tilføjede kun seks emnefamilier. 4.0.307-kandidaten har nu 152 kildeklassificerede katalogemner og 456 DA/DE/EN-evals oven på de 17 eksisterende intent-kontrakter. Grundbogen er suppleret med ekstern forskning, officielle kilder, RavRadars større forskningsgrundlag og navngiven praktisk ekspertviden. Edge er udvidet fra 23 til 38 offentlige fakta. Source-, produktions- og offentlig slutkontrol afventer.
-- **ISSUE-ASSISTANT-SKAGEN-SUBSTRING-REFUSAL – RETTET LOKALT / AFVENTER RELEASE:** `kage` i udenfor-domænefilteret ramte `Skagen` i browser og Edge. Unicode-helordsgrænsen bevarer den reelle kageafvisning og accepterer ravspørgsmål om Skagen.
-- **ISSUE-ASSISTANT-EDGE-UV-365-DRIFT – RETTET LOKALT / AFVENTER RELEASE:** Den lokale assistent og Grundbogen sagde 395 nm, mens Edge-faktakontrakten fortsat sagde 365 nm. Begge aktive assistentveje er nu ensrettet til 395 nm og dækket af negativ regression.
-- **ISSUE-LEARN-COAST-B-TRANSLATED-ARROW – RETTET LOKALT / AFVENTER RELEASE:** Dansk Kyst B var korrekt, men DE/EN-skabelonerne brugte fortsat højrepil. Alle tre sprog viser nu pil op; visuel slutkontrol afventer.
-- **ISSUE-FORECAST-STALE-FIRST-DAY – RETTET LOKALT / AFVENTER RELEASE:** 5-dagesvisningen viste de første fem datoer fra et ældre nøddriftsdatasæt, også efter at de var udløbet. Visningen filtrerer nu efter dansk kalenderdag, beholder originale datoer og viser færre reelle dage eller en klar udløbsbesked. Ingen forecastværdi, Candidate G-logik eller recoverydata ændres.
-- **ISSUE-ASSISTANT-LOCAL-ANSWER-BLOCKED-BY-FORECAST-DETAILS – RETTET OG LOKALT BROWSERVERIFICERET / AFVENTER RELEASE:** Den mobile browser viste HTTP-fejl på “Hvad er en ravlygte?”, fordi UI'en altid ventede på prognosedetaljer før et assistentsvar. Fakta-, forsknings- og sikkerhedssvar går nu direkte til den lokale vidensbase; kun dynamisk sted/tid/score kræver detaljerne. Mobil 390 × 844 svarer lokalt med 395 nm samt på fosfor, succinit, revlehul og nøddriftsdatoer, selv om den lokale detaljefil mangler.
+- **ISSUE-ASSISTANT-NATURAL-PHOSPHORUS-REFUSAL – RETTET LOKALT / AFVENTER RELEASE:** Det kildebundne emne krævede tidligere, at hvidt fosfor blev nævnt sammen med rav. Naturlige DA/DE/EN-spørgsmål om hvidt fosfor på stranden matcher nu det lokale officielle sikkerhedssvar og dækkes af tre sprogressioner.
+- **ISSUE-TRIP-ZONE-AMBIGUOUS-SUBSTRING-FIRST-HIT – RETTET LOKALT / AFVENTER RELEASE:** Den eksisterende søgning sprang til første delstrengsmatch og skjulte øvrige muligheder. Den fælles picker filtrerer nu den bevarede rullemenu til alle hits, viser antal ved flere hits og gendanner alle zoner, når søgningen ryddes.
+
+Se DEC-0106.
+
+## 4.0.307 – produktionsverificeret ekstra høj genkontrol
+
+- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-STILL-TOO-NARROW – PRODUKTIONSVERIFICERET LØST:** 152 kildeklassificerede katalogemner, 456 DA/DE/EN-evals, 27 offentlige kilder og 38 Edge-fakta er ude via PR #219 og produktion `33220124166`.
+- **ISSUE-ASSISTANT-SKAGEN-SUBSTRING-REFUSAL – PRODUKTIONSVERIFICERET LØST:** Unicode-helordsgrænsen bevarer kageafvisningen og accepterer ravspørgsmål om Skagen.
+- **ISSUE-ASSISTANT-EDGE-UV-365-DRIFT – PRODUKTIONSVERIFICERET LØST:** Lokal og Edge-assistent bruger 395 nm; aktiv 365 nm-anbefaling er fjernet.
+- **ISSUE-LEARN-COAST-B-TRANSLATED-ARROW – PRODUKTIONSVERIFICERET LØST:** Alle tre sprog viser lodret kyst og pil op.
+- **ISSUE-FORECAST-STALE-FIRST-DAY – PRODUKTIONSVERIFICERET LØST:** Offentlig nøddrift viste kun 29.–31. august og fjernede udløbne 27.–28. august uden omdatering.
+- **ISSUE-ASSISTANT-LOCAL-ANSWER-BLOCKED-BY-FORECAST-DETAILS – PRODUKTIONSVERIFICERET LØST:** Offentlig mobil svarede lokalt med 395 nm uden prognosedetaljefilen; kun dynamisk sted/tid/score afhænger af detaljer.
 
 Se DEC-0105.
 

@@ -1,5 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-29 – 4.0.308 offentlig QA-opfølgning
+
+- 4.0.307 er merged via PR #219 som `6c0b6c49230393a3e4306a867dd3f4c3e845d234`; exact-head `33220047699` og fuld produktion `33220124166` er grønne.
+- Offentlig mobilkontrol bekræfter version, layout, 395 nm-svar, pilesignatur og korrekt filtrering af udløbne prognosedage. Den fandt samtidig to naturlige kanter: fosfor uden ordet rav blev afvist, og `lyn` valgte kun første match.
+- 4.0.308-kandidaten udvider kun det kildebundne fosformønster på DA/DE/EN og gør zonesøgningen til en filtreret, bevaret rullemenu med alle matches. Målrettede regressioner, fuld sourcegate, releasegate, RDKS/version og særskilt geodatabevis er grønne; exact-head/produktion/offentlig kontrol afventer.
+- Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, modelprofil, geometri og punkter er urørte. Fortsæt Sol/Ekstra høj gennem slutvalidering. Se DEC-0106.
+
 ## KILDEKANDIDAT P1 – 2026-08-29 – 4.0.307 ekstra høj ejerrettelsesrevision
 
 - Arbejdet ligger isoleret på `codex/owner-corrections-4.0.307` fra `origin/main` `5366a73781a5313b95119f91ea81a1e1d8498af7`. Candidate G, RavScore, 20/50/30, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte.

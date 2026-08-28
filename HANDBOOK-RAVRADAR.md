@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Naturlige sikkerhedsspørgsmål og bedre zonesøgning – 4.0.308
+
+Den offentlige kontrol af 4.0.307 fandt to små, men reelle kanter. Spørgsmålet **“Hvad er hvidt fosfor på stranden?”** blev afvist, fordi det ikke også nævnte rav. Det og tilsvarende tyske/engelske spørgsmål giver nu RavRadars lokale, kildebundne sikkerhedssvar: lad et mistænkeligt fund ligge, hold afstand og kontakt politiet.
+
+Ved **afslut tur** og **manuel indberetning** filtrerer søgefeltet nu den eksisterende rullemenu til alle zoner, som indeholder teksten. Skriver man `lyn`, kan man derfor vælge mellem flere relevante matches i stedet for automatisk at få den første. Ryd søgningen for at få hele rullemenuen tilbage.
+
+Candidate G, RavScore, vejr, state, geometri og land-/vandpunkter er uændrede. Se [DEC-0106](docs/rdks/10_DECISIONS/DEC-0106-PUBLIC-NATURAL-PHRASING-AND-AMBIGUOUS-ZONE-SEARCH.md).
+
 ## Ekstra høj genkontrol og langt større lokal ravviden – 4.0.307
 
 Genkontrollen af hele ejerpakken fandt, at 4.0.306 ikke var bred nok i **Spørg RavRadar**. Assistenten har derfor fået 152 kildeklassificerede lokale emner om geologi, materiale, identifikation, behandling, kystfysik, feltmetode, sikkerhed, regler og RavRadar. De ligger oven på de 17 eksisterende intent-kontrakter og kontrolleres med 456 DA/DE/EN-spørgsmål uden netværk eller AI-kvote. Grundbogen er suppleret med ekstern forskning, officielle kilder, RavRadars systematiske analyser og Rav Jagt som navngiven praktisk ekspert. Edge-pakken er udvidet fra 23 til 38 offentlige fakta.
@@ -681,7 +689,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.307
+**Håndbogsversion:** 4.0.308
 
 **Opdateret:** 19. august 2026
 

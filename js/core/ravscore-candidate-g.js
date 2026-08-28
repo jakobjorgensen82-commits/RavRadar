@@ -3,7 +3,7 @@ import {
   PHASE_D_HUNTABILITY_PROFILES,
   evaluatePhaseDHuntability,
 } from './phase-d-process-candidate.js';
-import { evaluateWaveApproachSupport } from './wave-approach.js?v=4.0.307';
+import { evaluateWaveApproachSupport } from './wave-approach.js?v=4.0.308';
 
 export const CANDIDATE_G_WEIGHTS = Object.freeze({
   huntability: 0.20,

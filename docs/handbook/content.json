@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.307",
+  "handbookVersion": "4.0.308",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-29",
   "sections": [
+    {
+      "id": "public-natural-phrasing-zone-search-4-0-308",
+      "chapter": "83",
+      "title": "Naturlige sikkerhedsspørgsmål og alle zonehits",
+      "summary": "Spørg RavRadar forstår naturlige spørgsmål om hvidt fosfor, og zonesøgningen viser alle navne, som matcher det skrevne.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> To kanter fundet i den offentlige 4.0.307-kontrol er lukket uden at ændre prognose eller model.</div><div class=\"handbook-stack\"><p><strong>Hvidt fosfor:</strong> Naturlige danske, tyske og engelske spørgsmål om hvidt fosfor på stranden finder nu det lokale, officielt kildebundne sikkerhedssvar, også uden ordet rav. Et mistænkeligt fund skal blive liggende; hold afstand og kontakt politiet.</p><p><strong>Alle zonehits:</strong> Ved afslut tur og manuel indberetning filtrerer søgefeltet den eksisterende rullemenu til alle navne, som indeholder teksten. <code>lyn</code> kan derfor vise både Hundested og Lynæs samt navne med Lyngså, mens <code>voer</code> finder Voerså. Ryd feltet for at se hele listen igen.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vægte, kurver, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se <code>DEC-0106</code>.</p></div>"
+    },
     {
       "id": "owner-correction-extra-high-audit-4-0-307",
       "chapter": "82",

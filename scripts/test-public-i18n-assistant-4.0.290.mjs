@@ -35,10 +35,11 @@ assert.equal(i18n.t('header.trip.start'), 'Start ravtur');
 assert.equal(i18n.t('header.trip.start', {}, 'de'), 'Bernsteintour starten');
 assert.equal(i18n.t('header.trip.start', {}, 'en'), 'Start amber trip');
 const searchableZones = [
+  { id: 'lynaes', name: 'Hundested og Lynæs' },
   { id: 'lyngsaa', name: 'Lyngså' },
   { id: 'voersaa', name: 'Voerså' }
 ];
-assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'lyn')?.id, 'lyngsaa');
+assert.deepEqual(tripDialogModule.findZoneMatches(searchableZones, 'lyn').map(zone => zone.id), ['lynaes', 'lyngsaa']);
 assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'voer')?.id, 'voersaa');
 assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'LYNGSA')?.id, 'lyngsaa');
 assert.equal(i18n.t('forecast.calculating', { progress:42 }, 'de'), '5-Tage-Prognose wird berechnet… 42 %');
@@ -143,7 +144,7 @@ assert.match(indexHtml, /map\.currentArrow[\s\S]*map\.windArrow/, 'Kortsignature
 
 const tripDialog = await fs.readFile(path.join(ROOT, 'js/ui/trip-evidence-dialog.js'), 'utf8');
 const app = await fs.readFile(path.join(ROOT, 'app.js'), 'utf8');
-assert.match(tripDialog, /type: 'search'[\s\S]*findZoneMatch\(zones, query\)/, 'Tur- og fundformularen skal kunne søge på dele af zonenavnet.');
+assert.match(tripDialog, /type: 'search'[\s\S]*findZoneMatches\(zones, query\)[\s\S]*appendOptions\(select, matches/, 'Tur- og fundformularen skal filtrere rullemenuen til alle delstrengsmatches.');
 assert.match(tripDialog, /createElement\('select', \{ name: 'zoneId'/, 'Den eksisterende zonerullemenu skal bevares.');
 assert.match(app, /if\(ravQuestionNeedsConditionDetails\(clean\)\)await ensureConditionDetails\(\)/, 'Lokale faktasvar må ikke gøre prognosedetaljer til en forudsætning.');
 assert.match(indexHtml, /data-i18n="footer\.weatherSea"/);

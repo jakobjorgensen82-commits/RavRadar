@@ -1,4 +1,18 @@
-# Implementeringsstatus – 4.0.307 ejerrettelser under ekstra høj slutkontrol
+# Implementeringsstatus – 4.0.308 offentlig QA-opfølgning
+
+## 4.0.308-kandidat – luk naturlig fosforformulering og tvetydig zonesøgning
+
+- [x] Reproducer den offentlige afvisning af “Hvad er hvidt fosfor på stranden?”.
+- [x] Udvid DA/DE/EN-emnematchet til naturlige formuleringer uden at lempe eller omskrive det officielt kildebundne sikkerhedssvar.
+- [x] Reproducer, at `lyn` kun valgte første zonehit, når flere navne matchede.
+- [x] Filtrér den eksisterende rullemenu til alle delstrengsmatches ved både afslut tur og manuel indberetning; bevar rydning og fuld liste.
+- [x] Tilføj tre naturlige fosforregressioner og fler-match-/ryd-kontrakt.
+- [x] Bestå fuld lokal sourcegate, RDKS, geodatabevis og versionslukning.
+- [ ] Bestå PR exact-head, merge, frisk produktion og offentlig slutkontrol.
+
+Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0106.
+
+## Produktionsverificeret 4.0.307 – ekstra høj genkontrol af ejerrettelserne
 
 ## 4.0.307-kandidat – luk de fundne huller fra 4.0.306
 
@@ -11,7 +25,7 @@
 - [x] Fjern prognosedetaljefilen som forudsætning for lokale fakta-/forsknings-/sikkerhedssvar og browserprøv 395 nm, fosfor, succinit, revlehul og nøddriftsdatoer ved manglende detaljefil.
 - [x] Luk samlet målrettet browserkontrol på desktop/mobil og alle relevante tests.
 - [x] Bestå lokal RDKS, geodatadiff, fuld sourcegate og releasegate på afsluttet head.
-- [ ] Bestå PR exact-head, merge, frisk produktion og offentlig slutkontrol.
+- [x] Bestå PR #219 exact-head `33220047699`, merge `6c0b6c49`, frisk produktion `33220124166` og offentlig 390 px-slutkontrol.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0105.
 
