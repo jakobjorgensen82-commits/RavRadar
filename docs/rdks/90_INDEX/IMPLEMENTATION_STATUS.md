@@ -1,14 +1,27 @@
-# Implementeringsstatus – kystkausal RavScore 4.0.306-releasekandidat oven på 4.0.305
+# Implementeringsstatus – 4.0.306 Candidate G-genopretning under validering
 
-## Integreret ejerrettelsespakke
+## P0 – genåbn GitHub/vejropdateringer uden at deploye den ufærdige model
 
-- [x] Tekst, 395 nm, koldt vand, Rav Jagt-illustration/video, zonesøgning, kortpile, mobilombrydning og DA/DE/EN-scorenavne.
-- [x] Spørg RavRadar udvidet lokalt og med bevaret sikker Edge-routing.
-- [x] Nyere `main`/PR #215 integreret med modelkæden som autoritativ.
-- [x] Fuld source/releasegate gentaget grønt på integrations-head.
-- [ ] PR exact-head, merge, frisk produktion og offentlig kontrol.
+- [x] Bevis at begge fejlede produktionskørsler stoppede før Pages-deploy.
+- [x] Bevis at offentlig 4.0.305 fortsat har 210/673, gyldig primær prognose og gyldig auditeret Candidate G-recovery.
+- [x] Før source tilbage til den rene ejercommit `c53f5060` med Candidate G som eneste offentlige model.
+- [x] Tilføj præcis schema-3→Candidate G-checkpointadapter og negativ no-mutation-test.
+- [x] Bestå fuld lokal sourcegate og særskilt geodatadiff.
+- [ ] Bestå PR exact-head, merge, frisk produktion, fuld `validate`/`release:gate` og Pages.
+- [ ] Verificér offentlig 4.0.306 på desktop/mobil med 210 zoner/673 kystdele og frisk Candidate G-state.
 
-## Implementeret releasekandidat – integreret næste RavScore-generation
+Se DEC-0104.
+
+## 4.0.306-kandidat – samlet smårettelsespakke
+
+- [x] Tekst, læring, illustration, lokal assistentviden, zonesøgning, kortsignatur, pilkontrast, mobilombrydning og synlige scorenavne implementeret.
+- [x] Version, beslutning og begge håndbøger opdateret.
+- [x] Målrettede tests, RDKS/sourcegate og geodatadiff på afsluttet head.
+- [ ] PR exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol.
+
+Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0103.
+
+## Ejer-godkendt og ikke implementeret – integreret næste RavScore-generation
 
 - [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.
 - [x] Verificér mod aktuel kode, at Candidate G allerede adskiller jagtbarhed, strømstyret transport, bølgeenergimobilisering og afhængig bølgelanding.
@@ -17,19 +30,14 @@
 - [x] Lås det parallelle smårettelsesspor til ikke-modelkode og kræv, at modelsporet integrerer seneste grønne `main` før slutvalidering.
 - [x] Lås plug-and-play som acceptkrav: kandidaten skal selv levere kompatibilitet, adaptere, state-migration og rollback til RavRadars eksisterende system; ingen senere RavRadar-ombygning må stå tilbage.
 - [x] Lås grænserne: ingen private payloads, geometri eller land-/vandpunkter; ingen påstand om empirisk bedre fundrate uden repræsentative funddata.
-- [x] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN/UTILSTRÆKKELIG EVIDENS-matricen.
-- [x] Model-worktree: design og implementér den samlede årsagsmodel `RRS-COASTAL-CAUSAL-CHAIN-1` med state-schema 3, usikkerhed, forklaringer, migration og rollbackadapter.
-- [x] Erstat 20/50/30, +10/-8 og 13-timers nul med geometrisk nødvendig-led-kobling og glat 6,578813/8,312951-timers supply-state; bevar 0,03→0,15, 48 timers rand 0 og 4/48-timers mobilisering som versionspriorer.
-- [x] Indarbejd ekspertens præcisering om faldende vand som bounded søgefokus/jagtbarhed, ikke ekstra strøm, lokal batymetri eller bevis for tab ud over surfzonen.
-- [x] Model-worktree: bevis plug-and-play i kode mod produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
-- [x] Model-worktree: færdiggør producent-/forbrugermatricen for DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits.
-- [x] Gennemfør 288 koordinatfrie gammel-mod-ny-, scenarie-, ablations-, følsomheds-, glatheds- og regressionscases uden fundpræcisionspåstand.
-- [ ] Integrér eventuel nyere grøn `origin/main`, versionsluk kandidaten og bestå fuld lokal source-/releasegate.
-- [ ] Bestå PR exact-head, merge, frisk central hydrering/DMI/Copernicus, faktisk 210/673-runtimeaudit, fuld validate/releasegate og Pages.
-- [ ] Verificér offentlig desktop og 390 px mobil: version, kort, 210 zoner, fem aktuelle, fem × fem dage, detaljer/forklaringer, begge modes, assistent og nul konsolfejl.
+- [ ] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN-matricen.
+- [ ] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
+- [ ] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
+- [ ] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
+- [ ] Model-worktree: gennemfør scenarie-, ablations-, følsomheds-, regressions-, integrations- og fuld releasevalidering mod seneste `main`.
 - [ ] Udgiv først efter samlet modelbeslutning, exact-head, frisk produktion og offentlig kontrol.
 
-Se DEC-0102/0103 og dokumenterne under `docs/research/`. Offentlig version forbliver 4.0.305, indtil de resterende gates er registreret.
+Se DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig version forbliver 4.0.305.
 
 ## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 

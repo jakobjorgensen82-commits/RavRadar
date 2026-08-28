@@ -7,50 +7,50 @@ import {
   compactJson,
 } from './public-conditions-lib.mjs';
 import {
-  NEXT_RAVSCORE_MODEL_ID,
-  NEXT_RAVSCORE_PRIORS,
-  NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-  NEXT_RAVSCORE_VARIANT_ID,
-} from '../js/core/ravscore-next-generation.js';
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+  CANDIDATE_G_STATE_VARIANT_ID,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
-  NEXT_RAVSCORE_STATE_MIGRATION_ID,
-  NEXT_RAVSCORE_STATE_PROFILE_ID,
-} from '../js/core/ravscore-next-generation-state-pipeline.js';
-import {
-  nextPublicRavScoreConfigurationFromDocument,
-  resolveNextPublicRavScoreProfile,
-} from '../js/core/ravscore-next-generation-profile.js';
+  CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  publicRavScoreConfigurationFromDocument,
+  resolvePublicRavScoreProfile,
+} from '../js/core/ravscore-profile-switch.js';
 
 const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 for (const marker of [
-  'buildNextGenerationDerivedStateSeries',
-  'previousCoastalParts?.parts?.[part.partId]?.ravScore?.currentState',
+  'buildCandidateGDerivedStateSeries',
   'previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState',
-  'NEXT_RAVSCORE_STATE_MIGRATION_ID',
-  'nextRavScoreReferenceReadiness(partRows, generatedAt)',
-  'resolveNextPublicRavScoreProfile',
-  'selectNextPublicRavScoreResult',
-  'publicScoreChanged: true',
+  'initialStateAccepted',
+  'transportMemoryReady: derivedState.transportMemoryReady',
+  'candidateMemoryReady',
+  'candidateWarmupEligible',
+  'candidateGReferenceReadiness(partRows, generatedAt)',
+  'resolvePublicRavScoreProfile',
+  'selectPublicRavScoreResult',
+  "? 'active-public' : 'diagnostic-only'",
   'automaticActivationAllowed: false',
+  'publicScoreChanged: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID',
   'previous?.coastalParts ?? null',
-]) assert.ok(updater.includes(marker), `Central RavScore-runtime mangler ${marker}`);
+]) assert.ok(updater.includes(marker), `Central Candidate G-runtime mangler ${marker}`);
 
-const referenceAt = '2026-08-28T12:00:00.000Z';
-const productionConfiguration = nextPublicRavScoreConfigurationFromDocument(
+const referenceAt = '2026-08-23T12:00:00.000Z';
+const productionConfiguration = publicRavScoreConfigurationFromDocument(
   JSON.parse(fs.readFileSync('data/admin/ravscore-profile-selection.json', 'utf8')),
 );
-const scoreProfile = resolveNextPublicRavScoreProfile({
-  selection: productionConfiguration.selection,
-  modelCoverageReady: true,
-  modelMemoryReady: false,
+const scoreProfile = resolvePublicRavScoreProfile({
+  ...productionConfiguration,
+  candidateCoverageReady: true,
+  candidateMemoryReady: false,
+  candidateWarmupEligible: true,
 });
-const ravScore = {
-  schemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-  modelId: NEXT_RAVSCORE_MODEL_ID,
-  variantId: NEXT_RAVSCORE_VARIANT_ID,
-  profileId: NEXT_RAVSCORE_STATE_PROFILE_ID,
-  priors: NEXT_RAVSCORE_PRIORS,
-  migrationId: NEXT_RAVSCORE_STATE_MIGRATION_ID,
+const candidateG = {
+  schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+  modelId: CANDIDATE_G_STATE_MODEL_ID,
+  variantId: CANDIDATE_G_STATE_VARIANT_ID,
+  profileId: CANDIDATE_G_STATE_PROFILE_ID,
+  weights: { huntability: 0.2, transportAndDelivery: 0.5, mobilisation: 0.3 },
   scoreImpact: 'active-public',
   automaticActivationAllowed: false,
   publicScoreChanged: true,
@@ -60,12 +60,13 @@ const ravScore = {
   transportMemoryReady: false,
   transportMemoryStatus: 'WINDOW_INCOMPLETE',
   transportMemoryCoverageHours: 0,
-  transportMemoryWindowHours: 48,
+  initialStateAccepted: true,
+  initialStateResetReason: null,
   currentState: {
-    schemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-    modelId: NEXT_RAVSCORE_MODEL_ID,
-    variantId: NEXT_RAVSCORE_VARIANT_ID,
-    profileId: NEXT_RAVSCORE_STATE_PROFILE_ID,
+    schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+    modelId: CANDIDATE_G_STATE_MODEL_ID,
+    variantId: CANDIDATE_G_STATE_VARIANT_ID,
+    profileId: CANDIDATE_G_STATE_PROFILE_ID,
     stateKey: 'sha256:synthetic',
     time: referenceAt,
     transportReferenceAt: referenceAt,
@@ -78,13 +79,10 @@ const ravScore = {
     transportEvidence: [{ time: referenceAt, strength: 0 }],
     mobilisationPotential: 50,
   },
-  modes: {
-    waders: { available: true, modelId: NEXT_RAVSCORE_MODEL_ID, score: 45 },
-    beach: { available: true, modelId: NEXT_RAVSCORE_MODEL_ID, score: 55 },
-  },
+  modes: { waders: { available: true, score: 45 }, beach: { available: true, score: 55 } },
 };
 const full = {
-  datasetId: 'rr-synthetic-integrated-ravscore',
+  datasetId: 'rr-synthetic-candidate-g',
   generatedAt: referenceAt,
   productionReferenceAt: referenceAt,
   zones: {},
@@ -95,14 +93,13 @@ const full = {
     sourceRunId: 'synthetic',
     generatedAt: referenceAt,
     scoreProfile,
-    scoreAvailability: { policy: 'ravscore-local-fail-closed' },
     expectedPartCount: 1,
     scoredPartCount: 1,
     parts: {
       part1: {
         zoneId: 'zone1',
         current: { time: referenceAt, waders: { score: 45 }, beach: { score: 55 } },
-        ravScore,
+        candidateG,
       },
     },
     zones: {
@@ -123,24 +120,24 @@ const full = {
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
 const manifest = buildPublicManifest(full, compactJson(startup), compactJson(details));
-assert.equal(startup.coastalParts.parts.part1.ravScore, undefined,
-  'Kompakt RavScore-state hører kun til den behovshentede detaljepakke.');
+assert.equal(startup.coastalParts.parts.part1.candidateG, undefined,
+  'Candidate G-state hører kun til den behovshentede detaljepakke.');
 assert.equal(startup.coastalParts.parts.part1.current, undefined,
   'Den fulde aktuelle kystdel hører kun til den behovshentede detaljepakke.');
-assert.deepEqual(details.coastalParts.parts.part1.ravScore, ravScore);
+assert.deepEqual(details.coastalParts.parts.part1.candidateG, candidateG);
 assert.deepEqual(startup.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(details.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(manifest.ravScoreProfile, scoreProfile);
-assert.equal(startup.coastalParts.scoreProfile.activeProfileId, NEXT_RAVSCORE_MODEL_ID);
-assert.equal(startup.coastalParts.scoreProfile.activationState, 'next-ravscore-only-local-fail-closed');
-assert.equal(startup.coastalParts.scoreProfile.modelMemoryReady, false);
+assert.equal(startup.coastalParts.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
+assert.equal(startup.coastalParts.scoreProfile.activationState, 'candidate-g-only-local-fail-closed');
+assert.equal(startup.coastalParts.scoreProfile.candidateMemoryReady, false);
 assert.equal(details.coastalParts.parts.part1.current.waders.score, 45);
-assert.equal(details.coastalParts.parts.part1.ravScore.modes.waders.score, 45);
-assert.equal(details.coastalParts.parts.part1.ravScore.publicScoreChanged, true);
+assert.equal(details.coastalParts.parts.part1.candidateG.modes.waders.score, 45);
+assert.equal(details.coastalParts.parts.part1.candidateG.publicScoreChanged, true);
 
-const stateText = JSON.stringify(details.coastalParts.parts.part1.ravScore.currentState).toLowerCase();
+const stateText = JSON.stringify(details.coastalParts.parts.part1.candidateG.currentState).toLowerCase();
 for (const forbidden of ['currentu', 'currentv', 'waveheight', 'waveperiod', 'waterpoint', 'coordinates']) {
-  assert.equal(stateText.includes(forbidden), false, `Den kompakte offentlige tilstand må ikke indeholde ${forbidden}`);
+  assert.equal(stateText.includes(forbidden), false, `Den kompakte offentlige tilstand maa ikke indeholde ${forbidden}`);
 }
 
-console.log('Integreret RavScore central runtime-, payload-, hash- og warmupkontrakt: OK');
+console.log('Candidate G central pre-public warmup-runtimekontrakt: OK');

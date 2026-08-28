@@ -1,16 +1,16 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.305",
+  "releaseVersion": "4.0.293",
   "cases": [
     {
-      "id": "da-model-coupling",
+      "id": "da-weights",
       "locale": "da",
-      "category": "ravscore-causal-model",
-      "question": "Hvordan kobler RavScore tilførsel, mobilisering og søgeforhold?",
+      "category": "candidate-g",
+      "question": "Hvordan er RavScore vægtet?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "da-safety",
@@ -140,13 +140,13 @@
       "requiredEvidenceIds": []
     },
     {
-      "id": "de-model-coupling",
+      "id": "de-weights",
       "locale": "de",
-      "category": "ravscore-causal-model",
-      "question": "Wie verknüpft der RavScore Nachschub, Mobilisierung und Suchbedingungen?",
+      "category": "candidate-g",
+      "question": "Wie ist der RavScore gewichtet?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "de-safety",
@@ -276,13 +276,13 @@
       "requiredEvidenceIds": []
     },
     {
-      "id": "en-model-coupling",
+      "id": "en-weights",
       "locale": "en",
-      "category": "ravscore-causal-model",
-      "question": "How does RavScore couple supply, mobilisation, and hunting conditions?",
+      "category": "candidate-g",
+      "question": "How is RavScore weighted?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "en-safety",

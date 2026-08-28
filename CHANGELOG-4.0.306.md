@@ -1,20 +1,27 @@
-# RavRadar 4.0.306 – kystkausal RavScore
+# RavRadar 4.0.306
 
-## Ejerens UI-, lærings- og assistentrettelser
+## Driftsgenopretning
 
-- Retter `vejforløb` til `vejrforløb`, bruger 395 nm og viser BernsteinScore/AmberScore på tysk/engelsk.
-- Gør fundformularernes zoner søgbare uden at fjerne rullemenuen; forklarer kortpile, øger strømpilens kontrast og retter mobilombrydning.
-- Udvider lokal ravviden, tilføjer Rav Jagts krediterede kysttværsnit/video og forklarer koldt vands mobiliseringsbetydning.
-- Rettelserne ændrer ikke den kystkausale model, scoresemantik, state, vejrinput, geometri eller punkter.
+- Candidate G forbliver den eneste offentlige model. Den for tidligt mergede næste model er ført tilbage til den rene ejerbaseline, efter at to produktionskørsler stoppede sikkert før deploy.
+- En præcis, hashkontrolleret checkpointadapter kan føre den afbrudte schema-3-state tilbage til Candidate G, når modelkontekst og `stateKey` matcher. Den genbruger kun signerede strømevidens og mobilisering og rekonstruerer Candidate G's egne +10/-8-/13-timerstal; ukendte kontekster ændrer intet.
+- Adapteren kopierer ingen vejrdata, scores, rå U/V, koordinater, geometri, land-/vandpunkter eller private data. Se DEC-0104.
 
-- Erstatter Candidate G som eneste offentlige scoremodel med `RRS-COASTAL-CAUSAL-CHAIN-1`, kontrakt 1.0.0 og state-schema 3.0.0. Candidate G bevares kun til historisk/offline sammenligning og kan ikke være offentlig shadow- eller fallbackscore.
-- Kobler dokumenteret kystnært supply og bølgemobilisering med geometrisk middel, så begge fysiske led er nødvendige. Bølgeretning kan kun reducere nærkyststøtten bounded, og jagtbarhed kan højst påvirke 20 % bagefter.
-- Erstatter 20/50/30, lineære +10/-8 og den kategoriske 13-timers nul-gate med glat supply-opbygning/dæmpning. Det genbrugte 48-timers vindue har fortsat rand 0 og 0,03→0,15 m/s-respons; halveringstiderne 6,578813/8,312951 timer er synlige versionspriorer.
-- Indarbejder ekspertens præcisering om faldende vand: rav kan flyttes fra den inderste strand og koncentreres bag en revle eller i en rende, så et mindre område er lettere at afsøge. Effekten er begrænset til højst 10 jagtbarhedspoint mellem -3 og -15 cm/3 h og giver nul supply-, mobiliserings- eller strømvirkning.
-- Holder gridstrøm, bølgeorbitaler, undertow, feeder-/langskyststrøm og ripstrømme adskilt. Modellen påstår ingen lokal batymetri, revle/rende, surfzoneudtømning, retention/beaching eller empirisk højere fundpræcision.
-- Genbruger DMI/Copernicus-proveniens, 210 zoner/673 kystdele, 4/48-timers mobilisering, missing/fail-closed, state/checkpoint/recovery/privacy og atomiske startup-/detalje-/hashkontrakter. Schema-2-state kan migreres uden rå U/V, koordinater, råt vejr eller gammel score; inkompatibel state/fallback afvises.
-- Binder detaljer, forklaringer, central profil, konto/ture/observationer, admin, lokal/Edge-assistent og audits til eksakt model-, state- og forklaringsversion. Ældre brugerposter forbliver læsbare.
-- Opdaterer DA/DE/EN, Grundbog i ravjagt, Markdown-/webhåndbog, RDKS, workflow, produktionsaudit og releasegate. Interne modelmoduler holdes ude af Pages-artifactet; den lille offentlige modelkontrakt bevares til runtimebinding.
-- Dokumenterer 288 koordinatfrie gammel-mod-ny-, ablations-, følsomheds- og glathedscases. De beviser fysisk/teknisk struktur, ikke empirisk bedre fundpræcision.
-- Ændrer ingen geometri, land-/vandpunkter, koordinater, private payloads, rå U/V eller credentials. Geodatafilerne får alene den godkendte topversion 4.0.306.
-- PR-, exact-head-, produktions-, Pages- og offentlig browserbevis tilføjes, når de respektive gates er bestået.
+## Rettet
+
+- **Vejrforløb** erstatter stavefejlen *vejforløb* på Om-siden.
+- Grundbogen, Spørg RavRadar og den aktuelle håndbog bruger **395 nm** for ravlygten.
+- Koldt vands betydning for ravets mulighed for at blive mobiliseret beskrives tydeligere og linkes til Rav Jagts video uden at ændre RavScore.
+- Kyst B viser lodret kyst og en opadgående pil for strøm langs kysten.
+- Mobilknappen **Spørg RavRadar** kan bryde over to linjer.
+
+## Tilføjet
+
+- Et responsivt, krediteret kysttværsnit bygget på Rav Jagts syv skitser med seks ordnede placeringer fra havbund til strand.
+- Seks nye lokale emnefamilier i Spørg RavRadar: ravlygte, farver, behandling af fund, årstider, geologiske sekundærlagre og strand kontra vand.
+- Søgning på hele eller dele af zonenavnet ved afsluttet tur og manuel indberetning, samtidig med at rullemenuen bevares.
+- Signaturforklaring for blå strømretning og hvid vindretning samt en mørkere blå strømpil.
+- Synlige betegnelser **BernsteinScore** på tysk og **AmberScore** på engelsk.
+
+## Uændret
+
+Candidate G, 20/50/30, scorekurver og -semantik, bølge-/strøm-/mobiliserings-/leveringslogik, DMI/Copernicus, modelprofil, geometri, koordinater og land-/vandpunkter er uændrede. Kun den private checkpointovergang udvides; geodatafilerne ændrer kun topversionsfeltet til 4.0.306. Se DEC-0103/0104.

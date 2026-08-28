@@ -1,4 +1,4 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.306";
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-engine.js?v=4.0.306";
 import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.306";
 import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.306";
 import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.306";
@@ -48,7 +48,7 @@ function currentDisplayFor(zone){
   return {result:withPrediction(base,zone,weather,history),weather,context:{scope:'local-weather-missing',time:weather.time||null}};
 }
 function resultFor(zone) { return currentDisplayFor(zone).result; }
-function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key)){const local=localZoneScore(zone);const result=local||{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['RavScore-data mangler for zonen lige nu.']};state.currentScores.set(key,result);}return state.currentScores.get(key);}
+function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key)){const local=localZoneScore(zone);const result=local||{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['Candidate G-data mangler for zonen lige nu.']};state.currentScores.set(key,result);}return state.currentScores.get(key);}
 function nationalRankingRow(row){return addNationalRanking(row,state.zones?.coastalParts?.zones?.[row.zone?.id]);}
 function selectedFeature() { return state.zones?.features.find(item=>item.properties.id===state.selectedZone?.id); }
 function showSelectedZoneParts() {
@@ -386,9 +386,7 @@ function publicTripEvidenceContext(selection = null) {
     zones,
     coastalParts,
     appVersion,
-    modelVersion: coastalPart?.current?.[state.mode]?.scoreProfileId
-      || state.conditions?.coastalParts?.scoreProfile?.activeProfileId
-      || 'ravscore-' + appVersion
+    modelVersion: 'ravscore-' + appVersion
   };
 }
 

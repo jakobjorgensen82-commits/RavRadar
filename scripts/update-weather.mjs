@@ -1,26 +1,22 @@
 import fs from 'node:fs/promises';
 import { writePublicRuntimeFromFull } from './public-conditions-lib.mjs';
 import { build as buildPublicCoastalParts } from './build-public-coastal-parts-v2.mjs';
+import { calculateRavScore } from '../js/core/score-engine.js';
+import { evaluateRavScoreCandidateG, CANDIDATE_G_WEIGHTS } from '../js/core/ravscore-candidate-g.js';
 import {
-  NEXT_RAVSCORE_MODEL_ID,
-  NEXT_RAVSCORE_PRIORS,
-  NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-  NEXT_RAVSCORE_VARIANT_ID,
-  evaluateNextGenerationRavScore,
-} from '../js/core/ravscore-next-generation.js';
+  buildCandidateGDerivedStateSeries,
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+  CANDIDATE_G_STATE_VARIANT_ID,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
-  NEXT_RAVSCORE_STATE_MIGRATION_ID,
-  NEXT_RAVSCORE_STATE_PROFILE_ID,
-  buildNextGenerationDerivedStateSeries,
-} from '../js/core/ravscore-next-generation-state-pipeline.js';
-import {
-  NEXT_RAVSCORE_AVAILABILITY_POLICY,
-  compactNextRavScoreEvaluation,
-  nextPublicRavScoreConfigurationFromDocument,
-  nextRavScoreReferenceReadiness,
-  resolveNextPublicRavScoreProfile,
-  selectNextPublicRavScoreResult,
-} from '../js/core/ravscore-next-generation-profile.js';
+  candidateGReferenceReadiness,
+  CANDIDATE_G_RAVSCORE_PROFILE_ID,
+  publicRavScoreConfigurationFromDocument,
+  resolvePublicRavScoreProfile,
+  selectPublicRavScoreResult,
+} from '../js/core/ravscore-profile-switch.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
@@ -95,7 +91,7 @@ const PROVIDER_FAILURE_THRESHOLD = Math.max(1, Number(process.env.WEATHER_PROVID
 const PROVIDER_COOLDOWN_MS = Number(process.env.WEATHER_PROVIDER_COOLDOWN_MS ?? 10 * 60 * 1000);
 const USER_AGENT = process.env.WEATHER_USER_AGENT ?? 'RavRadar/2.4 (central weather updater)';
 const APP_VERSION = JSON.parse(await fs.readFile('package.json', 'utf8')).version;
-const RAVSCORE_PROFILE_CONFIGURATION = nextPublicRavScoreConfigurationFromDocument(
+const RAVSCORE_PROFILE_CONFIGURATION = publicRavScoreConfigurationFromDocument(
   await fs.readFile(RAVSCORE_PROFILE_SELECTION_PATH, 'utf8').then(JSON.parse).catch(() => null),
 );
 const PIPELINE_RUN_ID = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}` : `local-${Date.now()}`;
@@ -1041,8 +1037,27 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
-function compactRavScoreMode(result) {
-  return compactNextRavScoreEvaluation(result);
+function compactCandidateGMode(result) {
+  if (!result?.available || !Number.isFinite(result.score)) {
+    return {
+      available: false,
+      score: null,
+      reason: result?.reason ?? 'CANDIDATE_G_NOT_AVAILABLE',
+    };
+  }
+  return {
+    available: true,
+    score: result.score,
+    modelId: result.modelVersion,
+    components: result.components,
+    weightedContributions: result.scoreCalculation?.weightedContributions ?? null,
+    additiveScore: result.scoreCalculation?.additiveScore ?? null,
+    physicalGateFactor: result.scoreCalculation?.gateFactor ?? null,
+    wadersHuntabilityMaximum: result.scoreCalculation?.modeHuntabilityMaximum ?? null,
+    wadersHuntabilityLimitApplied: result.scoreCalculation?.modeHuntabilityApplied === true,
+    outflowExhaustionGateApplied: result.scoreCalculation?.outflowExhaustionGateApplied === true,
+    outflowExhaustionExplanationDa: result.scoreCalculation?.outflowExhaustionExplanationDa ?? null,
+  };
 }
 
 function scoreCoastalPartsRuntime(
@@ -1107,7 +1122,7 @@ function scoreCoastalPartsRuntime(
         liveCurrentPilot,
         hourly[0]?.time,
       );
-      const ravScoreState = buildNextGenerationDerivedStateSeries(hourly.map(hour => ({
+      const candidateGState = buildCandidateGDerivedStateSeries(hourly.map(hour => ({
         time: hour.time,
         currentSpeedMps: hour.currentSpeedMps,
         currentAlignment: hour.currentSpeedMps != null && hour.currentDirectionDeg != null
@@ -1119,25 +1134,34 @@ function scoreCoastalPartsRuntime(
       })), {
         stateKey,
         initialState: stateInjections?.[part.partId]
-          ?? previousCoastalParts?.parts?.[part.partId]?.ravScore?.currentState
           ?? previousCoastalParts?.parts?.[part.partId]?.candidateG?.currentState
           ?? null,
         nativeCadenceHoldHours,
         nativeCadenceReferenceSample,
       });
-      const ravScoreStateByTime = new Map(ravScoreState.rows.map(row => [row.time, row]));
+      const candidateGStateByTime = new Map(candidateGState.rows.map(row => [row.time, row]));
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       const scores = [];
       for (const weather of hourly) {
         const at = Date.parse(weather.time);
         const history = applyCurrentTransportToHistory({}, currentSamples.filter(sample => Date.parse(sample.at) <= at));
-        const ravScoreModes = {};
-        const derivedState = ravScoreStateByTime.get(weather.time) ?? null;
+        const modes = {};
+        const candidateGModes = {};
+        const derivedState = candidateGStateByTime.get(weather.time) ?? null;
         for (const mode of ['waders', 'beach']) {
+          const result = calculateRavScore({ mode, zone, weather, history });
+          const hasCurrent = weather.currentSpeedMps != null && weather.currentDirectionDeg != null;
+          if (hasCurrent && result.available && Number.isFinite(result.score)) modes[mode] = {
+            score: result.score,
+            components: result.components,
+            componentReasons: result.componentReasons,
+            explanation: result.explanation
+          };
           if (derivedState) {
-            ravScoreModes[mode] = compactRavScoreMode(evaluateNextGenerationRavScore(
+            candidateGModes[mode] = compactCandidateGMode(evaluateRavScoreCandidateG(
               { mode, zone, weather, history },
               {
+                variantId: CANDIDATE_G_STATE_VARIANT_ID,
                 nativeCadenceHold: derivedState.currentTransition === 'NATIVE_CADENCE_HOLD' ? {
                   transition: derivedState.currentTransition,
                   evaluatedAt: weather.time,
@@ -1150,14 +1174,19 @@ function scoreCoastalPartsRuntime(
                   transportPotential: derivedState.transportPotential,
                   outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
                   outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
-                  gridOutflowEvidenceActive: derivedState.gridOutflowEvidenceActive,
+                  actualOutboundTransport: derivedState.actualOutboundTransport,
                   mobilisationPotential: derivedState.mobilisationPotential,
+                  waveEnergyProxy: derivedState.waveEnergyProxy,
+                  waveEnergyScore: derivedState.waveEnergyScore,
+                  waveMobilisationTransition: derivedState.waveMobilisationTransition,
+                  waveMobilisationBuildHalfLifeHours: derivedState.waveMobilisationBuildHalfLifeHours,
+                  waveMobilisationDecayHalfLifeHours: derivedState.waveMobilisationDecayHalfLifeHours,
                 },
               },
             ));
           }
         }
-        if (Object.keys(ravScoreModes).length) scores.push({
+        if (Object.keys(candidateGModes).length) scores.push({
           time: weather.time,
           weather: {
             windSpeedMps: weather.windSpeedMps, windDirectionDeg: weather.windDirectionDeg,
@@ -1168,7 +1197,7 @@ function scoreCoastalPartsRuntime(
             currentUMps: weather.currentUMps, currentVMps: weather.currentVMps,
             currentProvenance: weather.currentProvenance
           },
-          ravScore: derivedState ? {
+          candidateG: derivedState ? {
             referenceAt: weather.time,
             continuationState: derivedState.continuationState,
             transportReferenceAt: derivedState.transportReferenceAt,
@@ -1184,13 +1213,7 @@ function scoreCoastalPartsRuntime(
                 ? Math.cos((Number(weather.currentDirectionDeg) - Number(part.onshoreDirectionDeg)) * Math.PI / 180)
                 : null,
               currentVerified: derivedState.currentVerified === true,
-              measurementStatus: derivedState.currentVerified === true
-                ? 'VERIFIED'
-                : derivedState.currentTransition === 'NATIVE_CADENCE_HOLD'
-                  ? 'NATIVE_CADENCE_HOLD' : 'UNVERIFIED',
               currentTransition: derivedState.currentTransition,
-              currentDirectionClass: derivedState.currentDirectionClass ?? null,
-              currentDirectionDifferenceDeg: derivedState.currentDirectionDifferenceDeg ?? null,
               transportReferenceAt: derivedState.transportReferenceAt,
               transportMemoryReady: derivedState.transportMemoryReady,
               transportMemoryStatus: derivedState.transportMemoryStatus,
@@ -1198,11 +1221,12 @@ function scoreCoastalPartsRuntime(
               transportMemoryWindowHours: derivedState.transportMemoryWindowHours,
               outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
               outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
-              gridOutflowEvidenceActive: derivedState.gridOutflowEvidenceActive,
+              actualOutboundTransport: derivedState.actualOutboundTransport,
               waveMobilisationTransition: derivedState.waveMobilisationTransition,
             },
-            modes: ravScoreModes,
+            modes: candidateGModes,
           } : null,
+          ...modes
         });
       }
       if (scores.length) {
@@ -1211,7 +1235,7 @@ function scoreCoastalPartsRuntime(
           landPoint: part.landPoint, waterPoint: part.waterPoint,
           onshoreDirectionDeg: part.onshoreDirectionDeg,
           onshoreDirectionSource: part.onshoreDirectionSource || 'Godkendt land-/havpunkt for kystdelen',
-          ravScoreState,
+          candidateGState,
           record,
           scores
         });
@@ -1219,23 +1243,27 @@ function scoreCoastalPartsRuntime(
     }
   }
 
-  const referenceReadiness = nextRavScoreReferenceReadiness(partRows, generatedAt);
-  const modelCoverageReady = partRows.length === Number(contract?.partCount)
+  const referenceReadiness = candidateGReferenceReadiness(partRows, generatedAt);
+  const candidateCoverageReady = partRows.length === Number(contract?.partCount)
     && referenceReadiness.referencePartCount === partRows.length
-    && referenceReadiness.modelCoverageReady;
-  const modelMemoryReady = modelCoverageReady
-    && referenceReadiness.modelMemoryReady;
-  const scoreProfile = resolveNextPublicRavScoreProfile({
+    && referenceReadiness.candidateCoverageReady;
+  const candidateMemoryReady = candidateCoverageReady
+    && referenceReadiness.candidateMemoryReady;
+  const candidateWarmupEligible = candidateCoverageReady
+    && referenceReadiness.candidateWarmupEligible;
+  const scoreProfile = resolvePublicRavScoreProfile({
     selection: RAVSCORE_PROFILE_CONFIGURATION.selection,
-    modelCoverageReady,
-    modelMemoryReady,
+    evidence: RAVSCORE_PROFILE_CONFIGURATION.evidence,
+    candidateCoverageReady,
+    candidateMemoryReady,
+    candidateWarmupEligible,
   });
-  const selectedMode = (scoreRow, mode) => selectNextPublicRavScoreResult({
+  const selectedMode = (scoreRow, mode) => selectPublicRavScoreResult({
     profile: scoreProfile,
-    ravScore: scoreRow?.ravScore?.modes?.[mode] ?? null,
-    state: scoreRow?.ravScore ?? null,
+    candidateG: scoreRow?.candidateG?.modes?.[mode] ?? null,
+    candidateState: scoreRow?.candidateG ?? null,
     mode,
-    context: scoreRow?.ravScore?.publicContext ?? {},
+    context: scoreRow?.candidateG?.publicContext ?? {},
   });
 
   const partRowsByZone = new Map();
@@ -1259,8 +1287,8 @@ function scoreCoastalPartsRuntime(
           const unavailableParts = evaluated.filter(row => row.detail?.available !== true).map(row => ({
             partId: row.partId,
             name: row.name,
-            code: row.detail?.unavailability?.code ?? 'RAVSCORE_SCORE_MISSING',
-            reason: row.detail?.unavailability?.messageDa ?? 'RavScore-datagrundlaget mangler for denne kystdel.',
+            code: row.detail?.unavailability?.code ?? 'CANDIDATE_G_SCORE_MISSING',
+            reason: row.detail?.unavailability?.messageDa ?? 'Candidate G-datagrundlaget mangler for denne kystdel.',
           }));
           result[mode] = {
             status: 'unavailable', available: false, score: null,
@@ -1306,28 +1334,27 @@ function scoreCoastalPartsRuntime(
       ? row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))
       : row.scores[nearestIndex(row.scores)]) ?? null;
     const flowPoints = flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt);
-    const ravScore = score?.ravScore ? {
-      schemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-      modelId: NEXT_RAVSCORE_MODEL_ID,
-      variantId: NEXT_RAVSCORE_VARIANT_ID,
-      profileId: NEXT_RAVSCORE_STATE_PROFILE_ID,
-      priors: NEXT_RAVSCORE_PRIORS,
-      migrationId: NEXT_RAVSCORE_STATE_MIGRATION_ID,
-      scoreImpact: 'active-public',
+    const candidateG = score?.candidateG ? {
+      schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+      modelId: CANDIDATE_G_STATE_MODEL_ID,
+      variantId: CANDIDATE_G_STATE_VARIANT_ID,
+      profileId: CANDIDATE_G_STATE_PROFILE_ID,
+      weights: CANDIDATE_G_WEIGHTS,
+      scoreImpact: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID
+        ? 'active-public' : 'diagnostic-only',
       automaticActivationAllowed: false,
-      publicScoreChanged: true,
-      referenceAt: score.ravScore.referenceAt,
-      transportReferenceAt: score.ravScore.transportReferenceAt,
-      currentTransition: score.ravScore.publicContext?.currentTransition ?? null,
-      transportMemoryReady: score.ravScore.transportMemoryReady,
-      transportMemoryStatus: score.ravScore.transportMemoryStatus,
-      transportMemoryCoverageHours: score.ravScore.transportMemoryCoverageHours,
-      transportMemoryWindowHours: score.ravScore.transportMemoryWindowHours,
-      initialStateAccepted: row.ravScoreState?.initialStateAccepted ?? null,
-      initialStateResetReason: row.ravScoreState?.initialStateResetReason ?? null,
-      migrationStatus: row.ravScoreState?.migrationStatus ?? null,
-      currentState: score.ravScore.continuationState,
-      modes: score.ravScore.modes,
+      publicScoreChanged: scoreProfile.activeProfileId === CANDIDATE_G_RAVSCORE_PROFILE_ID,
+      referenceAt: score.candidateG.referenceAt,
+      transportReferenceAt: score.candidateG.transportReferenceAt,
+      currentTransition: score.candidateG.publicContext?.currentTransition ?? null,
+      transportMemoryReady: score.candidateG.transportMemoryReady,
+      transportMemoryStatus: score.candidateG.transportMemoryStatus,
+      transportMemoryCoverageHours: score.candidateG.transportMemoryCoverageHours,
+      transportMemoryWindowHours: score.candidateG.transportMemoryWindowHours,
+      initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
+      initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
+      currentState: score.candidateG.continuationState,
+      modes: score.candidateG.modes,
     } : null;
     return [row.partId, {
       zoneId: row.zoneId, name: row.name, marineCoverage: row.marineCoverage,
@@ -1337,11 +1364,11 @@ function scoreCoastalPartsRuntime(
       flowPoints,
       current: score ? {
         ...score,
-        ravScore: undefined,
+        candidateG: undefined,
         waders: selectedMode(score, 'waders'),
         beach: selectedMode(score, 'beach'),
       } : null,
-      ravScore,
+      candidateG,
     }];
   }));
   const unavailableZones = [];
@@ -1356,7 +1383,7 @@ function scoreCoastalPartsRuntime(
   const totalZoneCount = expectedByZone.size;
   const scoreAvailability = {
     schemaVersion: 1,
-    policy: NEXT_RAVSCORE_AVAILABILITY_POLICY,
+    policy: 'candidate-g-local-fail-closed',
     allZonesActive: unavailableZones.length === 0,
     activeZoneCount: totalZoneCount - unavailableZones.length,
     unavailableZoneCount: unavailableZones.length,

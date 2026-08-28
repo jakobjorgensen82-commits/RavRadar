@@ -2,10 +2,10 @@ import fs from "node:fs";
 const infoPanelSource=fs.readFileSync("js/ui/info-panel.js","utf8");
 if(!/Debug: vis alle mellemregninger/.test(infoPanelSource))throw new Error("Debugpanel mangler");
 if(!/currentDirectionDifferenceDeg/.test(infoPanelSource))throw new Error("Retningsforskel mangler i debug");
-for(const marker of ["Teknisk kystkausal RavScore-visning","transportPotential","deliveryPotential","transportAndDelivery","transportMemoryCoverageHours","outboundEpisodeLossPoints","gridOutflowEvidenceActive"]){
-  if(!infoPanelSource.includes(marker))throw new Error(`Kystkausal RavScore-diagnostik mangler: ${marker}`);
+for(const marker of ["Teknisk Candidate G-visning","transportPotential","deliveryPotential","transportAndDelivery","transportMemoryCoverageHours","outboundEpisodeLossPoints"]){
+  if(!infoPanelSource.includes(marker))throw new Error(`Candidate G-diagnostik mangler: ${marker}`);
 }
-for(const retired of ["Transport før loft","Transport efter loft","<span>Vindens bevægelse</span>","Nærkystpotentiale","Teknisk Candidate G-visning","actualOutboundTransport"]){
+for(const retired of ["Transport før loft","Transport efter loft","<span>Vindens bevægelse</span>","Nærkystpotentiale"]){
   if(infoPanelSource.includes(retired))throw new Error(`Forældet teknisk felt er stadig aktivt: ${retired}`);
 }
 const app=fs.readFileSync("app.js","utf8");const tripDialog=fs.readFileSync("js/ui/trip-evidence-dialog.js","utf8");const i18n=fs.readFileSync("js/i18n.js","utf8");const zones=JSON.parse(fs.readFileSync("data/zones.geojson","utf8"));

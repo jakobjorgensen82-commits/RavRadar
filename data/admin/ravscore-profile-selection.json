@@ -1,19 +1,19 @@
 {
-  "schemaVersion": "3.0.0",
+  "schemaVersion": "2.0.0",
   "sourceVersion": "4.0.306",
   "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.306",
-  "requestedProfileId": "RRS-COASTAL-CAUSAL-CHAIN-1",
+  "requestedProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
   "rollbackProfileId": null,
-  "modelProfileId": "RRS-COASTAL-CAUSAL-CHAIN-1",
-  "publicModelEnabled": true,
-  "prePublicWarmupAccepted": false,
+  "candidateProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
+  "candidateActivationEnabled": true,
+  "prePublicWarmupAccepted": true,
   "automaticActivationAllowed": false,
-  "publicAvailabilityPolicy": "ravscore-local-fail-closed",
+  "publicAvailabilityPolicy": "candidate-g-local-fail-closed",
   "legacyPublicFallbackAllowed": false,
-  "status": "owner-approved-integrated-next-ravscore-local-fail-closed",
-  "activationAuthority": "DEC-0103-coastal-causal-ravscore-2026-08-28",
+  "status": "owner-approved-candidate-g-only-local-fail-closed",
+  "activationAuthority": "DEC-0072-owner-decision-2026-08-24",
   "evidence": {
     "freshFinalShadowRunId": null,
-    "ownerReviewDecisionId": "DEC-0103-COASTAL-CAUSAL-RAVSCORE"
+    "ownerReviewDecisionId": "DEC-0072-CANDIDATE-G-ONLY-LOCAL-AVAILABILITY"
   }
 }
