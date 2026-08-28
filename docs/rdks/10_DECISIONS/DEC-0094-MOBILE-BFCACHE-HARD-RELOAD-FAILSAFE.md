@@ -2,7 +2,7 @@
 
 ## Status
 
-Produktionsudgivet i 4.0.297 gennem PR #201, exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503`. Ejerens efterfølgende fysiske iPhone-test var fortsat rød, fordi den faktisk brugte retur var RavRadars eget link og ikke browserens tilbageknap/bfcache. Den særskilte direkte-link-kontrakt følges op i DEC-0095/4.0.298; 4.0.297 må ikke kaldes den fysiske løsning.
+**ERSTATTET AF DEC-0097.** Produktionsudgivet i 4.0.297 gennem PR #201, exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503`. Den fysiske iPhone viste senere, at mobil hard reload fjernede 4.0.292's fungerende genoptagelse. Beslutningen bevares kun som revisionsspor; kun tidlig retur før færdig appimport må fortsat genindlæses.
 
 ## Problem
 

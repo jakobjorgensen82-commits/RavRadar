@@ -1,5 +1,12 @@
 # RavRadar – overlevering til næste chat
 
+## Øverste checkpoint – 4.0.300 mobilretur
+
+- Start fra branch `codex/restore-mobile-resume-4.0.300` i den isolerede Codex-worktree. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter.
+- 4.0.299 er CI-/produktionsgrøn, men fysisk rød på iPhone. Offentlig desktop viste komplet cirka 1,36 sekunders intern Om-retur; fysisk Safari viste ingen kort/prognoser før lås/oplåsning.
+- 4.0.300 gendanner den eksakte 4.0.292-returretning: statisk `./`, ingen nonce/klikoverstyring, ingen mobil hard reload/watchdog og idempotent redraw ved `pageshow.persisted`. Lazy-load-ydelsen fra 4.0.295/296 er bevaret.
+- Målrettede tests er grønne. Fortsæt med fuld RDKS/sourcegate, exact-head, merge, fuld produktion/Pages, offentlig 210 + 5 × 5 og fysisk iPhone Safari/Hjemmeskærm. Ingen påstand om fysisk løsning før ejerbevis. Se DEC-0097.
+
 ## Kildekandidat 4.0.299 – én hurtig Om-retur
 
 - 4.0.298 blev udgivet gennem PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`, men fysisk iPhone-test var rød.

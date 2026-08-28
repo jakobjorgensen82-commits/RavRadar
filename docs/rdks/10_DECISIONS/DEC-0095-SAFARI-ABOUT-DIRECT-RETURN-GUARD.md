@@ -2,7 +2,7 @@
 
 ## Status
 
-Produktionsudgivet i 4.0.298 gennem PR #203, exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`. Den unikke navigation virker, men offentlig DOM-måling og fysisk iPhone-test viste, at sundhedsværnets kortselector og sekssekundersbudget var fejlbehæftede. 4.0.298 må ikke kaldes fysisk løst; den afgrænsede korrektion står i DEC-0096/4.0.299.
+**ERSTATTET AF DEC-0097.** Produktionsudgivet i 4.0.298 gennem PR #203, exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`. Både det særskilte værn og den unikke versions-/nonce-navigation er fysisk afvist på iPhone. Beslutningen bevares kun som revisionsspor.
 
 ## Problem
 

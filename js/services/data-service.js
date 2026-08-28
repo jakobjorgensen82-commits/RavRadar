@@ -1,5 +1,5 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.299';
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.299';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.300';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.300';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL='./data/live/public-condition-details.json';
 const MANIFEST_URL='./data/live/manifest.json';

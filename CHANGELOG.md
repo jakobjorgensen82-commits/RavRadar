@@ -1,3 +1,9 @@
+## 4.0.300 – gendannet mobil sidecache-retur (2026-08-28)
+
+- Fysisk iPhone viste fortsat ingen kort/prognoser efter den interne Om-knap i produktionsgrøn 4.0.299; lås/oplåsning fik visningen frem.
+- Gendanner 4.0.292's statiske `./`-link og eksisterende state-redraw. Fjerner nonce-navigation, mobil hard reload, watchdog og DOM-sundhedsreload uden at rulle 4.0.295/296's startupforbedringer tilbage.
+- Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0097 og `CHANGELOG-4.0.300.md`.
+
 ## 4.0.299 – én hurtig Om-retur uden tvungen reload (2026-08-28)
 
 - Bevarer den unikke versions-/noncebaserede Om-navigation, men fjerner 4.0.298's ekstra synkrone head-script, timer og automatiske reload.

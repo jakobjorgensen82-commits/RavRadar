@@ -1,3 +1,10 @@
+## 2026-08-28 – 4.0.300 gendanner 4.0.292's mobile returkontrakt
+
+- Registreret DEC-0097 efter at produktionsgrøn 4.0.299 fortsat fejlede på fysisk iPhone, mens lås/oplåsning fik kort og prognoser frem.
+- Eksakt kodehistorik identificerede mobil hard reload og unik versions-/nonce-navigation fra 4.0.297–299 som afvigelser fra den fungerende 4.0.292-vej.
+- Kildekandidaten gendanner statisk `./`, almindelig browsernavigation og eksisterende state-redraw uden watchdog/tvungen reload. DEC-0094–0096 er markeret erstattet.
+- Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede; Sibirien forbliver privat staged.
+
 ## 2026-08-28 – 4.0.299 én hurtig Om-retur uden tvungen reload
 
 - 4.0.298 bestod PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`, men den fysiske iPhone-rejse er rød.

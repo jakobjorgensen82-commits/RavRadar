@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.300 gendannet iPhone-retur
+
+- 4.0.299 blev produktionsudgivet gennem PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`. Offentlig desktopkontrol viste 210 zonelinjer, 5 + 5 + 5 og cirka 1,36 sekunders intern Om-retur.
+- Ejerens fysiske iPhone-test var stadig rød: efter tryk på RavRadar-knappen på **Om RavRadar** manglede kort og prognoser. Lås, kort ventetid og oplåsning fik dem frem. Det peger på suspenderet layout/genoptagelse, ikke manglende netværksload.
+- Eksakt sammenligning mod 4.0.292/merge `d22d0867` viste regressionen: det tidligere statiske `./`-link og appens redraw blev i 4.0.297–299 erstattet/suppleret af mobil hard reload, watchdog og unik versions-/nonce-navigation.
+- Branch `codex/restore-mobile-resume-4.0.300` gendanner kun browserlivscyklussen: almindeligt `./`-link, ingen klikoverstyring, ingen mobil hard reload/watchdog/DOM-sundhedsreload og redraw ved `pageshow.persisted`. 4.0.295/296's lazy-load- og startupforbedringer bevares.
+- Målrettede mobilresume-, Om-retur-, startup-, ydelses-, modulversions- og releaseversionskontroller er grønne. `test:public-runtime` kræver den centralt hydrerede detaljefil og dækkes i produktionskæden.
+- Geodatafilerne ændrer kun topversion 4.0.299 → 4.0.300. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering er ændret. Sibirien forbliver privat staged og uaktiveret.
+- Næste trin: RDKS/sourcegate, commit/push, PR exact-head, merge, fuld produktion/Pages, offentlig 210 + 5 × 5-kontrol og derefter fysisk iPhone Safari samt Hjemmeskærm. Kald ikke fejlen fysisk løst før ejerprøven er grøn. Brug Sol/Ekstra høj.
+
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.299 én hurtig Om-retur
 
 - 4.0.298 blev udgivet gennem PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`. Kæden var grøn, men produktet er ikke fysisk godkendt.
