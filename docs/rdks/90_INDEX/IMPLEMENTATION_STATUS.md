@@ -1,4 +1,15 @@
-# Implementeringsstatus – 4.0.293-kandidat for bred read-only assistentviden
+# Implementeringsstatus – 4.0.294-kandidat for naturlig oprindelsesformulering
+
+## P1 kandidat – offentlig formuleringstest
+
+- [x] Reproducer offentlig afvisning af **Hvordan opstod rav?** på 4.0.293.
+- [x] Udvid kun det eksisterende oprindelses-intent med naturlige dannelsesformuleringer på DA/DE/EN.
+- [x] Tilføj tre formuleringregressioner med lokal routing og nul netværkskald.
+- [x] Bevar de eksisterende 51 balancerede emnecases og hele read-only-/Edge-/Candidate G-grænsen.
+- [x] Bestå fuld lokal sourcegate og releasegate.
+- [ ] Bestå exact-head, produktion og gentaget offentlig DA/DE/EN-kontrol.
+
+Ingen svartekst, GPT-OSS-model, Edge-gateway, RavScore, vejr, prognose, sortering, konto-/turdata, privatliv, geometri eller punkt ændres.
 
 ## P1 kandidat – klogere Spørg RavRadar med lokal fallback
 
@@ -9,7 +20,7 @@
 - [x] Bevar fast emneafvisning, server-only credential, dataminimering, CORS, rate limits, timeout, gratis kvoteloft, fallback og rollback.
 - [x] Bevis med målrettede tests, at DA/DE/EN, Edge-validering og eksisterende Candidate G-svar består.
 - [x] Bestå fuld lokal sourcegate og releasegate på kandidatens afsluttede kilde.
-- [ ] Bestå PR exact-head, frisk produktion og offentlig DA/DE/EN-browserkontrol.
+- [x] Bestå PR #194 exact-head `33130341973`, merge `25722abc` og frisk produktion `33130425262`/build `98718434389`/Pages `98721765768`; første offentlige kontrol udløste 4.0.294-hotfixen ovenfor.
 
 Ingen assistentvej kan skrive til eller ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se DEC-0091.
 

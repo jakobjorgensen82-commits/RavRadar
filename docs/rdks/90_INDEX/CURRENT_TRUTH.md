@@ -1,13 +1,20 @@
 # Current truth – gældende projektviden
 
-## 4.0.293-kandidat – bred read-only DA/DE/EN-viden i Spørg RavRadar
+## 4.0.294-kandidat – naturlige DA/DE/EN-spørgsmål om ravets dannelse
+
+- 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
+- Offentlig 4.0.293 viste korrekt version, farvet kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul browserfejl, men **Hvordan opstod rav?** blev afvist på grund af en for snæver formulering i oprindelses-intentet.
+- 4.0.294 genkender almindelige dannelsesformuleringer på dansk, tysk og engelsk. Tre særskilte cases beviser lokal routing og nul netværk; de eksisterende 51 balancerede emnecases bevares.
+- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. Rettelsen ændrer ingen svartekst, ekstern model, Edge-gateway, RavScore, vejr, prognose, sortering, brugerdata, geometri eller punkt. Exact-head, produktion og gentaget offentlig kontrol afventer.
+
+## 4.0.293 – bred read-only DA/DE/EN-viden i Spørg RavRadar
 
 - Den lokale assistent er udvidet fra ni grove intents til 17 konkrete grundbogsbaserede emner på dansk, tysk og engelsk. Almindelige faktaspørgsmål bruger intet netværk og ingen AI-kvote.
 - Bedste sted, bedste tidspunkt og konkret valgt-zone-score er fortsat deterministiske Candidate G-funktioner. Åbne relevante specialspørgsmål kan fortsat gå til GPT-OSS.
 - Edge-viden er udvidet fra 10 til 23 offentlige evidens-ID'er om oprindelse, massefylde, skjulte lagre, vind/bølger/strøm, kystsortering, felttegn, identifikation, søgeteknik og vejrforløb.
 - 51 lokale cases dækker 17 emner × DA/DE/EN uden netværk. Den samlede provider-eval har 66 balancerede cases, 22 pr. sprog. Målrettet lokal-, i18n-, Edge-, dataminimerings- og Candidate G-kontrakt er grøn.
 - Server-only credential, CORS, dobbelte domænegates, rate limits, timeout, gratis kvoteloft, eksakt output/evidens, fallback og rollback er uændrede.
-- Assistenten er read-only og ændrer ikke RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Geodatafilerne ændrer kun topversionsfeltet. Fuld lokal sourcegate og releasegate er grøn; exact-head, produktion og offentlig kontrol afventer. Se DEC-0091.
+- Assistenten er read-only og ændrer ikke RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Geodatafilerne ændrer kun topversionsfeltet. Fuld lokal sourcegate/releasegate, exact-head og produktion er grønne; den offentlige formuleringstest lukkes i 4.0.294. Se DEC-0091.
 
 ## Produktionsverificeret 4.0.292 – mobil browser- og punktskiftegenoptagelse
 

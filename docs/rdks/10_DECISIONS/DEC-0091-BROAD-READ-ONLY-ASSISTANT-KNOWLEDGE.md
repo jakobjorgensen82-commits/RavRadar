@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og implementeret i 4.0.293-kandidaten; exact-head- og produktionsverifikation afventer.
+Besluttet og implementeret i 4.0.293. Exact-head og produktion er grønne; den offentlige formuleringstest udløste en afgrænset 4.0.294-hotfix før endelig lukning.
 
 ## Problem
 
@@ -26,4 +26,4 @@ Den offentlige GPT-OSS-gateway var sikker og domæneafgrænset, men dens godkend
 
 ## Verifikation
 
-Målrettet kontrakt dækker alle 51 lokale sprog-/intentkombinationer uden et eneste netværkskald, 66 balancerede modelcases, komplet i18n-nøgle-/parameterparitet, offentlig dataminimering, evidensvalidering og eksisterende Candidate G-svar. Den fulde lokale kildegate og releasegate er grøn. Exact-head, produktion og offentlig browserkontrol kræves fortsat, før 4.0.293 kaldes produktionsverificeret.
+Målrettet kontrakt dækker alle 51 lokale sprog-/intentkombinationer uden et eneste netværkskald, 66 balancerede modelcases, komplet i18n-nøgle-/parameterparitet, offentlig dataminimering, evidensvalidering og eksisterende Candidate G-svar. PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768` er grønne. Den offentlige kontrol fandt derefter, at **Hvordan opstod rav?** ikke matchede oprindelses-intentet. 4.0.294 tilføjer denne og tilsvarende tyske/engelske dannelsesformuleringer samt tre nul-netværksregressioner uden at ændre beslutningens faglige eller sikkerhedsmæssige grænser.

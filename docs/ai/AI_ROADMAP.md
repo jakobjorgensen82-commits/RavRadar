@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar 4.0.293+
+# AI Roadmap – RavRadar 4.0.294+
+
+## 4.0.294-kandidat – naturlige oprindelsesformuleringer
+
+- [x] Reproducer 4.0.293-afvisningen af **Hvordan opstod rav?**.
+- [x] Genkend almindelige dannelsesformuleringer på DA/DE/EN lokalt.
+- [x] Tilføj tre formuleringregressioner uden netværkskald og bevar de 51 balancerede emnecases.
+- [x] Bestå fuld lokal sourcegate og releasegate.
+- [ ] Bestå exact-head, produktion og gentaget offentlig kontrol.
+
+Ingen model-, gateway-, score-, vejr-, data- eller geokontrakt ændres.
 
 ## 4.0.293-kandidat – bred lokal og ekstern grundbogsviden
 
@@ -7,7 +17,7 @@
 - [x] Udvid evalgrundlaget til 51 lokale og 66 samlede balancerede cases.
 - [x] Bevar Candidate G-dataintents, fast afvisning, servercredential, CORS, rate limits, timeout, fallback og rollback.
 - [x] Bestå fuld lokal sourcegate og releasegate.
-- [ ] Bestå exact-head, produktion og offentlig DA/DE/EN-kontrol.
+- [x] Bestå PR #194 exact-head `33130341973`, merge `25722abc` og produktion `33130425262`; den første offentlige kontrol udløste 4.0.294-hotfixen ovenfor.
 
 Assistenten er read-only og må ikke påvirke kort, prognoser, RavScore, vejr, sortering, brugerdata eller geodata. Se DEC-0091.
 
