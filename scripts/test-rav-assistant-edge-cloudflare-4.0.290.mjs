@@ -61,7 +61,7 @@ assert.equal(JSON.stringify(safeContext).includes('provider'), false);
 const prompt = JSON.parse(assistantPrompt('Can waves move amber?', safeContext, 'en'));
 assert.equal(prompt.requestedLocale, 'en');
 assert.equal(prompt.question, 'Can waves move amber?');
-assert.equal(prompt.publicFacts.length, 10);
+assert.equal(prompt.publicFacts.length, 23);
 assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);
 assert.match(assistantSystemInstruction(), /Can you guarantee a find/);
 assert.match(assistantSystemInstruction(), /safety\.not-a-safety-rating/);

@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Klogere Spørg RavRadar – også når AI-kvoten er brugt – 4.0.293
+
+Spørg RavRadar kan nu besvare almindelige ravspørgsmål direkte på dansk, tysk og engelsk uden at bruge den daglige AI-kvote. Den lokale viden dækker 17 emner: ravets oprindelse og massefylde, skjulte ravlagre, vind, bølger, strøm, vandstand, kystfælder, felttegn, identifikation og UV, waders, vejrforløb, Candidate G, manglende data, modellens begrænsninger, søgeteknik og udstyr.
+
+Svarene bygger på den offentlige grundbog og bruger stabile sprognøgler. Spor som frisk tang og mulige samlesteder ved revler, render eller høfder beskrives som spor og muligheder – aldrig som bevis eller garanti. RavScore er fortsat et indeks, ikke en procentchance eller sikkerhedsvurdering.
+
+Åbne ravrelevante specialspørgsmål kan stadig sendes til den gratis GPT-OSS-gateway. Dens godkendte viden er udvidet fra 10 til 23 evidensbundne fakta om de samme emner. Credential forbliver på serveren, og CORS, domænegate, rate limits, timeout, eksakt JSON-/evidensvalidering og lokal fallback er uændrede. Ved kvote- eller providerfejl virker de lokale svar stadig.
+
+Begge assistentveje er rent læsende. De kan ikke ændre kort, prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0091](docs/rdks/10_DECISIONS/DEC-0091-BROAD-READ-ONLY-ASSISTANT-KNOWLEDGE.md).
+
 ## Sikker ændring af land-/vandpunkter – 4.0.292
 
 Når et land- eller vandpunkt flyttes i administrationen, ændres produktionen ikke længere ved den første gemning. Ændringen bliver en kandidat med egen revision, mens det hidtidige punkt fortsat leverer kort, **Bedste områder**, femdøgnsprognose og Candidate G.
@@ -611,7 +621,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.292
+**Håndbogsversion:** 4.0.293
 
 **Opdateret:** 19. august 2026
 

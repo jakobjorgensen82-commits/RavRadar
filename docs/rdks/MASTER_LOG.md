@@ -1,3 +1,9 @@
+## 2026-08-28 – 4.0.293 bred read-only Spørg RavRadar-viden
+
+- Den lokale assistent dækker 17 grundbogsemner på DA/DE/EN uden netværk eller kvote; stedet, tiden og konkret score forbliver Candidate G-deterministiske.
+- GPT-OSS' godkendte offentlige viden er udvidet fra 10 til 23 evidens-ID'er under uændrede gateway-, privacy-, rate-limit-, timeout-, fallback- og rollbackgrænser.
+- 51 lokale og 66 samlede balancerede evalcases samt fuld lokal sourcegate/releasegate er grønne. Exact-head og produktionsverifikation afventer. Se DEC-0091.
+
 ## 2026-08-28 – 4.0.292 staged land-/vandpunktaktivering
 
 - PR #189/exact-head `33124945636` blev merged som `8b3668b7`. Første 4.0.292-produktion `33125043019` fejlede lukket før DMI og deploy på en ikke-isoleret syntetisk testreference; hotfixen tilføjer eksplicit fixture-reference uden at ændre den virkelige workflowlåste produktionstime.

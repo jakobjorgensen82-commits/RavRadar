@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.293-kandidat – bred read-only DA/DE/EN-viden i Spørg RavRadar
+
+- Den lokale assistent er udvidet fra ni grove intents til 17 konkrete grundbogsbaserede emner på dansk, tysk og engelsk. Almindelige faktaspørgsmål bruger intet netværk og ingen AI-kvote.
+- Bedste sted, bedste tidspunkt og konkret valgt-zone-score er fortsat deterministiske Candidate G-funktioner. Åbne relevante specialspørgsmål kan fortsat gå til GPT-OSS.
+- Edge-viden er udvidet fra 10 til 23 offentlige evidens-ID'er om oprindelse, massefylde, skjulte lagre, vind/bølger/strøm, kystsortering, felttegn, identifikation, søgeteknik og vejrforløb.
+- 51 lokale cases dækker 17 emner × DA/DE/EN uden netværk. Den samlede provider-eval har 66 balancerede cases, 22 pr. sprog. Målrettet lokal-, i18n-, Edge-, dataminimerings- og Candidate G-kontrakt er grøn.
+- Server-only credential, CORS, dobbelte domænegates, rate limits, timeout, gratis kvoteloft, eksakt output/evidens, fallback og rollback er uændrede.
+- Assistenten er read-only og ændrer ikke RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Geodatafilerne ændrer kun topversionsfeltet. Fuld lokal sourcegate og releasegate er grøn; exact-head, produktion og offentlig kontrol afventer. Se DEC-0091.
+
 ## Produktionsverificeret 4.0.292 – mobil browser- og punktskiftegenoptagelse
 
 - Et centralt gemt land-/vandpunkt er nu en revisionsbundet kandidat og kan ikke erstatte den aktive offentlige sampling direkte.

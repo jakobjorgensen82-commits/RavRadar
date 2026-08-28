@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.287",
+  "releaseVersion": "4.0.293",
   "scoreModel": {
     "id": "candidate-g",
     "publicOnly": true,
@@ -13,8 +13,12 @@
   "locales": ["da", "de", "en"],
   "allowedTopics": [
     "amber-identification",
+    "amber-origin-density-and-secondary-stores",
     "amber-hunting-equipment",
     "amber-hunting-technique",
+    "amber-hunting-field-signs",
+    "coastal-sorting-and-local-traps",
+    "weather-event-sequence",
     "public-ravradar-forecast",
     "candidate-g-explanation",
     "wind-waves-current-water-level",
@@ -50,6 +54,22 @@
       "text": "RavScore describes modelled amber-hunting conditions. It never promises that amber will be found and is not statistically calibrated against enough representative find and no-find trips."
     },
     {
+      "id": "amber.origin-and-secondary-stores",
+      "text": "Amber is fossilised resin from ancient trees and is many millions of years old. A Danish beach find may have been moved and redeposited repeatedly through geological layers, glacial material, the seabed and older beach stores; a particular piece cannot be dated reliably from appearance alone."
+    },
+    {
+      "id": "amber.mostly-sinks",
+      "text": "Most Baltic amber has a density around 1.05 to 1.10 grams per cubic centimetre and sinks in ordinary Danish seawater, while remaining much lighter than sand and stone under water. Salinity and temperature change buoyancy slightly but are not enough to float most amber."
+    },
+    {
+      "id": "amber.piece-variation",
+      "text": "Air bubbles, porosity, impurities, size and shape can change how an individual amber piece behaves. A piece may roll, slide, bounce or move briefly in suspension, so there is no single natural current threshold that applies to all amber."
+    },
+    {
+      "id": "amber.weather-does-not-create",
+      "text": "Weather does not create amber. It can only release and move amber already available in a local or upstream store, so two nearly identical storms can produce very different finds when a store is hidden, newly exposed or already depleted."
+    },
+    {
       "id": "safety.not-a-safety-rating",
       "text": "RavScore is not a safety assessment. The user must assess current, depth, seabed, water level, waves, weather and local conditions at the site."
     },
@@ -62,12 +82,48 @@
       "text": "Verified current is the main transport signal. Transport towards the coast is favoured, but alongshore flow can still move amber and is not automatically worthless. Outflow must not be described as delivery towards the coast."
     },
     {
+      "id": "wind.indirect-not-bottom-current",
+      "text": "Wind acts mainly indirectly by building waves, affecting surface layers and water level, and moving light wash. Wind direction alone does not reliably show the direction of bottom-bound amber, and no wind direction is universally best because coast orientation and the preceding sequence matter."
+    },
+    {
+      "id": "waves.height-not-enough",
+      "text": "Wave height alone is not enough to describe mobilisation. Wave period, duration, water depth and seabed also matter; long waves reach deeper than short waves of the same height, and a brief peak is not equivalent to hours of developed sea."
+    },
+    {
+      "id": "transport.layered-water",
+      "text": "Surface flow, deeper flow, wave drift and return flow can differ in direction. RavRadar focuses on a bottom-near current representation because most amber lies or moves close to the seabed; a surface arrow is not automatically a reliable bottom-transport direction."
+    },
+    {
       "id": "mobilisation.wave-memory",
       "text": "Amber mobilisation is driven by one wave-energy state based on wave height squared times wave period. It builds over about four hours and decays with a 48-hour half-life, so the period after energetic weather can remain relevant. These are tested working rules, not universal natural limits."
     },
     {
       "id": "water-level.context",
       "text": "Water level can move or expose the wash line and affect access to hunting areas. It must be interpreted with the other conditions and is not by itself proof of amber."
+    },
+    {
+      "id": "coast.sorting-and-traps",
+      "text": "Bars, channels, gaps, groynes, piers, coastal bends, beach slope, swash and backwash can slow, redirect, retain or release light material very locally. Transitions, ends and both sides of a structure are possible traps, never guarantees that amber is present."
+    },
+    {
+      "id": "field-signs.clues-not-proof",
+      "text": "Fresh wet seaweed, wood, seeds, coal, shells, dark bands and new wash lines are clues that the sea has sorted light material. Hunters should follow the fraction and inspect edges and pockets, but seaweed or any other single field sign is not proof of amber."
+    },
+    {
+      "id": "identification.uv-clue-not-proof",
+      "text": "Low weight for size and a resin-like surface are useful first clues. Long-wave ultraviolet light around 365 nanometres often makes Baltic amber fluoresce clearly, but other materials can also fluoresce, so UV is not final proof."
+    },
+    {
+      "id": "identification.avoid-destructive-tests",
+      "text": "Hot needles, fire and other destructive home tests should be avoided. Valuable or uncertain finds should be assessed by a specialist."
+    },
+    {
+      "id": "technique.follow-the-fraction",
+      "text": "A systematic search follows the sequence read, choose, follow and compare: read the wash, choose the most promising sorted fraction, follow it along the coast and compare it with neighbouring stretches, changing the search line when the material changes."
+    },
+    {
+      "id": "sequence.release-transport-deposition",
+      "text": "An amber-hunting event is a sequence: waves may first release material, current may then transport it, and a calmer or falling phase may improve deposition and searching. Prolonged strong outflow can carry material away again, so one current weather value never tells the whole story."
     },
     {
       "id": "public-context.selected-zone-only",

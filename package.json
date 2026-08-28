@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.292",
+  "version": "4.0.293",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -126,7 +126,8 @@
     "test:auth-bootstrap": "node scripts/test-auth-bootstrap-4.0.66.mjs",
     "test:rav-assistant": "node scripts/test-rav-assistant-4.0.66.mjs",
     "test:public-i18n-assistant": "node scripts/test-public-i18n-assistant-4.0.290.mjs",
-    "test:rav-assistant-evals": "node scripts/run-rav-assistant-model-evals.mjs --self-test && node scripts/test-public-i18n-assistant-4.0.290.mjs",
+    "test:rav-assistant-local-knowledge": "node scripts/test-rav-assistant-local-knowledge-4.0.293.mjs",
+    "test:rav-assistant-evals": "node scripts/run-rav-assistant-model-evals.mjs --self-test && node scripts/test-rav-assistant-local-knowledge-4.0.293.mjs && node scripts/test-public-i18n-assistant-4.0.290.mjs",
     "test:rav-assistant-edge": "node scripts/test-rav-assistant-edge-cloudflare-4.0.290.mjs",
     "test:security-hardening": "node scripts/test-security-hardening-4.0.284.mjs",
     "test:current-direction-audit": "node scripts/test-current-direction-audit-4.0.66.mjs",

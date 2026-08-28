@@ -1,3 +1,10 @@
+## 4.0.293 – bred read-only Spørg RavRadar-viden (2026-08-28)
+
+- Udvider lokale DA/DE/EN-svar fra ni grove intents til 17 grundbogsbaserede emner, som virker uden netværk og AI-kvote.
+- Udvider den offentlige GPT-OSS-viden fra 10 til 23 evidens-ID'er samt evalpakken til 51 lokale og 66 samlede, balancerede cases.
+- Bevarer Candidate G for bedste sted/tid/score og alle eksisterende Edge-, privacy-, CORS-, rate-limit-, timeout-, gratis kvote-, fallback- og rollbackgrænser.
+- Assistenten forbliver read-only. RavScore, vejr, prognoser, sortering, konto-/turdata, geometri og land-/vandpunkter ændres ikke. Se DEC-0091 og `CHANGELOG-4.0.293.md`.
+
 ## 4.0.292 – mobil sidecache- og punktskifte-selvrecovery (2026-08-28)
 
 - CI-hotfix: punktstagingens syntetiske READY-test bruger nu en eksplicit reference og kan ikke overstyres af produktionsworkflowets låste time. Første post-merge-run stoppede sikkert før DMI/deploy; runtimekontrakten er uændret.

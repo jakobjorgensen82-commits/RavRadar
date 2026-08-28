@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuel 4.0.293-kandidat – klogere Spørg RavRadar uden kvoteafhængighed
+
+- 17 almindelige ravemner har faste grundbogsbaserede DA/DE/EN-svar og bruger ingen AI-kvote eller netværk.
+- Åbne specialspørgsmål bruger fortsat GPT-OSS, hvis kvoten og Edge er tilgængelig. Dens godkendte viden er udvidet fra 10 til 23 evidens-ID'er.
+- 51 lokale og 66 samlede balancerede evalcases samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktion og offentlig kontrol mangler endnu.
+- Fast afvisning, server-only credential, dataminimering, CORS, rate limits, timeout, gratis kvoteloft, fallback og rollback er uændrede.
+- Begge assistentveje er read-only. Rør ikke RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se DEC-0091.
+
 ## Produktionsverificeret 4.0.292 – staged land-/vandpunkter uden driftsudfald
 
 - Ingen faktisk geometri eller land-/vandpunkt er flyttet. Sibirien er kun den kommende bruger-case.

@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## AKTUELT P1-CHECKPOINT – 2026-08-28 – 4.0.293 bred read-only assistentviden
+
+- Ejerens næste godkendte leverance er implementeret som kandidat: den lokale Spørg RavRadar dækker nu 17 konkrete grundbogsbaserede emner på dansk, tysk og engelsk uden netværk eller AI-kvote.
+- Sted, tidspunkt og konkret score er fortsat lokale Candidate G-beregninger. Åbne relevante specialspørgsmål kan fortsat bruge den offentlige GPT-OSS Edge.
+- Edge-viden er udvidet fra 10 til 23 evidens-ID'er om oprindelse, massefylde, skjulte lagre, vind, bølger, strøm, kystsortering, felttegn, identifikation, teknik og forløb. Sikkerheds-, kvote- og privatlivskontrakten er uændret.
+- `rav-assistant-local-evals-v1` har 51 cases, 17 pr. sprog og emne; alle svar er lokale og nul netværkskald er bevist. Den samlede modelpakke har 66 cases, 22 pr. sprog, og 23 versionsbundne fakta.
+- Målrettet lokal-, i18n-, Edge-, dataminimerings- og eksisterende Candidate G-kontrakt samt fuld lokal sourcegate/releasegate er grøn. Exact-head, produktion og offentlig browserkontrol afventer.
+- Version er 4.0.293. Assistenten er read-only; RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. De to geodatafiler ændrer kun topversionsfeltet. Se DEC-0091.
+
 ## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-28 – 4.0.292 mobil- og punktskifte-selvrecovery
 
 - Ejeren bad om, at en kommende flytning af Sibirien-land-/vandpunktet ikke kan give ny 48-timers nedetid eller fejlscore. Ingen konkret placering er flyttet i denne leverance.
