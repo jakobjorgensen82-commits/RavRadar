@@ -10,7 +10,7 @@ import {
   RAV_ASSISTANT_FACTS,
   RAV_ASSISTANT_MODEL,
   RAV_ASSISTANT_REFUSALS,
-  RAV_ASSISTANT_WEIGHT_ANSWERS,
+  RAV_ASSISTANT_MODEL_ANSWERS,
   routeAssistantQuestion,
   validateAssistantResult,
 } from '../supabase/functions/_shared/rav-assistant-contract.ts';
@@ -73,12 +73,12 @@ assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobi
 assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Bernsteinmobilisierung');
 assert.equal(normaliseAssistantTerminology('20 % Jagtbarheit und 30 % Bernsteinmobilisierung', 'de'), '20 % Suchbarkeit und 30 % Bernsteinmobilisierung');
 
-const fixedGermanWeights = validateAssistantResult({
+const fixedGermanModel = validateAssistantResult({
   schemaVersion: 'rav-assistant-response-v1', locale: 'de', disposition: 'answer',
-  answer: 'Candidate G: 20 % Jagdbarheit, 50 % Transport, 30 % Bernsteinmobilisierung.',
-  evidenceIds: ['score.candidate-g-only', 'score.weights-20-50-30'],
+  answer: 'Der RavScore koppelt Nachschub und Mobilisierung kausal.',
+  evidenceIds: ['score.integrated-model-only', 'score.causal-coupling'],
 }, 'de');
-assert.equal(fixedGermanWeights.answer, RAV_ASSISTANT_WEIGHT_ANSWERS.de);
+assert.equal(fixedGermanModel.answer, RAV_ASSISTANT_MODEL_ANSWERS.de);
 assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and amber mobilisation');
 
 const valid = {

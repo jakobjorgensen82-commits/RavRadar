@@ -82,6 +82,20 @@ for(const file of ['.github/workflows/update-and-deploy.yml']){
  await fs.writeFile(file,text);
 }
 
+// Den aktive kystkausale profil er også releasebundet. Central hydrering,
+// persistence og deres kontrakttests skal kræve præcis samme switch-version.
+for(const file of [
+ 'js/core/ravscore-next-generation-profile.js',
+ 'scripts/sync-protected-admin-assets.mjs',
+ 'scripts/sync-admin-config.py',
+ 'scripts/test-candidate-g-public-diagnostics-4.0.281.mjs',
+ 'scripts/test_sync_admin_config_activation.py',
+]){
+ let text=await fs.readFile(file,'utf8');
+ text=text.replace(/RAVSCORE-PROFILE-SWITCH-(?:NEXT-1|\d+\.\d+\.\d+)/g,`RAVSCORE-PROFILE-SWITCH-${version}`);
+ await fs.writeFile(file,text);
+}
+
 // Releasebærende dokumenter kan være gledet fra package-versionen. Normalisér deres
 // eksplicitte versionsfelter i stedet for kun at erstatte previousVersion.
 {

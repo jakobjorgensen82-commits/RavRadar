@@ -9,6 +9,10 @@ import {
   validateRecoveryFallbackBundle,
 } from './candidate-g-public-recovery-fallback.mjs';
 import { compactJson, sha256Text } from './public-conditions-lib.mjs';
+import {
+  NEXT_RAVSCORE_MODEL_ID,
+  NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
+} from '../js/core/ravscore-next-generation.js';
 
 const generatedAt = '2026-08-27T01:34:48.669Z';
 const nowMs = Date.parse('2026-08-27T10:00:00.000Z');
@@ -26,11 +30,13 @@ const details = {
   datasetId: conditions.datasetId,
   generatedAt,
   zones: detailZones,
-  coastalParts: { parts },
+  coastalParts: { scoreProfile: { activeProfileId: NEXT_RAVSCORE_MODEL_ID }, parts },
 };
 const descriptor = {
   schemaVersion: 1,
-  status: 'last-verified-candidate-g-ready',
+  status: 'last-verified-ravscore-ready',
+  modelId: NEXT_RAVSCORE_MODEL_ID,
+  stateSchemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
   datasetId: conditions.datasetId,
   generatedAt,
   productionReferenceAt: '2026-08-27T00:00:00.000Z',
@@ -123,7 +129,7 @@ const boundedLocal = await publishRecoveryFallback({ auditPath, manifestPath, ca
 assert.equal(boundedLocal.status, 'active-last-verified');
 assert.equal(
   JSON.parse(await fs.readFile(manifestPath, 'utf8')).recoveryFallback.reason,
-  'candidate-g-bounded-local-context-warmup',
+  'ravscore-bounded-local-context-warmup',
 );
 
 await fs.writeFile(auditPath, `${JSON.stringify({
@@ -132,7 +138,7 @@ await fs.writeFile(auditPath, `${JSON.stringify({
 })}\n`);
 await assert.rejects(
   publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs }),
-  /Uventet delvis national Candidate G-recovery/,
+  /Uventet delvis national RavScore-recovery/,
 );
 
 await fs.writeFile(auditPath, `${JSON.stringify({
@@ -146,4 +152,4 @@ await assert.rejects(fs.access(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBA
 await assert.rejects(fs.access(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicDetailsName)));
 
 await fs.rm(root, { recursive: true, force: true });
-console.log('Candidate G last-verified public recovery fallback: OK');
+console.log('Integrated RavScore last-verified public recovery fallback: OK');

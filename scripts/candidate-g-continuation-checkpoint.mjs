@@ -28,7 +28,7 @@ function compactState(state, partId) {
     || !Array.isArray(state.transportEvidence) || state.transportEvidence.length < 1
     || !Number.isFinite(state.mobilisationPotential) || state.mobilisationPotential < 0 || state.mobilisationPotential > 100
     || (state.transportMemoryStatus === 'READY') !== state.transportMemoryReady) {
-    throw new Error(`Ugyldig kompakt Candidate G-state for kystdel ${partId}`);
+    throw new Error(`Ugyldig kompakt RavScore-state for kystdel ${partId}`);
   }
   let previousEvidenceMs = Number.NEGATIVE_INFINITY;
   const referenceMs = Date.parse(state.transportReferenceAt);
@@ -66,9 +66,9 @@ function checkpointRows(document, expectedPartCount) {
   const parts = document?.coastalParts?.parts || {};
   const rows = Object.entries(parts)
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([partId, part]) => [partId, compactState(part?.candidateG?.currentState, partId)]);
+    .map(([partId, part]) => [partId, compactState(part?.ravScore?.currentState ?? part?.candidateG?.currentState, partId)]);
   if (rows.length !== expectedPartCount) {
-    throw new Error(`Candidate G-checkpointet kræver ${expectedPartCount} kystdele, men fandt ${rows.length}`);
+    throw new Error(`RavScore-checkpointet kræver ${expectedPartCount} kystdele, men fandt ${rows.length}`);
   }
   return rows;
 }
@@ -87,18 +87,18 @@ export async function saveContinuationCheckpoint({
 } = {}) {
   const source = await readJson(sourcePath);
   if (!source?.datasetId || !finiteTime(source.productionReferenceAt)) {
-    throw new Error('Candidate G-checkpointets kilde mangler datasæt eller produktionstime');
+    throw new Error('RavScore-checkpointets kilde mangler datasæt eller produktionstime');
   }
   const rows = checkpointRows(source, expectedPartCount);
   const sourceReferenceMs = Date.parse(source.productionReferenceAt);
   for (const [partId, state] of rows) {
     if (Date.parse(state.time) > sourceReferenceMs || Date.parse(state.transportReferenceAt) > sourceReferenceMs) {
-      throw new Error(`Candidate G-checkpointet indeholder fremtidig state for kystdel ${partId}`);
+      throw new Error(`RavScore-checkpointet indeholder fremtidig state for kystdel ${partId}`);
     }
   }
   const checkpoint = {
     schemaVersion: CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
-    status: 'candidate-g-compact-continuation',
+    status: 'ravscore-compact-continuation',
     datasetId: source.datasetId,
     productionReferenceAt: new Date(source.productionReferenceAt).toISOString(),
     partCount: rows.length,
@@ -119,7 +119,7 @@ export async function saveContinuationCheckpoint({
 
 function validateCheckpoint(checkpoint, expectedPartCount) {
   if (checkpoint?.schemaVersion !== CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
-    || checkpoint?.status !== 'candidate-g-compact-continuation'
+    || !['ravscore-compact-continuation', 'candidate-g-compact-continuation'].includes(checkpoint?.status)
     || !checkpoint?.datasetId || !finiteTime(checkpoint.productionReferenceAt)
     || Number(checkpoint.partCount) !== expectedPartCount
     || checkpoint?.privacy?.compactDerivedStateOnly !== true
@@ -128,13 +128,13 @@ function validateCheckpoint(checkpoint, expectedPartCount) {
     || checkpoint?.privacy?.rawVectorsIncluded !== false
     || checkpoint?.privacy?.coordinatesIncluded !== false
     || checkpoint?.privacy?.privateDataIncluded !== false) {
-    throw new Error('Candidate G-checkpointets descriptor er ugyldig');
+    throw new Error('RavScore-checkpointets descriptor er ugyldig');
   }
   const rows = Object.entries(checkpoint.states || {})
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([partId, state]) => [partId, compactState(state, partId)]);
   if (rows.length !== expectedPartCount || sha256(rows) !== checkpoint.stateSha256) {
-    throw new Error('Candidate G-checkpointets kompakte state matcher ikke integriteten');
+    throw new Error('RavScore-checkpointets kompakte state matcher ikke integriteten');
   }
   return rows;
 }
@@ -153,7 +153,7 @@ export async function restoreContinuationCheckpoint({
     if (error?.code === 'ENOENT') return { restored: false, reason: 'checkpoint-not-found' };
     throw error;
   }
-  if (!finiteTime(targetReference)) throw new Error('Målreferencen til Candidate G-checkpointet er ugyldig');
+  if (!finiteTime(targetReference)) throw new Error('Målreferencen til RavScore-checkpointet er ugyldig');
   const target = await readJson(targetPath);
   if (!finiteTime(target.productionReferenceAt)) throw new Error('Det hydrerede mål mangler en gyldig produktionstime');
   const checkpointAt = Date.parse(checkpoint.productionReferenceAt || '');
@@ -168,17 +168,17 @@ export async function restoreContinuationCheckpoint({
   const targetParts = target?.coastalParts?.parts || {};
   if (Object.keys(targetParts).length !== expectedPartCount) throw new Error('Det hydrerede mål matcher ikke checkpointets delantal');
   for (const [partId, state] of rows) {
-    const candidate = targetParts[partId]?.candidateG;
-    const targetState = candidate?.currentState;
+    const scoreState = targetParts[partId]?.ravScore ?? targetParts[partId]?.candidateG;
+    const targetState = scoreState?.currentState;
     if (!targetState
       || state.schemaVersion !== targetState.schemaVersion
       || state.modelId !== targetState.modelId
       || state.variantId !== targetState.variantId
       || state.profileId !== targetState.profileId
       || state.stateKey !== targetState.stateKey) {
-      throw new Error(`Candidate G-checkpointets modelkontekst matcher ikke målet for kystdel ${partId}`);
+      throw new Error(`RavScore-checkpointets modelkontekst matcher ikke målet for kystdel ${partId}`);
     }
-    candidate.currentState = state;
+    scoreState.currentState = state;
   }
   await atomicWrite(targetPath, `${JSON.stringify(target, null, 2)}\n`);
   return {

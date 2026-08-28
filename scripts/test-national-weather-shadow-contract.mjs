@@ -23,6 +23,6 @@ const activeStart=workflow.indexOf('ravscore-active-shadow:');
 const activeEnd=workflow.indexOf('geometry-v2-pilot:',activeStart);
 if(activeStart<0||activeEnd<=activeStart)throw new Error('Fallback-kompatibel aktiv RavScore-shadow kunne ikke afgrænses');
 const activeSection=workflow.slice(activeStart,activeEnd);
-for(const marker of ['Download read-only fallback-compatible 210/673 runtime','node scripts/audit-ravscore-candidate-g-public-shadow.mjs','candidate-g-public-shadow-audit.json'])if(!activeSection.includes(marker))throw new Error(`Aktiv RavScore-shadow mangler DEC-0057-kontrakten: ${marker}`);
+for(const marker of ['Download read-only fallback-compatible 210/673 runtime','node scripts/audit-ravscore-next-generation-public.mjs','ravscore-public-runtime-audit.json'])if(!activeSection.includes(marker))throw new Error(`Aktiv RavScore-runtimeaudit mangler DEC-0057/DEC-0102-kontrakten: ${marker}`);
 for(const staleMarker of ['python scripts/sync-admin-config.py','python scripts/validate-national-local-part-dmi-grid.py','python scripts/validate-national-multi-step-series.py','python scripts/validate-national-local-part-wind-series.py','node scripts/validate-national-shadow-score.mjs'])if(activeSection.includes(staleMarker))throw new Error(`Aktiv RavScore-shadow genbruger stadig den snævre native-only vej: ${staleMarker}`);
 console.log('National weather-shadow kontrakt: bestået.');

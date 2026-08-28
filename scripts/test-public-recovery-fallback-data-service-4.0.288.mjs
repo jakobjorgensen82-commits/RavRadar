@@ -21,8 +21,8 @@ const primaryDatasetId = 'rr-primary-warmup-210';
 const fallbackConditionsSha = 'a'.repeat(64);
 const fallbackDetailsSha = 'b'.repeat(64);
 const primaryConditionsSha = 'c'.repeat(64);
-const fallbackConditionsUrl = `./data/live/candidate-g-last-verified-public-conditions.json?dataset=${fallbackDatasetId}&sha=${fallbackConditionsSha}`;
-const fallbackDetailsUrl = `./data/live/candidate-g-last-verified-public-condition-details.json?dataset=${fallbackDatasetId}&sha=${fallbackDetailsSha}`;
+const fallbackConditionsUrl = `./data/live/ravscore-last-verified-public-conditions.json?dataset=${fallbackDatasetId}&sha=${fallbackConditionsSha}`;
+const fallbackDetailsUrl = `./data/live/ravscore-last-verified-public-condition-details.json?dataset=${fallbackDatasetId}&sha=${fallbackDetailsSha}`;
 const primaryConditionsUrl = `./data/live/public-conditions.json?dataset=${primaryDatasetId}&sha=${primaryConditionsSha}`;
 const manifest = {
   datasetId: primaryDatasetId,
@@ -32,12 +32,13 @@ const manifest = {
   publicConditionsSha256: primaryConditionsSha,
   recoveryFallback: {
     status: 'active-last-verified',
+    modelId: 'RRS-COASTAL-CAUSAL-CHAIN-1',
     datasetId: fallbackDatasetId,
     generatedAt: '2026-08-27T01:34:48.669Z',
     validUntil: '2026-08-30T00:00:00.000Z',
     maximumAgeHours: 72,
-    conditionsPath: './candidate-g-last-verified-public-conditions.json',
-    conditionDetailsPath: './candidate-g-last-verified-public-condition-details.json',
+    conditionsPath: './ravscore-last-verified-public-conditions.json',
+    conditionDetailsPath: './ravscore-last-verified-public-condition-details.json',
     publicConditionsSha256: fallbackConditionsSha,
     publicConditionDetailsSha256: fallbackDetailsSha,
   },
@@ -104,4 +105,4 @@ assert.match(warnings[1], /prognosehorisont/);
 
 Date.now = realNow;
 console.warn = realWarn;
-console.log('Public data-service Candidate G recovery fallback: OK');
+console.log('Public data-service integrated RavScore recovery fallback: OK');

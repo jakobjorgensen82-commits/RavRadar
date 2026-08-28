@@ -35,21 +35,24 @@ const handbookTextLower=handbookText.toLowerCase();
 for(const expertId of Array.from({length:22},(_,i)=>`E-${String(i+1).padStart(2,'0')}`)){
   ok(handbookText.includes(expertId),`Håndbogen mangler ekspertpunkt ${expertId}`);
 }
-for(const marker of ['0,03 m/s','0,15 m/s','13 timers fuld udtransport','48 timers','20 % søgeforhold','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi','størrelsen på et ravlager','én bølgeenergistyret mobiliseringstilstand']){
+for(const marker of ['0,03 m/s','0,15 m/s','6,578813','8,312951','13-timers nul-gate','geometrisk middel','faldende vand','bag en revle','surfzonen','48 timers','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi','størrelsen på et ravlager','én bølgeenergistyret mobiliseringstilstand']){
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
 const scoreEngine=await read('js/core/score-engine.js');
 for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Den historiske sammenligningsmotors forventede auditkonstant mangler: ${marker}`);
 }
-const candidateG=await read('js/core/ravscore-candidate-g.js');
-for(const marker of ['huntability: 0.20','transportAndDelivery: 0.50','mobilisation: 0.30','physicalBottleneckGate','actualOutboundTransport === true','transportPotential === 0','wadersHuntabilityLimit']){
-  ok(candidateG.includes(marker),`Den aktive Candidate G-motor mangler auditkonstanten: ${marker}`);
+const activeRavScore=(await read('js/core/ravscore-next-generation-contract.js'))+(await read('js/core/ravscore-next-generation.js'));
+for(const marker of ['RRS-COASTAL-CAUSAL-CHAIN-1','huntabilityMaximumShare: 0.20','waveDirectionMaximumReduction: 0.20','fallingWaterSearchFocusMaximumHuntabilityPoints: 10','Math.sqrt','supplyCountedOnce: true','surfZoneResolved: false','empiricalFindAccuracyClaimed: false']){
+  ok(activeRavScore.includes(marker),`Den aktive kystkausale RavScore-motor mangler auditkontrakten: ${marker}`);
 }
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0015-HANDBOOK-EVIDENCE-TRACEABILITY.md'),'RDKS mangler DEC-0015 om håndbogens sporbarhed');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0016-HANDBOOK-REFERENCE-WORK.md'),'RDKS mangler DEC-0016 om håndbogens substans');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0017-MULTIPLE-AMBER-PATHWAYS.md'),'RDKS mangler DEC-0017 om flere ravveje');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0018-ADMIN-PERSISTENCE-AND-AREA-INTEGRITY.md'),'RDKS mangler DEC-0018 om områdeintegritet og Supabase-persistens');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0103-COASTAL-CAUSAL-RAVSCORE-ACTIVATION.md'),'RDKS mangler DEC-0103 om den aktive kystkausale RavScore');
+ok(await exists('docs/research/RAVSCORE_NEXT_GENERATION_MODEL_AUDIT_2026-08-28.md'),'RDKS mangler den komplette RavScore-bevaringsaudit');
+ok(await exists('docs/research/RAVSCORE_NEXT_GENERATION_OFFLINE_EVIDENCE_2026-08-28.md'),'RDKS mangler det datasikre RavScore-offlinebevis');
 
 const areaModel=await read('js/core/geographic-areas.js');
 for(const marker of ['Nordjyske østkyst','auditGeographicAreas','matchingZoneIds'])ok(areaModel.includes(marker),`Områdemodellen mangler ${marker}`);
@@ -70,8 +73,8 @@ ok(supabaseAdminRest.includes("startsWith('sb_secret_')")&&supabaseAdminRest.inc
 ok(supabaseAdminRest.includes("parseJson(body)?.code==='PGRST303'")&&supabaseAdminRest.includes('attempt===1'),'Supabase requester mangler snæver én-gangs PGRST303-genprøvning');
 ok(supabaseAdminRest.includes("status===500&&parseJson(body)?.code==='57014'")&&supabaseAdminRest.includes('statement-timeout 57014'),'Supabase requester mangler snæver én-gangs statement-timeout-genprøvning');
 ok(pythonAdminSync.includes('fetch_admin_rows')&&pythonAdminSync.includes('PGRST303')&&pythonAdminSync.includes('GITHUB_ACTIONS'),'Python-adminhydrering mangler fail-closed PGRST303-kontrakt');
-ok(pythonAdminSync.includes('is_candidate_g_only_selection')&&pythonAdminSync.includes('preserved-owner-approved-candidate-g-only-contract'),'Central adminhydrering kan genindføre en gammel offentlig RavScore-konfiguration');
-ok(sync.includes('assertCandidateGOnlySelection')&&sync.includes('candidate-g-local-fail-closed'),'Central adminpersistens mangler Candidate G-only-kontrakten');
+ok(pythonAdminSync.includes('is_public_ravscore_selection')&&pythonAdminSync.includes('preserved-owner-approved-integrated-ravscore-contract'),'Central adminhydrering kan genindføre en gammel offentlig RavScore-konfiguration');
+ok(sync.includes('assertPublicRavScoreSelection')&&sync.includes('ravscore-local-fail-closed'),'Central adminpersistens mangler den integrerede RavScore-kontrakt');
 const publicApp=await read('app.js');
 const publicI18n=await read('js/i18n.js');
 const publicAssistant=await read('js/services/rav-assistant.js');
@@ -94,9 +97,9 @@ for(const marker of [
   '--stage',
   '--publish',
   'candidate-g-last-ready-public-v1-',
-  'Audit actual Candidate G public runtime before deploy',
+  'Audit actual integrated RavScore public runtime before deploy',
 ]){
-  ok(workflow.includes(marker),`Produktionsworkflowet mangler Candidate G-selvrecovery: ${marker}`);
+  ok(workflow.includes(marker),`Produktionsworkflowet mangler RavScore-selvrecovery: ${marker}`);
 }
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
@@ -111,7 +114,7 @@ for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 1
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
 }
 for(const marker of ['expectedPartCount: 673','maximumCheckpointAgeHours: 72','weatherIncluded: false','scoresIncluded: false','rawVectorsIncluded: false','coordinatesIncluded: false','privateDataIncluded: false','stateSha256']){
-  ok(continuationCheckpoint.includes(marker),`Candidate G-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
+  ok(continuationCheckpoint.includes(marker),`RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
 }
 for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale']){
   ok(productionWatchdog.includes(marker),`Produktions-watchdoget mangler fail-safe tilstanden: ${marker}`);
@@ -120,14 +123,14 @@ for(const marker of ['types: [requested, completed]','retry-failed-production:',
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
 }
 const candidateGMemory=await read('js/core/ravscore-regime-memory.js');
-const candidateGStatePipeline=await read('js/core/ravscore-candidate-g-state-pipeline.js');
+const activeRavScoreStatePipeline=await read('js/core/ravscore-next-generation-state-pipeline.js');
 const publicRecovery=await read('scripts/candidate-g-public-recovery-fallback.mjs');
 const publicDataService=await read('js/services/data-service.js');
 const gapCheckpoint=JSON.parse(await read('data/admin/candidate-g-gap-checkpoint-recovery.json'));
 ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGMemory.includes('VERIFIED_TIME_GAP_SUFFIX_RESTART'),'Candidate G-hukommelsen mangler eksplicit opt-in til verificeret suffixgenstart');
-ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
-ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller fail-closed audit');
-ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
+ok(activeRavScoreStatePipeline.includes('buildCandidateGDerivedStateSeries')&&activeRavScoreStatePipeline.includes('migrationStatus'),'RavScore-statepipelinen genbruger ikke den verificerede gap-recovery med eksplicit migration');
+ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('no-compatible-ravscore-fallback-yet')&&publicRecovery.includes('DESCRIPTOR_MODEL_MISMATCH'),'RavScore-nødvisningen mangler 72-timers hard cap, prognoseudløb, modelbinding eller fail-closed overgang');
+ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours')&&publicDataService.includes('NEXT_RAVSCORE_MODEL_ID'),'Offentlig dataindlæsning mangler den bundne og modelverificerede RavScore-nøddrift');
 ok(publicApp.includes("t('data.emergency'")&&publicI18n.includes('Dataene er ikke aktuelle')&&publicI18n.includes('Die Daten sind nicht aktuell')&&publicI18n.includes('The data is not current'),'Den offentlige brugerflade advarer ikke på DA/DE/EN om nøddriftens aktualitet');
 ok(String(gapCheckpoint.sourceRunId)==='33059522170'&&gapCheckpoint.sourceArtifactName==='RavRadar-support-3633'&&gapCheckpoint.maximumResumeGapHours===3,'Det engangs-godkendte Candidate G-gapcheckpoint er ikke låst til den verificerede kilde og tre timer');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md'),'RDKS mangler DEC-0084 om Candidate G-selvrecovery');
@@ -139,8 +142,25 @@ ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages
 ok(workflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
 ok(workflow.includes("--exclude '_support/'"),'Pages-workflow skal udelukke supportmappen fra det offentlige artifact');
 ok(workflow.includes("--exclude 'RavRadar-support-*.zip'"),'Pages-workflow skal udelukke support-ZIP fra det offentlige artifact');
-for(const retiredPublicPath of ['js/ui/admin-app.js','js/core/rule-engine.js','js/services/rule-service.js','rules/']){
-  ok(workflow.includes(`--exclude '${retiredPublicPath}'`),`Pages-workflow skal holde det pensionerede regelværksted ude af det offentlige artifact: ${retiredPublicPath}`);
+for(const retiredPublicPath of [
+  'js/ui/admin-app.js',
+  'js/core/rule-engine.js',
+  'js/services/rule-service.js',
+  'js/core/score-engine.js',
+  'js/core/best-time-selector.js',
+  'js/core/score-candidates.js',
+  'js/core/ravscore-candidate-g.js',
+  'js/core/ravscore-candidate-g-state-pipeline.js',
+  'js/core/ravscore-profile-switch.js',
+  'js/core/ravscore-regime-memory.js',
+  'js/core/ravscore-mobilisation-memory.js',
+  'js/core/ravscore-mode-huntability-research.js',
+  'js/core/ravscore-next-generation.js',
+  'js/core/ravscore-next-generation-profile.js',
+  'js/core/ravscore-next-generation-state-pipeline.js',
+  'rules/',
+]){
+  ok(workflow.includes(`--exclude '${retiredPublicPath}'`),`Pages-workflow skal holde interne eller pensionerede modelmoduler ude af det offentlige artifact: ${retiredPublicPath}`);
 }
 ok(!workflow.includes('generate-public-admin-rules.mjs'),'Workflowet må ikke publicere historiske administratorregler');
 ok(!await exists('scripts/generate-public-admin-rules.mjs'),'Et pensioneret udgivelsesværktøj må ikke kunne genaktivere administratorregler');
@@ -154,7 +174,7 @@ ok(adminHtml.includes('>Kalibreringsgrundlag<')&&!adminHtml.includes('>Model-for
 const adminDashboard=await read('js/ui/admin-dashboard.js');
 ok(!/renderRules|renderKnowledge|openRuleEditor|queueAdminDocumentSave\('rules'|rules_(edit|publish)/.test(adminDashboard),'Skjult Regelværksted-kode må ikke være en aktiv del af adminmodulet');
 ok(!/adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/.test(adminDashboard),'Kalibreringsgrundlaget må ikke kunne aktivere eller tilbagerulle en lokal scoremodel');
-ok(adminDashboard.includes('Siden ændrer aldrig Candidate G eller den offentlige RavScore'),'Kalibreringsgrundlaget skal være tydeligt skrivebeskyttet');
+ok(adminDashboard.includes('Siden ændrer aldrig den offentlige RavScore'),'Kalibreringsgrundlaget skal være tydeligt skrivebeskyttet');
 const serviceWorker=await read('service-worker.js');
 ok(!/rule-engine|rule-service|(?:national|local|experimental)-rules\.json/.test(serviceWorker),'Regelværkstedets gamle motor og regelsæt må ikke ligge i den offentlige offlinepakke');
 const moduleClosureTest=await read('scripts/test-pages-module-closure-4.0.68.mjs');

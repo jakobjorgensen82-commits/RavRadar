@@ -1,89 +1,77 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import {
-  CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  selectPublicRavScoreResult,
-} from '../js/core/ravscore-profile-switch.js';
+import { NEXT_RAVSCORE_MODEL_ID } from '../js/core/ravscore-next-generation.js';
+import { projectNextRavScoreForPublic } from '../js/core/ravscore-next-generation-profile.js';
 
-const profile = {
-  activeProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.280',
-};
-const candidateG = {
+const candidate = {
   available: true,
-  modelId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  score: 33,
-  additiveScore: 33,
+  modelId: NEXT_RAVSCORE_MODEL_ID,
+  score: 42,
   components: {
-    huntability: 100,
-    transport: 28,
-    delivery: 28,
-    transportAndDelivery: 28,
-    mobilisation: 10,
+    coastalSupply: 36,
+    mobilisation: 49,
+    nearshoreSupport: 91,
+    physicalOpportunity: 38,
+    huntability: 70,
   },
-  outflowExhaustionGateApplied: false,
+  explanation: {
+    physicalCoupling: { nearshoreOpportunity: 38, supplyCountedOnce: true },
+  },
+  confidence: { modelMaturity: 'physics-informed-not-find-calibrated', limitations: [] },
 };
-const candidateState = {
-  transportReferenceAt: '2026-08-25T18:00:00.000Z',
-  currentTransition: 'INBOUND_BUILDUP',
-  transportMemoryReady: true,
-  transportMemoryStatus: 'READY',
-  transportMemoryCoverageHours: 48,
-  transportMemoryWindowHours: 48,
-};
-
-const result = selectPublicRavScoreResult({
-  profile,
-  candidateG,
-  candidateState,
+const result = projectNextRavScoreForPublic(candidate, {
   mode: 'beach',
+  profile: { activeProfileId: NEXT_RAVSCORE_MODEL_ID, switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.306' },
   context: {
-    currentVerified: true,
-    currentAlignment: Math.cos(32 * Math.PI / 180),
-    currentSpeedMps: 0.10,
+    measurementStatus: 'VERIFIED',
+    currentTransition: 'INBOUND_BUILDUP',
+    currentDirectionClass: 'INBOUND',
+    currentDirectionDifferenceDeg: 32,
+    transportReferenceAt: '2026-08-25T18:00:00.000Z',
+    transportMemoryReady: true,
+    transportMemoryStatus: 'READY',
+    transportMemoryCoverageHours: 48,
+    transportMemoryWindowHours: 48,
     outboundEpisodeEffectiveHours: 0,
     outboundEpisodeLossPoints: 0,
-    actualOutboundTransport: false,
+    gridOutflowEvidenceActive: false,
   },
 });
 const diagnostics = result.explanation.transportDiagnostics;
-assert.equal(diagnostics.engine, 'CANDIDATE_G');
+assert.equal(diagnostics.engine, 'RAVSCORE_COASTAL_CAUSAL_CHAIN');
 assert.equal(diagnostics.measurementStatus, 'VERIFIED');
 assert.equal(diagnostics.currentDirectionClass, 'INBOUND');
-assert.ok(Math.abs(diagnostics.currentDirectionDifferenceDeg - 32) < 1e-9);
-assert.equal(diagnostics.transportPotential, 28);
-assert.equal(diagnostics.deliveryPotential, 28);
-assert.equal(diagnostics.transportAndDelivery, 28);
+assert.equal(diagnostics.currentDirectionDifferenceDeg, 32);
+assert.equal(diagnostics.transportPotential, 36);
+assert.equal(diagnostics.deliveryPotential, 91);
+assert.equal(diagnostics.transportAndDelivery, 38);
 assert.equal(diagnostics.transportMemoryReady, true);
-assert.equal(diagnostics.transportMemoryStatus, 'READY');
-assert.equal(diagnostics.transportMemoryCoverageHours, 48);
-assert.equal(diagnostics.transportMemoryWindowHours, 48);
-assert.equal(diagnostics.windDirectlyIncluded, false);
+assert.equal(diagnostics.surfZoneResolved, false);
+assert.equal(diagnostics.gridOutflowEvidenceActive, false);
+assert.equal(diagnostics.beachOrSurfZoneDepletionClaimed, false);
+assert.equal(result.explanation.weights, null);
+assert.equal(result.explanation.empiricalFindAccuracyClaimed, false);
 
 const infoPanel = fs.readFileSync('js/ui/info-panel.js', 'utf8');
 for (const marker of [
-  'Candidate G · 20/50/30',
+  'Kystkausal RavScore',
   'Aktuel strømstatus',
   'Forskel strøm/kyst',
   'Strømhistorik',
   'Udgående episode',
-  'Samlet transportkomponent',
-  'Ingen ny måling denne time; seneste verificerede tilstand fastholdes',
+  'Fysisk mulighed',
+  'undertow, feeder-/langskyststrøm eller ripstrømme',
 ]) assert.ok(infoPanel.includes(marker), `Teknisk visning mangler: ${marker}`);
-for (const retired of ['Transport før loft', 'Transport efter loft', 'Nærkystpotentiale']) {
-  assert.ok(!infoPanel.includes(retired), `Forældet felt findes stadig: ${retired}`);
-}
 
 const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 for (const marker of [
   'transportMemoryWindowHours: derivedState.transportMemoryWindowHours',
   'outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints',
-  '...(explanation.transportDiagnostics || {})',
-  '...explanation,',
+  'context: scoreRow?.ravScore?.publicContext',
   "waders: selectedMode(score, 'waders')",
   "beach: selectedMode(score, 'beach')",
   'currentVerified: derivedState.currentVerified === true',
-]) assert.ok(updater.includes(marker), `Produktionskæden taber Candidate G-diagnostik: ${marker}`);
+]) assert.ok(updater.includes(marker), `Produktionskæden taber RavScore-diagnostik: ${marker}`);
 
-console.log('Candidate G-native teknisk diagnosekontrakt: OK');
+console.log('Kystkausal RavScore teknisk diagnosekontrakt: OK');

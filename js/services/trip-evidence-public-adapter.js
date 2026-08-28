@@ -2,7 +2,7 @@ import {
   createCalibrationFeatureSnapshot,
   createForecastSnapshotReference,
   createTripStartRecord
-} from './trip-evidence-contract.js?v=4.0.305';
+} from './trip-evidence-contract.js?v=4.0.306';
 
 function finiteOrNull(value, scale = 1) {
   if (value == null || value === '') return null;
@@ -46,7 +46,10 @@ export function createTripStartFromPublicState({
   });
   const calibrationFeatures = createCalibrationFeatureSnapshot({
     appVersion,
-    modelVersion,
+    modelVersion: modeState.scoreProfileId || modelVersion,
+    modelContractVersion: modeState.modelContractVersion,
+    stateSchemaVersion: modeState.stateSchemaVersion,
+    explanationContractVersion: modeState.explanationContractVersion,
     totalScore: modeState.score,
     huntabilityScore: modeState.components.huntability,
     transportScore: modeState.components.transport,

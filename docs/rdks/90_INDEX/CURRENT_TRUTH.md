@@ -1,6 +1,19 @@
 # Current truth – gældende projektviden
 
-## Ejer-godkendt næste spor – én samlet ny RavScore-model og et separat smårettelsesspor
+## Implementeret 4.0.306-releasekandidat – kystkausal RavScore afventer samlet aktiveringsbevis
+
+- Branch `codex/ravscore-next-generation` bygger fra `origin/main` `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`; seneste dokumenterede fetch 2026-08-28 viste stadig eksakt samme head. Offentlig produktion er fortsat 4.0.305, indtil exact-head, frisk produktion og offentlig kontrol er grønne.
+- Den valgte ene nye model er `RRS-COASTAL-CAUSAL-CHAIN-1`, kontrakt 1.0.0, state-schema 3.0.0. Candidate G er kun historisk/offline sammenligningsreference og må efter aktivering hverken være ekstra offentlig shadowmodel eller scorefallback.
+- Supply og mobilisering er nødvendige led og kobles med geometrisk middel. Bølgeretning kan kun reducere nærkyststøtten bounded; jagtbarhed påvirker højst 20 % bagefter. Supply tælles én gang, og mobilisering/jagtbarhed kan ikke opfinde en fysisk transportvej.
+- Candidate G's +10/-8 og kategoriske 13-timers nul-gate er erstattet af glat supply-opbygning/dæmpning med 6,578813/8,312951 timers halveringstid i det bevarede 48-timers vindue med rand 0. Strømgrænserne 0,03→0,15 m/s og 4/48-timers bølgemobilisering bevares som synlige, ikke-fundkalibrerede priorer.
+- Ekspertens nye præcisering er indarbejdet: faldende vand kan flytte noget rav væk fra den inderste strand og koncentrere det bag en revle eller i en rende, så et mindre område er lettere at afsøge. Det er ikke bevis for tab ud af hele surfzonen. Vandstand giver derfor kun en bounded søgefokus-/jagtbarhedseffekt fra -3 til -15 cm/3 h, højst 10 jagtbarhedspoint og nul supply-/mobiliserings-/strømvirkning.
+- RavRadar har fortsat ingen lokal batymetri eller bølgeopløst surfzonemodel. Gridstrøm, bølgeorbitaler, undertow, feeder-/langskyststrøm og ripstrømme holdes adskilt i kode, forklaring og audit; der opfindes ingen revle/rende eller ekstra vektor.
+- Den gamle kompakte state-, provenance-, gap-, cadence-, privacy-, checkpoint- og recoverykæde genbruges med eksplicit migration og modelbinding. Ingen rå U/V, koordinater, vejr eller gammel score kopieres. Konto/ture/observationer gemmer nyt model-/state-/forklarings-id, mens ældre poster er læsbare.
+- 288 koordinatfrie offlinecases beviser kausal ablation, monotoni, glat 13-timers overgang, wadersloft og bounded vandstand. Rangkorrelation mod Candidate G er 0,871988; resultatet dokumenterer struktur og regressioner, ikke højere empirisk fundpræcision.
+- Producent-/forbrugerkæden er integreret i generator, central profil, startup/detaljer/hashes, ranglister, bedste tid, fem dage, DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin, håndbøger, workflow, checkpoint/recovery og audits. Kodelukningen er måltestet; fuld sourcegate, frisk 210/673-produktion og offentlig desktop/390 px er resterende gates.
+- Se DEC-0103, bevarings-/integrationsauditen og det datasikre offlinebevis under `docs/research/`. Ingen geometri, land-/vandpunkter, private payloads eller credentials er læst eller ændret.
+
+## Historisk startcheckpoint – én samlet ny RavScore-model og et separat smårettelsesspor
 
 - Den offentlige baseline er fortsat produktionsverificeret 4.0.305. Dette checkpoint ændrer ingen kode, version, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter eller private data.
 - Næste modelgeneration bygges autonomt ende til ende i en ny isoleret worktree og udgives først som én samlet kandidat. Den er en analytisk videreudvikling: alt veldokumenteret i Candidate G skal først identificeres og genbruges; kun dokumenteret svage eller ufuldstændige led ændres.
