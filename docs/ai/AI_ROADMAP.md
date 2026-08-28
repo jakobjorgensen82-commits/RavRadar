@@ -1,4 +1,29 @@
-# AI Roadmap – RavRadar 4.0.295+
+# AI Roadmap – RavRadar 4.0.305+
+
+## P0 ejer-godkendt – én integreret næste RavScore-generation
+
+- [ ] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.
+- [ ] Læs hele RDKS-startkæden, aktuelle modelbeslutninger, håndbog, evidensbase og faktisk 4.0.305-kode før ændring.
+- [ ] Klassificér hvert aktivt modelled som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**; genbrug fungerende kode og kontrakter som udgangspunkt.
+- [ ] Udbyg primær evidens om bølgeomformning, orbitalbevægelse, undertow/returstrøm, rip-/langskyststrøm, lette partikler, retention, vandstand og modelusikkerhed.
+- [ ] Design én samlet årsagsmodel for tilførsel, mobilisering, transport, nærkystlevering/aflejring, jagtbarhed og usikkerhed uden dobbelt-tælling.
+- [ ] Implementér kandidaten ende til ende med nyt model-/state-id, migrations-/rollbackvej, missingsemantik og almindelige forklaringer.
+- [ ] Gør kandidaten plug-and-play på seneste RavRadar-`main`: nødvendige adaptere, projektioner, migration og rollback implementeres i modelsporet, så ingen senere RavRadar-ombygning er nødvendig.
+- [ ] Kortlæg og regressionsbevis alle model-forbrugere: DA/DE/EN, lokal/Edge **Spørg RavRadar**, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, workflows, audits og releasegates.
+- [ ] Sammenlign gammel og ny model på invariants, kanoniske/ekstreme/modstridende scenarier, missing, ablation, følsomhed og datasikre historiske/offentlige replays.
+- [ ] Hent og integrér løbende smårettelser fra `origin/main`; før slutrelease skal den eksakte seneste grønne `main` være bevaret.
+- [ ] Kør fuld score-, DMI-, state-, privacy-, RDKS-, release- og browservalidering og luk først gennem én samlet PR, exact-head, produktion og offentlig kontrol.
+
+Ingen offentlig delrelease, ekstra offentlig shadowmodel, kunstig historik, privat payload, geometri- eller land-/vandpunktændring er tilladt. Uden repræsentative fund/nulfund må modellen ikke kaldes empirisk bevist mere fundpræcis. Se DEC-0102.
+
+## Parallelt P1 – mindre rettelser uden modeloverlap
+
+- [ ] Modtag ejerens mindre rettelser i en separat isoleret worktree og implementér dem fra seneste grønne `main`.
+- [ ] Hold Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden og alle modelbeslutninger uden for dette spor.
+- [ ] Følg normal målrettet test, RDKS, version, exact-head, merge, produktion og offentlig verifikation for hver reel produktændring.
+- [ ] Dokumentér merges tydeligt, så modelsporet kan integrere dem uden at miste funktioner.
+
+Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er beskyttede i begge spor.
 
 ## Produktionsverificeret 4.0.294 – naturlige oprindelsesformuleringer
 

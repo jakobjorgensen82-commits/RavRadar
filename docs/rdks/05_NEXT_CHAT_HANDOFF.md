@@ -1,5 +1,17 @@
 # RavRadar – overlevering til næste chat
 
+## Nyt øverste checkpoint – to isolerede Codex-worktrees
+
+- Offentlig baseline er fortsat produktionsverificeret 4.0.305 på `main` `d61c376f2302b8eb3eb3b535fa99605897470e2e`. Klargøringen er docs-only.
+- **Modelsporet** bygger én ny hel RavScore-model ende til ende. Det skal starte analytisk med en komplet bevaringsmatrix, genbruge Candidate G's veldokumenterede dele og kun erstatte noget med dokumenteret grund. Det er ikke fragmentudgivelser og ikke en ekstra offentlig shadowmodel.
+- **Smårettelsessporet** modtager andre ejeropgaver og kan merge dem løbende til `main`, men må ikke ændre Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden eller modelbeslutninger.
+- Modelsporet følger `origin/main`, integrerer alle grønne smårettelser før slutvalidering og udgiver først derefter den samlede model gennem normal exact-head-/produktions-/offentlig kæde.
+- Plug-and-play er en hård acceptgate: modelsporet skal selv tilpasse kandidaten til RavRadars eksisterende input, state, 210/673-runtime, UI/admin, privacy, cache/recovery, forklaringer og releasegates. Der må ikke afleveres et efterfølgende RavRadar-ombygningsbehov.
+- Brug en eksplicit producent-/forbrugermatrix, som mindst dækker DA/DE/EN, lokal/Edge **Spørg RavRadar**, evidens/faste svar, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows, audits og offentlig browser.
+- Ekspertens returstrømsspørgsmål, den faktiske 4.0.305-kode, bevaringskrav, konkrete forbedringspunkter, valideringsgrænser og autonom autoritet står i DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`.
+- Brugerfund er ikke en forudsætning. Påstå ikke empirisk bedre fundnøjagtighed uden repræsentative fund/nulfund.
+- Rør aldrig rod-worktree, `.recovery-*`, private data, geometri, koordinater eller land-/vandpunkter. Modelsporet kræver Sol/Ekstra høj til kritisk analyse og slutvalidering.
+
 ## Produktionsverificeret checkpoint – 4.0.305 fjerner rasterflisegitter
 
 - Det synlige gitter er reproduceret som Leaflet-rasterflisesømme ved brøk-pixelplacering, ikke som zoner, geometri eller vejrdata.

@@ -1,5 +1,20 @@
 # RavRadar - aktuelt Codex-handoff
 
+## GENSTARTSSIKKERT ARBEJDSCHECKPOINT – 2026-08-28 – to isolerede spor
+
+- Ren baseline er `main`/`origin/main` `d61c376f2302b8eb3eb3b535fa99605897470e2e`, produktionsverificeret version 4.0.305. Denne klargøring ændrer kun dokumentation og opretter ingen ny appversion eller produktionsartifact.
+- Ejeren har godkendt én ny samlet RavScore-generation bygget ende til ende i en dedikeret worktree. Den skal arbejde superanalytisk, genbruge alt veldokumenteret fra Candidate G og kun erstatte dele efter et eksplicit BEVAR/FORBEDR/ERSTAT/FJERN-review.
+- Den nye model er én hel kandidat, ikke offentlige fragmenter og ikke en ny samtidig offentlig shadowmodel. Candidate G 4.0.305 forbliver offentlig, indtil kandidaten er samlet integreret og fuldt verificeret.
+- Ekspertspørgsmålet er indarbejdet korrekt: bølgeorbitaler, lokal bundnær modelstrøm og surfzonens undertow/rip-/langskyststrømme er forskellige fænomener. RavRadar har ikke lokal batymetri/surfzoneopløsning og må ikke foregive det.
+- Aktuel kode har allerede stærke dele: lokal verificeret kystnormal strøm, 48-timers bounded transportstate, særskilt bølgeenergimobilisering, bølgeretningsstøtte, strand/waders-adskillelse, missing/provenance og fail-closed release. De er bevaringskandidater.
+- Åbne analysepunkter er især sidste levering/retention, afhængigheden mellem transportlager og levering, mulig vandstandskontekst, dobbelt-tælling samt 20/50/30, +10/-8, 13 timer, 4/48 timer og bølgelandingsandelen som ikke-fundkalibrerede priorer.
+- Brugerfund er ikke en leveranceforudsætning. Modellen må kaldes fysisk/teknisk forbedret efter dokumenteret evidens, invariants, scenarier, ablation og datasikre replays, men ikke empirisk mere fundpræcis uden repræsentative fund/nulfund.
+- Et andet worktree oprettes til mindre rettelser. Det må ikke ændre RavScore/Candidate G/DMI-/strøm-/bølge-/statekæden. Modelsporet følger `origin/main` og integrerer de grønne smårettelser før sin afsluttende release.
+- Kandidaten er først færdig, når den er plug-and-play på seneste `main`. Modelsporet skal selv levere kompatibilitet med input, state, 210/673-runtime, UI/admin, privacy, cache/recovery, forklaringer og releasegates samt nødvendig migration/rollback; RavRadar skal ikke bagefter tilpasses modellen.
+- Kompatibiliteten skal styres af en fuld producent-/forbrugermatrix, ikke hukommelse: DA/DE/EN, lokal og Edge **Spørg RavRadar**, evidens/faste svar, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, state/cache/recovery, workflows, audits og browserkontrol skal alle være lukket i samme leverance.
+- Begge spor må ikke røre rod-worktree, `.recovery-*`, private data, geometri, koordinater eller land-/vandpunkter. Modelsporet stopper kun ved et reelt ejerkrav; rutineanalyse, kode, test, dokumentation, egne sikre PR'er og merges udføres autonomt.
+- Autoritativt grundlag: DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Anbefalet kritisk indstilling er Sol/Ekstra høj.
+
 ## PRODUKTIONSVERIFICERET P1 – 2026-08-28 – 4.0.305 kort uden flisegitter
 
 - Offentlig kontrol reproducerede et hårfint gitter fra Leaflets rasterflisesømme. Fliserne var 256 px og kantstillede korrekt, men laget stod på brøk-pixels.

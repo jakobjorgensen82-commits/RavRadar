@@ -1,5 +1,16 @@
 # Current truth – gældende projektviden
 
+## Ejer-godkendt næste spor – én samlet ny RavScore-model og et separat smårettelsesspor
+
+- Den offentlige baseline er fortsat produktionsverificeret 4.0.305. Dette checkpoint ændrer ingen kode, version, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter eller private data.
+- Næste modelgeneration bygges autonomt ende til ende i en ny isoleret worktree og udgives først som én samlet kandidat. Den er en analytisk videreudvikling: alt veldokumenteret i Candidate G skal først identificeres og genbruges; kun dokumenteret svage eller ufuldstændige led ændres.
+- Det faglige startpunkt er, at bølgeorbitaler, lokal modelstrøm og surfzonens undertow/rip-/langskyststrømme ikke er det samme. RavRadars nærmeste bundnære U/V-kolonne er et kystnært transportbevis, ikke en direkte måling af de sidste meter gennem revler, render og brydningszone.
+- Den nye model skal samle tilførsel, mobilisering, transport, nærkystlevering/retention, jagtbarhed og usikkerhed uden dobbelt-tælling. 20/50/30, +10/-8, 13-timers nul-gate, 4/48-timers mobilisering og bølgelandingsandelen er analysepunkter, ikke tavse naturkonstanter.
+- Brugerfund er efter ejerbeslutning ikke en leveranceforudsætning. Fysisk og teknisk forbedring kan valideres med forskning, invariants, scenarier, ablation og datasikre replays; empirisk bedre fundforudsigelse må ikke påstås uden repræsentativt fund-/nulgrundlag.
+- Et andet isoleret worktree tager mindre rettelser og må merge dem til `main`, men må ikke berøre modelkæden. Modelsporet skal løbende læse nyere `origin/main` og integrere seneste grønne `main` før samlet release.
+- Den færdige kandidat skal være plug-and-play: modellen tilpasses RavRadars eksisterende input, state, 210/673-runtime, UI/admin, privacy, cache og releasekæde. Adaptere, migration og rollback hører til modelleverancen; RavRadar må ikke bagefter kræve en særskilt ombygning.
+- Begge spor må ikke røre rod-worktree, `.recovery-*`, private data, geometri eller land-/vandpunkter. Se DEC-0102 og det permanente arbejdsgrundlag under `docs/research/`.
+
 ## Produktionsverificeret 4.0.305 – rasterkort uden flisegitter
 
 - Det offentlige standardkort reproducerede hårfine linjer ved Leaflets 256 px-flisegrænser. DOM-evidens viste brøk-pixelplacering; zoner, geometri og data var ikke årsagen.
