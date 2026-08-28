@@ -1,3 +1,9 @@
+## 2026-08-28 – 4.0.304 fælles offentlig RavRadar-kontakt
+
+- Ejeren besluttede, at **Skriv til Jakob** under **Om RavRadar** skal erstattes af **Skriv til RavRadar**, og at destinationen skal være `RavRadar@outlook.dk`.
+- Dansk, tysk og engelsk bruger samme RavRadar-identitet og mailadresse; Om-sidekontrakten afviser de tidligere personlige værdier.
+- Kun kontakttekst/destination samt versions- og dokumentationslukning ændres. Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede. Se DEC-0100.
+
 ## 2026-08-28 – 4.0.303 retter den fysisk afviste 4.0.302-opstart
 
 - 4.0.301 virkede på ejerens iPhone, inklusive den interne Om-retur, men første load var cirka 14 sekunder.

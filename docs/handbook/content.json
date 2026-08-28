@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.303",
+  "handbookVersion": "4.0.304",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-28",
   "sections": [
+    {
+      "id": "public-ravradar-contact-4-0-304",
+      "chapter": "79",
+      "title": "Fælles kontakt til RavRadar",
+      "summary": "Om RavRadar bruger nu RavRadar-navnet og den fælles RavRadar-mailadresse på alle tre offentlige sprog.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Kontaktknappen under <em>Om RavRadar</em> hedder <strong>Skriv til RavRadar</strong> og åbner <code>RavRadar@outlook.dk</code> i brugerens eget mailprogram.</div><div class=\"handbook-stack\"><p><strong>Samme identitet på alle sprog:</strong> Dansk, tysk og engelsk bruger RavRadar-navnet og den samme mailadresse.</p><p><strong>Privatliv:</strong> Siden sender eller indsamler ikke oplysninger; der sker kun noget, når brugeren selv aktiverer mail-linket.</p><p><strong>Uændrede grænser:</strong> Ændringen påvirker ikke Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se <code>DEC-0100</code>.</p></div>"
+    },
     {
       "id": "mobile-startup-and-first-install-4-0-303",
       "chapter": "78",

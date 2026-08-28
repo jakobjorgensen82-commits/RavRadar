@@ -1,5 +1,9 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.304 – offentlig kontaktidentitet
+
+- **ISSUE-PUBLIC-ABOUT-PERSONAL-CONTACT – LØST I KILDEKANDIDAT:** Om-siden brugte fortsat en personlig knaptekst og mailadresse. 4.0.304 bruger RavRadar-navnet og `RavRadar@outlook.dk` på dansk, tysk og engelsk og har en negativ regressionstest. Produktionslukning afventer exact-head og offentlig verifikation. Se DEC-0100.
+
 ## 4.0.303 – fysisk mobilopstartsydelse
 
 - **ISSUE-PUBLIC-MOBILE-STARTUP-REGRESSION – PRODUKTIONS- OG FYSISK VERIFICERET LØST I 4.0.303:** 4.0.302's parallelle start gav cirka 30 sekunder koldt og 7–8 sekunder varmt på fysisk iPhone. 4.0.303 bestod PR #209/exact-head, fuld produktion/Pages og offentlig 210 + 5 × 5. Ejeren bekræftede korrekt version, fungerende Om-retur og både kold og varm Safari-start på 4–5 sekunder. Se DEC-0099.

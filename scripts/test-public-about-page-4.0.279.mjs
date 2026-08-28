@@ -6,6 +6,7 @@ const root = process.cwd();
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8');
 const index = read('index.html');
 const about = read('about.html');
+const aboutI18n = read('js/ui/about-i18n.js');
 const aboutCss = read('about.css');
 const style = read('style.css');
 const worker = read('service-worker.js');
@@ -37,7 +38,8 @@ assert.ok(header.includes('id="accountButton"') && header.includes('id="tripButt
 
 for (const expected of [
   'Jakob Jørgensen',
-  'jakob.jorgensen82@gmail.com',
+  'RavRadar@outlook.dk',
+  'Skriv til RavRadar',
   'MobilePay Box: 4214MX',
   '8f2b226a-fd43-43f2-8610-1fa0df857c63',
   'når de en sjælden gang har lyst',
@@ -45,6 +47,15 @@ for (const expected of [
   'Sæby',
   'bevidst forenkling'
 ]) assert.ok(about.includes(expected), `Om-siden mangler: ${expected}`);
+
+for (const expected of ['An RavRadar schreiben', 'Write to RavRadar']) {
+  assert.ok(aboutI18n.includes(expected), `Om-sidens oversættelser mangler: ${expected}`);
+}
+const allAboutSources = `${about}\n${aboutI18n}`;
+assert.equal((allAboutSources.match(/mailto:RavRadar@outlook\.dk/g) || []).length, 3, 'DA/DE/EN skal bruge RavRadars fælles mailadresse');
+for (const removed of ['jakob.jorgensen82@gmail.com', 'Skriv til Jakob', 'Jakob schreiben', 'Write to Jakob']) {
+  assert.equal(allAboutSources.includes(removed), false, `Den tidligere kontaktværdi må ikke findes: ${removed}`);
+}
 
 assert.equal(about.includes('RavRadar viser beregnede vurderinger. Forholdene på stedet kan være anderledes.'), false, 'Den fravalgte bundtekst må ikke vises på Om-siden');
 assert.match(about, /srcset="[^"]*jakob-480\.webp[^"]*jakob-900\.webp/);

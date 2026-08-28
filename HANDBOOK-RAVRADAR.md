@@ -1,5 +1,9 @@
 # RavRadar Håndbog
 
+## Fælles kontakt til RavRadar – 4.0.304
+
+Kontaktknappen under **Om RavRadar** hedder **Skriv til RavRadar** og åbner `RavRadar@outlook.dk` i brugerens eget mailprogram. Den samme RavRadar-identitet og mailadresse bruges på dansk, tysk og engelsk. Kontaktfunktionen indsamler fortsat ingen data på siden. Se [DEC-0100](docs/rdks/10_DECISIONS/DEC-0100-PUBLIC-RAVRADAR-CONTACT.md).
+
 ## Hurtig første og varm mobilstart – 4.0.303
 
 RavRadar prioriterer igen opstarten i en fast rækkefølge: først kortets zoner og kystprojektion, derefter det friske manifest og til sidst den præcist manifestbundne prognosestartpakke. 4.0.302 forsøgte at hente disse dele parallelt. Det så grønt ud i desktopkontrollen, men gjorde en fysisk iPhone markant langsommere og er derfor afvist.
@@ -655,7 +659,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.303
+**Håndbogsversion:** 4.0.304
 
 **Opdateret:** 19. august 2026
 

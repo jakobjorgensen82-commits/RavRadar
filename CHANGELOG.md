@@ -1,3 +1,9 @@
+## 4.0.304 – fælles RavRadar-kontakt (2026-08-28)
+
+- Kontaktknappen på **Om RavRadar** hedder nu **Skriv til RavRadar** og åbner `RavRadar@outlook.dk`.
+- Dansk, tysk og engelsk bruger samme RavRadar-identitet og mailadresse; kontrakttesten afviser de tidligere kontaktværdier.
+- Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0100 og `CHANGELOG-4.0.304.md`.
+
 ## 4.0.303 – prioriteret mobilopstart uden første installationsreload (2026-08-28)
 
 - Ruller 4.0.302's fysisk afviste parallelle opstart tilbage: ejerens iPhone viste cirka 30 sekunder koldt og 7–8 sekunder varmt trods grøn desktop-CI.
