@@ -1,8 +1,16 @@
-## 2026-08-28 – 4.0.306 ejerrettelser i separat smårettelsesspor
+## 2026-08-28 – ejerrettelser integreret efter PR #215
 
-- Ejeren bestilte samlet korrektur, lærings-/illustrationsrettelser, bredere Spørg RavRadar-viden, zonesøgning, kortsignatur/pilkontrast, mobilombrydning og synlige tyske/engelske scorenavne.
-- Implementeringen er afgrænset fra DEC-0102: ingen Candidate G-, DMI/Copernicus-, state-, scoresemantik-, geometri- eller punktændring.
-- DEC-0103 registrerer den aktuelle kontrakt. Exact-head og produktion afventer.
+- UI-, lærings-, zonesøgnings-, oversættelses- og assistentrettelserne er flettet oven på `origin/main` `cfb91420`.
+- Konflikter i model-, profil-, runtime-, release- og statefiler blev løst med den nyere kystkausale model som autoritativ; ejerrettelserne blev derefter genanvendt på forbrugerfladerne.
+- Fuld sourcegate, RDKS, releasegate, geodatadiff og browserkontrol gentages på integrations-head før merge.
+
+## 2026-08-28 – 4.0.306 kystkausal RavScore implementeret som samlet releasekandidat
+
+- `RRS-COASTAL-CAUSAL-CHAIN-1`/state-schema 3 er implementeret som én modelkæde. Candidate G bliver kun historisk/offline reference og kan ikke vælges som offentlig scorefallback.
+- Supply og mobilisering kobles med geometrisk middel, bølgeretning er en bounded nærkystreduktion, og jagtbarhed påvirker højst 20 % bagefter. 20/50/30, +10/-8 og 13-timers nul er erstattet; 48-timers state, 0,03→0,15 og 4/48-mobilisering genbruges med tydelig priorstatus.
+- Ekspertens præcisering er indarbejdet: faldende vand kan flytte rav fra inderste strand og koncentrere det bag revle/i rende. Det giver kun en lille bounded søgefokus-/jagtbarhedseffekt og er ikke bevis for tab ud over surfzonen, lokal batymetri eller en ekstra strømvektor.
+- 288 koordinatfrie offlinecases, migration/rollback, modelbinding, startup/detaljer/hashes, UI/DA-DE-EN, lokal/Edge-assistent, konto/ture/observationer, admin, workflow/recovery og audits er implementeret og måltestet. Ingen empirisk bedre fundpræcision påstås.
+- Seneste fetch viste `origin/main` uændret på `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`. Version, fuld sourcegate, PR/exact-head, frisk 210/673-produktion og offentlig desktop/mobilkontrol mangler fortsat. Se DEC-0103 og `docs/research/RAVSCORE_NEXT_GENERATION_MODEL_AUDIT_2026-08-28.md`.
 
 ## 2026-08-28 – godkendt todelt arbejdsform og næste samlede RavScore-model
 

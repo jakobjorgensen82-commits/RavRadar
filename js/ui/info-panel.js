@@ -1,4 +1,4 @@
-import { scoreRating } from "../core/score-engine.js?v=4.0.306";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.306";
 import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.306";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
@@ -46,8 +46,9 @@ function componentDetails(name, key, result, definition) {
   const weather=result.localWeather||{};
   const directionClass=result.explanation?.transportDiagnostics?.currentDirectionClass;
   const directionKey=directionClass==='INBOUND'?'score.direction.inbound':directionClass==='ALONG_COAST'?'score.direction.along':directionClass==='OUTBOUND'?'score.direction.outbound':'score.direction.unknown';
+  const fallingWaterFocus=result.explanation?.causalExplanation?.waterLevel?.huntabilityBonusPoints>0;
   const stableReason=key==='huntability'
-    ? t('score.reason.huntability',{score:componentScore,wind:formatMetric(weather.windSpeedMps,'m/s'),waves:formatMetric(weather.waveHeightM,'m')})
+    ? t(fallingWaterFocus?'score.reason.huntabilityFallingWater':'score.reason.huntability',{score:componentScore,wind:formatMetric(weather.windSpeedMps,'m/s'),waves:formatMetric(weather.waveHeightM,'m')})
     : key==='transport'
       ? t('score.reason.transport',{score:componentScore,current:formatMetric(weather.currentSpeedMps,'m/s',2),direction:t(directionKey)})
       : t('score.reason.mobilisation',{score:componentScore,waves:formatMetric(weather.waveHeightM,'m'),period:formatMetric(weather.wavePeriodS,'s')});
@@ -142,9 +143,9 @@ function debugPanel(zone, result, condition) {
   const debugCondition = result.localWeather || condition;
   const d = result.explanation?.transportDiagnostics || {};
   const mobilisation = result.explanation?.mobilisationDiagnostics || {};
-  const isCandidateG = d.engine === "CANDIDATE_G";
+  const isRavScore = d.engine === "RAVSCORE_COASTAL_CAUSAL_CHAIN";
   const provider = debugCondition.providerLabel || debugCondition.provider || debugCondition.currentProvenance?.provider || "DMI";
-  if (!isCandidateG) return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content"><p class="debug-warning"><b>Teknisk visning kan ikke vises.</b> Den offentlige Candidate G-diagnostik blev ikke leveret for denne beregning.</p></div></details>`;
+  if (!isRavScore) return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content"><p class="debug-warning"><b>Teknisk visning kan ikke vises.</b> Den offentlige RavScore-diagnostik blev ikke leveret for denne beregning.</p></div></details>`;
   const verified = d.measurementStatus === "VERIFIED";
   const held = d.measurementStatus === "NATIVE_CADENCE_HOLD";
   const currentMeasurement = verified
@@ -173,15 +174,15 @@ function debugPanel(zone, result, condition) {
     : "Ikke leveret";
   const rows = [
     ["Transportpotentiale", technicalScore(d.transportPotential), "Opbygget af det dokumenterede strømforløb."],
-    ["Levering mod kysten", technicalScore(d.deliveryPotential), "Hvor meget af transportpotentialet der kan leveres kystnært."],
-    ["Samlet transportkomponent", technicalScore(d.transportAndDelivery), "65 % transportpotentiale og 35 % levering mod kysten."],
+    ["Nærkyststøtte", technicalScore(d.deliveryPotential), "Et begrænset retningssignal; ikke en opløst surfzone eller strandingschance."],
+    ["Fysisk mulighed", technicalScore(d.transportAndDelivery), "Kystnær tilførsel og mobilisering koblet kausalt, derefter begrænset af nærkyststøtten."],
     ["Rav i bevægelse", technicalScore(mobilisation.mobilisationPotential), "Bølgeforløbets opbyggede mobilisering."],
   ].map(([name,value,meaning]) => `<tr><td>${name}</td><td>${value}</td><td>${meaning}</td></tr>`).join("");
   return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content">
-    <p class="debug-warning"><b>Teknisk Candidate G-visning.</b> Bruges til at kontrollere, at målinger, kystretning, historik og score passer fysisk sammen. Vinden indgår ikke direkte i transportscoren.</p>
+    <p class="debug-warning"><b>Teknisk kystkausal RavScore-visning.</b> Bruges til at kontrollere, at tilførsel, mobilisering, nærkyststøtte og søgeforhold hænger fysisk sammen. Modellen opløser ikke undertow, feeder-/langskyststrøm eller ripstrømme uden lokal batymetri.</p>
     <div class="debug-grid">
       <div><span>Zone-ID</span><strong>${escapeHtml(debugZone.id)}</strong></div>
-      <div><span>Scoremotor</span><strong>Candidate G · 20/50/30</strong></div>
+      <div><span>Scoremotor</span><strong>Kystkausal RavScore</strong></div>
       <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
       <div><span>Pålandsretning</span><strong>${compass(debugZone.onshoreDirectionDeg)}</strong></div>
       <div><span>Retningskilde</span><strong>${escapeHtml(debugZone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
@@ -193,14 +194,14 @@ function debugPanel(zone, result, condition) {
       <div><span>Historisk fase</span><strong>${escapeHtml(phase)}</strong></div>
       <div><span>Udgående episode</span><strong>${escapeHtml(outboundHours)}</strong></div>
       <div><span>Tab ved udgående strøm</span><strong>${escapeHtml(outboundLoss)}</strong></div>
-      <div><span>Kraftig udtransport</span><strong>${d.actualOutboundTransport ? "Ja" : "Nej"}</strong></div>
+      <div><span>Udgående grid-evidens aktiv</span><strong>${d.gridOutflowEvidenceActive ? "Ja" : "Nej"}</strong></div>
       <div><span>Transportpotentiale</span><strong>${technicalScore(d.transportPotential)}</strong></div>
-      <div><span>Levering mod kysten</span><strong>${technicalScore(d.deliveryPotential)}</strong></div>
-      <div><span>Samlet transportkomponent</span><strong>${technicalScore(d.transportAndDelivery)}</strong></div>
+      <div><span>Nærkyststøtte</span><strong>${technicalScore(d.deliveryPotential)}</strong></div>
+      <div><span>Fysisk mulighed</span><strong>${technicalScore(d.transportAndDelivery)}</strong></div>
       <div><span>Rav i bevægelse</span><strong>${technicalScore(mobilisation.mobilisationPotential)}</strong></div>
       <div><span>Endelig RavScore</span><strong>${result.score ?? "–"}/100</strong></div>
     </div>
-    <h4>Candidate G’s beregningsled</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Led</th><th>Værdi</th><th>Betydning</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <h4>RavScores kausale beregningsled</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Led</th><th>Værdi</th><th>Betydning</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div></details>`;
 }
 

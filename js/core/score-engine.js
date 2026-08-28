@@ -3,33 +3,14 @@ import { evaluateDirectionAnchors, anchorClassification, buildCoastTransportExpl
 import { evaluateTransportEvent, classifyCoastalZone } from './coastal-process-model.js?v=4.0.306';
 import { buildScoreDebugTrace } from './debug-trace.js?v=4.0.306';
 import { boundedWaveTransportAdjustment } from './wave-approach.js?v=4.0.306';
+import { scoreRating } from './score-presentation.js?v=4.0.306';
+export { SCORE_PRESENTATION, exceptionalScoreMark, scoreRating } from './score-presentation.js?v=4.0.306';
 const clamp = (value, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 const numberOrNull = value => (value === null || value === undefined || value === '' || typeof value === 'boolean') ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
 const daNumber = (value, digits = 1) => Number(value).toFixed(digits).replace('.', ',');
 
 export const SCORE_WEIGHTS = Object.freeze({ huntability: 0.25, transport: 0.40, release: 0.35 });
 
-export const SCORE_PRESENTATION = Object.freeze({
-  exceptionalMinimum: 90,
-  levels: Object.freeze([
-    Object.freeze({ minimum: 75, label: "God", level: "good" }),
-    Object.freeze({ minimum: 55, label: "Middel", level: "fair" }),
-    Object.freeze({ minimum: 35, label: "Svag", level: "weak" }),
-    Object.freeze({ minimum: 0, label: "Dårlig", level: "poor" })
-  ])
-});
-
-export function scoreRating(score) {
-  if (score === null || score === undefined || score === "") return { label: "Ingen data", level: "unavailable", exceptional: false };
-  const value = Number(score);
-  if (!Number.isFinite(value)) return { label: "Ingen data", level: "unavailable", exceptional: false };
-  const rating = SCORE_PRESENTATION.levels.find(item => value >= item.minimum) || SCORE_PRESENTATION.levels.at(-1);
-  return { ...rating, exceptional: value >= SCORE_PRESENTATION.exceptionalMinimum };
-}
-
-export function exceptionalScoreMark(score, { symbol = "★" } = {}) {
-  return scoreRating(score).exceptional ? symbol : "";
-}
 function angularDifference(a, b) { const d = Math.abs(((a - b + 540) % 360) - 180); return Number.isFinite(d) ? d : null; }
 function directionScore(directionDeg, targetDeg) {
   const direction = numberOrNull(directionDeg), target = numberOrNull(targetDeg);

@@ -161,7 +161,11 @@ for (const html of [aboutHtml, learnHtml]) {
 }
 for (const language of ['de', 'en']) {
   const score = i18n.t('learn.score', {}, language);
-  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '13']) assert.ok(score.includes(marker), `${language} mangler Candidate G-markøren ${marker} i grundbogen.`);
+  for (const marker of ['6 m/s', '15 m/s', '13']) assert.ok(score.includes(marker), `${language} mangler den kystkausale RavScore-markør ${marker} i grundbogen.`);
+  assert.match(score, /48-(?:Stunden|hour)/i, `${language} mangler den glatte 48-timers supplytilstand.`);
+  assert.match(score, /Fallendes Wasser|Falling water/i, `${language} mangler faldende vands bounded søgefokus.`);
+  assert.match(score, /keine feste 13-Stunden-Nullregel|no fixed 13-hour zero rule/i, `${language} genindfører den gamle 13-timers gate.`);
+  assert.doesNotMatch(score, /20\s*%[\s\S]{0,250}50\s*%[\s\S]{0,250}30\s*%/, `${language} må ikke beskrive historisk 20/50/30 som aktiv model.`);
   assert.match(i18n.t('learn.knowledge', {}, language), /not.*safe|Sicherheit/i, `${language} mangler grundbogens sikkerhedsgrænse.`);
   assert.equal((i18n.t('learn.knowledge', {}, language).match(/https:\/\//g) || []).length, 7, `${language} skal bevare alle syv faglige kildelinks.`);
   assert.match(i18n.t('about.support', {}, language), /id="mobilepay-qr"/, `${language} skal bevare QR-målet.`);

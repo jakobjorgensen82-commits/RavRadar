@@ -1,6 +1,11 @@
-import { scoreRating } from './score-engine.js?v=4.0.306';
+import { scoreRating } from './score-presentation.js?v=4.0.306';
 
 const finite = value => Number.isFinite(Number(value));
+const waterSearchTieValue = row => {
+  const level = finite(row?.weather?.waterLevelCm) ? Number(row.weather.waterLevelCm) : Number.POSITIVE_INFINITY;
+  const trend = finite(row?.weather?.waterLevelTrendCm3h) ? Number(row.weather.waterLevelTrendCm3h) : 0;
+  return level + trend * 3;
+};
 const coverageReason = value => Number(value?.comparisonPartCount) <= 1
   ? 'Der er kun beregnet én kystdel. Derfor kan forskelle inden for zonen endnu ikke sammenlignes.'
   : value?.status === 'whole-zone'
@@ -43,9 +48,9 @@ export function buildLocalZoneScore({coastalParts,zoneId,mode,time}) {
     const reasons=(value?.reasons||[]).filter(Boolean);
     return {
       available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',
-      reasons:reasons.length?reasons:['Det sammenhængende datagrundlag til Candidate G mangler for denne zone lige nu.'],
+      reasons:reasons.length?reasons:['Det sammenhængende datagrundlag til RavScore mangler for denne zone lige nu.'],
       unavailability:{
-        policy:'candidate-g-local-fail-closed',
+        policy:'ravscore-local-fail-closed',
         validPartCount:Number(value?.validPartCount??0),
         expectedPartCount:Number(value?.expectedPartCount??coastalParts?.zones?.[zoneId]?.expectedPartCount??0),
         parts:value?.unavailableParts||[],
@@ -84,7 +89,9 @@ export function selectLocalBestForDay({coastalParts,zoneId,mode,date,now=Date.no
     .filter(row=>String(row.time||'').slice(0,10)===date)
     .map(row=>({row,result:buildLocalZoneScore({coastalParts,zoneId,mode,time:row.time})}))
     .filter(item=>item.result?.available)
-    .sort((a,b)=>Number(b.result.score)-Number(a.result.score)||Date.parse(a.row.time)-Date.parse(b.row.time));
+    .sort((a,b)=>Number(b.result.score)-Number(a.result.score)
+      || waterSearchTieValue(a.row)-waterSearchTieValue(b.row)
+      || Date.parse(a.row.time)-Date.parse(b.row.time));
   if(!candidates.length)return null;
   const best=candidates[0];
   return {

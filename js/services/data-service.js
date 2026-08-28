@@ -1,4 +1,5 @@
 import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.306';
+import { NEXT_RAVSCORE_MODEL_ID } from '../core/ravscore-next-generation-contract.js?v=4.0.306';
 export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.306';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL='./data/live/public-condition-details.json';
@@ -48,6 +49,7 @@ export async function loadConditions({manifest=null}={}){try{
   const recovery=manifest?.recoveryFallback;
   if(recovery?.status==='active-last-verified'){
     try{
+      if(recovery.modelId!==NEXT_RAVSCORE_MODEL_ID)throw new Error('Nødvisningens RavScore-model matcher ikke den aktive app.');
       const fallbackUrl=recoveryFallbackUrl(manifest,'conditionsPath');
       if(!fallbackUrl)throw new Error('Nødvisningen mangler startdatasti.');
       const fallback=await fetchJson(fallbackUrl,{ttlMs:2*60*1000,cache:contentAddressedCache(fallbackUrl)});
@@ -59,7 +61,7 @@ export async function loadConditions({manifest=null}={}){try{
       const validUntil=Date.parse(recovery?.validUntil||'');
       if(!Number.isFinite(validUntil)||Date.now()>validUntil)throw new Error('Nødvisningens prognosehorisont er udløbet.');
       return {...fallback,available:true,recoveryFallbackActive:true,recoveryFallback:{...recovery,ageHours},latestDatasetId:manifest?.datasetId||null,latestGeneratedAt:manifest?.generatedAt||null};
-    }catch(error){console.warn('Senest verificerede Candidate G-nødvisning kunne ikke bruges',error);}
+    }catch(error){console.warn('Senest verificerede RavScore-nødvisning kunne ikke bruges',error);}
   }
   const url=publicConditionsUrl(manifest);const data=await fetchJson(url,{ttlMs:2*60*1000,cache:contentAddressedCache(url)});
   if(manifest?.datasetId&&data?.datasetId!==manifest.datasetId)throw new Error('Datasættet blev opdateret under indlæsningen. Prøv igen.');

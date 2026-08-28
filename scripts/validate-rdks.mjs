@@ -19,7 +19,10 @@ const required = [
   'docs/ai/AI_ROADMAP.md',
   'docs/ai/AI_LESSONS_LEARNED.md',
   'docs/ai/CODEX_HANDOFF_CHECKLIST.md',
-  'docs/handbook/content.json'
+  'docs/handbook/content.json',
+  'docs/rdks/10_DECISIONS/DEC-0103-COASTAL-CAUSAL-RAVSCORE-ACTIVATION.md',
+  'docs/research/RAVSCORE_NEXT_GENERATION_MODEL_AUDIT_2026-08-28.md',
+  'docs/research/RAVSCORE_NEXT_GENERATION_OFFLINE_EVIDENCE_2026-08-28.md'
 ];
 for (const file of required) {
   const text = await fs.readFile(file, 'utf8');

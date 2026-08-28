@@ -69,8 +69,11 @@ function validateContract(knowledge, suite) {
   assert.equal(knowledge.schemaVersion, 'rav-assistant-public-knowledge-v1');
   assert.equal(suite.knowledgeVersion, knowledge.schemaVersion);
   assert.equal(knowledge.releaseVersion, suite.releaseVersion);
-  assert.deepEqual(knowledge.scoreModel.weights, { huntability: 20, transport: 50, mobilisation: 30 });
-  assert.equal(knowledge.scoreModel.id, 'candidate-g');
+  assert.deepEqual(knowledge.scoreModel.causalOrder,
+    ['coastalSupply', 'mobilisation', 'nearshoreSupport', 'huntability']);
+  assert.equal(knowledge.scoreModel.additiveWeights, null);
+  assert.equal(knowledge.scoreModel.id, 'RRS-COASTAL-CAUSAL-CHAIN-1');
+  assert.equal(knowledge.scoreModel.empiricalFindAccuracyClaimed, false);
   assert.equal(knowledge.scoreModel.publicOnly, true);
   assert.deepEqual(new Set(knowledge.locales), LOCALES);
 
@@ -131,7 +134,7 @@ function systemInstruction(knowledge) {
     'Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.',
     'Disposition examples: “Can you guarantee a find?” is answer because the no-find-guarantee fact answers it. “Does this score mean wading is safe?” is answer because the safety-boundary fact answers it. “What happens when coherent zone data are missing?” is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.',
     'For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.',
-    'For a RavScore weights question, state that Candidate G is the only public score model and cite both score.candidate-g-only and score.weights-20-50-30.',
+    'For a RavScore model question, explain the causal order without inventing additive weights and cite both score.integrated-model-only and score.causal-coupling.',
     `Fixed out-of-scope replies: ${JSON.stringify(knowledge.fixedRefusals)}`,
     'Return exactly one JSON object and nothing else. Do not use Markdown fences or expose reasoning. The object must contain exactly schemaVersion, locale, disposition, answer and evidenceIds. schemaVersion must be rav-assistant-response-v1.',
   ].join('\n');

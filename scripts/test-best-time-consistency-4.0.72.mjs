@@ -22,4 +22,9 @@ const tieHigh={...current,time:'2026-08-03T09:00:00.000Z',waterLevelCm:10};
 const tie=selectBestTimeForDay({day:{date:'2026-08-03',hours:[tieHigh,tieLow]},zone,mode:'waders',history,now});
 assert.equal(tie.hour.time,tieLow.time,'Ved samme RavScore må lavere vandstand bruges som tie-breaker for waders');
 
+const tieFalling={...current,time:'2026-08-04T09:00:00.000Z',waterLevelCm:0,waterLevelTrendCm3h:-6};
+const tieRising={...current,time:'2026-08-04T08:00:00.000Z',waterLevelCm:0,waterLevelTrendCm3h:6};
+const falling=selectBestTimeForDay({day:{date:'2026-08-04',hours:[tieRising,tieFalling]},zone,mode:'beach',history,now});
+assert.equal(falling.hour.time,tieFalling.time,'Ved samme RavScore og vandstand må faldende vand foretrækkes som søgefokus-tie-breaker');
+
 console.log('OK: Bedste tidspunkt bruger højeste samlede RavScore, inkluderer lige nu og ignorerer fortid.');

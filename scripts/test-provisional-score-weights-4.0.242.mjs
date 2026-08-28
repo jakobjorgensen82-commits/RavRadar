@@ -1,27 +1,47 @@
 import assert from 'node:assert/strict';
-import { CANDIDATE_G_WEIGHTS } from '../js/core/ravscore-candidate-g.js?weights=4.0.273';
 import {
-  CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  PUBLIC_RAVSCORE_PROFILE_SELECTION,
-  resolvePublicRavScoreProfile,
-} from '../js/core/ravscore-profile-switch.js?weights=4.0.273';
+  NEXT_RAVSCORE_MODEL_ID,
+  NEXT_RAVSCORE_PRIORS,
+  evaluateNextGenerationRavScore,
+} from '../js/core/ravscore-next-generation.js';
+import {
+  NEXT_PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  resolveNextPublicRavScoreProfile,
+} from '../js/core/ravscore-next-generation-profile.js';
 
-const expected = { huntability: 0.20, transportAndDelivery: 0.50, mobilisation: 0.30 };
-assert.deepEqual(CANDIDATE_G_WEIGHTS, expected, 'Den eneste offentlige RavScore skal bruge Candidate G 20/50/30.');
-assert.equal(Object.values(CANDIDATE_G_WEIGHTS).reduce((sum, value) => sum + value, 0), 1, 'Vægtene skal summere til 1.');
-assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.rollbackProfileId, null, 'Der må ikke være en offentlig rollbackprofil.');
-assert.equal(PUBLIC_RAVSCORE_PROFILE_SELECTION.legacyPublicFallbackAllowed, false, 'Gammel offentlig fallback skal være slået fra.');
-assert.equal(resolvePublicRavScoreProfile().activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID, 'Candidate G skal altid være den offentlige profil.');
+assert.equal(NEXT_RAVSCORE_PRIORS.huntabilityMaximumShare, 0.20,
+  'Jagtbarhed må højst modulere 20 % efter den fysiske mulighed.');
+assert.equal(NEXT_RAVSCORE_PRIORS.waveDirectionMaximumReduction, 0.20,
+  'Bølgeretningen må højst reducere nærkyststøtten 20 %.');
+assert.equal(NEXT_RAVSCORE_PRIORS.categoricalOutflowExhaustionGate, false,
+  'Den historiske 13-timers nul-gate må ikke være aktiv.');
+assert.equal(NEXT_PUBLIC_RAVSCORE_PROFILE_SELECTION.rollbackProfileId, null,
+  'Der må ikke være en offentlig rollbackscoreprofil.');
+assert.equal(NEXT_PUBLIC_RAVSCORE_PROFILE_SELECTION.legacyPublicFallbackAllowed, false,
+  'Gammel offentlig scorefallback skal være slået fra.');
+assert.equal(
+  resolveNextPublicRavScoreProfile({ modelCoverageReady: true, modelMemoryReady: true }).activeProfileId,
+  NEXT_RAVSCORE_MODEL_ID,
+  'Den kystkausale RavScore skal være den eneste offentlige profil.',
+);
 
-const weighted = ({ huntability, transport, release }) =>
-  Math.round(huntability * CANDIDATE_G_WEIGHTS.huntability
-    + transport * CANDIDATE_G_WEIGHTS.transportAndDelivery
-    + release * CANDIDATE_G_WEIGHTS.mobilisation);
+const context = {
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 0 },
+  weather: {
+    windSpeedMps: 2,
+    waveHeightM: 1,
+    wavePeriodS: 7,
+    waveDirectionDeg: 180,
+    waterLevelTrendCm3h: 0,
+  },
+};
+const evaluate = memory => evaluateNextGenerationRavScore(context, { memory });
+assert.equal(evaluate({ transportPotential: 0, mobilisationPotential: 100 }).score, 0,
+  'Mobilisering må ikke skabe supply.');
+assert.equal(evaluate({ transportPotential: 100, mobilisationPotential: 0 }).score, 0,
+  'Supply uden mobilisering må ikke skabe fysisk mulighed.');
+assert.ok(evaluate({ transportPotential: 100, mobilisationPotential: 100 }).score > 0,
+  'Komplet fysisk kæde skal kunne give en positiv score.');
 
-assert.equal(weighted({ huntability: 100, transport: 0, release: 0 }), 20);
-assert.equal(weighted({ huntability: 0, transport: 100, release: 0 }), 50);
-assert.equal(weighted({ huntability: 0, transport: 0, release: 100 }), 30);
-assert.equal(weighted({ huntability: 100, transport: 100, release: 100 }), 100);
-assert.equal(weighted({ huntability: 0, transport: 0, release: 0 }), 0);
-
-console.log('OK: Candidate G er eneste offentlige RavScore, låst til 20/50/30 uden gammel fallback.');
+console.log('OK: kystkausal RavScore er eneste offentlige profil uden 20/50/30, 13-timers gate eller legacyfallback.');
