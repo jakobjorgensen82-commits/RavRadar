@@ -1,11 +1,11 @@
 # RavRadar – overlevering til næste chat
 
-## Kildekandidat 4.0.297 – fysisk mobilretur fra bfcache
+## Kildekandidat 4.0.298 – direkte Safari-/Hjemmeskærm-retur
 
-- Produktionsbaseline er fortsat 4.0.296 på merge `f1cd5868`; dens kompakte startup og offentlige funktionskontrol er grøn.
-- Ejeren har fysisk observeret, at mobil retur fra eksempelvis **Om RavRadar** kan give en tom forside uden kort og prognoser. Desktopretur er grøn; behandl derfor fejlen som mobil bfcache/suspension og ikke som den løste payloadflaskehals.
-- 4.0.297 installerer returværnet før async bootstrap. En persisted mobilretur genindlæser rent, og en retur før appimport gør det samme. Desktop bevarer genoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
-- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Kør PR exact-head, produktion og offentlig kontrol; få derefter ejeren til at teste **Om RavRadar** → tilbage på den fysiske mobil. Kald ikke problemet fysisk løst før dette bevis. Se DEC-0094.
+- Produktionsbaseline er 4.0.297 på merge `f1adf9b1`; PR #201/exact-head `33162270459`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol er grønne.
+- Ejerens fysiske iPhone-prøve fejlede fortsat. Den afgørende præcisering er, at retur sker gennem RavRadars eget link inde på **Om RavRadar**, ikke browserens tilbageknap. 4.0.297's bfcache-værn ramte derfor den forkerte hændelsesvej.
+- 4.0.298 laver en entydig root-navigation med `return=about`, version og nonce. Et tidligt selvhostet head-værn kræver kort, fem aktuelle områder, fem dagsfaner og fem viste rækker og må højst genindlæse én gang efter seks sekunder.
+- Samme vej er scope-sikker for både Safari og Hjemmeskærm-app. Målrettede tests og fuld lokal source-/releasegate er grønne; kør PR exact-head, fuld produktion og offentlig kontrol, og få derefter ejeren til at teste Safari først og Hjemmeskærm bagefter. Se DEC-0095.
 - Rør ikke Sibirien, koordinater, geometri, private data eller Candidate G-state. Den private staged punktrevision kræver fortsat separat modning og ejer-go.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startpakke

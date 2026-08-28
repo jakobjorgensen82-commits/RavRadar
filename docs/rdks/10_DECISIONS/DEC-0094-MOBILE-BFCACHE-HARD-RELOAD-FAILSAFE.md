@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementeret kildekandidat til 4.0.297 efter ejerens fysiske mobilobservation 2026-08-28. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk efterkontrol afventer.
+Produktionsudgivet i 4.0.297 gennem PR #201, exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503`. Ejerens efterfølgende fysiske iPhone-test var fortsat rød, fordi den faktisk brugte retur var RavRadars eget link og ikke browserens tilbageknap/bfcache. Den særskilte direkte-link-kontrakt følges op i DEC-0095/4.0.298; 4.0.297 må ikke kaldes den fysiske løsning.
 
 ## Problem
 
@@ -28,3 +28,9 @@ Rettelsen ændrer kun den offentlige sides browserlivscyklus. Den ændrer ikke C
 - Hvis 4.0.297 udgiver et nyt artifact, skal fuld produktion, releasegate og Pages bestå.
 - Offentlig version, farvet kort, fem **Bedste områder**, fem resultater på alle fem prognosedage og den forbedrede opstartstid skal genverificeres.
 - Ejeren skal til sidst bekræfte den konkrete retur fra **Om RavRadar** på den fysiske mobil. Indtil da må fejlen ikke kaldes fysisk produktionsverificeret løst.
+
+## Efterfølgende evidens
+
+- Exact-head, fuld produktion, Pages og offentlig desktopretur bestod for 4.0.297.
+- Ejeren præciserede efter den fejlede iPhone-prøve, at testen bruger RavRadars egen tilbageknap på **Om RavRadar**, ikke browserens tilbageknap.
+- Det interne link udløser ikke pålideligt `pageshow.persisted`; DEC-0094 bevares for browserhistorik, mens DEC-0095 styrer den faktiske direkte returvej i Safari og Hjemmeskærm-app.

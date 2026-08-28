@@ -1,11 +1,11 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.297 – mobil bfcache-failsafe
+## Kildekandidat 4.0.298 – direkte Safari-/Hjemmeskærm-retur
 
-- 4.0.296 på merge `f1cd5868` er den aktuelle produktionsverificerede baseline med hurtig kompakt startup.
-- Ejerens fysiske mobil viser en regression: efter retur fra eksempelvis **Om RavRadar** kan kort og prognoser mangle. Desktopretur lykkes, så tidligere automatiseret viewportbevis er ikke tilstrækkeligt.
-- 4.0.297 genindlæser en persisted mobilretur rent fra et værn installeret før async bootstrap. Retur før appimport genindlæser også; desktop genoptegner fortsat med et tresekunders watchdog og konkret DOM-sundhed for Leaflet, rangliste og femdøgnsvisning.
-- Målrettede lokale tests og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig ydelse/funktion og fysisk mobilretur afventer. Se DEC-0094.
+- 4.0.297 på merge `f1adf9b1` er den aktuelle produktionsverificerede baseline. PR #201/exact-head `33162270459`, produktion `33162334072`, build `98819572518`, Pages `98821497503`, offentlig funktion og ydelse var grønne.
+- Fysisk iPhone-test viste fortsat tomt kort/prognoser. Ejeren bruger RavRadars eget link på **Om RavRadar**, ikke browserens tilbageknap; 4.0.297 dækkede derfor ikke den faktiske direkte navigation.
+- 4.0.298 giver linket en unik, versionsbundet root-URL og installerer et tidligt head-værn. Sundhed kræver kort, fem aktuelle områder, fem dagsfaner og fem viste prognoserækker; efter seks sekunder tillades præcis én frisk retry uden løkker.
+- Samme kontrakt gælder Safari og Hjemmeskærm-app. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion, offentlig kontrol og begge fysiske iPhone-veje afventer. Se DEC-0095.
 - Ingen faglig model, data, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startprojektion

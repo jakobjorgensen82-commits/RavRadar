@@ -1,12 +1,12 @@
 # RavRadar - aktuelt Codex-handoff
 
-## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.297 mobil bfcache-failsafe
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.298 direkte Safari-/Hjemmeskærm-retur
 
-- 4.0.296 er fortsat den produktionsverificerede baseline på `origin/main` `f1cd5868bda1f33c8a137cdab0baffaa31c7d698`; dens kompakte startup og offentlige 399.801-byte/1,37-sekunders no-cache-resultat er grønt.
-- Ejeren har på fysisk mobil observeret, at retur fra eksempelvis **Om RavRadar** igen kan efterlade kort og prognoser tomme. Samme completed-home → Om → retur kunne ikke reproduceres på desktop, så fysisk mobilevidens overtrumfer den tidligere automatiserede 390 px-kontrol.
-- 4.0.297 installerer et `pageshow.persisted`-værn før async bootstrap. Mobil (`max-width: 900px`) genindlæser straks rent; retur før appimport genindlæser også. Desktop genoptegner fortsat, men et tresekunders watchdog og DOM-sundhed for Leaflet, **Bedste områder** og **5-dages RavRadar** falder tilbage til reload.
-- En normal reload har `persisted=false`, så der er ingen reloadløkke. Målrettede tests for mobil, tidlig import, sund desktop, watchdog og usund DOM er grønne før versionsløftet.
-- Fuld lokal source-/releasegate er grøn. PR exact-head, produktion, offentlig funktion/ydelse og ejerens fysiske mobilretur afventer. Fejlen må ikke kaldes fysisk løst før ejerens efterkontrol. Se DEC-0094.
+- 4.0.297 er den produktionsverificerede baseline på `origin/main` merge `f1adf9b1`. PR #201/exact-head `33162270459`, produktion `33162334072`, build `98819572518` og Pages `98821497503` var grønne; offentlig side viste version, farvet kort, fem aktuelle områder og fem rækker på alle fem prognosedage med no-cache 850.200 byte/3,24 sekunder og varm komplet visning cirka 1,27 sekunder.
+- Ejerens fysiske iPhone-test var alligevel rød. Ejeren præciserede, at retur sker med RavRadars egen knap på **Om RavRadar**, ikke browserens tilbageknap. 4.0.297's `pageshow.persisted`-værn dækkede derfor ikke sikkert den faktiske rejse.
+- 4.0.298 giver linket en versionsbundet `return=about`-URL og en unik nonce. Et lille selvhostet værn installeres før Leaflet/async bootstrap og kræver synligt kort, fem **Bedste områder**, fem dagsfaner og fem viste prognoserækker.
+- En usund retur efter seks sekunder får højst én frisk `location.replace`; `retry=1` stopper enhver yderligere navigation. Samme relative in-scope-vej gælder Safari og installeret Hjemmeskærm-app, mens 4.0.297's bfcache-recovery bevares.
+- Målrettede kontrakttests og fuld lokal `validate:source`/releasegate er grønne. Exact-head, fuld produktion, offentlig funktion/ydelse og ejerens fysiske Safari- og Hjemmeskærm-test afventer. Se DEC-0095.
 - Candidate G, RavScore, vejr, prognosedata, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged; ingen koordinater er læst eller aktiveret.
 
 ## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-28 – 4.0.296 minimal Candidate G-startpakke

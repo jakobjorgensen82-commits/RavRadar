@@ -1,8 +1,16 @@
+## 4.0.298 – sikker direkte retur fra Om RavRadar (2026-08-28)
+
+- RavRadar-linket på **Om RavRadar** laver en entydig ny root-navigation med versionsmarkør og nonce i både Safari og Hjemmeskærm-app.
+- Et lille værn i sidens `<head>` kræver synligt kort, fem **Bedste områder**, fem dagsfaner og fem viste prognoserækker og må højst udføre én frisk retry efter seks sekunder.
+- Ændringen følger ejerens præcisering: den fejlede fysiske iPhone-rejse brugte den interne knap, ikke browserens tilbageknap. Den eksisterende bfcache-recovery bevares.
+- Candidate G, RavScore, vejr, scorer, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0095 og `CHANGELOG-4.0.298.md`.
+
 ## 4.0.297 – mobil bfcache-retur med fail-safe genindlæsning (2026-08-28)
 
 - Reagerer på ejerens fysiske mobilobservation: efter retur fra eksempelvis **Om RavRadar** kunne den genoptagne forside igen mangle kort og prognoser, selv om desktopretur var grøn.
 - Installerer et tidligt returværn og genindlæser en persisted mobilside rent. Desktop beholder genoptegning med et tresekunders watchdog og konkret sundhedskontrol af kort, **Bedste områder** og **5-dages RavRadar**.
-- Ændrer ingen faglig model, produktionsdata, score, sortering, brugerdata, geometri eller land-/vandpunkter. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk mobilkontrol afventer. Se DEC-0094 og `CHANGELOG-4.0.297.md`.
+- PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503` er grønne; offentlig funktion og ydelse bestod.
+- Ejerens efterfølgende fysiske iPhone-test af RavRadars eget Om-link var fortsat rød. 4.0.297 ændrer derfor ingen faglig model eller data, men må heller ikke kaldes løsningen på den konkrete rejse. Se DEC-0094/0095 og `CHANGELOG-4.0.297.md`.
 
 ## 4.0.296 – minimal Candidate G-startpakke (2026-08-28)
 
