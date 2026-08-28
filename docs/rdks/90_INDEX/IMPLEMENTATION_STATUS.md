@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.297-kandidat over produktionsverificeret 4.0.296
+# Implementeringsstatus – produktionsverificeret 4.0.297 med fysisk mobilefterkontrol åben
 
-## P1 kildekandidat – robust fysisk mobilretur
+## P1 produktionsverificeret / fysisk ejerprøve åben – robust mobilretur
 
 - [x] Registrér ejerens fysiske mobilobservation som modstridende evidens til den tidligere automatiserede 390 px-kontrol.
 - [x] Installer et tidligt `pageshow.persisted`-værn før asynkron bootstrap.
@@ -8,8 +8,8 @@
 - [x] Bevar desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
 - [x] Lås mobil reload, tidlig import, sund desktop, watchdog og usund DOM med målrettede tests.
 - [x] Bestå fuld lokal sourcegate og RDKS-/privacy-/releasekontrol efter versionsløftet.
-- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.297-version, hurtig startup, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
+- [x] Bestå PR #201 exact-head `33162270459`, merge `f1adf9b1`, fuld produktion `33162334072`/build `98819572518` og Pages `98821497503`.
+- [x] Genverificér offentlig 4.0.297-version, 850.200 byte/3,24 sekunders no-cache startup, cirka 1,27 sekunders varm komplet visning, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
 - [ ] Få ejeren til at bekræfte **Om RavRadar** → tilbage på den fysiske mobil.
 
 Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094.

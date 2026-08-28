@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementeret kildekandidat til 4.0.297 efter ejerens fysiske mobilobservation 2026-08-28. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk efterkontrol afventer.
+Implementeret og produktionsverificeret i 4.0.297 gennem PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig funktions-/ydelseskontrol. Ejerens fysiske mobilretur afventer som sidste bevis.
 
 ## Problem
 

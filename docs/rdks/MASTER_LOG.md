@@ -2,7 +2,7 @@
 
 - Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme, selv om desktopretur og den historiske automatiserede 390 px-kontrol var grønne.
 - Et værn før async bootstrap genindlæser nu persisted mobilretur rent. Retur før appimport gør det samme; desktop beholder genoptegning med tresekunders watchdog og konkret DOM-sundhed for Leaflet, **Bedste områder** og **5-dages RavRadar**.
-- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig kontrol og fysisk mobilretur afventer. Ingen faglig model, produktionsdata, score, brugerdata, geometri eller punkt ændres. Se DEC-0094.
+- Målrettede regressioner og fuld lokal source-/releasegate er grønne. PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503` er grønne. Offentlig 4.0.297 består version, farvet kort, fem aktuelle områder, fem resultater på alle fem dage og varm komplet visning omkring 1,27 sekunder. Fysisk mobilretur afventer. Ingen faglig model, produktionsdata, score, brugerdata, geometri eller punkt ændres. Se DEC-0094.
 
 ## 2026-08-28 – 4.0.295 offentlig opstartsydelse
 

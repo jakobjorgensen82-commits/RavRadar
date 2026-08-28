@@ -1,11 +1,13 @@
 # RavRadar – overlevering til næste chat
 
-## Kildekandidat 4.0.297 – fysisk mobilretur fra bfcache
+## Produktionsverificeret 4.0.297 – fysisk mobilretur afventer
 
-- Produktionsbaseline er fortsat 4.0.296 på merge `f1cd5868`; dens kompakte startup og offentlige funktionskontrol er grøn.
+- Produktionsbaseline er 4.0.297 på merge `f1adf9b1`; den bevarer 4.0.296's kompakte startup.
 - Ejeren har fysisk observeret, at mobil retur fra eksempelvis **Om RavRadar** kan give en tom forside uden kort og prognoser. Desktopretur er grøn; behandl derfor fejlen som mobil bfcache/suspension og ikke som den løste payloadflaskehals.
 - 4.0.297 installerer returværnet før async bootstrap. En persisted mobilretur genindlæser rent, og en retur før appimport gør det samme. Desktop bevarer genoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
-- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Kør PR exact-head, produktion og offentlig kontrol; få derefter ejeren til at teste **Om RavRadar** → tilbage på den fysiske mobil. Kald ikke problemet fysisk løst før dette bevis. Se DEC-0094.
+- PR #201 bestod exact-head `33162270459`/job `98819313935` på `95a8bdca`, blev merged som `f1adf9b1` og gennemførte grøn produktion `33162334072`, build `98819572518` og Pages `98821497503`.
+- Offentlig 4.0.297 viser farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage. Startup målte 850.200 byte/3,24 sekunder no-cache og cirka 1,27 sekunder varmt til komplet visning; tydelig Candidate G-recovery er bevaret.
+- Få ejeren til at teste **Om RavRadar** → tilbage på den fysiske mobil. Kald ikke problemet fysisk løst før dette sidste bevis. Se DEC-0094.
 - Rør ikke Sibirien, koordinater, geometri, private data eller Candidate G-state. Den private staged punktrevision kræver fortsat separat modning og ejer-go.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startpakke

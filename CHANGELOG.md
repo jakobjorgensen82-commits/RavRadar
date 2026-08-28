@@ -2,7 +2,7 @@
 
 - Reagerer på ejerens fysiske mobilobservation: efter retur fra eksempelvis **Om RavRadar** kunne den genoptagne forside igen mangle kort og prognoser, selv om desktopretur var grøn.
 - Installerer et tidligt returværn og genindlæser en persisted mobilside rent. Desktop beholder genoptegning med et tresekunders watchdog og konkret sundhedskontrol af kort, **Bedste områder** og **5-dages RavRadar**.
-- Ændrer ingen faglig model, produktionsdata, score, sortering, brugerdata, geometri eller land-/vandpunkter. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk mobilkontrol afventer. Se DEC-0094 og `CHANGELOG-4.0.297.md`.
+- Ændrer ingen faglig model, produktionsdata, score, sortering, brugerdata, geometri eller land-/vandpunkter. PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503` er grønne. Offentlig 4.0.297 viser farvet kort, fem aktuelle områder og fem resultater på alle fem dage; varm komplet visning er cirka 1,27 sekunder. Ejerens fysiske mobilretur afventer som sidste bevis. Se DEC-0094 og `CHANGELOG-4.0.297.md`.
 
 ## 4.0.296 – minimal Candidate G-startpakke (2026-08-28)
 

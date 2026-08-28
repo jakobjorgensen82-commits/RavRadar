@@ -2,7 +2,7 @@
 
 ## 4.0.297 – fysisk mobilretur
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme efter 4.0.296, mens desktopretur var grøn. 4.0.297 flytter værnet før async bootstrap, genindlæser persisted mobilretur rent og bevarer desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og ny fysisk mobilprøve afventer. Se DEC-0094.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – PRODUKTIONSVERIFICERET RETTELSE / FYSISK EJERBEVIS AFVENTER:** Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme efter 4.0.296, mens desktopretur var grøn. 4.0.297 flytter værnet før async bootstrap, genindlæser persisted mobilretur rent og bevarer desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed. PR #201, fuld produktion, Pages og offentlig 5 + 5×5-/ydelseskontrol er grønne. Ny fysisk mobilprøve afventer som sidste bevis. Se DEC-0094.
 
 ## 4.0.296 – offentlig opstartsydelse
 

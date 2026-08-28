@@ -20,5 +20,7 @@ Dato: 2026-08-28
 
 - Målrettede lokale regressionstests dækker mobil hard reload, tidlig import-reload, sund desktopretur, watchdog og manglende DOM-sundhed.
 - Fuld lokal `validate:source` og releasegate er grøn for 4.0.297.
-- Exact-head, produktion, offentlig kontrol og fysisk mobilretur afventer.
+- PR #201 bestod exact-head `33162270459`/job `98819313935` på `95a8bdca`, blev merged som `f1adf9b1` og gennemførte grøn produktion `33162334072`, build `98819572518` og Pages `98821497503`.
+- Offentlig 4.0.297 viser farvet kort, fem **Bedste områder** og fem resultater på hver af fem prognosedage. Den aktuelle startupfil målte 850.200 byte/3,24 sekunder no-cache, og en varm komplet visning tog cirka 1,27 sekunder. Den tydelige Candidate G-nøddrift er bevaret.
+- Ejerens fysiske mobilretur fra **Om RavRadar** afventer og er sidste bevis, før regressionen kan kaldes fysisk produktionsverificeret løst.
 - Se DEC-0094.

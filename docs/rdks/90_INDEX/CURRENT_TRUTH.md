@@ -1,11 +1,13 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.297 – mobil bfcache-failsafe
+## Produktionsverificeret 4.0.297 – mobil bfcache-failsafe med fysisk efterkontrol åben
 
-- 4.0.296 på merge `f1cd5868` er den aktuelle produktionsverificerede baseline med hurtig kompakt startup.
+- 4.0.297 på merge `f1adf9b1` er den aktuelle produktionsverificerede baseline og bevarer 4.0.296's hurtige kompakte startup.
 - Ejerens fysiske mobil viser en regression: efter retur fra eksempelvis **Om RavRadar** kan kort og prognoser mangle. Desktopretur lykkes, så tidligere automatiseret viewportbevis er ikke tilstrækkeligt.
 - 4.0.297 genindlæser en persisted mobilretur rent fra et værn installeret før async bootstrap. Retur før appimport genindlæser også; desktop genoptegner fortsat med et tresekunders watchdog og konkret DOM-sundhed for Leaflet, rangliste og femdøgnsvisning.
-- Målrettede lokale tests og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig ydelse/funktion og fysisk mobilretur afventer. Se DEC-0094.
+- PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518` og Pages `98821497503` er grønne gennem hele den friske produktionskæde.
+- Offentlig 4.0.297 viser farvet kort, fem aktuelle områder og fem resultater på hver af fem dage. Startup målte 850.200 byte/3,24 sekunder no-cache og cirka 1,27 sekunder varmt til komplet visning; Candidate G-recovery er fortsat tydelig.
+- Ejerens fysiske **Om RavRadar** → tilbage-prøve afventer som sidste bevis. Se DEC-0094.
 - Ingen faglig model, data, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startprojektion
