@@ -8,6 +8,8 @@ Den første service-worker-installation arbejder samtidig mindre i baggrunden. D
 
 Den fungerende RavRadar-knap på **Om RavRadar** er uændret: ved sikker samme-origin-retur bruger den browserens historik, og ellers bruges det almindelige `./`-link. Rettelsen ændrer ingen prognoser, scorer, vejrdata, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0099](docs/rdks/10_DECISIONS/DEC-0099-FIRST-INSTALL-AND-MOBILE-STARTUP.md).
 
+4.0.303 er verificeret gennem exact-head, fuld produktion, Pages og offentlig kontrol af 210 zoner samt fem aktuelle og fem gange fem prognoseresultater. På fysisk iPhone Safari bekræftede ejeren korrekt version, fungerende Om-retur og både kold og varm start på 4–5 sekunder; 4.0.302's 30/7–8-sekunders regression er dermed lukket.
+
 ## Hurtigere kort og femdøgnsvisning – 4.0.295/296
 
 RavRadar åbner nu kortet, **Bedste områder** og **5-dages RavRadar** fra en lille startpakke. Femdagene er ikke en ny eller forenklet score: produktionsbygningen bruger præcis den samme Candidate G-bestetid og nationale rangering som tidligere og gemmer kun de fem viste zoner pr. dag og søgemåde i startpakken.

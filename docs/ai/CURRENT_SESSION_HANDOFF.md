@@ -1,14 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
-## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.303 mobilopstart efter fysisk afvist 4.0.302
+## PRODUKTIONS- OG FYSISK VERIFICERET P1 – 2026-08-28 – 4.0.303 mobilopstart
 
 - 4.0.301 virkede på ejerens fysiske iPhone Safari, inklusive RavRadar-knappen fra **Om RavRadar**, men første indlæsning tog cirka 14 sekunder.
 - 4.0.302 paralleliserede kort-/kystprojektion med manifest/conditions. PR #207/exact-head og produktion var grønne på desktop, men ejeren målte cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation. 4.0.302 er fysisk afvist.
 - PR #208's eksakte rollback-head var grøn og blev merged som `e155f42e`, men produktion `33177494546` stoppede korrekt før deploy på `INVALID_SWITCH_VERSION`; offentlig side forblev 4.0.302.
-- Branch `codex/restore-baseline-4.0.303` gendanner 4.0.301's prioriterede sekvens, springer reload over ved første service-worker-claim og fjerner kortfil/store Om-billeder fra første installationsprecache. DEC-0098's historikretur bevares.
-- Målrettede sourcekontrakter og fuld lokal `validate:source`/releasegate er grønne. Lokal ny-origin-browser viser én dokumentnavigation; repositoryets lokale livefixture er for gammel til en fuld prognoseprøve, så funktion/latenstid skal bevises på exact-head-produktionsartifact og fysisk iPhone.
+- 4.0.303 gendanner 4.0.301's prioriterede sekvens, springer reload over ved første service-worker-claim og fjerner kortfil/store Om-billeder fra første installationsprecache. DEC-0098's historikretur bevares.
+- PR #209 exact-head `33178940206`/job `98874825239` på `23940e21`, merge `19886fc0`, produktion `33179036658`, build `98875217073` og Pages `98877901727` er grønne.
+- Offentlig 4.0.303 viste 210 interaktive zoner, fem aktuelle områder, fem resultater på alle fem prognosedage og fungerende Om-retur. Varm isoleret desktopstart var cirka 1,6 sekunder.
+- Ejeren bekræftede fysisk iPhone Safari: korrekt 4.0.303-version, fungerende retur og 4–5 sekunders både kold og varm start. Regressionen er lukket.
 - Geodata må kun ændre topversion 4.0.301 → 4.0.303. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering må ændres; Sibirien forbliver privat staged.
-- Næste trin: commit/push, PR exact-head, merge, frisk produktion/Pages, offentlig 210 + 5 × 5-kontrol og ejerens kolde + varme Safari-prøve. Kald ikke ydelsen løst før fysisk ejerbevis. Brug Sol/Ekstra høj.
+- Næste trin: ren dokumentationslukning gennem exact-head og merge. Ingen ny produktkode, data, geometri eller punktændring. Brug Sol/Ekstra høj til den afsluttende tværgående kontrol.
 
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.301 rigtig historikretur fra Om-knappen
 
