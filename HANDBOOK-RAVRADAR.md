@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-## Hurtigere kort og femdøgnsvisning – 4.0.295
+## Hurtigere kort og femdøgnsvisning – 4.0.295/296
 
 RavRadar åbner nu kortet, **Bedste områder** og **5-dages RavRadar** fra en lille startpakke. Femdagene er ikke en ny eller forenklet score: produktionsbygningen bruger præcis den samme Candidate G-bestetid og nationale rangering som tidligere og gemmer kun de fem viste zoner pr. dag og søgemåde i startpakken.
 
@@ -8,7 +8,9 @@ De fulde oplysninger for alle 210 zoner og 673 kystdele bevares. Browseren hente
 
 RavRadar genbruger kun en prognosefil, når adressen indeholder både det præcise dataset-id og filens SHA-kontrolsum fra det friske manifest. Manifestet, kortgeometrien og andre ikke-indholdsbundne livefiler hentes fortsat frisk. Startpakke og detaljer skal stadig høre til samme dataset og tidspunkt.
 
-Candidate G-nødvisningen følger samme kontrakt: det lille top-5-indeks afledes fra dens allerede kontrollerede offentlige data, mens den komplette detaljepakke, scorerne og tilstanden er uændrede. Ændringen påvirker ikke Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se [DEC-0092](docs/rdks/10_DECISIONS/DEC-0092-CONTENT-ADDRESSED-LAZY-PUBLIC-DETAILS.md).
+4.0.295 fjernede den store detaljefil fra normal opstart og gav hurtig varm genbrug. Den første offentlige cold-måling viste dog, at en READY-nødvisning stadig bar fulde aktuelle forklaringsdiagnoser i selve startpakken. 4.0.296 beholder derfor kun den aktuelle score, dækningsstatus, tre komponenttal, kompakt vejr og minimale vinder-/dellabels ved opstart. De fulde forklaringer, timeforløb og Candidate G-state ligger fortsat i detaljepakken og hentes ved behov.
+
+Candidate G-nødvisningen følger samme kontrakt: dens startprojektion kan gøres mindre fra de allerede kontrollerede detaljer, mens detaljepakken og dens hash, scorerne, tiderne og tilstanden er uændrede. Ændringen påvirker ikke Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se [DEC-0092](docs/rdks/10_DECISIONS/DEC-0092-CONTENT-ADDRESSED-LAZY-PUBLIC-DETAILS.md) og [DEC-0093](docs/rdks/10_DECISIONS/DEC-0093-MINIMAL-CANDIDATE-G-RECOVERY-STARTUP.md).
 
 ## Klogere Spørg RavRadar – også når AI-kvoten er brugt – 4.0.294
 
@@ -637,7 +639,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.295
+**Håndbogsversion:** 4.0.296
 
 **Opdateret:** 19. august 2026
 

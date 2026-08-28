@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og implementeret som 4.0.295-kildekandidat med grøn fuld lokal sourcegate/releasegate. Exact-head-, produktions- og offentlig ydelsesverifikation afventer.
+Produktionsverificeret i 4.0.295 gennem PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig funktionskontrol og varm start er grønne. En resterende stor READY-startprojektion lukkes særskilt i 4.0.296 under DEC-0093.
 
 ## Problem
 
@@ -27,4 +27,4 @@ Den offentlige HTML- og kortskal var hurtig, men normal opstart hentede derefter
 
 ## Verifikation
 
-Den målrettede 4.0.295-regression sammenligner det kompakte indeks med den tidligere fulde Candidate G-beregning for begge søgemåder og fem dage, kræver en lille startprojektion uden punkt-/forklaringsfelter og låser lazy-load-, SHA-cache-, dybzoom- og sidecachekontrakterne. Eksisterende progressive runtime-, fallback-, mobilresume-, opstarts-, ikke-blokerende prognose-, nationale rangerings-, sitefunktions- og Pages-modultests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktionskæde og offentlig ydelsesmåling afventer.
+Den målrettede 4.0.295-regression sammenligner det kompakte indeks med den tidligere fulde Candidate G-beregning for begge søgemåder og fem dage og låser lazy-load-, SHA-cache-, dybzoom- og sidecachekontrakterne. Eksisterende progressive runtime-, fallback-, mobilresume-, opstarts-, ikke-blokerende prognose-, nationale rangerings-, sitefunktions- og Pages-modultests samt fuld sourcegate/releasegate er grønne på exact head. Offentlig 4.0.295 viste korrekt version, farvet kort, fem aktuelle områder, fem færdige prognosedage og cirka 3,67 sekunders varm start. Cold-målingen af READY-nødvisning viste 3.562.253 byte/23,36 sekunder og førte til den supplerende minimale startprojektion i DEC-0093.

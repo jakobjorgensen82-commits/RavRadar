@@ -1,12 +1,12 @@
 # Current truth – gældende projektviden
 
-## 4.0.295-kildekandidat – hurtig offentlig start uden fuld detaljepakke
+## 4.0.296-kildekandidat – minimal startprojektion efter produktionsverificeret 4.0.295
 
-- Den pludselige langsomhed var ikke HTML-skallen eller Spørg RavRadar. Normal 4.0.294-opstart hentede 90–132 MB ukomprimerede offentlige Candidate G-detaljer og beregnede fem nationale top-5-lister i browseren. Observeret prognosetid var 25–29 sekunder og cirka 59 sekunder lige efter Pages-deploy.
-- Produktionsprojektionen afleder nu et kompakt top-5-indeks med præcis samme `selectLocalBestForDay` og nationale rangering. Kort, aktuelle områder og femdøgnsvisning bruger kun startpakken; detaljer hentes ved faktisk behov.
-- Kun en liveprognosefil med både dataset-id og 64-tegns SHA fra manifestet må bruge HTTP-cache. Manifest, geometri og ikke-adresserede livefiler forbliver `no-store`; eksisterende dataset-/tids-/hashgates bevares.
-- Candidate G-fallbacken får samme indeks deterministisk fra sit auditerede offentlige datasæt uden ændring af detaljepakke, score, state eller tid. Den fulde detaljefil forbliver tilgængelig og integritetsbundet.
-- Målrettede paritets-, cache-, fallback-, resume-, opstarts-, rangerings-, site- og modulclosuretests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, frisk produktion og offentlig cold/warm-verifikation afventer. Se DEC-0092.
+- 4.0.295 bestod PR #198/exact-head `33153155088` på `94621436`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig version, kort, fem aktuelle områder, fem prognosedage og konsol er grønne; varm start var cirka 3,67 sekunder.
+- Den fulde 90–132 MB detaljepakke og browserens nationale femdøgnsberegning er ikke længere normal opstart. Dataset+SHA-cache virker som besluttet i DEC-0092.
+- Aktiv READY-nødvisning afslørede et resthul: startup var 3.562.253 byte/23,36 sekunder, fordi aktuelle scoreposter og vinderobjekter stadig bar detaljediagnostik. Primær warmup-start var 694.288 byte/4,09 sekunder.
+- 4.0.296 bruger én minimal aktuel scoreprojektion i både primær og recovery. Kun startup/hash ændres; fulde detaljer/hash, dataset, tider, scorer, rangering og Candidate G-state bevares.
+- Målrettet paritet/integritet, cirka 95 % syntetisk READY-reduktion og fuld lokal sourcegate/releasegate er grøn. Exact-head, frisk produktion og offentlig cold/warm-verifikation af 4.0.296 afventer. Se DEC-0093.
 - En ny Sibirien-punktrevision er privat staged. Ingen koordinater er læst/publiceret, og ingen aktivering er godkendt; ægte DMI-/48-timersmodning fortsætter under DEC-0090.
 
 ## Driftsverificeret credentialrotation – 2026-08-28

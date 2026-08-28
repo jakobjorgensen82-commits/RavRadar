@@ -1,9 +1,16 @@
+## 4.0.296 – minimal Candidate G-startpakke (2026-08-28)
+
+- Lukker restflaskehalsen efter 4.0.295: aktiv READY-nødvisning havde stadig 3.562.253 byte/23,36 sekunders startup trods behovsstyrede detaljer og cirka 3,67 sekunders varm cache.
+- Beholder kun aktuel score/status, dækningsfelter, tre komponenttal, kompakt vejr og minimale labels i startup; fulde forklaringer, timeforløb og state forbliver i detaljepakken.
+- Bevarer detaljepakke/hash, dataset, tider, scorer, bestetid og national rangering. En READY-lignende test falder 545.339 → 26.578 byte uden scoreafvigelse. Se DEC-0093 og `CHANGELOG-4.0.296.md`.
+
 ## 4.0.295 – hurtig offentlig start og behovsstyrede detaljer (2026-08-28)
 
 - Lader kort, **Bedste områder** og **5-dages RavRadar** bruge en kompakt startpakke med samme Candidate G-bestetid og nationale rangering som før.
 - Henter den fulde 90–132 MB detaljepakke først, når område, konto, tur, assistent eller dybt zoom kræver den.
 - Genbruger kun liveprognoser, når URL'en er bundet til både dataset-id og manifest-SHA; manifest, geometri og ikke-adresserede livefiler forbliver friske.
 - Bevarer fuld detaljepakke, nødvisning, dataset-/tids-/hashgates, scorer og sortering. Ingen geometri eller punkt aktiveres; den nye Sibirien-revision forbliver privat staged. Se DEC-0092 og `CHANGELOG-4.0.295.md`.
+- PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908` er grønne. Offentlig funktion og varm cache er verificeret; den resterende READY-startpayload følges op i 4.0.296.
 
 ## 4.0.294 – driftslukning af Cloudflare-credentialrotation (2026-08-28)
 

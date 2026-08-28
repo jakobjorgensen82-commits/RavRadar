@@ -1,64 +1,386 @@
 {
   "schemaVersion": "rav-assistant-local-evals-v1",
-  "releaseVersion": "4.0.295",
+  "releaseVersion": "4.0.296",
   "phrasingCases": [
-    {"id":"da-origin-formed","locale":"da","question":"Hvordan opstod rav?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
-    {"id":"de-origin-formed","locale":"de","question":"Wie entsteht Bernstein?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
-    {"id":"en-origin-formed","locale":"en","question":"How is amber formed?","expectedIntent":"origin","answerKey":"assistant.local.origin"}
+    {
+      "id": "da-origin-formed",
+      "locale": "da",
+      "question": "Hvordan opstod rav?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    },
+    {
+      "id": "de-origin-formed",
+      "locale": "de",
+      "question": "Wie entsteht Bernstein?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    },
+    {
+      "id": "en-origin-formed",
+      "locale": "en",
+      "question": "How is amber formed?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    }
   ],
   "cases": [
-    {"id":"da-origin","locale":"da","question":"Hvor kommer rav fra?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
-    {"id":"da-density","locale":"da","question":"Hvorfor synker det meste rav i havvand?","expectedIntent":"density","answerKey":"assistant.local.density"},
-    {"id":"da-availability","locale":"da","question":"Hvorfor gav stormen ikke noget rav?","expectedIntent":"availability","answerKey":"assistant.local.availability"},
-    {"id":"da-wind","locale":"da","question":"Er vestenvind altid den bedste vindretning til ravjagt?","expectedIntent":"wind","answerKey":"assistant.local.wind"},
-    {"id":"da-current","locale":"da","question":"Kan en strøm langs kysten flytte rav?","expectedIntent":"current","answerKey":"assistant.local.current"},
-    {"id":"da-waves","locale":"da","question":"Er bølgehøjden alene nok til at vurdere rav?","expectedIntent":"waves","answerKey":"assistant.local.waves"},
-    {"id":"da-water","locale":"da","question":"Hvad betyder faldende vandstand for ravjagt?","expectedIntent":"water","answerKey":"assistant.local.water"},
-    {"id":"da-coast","locale":"da","question":"Hvor skal jeg se ved en revle og en rende?","expectedIntent":"coast","answerKey":"assistant.local.coast"},
-    {"id":"da-signs","locale":"da","question":"Er frisk tang et sikkert tegn på rav?","expectedIntent":"signs","answerKey":"assistant.local.signs"},
-    {"id":"da-identification","locale":"da","question":"Hvordan tester jeg, om et fund er ægte rav med UV-lys?","expectedIntent":"identification","answerKey":"assistant.local.identification"},
-    {"id":"da-waders","locale":"da","question":"Hvornår er wadersjagt mest effektiv?","expectedIntent":"waders","answerKey":"assistant.local.waders"},
-    {"id":"da-sequence","locale":"da","question":"Hvorfor kan tiden efter stormen være bedst?","expectedIntent":"sequence","answerKey":"assistant.local.sequence"},
-    {"id":"da-model","locale":"da","question":"Hvordan er Candidate G vægtet?","expectedIntent":"model","answerKey":"assistant.local.model"},
-    {"id":"da-missing-data","locale":"da","question":"Hvad gør RavRadar, hvis en zone mangler data?","expectedIntent":"missing-data","answerKey":"assistant.local.missingData"},
-    {"id":"da-limitations","locale":"da","question":"Kan RavScore garantere, at jeg finder rav?","expectedIntent":"limitations","answerKey":"assistant.local.limitations"},
-    {"id":"da-technique","locale":"da","question":"Hvordan leder jeg systematisk efter rav på stranden?","expectedIntent":"technique","answerKey":"assistant.local.technique"},
-    {"id":"da-equipment","locale":"da","question":"Hvilket udstyr er nyttigt til ravjagt?","expectedIntent":"equipment","answerKey":"assistant.local.equipment"},
-
-    {"id":"de-origin","locale":"de","question":"Woher kommt Bernstein?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
-    {"id":"de-density","locale":"de","question":"Warum sinkt der meiste Bernstein im Meerwasser?","expectedIntent":"density","answerKey":"assistant.local.density"},
-    {"id":"de-availability","locale":"de","question":"Warum gab es nach dem Sturm keinen Bernstein?","expectedIntent":"availability","answerKey":"assistant.local.availability"},
-    {"id":"de-wind","locale":"de","question":"Ist Westwind immer die beste Windrichtung für die Bernsteinsuche?","expectedIntent":"wind","answerKey":"assistant.local.wind"},
-    {"id":"de-current","locale":"de","question":"Kann eine Strömung längs der Küste Bernstein transportieren?","expectedIntent":"current","answerKey":"assistant.local.current"},
-    {"id":"de-waves","locale":"de","question":"Reicht die Wellenhöhe allein zur Bewertung der Bernsteinsuche?","expectedIntent":"waves","answerKey":"assistant.local.waves"},
-    {"id":"de-water","locale":"de","question":"Was bedeutet fallender Wasserstand für die Bernsteinsuche?","expectedIntent":"water","answerKey":"assistant.local.water"},
-    {"id":"de-coast","locale":"de","question":"Wo sollte ich bei einer Sandbank und einer Rinne suchen?","expectedIntent":"coast","answerKey":"assistant.local.coast"},
-    {"id":"de-signs","locale":"de","question":"Ist frischer Tang ein sicheres Zeichen für Bernstein?","expectedIntent":"signs","answerKey":"assistant.local.signs"},
-    {"id":"de-identification","locale":"de","question":"Wie prüfe ich mit UV-Licht, ob ein Fund echter Bernstein ist?","expectedIntent":"identification","answerKey":"assistant.local.identification"},
-    {"id":"de-waders","locale":"de","question":"Wann ist die Suche in Wathose am effektivsten?","expectedIntent":"waders","answerKey":"assistant.local.waders"},
-    {"id":"de-sequence","locale":"de","question":"Warum kann die Zeit nach dem Sturm am besten sein?","expectedIntent":"sequence","answerKey":"assistant.local.sequence"},
-    {"id":"de-model","locale":"de","question":"Wie ist Candidate G gewichtet?","expectedIntent":"model","answerKey":"assistant.local.model"},
-    {"id":"de-missing-data","locale":"de","question":"Was macht RavRadar, wenn für eine Zone Daten fehlen?","expectedIntent":"missing-data","answerKey":"assistant.local.missingData"},
-    {"id":"de-limitations","locale":"de","question":"Kann der RavScore einen Bernsteinfund garantieren?","expectedIntent":"limitations","answerKey":"assistant.local.limitations"},
-    {"id":"de-technique","locale":"de","question":"Wie suche ich systematisch am Strand nach Bernstein?","expectedIntent":"technique","answerKey":"assistant.local.technique"},
-    {"id":"de-equipment","locale":"de","question":"Welche Ausrüstung ist für die Bernsteinsuche nützlich?","expectedIntent":"equipment","answerKey":"assistant.local.equipment"},
-
-    {"id":"en-origin","locale":"en","question":"Where does amber come from?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
-    {"id":"en-density","locale":"en","question":"Why does most amber sink in seawater?","expectedIntent":"density","answerKey":"assistant.local.density"},
-    {"id":"en-availability","locale":"en","question":"Why was there no amber after the storm?","expectedIntent":"availability","answerKey":"assistant.local.availability"},
-    {"id":"en-wind","locale":"en","question":"Is a westerly always the best wind direction for amber hunting?","expectedIntent":"wind","answerKey":"assistant.local.wind"},
-    {"id":"en-current","locale":"en","question":"Can an alongshore current transport amber?","expectedIntent":"current","answerKey":"assistant.local.current"},
-    {"id":"en-waves","locale":"en","question":"Is wave height alone enough to assess amber conditions?","expectedIntent":"waves","answerKey":"assistant.local.waves"},
-    {"id":"en-water","locale":"en","question":"What does a falling water level mean for amber hunting?","expectedIntent":"water","answerKey":"assistant.local.water"},
-    {"id":"en-coast","locale":"en","question":"Where should I search around a sandbar and channel?","expectedIntent":"coast","answerKey":"assistant.local.coast"},
-    {"id":"en-signs","locale":"en","question":"Is fresh seaweed a certain sign of amber?","expectedIntent":"signs","answerKey":"assistant.local.signs"},
-    {"id":"en-identification","locale":"en","question":"How do I use UV light to test whether a find is real amber?","expectedIntent":"identification","answerKey":"assistant.local.identification"},
-    {"id":"en-waders","locale":"en","question":"When is hunting in waders most effective?","expectedIntent":"waders","answerKey":"assistant.local.waders"},
-    {"id":"en-sequence","locale":"en","question":"Why can the time after the storm be best?","expectedIntent":"sequence","answerKey":"assistant.local.sequence"},
-    {"id":"en-model","locale":"en","question":"How is Candidate G weighted?","expectedIntent":"model","answerKey":"assistant.local.model"},
-    {"id":"en-missing-data","locale":"en","question":"What does RavRadar do when a zone is missing data?","expectedIntent":"missing-data","answerKey":"assistant.local.missingData"},
-    {"id":"en-limitations","locale":"en","question":"Can RavScore guarantee that I will find amber?","expectedIntent":"limitations","answerKey":"assistant.local.limitations"},
-    {"id":"en-technique","locale":"en","question":"How should I search systematically for amber on the beach?","expectedIntent":"technique","answerKey":"assistant.local.technique"},
-    {"id":"en-equipment","locale":"en","question":"What equipment is useful for amber hunting?","expectedIntent":"equipment","answerKey":"assistant.local.equipment"}
+    {
+      "id": "da-origin",
+      "locale": "da",
+      "question": "Hvor kommer rav fra?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    },
+    {
+      "id": "da-density",
+      "locale": "da",
+      "question": "Hvorfor synker det meste rav i havvand?",
+      "expectedIntent": "density",
+      "answerKey": "assistant.local.density"
+    },
+    {
+      "id": "da-availability",
+      "locale": "da",
+      "question": "Hvorfor gav stormen ikke noget rav?",
+      "expectedIntent": "availability",
+      "answerKey": "assistant.local.availability"
+    },
+    {
+      "id": "da-wind",
+      "locale": "da",
+      "question": "Er vestenvind altid den bedste vindretning til ravjagt?",
+      "expectedIntent": "wind",
+      "answerKey": "assistant.local.wind"
+    },
+    {
+      "id": "da-current",
+      "locale": "da",
+      "question": "Kan en strøm langs kysten flytte rav?",
+      "expectedIntent": "current",
+      "answerKey": "assistant.local.current"
+    },
+    {
+      "id": "da-waves",
+      "locale": "da",
+      "question": "Er bølgehøjden alene nok til at vurdere rav?",
+      "expectedIntent": "waves",
+      "answerKey": "assistant.local.waves"
+    },
+    {
+      "id": "da-water",
+      "locale": "da",
+      "question": "Hvad betyder faldende vandstand for ravjagt?",
+      "expectedIntent": "water",
+      "answerKey": "assistant.local.water"
+    },
+    {
+      "id": "da-coast",
+      "locale": "da",
+      "question": "Hvor skal jeg se ved en revle og en rende?",
+      "expectedIntent": "coast",
+      "answerKey": "assistant.local.coast"
+    },
+    {
+      "id": "da-signs",
+      "locale": "da",
+      "question": "Er frisk tang et sikkert tegn på rav?",
+      "expectedIntent": "signs",
+      "answerKey": "assistant.local.signs"
+    },
+    {
+      "id": "da-identification",
+      "locale": "da",
+      "question": "Hvordan tester jeg, om et fund er ægte rav med UV-lys?",
+      "expectedIntent": "identification",
+      "answerKey": "assistant.local.identification"
+    },
+    {
+      "id": "da-waders",
+      "locale": "da",
+      "question": "Hvornår er wadersjagt mest effektiv?",
+      "expectedIntent": "waders",
+      "answerKey": "assistant.local.waders"
+    },
+    {
+      "id": "da-sequence",
+      "locale": "da",
+      "question": "Hvorfor kan tiden efter stormen være bedst?",
+      "expectedIntent": "sequence",
+      "answerKey": "assistant.local.sequence"
+    },
+    {
+      "id": "da-model",
+      "locale": "da",
+      "question": "Hvordan er Candidate G vægtet?",
+      "expectedIntent": "model",
+      "answerKey": "assistant.local.model"
+    },
+    {
+      "id": "da-missing-data",
+      "locale": "da",
+      "question": "Hvad gør RavRadar, hvis en zone mangler data?",
+      "expectedIntent": "missing-data",
+      "answerKey": "assistant.local.missingData"
+    },
+    {
+      "id": "da-limitations",
+      "locale": "da",
+      "question": "Kan RavScore garantere, at jeg finder rav?",
+      "expectedIntent": "limitations",
+      "answerKey": "assistant.local.limitations"
+    },
+    {
+      "id": "da-technique",
+      "locale": "da",
+      "question": "Hvordan leder jeg systematisk efter rav på stranden?",
+      "expectedIntent": "technique",
+      "answerKey": "assistant.local.technique"
+    },
+    {
+      "id": "da-equipment",
+      "locale": "da",
+      "question": "Hvilket udstyr er nyttigt til ravjagt?",
+      "expectedIntent": "equipment",
+      "answerKey": "assistant.local.equipment"
+    },
+    {
+      "id": "de-origin",
+      "locale": "de",
+      "question": "Woher kommt Bernstein?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    },
+    {
+      "id": "de-density",
+      "locale": "de",
+      "question": "Warum sinkt der meiste Bernstein im Meerwasser?",
+      "expectedIntent": "density",
+      "answerKey": "assistant.local.density"
+    },
+    {
+      "id": "de-availability",
+      "locale": "de",
+      "question": "Warum gab es nach dem Sturm keinen Bernstein?",
+      "expectedIntent": "availability",
+      "answerKey": "assistant.local.availability"
+    },
+    {
+      "id": "de-wind",
+      "locale": "de",
+      "question": "Ist Westwind immer die beste Windrichtung für die Bernsteinsuche?",
+      "expectedIntent": "wind",
+      "answerKey": "assistant.local.wind"
+    },
+    {
+      "id": "de-current",
+      "locale": "de",
+      "question": "Kann eine Strömung längs der Küste Bernstein transportieren?",
+      "expectedIntent": "current",
+      "answerKey": "assistant.local.current"
+    },
+    {
+      "id": "de-waves",
+      "locale": "de",
+      "question": "Reicht die Wellenhöhe allein zur Bewertung der Bernsteinsuche?",
+      "expectedIntent": "waves",
+      "answerKey": "assistant.local.waves"
+    },
+    {
+      "id": "de-water",
+      "locale": "de",
+      "question": "Was bedeutet fallender Wasserstand für die Bernsteinsuche?",
+      "expectedIntent": "water",
+      "answerKey": "assistant.local.water"
+    },
+    {
+      "id": "de-coast",
+      "locale": "de",
+      "question": "Wo sollte ich bei einer Sandbank und einer Rinne suchen?",
+      "expectedIntent": "coast",
+      "answerKey": "assistant.local.coast"
+    },
+    {
+      "id": "de-signs",
+      "locale": "de",
+      "question": "Ist frischer Tang ein sicheres Zeichen für Bernstein?",
+      "expectedIntent": "signs",
+      "answerKey": "assistant.local.signs"
+    },
+    {
+      "id": "de-identification",
+      "locale": "de",
+      "question": "Wie prüfe ich mit UV-Licht, ob ein Fund echter Bernstein ist?",
+      "expectedIntent": "identification",
+      "answerKey": "assistant.local.identification"
+    },
+    {
+      "id": "de-waders",
+      "locale": "de",
+      "question": "Wann ist die Suche in Wathose am effektivsten?",
+      "expectedIntent": "waders",
+      "answerKey": "assistant.local.waders"
+    },
+    {
+      "id": "de-sequence",
+      "locale": "de",
+      "question": "Warum kann die Zeit nach dem Sturm am besten sein?",
+      "expectedIntent": "sequence",
+      "answerKey": "assistant.local.sequence"
+    },
+    {
+      "id": "de-model",
+      "locale": "de",
+      "question": "Wie ist Candidate G gewichtet?",
+      "expectedIntent": "model",
+      "answerKey": "assistant.local.model"
+    },
+    {
+      "id": "de-missing-data",
+      "locale": "de",
+      "question": "Was macht RavRadar, wenn für eine Zone Daten fehlen?",
+      "expectedIntent": "missing-data",
+      "answerKey": "assistant.local.missingData"
+    },
+    {
+      "id": "de-limitations",
+      "locale": "de",
+      "question": "Kann der RavScore einen Bernsteinfund garantieren?",
+      "expectedIntent": "limitations",
+      "answerKey": "assistant.local.limitations"
+    },
+    {
+      "id": "de-technique",
+      "locale": "de",
+      "question": "Wie suche ich systematisch am Strand nach Bernstein?",
+      "expectedIntent": "technique",
+      "answerKey": "assistant.local.technique"
+    },
+    {
+      "id": "de-equipment",
+      "locale": "de",
+      "question": "Welche Ausrüstung ist für die Bernsteinsuche nützlich?",
+      "expectedIntent": "equipment",
+      "answerKey": "assistant.local.equipment"
+    },
+    {
+      "id": "en-origin",
+      "locale": "en",
+      "question": "Where does amber come from?",
+      "expectedIntent": "origin",
+      "answerKey": "assistant.local.origin"
+    },
+    {
+      "id": "en-density",
+      "locale": "en",
+      "question": "Why does most amber sink in seawater?",
+      "expectedIntent": "density",
+      "answerKey": "assistant.local.density"
+    },
+    {
+      "id": "en-availability",
+      "locale": "en",
+      "question": "Why was there no amber after the storm?",
+      "expectedIntent": "availability",
+      "answerKey": "assistant.local.availability"
+    },
+    {
+      "id": "en-wind",
+      "locale": "en",
+      "question": "Is a westerly always the best wind direction for amber hunting?",
+      "expectedIntent": "wind",
+      "answerKey": "assistant.local.wind"
+    },
+    {
+      "id": "en-current",
+      "locale": "en",
+      "question": "Can an alongshore current transport amber?",
+      "expectedIntent": "current",
+      "answerKey": "assistant.local.current"
+    },
+    {
+      "id": "en-waves",
+      "locale": "en",
+      "question": "Is wave height alone enough to assess amber conditions?",
+      "expectedIntent": "waves",
+      "answerKey": "assistant.local.waves"
+    },
+    {
+      "id": "en-water",
+      "locale": "en",
+      "question": "What does a falling water level mean for amber hunting?",
+      "expectedIntent": "water",
+      "answerKey": "assistant.local.water"
+    },
+    {
+      "id": "en-coast",
+      "locale": "en",
+      "question": "Where should I search around a sandbar and channel?",
+      "expectedIntent": "coast",
+      "answerKey": "assistant.local.coast"
+    },
+    {
+      "id": "en-signs",
+      "locale": "en",
+      "question": "Is fresh seaweed a certain sign of amber?",
+      "expectedIntent": "signs",
+      "answerKey": "assistant.local.signs"
+    },
+    {
+      "id": "en-identification",
+      "locale": "en",
+      "question": "How do I use UV light to test whether a find is real amber?",
+      "expectedIntent": "identification",
+      "answerKey": "assistant.local.identification"
+    },
+    {
+      "id": "en-waders",
+      "locale": "en",
+      "question": "When is hunting in waders most effective?",
+      "expectedIntent": "waders",
+      "answerKey": "assistant.local.waders"
+    },
+    {
+      "id": "en-sequence",
+      "locale": "en",
+      "question": "Why can the time after the storm be best?",
+      "expectedIntent": "sequence",
+      "answerKey": "assistant.local.sequence"
+    },
+    {
+      "id": "en-model",
+      "locale": "en",
+      "question": "How is Candidate G weighted?",
+      "expectedIntent": "model",
+      "answerKey": "assistant.local.model"
+    },
+    {
+      "id": "en-missing-data",
+      "locale": "en",
+      "question": "What does RavRadar do when a zone is missing data?",
+      "expectedIntent": "missing-data",
+      "answerKey": "assistant.local.missingData"
+    },
+    {
+      "id": "en-limitations",
+      "locale": "en",
+      "question": "Can RavScore guarantee that I will find amber?",
+      "expectedIntent": "limitations",
+      "answerKey": "assistant.local.limitations"
+    },
+    {
+      "id": "en-technique",
+      "locale": "en",
+      "question": "How should I search systematically for amber on the beach?",
+      "expectedIntent": "technique",
+      "answerKey": "assistant.local.technique"
+    },
+    {
+      "id": "en-equipment",
+      "locale": "en",
+      "question": "What equipment is useful for amber hunting?",
+      "expectedIntent": "equipment",
+      "answerKey": "assistant.local.equipment"
+    }
   ]
 }
