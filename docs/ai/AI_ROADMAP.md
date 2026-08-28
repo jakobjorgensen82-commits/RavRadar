@@ -1,25 +1,26 @@
 # AI Roadmap – RavRadar 4.0.292+
 
-## Aktiv kritisk datarelease – staged punktaktivering i 4.0.292
+## Produktionsverificeret kritisk datarelease – staged punktaktivering i 4.0.292
 
 - [x] Bevar gammel sampling, mens et ændret land-/vandpunkt er kandidat.
 - [x] Saml kandidatens DMI-serie og Candidate G-state privat med U/V ≤5 km, 96 timers fuld horisont og 48 timers memory.
 - [x] Kræv særskilt ejeraktivering, eksakt stateinjektion, fulde gates og central version-CAS.
 - [x] Bevar rollback/recovery og komplet fallback ved højst seks lokale warmups.
-- [ ] Bestå exact-head og frisk produktion uden at flytte et konkret punkt.
+- [x] Bestå PR #192 exact-head `33127353135`, merge `d22d0867`, frisk produktion `33127437790` og offentlig saniteret status uden at flytte et konkret punkt.
 
 Se DEC-0090. Dette mekanismearbejde ændrer ingen eksisterende geometri eller land-/vandpunkter.
 
-## Aktiv kritisk UI-release – mobil genoptagelse i 4.0.292
+## Produktionsverificeret kritisk UI-release – mobil genoptagelse i 4.0.292
 
 - [x] Afgræns den fælles fejlklasse til manglende Safari/WebKit-`pageshow`-recovery omkring asynkron opstart og progressiv rendering.
 - [x] Genindlæs fail-safe efter ufuldstændig/afbrudt opstart og genoptegn ellers kort, rangliste, valgt zone og femdøgnsvisning fra eksisterende state.
 - [x] Tilføj deterministisk livscyklusregression og bevar eksisterende mobil-/første-paint-/prognosekontrakter.
-- [ ] Bestå exact-head, produktion, offentlig runtime og fysisk iPhone-returkontrol.
+- [x] Bestå exact-head, produktion og offentlig 390 × 844-returkontrol med synligt kort, fem aktuelle områder, fem prognoserækker og nul browserfejl.
+- [ ] Indhent supplerende fysisk iPhone-efterkontrol fra ejeren.
 
 Se DEC-0089. Dette spor ændrer ingen assistent-, score-, vejr- eller datakontrakt.
 
-## Aktiv releasekandidat – offentlig gratis Spørg RavRadar i 4.0.291
+## Produktionsverificeret – offentlig gratis Spørg RavRadar i 4.0.291
 
 - [x] Modtag særskilt ejer-go og genbekræft den aktuelle Workers Free / $0-konto uden betalt overflow.
 - [x] Tilføj DA/DE/EN-kvotetekst i dialogen og bevar normal prognose-/lokal assistentfunktion ved kvoteudløb.
@@ -38,7 +39,7 @@ Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometr
 - [ ] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI må aldrig ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
 - [ ] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
 
-Den kritiske mobile tilbage-navigation er implementeret i 4.0.292-kandidaten og lukkes i produktion før dette brede vidensscope starter.
+Den kritiske mobile tilbage-navigation er produktionsverificeret i 4.0.292. Det brede vidensscope er derfor næste afgrænsede leverance og skal fortsat låses med konkrete intents og evals før implementering.
 
 ## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 
@@ -119,7 +120,7 @@ Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVU
 - [x] Dynamiske forklaringer bruger stabile betydnings-/tekstnøgler med parametre frem for skrøbelig ordret udskiftning af danske sætninger. Manglende oversættelser falder sikkert tilbage til dansk.
 - [x] Oversættelsen ændrer ikke RavScore, vejrdata, områdesortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter.
 - [x] Admin-, ekspert- og interne udviklerflader forbliver danske, medmindre ejeren senere beslutter et særskilt udvidet scope.
-- [x] Målrettede sprog-, fallback-, konto-/tur- og lokale browserregressioner er grønne på desktop og 390 px mobil. Exact-head og offentlig browserkontrol mangler før deploy.
+- [x] Målrettede sprog-, fallback-, konto-/tur- og browserregressioner er grønne på desktop og 390 px mobil; exact-head, produktion og offentlig browserkontrol er lukket i 4.0.290/4.0.291.
 
 ## P1 aktiv – modernisering og AI-valg til Spørg RavRadar
 
@@ -132,9 +133,9 @@ Første snapshot og metodejournal: `docs/rdks/30_FEATURES/INTERNAL-RAVRADAR-RAVU
 - [x] Kør den fælles live-eval og vælg en Cloudflare-model på evidens. GPT-OSS 20B er valgt som deaktiveret Edge-kandidat efter smoke 1/1, mål-gate 4/4 og 25/26 beståede evaluerbare fuldtests; GLM og Gemma gav ikke-evaluerbare smoke-svar. Én længdeafvigelse og én irrelevant timeout er låst som fail-closed gatewaycases.
 - [x] Implementér modellen bag den eksisterende server-side gateway uden API-nøgle eller leverandørcredential i browseren efter ejerens bekræftelse.
 - [x] Bevar en sikker lokal fallback, tre rate limits, input-/outputgrænser, locale-felt og samme-sprog-svar. Assistentfejl kan ikke blokere prognosen eller turflowet.
-- [ ] Deploy og verificér gatewayen gennem en godkendt kanal med målrettede sikkerheds-, CORS-, misbrugs-, flersprogs- og offentlig browserkontroller.
+- [x] Deploy og verificér gatewayen gennem en godkendt kanal med målrettede sikkerheds-, CORS-, misbrugs-, flersprogs- og offentlig browserkontroller; produktionsverificeret i 4.0.291.
 
-Ejerkravet er nul betaling. DEC-0087 kræver Workers Free uden betalt overflow; dagskvoten skal fejle lukket og give lokal fallback. Gemini er kun sammenligningsreference. Offentlig 4.0.289 forbliver local-only, og 4.0.290-kandidaten har fortsat `ravAssistantRemoteEnabled=false`.
+Ejerkravet er nul betaling. DEC-0087 kræver Workers Free uden betalt overflow; dagskvoten skal fejle lukket og give lokal fallback. Gemini er kun sammenligningsreference. Offentlig 4.0.291 har `ravAssistantRemoteEnabled=true`; `false` er fortsat øjeblikkelig rollback.
 
 ## P0 afsluttet – 4.0.286 rullende cadencefase
 

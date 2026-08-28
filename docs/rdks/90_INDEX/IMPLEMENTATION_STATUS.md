@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.292 mobil- og punktskifte-selvrecovery
+# Implementeringsstatus – produktionsverificeret 4.0.292 mobil- og punktskifte-selvrecovery
 
-## P1 aktiv – sikker land-/vandpunktændring
+## P1 produktionsverificeret – sikker land-/vandpunktændring
 
 - [x] Bevar aktiv sampling, mens en separat kandidat redigeres og gemmes centralt.
 - [x] Sample kandidat privat uden Pages-/supportlæk af koordinater eller rå strømdata.
@@ -12,22 +12,23 @@
 - [x] Bestå PR #189 exact-head `33124945636`; første produktion stoppede før DMI/deploy på en miljøafhængig syntetisk test, som nu er isoleret med eksplicit referenceparameter.
 - [x] Bestå PR #190 exact-head `33125466599` og produktionens friske DMI/Copernicus/runtime; fuld validate stoppede før deploy på en forældet scheduler-regex, som nu låser den nye private kandidatgrænse i kildegaten.
 - [x] Bestå PR #191 exact-head `33126975042`; produktionskildegaten stoppede før DMI/deploy på manglende tidligt installeret `requests`, og scheduleradfærdstesten er nu selvstændig uden at mocke schedulerlogikken.
-- [ ] Bestå hotfix-exact-head, frisk produktion og offentlig adminstatuskontrol.
+- [x] Bestå PR #192 exact-head `33127353135`, merge `d22d0867`, frisk produktion `33127437790`, build `98708851478`, Pages `98711255270` og offentlig saniteret stagingstatus med tom kandidatliste.
 
 Ingen faktiske punkter eller geometri er flyttet. Se DEC-0090.
 
-## P1 aktiv – mobil retur til forsiden
+## P1 produktionsverificeret – mobil retur til forsiden
 
 - [x] Afgræns fællessymptomet for kort, **Bedste områder** og **5-dages RavRadar** til manglende recovery omkring Safari/WebKit back/forward-cache og afbrudt asynkron opstart.
 - [x] Installer tidligt bootstrapværn før første await.
 - [x] Genindlæs ved ufuldstændig kerne-/detaljetilstand; genoptegn ellers Leaflet, zonefarver, rangliste, valgt zone og femdøgnsvisning.
 - [x] Saml samtidige resumehændelser og brug ren reload som fail-safe ved genoptegningsfejl.
 - [x] Bestå målrettet livscyklus-, mobil-, første-paint-, progressiv prognose- og modulversionskontrol.
-- [ ] Bestå exact-head CI, frisk produktion, offentlig browserkontrol og fysisk iPhone-retur.
+- [x] Bestå exact-head CI, frisk produktion og offentlig Chrome-kontrol ved 390 × 844 med synligt kort, 210 farvede zoner, fem aktuelle områder, fem færdige prognoserækker og nul konsolfejl/advarsler efter **Om RavRadar** → tilbage.
+- [ ] Få en supplerende fysisk iPhone-efterkontrol fra ejeren; den automatiserbare livscyklus- og produktionskontrakt er allerede grøn.
 
 Se DEC-0089. Candidate G 20/50/30, vejr, prognoseinput, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
 
-## P1 aktiv – offentlig gratis Spørg RavRadar i 4.0.291
+## P1 produktionsverificeret – offentlig gratis Spørg RavRadar i 4.0.291
 
 - [x] Modtag særskilt ejer-go til offentlig GPT-OSS-aktivering.
 - [x] Genbekræft Cloudflare Workers Free / $0, 10.000 neuroner/dag og fejl uden betalt overflow.
@@ -90,7 +91,7 @@ Se DEC-0085. Candidate G 20/50/30, fysik, DMI-først, vejrberegning, sortering, 
 
 Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0084.
 
-## P1 aktiv – gratis og domæneafgrænset Spørg RavRadar
+## P1 afsluttet – gratis og domæneafgrænset Spørg RavRadar
 
 - [x] Auditér lokal og Edge-assistent mod Candidate G, offentlig scoreforklaring, sikkerhedsgrænse og deterministisk dataansvar.
 - [x] Dokumentér, at den nuværende Edge mangler DA/DE/EN, struktureret output, almindelig emneafvisning og sikker routing af bedste sted/tid/score.
@@ -103,9 +104,9 @@ Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, 
 - [x] Kør live-eval mod `gemini-3.7-flash` og `gemini-3.5-flash-lite`; dokumentér fejl, latenstid, tokens og modelvalg. 3.7 gav fem timeouts; Flash-Lite/low bestod 27/27 med median/p95 1.329/1.896 ms og 27.314 tokens.
 - [x] Bevar Flash-Lite 27/27 som historisk reference, men erstat produktionskandidaten med ejerens GPT-OSS 20B-valg i DEC-0087; dette er ikke offentlig aktivering.
 - [x] Implementér provider-neutral Edge-routing, struktureret validering, fast afvisning og rollback bag fortsat deaktiveret standardflag.
-- [ ] Aktiver kun efter særskilt ejer-go, positiv CORS/rate-limit/fallback/DA-DE-EN/browserkontrol og aktuel privatlivs-/vilkårskontrol.
+- [x] Aktivér efter særskilt ejer-go, positiv CORS/rate-limit/fallback/DA-DE-EN/browserkontrol og aktuel privatlivs-/vilkårskontrol; produktionsverificeret i 4.0.291.
 
-Der er ingen offentlig runtime-, score-, vejr-, konto-/tur-, geometri- eller dataændring i denne leverance. Se DEC-0083.
+Assistentaktiveringen ændrer ingen score-, vejr-, konto-/tur-, geometri- eller prognosedata. Se DEC-0083 og DEC-0088.
 
 ## Produktionsverificeret 4.0.287 – endeligt EU-turlager med Supabase-rollback
 

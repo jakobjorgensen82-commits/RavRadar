@@ -9,6 +9,7 @@
 - Indfører staged land-/vandpunktkandidater: aktivt punkt bevares, kandidaten DMI-valideres og opvarmes privat, og kun en særskilt ejeraktivering kan skifte atomisk efter fulde gates og central versionskontrol.
 - Udvider hel-datasæt-fallbacken til højst seks lokale Candidate G-warmups; gamle og nye zoner blandes aldrig.
 - Tilføjer målrettede livscyklus-, privatheds-, DMI-, state-, aktiverings-, versionskonflikt- og recoveryregressioner uden at flytte et faktisk punkt eller ændre score, vejr, sortering, brugerdata eller geometri. Se DEC-0089/0090 og `CHANGELOG-4.0.292.md`.
+- PR #192/exact-head `33127353135`, merge `d22d0867`, produktion `33127437790`, build `98708851478` og Pages `98711255270` er grønne. Offentlig 390 × 844-returkontrol viser 210 farvede zoner, fem aktuelle områder og fem færdige prognoserækker uden browserfejl; stagingstatus er tom og saniteret. Den eksisterende Candidate G-nøddrift fortsætter korrekt med 0/673 frisk `READY`, mens den virkelige 48-timersstate modnes.
 
 ## 4.0.291 – offentlig gratis Spørg RavRadar (2026-08-27)
 

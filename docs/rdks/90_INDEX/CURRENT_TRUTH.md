@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## 4.0.292 releasekandidat – mobil browser- og punktskiftegenoptagelse
+## Produktionsverificeret 4.0.292 – mobil browser- og punktskiftegenoptagelse
 
 - Et centralt gemt land-/vandpunkt er nu en revisionsbundet kandidat og kan ikke erstatte den aktive offentlige sampling direkte.
 - Kandidaten opbygges privat fra de samme DMI-GRIB-filer og skal bevise fælles U/V-grid ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-hukommelse. Offentlig status indeholder ingen koordinater eller rå U/V.
@@ -11,7 +11,10 @@
 - Den tidligere offentlige forside havde ingen `pageshow`-recovery. Safari/WebKit kan gendanne en side fra back/forward-cache uden normal modulopstart og kan afbryde en aktiv hentning under navigation; det kan bevare præcis den halvfærdige tilstand, hvor kort og begge ranglister er tomme.
 - Kandidaten genindlæser rent, hvis kernevisningen eller detaljerne ikke blev færdige, og genoptegner ellers kort, zonefarver, **Bedste områder**, valgt zone og **5-dages RavRadar** fra den allerede indlæste offentlige tilstand.
 - Et separat tidligt værn dækker retur før app-importen. Samtidige hændelser samles, og genoptegningsfejl giver fail-safe reload.
-- Målrettede regressioner og lokal 390 px-retur er grønne. Exact-head, produktion, offentlig runtime og fysisk iPhone-efterkontrol afventer; 4.0.292 må derfor endnu ikke kaldes produktionsverificeret.
+- PR #192 bestod exact-head `33127353135` på `e555680f`, blev merged som `d22d0867` og gennemførte produktion `33127437790`, build `98708851478` samt Pages `98711255270` med frisk DMI/Copernicus, faktisk runtimeaudit, fuld validering, releasegate og beskyttet central sync.
+- Offentlig 390 × 844-kontrol gennemførte **Om RavRadar** → tilbage med synligt kort, 210 farvede zoner, fem **Bedste områder**, fem færdige prognoserækker og nul konsolfejl/advarsler. Fysisk iPhone-efterkontrol hos ejeren er fortsat ønskelig.
+- Offentlig stagingstatus har `automaticActivationAllowed=false` og `entries=[]`; ingen koordinater eller rå U/V er lækket, og ingen promotion eller faktisk punktflytning fandt sted.
+- Den friske primær `rr-20260827235556-210` har 673 warmups og 0/673 `READY`. Den komplette fallback `rr-20260827013448-210` er derfor fortsat den atomisk valgte offentlige prognose med tydelig ikke-aktuel-advarsel, indtil den naturlige 48-timers Candidate G-state modnes.
 - Candidate G, vejr, prognoseinput, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se DEC-0089.
 
 ## Produktionsverificeret 4.0.291 – offentlig gratis Spørg RavRadar

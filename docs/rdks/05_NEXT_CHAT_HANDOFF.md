@@ -1,21 +1,23 @@
 # RavRadar – overlevering til næste chat
 
-## 4.0.292-kandidat – staged land-/vandpunkter uden driftsudfald
+## Produktionsverificeret 4.0.292 – staged land-/vandpunkter uden driftsudfald
 
 - Ingen faktisk geometri eller land-/vandpunkt er flyttet. Sibirien er kun den kommende bruger-case.
 - Punktredigering gemmes som kandidat og påvirker ikke offentlig sampling. Privat DMI-cache kræver eksakt fælles U/V-grid ≤5 km, 96 timers fuld horisont og 48 timers Candidate G-memory.
 - READY kræver en særskilt ejeraktivering. Den eksakte runtime bygges med varm DMI/state, fulde gates kører, og central promotion sker derefter med version-CAS. Gammel active override bevares til rollback.
 - Senest verificeret hel-datasæt-fallback må dække 0/673 global warmup eller højst seks lokale warmups; intet blandet datasæt.
-- Målrettede tests er grønne. Næste trin er samlet 4.0.292-kildevalidering, PR/exact-head, frisk produktion og fysisk iPhone-returtest. Se DEC-0089/0090.
-- PR #189/exact-head `33124945636` blev merged som `8b3668b7`; første produktion `33125043019` stoppede før DMI/deploy på en testfixture, der arvede workflowets produktionstime. Den afgrænsede hotfix tilføjer en eksplicit referenceparameter og miljøisoleret regression; ny exact-head og produktion afventes.
+- Målrettede tests, samlet kildevalidering og fuld produktion er grønne. PR #192 bestod exact-head `33127353135`, blev merged som `d22d0867` og gennemførte produktion `33127437790`, build `98708851478` samt Pages `98711255270`. Se DEC-0089/0090.
+- PR #189/exact-head `33124945636` blev merged som `8b3668b7`; første produktion `33125043019` stoppede før DMI/deploy på en testfixture, der arvede workflowets produktionstime. Den afgrænsede hotfix tilføjer en eksplicit referenceparameter og miljøisoleret regression; den samlede opfølgning er lukket gennem PR #190–#192.
 - PR #190/exact-head `33125466599` blev merged som `6906ee5a`. Produktion `33125529746` nåede gennem frisk DMI/Copernicus/runtime, men fuld validate stoppede på en gammel scheduler-regex, der ikke kendte private punktkandidater. Den rettede kontrakt kræver nu eksplicit, at `privateStage` holdes ude af offentlig nævner, og kører også på PR-head.
 - PR #191/exact-head `33126975042` blev merged som `01c443b8`. Produktion `33127032179` stoppede før DMI/deploy, fordi den fremrykkede scheduleradfærdstest krævede `requests` før produktionsworkflowets afhængighedsinstallation. Testen stubber nu kun de ubrugte netværksklasser og importerer fortsat den virkelige schedulerkode.
+- Den offentlige stagingstatus er saniteret og tom: ingen kandidat, ingen koordinater/U/V og ingen automatisk aktivering. Promotionen i den grønne produktionskørsel var derfor en kontrolleret no-op.
 
-## 4.0.292-kandidat – mobil retur genopretter forsiden
+## Produktionsverificeret 4.0.292 – mobil retur genopretter forsiden
 
 - Safari/WebKit kan gendanne forsiden fra back/forward-cache, mens tidligere asynkron opstart er halvfærdig eller afbrudt. Den manglende livscyklushåndtering passer til ejerens samlede symptom: kort, **Bedste områder** og **5-dages RavRadar** mangler efter retur fra **Om RavRadar**.
 - Et bootstrapværn genindlæser ved retur før app-import. Appens resumecontroller genindlæser ved ufuldstændig/afbrudt dataopstart og genoptegner ellers Leaflet, zonefarver, rangliste, valgt zone og femdøgnsvisning idempotent.
-- Målrettede lokale kontrakter og 390 px-returflow er grønne; exact-head, produktion, offentlig runtime og fysisk iPhone afventer.
+- Målrettede kontrakter, exact-head, produktion og offentlig 390 × 844-returkontrol er grønne. Efter **Om RavRadar** → tilbage er kortet synligt med alle 210 farvede zoner, og både **Bedste områder** og **5-dages RavRadar** viser fem færdige resultater uden konsolfejl/advarsler. Fysisk iPhone-efterkontrol hos ejeren er stadig ønskelig.
+- Live primær `rr-20260827235556-210` er fortsat 0/673 `READY` med 673 warmups. Den komplette fallback `rr-20260827013448-210` leverer derfor fortsat atomisk og tydeligt markeret som ikke aktuel, indtil den virkelige 48-timers Candidate G-state er moden.
 - Næste godkendte spor efter lukning er konkret evalscope for en markant bredere lokal DA/DE/EN-ravvidensbase. Den er read-only og må aldrig ændre prognoser, RavScore eller andre runtime-data.
 - Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller land-/vandpunkter. Se DEC-0089.
 
