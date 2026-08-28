@@ -10,7 +10,10 @@
 - [x] Bestå PR #195 exact-head `33131976433`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`.
 - [x] Bestå offentlig DA/DE/EN-formuleringskontrol sammen med farvet kort, fem aktuelle områder, fem prognosedage og korrekt kvotetekst.
 - [x] Bestå live Edge-kontrol af 23-fakta-kilden, DA/DE/EN, fast afvisning, CORS/origin og 6/minut med lokal fallback.
-- [ ] Rotér Cloudflare quick-start-tokenet som forsigtighed ved næste ejeraktive driftsvindue og genverificér Edge uden at eksponere værdien.
+- [x] Rotér Cloudflare quick-start-tokenet med mindst-mulig Workers AI Read + Edit, opdatér kun den eksisterende Supabase-secret uden redeploy og eksponér aldrig værdien.
+- [x] Bevis ny credential før tilbagekaldelse med DA/DE/EN, fast afvisning, CORS/origin, 6/minut og lokal fallback; tilbagekald derefter fire gamle tokens efter særskilt ejer-go.
+- [x] Bevis post-revoke-vejen med et afgrænset `200`-retry efter ét fail-closed, transient `503 RATE_LIMIT_UNAVAILABLE` før provider.
+- [x] Bestå målrettede RDKS-, håndbogs-, privacy-, Edge-, assistent- og fallbackkontroller samt fuld lokal `validate:source` og releasegate på Sol/Ekstra høj.
 
 Ingen svartekst, GPT-OSS-model, Edge-gateway, RavScore, vejr, prognose, sortering, konto-/turdata, privatliv, geometri eller punkt ændres.
 

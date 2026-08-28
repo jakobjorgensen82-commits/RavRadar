@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Driftsverificeret credentialrotation – 2026-08-28
+
+- 4.0.294-koden og produktionsartifactet er uændrede. Rotationens kildebaseline var den rene `origin/main`-commit `989211265d0f338027452b5935d5def16dff3108`.
+- Cloudflare Workers AI-tokenet er roteret med mindst-mulig Read + Edit på den eksakte konto. Kun Supabase Edge-secret `CLOUDFLARE_WORKERS_AI_TOKEN` blev erstattet; ingen værdi blev læst ud, vist, logget eller skrevet i repositoryet, og intet redeploy var nødvendigt.
+- Den nye credential bestod DA/DE/EN, lokal rouladeafvisning, tilladt CORS, fremmed-origin-afvisning, reel 6/minut-grænse og lokal browserfallback. Efter særskilt ejerbekræftelse blev fire gamle generiske **Workers AI**-tokens tilbagekaldt; præcis ét nyt RavRadar-token er tilbage.
+- En enkelt post-revoke-probe fejlede lukket med `503 RATE_LIMIT_UNAVAILABLE` før provider; ét afgrænset retry bestod `200` og beviste den nye vej. Det er et observeret transient datapunkt, ikke evidens for tokenfejl eller en ændret Edge-kontrakt.
+- Målrettede RDKS-, håndbogs-, privacy-, Edge-, assistent- og fallbackkontroller samt fuld lokal `validate:source` og releasegate er grønne på Sol/Ekstra høj.
+- Assistenten er fortsat read-only. RavScore, Candidate G, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+
 ## Produktionsverificeret 4.0.294 – naturlige DA/DE/EN-spørgsmål om ravets dannelse
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
@@ -8,7 +17,7 @@
 - Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. PR #195 bestod exact-head `33131976433` på `80866ba8`, blev merged som `a3eb4ac5` og gennemførte produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`.
 - Offentlig 4.0.294 viser farvet kort, fem **Bedste områder** og fem prognosedage. **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** giver de korrekte lokale svar uden netværk eller AI-kvote; kvote-/isolationsbeskeden er korrekt på alle tre sprog.
 - Den versionsstyrede 23-fakta Edge er livekontrolleret på DA/DE/EN sammen med fast rouladeafvisning, CORS/origin og den virkelige 6/minut-grænse med lokal fallback. Rettelsen ændrer ingen svartekst, ekstern model, Edge-kontrakt, RavScore, vejr, prognose, sortering, brugerdata, geometri eller punkt.
-- Supabase-forbruget i den aktuelle periode var langt under Free-grænserne ved kontrollen; et tidligere periodes egressvarsel overvåges fortsat. Cloudflare quick-start-tokenet roteres som forsigtighed i et ejeraktivt driftsvindue med ny Edge-smoke og uden credentialoutput.
+- Supabase-forbruget i den aktuelle periode var langt under Free-grænserne ved kontrollen; et tidligere periodes egressvarsel overvåges fortsat. Cloudflare quick-start-tokenet er efterfølgende roteret og liveverificeret uden credentialoutput som beskrevet ovenfor.
 
 ## 4.0.293 – bred read-only DA/DE/EN-viden i Spørg RavRadar
 

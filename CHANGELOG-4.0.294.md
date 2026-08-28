@@ -6,6 +6,14 @@
 - Oprindelses-intentet genkender nu almindelige dannelsesformuleringer på dansk, tysk og engelsk, herunder **Hvordan opstod/dannes rav?**, **Wie entsteht Bernstein?** og **How is amber formed?**.
 - Tre særskilte formuleringcases supplerer de eksisterende 51 balancerede lokale cases og beviser lokal routing og nul netværkskald.
 
+## Efterfølgende driftslukning – Cloudflare-credential
+
+- Workers AI-tokenet er roteret med mindst-mulig Read + Edit på den eksakte konto. Kun den eksisterende Supabase Edge-secret blev erstattet gennem den godkendte dashboardkanal; ingen værdi blev vist eller skrevet i repositoryet, og intet redeploy var nødvendigt.
+- Den nye vej bestod ægte DA/DE/EN-fjernsvar, fast lokal rouladeafvisning, tilladt CORS, fremmed Origin `403`, seks `200` og `429` på syvende minutkald samt lokal browserfallback.
+- Fire gamle generisk navngivne tokens blev tilbagekaldt efter særskilt ejerbekræftelse. Første post-revoke-probe blev fail-closed af en transient `503 RATE_LIMIT_UNAVAILABLE` før provider; ét afgrænset retry bestod `200` med gyldigt GPT-OSS-svar.
+- Målrettede RDKS-, håndbogs-, privacy-, Edge-, assistent- og fallbacktests samt fuld lokal `validate:source` og releasegate er grønne på Sol/Ekstra høj.
+- Dette er en ren driftsrotation uden ny version, kodeændring, Edge-deploy eller produktionsartifact.
+
 ## Isolation
 
 - Rettelsen ændrer kun den lokale tekstklassifikation. Svartekst, GPT-OSS-model, Edge-kontrakt, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.

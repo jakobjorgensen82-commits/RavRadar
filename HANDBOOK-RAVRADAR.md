@@ -12,6 +12,8 @@ Svarene bygger på den offentlige grundbog og bruger stabile sprognøgler. Spor 
 
 Åbne ravrelevante specialspørgsmål kan stadig sendes til den gratis GPT-OSS-gateway. Dens godkendte viden er udvidet fra 10 til 23 evidensbundne fakta om de samme emner. Credential forbliver på serveren, og CORS, domænegate, rate limits, timeout, eksakt JSON-/evidensvalidering og lokal fallback er uændrede. Ved kvote- eller providerfejl virker de lokale svar stadig.
 
+Den 28. august 2026 blev Cloudflare-credentialen roteret forsigtigt uden ny release eller redeploy. Kun den eksisterende server-secret blev erstattet, den nye vej blev bevist på dansk, tysk og engelsk samt ved CORS-, origin-, rate-limit- og fallbackprøver, og de gamle tokens blev først tilbagekaldt efter grøn kontrol og særskilt ejerbekræftelse. Ingen credentialværdi blev vist eller gemt i projektet.
+
 Begge assistentveje er rent læsende. De kan ikke ændre kort, prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0091](docs/rdks/10_DECISIONS/DEC-0091-BROAD-READ-ONLY-ASSISTANT-KNOWLEDGE.md).
 
 ## Sikker ændring af land-/vandpunkter – 4.0.292
