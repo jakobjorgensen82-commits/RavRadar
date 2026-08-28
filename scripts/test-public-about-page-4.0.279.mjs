@@ -55,7 +55,7 @@ assert.match(aboutCss, /@media \(max-width: 600px\)/);
 assert.match(aboutCss, /\.family-photo\s*\{[^}]*grid-template-columns:\s*minmax\(300px,\s*\.82fr\)\s*minmax\(0,\s*1\.18fr\)/s);
 assert.match(aboutCss, /@media \(max-width: 860px\)[\s\S]*?\.family-photo\s*\{\s*grid-template-columns:\s*1fr;/);
 assert.match(style, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-assert.ok(worker.includes('"./about.html"') && worker.includes('`./about.css?v=${APP_VERSION}`'), 'Om-siden skal være del af app-skallen');
+assert.ok(worker.includes('"./about.html"') && worker.includes('`./about.css?v=${APP_VERSION}`'), 'Om-sidens lille HTML/CSS-skal skal være del af app-skallen');
 
 for (const asset of [
   'assets/about/jakob-480.webp',
@@ -66,6 +66,15 @@ for (const asset of [
   'assets/about/qrcode.min.js',
   'assets/about/QRCODEJS-LICENSE.txt'
 ]) assert.ok(fs.statSync(path.join(root, asset)).size > 1000, `Manglende eller tomt aktiv: ${asset}`);
+
+for (const image of [
+  'assets/about/jakob-480.webp',
+  'assets/about/jakob-900.webp',
+  'assets/about/ravjagt-med-boern-720.jpg',
+  'assets/about/ravjagt-med-boern-1200.jpg',
+  'assets/about/ravjagt-med-boern-1800.jpg'
+]) assert.equal(worker.includes(`"./${image}"`), false, `Første service-worker-installation må ikke forhåndshente ${image}`);
+assert.equal(worker.includes('`./data/zones.geojson?v=${APP_VERSION}`'), false, 'Første service-worker-installation må ikke hente kortfilen igen');
 
 assert.deepEqual(jpegDimensions('assets/about/ravjagt-med-boern-720.jpg'), { width: 540, height: 720 });
 assert.deepEqual(jpegDimensions('assets/about/ravjagt-med-boern-1200.jpg'), { width: 900, height: 1200 });

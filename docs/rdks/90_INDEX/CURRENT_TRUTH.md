@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## Kildekandidat 4.0.303 – prioriteret mobilopstart og let første installation
+
+- 4.0.301 virkede på ejerens fysiske iPhone, inklusive intern Om-retur, men første load tog cirka 14 sekunder.
+- 4.0.302's parallelle kort-/manifest-/conditions-start bestod PR #207, exact-head og produktion på desktop. Fysisk iPhone Safari viste derimod cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation. 4.0.302 er derfor afvist.
+- PR #208's byteidentiske 4.0.301-rollback bestod exact-head og blev merged som `e155f42e`, men produktion `33177494546` stoppede fail-closed før deploy på `INVALID_SWITCH_VERSION`, fordi centralt valg fortsat bar 4.0.302. Offentlig side forblev 4.0.302.
+- 4.0.303 gendanner sekventiel kort → manifest → conditions, lader første service-worker-claim beholde den allerede startede side og fjerner kortfil/store Om-billeder fra installationens forhåndshentning. Senere reelle workeropdateringer genindlæser fortsat højst én gang.
+- DEC-0098's historikretur og DEC-0092/0093's kompakte, indholdsadresserede data bevares. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion, offentlig runtime og fysisk kold/varm Safari afventer. Se DEC-0099.
+- Ingen faglig model, prognose, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
+
 ## Kildekandidat 4.0.301 – intern Om-knap bruger rigtig historikretur
 
 - 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig intern Om-retur var komplet på cirka 1,29 sekunder med 210 zonelinjer og 5 + 5 + 5, men ejerens fysiske Safari-test på bekræftet 4.0.300 var stadig rød.

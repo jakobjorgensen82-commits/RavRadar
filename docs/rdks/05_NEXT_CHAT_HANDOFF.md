@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Øverste checkpoint – 4.0.303 mobilopstart efter fysisk afvist 4.0.302
+
+- Arbejd kun i den isolerede Codex-worktree på `codex/restore-baseline-4.0.303`. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter.
+- 4.0.301 virkede fysisk, men første iPhone-load var cirka 14 sekunder. 4.0.302's parallelle start bestod PR #207/produktion på desktop, men blev fysisk afvist med cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation.
+- PR #208's exact-head rollback var grøn og merged som `e155f42e`; produktion `33177494546` stoppede fail-closed på `INVALID_SWITCH_VERSION`, så offentlig side er fortsat 4.0.302.
+- 4.0.303 gendanner sekventiel kort → manifest → conditions, undgår kun reload ved første service-worker-claim og forhåndshenter ikke kortfil/store Om-billeder under installation. DEC-0098-returen er bevaret. Se DEC-0099.
+- Målrettede tests og fuld lokal `validate:source`/releasegate er grønne. Fortsæt med exact-head, frisk produktion/Pages og offentlig 210 + 5 × 5. Få derefter ejeren til at prøve én kold og én varm Safari-start samt Om-retur. Kald ikke ydelsen løst før ejerbevis.
+- Sibirien forbliver privat staged/uaktiveret; ingen kunstig historik eller konkret punktændring.
+
 ## Øverste checkpoint – 4.0.301 rigtig historikretur
 
 - 4.0.300 er fuldt CI-/produktionsgrøn, men fysisk afvist på bekræftet version 4.0.300 i iPhone Safari.

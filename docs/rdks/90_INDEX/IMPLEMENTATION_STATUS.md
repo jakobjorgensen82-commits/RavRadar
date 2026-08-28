@@ -1,4 +1,21 @@
-# Implementeringsstatus – 4.0.301-kandidat efter fejlramt fysisk 4.0.300-retur
+# Implementeringsstatus – 4.0.303-kandidat efter fysisk afvist 4.0.302-opstart
+
+## P1 kildekandidat – prioriteret mobilopstart og let første service-worker-installation
+
+- [x] Registrér 4.0.301 som fysisk funktionel med cirka 14 sekunders første iPhone-load.
+- [x] Registrér 4.0.302 som fysisk afvist trods grøn PR #207/produktion: cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation.
+- [x] Registrér PR #208's grønne exact-head og fail-closed produktion `33177494546` på `INVALID_SWITCH_VERSION`; intet rollbackartifact blev deployet.
+- [x] Gendan den prioriterede sekvens kort/kyst → manifest → conditions uden 4.0.302's parallelle konkurrence.
+- [x] Undgå reload ved første service-worker-claim, men bevar én reload ved senere reel workeropdatering.
+- [x] Fjern kortfil og store Om-billeder fra installationens forhåndshentning; bevar filer og cache ved faktisk brug.
+- [x] Bevar DEC-0098's historikretur samt DEC-0092/0093's data-/fallbackkontrakter.
+- [x] Bestå målrettede startup-, worker-, Om-, resume-, fallback- og ydelseskontroller.
+- [x] Bestå fuld lokal RDKS/sourcegate og releasegate.
+- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
+- [ ] Verificér offentlig 4.0.303, 210 zonelinjer, fem aktuelle områder, fem dage × fem resultater og intern Om-retur.
+- [ ] Få ejeren til at godkende en kold og en varm Safari-start på fysisk iPhone.
+
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0099.
 
 ## P1 kildekandidat – intern knap udfører den beviste historikretur
 

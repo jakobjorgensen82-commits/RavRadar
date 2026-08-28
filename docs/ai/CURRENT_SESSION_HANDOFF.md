@@ -1,5 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.303 mobilopstart efter fysisk afvist 4.0.302
+
+- 4.0.301 virkede på ejerens fysiske iPhone Safari, inklusive RavRadar-knappen fra **Om RavRadar**, men første indlæsning tog cirka 14 sekunder.
+- 4.0.302 paralleliserede kort-/kystprojektion med manifest/conditions. PR #207/exact-head og produktion var grønne på desktop, men ejeren målte cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation. 4.0.302 er fysisk afvist.
+- PR #208's eksakte rollback-head var grøn og blev merged som `e155f42e`, men produktion `33177494546` stoppede korrekt før deploy på `INVALID_SWITCH_VERSION`; offentlig side forblev 4.0.302.
+- Branch `codex/restore-baseline-4.0.303` gendanner 4.0.301's prioriterede sekvens, springer reload over ved første service-worker-claim og fjerner kortfil/store Om-billeder fra første installationsprecache. DEC-0098's historikretur bevares.
+- Målrettede sourcekontrakter og fuld lokal `validate:source`/releasegate er grønne. Lokal ny-origin-browser viser én dokumentnavigation; repositoryets lokale livefixture er for gammel til en fuld prognoseprøve, så funktion/latenstid skal bevises på exact-head-produktionsartifact og fysisk iPhone.
+- Geodata må kun ændre topversion 4.0.301 → 4.0.303. Ingen koordinater, geometri, punkter, private data, Candidate G, vejr, scorer eller sortering må ændres; Sibirien forbliver privat staged.
+- Næste trin: commit/push, PR exact-head, merge, frisk produktion/Pages, offentlig 210 + 5 × 5-kontrol og ejerens kolde + varme Safari-prøve. Kald ikke ydelsen løst før fysisk ejerbevis. Brug Sol/Ekstra høj.
+
 ## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.301 rigtig historikretur fra Om-knappen
 
 - 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig intern Om-retur var komplet på cirka 1,29 sekunder med 210 + 5 + 5 + 5.
