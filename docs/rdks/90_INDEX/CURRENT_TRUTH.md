@@ -1,11 +1,14 @@
 # Current truth – gældende projektviden
 
-## 4.0.294-kandidat – naturlige DA/DE/EN-spørgsmål om ravets dannelse
+## Produktionsverificeret 4.0.294 – naturlige DA/DE/EN-spørgsmål om ravets dannelse
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
 - Offentlig 4.0.293 viste korrekt version, farvet kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul browserfejl, men **Hvordan opstod rav?** blev afvist på grund af en for snæver formulering i oprindelses-intentet.
 - 4.0.294 genkender almindelige dannelsesformuleringer på dansk, tysk og engelsk. Tre særskilte cases beviser lokal routing og nul netværk; de eksisterende 51 balancerede emnecases bevares.
-- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. Rettelsen ændrer ingen svartekst, ekstern model, Edge-gateway, RavScore, vejr, prognose, sortering, brugerdata, geometri eller punkt. Exact-head, produktion og gentaget offentlig kontrol afventer.
+- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. PR #195 bestod exact-head `33131976433` på `80866ba8`, blev merged som `a3eb4ac5` og gennemførte produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`.
+- Offentlig 4.0.294 viser farvet kort, fem **Bedste områder** og fem prognosedage. **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** giver de korrekte lokale svar uden netværk eller AI-kvote; kvote-/isolationsbeskeden er korrekt på alle tre sprog.
+- Den versionsstyrede 23-fakta Edge er livekontrolleret på DA/DE/EN sammen med fast rouladeafvisning, CORS/origin og den virkelige 6/minut-grænse med lokal fallback. Rettelsen ændrer ingen svartekst, ekstern model, Edge-kontrakt, RavScore, vejr, prognose, sortering, brugerdata, geometri eller punkt.
+- Supabase-forbruget i den aktuelle periode var langt under Free-grænserne ved kontrollen; et tidligere periodes egressvarsel overvåges fortsat. Cloudflare quick-start-tokenet roteres som forsigtighed i et ejeraktivt driftsvindue med ny Edge-smoke og uden credentialoutput.
 
 ## 4.0.293 – bred read-only DA/DE/EN-viden i Spørg RavRadar
 

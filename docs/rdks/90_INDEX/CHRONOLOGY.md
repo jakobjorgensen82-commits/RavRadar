@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-28: 4.0.294 bestod PR #195 exact-head `33131976433` på `80866ba8`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`. Offentlig DA/DE/EN-kontrol beviste de naturlige oprindelsessvar sammen med farvet kort, fem aktuelle områder og fem prognosedage. Den live 23-fakta Edge bestod DA/DE/EN, fast afvisning, CORS/origin og 6/minut med lokal fallback. 4.0.294 er produktionsverificeret.
+
 - 2026-08-28: 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`. Offentlig version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og konsol var grønne. Den naturlige formulering **Hvordan opstod rav?** blev dog afvist; 4.0.294 udvider kun oprindelses-intentet med DA/DE/EN-dannelsesformuleringer og tre nul-netværksregressioner.
 
 - 2026-08-28: Ejerens godkendte næste spor udvider 4.0.293-kandidaten til 17 lokale DA/DE/EN-ravemner, 23 Edge-evidensfakta, 51 lokale og 66 samlede evalcases. Målrettede kontrakter samt fuld lokal sourcegate/releasegate er grønne; exact-head, produktion og offentlig kontrol afventer. Assistenten forbliver read-only og isoleret fra alle prognose-, score-, bruger- og geodata. Se DEC-0091.

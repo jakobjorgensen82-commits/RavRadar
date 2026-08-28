@@ -2,7 +2,9 @@
 
 - Den offentlige 4.0.293-kontrol beviste version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul browserfejl, men fandt at **Hvordan opstod rav?** blev afvist.
 - 4.0.294 genkender naturlige dannelsesformuleringer på dansk, tysk og engelsk og supplerer de 51 emnecases med tre formuleringregressioner uden netværk. Ingen faglig, ekstern AI-, data- eller geokontrakt ændres.
-- 4.0.293-produktionsbeviset er PR #194/exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`. 4.0.294 har grøn fuld lokal sourcegate/releasegate; exact-head og produktion afventer.
+- 4.0.293-produktionsbeviset er PR #194/exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
+- 4.0.294 bestod PR #195/exact-head `33131976433`, head `80866ba8`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`. Offentlig DA/DE/EN-kontrol beviser de tre lokale oprindelsessvar, korrekt kvotetekst, farvet kort, fem aktuelle områder og fem prognosedage.
+- Den deployede 23-fakta Edge består live DA/DE/EN, fast rouladeafvisning, CORS/origin og reel 6/minut-browsergrænse med lokal fallback. Candidate G-nøddrift fortsætter uafhængigt under naturlig 48-timersmodning.
 
 ## 2026-08-28 – 4.0.293 bred read-only Spørg RavRadar-viden
 

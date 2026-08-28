@@ -1,15 +1,19 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P1-CHECKPOINT – 2026-08-28 – 4.0.294 naturlig oprindelsesformulering
+## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-28 – 4.0.294 naturlig oprindelsesformulering
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, blev merged som `25722abc` og gennemførte grøn produktion `33130425262`, build `98718434389` og Pages `98721765768`.
 - Offentlig version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og browserkonsol var grønne. Kontrollen fandt samtidig, at **Hvordan opstod rav?** blev afvist, fordi oprindelses-intentet kun kendte andre formuleringer.
 - 4.0.294 udvider kun dette eksisterende intent med naturlige dannelsesformuleringer på dansk, tysk og engelsk. De 51 balancerede emnecases suppleres af tre særskilte formuleringregressioner uden netværkskald.
-- Målrettede tests samt fuld lokal sourcegate og releasegate er grønne. Assistenten forbliver read-only. Svartekst, GPT-OSS/Edge, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Exact-head, produktion og gentaget offentlig kontrol afventer.
+- Målrettede tests samt fuld lokal sourcegate og releasegate er grønne. PR #195 bestod exact-head `33131976433` på `80866ba8`, blev merged som `a3eb4ac5` og gennemførte grøn produktion `33132053882`, build `98723615102`, Pages `98725082313` samt privat shadow `33132055561`.
+- Offentlig 4.0.294 viser farvet kort, fem aktuelle områder og fem prognosedage. **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** giver de korrekte lokale svar uden netværk eller AI-kvote; den tre-sprogede kvotetekst siger fortsat, at kun svarfunktionen er begrænset.
+- Den 23-fakta Edge-kilde er live og består DA/DE/EN, fast rouladeafvisning, fremmed-origin-afvisning, tilladt CORS samt seks fjernsvar pr. minut med lokal fallback på det syvende. Assistenten forbliver read-only. RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede.
+- Supabase-perioden 22. august–22. september viste ved kontrollen 0,089/0,5 GB database, 0,516/5 GB egress, 181/500.000 Edge-kald og 2/50.000 MAU. Den tidligere periodes egressvarsel skal fortsat overvåges, men der er ingen aktuel AI-kvotefejl.
+- Credential-hygiejne: Cloudflare quick-start-tokenvisningen blev lukket efter opsætningen. Rotér tokenet som forsigtighed ved næste ejeraktive driftsvindue og genverificér Edge uden at skrive værdien i Git, RDKS eller output.
 
-## 4.0.293 bred read-only assistentviden – implementeret og første produktion grøn
+## 4.0.293/294 bred read-only assistentviden – produktionsverificeret
 
-- Ejerens næste godkendte leverance er implementeret som kandidat: den lokale Spørg RavRadar dækker nu 17 konkrete grundbogsbaserede emner på dansk, tysk og engelsk uden netværk eller AI-kvote.
+- Ejerens godkendte leverance er produktionsverificeret: den lokale Spørg RavRadar dækker nu 17 konkrete grundbogsbaserede emner på dansk, tysk og engelsk uden netværk eller AI-kvote.
 - Sted, tidspunkt og konkret score er fortsat lokale Candidate G-beregninger. Åbne relevante specialspørgsmål kan fortsat bruge den offentlige GPT-OSS Edge.
 - Edge-viden er udvidet fra 10 til 23 evidens-ID'er om oprindelse, massefylde, skjulte lagre, vind, bølger, strøm, kystsortering, felttegn, identifikation, teknik og forløb. Sikkerheds-, kvote- og privatlivskontrakten er uændret.
 - `rav-assistant-local-evals-v1` har 51 cases, 17 pr. sprog og emne; alle svar er lokale og nul netværkskald er bevist. Den samlede modelpakke har 66 cases, 22 pr. sprog, og 23 versionsbundne fakta.

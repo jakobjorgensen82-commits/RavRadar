@@ -3,6 +3,7 @@
 - Den offentlige 4.0.293-kontrol fandt, at den naturlige formulering **Hvordan opstod rav?** faldt uden for den ellers korrekte oprindelses-intent og derfor blev afvist.
 - Dansk, tysk og engelsk genkender nu almindelige dannelsesformuleringer som **Hvordan opstod/dannes rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** lokalt uden netværk eller AI-kvote.
 - De oprindelige 51 balancerede emnecases er bevaret og suppleres af tre særskilte formuleringregressioner. Assistentens read-only-, privacy-, kvote-, gateway- og Candidate G-grænser er uændrede. Se DEC-0091 og `CHANGELOG-4.0.294.md`.
+- PR #195/exact-head `33131976433`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102` og Pages `98725082313` er grønne. Offentlig DA/DE/EN-kontrol består de tre naturlige oprindelsesspørgsmål sammen med farvet kort, fem aktuelle områder og fem prognosedage; 4.0.294 er produktionsverificeret.
 
 ## 4.0.293 – bred read-only Spørg RavRadar-viden (2026-08-28)
 

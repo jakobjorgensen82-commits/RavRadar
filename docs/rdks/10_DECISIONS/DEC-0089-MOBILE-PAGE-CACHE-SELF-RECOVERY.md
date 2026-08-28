@@ -1,6 +1,6 @@
 # DEC-0089 – selvrecovery efter mobil browser-sidecache
 
-**Status:** Implementeret i 4.0.292-kandidaten; exact-head, produktion og fysisk iPhone-efterkontrol afventer
+**Status:** Produktionsverificeret i 4.0.292; supplerende fysisk iPhone-efterkontrol afventer
 **Dato:** 2026-08-27
 **Scorepåvirkning:** Ingen
 **Data-/geometripåvirkning:** Ingen ud over ren versionsfeltsynkronisering
@@ -19,6 +19,6 @@
 - Den tidligere forside havde ingen `pageshow`-håndtering. Kortet og de to lister blev kun bygget gennem én top-level modulopstart med progressive `requestAnimationFrame`-trin og en asynkron detaljehentning.
 - WebKits dokumenterede page-cache-livscyklus genåbner en side gennem `pageshow` i stedet for normal ny opstart. En aktuel WebKit-fejlrapport dokumenterer desuden, at en aktiv `fetch` kan blive afbrudt ved navigation og siden senere gendannes fra det afbrudte punkt.
 - En isoleret tilstandskontrakt tester normal load, tidlig ufuldstændig opstart, færdig genoptegning, ventende detaljer, timeout/fejl og dublerede `pageshow`-hændelser. De eksisterende mobil-, første-paint-, progressive femdøgns- og modulversionskontroller er fortsat grønne.
-- Lokal 390 px-browsernavigation **Forside → Om RavRadar → browsertilbage** bekræfter, at den ufuldstændige lokale datatilstand starter rent igen. Den ikke-hydrerede worktree mangler fortsat det aktuelle offentlige detaljedatasæt og kan derfor ikke erstatte den krævede efterkontrol på publiceret runtime og fysisk iPhone.
+- Lokal og offentlig 390 × 844-browsernavigation **Forside → Om RavRadar → browsertilbage** bekræfter synligt kort, 210 farvede zoner, fem **Bedste områder** og fem færdige prognoserækker uden konsolfejl/advarsler. PR #192, produktion `33127437790` og Pages `98711255270` er grønne. En supplerende prøve på ejerens fysiske iPhone er fortsat ønskelig.
 
 Den planlagte bredere lokale Spørg RavRadar-vidensbase følger først efter denne kritiske livscyklusrelease. Begge assistentveje forbliver read-only.

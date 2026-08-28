@@ -2,7 +2,7 @@
 
 ## 4.0.292 – kommende punktflytning
 
-- **ISSUE-COASTAL-POINT-DIRECT-ACTIVATION-OUTAGE – RETTELSE IMPLEMENTERET / PRODUKTIONSKONTROL AFVENTER:** Et verificeret adminoverride kunne tidligere blive offentlig sampling før den nye koordinat havde bestået eksakt DMI-grid og 48 timers Candidate G-opvarmning. 4.0.292 holder kandidaten privat, bevarer det aktive punkt og kræver READY + særskilt aktivering + fulde gates + central version-CAS. Ingen konkret Sibirien-flytning er udført.
+- **ISSUE-COASTAL-POINT-DIRECT-ACTIVATION-OUTAGE – PRODUKTIONSVERIFICERET LØST:** Et verificeret adminoverride kunne tidligere blive offentlig sampling før den nye koordinat havde bestået eksakt DMI-grid og 48 timers Candidate G-opvarmning. 4.0.292 holder kandidaten privat, bevarer det aktive punkt og kræver READY + særskilt aktivering + fulde gates + central version-CAS. PR #192, produktion og saniteret offentlig status er grønne; ingen konkret Sibirien-flytning er udført.
 - **ISSUE-SIBIRIEN-CURRENT-GRID-MARGIN – ÅBEN TIL KONKRET EVIDENS:** Den historiske statiske kontrol for `dk-b02-06-national-part-02` viste 5,045 km til fælles U/V-grid mod den aktive 5,0 km-grænse. Den siger intet sikkert om en kommende ny koordinat; den konkrete kandidat skal derfor bestå frisk staged gridproof eller forblive uaktiveret.
 
 ## Produktionsverificeret 4.0.291 – sprog og gratis modelvalg
@@ -13,8 +13,9 @@
 
 ## Nye ejerobservationer efter produktionsverificeret 4.0.291
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY – RETTELSE IMPLEMENTERET / PRODUKTIONSKONTROL AFVENTER:** Forsiden manglede `pageshow`-recovery for Safari/WebKit back/forward-cache og kunne derfor bevare en halvfærdig eller fetch-afbrudt opstart. 4.0.292-kandidaten genindlæser ufuldstændig state og genoptegner færdig state. Målrettede tests og lokal 390 px-retur er grønne; exact-head, public runtime og fysisk iPhone skal lukke issueet.
-- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – ÅBEN / PLANLAGT EFTER MOBILFIX:** Den lokale fallback kan kun et lille sæt deterministiske intents. Ejeren ønsker en væsentligt klogere leverandøruafhængig assistent. Løsningen skal være versionsbundet, ravfaglig, DA/DE/EN, read-only og evaldrevet; den må ikke ændre prognoser, RavScore eller andre runtime-data.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY – PRODUKTIONSVERIFICERET LØST / FYSISK IPHONE-EFTERKONTROL ÅBEN:** Forsiden manglede `pageshow`-recovery for Safari/WebKit back/forward-cache. 4.0.292 bestod exact-head, produktion og offentlig 390 × 844-retur med farvet kort, fem **Bedste områder**, fem prognoserækker og nul browserfejl; ejeren bør stadig bekræfte på en fysisk iPhone.
+- **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – PRODUKTIONSVERIFICERET LØST:** 4.0.293/294 dækker 17 grundbogsbaserede DA/DE/EN-emner lokalt, 51 lokale nul-netværkscases, 23 Edge-fakta og 66 samlede evalcases. PR #194/#195, produktion og offentlig tre-sprogs kontrol er grønne; løsningen er read-only og ændrer ingen prognose-, score-, bruger- eller geodata.
+- **ISSUE-ASSISTANT-CLOUDFLARE-TOKEN-HYGIENE – ÅBEN DRIFTSFORHOLDSREGEL:** Quick-start-tokenvisningen blev lukket efter opsætningen. Tokenet roteres som forsigtighed ved næste ejeraktive vindue, Edge-secretet opdateres gennem den godkendte kanal, og DA/DE/EN-smoke gentages uden at credentialværdien skrives i Git, RDKS eller output.
 
 ## Produktionsverificeret P0 4.0.289 – den oprindelige datagap-trigger og recoveryoverlap
 

@@ -14,4 +14,7 @@
 ## Verifikation
 
 - Den målrettede DA/DE/EN-formuleringsregression, den eksisterende offentlige i18n-/routingkontrakt samt fuld lokal sourcegate/releasegate er grønne.
-- Exact-head, produktion og gentaget offentlig kontrol afventer, før 4.0.294 kan kaldes produktionsverificeret.
+- PR #195 bestod exact-head `33131976433` på `80866ba8`, blev merged som `a3eb4ac5` og gennemførte produktion `33132053882`, build `98723615102` samt Pages `98725082313`. Det samtidige private shadowrun `33132055561` var også grønt.
+- Offentlig 4.0.294 viste farvet kort, fem **Bedste områder**, fem prognosedage og den korrekte lokale oprindelsesforklaring for **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?**. Kvoteteksten er korrekt på alle tre sprog, og den afgrænser fortsat AI fra kort, prognoser, RavScore og øvrige funktioner.
+- Den versionsstyrede Edge-kilde med 23 evidens-ID'er blev deployet og livekontrolleret på DA/DE/EN. Fast rouladeafvisning, fremmed-origin-afvisning, tilladt CORS og den virkelige 6/minut-grænse med lokal browserfallback er grønne.
+- 4.0.294 er dermed produktionsverificeret. Candidate G viser fortsat den senest komplette prognose som tydeligt markeret nøddrift, mens en ny sammenhængende 48-timersstate modnes; dette er uafhængigt af assistentrettelsen.
