@@ -1,3 +1,11 @@
+## 2026-08-28 – 4.0.295 offentlig opstartsydelse
+
+- Offentlig måling af 4.0.294 fandt 25–29 sekunder til femdøgnsvisningen og cirka 59 sekunder umiddelbart efter Pages-deploy. HTML-skallen var hurtig; normal opstart hentede 90–132 MB ukomprimerede Candidate G-detaljer og genberegnede fem nationale top-5-lister.
+- 4.0.295 afleder samme top-5 med den eksisterende bestetids-/rangeringskontrakt i den kompakte startpakke. Den fulde detaljepakke bevares, men hentes først til område, konto, tur, assistent eller dybt zoom.
+- Dataset+SHA-adresserede prognosefiler må genbruges via HTTP-cache. Manifest, geometri og ikke-adresserede livefiler forbliver friske; dataset-, tids-, hash- og fallbackgates er uændrede.
+- Candidate G-nødvisningen opgraderes fra sit allerede auditerede offentlige datasæt uden ændring af detaljer, scorer eller state. Målrettede tests og fuld lokal sourcegate/releasegate er grønne; exact-head, produktion og offentlig måling afventer. Se DEC-0092.
+- Ejeren har gemt en ny Sibirien-punktrevision. Den forbliver privat staged, uaktiveret og under naturlig DMI-/48-timersmodning uden koordinatoutput eller kunstig historik.
+
 ## 2026-08-28 – 4.0.294 naturlig oprindelsesformulering
 
 - Den offentlige 4.0.293-kontrol beviste version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul browserfejl, men fandt at **Hvordan opstod rav?** blev afvist.

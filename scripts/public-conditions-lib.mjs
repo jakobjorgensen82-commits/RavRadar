@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
 import { selectLatestLocalScoreRowAtOrBefore } from './lib/local-current-reference.mjs';
+import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
+import { addNationalRanking, compareNationalRankingRows } from '../js/core/zone-ranking.js';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -41,6 +43,56 @@ function buildDetailedCoastalParts(full){
   return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
 }
 
+const PUBLIC_FORECAST_MODES = ['waders', 'beach'];
+
+function publicForecastDates(full) {
+  return [...new Set(Object.values(full?.zones || {})
+    .flatMap(zone => zone?.forecast?.hourly || [])
+    .map(row => String(row?.time || '').slice(0, 10))
+    .filter(Boolean))].sort().slice(0, 5);
+}
+
+function publicPartsByZone(source) {
+  const byZone = new Map();
+  for (const part of Object.values(source?.parts || {})) {
+    if (!part?.zoneId) continue;
+    if (!byZone.has(part.zoneId)) byZone.set(part.zoneId, []);
+    byZone.get(part.zoneId).push(part);
+  }
+  return byZone;
+}
+
+// Den nationale femdøgnsliste er et lille, deterministisk indeks over den
+// samme Candidate G-runtime som detaljepakken. Browseren behøver derfor ikke
+// hente og genberegne alle 210 zoner/673 dele for at vise fem top-5-lister.
+export function buildPublicNationalForecast(full) {
+  const source = full?.coastalParts;
+  const dates = publicForecastDates(full);
+  const partsByZone = publicPartsByZone(source);
+  const modes = Object.fromEntries(PUBLIC_FORECAST_MODES.map(mode => [mode, dates.map(date => {
+    const ranked = Object.keys(source?.zones || {}).flatMap(zoneId => {
+      const best = selectLocalBestForDay({ coastalParts: source, zoneId, mode, date, now: 0 });
+      if (!best) return [];
+      return [addNationalRanking({
+        zoneId,
+        time: best.hour.time,
+        result: best.result,
+      }, partsByZone.get(zoneId) || [])];
+    }).sort(compareNationalRankingRows).slice(0, 5);
+    return {
+      date,
+      rows: ranked.map(row => ({
+        zoneId: row.zoneId,
+        time: row.time,
+        score: row.result.score,
+        rankingScore: row.rankingScore,
+        rankingDisplayScore: row.rankingDisplayScore,
+      })),
+    };
+  })]));
+  return { schemaVersion: 1, dates, modes };
+}
+
 export function buildPublicConditions(full){
   const zones={};
   for(const [zoneId,zone] of Object.entries(full?.zones||{})){
@@ -68,7 +120,7 @@ export function buildPublicConditions(full){
     historyPath:full.controlledLiveCurrentPilot.historyPath||'./current-pilot-history.json',
     generatedAt:full.controlledLiveCurrentPilot.generatedAt||null,
   }:null;
-  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,source:'RavRadar public runtime projection',currentPilot,zones,coastalParts};
+  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,source:'RavRadar public runtime projection',currentPilot,nationalForecast:buildPublicNationalForecast(full),zones,coastalParts};
 }
 
 export function buildPublicConditionDetails(full){

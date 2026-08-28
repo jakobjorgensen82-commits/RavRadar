@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-local-evals-v1",
-  "releaseVersion": "4.0.294",
+  "releaseVersion": "4.0.295",
   "phrasingCases": [
     {"id":"da-origin-formed","locale":"da","question":"Hvordan opstod rav?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
     {"id":"de-origin-formed","locale":"de","question":"Wie entsteht Bernstein?","expectedIntent":"origin","answerKey":"assistant.local.origin"},

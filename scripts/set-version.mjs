@@ -13,7 +13,8 @@ const replacements=[
    ...json,
    sourceVersion:version,
    switchVersion:`RAVSCORE-PROFILE-SWITCH-${version}`
- })]
+ })],
+ ['scripts/fixtures/rav-assistant-local-evals-v1.json',json=>({...json,releaseVersion:version})]
 ];
 if(!preserveGeodataVersion){
  replacements.push(

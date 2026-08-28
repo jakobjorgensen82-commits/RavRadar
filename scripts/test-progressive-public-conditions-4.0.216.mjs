@@ -19,6 +19,7 @@ if(startup.coastalParts.zones.z1.currentReferenceAt!==selectedReferenceAt||detai
 if(startup.productionReferenceAt!==generatedAt||details.productionReferenceAt!==generatedAt)throw new Error('Produktionstidspunktet føres ikke gennem begge offentlige pakker.');
 if(Object.keys(startup.coastalParts.parts).length!==0)throw new Error('En lokalt utilgængelig scorerække må ikke opfinde eller genbruge tidligere vindere.');
 if(startup.coastalParts.scoreAvailability?.allZonesActive!==false||details.coastalParts.scoreAvailability?.unavailableZones?.[0]?.zoneId!=='z1')throw new Error('Candidate G-tilgængeligheden føres ikke gennem begge offentlige pakker.');
+if(startup.nationalForecast?.schemaVersion!==1||startup.nationalForecast?.modes?.waders?.[0]?.rows?.[0]?.zoneId!=='z1'||startup.nationalForecast?.modes?.waders?.[0]?.rows?.[0]?.score!==62)throw new Error('Startpakken mangler det deterministiske kompakte femdøgnsindeks.');
 if(details.zones.z1.forecast.hourly.length!==3||details.coastalParts.zones.z1.hourly.length!==3||Object.keys(details.coastalParts.parts).length!==3)throw new Error('Detaljepakken bevarer ikke hele prognosen og alle kystdele.');
 if('privateDiagnostic' in details.coastalParts)throw new Error('Detaljepakken lækkede et ikke-offentligt kystdelsfelt.');
 const merged=mergeConditionDetails({...startup,available:true},details);

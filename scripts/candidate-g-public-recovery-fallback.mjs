@@ -6,6 +6,7 @@ import { auditCandidateGPublicShadow } from './audit-ravscore-candidate-g-public
 import {
   buildPublicConditions,
   buildPublicConditionDetails,
+  buildPublicNationalForecast,
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
@@ -76,12 +77,42 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   return { ok: errors.length === 0, errors, ageHours: Number.isFinite(age) ? age : null };
 }
 
+// En bevaret nødvisning kan være bygget af en ældre appversion. Tilføj kun det
+// nye kompakte, deterministiske femdøgnsindeks fra dens allerede auditerede
+// offentlige start-/detaljepakke, og bind den nye projektion til en ny hash.
+// Detaljepakken, dataset-id, tider, scorer og Candidate G-state ændres ikke.
+export function upgradeRecoveryFallbackBundle(bundle) {
+  const conditions = bundle?.conditions || {};
+  const details = bundle?.details || {};
+  const zones = Object.fromEntries(Object.entries(conditions.zones || {}).map(([zoneId, zone]) => [zoneId, {
+    ...zone,
+    forecast: details.zones?.[zoneId]?.forecast || zone?.forecast || { hourly: [] },
+  }]));
+  const nationalForecast = buildPublicNationalForecast({
+    datasetId: conditions.datasetId,
+    generatedAt: conditions.generatedAt,
+    productionReferenceAt: conditions.productionReferenceAt || details.productionReferenceAt || null,
+    zones,
+    coastalParts: details.coastalParts || conditions.coastalParts || null,
+  });
+  const upgradedConditions = { ...conditions, nationalForecast };
+  return {
+    ...bundle,
+    descriptor: {
+      ...(bundle?.descriptor || {}),
+      publicConditionsSha256: sha256Text(compactJson(upgradedConditions)),
+    },
+    conditions: upgradedConditions,
+    details,
+  };
+}
+
 export function selectNewestRecoveryFallbackCandidate(candidates, { nowMs = Date.now() } = {}) {
   return candidates
-    .map(candidate => ({
-      ...candidate,
-      validation: validateRecoveryFallbackBundle(candidate.bundle, { nowMs }),
-    }))
+    .map(candidate => {
+      const bundle = upgradeRecoveryFallbackBundle(candidate.bundle);
+      return { ...candidate, bundle, validation: validateRecoveryFallbackBundle(bundle, { nowMs }) };
+    })
     .filter(candidate => candidate.validation.ok)
     .sort((left, right) => Date.parse(right.bundle.descriptor.generatedAt) - Date.parse(left.bundle.descriptor.generatedAt))[0] || null;
 }
@@ -254,9 +285,10 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   if (!completeAccounting || (!globalRecovery && !boundedLocalRecovery)) {
     throw new Error(`Uventet delvis national Candidate G-recovery: ready=${ready}, warmup=${warmup}.`);
   }
-  const bundle = await readCacheBundle(cacheRoot);
+  const bundle = upgradeRecoveryFallbackBundle(await readCacheBundle(cacheRoot));
   const validation = validateRecoveryFallbackBundle(bundle, { nowMs });
   if (!validation.ok) throw new Error(`Candidate G-nødvisningen er ikke publicerbar: ${validation.errors.join(',')}`);
+  await writeCacheBundle(cacheRoot, bundle);
   await atomicWrite(publicConditionsPath, compactJson(bundle.conditions));
   await atomicWrite(publicDetailsPath, compactJson(bundle.details));
   manifest.recoveryFallback = {

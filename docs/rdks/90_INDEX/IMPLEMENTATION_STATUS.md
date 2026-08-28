@@ -1,4 +1,17 @@
-# Implementeringsstatus – produktionsverificeret 4.0.294
+# Implementeringsstatus – 4.0.295-kildekandidat over produktionsverificeret 4.0.294
+
+## P1 implementeret – offentlig opstartsydelse
+
+- [x] Afgræns flaskehalsen til den 90–132 MB store detaljepakke og browserens gentagne nationale femdøgnsberegning; frikend HTML-skallen og Cloudflare-assistenten.
+- [x] Byg et kompakt femdøgns-top-5-indeks for waders/strand med den eksisterende bestetids- og nationale rangeringskontrakt.
+- [x] Hold kort, aktuelle områder og femdøgnsvisning på startpakken; hent fulde detaljer kun ved område, konto, tur, assistent eller dybt zoom.
+- [x] Tillad kun HTTP-cache for dataset+SHA-adresserede liveprognoser; bevar `no-store` for manifest, geometri og ikke-adresserede livefiler.
+- [x] Opgradér auditeret Candidate G-nødvisning uden ændring af detaljepakke, dataset, tider, scorer eller state.
+- [x] Lås top-5-paritet, dataminimering, lazy load, cache, sidecache, fallback, startup, rangering, sitefunktioner og modulclosure i målrettede tests.
+- [x] Bestå fuld lokal sourcegate, RDKS/privacy/Edge/releasekontrol.
+- [ ] Bestå PR exact-head, frisk produktionsartifact og offentlig cold/warm ydelsesverifikation.
+
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og kræver ægte modning samt senere særskilt ejeraktivering. Se DEC-0092.
 
 ## P1 produktionsverificeret – offentlig formuleringstest
 

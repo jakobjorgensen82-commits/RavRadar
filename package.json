@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.294",
+  "version": "4.0.295",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -10,6 +10,7 @@
     "audit:deployed-zone-weather": "node scripts/audit-deployed-zone-weather.mjs",
     "audit:public-startup-payload": "node scripts/audit-public-startup-payload.mjs",
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
+    "test:public-load-performance": "node scripts/test-public-load-performance-4.0.295.mjs",
     "test:candidate-g-public-recovery": "node scripts/test-candidate-g-gap-checkpoint-recovery-4.0.288.mjs && node scripts/test-candidate-g-continuation-checkpoint-4.0.289.mjs && node scripts/test-candidate-g-public-recovery-fallback-4.0.288.mjs && node scripts/test-public-recovery-fallback-data-service-4.0.288.mjs && npm run test:coastal-point-staging",
     "test:coastal-point-staging": "python scripts/test-coastal-point-staging-4.0.292.py && python scripts/test-promote-coastal-point-activation-4.0.292.py && node scripts/test-coastal-point-staging-4.0.292.mjs && node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",
@@ -140,7 +141,7 @@
     "test:best-time-consistency": "node scripts/test-best-time-consistency-4.0.72.mjs",
     "test:release-integrity-4.0.73": "node scripts/test-release-integrity-4.0.73.mjs",
     "test:public-runtime": "node scripts/test-public-runtime-4.0.74.mjs",
-    "test:mobile-live-cache": "node scripts/test-mobile-start-and-live-cache-4.0.74.mjs && node scripts/test-public-page-resume-4.0.292.mjs",
+    "test:mobile-live-cache": "node scripts/test-mobile-start-and-live-cache-4.0.74.mjs && node scripts/test-public-page-resume-4.0.292.mjs && npm run test:public-load-performance",
     "test:public-runtime-pipeline": "node scripts/test-public-runtime-pipeline-4.0.75.mjs",
     "build:current-provenance": "node scripts/enrich-current-provenance.mjs",
     "build:live-current-pilot": "python scripts/build-live-current-pilot.py",

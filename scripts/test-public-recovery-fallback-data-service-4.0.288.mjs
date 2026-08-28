@@ -8,9 +8,9 @@ const warnings = [];
 console.warn = (...parts) => warnings.push(parts.map(String).join(' '));
 const requests = [];
 const documents = new Map();
-globalThis.fetch = async url => {
+globalThis.fetch = async (url, options = {}) => {
   const key = String(url);
-  requests.push(key);
+  requests.push({ url:key, cache:options.cache || 'default' });
   if (!documents.has(key)) return { ok: false, status: 404, json: async () => ({}) };
   return { ok: true, status: 200, json: async () => structuredClone(documents.get(key)) };
 };
@@ -18,14 +18,18 @@ globalThis.fetch = async url => {
 const service = await import('../js/services/data-service.js?candidate-g-public-recovery-fallback-4.0.288');
 const fallbackDatasetId = 'rr-last-ready-210';
 const primaryDatasetId = 'rr-primary-warmup-210';
-const fallbackConditionsUrl = `./data/live/candidate-g-last-verified-public-conditions.json?dataset=${fallbackDatasetId}`;
-const fallbackDetailsUrl = `./data/live/candidate-g-last-verified-public-condition-details.json?dataset=${fallbackDatasetId}`;
-const primaryConditionsUrl = `./data/live/public-conditions.json?dataset=${primaryDatasetId}`;
+const fallbackConditionsSha = 'a'.repeat(64);
+const fallbackDetailsSha = 'b'.repeat(64);
+const primaryConditionsSha = 'c'.repeat(64);
+const fallbackConditionsUrl = `./data/live/candidate-g-last-verified-public-conditions.json?dataset=${fallbackDatasetId}&sha=${fallbackConditionsSha}`;
+const fallbackDetailsUrl = `./data/live/candidate-g-last-verified-public-condition-details.json?dataset=${fallbackDatasetId}&sha=${fallbackDetailsSha}`;
+const primaryConditionsUrl = `./data/live/public-conditions.json?dataset=${primaryDatasetId}&sha=${primaryConditionsSha}`;
 const manifest = {
   datasetId: primaryDatasetId,
   generatedAt: '2026-08-27T09:55:50.000Z',
   conditionsPath: './public-conditions.json',
   conditionDetailsPath: './public-condition-details.json',
+  publicConditionsSha256: primaryConditionsSha,
   recoveryFallback: {
     status: 'active-last-verified',
     datasetId: fallbackDatasetId,
@@ -34,6 +38,8 @@ const manifest = {
     maximumAgeHours: 72,
     conditionsPath: './candidate-g-last-verified-public-conditions.json',
     conditionDetailsPath: './candidate-g-last-verified-public-condition-details.json',
+    publicConditionsSha256: fallbackConditionsSha,
+    publicConditionDetailsSha256: fallbackDetailsSha,
   },
 };
 documents.set(fallbackConditionsUrl, {
@@ -63,7 +69,10 @@ const merged = service.mergeConditionDetails(fallback, details);
 assert.equal(merged.datasetId, fallbackDatasetId);
 assert.equal(merged.detailsAvailable, true);
 assert.equal(merged.zones.zone.forecast.hourly.length, 1);
-assert.deepEqual(requests.slice(0, 2), [fallbackConditionsUrl, fallbackDetailsUrl]);
+assert.deepEqual(requests.slice(0, 2), [
+  {url:fallbackConditionsUrl,cache:'force-cache'},
+  {url:fallbackDetailsUrl,cache:'force-cache'},
+]);
 
 service.clearDataMemoryCache();
 documents.set(fallbackConditionsUrl, {

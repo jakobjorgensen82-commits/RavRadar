@@ -1,3 +1,10 @@
+## 4.0.295 – hurtig offentlig start og behovsstyrede detaljer (2026-08-28)
+
+- Lader kort, **Bedste områder** og **5-dages RavRadar** bruge en kompakt startpakke med samme Candidate G-bestetid og nationale rangering som før.
+- Henter den fulde 90–132 MB detaljepakke først, når område, konto, tur, assistent eller dybt zoom kræver den.
+- Genbruger kun liveprognoser, når URL'en er bundet til både dataset-id og manifest-SHA; manifest, geometri og ikke-adresserede livefiler forbliver friske.
+- Bevarer fuld detaljepakke, nødvisning, dataset-/tids-/hashgates, scorer og sortering. Ingen geometri eller punkt aktiveres; den nye Sibirien-revision forbliver privat staged. Se DEC-0092 og `CHANGELOG-4.0.295.md`.
+
 ## 4.0.294 – driftslukning af Cloudflare-credentialrotation (2026-08-28)
 
 - Roterer Workers AI-credentialen med mindst-mulig kontoafgrænset Read + Edit og erstatter kun den eksisterende Supabase Edge-secret; ingen credentialværdi er vist eller gemt i repositoryet.

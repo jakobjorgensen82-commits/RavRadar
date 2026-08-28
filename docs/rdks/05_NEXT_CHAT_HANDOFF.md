@@ -1,5 +1,14 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuel 4.0.295-kildekandidat – offentlig opstartsydelse
+
+- 4.0.294 hentede den fulde 90–132 MB ukomprimerede Candidate G-detaljepakke ved hver normal opstart og genberegnede fem nationale top-5-lister i browseren. Målinger viste 25–29 sekunder til prognosen og cirka 59 sekunder umiddelbart efter et nyt Pages-deploy; HTML-skallen og Cloudflare-assistenten var ikke flaskehalsen.
+- 4.0.295 lægger et kompakt, eksakt top-5-indeks for fem dage og begge modes i startpakken. Kort, **Bedste områder** og **5-dages RavRadar** kræver derfor ikke detaljepakken; område, konto, tur, assistent og dybt zoom henter den behovsstyret.
+- Kun livefiler med både dataset-id og gyldig manifest-SHA får HTTP-cache. Manifest, geometri og andre ikke-adresserede livefiler forbliver friske. Candidate G-, score-, tids-, hash- og fallbackbindinger er uændrede.
+- Målrettede tests samt fuld lokal sourcegate med RDKS/privacy/Edge/releasekontrol er grønne. Kør nu PR exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092.
+- Sibirien har en ny privat staged punktrevision fra ejeren. Læs eller publicér ikke koordinater, aktivér intet, og opfind ingen historik. Lad samme DMI-grid-, 96-timers- og 48-timerskrav modne; en senere promotion kræver særskilt ejer-go.
+- Rod-worktree, `.recovery-*`, private data og faktisk geometri må ikke røres. Geodatafilerne ændrer kun topversionen til 4.0.295.
+
 ## Driftsverificeret 2026-08-28 – Cloudflare-tokenrotation lukket
 
 - Fra ren 4.0.294-baseline på `origin/main` `989211265d0f338027452b5935d5def16dff3108` blev et nyt mindst-muligt Workers AI-token oprettet med Read + Edit på den eksakte konto. Credentialværdien blev aldrig vist, læst ud eller skrevet i output/repository.

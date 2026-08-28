@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.295 – offentlig opstartsydelse
+
+- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – KILDERETTET / PRODUKTIONSVERIFIKATION AFVENTER:** 4.0.294 hentede 90–132 MB ukomprimerede Candidate G-detaljer ved normal opstart og genberegnede fem top-5-lister i browseren. 4.0.295 flytter et eksakt kompakt indeks til startpakken, gør detaljehentningen behovsstyret og genbruger kun dataset+SHA-adresserede filer. Målrettet paritet, fallback, mobilresume, startup, rangering, site og modulclosure samt fuld lokal sourcegate/releasegate er grønne; exact-head, produktion og offentlig cold/warm-måling afventer.
+- **ISSUE-SIBIRIEN-STAGED-POINT-REVISION – PRIVAT MODNING / IKKE AKTIVERET:** Ejeren har gemt en ny punktrevision. Kandidaten må kun behandles gennem DEC-0090's private grid-, 96-timers- og 48-timersgates. Ingen koordinater må læses eller publiceres, ingen historik må fabrikeres, og READY giver ikke automatisk aktivering; særskilt ejer-go mangler.
+
 ## 4.0.292 – kommende punktflytning
 
 - **ISSUE-COASTAL-POINT-DIRECT-ACTIVATION-OUTAGE – PRODUKTIONSVERIFICERET LØST:** Et verificeret adminoverride kunne tidligere blive offentlig sampling før den nye koordinat havde bestået eksakt DMI-grid og 48 timers Candidate G-opvarmning. 4.0.292 holder kandidaten privat, bevarer det aktive punkt og kræver READY + særskilt aktivering + fulde gates + central version-CAS. PR #192, produktion og saniteret offentlig status er grønne; ingen konkret Sibirien-flytning er udført.
