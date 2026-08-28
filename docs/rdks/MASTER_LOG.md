@@ -1,16 +1,8 @@
-## 2026-08-28 – ejerrettelser integreret efter PR #215
+## 2026-08-28 – 4.0.306 ejerrettelser i separat smårettelsesspor
 
-- UI-, lærings-, zonesøgnings-, oversættelses- og assistentrettelserne er flettet oven på `origin/main` `cfb91420`.
-- Konflikter i model-, profil-, runtime-, release- og statefiler blev løst med den nyere kystkausale model som autoritativ; ejerrettelserne blev derefter genanvendt på forbrugerfladerne.
-- Fuld sourcegate, RDKS, releasegate, geodatadiff og browserkontrol gentages på integrations-head før merge.
-
-## 2026-08-28 – 4.0.306 kystkausal RavScore implementeret som samlet releasekandidat
-
-- `RRS-COASTAL-CAUSAL-CHAIN-1`/state-schema 3 er implementeret som én modelkæde. Candidate G bliver kun historisk/offline reference og kan ikke vælges som offentlig scorefallback.
-- Supply og mobilisering kobles med geometrisk middel, bølgeretning er en bounded nærkystreduktion, og jagtbarhed påvirker højst 20 % bagefter. 20/50/30, +10/-8 og 13-timers nul er erstattet; 48-timers state, 0,03→0,15 og 4/48-mobilisering genbruges med tydelig priorstatus.
-- Ekspertens præcisering er indarbejdet: faldende vand kan flytte rav fra inderste strand og koncentrere det bag revle/i rende. Det giver kun en lille bounded søgefokus-/jagtbarhedseffekt og er ikke bevis for tab ud over surfzonen, lokal batymetri eller en ekstra strømvektor.
-- 288 koordinatfrie offlinecases, migration/rollback, modelbinding, startup/detaljer/hashes, UI/DA-DE-EN, lokal/Edge-assistent, konto/ture/observationer, admin, workflow/recovery og audits er implementeret og måltestet. Ingen empirisk bedre fundpræcision påstås.
-- Seneste fetch viste `origin/main` uændret på `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`. Version, fuld sourcegate, PR/exact-head, frisk 210/673-produktion og offentlig desktop/mobilkontrol mangler fortsat. Se DEC-0103 og `docs/research/RAVSCORE_NEXT_GENERATION_MODEL_AUDIT_2026-08-28.md`.
+- Ejeren bestilte samlet korrektur, lærings-/illustrationsrettelser, bredere Spørg RavRadar-viden, zonesøgning, kortsignatur/pilkontrast, mobilombrydning og synlige tyske/engelske scorenavne.
+- Implementeringen er afgrænset fra DEC-0102: ingen Candidate G-, DMI/Copernicus-, state-, scoresemantik-, geometri- eller punktændring.
+- DEC-0103 registrerer den aktuelle kontrakt. Exact-head og produktion afventer.
 
 ## 2026-08-28 – godkendt todelt arbejdsform og næste samlede RavScore-model
 
@@ -2467,3 +2459,10 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Aktiv READY-nødvisning målte dog 3.562.253 byte/23,36 sekunder i startup, fordi aktuelle scoreposter og vinderobjekter fortsat bar detaljediagnostik. Primær warmup-start målte 694.288 byte/4,09 sekunder.
 - 4.0.296 projekterer kun de felter, som kort, aktuelle områder og den øjeblikkelige områdevisning bruger. Vinderdelens kompakte `flowPoints`-koordinater og kildeklasser bevares til dokumenterede lokale DMI-pile. Recovery ændrer kun startup/hash; detaljer/hash, dataset, tider, scorer, rangering og state bevares.
 - PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede korrekt før releasegate og deploy, da zoomtesten fangede manglende pilproveniens i første projektion. Den afgrænsede korrektion består pil-, score- og recoverytest; READY-lignende syntetisk payload falder 591.295 → 29.670 byte. Nyt exact-head, produktion og offentlig cold/warm-verifikation afventer. Se DEC-0093.
+## 2026-08-28 – P0-genopretning efter for tidligt RavScore-merge
+
+- PR #215 blev merged som `cfb91420`, men produktion `33206467775` stoppede før auditresultat/slutgates/deploy på en manglende audit-outputmappe. Kørslens nyere schema-3-checkpoint blev gemt før slutgates.
+- Efter PR #216 stoppede produktion `33208713861` før vejrbuild, fordi det nyere checkpoint ikke matchede den fortsat deployede Candidate G/schema 2. Ingen af kørslerne nåede Pages.
+- Offentlig manifestkontrol viste fortsat 4.0.305, 210/673, gyldig primær prognose og komplet auditeret Candidate G-recovery. Opdateringskæden var dog blokeret.
+- Source føres tilbage til den rene ejercommit `c53f5060`. En eksakt, privacy-bevarende checkpointadapter lukker kun den kendte afbrudte modelovergang; ukendte kontekster ændrer intet.
+- Sol/Ultra-genaudit fandt selvstændige aktiveringsstop i hard supply-gate, bølge-missing, 48-timersrand samt manglende kanonisk evidens/replay. Den næste model forbliver udvikling under DEC-0102. Se DEC-0104.

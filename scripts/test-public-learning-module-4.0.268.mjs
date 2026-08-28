@@ -38,22 +38,10 @@ for (const marker of [
   'Miniordbog'
 ]) assert.ok(learning.includes(marker), `Læringsmodulet mangler: ${marker}`);
 
-for (const marker of [
-  'Kystnær tilførsel',
-  'Rav i bevægelse',
-  'Nærkyststøtte',
-  'Søgeforhold',
-  'Vind under 6 m/s',
-  'ved 15 m/s',
-  'ingen fast 13-timers nulregel',
-  'Faldende vand kan samtidig flytte og koncentrere rav i render eller bag revler',
-  'påstår ikke empirisk højere fundpræcision',
-]) {
+for (const marker of ['20 %', '50 %', '30 %', 'Vind under 6 m/s', 'ved 15 m/s', 'går i nul efter 13 timer']) {
   assert.ok(learning.includes(marker), `Den aktive model forklares ikke korrekt: ${marker}`);
 }
 assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må ikke stå i det offentlige læringsmodul');
-assert.doesNotMatch(learning, /20\s*%[\s\S]*50\s*%[\s\S]*30\s*%/, 'Candidate G-vægtningen må ikke stå som aktiv model i læringsmodulet');
-assert.doesNotMatch(learning, /går i nul efter 13 timer/, 'Den pensionerede 13-timers nul-gate må ikke forklares som aktiv');
 assert.match(learning, /Strømmen transporterer/, 'Strøm og bølger skal have forskellige roller');
 assert.match(learning, /Bølgerne mobiliserer/, 'Mobilisering skal forklares i almindeligt dansk');
 assert.match(learning, /Der findes ikke én dansk vind- eller strømretning, som altid er bedst/, 'Modulet må ikke lære en falsk universel retning');

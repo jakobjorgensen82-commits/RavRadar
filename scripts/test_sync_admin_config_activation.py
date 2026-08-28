@@ -23,28 +23,28 @@ def manifest(version, active=True, approved=True):
 
 
 def ravscore_selection(version, active=True, approved=True, legacy=False):
-    model_id = MODULE.PUBLIC_RAVSCORE_PROFILE_ID
+    candidate_id = MODULE.CANDIDATE_G_PROFILE_ID
     payload = {
-        "schemaVersion": "3.0.0",
+        "schemaVersion": "2.0.0",
         "sourceVersion": version,
-        "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.306",
-        "requestedProfileId": model_id,
-        "modelProfileId": model_id,
+        "switchVersion": f"RAVSCORE-PROFILE-SWITCH-{version}",
+        "requestedProfileId": candidate_id,
+        "candidateProfileId": candidate_id,
         "rollbackProfileId": None,
-        "status": "owner-approved-integrated-next-ravscore-local-fail-closed" if approved else "draft",
-        "publicModelEnabled": active,
-        "prePublicWarmupAccepted": False,
+        "status": "owner-approved-candidate-g-only-local-fail-closed" if approved else "draft",
+        "candidateActivationEnabled": active,
+        "prePublicWarmupAccepted": approved,
         "automaticActivationAllowed": False,
-        "publicAvailabilityPolicy": "ravscore-local-fail-closed",
+        "publicAvailabilityPolicy": "candidate-g-local-fail-closed",
         "legacyPublicFallbackAllowed": False,
-        "activationAuthority": "DEC-0102" if approved else "",
-        "evidence": {"ownerReviewDecisionId": "DEC-0102-OWNER" if approved else None},
+        "activationAuthority": "DEC-0060" if approved else "",
+        "evidence": {"ownerReviewDecisionId": "DEC-0060-OWNER" if approved else None},
     }
     if legacy:
         payload.update({
             "requestedProfileId": "RRS-CURRENT-B0-4.0.247",
             "rollbackProfileId": "RRS-CURRENT-B0-4.0.247",
-            "publicModelEnabled": False,
+            "candidateActivationEnabled": False,
             "publicAvailabilityPolicy": None,
             "legacyPublicFallbackAllowed": True,
             "status": "owner-approved-global-rollback",
@@ -83,7 +83,7 @@ class RavScoreSelectionPrecedenceTest(unittest.TestCase):
         self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
             ravscore_selection("4.0.261"), ravscore_selection("9.9.999", legacy=True)))
 
-    def test_equal_or_newer_valid_integrated_central_remains_authoritative(self):
+    def test_equal_or_newer_valid_candidate_g_only_central_remains_authoritative(self):
         self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
             ravscore_selection("4.0.261"), ravscore_selection("4.0.261")))
         self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
@@ -98,7 +98,7 @@ class RavScoreSelectionPrecedenceTest(unittest.TestCase):
     def test_complete_contract_is_required(self):
         incomplete = ravscore_selection("4.0.261")
         incomplete.pop("publicAvailabilityPolicy")
-        self.assertFalse(MODULE.is_public_ravscore_selection(incomplete))
+        self.assertFalse(MODULE.is_candidate_g_only_selection(incomplete))
         self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
             incomplete, ravscore_selection("4.0.260", legacy=True)))
 

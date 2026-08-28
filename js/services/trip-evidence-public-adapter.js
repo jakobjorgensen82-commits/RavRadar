@@ -46,10 +46,7 @@ export function createTripStartFromPublicState({
   });
   const calibrationFeatures = createCalibrationFeatureSnapshot({
     appVersion,
-    modelVersion: modeState.scoreProfileId || modelVersion,
-    modelContractVersion: modeState.modelContractVersion,
-    stateSchemaVersion: modeState.stateSchemaVersion,
-    explanationContractVersion: modeState.explanationContractVersion,
+    modelVersion,
     totalScore: modeState.score,
     huntabilityScore: modeState.components.huntability,
     transportScore: modeState.components.transport,

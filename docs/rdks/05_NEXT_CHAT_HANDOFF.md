@@ -1,15 +1,6 @@
 # RavRadar – overlevering til næste chat
 
-## Nyt øverste checkpoint – kystkausal RavScore 4.0.306-releasekandidat
-
-- Aktiv branch er `codex/ravscore-next-generation`; baseline/fetch er `origin/main` `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`, offentlig 4.0.305. Rod-worktree, `.recovery-*`, private data, geometri og punkter er urørte.
-- Model `RRS-COASTAL-CAUSAL-CHAIN-1`, kontrakt 1.0.0 og state-schema 3.0.0 er implementeret ende til ende. Candidate G er kun historisk/offline reference og må ikke være offentlig shadow- eller scorefallback.
-- Ny formel: geometrisk middel af nødvendig supply/mobilisering, højst 20 % bounded bølgeretningsreduktion og højst 20 % jagtbarhedsmodulation; wadersloftet består. +10/-8 og 13-timers gate er erstattet af glat supply med 6,578813/8,312951 timers halveringstid i det bevarede 48-timers vindue.
-- Faldende vand kan flytte rav fra inderste strand og koncentrere det bag revle/i rende. Koden giver kun bounded søgefokus/jagtbarhed fra -3 til -15 cm/3 h, højst 10 jagtbarhedspoint, nul supply/mobilisering/strøm og ingen påstand om lokal form eller tab ud over surfzonen.
-- Plug-and-play-kæden er implementeret for central profil, generator, state/migration/rollback, 210/673, startup/detaljer/hashes, ranglister/tid/fem dage, DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin, håndbøger, workflow/checkpoint/recovery og audits. 288 koordinatfrie offlinecases og målrettede kontrakttests er grønne.
-- Næste handling: luk håndbøger/version/RDKS, fetch/integrér nyeste grønne main, kør fuld sourcegate, push PR, vent exact-head, merge, følg frisk produktion og verificér offentlig desktop/390 px. Opdatér dette checkpoint med eksakte run-/commit-/datasetbeviser. Sol/Ekstra høj kræves til slutvalideringen.
-
-## Historisk startcheckpoint – to isolerede Codex-worktrees
+## Nyt øverste checkpoint – to isolerede Codex-worktrees
 
 - Offentlig baseline er fortsat produktionsverificeret 4.0.305 på `main` `d61c376f2302b8eb3eb3b535fa99605897470e2e`. Klargøringen er docs-only.
 - **Modelsporet** bygger én ny hel RavScore-model ende til ende. Det skal starte analytisk med en komplet bevaringsmatrix, genbruge Candidate G's veldokumenterede dele og kun erstatte noget med dokumenteret grund. Det er ikke fragmentudgivelser og ikke en ekstra offentlig shadowmodel.

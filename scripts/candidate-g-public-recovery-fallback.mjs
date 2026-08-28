@@ -2,11 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { auditNextGenerationPublicRuntime } from './audit-ravscore-next-generation-public.mjs';
-import {
-  NEXT_RAVSCORE_MODEL_ID,
-  NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
-} from '../js/core/ravscore-next-generation.js';
+import { auditCandidateGPublicShadow } from './audit-ravscore-candidate-g-public-shadow.mjs';
 import {
   buildPublicConditions,
   buildPublicConditionDetails,
@@ -25,8 +21,8 @@ export const CANDIDATE_G_RECOVERY_FALLBACK_POLICY = Object.freeze({
   cacheConditionsName: 'public-conditions.json',
   cacheDetailsName: 'public-condition-details.json',
   cacheDescriptorName: 'descriptor.json',
-  publicConditionsName: 'ravscore-last-verified-public-conditions.json',
-  publicDetailsName: 'ravscore-last-verified-public-condition-details.json',
+  publicConditionsName: 'candidate-g-last-verified-public-conditions.json',
+  publicDetailsName: 'candidate-g-last-verified-public-condition-details.json',
 });
 
 const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
@@ -54,9 +50,7 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   const policy = CANDIDATE_G_RECOVERY_FALLBACK_POLICY;
   const errors = [];
   if (descriptor?.schemaVersion !== policy.schemaVersion) errors.push('DESCRIPTOR_SCHEMA_MISMATCH');
-  if (descriptor?.status !== 'last-verified-ravscore-ready') errors.push('DESCRIPTOR_STATUS_MISMATCH');
-  if (descriptor?.modelId !== NEXT_RAVSCORE_MODEL_ID) errors.push('DESCRIPTOR_MODEL_MISMATCH');
-  if (descriptor?.stateSchemaVersion !== NEXT_RAVSCORE_STATE_SCHEMA_VERSION) errors.push('DESCRIPTOR_STATE_SCHEMA_MISMATCH');
+  if (descriptor?.status !== 'last-verified-candidate-g-ready') errors.push('DESCRIPTOR_STATUS_MISMATCH');
   if (!descriptor?.datasetId || descriptor.datasetId !== conditions?.datasetId || descriptor.datasetId !== details?.datasetId) {
     errors.push('DATASET_ID_MISMATCH');
   }
@@ -68,7 +62,6 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   if (Object.keys(conditions?.zones || {}).length !== policy.expectedZoneCount) errors.push('STARTUP_ZONE_COUNT_MISMATCH');
   if (Object.keys(details?.zones || {}).length !== policy.expectedZoneCount) errors.push('DETAIL_ZONE_COUNT_MISMATCH');
   if (Object.keys(details?.coastalParts?.parts || {}).length !== policy.expectedPartCount) errors.push('COASTAL_PART_COUNT_MISMATCH');
-  if (details?.coastalParts?.scoreProfile?.activeProfileId !== NEXT_RAVSCORE_MODEL_ID) errors.push('DETAIL_MODEL_MISMATCH');
   if (Number(descriptor?.audit?.memoryReadyPartCount) !== policy.expectedPartCount) errors.push('MEMORY_READY_COUNT_MISMATCH');
   if (Number(descriptor?.audit?.modeEvaluationCount) !== policy.expectedPartCount * 2) errors.push('MODE_EVALUATION_COUNT_MISMATCH');
   const generatedAt = descriptor?.generatedAt || conditions?.generatedAt;
@@ -88,7 +81,7 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
 // En bevaret nødvisning kan være bygget af en ældre appversion. Genopbyg kun
 // dens offentlige opstartsprojektion og deterministiske femdøgnsindeks fra den
 // allerede auditerede detaljepakke, og bind projektionen til en ny hash.
-// Detaljepakken, dataset-id, tider, scorer og RavScore-state ændres ikke.
+// Detaljepakken, dataset-id, tider, scorer og Candidate G-state ændres ikke.
 export function upgradeRecoveryFallbackBundle(bundle) {
   const conditions = bundle?.conditions || {};
   const details = bundle?.details || {};
@@ -136,9 +129,7 @@ function descriptorFor({ full, publicDocument, detailsDocument, audit }) {
   const detailsText = compactJson(detailsDocument);
   return {
     schemaVersion: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.schemaVersion,
-    status: 'last-verified-ravscore-ready',
-    modelId: NEXT_RAVSCORE_MODEL_ID,
-    stateSchemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
+    status: 'last-verified-candidate-g-ready',
     datasetId: full.datasetId,
     generatedAt: full.generatedAt,
     productionReferenceAt: full.productionReferenceAt || null,
@@ -195,9 +186,7 @@ async function fetchDeployedBundle(baseUrl, manifest) {
   return {
     descriptor: {
       schemaVersion: 1,
-      status: 'last-verified-ravscore-ready',
-      modelId: fallback.modelId ?? null,
-      stateSchemaVersion: fallback.stateSchemaVersion ?? null,
+      status: 'last-verified-candidate-g-ready',
       datasetId: fallback.datasetId,
       generatedAt: fallback.generatedAt,
       productionReferenceAt: fallback.productionReferenceAt || null,
@@ -235,13 +224,13 @@ export async function stageRecoveryFallback({
         candidates.push({ status: 'restored-deployed-fallback', bundle: deployed });
       }
     } catch (error) {
-      console.warn(`Deployet RavScore-nødvisning kunne ikke genbruges: ${error.message}`);
+      console.warn(`Deployet Candidate G-nødvisning kunne ikke genbruges: ${error.message}`);
     }
   }
 
   try {
     const full = await readJson(sourcePath);
-    const audit = auditNextGenerationPublicRuntime(full, { requireAllReady: false });
+    const audit = auditCandidateGPublicShadow(full);
     const policy = CANDIDATE_G_RECOVERY_FALLBACK_POLICY;
     if (audit.status === 'passed'
       && audit.stateContinuation.memoryReadyPartCount === policy.expectedPartCount
@@ -258,20 +247,11 @@ export async function stageRecoveryFallback({
       });
     }
   } catch (error) {
-    console.warn(`Det hydrerede RavScore-grundlag kunne ikke auditeres til nødvisning: ${error.message}`);
+    console.warn(`Det hydrerede Candidate G-grundlag kunne ikke auditeres til nødvisning: ${error.message}`);
   }
 
   const selected = selectNewestRecoveryFallbackCandidate(candidates, { nowMs });
-  if (!selected) {
-    await fs.mkdir(cacheRoot, { recursive: true });
-    return {
-      status: 'no-compatible-ravscore-fallback-yet',
-      datasetId: null,
-      ageHours: null,
-      cacheAvailable: false,
-      cacheRefreshed: false,
-    };
-  }
+  if (!selected) throw new Error('Intet komplet, auditeret Candidate G-datasæt inden for 72 timer og egen prognosehorisont kunne klargøres til nødvisning.');
   const cacheRefreshed = !cachedBundle
     || cachedBundle.descriptor?.publicConditionsSha256 !== selected.bundle.descriptor.publicConditionsSha256
     || cachedBundle.descriptor?.publicConditionDetailsSha256 !== selected.bundle.descriptor.publicConditionDetailsSha256;
@@ -280,7 +260,6 @@ export async function stageRecoveryFallback({
     status: selected.status,
     datasetId: selected.bundle.descriptor.datasetId,
     ageHours: selected.validation.ageHours,
-    cacheAvailable: true,
     cacheRefreshed,
   };
 }
@@ -295,7 +274,7 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   const audit = await readJson(auditPath);
   const manifest = await readJson(manifestPath);
   const policy = CANDIDATE_G_RECOVERY_FALLBACK_POLICY;
-  if (audit.status !== 'passed') throw new Error('Den aktuelle RavScore-runtime må ikke publiceres efter en fejlet audit.');
+  if (audit.status !== 'passed') throw new Error('Den aktuelle Candidate G-runtime må ikke publiceres efter en fejlet audit.');
   const ready = Number(audit.stateContinuation?.memoryReadyPartCount || 0);
   const warmup = Number(audit.stateContinuation?.warmupPartCount || 0);
   const publicConditionsPath = path.join(outputRoot, policy.publicConditionsName);
@@ -311,11 +290,11 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   const globalRecovery = ready === 0 && warmup === policy.expectedPartCount;
   const boundedLocalRecovery = ready > 0 && warmup > 0 && warmup <= policy.maximumLocalWarmupPartCount;
   if (!completeAccounting || (!globalRecovery && !boundedLocalRecovery)) {
-    throw new Error(`Uventet delvis national RavScore-recovery: ready=${ready}, warmup=${warmup}.`);
+    throw new Error(`Uventet delvis national Candidate G-recovery: ready=${ready}, warmup=${warmup}.`);
   }
   const bundle = upgradeRecoveryFallbackBundle(await readCacheBundle(cacheRoot));
   const validation = validateRecoveryFallbackBundle(bundle, { nowMs });
-  if (!validation.ok) throw new Error(`RavScore-nødvisningen er ikke publicerbar: ${validation.errors.join(',')}`);
+  if (!validation.ok) throw new Error(`Candidate G-nødvisningen er ikke publicerbar: ${validation.errors.join(',')}`);
   await writeCacheBundle(cacheRoot, bundle);
   await atomicWrite(publicConditionsPath, compactJson(bundle.conditions));
   await atomicWrite(publicDetailsPath, compactJson(bundle.details));
@@ -323,10 +302,8 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
     schemaVersion: 1,
     status: 'active-last-verified',
     reason: globalRecovery
-      ? 'ravscore-verified-time-gap-recovery'
-      : 'ravscore-bounded-local-context-warmup',
-    modelId: NEXT_RAVSCORE_MODEL_ID,
-    stateSchemaVersion: NEXT_RAVSCORE_STATE_SCHEMA_VERSION,
+      ? 'candidate-g-verified-time-gap-recovery'
+      : 'candidate-g-bounded-local-context-warmup',
     datasetId: bundle.descriptor.datasetId,
     generatedAt: bundle.descriptor.generatedAt,
     productionReferenceAt: bundle.descriptor.productionReferenceAt,
@@ -369,7 +346,7 @@ async function main() {
     });
   } else if (args.includes('--publish')) {
     result = await publishRecoveryFallback({
-      auditPath: value('--audit', '.geometry-v2-work/ravscore-public-runtime-audit.json'),
+      auditPath: value('--audit', '.geometry-v2-work/candidate-g-public-runtime-audit.json'),
       manifestPath: value('--manifest', 'data/live/manifest.json'),
       cacheRoot,
       outputRoot: value('--output-root', 'data/live'),
@@ -380,7 +357,6 @@ async function main() {
   const githubOutput = value('--github-output', '');
   if (githubOutput && Object.hasOwn(result, 'cacheRefreshed')) {
     await fs.appendFile(githubOutput, `cache_refreshed=${result.cacheRefreshed ? 'true' : 'false'}\n`);
-    await fs.appendFile(githubOutput, `cache_available=${result.cacheAvailable === true ? 'true' : 'false'}\n`);
   }
   console.log(JSON.stringify(result));
 }

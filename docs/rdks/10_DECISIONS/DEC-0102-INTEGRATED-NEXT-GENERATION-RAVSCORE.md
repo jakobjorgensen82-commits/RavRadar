@@ -1,6 +1,6 @@
 # DEC-0102 – Integreret næste generation af RavScore i separat worktree
 
-- **Status:** Udviklingsprogram implementeret som releasekandidat; aktiv modelbeslutning i DEC-0103, offentlig aktivering afventer gates
+- **Status:** Ejer-godkendt udviklingsprogram; ikke implementeret eller aktiveret offentligt
 - **Dato:** 2026-08-28
 - **Udgangspunkt:** Produktionsverificeret 4.0.305 på `main`
 - **Offentlig påvirkning nu:** Ingen
@@ -62,10 +62,6 @@ Samtidig er flere tal og koblinger ejer-/forskningspriorer, ikke naturkonstanter
 
 Det mindre rettelsesspor må merge først og løbende til `main`. Modelsporet må ikke antage, at dets start-`main` forbliver aktuel. Før modelrelease skal det bevise, at seneste smårettelser og alle deres regressioner er bevaret. Ved reel fil-/kontraktkonflikt vælger modelsporet ikke tavst en side, men følger nyere RDKS og faktisk `main`-adfærd.
 
-## Oprindelig konsekvens ved beslutningen
+## Konsekvens nu
 
 Dette dokument er alene plan-, scope- og autoritetsgrundlag. Versionen forbliver 4.0.305. Der ændres ingen kode, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter, privat data eller produktionsartifact.
-
-## Efterfølgende implementeringsstatus 2026-08-28
-
-Programmet er gennemført i den isolerede modelbranch med komplet bevaringsmatrix, primær forskning, én samlet kystkausal model, state-schema 3, migration/rollback, producent-/forbrugermatrix og koordinatfrie offlinebeviser. Ekspertens præcisering om faldende vand er indarbejdet som bounded jagtbarhed/søgefokus uden ekstra strømvektor eller surfzonepåstand. Den præcise modelbeslutning, formel, priorer, påstandsgrænser og resterende releasegates står i DEC-0103. Offentlig 4.0.305 forbliver uændret, indtil exact-head, frisk produktion og offentlig kontrol er grønne.

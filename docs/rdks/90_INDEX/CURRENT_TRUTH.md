@@ -1,25 +1,20 @@
 # Current truth – gældende projektviden
 
-## Integreret 4.0.306-kandidat – ejerens UI-, lærings- og assistentrettelser
+## 4.0.306-genopretning – Candidate G er igen eneste releasekandidat
 
-- Smårettelserne er integreret oven på `origin/main` efter PR #215 og bevarer den kystkausale RavScore uændret.
-- Aktiv vejledning bruger 395 nm; koldt vand forklares som mobiliseringsfaktor, ikke som nyt scoreinput. Rav Jagt krediteres for video og kysttværsnit.
-- Zonesøgning, kortsignatur, mørkere strømpil, mobilombrydning, BernsteinScore/AmberScore og bredere lokal assistentviden er implementeret.
+- PR #215/merge `cfb91420` var for tidlig. Produktion `33206467775` og den efterfølgende main-produktion `33208713861` stoppede begge før deploy; ingen schema-3-model blev offentlig.
+- Kildetræet er lokalt ført tilbage til den rene ejercommit `c53f5060`, så alle PR #216-rettelser bevares oven på Candidate G/20/50/30/schema 2. Den næste model forbliver under DEC-0102 og er ikke releaseklar.
+- Det nyere schema-3-checkpoint blokerede Candidate G-restoren. En eksakt model-/stateKey-bundet adapter genbruger kun den kendte signerede strømevidens og uændrede mobilisering og rekonstruerer Candidate G's +10/-8-/13-timerstransport; ukendte kontekster efterlader målet uændret.
+- Offentlig kontrol viste fortsat komplet 4.0.305 med 210 zoner/673 kystdele, primær prognose gyldig til 2. september og auditeret recovery gyldig til 31. august. Der var intet aktuelt hul, men frisk opdatering, exact-head, merge, fulde produktionsgates og offentlig kontrol udestår.
+- Ingen modelmatematik, geometri, land-/vandpunkter, rå U/V, koordinater, credentials eller private payloads indgår i genopretningen. Se DEC-0104.
 
-## Implementeret 4.0.306-releasekandidat – kystkausal RavScore afventer samlet aktiveringsbevis
+## 4.0.306-kandidat – ejerrettelser uden modelændring
 
-- Branch `codex/ravscore-next-generation` bygger fra `origin/main` `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`; seneste dokumenterede fetch 2026-08-28 viste stadig eksakt samme head. Offentlig produktion er fortsat 4.0.305, indtil exact-head, frisk produktion og offentlig kontrol er grønne.
-- Den valgte ene nye model er `RRS-COASTAL-CAUSAL-CHAIN-1`, kontrakt 1.0.0, state-schema 3.0.0. Candidate G er kun historisk/offline sammenligningsreference og må efter aktivering hverken være ekstra offentlig shadowmodel eller scorefallback.
-- Supply og mobilisering er nødvendige led og kobles med geometrisk middel. Bølgeretning kan kun reducere nærkyststøtten bounded; jagtbarhed påvirker højst 20 % bagefter. Supply tælles én gang, og mobilisering/jagtbarhed kan ikke opfinde en fysisk transportvej.
-- Candidate G's +10/-8 og kategoriske 13-timers nul-gate er erstattet af glat supply-opbygning/dæmpning med 6,578813/8,312951 timers halveringstid i det bevarede 48-timers vindue med rand 0. Strømgrænserne 0,03→0,15 m/s og 4/48-timers bølgemobilisering bevares som synlige, ikke-fundkalibrerede priorer.
-- Ekspertens nye præcisering er indarbejdet: faldende vand kan flytte noget rav væk fra den inderste strand og koncentrere det bag en revle eller i en rende, så et mindre område er lettere at afsøge. Det er ikke bevis for tab ud af hele surfzonen. Vandstand giver derfor kun en bounded søgefokus-/jagtbarhedseffekt fra -3 til -15 cm/3 h, højst 10 jagtbarhedspoint og nul supply-/mobiliserings-/strømvirkning.
-- RavRadar har fortsat ingen lokal batymetri eller bølgeopløst surfzonemodel. Gridstrøm, bølgeorbitaler, undertow, feeder-/langskyststrøm og ripstrømme holdes adskilt i kode, forklaring og audit; der opfindes ingen revle/rende eller ekstra vektor.
-- Den gamle kompakte state-, provenance-, gap-, cadence-, privacy-, checkpoint- og recoverykæde genbruges med eksplicit migration og modelbinding. Ingen rå U/V, koordinater, vejr eller gammel score kopieres. Konto/ture/observationer gemmer nyt model-/state-/forklarings-id, mens ældre poster er læsbare.
-- 288 koordinatfrie offlinecases beviser kausal ablation, monotoni, glat 13-timers overgang, wadersloft og bounded vandstand. Rangkorrelation mod Candidate G er 0,871988; resultatet dokumenterer struktur og regressioner, ikke højere empirisk fundpræcision.
-- Producent-/forbrugerkæden er integreret i generator, central profil, startup/detaljer/hashes, ranglister, bedste tid, fem dage, DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin, håndbøger, workflow, checkpoint/recovery og audits. Kodelukningen er måltestet; fuld sourcegate, frisk 210/673-produktion og offentlig desktop/390 px er resterende gates.
-- Se DEC-0103, bevarings-/integrationsauditen og det datasikre offlinebevis under `docs/research/`. Ingen geometri, land-/vandpunkter, private payloads eller credentials er læst eller ændret.
+- **Vejrforløb**, 395 nm, koldt vands mobiliseringsbetydning, Rav Jagt-video og et krediteret kysttværsnit er indarbejdet.
+- Spørg RavRadar har seks nye lokale emnefamilier. Zonesøgning, pilesignatur, mørkere strømpil, korrekt Kyst B, mobil tekstombrydning samt BernsteinScore/AmberScore er implementeret.
+- Candidate G, 20/50/30, DMI/Copernicus, state/cache/recovery, scoresemantik, geometri og land-/vandpunkter er uændrede. Se DEC-0103. Exact-head og produktion afventer.
 
-## Historisk startcheckpoint – én samlet ny RavScore-model og et separat smårettelsesspor
+## Ejer-godkendt næste spor – én samlet ny RavScore-model og et separat smårettelsesspor
 
 - Den offentlige baseline er fortsat produktionsverificeret 4.0.305. Dette checkpoint ændrer ingen kode, version, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter eller private data.
 - Næste modelgeneration bygges autonomt ende til ende i en ny isoleret worktree og udgives først som én samlet kandidat. Den er en analytisk videreudvikling: alt veldokumenteret i Candidate G skal først identificeres og genbruges; kun dokumenteret svage eller ufuldstændige led ændres.
@@ -422,7 +417,7 @@ Candidate G 20/50/30, scorekurver, vejr, zoner, geometri, land-/vandpunkter og p
 
 - Den offentlige læring er nu en selvstændig **Grundbog i ravjagt**, ikke en vejledning i at trykke rundt i appen. Den lærer først ravets egenskaber, mobilisering, transport, vind, bølger, strøm, vandstand, kystformer, felttegn og selve jagten.
 - Grundforklaringen er: Bølger kan mobilisere, strøm transporterer, og kysten sorterer og samler. Vind virker især gennem bølger, vandlag, vandstand og søgeforhold; der findes ingen universel gunstig dansk vindretning.
-- Strand, vandkant, waders og UV omkring 365 nm beskrives som forskellige metoder. UV er et spor og ikke et endeligt ægthedsbevis; ødelæggende hjemmetests anbefales ikke.
+- Strand, vandkant, waders og UV omkring 395 nm beskrives som forskellige metoder. UV er et spor og ikke et endeligt ægthedsbevis; ødelæggende hjemmetests anbefales ikke.
 - RavRadar forklares først efter den praktiske og fysiske viden. Den aktive `20/50/30`-model, waders-vindkurven og 13-timers udtransportregel beskrives som testede RavRadar-regler, ikke universelle naturgrænser.
 - Centrale offentlige tekster om login, konto, tur, score, opdatering og datakilder er gjort mere forståelige. Interne standardord som fallback, datasæt, databaseleverandør og tekniske scorereferencer vises ikke som normal brugertekst.
 - Kandidaten ændrer ingen score, Candidate G-regel, vejrdata, Supabase-kontrakt, geometri eller land-/vandpunkter. De to geodatafiler har kun versionsfeltet 4.0.268.

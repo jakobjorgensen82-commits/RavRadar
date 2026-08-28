@@ -14,10 +14,9 @@ URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ACTIVATION_KEY = "coastal-parts-v2-activation"
 RAVSCORE_PROFILE_KEY = "ravscore-profile-selection"
-PUBLIC_RAVSCORE_PROFILE_ID = "RRS-COASTAL-CAUSAL-CHAIN-1"
-PUBLIC_RAVSCORE_SCHEMA_VERSION = "3.0.0"
-PUBLIC_RAVSCORE_SWITCH_VERSION = "RAVSCORE-PROFILE-SWITCH-4.0.306"
-PUBLIC_RAVSCORE_AVAILABILITY_POLICY = "ravscore-local-fail-closed"
+CANDIDATE_G_PROFILE_ID = "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3"
+CANDIDATE_G_SCHEMA_VERSION = "2.0.0"
+CANDIDATE_G_AVAILABILITY_POLICY = "candidate-g-local-fail-closed"
 MAP = {
     "water-level-station-routing": "data/water-level-station-routing.json",
     "direction-reviews": "data/admin/direction-reviews.json",
@@ -52,7 +51,7 @@ def preserve_newer_owner_approved_activation(local, central):
     return bool(explicit_approval and local_version and central_version and local_version > central_version)
 
 
-def is_public_ravscore_selection(payload):
+def is_candidate_g_only_selection(payload):
     """Return whether a document is the complete owner-approved public score contract."""
     if not isinstance(payload, dict):
         return False
@@ -60,38 +59,38 @@ def is_public_ravscore_selection(payload):
     evidence = payload.get("evidence") or {}
     return bool(
         version_tuple(source_version)
-        and payload.get("schemaVersion") == PUBLIC_RAVSCORE_SCHEMA_VERSION
-        and payload.get("switchVersion") == PUBLIC_RAVSCORE_SWITCH_VERSION
-        and payload.get("requestedProfileId") == PUBLIC_RAVSCORE_PROFILE_ID
-        and payload.get("modelProfileId") == PUBLIC_RAVSCORE_PROFILE_ID
+        and payload.get("schemaVersion") == CANDIDATE_G_SCHEMA_VERSION
+        and payload.get("switchVersion") == f"RAVSCORE-PROFILE-SWITCH-{source_version}"
+        and payload.get("requestedProfileId") == CANDIDATE_G_PROFILE_ID
+        and payload.get("candidateProfileId") == CANDIDATE_G_PROFILE_ID
         and payload.get("rollbackProfileId") is None
-        and payload.get("publicModelEnabled") is True
-        and payload.get("prePublicWarmupAccepted") is False
+        and payload.get("candidateActivationEnabled") is True
+        and payload.get("prePublicWarmupAccepted") is True
         and payload.get("automaticActivationAllowed") is False
-        and payload.get("publicAvailabilityPolicy") == PUBLIC_RAVSCORE_AVAILABILITY_POLICY
+        and payload.get("publicAvailabilityPolicy") == CANDIDATE_G_AVAILABILITY_POLICY
         and payload.get("legacyPublicFallbackAllowed") is False
         and bool(str(payload.get("activationAuthority") or "").strip())
-        and str(payload.get("status") or "").startswith("owner-approved-integrated-next-ravscore-")
+        and str(payload.get("status") or "").startswith("owner-approved-candidate-g-only-")
         and bool(str(evidence.get("ownerReviewDecisionId") or "").strip())
     )
 
 
 def preserve_newer_owner_approved_ravscore_selection(local, central):
-    """Keep the integrated public RavScore authoritative across central hydration.
+    """Keep Candidate G-only authoritative across central hydration.
 
     The old public profile is no longer a permitted admin rollback. A central
     legacy/rollback document must therefore never overwrite the versioned
-    integrated single-model contract, even if that stale document carries an equal or
-    syntactically newer version. A valid equal/newer integrated central
+    Candidate G-only contract, even if that stale document carries an equal or
+    syntactically newer version. A valid equal/newer Candidate G-only central
     document remains authoritative.
     """
     local_version = version_tuple(local.get("sourceVersion")) if isinstance(local, dict) else None
     central_version = version_tuple(central.get("sourceVersion")) if isinstance(central, dict) else None
     return bool(
-        is_public_ravscore_selection(local)
+        is_candidate_g_only_selection(local)
         and local_version
         and (
-            not is_public_ravscore_selection(central)
+            not is_candidate_g_only_selection(central)
             or central_version is None
             or local_version > central_version
         )
@@ -114,7 +113,7 @@ def write_document(document_key, payload):
         except (OSError, json.JSONDecodeError):
             local = None
         if preserve_newer_owner_approved_ravscore_selection(local, payload):
-            return "preserved-owner-approved-integrated-ravscore-contract"
+            return "preserved-owner-approved-candidate-g-only-contract"
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
     return "central"
 

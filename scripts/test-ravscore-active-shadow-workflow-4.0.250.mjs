@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8');
-const audit = fs.readFileSync('scripts/audit-ravscore-next-generation-public.mjs', 'utf8');
+const audit = fs.readFileSync('scripts/audit-ravscore-candidate-g-public-shadow.mjs', 'utf8');
 for (const marker of [
   'ravscore_active_shadow:',
   'ravscore-active-shadow:',
-  'Audit read-only 210/673 integrated RavScore public runtime',
+  'Audit fallback-compatible 210/673 Candidate G public shadow',
   'Download read-only fallback-compatible 210/673 runtime',
-  'node scripts/audit-ravscore-next-generation-public.mjs',
-  'ravscore-public-runtime-audit.json',
+  'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
+  'candidate-g-public-shadow-audit.json',
   'ravradar-active-ravscore-shadow',
 ]) assert.ok(workflow.includes(marker), `Workflow mangler ${marker}`);
 
@@ -36,17 +36,20 @@ for (const forbidden of [
 ]) assert.ok(!section.includes(forbidden), `Den fallback-kompatible shadow maa ikke bruge ${forbidden}`);
 
 for (const marker of [
-  'EXPECTED_ZONE_COUNT = 210',
-  'EXPECTED_PART_COUNT = 673',
-  'NEXT_RAVSCORE_MODEL_ID',
-  'NEXT_RAVSCORE_STATE_SCHEMA_VERSION',
-  'PUBLIC_PROFILE_MISMATCH',
-  'ACTIVE_SCORE_RECONSTRUCTION_MISMATCH',
-  'SURF_ZONE_PRECISION_CLAIMED',
-  'EMPIRICAL_FIND_ACCURACY_CLAIMED',
-  'rawVectorsLogged: false',
-  'coordinatesLogged: false',
-  'privatePayloadsLogged: false',
-]) assert.ok(audit.includes(marker), `Runtimeauditen mangler ${marker}`);
+  'EXPECTED_ZONES = 210',
+  'EXPECTED_PARTS = 673',
+  "scoreImpact === 'active-public'",
+  'automaticActivationAllowed === false',
+  'publicScoreChanged === true',
+  'ACTIVE_SCORE_DOES_NOT_MATCH_CANDIDATE_G',
+  'prePublicWarmupAccepted',
+  'WINDOW_HAS_MISSING_EVIDENCE',
+  'WINDOW_HAS_TIME_GAP',
+  'LATEST_SAMPLE_MISSING',
+  'CANDIDATE_SCORE_RECONSTRUCTION_MISMATCH',
+  'rawCurrentVectorsIncluded: false',
+  'coordinatesIncluded: false',
+  'privateReplayPayloadIncluded: false',
+]) assert.ok(audit.includes(marker), `Shadowauditen mangler ${marker}`);
 assert.match(workflow, /build-and-prepare:[\s\S]{0,220}inputs\.ravscore_active_shadow != true/);
-console.log('Read-only 210/673 integrated RavScore public runtime-workflow: bestået.');
+console.log('Fallback-kompatibel 210/673 Candidate G public shadow-workflow: bestået.');

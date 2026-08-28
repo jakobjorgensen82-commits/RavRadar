@@ -7,19 +7,20 @@ const timeMs = value => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
-function waterSearchTieValue(candidate) {
+function wadersTieValue(candidate) {
   const level = finite(candidate.hour?.waterLevelCm) ? Number(candidate.hour.waterLevelCm) : Number.POSITIVE_INFINITY;
   const trend = finite(candidate.hour?.waterLevelTrendCm3h) ? Number(candidate.hour.waterLevelTrendCm3h) : 0;
-  // Kun tie-breaker: lavere vand og en mere faldende trend kan blotlægge eller
-  // koncentrere et smallere søgebånd. Dette er ikke et supply- eller flowsignal.
-  return level + trend * 3;
+  // Kun tie-breaker: lavere vand og faldende/stabil trend er lettere at jage i.
+  return level + Math.max(0, trend) * 3;
 }
 
 function compareCandidates(a, b, mode) {
   const scoreDelta = Number(b.result.score) - Number(a.result.score);
   if (scoreDelta !== 0) return scoreDelta;
-  const waterDelta = waterSearchTieValue(a) - waterSearchTieValue(b);
-  if (waterDelta !== 0) return waterDelta;
+  if (mode === 'waders') {
+    const waterDelta = wadersTieValue(a) - wadersTieValue(b);
+    if (waterDelta !== 0) return waterDelta;
+  }
   const aTime = timeMs(a.hour?.time) ?? Number.POSITIVE_INFINITY;
   const bTime = timeMs(b.hour?.time) ?? Number.POSITIVE_INFINITY;
   return aTime - bTime;
