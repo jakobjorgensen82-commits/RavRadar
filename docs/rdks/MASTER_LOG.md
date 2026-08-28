@@ -1,3 +1,10 @@
+## 2026-08-28 – 4.0.301 gør den interne Om-knap til browsertilbage
+
+- Ejerens fysiske Safari-test var fortsat rød på bekræftet 4.0.300 trods grøn PR, produktion, Pages og offentlig desktopretur.
+- Den tidligere dokumentation overdrev 4.0.292-beviset: prøven brugte browserens tilbagefunktion, ikke det interne `./`-link. DEC-0098 erstatter DEC-0097.
+- Offentlig navigation beviser samme-origin root-referrer. Kildekandidaten bruger kun da `history.back()`; direkte/fremmed/modificeret åbning beholder statisk fallback.
+- Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede; Sibirien forbliver privat staged.
+
 ## 2026-08-28 – 4.0.300 gendanner 4.0.292's mobile returkontrakt
 
 - Registreret DEC-0097 efter at produktionsgrøn 4.0.299 fortsat fejlede på fysisk iPhone, mens lås/oplåsning fik kort og prognoser frem.

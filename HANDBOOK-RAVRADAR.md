@@ -38,17 +38,19 @@ READY skifter ikke automatisk. Ejeren vælger særskilt **Aktivér klar ændring
 
 Som sidste sikkerhedsnet vises det seneste komplette, auditerede datasæt ved op til seks lokale warmups. RavRadar publicerer aldrig en blanding, hvor enkelte zoner er nye og andre gamle. 4.0.292 flytter ingen faktiske punkter; mekanismen er forberedt til en senere ejerstyret ændring, herunder Sibirien. Se [DEC-0090](docs/rdks/10_DECISIONS/DEC-0090-STAGED-COASTAL-POINT-ACTIVATION.md).
 
-## Mobil retur og browserens sidecache – 4.0.300
+## Mobil retur og browserens sidecache – 4.0.301
 
 Mobil Safari kan gemme en hel webside i sin tilbage-/fremcache og senere vise den igen uden at starte JavaScript-modulerne forfra. Hvis brugeren forlader forsiden, mens en datahentning eller den progressive femdøgnsberegning stadig er i gang, kan browseren derfor vende tilbage til en halvfærdig visning.
 
-RavRadar-knappen på **Om RavRadar** bruger igen den enkle, almindelige adresse `./`. Det er samme cachevenlige vej som i 4.0.292. Linket overtages ikke af JavaScript, får ingen nonce og tvinger ikke en ny kold navigation.
+RavRadar-knappen på **Om RavRadar** beholder den enkle adresse `./` som sikker fallback. Når Om-siden faktisk blev åbnet fra RavRadars egen forside, bruger knappen imidlertid browserens rigtige historikretur. Det er den hændelse, som tidligere blev bevist med browserens tilbagefunktion, og som udløser sidens genoptegning.
 
 Når Safari gendanner en færdig forside fra sin sidecache, genoptegner RavRadar Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone, **5-dages RavRadar** og strømpilene fra den allerede indlæste tilstand. Kun hvis siden blev gemt, før appens modulimport var færdig, genindlæses den. Mobil hard reload, separat watchdog, DOM-sundhedsreload og Om-specifik timer er fjernet.
 
-4.0.297–299's alternative strategi blev afvist af den fysiske iPhone-test: 4.0.299 var komplet på desktop, men kort og prognoser viste sig først på telefonen efter lås/oplåsning. 4.0.300 gendanner derfor 4.0.292's livscyklus uden at rulle 4.0.295/296's kompakte og behovsstyrede startup tilbage.
+RavRadar overtager kun et almindeligt klik, når Om-sidens referrer er den samme offentlige root. Queryparametre og `/index.html` håndteres som samme forside. Hvis Om-siden blev åbnet direkte, fra et andet websted eller med et modificeret klik, bruges det almindelige `./`-link.
 
-Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md) og [DEC-0097](docs/rdks/10_DECISIONS/DEC-0097-RESTORE-MOBILE-PAGE-RESUME.md). DEC-0094–0096 er bevaret som historiske, fysisk afviste forsøg.
+4.0.297–300's alternative strategier blev afvist af de fysiske iPhone-tests. 4.0.300 overså konkret, at 4.0.292's automatiske bevis brugte browsertilbage og ikke det interne link. 4.0.301 gør derfor den interne knap til samme historikretur uden at rulle 4.0.295/296's kompakte og behovsstyrede startup tilbage.
+
+Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md) og [DEC-0098](docs/rdks/10_DECISIONS/DEC-0098-ABOUT-BUTTON-HISTORY-RETURN.md). DEC-0094–0097 er bevaret som historiske, fysisk afviste forsøg.
 
 ## Offentlig gratis Spørg RavRadar – 4.0.291
 
@@ -643,7 +645,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.300
+**Håndbogsversion:** 4.0.301
 
 **Opdateret:** 19. august 2026
 

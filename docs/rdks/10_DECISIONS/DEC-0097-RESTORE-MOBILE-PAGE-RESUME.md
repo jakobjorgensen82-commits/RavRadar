@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementeret som lokal 4.0.300-kandidat efter gentagen rød fysisk iPhone-test af 4.0.299. Målrettede livscyklus-, cache-, ydelses-, versions- og geodatakontroller er grønne; exact-head, produktion, offentlig runtime og fysisk Safari-/Hjemmeskærm-test afventer.
+**ERSTATTET AF DEC-0098.** 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig desktopretur var komplet på 1,29 sekunder, men ejerens fysiske Safari-test på bekræftet version 4.0.300 var fortsat rød. Den historiske 4.0.292-verifikation brugte browserens tilbagefunktion, ikke det interne `./`-link; 4.0.300 genskabte derfor ikke den faktisk beviste hændelse.
 
 ## Problem
 

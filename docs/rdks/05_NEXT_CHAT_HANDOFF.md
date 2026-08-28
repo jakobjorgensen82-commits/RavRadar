@@ -1,5 +1,12 @@
 # RavRadar – overlevering til næste chat
 
+## Øverste checkpoint – 4.0.301 rigtig historikretur
+
+- 4.0.300 er fuldt CI-/produktionsgrøn, men fysisk afvist på bekræftet version 4.0.300 i iPhone Safari.
+- 4.0.292's tidligere bevis brugte browsertilbage, ikke det interne link. 4.0.301 lader derfor Om-knappen kalde `history.back()` ved verificeret samme-origin root-referrer og bevarer `./` som direkte fallback.
+- Offentlig referrerforudsætning og målrettede historik-/resume-/startup-/ydelsestests er grønne. Fortsæt med sourcegate, exact-head, produktion, offentlig kontrol og fysisk Safari/Hjemmeskærm. Se DEC-0098.
+- Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter. Sibirien forbliver privat staged.
+
 ## Øverste checkpoint – 4.0.300 mobilretur
 
 - Start fra branch `codex/restore-mobile-resume-4.0.300` i den isolerede Codex-worktree. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter.
