@@ -4,11 +4,13 @@
 
 - [x] Luk 4.0.295 gennem PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641`, Pages `98794513908` og offentlig funktionskontrol.
 - [x] Bevis 4.0.295's varme start omkring 3,67 sekunder og afgræns den resterende kolde recovery-flaskehals til 3.562.253 byte/23,36 sekunder.
-- [x] Projektér aktuelle READY-scoreposter til score/status, dækningsfelter, komponenttal, kompakt vejr og minimale labels.
+- [x] Projektér aktuelle READY-scoreposter til score/status, dækningsfelter, komponenttal, kompakt vejr, minimale labels og vinderdelens lille DMI-`flowPoints`-bevis.
 - [x] Brug samme projektion i primær runtime og auditeret recovery; bevar detaljepakke/hash, dataset, tider, scorer, rangering og state.
-- [x] Lås begge modes med score-/rangeringsparitet, fravær af tunge felter og 545.339 → 26.578 byte syntetisk reduktion.
+- [x] Lås begge modes med score-/rangeringsparitet, fravær af tunge felter, bevaret pilproveniens og 591.295 → 29.670 byte syntetisk reduktion.
 - [x] Bestå fuld lokal sourcegate, RDKS/privacy/Edge/releasekontrol.
-- [ ] Bestå PR exact-head, frisk produktionsartifact og offentlig cold/warm ydelsesverifikation.
+- [x] Bestå PR #199 exact-head `33156988524` og merge som `bdd23cc0`.
+- [x] Bekræft fail-closed gate: produktion `33157055276`/build `98802272478` stoppede før releasegate/Supabase/Pages på manglende startup-pilproveniens; den målrettede korrektion er grøn.
+- [ ] Bestå nyt PR exact-head, frisk produktionsartifact og offentlig cold/warm ydelsesverifikation.
 
 Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og kræver ægte modning samt senere særskilt ejeraktivering. Se DEC-0092/0093.
 

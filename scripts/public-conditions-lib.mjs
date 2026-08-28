@@ -17,6 +17,7 @@ const STARTUP_SCORE_FIELDS = [
 ];
 const STARTUP_PART_FIELDS = ['id','zoneId','name','waterPoint','landPoint','onshoreDirectionDeg','onshoreDirectionSource'];
 const compactCoverageParts = parts => (parts || []).map(part => pick(part, ['partId','name','score']));
+const compactFlowPoints = value => value ? pick(value, ['current','wind','sources']) : null;
 const compactStartupScore = value => value ? {
   ...pick(value, STARTUP_SCORE_FIELDS),
   ...(Array.isArray(value.parts) ? { parts: compactCoverageParts(value.parts) } : {}),
@@ -46,7 +47,11 @@ export function buildStartupCoastalParts(full){
     const startupRow=compactStartupRow(row);
     zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:startupRow?.time||null,hourly:startupRow?[startupRow]:[]};
   }
-  const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,pick(source.parts[id],STARTUP_PART_FIELDS)]));
+  const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>{
+    const part=source.parts[id];
+    const flowPoints=compactFlowPoints(part.flowPoints);
+    return [id,{...pick(part,STARTUP_PART_FIELDS),...(flowPoints?{flowPoints}:{})}];
+  }));
   return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
 }
 

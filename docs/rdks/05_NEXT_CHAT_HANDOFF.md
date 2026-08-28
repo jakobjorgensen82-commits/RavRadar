@@ -4,8 +4,8 @@
 
 - 4.0.295 bestod PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Den fjernede 90–132 MB-detaljehentningen fra normal opstart og gav cirka 3,67 sekunders varm offentlig start.
 - Offentlig cold-måling fandt dog, at den aktive READY-nødvisnings startup stadig var 3.562.253 byte/23,36 sekunder mod primærens 694.288 byte/4,09 sekunder. Resten er fulde aktuelle scoreposter og komplette vinderobjekter, ikke HTML eller Spørg RavRadar.
-- 4.0.296 beholder kun score/status, dækningsfelter, tre komponenttal, kompakt vejr og minimale labels i startup. Detaljer og state forbliver i den behovshentede fil; recovery ændrer kun startup-hash.
-- Målrettet score-/rangeringsparitet, uændret detalje/hash og 545.339 → 26.578 byte samt fuld lokal sourcegate/releasegate er grøn. Kør PR exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092/0093.
+- 4.0.296 beholder kun score/status, dækningsfelter, tre komponenttal, kompakt vejr, minimale labels og det lille `flowPoints`-bevis i startup. Detaljer og state forbliver i den behovshentede fil; recovery ændrer kun startup-hash.
+- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før deploy, fordi den gamle zoomtest fangede manglende DMI-pilproveniens. Korrektionen bevarer kun `current`, `wind` og `sources` under `flowPoints`; målrettet score-/rangeringsparitet, uændret detalje/hash, piltesten og 591.295 → 29.670 byte er grøn. Kør ny exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092/0093.
 - Sibirien har en ny privat staged punktrevision fra ejeren. Læs eller publicér ikke koordinater, aktivér intet, og opfind ingen historik. Lad samme DMI-grid-, 96-timers- og 48-timerskrav modne; en senere promotion kræver særskilt ejer-go.
 - Rod-worktree, `.recovery-*`, private data og faktisk geometri må ikke røres. Geodatafilerne ændrer kun topversionen 4.0.295 → 4.0.296.
 

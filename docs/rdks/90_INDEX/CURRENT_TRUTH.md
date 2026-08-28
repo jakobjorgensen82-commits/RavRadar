@@ -5,8 +5,8 @@
 - 4.0.295 bestod PR #198/exact-head `33153155088` på `94621436`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig version, kort, fem aktuelle områder, fem prognosedage og konsol er grønne; varm start var cirka 3,67 sekunder.
 - Den fulde 90–132 MB detaljepakke og browserens nationale femdøgnsberegning er ikke længere normal opstart. Dataset+SHA-cache virker som besluttet i DEC-0092.
 - Aktiv READY-nødvisning afslørede et resthul: startup var 3.562.253 byte/23,36 sekunder, fordi aktuelle scoreposter og vinderobjekter stadig bar detaljediagnostik. Primær warmup-start var 694.288 byte/4,09 sekunder.
-- 4.0.296 bruger én minimal aktuel scoreprojektion i både primær og recovery. Kun startup/hash ændres; fulde detaljer/hash, dataset, tider, scorer, rangering og Candidate G-state bevares.
-- Målrettet paritet/integritet, cirka 95 % syntetisk READY-reduktion og fuld lokal sourcegate/releasegate er grøn. Exact-head, frisk produktion og offentlig cold/warm-verifikation af 4.0.296 afventer. Se DEC-0093.
+- 4.0.296 bruger én minimal aktuel scoreprojektion i både primær og recovery. Kun startup/hash ændres; fulde detaljer/hash, dataset, tider, scorer, rangering og Candidate G-state bevares. Vinderdelens tre små `flowPoints`-felter bevares som dokumentation for kortets lokale DMI-pile.
+- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før releasegate og deploy, da zoomtesten fandt den først manglende pilproveniens. Den afgrænsede korrektion består piltesten og reducerer fortsat den syntetiske READY-startpakke cirka 95 %. Nyt exact-head, frisk produktion og offentlig cold/warm-verifikation af 4.0.296 afventer. Se DEC-0093.
 - En ny Sibirien-punktrevision er privat staged. Ingen koordinater er læst/publiceret, og ingen aktivering er godkendt; ægte DMI-/48-timersmodning fortsætter under DEC-0090.
 
 ## Driftsverificeret credentialrotation – 2026-08-28

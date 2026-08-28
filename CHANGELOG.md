@@ -1,8 +1,9 @@
 ## 4.0.296 – minimal Candidate G-startpakke (2026-08-28)
 
 - Lukker restflaskehalsen efter 4.0.295: aktiv READY-nødvisning havde stadig 3.562.253 byte/23,36 sekunders startup trods behovsstyrede detaljer og cirka 3,67 sekunders varm cache.
-- Beholder kun aktuel score/status, dækningsfelter, tre komponenttal, kompakt vejr og minimale labels i startup; fulde forklaringer, timeforløb og state forbliver i detaljepakken.
-- Bevarer detaljepakke/hash, dataset, tider, scorer, bestetid og national rangering. En READY-lignende test falder 545.339 → 26.578 byte uden scoreafvigelse. Se DEC-0093 og `CHANGELOG-4.0.296.md`.
+- Beholder kun aktuel score/status, dækningsfelter, tre komponenttal, kompakt vejr, minimale labels og vinderdelens lille DMI-`flowPoints`-bevis i startup; fulde forklaringer, timeforløb og state forbliver i detaljepakken.
+- Bevarer detaljepakke/hash, dataset, tider, scorer, bestetid og national rangering. Den opdaterede READY-lignende test falder 591.295 → 29.670 byte uden scoreafvigelse.
+- PR #199's exact-head var grøn og blev merged som `bdd23cc0`; første produktion `33157055276` stoppede fail-closed før deploy på manglende pilproveniens. Den afgrænsede korrektion bevarer kun de tre nødvendige `flowPoints`-felter og består den målrettede zoom-/piltest. Nyt produktionsbevis afventer. Se DEC-0093 og `CHANGELOG-4.0.296.md`.
 
 ## 4.0.295 – hurtig offentlig start og behovsstyrede detaljer (2026-08-28)
 

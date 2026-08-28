@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og implementeret som 4.0.296-kildekandidat. Målrettet score-/rangeringsparitet, recovery-integritet og størrelseskontrol samt fuld lokal sourcegate/releasegate er grøn; exact-head, produktion og offentlig cold/warm-verifikation afventer.
+Besluttet og implementeret som 4.0.296-kildekandidat. PR #199's exact-head-kildegate var grøn, men første produktion stoppede korrekt før deploy, fordi startprojektionen ikke havde bevaret vinderdelens lille `flowPoints`-proveniens. Den afgrænsede korrektion bevarer kun `current`, `wind` og `sources`; målrettet pil-, score-, recovery- og størrelseskontrol er grøn. Nyt exact-head-, produktions- og offentligt cold/warm-bevis afventer.
 
 ## Problem
 
@@ -13,7 +13,7 @@ Resten kom fra `coastalParts`: hver zone bar stadig en fuld aktuel scorepost med
 ## Beslutning
 
 1. Den aktuelle Candidate G-startpost må kun indeholde tidspunkt, tilgængelighed/status, score, vinder-id/-navn, dæknings- og antalfelter, de tre numeriske scorekomponenter, kompakt aktuelt vejr og minimale `{partId,name,score}`-dækningsrækker.
-2. Startpakkens vinderregister må kun indeholde identitet og de allerede offentlige metadata, som den øjeblikkelige områdevisning bruger. `current`, `forecast`, Candidate G-state, forklaringer, component reasons, unavailable-part-diagnostik og øvrige tunge felter forbliver alene i detaljepakken.
+2. Startpakkens vinderregister må kun indeholde identitet, de allerede offentlige metadata, som den øjeblikkelige områdevisning bruger, samt det kompakte `flowPoints`-bevis (`current`, `wind`, `sources`) for kortets dokumenterede DMI-pile. Det fulde `current`-objekt, `forecast`, Candidate G-state, forklaringer, component reasons, unavailable-part-diagnostik og øvrige tunge felter forbliver alene i detaljepakken.
 3. Uændrede eller utilgængelige startposter må fortsat fejle lukket. Manglende detaljer giver den eksisterende generiske utilgængeligheds- eller dækningsforklaring, indtil den behovshentede detaljepakke er indlæst.
 4. En ældre bevaret Candidate G-nødvisning genprojekteres deterministisk fra sin egen allerede auditerede detaljepakke. Kun startup-dokumentet og dets hash ændres; detaljepakken og dens hash, dataset-id, tider, scorer og state er identiske.
 5. Samme projektion bruges til friske primære runtimes, så payloaden ikke vokser igen ved 673/673 READY.
@@ -27,4 +27,4 @@ Resten kom fra `coastalParts`: hver zone bar stadig en fuld aktuel scorepost med
 
 ## Verifikation
 
-Den målrettede 4.0.296-regression sammenligner aktuel score, vinder, komponenter, vejr, dækningsrækker og national rangeringsscore før og efter projektionen for begge søgemåder. Den kræver fravær af tunge detaljefelter, uændret detaljeobjekt og detaljehash samt korrekt ny startup-hash. Den syntetiske READY-lignende startpakke faldt fra 545.339 til 26.578 byte, cirka 95 %, uden score- eller rangeringsafvigelse. Eksisterende 4.0.295-, Candidate G-recovery- og data-service-regressioner samt fuld lokal RDKS-, privacy-, Edge-, Candidate G-, DMI-, workflow- og releasekontrol er grønne.
+Den målrettede 4.0.296-regression sammenligner aktuel score, vinder, komponenter, vejr, dækningsrækker og national rangeringsscore før og efter projektionen for begge søgemåder. Den kræver fravær af tunge detaljefelter, uændret detaljeobjekt og detaljehash, korrekt ny startup-hash og bevaret minimal pilproveniens. Den syntetiske READY-lignende startpakke falder fra 591.295 til 29.670 byte, cirka 95 %, uden score- eller rangeringsafvigelse. Produktion `33157055276`/build `98802272478` stoppede fail-closed i den eksisterende zoom-/piltest før releasegate, Supabase og Pages; den målrettede piltest er grøn efter korrektionen.
