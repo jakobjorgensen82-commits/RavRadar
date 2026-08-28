@@ -6,6 +6,8 @@ Spørg RavRadar kan nu besvare almindelige ravspørgsmål direkte på dansk, tys
 
 Oprindelsessvaret genkender også de naturlige formuleringer **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** samt tilsvarende dannelsesvarianter. Det er låst med en særskilt DA/DE/EN-regression, efter at den første offentlige 4.0.293-kontrol fandt, at netop denne formulering blev afvist.
 
+4.0.294 er produktionsverificeret gennem PR #195, fuld produktionskæde og offentlig kontrol. Alle tre formuleringer giver de korrekte lokale svar uden netværk eller AI-kvote. Samtidig viser live-siden fortsat farvet kort, fem **Bedste områder** og fem prognosedage; assistentændringen påvirker ingen prognosefunktion.
+
 Svarene bygger på den offentlige grundbog og bruger stabile sprognøgler. Spor som frisk tang og mulige samlesteder ved revler, render eller høfder beskrives som spor og muligheder – aldrig som bevis eller garanti. RavScore er fortsat et indeks, ikke en procentchance eller sikkerhedsvurdering.
 
 Åbne ravrelevante specialspørgsmål kan stadig sendes til den gratis GPT-OSS-gateway. Dens godkendte viden er udvidet fra 10 til 23 evidensbundne fakta om de samme emner. Credential forbliver på serveren, og CORS, domænegate, rate limits, timeout, eksakt JSON-/evidensvalidering og lokal fallback er uændrede. Ved kvote- eller providerfejl virker de lokale svar stadig.

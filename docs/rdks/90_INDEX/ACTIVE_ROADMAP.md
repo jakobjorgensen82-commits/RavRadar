@@ -1,12 +1,13 @@
 # RavRadar - aktivt roadmap
 
-## P1 4.0.293-kandidat – bred read-only Spørg RavRadar-viden
+## P1 produktionsverificeret 4.0.294 – bred read-only Spørg RavRadar-viden
 
 - [x] Lås og implementér 17 lokale grundbogsemner på DA/DE/EN.
 - [x] Lås 51 lokale evals og 66 samlede providercases med 23 offentlige evidens-ID'er.
 - [x] Bevar deterministic Candidate G for sted/tid/score samt Edge-/privacy-/kvote-/rollbackgrænser.
 - [x] Bestå fuld lokal sourcegate og releasegate.
-- [ ] Bestå exact-head, frisk produktion og offentlig tre-sprogs kontrol.
+- [x] Bestå PR #194/#195 exact-head, frisk produktion og offentlig tre-sprogs kontrol inklusive naturlige oprindelsesformuleringer.
+- [ ] Rotér Cloudflare quick-start-tokenet som forsigtighed i et ejeraktivt vindue og genverificér Edge uden credentialoutput.
 
 Begge assistentveje er read-only og isoleret fra prognoser, RavScore og alle bruger-/geodata. Se DEC-0091.
 
@@ -38,13 +39,13 @@ Se DEC-0089.
 
 Se DEC-0088.
 
-## P1-rækkefølge efter produktionsverificeret 4.0.292 – udført i 4.0.293-kandidaten
+## P1-rækkefølge efter produktionsverificeret 4.0.292 – afsluttet i 4.0.293/294
 
 1. [x] Udvid den lokale Spørg RavRadar til en væsentligt bredere, versionsbundet DA/DE/EN-vidensbase med aktuelle valgte-zone-data og fortsat fast emneafvisning.
 2. [x] Bevar begge assistentveje som read-only; ingen assistentkode må ændre prognoser, RavScore, vejr, sortering, konto-/turdata, geometri eller land-/vandpunkter.
 3. [ ] Følg sideløbende den naturlige Candidate G-modning og indhent ejerens fysiske iPhone-efterkontrol; ingen af delene må fremtvinges med kunstig historik eller en punktflytning.
 
-Det brede lokale vidensscope er låst med 17 konkrete intents og 51 lokale evals før slutvalidering.
+Det brede lokale vidensscope er produktionsverificeret med 17 konkrete intents, 51 lokale evals og de tre ekstra 4.0.294-formuleringsregressioner.
 
 ## P1 afsluttet – produktionsverificeret 4.0.290 DA/DE/EN og deaktiveret Workers AI
 

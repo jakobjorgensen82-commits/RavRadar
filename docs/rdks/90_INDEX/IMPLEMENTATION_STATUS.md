@@ -1,17 +1,20 @@
-# Implementeringsstatus – 4.0.294-kandidat for naturlig oprindelsesformulering
+# Implementeringsstatus – produktionsverificeret 4.0.294
 
-## P1 kandidat – offentlig formuleringstest
+## P1 produktionsverificeret – offentlig formuleringstest
 
 - [x] Reproducer offentlig afvisning af **Hvordan opstod rav?** på 4.0.293.
 - [x] Udvid kun det eksisterende oprindelses-intent med naturlige dannelsesformuleringer på DA/DE/EN.
 - [x] Tilføj tre formuleringregressioner med lokal routing og nul netværkskald.
 - [x] Bevar de eksisterende 51 balancerede emnecases og hele read-only-/Edge-/Candidate G-grænsen.
 - [x] Bestå fuld lokal sourcegate og releasegate.
-- [ ] Bestå exact-head, produktion og gentaget offentlig DA/DE/EN-kontrol.
+- [x] Bestå PR #195 exact-head `33131976433`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`.
+- [x] Bestå offentlig DA/DE/EN-formuleringskontrol sammen med farvet kort, fem aktuelle områder, fem prognosedage og korrekt kvotetekst.
+- [x] Bestå live Edge-kontrol af 23-fakta-kilden, DA/DE/EN, fast afvisning, CORS/origin og 6/minut med lokal fallback.
+- [ ] Rotér Cloudflare quick-start-tokenet som forsigtighed ved næste ejeraktive driftsvindue og genverificér Edge uden at eksponere værdien.
 
 Ingen svartekst, GPT-OSS-model, Edge-gateway, RavScore, vejr, prognose, sortering, konto-/turdata, privatliv, geometri eller punkt ændres.
 
-## P1 kandidat – klogere Spørg RavRadar med lokal fallback
+## P1 produktionsverificeret – klogere Spørg RavRadar med lokal fallback
 
 - [x] Lås 17 konkrete grundbogsbaserede intents for dansk, tysk og engelsk.
 - [x] Bevar bedste sted/tid/score som deterministiske Candidate G-funktioner og send kun åbne relevante specialspørgsmål til GPT-OSS.

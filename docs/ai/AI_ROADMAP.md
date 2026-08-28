@@ -1,16 +1,17 @@
 # AI Roadmap – RavRadar 4.0.294+
 
-## 4.0.294-kandidat – naturlige oprindelsesformuleringer
+## Produktionsverificeret 4.0.294 – naturlige oprindelsesformuleringer
 
 - [x] Reproducer 4.0.293-afvisningen af **Hvordan opstod rav?**.
 - [x] Genkend almindelige dannelsesformuleringer på DA/DE/EN lokalt.
 - [x] Tilføj tre formuleringregressioner uden netværkskald og bevar de 51 balancerede emnecases.
 - [x] Bestå fuld lokal sourcegate og releasegate.
-- [ ] Bestå exact-head, produktion og gentaget offentlig kontrol.
+- [x] Bestå PR #195 exact-head `33131976433`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og offentlig DA/DE/EN-kontrol.
+- [x] Genverificér den live 23-fakta Edge, fast afvisning, CORS/origin og 6/minut med lokal fallback.
 
 Ingen model-, gateway-, score-, vejr-, data- eller geokontrakt ændres.
 
-## 4.0.293-kandidat – bred lokal og ekstern grundbogsviden
+## Produktionsverificeret 4.0.293 – bred lokal og ekstern grundbogsviden
 
 - [x] Udvid lokalt til 17 konkrete DA/DE/EN-emner uden netværk eller AI-kvote.
 - [x] Udvid den versionsbundne Edge-viden fra 10 til 23 evidens-ID'er.
@@ -52,7 +53,7 @@ Se DEC-0089. Dette spor ændrer ingen assistent-, score-, vejr- eller datakontra
 
 Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometri- eller punktændring er tilladt.
 
-## Udført i 4.0.293-kandidaten – klogere lokal assistent
+## Produktionsverificeret i 4.0.293/294 – klogere lokal assistent
 
 - [x] Udvid den lokale, leverandøruafhængige assistent fra få faste intents til en versionsbundet ravfaglig vidensbase på dansk, tysk og engelsk.
 - [x] Dæk vind, strøm, bølger, vandstand, mobilisering, transport, timing, kystfælder, felttegn, identifikation, sikkerhed, Candidate G og den valgte zones allerede beregnede offentlige data.
@@ -60,7 +61,7 @@ Se DEC-0088. Ingen score-, vejr-, sorterings-, konto-/tur-, privatlivs-, geometr
 - [x] Bevar fast emneafvisning og ren læseadgang: lokal assistent og fjern-AI kan ikke ændre kort, prognoser, RavScore, sortering, konto-/turdata eller andre runtime-data.
 - [x] Lås scope med reproducerbare DA/DE/EN-evals før bred implementering.
 
-Den kritiske mobile tilbage-navigation er produktionsverificeret i 4.0.292. Det brede vidensscope er implementeret i 4.0.293-kandidaten og afventer tværgående releaseverifikation.
+Den kritiske mobile tilbage-navigation er produktionsverificeret i 4.0.292. Det brede vidensscope og de naturlige oprindelsesformuleringer er produktionsverificeret i 4.0.293/294 med tværgående release- og offentlig kontrol.
 
 ## Produktionsverificeret – central DA/DE/EN og sikker assistentrouting i 4.0.290
 

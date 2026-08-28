@@ -2,7 +2,7 @@
 
 ## Status
 
-Besluttet og implementeret i 4.0.293. Exact-head og produktion er grønne; den offentlige formuleringstest udløste en afgrænset 4.0.294-hotfix før endelig lukning.
+Besluttet og produktionsverificeret i 4.0.293/4.0.294. Den offentlige formuleringstest udløste og lukkede en afgrænset 4.0.294-hotfix.
 
 ## Problem
 
@@ -26,4 +26,4 @@ Den offentlige GPT-OSS-gateway var sikker og domæneafgrænset, men dens godkend
 
 ## Verifikation
 
-Målrettet kontrakt dækker alle 51 lokale sprog-/intentkombinationer uden et eneste netværkskald, 66 balancerede modelcases, komplet i18n-nøgle-/parameterparitet, offentlig dataminimering, evidensvalidering og eksisterende Candidate G-svar. PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768` er grønne. Den offentlige kontrol fandt derefter, at **Hvordan opstod rav?** ikke matchede oprindelses-intentet. 4.0.294 tilføjer denne og tilsvarende tyske/engelske dannelsesformuleringer samt tre nul-netværksregressioner uden at ændre beslutningens faglige eller sikkerhedsmæssige grænser.
+Målrettet kontrakt dækker alle 51 lokale sprog-/intentkombinationer uden et eneste netværkskald, 66 balancerede modelcases, komplet i18n-nøgle-/parameterparitet, offentlig dataminimering, evidensvalidering og eksisterende Candidate G-svar. PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768` er grønne. Den offentlige kontrol fandt derefter, at **Hvordan opstod rav?** ikke matchede oprindelses-intentet. 4.0.294 tilføjede denne og tilsvarende tyske/engelske dannelsesformuleringer samt tre nul-netværksregressioner. PR #195/exact-head `33131976433`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102` og Pages `98725082313` er grønne; offentlig DA/DE/EN-kontrol beviser de tre lokale svar. Den live 23-fakta Edge består desuden DA/DE/EN, fast afvisning, CORS/origin og reel 6/minut-browsergrænse med lokal fallback uden ændring af beslutningens faglige eller sikkerhedsmæssige grænser.

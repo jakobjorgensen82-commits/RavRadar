@@ -1,11 +1,14 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuel 4.0.294-kandidat – naturlig formulering om ravets dannelse
+## Produktionsverificeret 4.0.294 – naturlig formulering om ravets dannelse
 
 - 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
 - Offentlig kort-, rangliste-, femdøgns- og konsolkontrol var grøn, men **Hvordan opstod rav?** blev fejlagtigt afvist trods eksisterende oprindelsesviden.
 - 4.0.294 genkender almindelige dannelsesformuleringer på DA/DE/EN og låser dem med tre ekstra lokale nul-netværkscases. Ingen svar-, Edge-, score-, vejr-, data- eller geokontrakt ændres.
-- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktion og gentaget offentlig DA/DE/EN-kontrol afventer.
+- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. PR #195/exact-head `33131976433`, head `80866ba8`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561` er grønne.
+- Offentlig 4.0.294 viser farvet kort, fem aktuelle områder og fem prognosedage. De tre naturlige DA/DE/EN-formuleringer giver lokale oprindelsessvar uden kvote; kvoteteksten er korrekt på alle tre sprog.
+- Den 23-fakta Edge-kilde er live. DA/DE/EN, rouladeafvisning, CORS/origin og reel 6/minut-browsergrænse med lokal fallback er verificeret. Ingen assistentvej kan ændre score-, vejr-, bruger- eller geodata.
+- Næste ejeraktive driftsopgave er en forsigtig rotation af Cloudflare quick-start-tokenet med efterfølgende Edge-smoke; ingen credentialværdi må skrives i repository eller output. Candidate G-nøddriften modnes fortsat naturligt og må ikke fremskyndes med kunstig historik.
 
 ## 4.0.293 – klogere Spørg RavRadar uden kvoteafhængighed
 
