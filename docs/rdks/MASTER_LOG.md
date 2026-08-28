@@ -2379,3 +2379,9 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Målrettet eval-, lokal assistent-, Edge-sikkerheds-, RDKS-, knowledge-, kildeneutralitets- og releasegatekontrol er grøn.
 - Live-Gemini-eval kræver eksplicit lokal nøgle og `GEMINI_FREE_TIER_CONFIRMED=1`. Den efterfølgende eval afviste 3.7 Flash efter fem timeouts og valgte Flash-Lite/low efter 27/27; Edge-ændring, deploy og aktivering er fortsat åbne.
 - Offentlig 4.0.287, Candidate G, vejr, konto-/turdata, privatliv, geometri, land-/vandpunkter og private data er uændrede.
+## 2026-08-28 – 4.0.296 minimal Candidate G-startprojektion
+
+- 4.0.295 bestod PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig funktion og cirka 3,67 sekunders varm start er grønne.
+- Aktiv READY-nødvisning målte dog 3.562.253 byte/23,36 sekunder i startup, fordi aktuelle scoreposter og vinderobjekter fortsat bar detaljediagnostik. Primær warmup-start målte 694.288 byte/4,09 sekunder.
+- 4.0.296 projekterer kun de felter, som kort, aktuelle områder og den øjeblikkelige områdevisning bruger. Recovery ændrer kun startup/hash; detaljer/hash, dataset, tider, scorer, rangering og state bevares.
+- Målrettet score-/rangeringsparitet, uændret detaljehash og fuld lokal sourcegate/releasegate er grøn; READY-lignende syntetisk payload falder cirka 95 %. Exact-head, produktion og offentlig cold/warm-verifikation afventer. Se DEC-0093.

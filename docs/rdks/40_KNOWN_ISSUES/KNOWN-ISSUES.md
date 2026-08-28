@@ -1,8 +1,8 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.295 – offentlig opstartsydelse
+## 4.0.296 – offentlig opstartsydelse
 
-- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – KILDERETTET / PRODUKTIONSVERIFIKATION AFVENTER:** 4.0.294 hentede 90–132 MB ukomprimerede Candidate G-detaljer ved normal opstart og genberegnede fem top-5-lister i browseren. 4.0.295 flytter et eksakt kompakt indeks til startpakken, gør detaljehentningen behovsstyret og genbruger kun dataset+SHA-adresserede filer. Målrettet paritet, fallback, mobilresume, startup, rangering, site og modulclosure samt fuld lokal sourcegate/releasegate er grønne; exact-head, produktion og offentlig cold/warm-måling afventer.
+- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – DELVIST PRODUKTIONSRETTET / 4.0.296-KILDERETTELSE:** 4.0.295 fjernede 90–132 MB-detaljepakken fra normal opstart og gav cirka 3,67 sekunders varm start, men den aktive READY-nødvisnings startup var stadig 3.562.253 byte/23,36 sekunder. 4.0.296 fjerner tunge forklarings-/vinderfelter fra både primær og recovery-startup med score-/rangeringsparitet og uændret detaljehash. Målrettet reduktion og fuld lokal sourcegate/releasegate er grøn; exact-head, produktion og offentlig cold/warm-måling afventer.
 - **ISSUE-SIBIRIEN-STAGED-POINT-REVISION – PRIVAT MODNING / IKKE AKTIVERET:** Ejeren har gemt en ny punktrevision. Kandidaten må kun behandles gennem DEC-0090's private grid-, 96-timers- og 48-timersgates. Ingen koordinater må læses eller publiceres, ingen historik må fabrikeres, og READY giver ikke automatisk aktivering; særskilt ejer-go mangler.
 
 ## 4.0.292 – kommende punktflytning

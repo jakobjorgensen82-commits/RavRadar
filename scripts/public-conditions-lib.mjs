@@ -11,6 +11,21 @@ const HOURLY_FIELDS = [
 const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'airTemperatureC');
 const HISTORY_FIELDS = ['maxWind24hMps','maxWave24hM','hoursSinceHighEnergy','strongEventDurationHours','hoursSinceStrongEventEnd','inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentDurationHours','outboundCurrentPressure','activeCurrentRegime','activeCurrentRegimeDurationHours','activeCurrentRegimeMomentum','activeCurrentRegimeStability','activeCurrentRegimeSampleCount','verifiedCurrentCoverageHours','unverifiedCurrentSampleCount','currentDirectionStability','mobilisationPotential','nearshorePotential','eventPhase','stateModelMode'];
 const pick=(source,fields)=>Object.fromEntries(fields.filter(key=>source?.[key]!==undefined).map(key=>[key,source[key]]));
+const STARTUP_SCORE_FIELDS = [
+  'available','status','score','winningPartId','winningPartName','scoreSpread','comparisonPartCount',
+  'validPartCount','expectedPartCount','components','weather'
+];
+const STARTUP_PART_FIELDS = ['id','zoneId','name','waterPoint','landPoint','onshoreDirectionDeg','onshoreDirectionSource'];
+const compactCoverageParts = parts => (parts || []).map(part => pick(part, ['partId','name','score']));
+const compactStartupScore = value => value ? {
+  ...pick(value, STARTUP_SCORE_FIELDS),
+  ...(Array.isArray(value.parts) ? { parts: compactCoverageParts(value.parts) } : {}),
+} : value;
+const compactStartupRow = row => row ? {
+  time: row.time,
+  waders: compactStartupScore(row.waders),
+  beach: compactStartupScore(row.beach),
+} : null;
 const currentLocalRow=(zone,source,full)=>{
   const explicit=Date.parse(zone?.currentReferenceAt||'');
   const exact=Number.isFinite(explicit)
@@ -22,15 +37,16 @@ const currentLocalRow=(zone,source,full)=>{
   );
 };
 
-function buildStartupCoastalParts(full){
+export function buildStartupCoastalParts(full){
   const source=full?.coastalParts;if(!source)return null;
   const zones={};const winnerIds=new Set();
   for(const [zoneId,zone] of Object.entries(source.zones||{})){
     const row=currentLocalRow(zone,source,full);
     for(const mode of ['waders','beach'])if(row?.[mode]?.winningPartId)winnerIds.add(row[mode].winningPartId);
-    zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:row?.time||null,hourly:row?[row]:[]};
+    const startupRow=compactStartupRow(row);
+    zones[zoneId]={expectedPartCount:zone.expectedPartCount||0,scoredPartCount:zone.scoredPartCount||0,currentReferenceAt:startupRow?.time||null,hourly:startupRow?[startupRow]:[]};
   }
-  const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,source.parts[id]]));
+  const parts=Object.fromEntries([...winnerIds].filter(id=>source.parts?.[id]).map(id=>[id,pick(source.parts[id],STARTUP_PART_FIELDS)]));
   return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
 }
 

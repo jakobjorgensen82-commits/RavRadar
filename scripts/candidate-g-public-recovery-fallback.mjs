@@ -7,6 +7,7 @@ import {
   buildPublicConditions,
   buildPublicConditionDetails,
   buildPublicNationalForecast,
+  buildStartupCoastalParts,
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
@@ -77,9 +78,9 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   return { ok: errors.length === 0, errors, ageHours: Number.isFinite(age) ? age : null };
 }
 
-// En bevaret nødvisning kan være bygget af en ældre appversion. Tilføj kun det
-// nye kompakte, deterministiske femdøgnsindeks fra dens allerede auditerede
-// offentlige start-/detaljepakke, og bind den nye projektion til en ny hash.
+// En bevaret nødvisning kan være bygget af en ældre appversion. Genopbyg kun
+// dens offentlige opstartsprojektion og deterministiske femdøgnsindeks fra den
+// allerede auditerede detaljepakke, og bind projektionen til en ny hash.
 // Detaljepakken, dataset-id, tider, scorer og Candidate G-state ændres ikke.
 export function upgradeRecoveryFallbackBundle(bundle) {
   const conditions = bundle?.conditions || {};
@@ -95,7 +96,13 @@ export function upgradeRecoveryFallbackBundle(bundle) {
     zones,
     coastalParts: details.coastalParts || conditions.coastalParts || null,
   });
-  const upgradedConditions = { ...conditions, nationalForecast };
+  const coastalParts = buildStartupCoastalParts({
+    datasetId: conditions.datasetId,
+    generatedAt: conditions.generatedAt,
+    productionReferenceAt: conditions.productionReferenceAt || details.productionReferenceAt || null,
+    coastalParts: details.coastalParts || conditions.coastalParts || null,
+  });
+  const upgradedConditions = { ...conditions, nationalForecast, coastalParts };
   return {
     ...bundle,
     descriptor: {

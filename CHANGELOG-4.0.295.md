@@ -21,5 +21,6 @@
 ## Verifikation
 
 - Målrettet top-5-paritet for begge modes/fem dage, dataminimering, lazy load, dataset+SHA-cache, Candidate G-fallback, sidecache-resume, startup, ikke-blokerende prognose, national rangering, sitefunktioner og Pages-modulclosure er grønne lokalt.
-- Fuld lokal sourcegate og releasegate er grønne. Exact-head, frisk produktionskæde og offentlig cold/warm ydelsesverifikation afventer.
+- Fuld lokal sourcegate og releasegate er grønne. PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908` er grønne.
+- Offentlig version, kort, fem aktuelle områder, fem prognosedage og konsol er grønne; varm ny fane var klar på cirka 3,67 sekunder. Cold-målingen fandt en resterende 3.562.253-byte READY-startprojektion, som lukkes i 4.0.296/DEC-0093.
 - Se DEC-0092.

@@ -1,15 +1,15 @@
 # RavRadar - aktivt roadmap
 
-## P1 4.0.295-kildekandidat – offentlig opstartsydelse
+## P1 4.0.296-kildekandidat – offentlig opstartsydelse
 
-- [x] Afgræns den store detaljepakke og browserberegningen som flaskehals; frikend HTML-skallen og Spørg RavRadar.
-- [x] Byg eksakt kompakt top-5 for fem dage/begge modes og hent fulde detaljer behovsstyret.
-- [x] Lås dataset+SHA-cache uden at cache manifest, geometri eller ikke-adresserede livefiler.
-- [x] Bestå målrettede kontrakter og fuld lokal sourcegate/releasegate.
-- [ ] Bestå PR exact-head, frisk produktion og offentlig cold/warm ydelsesverifikation.
+- [x] Produktionsverificér 4.0.295's lazy detaljer, top-5-indeks og dataset+SHA-cache gennem PR #198 og grøn produktion.
+- [x] Afgræns det resterende kolde problem til den 3,56 MB READY-recovery-startfil; frikend detaljehentning og assistent.
+- [x] Indfør minimal aktuel scoreprojektion i både primær og recovery med uændret detaljepakke/hash og score-/rangeringsparitet.
+- [x] Bestå fuld lokal sourcegate/releasegate for 4.0.296.
+- [ ] Bestå PR exact-head, frisk produktion og offentlig cold/warm ydelsesverifikation af 4.0.296.
 - [ ] Lad den nye private Sibirien-punktrevision modne naturligt; aktivér kun efter et senere særskilt ejer-go.
 
-Se DEC-0092. Ingen score-, vejr-, bruger-, privatlivs- eller geokontrakt ændres.
+Se DEC-0092/0093. Ingen score-, vejr-, bruger-, privatlivs- eller geokontrakt ændres.
 
 ## P1 produktionsverificeret 4.0.294 – bred read-only Spørg RavRadar-viden
 

@@ -120,7 +120,10 @@ const full = {
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
 const manifest = buildPublicManifest(full, compactJson(startup), compactJson(details));
-assert.deepEqual(startup.coastalParts.parts.part1.candidateG, candidateG);
+assert.equal(startup.coastalParts.parts.part1.candidateG, undefined,
+  'Candidate G-state hører kun til den behovshentede detaljepakke.');
+assert.equal(startup.coastalParts.parts.part1.current, undefined,
+  'Den fulde aktuelle kystdel hører kun til den behovshentede detaljepakke.');
 assert.deepEqual(details.coastalParts.parts.part1.candidateG, candidateG);
 assert.deepEqual(startup.coastalParts.scoreProfile, scoreProfile);
 assert.deepEqual(details.coastalParts.scoreProfile, scoreProfile);

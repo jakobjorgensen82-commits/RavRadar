@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-28: 4.0.295 bestod PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig funktionskontrol og cirka 3,67 sekunders varm start er grønne, men READY-nødvisningens startup målte 3.562.253 byte/23,36 sekunder. 4.0.296 indfører én minimal scoreprojektion i primær og recovery med uændret detaljehash og cirka 95 % syntetisk reduktion. Se DEC-0092/0093.
+
 - 2026-08-28: 4.0.294 bestod PR #195 exact-head `33131976433` på `80866ba8`, merge `a3eb4ac5`, produktion `33132053882`, build `98723615102`, Pages `98725082313` og privat shadow `33132055561`. Offentlig DA/DE/EN-kontrol beviste de naturlige oprindelsessvar sammen med farvet kort, fem aktuelle områder og fem prognosedage. Den live 23-fakta Edge bestod DA/DE/EN, fast afvisning, CORS/origin og 6/minut med lokal fallback. 4.0.294 er produktionsverificeret.
 
 - 2026-08-28: 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`. Offentlig version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og konsol var grønne. Den naturlige formulering **Hvordan opstod rav?** blev dog afvist; 4.0.294 udvider kun oprindelses-intentet med DA/DE/EN-dannelsesformuleringer og tre nul-netværksregressioner.

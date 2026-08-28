@@ -1,15 +1,15 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.295",
+  "handbookVersion": "4.0.296",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-28",
   "sections": [
     {
       "id": "content-addressed-lazy-public-details-4-0-295",
       "chapter": "77",
-      "title": "Hurtigere kort og femdøgnsvisning",
-      "summary": "Kort, aktuelle områder og fem dage kommer fra en lille Candidate G-startpakke; fulde detaljer hentes først ved behov og genbruges kun med eksakt dataset- og SHA-binding.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar behøver ikke længere hente alle detaljer for 210 zoner og 673 kystdele, før kortet og femdøgnsvisningen kan bruges.</div><div class=\"handbook-stack\"><p><strong>Samme score:</strong> Produktionsbygningen bruger præcis den eksisterende Candidate G-bestetid og nationale rangering og lægger kun de fem viste zoner pr. dag og søgemåde i startpakken. Det er ikke en ny eller forenklet RavScore.</p><p><strong>Detaljer ved behov:</strong> Den fulde detaljepakke bevares og hentes ved områdevalg, konto, tur, assistentspørgsmål eller dybt kortzoom. Normal opstart undgår dermed cirka 90–132 MB ukomprimeret data uden at fjerne funktioner.</p><p><strong>Sikker genbrug:</strong> En liveprognose må kun genbruges, når adressen indeholder både det præcise dataset-id og filens SHA-kontrolsum fra det friske manifest. Manifest, kortgeometri og andre ikke-indholdsbundne livefiler hentes fortsat frisk.</p><p><strong>Nødvisning:</strong> Candidate G-nødvisningen får samme lille indeks fra sit allerede kontrollerede offentlige datasæt. Detaljepakke, scorer, tider og state ændres ikke.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0092</code>.</p></div>"
+      "title": "Hurtigere kort og femdøgnsvisning – også i nødvisning",
+      "summary": "Kort, aktuelle områder og fem dage kommer fra en minimal Candidate G-startpakke; fulde detaljer hentes først ved behov og genbruges kun med eksakt dataset- og SHA-binding.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar behøver ikke længere hente alle detaljer for 210 zoner og 673 kystdele, før kortet og femdøgnsvisningen kan bruges.</div><div class=\"handbook-stack\"><p><strong>Samme score:</strong> Produktionsbygningen bruger præcis den eksisterende Candidate G-bestetid og nationale rangering og lægger kun de fem viste zoner pr. dag og søgemåde i startpakken. Det er ikke en ny eller forenklet RavScore.</p><p><strong>Detaljer ved behov:</strong> Den fulde detaljepakke bevares og hentes ved områdevalg, konto, tur, assistentspørgsmål eller dybt kortzoom. Normal opstart undgår dermed cirka 90–132 MB ukomprimeret data uden at fjerne funktioner.</p><p><strong>Minimal aktuel visning:</strong> Efter offentlig kontrol af 4.0.295 blev også den aktuelle READY-scorepost gjort lille. Startup indeholder kun score, dækningsstatus, tre komponenttal, kompakt vejr og minimale vinder-/dellabels. Forklaringsdiagnoser, timeforløb og Candidate G-state forbliver i detaljepakken.</p><p><strong>Sikker genbrug:</strong> En liveprognose må kun genbruges, når adressen indeholder både det præcise dataset-id og filens SHA-kontrolsum fra det friske manifest. Manifest, kortgeometri og andre ikke-indholdsbundne livefiler hentes fortsat frisk.</p><p><strong>Nødvisning:</strong> Candidate G-nødvisningen får samme lille projektion fra sit allerede kontrollerede offentlige datasæt. Kun startup og dens hash ændres; detaljepakke/hash, scorer, tider og state er uændrede.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0092</code> og <code>DEC-0093</code>.</p></div>"
     },
     {
       "id": "broad-read-only-assistant-knowledge-4-0-293",

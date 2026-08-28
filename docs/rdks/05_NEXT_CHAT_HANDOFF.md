@@ -1,13 +1,13 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuel 4.0.295-kildekandidat – offentlig opstartsydelse
+## Aktuel 4.0.296-kildekandidat – minimal Candidate G-startpakke
 
-- 4.0.294 hentede den fulde 90–132 MB ukomprimerede Candidate G-detaljepakke ved hver normal opstart og genberegnede fem nationale top-5-lister i browseren. Målinger viste 25–29 sekunder til prognosen og cirka 59 sekunder umiddelbart efter et nyt Pages-deploy; HTML-skallen og Cloudflare-assistenten var ikke flaskehalsen.
-- 4.0.295 lægger et kompakt, eksakt top-5-indeks for fem dage og begge modes i startpakken. Kort, **Bedste områder** og **5-dages RavRadar** kræver derfor ikke detaljepakken; område, konto, tur, assistent og dybt zoom henter den behovsstyret.
-- Kun livefiler med både dataset-id og gyldig manifest-SHA får HTTP-cache. Manifest, geometri og andre ikke-adresserede livefiler forbliver friske. Candidate G-, score-, tids-, hash- og fallbackbindinger er uændrede.
-- Målrettede tests samt fuld lokal sourcegate med RDKS/privacy/Edge/releasekontrol er grønne. Kør nu PR exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092.
+- 4.0.295 bestod PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Den fjernede 90–132 MB-detaljehentningen fra normal opstart og gav cirka 3,67 sekunders varm offentlig start.
+- Offentlig cold-måling fandt dog, at den aktive READY-nødvisnings startup stadig var 3.562.253 byte/23,36 sekunder mod primærens 694.288 byte/4,09 sekunder. Resten er fulde aktuelle scoreposter og komplette vinderobjekter, ikke HTML eller Spørg RavRadar.
+- 4.0.296 beholder kun score/status, dækningsfelter, tre komponenttal, kompakt vejr og minimale labels i startup. Detaljer og state forbliver i den behovshentede fil; recovery ændrer kun startup-hash.
+- Målrettet score-/rangeringsparitet, uændret detalje/hash og 545.339 → 26.578 byte samt fuld lokal sourcegate/releasegate er grøn. Kør PR exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092/0093.
 - Sibirien har en ny privat staged punktrevision fra ejeren. Læs eller publicér ikke koordinater, aktivér intet, og opfind ingen historik. Lad samme DMI-grid-, 96-timers- og 48-timerskrav modne; en senere promotion kræver særskilt ejer-go.
-- Rod-worktree, `.recovery-*`, private data og faktisk geometri må ikke røres. Geodatafilerne ændrer kun topversionen til 4.0.295.
+- Rod-worktree, `.recovery-*`, private data og faktisk geometri må ikke røres. Geodatafilerne ændrer kun topversionen 4.0.295 → 4.0.296.
 
 ## Driftsverificeret 2026-08-28 – Cloudflare-tokenrotation lukket
 
