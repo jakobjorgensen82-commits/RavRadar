@@ -1,5 +1,11 @@
 # AI Roadmap – RavRadar 4.0.305+
 
+## Aktivt smårettelsesspor – 4.0.306
+
+- [x] Implementér ejerens ikke-modelrelaterede UI-, lærings-, oversættelses- og assistentrettelser.
+- [ ] Luk målrettede tests, source/RDKS, exact-head, produktion og offentlig kontrol.
+- [ ] Dokumentér merge, så DEC-0102-modelworktree kan integrere nyeste `origin/main`.
+
 ## P0 ejer-godkendt – én integreret næste RavScore-generation
 
 - [ ] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.

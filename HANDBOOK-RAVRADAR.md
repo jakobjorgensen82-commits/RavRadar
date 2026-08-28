@@ -1,5 +1,11 @@
 # RavRadar Håndbog
 
+## Ejerens lærings-, UI- og assistentrettelser – 4.0.306
+
+Grundbogen bruger nu **395 nm** som praktisk angivelse for ravlygten. Koldt vands betydning for ravets mobilisering forklares uden at gøre temperatur til et nyt scoreinput. Rav Jagts video og et nyt krediteret kysttværsnit uddyber forløbet fra havbund til strand.
+
+Spørg RavRadar har fået flere lokale svarfamilier og bredere relevante formuleringer. Zoner kan søges på hele eller dele af navnet, kortsignaturen forklarer vind- og strømpile, og mobilknappen kan bryde over to linjer. Tysk og engelsk viser **BernsteinScore** og **AmberScore**. Se [ejerrettelsesbeslutningen](docs/rdks/10_DECISIONS/DEC-0103-OWNER-UI-LEARNING-AND-ASSISTANT-CORRECTIONS.md).
+
 ## Kystkausal RavScore – samlet releasekandidat
 
 RavRadars næste ene offentlige model er `RRS-COASTAL-CAUSAL-CHAIN-1`. Candidate G er bevaret som historisk/offline sammenligningsreference, men bliver efter samlet aktivering hverken en ekstra offentlig shadowmodel eller scorefallback. Modellen bygger analytisk videre på de dele, der allerede virkede: DMI-/Copernicus-proveniens, lokale kystnormaler, 48-timers kompakt state, fire/48-timers bølgemobilisering, strand/waders, missing/fail-closed, atomiske payloads og recovery.

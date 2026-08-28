@@ -1,5 +1,12 @@
 # RavRadar 4.0.306 – kystkausal RavScore
 
+## Ejerens UI-, lærings- og assistentrettelser
+
+- Retter `vejforløb` til `vejrforløb`, bruger 395 nm og viser BernsteinScore/AmberScore på tysk/engelsk.
+- Gør fundformularernes zoner søgbare uden at fjerne rullemenuen; forklarer kortpile, øger strømpilens kontrast og retter mobilombrydning.
+- Udvider lokal ravviden, tilføjer Rav Jagts krediterede kysttværsnit/video og forklarer koldt vands mobiliseringsbetydning.
+- Rettelserne ændrer ikke den kystkausale model, scoresemantik, state, vejrinput, geometri eller punkter.
+
 - Erstatter Candidate G som eneste offentlige scoremodel med `RRS-COASTAL-CAUSAL-CHAIN-1`, kontrakt 1.0.0 og state-schema 3.0.0. Candidate G bevares kun til historisk/offline sammenligning og kan ikke være offentlig shadow- eller fallbackscore.
 - Kobler dokumenteret kystnært supply og bølgemobilisering med geometrisk middel, så begge fysiske led er nødvendige. Bølgeretning kan kun reducere nærkyststøtten bounded, og jagtbarhed kan højst påvirke 20 % bagefter.
 - Erstatter 20/50/30, lineære +10/-8 og den kategoriske 13-timers nul-gate med glat supply-opbygning/dæmpning. Det genbrugte 48-timers vindue har fortsat rand 0 og 0,03→0,15 m/s-respons; halveringstiderne 6,578813/8,312951 timer er synlige versionspriorer.

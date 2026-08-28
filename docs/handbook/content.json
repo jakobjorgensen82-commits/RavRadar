@@ -5,6 +5,13 @@
   "updatedAt": "2026-08-28",
   "sections": [
     {
+      "id": "owner-learning-ui-assistant-corrections-4-0-306",
+      "chapter": "81",
+      "title": "Mere viden og tydeligere betjening",
+      "summary": "395 nm, koldt vands mobilisering, Rav Jagt-illustrationer, bredere lokal assistentviden, zonesøgning og tydelige kortpile samles i 4.0.306.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Grundbogen, Spørg RavRadar og de små offentlige betjeningsflader er gjort mere præcise og brugbare.</div><div class=\"handbook-stack\"><p><strong>Ravlygte:</strong> Den aktive vejledning bruger 395 nm. Tidligere aktiv tekst om 395 nm er erstattet.</p><p><strong>Koldt vand:</strong> Højere vandtæthed og opdrift kan gøre rav lettere at mobilisere, men temperaturen giver ingen fundgaranti og er ikke tilføjet som scoreinput. Rav Jagts video og krediterede kysttværsnit uddyber den praktiske forståelse.</p><p><strong>Spørg RavRadar:</strong> Lokal viden dækker nu flere spørgsmål om udstyr, fund, årstider, geologi og søgemetode. Åbne specialspørgsmål kan fortsat bruge den sikre, dataminimerede Edge-vej.</p><p><strong>Betjening:</strong> Zoner kan søges ved afslutning og manuel indberetning, kortsignaturen forklarer pilene, strømpilen er mørkere, og mobilknappen kan bryde over to linjer. Tysk og engelsk viser BernsteinScore og AmberScore.</p><p><strong>Uændrede grænser:</strong> Candidate G, scoresemantik, DMI/Copernicus, state, geometri og land-/vandpunkter er urørte. Se <code>DEC-0103</code>.</p></div>"
+    },
+    {
       "id": "coastal-causal-ravscore-4-0-306",
       "chapter": "81",
       "title": "Kystkausal RavScore som én samlet model",

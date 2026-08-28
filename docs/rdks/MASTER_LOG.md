@@ -1,3 +1,9 @@
+## 2026-08-28 – ejerrettelser integreret efter PR #215
+
+- UI-, lærings-, zonesøgnings-, oversættelses- og assistentrettelserne er flettet oven på `origin/main` `cfb91420`.
+- Konflikter i model-, profil-, runtime-, release- og statefiler blev løst med den nyere kystkausale model som autoritativ; ejerrettelserne blev derefter genanvendt på forbrugerfladerne.
+- Fuld sourcegate, RDKS, releasegate, geodatadiff og browserkontrol gentages på integrations-head før merge.
+
 ## 2026-08-28 – 4.0.306 kystkausal RavScore implementeret som samlet releasekandidat
 
 - `RRS-COASTAL-CAUSAL-CHAIN-1`/state-schema 3 er implementeret som én modelkæde. Candidate G bliver kun historisk/offline reference og kan ikke vælges som offentlig scorefallback.

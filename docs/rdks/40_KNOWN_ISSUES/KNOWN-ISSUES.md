@@ -1,5 +1,10 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.306 – ejerens smårettelser
+
+- De observerede tekst-, lærings-, zonesøgnings-, pile-, mobil- og assistantproblemer er løst i den integrerede kandidat; exact-head og offentlig produktion mangler.
+- Rettelserne ændrer ikke den kystkausale RavScore. En fremtidig temperaturændring i modellen kræver en særskilt modelbeslutning.
+
 ## Næste RavScore-generation – implementerede afklaringer og åbne modelbegrænsninger
 
 - **ISSUE-RAVSCORE-SURF-ZONE-RESOLUTION – KENDT, SYNLIG BEGRÆNSNING:** Den bundnære modelstrøm ved nærmeste tilladte U/V-kolonne opløser ikke de sidste meter gennem revler, render, brydningszone, undertow, feeder-/langskyststrømme og ripstrømme. `RRS-COASTAL-CAUSAL-CHAIN-1` holder betydningerne adskilt og viser usikkerheden uden at opfinde batymetri eller flytte punkter; begrænsningen kan ikke lukkes uden nye lokale data.
@@ -767,4 +772,3 @@ Migrationen `20260821_trip_evidence_contract.sql` blev anvendt og verificeret p�
 - Den faktiske nye adfærd læser centralt gemte regler med GET og bygger kun en lokal midlertidig regelfil; den skriver ikke til central admin.
 - Testen lå ikke i `validate:source`. PR #60 flyttede den ind i kildegaten og erstattede ordforbuddet med eksplicit tilladelse af de to læsetrin samt forbud mod konkrete skrive-, roundtrip- og deployveje.
 - Exact-head-gate `32566573875`, merge `41e01e2d`, fuld produktion `32566631701` og Pages deployment `6035679906` er grønne. Issuet er lukket uden score-, data-, geometri- eller punktændring.
-

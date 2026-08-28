@@ -13,6 +13,7 @@ globalThis.localStorage = {
 
 const i18n = await import(`../js/i18n.js?v=${releaseVersion}`);
 const assistant = await import('../js/services/rav-assistant.js');
+const tripDialogModule = await import('../js/ui/trip-evidence-dialog.js');
 
 const danishKeys = Object.keys(i18n.MESSAGES.da).sort();
 const intentionallyShared = {
@@ -33,6 +34,13 @@ assert.equal(i18n.getLanguage(), 'da', 'Dansk skal være standard uden et gemt v
 assert.equal(i18n.t('header.trip.start'), 'Start ravtur');
 assert.equal(i18n.t('header.trip.start', {}, 'de'), 'Bernsteintour starten');
 assert.equal(i18n.t('header.trip.start', {}, 'en'), 'Start amber trip');
+const searchableZones = [
+  { id: 'lyngsaa', name: 'Lyngså' },
+  { id: 'voersaa', name: 'Voerså' }
+];
+assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'lyn')?.id, 'lyngsaa');
+assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'voer')?.id, 'voersaa');
+assert.equal(tripDialogModule.findZoneMatch(searchableZones, 'LYNGSA')?.id, 'lyngsaa');
 assert.equal(i18n.t('forecast.calculating', { progress:42 }, 'de'), '5-Tage-Prognose wird berechnet… 42 %');
 assert.equal(i18n.t('header.about', {}, 'fr'), 'Om RavRadar', 'Ukendt sprog skal falde sikkert tilbage til dansk.');
 assert.equal(i18n.setLanguage('de-DE'), 'de');
@@ -120,8 +128,17 @@ assert.match(indexHtml, /data-i18n="ranking\.title"/);
 assert.match(indexHtml, /data-i18n="forecast\.title"/);
 assert.match(indexHtml, /class="assistant-quota" data-i18n="assistant\.quota"/);
 assert.match(indexHtml, /Kvoten gælder kun Spørg RavRadar og har ingen indflydelse på kort, prognoser, RavScore eller øvrige funktioner\./);
-assert.match(i18n.MESSAGES.de['assistant.quota'], /Dieses Kontingent gilt nur für Frag RavRadar und hat keinen Einfluss auf Karte, Prognosen, RavScore oder andere Funktionen\./);
-assert.match(i18n.MESSAGES.en['assistant.quota'], /This allowance applies only to Ask RavRadar and has no effect on the map, forecasts, RavScore, or other features\./);
+assert.match(i18n.t('assistant.quota', {}, 'de'), /Dieses Kontingent gilt nur für Frag RavRadar und hat keinen Einfluss auf Karte, Prognosen, BernsteinScore oder andere Funktionen\./);
+assert.match(i18n.t('assistant.quota', {}, 'en'), /This allowance applies only to Ask RavRadar and has no effect on the map, forecasts, AmberScore, or other features\./);
+assert.doesNotMatch(i18n.t('ranking.note', {}, 'de'), /RavScore/);
+assert.match(i18n.t('ranking.note', {}, 'de'), /BernsteinScore/);
+assert.doesNotMatch(i18n.t('ranking.note', {}, 'en'), /RavScore/);
+assert.match(i18n.t('ranking.note', {}, 'en'), /AmberScore/);
+assert.match(indexHtml, /map\.currentArrow[\s\S]*map\.windArrow/, 'Kortsignaturen skal forklare begge pile.');
+
+const tripDialog = await fs.readFile(path.join(ROOT, 'js/ui/trip-evidence-dialog.js'), 'utf8');
+assert.match(tripDialog, /type: 'search'[\s\S]*findZoneMatch\(zones, query\)/, 'Tur- og fundformularen skal kunne søge på dele af zonenavnet.');
+assert.match(tripDialog, /createElement\('select', \{ name: 'zoneId'/, 'Den eksisterende zonerullemenu skal bevares.');
 assert.match(indexHtml, /data-i18n="footer\.weatherSea"/);
 assert.match(indexHtml, /data-i18n="footer\.licenseSuffix"/);
 assert.doesNotMatch(indexHtml.match(/<dialog id="developerDialog"[\s\S]*?<\/dialog>/)?.[0] || '', /data-i18n/, 'Udviklerfladen skal forblive dansk.');

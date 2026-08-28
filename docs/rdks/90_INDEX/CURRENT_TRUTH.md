@@ -1,5 +1,11 @@
 # Current truth – gældende projektviden
 
+## Integreret 4.0.306-kandidat – ejerens UI-, lærings- og assistentrettelser
+
+- Smårettelserne er integreret oven på `origin/main` efter PR #215 og bevarer den kystkausale RavScore uændret.
+- Aktiv vejledning bruger 395 nm; koldt vand forklares som mobiliseringsfaktor, ikke som nyt scoreinput. Rav Jagt krediteres for video og kysttværsnit.
+- Zonesøgning, kortsignatur, mørkere strømpil, mobilombrydning, BernsteinScore/AmberScore og bredere lokal assistentviden er implementeret.
+
 ## Implementeret 4.0.306-releasekandidat – kystkausal RavScore afventer samlet aktiveringsbevis
 
 - Branch `codex/ravscore-next-generation` bygger fra `origin/main` `9c6e161ec52a7a0154a0f0d78b650ba87f2441bc`; seneste dokumenterede fetch 2026-08-28 viste stadig eksakt samme head. Offentlig produktion er fortsat 4.0.305, indtil exact-head, frisk produktion og offentlig kontrol er grønne.

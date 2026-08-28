@@ -1,5 +1,13 @@
 # Implementeringsstatus – kystkausal RavScore 4.0.306-releasekandidat oven på 4.0.305
 
+## Integreret ejerrettelsespakke
+
+- [x] Tekst, 395 nm, koldt vand, Rav Jagt-illustration/video, zonesøgning, kortpile, mobilombrydning og DA/DE/EN-scorenavne.
+- [x] Spørg RavRadar udvidet lokalt og med bevaret sikker Edge-routing.
+- [x] Nyere `main`/PR #215 integreret med modelkæden som autoritativ.
+- [x] Fuld source/releasegate gentaget grønt på integrations-head.
+- [ ] PR exact-head, merge, frisk produktion og offentlig kontrol.
+
 ## Implementeret releasekandidat – integreret næste RavScore-generation
 
 - [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.
