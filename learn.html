@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#073b4c">
   <meta name="description" data-i18n-content="learn.meta.description" content="RavRadars grundbog i ravjagt: ravets oprindelse, mobilisering, strøm, vind, bølger, kystformer, felttegn, strandjagt og wadersjagt.">
   <title data-i18n="learn.meta.title">Lær ravjagt – RavRadar</title>
-  <link rel="stylesheet" href="learn.css?v=4.0.305">
+  <link rel="stylesheet" href="learn.css?v=4.0.306">
 </head>
 <body>
   <header class="learn-header">
@@ -171,9 +171,10 @@
     <section id="ravscore" class="learning-section" data-i18n-html="learn.score">
       <div class="section-heading"><p class="eyebrow dark">Del 7 · værktøjet efter fagligheden</p><h2>Sådan omsætter RavRadar forløbet til en vurdering</h2><p>RavScore er et indeks over modellerede rav- og søgeforhold. Det er ikke en procentchance for fund. Brug delene til at forstå vurderingen — ikke kun farven.</p></div>
       <div class="three-parts">
-        <article><span class="part-number">20 %</span><h3>Søgeforhold</h3><p>Hvor effektiv den valgte metode forventes at være. Strand og waders vurderes forskelligt.</p></article>
-        <article><span class="part-number">50 %</span><h3>Transport mod kysten</h3><p>Strømmens dokumenterede retning og styrke gennem de seneste timer. Bølger kan ikke skabe dette led alene.</p></article>
-        <article><span class="part-number">30 %</span><h3>Rav i bevægelse</h3><p>Bølgernes højde og periode bruges til at beskrive mobilisering og den aftagende virkning efter en hændelse.</p></article>
+        <article><span class="part-number">1</span><h3>Kystnær tilførsel</h3><p>Dokumenteret gridstrøm opbygger eller dæmper et glat 48-timers transportpotentiale. Bølger kan ikke skabe dette led alene.</p></article>
+        <article><span class="part-number">2</span><h3>Rav i bevægelse</h3><p>Bølgehøjde og -periode beskriver mobilisering af allerede tilgængeligt let materiale og den aftagende virkning efter en hændelse.</p></article>
+        <article><span class="part-number">3</span><h3>Nærkyststøtte</h3><p>Bølgernes retning kan kun dæmpe leveringsmuligheden inden for en fast grænse. RavRadar modellerer ikke lokale revler, ripstrømme eller undertow.</p></article>
+        <article><span class="part-number">4</span><h3>Søgeforhold</h3><p>Strand og waders vurderes forskelligt. Faldende vand kan give et lille, betinget løft, fordi rav nogle steder kan samles i et smallere bånd eller bag en revle.</p></article>
       </div>
       <div class="score-guide">
         <div class="score-scale" aria-label="RavScores fire farvetrin"><span class="poor">0–34<br><b>Dårlig</b></span><span class="weak">35–54<br><b>Svag</b></span><span class="fair">55–74<br><b>Middel</b></span><span class="good">75–100<br><b>God</b></span></div>
@@ -181,11 +182,11 @@
           <article><b>Pilen er strømmen nu</b><p>Den viser det aktuelle modellerede vandlag. Historikken fortæller, hvad de foregående timer har gjort ved transportpotentialet.</p></article>
           <article><b>Waders reagerer på vinden</b><p>Vind under 6 m/s giver den højeste søgeeffektivitet. Derefter falder den trinvist, og ved 15 m/s er waders-søgeforholdene nul.</p></article>
           <article><b>Strandpotentialet må godt være højt</b><p>Kraftig vind kan gøre en strandtur mere krævende uden at slette god mobilisering og transport.</p></article>
-          <article><b>Lang kraftig udtransport er afgørende</b><p>Transporten taber point fra den første kraftige udgående time og går i nul efter 13 timer. Så bliver hele vurderingen nul.</p></article>
+          <article><b>Udgående gridstrøm dæmper glat</b><p>Længere og kraftigere fralandsrettet gridstrøm svækker tilførselsevidensen gradvist. Der er ingen fast 13-timers nulregel.</p></article>
         </div>
       </div>
-      <blockquote>På grund af kraftig fralandsstrøm trækkes ravet ud i havet, og derfor går scoren i nul, selv om der fortsat kan være mobilisering og gode søgeforhold.</blockquote>
-      <p class="plain-note"><strong>Model — ikke naturgrænse:</strong> Vægte, tider og tærskler er RavRadars nuværende testede arbejdsregler. De skal løbende prøves mod komplette ture med både fund og nul-fund.</p>
+      <blockquote>Udgående gridstrøm kan føre materiale væk fra den inderste strand, men den beviser ikke, at stranden eller brændingszonen er tømt. Faldende vand kan samtidig flytte og koncentrere rav i render eller bag revler, hvor den lokale bund gør det muligt.</blockquote>
+      <p class="plain-note"><strong>Model — ikke naturgrænse:</strong> RavScore kobler kystnær tilførsel og mobilisering, før nærkyststøtte og søgeforhold kan begrænse resultatet. Tider og tærskler er versionsstyrede fysiske arbejdshypoteser; RavRadar påstår ikke empirisk højere fundpræcision uden et repræsentativt fundgrundlag.</p>
     </section>
 
     <section id="viden" class="learning-section section-card" data-i18n-html="learn.knowledge">
@@ -210,6 +211,6 @@
   </main>
 
   <footer><p data-i18n="learn.footer">Grundbogen samler RavRadars aktuelle faglige viden. Den skelner mellem dokumenteret viden, fysiske analogier og regler, som fortsat skal læres af ture.</p></footer>
-  <script type="module" src="js/ui/learn-i18n.js?v=4.0.305"></script>
+  <script type="module" src="js/ui/learn-i18n.js?v=4.0.306"></script>
 </body>
 </html>

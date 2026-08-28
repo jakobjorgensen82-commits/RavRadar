@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { scoreRating, exceptionalScoreMark, SCORE_PRESENTATION } from "../js/core/score-engine.js";
+import { scoreRating, exceptionalScoreMark, SCORE_PRESENTATION } from "../js/core/score-presentation.js";
 
 assert.equal(scoreRating(100).level, "good");
 assert.equal(scoreRating(90).exceptional, true);

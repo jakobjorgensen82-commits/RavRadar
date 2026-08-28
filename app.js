@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-engine.js?v=4.0.305";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.305";
-import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.305";
-import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.305";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.305";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.305";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.305";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.305";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.305";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.305";
-import { askRavRadar, quickQuestions } from "./js/services/rav-assistant.js?v=4.0.305";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.305";
-import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.305";
-import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.305";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.305";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.305';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.305';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.306";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest } from "./js/services/data-service.js?v=4.0.306";
+import { getLocalObservations, submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.306";
+import { predictAmberChance } from "./js/core/prediction-engine.js?v=4.0.306";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.306";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.306";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.306";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.306";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.306";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.306";
+import { askRavRadar, quickQuestions } from "./js/services/rav-assistant.js?v=4.0.306";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.306";
+import { loadAdaptiveModel } from "./js/core/adaptive-model.js?v=4.0.306";
+import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.306";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.306";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.306';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.306';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, adaptiveModel:loadAdaptiveModel(), currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -48,7 +48,7 @@ function currentDisplayFor(zone){
   return {result:withPrediction(base,zone,weather,history),weather,context:{scope:'local-weather-missing',time:weather.time||null}};
 }
 function resultFor(zone) { return currentDisplayFor(zone).result; }
-function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key)){const local=localZoneScore(zone);const result=local||{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['Candidate G-data mangler for zonen lige nu.']};state.currentScores.set(key,result);}return state.currentScores.get(key);}
+function currentScoreFor(zone){const key=`${state.mode}:${zone.id}`;if(!state.currentScores.has(key)){const local=localZoneScore(zone);const result=local||{available:false,score:null,level:'unavailable',label:'RavScore midlertidigt utilgængelig',reasons:['RavScore-data mangler for zonen lige nu.']};state.currentScores.set(key,result);}return state.currentScores.get(key);}
 function nationalRankingRow(row){return addNationalRanking(row,state.zones?.coastalParts?.zones?.[row.zone?.id]);}
 function selectedFeature() { return state.zones?.features.find(item=>item.properties.id===state.selectedZone?.id); }
 function showSelectedZoneParts() {
@@ -326,11 +326,11 @@ try {
   syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.hidden=false;infoPanel.innerHTML=`<div class="notice">${t('data.couldNotLoad')}</div>`;dataStatus.textContent=t('data.loadError');}
 
-// RavRadar 4.0.305: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.306: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.305"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.306"; document.querySelector("#appVersion").textContent=version;
   let registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent=t('update.now');};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent=t('update.updating');(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
@@ -370,8 +370,8 @@ function publicTripEvidenceContext(selection = null) {
   const coastalPart = partsById[coastalPartId];
   if (!coastalPart) throw new Error('Den valgte kyststrækning findes ikke længere. Vælg område og kyststrækning igen.');
 
-  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.305');
-  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.305';
+  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.306');
+  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.306';
   return {
     mode: selection?.mode || state.mode,
     zoneId,
@@ -386,7 +386,9 @@ function publicTripEvidenceContext(selection = null) {
     zones,
     coastalParts,
     appVersion,
-    modelVersion: 'ravscore-' + appVersion
+    modelVersion: coastalPart?.current?.[state.mode]?.scoreProfileId
+      || state.conditions?.coastalParts?.scoreProfile?.activeProfileId
+      || 'ravscore-' + appVersion
   };
 }
 

@@ -1,42 +1,49 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-import { calculateRavScore } from '../js/core/score-engine.js';
 import {
-  CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  projectCandidateGForPublic,
-} from '../js/core/ravscore-profile-switch.js';
+  NEXT_RAVSCORE_MODEL_ID,
+  evaluateNextGenerationRavScore,
+} from '../js/core/ravscore-next-generation.js';
+import {
+  NEXT_PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  projectNextRavScoreForPublic,
+  resolveNextPublicRavScoreProfile,
+} from '../js/core/ravscore-next-generation-profile.js';
 
-const candidate = {
-  available: true,
-  modelId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  score: 82,
-  additiveScore: 82,
-  components: {
-    huntability: 68,
-    transport: 100,
-    delivery: 100,
-    transportAndDelivery: 100,
-    mobilisation: 73,
+const context = {
+  mode: 'waders',
+  zone: { onshoreDirectionDeg: 90 },
+  weather: {
+    windSpeedMps: 4.7,
+    waveHeightM: 0.4,
+    wavePeriodS: 8,
+    waveDirectionDeg: 270,
+    waterLevelCm: -20,
+    waterLevelTrendCm3h: -8,
   },
-  outflowExhaustionGateApplied: false,
-  outflowExhaustionExplanationDa: null,
 };
-const profile = {
-  activeProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.269',
-};
-
-const projected = projectCandidateGForPublic(candidate, {
+const candidate = evaluateNextGenerationRavScore(context, {
+  memory: {
+    transportPotential: 76,
+    mobilisationPotential: 73,
+    outboundEpisodeEffectiveHours: 0,
+    gridOutflowEvidenceActive: false,
+  },
+});
+const profile = resolveNextPublicRavScoreProfile({
+  selection: NEXT_PUBLIC_RAVSCORE_PROFILE_SELECTION,
+  modelCoverageReady: true,
+  modelMemoryReady: true,
+});
+const projected = projectNextRavScoreForPublic(candidate, {
   mode: 'waders',
   profile,
   context: {
-    windSpeedMps: 4.7,
-    waveHeightM: 0.4,
-    currentSpeedMps: 0.18,
-    currentAlignment: 0.76,
-    currentVerified: true,
-    currentTransition: 'INBOUND_BUILDUP',
+    measurementStatus: 'VERIFIED',
+    currentTransition: 'INBOUND_SUPPLY_EVIDENCE_BUILDUP',
+    currentDirectionClass: 'INBOUND',
+    currentDirectionDifferenceDeg: 32,
     transportReferenceAt: '2026-08-25T18:00:00.000Z',
     transportMemoryReady: true,
     transportMemoryStatus: 'READY',
@@ -44,35 +51,38 @@ const projected = projectCandidateGForPublic(candidate, {
     transportMemoryWindowHours: 48,
     outboundEpisodeEffectiveHours: 0,
     outboundEpisodeLossPoints: 0,
-    actualOutboundTransport: false,
-    waveMobilisationTransition: 'decay',
+    gridOutflowEvidenceActive: false,
   },
 });
 
-assert.deepEqual(projected.explanation.weights, { huntability: 0.20, transport: 0.50, release: 0.30 });
-assert.match(projected.explanation.formula, /20 %.*50 %.*30 %/);
-assert.ok(projected.componentReasons.huntability.some(reason => reason.includes('4,7 m/s')));
-assert.ok(projected.componentReasons.huntability.some(reason => reason.includes('0,4 m')));
-assert.ok(projected.componentReasons.transport.some(reason => reason.includes('0,18 m/s') && reason.includes('ind mod kystdelen')));
-assert.ok(projected.componentReasons.transport.some(reason => reason.includes('time for time')));
-assert.ok(projected.componentReasons.release.some(reason => reason.includes('0,4 m')));
-assert.ok(projected.componentReasons.release.some(reason => reason.includes('aftager gradvist')));
-assert.equal(projected.explanation.transportDiagnostics.engine, 'CANDIDATE_G');
+assert.equal(projected.scoreProfileId, NEXT_RAVSCORE_MODEL_ID);
+assert.equal(projected.explanation.weights, null);
+assert.equal(projected.explanation.contributions, null);
+assert.match(projected.explanation.formula, /Kystnær tilførsel og mobilisering kobles først/);
+assert.ok(projected.componentReasons.huntability.some(reason => reason.includes('faldende vand')));
+assert.ok(projected.componentReasons.transport.some(reason => reason.includes('kystnære tilførselspotentiale')));
+assert.ok(projected.componentReasons.release.some(reason => reason.includes('mobilisering')));
+assert.equal(projected.explanation.transportDiagnostics.engine, 'RAVSCORE_COASTAL_CAUSAL_CHAIN');
 assert.equal(projected.explanation.transportDiagnostics.measurementStatus, 'VERIFIED');
 assert.equal(projected.explanation.transportDiagnostics.currentDirectionClass, 'INBOUND');
-assert.ok(Math.abs(projected.explanation.transportDiagnostics.currentDirectionDifferenceDeg - 40.5358) < 0.01);
-assert.equal(projected.explanation.transportDiagnostics.deliveryPotential, 100);
+assert.equal(projected.explanation.transportDiagnostics.currentDirectionDifferenceDeg, 32);
 assert.equal(projected.explanation.transportDiagnostics.transportMemoryStatus, 'READY');
 assert.equal(projected.explanation.transportDiagnostics.transportMemoryCoverageHours, 48);
 assert.equal(projected.explanation.transportDiagnostics.windDirectlyIncluded, false);
+assert.equal(projected.explanation.transportDiagnostics.surfZoneResolved, false);
+assert.equal(projected.explanation.transportDiagnostics.beachOrSurfZoneDepletionClaimed, false);
+assert.equal(projected.explanation.causalExplanation.waterLevel.scoreImpact.coastalSupply, 0);
+assert.ok(projected.explanation.causalExplanation.waterLevel.huntabilityBonusPoints > 0);
+assert.equal(projected.explanation.empiricalFindAccuracyClaimed, false);
 
-const held = projectCandidateGForPublic(candidate, {
+const held = projectNextRavScoreForPublic(candidate, {
   mode: 'beach',
   profile,
   context: {
-    currentVerified: true,
-    currentAlignment: 0.76,
+    measurementStatus: 'NATIVE_CADENCE_HOLD',
     currentTransition: 'NATIVE_CADENCE_HOLD',
+    currentDirectionClass: null,
+    currentDirectionDifferenceDeg: null,
     transportMemoryReady: true,
     transportMemoryStatus: 'READY',
     transportMemoryCoverageHours: 48,
@@ -80,37 +90,8 @@ const held = projectCandidateGForPublic(candidate, {
   },
 });
 assert.equal(held.explanation.transportDiagnostics.measurementStatus, 'NATIVE_CADENCE_HOLD');
-assert.equal(held.explanation.transportDiagnostics.currentAlignment, null);
 assert.equal(held.explanation.transportDiagnostics.currentDirectionDifferenceDeg, null);
 assert.equal(held.explanation.transportDiagnostics.currentDirectionClass, null);
-
-const legacy = calculateRavScore({
-  mode: 'waders',
-  zone: {
-    id: 'explanation-test',
-    coastType: 'east',
-    onshoreDirectionDeg: 270,
-    shallowWater: true,
-    reefs: true,
-    seagrass: true,
-  },
-  weather: {
-    windSpeedMps: 4.7,
-    windDirectionDeg: 306,
-    waveHeightM: 0.4,
-    currentSpeedMps: 0.18,
-    currentDirectionDeg: 270,
-    waterLevelCm: -47,
-    waterLevelTrendCm3h: 64,
-  },
-  history: { maxWind24hMps: 9, maxWave24hM: 0.8, hoursSinceHighEnergy: 8 },
-});
-assert.ok(legacy.componentReasons.huntability.some(reason => reason.includes('4,7 m/s')));
-assert.ok(legacy.componentReasons.transport.some(reason => reason.includes('0,18 m/s') && reason.includes('ind mod kystdelen')));
-assert.ok(legacy.componentReasons.transport.some(reason => reason.includes('lavt, men er stigende')));
-assert.ok(legacy.componentReasons.transport.some(reason => reason.includes('ikke den aktuelle vandstand')));
-assert.ok(!legacy.componentReasons.transport.some(reason => reason.includes('Lavt vand kan hjælpe')));
-assert.ok(legacy.componentReasons.release.some(reason => reason.includes('0,4 m')));
 
 const ui = fs.readFileSync('js/ui/info-panel.js', 'utf8');
 const index = fs.readFileSync('index.html', 'utf8');
@@ -120,16 +101,23 @@ const updater = fs.readFileSync('scripts/update-weather.mjs', 'utf8');
 for (const removed of ['Fundprognose', 'Anvendte scorelofter', '<h4>Samlet score</h4>']) {
   assert.ok(!ui.includes(removed), `Den offentlige zonevisning indeholder stadig ${removed}`);
 }
-assert.ok(ui.includes("t('score.state.wavePotential')"));
-assert.ok(ui.includes("t('score.mobilisationDefinition')"));
+assert.ok(ui.includes('RAVSCORE_COASTAL_CAUSAL_CHAIN'));
+assert.ok(ui.includes('Modellen opløser ikke undertow, feeder-/langskyststrøm eller ripstrømme'));
 assert.ok(index.includes('<section id="infoPanel" class="info-panel" aria-live="polite" hidden></section>'));
 assert.ok(!index.includes('Vælg et område på kortet'));
 assert.ok(!app.includes('Vælg et område på kortet'));
 assert.ok(index.includes('E.U. Copernicus Marine Service Information'));
 assert.ok(index.includes('Copernicus Marine-vilkårene'));
 assert.ok(index.includes('OpenStreetMap-data er under ODbL'));
-for (const marker of ['publicContext', 'currentTransition', 'waveMobilisationTransition', 'transportMemoryWindowHours', 'outboundEpisodeLossPoints', 'context: scoreRow?.candidateG?.publicContext']) {
+for (const marker of [
+  'publicContext',
+  'currentTransition',
+  'transportMemoryWindowHours',
+  'outboundEpisodeLossPoints',
+  'gridOutflowEvidenceActive',
+  'context: scoreRow?.ravScore?.publicContext',
+]) {
   assert.ok(updater.includes(marker), `Produktionskæden mangler ${marker}`);
 }
 
-console.log('Offentlige RavScore-forklaringer, forenkling og kildeangivelse: OK');
+console.log('Offentlige kystkausale RavScore-forklaringer, forenkling og kildeangivelse: OK');

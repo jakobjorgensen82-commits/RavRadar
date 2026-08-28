@@ -135,16 +135,16 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.305 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.306 (${{ github.server_url }}/${{ github.repository }})"
 
-      - name: Inspect verified Candidate G continuation recovery
+      - name: Inspect verified RavScore continuation recovery
         id: candidate-g-recovery
         run: >-
           node scripts/restore-candidate-g-continuation.mjs
           --check
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Download last verified healthy public artifact for poisoned Candidate G continuation
+      - name: Download last verified healthy public artifact for poisoned RavScore continuation
         if: steps.candidate-g-recovery.outputs.required == 'true'
         uses: actions/download-artifact@v8
         with:
@@ -162,7 +162,7 @@ jobs:
           test -s .cache/candidate-g-recovery-artifact/artifact.tar
           tar -xf .cache/candidate-g-recovery-artifact/artifact.tar -C .cache/candidate-g-recovery-source
 
-      - name: Restore only compact Candidate G continuation state
+      - name: Restore only compact RavScore continuation state
         if: steps.candidate-g-recovery.outputs.required == 'true'
         run: >-
           node scripts/restore-candidate-g-continuation.mjs
@@ -187,7 +187,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.305 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.306 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -206,7 +206,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'
         run: npm run validate:source
 
-      - name: Restore last verified Candidate G public fallback
+      - name: Restore last verified RavScore public fallback
         if: steps.preflight.outputs.should_run == 'true'
         id: candidate-g-public-fallback-cache
         uses: actions/cache/restore@v6
@@ -216,7 +216,7 @@ jobs:
           restore-keys: |
             candidate-g-last-ready-public-v1-
 
-      - name: Stage audited last verified Candidate G public fallback
+      - name: Stage audited last verified RavScore public fallback
         if: steps.preflight.outputs.should_run == 'true'
         id: candidate-g-public-fallback-stage
         env:
@@ -230,14 +230,14 @@ jobs:
           --deployed-base-url "$RAVRADAR_DEPLOYED_BASE_URL"
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Save last verified Candidate G public fallback
-        if: steps.preflight.outputs.should_run == 'true' && (steps.candidate-g-public-fallback-cache.outputs.cache-matched-key == '' || steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true')
+      - name: Save last verified RavScore public fallback
+        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-public-fallback-stage.outputs.cache_available == 'true' && (steps.candidate-g-public-fallback-cache.outputs.cache-matched-key == '' || steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true')
         uses: actions/cache/save@v6
         with:
           path: .cache/candidate-g-last-ready-public
           key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Inspect failed-run Candidate G gap checkpoint recovery
+      - name: Inspect failed-run RavScore gap checkpoint recovery
         if: steps.preflight.outputs.should_run == 'true'
         id: candidate-g-gap-checkpoint
         run: >-
@@ -246,7 +246,7 @@ jobs:
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Download verified failed-run Candidate G checkpoint
+      - name: Download verified failed-run RavScore checkpoint
         if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         uses: actions/download-artifact@v8
         with:
@@ -255,7 +255,7 @@ jobs:
           github-token: ${{ github.token }}
           path: .cache/candidate-g-gap-checkpoint-artifact
 
-      - name: Extract only failed-run Candidate G conditions checkpoint
+      - name: Extract only failed-run RavScore conditions checkpoint
         if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         shell: bash
         run: |
@@ -266,14 +266,14 @@ jobs:
             > .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
           test -s .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
 
-      - name: Restore only verified compact suffix from failed Candidate G run
+      - name: Restore only verified compact suffix from failed RavScore run
         if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         run: >-
           node scripts/restore-candidate-g-gap-checkpoint.mjs
           --source-root .cache/candidate-g-gap-checkpoint-source
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
-      - name: Restore latest compact Candidate G continuation checkpoint
+      - name: Restore latest compact RavScore continuation checkpoint
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache/restore@v6
         with:
@@ -282,7 +282,7 @@ jobs:
           restore-keys: |
             candidate-g-continuation-checkpoint-v1-
 
-      - name: Apply newer compact Candidate G continuation checkpoint
+      - name: Apply newer compact RavScore continuation checkpoint
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/candidate-g-continuation-checkpoint.mjs
@@ -406,7 +406,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.305 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.306 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -547,7 +547,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.305 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.306 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -569,7 +569,7 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/generate-public-conditions.mjs
 
-      - name: Build compact Candidate G continuation checkpoint
+      - name: Build compact RavScore continuation checkpoint
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/candidate-g-continuation-checkpoint.mjs
@@ -577,26 +577,27 @@ jobs:
           --source data/live/conditions.json
           --checkpoint .cache/candidate-g-continuation-checkpoint/checkpoint.json
 
-      - name: Save compact Candidate G continuation checkpoint before final gates
+      - name: Save compact RavScore continuation checkpoint before final gates
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache/save@v6
         with:
           path: .cache/candidate-g-continuation-checkpoint
           key: candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Audit actual Candidate G public runtime before deploy
+      - name: Audit actual integrated RavScore public runtime before deploy
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
-          node scripts/audit-ravscore-candidate-g-public-shadow.mjs
+          node scripts/audit-ravscore-next-generation-public.mjs
           --input data/live/conditions.json
-          --output .geometry-v2-work/candidate-g-public-runtime-audit.json
+          --allow-local-warmup
+          --output .geometry-v2-work/ravscore-public-runtime-audit.json
 
-      - name: Publish bounded Candidate G recovery fallback when current runtime is warming up
+      - name: Publish bounded RavScore recovery fallback when current runtime is warming up
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/candidate-g-public-recovery-fallback.mjs
           --publish
-          --audit .geometry-v2-work/candidate-g-public-runtime-audit.json
+          --audit .geometry-v2-work/ravscore-public-runtime-audit.json
           --manifest data/live/manifest.json
           --cache-root .cache/candidate-g-last-ready-public
           --output-root data/live
@@ -720,6 +721,18 @@ jobs:
             --exclude 'js/ui/admin-app.js' \
             --exclude 'js/core/rule-engine.js' \
             --exclude 'js/services/rule-service.js' \
+            --exclude 'js/core/score-engine.js' \
+            --exclude 'js/core/best-time-selector.js' \
+            --exclude 'js/core/score-candidates.js' \
+            --exclude 'js/core/ravscore-candidate-g.js' \
+            --exclude 'js/core/ravscore-candidate-g-state-pipeline.js' \
+            --exclude 'js/core/ravscore-profile-switch.js' \
+            --exclude 'js/core/ravscore-regime-memory.js' \
+            --exclude 'js/core/ravscore-mobilisation-memory.js' \
+            --exclude 'js/core/ravscore-mode-huntability-research.js' \
+            --exclude 'js/core/ravscore-next-generation.js' \
+            --exclude 'js/core/ravscore-next-generation-profile.js' \
+            --exclude 'js/core/ravscore-next-generation-state-pipeline.js' \
             --exclude 'rules/' \
             --exclude 'schemas/' \
             --exclude 'supabase/' \
@@ -1048,7 +1061,7 @@ jobs:
           include-hidden-files: true
 
   ravscore-active-shadow:
-    name: Audit fallback-compatible 210/673 Candidate G public shadow
+    name: Audit read-only 210/673 integrated RavScore public runtime
     if: github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -1057,7 +1070,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Set up Node.js for Candidate G public shadow audit
+      - name: Set up Node.js for integrated RavScore runtime audit
         uses: actions/setup-node@v7
         with:
           node-version: "24"
@@ -1069,14 +1082,17 @@ jobs:
             --output .cache/active-public-condition-details.json \
             https://jakobjorgensen82-commits.github.io/RavRadar/data/live/public-condition-details.json
 
-      - name: Audit centrally derived Candidate G state and score
-        run: node scripts/audit-ravscore-candidate-g-public-shadow.mjs
+      - name: Audit centrally derived integrated RavScore state and score
+        run: >-
+          node scripts/audit-ravscore-next-generation-public.mjs
+          --input .cache/active-public-condition-details.json
+          --output .geometry-v2-work/ravscore-public-runtime-audit.json
 
-      - name: Upload dataminimized Candidate G public shadow audit
+      - name: Upload dataminimized integrated RavScore runtime audit
         uses: actions/upload-artifact@v7
         with:
           name: ravradar-active-ravscore-shadow-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .geometry-v2-work/candidate-g-public-shadow-audit.json
+          path: .geometry-v2-work/ravscore-public-runtime-audit.json
           retention-days: 14
           if-no-files-found: error
           include-hidden-files: true

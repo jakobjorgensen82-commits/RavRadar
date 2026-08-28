@@ -33,6 +33,8 @@ if ($LASTEXITCODE -ne 0) {
 
 Push-Location $repoRoot
 try {
+  & $pnpm run test:ravscore-next-generation
+  if ($LASTEXITCODE -ne 0) { throw 'Next-generation RavScore source contract failed.' }
   & $pnpm run validate:source
   $exitCode = $LASTEXITCODE
 } finally {

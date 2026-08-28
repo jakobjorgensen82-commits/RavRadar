@@ -45,9 +45,9 @@ assert.deepEqual(Object.fromEntries(locales), { da:17, de:17, en:17 });
 assert.equal(topics.size, 17);
 for (const [topic, count] of topics) assert.equal(count, 3, `${topic} skal have én reproducerbar case pr. sprog.`);
 
-assert.match(i18n.t('assistant.local.model', {}, 'da'), /20 %.*50 %.*30 %/);
-assert.match(i18n.t('assistant.local.model', {}, 'de'), /20 %.*50 %.*30 %/);
-assert.match(i18n.t('assistant.local.model', {}, 'en'), /20%.*50%.*30%/);
+assert.match(i18n.t('assistant.local.model', {}, 'da'), /kystkausale.*ikke en procentchance.*tilførsel.*mobilisering/is);
+assert.match(i18n.t('assistant.local.model', {}, 'de'), /küstenkausaler.*keine prozentuale.*Nachschub.*Mobilisierung/is);
+assert.match(i18n.t('assistant.local.model', {}, 'en'), /coastal-causal.*not a percentage.*supply.*mobilisation/is);
 assert.match(i18n.t('assistant.local.identification', {}, 'da'), /365 nm.*kun et indicium.*Undgå/is);
 assert.match(i18n.t('assistant.local.identification', {}, 'de'), /365 nm.*Vermeide/is);
 assert.match(i18n.t('assistant.local.identification', {}, 'en'), /365 nm.*Avoid/is);

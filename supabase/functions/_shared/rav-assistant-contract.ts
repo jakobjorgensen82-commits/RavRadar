@@ -3,9 +3,9 @@ export const RAV_ASSISTANT_RESPONSE_SCHEMA = "rav-assistant-response-v1";
 export const RAV_ASSISTANT_LOCALES = Object.freeze(["da", "de", "en"]);
 
 export const RAV_ASSISTANT_FACTS = Object.freeze([
-  { id: "score.candidate-g-only", text: "Candidate G is RavRadar's only public score model. Older score models must not be used as public fallback." },
-  { id: "score.weights-20-50-30", text: "Candidate G combines 20 percent huntability, 50 percent transport towards the coast and 30 percent amber mobilisation." },
-  { id: "score.local-missing", text: "If Candidate G lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from an older model, another zone, another coastal part or another hour." },
+  { id: "score.integrated-model-only", text: "RRS-COASTAL-CAUSAL-CHAIN-1 is RavRadar's single integrated public score model. Component mixing and older score models must not be used as public fallback." },
+  { id: "score.causal-coupling", text: "RavScore first couples documented coastal supply with wave mobilisation, so both physical stages are necessary. Bounded nearshore directional support and huntability can then only reduce the opportunity; huntability has a maximum 20 percent influence and cannot create a positive physical score." },
+  { id: "score.local-missing", text: "If RavScore lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from another model, zone, coastal part or hour." },
   { id: "score.no-find-guarantee", text: "RavScore describes modelled amber-hunting conditions. It never promises that amber will be found and is not statistically calibrated against enough representative find and no-find trips." },
   { id: "amber.origin-and-secondary-stores", text: "Amber is fossilised resin from ancient trees and is many millions of years old. A Danish beach find may have been moved and redeposited repeatedly through geological layers, glacial material, the seabed and older beach stores; a particular piece cannot be dated reliably from appearance alone." },
   { id: "amber.mostly-sinks", text: "Most Baltic amber has a density around 1.05 to 1.10 grams per cubic centimetre and sinks in ordinary Danish seawater, while remaining much lighter than sand and stone under water. Salinity and temperature change buoyancy slightly but are not enough to float most amber." },
@@ -18,7 +18,7 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "waves.height-not-enough", text: "Wave height alone is not enough to describe mobilisation. Wave period, duration, water depth and seabed also matter; long waves reach deeper than short waves of the same height, and a brief peak is not equivalent to hours of developed sea." },
   { id: "transport.layered-water", text: "Surface flow, deeper flow, wave drift and return flow can differ in direction. RavRadar focuses on a bottom-near current representation because most amber lies or moves close to the seabed; a surface arrow is not automatically a reliable bottom-transport direction." },
   { id: "mobilisation.wave-memory", text: "Amber mobilisation is driven by one wave-energy state based on wave height squared times wave period. It builds over about four hours and decays with a 48-hour half-life, so the period after energetic weather can remain relevant. These are tested working rules, not universal natural limits." },
-  { id: "water-level.context", text: "Water level can move or expose the wash line and affect access to hunting areas. It must be interpreted with the other conditions and is not by itself proof of amber." },
+  { id: "water-level.context", text: "Falling water can move some amber seaward from the innermost shoreline while exposing ground and, where local bars and troughs exist, concentrating light material in a narrower hunting band. That can improve huntability, but it does not prove transport beyond the surf zone or that amber is present. RavRadar has no local bathymetry and therefore uses only a small bounded hunting-condition prior, never a second current vector or an amber-supply bonus." },
   { id: "coast.sorting-and-traps", text: "Bars, channels, gaps, groynes, piers, coastal bends, beach slope, swash and backwash can slow, redirect, retain or release light material very locally. Transitions, ends and both sides of a structure are possible traps, never guarantees that amber is present." },
   { id: "field-signs.clues-not-proof", text: "Fresh wet seaweed, wood, seeds, coal, shells, dark bands and new wash lines are clues that the sea has sorted light material. Hunters should follow the fraction and inspect edges and pockets, but seaweed or any other single field sign is not proof of amber." },
   { id: "identification.uv-clue-not-proof", text: "Low weight for size and a resin-like surface are useful first clues. Long-wave ultraviolet light around 365 nanometres often makes Baltic amber fluoresce clearly, but other materials can also fluoresce, so UV is not final proof." },
@@ -34,10 +34,10 @@ export const RAV_ASSISTANT_REFUSALS = Object.freeze({
   en: "I can only help with amber, amber hunting, and conditions relevant to an amber-hunting trip.",
 });
 
-export const RAV_ASSISTANT_WEIGHT_ANSWERS = Object.freeze({
-  da: "Candidate G er RavRadars eneste offentlige scoremodel. RavScore vægter 20 % jagtbarhed, 50 % transport mod kysten og 30 % ravmobilisering.",
-  de: "Candidate G ist RavRadars einziges öffentliches Score-Modell. RavScore gewichtet 20 % Suchbarkeit, 50 % Transport zur Küste und 30 % Bernsteinmobilisierung.",
-  en: "Candidate G is RavRadar's only public score model. RavScore weights 20% huntability, 50% transport towards the coast, and 30% amber mobilisation.",
+export const RAV_ASSISTANT_MODEL_ANSWERS = Object.freeze({
+  da: "RavRadars kystkausale RavScore kobler først dokumenteret kystnær tilførsel med ravmobilisering, så begge fysiske led er nødvendige. Nærkyststøtte og jagtbarhed kan derefter kun begrænse muligheden; jagtbarhed kan højst påvirke 20 % og kan ikke skabe en fysisk score alene.",
+  de: "RavRadars küstenkausaler RavScore verknüpft zuerst dokumentierten küstennahen Nachschub mit Bernsteinmobilisierung, sodass beide physikalischen Stufen nötig sind. Küstennähe und Suchbarkeit können die Möglichkeit danach nur begrenzen; Suchbarkeit kann höchstens 20 % beeinflussen und allein keinen physikalischen Score erzeugen.",
+  en: "RavRadar's coastal-causal RavScore first couples documented coastal supply with amber mobilisation, so both physical stages are necessary. Nearshore support and huntability can then only limit the opportunity; huntability has at most 20% influence and cannot create a physical score on its own.",
 });
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;
@@ -96,7 +96,7 @@ export function assistantSystemInstruction() {
     "Disposition semantics are strict: use answer for every relevant question that the supplied facts can answer, including safety boundaries, missing data and explaining that a find cannot be guaranteed. Use out_of_scope only for an unrelated topic. Use uncertain only for a relevant question that the supplied facts and selected-zone context cannot answer.",
     "Disposition examples: ‘Can you guarantee a find?’ is answer because the no-find-guarantee fact answers it. ‘Does this score mean safe?’ is answer because the safety-boundary fact answers it. ‘What happens when coherent zone data are missing?’ is answer because the local-missing fact answers it. The answer may explain uncertainty, but its disposition is still answer when a supplied fact supports it.",
     "For a relevant answer, include every supplied fact ID that is necessary to support the main claim. In particular, safety uses safety.not-a-safety-rating, no-find guarantees use score.no-find-guarantee, missing coherent data uses score.local-missing, and the waders wind question uses huntability.waders-wind-led.",
-    "For a RavScore weights question, state that Candidate G is the only public score model and cite both score.candidate-g-only and score.weights-20-50-30.",
+    "For a RavScore model question, explain the causal order without inventing additive weights and cite both score.integrated-model-only and score.causal-coupling.",
     "For origin, density, wind, waves, layered current, coastal traps, field signs, UV identification, destructive tests, systematic technique, and event-sequence questions, cite the matching supplied fact IDs. Do not turn clues or possible traps into proof or guarantees.",
     `Fixed out-of-scope replies: ${JSON.stringify(RAV_ASSISTANT_REFUSALS)}`,
     "Return exactly one JSON object and nothing else. Do not use Markdown fences or expose reasoning. The object must contain exactly schemaVersion, locale, disposition, answer and evidenceIds. schemaVersion must be rav-assistant-response-v1.",
@@ -185,8 +185,8 @@ export function validateAssistantResult(value, locale) {
     return { answer: RAV_ASSISTANT_REFUSALS[locale], disposition: value.disposition, evidenceIds };
   }
   if (value.disposition === "answer" && !evidenceIds.length) return null;
-  if (value.disposition === "answer" && evidenceIds.includes("score.candidate-g-only") && evidenceIds.includes("score.weights-20-50-30")) {
-    return { answer: RAV_ASSISTANT_WEIGHT_ANSWERS[locale], disposition: value.disposition, evidenceIds };
+  if (value.disposition === "answer" && evidenceIds.includes("score.integrated-model-only") && evidenceIds.includes("score.causal-coupling")) {
+    return { answer: RAV_ASSISTANT_MODEL_ANSWERS[locale], disposition: value.disposition, evidenceIds };
   }
   return { answer, disposition: value.disposition, evidenceIds };
 }

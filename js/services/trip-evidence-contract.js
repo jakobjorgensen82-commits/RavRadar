@@ -31,6 +31,10 @@ function requiredId(value, label) {
   return normalized;
 }
 
+function optionalId(value, label) {
+  return value == null || value === '' ? null : requiredId(value, label);
+}
+
 function requiredUuid(value, label) {
   const normalized = String(value || '').trim();
   if (!UUID_PATTERN.test(normalized)) throw new Error(`${label} skal være en UUID.`);
@@ -112,6 +116,12 @@ export function createCalibrationFeatureSnapshot(input = {}) {
     modelVersion: requiredId(input.modelVersion, 'Modelversion'),
     appVersion: requiredId(input.appVersion, 'Appversion')
   };
+  const modelContractVersion = optionalId(input.modelContractVersion, 'Modelkontraktversion');
+  const stateSchemaVersion = optionalId(input.stateSchemaVersion, 'Modeltilstands-version');
+  const explanationContractVersion = optionalId(input.explanationContractVersion, 'Forklaringskontraktversion');
+  if (modelContractVersion) snapshot.modelContractVersion = modelContractVersion;
+  if (stateSchemaVersion) snapshot.stateSchemaVersion = stateSchemaVersion;
+  if (explanationContractVersion) snapshot.explanationContractVersion = explanationContractVersion;
   for (const key of Object.keys(CALIBRATION_RANGES)) snapshot[key] = rangedNumber(input[key], key);
   for (const key of ['totalScore', 'huntabilityScore', 'transportScore', 'mobilisationScore']) {
     if (snapshot[key] == null) throw new Error(`${key} mangler.`);

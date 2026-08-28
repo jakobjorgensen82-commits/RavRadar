@@ -1,16 +1,16 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.293",
+  "releaseVersion": "4.0.305",
   "cases": [
     {
-      "id": "da-weights",
+      "id": "da-model-coupling",
       "locale": "da",
-      "category": "candidate-g",
-      "question": "Hvordan er RavScore vægtet?",
+      "category": "ravscore-causal-model",
+      "question": "Hvordan kobler RavScore tilførsel, mobilisering og søgeforhold?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
+      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
     },
     {
       "id": "da-safety",
@@ -140,13 +140,13 @@
       "requiredEvidenceIds": []
     },
     {
-      "id": "de-weights",
+      "id": "de-model-coupling",
       "locale": "de",
-      "category": "candidate-g",
-      "question": "Wie ist der RavScore gewichtet?",
+      "category": "ravscore-causal-model",
+      "question": "Wie verknüpft der RavScore Nachschub, Mobilisierung und Suchbedingungen?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
+      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
     },
     {
       "id": "de-safety",
@@ -276,13 +276,13 @@
       "requiredEvidenceIds": []
     },
     {
-      "id": "en-weights",
+      "id": "en-model-coupling",
       "locale": "en",
-      "category": "candidate-g",
-      "question": "How is RavScore weighted?",
+      "category": "ravscore-causal-model",
+      "question": "How does RavScore couple supply, mobilisation, and hunting conditions?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
+      "requiredEvidenceIds": ["score.integrated-model-only", "score.causal-coupling"]
     },
     {
       "id": "en-safety",

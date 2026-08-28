@@ -143,21 +143,21 @@ for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.
 }
 const positions = {
   hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
-  gapCheckpoint: text.indexOf('name: Inspect failed-run Candidate G gap checkpoint recovery'),
-  continuationRestore: text.indexOf('name: Restore latest compact Candidate G continuation checkpoint'),
+  gapCheckpoint: text.indexOf('name: Inspect failed-run RavScore gap checkpoint recovery'),
+  continuationRestore: text.indexOf('name: Restore latest compact RavScore continuation checkpoint'),
   preflight: text.indexOf('name: Decide whether weather needs updating'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
-  fallbackStage: text.indexOf('name: Stage audited last verified Candidate G public fallback'),
+  fallbackStage: text.indexOf('name: Stage audited last verified RavScore public fallback'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  continuationBuild: text.indexOf('name: Build compact Candidate G continuation checkpoint'),
-  continuationSave: text.indexOf('name: Save compact Candidate G continuation checkpoint before final gates'),
-  publicAudit: text.indexOf('name: Audit actual Candidate G public runtime before deploy'),
-  fallbackPublish: text.indexOf('name: Publish bounded Candidate G recovery fallback when current runtime is warming up'),
+  continuationBuild: text.indexOf('name: Build compact RavScore continuation checkpoint'),
+  continuationSave: text.indexOf('name: Save compact RavScore continuation checkpoint before final gates'),
+  publicAudit: text.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  fallbackPublish: text.indexOf('name: Publish bounded RavScore recovery fallback when current runtime is warming up'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
@@ -223,15 +223,16 @@ const publicAuditBlock = text.slice(positions.publicAudit,
   publicAuditBlockEnd < 0 ? text.length : publicAuditBlockEnd);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
-  'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
+  'node scripts/audit-ravscore-next-generation-public.mjs',
   '--input data/live/conditions.json',
+  '--allow-local-warmup',
 ]) {
   if (!publicAuditBlock.includes(marker)) {
-    throw new Error(`Den faktiske Candidate G public runtime-gate mangler ${marker}`);
+    throw new Error(`Den faktiske integrerede RavScore-runtimegate mangler ${marker}`);
   }
 }
 if (publicAuditBlock.includes('continue-on-error')) {
-  throw new Error('Den faktiske Candidate G public runtime-gate må ikke være vejledende.');
+  throw new Error('Den faktiske integrerede RavScore-runtimegate må ikke være vejledende.');
 }
 const gapCheckpointSection = text.slice(positions.gapCheckpoint, positions.dmiBulk);
 for (const marker of [
@@ -242,7 +243,7 @@ for (const marker of [
   'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
   'unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip',
   'project/data/live/conditions.json',
-  'Restore only verified compact suffix from failed Candidate G run',
+  'Restore only verified compact suffix from failed RavScore run',
 ]) {
   if (!gapCheckpointSection.includes(marker)) throw new Error(`Candidate G-gapcheckpointet mangler ${marker}`);
 }
@@ -266,6 +267,7 @@ for (const marker of [
   '--stage',
   '--github-output "$GITHUB_OUTPUT"',
   'uses: actions/cache/save@v6',
+  "steps.candidate-g-public-fallback-stage.outputs.cache_available == 'true'",
   "steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true'",
 ]) {
   if (!fallbackStageSection.includes(marker)) throw new Error(`Candidate G-nødgrundlaget mangler ${marker}`);
@@ -277,7 +279,7 @@ for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'node scripts/candidate-g-public-recovery-fallback.mjs',
   '--publish',
-  '--audit .geometry-v2-work/candidate-g-public-runtime-audit.json',
+  '--audit .geometry-v2-work/ravscore-public-runtime-audit.json',
 ]) {
   if (!fallbackPublishBlock.includes(marker)) throw new Error(`Candidate G-nødpubliceringen mangler ${marker}`);
 }

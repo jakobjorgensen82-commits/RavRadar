@@ -1,14 +1,12 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.293",
+  "releaseVersion": "4.0.305",
   "scoreModel": {
-    "id": "candidate-g",
+    "id": "RRS-COASTAL-CAUSAL-CHAIN-1",
     "publicOnly": true,
-    "weights": {
-      "huntability": 20,
-      "transport": 50,
-      "mobilisation": 30
-    }
+    "causalOrder": ["coastalSupply", "mobilisation", "nearshoreSupport", "huntability"],
+    "additiveWeights": null,
+    "empiricalFindAccuracyClaimed": false
   },
   "locales": ["da", "de", "en"],
   "allowedTopics": [
@@ -20,7 +18,7 @@
     "coastal-sorting-and-local-traps",
     "weather-event-sequence",
     "public-ravradar-forecast",
-    "candidate-g-explanation",
+    "coastal-causal-ravscore-explanation",
     "wind-waves-current-water-level",
     "coastal-hunting-safety-boundary"
   ],
@@ -38,16 +36,16 @@
   ],
   "facts": [
     {
-      "id": "score.candidate-g-only",
-      "text": "Candidate G is RavRadar's only public score model. Older score models must not be used as public fallback."
+      "id": "score.integrated-model-only",
+      "text": "RRS-COASTAL-CAUSAL-CHAIN-1 is RavRadar's single integrated public score model. Component mixing and older score models must not be used as public fallback."
     },
     {
-      "id": "score.weights-20-50-30",
-      "text": "Candidate G combines 20 percent huntability, 50 percent transport towards the coast and 30 percent amber mobilisation."
+      "id": "score.causal-coupling",
+      "text": "RavScore first couples documented coastal supply with wave mobilisation, so both physical stages are necessary. Bounded nearshore directional support and huntability can then only reduce the opportunity; huntability has a maximum 20 percent influence and cannot create a positive physical score."
     },
     {
       "id": "score.local-missing",
-      "text": "If Candidate G lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from an older model, another zone, another coastal part or another hour."
+      "text": "If RavScore lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from another model, zone, coastal part or hour."
     },
     {
       "id": "score.no-find-guarantee",
@@ -99,7 +97,7 @@
     },
     {
       "id": "water-level.context",
-      "text": "Water level can move or expose the wash line and affect access to hunting areas. It must be interpreted with the other conditions and is not by itself proof of amber."
+      "text": "Falling water can move some amber seaward from the innermost shoreline while exposing ground and, where local bars and troughs exist, concentrating light material in a narrower hunting band. That can improve huntability, but it does not prove transport beyond the surf zone or that amber is present. RavRadar has no local bathymetry and therefore uses only a small bounded hunting-condition prior, never a second current vector or an amber-supply bonus."
     },
     {
       "id": "coast.sorting-and-traps",

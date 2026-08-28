@@ -84,7 +84,7 @@ function publicPartsByZone(source) {
 }
 
 // Den nationale femdøgnsliste er et lille, deterministisk indeks over den
-// samme Candidate G-runtime som detaljepakken. Browseren behøver derfor ikke
+// samme RavScore-runtime som detaljepakken. Browseren behøver derfor ikke
 // hente og genberegne alle 210 zoner/673 dele for at vise fem top-5-lister.
 export function buildPublicNationalForecast(full) {
   const source = full?.coastalParts;
