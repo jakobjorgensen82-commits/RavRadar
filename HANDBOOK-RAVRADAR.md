@@ -1,8 +1,10 @@
 # RavRadar Håndbog
 
-## Klogere Spørg RavRadar – også når AI-kvoten er brugt – 4.0.293
+## Klogere Spørg RavRadar – også når AI-kvoten er brugt – 4.0.294
 
 Spørg RavRadar kan nu besvare almindelige ravspørgsmål direkte på dansk, tysk og engelsk uden at bruge den daglige AI-kvote. Den lokale viden dækker 17 emner: ravets oprindelse og massefylde, skjulte ravlagre, vind, bølger, strøm, vandstand, kystfælder, felttegn, identifikation og UV, waders, vejrforløb, Candidate G, manglende data, modellens begrænsninger, søgeteknik og udstyr.
+
+Oprindelsessvaret genkender også de naturlige formuleringer **Hvordan opstod rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** samt tilsvarende dannelsesvarianter. Det er låst med en særskilt DA/DE/EN-regression, efter at den første offentlige 4.0.293-kontrol fandt, at netop denne formulering blev afvist.
 
 Svarene bygger på den offentlige grundbog og bruger stabile sprognøgler. Spor som frisk tang og mulige samlesteder ved revler, render eller høfder beskrives som spor og muligheder – aldrig som bevis eller garanti. RavScore er fortsat et indeks, ikke en procentchance eller sikkerhedsvurdering.
 
@@ -621,7 +623,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.293
+**Håndbogsversion:** 4.0.294
 
 **Opdateret:** 19. august 2026
 

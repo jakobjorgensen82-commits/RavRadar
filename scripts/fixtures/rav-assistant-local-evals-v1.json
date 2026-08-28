@@ -1,6 +1,11 @@
 {
   "schemaVersion": "rav-assistant-local-evals-v1",
-  "releaseVersion": "4.0.293",
+  "releaseVersion": "4.0.294",
+  "phrasingCases": [
+    {"id":"da-origin-formed","locale":"da","question":"Hvordan opstod rav?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
+    {"id":"de-origin-formed","locale":"de","question":"Wie entsteht Bernstein?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
+    {"id":"en-origin-formed","locale":"en","question":"How is amber formed?","expectedIntent":"origin","answerKey":"assistant.local.origin"}
+  ],
   "cases": [
     {"id":"da-origin","locale":"da","question":"Hvor kommer rav fra?","expectedIntent":"origin","answerKey":"assistant.local.origin"},
     {"id":"da-density","locale":"da","question":"Hvorfor synker det meste rav i havvand?","expectedIntent":"density","answerKey":"assistant.local.density"},

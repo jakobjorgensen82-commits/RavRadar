@@ -1,3 +1,9 @@
+## 4.0.294 – naturlige oprindelsesspørgsmål i Spørg RavRadar (2026-08-28)
+
+- Den offentlige 4.0.293-kontrol fandt, at den naturlige formulering **Hvordan opstod rav?** faldt uden for den ellers korrekte oprindelses-intent og derfor blev afvist.
+- Dansk, tysk og engelsk genkender nu almindelige dannelsesformuleringer som **Hvordan opstod/dannes rav?**, **Wie entsteht Bernstein?** og **How is amber formed?** lokalt uden netværk eller AI-kvote.
+- De oprindelige 51 balancerede emnecases er bevaret og suppleres af tre særskilte formuleringregressioner. Assistentens read-only-, privacy-, kvote-, gateway- og Candidate G-grænser er uændrede. Se DEC-0091 og `CHANGELOG-4.0.294.md`.
+
 ## 4.0.293 – bred read-only Spørg RavRadar-viden (2026-08-28)
 
 - Udvider lokale DA/DE/EN-svar fra ni grove intents til 17 grundbogsbaserede emner, som virker uden netværk og AI-kvote.

@@ -1,3 +1,9 @@
+## 2026-08-28 – 4.0.294 naturlig oprindelsesformulering
+
+- Den offentlige 4.0.293-kontrol beviste version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul browserfejl, men fandt at **Hvordan opstod rav?** blev afvist.
+- 4.0.294 genkender naturlige dannelsesformuleringer på dansk, tysk og engelsk og supplerer de 51 emnecases med tre formuleringregressioner uden netværk. Ingen faglig, ekstern AI-, data- eller geokontrakt ændres.
+- 4.0.293-produktionsbeviset er PR #194/exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`. 4.0.294 har grøn fuld lokal sourcegate/releasegate; exact-head og produktion afventer.
+
 ## 2026-08-28 – 4.0.293 bred read-only Spørg RavRadar-viden
 
 - Den lokale assistent dækker 17 grundbogsemner på DA/DE/EN uden netværk eller kvote; stedet, tiden og konkret score forbliver Candidate G-deterministiske.

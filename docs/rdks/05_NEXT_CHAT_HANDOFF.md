@@ -1,10 +1,17 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuel 4.0.293-kandidat – klogere Spørg RavRadar uden kvoteafhængighed
+## Aktuel 4.0.294-kandidat – naturlig formulering om ravets dannelse
+
+- 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`.
+- Offentlig kort-, rangliste-, femdøgns- og konsolkontrol var grøn, men **Hvordan opstod rav?** blev fejlagtigt afvist trods eksisterende oprindelsesviden.
+- 4.0.294 genkender almindelige dannelsesformuleringer på DA/DE/EN og låser dem med tre ekstra lokale nul-netværkscases. Ingen svar-, Edge-, score-, vejr-, data- eller geokontrakt ændres.
+- Målrettede tests samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktion og gentaget offentlig DA/DE/EN-kontrol afventer.
+
+## 4.0.293 – klogere Spørg RavRadar uden kvoteafhængighed
 
 - 17 almindelige ravemner har faste grundbogsbaserede DA/DE/EN-svar og bruger ingen AI-kvote eller netværk.
 - Åbne specialspørgsmål bruger fortsat GPT-OSS, hvis kvoten og Edge er tilgængelig. Dens godkendte viden er udvidet fra 10 til 23 evidens-ID'er.
-- 51 lokale og 66 samlede balancerede evalcases samt fuld lokal sourcegate/releasegate er grønne. Exact-head, produktion og offentlig kontrol mangler endnu.
+- 51 lokale og 66 samlede balancerede evalcases samt fuld lokal sourcegate/releasegate, exact-head og produktion er grønne. Den første offentlige kontrol udløste den afgrænsede 4.0.294-formuleringsrettelse ovenfor.
 - Fast afvisning, server-only credential, dataminimering, CORS, rate limits, timeout, gratis kvoteloft, fallback og rollback er uændrede.
 - Begge assistentveje er read-only. Rør ikke RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se DEC-0091.
 

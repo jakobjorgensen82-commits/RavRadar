@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-28: 4.0.293 bestod PR #194 exact-head `33130341973`, merge `25722abc`, produktion `33130425262`, build `98718434389` og Pages `98721765768`. Offentlig version, kort, fem aktuelle områder, fem færdige femdøgnsresultater og konsol var grønne. Den naturlige formulering **Hvordan opstod rav?** blev dog afvist; 4.0.294 udvider kun oprindelses-intentet med DA/DE/EN-dannelsesformuleringer og tre nul-netværksregressioner.
+
 - 2026-08-28: Ejerens godkendte næste spor udvider 4.0.293-kandidaten til 17 lokale DA/DE/EN-ravemner, 23 Edge-evidensfakta, 51 lokale og 66 samlede evalcases. Målrettede kontrakter samt fuld lokal sourcegate/releasegate er grønne; exact-head, produktion og offentlig kontrol afventer. Assistenten forbliver read-only og isoleret fra alle prognose-, score-, bruger- og geodata. Se DEC-0091.
 
 - 2026-08-28: 4.0.292 PR #189 bestod exact-head `33124945636` og blev merged som `8b3668b7`. Produktion `33125043019` stoppede før DMI/deploy, fordi punktstagingens syntetiske READY-test arvede workflowets låste produktionstime. En afgrænset hotfix gør fixture-reference eksplicit og bevarer produktionens normale miljølåste reference.

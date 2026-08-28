@@ -29,6 +29,13 @@ try {
     locales.set(item.locale, (locales.get(item.locale) || 0) + 1);
     topics.set(item.expectedIntent, (topics.get(item.expectedIntent) || 0) + 1);
   }
+  for (const item of suite.phrasingCases || []) {
+    assert.match(item.id, /^(da|de|en)-[a-z0-9-]+$/);
+    assert.equal(assistant.classifyRavQuestion(item.question), item.expectedIntent, `Forkert intent: ${item.id}`);
+    assert.equal(assistant.routeRavQuestion(item.question), 'local-deterministic', `Forkert route: ${item.id}`);
+    const answer = await assistant.askRavRadar(item.question, {}, { language:item.locale });
+    assert.equal(answer, i18n.t(item.answerKey, {}, item.locale), `Forkert lokalt svar: ${item.id}`);
+  }
 } finally {
   globalThis.fetch = originalFetch;
 }
@@ -48,4 +55,4 @@ assert.match(i18n.t('assistant.local.limitations', {}, 'da'), /aldrig garantere/
 assert.match(i18n.t('assistant.local.limitations', {}, 'de'), /nie garantieren/i);
 assert.match(i18n.t('assistant.local.limitations', {}, 'en'), /never guarantee/i);
 
-console.log(`OK: ${suite.cases.length} lokale DA/DE/EN-evals dækker ${topics.size} ravfaglige emner uden AI-kvote eller netværk.`);
+console.log(`OK: ${suite.cases.length} lokale DA/DE/EN-evals og ${(suite.phrasingCases || []).length} naturlige formuleringer dækker ${topics.size} ravfaglige emner uden AI-kvote eller netværk.`);
