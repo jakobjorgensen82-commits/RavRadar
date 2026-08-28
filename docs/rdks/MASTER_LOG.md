@@ -1,3 +1,11 @@
+## 2026-08-28 – 4.0.303 retter den fysisk afviste 4.0.302-opstart
+
+- 4.0.301 virkede på ejerens iPhone, inklusive den interne Om-retur, men første load var cirka 14 sekunder.
+- 4.0.302 paralleliserede kort-/kystvejen med manifest og conditions. PR #207 og produktion var grønne, men ejeren målte cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation; versionen er fysisk afvist.
+- PR #208's eksakte rollback-head var grøn og blev merged, men produktion `33177494546` stoppede fail-closed før deploy på `INVALID_SWITCH_VERSION`. Offentlig side forblev derfor 4.0.302.
+- 4.0.303 gendanner sekventiel start, undgår reload ved første service-worker-claim og fjerner kortfil/store Om-billeder fra installationsprecache. Fysisk Safari-bevis afventer. Se DEC-0099.
+- Candidate G, data, scorer, vejr, konto-/turdata, privatliv, geometri og punkter er uændrede; Sibirien forbliver privat staged.
+
 ## 2026-08-28 – 4.0.301 gør den interne Om-knap til browsertilbage
 
 - Ejerens fysiske Safari-test var fortsat rød på bekræftet 4.0.300 trods grøn PR, produktion, Pages og offentlig desktopretur.

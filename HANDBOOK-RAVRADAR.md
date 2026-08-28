@@ -1,5 +1,13 @@
 # RavRadar Håndbog
 
+## Hurtig første og varm mobilstart – 4.0.303
+
+RavRadar prioriterer igen opstarten i en fast rækkefølge: først kortets zoner og kystprojektion, derefter det friske manifest og til sidst den præcist manifestbundne prognosestartpakke. 4.0.302 forsøgte at hente disse dele parallelt. Det så grønt ud i desktopkontrollen, men gjorde en fysisk iPhone markant langsommere og er derfor afvist.
+
+Den første service-worker-installation arbejder samtidig mindre i baggrunden. Den henter ikke længere kortfilen en ekstra gang eller downloader de store billeder fra **Om RavRadar**, før brugeren faktisk åbner siden. Når workerens første installation overtager den allerede åbne side, genindlæses siden ikke; en senere rigtig versionsopdatering genindlæser fortsat kontrolleret én gang.
+
+Den fungerende RavRadar-knap på **Om RavRadar** er uændret: ved sikker samme-origin-retur bruger den browserens historik, og ellers bruges det almindelige `./`-link. Rettelsen ændrer ingen prognoser, scorer, vejrdata, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0099](docs/rdks/10_DECISIONS/DEC-0099-FIRST-INSTALL-AND-MOBILE-STARTUP.md).
+
 ## Hurtigere kort og femdøgnsvisning – 4.0.295/296
 
 RavRadar åbner nu kortet, **Bedste områder** og **5-dages RavRadar** fra en lille startpakke. Femdagene er ikke en ny eller forenklet score: produktionsbygningen bruger præcis den samme Candidate G-bestetid og nationale rangering som tidligere og gemmer kun de fem viste zoner pr. dag og søgemåde i startpakken.
@@ -645,7 +653,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.301
+**Håndbogsversion:** 4.0.303
 
 **Opdateret:** 19. august 2026
 

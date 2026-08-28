@@ -1,7 +1,7 @@
 {
   "schemaVersion": "2.0.0",
-  "sourceVersion": "4.0.301",
-  "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.301",
+  "sourceVersion": "4.0.303",
+  "switchVersion": "RAVSCORE-PROFILE-SWITCH-4.0.303",
   "requestedProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
   "rollbackProfileId": null,
   "candidateProfileId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",

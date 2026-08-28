@@ -1,3 +1,15 @@
+## 4.0.303 – prioriteret mobilopstart uden første installationsreload (2026-08-28)
+
+- Ruller 4.0.302's fysisk afviste parallelle opstart tilbage: ejerens iPhone viste cirka 30 sekunder koldt og 7–8 sekunder varmt trods grøn desktop-CI.
+- Første service-worker-overtagelse genindlæser ikke længere siden, og installationen forhåndshenter ikke kortfilen eller de store Om-billeder.
+- DEC-0098's fungerende historikretur bevares. Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0099 og `CHANGELOG-4.0.303.md`.
+
+## 4.0.302 – parallel opstart, fysisk afvist (2026-08-28)
+
+- Paralleliserede kort-/kystprojektion med manifest/conditions og bestod PR #207/exact-head samt produktion på desktop.
+- Fysisk iPhone Safari viste cirka 30 sekunder koldt, 7–8 sekunder varmt og langsom første Om-navigation. Versionen er afvist og erstattet af 4.0.303/DEC-0099.
+- PR #208's rollback var exact-head-grøn, men produktion stoppede fail-closed før deploy på `INVALID_SWITCH_VERSION`; offentlig side forblev 4.0.302. Se `CHANGELOG-4.0.302.md`.
+
 ## 4.0.301 – Om-knappen udfører rigtig historikretur (2026-08-28)
 
 - Retter den afgørende forskel, som 4.0.300 overså: 4.0.292's tidligere bevis brugte browsertilbage, mens det interne `./`-link lavede en ny navigation.

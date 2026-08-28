@@ -1,9 +1,16 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.301",
+  "handbookVersion": "4.0.303",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-28",
   "sections": [
+    {
+      "id": "mobile-startup-and-first-install-4-0-303",
+      "chapter": "78",
+      "title": "Hurtig første og varm mobilstart",
+      "summary": "RavRadar prioriterer igen kort, manifest og prognosestartpakke i rækkefølge og undgår tung dobbeltindlæsning ved service workerens første installation.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> 4.0.302's parallelle start så grøn ud på desktop, men gjorde en fysisk iPhone markant langsommere. 4.0.303 gendanner den prioriterede opstart og gør første service-worker-installation lettere.</div><div class=\"handbook-stack\"><p><strong>Fast rækkefølge:</strong> Kortets zoner og kystprojektion kommer først, derefter det friske manifest og til sidst den præcist manifestbundne prognosestartpakke. Den store detaljepakke er fortsat behovsstyret.</p><p><strong>Ingen første installationsreload:</strong> Når en ny worker overtager en hidtil ukontrolleret side, fortsætter den allerede startede visning. En senere rigtig versionsopdatering kan fortsat genindlæse kontrolleret én gang.</p><p><strong>Let installation:</strong> Kortfilen og de store responsive billeder fra <em>Om RavRadar</em> forhåndshentes ikke længere under installation. De findes stadig og cachelagres, når brugeren faktisk åbner dem.</p><p><strong>Om-returen bevares:</strong> RavRadar-knappen bruger fortsat sikker historikretur fra samme-origin-forsiden og almindeligt <code>./</code>-link som fallback.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0099</code>.</p></div>"
+    },
     {
       "id": "content-addressed-lazy-public-details-4-0-295",
       "chapter": "77",
