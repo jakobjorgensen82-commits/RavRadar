@@ -35,6 +35,12 @@ for (let zoneIndex = 0; zoneIndex < 12; zoneIndex += 1) {
       landPoint:[10 + zoneIndex / 10, 55.01 + partIndex / 10],
       onshoreDirectionDeg:(zoneIndex * 31 + partIndex * 80) % 360,
       onshoreDirectionSource:'test',
+      flowPoints:{
+        current:[10 + zoneIndex / 10, 55 + partIndex / 10],
+        wind:[10.01 + zoneIndex / 10, 55.01 + partIndex / 10],
+        sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'},
+        diagnostic:verbose,
+      },
       current:{diagnostic:verbose}, forecast:{diagnostic:verbose}, candidateG:{diagnostic:verbose},
     };
   }
@@ -132,13 +138,15 @@ const collectKeys = (value, keys = new Set()) => {
   return keys;
 };
 const startupCoastalKeys = collectKeys(startup.coastalParts);
-for (const forbidden of ['componentReasons','explanation','transportDiagnostics','unavailableParts','reasons','candidateG','forecast','current']) {
+for (const forbidden of ['componentReasons','explanation','transportDiagnostics','unavailableParts','reasons','candidateG','forecast','diagnostic']) {
   assert.ok(!startupCoastalKeys.has(forbidden), `Opstartsprojektionen indeholder fortsat ${forbidden}.`);
 }
 for (const winner of Object.values(startup.coastalParts.parts)) {
   assert.deepEqual(Object.keys(winner).sort(), [
-    'id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource','waterPoint','zoneId',
+    'flowPoints','id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource','waterPoint','zoneId',
   ]);
+  assert.deepEqual(Object.keys(winner.flowPoints).sort(), ['current','sources','wind']);
+  assert.equal(winner.flowPoints.sources.current, 'dmi-marine-grid');
 }
 
 const legacyConditions = {...startup, coastalParts:legacyCoastalParts};

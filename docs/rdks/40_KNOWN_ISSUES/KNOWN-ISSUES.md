@@ -2,7 +2,7 @@
 
 ## 4.0.296 – offentlig opstartsydelse
 
-- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – DELVIST PRODUKTIONSRETTET / 4.0.296-KILDERETTELSE:** 4.0.295 fjernede 90–132 MB-detaljepakken fra normal opstart og gav cirka 3,67 sekunders varm start, men den aktive READY-nødvisnings startup var stadig 3.562.253 byte/23,36 sekunder. 4.0.296 fjerner tunge forklarings-/vinderfelter fra både primær og recovery-startup med score-/rangeringsparitet og uændret detaljehash. Målrettet reduktion og fuld lokal sourcegate/releasegate er grøn; exact-head, produktion og offentlig cold/warm-måling afventer.
+- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – DELVIST PRODUKTIONSRETTET / 4.0.296-KILDERETTELSE:** 4.0.295 fjernede 90–132 MB-detaljepakken fra normal opstart og gav cirka 3,67 sekunders varm start, men den aktive READY-nødvisnings startup var stadig 3.562.253 byte/23,36 sekunder. 4.0.296 fjerner tunge forklarings-/vinderfelter fra både primær og recovery-startup med score-/rangeringsparitet og uændret detaljehash. Første produktion stoppede fail-closed før deploy, fordi kortets lille DMI-pilproveniens også var fjernet; korrektionen bevarer kun `flowPoints.current`, `wind` og `sources` og består målrettet zoom-/størrelsestest. Nyt exact-head, produktion og offentlig cold/warm-måling afventer.
 - **ISSUE-SIBIRIEN-STAGED-POINT-REVISION – PRIVAT MODNING / IKKE AKTIVERET:** Ejeren har gemt en ny punktrevision. Kandidaten må kun behandles gennem DEC-0090's private grid-, 96-timers- og 48-timersgates. Ingen koordinater må læses eller publiceres, ingen historik må fabrikeres, og READY giver ikke automatisk aktivering; særskilt ejer-go mangler.
 
 ## 4.0.292 – kommende punktflytning
