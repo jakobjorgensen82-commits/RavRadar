@@ -1,11 +1,17 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.304 – fælles offentlig RavRadar-kontakt
+## Kildekandidat 4.0.305 – fjern rasterkortets flisegitter
+
+- Det offentlige standardkort reproducerede hårfine linjer ved Leaflets 256 px-flisegrænser. DOM-evidens viste brøk-pixelplacering; zoner, geometri og data var ikke årsagen.
+- Kun rasterfliserne i `leaflet-tile-pane` overlapper 0,5 px og bruger normal blanding. Leaflet-JavaScript, standard-/satellitadresser, bounds, zone-/geometri-/pile-/label-/kliklag er urørte.
+- Lokal visuel standard- og satellitkontrol, zoom, 211 zonepaths og målrettede regressionstests er grønne. Fuld sourcegate, exact-head og produktion afventer. Se DEC-0101.
+
+## Produktionsverificeret 4.0.304 – fælles offentlig RavRadar-kontakt
 
 - Den danske kontaktknap under **Om RavRadar** hedder **Skriv til RavRadar** og åbner `RavRadar@outlook.dk`.
 - Tysk og engelsk bruger samme RavRadar-identitet og mailadresse. Om-sidekontrakten kræver alle tre links og afviser de tidligere personlige værdier.
 - Kun kontakttekst/destination samt versions- og dokumentationslukning ændres. Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0100.
-- Exact-head, produktion, Pages og offentlig DA/DE/EN-verifikation afventer.
+- PR #211/exact-head `33183709302`/job `98891147198` på `cb018775`, merge `e5eed868`, produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne. Offentlig 4.0.304 viser 210 zoner, fem aktuelle områder og fem prognosedage; DA/DE/EN-kontaktlink har samme godkendte destination.
 
 ## Produktions- og fysisk verificeret 4.0.303 – prioriteret mobilopstart og let første installation
 

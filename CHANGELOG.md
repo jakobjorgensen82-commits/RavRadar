@@ -1,8 +1,15 @@
+## 4.0.305 – kort uden flisegitter (2026-08-28)
+
+- Fjerner hårfine sømme mellem Leaflets rasterkortfliser med et målrettet 0,5 px overlap og normal fliseblanding.
+- Standard- og satellitkort samt zoom er visuelt kontrolleret; zoner, pile, klikflader, Candidate G og alle data er urørte.
+- 4.0.304's fælles RavRadar-kontakt er produktionsverificeret gennem PR #211 og bevaret. Se DEC-0100/0101 og `CHANGELOG-4.0.305.md`.
+
 ## 4.0.304 – fælles RavRadar-kontakt (2026-08-28)
 
 - Kontaktknappen på **Om RavRadar** hedder nu **Skriv til RavRadar** og åbner `RavRadar@outlook.dk`.
 - Dansk, tysk og engelsk bruger samme RavRadar-identitet og mailadresse; kontrakttesten afviser de tidligere kontaktværdier.
 - Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0100 og `CHANGELOG-4.0.304.md`.
+- PR #211/exact-head `33183709302`, merge `e5eed868`, produktion `33183809909`, build `98891543382` og Pages `98893788414` er grønne. Offentlig 4.0.304 og DA/DE/EN-kontaktlink er verificeret.
 
 ## 4.0.303 – prioriteret mobilopstart uden første installationsreload (2026-08-28)
 

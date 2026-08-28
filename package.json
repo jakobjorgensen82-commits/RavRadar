@@ -1,7 +1,7 @@
 {
   "name": "ravradar",
   "private": true,
-  "version": "4.0.304",
+  "version": "4.0.305",
   "type": "module",
   "scripts": {
     "update:weather": "node scripts/update-weather.mjs",
@@ -10,7 +10,7 @@
     "audit:deployed-zone-weather": "node scripts/audit-deployed-zone-weather.mjs",
     "audit:public-startup-payload": "node scripts/audit-public-startup-payload.mjs",
     "test:progressive-public-conditions": "node scripts/test-progressive-public-conditions-4.0.216.mjs",
-    "test:public-load-performance": "node scripts/test-public-load-performance-4.0.295.mjs && node scripts/test-public-fallback-startup-4.0.296.mjs && node scripts/test-public-cold-start-4.0.303.mjs",
+    "test:public-load-performance": "node scripts/test-public-load-performance-4.0.295.mjs && node scripts/test-public-fallback-startup-4.0.296.mjs && node scripts/test-public-cold-start-4.0.303.mjs && node scripts/test-map-tile-seams-4.0.305.mjs",
     "test:candidate-g-public-recovery": "node scripts/test-candidate-g-gap-checkpoint-recovery-4.0.288.mjs && node scripts/test-candidate-g-continuation-checkpoint-4.0.289.mjs && node scripts/test-candidate-g-public-recovery-fallback-4.0.288.mjs && node scripts/test-public-recovery-fallback-data-service-4.0.288.mjs && npm run test:coastal-point-staging",
     "test:coastal-point-staging": "python scripts/test-coastal-point-staging-4.0.292.py && python scripts/test-promote-coastal-point-activation-4.0.292.py && node scripts/test-coastal-point-staging-4.0.292.mjs && node scripts/test-dmi-scheduler-active-zones-4.0.117.mjs",
     "test:local-weather-snapshot": "node scripts/test-local-weather-snapshot-status-4.0.208.mjs",

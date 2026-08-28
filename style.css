@@ -66,6 +66,9 @@ footer p { margin: 4px 0; }
 }
 .dashboard { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 14px; padding: 14px 14px 0; }
 .dashboard .map-shell { border-radius: 16px; overflow: hidden; box-shadow: var(--shadow); }
+/* Leaflet kan placere rasterlaget på brøk-pixels, især ved Safari/DPR-skalering.
+   Et halvt pixels overlap lukker kun flisesømmene og berører ikke vektorlagene. */
+.leaflet-tile-pane .leaflet-tile[style*="width: 256px"] { width: 256.5px !important; height: 256.5px !important; mix-blend-mode: normal; }
 .ranking-panel, .about-panel { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .ranking-panel { padding: 16px; }
 .section-heading h2, .about-panel h2 { margin: 0; }
