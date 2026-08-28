@@ -8,7 +8,7 @@ De fulde oplysninger for alle 210 zoner og 673 kystdele bevares. Browseren hente
 
 RavRadar genbruger kun en prognosefil, når adressen indeholder både det præcise dataset-id og filens SHA-kontrolsum fra det friske manifest. Manifestet, kortgeometrien og andre ikke-indholdsbundne livefiler hentes fortsat frisk. Startpakke og detaljer skal stadig høre til samme dataset og tidspunkt.
 
-4.0.295 fjernede den store detaljefil fra normal opstart og gav hurtig varm genbrug. Den første offentlige cold-måling viste dog, at en READY-nødvisning stadig bar fulde aktuelle forklaringsdiagnoser i selve startpakken. 4.0.296 beholder derfor kun den aktuelle score, dækningsstatus, tre komponenttal, kompakt vejr, minimale vinder-/dellabels og vinderdelens lille DMI-pilbevis ved opstart. De fulde forklaringer, timeforløb og Candidate G-state ligger fortsat i detaljepakken og hentes ved behov.
+4.0.295 fjernede den store detaljefil fra normal opstart og gav hurtig varm genbrug. Den første offentlige cold-måling viste dog, at en READY-nødvisning stadig bar fulde aktuelle forklaringsdiagnoser i selve startpakken. 4.0.296 beholder derfor kun den aktuelle score, dækningsstatus, tre komponenttal, kompakt vejr, minimale vinder-/dellabels og vinderdelens lille DMI-pilbevis ved opstart. De fulde forklaringer, timeforløb og Candidate G-state ligger fortsat i detaljepakken og hentes ved behov. Den produktionsverificerede offentlige startpakke er 399.801 byte mod tidligere 3.562.253 byte, og varm komplet visning er målt til cirka 1,31 sekunder.
 
 Candidate G-nødvisningen følger samme kontrakt: dens startprojektion kan gøres mindre fra de allerede kontrollerede detaljer, mens detaljepakken og dens hash, scorerne, tiderne og tilstanden er uændrede. Ændringen påvirker ikke Candidate G, RavScore, vejr, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se [DEC-0092](docs/rdks/10_DECISIONS/DEC-0092-CONTENT-ADDRESSED-LAZY-PUBLIC-DETAILS.md) og [DEC-0093](docs/rdks/10_DECISIONS/DEC-0093-MINIMAL-CANDIDATE-G-RECOVERY-STARTUP.md).
 
@@ -38,13 +38,15 @@ READY skifter ikke automatisk. Ejeren vælger særskilt **Aktivér klar ændring
 
 Som sidste sikkerhedsnet vises det seneste komplette, auditerede datasæt ved op til seks lokale warmups. RavRadar publicerer aldrig en blanding, hvor enkelte zoner er nye og andre gamle. 4.0.292 flytter ingen faktiske punkter; mekanismen er forberedt til en senere ejerstyret ændring, herunder Sibirien. Se [DEC-0090](docs/rdks/10_DECISIONS/DEC-0090-STAGED-COASTAL-POINT-ACTIVATION.md).
 
-## Mobil retur og browserens sidecache – 4.0.292
+## Mobil retur og browserens sidecache – 4.0.297
 
 Mobil Safari kan gemme en hel webside i sin tilbage-/fremcache og senere vise den igen uden at starte JavaScript-modulerne forfra. Hvis brugeren forlader forsiden, mens en datahentning eller den progressive femdøgnsberegning stadig er i gang, kan browseren derfor vende tilbage til en halvfærdig visning.
 
-RavRadar installerer nu et livscyklusværn før den første asynkrone opstart. Er kortgrundlaget ikke færdigt ved retur, genindlæses forsiden automatisk. Hvis brugeren allerede havde bedt om områdedetaljer, gælder det samme, indtil den hentning er færdig. Ellers genopfriskes Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand uden at kræve den bevidst uanmodede detaljepakke. Flere samtidige returhændelser samles, og en genoptegningsfejl giver en ren genindlæsning.
+RavRadar installerer livscyklusværnet før den første asynkrone opstart. En persisted retur på mobil genindlæser nu forsiden rent, fordi fysisk mobilevidens viste, at en frosset WebKit-side kunne se færdig ud internt, men stadig mangle kort og prognoser. En normal sideindlæsning er ikke persisted og udløser derfor ikke en løkke.
 
-Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md).
+På desktop genopfriskes fortsat Leaflet-layoutet, zonefarverne, **Bedste områder**, den valgte zone og **5-dages RavRadar** fra den eksisterende tilstand. Et tresekunders watchdog og en konkret kontrol af kort-, rangliste- og prognosefelterne genindlæser fail-safe, hvis genoptegningen ikke giver en komplet visning. Retur før appimportens afslutning genindlæser også rent.
+
+Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md) og [DEC-0094](docs/rdks/10_DECISIONS/DEC-0094-MOBILE-BFCACHE-HARD-RELOAD-FAILSAFE.md).
 
 ## Offentlig gratis Spørg RavRadar – 4.0.291
 
@@ -639,7 +641,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.296
+**Håndbogsversion:** 4.0.297
 
 **Opdateret:** 19. august 2026
 

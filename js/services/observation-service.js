@@ -1,7 +1,7 @@
-import { PUBLIC_CONFIG } from '../../config.js?v=4.0.296';
-import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.296';
-import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.296';
-import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.296';
+import { PUBLIC_CONFIG } from '../../config.js?v=4.0.297';
+import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.297';
+import { assertTripEvidencePrivacy } from './trip-evidence-contract.js?v=4.0.297';
+import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.297';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
 const OUTBOX_KEY='ravradar-observation-outbox-v1';

@@ -1,11 +1,21 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuel 4.0.296-kildekandidat – minimal Candidate G-startpakke
+## Kildekandidat 4.0.297 – fysisk mobilretur fra bfcache
+
+- Produktionsbaseline er fortsat 4.0.296 på merge `f1cd5868`; dens kompakte startup og offentlige funktionskontrol er grøn.
+- Ejeren har fysisk observeret, at mobil retur fra eksempelvis **Om RavRadar** kan give en tom forside uden kort og prognoser. Desktopretur er grøn; behandl derfor fejlen som mobil bfcache/suspension og ikke som den løste payloadflaskehals.
+- 4.0.297 installerer returværnet før async bootstrap. En persisted mobilretur genindlæser rent, og en retur før appimport gør det samme. Desktop bevarer genoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
+- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Kør PR exact-head, produktion og offentlig kontrol; få derefter ejeren til at teste **Om RavRadar** → tilbage på den fysiske mobil. Kald ikke problemet fysisk løst før dette bevis. Se DEC-0094.
+- Rør ikke Sibirien, koordinater, geometri, private data eller Candidate G-state. Den private staged punktrevision kræver fortsat separat modning og ejer-go.
+
+## Produktionsverificeret 4.0.296 – minimal Candidate G-startpakke
 
 - 4.0.295 bestod PR #198/exact-head `33153155088`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Den fjernede 90–132 MB-detaljehentningen fra normal opstart og gav cirka 3,67 sekunders varm offentlig start.
 - Offentlig cold-måling fandt dog, at den aktive READY-nødvisnings startup stadig var 3.562.253 byte/23,36 sekunder mod primærens 694.288 byte/4,09 sekunder. Resten er fulde aktuelle scoreposter og komplette vinderobjekter, ikke HTML eller Spørg RavRadar.
 - 4.0.296 beholder kun score/status, dækningsfelter, tre komponenttal, kompakt vejr, minimale labels og det lille `flowPoints`-bevis i startup. Detaljer og state forbliver i den behovshentede fil; recovery ændrer kun startup-hash.
-- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før deploy, fordi den gamle zoomtest fangede manglende DMI-pilproveniens. Korrektionen bevarer kun `current`, `wind` og `sources` under `flowPoints`; målrettet score-/rangeringsparitet, uændret detalje/hash, piltesten og 591.295 → 29.670 byte er grøn. Kør ny exact-head, frisk produktion og offentlig cold/warm browsermåling. Se DEC-0092/0093.
+- PR #199/exact-head `33156988524` var grøn og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede fail-closed før deploy, fordi den gamle zoomtest fangede manglende DMI-pilproveniens. Korrektionen bevarer kun `current`, `wind` og `sources` under `flowPoints`; målrettet score-/rangeringsparitet, uændret detalje/hash, piltesten og 591.295 → 29.670 byte er grøn.
+- PR #200 bestod exact-head `33158782786`/job `98807893242` på `5dad21c6`, blev merged som `f1cd5868` og gennemførte grøn produktion `33158840203`, build `98808126976` og Pages `98814032394`.
+- Offentlig startpakke er 399.801 byte og tog 1,37 sekunder ved no-cache HTTP-kontrol; varm komplet browservisning tog cirka 1,31 sekunder. Version, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage er grønne. Candidate G er stadig tydeligt i sund recovery, mens ægte 48-timersstate modnes. Se DEC-0092/0093.
 - Sibirien har en ny privat staged punktrevision fra ejeren. Læs eller publicér ikke koordinater, aktivér intet, og opfind ingen historik. Lad samme DMI-grid-, 96-timers- og 48-timerskrav modne; en senere promotion kræver særskilt ejer-go.
 - Rod-worktree, `.recovery-*`, private data og faktisk geometri må ikke røres. Geodatafilerne ændrer kun topversionen 4.0.295 → 4.0.296.
 

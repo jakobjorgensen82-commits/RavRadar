@@ -1,12 +1,23 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P1-CHECKPOINT – 2026-08-28 – 4.0.296 minimal Candidate G-startpakke
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.297 mobil bfcache-failsafe
+
+- 4.0.296 er fortsat den produktionsverificerede baseline på `origin/main` `f1cd5868bda1f33c8a137cdab0baffaa31c7d698`; dens kompakte startup og offentlige 399.801-byte/1,37-sekunders no-cache-resultat er grønt.
+- Ejeren har på fysisk mobil observeret, at retur fra eksempelvis **Om RavRadar** igen kan efterlade kort og prognoser tomme. Samme completed-home → Om → retur kunne ikke reproduceres på desktop, så fysisk mobilevidens overtrumfer den tidligere automatiserede 390 px-kontrol.
+- 4.0.297 installerer et `pageshow.persisted`-værn før async bootstrap. Mobil (`max-width: 900px`) genindlæser straks rent; retur før appimport genindlæser også. Desktop genoptegner fortsat, men et tresekunders watchdog og DOM-sundhed for Leaflet, **Bedste områder** og **5-dages RavRadar** falder tilbage til reload.
+- En normal reload har `persisted=false`, så der er ingen reloadløkke. Målrettede tests for mobil, tidlig import, sund desktop, watchdog og usund DOM er grønne før versionsløftet.
+- Fuld lokal source-/releasegate er grøn. PR exact-head, produktion, offentlig funktion/ydelse og ejerens fysiske mobilretur afventer. Fejlen må ikke kaldes fysisk løst før ejerens efterkontrol. Se DEC-0094.
+- Candidate G, RavScore, vejr, prognosedata, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged; ingen koordinater er læst eller aktiveret.
+
+## PRODUKTIONSVERIFICERET P1-CHECKPOINT – 2026-08-28 – 4.0.296 minimal Candidate G-startpakke
 
 - 4.0.295 bestod PR #198 exact-head `33153155088` på `94621436`, merge `6c0602d7`, produktion `33153271907`, build `98790063641` og Pages `98794513908`. Offentlig side viste 4.0.295, farvet kort, fem aktuelle områder, fem færdige femdøgnsresultater og nul konsolfejl; varm ny fane var klar på cirka 3,67 sekunder.
 - 4.0.295 fjernede den 90–132 MB store detaljepakke fra normal opstart, men offentlig måling fandt et restproblem: den aktive READY-nødvisnings startfil var 3.562.253 byte/23,36 sekunder mod primærens 694.288 byte/4,09 sekunder. Årsagen var fulde aktuelle scoreposter og komplette vinderobjekter i startup; assistenten indgik ikke i kæden.
 - 4.0.296 projekterer kun aktuel score/status, dækningsfelter, tre komponenttal, kompakt vejr, minimale vinder-/dellabels og vinderdelens lille DMI-`flowPoints`-bevis. Forklaringsdiagnoser, timeforløb og Candidate G-state forbliver i den behovshentede detaljepakke.
 - Recovery-opgraderingen ændrer kun startpakken og dens hash. Detaljepakke/hash, dataset, tider, scorer, bestetid, rangering og state er uændrede. Den opdaterede syntetiske READY-lignende pakke falder 591.295 → 29.670 byte, cirka 95 %, med score-/rangeringsparitet.
-- PR #199 bestod exact-head `33156988524` på `cd2ad230` og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede korrekt før releasegate/Supabase/Pages, fordi zoomtesten fangede manglende lokal DMI-pilproveniens i startup. Den afgrænsede korrektion bevarer kun `current`, `wind` og `sources` under `flowPoints`; målrettet pil-/størrelsestest er grøn. Nyt exact-head, produktion og offentlig cold/warm-måling afventer. Se DEC-0092/0093.
+- PR #199 bestod exact-head `33156988524` på `cd2ad230` og blev merged som `bdd23cc0`. Produktion `33157055276`/build `98802272478` stoppede korrekt før releasegate/Supabase/Pages, fordi zoomtesten fangede manglende lokal DMI-pilproveniens i startup. Den afgrænsede korrektion bevarer kun `current`, `wind` og `sources` under `flowPoints`.
+- PR #200 bestod exact-head `33158782786`/job `98807893242` på `5dad21c6` og blev merged som `f1cd5868`. Produktion `33158840203`, build `98808126976` og Pages `98814032394` bestod frisk data/proveniens, fuld validering, releasegate, Supabase, artifact og deploy.
+- Offentlig 4.0.296 viser farvet kort, fem **Bedste områder** og fem resultater på hver af fem prognosedage. Startpakken er 399.801 byte med matchende manifeststørrelse/hashbinding; en no-cache HTTP-måling tog 1,37 sekunder mod 3.562.253 byte/23,36 sekunder før rettelsen, og varm browser var fuldt klar på cirka 1,31 sekunder. Nøddriften er fortsat tydelig og sund, mens den ægte 48-timersstate modnes. Se DEC-0092/0093.
 - GitHub CLI 2.98.0 er installeret og read-only API-verificeret som `jakobjorgensen82-commits`; ingen GitHub-tokenværdi blev vist.
 - Ejeren har gemt en ny Sibirien-land-/vandpunktrevision. Den behandles kun som privat staged kandidat: ingen koordinater er læst eller publiceret, ingen aktivering udføres, og ægte DMI-grid/96-timershorisont/48-timersstate skal modnes uden kunstig historik. Et senere skift kræver særskilt ejer-go.
 - Rod-worktree, `.recovery-*`, private data og faktisk geometri er urørte. De to geodatafiler ændrer kun topversionsfeltet 4.0.295 → 4.0.296.

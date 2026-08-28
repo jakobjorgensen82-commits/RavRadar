@@ -1,8 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.297 – fysisk mobilretur
+
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme efter 4.0.296, mens desktopretur var grøn. 4.0.297 flytter værnet før async bootstrap, genindlæser persisted mobilretur rent og bevarer desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og ny fysisk mobilprøve afventer. Se DEC-0094.
+
 ## 4.0.296 – offentlig opstartsydelse
 
-- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – DELVIST PRODUKTIONSRETTET / 4.0.296-KILDERETTELSE:** 4.0.295 fjernede 90–132 MB-detaljepakken fra normal opstart og gav cirka 3,67 sekunders varm start, men den aktive READY-nødvisnings startup var stadig 3.562.253 byte/23,36 sekunder. 4.0.296 fjerner tunge forklarings-/vinderfelter fra både primær og recovery-startup med score-/rangeringsparitet og uændret detaljehash. Første produktion stoppede fail-closed før deploy, fordi kortets lille DMI-pilproveniens også var fjernet; korrektionen bevarer kun `flowPoints.current`, `wind` og `sources` og består målrettet zoom-/størrelsestest. Nyt exact-head, produktion og offentlig cold/warm-måling afventer.
+- **ISSUE-PUBLIC-DETAIL-PAYLOAD-BLOCKS-STARTUP – PRODUKTIONSVERIFICERET LØST I 4.0.296:** 4.0.295 fjernede 90–132 MB-detaljepakken fra normal opstart, men READY-nødvisningen var stadig 3.562.253 byte/23,36 sekunder. Første 4.0.296-produktion stoppede fail-closed før deploy, fordi kortets lille DMI-pilproveniens også var fjernet. Den afgrænsede korrektion bevarer kun `flowPoints.current`, `wind` og `sources`; PR #200, fuld produktion og Pages er grønne. Offentlig startpakke er 399.801 byte/1,37 sekunder no-cache, varm komplet browservisning cirka 1,31 sekunder, og version, kort samt fem aktuelle/fem prognosedages resultater er verificeret.
 - **ISSUE-SIBIRIEN-STAGED-POINT-REVISION – PRIVAT MODNING / IKKE AKTIVERET:** Ejeren har gemt en ny punktrevision. Kandidaten må kun behandles gennem DEC-0090's private grid-, 96-timers- og 48-timersgates. Ingen koordinater må læses eller publiceres, ingen historik må fabrikeres, og READY giver ikke automatisk aktivering; særskilt ejer-go mangler.
 
 ## 4.0.292 – kommende punktflytning
@@ -18,7 +22,7 @@
 
 ## Nye ejerobservationer efter produktionsverificeret 4.0.291
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY – PRODUKTIONSVERIFICERET LØST / FYSISK IPHONE-EFTERKONTROL ÅBEN:** Forsiden manglede `pageshow`-recovery for Safari/WebKit back/forward-cache. 4.0.292 bestod exact-head, produktion og offentlig 390 × 844-retur med farvet kort, fem **Bedste områder**, fem prognoserækker og nul browserfejl; ejeren bør stadig bekræfte på en fysisk iPhone.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY – HISTORISK 4.0.292-RETTELSE / SENERE FYSISK REGRESSION FLYTTET TIL 4.0.297:** Forsiden manglede oprindeligt `pageshow`-recovery for Safari/WebKit back/forward-cache. 4.0.292 bestod exact-head, produktion og offentlig 390 × 844-retur, men ejerens senere fysiske mobilevidens viste, at kontrakten ikke var robust nok efter den progressive opstartsændring. Den aktive opfølgning står ovenfor og i DEC-0094.
 - **ISSUE-ASSISTANT-LOCAL-KNOWLEDGE-TOO-NARROW – PRODUKTIONSVERIFICERET LØST:** 4.0.293/294 dækker 17 grundbogsbaserede DA/DE/EN-emner lokalt, 51 lokale nul-netværkscases, 23 Edge-fakta og 66 samlede evalcases. PR #194/#195, produktion og offentlig tre-sprogs kontrol er grønne; løsningen er read-only og ændrer ingen prognose-, score-, bruger- eller geodata.
 - **ISSUE-ASSISTANT-CLOUDFLARE-TOKEN-HYGIENE – DRIFTSVERIFICERET LUKKET:** Et nyt mindst-muligt Workers AI Read + Edit-token blev oprettet på den eksakte konto, og kun den eksisterende Supabase Edge-secret blev erstattet uden redeploy eller credentialoutput. DA/DE/EN, fast afvisning, CORS/origin, seks `200` + syvende `429` og offentlig lokal fallback var grønne før tilbagekaldelse. Efter særskilt ejer-go blev fire gamle generiske tokens tilbagekaldt; ét afgrænset retry efter en fail-closed transient i rate-limit-RPC'en beviste den nye vej med `200` efter tilbagekaldelsen. Ingen kode-, produkt-, privatlivs- eller geodataændring fandt sted.
 
