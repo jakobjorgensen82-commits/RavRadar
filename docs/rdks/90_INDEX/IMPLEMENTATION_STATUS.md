@@ -1,4 +1,21 @@
-# Implementeringsstatus – 4.0.301-kandidat efter fejlramt fysisk 4.0.300-retur
+# Implementeringsstatus – 4.0.302-kandidat efter reproduceret kold førstegangsload
+
+## P1 kildekandidat – én koldstart uden første service-worker-reload
+
+- [x] Luk 4.0.301 gennem PR #206/exact-head `33172111444`/job `98851532431`, merge `21aac8f6`, produktion `33172186373`, build `98851836126` og Pages `98854056109`.
+- [x] Verificér offentlig intern Om-retur på cirka 1,27 sekunder med 210 zonelinjer og fem resultater på alle fem prognosedage.
+- [x] Registrér ejerens grønne fysiske iPhone Safari-test og luk mobilreturfejlen.
+- [x] Reproducer cirka 14 sekunders første load og hurtige efterfølgende faner i offentlig browser.
+- [x] Identificér den ubetingede `controllerchange`-reload efter første `clients.claim()` samt den sekventielle start af uafhængige datagrene.
+- [x] Spring kun første claim-reload over; bevar præcis én reload ved senere rigtig opdatering.
+- [x] Start manifest/prognosestart parallelt med zone-/kystdelsgrenen uden at ændre synlig rækkefølge eller data-/hashgates.
+- [x] Bestå målrettede cold-start-, mobilresume-, Om-retur- og ydelseskontroller.
+- [x] Bestå fuld lokal RDKS/sourcegate og releasegate.
+- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
+- [ ] Verificér offentlig 4.0.302 med 210 zonelinjer, fem aktuelle områder, fem resultater på alle fem dage og grøn Om-retur.
+- [ ] Bevis en reelt cachekold første installation uden ekstra automatisk reload; få derefter ejerens fysiske efterprøve.
+
+Candidate G, RavScore, vejr, prognoseindhold, sortering, konto-/turdata, privatliv, geometri og punkter er uændrede. Sibirien forbliver privat staged. Se DEC-0099.
 
 ## P1 kildekandidat – intern knap udfører den beviste historikretur
 
@@ -10,9 +27,9 @@
 - [x] Lås query, `/index.html`, fremmed/tom referrer, modified click, historikkald og fallback i målrettet test.
 - [x] Bevar eksisterende `pageshow.persisted`-redraw og 4.0.295/296's lazy startup uden timer/reload/watchdog.
 - [x] Bestå målrettede historik-, resume-, startup-, ydelses- og versionskontroller.
-- [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.301-version, referrer, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage efter intern historikretur.
-- [ ] Få ejeren til at bekræfte Safari og derefter Hjemmeskærm-appen på fysisk iPhone.
+- [x] Bestå PR #206 exact-head `33172111444`, merge `21aac8f6`, fuld produktion `33172186373`, build `98851836126` og Pages `98854056109`.
+- [x] Genverificér offentlig 4.0.301-version, referrer, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage efter intern historikretur.
+- [x] Få ejeren til at bekræfte Safari på fysisk iPhone. Hjemmeskærm-appen kan efterkontrolleres særskilt.
 
 Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0098; DEC-0094–0097 er historiske, fysisk afviste forsøg.
 

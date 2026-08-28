@@ -1,5 +1,15 @@
 # RavRadar Håndbog
 
+## Hurtigere allerførste åbning – 4.0.302
+
+Når RavRadar åbnes første gang i en browser, installerer siden en service worker til sikker cache og senere versionsopdatering. Tidligere overtog den nye worker den allerede åbne side og udløste straks en ny fuld indlæsning. Brugeren kunne derfor betale for den samme kolde opstart to gange, selv om den første side allerede var korrekt.
+
+4.0.302 accepterer den første sikre overtagelse uden genindlæsning. Når browseren senere modtager en rigtig ny RavRadar-version, genindlæses siden fortsat præcis én gang, så kode og cache ikke blandes mellem versioner.
+
+Samtidig begynder manifest/prognosestart at blive hentet parallelt med zoner og kystdele. RavRadar viser fortsat først det samme præcise kortgrundlag og kontrollerer derefter det samme dataset, tider og hashbindinger før farver, **Bedste områder** og **5-dages RavRadar**. Ingen geometri udsættes eller erstattes.
+
+Rettelsen følger en reproduceret cirka 14 sekunders første åbning på fysisk iPhone Safari og i offentlig browser, mens efterfølgende faner var hurtige. Den målrettede kontrakt bevarer opdateringssikkerheden og ændrer ikke Candidate G, RavScore, vejr, prognoseindhold, sortering, konto-/turdata, privatliv, geometri eller land-/vandpunkter. Se [DEC-0099](docs/rdks/10_DECISIONS/DEC-0099-FIRST-SERVICE-WORKER-CLAIM-NO-RELOAD.md).
+
 ## Hurtigere kort og femdøgnsvisning – 4.0.295/296
 
 RavRadar åbner nu kortet, **Bedste områder** og **5-dages RavRadar** fra en lille startpakke. Femdagene er ikke en ny eller forenklet score: produktionsbygningen bruger præcis den samme Candidate G-bestetid og nationale rangering som tidligere og gemmer kun de fem viste zoner pr. dag og søgemåde i startpakken.
@@ -48,7 +58,7 @@ Når Safari gendanner en færdig forside fra sin sidecache, genoptegner RavRadar
 
 RavRadar overtager kun et almindeligt klik, når Om-sidens referrer er den samme offentlige root. Queryparametre og `/index.html` håndteres som samme forside. Hvis Om-siden blev åbnet direkte, fra et andet websted eller med et modificeret klik, bruges det almindelige `./`-link.
 
-4.0.297–300's alternative strategier blev afvist af de fysiske iPhone-tests. 4.0.300 overså konkret, at 4.0.292's automatiske bevis brugte browsertilbage og ikke det interne link. 4.0.301 gør derfor den interne knap til samme historikretur uden at rulle 4.0.295/296's kompakte og behovsstyrede startup tilbage.
+4.0.297–300's alternative strategier blev afvist af de fysiske iPhone-tests. 4.0.300 overså konkret, at 4.0.292's automatiske bevis brugte browsertilbage og ikke det interne link. 4.0.301 gør derfor den interne knap til samme historikretur uden at rulle 4.0.295/296's kompakte og behovsstyrede startup tilbage. PR #206, produktion og Pages er grønne, offentlig retur var komplet på cirka 1,27 sekunder, og ejeren bekræftede fysisk iPhone Safari grøn.
 
 Recoveryen skriver ingen data og ændrer ikke Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, geometri eller land-/vandpunkter. Se [DEC-0089](docs/rdks/10_DECISIONS/DEC-0089-MOBILE-PAGE-CACHE-SELF-RECOVERY.md) og [DEC-0098](docs/rdks/10_DECISIONS/DEC-0098-ABOUT-BUTTON-HISTORY-RETURN.md). DEC-0094–0097 er bevaret som historiske, fysisk afviste forsøg.
 
@@ -645,7 +655,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.301
+**Håndbogsversion:** 4.0.302
 
 **Opdateret:** 19. august 2026
 

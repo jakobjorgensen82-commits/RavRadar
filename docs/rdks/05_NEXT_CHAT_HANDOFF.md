@@ -1,10 +1,18 @@
 # RavRadar – overlevering til næste chat
 
+## Øverste checkpoint – 4.0.302 koldstart uden dobbelt opstart
+
+- 4.0.301 er fuldt exact-head-/produktionsgrøn og fysisk godkendt på iPhone Safari for den interne Om → RavRadar-retur. PR #206, merge `21aac8f6`, produktion `33172186373`, build `98851836126` og Pages `98854056109` er beviset.
+- Ejeren og offentlig browserkontrol reproducerede cirka 14 sekunders første load, mens efterfølgende faner var hurtige. `clients.claim()` overtog første side og udløste en ubetinget `controllerchange`-reload; manifest/prognosestart begyndte desuden først efter zone-/kystdelsgrenen.
+- 4.0.302 tillader første claim uden reload, bevarer én reload ved senere rigtig versionsopdatering og starter de uafhængige datagrene parallelt. Målrettede tests er grønne.
+- Fuld lokal `validate:source`/releasegate er grøn. Fortsæt med exact-head, produktion/Pages, 210 + fem × fem, Om-retur og reelt cachekold browserprøve. Kald ikke koldstarten løst før offentlig/fysisk bevis. Se DEC-0099.
+- Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter. Sibirien forbliver privat staged.
+
 ## Øverste checkpoint – 4.0.301 rigtig historikretur
 
 - 4.0.300 er fuldt CI-/produktionsgrøn, men fysisk afvist på bekræftet version 4.0.300 i iPhone Safari.
 - 4.0.292's tidligere bevis brugte browsertilbage, ikke det interne link. 4.0.301 lader derfor Om-knappen kalde `history.back()` ved verificeret samme-origin root-referrer og bevarer `./` som direkte fallback.
-- Offentlig referrerforudsætning og målrettede historik-/resume-/startup-/ydelsestests er grønne. Fortsæt med sourcegate, exact-head, produktion, offentlig kontrol og fysisk Safari/Hjemmeskærm. Se DEC-0098.
+- PR #206, exact-head, produktion, Pages, offentlig cirka 1,27-sekunders intern retur og fysisk iPhone Safari er grønne. Hjemmeskærm kan fortsat efterkontrolleres særskilt. Se DEC-0098.
 - Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter. Sibirien forbliver privat staged.
 
 ## Øverste checkpoint – 4.0.300 mobilretur
