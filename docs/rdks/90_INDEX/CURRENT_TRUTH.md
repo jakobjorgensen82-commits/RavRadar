@@ -1,5 +1,12 @@
 # Current truth – gældende projektviden
 
+## Kildekandidat 4.0.304 – fælles offentlig RavRadar-kontakt
+
+- Den danske kontaktknap under **Om RavRadar** hedder **Skriv til RavRadar** og åbner `RavRadar@outlook.dk`.
+- Tysk og engelsk bruger samme RavRadar-identitet og mailadresse. Om-sidekontrakten kræver alle tre links og afviser de tidligere personlige værdier.
+- Kun kontakttekst/destination samt versions- og dokumentationslukning ændres. Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0100.
+- Exact-head, produktion, Pages og offentlig DA/DE/EN-verifikation afventer.
+
 ## Produktions- og fysisk verificeret 4.0.303 – prioriteret mobilopstart og let første installation
 
 - 4.0.301 virkede på ejerens fysiske iPhone, inklusive intern Om-retur, men første load tog cirka 14 sekunder.

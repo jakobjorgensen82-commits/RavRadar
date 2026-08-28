@@ -1,4 +1,15 @@
-# Implementeringsstatus – produktions- og fysisk verificeret 4.0.303
+# Implementeringsstatus – 4.0.304 kontaktkandidat oven på produktionsverificeret 4.0.303
+
+## P1 kildekandidat – fælles RavRadar-kontakt
+
+- [x] Skift dansk knaptekst til **Skriv til RavRadar**.
+- [x] Skift `mailto:` til `RavRadar@outlook.dk` på dansk, tysk og engelsk.
+- [x] Brug RavRadar-navnet i tysk og engelsk knaptekst.
+- [x] Udvid Om-sidekontrakten med positive DA/DE/EN-krav og negativ kontrol af tidligere kontaktværdier.
+- [x] Bestå geodatabevis, RDKS-, versions-, source- og releasekontroller.
+- [ ] Bestå PR exact-head, merge, produktion/Pages og offentlig DA/DE/EN-kontrol.
+
+Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Se DEC-0100.
 
 ## P1 produktionsverificeret – prioriteret mobilopstart og let første service-worker-installation
 

@@ -1,5 +1,13 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P1 – 2026-08-28 – 4.0.304 fælles RavRadar-kontakt
+
+- Ejeren har besluttet, at kontaktknappen under **Om RavRadar** skal hedde **Skriv til RavRadar** og bruge `RavRadar@outlook.dk`.
+- Dansk, tysk og engelsk bruger nu samme RavRadar-identitet og `mailto:`-destination. Den tidligere personlige knaptekst og mailadresse er fjernet fra Om-kilderne og kontrakttesten afviser, at de genindføres.
+- Kodeændringen er afgrænset til `about.html`, `js/ui/about-i18n.js` og Om-sidekontrakten. Version/RDKS/changelog/håndbog følger 4.0.304.
+- Candidate G, RavScore, vejr, prognoser, sortering, konto-/turdata, privatliv, assistent, geometri og land-/vandpunkter er uændrede. Sibirien forbliver privat staged.
+- Næste trin: geodatabevis, målrettede kontroller, fuld sourcegate, PR exact-head, merge, fuld produktion/Pages og offentlig DA/DE/EN-kontrol. Se DEC-0100.
+
 ## PRODUKTIONS- OG FYSISK VERIFICERET P1 – 2026-08-28 – 4.0.303 mobilopstart
 
 - 4.0.301 virkede på ejerens fysiske iPhone Safari, inklusive RavRadar-knappen fra **Om RavRadar**, men første indlæsning tog cirka 14 sekunder.

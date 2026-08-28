@@ -1,5 +1,12 @@
 # RavRadar – overlevering til næste chat
 
+## Øverste checkpoint – 4.0.304 fælles RavRadar-kontakt
+
+- Kontaktknappen under **Om RavRadar** er ændret til **Skriv til RavRadar** med `mailto:RavRadar@outlook.dk`.
+- Tysk og engelsk bruger tilsvarende RavRadar-branding og samme adresse. Kontrakttesten låser alle tre sprog og afviser de tidligere personlige kontaktværdier.
+- Kun kontakttekst/destination samt versions- og projekthukommelse ændres. Ingen faglig model, vejr-, score-, bruger- eller geodata ændres; Sibirien forbliver privat staged.
+- Før lukning kræves geodatabevis, sourcegate, exact-head, produktion/Pages og offentlig DA/DE/EN-verifikation. Se DEC-0100.
+
 ## Øverste checkpoint – produktions- og fysisk verificeret 4.0.303
 
 - Arbejd kun i den isolerede Codex-worktree. Rør ikke rod-worktree, `.recovery-*`, private data, geometri eller punkter.
