@@ -1,8 +1,8 @@
-const APP_VERSION = "4.0.297";
+const APP_VERSION = "4.0.298";
 const CACHE_PREFIX = "ravradar-app-";
 const CACHE = `${CACHE_PREFIX}${APP_VERSION.replaceAll('.', '-')}`;
 const STATIC = [
-  "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/i18n.js?v=${APP_VERSION}`,`./js/ui/about.js?v=${APP_VERSION}`,`./js/ui/about-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-de.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-en.js?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
+  "./","./index.html","./about.html","./learn.html","./admin.html",`./about.css?v=${APP_VERSION}`,`./learn.css?v=${APP_VERSION}`,`./admin.css?v=${APP_VERSION}`,`./js/i18n.js?v=${APP_VERSION}`,`./js/ui/about.js?v=${APP_VERSION}`,`./js/ui/about-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-de.js?v=${APP_VERSION}`,`./js/ui/learn-i18n-en.js?v=${APP_VERSION}`,`./js/ui/admin-dashboard.js?v=${APP_VERSION}`,`./js/core/public-home-return-guard.js?v=${APP_VERSION}`,`./style.css?v=${APP_VERSION}`,`./bootstrap.js?v=${APP_VERSION}`,`./app.js?v=${APP_VERSION}`,
   "./assets/about/jakob-480.webp","./assets/about/jakob-900.webp","./assets/about/ravjagt-med-boern-720.jpg","./assets/about/ravjagt-med-boern-1200.jpg","./assets/about/ravjagt-med-boern-1800.jpg",`./assets/about/qrcode.min.js?v=${APP_VERSION}`,
   "./config.js","./manifest.webmanifest","./version.json",`./data/zones.geojson?v=${APP_VERSION}`,"./data/model.json",
   "./js/core/score-engine.js","./js/core/adaptive-model.js","./js/core/prediction-engine.js",

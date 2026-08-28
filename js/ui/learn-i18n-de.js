@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.297';
+import { registerI18nMessages } from '../i18n.js?v=4.0.298';
 
 registerI18nMessages({ de:{
   'static.back':'Zurück zu RavRadar', 'learn.meta.title':'Bernsteinsuche lernen – RavRadar',

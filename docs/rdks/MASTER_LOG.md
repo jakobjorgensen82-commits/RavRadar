@@ -1,8 +1,15 @@
+## 2026-08-28 – 4.0.298 direkte Safari-/Hjemmeskærm-retur
+
+- 4.0.297 bestod PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol, men ejerens fysiske iPhone-test var fortsat rød.
+- Ejeren præciserede, at retur sker gennem RavRadars eget link på **Om RavRadar**, ikke browserens tilbageknap. Den direkte navigation var derfor ikke sikkert omfattet af 4.0.297's `pageshow.persisted`-værn.
+- 4.0.298 bruger et statisk versionsbundet link, en unik nonce og et lille tidligt head-værn. Sundhed kræver kort, fem aktuelle områder, fem dagsfaner og fem viste rækker; efter seks sekunder tillades højst én frisk retry uden løkke.
+- Samme navigation gælder Safari og Hjemmeskærm-app. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion, offentlig kontrol og fysisk iPhone-bevis afventer. Ingen faglig model, data, score, brugerdata, geometri eller punkt ændres. Se DEC-0095.
+
 ## 2026-08-28 – 4.0.297 fysisk mobil bfcache-failsafe
 
 - Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme, selv om desktopretur og den historiske automatiserede 390 px-kontrol var grønne.
 - Et værn før async bootstrap genindlæser nu persisted mobilretur rent. Retur før appimport gør det samme; desktop beholder genoptegning med tresekunders watchdog og konkret DOM-sundhed for Leaflet, **Bedste områder** og **5-dages RavRadar**.
-- Målrettede regressioner og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig kontrol og fysisk mobilretur afventer. Ingen faglig model, produktionsdata, score, brugerdata, geometri eller punkt ændres. Se DEC-0094.
+- PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopretur er grønne. Den fysiske interne-link-rejse fejlede fortsat og er flyttet til DEC-0095/4.0.298. Ingen faglig model, produktionsdata, score, brugerdata, geometri eller punkt ændres.
 
 ## 2026-08-28 – 4.0.295 offentlig opstartsydelse
 

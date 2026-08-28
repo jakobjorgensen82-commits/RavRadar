@@ -1,8 +1,8 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.297";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.297";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.297";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.297";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.297";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.298";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.298";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.298";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.298";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.298";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);

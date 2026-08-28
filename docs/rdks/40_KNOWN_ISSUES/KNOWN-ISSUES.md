@@ -1,8 +1,8 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.297 – fysisk mobilretur
+## 4.0.298 – fysisk mobilretur gennem RavRadars eget Om-link
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** Ejeren observerede på fysisk mobil, at retur fra eksempelvis **Om RavRadar** igen kunne efterlade kort og prognoser tomme efter 4.0.296, mens desktopretur var grøn. 4.0.297 flytter værnet før async bootstrap, genindlæser persisted mobilretur rent og bevarer desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og ny fysisk mobilprøve afventer. Se DEC-0094.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – 4.0.298 KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** 4.0.297 bestod exact-head, fuld produktion, Pages og offentlig desktopretur, men ejerens fysiske iPhone-test var fortsat rød. Ejeren præciserede, at retur sker med RavRadars eget link på **Om RavRadar**, ikke browserens tilbageknap. 4.0.298 gør derfor linket til en unik, versionsbundet navigation og installerer et tidligt DOM-sundhedsværn med højst én loop-sikker retry. Målrettede tests og fuld lokal source-/releasegate er grønne; exact-head, produktion og fysisk Safari-/Hjemmeskærm-test afventer. Se DEC-0094/0095.
 
 ## 4.0.296 – offentlig opstartsydelse
 

@@ -1,18 +1,19 @@
-# Implementeringsstatus – 4.0.297-kandidat over produktionsverificeret 4.0.296
+# Implementeringsstatus – 4.0.298-kandidat over produktionsverificeret 4.0.297
 
-## P1 kildekandidat – robust fysisk mobilretur
+## P1 kildekandidat – robust intern mobilretur
 
-- [x] Registrér ejerens fysiske mobilobservation som modstridende evidens til den tidligere automatiserede 390 px-kontrol.
-- [x] Installer et tidligt `pageshow.persisted`-værn før asynkron bootstrap.
-- [x] Genindlæs mobilens persisted side rent og genindlæs også ved retur før appimport.
-- [x] Bevar desktopgenoptegning med tresekunders watchdog og konkret DOM-sundhed for kort, rangliste og femdøgnsvisning.
-- [x] Lås mobil reload, tidlig import, sund desktop, watchdog og usund DOM med målrettede tests.
+- [x] Luk 4.0.297 gennem PR #201/exact-head `33162270459`, merge `f1adf9b1`, produktion `33162334072`, build `98819572518`, Pages `98821497503` og offentlig desktopkontrol.
+- [x] Registrér ejerens fortsat røde fysiske iPhone-test og præciseringen: testen bruger RavRadars eget link, ikke browserens tilbageknap.
+- [x] Giv Om-linket en statisk versionsbundet `return=about`-vej og en unik nonce ved normal aktivering.
+- [x] Installer et tidligt selvhostet head-værn før Leaflet og async bootstrap.
+- [x] Kræv synligt kort, fem aktuelle områder, fem dagsfaner og fem viste prognoserækker; tillad højst én sekssekunders retry.
+- [x] Lås sund retur, timeout, præcis én retry, ingen løkke, fravær af returmarkør, statisk href, head-rækkefølge og service-worker-cache med målrettede tests.
 - [x] Bestå fuld lokal sourcegate og RDKS-/privacy-/releasekontrol efter versionsløftet.
 - [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.297-version, hurtig startup, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
-- [ ] Få ejeren til at bekræfte **Om RavRadar** → tilbage på den fysiske mobil.
+- [ ] Genverificér offentlig 4.0.298-version, hurtig startup, farvet kort, fem aktuelle områder og fem resultater på alle fem prognosedage.
+- [ ] Få ejeren til at bekræfte **Om RavRadar** → RavRadar først i Safari og derefter i Hjemmeskærm-appen på fysisk iPhone.
 
-Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094.
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094/0095.
 
 ## P1 produktionsverificeret – minimal Candidate G-startprojektion
 
