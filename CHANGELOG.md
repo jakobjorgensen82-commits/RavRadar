@@ -5,6 +5,7 @@
 - Udvider lokal assistentviden, tilføjer delstrengssøgning med bevaret zonerullemenu, pilesignatur og mørkere strømpil.
 - Viser BernsteinScore/AmberScore uden at ændre interne RavScore-/Candidate G-kontrakter.
 - Candidate G, DMI/Copernicus, offentlig score/state, geometri og land-/vandpunkter er uændrede. Se DEC-0103/0104.
+- PR #217/exact-head `33212348031`, merge `8ebbd4e7`, produktion `33212435923` og Pages-deployment `6148930627` er grønne. Offentlig 4.0.306 består 210/673, desktop/390 px, 5 + 5 x 5 og zonedetalje uden konsolfejl eller mobil overflow. Frisk primary modnes ved 0/673 READY under den komplette auditerede 673/673-recovery; der er intet dækningshul.
 
 ## 4.0.305 – kort uden flisegitter (2026-08-28)
 

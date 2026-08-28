@@ -1,8 +1,14 @@
+## 2026-08-28 – 4.0.306 GitHub-genopretning produktionslukket
+
+- PR #217 bestod exact-head `33212348031` på `91dffaa3` og blev merged som `8ebbd4e7`. Produktion `33212435923` bestod checkpointovergang, frisk DMI/Copernicus/proveniens, faktisk Candidate G-runtimeaudit, fuld validering, releasegate, artifact og Pages-deployment `6148930627`.
+- Offentlig 4.0.306 viser frisk primary `rr-20260828213450-210`, komplet 210/673 og Candidate G som eneste offentlige model. Primary står årsagstro ved 0/673 READY; den atomiske recovery `rr-20260827013448-210` har 673 memory-ready dele, 1.346 modeevalueringer og nul rekonstruktionsafvigelser, så der er intet dækningshul.
+- Desktop 1440 x 900 og mobil 390 x 844 viser farvet kort, fem aktuelle områder, fem resultater på hver af fem dage, fungerende zonedetalje og tydelig recoverybesked uden konsolfejl eller mobil overflow. Broen bevarede cirka 36/48 timers sammenhængende suffix; forventet primary-READY cirka 2026-08-29T09:00:00Z har omkring 16,5 timers margin til recoverygrænsen 2026-08-30T01:34:48Z. Se DEC-0104.
+
 ## 2026-08-28 – 4.0.306 ejerrettelser i separat smårettelsesspor
 
 - Ejeren bestilte samlet korrektur, lærings-/illustrationsrettelser, bredere Spørg RavRadar-viden, zonesøgning, kortsignatur/pilkontrast, mobilombrydning og synlige tyske/engelske scorenavne.
 - Implementeringen er afgrænset fra DEC-0102: ingen Candidate G-, DMI/Copernicus-, state-, scoresemantik-, geometri- eller punktændring.
-- DEC-0103 registrerer den aktuelle kontrakt. Exact-head og produktion afventer.
+- DEC-0103 registrerer den aktuelle kontrakt. Exact-head, produktion og offentlig desktop-/mobilkontrol er nu grønne gennem PR #217 og DEC-0104.
 
 ## 2026-08-28 – godkendt todelt arbejdsform og næste samlede RavScore-model
 
@@ -2466,3 +2472,4 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Offentlig manifestkontrol viste fortsat 4.0.305, 210/673, gyldig primær prognose og komplet auditeret Candidate G-recovery. Opdateringskæden var dog blokeret.
 - Source føres tilbage til den rene ejercommit `c53f5060`. En eksakt, privacy-bevarende checkpointadapter lukker kun den kendte afbrudte modelovergang; ukendte kontekster ændrer intet.
 - Sol/Ultra-genaudit fandt selvstændige aktiveringsstop i hard supply-gate, bølge-missing, 48-timersrand samt manglende kanonisk evidens/replay. Den næste model forbliver udvikling under DEC-0102. Se DEC-0104.
+- Genopretningen blev efterfølgende lukket af PR #217/exact-head `33212348031`, merge `8ebbd4e7`, grøn fuld produktion `33212435923`, Pages `6148930627` og offentlig desktop-/390 px-kontrol. Frisk primary modnes under komplet auditeret recovery uden dækningshul.
