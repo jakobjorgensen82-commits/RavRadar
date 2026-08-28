@@ -19,5 +19,6 @@ Dato: 2026-08-28
 
 - Offentlig 4.0.298 beviste, at Om-returen allerede var komplet efter cirka ét sekund med 210 zonelinjer og 5 + 5 + 5, hvorefter det fejlagtige værn tvang en ny navigation ved cirka seks sekunder.
 - Ejerens fysiske iPhone-test beskrev siden som meget langsom og derefter helt udeblevet. 4.0.298 må ikke kaldes fysisk løst.
-- Målrettet 4.0.299-test og fuld lokal `validate:source`/releasegate er grønne. Exact-head, produktion, offentlig cirka ét-sekundsretur og fysisk Safari-/Hjemmeskærm-test afventer.
-- Se DEC-0096.
+- PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939` er grønne.
+- Offentlig desktopkontrol viste 210 zonelinjer, fem aktuelle områder, fem dagsfaner/fem viste rækker og cirka 1,36 sekunders Om-retur uden senere URL-skift.
+- Ejerens efterfølgende fysiske iPhone-test var fortsat rød: kort og prognoser manglede, indtil telefonen blev låst og åbnet igen. 4.0.299 må derfor ikke kaldes den fysiske løsning; se DEC-0097/4.0.300.

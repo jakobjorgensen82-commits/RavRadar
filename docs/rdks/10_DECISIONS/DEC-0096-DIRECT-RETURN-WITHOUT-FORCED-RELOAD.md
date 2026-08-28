@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementeret kildekandidat til 4.0.299 efter offentlig tidsmåling og ejerens røde fysiske iPhone-test 2026-08-28. Målrettede tests og fuld lokal `validate:source`/releasegate er grønne; exact-head, produktion og fysisk Safari-/Hjemmeskærm-test afventer.
+**ERSTATTET AF DEC-0097.** 4.0.299 bestod PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`. Offentlig desktopkontrol viste 210 zonelinjer og 5 + 5 + 5 samt cirka 1,36 sekunders Om-retur, men ejerens efterfølgende fysiske iPhone-test viste stadig en forside uden kort og prognoser. Lås/oplåsning fik visningen frem, hvilket pegede på suspenderet layout/genoptagelse. Den unikke navigation og 4.0.297's mobile reload fjernes derfor i DEC-0097.
 
 ## Problem
 

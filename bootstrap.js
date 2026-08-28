@@ -1,27 +1,21 @@
 performance.mark?.('ravradar:bootstrap-start');
-import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.299";
-import { initialiseI18n } from "./js/i18n.js?v=4.0.299";
-import { createPublicPageReturnWatchdog } from "./js/core/public-page-resume.js?v=4.0.299";
+import { initializeUserDataSafety } from "./js/services/storage-safety.js?v=4.0.300";
+import { initialiseI18n } from "./js/i18n.js?v=4.0.300";
 
 let appImported = false;
-const handleEarlyPageShow=createPublicPageReturnWatchdog({
-  isAppImported:()=>appImported,
-  // På en smal mobilskærm er en ren genindlæsning sikrere end at stole på,
-  // at Safari/Chrome genstarter alle suspenderede kort- og forecastopgaver.
-  // Den kompakte startpakke gør samtidig denne fail-safe billig.
-  shouldReloadImmediately:()=>globalThis.matchMedia?.('(max-width: 900px)').matches===true,
-  markPending:()=>{document.documentElement.dataset.ravradarResume='pending';},
-  isResumeHealthy:()=>document.documentElement.dataset.ravradarResume==='ready',
-  reload:()=>location.reload()
+addEventListener('pageshow', event => {
+  // Safari kan gendanne en side, der blev lagt i page cache, før app-importen
+  // var færdig. En færdig app genoptages og genoptegnes i app.js; kun en
+  // reelt halvfærdig modulstart må genindlæses.
+  if (event.persisted && !appImported) location.reload();
 });
-addEventListener('pageshow',event=>{handleEarlyPageShow(event);});
 
 initialiseI18n();
 await initializeUserDataSafety();
 performance.mark?.('ravradar:storage-ready');
-await import("./app.js?v=4.0.299");
+await import("./app.js?v=4.0.300");
 appImported = true;
 performance.mark?.('ravradar:app-imported');
-void import("./js/services/visit-counter.js?v=4.0.299")
+void import("./js/services/visit-counter.js?v=4.0.300")
   .then(({ schedulePublicPageView }) => schedulePublicPageView())
   .catch(() => {});

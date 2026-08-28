@@ -1,20 +1,21 @@
-# Implementeringsstatus – 4.0.299-kandidat efter fejlramt fysisk 4.0.298-retur
+# Implementeringsstatus – 4.0.300-kandidat efter fejlramt fysisk 4.0.299-retur
 
-## P1 kildekandidat – én hurtig direkte retur
+## P1 kildekandidat – gendan den fungerende sidecache-retur
 
-- [x] Luk 4.0.298 gennem PR #203/exact-head `33164570642`, merge `077b6fb9`, produktion `33164639052`, build `98827073610` og Pages `98829261896`.
-- [x] Registrér offentlig modstridende evidens: komplet 210 + 5 + 5 + 5 efter ét sekund, men `pending`/retry/`failed` på grund af forkert pane-selector.
-- [x] Registrér ejerens røde fysiske iPhone-test med meget langsom og derefter udeblevet side.
-- [x] Bevar Om-linkets unikke versions-/noncebaserede navigation i Safari og Hjemmeskærm-app.
-- [x] Fjern det ekstra synkrone head-script, timeren og den automatiske reload, som genstartede den allerede komplette side.
-- [x] Fjern det forkastede værn fra service-workerens appskal og den aktive testkæde.
-- [x] Bestå målrettet 4.0.299-regression og fuld lokal sourcegate.
+- [x] Luk 4.0.299 gennem PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`.
+- [x] Registrér offentlig desktop-evidens: komplet 210 + 5 + 5 + 5 og cirka 1,36 sekunders intern Om-retur uden senere reload.
+- [x] Registrér ejerens modstridende fysiske iPhone-evidens: kort og prognoser mangler efter intern Om-retur, men kommer frem efter lås/oplåsning.
+- [x] Sammenlign eksakt med 4.0.292 og identificér de senere regressioner: mobil hard reload samt unik versions-/nonce-navigation.
+- [x] Gendan statisk `./`-link og almindelig browsernavigation uden klikoverstyring.
+- [x] Fjern mobil hard reload, separat watchdog, DOM-sundhedsreload og resume-markører; bevar kun reload før færdig appimport.
+- [x] Bevar den nuværende behovsstyrede detaljelæsning og genoptegn samme state ved `pageshow.persisted`.
+- [x] Bestå målrettede resume-, retur-, startup-, ydelses-, versions- og geodatakontroller.
 - [ ] Bestå PR exact-head, merge, fuld produktion og Pages.
-- [ ] Genverificér offentlig 4.0.299-version, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage.
-- [ ] Bevis offentlig cirka ét-sekunds Om-retur uden efterfølgende URL-skift eller reload.
+- [ ] Genverificér offentlig 4.0.300-version, 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage.
+- [ ] Bevis offentlig Om-retur med det direkte `./`-link og uden tvungen ny navigation.
 - [ ] Få ejeren til at bekræfte Safari og derefter Hjemmeskærm-appen på fysisk iPhone.
 
-Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0094–0096.
+Candidate G, RavScore, vejr, prognoseinput, sortering, konto-/turdata, privatliv og geometri er uændrede. Sibirien forbliver privat staged og uaktiveret. Se DEC-0097; DEC-0094–0096 er historiske, fysisk afviste forsøg.
 
 ## P1 produktionsverificeret – minimal Candidate G-startprojektion
 

@@ -1,11 +1,12 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.299 – én frisk navigation uden tvungen reload
+## Kildekandidat 4.0.300 – den beviste 4.0.292-returvej gendannes
 
-- 4.0.298 på merge `077b6fb9` bestod exact-head `33164570642`, produktion `33164639052`, build `98827073610` og Pages `98829261896`, men er rød for den fysiske iPhone-rejse.
-- Den offentlige Om-retur havde allerede efter ét sekund 210 interaktive zonelinjer, fem aktuelle områder, fem dagsfaner og fem viste rækker. Det pane-afhængige værn forblev alligevel `pending`, genindlæste ved cirka seks sekunder og endte `failed`.
-- 4.0.299 beholder Om-linkets unikke versions-/noncebaserede root-navigation, men fjerner det ekstra synkrone head-script, timeren og automatiske reload. Den eksisterende kompakte appopstart fuldfører én gang uden at blive genstartet.
-- Målrettet test og fuld lokal source-/releasegate er grønne. Exact-head, produktion, offentlig cirka ét-sekundsretur uden senere URL-skift og fysisk Safari-/Hjemmeskærm-kontrol afventer. Se DEC-0096.
+- 4.0.299 bestod PR #204/exact-head `33166362478`, merge `0ac66199`, produktion `33166424816`, build `98832864492` og Pages `98834824939`. Offentlig desktopretur var komplet på cirka 1,36 sekunder med 210 zonelinjer og 5 + 5 + 5, men den fysiske iPhone-test var stadig rød.
+- På iPhone kom kort og prognoser først frem efter lås, kort ventetid og oplåsning. Siden var derfor indlæst, men visningen/livscyklussen var suspenderet; en ny kold navigation var ikke løsningen.
+- Den eksakte kodeforskel mod produktionsverificeret 4.0.292 viser regressionen: 4.0.297 indførte mobil hard reload ved enhver persisted retur, og 4.0.298/299 erstattede det almindelige `./`-link med en unik versions-/nonce-URL.
+- 4.0.300 gendanner det statiske `./`-link, fjerner klikoverstyring, mobil hard reload, watchdog og DOM-sundhedsreload. En færdig bfcache-side genoptegner Leaflet, zonefarver, **Bedste områder**, valgt zone, **5-dages RavRadar** og pile; kun en retur før afsluttet appimport genindlæses.
+- 4.0.295/296's behovsstyrede, indholdsadresserede datalæsning bevares. Målrettede tests er grønne; exact-head, produktion, offentlig runtime og fysisk Safari-/Hjemmeskærm-test afventer. Se DEC-0097.
 - Ingen faglig model, data, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startprojektion

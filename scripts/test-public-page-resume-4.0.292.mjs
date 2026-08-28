@@ -76,8 +76,8 @@ const bootstrap=await fs.readFile('bootstrap.js','utf8');
 const earlyGuard=bootstrap.indexOf("addEventListener('pageshow'");
 const storageAwait=bootstrap.indexOf('await initializeUserDataSafety()');
 assert.ok(earlyGuard>=0&&earlyGuard<storageAwait,'Bootstrapværnet skal være installeret før første asynkrone opstartstrin.');
-assert.match(bootstrap,/createPublicPageReturnWatchdog/);
-assert.match(bootstrap,/isAppImported:\(\)=>appImported/);
+assert.match(bootstrap,/event\.persisted && !appImported/);
+assert.doesNotMatch(bootstrap,/createPublicPageReturnWatchdog|matchMedia|max-width: 900px|ravradarResume/);
 
 const app=await fs.readFile('app.js','utf8');
 assert.match(app,/createPublicPageResumeHandler/);
@@ -86,5 +86,6 @@ assert.match(app,/detailsRequired:\(\)=>conditionDetailsPromise!==null/);
 assert.match(app,/isDetailsReady:\(\)=>conditionDetailsReady/);
 assert.match(app,/map\.invalidateSize\(\{pan:false\}\)/);
 assert.match(app,/renderRanking\(\);renderSelectedZone\(\);[\s\S]*await renderNationalForecast\(\)/);
+assert.doesNotMatch(app,/publicViewHealthy|ravradarResume/);
 
-console.log('OK: Safari/bfcache-genoptagelse genoptegner en færdig forside og genindlæser fail-safe efter en afbrudt opstart.');
+console.log('OK: Safari/bfcache-genoptagelse genoptegner en færdig forside og genindlæser kun efter en afbrudt opstart.');
