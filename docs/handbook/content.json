@@ -1,16 +1,9 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.302",
+  "handbookVersion": "4.0.301",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-28",
   "sections": [
-    {
-      "id": "first-service-worker-claim-no-reload-4-0-302",
-      "chapter": "78",
-      "title": "Hurtigere allerførste åbning",
-      "summary": "Første service-worker-overtagelse genindlæser ikke længere en allerede korrekt side, og de uafhængige startdata begynder samtidig.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar kunne tidligere køre den dyre første indlæsning to gange, fordi den nyinstallerede service worker overtog siden og udløste en automatisk reload.</div><div class=\"handbook-stack\"><p><strong>Ingen dobbelt førstegangsstart:</strong> Den første overgang fra ingen controller til den nye RavRadar-worker accepteres nu uden genindlæsning.</p><p><strong>Fortsat sikker opdatering:</strong> Når en allerede kontrolleret side senere får en rigtig ny version, genindlæses den fortsat præcis én gang. Versionskontrol, cachebinding og updateovertagelse bevares.</p><p><strong>Parallel hentning:</strong> Manifest/prognosestart begynder samtidig med zone-/kystdelsgrenen. Den synlige rækkefølge og alle dataset-, tids- og hashgates er uændrede.</p><p><strong>Evidens:</strong> Ejeren og offentlig browser reproducerede cirka 14 sekunders første åbning, mens efterfølgende faner var hurtige. Den målrettede kontrakt låser første claim til nul reloads og senere update til én.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, vejr, prognoseindhold, sortering, konto-/turdata, privatliv, geometri og land-/vandpunkter er uændrede. Se <code>DEC-0099</code>.</p></div>"
-    },
     {
       "id": "content-addressed-lazy-public-details-4-0-295",
       "chapter": "77",

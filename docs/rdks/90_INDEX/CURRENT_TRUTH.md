@@ -1,21 +1,12 @@
 # Current truth – gældende projektviden
 
-## Kildekandidat 4.0.302 – første service-worker-claim uden ekstra reload
-
-- 4.0.301 er produktionsverificeret gennem PR #206/exact-head `33172111444`/job `98851532431`, merge `21aac8f6`, produktion `33172186373`, build `98851836126` og Pages `98854056109`.
-- Offentlig Om → RavRadar-retur viste 210 zonelinjer, fem aktuelle områder og fem resultater på alle fem prognosedage på cirka 1,27 sekunder og var stabil efter otte sekunder. Ejeren bekræftede fysisk iPhone Safari grøn; ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION er lukket.
-- Første besøg tog samtidig cirka 14 sekunder hos ejeren og i en frisk offentlig browserkontrol; efterfølgende faner var hurtige. Den første service-worker-aktivering kaldte `clients.claim()`, hvorefter appens ubetingede `controllerchange`-handler genindlæste hele siden.
-- 4.0.302 accepterer den første overgang fra ukontrolleret til kontrolleret side uden reload. En efterfølgende rigtig workeropdatering genindlæser fortsat præcis én gang.
-- Manifest/prognosestart begynder parallelt med zone-/kystdelsgrenen. Geometrien og den synlige initialiseringsrækkefølge ændres ikke. Målrettede tests og fuld lokal `validate:source`/releasegate er grønne; exact-head, produktion og reelt cachekold efterprøve afventer. Se DEC-0099.
-- Candidate G, RavScore, vejr, prognoseindhold, sortering, konto-/turdata, privatliv, geometri og punkter er uændrede. Sibirien forbliver privat staged og uaktiveret.
-
-## Produktionsverificeret 4.0.301 – intern Om-knap bruger rigtig historikretur
+## Kildekandidat 4.0.301 – intern Om-knap bruger rigtig historikretur
 
 - 4.0.300 bestod PR #205/exact-head `33169073533`, merge `11f87093`, produktion `33169139060`, build `98841746378` og Pages `98843831281`. Offentlig intern Om-retur var komplet på cirka 1,29 sekunder med 210 zonelinjer og 5 + 5 + 5, men ejerens fysiske Safari-test på bekræftet 4.0.300 var stadig rød.
 - Fejlen i 4.0.300's begrundelse er identificeret: 4.0.292's dokumenterede prøve brugte browserens tilbagefunktion. Det gendannede `./`-link oprettede en ny navigation og var derfor ikke samme hændelse.
 - Offentlig navigation beviser, at Om-siden modtager forsiden som fuld samme-origin-referrer. 4.0.301 bruger derfor `history.back()` ved et almindeligt klik, når referreren er den kanoniske RavRadar-root; direkte/fremmed åbning beholder det statiske `./`-link.
 - Den rigtige historikretur rammer appens eksisterende `pageshow.persisted`-redraw af Leaflet, zonefarver, **Bedste områder**, valgt zone, femdøgnsprognose og pile. Ingen reload, timer, nonce eller watchdog tilføjes.
-- 4.0.295/296's behovsstyrede, indholdsadresserede datalæsning bevares. PR #206, produktion, offentlig runtime og fysisk iPhone Safari er grønne. Hjemmeskærm kan efterkontrolleres særskilt. Se DEC-0098.
+- 4.0.295/296's behovsstyrede, indholdsadresserede datalæsning bevares. Målrettede tests er grønne; exact-head, produktion, offentlig runtime og fysisk Safari-/Hjemmeskærm-test afventer. Se DEC-0098.
 - Ingen faglig model, data, score, sortering, konto-/turdata, geometri eller punkt ændres. Sibirien forbliver privat staged og uaktiveret.
 
 ## Produktionsverificeret 4.0.296 – minimal Candidate G-startprojektion

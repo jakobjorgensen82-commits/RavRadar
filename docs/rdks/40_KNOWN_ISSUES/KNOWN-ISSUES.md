@@ -1,12 +1,8 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.302 – langsom første service-worker-installation
-
-- **ISSUE-PUBLIC-FIRST-INSTALL-DOUBLE-START – 4.0.302 KILDEKANDIDAT / KOLD PRODUKTIONSBEVIS AFVENTER:** Ejeren og en frisk offentlig browserkontrol reproducerede cirka 14 sekunders første load, mens efterfølgende faner var hurtige. Første service-worker-aktivering kaldte `clients.claim()`, og appens ubetingede `controllerchange`-handler genindlæste derefter hele den allerede indlæste side. 4.0.302 accepterer første claim uden reload, bevarer én reload ved en rigtig senere opdatering og starter manifest/prognosestart parallelt med zone-/kystdelsgrenen. Målrettede tests er grønne; exact-head, produktion og reelt cachekold efterprøve afventer. Se DEC-0099.
-
 ## 4.0.301 – fysisk mobilretur gennem RavRadars eget Om-link
 
-- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – PRODUKTIONSVERIFICERET OG FYSISK LØST I 4.0.301:** 4.0.301 lader den interne knap udføre `history.back()` efter verificeret samme-origin root-referrer og beholder statisk `./` ved direkte/fremmed åbning. PR #206, exact-head, produktion og Pages er grønne; offentlig retur var komplet på cirka 1,27 sekunder med 210 zonelinjer og fem resultater på alle fem dage, og ejeren bekræftede fysisk iPhone Safari grøn. Hjemmeskærm kan efterkontrolleres særskilt. Se DEC-0098.
+- **ISSUE-MOBILE-HOME-RETURN-EMPTY-REGRESSION – 4.0.301 KILDEKANDIDAT / FYSISK PRODUKTIONSBEVIS AFVENTER:** Ejerens fysiske Safari-test var fortsat rød på bekræftet produktionsversion 4.0.300. Den tidligere 4.0.292-verifikation viste browsertilbage, ikke intern `./`-navigation; 4.0.300 genskabte derfor ikke den beviste hændelse. Offentlig referrer er verificeret samme-origin root. 4.0.301 lader den interne knap udføre `history.back()` i netop dette tilfælde og beholder statisk `./` ved direkte/fremmed åbning. Målrettede tests er grønne; exact-head, produktion og fysisk Safari-/Hjemmeskærm-bevis afventer. Se DEC-0098.
 
 ## 4.0.296 – offentlig opstartsydelse
 
