@@ -16,12 +16,15 @@
 - [x] Model-worktree: bevis plug-and-play i kode mod produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
 - [x] Model-worktree: færdiggør producent-/forbrugermatricen for DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits.
 - [x] Gennemfør 288 koordinatfrie gammel-mod-ny-, scenarie-, ablations-, følsomheds-, glatheds- og regressionscases uden fundpræcisionspåstand.
-- [ ] Integrér eventuel nyere grøn `origin/main`, versionsluk kandidaten og bestå fuld lokal source-/releasegate.
-- [ ] Bestå PR exact-head, merge, frisk central hydrering/DMI/Copernicus, faktisk 210/673-runtimeaudit, fuld validate/releasegate og Pages.
+- [x] Genbrug allerede hentet verificeret vejrhistorik, DMI/Copernicus-cache og kompatibel kompakt state ved første release; migration/replay må ikke kræve flerdages ny opvarmning eller kunstig historik.
+- [x] Integrér seneste grønne `origin/main`, versionsluk kandidaten, bestå fuld source-/releasegate, PR #215 exact-head `33206386764` og merge `cfb91420`.
+- [x] Bevis i første produktion `33206467775`, at central adminhydrering, eksisterende checkpoint/state og DMI/Copernicus-cache genbruges før frisk runtimebygning.
+- [x] Stop fail-closed før deploy, da den faktiske runtimeaudits outputmappe manglede; afgræns rettelsen til rekursiv mappeoprettelse og en temp-baseret regressionstest.
+- [ ] Bestå rettelses-PR exact-head, merge, ny frisk central hydrering/DMI/Copernicus, faktisk 210/673-runtimeaudit, fuld validate/releasegate og Pages.
 - [ ] Verificér offentlig desktop og 390 px mobil: version, kort, 210 zoner, fem aktuelle, fem × fem dage, detaljer/forklaringer, begge modes, assistent og nul konsolfejl.
 - [ ] Udgiv først efter samlet modelbeslutning, exact-head, frisk produktion og offentlig kontrol.
 
-Se DEC-0102/0103 og dokumenterne under `docs/research/`. Offentlig version forbliver 4.0.305, indtil de resterende gates er registreret.
+Se DEC-0102/0103 og dokumenterne under `docs/research/`. Offentlig version forbliver 4.0.305, fordi første produktion stoppede før deploy; den nye model er ikke offentliggjort som fragment eller shadowmodel.
 
 ## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -118,7 +119,13 @@ export function auditNextGenerationPublicRuntime(document, {
   };
 }
 
-function selfTest() {
+async function writeAuditReport(output, report) {
+  const resolved = path.resolve(output);
+  await fs.mkdir(path.dirname(resolved), { recursive: true });
+  await fs.writeFile(resolved, `${JSON.stringify(report, null, 2)}\n`);
+}
+
+async function selfTest() {
   const mode = score => ({
     available: true,
     score,
@@ -173,6 +180,11 @@ function selfTest() {
   const invalid = structuredClone(document);
   invalid.coastalParts.parts.p1.current.beach.explanation.transportDiagnostics.surfZoneResolved = true;
   assert.equal(auditNextGenerationPublicRuntime(invalid, { expectedZoneCount: 1, expectedPartCount: 1 }).ok, false);
+  const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-runtime-audit-'));
+  const nestedOutput = path.join(temporaryRoot, 'missing-parent', 'audit.json');
+  await writeAuditReport(nestedOutput, report);
+  assert.equal(JSON.parse(await fs.readFile(nestedOutput, 'utf8')).ok, true);
+  await fs.rm(temporaryRoot, { recursive: true, force: true });
   console.log('OK: integreret RavScore-runtimeaudit låser model, state, projektion, usikkerhed og fail-closed-kontrakt.');
 }
 
@@ -185,7 +197,7 @@ async function main() {
   const report = auditNextGenerationPublicRuntime(JSON.parse(await fs.readFile(input, 'utf8')), {
     requireAllReady: !process.argv.includes('--allow-local-warmup'),
   });
-  if (output) await fs.writeFile(output, `${JSON.stringify(report, null, 2)}\n`);
+  if (output) await writeAuditReport(output, report);
   if (!report.ok) throw new Error(`RavScore-runtimeaudit fejlede: ${report.failures.slice(0, 20).join(', ')}`);
   console.log(`OK: ${report.coverage.zoneCount} zoner, ${report.coverage.partCount} kystdele og ${report.coverage.modeEvaluationCount} modelprojektioner.`);
 }

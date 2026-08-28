@@ -59,13 +59,19 @@ Kandidaten leverer selv producent-/forbrugerkompatibilitet for DMI/Copernicus, 2
 
 Den centrale profil skal være schema 3 og vælge præcis det nye model-id. Produktionsgeneratoren beregner kun den valgte nye score. Gammel Candidate G-state må kun bruges én gang som eksplicit migrationskilde; gammel Candidate G-score må aldrig bruges som offentlig fallback.
 
+## Første release og eksisterende data
+
+Modellen skal være scoreklar i den samme release, der aktiverer den. Produktionskæden genbruger derfor allerede hentet og verificeret vejrhistorik, eksisterende DMI/Copernicus-cache samt kompatibel kompakt state. Schema-2-state migreres eksplicit til schema 3; hvis direkte migration ikke er kompatibel, må generatoren datasikkert replaye de allerede hentede verificerede prøver. Den må ikke vente flere dage på en ny historik, fremskynde state med kunstige timer eller bruge gammel Candidate G-score.
+
+Manglende eller inkompatibel evidens er fortsat fail-closed. Den valgte model kræver ingen ny datakilde. Hvis senere forskning dokumenterer et nyt databehov, må det kun etableres som et separat score-neutralt anskaffelsesforløb efter konfliktkontrol mod seneste `main`; det må ikke ændre offentlig model, state, score, geometri eller punkter før en ny samlet beslutning.
+
 ## Evidens og påstandsgrænse
 
 Det koordinatfrie offlinebevis omfatter 288 syntetiske scenarier, gammel-mod-ny, ablation, følsomhed, glathed ved den tidligere 13-timers grænse, wadersloft og faldende vand. Supply- og mobiliseringsablation giver begge ny score 0, rangkorrelationen med Candidate G er 0,871988, og vandstandssweepet ændrer højst slutscoren 1 point i referencecasene. Det beviser struktur og regressioner, ikke højere empirisk fundpræcision.
 
 ## Aktiverings- og rollbackgate
 
-Aktivering kræver seneste grønne `origin/main`, målrettede regressioner, fuld `validate:source` på PR'ens eksakte head, frisk central hydrering og vejropbygning, faktisk 210/673-runtimeaudit, fuld `npm run validate`, `npm run release:gate`, sikker merge, frisk Pages-deploy samt offentlig desktop- og 390 px-mobilkontrol. En grøn status kan ikke overtrumfe konkret modstridende evidens.
+Aktivering kræver seneste grønne `origin/main`, målrettede regressioner, fuld `validate:source` på PR'ens eksakte head, frisk central hydrering og vejropbygning med dokumenteret genbrug af eksisterende historik/cache, faktisk 210/673-runtimeaudit, fuld `npm run validate`, `npm run release:gate`, sikker merge, frisk Pages-deploy samt offentlig desktop- og 390 px-mobilkontrol. En grøn status kan ikke overtrumfe konkret modstridende evidens.
 
 Før disse beviser er registreret, er status kun releasekandidat. Ved fejl bevares eller gendannes det seneste hele, verificerede artifact; state, scorer, dataset-id'er eller hashes må aldrig blandes på tværs af modeller.
 

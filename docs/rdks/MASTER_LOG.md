@@ -1,3 +1,12 @@
+## 2026-08-28 – 4.0.306 exact-head/merge og sikkert produktionsstop
+
+- PR #215 bestod exact-head `33206386764` på `8547c1f9`; den samlede modelkandidat blev merged som `cfb9142062218a3ac8afc58a3de95560017450b2` uden offentlig fragment- eller shadowmodel.
+- Push-produktion `33206467775` hydrerede central adminprofil, eksisterende checkpoint/state og DMI/Copernicus-cache og byggede frisk runtime. Den stoppede før deploy, da auditrapportens `.geometry-v2-work`-forældermappe manglede; fuld modelaudit, validate/releasegate og Pages blev ikke omgået.
+- Den afgrænsede rettelse opretter rapportens forældermappe rekursivt og udvider self-testen med nested output i systemets temp-mappe. Offentlig side forbliver 4.0.305, indtil ny exact-head, frisk produktion og desktop-/mobilkontrol er grønne.
+- Rettelsen består audit-self-test, hele den målrettede RavScore-suite, 288 offlinecases, RDKS, releasegate og fuld lokal `validate:source`; GitHub exact-head og ny produktion mangler fortsat.
+- Ejeren præciserede, at første release skal genbruge allerede hentet vejrhistorik/cache, så modellen ikke kræver flerdages opvarmning. Det er nu et bindende krav; første produktion gav checkpoint-/cachebevis, mens 673/673 scoreklarhed afventer den nye kørsel.
+- Ingen ekstra datakilde er nødvendig. Ejerens mulighed for et senere særskilt dataanskaffelsesforløb bruges kun ved dokumenteret behov og efter konfliktkontrol mod nyeste `main`; det skal være score-neutralt og må ikke ændre geodata, model eller offentlig state.
+
 ## 2026-08-28 – 4.0.306 kystkausal RavScore implementeret som samlet releasekandidat
 
 - `RRS-COASTAL-CAUSAL-CHAIN-1`/state-schema 3 er implementeret som én modelkæde. Candidate G bliver kun historisk/offline reference og kan ikke vælges som offentlig scorefallback.
