@@ -1,14 +1,8 @@
-## 4.0.302 – én koldstart uden førstegangsreload (2026-08-28)
-
-- Første service-worker-claim genindlæser ikke længere en allerede korrekt indlæst side; senere versionsovertagelser genindlæser fortsat præcis én gang.
-- Manifest/prognosestart hentes parallelt med zone-/kystdelsgrenen. Ingen geometri, punkter, Candidate G, score, vejr eller brugerdata ændres. Se DEC-0099 og `CHANGELOG-4.0.302.md`.
-
 ## 4.0.301 – Om-knappen udfører rigtig historikretur (2026-08-28)
 
 - Retter den afgørende forskel, som 4.0.300 overså: 4.0.292's tidligere bevis brugte browsertilbage, mens det interne `./`-link lavede en ny navigation.
 - Den interne knap bruger nu `history.back()` ved verificeret samme-origin root-referrer og bevarer `./` som sikker fallback ved direkte/fremmed åbning.
 - Ingen Candidate G-, score-, vejr-, bruger- eller geodata ændres. Se DEC-0098 og `CHANGELOG-4.0.301.md`.
-- PR #206, exact-head, produktion og Pages er grønne, og ejeren har fysisk godkendt den interne retur på iPhone Safari. Den særskilte cirka 14 sekunders første load følges i 4.0.302.
 
 ## 4.0.300 – gendannet mobil sidecache-retur (2026-08-28)
 

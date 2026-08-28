@@ -2,7 +2,7 @@
 
 ## Status
 
-Produktionsverificeret og fysisk godkendt i 4.0.301. PR #206 bestod exact-head `33172111444`/job `98851532431` på `f1ca4677`, blev merged som `21aac8f6` og gennemførte grøn produktion `33172186373`, build `98851836126` samt Pages `98854056109`. Ejeren bekræftede derefter på fysisk iPhone Safari, at den interne RavRadar-knap viser kort og prognoser korrekt.
+Implementeret som lokal 4.0.301-kandidat efter ejerens røde fysiske Safari-test på bekræftet version 4.0.300. Målrettede historik-, resume-, startup-, ydelses- og versionskontroller er grønne; exact-head, produktion, offentlig runtime og fysisk iPhone-test afventer.
 
 ## Problem
 
@@ -29,5 +29,4 @@ Den offentlige 4.0.300-side bekræfter, at **Om RavRadar** modtager den fulde sa
 - Eksisterende bfcache-redraw og 4.0.295/296-startup-/ydelseskontrakter skal bestå.
 - Fuld `validate:source` skal bestå på PR'ens eksakte head, efterfulgt af frisk produktion, releasegate og Pages.
 - Offentlig kontrol skal bevise 4.0.301, referrerforudsætningen, 210 kortzoner, fem aktuelle områder og fem rækker på alle fem prognosedage efter den interne knap.
-- Den offentlige interne knap var komplet på cirka 1,27 sekunder med 210 kortzoner, fem aktuelle områder og fem rækker på alle fem prognosedage og forblev stabil efter otte sekunder.
-- Ejeren bekræftede den samme rejse grøn på fysisk iPhone Safari 28. august 2026. Hjemmeskærm kan fortsat efterkontrolleres særskilt, men den rapporterede Safari-fejl er lukket.
+- Ejeren skal til sidst bekræfte den interne knap på fysisk iPhone Safari; derefter testes Hjemmeskærm særskilt. Fejlen er åben indtil den fysiske prøve er grøn.
