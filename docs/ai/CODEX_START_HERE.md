@@ -2,7 +2,18 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-29 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
+## Aktuelt P0-checkpoint 2026-08-30 – før-primary-gate lokalt afgrænset
+
+- Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
+- PR #230 bestod exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea`, og push `33277217412` var korrekt no-op.
+- Første D1 `33277253662` stoppede fail-closed på en forbigående unauth-trip-probe-503 efter Edge med grøn roll-forward og nul inspect. Idempotent genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme SHA.
+- Read-only inspect `33277738135`/`99167394284` stoppede før descriptor/apply/build/Pages og viste kun `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Ingen data eller cache blev ændret.
+- Før-supportfilen er den ærlige primary; den komplette målte nødvisning blev publiceret separat. Før-primary må derfor være eksakt replaybar measured-only schema 2.0 `WINDOW_INCOMPLETE`. Kun det samlede target-reference-replay må åbne `READY` efter den ene forseglede interpolation.
+- Lokal same-version-hotfix fjerner kun blanket-READY-gaten. Alle minimum-, replay-, cadence-, bracket-, targetanker-, source-, descriptor-, CAS-, privacy- og slut-READY-gates består. Ældre hul, for kort suffix, schema 2.1, ukendt status eller tampering stopper før descriptor.
+- Syntetisk 210/673-test bruger 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer og består begge parentmiljøer. Næste rækkefølge er lokale gates/review → exact-head/merge/no-op → nyt D1 → ny inspect → eventuelt CAS-apply/frisk produktion/offentlig 210/673.
+- Hent aldrig fuld inspectjoblog eller source-/descriptor-/rollbackartifacts. Brug kun allowlistet checkannotation. Ingen vejr, rå U/V, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
+
+## Historisk P0-checkpoint 2026-08-29 – D1 grøn; sanitiseret diagnostikhotfix
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.

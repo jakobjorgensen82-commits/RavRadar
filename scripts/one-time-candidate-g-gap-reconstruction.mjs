@@ -719,10 +719,12 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
     && Date.parse(after.productionReferenceAt) <= Date.parse(target.productionReferenceAt))) {
     throw new Error('ONE_TIME_GAP_DOCUMENT_TIME_ORDER_INVALID');
   }
-  if (beforeRows.some(row => row.state.transportMemoryReady !== true
-      || row.state.transportMemoryStatus !== 'READY')) {
-    throw new Error('ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY');
-  }
+  // BEFORE is the exact measured primary from the bound support artifact. It
+  // may honestly be WINDOW_INCOMPLETE at its own reference because the
+  // complete emergency view was published separately. stateRows has already
+  // required measured schema 2.0 and an exact state replay. Only the merged
+  // target-reference replay below is allowed to decide whether the single
+  // sealed interpolation makes the active 48-hour window READY.
   if ([...afterRows, ...targetRows].some(row => row.state.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
       || row.state.transportMemoryReady !== false
       || row.state.transportMemoryStatus !== 'WINDOW_INCOMPLETE'

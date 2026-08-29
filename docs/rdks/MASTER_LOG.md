@@ -1,3 +1,12 @@
+## 2026-08-30 – før-primary-gaten afgrænset efter sanitiseret live-inspect
+
+- Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op uden inspect/build/artifact/Pages.
+- Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 efter Edge. Hele den bundne fail-closed roll-forward bestod, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme SHA.
+- Read-only inspect `33277738135`/`99167394284` viste kun `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY` og stoppede før descriptor, apply, build og Pages. Ingen data-/cachemutation eller publicering skete.
+- Supportartifactets før-fil er den ærlige primary; runnets komplette målte nødvisning blev skrevet separat. Blanketkravet om, at alle før-states allerede var `READY`, var derfor stærkere end kilde- og beslutningskontrakten.
+- Lokal same-version-rettelse bevarer measured-only schema 2.0, fuldt state-replay, minimum to, identitet, cadence, bracket, targetanker, sourcebinding, descriptor/CAS/privacy og kræver fortsat samlet target-reference-`READY`. Den udfylder ikke ældre huller.
+- Hele syntetiske 210/673-kæde består med 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer i begge parentmiljøer. For kort suffix, ekstra hul, replaytampering, schema 2.1 og ukendt status stopper før descriptor. Exact-head, merge, nyt D1, inspect/apply og offentlig verifikation afventer.
+
 ## 2026-08-29 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
 
 - Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250cc0809cc4dde9aaf3e20bf5b93c2837f2`, og push `33275147023` var korrekt no-op uden build/inspect/Pages.

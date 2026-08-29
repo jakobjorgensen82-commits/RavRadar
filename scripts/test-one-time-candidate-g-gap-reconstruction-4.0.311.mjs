@@ -177,7 +177,12 @@ function buildDocument(kind) {
     const rightStrength = index % 3 === 0 ? -0.35 : 0.4;
     let evidence;
     if (kind === 'before') {
-      evidence = series(addHours(leftAnchor, -48), leftAnchor, cadence, measuredStrength);
+      // The real support artifact preserves the honest primary, not the
+      // separately published complete emergency view. Model that boundary
+      // directly: BEFORE is measured and replay-exact, but only has a
+      // contiguous 24-hour suffix and is therefore WINDOW_INCOMPLETE at its
+      // own reference. The combined target replay must still prove all 48h.
+      evidence = series(addHours(leftAnchor, -24), leftAnchor, cadence, measuredStrength);
     } else {
       const end = kind === 'after' ? afterReference : targetReference;
       // The sealed after artifact legitimately contains only its exact right
@@ -194,8 +199,8 @@ function buildDocument(kind) {
       mobilisationPotential: 40 + (index % 20),
     });
     if (kind === 'before') {
-      assert.equal(currentState.transportMemoryReady, true);
-      assert.equal(currentState.transportMemoryStatus, 'READY');
+      assert.equal(currentState.transportMemoryReady, false);
+      assert.equal(currentState.transportMemoryStatus, 'WINDOW_INCOMPLETE');
     } else {
       assert.equal(currentState.transportMemoryReady, false);
       assert.equal(currentState.transportMemoryStatus, 'WINDOW_INCOMPLETE');
@@ -432,6 +437,75 @@ await assert.rejects(
   /ONE_TIME_GAP_BEFORE_EVIDENCE_COUNT/,
 );
 assert.equal(await exists(file('singleton-before-descriptor.json')), false);
+
+const insufficientBefore = structuredClone(before);
+const insufficientBeforeOriginal = insufficientBefore.coastalParts
+  .parts['part-000'].candidateG.currentState;
+insufficientBefore.coastalParts.parts['part-000'].candidateG.currentState = state({
+  stateKey: insufficientBeforeOriginal.stateKey,
+  stateTime: beforeReference,
+  // Start one native cadence after the target's 48-hour boundary. The sealed
+  // bracket can be reconstructed, but an older missing hour must remain
+  // missing and the final target replay must fail closed.
+  evidence: insufficientBeforeOriginal.transportEvidence.slice(1),
+  mobilisationPotential: insufficientBeforeOriginal.mobilisationPotential,
+});
+await writeJson('insufficient-before.json', insufficientBefore);
+const insufficientBeforeTargetBytes = await fs.readFile(targetPath, 'utf8');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('insufficient-before.json'),
+    descriptorPath: file('insufficient-before-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_RECONSTRUCTION_NOT_READY/,
+);
+assert.equal(await fs.readFile(targetPath, 'utf8'), insufficientBeforeTargetBytes);
+assert.equal(await exists(file('insufficient-before-descriptor.json')), false);
+
+const gappedBefore = structuredClone(before);
+const gappedBeforeState = gappedBefore.coastalParts.parts['part-000'].candidateG.currentState;
+gappedBeforeState.transportEvidence.splice(8, 4);
+await writeJson('gapped-before.json', gappedBefore);
+const gappedBeforeTargetBytes = await fs.readFile(targetPath, 'utf8');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('gapped-before.json'),
+    descriptorPath: file('gapped-before-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_BEFORE_STATE_REPLAY_MISMATCH/,
+);
+assert.equal(await fs.readFile(targetPath, 'utf8'), gappedBeforeTargetBytes);
+assert.equal(await exists(file('gapped-before-descriptor.json')), false);
+
+const reconstructedBefore = structuredClone(before);
+reconstructedBefore.coastalParts.parts['part-000'].candidateG.currentState.schemaVersion =
+  CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION;
+await writeJson('reconstructed-before.json', reconstructedBefore);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('reconstructed-before.json'),
+    descriptorPath: file('reconstructed-before-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_BEFORE_SOURCE_SCHEMA_NOT_MEASURED_ONLY/,
+);
+assert.equal(await exists(file('reconstructed-before-descriptor.json')), false);
+
+const unsupportedBeforeStatus = structuredClone(before);
+unsupportedBeforeStatus.coastalParts.parts['part-000'].candidateG.currentState
+  .transportMemoryStatus = 'COLD_START';
+await writeJson('unsupported-before-status.json', unsupportedBeforeStatus);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('unsupported-before-status.json'),
+    descriptorPath: file('unsupported-before-status-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_BEFORE_STATE_INVALID/,
+);
+assert.equal(await exists(file('unsupported-before-status-descriptor.json')), false);
 
 const singletonTarget = structuredClone(originalTarget);
 const singletonTargetOriginal = singletonTarget.coastalParts.parts['part-672'].candidateG.currentState;

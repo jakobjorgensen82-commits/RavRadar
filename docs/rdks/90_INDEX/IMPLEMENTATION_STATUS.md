@@ -1,6 +1,20 @@
-# Implementeringsstatus – 4.0.314 diagnostikhotfix efter sikkert inspect-stop
+# Implementeringsstatus – 4.0.314 før-primary-hotfix efter sikkert inspect-stop
 
-## P0 – D1 grøn; inspect stoppet før descriptor; datahullet stadig åbent
+## P0 – before-primary afgrænset lokalt; datahullet stadig åbent
+
+- [x] Bestå PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, merge `228725ea` og korrekt no-op push `33277217412`.
+- [x] Klassificér første D1 `33277253662` som fail-closed stop på en forbigående 503 efter Edge; bevis alle roll-forward-trin grønne og nul inspect.
+- [x] Bestå idempotent exact-main D1-genkørsel `33277510537`/`99166722076` på `228725ea`.
+- [x] Stop read-only inspect `33277738135`/`99167394284` ved den sanitiserede `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY` før descriptor, apply, build og Pages.
+- [x] Bevis, at supportartifactets før-fil er den ærlige primary, mens runnets komplette målte nødvisning blev skrevet separat.
+- [x] Fjern kun blanketkravet om før-`READY`; bevar measured-only schema 2.0, fuldt replay, minimum to, cadence, bracket, targetanker, sourcebinding, descriptorhash, CAS og slut-`READY`.
+- [x] Gør den positive fixture 673/673 `WINDOW_INCOMPLETE` med 24-timers målte suffixer, og bevis ældre hul, replaytampering, schema 2.1 og ukendt status fail-closed.
+- [x] Bestå hele syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-regressionen både med og uden nedarvet `GITHUB_ACTIONS`.
+- [x] Bestå målrettede workflow-, RDKS-, håndbogs-, security-, release- og geodatagates, hele lokale `validate:source` samt tre uafhængige slutreviews uden resterende blocker.
+- [ ] Bestå same-version-hotfix exact-head/merge/no-op og nyt exact-main D1 på den nye SHA.
+- [ ] Kør ny read-only inspect; hvis descriptoren forsegles, gennemfør eksakt CAS-bundet apply, frisk normal produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+
+## Historisk P0 – diagnostikhotfix før before-primary-fejlkoden
 
 - [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11` og korrekt no-op push `33269584236`.
 - [x] Bestå hele exact-main D1-run `33269631305`/job `99145677813`, inklusive begge syncs, slutreconciliation og afsluttende Edge/Worker/registry/SQL.
@@ -21,8 +35,8 @@
 - [x] Stop inspect `33275438494`/`99161265720` i planforseglingen før descriptorupload, mutation, build og Pages.
 - [x] Implementér og målretstest allowlistet GitHub-fejlannotation for `ONE_TIME_GAP_*`, maskering af vilkårlig fejltekst og en separat succesannotation med kun descriptor-SHA samt faste 673-/prøve-/665-/8-optællinger.
 - [x] Stop PR #230's første exact-head `33276791132` på den miljøafhængige testassertion; isolér normal CLI fra `GITHUB_ACTIONS` og bevis hele 210/673-testen i begge forældremiljøer.
-- [ ] Bestå diagnostikhotfix exact-head/merge/no-op og nyt exact-main D1 på den nye final-SHA.
-- [ ] Kør ny inspect, aflæs kun den sanitiserede fejlkode, luk årsagen og gennemfør descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
+- [x] Bestå diagnostikhotfix exact-head/merge/no-op og nyt exact-main D1 på `228725ea`.
+- [x] Kør ny inspect og aflæs kun den sanitiserede `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`-kode; den aktuelle fortsættelse står i P0-blokken ovenfor.
 
 ## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
 

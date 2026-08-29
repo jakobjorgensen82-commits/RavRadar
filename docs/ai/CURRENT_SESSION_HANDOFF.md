@@ -1,6 +1,17 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – 4.0.314 D1 grøn; inspect stoppet; sanitiseret diagnostikhotfix
+## AKTUELT P0-HANDOFF – 4.0.314 før-primary-gate lokalt afgrænset
+
+- Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
+- PR #230 bestod exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op.
+- Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående unauth-trip-probe-503 efter Edge. Den fulde fail-closed roll-forward bestod, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` er helt grøn på samme SHA.
+- Read-only inspect `33277738135`/`99167394284` stoppede før descriptor, apply, build og Pages med den sanitiserede kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Ingen data, cache eller offentlig drift blev ændret.
+- Før-runnet publicerede en separat komplet målt nødvisning. Det bundne supportartifacts `data/live/conditions.json` er den ærlige primary og kan derfor legitimt være `WINDOW_INCOMPLETE` på sin egen reference.
+- Lokal source-hotfix fjerner kun blanketkravet om 673/673 før-`READY`. Før-state skal stadig være målt schema 2.0, mindst to punkter og eksakt replaybar. Kun samlet target-reference-replay må blive `READY` efter den ene bracketbundne interpolation; ældre hul, for kort suffix, schema 2.1, ukendt status eller replayafvigelse stopper før descriptor.
+- Den positive fixture bruger 673 ærlige 24-timers `WINDOW_INCOMPLETE`-suffixer. Hele 210/673 inspect/CAS/rollback/cleanup/checkpoint-testen består med og uden nedarvet Actions-miljø; nye negativer består.
+- Næste sikre rækkefølge: lokale tværgående gates/review → exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → descriptorbundet CAS-apply → frisk normal produktion → fulde gates → offentlig 210/673 desktop/mobil. Først derefter er hullet lukket, og DEC-0102-modelsporet integrerer nyeste grønne main.
+
+## HISTORISK P0-HANDOFF – sanitiseret diagnostikhotfix før before-primary-fejlkoden
 
 - Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
 - 4.0.313 bestod PR #226 exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og hele exact-main D1-run `33269631305`/job `99145677813`.
