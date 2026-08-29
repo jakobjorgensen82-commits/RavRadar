@@ -1,6 +1,18 @@
-# Implementeringsstatus – 4.0.314 før-primary-hotfix efter sikkert inspect-stop
+# Implementeringsstatus – 4.0.314 cadencepolicy-hotfix efter sikkert inspect-stop
 
-## P0 – before-primary afgrænset lokalt; datahullet stadig åbent
+## P0 – cadenceautoritet lokalt afgrænset; datahullet stadig åbent
+
+- [x] Bestå PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og korrekt no-op push `33279411885`.
+- [x] Bestå exact-main D1 `33279463545`/`99172031927` på `d539fc9d`.
+- [x] Stop read-only inspect `33279639424`/`99172534863` før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og bevis nul mutation.
+- [x] Erstat suffixgæt med den eksisterende policybundne identitet for præcis otte `dkss_lf`-3h-dele; hash kun en koordinatfri projektion og genvalider den ved apply-CAS.
+- [x] Tillad kun eksakte 1/2/3-timersafstande på policyklassificerede 1h-dele uden at syntetisere de manglende interne slots; kræv fortsat eksakt 3h på de otte 3h-dele.
+- [x] Bestå målrettet 210/673 cadence-/descriptor-/CAS-test og workflowinterlocktest.
+- [x] Bestå den fulde lokale `validate:source` én gang samt de målrettede RDKS-, håndbogs-, security- og releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
+- [ ] Bestå same-version exact-head/merge/no-op og nyt exact-main D1 på endelig SHA.
+- [ ] Kør ny read-only inspect; kun ved forseglet descriptor fortsættes med CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+
+## Historisk P0 – before-primary afgrænset lokalt
 
 - [x] Bestå PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, merge `228725ea` og korrekt no-op push `33277217412`.
 - [x] Klassificér første D1 `33277253662` som fail-closed stop på en forbigående 503 efter Edge; bevis alle roll-forward-trin grønne og nul inspect.

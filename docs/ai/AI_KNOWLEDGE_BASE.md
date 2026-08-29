@@ -1,5 +1,14 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.314 – cadenceidentitet kommer fra policy, ikke suffixafstand
+
+- Candidate G's maksimumsgab på tre timer er en continuityregel. På en autoritativ 1h-del kan observerede eksakte 2/3h-afstande være manglende native slots; de er ikke en ny cadence og må ikke automatisk udfyldes.
+- Den eksisterende regionale proxy-policy identificerer præcis de otte ejerautoriserede `dkss_lf`-dele med native 3h. Brug per-del-identiteten og behold 665/8 som separat populationgate; en total alene kan ikke opdage et identitetsbytte.
+- Inspect må kun hashbinde en koordinatfri projektion af de relevante policyfelter og sorterede del-id'er. Apply genberegner både policyprojektion og hele planen og kræver kanonisk descriptor-/target-CAS.
+- En policyklassificeret 3h-del kræver mindst to eksakte 3h-intervaller på både før- og targetkanten. Kun derefter er singleton-`AFTER` tilladt. En 1h-del kræver eksakte heltalsafstande i `{1,2,3}`; nonintegral eller >3h stopper.
+- Interpolationens domæne er fortsat kun incidentets forseglede venstre/højre bracket. Et andet manglende punkt i en ellers lovlig suffix forbliver manglende, og finalt 48h non-restart replay skal stadig være `READY`.
+- Live-inspect `33279639424` viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og stoppede før descriptor/mutation. Det er årsagsevidens, ikke bevis for gennemført rekonstruktion.
+
 ## 4.0.314 – et højreanker er ikke et cadencebevis
 
 - En gyldig målt after-state kan have ét punkt og stadig reproduceres som schema-2.0 `WINDOW_INCOMPLETE`; punktet kan være det eksakte højre bracket uden at bevise kadencen alene.

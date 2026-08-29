@@ -1,6 +1,15 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – 4.0.314 før-primary-gate lokalt afgrænset
+## AKTUELT P0-HANDOFF – 4.0.314 cadencepolicy lokalt afgrænset
+
+- Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
+- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
+- Read-only inspect `33279639424`/`99172534863` stoppede før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og muterede intet.
+- Den sikre annotation beviser kun, at suffixbaseret cadenceklassifikation var tvetydig; den fastslår ikke seriens native cadence. Den lokale rettelse fjerner dette gæt ved at binde de otte native-3h-dele til den eksisterende `dkss_lf`-policy og alle øvrige til 1h; descriptor/apply binder en koordinatfri projektionshash, og genkørslen skal derefter afgøre måleafstandenes kompatibilitet med identiteten.
+- Eksakte 1/2/3h-afstande på 1h-dele forbliver measured sparse continuity og udfyldes ikke. 3h-dele kræver eksakt 3h på før/target, og alle øvrige bracket/source/trust/CAS/slut-`READY`-gates bevares.
+- Målrettet 210/673- og workflowtest, fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate samt kode-, algoritme-, sikkerheds- og dokumentationsreview er grønne. Næste sikre rækkefølge er: exact-head/merge/no-op → nyt final-SHA D1 → read-only inspect → kun ved descriptor CAS-apply → frisk normal produktion → fulde gates → offentlig 210/673 desktop/mobil.
+
+## HISTORISK P0-HANDOFF – 4.0.314 før-primary-gate lokalt afgrænset
 
 - Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
 - PR #230 bestod exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op.

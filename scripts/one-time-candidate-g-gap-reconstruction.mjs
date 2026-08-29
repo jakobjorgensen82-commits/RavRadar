@@ -26,6 +26,7 @@ import {
 const HOUR_MS = 3_600_000;
 const EPSILON = 1e-9;
 const POLICY_PATH = 'data/admin/candidate-g-one-time-gap-reconstruction-20260829.json';
+const CADENCE_POLICY_PATH = 'data/current-regional-proxy-policy.json';
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const EXPECTED_SOURCE_BINDINGS = Object.freeze([
   Object.freeze({
@@ -242,30 +243,31 @@ function stateMatrix(rows) {
   return rows.map(({ partId, state }) => [partId, state]);
 }
 
-function observedCadenceCandidates(evidence, edge) {
+function validateObservedCadence(evidence, edge, nativeCadenceHours) {
   const selected = edge === 'before' ? evidence.slice(-13) : evidence.slice(0, 13);
-  const candidates = [];
+  let intervalCount = 0;
   for (let index = 1; index < selected.length; index += 1) {
     const hours = (Date.parse(selected[index].time) - Date.parse(selected[index - 1].time)) / HOUR_MS;
-    if (Math.abs(hours - 1) <= EPSILON || Math.abs(hours - 3) <= EPSILON) candidates.push(hours);
-    else throw new Error('ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE');
+    const exactHours = Math.round(hours);
+    if (!Number.isFinite(hours)
+      || Math.abs(hours - exactHours) > EPSILON
+      || exactHours < 1
+      || exactHours > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours) {
+      throw new Error('ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE');
+    }
+    if (nativeCadenceHours === 3 && exactHours !== 3) {
+      throw new Error('ONE_TIME_GAP_THREE_HOUR_CADENCE_MISMATCH');
+    }
+    intervalCount += 1;
   }
-  return candidates;
+  if (intervalCount < 2) throw new Error('ONE_TIME_GAP_NATIVE_CADENCE_UNPROVEN');
 }
 
-function nativeCadenceHours(beforeEvidence, afterEvidence) {
-  const beforeCandidates = observedCadenceCandidates(beforeEvidence, 'before');
-  const afterCandidates = observedCadenceCandidates(afterEvidence, 'after');
-  if (beforeCandidates.length < 2 || afterCandidates.length < 2) {
-    throw new Error('ONE_TIME_GAP_NATIVE_CADENCE_UNPROVEN');
-  }
-  const beforeCadences = new Set(beforeCandidates);
-  const afterCadences = new Set(afterCandidates);
-  if (beforeCadences.size !== 1 || afterCadences.size !== 1
-    || beforeCandidates[0] !== afterCandidates[0]) {
-    throw new Error('ONE_TIME_GAP_NATIVE_CADENCE_NOT_UNANIMOUS');
-  }
-  return beforeCandidates[0];
+function nativeCadenceHours(partId, beforeEvidence, targetEvidence, cadencePolicy) {
+  const cadenceHours = cadencePolicy.nativeThreeHourPartIds.has(partId) ? 3 : 1;
+  validateObservedCadence(beforeEvidence, 'before', cadenceHours);
+  validateObservedCadence(targetEvidence, 'after', cadenceHours);
+  return cadenceHours;
 }
 
 function mergeExactEvidence(groups) {
@@ -612,6 +614,40 @@ function applyCleanupPendingRebuildInterlock(target, planned, descriptorSha256) 
   };
 }
 
+function validateCadencePolicy(value) {
+  const rows = Array.isArray(value?.parts) ? value.parts : [];
+  const partIds = rows.map(row => String(row?.partId || '').trim()).sort();
+  if (value?.schemaVersion !== 1
+    || value?.status !== 'private-collection-enabled-public-activation-gated'
+    || value?.controlledLivePilotAllowed !== true
+    || value?.requiredCollection !== 'dkss_lf'
+    || value?.sameConnectedWaterBody !== 'Limfjorden'
+    || value?.interpolation !== false
+    || value?.globalOverrideAllowed !== false
+    || value?.scoreImpact !== false
+    || value?.publicRuntime !== false
+    || partIds.length !== 8
+    || partIds.some(partId => !partId)
+    || new Set(partIds).size !== partIds.length) {
+    throw new Error('ONE_TIME_GAP_CADENCE_POLICY_INVALID');
+  }
+  const projection = {
+    schemaVersion: 1,
+    authority: 'CURRENT_REGIONAL_PROXY_POLICY',
+    status: value.status,
+    controlledLivePilotAllowed: value.controlledLivePilotAllowed,
+    requiredCollection: value.requiredCollection,
+    sameConnectedWaterBody: value.sameConnectedWaterBody,
+    interpolation: value.interpolation,
+    nativeCadenceHours: 3,
+    partIds,
+  };
+  return {
+    nativeThreeHourPartIds: new Set(partIds),
+    projectionSha256: sha256(projection),
+  };
+}
+
 function validatePolicy(policy) {
   const expectedPolicyKeys = [
     'decisionId',
@@ -701,7 +737,7 @@ async function verifySourceBundles(policy, {
   return verified;
 }
 
-function buildPlan({ before, after, target, policy, sourceBindings }) {
+function buildPlan({ before, after, target, policy, cadencePolicy, sourceBindings }) {
   const beforeRows = stateRows(before, policy, 'BEFORE');
   const afterRows = stateRows(after, policy, 'AFTER', {
     allowSingleMeasuredRightBracket: true,
@@ -736,6 +772,43 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
   const targetByPart = new Map(targetRows.map(row => [row.partId, row]));
   const afterByPart = new Map(afterRows.map(row => [row.partId, row]));
   const cadenceCounts = { '1h': 0, '3h': 0 };
+  const cadenceByPart = new Map();
+  const matrixPartIds = new Set(beforeRows.map(row => row.partId));
+  if ([...cadencePolicy.nativeThreeHourPartIds].some(partId => !matrixPartIds.has(partId))) {
+    throw new Error('ONE_TIME_GAP_CADENCE_POLICY_PART_MISMATCH');
+  }
+  // Cadence identity comes from the already owner-approved, versioned regional
+  // proxy policy. Measured spacing is only a compatibility check: a 1h source
+  // may have bounded 2h/3h omissions, while the eight dkss_lf parts must remain
+  // exact 3h on both independent measured sides. Resolve all 673 identities
+  // before any interpolation work so a policy mismatch fails closed.
+  for (const beforeRow of beforeRows) {
+    const afterRow = afterByPart.get(beforeRow.partId);
+    const targetRow = targetByPart.get(beforeRow.partId);
+    if (!afterRow || !targetRow
+      || beforeRow.state.stateKey !== afterRow.state.stateKey
+      || beforeRow.state.stateKey !== targetRow.state.stateKey) {
+      throw new Error('ONE_TIME_GAP_PART_BINDING_MISMATCH');
+    }
+    if ((targetRow.evidence || []).some(item => item?.incidentId !== undefined || item?.provenance !== undefined)) {
+      throw new Error('ONE_TIME_GAP_TARGET_TRUST_CONFLICT');
+    }
+    const cadenceHours = nativeCadenceHours(
+      beforeRow.partId,
+      beforeRow.evidence,
+      targetRow.evidence,
+      cadencePolicy,
+    );
+    if (afterRow.evidence.length === 1 && cadenceHours !== 3) {
+      throw new Error('ONE_TIME_GAP_SINGLE_AFTER_ANCHOR_CADENCE_NOT_ALLOWED');
+    }
+    cadenceByPart.set(beforeRow.partId, cadenceHours);
+    cadenceCounts[`${cadenceHours}h`] += 1;
+  }
+  if (cadenceCounts['1h'] !== policy.expectedCadencePartCounts['1h']
+    || cadenceCounts['3h'] !== policy.expectedCadencePartCounts['3h']) {
+    throw new Error('ONE_TIME_GAP_NATIVE_CADENCE_POPULATION_MISMATCH');
+  }
   const syntheticTimeCounts = new Map();
   const planned = [];
   let signReversalPartCount = 0;
@@ -766,14 +839,7 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
     const beforeAnchor = beforeRow.evidence.at(-1);
     const afterAnchor = afterRow.evidence.find(item => Date.parse(item.time) > Date.parse(beforeAnchor.time));
     if (!afterAnchor) throw new Error('ONE_TIME_GAP_AFTER_BRACKET_MISSING');
-    // The old left suffix and the newer measured target suffix prove cadence.
-    // Artifact 3676 supplies the exact right bracket but is not required to
-    // contain two later 3-hour intervals.
-    const cadenceHours = nativeCadenceHours(beforeRow.evidence, targetRow.evidence);
-    if (afterRow.evidence.length === 1 && cadenceHours !== 3) {
-      throw new Error('ONE_TIME_GAP_SINGLE_AFTER_ANCHOR_CADENCE_NOT_ALLOWED');
-    }
-    cadenceCounts[`${cadenceHours}h`] += 1;
+    const cadenceHours = cadenceByPart.get(beforeRow.partId);
     const synthetic = interpolateGap({ beforeAnchor, afterAnchor, cadenceHours, policy });
     const targetAtSyntheticTimes = new Map(targetRow.evidence.map(item => [item.time, item]));
     if (synthetic.some(item => targetAtSyntheticTimes.has(item.time))) {
@@ -871,10 +937,6 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
     });
   }
 
-  if (cadenceCounts['1h'] !== policy.expectedCadencePartCounts['1h']
-    || cadenceCounts['3h'] !== policy.expectedCadencePartCounts['3h']) {
-    throw new Error('ONE_TIME_GAP_NATIVE_CADENCE_POPULATION_MISMATCH');
-  }
   const descriptor = {
     schemaVersion: 1,
     status: 'SEALED_ONE_TIME_GAP_RECONSTRUCTION_INSPECTION',
@@ -909,6 +971,7 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
       stateSha256: sha256(stateMatrix(targetRows)),
     },
     integrity: {
+      cadencePolicyProjectionSha256: cadencePolicy.projectionSha256,
       partContextSha256: identityHashes[0],
       beforeEndpointMatrixSha256: sha256(planned.map(item => [
         item.partId, item.cadenceHours, item.beforeAnchor.time, sha256(item.beforeAnchor),
@@ -997,6 +1060,7 @@ function validateDescriptorSemantics(descriptor) {
   const integrityKeys = [
     'afterEndpointMatrixSha256',
     'beforeEndpointMatrixSha256',
+    'cadencePolicyProjectionSha256',
     'partContextSha256',
     'plannedStateSha256',
     'syntheticMatrixSha256',
@@ -1084,15 +1148,20 @@ async function atomicWrite(file, value) {
 }
 
 export async function inspectOneTimeGap({
-  beforePath, afterPath, targetPath, policyPath = POLICY_PATH, descriptorPath,
+  beforePath, afterPath, targetPath, policyPath = POLICY_PATH,
+  cadencePolicyPath = CADENCE_POLICY_PATH, descriptorPath,
   beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath,
 }) {
-  const policy = validatePolicy(await readJson(policyPath));
-  const [before, after, target, sourceBindings] = await Promise.all([
+  const [policyValue, cadencePolicyValue, before, after, target] = await Promise.all([
+    readJson(policyPath), readJson(cadencePolicyPath),
     readJson(beforePath), readJson(afterPath), readJson(targetPath),
-    verifySourceBundles(policy, { beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath }),
   ]);
-  const { descriptor } = buildPlan({ before, after, target, policy, sourceBindings });
+  const policy = validatePolicy(policyValue);
+  const cadencePolicy = validateCadencePolicy(cadencePolicyValue);
+  const sourceBindings = await verifySourceBundles(policy, {
+    beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath,
+  });
+  const { descriptor } = buildPlan({ before, after, target, policy, cadencePolicy, sourceBindings });
   const sealed = sealedDescriptor(descriptor);
   await atomicWrite(descriptorPath, sealed);
   return {
@@ -1109,17 +1178,24 @@ export async function inspectOneTimeGap({
 }
 
 export async function applyOneTimeGap({
-  beforePath, afterPath, targetPath, policyPath = POLICY_PATH, descriptorPath,
+  beforePath, afterPath, targetPath, policyPath = POLICY_PATH,
+  cadencePolicyPath = CADENCE_POLICY_PATH, descriptorPath,
   descriptorSha256, rollbackPath,
   beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath,
 }) {
-  const policy = validatePolicy(await readJson(policyPath));
-  const [before, after, target, sealed, sourceBindings] = await Promise.all([
+  const [policyValue, cadencePolicyValue, before, after, target, sealed] = await Promise.all([
+    readJson(policyPath), readJson(cadencePolicyPath),
     readJson(beforePath), readJson(afterPath), readJson(targetPath), readJson(descriptorPath),
-    verifySourceBundles(policy, { beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath }),
   ]);
+  const policy = validatePolicy(policyValue);
+  const cadencePolicy = validateCadencePolicy(cadencePolicyValue);
+  const sourceBindings = await verifySourceBundles(policy, {
+    beforeAttestationPath, afterAttestationPath, beforeBundlePath, afterBundlePath,
+  });
   const expectedDescriptor = validateSealedDescriptor(sealed, descriptorSha256);
-  const { descriptor, planned } = buildPlan({ before, after, target, policy, sourceBindings });
+  const { descriptor, planned } = buildPlan({
+    before, after, target, policy, cadencePolicy, sourceBindings,
+  });
   if (canonicalJson(descriptor) !== canonicalJson(expectedDescriptor)) {
     throw new Error('ONE_TIME_GAP_DESCRIPTOR_OR_TARGET_CAS_MISMATCH');
   }
@@ -1445,7 +1521,7 @@ function emitSanitizedGithubInspectionNotice(result) {
 }
 
 function parseArgs(argv) {
-  const result = { mode: null, policyPath: POLICY_PATH };
+  const result = { mode: null, policyPath: POLICY_PATH, cadencePolicyPath: CADENCE_POLICY_PATH };
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
     if (['--inspect', '--apply', '--rollback', '--rollback-dispatch', '--cleanup'].includes(value)) {
@@ -1456,6 +1532,7 @@ function parseArgs(argv) {
     else if (value === '--after') result.afterPath = argv[++index];
     else if (value === '--target') result.targetPath = argv[++index];
     else if (value === '--policy') result.policyPath = argv[++index];
+    else if (value === '--cadence-policy') result.cadencePolicyPath = argv[++index];
     else if (value === '--descriptor') result.descriptorPath = argv[++index];
     else if (value === '--descriptor-sha256') result.descriptorSha256 = argv[++index];
     else if (value === '--rollback-checkpoint') result.rollbackPath = argv[++index];

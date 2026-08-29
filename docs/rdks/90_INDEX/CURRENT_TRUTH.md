@@ -1,6 +1,16 @@
 # Current truth – gældende projektviden
 
-## 4.0.314 – før-primary-gaten afgrænset lokalt; datahullet fortsat åbent
+## 4.0.314 – cadenceautoriteten afgrænset lokalt; datahullet fortsat åbent
+
+- Før-primary-rettelsen bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op uden inspect, build eller Pages. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.
+- Read-only inspect `33279639424`/`99172534863` stoppede i planforseglingen med kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Descriptor, apply, build og Pages blev sprunget over; ingen data, cache eller offentlig drift blev ændret.
+- Den sikre annotation beviser kun, at suffixbaseret cadenceklassifikation var tvetydig; den fastslår ikke seriens native cadence. Kontraktfejlen er at gætte cadenceidentitet fra observerede måleafstande. Den policybundne genkørsel skal i stedet afgøre, om hver kants målte afstande er kompatible med den autoritative 1h-/3h-identitet; manglende interne 1h-slots må hverken udfyldes eller omklassificere serien.
+- Den lokale same-version-rettelse henter cadenceidentiteten fra `data/current-regional-proxy-policy.json`: præcis de otte ejerautoriserede `dkss_lf`-dele er 3h, alle øvrige er 1h. Kun en koordinatfri projektion af de relevante policyfelter og del-id'er hashes ind i descriptoren og genvalideres ved apply-CAS; hverken del-id'er, koordinater eller policyindhold eksponeres i Actions-annotationen.
+- En 1h-del må have eksakte målte afstande på 1, 2 eller 3 timer inden for den eksisterende continuitygrænse. De otte policybundne 3h-dele skal fortsat være eksakt 3h på både før- og targetkanten; singleton-`AFTER` er kun lovlig for dem. 665/8-populationen, slut-`READY`, bracket, sourcebinding, trust, rollback og privacy er uændrede.
+- Den målrettede 210/673 inspect/CAS/rollback/cleanup/checkpoint-regression og workflowinterlocktesten er grønne, inklusive 2h-sparse hourly, mixed 1/3-hourly, 3h-mismatch, policy-id-swap, nonintegral cadence og policyhash-CAS. Fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate samt kode-, algoritme-, sikkerheds- og dokumentationsreview er grønne. Exact-head, merge, nyt D1 og ny inspect afventer.
+- Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift. Morgenhullet er ikke rekonstrueret.
+
+## Historisk 4.0.314-checkpoint – før-primary-gaten afgrænset lokalt
 
 - Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op uden inspect/build/artifact/Pages.
 - Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 i den uautentificerede trip-log-probe efter Edge-deploy. Alle failure-roll-forward-trin var grønne, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme `228725ea`.

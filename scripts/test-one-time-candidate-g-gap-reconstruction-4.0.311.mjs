@@ -229,6 +229,21 @@ const descriptorPath = file('descriptor.json');
 const rollbackPath = file('rollback.json');
 const githubOutputPath = file('github-output.txt');
 const policyPath = path.resolve('data/admin/candidate-g-one-time-gap-reconstruction-20260829.json');
+const cadencePolicyPath = file('cadence-policy.json');
+const cadencePolicy = {
+  schemaVersion: 1,
+  status: 'private-collection-enabled-public-activation-gated',
+  controlledLivePilotAllowed: true,
+  requiredCollection: 'dkss_lf',
+  sameConnectedWaterBody: 'Limfjorden',
+  interpolation: false,
+  globalOverrideAllowed: false,
+  scoreImpact: false,
+  publicRuntime: false,
+  parts: Array.from({ length: 8 }, (_, index) => ({
+    partId: `part-${String(665 + index).padStart(3, '0')}`,
+  })),
+};
 const beforeAttestationPath = file('before-attestation.txt');
 const afterAttestationPath = file('after-attestation.txt');
 const beforeBundlePath = file('before-bundle.zip');
@@ -238,6 +253,7 @@ await Promise.all([
   writeJson('before.json', before),
   writeJson('after.json', after),
   writeJson('target.json', originalTarget),
+  writeJson('cadence-policy.json', cadencePolicy),
   fs.writeFile(beforeAttestationPath, `repository=jakobjorgensen82-commits/RavRadar\nrun_number=3675\nsha=${sourceHead}\nref=refs/heads/main\ngenerated_at=2026-08-28T09:00:00Z\n`),
   fs.writeFile(afterAttestationPath, `repository=jakobjorgensen82-commits/RavRadar\nrun_number=3676\nsha=${sourceHead}\nref=refs/heads/main\ngenerated_at=2026-08-28T18:00:00Z\n`),
   fs.writeFile(beforeBundlePath, 'synthetic-before-support-bundle'),
@@ -249,6 +265,7 @@ const common = {
   afterPath,
   targetPath,
   policyPath,
+  cadencePolicyPath,
   descriptorPath,
   beforeAttestationPath,
   afterAttestationPath,
@@ -279,6 +296,7 @@ const cli = spawnOneTimeCli([
   '--after', afterPath,
   '--target', file('cli-target.json'),
   '--policy', policyPath,
+  '--cadence-policy', cadencePolicyPath,
   '--descriptor', cliDescriptorPath,
   '--before-attestation', beforeAttestationPath,
   '--after-attestation', afterAttestationPath,
@@ -611,24 +629,116 @@ await assert.rejects(
 );
 assert.equal(await exists(file('two-point-target-descriptor.json')), false);
 
-const ambiguousCadenceTarget = structuredClone(originalTarget);
 const ambiguousPartId = 'part-000';
+const sparseHourlyTarget = structuredClone(originalTarget);
+const sparseHourlyOriginal = sparseHourlyTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState;
+const sparseHourlyEvidence = series('2026-08-28T12:00:00.000Z', '2026-08-29T08:00:00.000Z', 2, -0.35);
+sparseHourlyEvidence.push({ time: targetReference, strength: -0.35 });
+sparseHourlyTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState = state({
+  stateKey: sparseHourlyOriginal.stateKey,
+  stateTime: targetReference,
+  evidence: sparseHourlyEvidence,
+  mobilisationPotential: sparseHourlyOriginal.mobilisationPotential,
+});
+await writeJson('sparse-hourly-target.json', sparseHourlyTarget);
+const sparseHourlyBytes = await fs.readFile(file('sparse-hourly-target.json'), 'utf8');
+const sparseHourlyInspected = await inspectOneTimeGap({
+  ...common,
+  targetPath: file('sparse-hourly-target.json'),
+  descriptorPath: file('sparse-hourly-descriptor.json'),
+});
+assert.deepEqual(sparseHourlyInspected.cadencePartCounts, { '1h': 665, '3h': 8 });
+assert.equal(await fs.readFile(file('sparse-hourly-target.json'), 'utf8'), sparseHourlyBytes);
+const sparseHourlyDescriptor = await readJson('sparse-hourly-descriptor.json');
+assert.deepEqual(sparseHourlyDescriptor.syntheticTimeCounts, descriptor.syntheticTimeCounts);
+
+const mixedHourlyTarget = structuredClone(originalTarget);
+const mixedHourlyOriginal = mixedHourlyTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState;
+const mixedHourlyEvidence = structuredClone(mixedHourlyOriginal.transportEvidence);
+const omittedMeasuredTimes = mixedHourlyEvidence.slice(4, 6).map(item => item.time);
+mixedHourlyEvidence.splice(4, 2);
+mixedHourlyTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState = state({
+  stateKey: mixedHourlyOriginal.stateKey,
+  stateTime: targetReference,
+  evidence: mixedHourlyEvidence,
+  mobilisationPotential: mixedHourlyOriginal.mobilisationPotential,
+});
+await writeJson('mixed-hourly-target.json', mixedHourlyTarget);
+const mixedHourlyBytes = await fs.readFile(file('mixed-hourly-target.json'), 'utf8');
+const mixedHourlyInspected = await inspectOneTimeGap({
+  ...common,
+  targetPath: file('mixed-hourly-target.json'),
+  descriptorPath: file('mixed-hourly-descriptor.json'),
+});
+assert.deepEqual(mixedHourlyInspected.cadencePartCounts, { '1h': 665, '3h': 8 });
+assert.equal(await fs.readFile(file('mixed-hourly-target.json'), 'utf8'), mixedHourlyBytes);
+const mixedHourlyDescriptor = await readJson('mixed-hourly-descriptor.json');
+for (const time of omittedMeasuredTimes) {
+  assert.equal(Object.hasOwn(mixedHourlyDescriptor.syntheticTimeCounts, time), false, time);
+}
+
+const ambiguousCadenceTarget = structuredClone(originalTarget);
 const ambiguousOriginal = ambiguousCadenceTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState;
-const ambiguousEvidence = series('2026-08-28T12:00:00.000Z', '2026-08-29T08:00:00.000Z', 2, -0.35);
-ambiguousEvidence.push({ time: targetReference, strength: -0.35 });
 ambiguousCadenceTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState = state({
   stateKey: ambiguousOriginal.stateKey,
   stateTime: targetReference,
-  evidence: ambiguousEvidence,
+  evidence: series('2026-08-28T12:00:00.000Z', targetReference, 1.5, -0.35),
   mobilisationPotential: ambiguousOriginal.mobilisationPotential,
 });
 await writeJson('ambiguous-target.json', ambiguousCadenceTarget);
 const ambiguousBytes = await fs.readFile(file('ambiguous-target.json'), 'utf8');
 await assert.rejects(
-  inspectOneTimeGap({ ...common, targetPath: file('ambiguous-target.json'), descriptorPath: file('ambiguous-descriptor.json') }),
+  inspectOneTimeGap({
+    ...common,
+    targetPath: file('ambiguous-target.json'),
+    descriptorPath: file('ambiguous-descriptor.json'),
+  }),
   /ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE/,
 );
 assert.equal(await fs.readFile(file('ambiguous-target.json'), 'utf8'), ambiguousBytes);
+assert.equal(await exists(file('ambiguous-descriptor.json')), false);
+
+const threeHourMismatchBefore = structuredClone(before);
+const threeHourMismatchPartId = 'part-672';
+const threeHourMismatchOriginal = threeHourMismatchBefore.coastalParts
+  .parts[threeHourMismatchPartId].candidateG.currentState;
+threeHourMismatchBefore.coastalParts.parts[threeHourMismatchPartId].candidateG.currentState = state({
+  stateKey: threeHourMismatchOriginal.stateKey,
+  stateTime: beforeReference,
+  evidence: series(addHours(beforeReference, -24), beforeReference, 2, -0.35),
+  mobilisationPotential: threeHourMismatchOriginal.mobilisationPotential,
+});
+await writeJson('three-hour-mismatch-before.json', threeHourMismatchBefore);
+const threeHourMismatchBeforeBytes = await fs.readFile(file('three-hour-mismatch-before.json'), 'utf8');
+const unchangedAfterBytes = await fs.readFile(afterPath, 'utf8');
+const unchangedTargetBytes = await fs.readFile(targetPath, 'utf8');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('three-hour-mismatch-before.json'),
+    descriptorPath: file('three-hour-mismatch-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_THREE_HOUR_CADENCE_MISMATCH/,
+);
+assert.equal(await fs.readFile(file('three-hour-mismatch-before.json'), 'utf8'), threeHourMismatchBeforeBytes);
+assert.equal(await fs.readFile(afterPath, 'utf8'), unchangedAfterBytes);
+assert.equal(await fs.readFile(targetPath, 'utf8'), unchangedTargetBytes);
+assert.equal(await exists(file('three-hour-mismatch-descriptor.json')), false);
+
+const swappedCadencePolicy = structuredClone(cadencePolicy);
+swappedCadencePolicy.parts[0].partId = ambiguousPartId;
+await writeJson('swapped-cadence-policy.json', swappedCadencePolicy);
+const swappedCadenceTargetBytes = await fs.readFile(targetPath, 'utf8');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    cadencePolicyPath: file('swapped-cadence-policy.json'),
+    descriptorPath: file('swapped-cadence-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_THREE_HOUR_CADENCE_MISMATCH/,
+);
+assert.equal(await fs.readFile(targetPath, 'utf8'), swappedCadenceTargetBytes);
+assert.equal(await exists(file('swapped-cadence-descriptor.json')), false);
 
 const alreadyFilledTarget = structuredClone(originalTarget);
 const filledOriginal = alreadyFilledTarget.coastalParts.parts[ambiguousPartId].candidateG.currentState;
@@ -666,6 +776,27 @@ await assert.rejects(
 );
 assert.equal(await fs.readFile(file('semantic-target.json'), 'utf8'), semanticTargetBytes);
 assert.equal(await exists(semanticRollbackPath), false);
+
+const cadenceHashTamperedDescriptor = structuredClone(descriptor);
+delete cadenceHashTamperedDescriptor.descriptorSha256;
+cadenceHashTamperedDescriptor.integrity.cadencePolicyProjectionSha256 = 'b'.repeat(64);
+cadenceHashTamperedDescriptor.descriptorSha256 = digest(cadenceHashTamperedDescriptor);
+await writeJson('cadence-hash-descriptor.json', cadenceHashTamperedDescriptor);
+await writeJson('cadence-hash-target.json', originalTarget);
+const cadenceHashTargetBytes = await fs.readFile(file('cadence-hash-target.json'), 'utf8');
+const cadenceHashRollbackPath = file('cadence-hash-rollback.json');
+await assert.rejects(
+  applyOneTimeGap({
+    ...common,
+    targetPath: file('cadence-hash-target.json'),
+    descriptorPath: file('cadence-hash-descriptor.json'),
+    descriptorSha256: cadenceHashTamperedDescriptor.descriptorSha256,
+    rollbackPath: cadenceHashRollbackPath,
+  }),
+  /ONE_TIME_GAP_DESCRIPTOR_OR_TARGET_CAS_MISMATCH/,
+);
+assert.equal(await fs.readFile(file('cadence-hash-target.json'), 'utf8'), cadenceHashTargetBytes);
+assert.equal(await exists(cadenceHashRollbackPath), false);
 
 const changedBundlePath = file('changed-before-bundle.zip');
 await fs.writeFile(changedBundlePath, 'not-the-inspected-support-bundle');
