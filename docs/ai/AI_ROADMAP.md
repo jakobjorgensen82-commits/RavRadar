@@ -1,5 +1,17 @@
 # AI Roadmap – RavRadar 4.0.309+
 
+## P0 nu – luk kun det ejerautoriserede morgenhul gennem DEC-0109
+
+1. Færdiggør lokalt tværgående review af state 2.1, trust, hard-outflow-suppression, checkpoint, measured-only fallback, workflow og trip-/databaseparitet.
+2. Bevar storage/privacy-kandidaten med installationstype-intent efter capacity/CAS, 20-/30-minutters lease, femsekunders Edge-prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
+3. Kør alle målrettede negative no-mutation-/privacy-/workflowtests samt RDKS/håndbog/version/sourcegate på den afsluttede kilde.
+4. Opret først derefter recovery-PR, luk exact-head, merge, kør eksakt-head `[d1]` backend og read-only inspect mod de eksakte artifacts.
+5. Apply kun ved eksakt descriptor- og mål-CAS; følg frisk produktion, fulde gates, Pages og offentlig desktop/mobil/210/673.
+6. Bevar privat rollback og kausal cleanup. Kald ikke P0 lukket eller produktionen genoprettet før offentlig beviskæde er grøn.
+7. Hent derefter nyeste grønne `main` ind i den separate DEC-0102-modelworktree. Bevar 72-timers atomisk measured-only emergency, og hold global koefficientlæring låst, indtil server-side signeret manifestbinding findes.
+
+Interpolation er ikke en roadmapfeature eller generel fallback; den er en enkelt ejerautoriseret incidentoperation. Sol/Ultra bevares gennem slutvalidering.
+
 ## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
 
 - [x] Bevis 4.0.309's virkelige 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
@@ -180,7 +192,7 @@ P1-oversættelse og Spørg RavRadar kan nu fortsætte i den ejerbekræftede ræk
 - [x] Bevar Supabase til Auth, profiler, rettigheder, rate limit og Edge; flyt normal turvækst til ti EU-låste Cloudflare D1-shards.
 - [x] Send kun HMAC-pseudonymiseret ejerskab og allowlistede turdata til Cloudflare; forbyd rå ID, mail, navn, JWT, GPS og rute.
 - [x] Signér hele servicekaldet, håndhæv tidsgrænse, kanonisk hash og idempotens.
-- [x] Migrér før/efter cutover uden kildesletning; behold eksplicit Supabase-rollback og idempotent vej tilbage.
+- [x] Historisk 4.0.287: migrér før/efter cutover uden kildesletning og behold den daværende Supabase-rollback. Post-cutover rollbackdelen er afløst af 4.0.311-kandidatens varige D1/roll-forward.
 - [x] Overvåg lager uden payloads ved 70/85 % og understøt eksplicit ejersletning på tværs af begge lagre.
 - [x] Opret live Cloudflare-konto, mindst-mulige credentials og krypterede GitHub-secrets efter godkendelse; bestå infrastrukturens exact-head/merge og rollback-Edge-deploy.
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér ti live EU-shards og deploy Worker; stop første cutover sikkert før migration/Edge på health-udbredelsesforsinkelsen.

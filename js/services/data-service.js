@@ -1,11 +1,16 @@
-import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.310';
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.310';
+import { loadActiveZoneCollection } from './zone-registry.js?v=4.0.311';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.311';
 const DEFAULT_PUBLIC_CONDITIONS_URL='./data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL='./data/live/public-condition-details.json';
 const MANIFEST_URL='./data/live/manifest.json';
 const COASTAL_PARTS_URL='./data/live/coastal-parts-v2.json';
 const MAX_RECOVERY_FALLBACK_AGE_HOURS=72;
 const memory=new Map();
+function canonicalJson(value){
+  if(Array.isArray(value))return `[${value.map(canonicalJson).join(',')}]`;
+  if(value&&typeof value==='object')return `{${Object.keys(value).sort().map(key=>`${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
+  return JSON.stringify(value);
+}
 async function fetchJson(url,{ttlMs=0,cache='default'}={}){
   const cached=memory.get(url);if(cached&&Date.now()-cached.at<ttlMs)return cached.value;
   const response=await fetch(url,{cache});if(!response.ok)throw new Error(`${url}: HTTP ${response.status}`);
@@ -78,6 +83,7 @@ export async function loadConditionDetails({manifest=null,conditions=null}={}){
 export function mergeConditionDetails(conditions,details){
   if(!conditions?.datasetId||conditions.datasetId!==details?.datasetId)throw new Error('Vejrdetaljer kan ikke blandes mellem datasæt.');
   if(conditions?.productionReferenceAt&&details?.productionReferenceAt&&Date.parse(conditions.productionReferenceAt)!==Date.parse(details.productionReferenceAt))throw new Error('Vejrdetaljer og startdata bruger ikke samme produktionstidspunkt.');
+  if(!conditions?.ravScoreEvidenceTrust||!details?.ravScoreEvidenceTrust||canonicalJson(conditions.ravScoreEvidenceTrust)!==canonicalJson(details.ravScoreEvidenceTrust))throw new Error('Vejrdetaljer og startdata har ikke samme RavScore-evidenstillid.');
   const zones=Object.fromEntries(Object.entries(conditions.zones||{}).map(([zoneId,zone])=>[zoneId,{...zone,forecast:details.zones?.[zoneId]?.forecast||zone.forecast}]));
   return {...conditions,productionReferenceAt:details?.productionReferenceAt||conditions.productionReferenceAt||null,zones,coastalParts:details.coastalParts||conditions.coastalParts,detailsAvailable:true};
 }

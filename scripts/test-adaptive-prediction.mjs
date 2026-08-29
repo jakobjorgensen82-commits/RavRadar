@@ -13,4 +13,11 @@ const excluded=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-06-
 const predictionWithoutUnsafeHistory=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...excluded],model});
 assert.equal(predictionWithoutUnsafeHistory.sampleSize,prediction.sampleSize,'Observationer mærket calibration_eligible=false må ikke påvirke den direkte sandsynlighedsberegning.');
 assert.equal(predictionWithoutUnsafeHistory.probability,prediction.probability);
+const unattestedLegacy=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-05-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'good',schema_version:2,calibration_eligible:true,data_quality_flags:[],calibration_features:{appVersion:'4.0.310'}}));
+const predictionWithoutUnattestedLegacy=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...unattestedLegacy],model});
+assert.equal(predictionWithoutUnattestedLegacy.sampleSize,prediction.sampleSize,'Pre-4.0.311 schema-v2-ture uden trustattestation må ikke påvirke sandsynlighedsberegningen.');
+assert.equal(predictionWithoutUnattestedLegacy.probability,prediction.probability);
+const attestedCurrent=Array.from({length:6},(_,i)=>({zone_id:'z',observed_at:`2026-08-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'none',schema_version:2,calibration_eligible:true,data_quality_flags:[],calibration_features:{appVersion:'4.0.311'}}));
+const predictionWithAttestedCurrent=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...attestedCurrent],model});
+assert.equal(predictionWithAttestedCurrent.sampleSize,prediction.sampleSize+attestedCurrent.length);
 console.log('Eksisterende adaptive model og AI Prediction Engine består, mens nye observationsforslag er scorelåst.');

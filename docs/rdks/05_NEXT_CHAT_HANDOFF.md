@@ -1,5 +1,18 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuelt P0 – 2026-08-29 lokal 4.0.311-kandidat efter genstart
+
+- Offentlig drift er fortsat 4.0.310. Morgenhullet er ikke rekonstrueret i produktion endnu.
+- Ejerautoriteten gælder kun incident `RRGAP-2026-08-29-CANDIDATE-G-01`; se DEC-0109. Interpolér kun allerede afledt kystnormal strength mellem eksakte run-/artifactankre. Vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter og private payloads er forbudt.
+- Bevar schema 2.1/trust, calibration/hard-observed false, measured-only fallback, tripflags, inspect/apply/rollback/cleanup og alle normale releasegates.
+- Storagekandidaten sætter efter capacity/CAS existing-D1 eller fresh Edge-predeploy-intent lige før første Edge-deploy. Existing D1 går gennem Edge under uændret mode/gammel Worker → repair-intent → 20-minutters lease/30-minutters max → femsekunders dobbeltprober → 20-sekunders drain → mindst 600 sekunders restlease → samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Uden intent ingen recoverymutation. Stadig lokal kandidat, ikke livebevis.
+- Recoveryarbejdet overlevede computerens genstart. Branch og filer er intakte; intet er pushet, merged eller deployet. Den aktive redigeringskopi er den genoprettede plain workspace, som senere skal samles mekanisk tilbage i recovery-clonen før commit.
+- Færdiggør agenternes kode-/testreview, kør målrettede tests + RDKS/håndbog/version/geodatabevis + fuld sourcegate, og opret først derefter PR. Backend `[d1]`, apply og Pages kræver hver eksakt aktuelle main; apply kræver ny read-only inspect og eksakt descriptor-/mål-CAS.
+- Efter produktionsverificeret recovery hentes nyeste `main` ind i den separate DEC-0102-modelworktree. Dens næste beslutningsnummer skal ligge efter DEC-0109, og den må ikke gøre interpolation til generel missingregel. Modellen skal selv levere en målt-only atomisk 210/673-nødstate med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
+- Åbent P2: schema-v2/`calibration_eligible` er ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring og kald ikke feltet empirisk evidens, før en særskilt server-side snapshotbinding findes.
+
+Anbefalet model/indsats: GPT-5.6 Sol/Ultra.
+
 ## Nyt øverste checkpoint – 4.0.310 hurtigere ekstern overtagelse
 
 - 4.0.309 er merged/produktionsverificeret via PR #221, exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og offentligt `rr-20260829085521-210`.
@@ -192,7 +205,7 @@
 ## Produktionsverificeret 4.0.287 – lagerarkitekturens udgangspunkt
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
-- Lokal kontrakt er grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og eksplicit Supabase-rollback.
+- Historisk 4.0.287-kontrakt var grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og daværende eksplicit Supabase-rollback. Rollbackdelen er afløst af det øverste 4.0.311-handoff.
 - Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget. Cloudflare-token er uden udløb; det installerede Supabase-PAT har udløb 25. august 2027, men må efter den aktuelle behovsstyrede politik nedenfor udløbe uden fornyelse.
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den korte health-udbredelsesforsinkelse.
 - PR #166 bestod exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` bestod privat Worker-grænse, pre-/post-migration, D1-Edge og ikke-skrivende CORS/login/feltkontrol; fire kilderækker blev migreret og genkørslen var idempotent.

@@ -1,5 +1,13 @@
 # AI Working Rules – RavRadar
 
+## Aktuel recovery-/storage-regel fra 4.0.311-kandidaten
+
+- Behandl `RRGAP-2026-08-29-CANDIDATE-G-01` som den eneste tilladte rekonstruktion. Den må aldrig blive en generel missing-, fallback- eller træningsregel.
+- Skeln altid lokal kandidat, exact-head CI, live backend, apply, frisk produktion og offentlig verifikation. Ingen af de første fem må omtales som den næste.
+- Ved lagercutover sættes existing-D1/fresh Edge-predeploy-intent efter capacity/CAS før første Edge-write. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
+- Migreringsværktøjer må kun læse eksplicitte server-side safe blade. Data, som ikke må logges eller lagres, må heller ikke hentes “for en sikkerheds skyld”.
+- `calibration_eligible` åbner ikke læring uden server-side signeret manifestbinding. Den integrerede model skal bevare en atomisk målt-only 210/673-nødvej i højst 72 timer og aldrig efter kortere forecastudløb.
+
 ## 1. Systemisk fejlretning
 RavRadar fejlrettes som et system. Start med den konkrete observation og følg runtimekæden både bagud til input/kilde og fremad til score, UI, test og deployment. En rød test er et symptom, indtil årsagen er bevist.
 

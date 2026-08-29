@@ -1,5 +1,29 @@
 # RavRadar Håndbog
 
+## Én kontrolleret rekonstruktion af Candidate G-morgenhullet – lokal 4.0.311-kandidat
+
+RavRadar har normalt en hård regel: manglende Candidate G-historik må ikke opfindes eller behandles som nul. Efter schedulerhullet om morgenen 29. august 2026 har ejeren godkendt præcis én undtagelse, fordi perioden ikke skal bruges til reel ravjagt. Incidentet hedder `RRGAP-2026-08-29-CANDIDATE-G-01`; beslutningen gælder ikke andre huller og må ikke blive en automatisk fallback.
+
+Kun den allerede afledte, signerede **kystnormale transportstyrke** mellem eksakte målte ankre før og efter hullet må interpoleres lineært ved den dokumenterede native kadence. RavRadar rekonstruerer ikke vejr, vind, bølger, vandstand, rå strømvektorer, fart, koordinater, geometri, land-/vandpunkter eller scoretal. En read-only inspektion beviser først kildeartifacts, 210 zoner/673 kystdele, model-/stateKey-identitet, cadence, bracket og følsomhed og forsegler en descriptor uden selve styrkerne.
+
+Målt Candidate G-state forbliver schema 2.0.0. En state, som stadig indeholder en rekonstrueret prøve, er schema 2.1.0 og mærkes **afledt rekonstruktion – ikke målt** gennem state, score, startup, detaljer, manifest og hashes. Den må godt gøre 48-timersvinduet teknisk `READY`, men den er ikke kalibreringsevidens og må ikke alene bevise, at 13 timers faktisk udtransport er observeret. Ældre eller ukendt kode afviser schema 2.1 fail-closed.
+
+Apply må kun ske manuelt på den eksakte descriptor og et uændret hydreret mål. RavRadar skriver en privat rollback før første mutation og beviser på en isoleret kopi, at apply og direkte rollback er byteidentiske. Den eksakte rollback må kun bruges, mens målet stadig er den uændrede umiddelbare post-apply-state; ellers fjerner kausal cleanup kun dette incidents syntetiske prøver, beholder alle nyere målinger og vender tilbage til ærlig schema 2.0/warmup. Rekonstruktionskørsler kan ikke skrive de delte continuation-, checkpoint- eller last-ready-caches, og alle 673 scoreveje forbliver lukkede, indtil en obligatorisk frisk normal produktion er komplet. Den målte nødvisning må ikke erstattes af en rekonstrueret “last verified”-kopi.
+
+Ture bindes til det datasæt, brugeren faktisk så. Appen skal føre hele det aktive manifest videre; både startup- og kystdels-trust skal findes og være identiske, før en tur kan bindes. En rekonstrueret score får `ravscore-reconstructed-derived-evidence`, mens en vist komplet nødvisning får `public-emergency-last-complete`. Begge typer er fortsat brugerhistorik, men er altid `calibration_eligible=false` gennem browser, Edge, D1/Supabase, schema og installation.
+
+En aktiv eller afventende schema-v2-tur fra før 4.0.311 kan mangle de nye trustfelter. RavRadar må hverken slette turen eller antage, at den derfor er målt og kalibreringsegnet. Den bevares med `ravscore-evidence-trust-unattested` og `calibration_eligible=false`, indtil dens evidenstillid kan attesteres gennem en særskilt godkendt vej.
+
+Observationer, som allerede er gemt i databasen med schema v2 før 4.0.311, ændres eller slettes heller ikke. I stedet er den lokale prediction-/kalibreringsforbruger fail-closed: en række medtages kun, når `calibration_features.appVersion` er mindst 4.0.311, `calibration_eligible` udtrykkeligt er sand, og `data_quality_flags` er den eksakte attesterede tomme liste. Mangler én af de tre attestationer, bevares observationen som historik, men bruges ikke til prediction eller kalibrering. Selv når felterne er konsistente, er de endnu kun klientattesterede og ikke serverbevist mod det signerede offentlige manifest. De er derfor ikke empirisk evidens og kan ikke åbne global koefficientlæring.
+
+Edge, migration og D1-readback tillader kun dokumenterede snapshot-/kalibreringsblade med faste typer og intervaller. Lokation, GPS/rute, geohash/UTM, rå strømkomponenter, fri tekst/billeder, hele fri-form-JSON og ukendte kolonner hentes eller føres ikke videre; owner-id bruges kun kortvarigt til HMAC uden logging. Historiske snapshots kan kun læses eller migreres som én deterministisk sikker projektion; den eksisterende lagrede række omskrives ikke, og en gentagelse accepteres kun efter oprindelig hash-, ejer- og id-kontrol. Ti D1-shards deler én atomisk registry, og ejer-sletning skriver først en global tombstone, så samtidige eller senere writes stoppes.
+
+Backendudgivelsen sker på samme eksakte main-head som Pages. Efter kapacitetskontrol og main-kontrol registrerer RavRadar umiddelbart før første Edge-deploy, om installationen allerede bruger D1 eller er helt ny. Eksisterende D1 får nye Edge-funktioner under uændret mode/gammel Worker, derefter en 20-minutters maintenance-lease; mere end 30 minutter afvises, og udløb genåbner D1. Hver Edge-probe stopper efter fem sekunder. Efter dobbelt kontrol og 20-sekunders drain skal mindst ti minutter restere, før secret, Worker-deploy og health køres som én højst syv minutter lang gate. Fejler første Edge-deploy delvist på eksisterende D1, repareres kun fremad i D1. På en helt ny installation genbekræftes main, Supabase-secret genindsættes, Edge deployes eksakt igen og begge grænser kontrolleres dobbelt i Supabase. Fejl før intent ændrer intet recovery-state. Dette er stadig lokal kandidat, ikke livebevis.
+
+Den kommende samlede RavScore-model får sin egen nøddrift som bindende acceptkrav. Kun den seneste komplette, målt-only, atomiske og hash-/model-/statebundne 210/673-pakke må bruges. Den vises tydeligt som ældre på dansk, tysk og engelsk, må højst være 72 timer gammel og må aldrig overskride en kortere prognose-/produktudløbsgrænse. Ture er ikke-kalibrerbare, og en ny komplet primary overtager automatisk og atomisk. Ukendt, blandet, rekonstrueret, manipuleret eller udløbet state lukkes fail-closed; nøddriften interpolerer ikke huller og aktiverer ikke en anden offentlig model.
+
+Dette er endnu kun en lokal kildekandidat. Offentlig RavRadar er fortsat 4.0.310, og morgenhullet er ikke ændret i produktion, før exact-head, inspect/apply, fuld produktion og offentlig desktop/mobil/210/673 er bevist. Se [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md).
+
 ## Ekstern sikkerhed mod stille vejrproduktion – 4.0.309/4.0.310
 
 RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et enkelt eksternt job kontrollerer forskudt ved UTC-minut 04, 19, 34 og 49, om hele GitHubs planlægning er blevet stille. Det starter ikke vejrproduktion blindt og sender ingen vejrdata ud af GitHub.
@@ -122,13 +146,13 @@ Nøddriften viser ét komplet, auditeret dataset med tydelig besked om, at datae
 
 Et reelt hul over tre timer genstarter Candidate G fra de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke manglende timer. Candidate G 20/50/30, scorefysikken, DMI-først, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0085](docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md).
 
-## Supabase-login og EU-turlager med rollback – 4.0.287
+## Supabase-login og EU-turlager – historisk 4.0.287-cutover
 
 Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadars offentlige Edge-gateway. Normale ture gemmes i ti Cloudflare D1-databaser, som er låst til EU. Det giver op til 5 GB samlet gratis turlager i stedet for at lade turene vokse mod Supabases 500 MB-databaseloft.
 
 Før en tur forlader Supabase-grænsen, erstatter Edge brugerens eller den anonyme enheds id med et versionsbåret HMAC-pseudonym. Cloudflare modtager ikke bruger-id, mail, navn, login-token, GPS eller rute. Kaldet mellem Edge og Cloudflare er privat signeret og tidsbegrænset; samme klient-/tur-id kan prøves igen uden dublet, men afvises hvis indholdet ændres.
 
-Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. En manuel `TRIP_STORAGE_MODE=supabase` kan sende nye ture tilbage til Supabase ved en D1-fejl; ved tilbagevenden migreres rollback-perioden igen. Ældre D1-ture er bevaret, men kan være midlertidigt usynlige under en D1-nedetid.
+Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. Den oprindelige 4.0.287-kontrakt tillod en manuel `TRIP_STORAGE_MODE=supabase` efter D1-cutover. Det er historik: 4.0.311-kandidaten afløser denne vej, fordi D1-only ture ellers kan blive skjult. Efter den varige D1-intent repareres kun fremad i D1; Supabase-broen findes kun ved en helt ny pre-intent-installation. Dette er endnu kandidatstatus og ikke livebevis.
 
 Et dagligt kontroljob læser kun leverandørernes størrelsestal – aldrig turpayloads – og advarer ved 70 % samt stopper ved 85 %. En eksplicit bekræftet driftskommando kan slette en ejers ture i begge lagre uden at udskrive id eller payload. Supabases varsel om mulig begrænsning fra 9. september 2026 overvåges fortsat, fordi login og Edge stadig bruger Supabase. Se [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
@@ -317,7 +341,7 @@ RavRadar sætter aldrig dagens vejr på en ældre tur. Hvis systemet ikke sikker
 
 Den påvirker heller ikke den aktuelle beregnede fundchance, så længe den mangler et sikkert historisk grundlag.
 
-Efterregistreringen gemmes som én almindelig logisk turpost i det aktive turlager. Den samme post vises i **Mine ture og fund**. Der oprettes ingen særskilt fundpost eller normal dobbeltkopi, og brugeren møder ikke tekniske databaseforklaringer i turloggen. Supabase-tabellen er fra 4.0.287 migrationskilde og eksplicit rollback.
+Efterregistreringen gemmes som én almindelig logisk turpost i det aktive turlager. Den samme post vises i **Mine ture og fund**. Der oprettes ingen særskilt fundpost eller normal dobbeltkopi, og brugeren møder ikke tekniske databaseforklaringer i turloggen. Supabase-tabellen er migrationskilde; dens historiske post-cutover rollbackrolle fra 4.0.287 er afløst af 4.0.311-kandidatens énvejs D1-/roll-forward-kontrakt.
 
 Ved afslutning af en startet tur kan brugeren vælge **Indsend tur**, **Svar senere** eller **Afslut uden at indberette**. **Svar senere** bevarer turen på enheden. Det sidste valg kræver bekræftelse og rydder turen uden at sende eller gemme en rapport.
 
@@ -695,7 +719,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.310
+**Håndbogsversion:** 4.0.311
 
 **Opdateret:** 19. august 2026
 

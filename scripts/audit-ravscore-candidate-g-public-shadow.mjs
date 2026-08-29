@@ -7,12 +7,20 @@ import { fileURLToPath } from 'node:url';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
   buildBoundedCurrentTransportMemory,
   CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
+  isReconstructedTransportEvidence,
+  ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+  ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
 } from '../js/core/ravscore-regime-memory.js';
 import {
   CANDIDATE_G_OUTFLOW_ZERO_EXPLANATION_DA,
@@ -30,6 +38,10 @@ const DEFAULT_OUTPUT = '.geometry-v2-work/candidate-g-public-shadow-audit.json';
 const EXPECTED_ZONES = 210;
 const EXPECTED_PARTS = 673;
 const MODES = ['waders', 'beach'];
+const RECONSTRUCTED_TRUST_STATUS = RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS;
+const VERIFIED_TRUST_STATUS = 'VERIFIED_ONLY';
+const RECONSTRUCTED_METHOD = RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD;
+const RECONSTRUCTED_CLASSIFICATION = RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION;
 const NOT_READY_TRANSPORT_MEMORY_STATUSES = new Set([
   'LATEST_SAMPLE_MISSING',
   'WINDOW_HAS_MISSING_EVIDENCE',
@@ -45,6 +57,20 @@ const finite = value => value !== null
 const round = (value, digits = 3) => Number(Number(value).toFixed(digits));
 const clamp = value => Math.max(0, Math.min(100, Number(value)));
 const digest = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex').slice(0, 20);
+const verifiedEvidenceTrust = () => ({
+  schemaVersion: 1,
+  status: VERIFIED_TRUST_STATUS,
+  incidentId: null,
+  decisionId: null,
+  method: null,
+  evidenceClassification: 'MEASURED_DERIVED_EVIDENCE',
+  calibrationEligible: true,
+  hardObservedOuttransportEligible: true,
+  descriptorSha256: null,
+  affectedPartCount: 0,
+  syntheticSampleCount: 0,
+  activeUntil: null,
+});
 
 function scoreBand(score) {
   if (score < 20) return '0-19';
@@ -139,6 +165,10 @@ export function auditCandidateGPublicShadow(document, {
   let verifiedTimeGapRecoveryPartCount = 0;
   let technicalDiagnosticsModeCount = 0;
   let transportStateReplayMismatchCount = 0;
+  let reconstructedEvidencePartCount = 0;
+  let reconstructedEvidenceSampleCount = 0;
+  let reconstructedHardGateSuppressionModeCount = 0;
+  let latestReconstructedEvidenceMs = Number.NEGATIVE_INFINITY;
   const persistedTransportPotentials = [];
   const replayedTransportPotentials = [];
   for (const [, part] of parts) {
@@ -186,7 +216,21 @@ export function auditCandidateGPublicShadow(document, {
       || (part?.current?.weather?.currentSpeedMps == null
         && part?.current?.weather?.currentDirectionDeg == null),
     'NATIVE_CADENCE_HOLD_EXPOSES_INVENTED_CURRENT');
-    add(state?.schemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION, 'COMPACT_STATE_SCHEMA_MISMATCH');
+    const reconstructedEvidence = Array.isArray(state?.transportEvidence)
+      ? state.transportEvidence.filter(isReconstructedTransportEvidence)
+      : [];
+    const reconstructed = reconstructedEvidence.length > 0;
+    if (reconstructed) {
+      reconstructedEvidencePartCount += 1;
+      reconstructedEvidenceSampleCount += reconstructedEvidence.length;
+      latestReconstructedEvidenceMs = Math.max(
+        latestReconstructedEvidenceMs,
+        ...reconstructedEvidence.map(item => Date.parse(item.time)).filter(Number.isFinite),
+      );
+    }
+    add(state?.schemaVersion === (reconstructed
+      ? CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
+      : CANDIDATE_G_STATE_SCHEMA_VERSION), 'COMPACT_STATE_SCHEMA_MISMATCH');
     add(state?.modelId === CANDIDATE_G_STATE_MODEL_ID, 'COMPACT_STATE_MODEL_MISMATCH');
     add(state?.profileId === CANDIDATE_G_STATE_PROFILE_ID, 'COMPACT_STATE_PROFILE_MISMATCH');
     add(typeof state?.stateKey === 'string' && state.stateKey.startsWith('sha256:'), 'COMPACT_STATE_KEY_MISSING');
@@ -202,12 +246,18 @@ export function auditCandidateGPublicShadow(document, {
       && (memoryReady ? state.transportEvidence.length >= 17 && state.transportEvidence.length <= 49
         : state.transportEvidence.length >= 1 && state.transportEvidence.length <= 49),
     'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INVALID_LENGTH');
-    add((state?.transportEvidence ?? []).every((item, index, rows) =>
-      item && Object.keys(item).sort().join(',') === 'strength,time'
+    add((state?.transportEvidence ?? []).every((item, index, rows) => {
+      const reconstructedItem = isReconstructedTransportEvidence(item);
+      const expectedKeys = reconstructedItem
+        ? 'incidentId,provenance,strength,time'
+        : 'strength,time';
+      return item && Object.keys(item).sort().join(',') === expectedKeys
       && Number.isFinite(Date.parse(item.time))
+      && (reconstructedItem ? Number.isFinite(item.strength) : item.strength === null || finite(item.strength))
       && (item.strength === null || (finite(item.strength)
         && Number(item.strength) >= -1 && Number(item.strength) <= 1))
-      && (index === 0 || Date.parse(item.time) > Date.parse(rows[index - 1].time))),
+      && (index === 0 || Date.parse(item.time) > Date.parse(rows[index - 1].time));
+    }),
     'COMPACT_BOUNDED_TRANSPORT_EVIDENCE_INVALID');
     add((state?.transportEvidence ?? []).every((item, index, rows) =>
       Number.isFinite(item?.strength)
@@ -321,6 +371,34 @@ export function auditCandidateGPublicShadow(document, {
       add(Number(diagnostics?.transportMemoryWindowHours) === 48,
         'CANDIDATE_G_MEMORY_WINDOW_DIAGNOSTIC_INVALID');
       add(diagnostics?.windDirectlyIncluded === false, 'CANDIDATE_G_WIND_DIAGNOSTIC_INVALID');
+      const partTrust = candidate?.evidenceTrust;
+      if (reconstructed) {
+        add(partTrust?.status === RECONSTRUCTED_TRUST_STATUS
+          && partTrust?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+          && partTrust?.calibrationEligible === false
+          && partTrust?.hardObservedOuttransportEligible === false
+          && Number(partTrust?.syntheticSampleCount) === reconstructedEvidence.length,
+        'RECONSTRUCTED_PART_TRUST_MISMATCH');
+        add(candidateMode?.evidenceTrust?.status === RECONSTRUCTED_TRUST_STATUS
+          && candidateMode.evidenceTrust.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+        'RECONSTRUCTED_MODE_TRUST_MISSING');
+        add(diagnostics?.evidenceTrust?.status === RECONSTRUCTED_TRUST_STATUS
+          && diagnostics.evidenceTrust.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+        'RECONSTRUCTED_DIAGNOSTIC_TRUST_MISSING');
+        add(candidateMode?.outflowExhaustionGateApplied === false
+          && diagnostics?.actualOutboundTransport === false,
+        'RECONSTRUCTED_OBSERVED_OUTFLOW_GATE_NOT_SUPPRESSED');
+        if (candidateMode?.outflowExhaustionGateApplied === false
+          && diagnostics?.actualOutboundTransport === false) {
+          reconstructedHardGateSuppressionModeCount += 1;
+        }
+      } else {
+        add(partTrust?.status === VERIFIED_TRUST_STATUS
+          && partTrust?.calibrationEligible === true
+          && partTrust?.hardObservedOuttransportEligible === true
+          && Number(partTrust?.syntheticSampleCount) === 0,
+        'VERIFIED_PART_TRUST_MISMATCH');
+      }
       if (measurementStatus === 'VERIFIED') {
         add(['INBOUND', 'ALONG_COAST', 'OUTBOUND'].includes(diagnostics?.currentDirectionClass),
           'CANDIDATE_G_DIRECTION_CLASS_MISSING');
@@ -337,8 +415,8 @@ export function auditCandidateGPublicShadow(document, {
       const proposed = Number(candidateMode.score);
       add(active >= 0 && active <= 100 && proposed >= 0 && proposed <= 100, 'SCORE_OUT_OF_RANGE');
       add(active === proposed, 'ACTIVE_SCORE_DOES_NOT_MATCH_CANDIDATE_G');
-      const reconstructed = reconstructCandidateScore(mode, candidateMode);
-      if (reconstructed !== proposed) scoreReconstructionMismatchCount += 1;
+      const reconstructedScore = reconstructCandidateScore(mode, candidateMode);
+      if (reconstructedScore !== proposed) scoreReconstructionMismatchCount += 1;
       if (scoreBand(active) !== scoreBand(proposed)) bandChangeCount += 1;
       if (candidateMode.outflowExhaustionGateApplied === true) {
         outflowGateCount += 1;
@@ -353,6 +431,37 @@ export function auditCandidateGPublicShadow(document, {
     'CANDIDATE_G_PUBLIC_DIAGNOSTICS_COVERAGE_INCOMPLETE');
   add(acceptedNearBoundaryIncompletePartCount / Math.max(1, parts.length) < 0.98,
     'ACCEPTED_STATE_MASS_WINDOW_INCOMPLETE');
+  const aggregateTrust = coastal?.evidenceTrust;
+  if (reconstructedEvidenceSampleCount > 0) {
+    const expectedActiveUntil = Number.isFinite(latestReconstructedEvidenceMs)
+      ? new Date(latestReconstructedEvidenceMs
+        + CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000).toISOString()
+      : null;
+    add(aggregateTrust?.schemaVersion === 1
+      && aggregateTrust?.status === RECONSTRUCTED_TRUST_STATUS
+      && aggregateTrust?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+      && aggregateTrust?.decisionId === ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID
+      && aggregateTrust?.method === RECONSTRUCTED_METHOD
+      && aggregateTrust?.evidenceClassification === RECONSTRUCTED_CLASSIFICATION
+      && aggregateTrust?.calibrationEligible === false
+      && aggregateTrust?.hardObservedOuttransportEligible === false
+      && /^[a-f0-9]{64}$/.test(String(aggregateTrust?.descriptorSha256 || ''))
+      && Number(aggregateTrust?.affectedPartCount) === reconstructedEvidencePartCount
+      && Number(aggregateTrust?.syntheticSampleCount) === reconstructedEvidenceSampleCount
+      && aggregateTrust?.activeUntil === expectedActiveUntil,
+    'RECONSTRUCTED_AGGREGATE_TRUST_MISMATCH');
+    add(reconstructedHardGateSuppressionModeCount === reconstructedEvidencePartCount * MODES.length,
+      'RECONSTRUCTED_HARD_GATE_SUPPRESSION_COVERAGE_INCOMPLETE');
+  } else {
+    add(aggregateTrust?.schemaVersion === 1
+      && aggregateTrust?.status === VERIFIED_TRUST_STATUS
+      && aggregateTrust?.calibrationEligible === true
+      && aggregateTrust?.hardObservedOuttransportEligible === true
+      && aggregateTrust?.incidentId === null
+      && Number(aggregateTrust?.affectedPartCount) === 0
+      && Number(aggregateTrust?.syntheticSampleCount) === 0,
+    'VERIFIED_AGGREGATE_TRUST_MISMATCH');
+  }
 
   const modeSummary = Object.fromEntries(MODES.map(mode => [mode, {
     active: summarize(modeRows[mode].map(row => row.active)),
@@ -407,6 +516,14 @@ export function auditCandidateGPublicShadow(document, {
       persistedTransportZeroCount: persistedTransportPotentials.filter(value => value === 0).length,
       replayedTransportZeroCount: replayedTransportPotentials.filter(value => value === 0).length,
       replayedTransportPositiveCount: replayedTransportPotentials.filter(value => value > 0).length,
+    },
+    evidenceTrust: {
+      status: aggregateTrust?.status ?? null,
+      reconstructedPartCount: reconstructedEvidencePartCount,
+      reconstructedSampleCount: reconstructedEvidenceSampleCount,
+      hardGateSuppressionModeCount: reconstructedHardGateSuppressionModeCount,
+      calibrationEligible: aggregateTrust?.calibrationEligible ?? null,
+      descriptorBound: /^[a-f0-9]{64}$/.test(String(aggregateTrust?.descriptorSha256 || '')),
     },
     scoreComparison: { modes: modeSummary, bandChangeCount, outflowGateCount },
     scoreReconstructionMismatchCount,
@@ -486,6 +603,7 @@ export function syntheticCandidateGPublicShadowDocument() {
           transportMemoryCoverageHours: 0,
           initialStateAccepted: zoneNumber > 0,
           initialStateResetReason: zoneNumber > 0 ? null : 'NO_PREVIOUS_STATE',
+          evidenceTrust: verifiedEvidenceTrust(),
           currentState: {
             schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
             modelId: CANDIDATE_G_STATE_MODEL_ID,
@@ -533,10 +651,136 @@ export function syntheticCandidateGPublicShadowDocument() {
       },
       expectedPartCount: EXPECTED_PARTS,
       scoredPartCount: EXPECTED_PARTS,
+      evidenceTrust: verifiedEvidenceTrust(),
       zones,
       parts,
     },
   };
+}
+
+export function syntheticReconstructedReadyCandidateGPublicShadowDocument() {
+  const document = syntheticCandidateGPublicShadowDocument();
+  const referenceMs = Date.parse(document.generatedAt);
+  const evidence = Array.from({ length: 49 }, (_, index) => {
+    const row = {
+      time: new Date(referenceMs - ((48 - index) * 3_600_000)).toISOString(),
+      strength: 0.2,
+    };
+    return index >= 43 && index <= 45
+      ? {
+        ...row,
+        provenance: RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE,
+        incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+      }
+      : row;
+  });
+  const replay = buildBoundedCurrentTransportMemory(evidence, {
+    referenceTime: document.generatedAt,
+  });
+  assert.equal(replay.memoryReady, true);
+  assert.equal(replay.status, 'READY');
+  const syntheticSampleCountPerPart = evidence.filter(isReconstructedTransportEvidence).length;
+  const latestSyntheticAt = evidence.filter(isReconstructedTransportEvidence).at(-1).time;
+  const activeUntil = new Date(Date.parse(latestSyntheticAt)
+    + CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000).toISOString();
+  const partTrust = {
+    schemaVersion: 1,
+    status: RECONSTRUCTED_TRUST_STATUS,
+    incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+    decisionId: ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+    method: RECONSTRUCTED_METHOD,
+    evidenceClassification: RECONSTRUCTED_CLASSIFICATION,
+    calibrationEligible: false,
+    hardObservedOuttransportEligible: false,
+    descriptorSha256: 'a'.repeat(64),
+    affectedPartCount: 1,
+    syntheticSampleCount: syntheticSampleCountPerPart,
+    activeUntil,
+  };
+  const weightedContributions = {
+    huntability: 20,
+    transportAndDelivery: 25,
+    mobilisation: 15,
+  };
+  const score = 60;
+  const candidateMode = mode => ({
+    available: true,
+    score,
+    weightedContributions,
+    physicalGateFactor: 1,
+    wadersHuntabilityMaximum: mode === 'waders' ? 100 : null,
+    outflowExhaustionGateApplied: false,
+    outflowExhaustionExplanationDa: null,
+    evidenceTrust: partTrust,
+  });
+  const publicMode = () => ({
+    available: true,
+    score,
+    explanation: {
+      transportDiagnostics: {
+        engine: 'CANDIDATE_G',
+        measurementStatus: 'VERIFIED',
+        currentDirectionClass: 'INBOUND',
+        currentDirectionDifferenceDeg: 0,
+        transportPotential: replay.result.transportPotential,
+        deliveryPotential: 50,
+        transportAndDelivery: 50,
+        transportMemoryReady: true,
+        transportMemoryStatus: 'READY',
+        transportMemoryCoverageHours: 48,
+        transportMemoryWindowHours: 48,
+        actualOutboundTransport: false,
+        evidenceTrust: partTrust,
+        windDirectlyIncluded: false,
+      },
+    },
+  });
+
+  for (const zone of Object.values(document.coastalParts.zones)) {
+    zone.hourly[0].waders = publicMode();
+    zone.hourly[0].beach = publicMode();
+  }
+  for (const part of Object.values(document.coastalParts.parts)) {
+    part.current.waders = publicMode();
+    part.current.beach = publicMode();
+    part.candidateG.transportMemoryReady = true;
+    part.candidateG.transportMemoryStatus = 'READY';
+    part.candidateG.transportMemoryCoverageHours = 48;
+    part.candidateG.currentTransition = 'BOUNDED_MEMORY_READY';
+    part.candidateG.initialStateAccepted = true;
+    part.candidateG.initialStateResetReason = null;
+    part.candidateG.evidenceTrust = structuredClone(partTrust);
+    part.candidateG.currentState = {
+      ...part.candidateG.currentState,
+      schemaVersion: CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
+      transportPotential: replay.result.transportPotential,
+      outboundEpisodeEffectiveHours: replay.result.outboundEpisodeEffectiveHours,
+      transportMemoryReady: true,
+      transportMemoryStatus: 'READY',
+      transportMemoryCoverageHours: 48,
+      transportEvidence: structuredClone(replay.evidence),
+    };
+    part.candidateG.modes = {
+      waders: candidateMode('waders'),
+      beach: candidateMode('beach'),
+    };
+  }
+  document.coastalParts.scoreAvailability = {
+    schemaVersion: 1,
+    policy: 'candidate-g-local-fail-closed',
+    allZonesActive: true,
+    activeZoneCount: EXPECTED_ZONES,
+    unavailableZoneCount: 0,
+    totalZoneCount: EXPECTED_ZONES,
+    evaluatedAt: document.generatedAt,
+    unavailableZones: [],
+  };
+  document.coastalParts.evidenceTrust = {
+    ...partTrust,
+    affectedPartCount: EXPECTED_PARTS,
+    syntheticSampleCount: EXPECTED_PARTS * syntheticSampleCountPerPart,
+  };
+  return document;
 }
 
 async function main() {
@@ -552,6 +796,27 @@ async function main() {
     assert.equal(report.stateContinuation.warmupPartCount, EXPECTED_PARTS);
     assert.equal(report.scoreProfile.activeProfileId, CANDIDATE_G_RAVSCORE_PROFILE_ID);
     assert.equal(report.privacy.partIdentifiersIncluded, false);
+    const reconstructedReadyDocument = syntheticReconstructedReadyCandidateGPublicShadowDocument();
+    const reconstructedReadyReport = auditCandidateGPublicShadow(reconstructedReadyDocument);
+    assert.deepEqual(reconstructedReadyReport.errors, [],
+      'En fuldt bundet 210/673-runtime med rekonstrueret derived evidence skal bestå uden at ligne målt evidens.');
+    assert.equal(reconstructedReadyReport.stateContinuation.memoryReadyPartCount, EXPECTED_PARTS);
+    assert.equal(reconstructedReadyReport.coverage.modeEvaluationCount, EXPECTED_PARTS * MODES.length);
+    assert.equal(reconstructedReadyReport.evidenceTrust.reconstructedPartCount, EXPECTED_PARTS);
+    assert.equal(reconstructedReadyReport.evidenceTrust.hardGateSuppressionModeCount,
+      EXPECTED_PARTS * MODES.length);
+    assert.equal(reconstructedReadyReport.evidenceTrust.calibrationEligible, false);
+    const trustTamperDocument = syntheticReconstructedReadyCandidateGPublicShadowDocument();
+    trustTamperDocument.coastalParts.evidenceTrust.calibrationEligible = true;
+    assert.equal(auditCandidateGPublicShadow(trustTamperDocument).errors
+      .includes('RECONSTRUCTED_AGGREGATE_TRUST_MISMATCH'), true,
+    'Rekonstrueret evidens må ikke kunne ommærkes som kalibreringsegnet.');
+    const hardGateTamperDocument = syntheticReconstructedReadyCandidateGPublicShadowDocument();
+    Object.values(hardGateTamperDocument.coastalParts.parts)[0]
+      .current.waders.explanation.transportDiagnostics.actualOutboundTransport = true;
+    assert.equal(auditCandidateGPublicShadow(hardGateTamperDocument).errors
+      .includes('RECONSTRUCTED_OBSERVED_OUTFLOW_GATE_NOT_SUPPRESSED'), true,
+    'En reconstruction-afhængig udtransportgate må ikke præsenteres som observeret.');
     const verifiedGapRecoveryDocument = syntheticCandidateGPublicShadowDocument();
     for (const part of Object.values(verifiedGapRecoveryDocument.coastalParts.parts)) {
       part.candidateG.initialStateAccepted = true;

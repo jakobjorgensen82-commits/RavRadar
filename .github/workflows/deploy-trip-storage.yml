@@ -1,19 +1,12 @@
 name: Deploy RavRadar trip storage
+run-name: "Deploy RavRadar trip storage [d1]"
 
 on:
   workflow_dispatch:
-    inputs:
-      storage_mode:
-        description: Normal Cloudflare D1-drift eller kontrolleret Supabase-rollback
-        required: true
-        default: d1
-        type: choice
-        options:
-          - d1
-          - supabase
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ravradar-trip-storage-production
@@ -23,7 +16,7 @@ jobs:
   deploy-trip-storage:
     name: Validate, migrate and deploy trip storage
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
@@ -43,6 +36,16 @@ jobs:
 
       - uses: actions/checkout@v7
 
+      - name: Require checked-out trip-storage HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -61,39 +64,288 @@ jobs:
       - name: Validate exact source head before external writes
         run: npm run validate:source
 
-      - name: Prepare ten EU-restricted D1 shards and schema
-        if: inputs.storage_mode == 'd1'
-        run: node scripts/prepare-cloudflare-trip-storage.mjs
-
-      - name: Require safe D1 storage headroom
-        if: inputs.storage_mode == 'd1'
-        run: node scripts/audit-cloudflare-trip-storage.mjs
-
-      - name: Install the private Worker secret
-        if: inputs.storage_mode == 'd1'
-        run: printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
-
-      - name: Deploy the private D1 gateway
-        if: inputs.storage_mode == 'd1'
-        run: npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
-
-      - name: Verify Worker boundary before migration
-        if: inputs.storage_mode == 'd1'
-        run: node scripts/verify-cloudflare-trip-gateway.mjs
-
-      - name: Idempotently migrate existing Supabase trips
-        if: inputs.storage_mode == 'd1'
-        run: node scripts/migrate-trip-storage-to-cloudflare.mjs
+      - name: Reconfirm current origin/main before the Candidate G database contract
+        shell: bash
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Atomically apply and verify the Candidate G trip-quality contract
+        run: node scripts/apply-candidate-g-trip-quality-migration.mjs
 
       - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
         with:
           version: latest
 
-      - name: Configure normal Cloudflare D1 mode
-        if: inputs.storage_mode == 'd1'
+      - name: Reconfirm current origin/main before D1 schema and phase inspection
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Prepare ten EU-restricted D1 shards, schema and durable phase
+        id: prepare_d1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/prepare-cloudflare-trip-storage.mjs
+
+      - name: Require safe D1 storage headroom
+        run: node scripts/audit-cloudflare-trip-storage.mjs
+
+      - name: Reconfirm current origin/main before legacy-D1 phase seeding
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+            && steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+          }}
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Record fail-closed intent for the already-live legacy D1 installation
+        id: legacy_activation_intent
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+            && steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+          }}
+        shell: bash
+        run: echo "d1_activation_intent=true" >> "$GITHUB_OUTPUT"
+
+      - name: Persist the D1 boundary before quiescing the legacy installation
+        id: mark_legacy_d1_activation
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+            && steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+          }}
+        run: node scripts/mark-cloudflare-trip-storage-activation.mjs
+
+      - name: Reconfirm current origin/main before maintenance-capable Edge predeployment
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Record current-run existing-D1 Edge predeployment intent
+        id: d1_edge_predeploy_intent
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted == 'true'
+            || steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+          }}
+        shell: bash
+        run: echo "edge_predeploy_intent=true" >> "$GITHUB_OUTPUT"
+
+      - name: Record current-run fresh-Supabase Edge predeployment intent
+        id: fresh_edge_predeploy_intent
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        shell: bash
+        run: echo "edge_predeploy_intent=true" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy exact maintenance-capable Edge functions while Worker and mode stay unchanged
+        timeout-minutes: 5
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Attest both exact Edge boundaries in unchanged D1 mode before leasing maintenance
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted == 'true'
+            || steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+          }}
+        timeout-minutes: 3
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+
+      - name: Reconfirm current origin/main immediately before the public mode family
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Record current-run D1 repair intent immediately before quiescence
+        id: d1_repair_intent
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted == 'true'
+            || steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+          }}
+        shell: bash
+        run: echo "d1_repair_intent=true" >> "$GITHUB_OUTPUT"
+
+      - name: Enter fail-closed expiring maintenance for every existing D1 installation
+        id: enter_maintenance
+        if: >-
+          ${{
+            steps.d1_repair_intent.outputs.d1_repair_intent == 'true'
+          }}
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          maintenance_deadline_epoch="$(date -u -d '+20 minutes' '+%s')"
+          maintenance_until="$(date -u -d "@$maintenance_deadline_epoch" '+%Y-%m-%dT%H:%M:%SZ')"
+          supabase secrets set \
+          --project-ref "$SUPABASE_PROJECT_ID" \
+          TRIP_STORAGE_MODE="maintenance:$maintenance_until"
+          echo "lease_deadline_epoch=$maintenance_deadline_epoch" >> "$GITHUB_OUTPUT"
+
+      - name: Preserve the initial Supabase bridge only for a genuinely fresh D1 installation
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        timeout-minutes: 5
+        run: >-
+          supabase secrets set
+          --project-ref "$SUPABASE_PROJECT_ID"
+          TRIP_STORAGE_MODE=supabase
+
+      - name: Attest both Edge boundaries in fail-closed maintenance
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted == 'true'
+            || steps.prepare_d1.outputs.legacy_d1_detected == 'true'
+          }}
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: maintenance
+
+      - name: Attest both Edge boundaries in the genuinely fresh Supabase bridge
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: supabase
+
+      - name: Drain every bounded request from the preceding Edge generation
+        shell: bash
+        run: sleep 20
+
+      - name: Reconfirm current origin/main before quiesced Cloudflare Worker replacement
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Require enough maintenance lease for bounded Worker replacement
+        shell: bash
+        env:
+          LEASE_DEADLINE_EPOCH: ${{ steps.enter_maintenance.outputs.lease_deadline_epoch }}
+        run: |
+          set -euo pipefail
+          if [ -n "$LEASE_DEADLINE_EPOCH" ]; then
+            remaining_seconds=$((LEASE_DEADLINE_EPOCH - $(date -u '+%s')))
+            test "$remaining_seconds" -ge 600
+          fi
+
+      - name: Install deploy and attest the private D1 gateway after Edge quiescence
+        timeout-minutes: 7
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
+          npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
+          node scripts/verify-cloudflare-trip-gateway.mjs
+
+      - name: Reconfirm current origin/main before the first Supabase to D1 synchronization
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Idempotently synchronize existing Supabase trips into D1
+        run: node scripts/migrate-trip-storage-to-cloudflare.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Reconfirm current origin/main before a genuinely fresh D1 activation
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Record local fail-closed intent before a genuinely fresh D1 marker
+        id: activation_intent
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        shell: bash
+        run: echo "d1_activation_intent=true" >> "$GITHUB_OUTPUT"
+
+      - name: Persist the point of no return immediately before fresh D1 activation
+        id: mark_d1_activation
+        if: >-
+          ${{
+            steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+          }}
+        run: node scripts/mark-cloudflare-trip-storage-activation.mjs
+
+      - name: Reconfirm current origin/main immediately before normal D1 mode
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Activate normal Cloudflare D1 mode after verified Worker readiness
         run: >-
           supabase secrets set
           --project-ref "$SUPABASE_PROJECT_ID"
@@ -102,24 +354,412 @@ jobs:
           TRIP_GATEWAY_SHARED_SECRET="$TRIP_GATEWAY_SHARED_SECRET"
           TRIP_PSEUDONYM_SECRET_V1="$TRIP_PSEUDONYM_SECRET_V1"
 
-      - name: Configure explicit Supabase rollback mode
-        if: inputs.storage_mode == 'supabase'
-        run: >-
-          supabase secrets set
-          --project-ref "$SUPABASE_PROJECT_ID"
-          TRIP_STORAGE_MODE=supabase
+      - name: Attest both Edge write and read boundaries in live D1 mode before final reconciliation
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
 
-      - name: Deploy all version-controlled Edge functions
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Drain the last bounded pre-D1 requests before final reconciliation
+        shell: bash
+        run: sleep 20
 
-      - name: Reconcile trips written during the D1 cutover
-        if: inputs.storage_mode == 'd1'
+      - name: Reconfirm current origin/main immediately before final reconciliation
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Reconcile every trip written before both Edge boundaries attested D1
         run: node scripts/migrate-trip-storage-to-cloudflare.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Verify public Edge boundaries without creating data
+      - name: Reverify both public Edge boundaries in live D1 mode
         run: node scripts/verify-trip-storage-edge.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+
+      - name: Reverify Worker after the final reconciliation
+        run: node scripts/verify-cloudflare-trip-gateway.mjs
+
+      - name: Reverify the Candidate G trip-quality database contract
+        run: node scripts/apply-candidate-g-trip-quality-migration.mjs --verify-only
+
+      - name: Reconfirm exact main before any failure-recovery mutation
+        id: failure_exact_head
+        if: failure()
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Restore Supabase only for a proven fresh pre-activation installation
+        id: failure_supabase_restore
+        if: >-
+          ${{
+            failure()
+            && steps.failure_exact_head.outcome == 'success'
+            && steps.prepare_d1.outcome == 'success'
+            && steps.prepare_d1.outputs.d1_activation_attempted != 'true'
+            && steps.prepare_d1.outputs.legacy_d1_detected != 'true'
+            && steps.fresh_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'
+            && steps.legacy_activation_intent.outputs.d1_activation_intent != 'true'
+            && steps.d1_repair_intent.outputs.d1_repair_intent != 'true'
+            && steps.activation_intent.outputs.d1_activation_intent != 'true'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        run: >-
+          supabase secrets set
+          --project-ref "$SUPABASE_PROJECT_ID"
+          TRIP_STORAGE_MODE=supabase
+
+      - name: Reconfirm exact main before restored fresh-Supabase Edge deployment
+        id: failure_fresh_edge_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_supabase_restore.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Redeploy exact Edge functions for the restored fresh Supabase bridge
+        id: failure_fresh_edge
+        if: >-
+          ${{
+            failure()
+            && steps.failure_fresh_edge_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Attest the restored genuinely fresh Supabase bridge
+        if: >-
+          ${{
+            failure()
+            && steps.failure_fresh_edge.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: supabase
+
+      - name: Reconfirm exact main before failure roll-forward D1 phase persistence
+        id: failure_marker_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_exact_head.outcome == 'success'
+            && steps.prepare_d1.outcome == 'success'
+            && (
+              steps.legacy_activation_intent.outputs.d1_activation_intent == 'true'
+              || steps.d1_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'
+              || steps.d1_repair_intent.outputs.d1_repair_intent == 'true'
+              || steps.activation_intent.outputs.d1_activation_intent == 'true'
+            )
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Persist or reconfirm the D1 boundary during failure roll-forward
+        id: failure_d1_marker
+        if: >-
+          ${{
+            failure()
+            && steps.failure_marker_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        run: node scripts/mark-cloudflare-trip-storage-activation.mjs
+
+      - name: Reconfirm exact main before maintenance-capable failure Edge predeployment
+        id: failure_maintenance_edge_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_marker.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Redeploy exact maintenance-capable Edge functions before failure maintenance
+        id: failure_maintenance_edge
+        if: >-
+          ${{
+            failure()
+            && steps.failure_maintenance_edge_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Reconfirm exact main before failure roll-forward expiring maintenance
+        id: failure_maintenance_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_maintenance_edge.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Enter fail-closed expiring maintenance during D1 failure roll-forward
+        id: failure_d1_maintenance
+        if: >-
+          ${{
+            failure()
+            && steps.failure_maintenance_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          maintenance_deadline_epoch="$(date -u -d '+20 minutes' '+%s')"
+          maintenance_until="$(date -u -d "@$maintenance_deadline_epoch" '+%Y-%m-%dT%H:%M:%SZ')"
+          supabase secrets set \
+          --project-ref "$SUPABASE_PROJECT_ID" \
+          TRIP_STORAGE_MODE="maintenance:$maintenance_until"
+          echo "lease_deadline_epoch=$maintenance_deadline_epoch" >> "$GITHUB_OUTPUT"
+
+      - name: Attest both Edge boundaries in failure roll-forward maintenance
+        id: failure_maintenance_attestation
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_maintenance.outcome == 'success'
+          }}
+        continue-on-error: true
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: maintenance
+
+      - name: Drain the preceding Edge generation before failure Worker replacement
+        id: failure_maintenance_drain
+        if: >-
+          ${{
+            failure()
+            && steps.failure_maintenance_attestation.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        run: sleep 20
+
+      - name: Reconfirm exact main immediately before failure Worker replacement
+        id: failure_worker_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_maintenance_drain.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Require enough failure maintenance lease for bounded Worker replacement
+        id: failure_lease_remaining
+        if: >-
+          ${{
+            failure()
+            && steps.failure_worker_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          LEASE_DEADLINE_EPOCH: ${{ steps.failure_d1_maintenance.outputs.lease_deadline_epoch }}
+        run: |
+          set -euo pipefail
+          test -n "$LEASE_DEADLINE_EPOCH"
+          remaining_seconds=$((LEASE_DEADLINE_EPOCH - $(date -u '+%s')))
+          test "$remaining_seconds" -ge 600
+
+      - name: Reinstall and redeploy the exact Worker after failure Edge quiescence
+        id: failure_d1_worker
+        if: >-
+          ${{
+            failure()
+            && steps.failure_lease_remaining.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 7
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' "$TRIP_GATEWAY_SHARED_SECRET" | npx --yes wrangler@4.28.1 secret put TRIP_GATEWAY_SHARED_SECRET --config "$TRIP_WRANGLER_CONFIG_PATH"
+          npx --yes wrangler@4.28.1 deploy --config "$TRIP_WRANGLER_CONFIG_PATH"
+          node scripts/verify-cloudflare-trip-gateway.mjs
+
+      - name: Reconfirm exact main before failure D1 secret and Edge deployment
+        id: failure_d1_edge_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_worker.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Preserve D1 after the point of no return and repair forward
+        id: failure_d1_mode
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_edge_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        run: >-
+          supabase secrets set
+          --project-ref "$SUPABASE_PROJECT_ID"
+          TRIP_STORAGE_MODE=d1
+          CLOUDFLARE_TRIP_GATEWAY_URL="$CLOUDFLARE_TRIP_GATEWAY_URL"
+          TRIP_GATEWAY_SHARED_SECRET="$TRIP_GATEWAY_SHARED_SECRET"
+          TRIP_PSEUDONYM_SECRET_V1="$TRIP_PSEUDONYM_SECRET_V1"
+
+      - name: Redeploy exact Edge functions during D1 failure roll-forward
+        id: failure_d1_edge
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_mode.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 5
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Attest both Edge boundaries in D1 mode before failure reconciliation
+        id: failure_d1_attestation
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_edge.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+
+      - name: Drain bounded pre-D1 requests during failure roll-forward
+        id: failure_d1_drain
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_attestation.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        run: sleep 20
+
+      - name: Reconfirm exact main immediately before failure roll-forward reconciliation
+        id: failure_reconcile_exact_head
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_drain.outcome == 'success'
+          }}
+        continue-on-error: true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Reconcile the Supabase source during failure roll-forward
+        id: failure_d1_reconciliation
+        if: >-
+          ${{
+            failure()
+            && steps.failure_reconcile_exact_head.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 8
+        run: node scripts/migrate-trip-storage-to-cloudflare.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Reattest both Edge boundaries after failure roll-forward
+        id: failure_final_edge_attestation
+        if: >-
+          ${{
+            failure()
+            && steps.failure_d1_reconciliation.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+
+      - name: Reattest Worker after failure roll-forward
+        if: >-
+          ${{
+            failure()
+            && steps.failure_final_edge_attestation.outcome == 'success'
+          }}
+        continue-on-error: true
+        timeout-minutes: 3
+        run: node scripts/verify-cloudflare-trip-gateway.mjs

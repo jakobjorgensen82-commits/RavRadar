@@ -1,8 +1,10 @@
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
   completeTripEvidence,
-  createTripStartRecord
-} from './trip-evidence-contract.js?v=4.0.310';
+  createTripStartRecord,
+  migrateLegacyUnattestedTripEvidence,
+  migrateLegacyUnattestedTripStart
+} from './trip-evidence-contract.js?v=4.0.311';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';
@@ -26,18 +28,26 @@ function readJson(storage, key, fallback) {
 }
 
 export function loadActiveTripEvidence(storage = null) {
-  const active = readJson(resolveStorage(storage), ACTIVE_KEY, null);
+  const target = resolveStorage(storage);
+  const active = readJson(target, ACTIVE_KEY, null);
   if (active == null) return null;
   if (active.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) {
     throw new Error('Den aktive tur bruger en ukendt dataversion.');
   }
-  return active;
+  const migrated = migrateLegacyUnattestedTripStart(active);
+  if (migrated !== active) target.setItem(ACTIVE_KEY, JSON.stringify(migrated));
+  return migrated;
 }
 
 export function listPendingTripEvidence(storage = null) {
-  const pending = readJson(resolveStorage(storage), PENDING_KEY, []);
+  const target = resolveStorage(storage);
+  const pending = readJson(target, PENDING_KEY, []);
   if (!Array.isArray(pending)) throw new Error('Den lokale turkø har ugyldigt format.');
-  return pending;
+  const migrated = pending.map(migrateLegacyUnattestedTripEvidence);
+  if (migrated.some((record, index) => record !== pending[index])) {
+    target.setItem(PENDING_KEY, JSON.stringify(migrated));
+  }
+  return migrated;
 }
 
 export function beginTripEvidence(input, storage = null) {

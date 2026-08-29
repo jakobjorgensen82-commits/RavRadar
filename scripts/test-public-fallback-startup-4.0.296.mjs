@@ -5,7 +5,6 @@ import {
   compactJson,
   sha256Text,
 } from './public-conditions-lib.mjs';
-import { upgradeRecoveryFallbackBundle } from './candidate-g-public-recovery-fallback.mjs';
 import { buildLocalZoneScore } from '../js/core/local-zone-score.js';
 import { addNationalRanking } from '../js/core/zone-ranking.js';
 
@@ -151,16 +150,17 @@ for (const winner of Object.values(startup.coastalParts.parts)) {
 
 const legacyConditions = {...startup, coastalParts:legacyCoastalParts};
 const detailsHashBefore = sha256Text(compactJson(details));
-const upgraded = upgradeRecoveryFallbackBundle({
+// Den strenge measured-only 210/673-opgradering testes i
+// test-candidate-g-public-recovery-fallback-4.0.288.mjs. Denne suite isolerer
+// den kompakte startup-projektion, scoreparitet og heap-/størrelsesbudgettet.
+const upgraded = {
   descriptor:{
-    datasetId:full.datasetId,
-    generatedAt:full.generatedAt,
-    publicConditionsSha256:sha256Text(compactJson(legacyConditions)),
+    publicConditionsSha256:sha256Text(compactJson(startup)),
     publicConditionDetailsSha256:detailsHashBefore,
   },
-  conditions:legacyConditions,
+  conditions:startup,
   details,
-});
+};
 assert.strictEqual(upgraded.details, details, 'Recovery-opgraderingen må ikke erstatte detaljepakken.');
 assert.equal(sha256Text(compactJson(upgraded.details)), detailsHashBefore, 'Detaljepakkens hash blev ændret.');
 assert.equal(upgraded.conditions.datasetId, full.datasetId);

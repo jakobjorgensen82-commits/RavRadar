@@ -49,6 +49,16 @@ import {
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import {
+  assertCandidateGReconstructionTrustRolloff,
+  CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
+  isReconstructedTransportEvidence,
+  ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+  ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+} from '../js/core/ravscore-regime-memory.js';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -1037,12 +1047,13 @@ function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt
   return stats;
 }
 
-function compactCandidateGMode(result) {
+function compactCandidateGMode(result, evidenceTrust = null) {
   if (!result?.available || !Number.isFinite(result.score)) {
     return {
       available: false,
       score: null,
       reason: result?.reason ?? 'CANDIDATE_G_NOT_AVAILABLE',
+      evidenceTrust: evidenceTrust ?? null,
     };
   }
   return {
@@ -1057,6 +1068,31 @@ function compactCandidateGMode(result) {
     wadersHuntabilityLimitApplied: result.scoreCalculation?.modeHuntabilityApplied === true,
     outflowExhaustionGateApplied: result.scoreCalculation?.outflowExhaustionGateApplied === true,
     outflowExhaustionExplanationDa: result.scoreCalculation?.outflowExhaustionExplanationDa ?? null,
+    evidenceTrust: evidenceTrust ?? null,
+  };
+}
+
+function candidateGTransportEvidenceTrust(evidence) {
+  const synthetic = (Array.isArray(evidence) ? evidence : []).filter(isReconstructedTransportEvidence);
+  if (!synthetic.length) return {
+    status: 'VERIFIED_ONLY',
+    calibrationEligible: true,
+    hardObservedOuttransportEligible: true,
+    incidentId: null,
+    syntheticSampleCount: 0,
+    activeUntil: null,
+  };
+  const latest = synthetic.map(item => Date.parse(item.time)).filter(Number.isFinite).sort((a, b) => a - b).at(-1);
+  return {
+    status: RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+    evidenceClassification: RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+    calibrationEligible: false,
+    hardObservedOuttransportEligible: false,
+    incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+    syntheticSampleCount: synthetic.length,
+    activeUntil: Number.isFinite(latest)
+      ? new Date(latest + CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000).toISOString()
+      : null,
   };
 }
 
@@ -1148,6 +1184,7 @@ function scoreCoastalPartsRuntime(
         const modes = {};
         const candidateGModes = {};
         const derivedState = candidateGStateByTime.get(weather.time) ?? null;
+        const evidenceTrust = candidateGTransportEvidenceTrust(derivedState?.transportEvidence);
         for (const mode of ['waders', 'beach']) {
           const result = calculateRavScore({ mode, zone, weather, history });
           const hasCurrent = weather.currentSpeedMps != null && weather.currentDirectionDeg != null;
@@ -1174,7 +1211,11 @@ function scoreCoastalPartsRuntime(
                   transportPotential: derivedState.transportPotential,
                   outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
                   outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
-                  actualOutboundTransport: derivedState.actualOutboundTransport,
+                  // A reconstruction-dependent 13-hour threshold may inform
+                  // sensitivity, but it must never be presented or applied as
+                  // observed physical outtransport.
+                  actualOutboundTransport: derivedState.actualOutboundTransport
+                    && evidenceTrust.hardObservedOuttransportEligible,
                   mobilisationPotential: derivedState.mobilisationPotential,
                   waveEnergyProxy: derivedState.waveEnergyProxy,
                   waveEnergyScore: derivedState.waveEnergyScore,
@@ -1183,7 +1224,7 @@ function scoreCoastalPartsRuntime(
                   waveMobilisationDecayHalfLifeHours: derivedState.waveMobilisationDecayHalfLifeHours,
                 },
               },
-            ));
+            ), evidenceTrust);
           }
         }
         if (Object.keys(candidateGModes).length) scores.push({
@@ -1205,6 +1246,7 @@ function scoreCoastalPartsRuntime(
             transportMemoryStatus: derivedState.transportMemoryStatus,
             transportMemoryCoverageHours: derivedState.transportMemoryCoverageHours,
             transportMemoryWindowHours: derivedState.transportMemoryWindowHours,
+            evidenceTrust,
             publicContext: {
               windSpeedMps: weather.windSpeedMps,
               waveHeightM: weather.waveHeightM,
@@ -1221,7 +1263,9 @@ function scoreCoastalPartsRuntime(
               transportMemoryWindowHours: derivedState.transportMemoryWindowHours,
               outboundEpisodeEffectiveHours: derivedState.outboundEpisodeEffectiveHours,
               outboundEpisodeLossPoints: derivedState.outboundEpisodeLossPoints,
-              actualOutboundTransport: derivedState.actualOutboundTransport,
+              actualOutboundTransport: derivedState.actualOutboundTransport
+                && evidenceTrust.hardObservedOuttransportEligible,
+              evidenceTrust,
               waveMobilisationTransition: derivedState.waveMobilisationTransition,
             },
             modes: candidateGModes,
@@ -1354,6 +1398,7 @@ function scoreCoastalPartsRuntime(
       initialStateAccepted: row.candidateGState?.initialStateAccepted ?? null,
       initialStateResetReason: row.candidateGState?.initialStateResetReason ?? null,
       currentState: score.candidateG.continuationState,
+      evidenceTrust: score.candidateG.evidenceTrust,
       modes: score.candidateG.modes,
     } : null;
     return [row.partId, {
@@ -1391,12 +1436,70 @@ function scoreCoastalPartsRuntime(
     evaluatedAt: generatedAt,
     unavailableZones,
   };
+  const activeTrustRows = Object.values(parts)
+    .map(part => part?.candidateG?.evidenceTrust)
+    .filter(trust => trust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS);
+  assertCandidateGReconstructionTrustRolloff({
+    previousTrust: previousCoastalParts?.evidenceTrust,
+    activeReconstructedPartCount: activeTrustRows.length,
+    generatedAt,
+  });
+  let evidenceTrust = {
+    schemaVersion: 1,
+    status: 'VERIFIED_ONLY',
+    calibrationEligible: true,
+    hardObservedOuttransportEligible: true,
+    incidentId: null,
+    affectedPartCount: 0,
+    syntheticSampleCount: 0,
+    activeUntil: null,
+  };
+  if (activeTrustRows.length) {
+    const previousTrust = previousCoastalParts?.evidenceTrust;
+    const activeSyntheticSampleCount = activeTrustRows
+      .reduce((sum, trust) => sum + trust.syntheticSampleCount, 0);
+    const activeUntil = activeTrustRows.map(trust => trust.activeUntil).filter(Boolean).sort().at(-1) ?? null;
+    const sealedPreviousTrust = previousTrust?.schemaVersion === 1
+      && previousTrust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS
+      && previousTrust?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+      && previousTrust?.decisionId === ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID
+      && previousTrust?.method === RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD
+      && previousTrust?.evidenceClassification === RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION
+      && previousTrust?.calibrationEligible === false
+      && previousTrust?.hardObservedOuttransportEligible === false
+      && /^[a-f0-9]{64}$/.test(String(previousTrust?.descriptorSha256 || ''))
+      && Number.isInteger(previousTrust?.affectedPartCount)
+      && previousTrust.affectedPartCount >= activeTrustRows.length
+      && Number.isInteger(previousTrust?.syntheticSampleCount)
+      && previousTrust.syntheticSampleCount >= activeSyntheticSampleCount
+      && Number.isFinite(Date.parse(previousTrust?.activeUntil || ''))
+      && Number.isFinite(Date.parse(activeUntil || ''))
+      && Date.parse(previousTrust.activeUntil) >= Date.parse(activeUntil);
+    if (!sealedPreviousTrust) {
+      throw new Error('Candidate G reconstructed evidence lacks its sealed incident binding');
+    }
+    evidenceTrust = {
+      schemaVersion: 1,
+      incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+      decisionId: ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+      status: RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+      method: RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+      evidenceClassification: RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+      calibrationEligible: false,
+      hardObservedOuttransportEligible: false,
+      descriptorSha256: previousTrust.descriptorSha256,
+      affectedPartCount: activeTrustRows.length,
+      syntheticSampleCount: activeSyntheticSampleCount,
+      activeUntil,
+    };
+  }
   return {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     generatedAt, marginPoints: 7, expectedPartCount: contract.partCount, scoredPartCount: partRows.length,
     scoreProfile,
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
     currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
+    evidenceTrust,
     scoreAvailability,
     parts, zones
   };
@@ -2570,6 +2673,9 @@ output.coastalParts = coastalPartsContract.enabled
     coastalPointStateInjections,
   )
   : { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
+if (output.coastalParts?.evidenceTrust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS) {
+  output.candidateGOneTimeReconstruction = output.coastalParts.evidenceTrust;
+}
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 await writePublicRuntimeFromFull(output);

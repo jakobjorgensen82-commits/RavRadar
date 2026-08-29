@@ -6,12 +6,35 @@ import {
   CANDIDATE_G_RECOVERY_FALLBACK_POLICY,
   publishRecoveryFallback,
   selectNewestRecoveryFallbackCandidate,
+  upgradeRecoveryFallbackBundle,
+  validateLegacyRecoveryFallbackBundle,
   validateRecoveryFallbackBundle,
 } from './candidate-g-public-recovery-fallback.mjs';
 import { compactJson, sha256Text } from './public-conditions-lib.mjs';
+import {
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+  CANDIDATE_G_STATE_VARIANT_ID,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
 
 const generatedAt = '2026-08-27T01:34:48.669Z';
 const nowMs = Date.parse('2026-08-27T10:00:00.000Z');
+const verifiedOnlyTrust = {
+  schemaVersion: 1,
+  status: 'VERIFIED_ONLY',
+  calibrationEligible: true,
+  hardObservedOuttransportEligible: true,
+  incidentId: null,
+  affectedPartCount: 0,
+  syntheticSampleCount: 0,
+  activeUntil: null,
+};
+const productionReferenceAt = generatedAt;
+const evidence = Array.from({ length: 49 }, (_, index) => ({
+  time: new Date(Date.parse(productionReferenceAt) - (48 - index) * 3_600_000).toISOString(),
+  strength: 0,
+}));
 const zones = Object.fromEntries(Array.from({ length: 210 }, (_, index) => [`zone-${index}`, {
   current: { windSpeedMps: 5 },
   forecast: { hourly: [] },
@@ -19,25 +42,82 @@ const zones = Object.fromEntries(Array.from({ length: 210 }, (_, index) => [`zon
 const detailZones = Object.fromEntries(Array.from({ length: 210 }, (_, index) => [`zone-${index}`, {
   forecast: { hourly: [{ time: '2026-08-29T00:00:00.000Z' }] },
 }]));
-const parts = Object.fromEntries(Array.from({ length: 673 }, (_, index) => [`part-${index}`, { zoneId: `zone-${index % 210}` }]));
-const conditions = { schemaVersion: 2, datasetId: 'rr-last-ready-210', generatedAt, zones };
-const details = {
+const coastalZones = {};
+const parts = {};
+let partIndex = 0;
+for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
+  const zoneId = `zone-${zoneIndex}`;
+  const count = zoneIndex < 43 ? 4 : 3;
+  coastalZones[zoneId] = {
+    expectedPartCount: count,
+    scoredPartCount: count,
+    currentReferenceAt: productionReferenceAt,
+    hourly: [],
+  };
+  for (let localIndex = 0; localIndex < count; localIndex += 1) {
+    const partId = `part-${partIndex}`;
+    const mode = { available: true, score: 50, components: { transport: 0, release: 50, huntability: 50 } };
+    parts[partId] = {
+      zoneId,
+      current: { time: productionReferenceAt, waders: { ...mode }, beach: { ...mode } },
+      candidateG: {
+        schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+        modelId: CANDIDATE_G_STATE_MODEL_ID,
+        variantId: CANDIDATE_G_STATE_VARIANT_ID,
+        profileId: CANDIDATE_G_STATE_PROFILE_ID,
+        referenceAt: productionReferenceAt,
+        transportReferenceAt: productionReferenceAt,
+        transportMemoryReady: true,
+        transportMemoryStatus: 'READY',
+        transportMemoryCoverageHours: 48,
+        modes: { waders: { ...mode }, beach: { ...mode } },
+        currentState: {
+          schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+          modelId: CANDIDATE_G_STATE_MODEL_ID,
+          variantId: CANDIDATE_G_STATE_VARIANT_ID,
+          profileId: CANDIDATE_G_STATE_PROFILE_ID,
+          stateKey: `sha256:${sha256Text(partId)}`,
+          time: productionReferenceAt,
+          transportReferenceAt: productionReferenceAt,
+          transportPotential: 0,
+          outboundEpisodeEffectiveHours: 0,
+          transportMemoryReady: true,
+          transportMemoryStatus: 'READY',
+          transportMemoryWindowHours: 48,
+          transportMemoryCoverageHours: 48,
+          transportEvidence: evidence.map(item => ({ ...item })),
+          mobilisationPotential: 50,
+        },
+      },
+    };
+    partIndex += 1;
+  }
+}
+const legacyConditions = { schemaVersion: 2, datasetId: 'rr-last-ready-210', generatedAt, productionReferenceAt, zones };
+const legacyDetails = {
   schemaVersion: 1,
-  datasetId: conditions.datasetId,
+  datasetId: legacyConditions.datasetId,
   generatedAt,
+  productionReferenceAt,
   zones: detailZones,
-  coastalParts: { parts },
+  coastalParts: {
+    schemaVersion: 1,
+    expectedPartCount: 673,
+    scoredPartCount: 673,
+    zones: coastalZones,
+    parts,
+  },
 };
-const descriptor = {
+const legacyDescriptor = {
   schemaVersion: 1,
   status: 'last-verified-candidate-g-ready',
-  datasetId: conditions.datasetId,
+  datasetId: legacyConditions.datasetId,
   generatedAt,
-  productionReferenceAt: '2026-08-27T00:00:00.000Z',
+  productionReferenceAt,
   validUntil: '2026-08-29T00:00:00.000Z',
   maximumAgeHours: 72,
-  publicConditionsSha256: sha256Text(compactJson(conditions)),
-  publicConditionDetailsSha256: sha256Text(compactJson(details)),
+  publicConditionsSha256: sha256Text(compactJson(legacyConditions)),
+  publicConditionDetailsSha256: sha256Text(compactJson(legacyDetails)),
   audit: {
     status: 'passed',
     zoneCount: 210,
@@ -48,8 +128,40 @@ const descriptor = {
   },
   privacy: { compactPublicProjectionOnly: true, privateCacheIncluded: false, credentialsIncluded: false },
 };
-const bundle = { descriptor, conditions, details };
+const legacyBundle = { descriptor: legacyDescriptor, conditions: legacyConditions, details: legacyDetails };
+assert.equal(validateLegacyRecoveryFallbackBundle(legacyBundle, { nowMs }).ok, true);
+const hashTamperedLegacy = structuredClone(legacyBundle);
+hashTamperedLegacy.conditions.zones['zone-0'].current.windSpeedMps = 99;
+assert.ok(validateLegacyRecoveryFallbackBundle(hashTamperedLegacy, { nowMs }).errors.includes('STARTUP_HASH_MISMATCH'));
+const metadataTamperedLegacy = structuredClone(legacyBundle);
+metadataTamperedLegacy.descriptor.audit.modeEvaluationCount = 1345;
+assert.ok(validateLegacyRecoveryFallbackBundle(metadataTamperedLegacy, { nowMs }).errors.includes('READY_AUDIT_METADATA_MISMATCH'));
+const partialLegacy = structuredClone(legacyBundle);
+delete partialLegacy.details.coastalParts.parts['part-672'];
+partialLegacy.descriptor.publicConditionDetailsSha256 = sha256Text(compactJson(partialLegacy.details));
+assert.ok(validateLegacyRecoveryFallbackBundle(partialLegacy, { nowMs }).errors.some(error =>
+  error.includes('COVERAGE_MISMATCH') || error.includes('PART_COUNT_MISMATCH')));
+const markedLegacy = structuredClone(legacyBundle);
+markedLegacy.details.coastalParts.parts['part-0'].candidateG.currentState.transportEvidence[24] = {
+  ...markedLegacy.details.coastalParts.parts['part-0'].candidateG.currentState.transportEvidence[24],
+  incidentId: 'RRGAP-2026-08-29-CANDIDATE-G-01',
+  provenance: 'OWNER_AUTHORIZED_LINEAR_INTERPOLATION_DERIVED_STRENGTH',
+};
+markedLegacy.descriptor.publicConditionDetailsSha256 = sha256Text(compactJson(markedLegacy.details));
+assert.ok(validateLegacyRecoveryFallbackBundle(markedLegacy, { nowMs }).errors.some(error =>
+  error.startsWith('MEASURED_STATE_INVALID')));
+const bundle = upgradeRecoveryFallbackBundle(legacyBundle);
+const { descriptor, conditions, details } = bundle;
+assert.equal(descriptor.schemaVersion, 2);
+assert.equal(descriptor.legacyUpgrade.verifiedPartCount, 673);
+assert.equal(descriptor.legacyUpgrade.verifiedModeEvaluationCount, 1346);
+assert.equal(descriptor.legacyUpgrade.originalPublicConditionsSha256, legacyDescriptor.publicConditionsSha256);
+assert.equal(descriptor.legacyUpgrade.originalPublicConditionDetailsSha256, legacyDescriptor.publicConditionDetailsSha256);
 assert.equal(validateRecoveryFallbackBundle(bundle, { nowMs }).ok, true);
+const trustTampered = structuredClone(bundle);
+trustTampered.conditions.ravScoreEvidenceTrust.status = 'ACTIVE_RECONSTRUCTED_DERIVED_EVIDENCE';
+trustTampered.descriptor.publicConditionsSha256 = sha256Text(compactJson(trustTampered.conditions));
+assert.ok(validateRecoveryFallbackBundle(trustTampered, { nowMs }).errors.includes('SOURCE_EVIDENCE_TRUST_MISMATCH'));
 assert.deepEqual(
   validateRecoveryFallbackBundle({ ...bundle, details: { ...details, datasetId: 'wrong' } }, { nowMs }).errors,
   ['DATASET_ID_MISMATCH', 'DETAIL_HASH_MISMATCH'],
@@ -110,6 +222,8 @@ assert.equal(recoveryManifest.datasetId, 'rr-primary-warmup-210');
 assert.equal(recoveryManifest.recoveryFallback.datasetId, conditions.datasetId);
 assert.equal(recoveryManifest.recoveryFallback.maximumAgeHours, 72);
 assert.equal(recoveryManifest.recoveryFallback.primaryMemoryReadyPartCount, 0);
+assert.deepEqual(recoveryManifest.recoveryFallback.ravScoreEvidenceTrust, verifiedOnlyTrust);
+assert.equal(recoveryManifest.recoveryFallback.ravScoreEvidenceTrustSha256, sha256Text(compactJson(verifiedOnlyTrust)));
 assert.equal(
   JSON.parse(await fs.readFile(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicConditionsName), 'utf8')).datasetId,
   conditions.datasetId,

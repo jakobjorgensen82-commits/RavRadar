@@ -21,6 +21,16 @@ const primaryDatasetId = 'rr-primary-warmup-210';
 const fallbackConditionsSha = 'a'.repeat(64);
 const fallbackDetailsSha = 'b'.repeat(64);
 const primaryConditionsSha = 'c'.repeat(64);
+const verifiedOnlyTrust = {
+  schemaVersion: 1,
+  status: 'VERIFIED_ONLY',
+  incidentId: null,
+  calibrationEligible: true,
+  hardObservedOuttransportEligible: true,
+  affectedPartCount: 0,
+  syntheticSampleCount: 0,
+  activeUntil: null,
+};
 const fallbackConditionsUrl = `./data/live/candidate-g-last-verified-public-conditions.json?dataset=${fallbackDatasetId}&sha=${fallbackConditionsSha}`;
 const fallbackDetailsUrl = `./data/live/candidate-g-last-verified-public-condition-details.json?dataset=${fallbackDatasetId}&sha=${fallbackDetailsSha}`;
 const primaryConditionsUrl = `./data/live/public-conditions.json?dataset=${primaryDatasetId}&sha=${primaryConditionsSha}`;
@@ -45,13 +55,15 @@ const manifest = {
 documents.set(fallbackConditionsUrl, {
   datasetId: fallbackDatasetId,
   generatedAt: manifest.recoveryFallback.generatedAt,
+  ravScoreEvidenceTrust: verifiedOnlyTrust,
   zones: { zone: { forecast: { hourly: [] } } },
 });
 documents.set(fallbackDetailsUrl, {
   datasetId: fallbackDatasetId,
   generatedAt: manifest.recoveryFallback.generatedAt,
+  ravScoreEvidenceTrust: verifiedOnlyTrust,
   zones: { zone: { forecast: { hourly: [{ time: '2026-08-27T10:00:00.000Z' }] } } },
-  coastalParts: { parts: {}, zones: {} },
+  coastalParts: { evidenceTrust: verifiedOnlyTrust, parts: {}, zones: {} },
 });
 documents.set(primaryConditionsUrl, {
   datasetId: primaryDatasetId,

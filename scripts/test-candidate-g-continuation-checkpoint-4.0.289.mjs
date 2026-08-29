@@ -427,18 +427,11 @@ try {
   }
   await fs.writeFile(sourcePath, JSON.stringify(unsupportedSource));
   await fs.writeFile(targetPath, JSON.stringify(target));
-  await saveContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 2 });
   const targetBeforeUnsupportedRestore = await fs.readFile(targetPath, 'utf8');
-  const unsupported = await restoreContinuationCheckpoint({
-    targetPath,
-    checkpointPath,
-    targetReference: at(11),
-    expectedPartCount: 2,
-  });
-  assert.equal(unsupported.restored, false);
-  assert.equal(unsupported.reason, 'checkpoint-model-context-incompatible');
-  assert.equal(unsupported.incompatiblePartCount, 2);
-  assert.equal(unsupported.targetUnchanged, true);
+  await assert.rejects(
+    saveContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 2 }),
+    /state og rekonstruktionsproveniens matcher ikke/,
+  );
   assert.equal(await fs.readFile(targetPath, 'utf8'), targetBeforeUnsupportedRestore);
 
   const matchedUnknownSource = structuredClone(source);
@@ -450,17 +443,11 @@ try {
   }
   await fs.writeFile(sourcePath, JSON.stringify(matchedUnknownSource));
   await fs.writeFile(targetPath, JSON.stringify(matchedUnknownTarget));
-  await saveContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 2 });
   const targetBeforeMatchedUnknownRestore = await fs.readFile(targetPath, 'utf8');
-  const matchedUnknown = await restoreContinuationCheckpoint({
-    targetPath,
-    checkpointPath,
-    targetReference: at(11),
-    expectedPartCount: 2,
-  });
-  assert.equal(matchedUnknown.restored, false);
-  assert.equal(matchedUnknown.reason, 'checkpoint-model-context-incompatible');
-  assert.equal(matchedUnknown.targetUnchanged, true);
+  await assert.rejects(
+    saveContinuationCheckpoint({ sourcePath, checkpointPath, expectedPartCount: 2 }),
+    /state og rekonstruktionsproveniens matcher ikke/,
+  );
   assert.equal(await fs.readFile(targetPath, 'utf8'), targetBeforeMatchedUnknownRestore);
 
   const matchedSchemaThreeTarget = structuredClone(target);
