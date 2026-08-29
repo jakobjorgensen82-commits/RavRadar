@@ -1,23 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { assertAllowedOrigin, corsHeaders, enforceRateLimits, GatewayError, jsonResponse, readJsonObject, resolveAuthenticatedUserId, safeGatewayError } from "../_shared/public-gateway.ts";
+import { assertAllowedOrigin, enforceRateLimits, GatewayError, jsonResponse, readJsonObject, resolveAuthenticatedUserId, safeGatewayError } from "../_shared/public-gateway.ts";
 import { storeObservation } from "../_shared/trip-store.ts";
-import { TRIP_INPUT_FIELD_NAMES } from "../_shared/trip-storage.js";
+import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.ts";
+import { assertExternalTripNestedContract, assertExternalTripQualityBinding, assertNoPrivateLocation, normalizeExternalTripQualityBinding, projectLegacyExternalTripPayload, TRIP_INPUT_FIELD_NAMES } from "../_shared/trip-storage.js";
 
 const ALLOWED_FIELDS = new Set(TRIP_INPUT_FIELD_NAMES);
 
-const LOCATION_KEYS = new Set(["gps", "latitude", "longitude", "coordinates", "position", "route", "track", "location"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SEARCH_COVERAGE = new Set(["partial", "normal", "thorough"]);
 const ACCOUNT_REPORT_FLAG = "account-manual";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function containsPrivateLocation(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(containsPrivateLocation);
-  if (!isRecord(value)) return false;
-  return Object.entries(value).some(([key, nested]) => LOCATION_KEYS.has(key.toLowerCase()) || containsPrivateLocation(nested));
 }
 
 function assertSafeStructure(value: unknown, depth = 0) {
@@ -83,12 +77,10 @@ function validateTripContract(payload: Record<string, unknown>, schemaVersion: n
   if (!SEARCH_COVERAGE.has(String(payload.search_coverage))) throw new GatewayError(400, "INVALID_SEARCH_COVERAGE");
   requireText(payload.actual_zone_id, "actual_zone_id", 160);
   requireText(payload.actual_coastal_part_id, "actual_coastal_part_id", 160);
-  if (payload.calibration_eligible !== (schemaVersion === 2 && payload.actual_zone_id === payload.forecast_zone_id && payload.actual_coastal_part_id === payload.forecast_coastal_part_id)) {
-    throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
-  }
   if (typeof payload.found !== "boolean") throw new GatewayError(400, "INVALID_FOUND");
 
   if (accountReport) {
+    if (payload.calibration_eligible !== false) throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
     if (payload.forecast_zone_id != null || payload.forecast_coastal_part_id != null || payload.forecast_snapshot_id != null || payload.calibration_features != null) {
       throw new GatewayError(400, "HISTORICAL_FORECAST_NOT_ALLOWED");
     }
@@ -105,14 +97,26 @@ function validateTripContract(payload: Record<string, unknown>, schemaVersion: n
   for (const score of ["totalScore", "huntabilityScore", "transportScore", "mobilisationScore"]) {
     requireNumber(payload.calibration_features[score], score, 0, 100);
   }
+  try {
+    assertExternalTripQualityBinding(payload);
+  } catch (error) {
+    throw new GatewayError(400, error instanceof Error ? error.message : "TRIP_QUALITY_BINDING_INVALID");
+  }
 }
 
 function validatePayload(payload: Record<string, unknown>) {
   const unknown = Object.keys(payload).filter((key) => !ALLOWED_FIELDS.has(key));
   if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");
   if (payload.gps !== null && payload.gps !== undefined) throw new GatewayError(400, "PRECISE_LOCATION_NOT_ALLOWED");
-  if (containsPrivateLocation(payload.weather_snapshot) || containsPrivateLocation(payload.calibration_features)) {
-    throw new GatewayError(400, "PRECISE_LOCATION_NOT_ALLOWED");
+  try {
+    assertExternalTripNestedContract(payload);
+    assertNoPrivateLocation(payload.weather_snapshot);
+    assertNoPrivateLocation(payload.calibration_features);
+  } catch (error) {
+    if (error instanceof Error && (error.message === "PRECISE_LOCATION_NOT_ALLOWED" || error.message.startsWith("TRIP_"))) {
+      throw new GatewayError(400, error.message);
+    }
+    throw error;
   }
   assertSafeStructure(payload.weather_snapshot);
   assertSafeStructure(payload.calibration_features);
@@ -144,8 +148,10 @@ function validatePayload(payload: Record<string, unknown>) {
 Deno.serve(async (request) => {
   try {
     assertAllowedOrigin(request);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
-    const payload = await readJsonObject(request, 64 * 1024);
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: tripStorageReadinessHeaders(request) });
+    }
+    const payload = projectLegacyExternalTripPayload(normalizeExternalTripQualityBinding(await readJsonObject(request, 64 * 1024)));
     validatePayload(payload);
     await enforceRateLimits(request, "submit-observation", { minute: 4, hour: 50, globalDay: 2000 });
 

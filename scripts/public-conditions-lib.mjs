@@ -3,6 +3,15 @@ import crypto from 'node:crypto';
 import { selectLatestLocalScoreRowAtOrBefore } from './lib/local-current-reference.mjs';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { addNationalRanking, compareNationalRankingRows } from '../js/core/zone-ranking.js';
+import {
+  CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
+  isReconstructedTransportEvidence,
+  ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+  ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+} from '../js/core/ravscore-regime-memory.js';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -38,6 +47,113 @@ const currentLocalRow=(zone,source,full)=>{
   );
 };
 
+export function buildPublicRavScoreEvidenceTrust(full) {
+  const parts = Object.values(full?.coastalParts?.parts || {});
+  const rows = parts.map(part => {
+    const evidence = part?.candidateG?.currentState?.transportEvidence || [];
+    const invalidMarker = evidence.some(item =>
+      (item?.incidentId !== undefined || item?.provenance !== undefined)
+      && !isReconstructedTransportEvidence(item));
+    const synthetic = evidence.filter(isReconstructedTransportEvidence);
+    return { part, synthetic, invalidMarker };
+  });
+  const active = rows.filter(row => row.synthetic.length > 0);
+  const binding = full?.coastalParts?.evidenceTrust;
+  if (!active.length) {
+    const verifiedAggregate = binding == null || (binding?.schemaVersion === 1
+      && binding?.status === 'VERIFIED_ONLY'
+      && binding?.calibrationEligible === true
+      && binding?.hardObservedOuttransportEligible === true
+      && binding?.incidentId === null
+      && Number(binding?.affectedPartCount) === 0
+      && Number(binding?.syntheticSampleCount) === 0
+      && binding?.activeUntil === null);
+    const verifiedParts = rows.every(({ part, invalidMarker }) => {
+      const trust = part?.candidateG?.evidenceTrust;
+      return !invalidMarker && (trust == null || (trust?.status === 'VERIFIED_ONLY'
+        && trust?.calibrationEligible === true
+        && trust?.hardObservedOuttransportEligible === true
+        && trust?.incidentId === null
+        && Number(trust?.syntheticSampleCount) === 0
+        && trust?.activeUntil === null));
+    });
+    if (!verifiedAggregate || !verifiedParts) {
+      throw new Error('Candidate G-evidenstillid kan ikke nedklassificeres til målt uden et rent markerfrit state.');
+    }
+    return {
+      schemaVersion: 1,
+      status: 'VERIFIED_ONLY',
+      calibrationEligible: true,
+      hardObservedOuttransportEligible: true,
+      incidentId: null,
+      affectedPartCount: 0,
+      syntheticSampleCount: 0,
+      activeUntil: null,
+    };
+  }
+  const syntheticTimes = active.flatMap(row => row.synthetic.map(item => Date.parse(item?.time)));
+  const validSyntheticRows = rows.every(({ part, synthetic, invalidMarker }) => {
+    const trust = part?.candidateG?.evidenceTrust;
+    if (invalidMarker) return false;
+    if (!synthetic.length) {
+      return trust == null || (trust?.status === 'VERIFIED_ONLY'
+        && trust?.calibrationEligible === true
+        && trust?.hardObservedOuttransportEligible === true
+        && trust?.incidentId === null
+        && Number(trust?.syntheticSampleCount) === 0
+        && trust?.activeUntil === null);
+    }
+    const times = synthetic.map(item => Date.parse(item?.time));
+    const latest = Math.max(...times);
+    return times.every(Number.isFinite)
+      && synthetic.every(item => Number.isFinite(item?.strength)
+        && Number(item.strength) >= -1 && Number(item.strength) <= 1)
+      && trust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS
+      && trust?.evidenceClassification === RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION
+      && trust?.calibrationEligible === false
+      && trust?.hardObservedOuttransportEligible === false
+      && trust?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+      && Number(trust?.syntheticSampleCount) === synthetic.length
+      && trust?.activeUntil === new Date(latest
+        + CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000).toISOString();
+  });
+  const syntheticSampleCount = active.reduce((sum, row) => sum + row.synthetic.length, 0);
+  const latestSyntheticMs = Math.max(...syntheticTimes);
+  const activeUntil = Number.isFinite(latestSyntheticMs)
+    ? new Date(latestSyntheticMs
+      + CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000).toISOString()
+    : null;
+  const validBinding = binding?.schemaVersion === 1
+    && binding?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS
+    && binding?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+    && binding?.decisionId === ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID
+    && binding?.method === RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD
+    && binding?.evidenceClassification === RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION
+    && binding?.calibrationEligible === false
+    && binding?.hardObservedOuttransportEligible === false
+    && /^[a-f0-9]{64}$/.test(String(binding?.descriptorSha256 || ''))
+    && Number(binding?.affectedPartCount) === active.length
+    && Number(binding?.syntheticSampleCount) === syntheticSampleCount
+    && binding?.activeUntil === activeUntil;
+  if (!validSyntheticRows || !validBinding) {
+    throw new Error('Rekonstrueret Candidate G-evidens mangler en entydig forseglet provenancebinding.');
+  }
+  return {
+    schemaVersion: 1,
+    status: RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+    incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+    decisionId: ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+    method: RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+    evidenceClassification: RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+    calibrationEligible: false,
+    hardObservedOuttransportEligible: false,
+    descriptorSha256: binding.descriptorSha256,
+    affectedPartCount: active.length,
+    syntheticSampleCount,
+    activeUntil,
+  };
+}
+
 export function buildStartupCoastalParts(full){
   const source=full?.coastalParts;if(!source)return null;
   const zones={};const winnerIds=new Set();
@@ -52,16 +168,35 @@ export function buildStartupCoastalParts(full){
     const flowPoints=compactFlowPoints(part.flowPoints);
     return [id,{...pick(part,STARTUP_PART_FIELDS),...(flowPoints?{flowPoints}:{})}];
   }));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,evidenceTrust:buildPublicRavScoreEvidenceTrust(full),expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts,zones};
+}
+
+function publicDetailedPartsWithEvidenceTrust(parts, evidenceTrust) {
+  return Object.fromEntries(Object.entries(parts || {}).map(([partId, part]) => {
+    if (!part?.candidateG) return [partId, part];
+    const modes = Object.fromEntries(Object.entries(part.candidateG.modes || {}).map(([mode, result]) => [
+      mode,
+      result && typeof result === 'object' ? { ...result, evidenceTrust } : result,
+    ]));
+    return [partId, {
+      ...part,
+      candidateG: {
+        ...part.candidateG,
+        evidenceTrust,
+        modes,
+      },
+    }];
+  }));
 }
 
 function buildDetailedCoastalParts(full){
   const source=full?.coastalParts;if(!source)return null;
+  const evidenceTrust=buildPublicRavScoreEvidenceTrust(full);
   const zones=Object.fromEntries(Object.entries(source.zones||{}).map(([zoneId,zone])=>{
     const row=currentLocalRow(zone,source,full);
     return [zoneId,{...zone,currentReferenceAt:row?.time||null}];
   }));
-  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:source.parts||{},zones};
+  return {schemaVersion:source.schemaVersion,enabled:source.enabled===true,datasetVersion:source.datasetVersion||null,sourceRunId:source.sourceRunId||null,generatedAt:source.generatedAt||full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||source.productionReferenceAt||null,marginPoints:source.marginPoints||7,scoreProfile:source.scoreProfile||null,scoreAvailability:source.scoreAvailability||null,evidenceTrust,expectedPartCount:source.expectedPartCount||0,scoredPartCount:source.scoredPartCount||0,parts:publicDetailedPartsWithEvidenceTrust(source.parts,evidenceTrust),zones};
 }
 
 const PUBLIC_FORECAST_MODES = ['waders', 'beach'];
@@ -141,7 +276,7 @@ export function buildPublicConditions(full){
     historyPath:full.controlledLiveCurrentPilot.historyPath||'./current-pilot-history.json',
     generatedAt:full.controlledLiveCurrentPilot.generatedAt||null,
   }:null;
-  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,source:'RavRadar public runtime projection',currentPilot,nationalForecast:buildPublicNationalForecast(full),zones,coastalParts};
+  return {schemaVersion:2,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,source:'RavRadar public runtime projection',ravScoreEvidenceTrust:buildPublicRavScoreEvidenceTrust(full),currentPilot,nationalForecast:buildPublicNationalForecast(full),zones,coastalParts};
 }
 
 export function buildPublicConditionDetails(full){
@@ -149,7 +284,7 @@ export function buildPublicConditionDetails(full){
     const forecast=zone?.forecast||{};
     return [zoneId,{forecast:{provider:forecast.provider||zone?.provider||null,providerLabel:forecast.providerLabel||zone?.providerLabel||null,generatedAt:forecast.generatedAt||full?.generatedAt||null,validUntil:forecast.validUntil||null,hourly:(forecast.hourly||[]).map(hour=>pick(hour,HOURLY_FIELDS))}}];
   }));
-  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,currentPilot:full?.controlledLiveCurrentPilot||null,zones,coastalParts:buildDetailedCoastalParts(full)};
+  return {schemaVersion:1,datasetId:full?.datasetId||null,generatedAt:full?.generatedAt||null,productionReferenceAt:full?.productionReferenceAt||null,ravScoreEvidenceTrust:buildPublicRavScoreEvidenceTrust(full),currentPilot:full?.controlledLiveCurrentPilot||null,zones,coastalParts:buildDetailedCoastalParts(full)};
 }
 export function compactJson(value){return `${JSON.stringify(value)}\n`;}
 export function sha256Text(text){return crypto.createHash('sha256').update(text).digest('hex');}
@@ -172,6 +307,7 @@ export function buildPublicManifest(full, publicText, detailsText){
     currentPilotMode:full?.controlledLiveCurrentPilot?.mode||null,
     ravScoreProfile:full?.coastalParts?.scoreProfile||null,
     ravScoreAvailability:full?.coastalParts?.scoreAvailability||null,
+    ravScoreEvidenceTrust:buildPublicRavScoreEvidenceTrust(full),
     publicConditionsSha256:sha256Text(publicText),
     publicConditionsBytes:Buffer.byteLength(publicText),
     publicConditionDetailsSha256:sha256Text(detailsText),

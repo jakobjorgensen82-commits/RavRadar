@@ -1,6 +1,6 @@
-import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.310';
-import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.310';
-import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.310';
+import { createTripEvidenceController } from './trip-evidence-controller.js?v=4.0.311';
+import { createTripStartFromPublicState } from './trip-evidence-public-adapter.js?v=4.0.311';
+import { openTripEvidenceStartDialog } from '../ui/trip-evidence-dialog.js?v=4.0.311';
 
 function defaultTripId() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -51,7 +51,9 @@ export function createPublicTripEvidenceRuntime({
         zoneId: prepared.forecastZoneId,
         coastalPartId: prepared.forecastCoastalPartId,
         forecastSnapshot: prepared.forecastSnapshot,
-        calibrationFeatures: prepared.calibrationFeatures
+        calibrationFeatures: prepared.calibrationFeatures,
+        forecastCalibrationEligible: prepared.forecastCalibrationEligible,
+        dataQualityFlags: prepared.dataQualityFlags
       });
     },
     async startWithPrompt({ tripId = createTripId(), startedAt = now() } = {}) {

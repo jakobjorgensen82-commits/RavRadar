@@ -62,6 +62,20 @@ Samtidig er flere tal og koblinger ejer-/forskningspriorer, ikke naturkonstanter
 
 Det mindre rettelsesspor må merge først og løbende til `main`. Modelsporet må ikke antage, at dets start-`main` forbliver aktuel. Før modelrelease skal det bevise, at seneste smårettelser og alle deres regressioner er bevaret. Ved reel fil-/kontraktkonflikt vælger modelsporet ikke tavst en side, men følger nyere RDKS og faktisk `main`-adfærd.
 
+## Emergency-addendum fra DEC-0109 – bindende for den samlede model
+
+Den integrerede model skal levere sin egen fulde nøddriftskontrakt som del af plug-and-play-gaten. Den må ikke bero på en senere RavRadar-tilpasning:
+
+1. Primary og nødgrundlag er hver især atomiske hele pakker. En nødvisning må kun vælges fra én senest komplet, målt-only pakke med præcis 210 zoner/673 kystdele og eksakt model-id, stateversion, stateKey, dataset/reference og startup-/detalje-/manifesthashes. Dele, tider, modelgenerationer eller trustklasser må aldrig blandes.
+2. Nødgrundlaget må højst være 72 timer gammelt og skal desuden respektere den kortere reelle prognose-/produktudløbsgrænse. Ukendt, rekonstrueret, tampered, ufuldstændigt eller udløbet grundlag lukkes fail-closed; interpolation og backfill er ikke en nødmekanisme.
+3. DA/DE/EN skal tydeligt fortælle, at brugeren ser den senest komplette, ældre måling. Appen genvurderer friskhed/udløb og skifter automatisk og atomisk tilbage til den første nye komplette primary. En nødtur bindes til det faktisk viste manifest som `public-emergency-last-complete` og er altid `calibration_eligible=false`.
+4. State-, cache-, checkpoint-, recovery-, startup-, detalje-, trip-, admin-, scheduler-, audit- og releaseforbrugere skal alle bevise samme kontrakt. Et fail-open kaldested eller en cache, der kan stage rekonstrueret/ukendt state som last verified, er en modelreleaseblokker.
+5. DEC-0109's engangsinterpolation for `RRGAP-2026-08-29-CANDIDATE-G-01` er kun en incidentbundet driftsundtagelse. Den kommende model overtager trust-/provenance-/cleanupgrænserne, men aldrig undtagelsen som normal algoritme, fallback eller træningsdata.
+
+Schema-v2-feltet `calibration_eligible` og den nuværende trustbinding er kun klientattesteret og internt konsistent; serveren beviser endnu ikke snapshottene mod det signerede offentlige manifest. Det er derfor ikke empirisk evidens og må ikke bruges til global koefficientlæring. Den eksisterende kalibreringslås skal bevares, indtil en særskilt server-side snapshot-/manifestbinding er designet, implementeret og valideret.
+
+Når recoverykandidatens grønne `main` senere integreres, skal modelsporet bevare dens driftsgrænse uden at gøre den til modelalgoritme: efter capacity/CAS sættes existing-D1 eller fresh Edge-predeploy-intent; existing D1 bruger 20-minutters lease med 30-minutters max, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main-bundet Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden current-run intent sker nul recoverymutation.
+
 ## Konsekvens nu
 
-Dette dokument er alene plan-, scope- og autoritetsgrundlag. Versionen forbliver 4.0.305. Der ændres ingen kode, score, state, vejrdata, offentlig runtime, geometri, land-/vandpunkter, privat data eller produktionsartifact.
+Dette dokument er alene plan-, scope- og autoritetsgrundlag. Offentlig runtime er fortsat Candidate G/4.0.310 ved 4.0.311-dokumentcheckpointet; hverken recoverykandidaten eller den integrerede næste model er merged, anvendt eller produktionsverificeret. Der ændres ingen modelscore, geometri, land-/vandpunkter eller private data ved dette addendum.

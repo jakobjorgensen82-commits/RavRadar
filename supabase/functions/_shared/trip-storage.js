@@ -3,6 +3,60 @@ const OWNER_PREFIX = Object.freeze({ user: 'usr_v1_', anonymous: 'anon_v1_' });
 const DIRECT_IDENTITY_KEYS = new Set([
   'anonymousid', 'displayname', 'email', 'fullname', 'phonenumber', 'profile', 'userid'
 ]);
+// Keep the remote storage boundary at least as strict as the browser-side
+// trip-evidence privacy contract. Every nested key is examined so aliases such
+// as lat, lng, geoCoordinates and gpsTrack cannot carry precise position.
+const PRIVATE_LOCATION_KEY_PATTERN = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track|location)/i;
+const CALIBRATION_FEATURE_KEYS = new Set([
+  'modelVersion', 'appVersion', 'totalScore', 'huntabilityScore', 'transportScore',
+  'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
+  'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
+  'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
+  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
+]);
+const WEATHER_SNAPSHOT_KEYS = new Set([
+  'schemaVersion', 'capturedAt', 'sourceGeneratedAt', 'forecastTime', 'provider',
+  'current', 'score', 'prediction', 'matchedRuleIds', 'forecastSnapshotId',
+  'forecastIssuedAt', 'forecastValidAt', 'calibrationFeatures', 'reportSource',
+  'selectedAt', 'historicalSnapshotStatus',
+]);
+const WEATHER_CURRENT_KEYS = new Set([
+  'generatedAt', 'time', 'provider', 'providerLabel', 'windSpeedMps',
+  'windDirectionDeg', 'waveHeightM', 'wavePeriodS', 'waveDirectionDeg',
+  'currentSpeedMps', 'currentDirectionDeg', 'waterLevelCm',
+  'waterLevelTrendCm3h', 'waterTemperatureC',
+]);
+const WEATHER_SCORE_KEYS = new Set(['baseScore', 'finalScore', 'level']);
+const WEATHER_PREDICTION_KEYS = new Set(['probability', 'confidence', 'modelVersion']);
+const CALIBRATION_FEATURE_RANGES = Object.freeze({
+  totalScore: [0, 100], huntabilityScore: [0, 100], transportScore: [0, 100],
+  mobilisationScore: [0, 100], windSpeedMs: [0, 100], windDirectionDeg: [0, 360],
+  waveHeightM: [0, 30], wavePeriodS: [0, 40], waveDirectionDeg: [0, 360],
+  currentSpeedMs: [0, 10], currentDirectionDeg: [0, 360], waterLevelM: [-20, 20],
+  waterLevelTrendM3h: [-10, 10], maxWaveHeight24hM: [0, 30],
+  hoursSinceEnergyPeak: [0, 168], sustainedOnshoreHours: [0, 168],
+});
+const SNAPSHOT_CURRENT_RANGES = Object.freeze({
+  windSpeedMps: [0, 100], windDirectionDeg: [0, 360], waveHeightM: [0, 30],
+  wavePeriodS: [0, 40], waveDirectionDeg: [0, 360], currentSpeedMps: [0, 10],
+  currentDirectionDeg: [0, 360], waterLevelCm: [-2000, 2000],
+  waterLevelTrendCm3h: [-1000, 1000], waterTemperatureC: [-10, 50],
+});
+export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG = 'ravscore-reconstructed-derived-evidence';
+export const PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG = 'public-emergency-last-complete';
+export const UNATTESTED_RAVSCORE_QUALITY_FLAG = 'ravscore-evidence-trust-unattested';
+export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
+  PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
+  RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
+  UNATTESTED_RAVSCORE_QUALITY_FLAG,
+]);
+const TRIP_QUALITY_FLAG_COMBINATIONS = new Set([
+  '[]',
+  JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG]),
+  JSON.stringify([RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
+  JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
+  JSON.stringify([UNATTESTED_RAVSCORE_QUALITY_FLAG]),
+]);
 
 export const TRIP_INPUT_FIELD_NAMES = Object.freeze([
   'zone_id', 'zone_name', 'coast_type', 'observed_at', 'submitted_at', 'hunt_mode', 'result', 'grams',
@@ -34,10 +88,286 @@ export const D1_TRIP_SCHEMA_STATEMENTS = Object.freeze([
     on trip_observations(trip_id) where trip_id is not null`,
   `create index if not exists trip_observations_owner_time
     on trip_observations(owner_subject, observed_at desc)`,
+  `create table if not exists trip_observation_registry (
+    client_observation_id text not null primary key,
+    trip_id text,
+    owner_subject text not null check (length(owner_subject) between 20 and 96),
+    payload_sha256 text not null check (length(payload_sha256) = 64),
+    target_database_index integer not null check (target_database_index between 0 and 9),
+    created_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  )`,
+  `create unique index if not exists trip_observation_registry_trip_unique
+    on trip_observation_registry(trip_id) where trip_id is not null`,
+  `create unique index if not exists trip_observation_registry_owner_client_unique
+    on trip_observation_registry(owner_subject, client_observation_id)`,
+  `create unique index if not exists trip_observation_registry_owner_trip_unique
+    on trip_observation_registry(owner_subject, trip_id) where trip_id is not null`,
+  `create table if not exists trip_owner_erasure_tombstones (
+    owner_subject text not null primary key check (length(owner_subject) between 20 and 96),
+    erased_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  )`,
+  `create table if not exists trip_storage_control (
+    control_key text not null primary key check (control_key = 'd1_activation_attempted'),
+    control_value text not null check (control_value = 'true'),
+    updated_at text not null default (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
+  )`,
 ]);
 
 function isRecord(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function assertScalarOrNull(value, errorCode) {
+  if (value === null || value === undefined) return;
+  if (!['string', 'number', 'boolean'].includes(typeof value)) throw new Error(errorCode);
+}
+
+function assertBoundedNumberOrNull(value, range, errorCode) {
+  if (value === null || value === undefined) return;
+  if (typeof value !== 'number' || !Number.isFinite(value)
+    || value < range[0] || value > range[1]) throw new Error(errorCode);
+}
+
+function assertBoundedTextOrNull(value, maximum, errorCode) {
+  if (value === null || value === undefined) return;
+  if (typeof value !== 'string' || value.length > maximum) throw new Error(errorCode);
+}
+
+function assertAllowedRecord(value, allowedKeys, errorCode) {
+  if (!isRecord(value)) throw new Error(errorCode);
+  if (Object.keys(value).some(key => !allowedKeys.has(key))) throw new Error(errorCode);
+}
+
+function assignProjected(output, key, value) {
+  if (value !== undefined) output[key] = value;
+}
+
+function projectedTextOrNull(value, maximum) {
+  if (value === null) return null;
+  return typeof value === 'string' && value.length <= maximum ? value : undefined;
+}
+
+function projectedNumberOrNull(value, range) {
+  if (value === null) return null;
+  return typeof value === 'number' && Number.isFinite(value)
+    && value >= range[0] && value <= range[1] ? value : undefined;
+}
+
+function projectLegacyCalibrationFeatures(value) {
+  if (!isRecord(value)) return undefined;
+  const projected = {};
+  for (const key of CALIBRATION_FEATURE_KEYS) {
+    const nested = value[key];
+    if (key === 'reasonCodes') {
+      if (Array.isArray(nested)) {
+        projected.reasonCodes = nested
+          .filter(item => typeof item === 'string' && item.length <= 128)
+          .slice(0, 12);
+      }
+    } else if (Object.hasOwn(CALIBRATION_FEATURE_RANGES, key)) {
+      assignProjected(projected, key, projectedNumberOrNull(nested, CALIBRATION_FEATURE_RANGES[key]));
+    } else assignProjected(projected, key, projectedTextOrNull(nested, 128));
+  }
+  return projected;
+}
+
+function projectLegacyCurrentSnapshot(value) {
+  if (!isRecord(value)) return undefined;
+  const projected = {};
+  for (const key of WEATHER_CURRENT_KEYS) {
+    const nested = value[key];
+    if (Object.hasOwn(SNAPSHOT_CURRENT_RANGES, key)) {
+      assignProjected(projected, key, projectedNumberOrNull(nested, SNAPSHOT_CURRENT_RANGES[key]));
+    } else assignProjected(projected, key, projectedTextOrNull(nested, 160));
+  }
+  return projected;
+}
+
+function projectLegacyScoreSnapshot(value) {
+  if (!isRecord(value)) return undefined;
+  const projected = {};
+  assignProjected(projected, 'baseScore', projectedNumberOrNull(value.baseScore, [0, 100]));
+  assignProjected(projected, 'finalScore', projectedNumberOrNull(value.finalScore, [0, 100]));
+  assignProjected(projected, 'level', projectedTextOrNull(value.level, 40));
+  return projected;
+}
+
+function projectLegacyPredictionSnapshot(value) {
+  if (!isRecord(value)) return undefined;
+  const projected = {};
+  assignProjected(projected, 'probability', projectedNumberOrNull(value.probability, [0, 1]));
+  assignProjected(projected, 'confidence', projectedNumberOrNull(value.confidence, [0, 1]));
+  assignProjected(projected, 'modelVersion', projectedTextOrNull(value.modelVersion, 128));
+  return projected;
+}
+
+function projectLegacyMatchedRuleIds(value) {
+  const sources = [];
+  if (Array.isArray(value.matchedRuleIds)) sources.push(...value.matchedRuleIds);
+  if (Array.isArray(value.matchedRules)) sources.push(...value.matchedRules.map(rule => {
+    if (typeof rule === 'string') return rule;
+    if (!isRecord(rule)) return null;
+    return rule.id ?? rule.ruleId ?? null;
+  }));
+  if (!Array.isArray(value.matchedRuleIds) && !Array.isArray(value.matchedRules)) return undefined;
+  return [...new Set(sources.filter(item => typeof item === 'string' && item.length <= 120))].slice(0, 40);
+}
+
+// Schema-1 observations predate the bounded nested contract. Preserve only the
+// documented public snapshot scalars and derive IDs from the old matchedRules
+// objects. Unknown nested values are deliberately discarded before storage.
+export function projectLegacyWeatherSnapshot(value) {
+  if (!isRecord(value)) return undefined;
+  const projected = {};
+  if (value.schemaVersion === null
+    || (Number.isSafeInteger(value.schemaVersion) && [2, 3, 4, 5].includes(value.schemaVersion))) {
+    projected.schemaVersion = value.schemaVersion;
+  }
+  for (const key of [
+    'capturedAt', 'sourceGeneratedAt', 'forecastTime', 'provider',
+    'forecastSnapshotId', 'forecastIssuedAt', 'forecastValidAt', 'reportSource',
+    'selectedAt', 'historicalSnapshotStatus',
+  ]) assignProjected(projected, key, projectedTextOrNull(value[key], 200));
+  assignProjected(projected, 'current', projectLegacyCurrentSnapshot(value.current));
+  assignProjected(projected, 'score', projectLegacyScoreSnapshot(value.score));
+  assignProjected(projected, 'prediction', projectLegacyPredictionSnapshot(value.prediction));
+  assignProjected(projected, 'matchedRuleIds', projectLegacyMatchedRuleIds(value));
+  assignProjected(projected, 'calibrationFeatures', projectLegacyCalibrationFeatures(value.calibrationFeatures));
+  return projected;
+}
+
+export function projectLegacyExternalTripPayload(payload) {
+  if (!isRecord(payload) || Number(payload.schema_version ?? 1) !== 1) return payload;
+  if (!Object.hasOwn(payload, 'weather_snapshot')) return payload;
+  const projectedSnapshot = projectLegacyWeatherSnapshot(payload.weather_snapshot);
+  const projected = { ...payload };
+  if (projectedSnapshot === undefined) delete projected.weather_snapshot;
+  else projected.weather_snapshot = projectedSnapshot;
+  return projected;
+}
+
+function assertCalibrationFeatureContract(value) {
+  if (value === null || value === undefined) return;
+  assertAllowedRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
+  for (const [key, nested] of Object.entries(value)) {
+    if (key === 'reasonCodes') {
+      if (!Array.isArray(nested) || nested.length > 12
+        || nested.some(item => typeof item !== 'string' || item.length > 128)) {
+        throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
+      }
+    } else if (Object.hasOwn(CALIBRATION_FEATURE_RANGES, key)) {
+      assertBoundedNumberOrNull(nested, CALIBRATION_FEATURE_RANGES[key], 'TRIP_CALIBRATION_FEATURES_INVALID');
+    } else assertBoundedTextOrNull(nested, 128, 'TRIP_CALIBRATION_FEATURES_INVALID');
+  }
+}
+
+function assertFlatSnapshotRecord(value, allowedKeys) {
+  assertAllowedRecord(value, allowedKeys, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+  for (const nested of Object.values(value)) {
+    assertScalarOrNull(nested, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+  }
+}
+
+function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false) {
+  if (value === null || value === undefined) return;
+  assertAllowedRecord(value, WEATHER_SNAPSHOT_KEYS, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+  for (const [key, nested] of Object.entries(value)) {
+    if (key === 'current') {
+      assertFlatSnapshotRecord(nested, WEATHER_CURRENT_KEYS);
+      for (const [currentKey, currentValue] of Object.entries(nested)) {
+        if (Object.hasOwn(SNAPSHOT_CURRENT_RANGES, currentKey)) {
+          assertBoundedNumberOrNull(currentValue, SNAPSHOT_CURRENT_RANGES[currentKey], 'TRIP_WEATHER_SNAPSHOT_INVALID');
+        } else assertBoundedTextOrNull(currentValue, 160, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+      }
+    }
+    else if (key === 'score') {
+      assertFlatSnapshotRecord(nested, WEATHER_SCORE_KEYS);
+      assertBoundedNumberOrNull(nested.baseScore, [0, 100], 'TRIP_WEATHER_SNAPSHOT_INVALID');
+      assertBoundedNumberOrNull(nested.finalScore, [0, 100], 'TRIP_WEATHER_SNAPSHOT_INVALID');
+      assertBoundedTextOrNull(nested.level, 40, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+    }
+    else if (key === 'prediction') {
+      assertFlatSnapshotRecord(nested, WEATHER_PREDICTION_KEYS);
+      assertBoundedNumberOrNull(nested.probability, [0, 1], 'TRIP_WEATHER_SNAPSHOT_INVALID');
+      assertBoundedNumberOrNull(nested.confidence, [0, 1], 'TRIP_WEATHER_SNAPSHOT_INVALID');
+      assertBoundedTextOrNull(nested.modelVersion, 128, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+    }
+    else if (key === 'calibrationFeatures') assertCalibrationFeatureContract(nested);
+    else if (key === 'matchedRuleIds') {
+      if (!Array.isArray(nested) || nested.length > 40
+        || nested.some(item => typeof item !== 'string' || item.length > 120)) {
+        throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
+      }
+    } else if (key === 'schemaVersion') {
+      const allowedVersions = allowLegacySchemaTwo ? [2, 3, 4, 5] : [3, 4, 5];
+      if (nested !== null && (!Number.isSafeInteger(nested) || !allowedVersions.includes(nested))) {
+        throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
+      }
+    } else assertBoundedTextOrNull(nested, 200, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+  }
+}
+
+export function assertExternalTripNestedContract(payload) {
+  if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
+  assertCalibrationFeatureContract(payload.calibration_features);
+  assertWeatherSnapshotContract(payload.weather_snapshot, Number(payload.schema_version ?? 1) === 1);
+  return true;
+}
+
+function attestedTripRelease(value) {
+  const match = String(value || '').match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if (!match) return false;
+  const [major, minor, patch] = match.slice(1).map(Number);
+  return major > 4 || (major === 4 && (minor > 0 || (minor === 0 && patch >= 311)));
+}
+
+function appendUnattestedReason(features) {
+  const source = isRecord(features) ? features : {};
+  const reasons = Array.isArray(source.reasonCodes)
+    ? source.reasonCodes.filter(reason => reason !== UNATTESTED_RAVSCORE_QUALITY_FLAG).slice(0, 11)
+    : [];
+  return { ...source, reasonCodes: [...reasons, UNATTESTED_RAVSCORE_QUALITY_FLAG] };
+}
+
+export function normalizeExternalTripQualityBinding(payload) {
+  if (!isRecord(payload) || Number(payload.schema_version) !== 2) return payload;
+  const flags = payload.data_quality_flags;
+  if (flags !== undefined && !Array.isArray(flags)) throw new Error('TRIP_DATA_QUALITY_FLAGS_INVALID');
+  const appVersion = payload.calibration_features?.appVersion;
+  if (Array.isArray(flags) && (flags.length > 0 || attestedTripRelease(appVersion))) return payload;
+  const calibrationFeatures = appendUnattestedReason(payload.calibration_features);
+  const weatherSnapshot = isRecord(payload.weather_snapshot)
+    ? { ...payload.weather_snapshot, calibrationFeatures }
+    : payload.weather_snapshot;
+  return {
+    ...payload,
+    calibration_eligible: false,
+    data_quality_flags: [UNATTESTED_RAVSCORE_QUALITY_FLAG],
+    calibration_features: calibrationFeatures,
+    weather_snapshot: weatherSnapshot,
+  };
+}
+
+export function assertExternalTripQualityBinding(payload) {
+  if (!isRecord(payload) || Number(payload.schema_version) !== 2) return;
+  const flags = payload.data_quality_flags;
+  if (!Array.isArray(flags)
+    || !TRIP_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(flags))) {
+    throw new Error('TRIP_DATA_QUALITY_FLAGS_INVALID');
+  }
+  const reasonCodes = payload.calibration_features?.reasonCodes;
+  if (!Array.isArray(reasonCodes)
+    || reasonCodes.some(code => typeof code !== 'string')) throw new Error('TRIP_QUALITY_REASON_CODES_INVALID');
+  const qualityReasons = reasonCodes.filter(code => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(code));
+  if (JSON.stringify(qualityReasons) !== JSON.stringify(flags)) {
+    throw new Error('TRIP_QUALITY_REASON_BINDING_INVALID');
+  }
+  const sameForecastContext = payload.actual_zone_id === payload.forecast_zone_id
+    && payload.actual_coastal_part_id === payload.forecast_coastal_part_id;
+  const expectedEligibility = sameForecastContext && flags.length === 0;
+  if (payload.calibration_eligible !== expectedEligibility) {
+    throw new Error('TRIP_CALIBRATION_ELIGIBILITY_INVALID');
+  }
 }
 
 function utf8(value) {
@@ -95,22 +425,41 @@ export function assertNoDirectIdentity(value, depth = 0) {
   }
 }
 
+export function assertNoPrivateLocation(value, depth = 0) {
+  if (depth > 8) throw new Error('TRIP_PAYLOAD_TOO_DEEP');
+  if (Array.isArray(value)) {
+    value.forEach(entry => assertNoPrivateLocation(entry, depth + 1));
+    return;
+  }
+  if (!isRecord(value)) return;
+  for (const [key, nested] of Object.entries(value)) {
+    if (PRIVATE_LOCATION_KEY_PATTERN.test(String(key)) && nested !== null) {
+      throw new Error('PRECISE_LOCATION_NOT_ALLOWED');
+    }
+    assertNoPrivateLocation(nested, depth + 1);
+  }
+}
+
 export function externalTripPayload(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  const clone = typeof structuredClone === 'function'
+  const cloned = typeof structuredClone === 'function'
     ? structuredClone(payload)
     : JSON.parse(JSON.stringify(payload));
+  const source = projectLegacyExternalTripPayload(cloned);
+  const clone = normalizeExternalTripQualityBinding(source);
   const external = {};
   for (const key of TRIP_INPUT_FIELD_NAMES) {
     if (key === 'user_id' || key === 'anonymous_id' || key === 'gps') continue;
     const value = clone[key];
     if (value === null || value === undefined) continue;
-    if (key === 'data_quality_flags' && Array.isArray(value) && value.length === 0) continue;
     external[key] = value;
   }
   external.schema_version = Number(clone.schema_version ?? 1);
   if (![1, 2].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
   assertNoDirectIdentity(external);
+  assertNoPrivateLocation(external);
+  assertExternalTripNestedContract(external);
+  assertExternalTripQualityBinding(external);
   return external;
 }
 
@@ -122,6 +471,76 @@ function canonicalValue(value) {
 
 export function canonicalJson(value) {
   return JSON.stringify(canonicalValue(value));
+}
+
+function tripPayloadDigestValue(payload) {
+  const value = isRecord(payload) ? { ...payload } : payload;
+  if (isRecord(value)) delete value.submitted_at;
+  return value;
+}
+
+export function isLegacyUnattestedTripReplay(storedPayload, incomingPayload) {
+  if (!isRecord(storedPayload) || !isRecord(incomingPayload)
+    || Number(storedPayload.schema_version) !== 2
+    || Number(incomingPayload.schema_version) !== 2) return false;
+  const storedFlags = storedPayload.data_quality_flags;
+  const legacyFlags = storedFlags === undefined
+    || (Array.isArray(storedFlags) && storedFlags.length === 0);
+  if (!legacyFlags || attestedTripRelease(storedPayload.calibration_features?.appVersion)) return false;
+  const normalized = normalizeExternalTripQualityBinding(storedPayload);
+  if (canonicalJson(tripPayloadDigestValue(normalized))
+      === canonicalJson(tripPayloadDigestValue(storedPayload))) return false;
+  return Array.isArray(incomingPayload.data_quality_flags)
+    && canonicalJson(incomingPayload.data_quality_flags)
+      === canonicalJson([UNATTESTED_RAVSCORE_QUALITY_FLAG])
+    && incomingPayload.calibration_eligible === false
+    && canonicalJson(tripPayloadDigestValue(normalized))
+      === canonicalJson(tripPayloadDigestValue(incomingPayload));
+}
+
+function isLegacyMatchedRulesOnlyProjectionReplay(storedPayload, projectedPayload, incomingPayload) {
+  const storedSnapshot = storedPayload.weather_snapshot;
+  const projectedSnapshot = projectedPayload.weather_snapshot;
+  const incomingSnapshot = incomingPayload.weather_snapshot;
+  if (!isRecord(storedSnapshot)
+    || !Array.isArray(storedSnapshot.matchedRules)
+    || Object.hasOwn(storedSnapshot, 'matchedRuleIds')
+    || !isRecord(projectedSnapshot)
+    || !Array.isArray(projectedSnapshot.matchedRuleIds)
+    || !isRecord(incomingSnapshot)
+    || Object.hasOwn(incomingSnapshot, 'matchedRuleIds')) return false;
+  const withoutDerivedRuleIds = {
+    ...projectedPayload,
+    weather_snapshot: { ...projectedSnapshot },
+  };
+  delete withoutDerivedRuleIds.weather_snapshot.matchedRuleIds;
+  return canonicalJson(tripPayloadDigestValue(withoutDerivedRuleIds))
+    === canonicalJson(tripPayloadDigestValue(incomingPayload));
+}
+
+export function isLegacyProjectedTripReplay(storedPayload, incomingPayload, {
+  allowMissingDerivedMatchedRuleIds = false,
+} = {}) {
+  if (!isRecord(storedPayload) || !isRecord(incomingPayload)
+    || Number(storedPayload.schema_version ?? 1) !== 1
+    || Number(incomingPayload.schema_version ?? 1) !== 1) return false;
+  let projected;
+  try {
+    projected = externalTripPayload(storedPayload);
+  } catch {
+    return false;
+  }
+  const storedDigest = canonicalJson(tripPayloadDigestValue(storedPayload));
+  const projectedDigest = canonicalJson(tripPayloadDigestValue(projected));
+  if (storedDigest === projectedDigest) return false;
+  if (projectedDigest === canonicalJson(tripPayloadDigestValue(incomingPayload))) return true;
+  return allowMissingDerivedMatchedRuleIds
+    && isLegacyMatchedRulesOnlyProjectionReplay(storedPayload, projected, incomingPayload);
+}
+
+export function isLegacyCompatibleTripReplay(storedPayload, incomingPayload, options = {}) {
+  return isLegacyProjectedTripReplay(storedPayload, incomingPayload, options)
+    || isLegacyUnattestedTripReplay(storedPayload, incomingPayload);
 }
 
 export async function externalTripRecord({ owner, payload, source = 'live' }) {

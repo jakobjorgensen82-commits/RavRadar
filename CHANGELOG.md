@@ -1,3 +1,16 @@
+## 4.0.311-kandidat – én kontrolleret rekonstruktion af morgenhullet (2026-08-29)
+
+- Tilføjer en manuelt aktiveret, incidentlåst inspect/apply/rollback/cleanup-kæde for `RRGAP-2026-08-29-CANDIDATE-G-01`, inklusive isoleret byteidentisk apply→rollback-bevis og kausal descendant-cleanup.
+- Rekonstruerer kun allerede afledt, signeret kystnormal Candidate G-transportstyrke mellem eksakte før-/efterankre; ingen vejr-, bølge-, vandstands-, U/V-, koordinat-, geometri-, punkt- eller privat data interpoleres eller publiceres.
+- Løfter kun state med levende rekonstruktionsmarkør til schema 2.1.0, fører trust gennem public payloads og gør den hverken kalibreringsegnet eller gyldig som observeret 13-timers udtransportbevis.
+- Bevarer målt-only last-verified nødvisning, karantæner reconstruction-mode fra delte continuation/checkpoint/fallbackcaches og kræver frisk normal 673-delsgenberegning før genåbning.
+- Binder ture fra rekonstrueret score eller vist nødvisning til eksakte ikke-kalibrerbare kvalitetsflags gennem klient, Edge, D1/Supabase, schema og installer.
+- Bevarer aktive/pending schema-v2-ture fra før 4.0.311, men markerer manglende trust som `ravscore-evidence-trust-unattested` og udelukker dem fail-closed fra kalibrering.
+- Ændrer eller sletter ikke allerede gemte pre-4.0.311 schema-v2-observationer. Den lokale prediction-/kalibreringsforbruger medtager kun observationer med `appVersion >= 4.0.311`, `calibration_eligible=true` og eksakt attesteret tom kvalitetsflagliste.
+- Lukker nested browser/Edge/D1-privacy med ét testlåst lokationsaliasmønster, type-/intervalallowlist og en deterministisk, no-mutation-kompatibel projektion af historiske fri-form-snapshots.
+- Kræver exact-head `[d1]`-backendbevis før Pages. Maintenance-kapabel Edge predeployes under uændret mode/gammel Worker; existing D1 dobbeltattesteres før en 20-minutters lease, drain og den højst syv minutter lange Worker-gate, mens genuine fresh forbliver i Supabase gennem første synk. Partial existing D1 repareres kun fremad; partial fresh genopretter Supabase-secret og eksakt Edge. Legacy-installationen kræver både eksakte ti EU-shards og jobniveau-bevis fra run `33024408547`: alle D1-trin `completed/success`, Supabase-rollback `completed/skipped`. Uverificerbar readiness giver ingen Pages-udgivelse.
+- Dette er endnu kun en lokal kildekandidat. Exact-head, apply, frisk produktion og offentlig kontrol mangler. Se DEC-0109 og `CHANGELOG-4.0.311.md`.
+
 ## 4.0.310 – ekstern overtagelse efter ét manglende interval (2026-08-29)
 
 - 4.0.309-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992` efter fortsat native schedulerstilhed og beviste, at 45 minutter kunne give cirka en time mellem produktionsstarterne.

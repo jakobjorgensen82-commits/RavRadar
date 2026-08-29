@@ -1,8 +1,17 @@
-import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.310';
+import { loadAdaptiveModel, modelAdjustment } from './adaptive-model.js?v=4.0.311';
 const clamp=(v,min=0,max=100)=>Math.min(max,Math.max(min,v));
 const sigmoid=x=>1/(1+Math.exp(-x));
 const asFinite=v=>(v===null||v===undefined||v===''||typeof v==='boolean')?null:(Number.isFinite(Number(v))?Number(v):null);
 const isFind=row=>row?.result&&!['none','no'].includes(row.result);
+const isAttestedCalibrationRow=row=>{
+  if(row?.calibration_eligible===false)return false;
+  if(Number(row?.schema_version)!==2)return true;
+  const match=String(row?.calibration_features?.appVersion||row?.weather_snapshot?.calibrationFeatures?.appVersion||'').match(/^(\d+)\.(\d+)\.(\d+)$/);
+  if(!match)return false;
+  const [major,minor,patch]=match.slice(1).map(Number);
+  const releaseOrNewer=major>4||(major===4&&(minor>0||(minor===0&&patch>=311)));
+  return releaseOrNewer&&row.calibration_eligible===true&&Array.isArray(row.data_quality_flags)&&row.data_quality_flags.length===0;
+};
 function betaEstimate(rows,priorSuccess=2,priorFailure=3){const success=rows.filter(isFind).length;return {rate:(success+priorSuccess)/(rows.length+priorSuccess+priorFailure),success,total:rows.length};}
 function comparableRows(observations,zone,weather){
   const local=observations.filter(x=>x.zone_id===zone?.id);
@@ -16,7 +25,7 @@ function comparableRows(observations,zone,weather){
 export function predictAmberChance({baseScore,zone,weather={},history={},observations=[],model=loadAdaptiveModel()}={}){
   if(asFinite(baseScore)===null)return {available:false,probability:null,confidence:0,label:'Ingen prognose',reasons:['RavScore mangler.']};
   const adaptive=modelAdjustment({model,zone,weather});
-  const calibrationRows=observations.filter(row=>row?.calibration_eligible!==false);
+  const calibrationRows=observations.filter(isAttestedCalibrationRow);
   const comparable=comparableRows(calibrationRows,zone,weather);const empirical=betaEstimate(comparable.rows);
   const modelProbability=sigmoid((Number(baseScore)+adaptive.adjustment-55)/13);
   const evidenceWeight=Math.min(.50,comparable.rows.length/60);

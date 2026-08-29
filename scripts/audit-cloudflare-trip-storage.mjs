@@ -1,3 +1,5 @@
+import { boundedFetch } from './lib/bounded-fetch.mjs';
+
 const SHARD_COUNT = 10;
 const SHARD_LIMIT_BYTES = 500_000_000;
 const ACCOUNT_LIMIT_BYTES = 5_000_000_000;
@@ -12,7 +14,7 @@ function required(value, name) {
 }
 
 async function cloudflareGet(pathname) {
-  const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${required(accountId, 'CLOUDFLARE_ACCOUNT_ID')}${pathname}`, {
+  const response = await boundedFetch(`https://api.cloudflare.com/client/v4/accounts/${required(accountId, 'CLOUDFLARE_ACCOUNT_ID')}${pathname}`, {
     headers: { Authorization: `Bearer ${required(apiToken, 'CLOUDFLARE_AUDIT_API_TOKEN')}` },
   });
   const body = await response.json();
@@ -40,7 +42,7 @@ const shards = Array.from({ length: SHARD_COUNT }, (_, index) => {
 });
 const details = [];
 for (const shard of shards) details.push((await cloudflareGet(`/d1/database/${shard.uuid}`)).result);
-const sizes = details.map(database => Number(database?.file_size || 0));
+const sizes = details.map(database => Number(database?.file_size));
 if (sizes.some(size => !Number.isFinite(size) || size < 0)) throw new Error('Cloudflare returnerede en ugyldig lagerstørrelse.');
 const totalBytes = sizes.reduce((sum, size) => sum + size, 0);
 const largestBytes = Math.max(...sizes);

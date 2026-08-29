@@ -1,11 +1,26 @@
 export const TRIP_EVIDENCE_SCHEMA_VERSION = 2;
 export const TRIP_SEARCH_COVERAGE = Object.freeze(['partial', 'normal', 'thorough']);
 export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
+export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG = 'ravscore-reconstructed-derived-evidence';
+export const PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG = 'public-emergency-last-complete';
+export const UNATTESTED_RAVSCORE_QUALITY_FLAG = 'ravscore-evidence-trust-unattested';
+export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
+  PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
+  RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
+  UNATTESTED_RAVSCORE_QUALITY_FLAG
+]);
+const TRIP_QUALITY_FLAG_COMBINATIONS = new Set([
+  '[]',
+  JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG]),
+  JSON.stringify([RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
+  JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
+  JSON.stringify([UNATTESTED_RAVSCORE_QUALITY_FLAG])
+]);
 
 const MAX_SEARCH_MINUTES = 24 * 60;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const FORBIDDEN_REMOTE_KEY = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track)/i;
+const FORBIDDEN_REMOTE_KEY = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track|location)/i;
 const CALIBRATION_RANGES = Object.freeze({
   totalScore: [0, 100],
   huntabilityScore: [0, 100],
@@ -56,6 +71,53 @@ function assertChoice(value, allowed, label) {
   const normalized = String(value || '').trim();
   if (!allowed.includes(normalized)) throw new Error(`${label} er ugyldig.`);
   return normalized;
+}
+
+function normalizeTripQualityFlags(value) {
+  if (!Array.isArray(value)) throw new Error('Datakvalitetsflag skal være en liste.');
+  const flags = value.map(entry => requiredId(entry, 'Datakvalitetsflag'));
+  if (new Set(flags).size !== flags.length) throw new Error('Datakvalitetsflag må ikke gentages.');
+  if (!TRIP_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(flags))) {
+    throw new Error('Turen indeholder en ukendt eller ikke-kanonisk kombination af datakvalitetsflag.');
+  }
+  return Object.freeze(flags);
+}
+
+function assertTripQualityReasonBinding(flags, reasonCodes) {
+  if (!Array.isArray(reasonCodes)) throw new Error('Kalibreringsgrundlaget mangler årsagskoder.');
+  const qualityReasons = reasonCodes.filter(code => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(code));
+  if (JSON.stringify(qualityReasons) !== JSON.stringify(flags)) {
+    throw new Error('Datakvalitetsflag og kalibreringsgrundlag er ikke entydigt bundet sammen.');
+  }
+}
+
+export function assertTripForecastQualityBinding({
+  dataQualityFlags,
+  reasonCodes,
+  forecastCalibrationEligible
+} = {}) {
+  const flags = normalizeTripQualityFlags(dataQualityFlags);
+  assertTripQualityReasonBinding(flags, reasonCodes);
+  const expectedEligibility = flags.length === 0;
+  if (forecastCalibrationEligible !== expectedEligibility) {
+    throw new Error('Nød- eller rekonstrueret RavScore skal være udelukket fra kalibrering.');
+  }
+  return flags;
+}
+
+export function assertObservationTripQualityBinding(columns = {}) {
+  if (columns?.schema_version !== TRIP_EVIDENCE_SCHEMA_VERSION) {
+    throw new Error('Kun den aktuelle turkontrakt kan kvalitetskontrolleres.');
+  }
+  const flags = normalizeTripQualityFlags(columns.data_quality_flags);
+  assertTripQualityReasonBinding(flags, columns.calibration_features?.reasonCodes);
+  const sameForecastContext = String(columns.actual_zone_id || '') === String(columns.forecast_zone_id || '')
+    && String(columns.actual_coastal_part_id || '') === String(columns.forecast_coastal_part_id || '');
+  const expectedEligibility = sameForecastContext && flags.length === 0;
+  if (columns.calibration_eligible !== expectedEligibility) {
+    throw new Error('Turens kalibreringsstatus matcher ikke prognosebindingen og datakvaliteten.');
+  }
+  return flags;
 }
 
 function rangedNumber(value, key) {
@@ -121,8 +183,86 @@ export function createCalibrationFeatureSnapshot(input = {}) {
   return Object.freeze(snapshot);
 }
 
+function unattestedCalibrationFeatures(value) {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const reasons = Array.isArray(source.reasonCodes)
+    ? source.reasonCodes.filter(reason => reason !== UNATTESTED_RAVSCORE_QUALITY_FLAG).slice(0, 11)
+    : [];
+  return createCalibrationFeatureSnapshot({
+    ...source,
+    reasonCodes: [...reasons, UNATTESTED_RAVSCORE_QUALITY_FLAG]
+  });
+}
+
+export function migrateLegacyUnattestedTripStart(record) {
+  if (record?.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) return record;
+  const hasEligibility = Object.hasOwn(record, 'forecastCalibrationEligible');
+  const hasFlags = Object.hasOwn(record, 'dataQualityFlags');
+  if (hasEligibility !== hasFlags) throw new Error('Den aktive tur har en ufuldstændig evidenstillidsbinding.');
+  if (hasEligibility) {
+    assertTripForecastQualityBinding({
+      dataQualityFlags: record.dataQualityFlags,
+      reasonCodes: record.calibrationFeatures?.reasonCodes,
+      forecastCalibrationEligible: record.forecastCalibrationEligible
+    });
+    return record;
+  }
+  const migrated = Object.freeze({
+    ...record,
+    calibrationFeatures: unattestedCalibrationFeatures(record.calibrationFeatures),
+    forecastCalibrationEligible: false,
+    dataQualityFlags: Object.freeze([UNATTESTED_RAVSCORE_QUALITY_FLAG])
+  });
+  assertTripEvidencePrivacy(migrated);
+  return migrated;
+}
+
+export function migrateLegacyUnattestedTripEvidence(record) {
+  if (record?.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) return record;
+  if (Object.hasOwn(record, 'dataQualityFlags')) {
+    const columns = toObservationTripColumns(record);
+    assertObservationTripQualityBinding(columns);
+    return record;
+  }
+  const migrated = Object.freeze({
+    ...record,
+    calibrationEligible: false,
+    dataQualityFlags: Object.freeze([UNATTESTED_RAVSCORE_QUALITY_FLAG]),
+    calibrationFeatures: unattestedCalibrationFeatures(record.calibrationFeatures)
+  });
+  assertTripEvidencePrivacy(migrated);
+  return migrated;
+}
+
+export function migrateLegacyUnattestedObservationColumns(columns) {
+  if (columns?.schema_version !== TRIP_EVIDENCE_SCHEMA_VERSION) return columns;
+  if (Object.hasOwn(columns, 'data_quality_flags')) {
+    assertObservationTripQualityBinding(columns);
+    return columns;
+  }
+  const migrated = Object.freeze({
+    ...columns,
+    calibration_eligible: false,
+    data_quality_flags: Object.freeze([UNATTESTED_RAVSCORE_QUALITY_FLAG]),
+    calibration_features: unattestedCalibrationFeatures(columns.calibration_features)
+  });
+  assertObservationTripQualityBinding(migrated);
+  assertTripEvidencePrivacy(migrated);
+  return migrated;
+}
+
 export function createTripStartRecord(input = {}) {
   const started = requiredIso(input.startedAt, 'Starttid');
+  const calibrationFeatures = createCalibrationFeatureSnapshot(input.calibrationFeatures || {});
+  if (typeof input.forecastCalibrationEligible !== 'boolean') {
+    throw new Error('Turstarten mangler en eksplicit kalibreringsstatus.');
+  }
+  const forecastCalibrationEligible = input.forecastCalibrationEligible;
+  const dataQualityFlags = assertTripForecastQualityBinding({
+    dataQualityFlags: input.dataQualityFlags,
+    reasonCodes: calibrationFeatures.reasonCodes,
+    forecastCalibrationEligible
+  });
   const record = {
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredUuid(input.tripId, 'Tur-id'),
@@ -131,7 +271,9 @@ export function createTripStartRecord(input = {}) {
     forecastZoneId: requiredId(input.zoneId, 'Zone ved turstart'),
     forecastCoastalPartId: requiredId(input.coastalPartId, 'Kystdel ved turstart'),
     forecastSnapshot: createForecastSnapshotReference(input.forecastSnapshot || {}),
-    calibrationFeatures: createCalibrationFeatureSnapshot(input.calibrationFeatures || {})
+    calibrationFeatures,
+    forecastCalibrationEligible,
+    dataQualityFlags
   };
   assertTripEvidencePrivacy(record);
   return Object.freeze(record);
@@ -139,20 +281,23 @@ export function createTripStartRecord(input = {}) {
 
 export function completeTripEvidence(startRecord, completion = {}) {
   if (startRecord?.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) throw new Error('Turstart mangler den aktuelle kontrakt.');
+  const trustedStart = migrateLegacyUnattestedTripStart(startRecord);
   return buildTripEvidence({
-    tripId: startRecord.tripId,
-    startedAt: startRecord.startedAt,
+    tripId: trustedStart.tripId,
+    startedAt: trustedStart.startedAt,
     endedAt: completion.endedAt,
-    mode: startRecord.mode,
+    mode: trustedStart.mode,
     zoneId: completion.zoneId,
     coastalPartId: completion.coastalPartId,
-    forecastZoneId: startRecord.forecastZoneId,
-    forecastCoastalPartId: startRecord.forecastCoastalPartId,
+    forecastZoneId: trustedStart.forecastZoneId,
+    forecastCoastalPartId: trustedStart.forecastCoastalPartId,
     searchCoverage: completion.searchCoverage,
     found: completion.found,
     grams: completion.grams,
-    forecastSnapshot: startRecord.forecastSnapshot,
-    calibrationFeatures: startRecord.calibrationFeatures
+    forecastSnapshot: trustedStart.forecastSnapshot,
+    calibrationFeatures: trustedStart.calibrationFeatures,
+    forecastCalibrationEligible: trustedStart.forecastCalibrationEligible,
+    dataQualityFlags: trustedStart.dataQualityFlags
   });
 }
 
@@ -178,6 +323,16 @@ export function buildTripEvidence(input = {}) {
   const coastalPartId = requiredId(input.coastalPartId, 'Kystdel');
   const forecastZoneId = requiredId(input.forecastZoneId || zoneId, 'Zone ved turstart');
   const forecastCoastalPartId = requiredId(input.forecastCoastalPartId || coastalPartId, 'Kystdel ved turstart');
+  const calibrationFeatures = createCalibrationFeatureSnapshot(input.calibrationFeatures || {});
+  if (typeof input.forecastCalibrationEligible !== 'boolean') {
+    throw new Error('Turen mangler en eksplicit kalibreringsstatus fra turstarten.');
+  }
+  const forecastCalibrationEligible = input.forecastCalibrationEligible;
+  const dataQualityFlags = assertTripForecastQualityBinding({
+    dataQualityFlags: input.dataQualityFlags,
+    reasonCodes: calibrationFeatures.reasonCodes,
+    forecastCalibrationEligible
+  });
   const evidence = Object.freeze({
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredUuid(input.tripId, 'Tur-id'),
@@ -191,14 +346,16 @@ export function buildTripEvidence(input = {}) {
     coastalPartId,
     forecastZoneId,
     forecastCoastalPartId,
-    calibrationEligible: zoneId === forecastZoneId && coastalPartId === forecastCoastalPartId,
+    calibrationEligible: forecastCalibrationEligible
+      && zoneId === forecastZoneId && coastalPartId === forecastCoastalPartId,
+    dataQualityFlags,
     found: input.found,
     grams: optionalGrams(input.grams, input.found),
     forecastSnapshotId: requiredId(snapshot.id, 'Prognose-id'),
     forecastIssuedAt: issued.iso,
     forecastValidAt: valid.iso,
     forecastCapturedAt: captured.iso,
-    calibrationFeatures: createCalibrationFeatureSnapshot(input.calibrationFeatures || {})
+    calibrationFeatures
   });
   assertTripEvidencePrivacy(evidence);
   return evidence;
@@ -229,8 +386,10 @@ export function toObservationTripColumns(evidence) {
     forecast_issued_at: evidence.forecastIssuedAt,
     forecast_valid_at: evidence.forecastValidAt,
     forecast_captured_at: evidence.forecastCapturedAt,
-    calibration_features: evidence.calibrationFeatures
+    calibration_features: evidence.calibrationFeatures,
+    data_quality_flags: evidence.dataQualityFlags
   };
+  assertObservationTripQualityBinding(columns);
   assertTripEvidencePrivacy(columns);
   return columns;
 }

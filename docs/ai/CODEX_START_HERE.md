@@ -2,7 +2,15 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt arbejdscheckpoint 2026-08-24 – 4.0.273
+## Aktuelt P0-checkpoint 2026-08-29 – lokal 4.0.311-kandidat
+
+- Offentlig sandhed er fortsat produktionsverificeret 4.0.310. Der er endnu ingen 4.0.311-commit, PR, apply, produktion eller offentlig verifikation.
+- Ejeren har godkendt præcis én rekonstruktion af Candidate G-morgenhullet som incident `RRGAP-2026-08-29-CANDIDATE-G-01`. Kun allerede afledt kystnormal strength mellem eksakte artifacts må interpoleres; ingen vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter eller private payloads.
+- Rekonstrueret state er schema 2.1 med eksplicit trust, ikke kalibreringsegnet og ikke gyldigt observeret udtransportbevis. Normal measured-only state/fallback er schema 2.0 og uændret.
+- Inspect/apply/rollback/cleanup, measured-only fallback, tripflags og releasekæden er bindende. Storagekandidaten sætter existing-D1/fresh Edge-predeploy-intent efter capacity/CAS. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial Edge går D1 roll-forward. Fresh partial Edge går exact-main/Supabase-secret/eksakt Edge/dobbelt attest. Uden intent ingen recoverymutation. Fortsæt fra handoff/DEC-0109 med Sol/Ultra; kald ikke driften genoprettet før exact-head, live backend, frisk produktion og offentlig kontrol er grøn.
+- Den integrerede næste model er fortsat separat under DEC-0102 og skal efter recovery integrere den nye grønne `main` samt bevare DEC-0109's trust-/provenancekontrakt uden generel interpolation. Den skal selv bevare én målt-only atomisk 210/673-nødstate i højst 72 timer og aldrig efter kortere forecastudløb. `calibration_eligible` er ikke serverbevist empirisk evidens; global koefficientlæring forbliver låst.
+
+## Historisk arbejdscheckpoint 2026-08-24 – 4.0.273
 
 - **Candidate G er den eneste tilladte offentlige scoremodel.** Den aktive formel er `20 % søgeforhold`, `50 % transport mod kysten` og `30 % rav i bevægelse`. `25/40/35` må kun bruges til historisk analyse og kan ikke vælges som offentlig reserve.
 - Manglende eller usammenhængende Candidate G-grundlag håndteres lokalt: den konkrete zone, søgemåde og time får ingen score og udelades fra aktuelle og femdøgns-ranglister. Andre zoner fortsætter på Candidate G. Der må ikke lånes score fra en gammel model, moderzone, nabozone eller anden time.

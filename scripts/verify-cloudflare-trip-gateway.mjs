@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { normalizeCloudflareGatewayUrl, tripGatewaySignature } from '../supabase/functions/_shared/trip-storage.js';
+import { boundedFetch, createBoundedFetch, TRIP_STORAGE_NETWORK_TIMEOUT_MS } from './lib/bounded-fetch.mjs';
 
 export const WORKER_HEALTH_RETRY_DELAYS_MS = Object.freeze([0, 1_000, 2_000, 3_000, 5_000, 8_000, 13_000, 21_000]);
 
@@ -8,20 +9,29 @@ function sleep(milliseconds) {
 }
 
 function validHealth(response, body) {
-  return response?.ok === true && body?.ok === true && body?.shards === 10 && body?.storage_schema_version === 1;
+  return response?.ok === true
+    && body?.ok === true
+    && body?.contract_version === '4.0.311'
+    && body?.shards === 10
+    && body?.storage_schema_version === 1
+    && body?.idempotency_registry_schema_version === 2
+    && body?.owner_erasure_tombstone_schema_version === 1;
 }
 
 export async function waitForWorkerHealth({
   gatewayUrl,
   fetchImpl = fetch,
   retryDelaysMs = WORKER_HEALTH_RETRY_DELAYS_MS,
+  fetchTimeoutMs = TRIP_STORAGE_NETWORK_TIMEOUT_MS,
 }) {
   let lastResponse = null;
   let lastBody = {};
   for (const delay of retryDelaysMs) {
     if (delay > 0) await sleep(delay);
     try {
-      lastResponse = await fetchImpl(`${gatewayUrl}/health`, { headers: { accept: 'application/json' } });
+      lastResponse = await boundedFetch(`${gatewayUrl}/health`, {
+        headers: { accept: 'application/json' },
+      }, { fetchImpl, timeoutMs: fetchTimeoutMs });
       lastBody = await lastResponse.json().catch(() => ({}));
       if (validHealth(lastResponse, lastBody)) return { response: lastResponse, body: lastBody };
     } catch {
@@ -35,6 +45,7 @@ export async function waitForWorkerHealth({
 async function main() {
   const gatewayUrl = normalizeCloudflareGatewayUrl(process.env.CLOUDFLARE_TRIP_GATEWAY_URL || '');
   const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
+  const fetchWithDeadline = createBoundedFetch();
   if (sharedSecret.length < 32) throw new Error('Worker-verifikationens delte hemmelighed mangler.');
 
   const health = await waitForWorkerHealth({ gatewayUrl });
@@ -42,7 +53,7 @@ async function main() {
     throw new Error('Workerens offentlige, datasikre health-kontrakt fejlede efter afgrænset udbredelsesventetid.');
   }
 
-  const unsigned = await fetch(`${gatewayUrl}/v1/trips/count`, {
+  const unsigned = await fetchWithDeadline(`${gatewayUrl}/v1/trips/count`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
@@ -58,7 +69,7 @@ async function main() {
     pathname: '/v1/trips/count',
     bodyText,
   });
-  const count = await fetch(`${gatewayUrl}/v1/trips/count`, {
+  const count = await fetchWithDeadline(`${gatewayUrl}/v1/trips/count`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

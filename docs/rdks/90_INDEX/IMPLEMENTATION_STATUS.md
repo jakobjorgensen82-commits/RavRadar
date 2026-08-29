@@ -1,4 +1,33 @@
-# Implementeringsstatus – 4.0.310 hurtigere ekstern produktionsvagthund
+# Implementeringsstatus – lokal 4.0.311-kandidat til én Candidate G-rekonstruktion
+
+## P0 – ejerautoriseret morgenhul, endnu ikke anvendt i produktion
+
+- [x] Afgræns incident, kilder, metode og privacy i policy samt DEC-0109.
+- [x] Lås 210/673, 665 × 1-timeskadence, 8 × 3-timerskadence, eksakte ankre og højst fem syntetiske prøver pr. del.
+- [x] Adskil målt schema 2.0.0 fra rekonstrueret schema 2.1.0 og før trust gennem Candidate G-/public-kontrakten.
+- [x] Gør rekonstrueret evidens ikke-kalibrerbar og uegnet som observeret 13-timers udtransportbevis.
+- [x] Implementér read-only inspect, CAS-bundet apply, privat før-mutation-rollback, direkte rollback mod umiddelbar post-apply-CAS og kausal cleanup.
+- [x] Bevis isoleret apply→direkte rollback, begræns eksakt rollback til den byte-/hashidentiske umiddelbare state og brug kun kausal cleanup mod senere descendants.
+- [x] Karantæn reconstruction-mode fra delt continuation/checkpoint/last-ready-cache og luk alle 673 scorer indtil obligatorisk frisk normal genberegning.
+- [x] Bevar målt-only last-verified fallback og afvis rekonstrueret/tampered staging.
+- [x] Bind ture/observationer til faktisk vist primary/fallback med hele active manifest, identisk startup-/kystdels-trust og eksakte kvalitetsflags gennem klient, Edge, D1/Supabase, schema og installer.
+- [x] Bevar pre-4.0.311 aktive/pending schema-v2-ture uden trust som `ravscore-evidence-trust-unattested` og `calibration_eligible=false` i stedet for fail-open eller datatab.
+- [x] Bevar allerede gemte pre-4.0.311 schema-v2-observationer byte-/databaseuændret og lad den lokale prediction-/kalibreringsforbruger kræve `appVersion >= 4.0.311`, `calibration_eligible=true` og eksakt attesteret tom `data_quality_flags`-liste før inklusion.
+- [x] Kræv exact-head `[d1]`-bevis før Pages. Efter capacity/CAS sættes existing-D1 eller fresh Edge-predeploy-intent umiddelbart før første Edge-deploy. Existing D1 bruger 20-minutters lease/30-minutters max, femsekunders prober, dobbeltattestation, 20-sekunders drain, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main-bundet Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- [x] Implementér én atomisk global D1-registry på control-sharden og owner-erasure tombstones, så tværshard-idempotens, konflikter og samtidige ejer-sletninger er fail-closed.
+- [x] Luk og målret test den deterministiske sikre projektion og no-mutation-replay/readback for historiske fri-form-snapshots på tværs af Supabase, Edge og D1. Migrationen bruger eksplicit server-side PostgREST-bladselect og læser aldrig `select=*`, hele fri-form-JSON, GPS/koordinater, rå U/V, fri tekst/billeder eller ukendte kolonner.
+- [ ] Bevar P2-kalibreringslåsen: schema-v2/`calibration_eligible` er kun klientattesteret og internt konsistent, ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring før særskilt server-side snapshotbinding.
+- [ ] Bestå alle målrettede reconstruction-, state-, audit-, fallback-, workflow-, trip-, Edge-, D1-/Supabase- og privacytests på den afsluttede kilde.
+- [ ] Bestå fuld sourcegate, version/RDKS/håndbogsidentitet og separat geodatabevis på PR'ens eksakte head.
+- [ ] Merge sikkert og gennemfør `inspect` mod de eksakte to artifacts; godkend kun apply ved uændret descriptor-/mål-CAS.
+- [ ] Gennemfør apply, frisk normal produktion, fuld `validate`/`release:gate`, artifact, Pages og offentlig desktop/mobil/210/673-kontrol.
+- [ ] Bevar private rollback-/cleanupbeviser og dokumentér tilbagevenden til målt schema 2.0 efter naturligt rolloff eller kausal cleanup.
+
+Ingen produktion er manipuleret ved dette checkpoint. Offentlig sandhed er fortsat 4.0.310/nødvisning. Se DEC-0109.
+
+Den kommende samlede model har desuden en bindende, endnu ikke slutvalideret nøddriftsgate: komplet målt-only atomisk 210/673-state, eksakt model/state/hashbinding, tydelig DA/DE/EN-status, højst 72 timer og aldrig længere end kortere prognoseudløb, ikke-kalibrerbare ture, automatisk frisk primary og fail-closed ved ukendt/rekonstrueret/tampered/udløbet state. Interpolation er ikke en normal fallback.
+
+# Historisk implementeringsstatus – 4.0.310 hurtigere ekstern produktionsvagthund
 
 ## Produktions- og driftsverificeret 4.0.310 – overtag efter ét manglende native interval
 
@@ -309,7 +338,7 @@ Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, 
 
 Assistentaktiveringen ændrer ingen score-, vejr-, konto-/tur-, geometri- eller prognosedata. Se DEC-0083 og DEC-0088.
 
-## Produktionsverificeret 4.0.287 – endeligt EU-turlager med Supabase-rollback
+## Historisk produktionsverificeret 4.0.287 – EU-turlagerets oprindelige Supabase-rollback
 
 - [x] Bevar Supabase som Auth-, profil-, rettigheds-, rate-limit- og offentlig Edge-grænse.
 - [x] Pseudonymisér ejer-id med en separat versionsbåret HMAC-secret og fjern rå identitet, JWT, GPS og rute før ekstern lagring.
@@ -317,7 +346,7 @@ Assistentaktiveringen ændrer ingen score-, vejr-, konto-/tur-, geometri- eller 
 - [x] Fordel tur-id'er deterministisk over ti EU-låste D1-shards og saml privat ejerlog uden direkte identitet.
 - [x] Lås kanonisk payload-hash, klient-/tur-idempotens og konfliktstop.
 - [x] Migrér Supabase idempotent uden kildesletning og rekonsiliér både før og efter Edge-cutover.
-- [x] Bevar eksplicit `TRIP_STORAGE_MODE=supabase` uden automatisk fallback eller normal dual-write.
+- [x] Historisk 4.0.287: eksplicit `TRIP_STORAGE_MODE=supabase` uden automatisk fallback eller normal dual-write. Post-cutover-delen afløses af 4.0.311-kandidatens varige D1/roll-forward, når den er liveverificeret.
 - [x] Tilføj daglig payloadfri 70/85 %-kapacitetskontrol og manuel, eksplicit bekræftet ejersletning i begge lagre.
 - [x] Lås D1-, HMAC-, privatlivs-, turlog-, workflow-, CORS- og rollbackkontrakten med målrettede tests.
 - [x] Bestå fuld lokal `scripts/validate-source.ps1` inklusive releasegate på den færdige kandidat.

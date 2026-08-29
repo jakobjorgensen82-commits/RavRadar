@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
   assertAllowedOrigin,
-  corsHeaders,
   enforceRateLimits,
   GatewayError,
   jsonResponse,
@@ -10,11 +9,14 @@ import {
   safeGatewayError,
 } from "../_shared/public-gateway.ts";
 import { listOwnTripObservations } from "../_shared/trip-store.ts";
+import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.ts";
 
 Deno.serve(async (request) => {
   try {
     assertAllowedOrigin(request);
-    if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: tripStorageReadinessHeaders(request) });
+    }
     const payload = await readJsonObject(request, 4 * 1024);
     const unknown = Object.keys(payload).filter(key => key !== "limit");
     if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");

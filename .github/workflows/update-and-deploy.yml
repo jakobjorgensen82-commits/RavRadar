@@ -27,6 +27,42 @@ on:
         required: false
         default: false
         type: boolean
+      candidate_g_gap_reconstruction_mode:
+        description: "Engangsrekonstruktion RRGAP-2026-08-29: none, inspect, apply, rollback eller cleanup"
+        required: true
+        default: none
+        type: choice
+        options:
+          - none
+          - inspect
+          - apply
+          - rollback
+          - cleanup
+      candidate_g_gap_inspection_run_id:
+        description: "Eksakt run-id fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
+        required: false
+        default: ""
+        type: string
+      candidate_g_gap_inspection_artifact_id:
+        description: "Eksakt artifact-id fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
+        required: false
+        default: ""
+        type: string
+      candidate_g_gap_descriptor_sha256:
+        description: "Eksakt SHA-256 fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
+        required: false
+        default: ""
+        type: string
+      candidate_g_gap_apply_run_id:
+        description: "Eksakt succesfuldt apply-run med privat rollbackcheckpoint (kun rollback)"
+        required: false
+        default: ""
+        type: string
+      candidate_g_gap_rollback_artifact_id:
+        description: "Eksakt privat rollback-artifact fra apply-run (kun rollback)"
+        required: false
+        default: ""
+        type: string
   push:
     branches: [main]
     paths-ignore:
@@ -48,8 +84,8 @@ permissions:
 # dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && 'ravradar-active-ravscore-shadow' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
-  cancel-in-progress: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true || inputs.ravscore_active_shadow == true)) }}
+  group: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode != 'none' && 'ravradar-weather-production' || github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && 'ravradar-active-ravscore-shadow' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
+  cancel-in-progress: ${{ (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true || inputs.ravscore_active_shadow == true))) }}
 
 jobs:
   current-hour-readiness:
@@ -64,8 +100,61 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Validate one-time Candidate G reconstruction dispatch contract
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        env:
+          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
+          FORCE: ${{ inputs.force }}
+          GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
+          GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
+          RAVSCORE_SHADOW: ${{ inputs.ravscore_active_shadow }}
+          INSPECTION_RUN_ID: ${{ inputs.candidate_g_gap_inspection_run_id }}
+          INSPECTION_ARTIFACT_ID: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
+          DESCRIPTOR_SHA256: ${{ inputs.candidate_g_gap_descriptor_sha256 }}
+          APPLY_RUN_ID: ${{ inputs.candidate_g_gap_apply_run_id }}
+          ROLLBACK_ARTIFACT_ID: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
+        run: |
+          set -euo pipefail
+          case "$RECONSTRUCTION_MODE" in
+            none|inspect|apply|rollback|cleanup) ;;
+            *) echo "Unsupported reconstruction mode." >&2; exit 1 ;;
+          esac
+          if [ "$RECONSTRUCTION_MODE" != "none" ]; then
+            test "$GITHUB_REF" = "refs/heads/main" || { echo "Reconstruction is allowed only on main." >&2; exit 1; }
+            if [ "$FORCE" != "false" ] || [ "$GEOMETRY_PILOT" != "false" ] || [ "$GEOMETRY_NATIONAL" != "false" ] || [ "$RAVSCORE_SHADOW" != "false" ]; then
+              echo "Reconstruction cannot be combined with force, geometry or shadow modes." >&2
+              exit 1
+            fi
+          fi
+          if [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
+            [[ "$INSPECTION_RUN_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric inspection run-id is required." >&2; exit 1; }
+            [[ "$INSPECTION_ARTIFACT_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric inspection artifact-id is required." >&2; exit 1; }
+            [[ "$DESCRIPTOR_SHA256" =~ ^[a-f0-9]{64}$ ]] || { echo "A lowercase SHA-256 descriptor seal is required." >&2; exit 1; }
+          elif [ -n "$INSPECTION_RUN_ID" ] || [ -n "$INSPECTION_ARTIFACT_ID" ] || [ -n "$DESCRIPTOR_SHA256" ]; then
+            echo "Inspection bindings are accepted only by apply, rollback or cleanup." >&2
+            exit 1
+          fi
+          if [ "$RECONSTRUCTION_MODE" = "rollback" ]; then
+            [[ "$APPLY_RUN_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric successful apply run-id is required." >&2; exit 1; }
+            [[ "$ROLLBACK_ARTIFACT_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric private rollback artifact-id is required." >&2; exit 1; }
+          elif [ -n "$APPLY_RUN_ID" ] || [ -n "$ROLLBACK_ARTIFACT_ID" ]; then
+            echo "Apply-run rollback bindings are accepted only by rollback." >&2
+            exit 1
+          fi
+
       - name: Restore private Copernicus current cache for timed gate
-        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
@@ -74,7 +163,7 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Inspect timed UTC hour without exposing raw vectors
-        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
 
@@ -82,7 +171,7 @@ jobs:
         id: readiness
         shell: bash
         env:
-          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true) }}
+          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true) }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
           echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -91,9 +180,203 @@ jobs:
             echo "::notice title=Targeted supplement pending::The exact Copernicus supplement will be resolved after fresh DMI gap selection; nationwide Copernicus coverage is not required."
           fi
 
-  build-and-prepare:
+  trip-storage-readiness:
+    name: Check exact-head D1 trip-storage readiness
     needs: current-hour-readiness
-    if: (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)) && needs.current-hour-readiness.outputs.ready == 'true'
+    if: needs.current-hour-readiness.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      ready: ${{ steps.readiness.outputs.ready }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Determine exact-head D1 trip-storage readiness without failing the run
+        id: readiness
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
+        run: |
+          set -uo pipefail
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          if ! release_version="$(jq -er '.version | select(type == "string" and test("^4\\.0\\.[0-9]+$"))' version.json 2>/dev/null)"; then
+            echo "::notice title=Pages production deferred::version.json could not be validated; this run remains a green no-op."
+            exit 0
+          fi
+          requires_exact_d1=false
+          if [ "$release_version" = "4.0.311" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
+            requires_exact_d1=true
+          fi
+          if [ "$requires_exact_d1" != "true" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "The one-time 4.0.311 exact-D1 release interlock is not required for version $release_version."
+            exit 0
+          fi
+          if ! runs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-trip-storage.yml/runs?branch=main&status=completed&event=workflow_dispatch&per_page=100")"; then
+            echo "::notice title=Pages production deferred::Could not verify the exact-head D1 trip-storage deployment; this run remains a green no-op."
+            exit 0
+          fi
+          if ! matching_count="$(jq --arg sha "$EXPECTED_HEAD_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .head_branch == "main" and .conclusion == "success" and .event == "workflow_dispatch" and .display_title == "Deploy RavRadar trip storage [d1]")] | length' <<< "$runs_json")"; then
+            echo "::notice title=Pages production deferred::The D1 readiness response could not be validated; this run remains a green no-op."
+            exit 0
+          fi
+          if [ "$matching_count" -lt 1 ]; then
+            echo "::notice title=Pages production deferred::Deploy and verify trip storage in D1 mode on this exact main head, then dispatch normal production."
+            exit 0
+          fi
+          if ! node scripts/verify-trip-storage-edge.mjs; then
+            echo "::notice title=Pages production deferred::The live Edge contract is not exact 4.0.311 D1 mode; this run remains a green no-op."
+            exit 0
+          fi
+          if ! node scripts/verify-cloudflare-trip-gateway.mjs; then
+            echo "::notice title=Pages production deferred::The live Worker/registry contract could not be attested; this run remains a green no-op."
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+          echo "The exact source head and the live Edge/Worker backend have the required D1 contract."
+
+  inspect-candidate-g-one-time-gap:
+    name: Inspect and seal the one-time Candidate G gap reconstruction
+    needs: current-hour-readiness
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'inspect' && needs.current-hour-readiness.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      descriptor_sha256: ${{ steps.inspect.outputs.descriptor_sha256 }}
+      descriptor_artifact_id: ${{ steps.upload-descriptor.outputs.artifact-id }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Set up Python for deployed-state hydration
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Set up Node.js for sealed reconstruction inspection
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Hydrate the exact current public Candidate G target
+        run: python scripts/hydrate-deployed-weather.py
+        env:
+          RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
+          WEATHER_USER_AGENT: "RavRadar/4.0.311 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Download exact healthy pre-gap support artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: 9707010150
+          run-id: 33225493339
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/source-before
+
+      - name: Download exact post-gap support artifact
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: 9709446092
+          run-id: 33233545688
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/source-after
+
+      - name: Extract only the bound source bundles
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
+          test -s .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
+          mkdir -p \
+            .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live \
+            .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata \
+            .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live \
+            .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata
+          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
+            run-metadata/github-run.txt \
+            > .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
+            run-metadata/github-run.txt \
+            > .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          test -s .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          test -s .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          test -s .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          test -s .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          test "$(find .cache/candidate-g-gap-reconstruction/extracted-before -type f | wc -l)" -eq 2
+          test "$(find .cache/candidate-g-gap-reconstruction/extracted-after -type f | wc -l)" -eq 2
+
+      - name: Inspect, verify and seal the one-time reconstruction plan
+        id: inspect
+        run: >-
+          node scripts/one-time-candidate-g-gap-reconstruction.mjs
+          --inspect
+          --before .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          --after .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          --target data/live/conditions.json
+          --descriptor .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
+          --before-attestation .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          --after-attestation .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          --before-bundle .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
+          --after-bundle .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Refuse any non-descriptor inspection output
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
+          test "$(find .cache/candidate-g-gap-reconstruction -maxdepth 1 -type f | wc -l)" -eq 1
+
+      - name: Upload only the sanitized sealed inspection descriptor
+        id: upload-descriptor
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-g-gap-reconstruction-inspection-${{ github.run_id }}
+          path: .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
+
+  build-and-prepare:
+    needs: [current-hour-readiness, trip-storage-readiness]
+    if: (github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)) && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     permissions:
@@ -109,6 +392,16 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Set up Python preflight
         uses: actions/setup-python@v7
@@ -135,9 +428,236 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.310 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.311 (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Set up Node.js for one-time reconstruction mutation
+        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Verify exact sealed inspection artifact identity
+        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
+          INSPECTION_RUN_ID: ${{ inputs.candidate_g_gap_inspection_run_id }}
+          INSPECTION_ARTIFACT_ID: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          artifact_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${INSPECTION_ARTIFACT_ID}")"
+          test "$(jq -r '.id | tostring' <<< "$artifact_json")" = "$INSPECTION_ARTIFACT_ID"
+          test "$(jq -r '.name' <<< "$artifact_json")" = "candidate-g-gap-reconstruction-inspection-${INSPECTION_RUN_ID}"
+          test "$(jq -r '.expired | tostring' <<< "$artifact_json")" = "false"
+          test "$(jq -r '.workflow_run.id | tostring' <<< "$artifact_json")" = "$INSPECTION_RUN_ID"
+          test "$(jq -r '.workflow_run.head_branch' <<< "$artifact_json")" = "main"
+          inspection_head_sha="$(jq -r '.workflow_run.head_sha' <<< "$artifact_json")"
+          [[ "$inspection_head_sha" =~ ^[a-f0-9]{40}$ ]]
+          if [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ]; then
+            test "$inspection_head_sha" = "$EXPECTED_HEAD_SHA"
+          fi
+
+      - name: Download the exact sealed reconstruction descriptor
+        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
+          run-id: ${{ inputs.candidate_g_gap_inspection_run_id }}
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/inspection
+
+      - name: Verify the downloaded inspection artifact is descriptor-only
+        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
+          test "$(find .cache/candidate-g-gap-reconstruction/inspection -type f | wc -l)" -eq 1
+
+      - name: Verify exact successful apply rollback artifact identity
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APPLY_RUN_ID: ${{ inputs.candidate_g_gap_apply_run_id }}
+          ROLLBACK_ARTIFACT_ID: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          artifact_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ROLLBACK_ARTIFACT_ID}")"
+          test "$(jq -r '.id | tostring' <<< "$artifact_json")" = "$ROLLBACK_ARTIFACT_ID"
+          test "$(jq -r '.name' <<< "$artifact_json")" = "candidate-g-gap-reconstruction-rollback-${APPLY_RUN_ID}"
+          test "$(jq -r '.expired | tostring' <<< "$artifact_json")" = "false"
+          test "$(jq -r '.workflow_run.id | tostring' <<< "$artifact_json")" = "$APPLY_RUN_ID"
+          test "$(jq -r '.workflow_run.head_branch' <<< "$artifact_json")" = "main"
+          test "$(jq -r '.workflow_run.head_sha' <<< "$artifact_json")" = "$EXPECTED_HEAD_SHA"
+          run_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/runs/${APPLY_RUN_ID}")"
+          test "$(jq -r '.head_branch' <<< "$run_json")" = "main"
+          test "$(jq -r '.head_sha' <<< "$run_json")" = "$EXPECTED_HEAD_SHA"
+          test "$(jq -r '.event' <<< "$run_json")" = "workflow_dispatch"
+          test "$(jq -r '.status' <<< "$run_json")" = "completed"
+          test "$(jq -r '.conclusion' <<< "$run_json")" = "success"
+
+      - name: Download the exact private apply rollback checkpoint
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
+          run-id: ${{ inputs.candidate_g_gap_apply_run_id }}
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/rollback-operation
+
+      - name: Verify the downloaded rollback artifact is checkpoint-only
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/rollback-operation/compact-rollback.json
+          test "$(find .cache/candidate-g-gap-reconstruction/rollback-operation -type f | wc -l)" -eq 1
+
+      - name: Reconfirm current origin/main immediately before reconstruction mutation
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode != 'none'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Download exact healthy pre-gap support artifact for apply
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: 9707010150
+          run-id: 33225493339
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/source-before
+
+      - name: Download exact post-gap support artifact for apply
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        uses: actions/download-artifact@v8
+        with:
+          artifact-ids: 9709446092
+          run-id: 33233545688
+          github-token: ${{ github.token }}
+          path: .cache/candidate-g-gap-reconstruction/source-after
+
+      - name: Extract only the bound source bundles for apply
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
+          test -s .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
+          mkdir -p \
+            .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live \
+            .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata \
+            .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live \
+            .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata
+          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
+            run-metadata/github-run.txt \
+            > .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
+            project/data/live/conditions.json \
+            > .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
+            run-metadata/github-run.txt \
+            > .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          test -s .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          test -s .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          test -s .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          test -s .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          test "$(find .cache/candidate-g-gap-reconstruction/extracted-before -type f | wc -l)" -eq 2
+          test "$(find .cache/candidate-g-gap-reconstruction/extracted-after -type f | wc -l)" -eq 2
+
+      - name: Capture the exact pre-apply target for isolated rollback proof
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache/candidate-g-gap-reconstruction/transaction-proof
+          cp data/live/conditions.json .cache/candidate-g-gap-reconstruction/transaction-proof/pre-apply-conditions.json
+
+      - name: Apply the descriptor-bound one-time Candidate G reconstruction
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        run: >-
+          node scripts/one-time-candidate-g-gap-reconstruction.mjs
+          --apply
+          --before .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
+          --after .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
+          --target data/live/conditions.json
+          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
+          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
+          --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
+          --before-attestation .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
+          --after-attestation .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
+          --before-bundle .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
+          --after-bundle .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
+
+      - name: Refuse a missing or non-isolated rollback checkpoint
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
+          test "$(find .cache/candidate-g-gap-reconstruction/rollback -maxdepth 1 -type f | wc -l)" -eq 1
+
+      - name: Prove apply then direct rollback is exact on an isolated copy
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        shell: bash
+        run: |
+          set -euo pipefail
+          applied_target_sha256="$(sha256sum data/live/conditions.json | cut -d ' ' -f1)"
+          cp data/live/conditions.json .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json
+          node scripts/one-time-candidate-g-gap-reconstruction.mjs \
+            --rollback \
+            --target .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json \
+            --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json \
+            --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}" \
+            --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
+          cmp --silent \
+            .cache/candidate-g-gap-reconstruction/transaction-proof/pre-apply-conditions.json \
+            .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json
+          test "$(sha256sum data/live/conditions.json | cut -d ' ' -f1)" = "$applied_target_sha256"
+
+      - name: Upload compact private rollback before continuing production
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-g-gap-reconstruction-rollback-${{ github.run_id }}
+          path: .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
+          include-hidden-files: true
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Roll back exact post-apply state or causally clean the deployed descendant
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
+        run: >-
+          node scripts/one-time-candidate-g-gap-reconstruction.mjs
+          --rollback-dispatch
+          --target data/live/conditions.json
+          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
+          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
+          --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback-operation/compact-rollback.json
+
+      - name: Causally remove only the descriptor-bound reconstructed evidence
+        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'cleanup'
+        run: >-
+          node scripts/one-time-candidate-g-gap-reconstruction.mjs
+          --cleanup
+          --target data/live/conditions.json
+          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
+          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
 
       - name: Inspect verified Candidate G continuation recovery
+        if: github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none'
         id: candidate-g-recovery
         run: >-
           node scripts/restore-candidate-g-continuation.mjs
@@ -145,7 +665,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Download last verified healthy public artifact for poisoned Candidate G continuation
-        if: steps.candidate-g-recovery.outputs.required == 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-recovery.outputs.required == 'true'
         uses: actions/download-artifact@v8
         with:
           name: github-pages
@@ -154,7 +674,7 @@ jobs:
           path: .cache/candidate-g-recovery-artifact
 
       - name: Extract last verified healthy public artifact
-        if: steps.candidate-g-recovery.outputs.required == 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-recovery.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -163,7 +683,7 @@ jobs:
           tar -xf .cache/candidate-g-recovery-artifact/artifact.tar -C .cache/candidate-g-recovery-source
 
       - name: Restore only compact Candidate G continuation state
-        if: steps.candidate-g-recovery.outputs.required == 'true'
+        if: (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-recovery.outputs.required == 'true'
         run: >-
           node scripts/restore-candidate-g-continuation.mjs
           --source-root .cache/candidate-g-recovery-source
@@ -174,7 +694,7 @@ jobs:
           cp data/live/dmi-bulk-cache.json .cache/deployed-dmi-bulk-cache.json
 
       - name: Test Supabase persistence roundtrip
-        if: github.event_name == 'push' || inputs.force == true
+        if: github.event_name == 'push' || inputs.force == true || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup'))
         run: node scripts/test-supabase-persistence.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -184,10 +704,10 @@ jobs:
         id: preflight
         run: python scripts/check-weather-update.py
         env:
-          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true }}
+          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')) }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.310 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.311 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -207,17 +727,18 @@ jobs:
         run: npm run validate:source
 
       - name: Restore last verified Candidate G public fallback
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode != 'apply')
         id: candidate-g-public-fallback-cache
         uses: actions/cache/restore@v6
         with:
           path: .cache/candidate-g-last-ready-public
-          key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: candidate-g-last-ready-public-v2-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            candidate-g-last-ready-public-v2-
             candidate-g-last-ready-public-v1-
 
       - name: Stage audited last verified Candidate G public fallback
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode != 'apply')
         id: candidate-g-public-fallback-stage
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
@@ -231,14 +752,14 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Save last verified Candidate G public fallback
-        if: steps.preflight.outputs.should_run == 'true' && (steps.candidate-g-public-fallback-cache.outputs.cache-matched-key == '' || steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true')
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && (steps.candidate-g-public-fallback-cache.outputs.cache-matched-key == '' || steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true')
         uses: actions/cache/save@v6
         with:
           path: .cache/candidate-g-last-ready-public
-          key: candidate-g-last-ready-public-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: candidate-g-last-ready-public-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Inspect failed-run Candidate G gap checkpoint recovery
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')
         id: candidate-g-gap-checkpoint
         run: >-
           node scripts/restore-candidate-g-gap-checkpoint.mjs
@@ -247,7 +768,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Download verified failed-run Candidate G checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         uses: actions/download-artifact@v8
         with:
           name: ${{ steps.candidate-g-gap-checkpoint.outputs.source_artifact_name }}
@@ -256,7 +777,7 @@ jobs:
           path: .cache/candidate-g-gap-checkpoint-artifact
 
       - name: Extract only failed-run Candidate G conditions checkpoint
-        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -267,23 +788,24 @@ jobs:
           test -s .cache/candidate-g-gap-checkpoint-source/data/live/conditions.json
 
       - name: Restore only verified compact suffix from failed Candidate G run
-        if: steps.preflight.outputs.should_run == 'true' && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && steps.candidate-g-gap-checkpoint.outputs.required == 'true'
         run: >-
           node scripts/restore-candidate-g-gap-checkpoint.mjs
           --source-root .cache/candidate-g-gap-checkpoint-source
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Restore latest compact Candidate G continuation checkpoint
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')
         uses: actions/cache/restore@v6
         with:
           path: .cache/candidate-g-continuation-checkpoint
-          key: candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: candidate-g-continuation-checkpoint-v2-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            candidate-g-continuation-checkpoint-v2-
             candidate-g-continuation-checkpoint-v1-
 
       - name: Apply newer compact Candidate G continuation checkpoint
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')
         run: >-
           node scripts/candidate-g-continuation-checkpoint.mjs
           --restore
@@ -406,7 +928,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.310 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.311 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -547,8 +1069,19 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.310 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.311 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
+
+      - name: Refuse reconstruction deploy without a successful fresh weather rebuild
+        if: steps.preflight.outputs.should_run == 'true' && github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
+        shell: bash
+        env:
+          WEATHER_OUTCOME: ${{ steps.weather.outcome }}
+        run: |
+          if [ "$WEATHER_OUTCOME" != "success" ]; then
+            echo "The one-time reconstruction requires a successful fresh weather rebuild; hydrated fallback deployment is forbidden."
+            exit 1
+          fi
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
         if: steps.preflight.outputs.should_run == 'true'
@@ -570,7 +1103,7 @@ jobs:
         run: node scripts/generate-public-conditions.mjs
 
       - name: Build compact Candidate G continuation checkpoint
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')
         run: >-
           node scripts/candidate-g-continuation-checkpoint.mjs
           --save
@@ -578,11 +1111,11 @@ jobs:
           --checkpoint .cache/candidate-g-continuation-checkpoint/checkpoint.json
 
       - name: Save compact Candidate G continuation checkpoint before final gates
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')
         uses: actions/cache/save@v6
         with:
           path: .cache/candidate-g-continuation-checkpoint
-          key: candidate-g-continuation-checkpoint-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: candidate-g-continuation-checkpoint-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Audit actual Candidate G public runtime before deploy
         if: steps.preflight.outputs.should_run == 'true'
@@ -616,6 +1149,24 @@ jobs:
       - name: Validate updated weather cache
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: npm run validate:data
+
+      - name: Verify active trip-storage quality contract without creating data
+        if: steps.preflight.outputs.should_run == 'true'
+        run: node scripts/verify-trip-storage-edge.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          EXPECTED_TRIP_STORAGE_MODE: d1
+
+      - name: Reconfirm current origin/main before protected writes and Pages artifact
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Atomically promote the validated point candidate in central admin storage
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
@@ -677,6 +1228,17 @@ jobs:
           path: RavRadar-support-${{ github.run_number }}.zip
           retention-days: 14
           if-no-files-found: error
+
+      - name: Reconfirm current origin/main immediately before protected admin sync
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Sync protected admin data to Supabase
         if: steps.preflight.outputs.should_run == 'true'
@@ -746,7 +1308,8 @@ jobs:
 
   geometry-v2-national:
     name: Acquire private national GeoDanmark geometry-v2 source
-    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true && inputs.ravscore_active_shadow != true
+    needs: current-hour-readiness
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true && inputs.ravscore_active_shadow != true
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -1049,7 +1612,8 @@ jobs:
 
   ravscore-active-shadow:
     name: Audit fallback-compatible 210/673 Candidate G public shadow
-    if: github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
+    needs: current-hour-readiness
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -1083,7 +1647,8 @@ jobs:
 
   geometry-v2-pilot:
     name: Run GeoDanmark geometry-v2 pilot
-    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && inputs.ravscore_active_shadow != true
+    needs: current-hour-readiness
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_pilot == true && inputs.ravscore_active_shadow != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -1206,12 +1771,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     permissions:
+      contents: read
       pages: write
       id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/checkout@v7
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5

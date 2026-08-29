@@ -1,5 +1,24 @@
 # AI Knowledge Base – RavRadar
 
+## DEC-0109 – afledt rekonstruktion er en særskilt evidensklasse
+
+- Et komplet aktuelt vejrdatasæt kan godt have ufuldstændig Candidate G-memory; aktuelle vejrdata og 48-timers transportbevis er forskellige sandheder.
+- Den eneste godkendte rekonstruktion er incident `RRGAP-2026-08-29-CANDIDATE-G-01`. Den bruger lineær interpolation af allerede afledt signeret kystnormal `strength` mellem eksakte målte ankre. Det gør ikke prøven målt og siger intet nyt om rå strøm, vejr, bølger, vandstand eller surfzonen.
+- Målt state er schema 2.0.0. State med levende rekonstrueret prøve er schema 2.1.0 og skal bære trust helt ud i mode, diagnostik, startup/detaljer, manifest/hash og turbinding. Ældre/ukendt kode skal afvise den fail-closed.
+- Rekonstrueret transportmemory kan være teknisk READY, men `calibrationEligible=false` og `hardObservedOuttransportEligible=false`. En rekonstrueret passage af +10/-8/13-timersmekanikken er ikke observeret bevis for faktisk udtransport.
+- Inspect er read-only og descriptorforseglet. Apply er source-/mål-CAS-bundet og skriver privat rollback først. Cleanup fjerner kun incidentets syntetiske prøver, bevarer nyere målinger og vender tilbage til schema 2.0/warmup.
+- Last-verified offentlig nødvisning er målt-only. Ture fra nødvisning eller rekonstrueret score gemmes som erfaring, men må aldrig indgå i kalibrering.
+- Fravær af de nye trustfelter er ikke bevis for measured-only. Aktive/pending schema-v2-ture fra før 4.0.311 bevares som `ravscore-evidence-trust-unattested` med `calibrationEligible=false`; migrationen må ikke slette brugerens tur eller lade den fail-open til kalibrering.
+- Allerede persistérede pre-4.0.311 schema-v2-observationer backfilles, omskrives eller slettes ikke. Prediction-/kalibreringsforbrugeren er den konservative migrationsgrænse: en række kan kun medtages ved `calibration_features.appVersion >= 4.0.311`, eksplicit `calibration_eligible=true` og eksakt attesteret `data_quality_flags=[]`; alt andet udelukkes lokalt uden databaseændring.
+- Tripmigration/readback må kun se en eksplicit server-side bladprojektion. `select=*`, hele fri-form-JSON, lokation/GPS, geohash/UTM, rå U/V, fri tekst/billeder og ukendte/private ekstrakolonner må ikke komme ind i runner-memory. Owner-id bruges kun kortvarigt til HMAC og logges ikke.
+- Ti D1-shards deler én atomisk global registry for id/ejer/hash/målshard. Ejer-sletning skriver en global tombstone før rows/registry fjernes, så samtidige og senere writes stoppes.
+- Efter capacity/CAS identificerer current-run Edge-predeploy-intent installationstypen. Existing D1 bruger 20-minutters lease/30-minutters max, femsekunders prober, dobbeltattestation, drain, 600 sekunders restlease og samlet syvminutters Worker-gate; partial Edge går D1 roll-forward. Fresh partial Edge før activation går exact-main-bundet til Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- `calibration_eligible=true` er ikke et serverbevis mod signeret public manifest. Det er en udelukkelseslås, ikke empirisk evidens, og må ikke åbne global koefficientlæring.
+- Den næste samlede RavScore-model skal bevare provenance, trust, migration, tripbinding og cleanup, men interpolation må ikke blive dens normale missingregel.
+- Den næste models nødvej skal være målt-only og atomisk 210/673 med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
+
+Status 2026-08-29: kun lokal 4.0.311-kildekandidat; ingen apply eller produktionsverifikation endnu.
+
 ## Produktions- og driftsverificeret 4.0.310 – ekstern og intern stilhedsgrænse er bevidst forskellige
 
 4.0.309's første virkelige redningsgren blev udløst af vagt `33246369618` kl. 09:49 UTC og bestilte produktion `33246376992`. Da den foregående produktionsstart lå cirka en time tidligere, var den fælles 45-minuttersgrænse for konservativ som vedvarende erstatning for helt manglende native schedules.

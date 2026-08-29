@@ -1,3 +1,15 @@
+## 2026-08-29 – lokal 4.0.311-kandidat til én ejerautoriseret Candidate G-rekonstruktion
+
+- Ejeren godkendte udtrykkeligt én undtagelse til no-backfill-reglen for morgenhullet og præciserede, at kvalitet, forskning og slutvalidering ikke må reduceres af Codex-kvote.
+- Incidentet er låst som `RRGAP-2026-08-29-CANDIDATE-G-01`. Kun de eksakte supportartifacts før/efter og deres allerede afledte signerede kystnormale styrke må bruges; vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter og private payloads er forbudt.
+- Den lokale kandidat skelner schema 2.0 målt fra schema 2.1 rekonstrueret, fører trust gennem state/public payloads, undertrykker rekonstruktionsafhængig hard-outflow og markerer ture ikke-kalibrerbare.
+- Inspect/apply/rollback/cleanup er afgrænset med descriptor-SHA, source-/mål-CAS, privat før-mutation-rollback og målt-only last-verified fallback. Almindelig missing-/nøddriftsadfærd er uændret uden for incidentet.
+- Tværgående review fandt og lukkede lokale Candidate G-/trip-storage-risici: hele active manifest bindes til ture; legacy schema-v2 bevares som uattesteret/non-calibration; predictionforbrugeren er fail-closed; migration/readback bruger kun en eksplicit server-side bladprojektion; D1 bruger global atomisk registry og owner-erasure tombstones.
+- Runner-loss-gennemgangen tilføjede installationstype-intents umiddelbart før første Edge-deploy efter capacity/CAS. Existing D1 bruger maintenance-kapabel Edge, repair-intent og 20-minutters lease med 30-minutters max; femsekunders prober, dobbeltattestation, drain, 600 sekunders restlease og én syvminutters Worker-gate beskytter cutover. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- DEC-0109, aktive krav, issues, status, håndbøger og AI-checkpoints registrerer kandidaten. Der er endnu ingen commit, PR, merge, inspect/apply, live-storagekørsel, produktion eller offentlig 4.0.311-verifikation.
+- Den samlede næste model under DEC-0102 fortsætter separat efter recovery og skal bevare trust-/provenance-/trip-/cleanupkontrakten uden at gøre interpolation til en normal modelregel. Dens nøddrift skal være målt-only og atomisk 210/673, højst 72 timer og kortere end eventuelt forecastudløb, med eksakt model/state/hash, DA/DE/EN-advarsel, ikke-kalibrerbare ture og automatisk frisk primary.
+- Et åbent P2-forhold er bevaret: `calibration_eligible` er klientattesteret og internt konsistent, men ikke serverbevist mod signeret public manifest. Det er ikke empirisk evidens; global koefficientlæring forbliver låst, indtil server-side snapshotbinding findes.
+
 ## 2026-08-29 – 4.0.310 sænker kun ekstern stilhedsgrænse
 
 - Den tredje automatiske 4.0.309-vagt `33246369618` ramte kl. 09:49 UTC efter fortsat manglende native schedules og bestilte normal redningsproduktion `33246376992`. Den bestod hele kæden og publicerede komplet `rr-20260829095610-210` med reference 09:00 UTC. 45-minuttersgrenen virker, men gav cirka en time mellem produktionsstarterne.

@@ -51,5 +51,11 @@ for (const marker of [
   'coordinatesIncluded: false',
   'privateReplayPayloadIncluded: false',
 ]) assert.ok(audit.includes(marker), `Shadowauditen mangler ${marker}`);
-assert.match(workflow, /build-and-prepare:[\s\S]{0,220}inputs\.ravscore_active_shadow != true/);
+const buildStart = workflow.indexOf('  build-and-prepare:');
+const buildSteps = workflow.indexOf('\n    steps:', buildStart);
+assert.ok(buildStart >= 0 && buildSteps > buildStart, 'Det almindelige buildjob kunne ikke afgrænses');
+assert.ok(
+  workflow.slice(buildStart, buildSteps).includes('inputs.ravscore_active_shadow != true'),
+  'Det almindelige buildjob skal fortsat udelukke den private RavScore-shadow.',
+);
 console.log('Fallback-kompatibel 210/673 Candidate G public shadow-workflow: bestået.');

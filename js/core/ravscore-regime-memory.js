@@ -51,6 +51,59 @@ export const CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY = Object.freeze({
   evidenceSemantics: 'DERIVED_COAST_NORMAL_STRENGTH_ONLY',
 });
 
+// DEC-0109 permits exactly one owner-authorized reconstruction of the compact,
+// already derived coast-normal transport strength. The marker is intentionally
+// carried on the individual synthetic samples: dropping it would make derived
+// evidence indistinguishable from a verified DMI/Copernicus sample.
+export const ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID =
+  'RRGAP-2026-08-29-CANDIDATE-G-01';
+export const ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID = 'DEC-0109';
+export const RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE =
+  'OWNER_AUTHORIZED_LINEAR_INTERPOLATION_DERIVED_STRENGTH';
+export const RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS =
+  'ACTIVE_RECONSTRUCTED_DERIVED_EVIDENCE';
+export const RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD =
+  'LINEAR_INTERPOLATION_OF_DERIVED_SIGNED_TRANSPORT_STRENGTH';
+export const RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION =
+  'RECONSTRUCTED_DERIVED_NOT_MEASURED';
+
+export function assertCandidateGReconstructionTrustRolloff({
+  previousTrust,
+  activeReconstructedPartCount,
+  generatedAt,
+} = {}) {
+  if (previousTrust?.status !== RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS) return false;
+  const sealed = previousTrust?.schemaVersion === 1
+    && previousTrust.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+    && previousTrust.decisionId === ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID
+    && previousTrust.method === RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD
+    && previousTrust.evidenceClassification === RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION
+    && previousTrust.calibrationEligible === false
+    && previousTrust.hardObservedOuttransportEligible === false
+    && /^[a-f0-9]{64}$/.test(String(previousTrust.descriptorSha256 || ''))
+    && Number.isInteger(previousTrust.affectedPartCount)
+    && previousTrust.affectedPartCount >= 1
+    && previousTrust.affectedPartCount <= 673
+    && Number.isInteger(previousTrust.syntheticSampleCount)
+    && previousTrust.syntheticSampleCount >= previousTrust.affectedPartCount
+    && Number.isFinite(Date.parse(String(previousTrust.activeUntil || '')));
+  if (!sealed) throw new Error('Candidate G previous reconstructed evidence trust is not sealed');
+  if (Number(activeReconstructedPartCount) > 0) return true;
+  const generatedAtMs = Date.parse(String(generatedAt || ''));
+  if (!Number.isFinite(generatedAtMs)) {
+    throw new Error('Candidate G reconstruction rolloff requires a valid generatedAt');
+  }
+  if (generatedAtMs < Date.parse(previousTrust.activeUntil)) {
+    throw new Error('Candidate G reconstructed evidence disappeared before its sealed activeUntil');
+  }
+  return false;
+}
+
+export function isReconstructedTransportEvidence(item) {
+  return item?.incidentId === ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+    && item?.provenance === RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE;
+}
+
 function canonicalTime(value) {
   const time = new Date(value);
   return Number.isFinite(time.getTime()) ? time.toISOString() : null;
@@ -110,11 +163,41 @@ function normalizedTransportEvidence(evidence, referenceTime, windowHours) {
     const time = canonicalTime(item?.time);
     if (!time) continue;
     const timeMs = Date.parse(time);
-    if (timeMs < cutoffMs || timeMs > referenceMs || byTime.has(time)) continue;
+    if (timeMs < cutoffMs || timeMs > referenceMs) continue;
+    const hasTrustMarker = item?.incidentId !== undefined || item?.provenance !== undefined;
+    const reconstructed = isReconstructedTransportEvidence(item);
+    if (hasTrustMarker && !reconstructed) {
+      throw new Error('bounded current transport memory received an invalid reconstruction marker');
+    }
     const strength = item?.strength === null
       ? null
       : clamp(finiteNumber(item?.strength, Number.NaN), -1, 1);
-    if (strength === null || Number.isFinite(strength)) byTime.set(time, { time, strength });
+    if (reconstructed && !Number.isFinite(strength)) {
+      throw new Error('bounded current transport memory requires finite reconstructed strength');
+    }
+    if (strength === null || Number.isFinite(strength)) {
+      const normalized = reconstructed
+        ? {
+          time,
+          strength,
+          provenance: RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE,
+          incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+        }
+        : { time, strength };
+      const existing = byTime.get(time);
+      if (existing) {
+        if (existing.strength !== normalized.strength) {
+          throw new Error('bounded current transport memory received conflicting evidence at one time');
+        }
+        // A duplicate plain row must never launder an already reconstructed
+        // sample. Equal duplicates retain the strictest trust classification.
+        if (isReconstructedTransportEvidence(existing) || reconstructed) {
+          byTime.set(time, isReconstructedTransportEvidence(existing) ? existing : normalized);
+        }
+        continue;
+      }
+      byTime.set(time, normalized);
+    }
   }
   return [...byTime.values()].sort((left, right) => Date.parse(left.time) - Date.parse(right.time));
 }

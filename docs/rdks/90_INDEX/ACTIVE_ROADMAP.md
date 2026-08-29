@@ -1,5 +1,21 @@
 # RavRadar - aktivt roadmap
 
+## P0 lokal 4.0.311-kandidat – afgrænset morgenhul og datasikker D1-udrulning
+
+- [x] Lås `RRGAP-2026-08-29-CANDIDATE-G-01` til eksakte artifacts og lineær interpolation af allerede afledt signeret kystnormal strength; interpolér ingen vejrdata, rå U/V, koordinater, geometri eller private payloads.
+- [x] Før schema 2.1/trust gennem state, public payloads, fallback, manifest, trips og observationer; udeluk rekonstruktion/nødvisning og uattesteret legacy fra kalibrering og observeret hard-outflow.
+- [x] Implementér CAS-bundet inspect/apply/direct rollback/kausal cleanup, private rollbackartifacts, cachekarantæne og obligatorisk frisk normal 673-dels genberegning.
+- [x] Luk storage/privacy lokalt med eksplicit server-side bladprojektion/readback, global atomisk D1-registry, owner-erasure tombstones og no-mutation legacy replay.
+- [x] Lås cutover med installationstype-intent efter capacity/CAS, 20-/30-minutters lease, femsekunders Edge-prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Route partial existing Edge til D1 roll-forward og partial fresh Edge til exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation; uden intent ingen recoverymutation.
+- [x] Registrér næste models bindende målt-only, atomiske 210/673-nøddrift: eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
+- [ ] Bestå afsluttede målrettede suites og fuld `validate:source` på kandidatens eksakte PR-head; luk version/RDKS/Markdown-/webhåndbogsidentitet og særskilt geodatadiff.
+- [ ] Merge først efter grøn exact-head; kør `[d1]`-backenddeploy, read-only inspect, CAS-bundet apply, frisk normal produktion, fuld validate/releasegate og offentlig desktop/mobil/210/673-verifikation.
+- [ ] Bevar P2-låsen: aktivér ingen global koefficientlæring, før schema-v2/snapshot er serverbevist mod signeret public manifest.
+- [ ] Efter den akutte 4.0.311-genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
+- [ ] Erstat migrationsrunnerens mutable offset-pagination med stabil keyset-/snapshotpagination; bevar indtil da obligatorisk idempotent slutreconciliation og retry som reparationsvej.
+
+Indtil alle åbne punkter er grønne, er 4.0.311 kun lokal kandidat. Offentlig sandhed er fortsat 4.0.310 og den eksisterende målte nødvisning. Se DEC-0109 og DEC-0102-addendum.
+
 ## Produktions- og driftsverificeret P0 4.0.310 – ekstern overtagelse efter ét manglende interval
 
 - [x] Bevis den aktive 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
@@ -105,15 +121,15 @@ Se DEC-0086/0087.
 
 P1-oversættelse og Spørg RavRadar kan genoptages efter konkret ejerscope. Se DEC-0084.
 
-## P0 afsluttet – 4.0.287 EU-turlager og Supabase-rollback
+## Historisk afsluttet P0 – 4.0.287 EU-turlager og oprindelig Supabase-rollback
 
 - [x] Vælg endelig gratis normalarkitektur: Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards.
 - [x] Hold rå identitet og præcis lokation ude af Cloudflare gennem HMAC-pseudonymisering og streng feltallowlist.
 - [x] Implementér privat signerede writes/reads, idempotens, privat turlog og ejerens slettevej.
-- [x] Implementér migrations-cutover før/efter, daglig kapacitetskontrol og eksplicit manuel Supabase-rollback.
+- [x] Implementér 4.0.287's migrations-cutover før/efter, daglig kapacitetskontrol og daværende eksplicitte Supabase-rollback; rollbackdelen afløses af den aktive 4.0.311-kandidat.
 - [x] Bevar eksisterende Supabase-rækker som migrationskilde/rollback uden normal dual-write.
 - [x] Opret dedikeret Cloudflare-konto, mindst-mulige deploy-/audit-tokens og krypterede GitHub-secrets gennem godkendt brugerkanal; verificér DPA/self-serve-kontrakt uden at vise værdier.
-- [x] Bestå infrastrukturens exact-head/merge og deployér Edge grønt i eksplicit Supabase-rollback.
+- [x] Bestå 4.0.287-infrastrukturens exact-head/merge og deployér Edge grønt i den daværende Supabase-rollback.
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér alle ti EU-shards og deploy Worker; stop sikkert før migration/Edge på første health-udbredelsesforsinkelse.
 - [x] Bestå bounded-retry-opfølgningens exact-head `33019805663`, merge PR #166 som `2d12c085`, privat Worker-grænse, idempotent 4/4-migration og D1-aktivering i `33019868542`.
 - [x] Bestå fuld frisk produktion `33019856228`, Pages-job `98351206091`, offentlig 210/673/420/2.100-verifikation og read-only kapacitetsmonitor `33021364240`.

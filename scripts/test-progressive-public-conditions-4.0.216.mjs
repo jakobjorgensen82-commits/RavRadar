@@ -28,6 +28,8 @@ let mismatchRejected=false;try{mergeConditionDetails(startup,{...details,dataset
 if(!mismatchRejected)throw new Error('Detaljer fra et andet datasæt blev ikke afvist.');
 let timeMismatchRejected=false;try{mergeConditionDetails(startup,{...details,productionReferenceAt:'2026-08-15T12:00:00.000Z'});}catch{timeMismatchRejected=true;}
 if(!timeMismatchRejected)throw new Error('Detaljer fra et andet produktionstidspunkt blev ikke afvist.');
+let trustMismatchRejected=false;try{mergeConditionDetails(startup,{...details,ravScoreEvidenceTrust:{...details.ravScoreEvidenceTrust,unexpected:true}});}catch{trustMismatchRejected=true;}
+if(!trustMismatchRejected)throw new Error('Detaljer med ændret eller udvidet RavScore-evidenstillid blev ikke afvist.');
 const startText=compactJson(startup),detailsText=compactJson(details),manifest=buildPublicManifest(full,startText,detailsText);
 if(manifest.conditionDetailsPath!=='./public-condition-details.json'||manifest.publicConditionDetailsBytes!==Buffer.byteLength(detailsText)||manifest.productionReferenceAt!==generatedAt||manifest.ravScoreAvailability?.allZonesActive!==false)throw new Error('Manifestet mangler detaljepakken, produktionstidspunktet eller Candidate G-tilgængeligheden.');
 console.log(`OK: progressiv offentlig runtime bevarer funktioner og reducerer syntetisk startpayload fra ${Buffer.byteLength(detailsText)} til ${Buffer.byteLength(startText)} bytes.`);
