@@ -6,6 +6,7 @@
 - GitHubs interne vagt beholder 45 minutter. Aktiv/queued produktion, frisk runhistorik, friskt manifest, begge concurrencygrupper og alle data-/releasegates bevares.
 - Candidate G, RavScore, DMI/Copernicus-scoreinput, state/cache/recovery, geometri, punkter og faktiske vejrdata er urørte; ingen historik opfindes eller interpoleres. Se DEC-0108.
 - Målrettede boundary-/workflowtests, RDKS, begge håndbøger, releaseversion, hele lokale `scripts/validate-source.ps1` og releasegate består. Særskilt geodatadiff viser kun topversion 4.0.309 → 4.0.310.
+- PR #222 bestod exact-head `33247789054` på `63ab1209`, blev merged som `792648c3`, og post-merge-produktion `33247839121` publicerede komplet `rr-20260829103233-210` efter alle gates. Det automatiske eksterne run `33248692042` bestod den mergede 15-minutterskontrol og bestilte præcis én normal produktion `33248699516`; ejeren vurderede dette som tilstrækkeligt levende driftsbevis og fravalgte fortsat trin-for-trin-overvågning.
 
 ## 2026-08-29 – 4.0.309 lukker total GitHub-schedulerstilhed eksternt
 

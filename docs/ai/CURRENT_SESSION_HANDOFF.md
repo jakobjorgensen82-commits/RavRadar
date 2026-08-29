@@ -1,6 +1,6 @@
 # RavRadar - aktuelt Codex-handoff
 
-## KILDEKANDIDAT P0 – 2026-08-29 – 4.0.310 hurtigere ekstern overtagelse
+## PRODUKTIONS- OG DRIFTSVERIFICERET P0 – 2026-08-29 – 4.0.310 hurtigere ekstern overtagelse
 
 - 4.0.309 er produktions-/driftsverificeret gennem PR #221/exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og ét aktivt cron-job, id `8348098`.
 - De første automatiske vagter `33245204517`/`33245798817` var korrekte no-ops ved friskt manifest. Intet native produktionsschedule blev oprettet omkring 09:29 UTC.
@@ -8,7 +8,8 @@
 - Aggregeret offentlig eftermåling viser 0/673 memory-ready, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer. Aktuelt vejr er genoprettet, men morgenens historik er ikke backfillet; kl. 15-ETA er forkastet. Uden nye huller er tidligste realistiske READY første færdige produktion omkring 2026-08-31 kl. 06.15–06.30 dansk tid.
 - 4.0.310 sænker kun `external_watchdog=true` til mere end 15 minutters gammel runhistorik + gammelt manifest uden aktiv/queued produktion. GitHubs interne vagt beholder 45 minutter.
 - Alle current-hour-, DMI/Copernicus-, 210/673-, Candidate G-, validate-, release-, concurrency- og deploygates består. Ingen kunstig/interpoleret historik og ingen model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108.
-- Før-redningsproduktionen og lokal validering er lukket; exact-head, merge, post-merge-produktion og automatisk 15-minuttersbevis lukkes nu på Sol/Ekstra høj.
+- PR #222 bestod exact-head `33247789054` på `63ab1209`, blev merged som `792648c3`, og post-merge-produktion `33247839121` publicerede komplet 4.0.310/`rr-20260829103233-210` efter alle gates.
+- Automatisk cron-run `33248692042` på den mergede kode bestod 15-minutterskontrollen og produktionsdispatch og oprettede præcis én normal produktion `33248699516`. Ejeren vurderede dette som tilstrækkeligt levende bevis og bad om ikke at fortsætte trin-for-trin-overvågning.
 
 ## KILDEKANDIDAT P0 – 2026-08-29 – 4.0.309 ekstern schedulerstilhed
 

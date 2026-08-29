@@ -1,6 +1,9 @@
 # Current truth – gældende projektviden
 
-## 4.0.310-kandidat – ekstern overtagelse efter ét manglende interval
+## Produktions- og driftsverificeret 4.0.310 – ekstern overtagelse efter ét manglende interval
+
+- PR #222 bestod exact-head `33247789054` på `63ab1209f9dbaadfb347fcb6e4577ccd776d4489`, blev merged som `792648c3b179afc0a222ad8f0be54e85ae2aa824`, og post-merge-produktion `33247839121` bestod frisk runtime, fuld validering, releasegate, artifact og Pages. Offentlig 4.0.310 er komplet som `rr-20260829103233-210` med 210 zoner og 673 kystdele.
+- Det automatiske eksterne kald `33248692042` kom kl. 10:49:07 UTC på den mergede kode efter fortsat fravær af native produktionsschedule. Både freshnesskontrollen og `Dispatch one production after verified silence` bestod; præcis én normal produktion `33248699516` blev oprettet kl. 10:49:20 UTC på samme mergecommit. Ejeren vurderede dette kombineret med den allerede grønne post-merge-produktion som tilstrækkeligt levende driftsbevis og fravalgte fortsat trin-for-trin-overvågning af den nye kørsel.
 
 - 4.0.309's første virkelige 45-minuttersgren blev bevist kl. 09:49 UTC: ekstern vagt `33246369618` fandt samtidig gammel produktionshistorik og gammelt manifest og bestilte normal redningsproduktion `33246376992`. Produktionen bestod current-hour, målrettet Copernicus, komplet 210/673, Candidate G-runtimeaudit, fuld validering, releasegate og Pages og publicerede `rr-20260829095610-210` med reference 09:00 UTC.
 - En efterfølgende offentlig, aggregeret kontrol af samme datasæt viser 0/673 memory-ready dele, 673 `WINDOW_INCOMPLETE` og kun 5–12 af de krævede 48 sammenhængende timer. Det aktuelle vejr er komplet, og den nye suffix er sammenhængende, men morgenens mistede historik blev ikke efterfyldt; den tidligere forventning om nøddriftsophør omkring kl. 15 dansk tid er derfor forkastet. Uden flere huller er tidligste realistiske fulde READY cirka 2026-08-31 kl. 06.15–06.30 dansk tid efter første afsluttede produktion over 48 timer.

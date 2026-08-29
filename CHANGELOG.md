@@ -2,6 +2,7 @@
 
 - 4.0.309-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992` efter fortsat native schedulerstilhed og beviste, at 45 minutter kunne give cirka en time mellem produktionsstarterne.
 - Sænker kun det eksplicitte eksterne `external_watchdog=true` til mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest. GitHubs interne vagt beholder 45 minutter.
+- PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121`, offentlig `rr-20260829103233-210` og automatisk 15-minuttersdispatch `33248692042` → `33248699516` er grønne.
 - Bevarer aktiv-run-/friskhedsblokering, concurrency, normal `force=false` og alle current-hour-, DMI/Copernicus-, 210/673-, Candidate G-, validate-, release- og deploygates.
 - Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring og ingen kunstig/interpoleret historik. Se DEC-0108 og `CHANGELOG-4.0.310.md`.
 
