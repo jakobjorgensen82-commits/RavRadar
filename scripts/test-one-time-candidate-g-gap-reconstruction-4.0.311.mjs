@@ -51,10 +51,35 @@ const deepKeys = value => {
   if (!value || typeof value !== 'object') return [];
   return Object.entries(value).flatMap(([key, child]) => [key, ...deepKeys(child)]);
 };
-const spawnOneTimeCli = args => spawnSync(process.execPath, [
-  path.resolve('scripts/one-time-candidate-g-gap-reconstruction.mjs'),
-  ...args,
-], { cwd: process.cwd(), encoding: 'utf8' });
+const spawnOneTimeCli = (args, { githubActions = false } = {}) => {
+  const env = { ...process.env };
+  if (githubActions) env.GITHUB_ACTIONS = 'true';
+  else delete env.GITHUB_ACTIONS;
+  return spawnSync(process.execPath, [
+    path.resolve('scripts/one-time-candidate-g-gap-reconstruction.mjs'),
+    ...args,
+  ], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    env,
+  });
+};
+
+const annotatedKnownFailure = spawnOneTimeCli([], { githubActions: true });
+assert.notEqual(annotatedKnownFailure.status, 0);
+assert.equal(annotatedKnownFailure.stderr, '');
+assert.equal(
+  annotatedKnownFailure.stdout.trim(),
+  '::error title=Candidate G one-time reconstruction::ONE_TIME_GAP_ARGUMENTS_MISSING',
+);
+const annotatedUnknownFailure = spawnOneTimeCli(['--private-value'], { githubActions: true });
+assert.notEqual(annotatedUnknownFailure.status, 0);
+assert.equal(annotatedUnknownFailure.stderr, '');
+assert.equal(
+  annotatedUnknownFailure.stdout.trim(),
+  '::error title=Candidate G one-time reconstruction::ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE',
+);
+assert.doesNotMatch(annotatedUnknownFailure.stdout, /private-value/);
 
 const sealedRolloffTrust = {
   schemaVersion: 1,
@@ -255,9 +280,13 @@ const cli = spawnOneTimeCli([
   '--before-bundle', beforeBundlePath,
   '--after-bundle', afterBundlePath,
   '--github-output', githubOutputPath,
-]);
+], { githubActions: true });
 assert.equal(cli.status, 0, cli.stderr || cli.stdout);
 assert.equal(cli.stderr, '');
+assert.match(
+  cli.stdout,
+  new RegExp(`^::notice title=Candidate G one-time reconstruction inspection::descriptor_sha256=${inspected.descriptorSha256};affected_part_count=673;synthetic_sample_count=1338;cadence_1h=665;cadence_3h=8\\r?\\n`),
+);
 assert.doesNotMatch(cli.stdout, /fixture-|"dataset|"sources|runId|artifactId|"strength"/i);
 const githubOutput = await fs.readFile(githubOutputPath, 'utf8');
 assert.deepEqual(githubOutput.trim().split(/\r?\n/).map(line => line.split('=')[0]), [

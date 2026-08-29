@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.314 – luk sourcegate-hotfix før engangsrekonstruktionen
+## P0 4.0.314 – luk sanitiseret inspectdiagnostik før engangsrekonstruktionen
 
 - [x] Luk 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`.
 - [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT` og uden mutation.
@@ -13,9 +13,13 @@
 - [x] Fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
 - [x] Bestå to uafhængige hotfixrevisioner uden blocker.
 - [x] Hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og korrekt no-op push `33274505196`.
-- [ ] Docs-checkpoint exact-head, merge og korrekt no-op push.
-- [ ] Helt grøn exact-main 4.0.314-D1-backend på den endelige docs-synkroniserede merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
-- [ ] Ny inspect/CAS, apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+- [x] Docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og korrekt no-op push `33275147023`.
+- [x] Helt grøn exact-main 4.0.314-D1 `33275218540`/`99160622956` på `9291250c` inklusive begge syncs, slutreconciliation og slutattestation.
+- [x] Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen før descriptorupload, mutation, build og Pages.
+- [x] Allowlist `ONE_TIME_GAP_*` som fejlannotation, maskér al anden fejltekst og eksponér kun descriptor-SHA plus faste optællinger ved succes; målrettet 210/673-black-box-test er grøn.
+- [x] Reproducer PR #230's første CI-stop under nedarvet `GITHUB_ACTIONS=true`, isolér testmiljøerne og bestå 210/673-regressionen i begge tilstande uden runtimeændring.
+- [ ] Diagnostikhotfix exact-head/merge/no-op, derefter nyt exact-main D1 på den nye final-SHA.
+- [ ] Ny inspect med sanitiseret fejlkode, evidensbaseret årsagslukning, CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
 
 ## Historisk P0 lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet sikkert

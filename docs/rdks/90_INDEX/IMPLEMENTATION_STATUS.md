@@ -1,6 +1,6 @@
-# Implementeringsstatus – 4.0.314 source merged; same-version sourcegate-hotfix
+# Implementeringsstatus – 4.0.314 diagnostikhotfix efter sikkert inspect-stop
 
-## P0 – afteranker source merged; productionstestgate rettes; datahullet stadig åbent
+## P0 – D1 grøn; inspect stoppet før descriptor; datahullet stadig åbent
 
 - [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11` og korrekt no-op push `33269584236`.
 - [x] Bestå hele exact-main D1-run `33269631305`/job `99145677813`, inklusive begge syncs, slutreconciliation og afsluttende Edge/Worker/registry/SQL.
@@ -16,9 +16,13 @@
 - [x] Bestå ny fuld lokal source/RDKS/release/versiongate med nul geodatadiff.
 - [x] Bestå to uafhængige hotfixrevisioner uden blocker.
 - [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
-- [ ] Bestå docs-checkpoint exact-head PR, merge og no-op push.
-- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run på den endelige docs-synkroniserede merge-SHA; tidligere beviser kan ikke genbruges.
-- [ ] Kør ny inspect, descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
+- [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
+- [x] Bestå exact-main D1 `33275218540`/`99160622956` på `9291250c` med alle storage-/Edge-/Worker-/sync-/slutattestationstrin.
+- [x] Stop inspect `33275438494`/`99161265720` i planforseglingen før descriptorupload, mutation, build og Pages.
+- [x] Implementér og målretstest allowlistet GitHub-fejlannotation for `ONE_TIME_GAP_*`, maskering af vilkårlig fejltekst og en separat succesannotation med kun descriptor-SHA samt faste 673-/prøve-/665-/8-optællinger.
+- [x] Stop PR #230's første exact-head `33276791132` på den miljøafhængige testassertion; isolér normal CLI fra `GITHUB_ACTIONS` og bevis hele 210/673-testen i begge forældremiljøer.
+- [ ] Bestå diagnostikhotfix exact-head/merge/no-op og nyt exact-main D1 på den nye final-SHA.
+- [ ] Kør ny inspect, aflæs kun den sanitiserede fejlkode, luk årsagen og gennemfør descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
 
 ## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
 

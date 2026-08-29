@@ -1,6 +1,6 @@
 # RavRadar Håndbog
 
-## Ét målt højreanker og sikker release-rækkefølge – 4.0.314 source merged
+## Ét målt højreanker og sikker release-rækkefølge – 4.0.314 D1 grøn, inspect stoppet
 
 Morgenhullet er endnu ikke lukket, og offentlig RavRadar viser fortsat den komplette, målte 4.0.310-nødvisning. 4.0.313 er derimod sikkert merged og har bestået hele den levende D1-/Edge-/Worker-kæde. Den første efterfølgende inspektion var kun læsende og stoppede før descriptor eller dataændring.
 
@@ -14,7 +14,9 @@ Alle øvrige sikkerhedsbeviser er uændrede: eksakt model, profil og stateKey; r
 
 Kilden bestod PR #227 exact-head `33272564543`, blev merged som `d1369d88`, og push `33272676071` var korrekt no-op. En ældre 4.0.313-produktion stoppede før releasegate og Pages, fordi en forældet marine-first-test stadig forventede den gamle dynamiske concurrencytekst og ikke var med i PR-sourcegaten. Same-version-hotfixet ændrer kun testen og dens gate-dækning: præcis én `cancel-in-progress: false` kræves, og testen kører nu gennem `validate:source`. Runtime, model og data er uændrede.
 
-Hotfix PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op uden build/inspect/Pages. Efter dette docs-checkpoint køres nyt exact-main D1 på den endelige merge-SHA. Låsen gælder kun denne recoveryrelease; testen beviser, at 4.0.315 ikke er permanent låst. Candidate G's formel, 20/50/30, model-id, målt schema 2.0, markeret schema 2.1, trust, nødvisning og forbud mod kalibrering på rekonstrueret evidens er uændrede. Først efter ny inspect, CAS-bundet apply, frisk normal produktion og offentlig 210/673-kontrol kan morgenhullet kaldes lukket.
+Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250c`, og push `33275147023` var korrekt no-op. D1 `33275218540`/`99160622956` bestod derefter hele storage-/Edge-/Worker-/sync-kæden. Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen efter hydration og kildeudtræk, men før descriptorupload. Der blev ikke ændret data, bygget vejr eller deployet Pages.
+
+Den sikre GitHub-status viste kun exit 1. RavRadar henter ikke hele jobloggen eller kilderne for at finde årsagen. Diagnostikhotfixet gør i stedet kun faste `ONE_TIME_GAP_*`-fejlkoder synlige og skjuler enhver anden fejltekst. En vellykket inspect viser kun descriptorens SHA og fire faste, ikke-følsomme optællinger: berørte dele, syntetiske prøver og 1-/3-timers cadencefordeling. Dermed kan næste apply bindes eksakt uden at læse jobloggen. PR #230's første kildekontrol fandt en ren testmiljøfejl: lokale stderr-tests arvede GitHubs annotationstilstand. Testharnessen isolerer nu normal og Actions-tilstand og består hele 210/673-forløbet i begge miljøer; ingen produktion eller data blev rørt. Den nye final-SHA skal igen bestå D1 før en ny inspect. Låsen gælder kun denne recoveryrelease; 4.0.315 er ikke permanent låst. Candidate G's formel, 20/50/30, model-id, målt schema 2.0, markeret schema 2.1, trust, nødvisning og forbud mod kalibrering på rekonstrueret evidens er uændrede. Først efter ny inspect, CAS-bundet apply, frisk normal produktion og offentlig 210/673-kontrol kan morgenhullet kaldes lukket.
 
 ## Historisk: én kontrolleret rekonstruktion af Candidate G-morgenhullet – 4.0.313-roll-forward
 

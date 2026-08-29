@@ -1,13 +1,14 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-29 4.0.314 source merged; same-version sourcegate-hotfix
+## Aktuelt P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
 
 - Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 er exact-head-valideret/merged som `ff62ba11`; push `33269584236` var no-op, og D1-backend `33269631305`/`99145677813` er helt grøn.
 - Read-only inspect `33269849748`/`99146287609` stoppede uden descriptor eller mutation på `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`.
 - 4.0.314 accepterer ét målt afteranker kun for uafhængigt bevist 3-timerskadence og bevarer alle øvrige fail-closed gates. PR #227/exact-head `33272564543`/`99153577550`, merge `d1369d88` og no-op push `33272676071` er grønne.
 - Ældre produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, som ikke var med i PR-sourcegaten. Same-version-branchen `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
-- Hotfix PR #228/exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196` er grønne. Fortsæt Sol/Ultra: docs-checkpoint exact-head/merge/no-op → exact-main D1 på final merge-SHA → ny inspect → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Genbrug aldrig det fejlede inspects manglende descriptor.
+- PR #229/exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023` er grønne. D1 `33275218540`/`99160622956` er helt grøn. Inspect `33275438494`/`99161265720` stoppede derefter i planforseglingen; descriptorupload, build og Pages blev skipped, og ingen mutation skete.
+- Hent ikke hele jobloggen eller artifacts. Diagnostikhotfixet gør kun allowlistede `ONE_TIME_GAP_*`-koder synlige som annotation og maskerer alt andet. Fortsæt Sol/Ultra: exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → luk den sanitiserede årsag → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil.
 
 ## Historisk P0 – 2026-08-29 lokal 4.0.313 replay-roll-forward
 

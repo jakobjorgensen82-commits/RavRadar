@@ -1,6 +1,6 @@
 # AI Roadmap – RavRadar 4.0.314+
 
-## P0 nu – få 4.0.314 sikkert gennem sourcegate-hotfix og rekonstruktion
+## P0 nu – få 4.0.314 sikkert gennem diagnostikhotfix og rekonstruktion
 
 1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
 2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
@@ -12,10 +12,12 @@
 8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
 9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
 10. [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
-11. [ ] Bestå docs-checkpoint exact-head, merge og no-op push.
-12. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` på final merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
-13. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-14. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+11. [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
+12. [x] Bestå exact-main 4.0.314 `[d1]` `33275218540`/`99160622956` inklusive begge syncs, slutreconciliation og slutattestation.
+13. [x] Stop read-only inspect `33275438494`/`99161265720` fail-closed i planforseglingen før descriptorupload, mutation, build og Pages.
+14. [ ] Exact-head-valider og merge den allowlistede GitHub-fejlannotation og den særskilte minimale succesannotation; kør ny exact-main D1 på den nye final-SHA.
+15. [ ] Kør ny inspect, aflæs kun den sanitiserede domænekode, ret årsagen evidensbaseret og gennemfør CAS-apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
+16. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
 
 ## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
 

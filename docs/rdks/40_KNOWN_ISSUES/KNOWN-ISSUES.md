@@ -1,13 +1,15 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.314 – afteranker source merged; sourcegate-hotfix før rekonstruktion
+## 4.0.314 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostik før rekonstruktion
 
 - **ISSUE-TRIP-D1-LEGACY-NULL-REPLAY – LIVE LUKKET PÅ 4.0.313:** Exact-main backend `33269631305` bestod begge syncs, slutreconciliation, Edge, Worker, registry og SQL uden at omskrive eksisterende row/hash/registry.
 - **ISSUE-CANDIDATE-G-AFTER-EVIDENCE-COUNT – SOURCE EXACT-HEAD OG MERGED:** Read-only inspect `33269849748` stoppede, fordi en fælles minimum-to-gate afviste det ene legitime målte højreanker på native 3-timersdele. 4.0.314 tillader det kun i `AFTER` og kun efter uafhængigt cadence- og statebevis; PR #227/exact-head `33272564543` og merge `d1369d88` er grønne.
-- **ISSUE-CANDIDATE-G-MORNING-GAP-20260829 – FORTSAT ÅBEN:** Ingen descriptor blev uploadet, og ingen apply eller mutation er sket. Offentlig drift forbliver 4.0.310-nøddrift, indtil 4.0.314 exact-main backend, ny CAS-bundet inspect/apply, frisk produktion og offentlig verifikation er grøn.
+- **ISSUE-CANDIDATE-G-MORNING-GAP-20260829 – FORTSAT ÅBEN:** D1 `33275218540` er grøn, men inspect `33275438494` stoppede i planforseglingen før descriptorupload. Ingen apply eller mutation er sket. Offentlig drift forbliver 4.0.310-nøddrift, indtil ny CAS-bundet inspect/apply, frisk produktion og offentlig verifikation er grøn.
 - **ISSUE-RECOVERY-4.0.314-OVERTAKE – SOURCE MERGED / NO-OP BEVIST:** 4.0.314 kræver både exact-main D1 og, for normal `none`-produktion, et succesbevis for descriptorbundet apply og Pages på samme SHA. Push `33272676071` var korrekt no-op; manglende eller malformed Actions-metadata åbner intet. 4.0.315 er bevidst ulåst.
-- **ISSUE-RECOVERY-CONCURRENCY-LEGACY-TEST-4.0.314 – LOKALT RETTET / AFVENTER HOTFIX EXACT-HEAD:** Produktion `33271863449` stoppede før releasegate/Pages, fordi `test:dmi-marine-first-recovery` forventede den afløste dynamiske concurrencytekst og ikke var med i PR-sourcegatens workflowkontraktsuite. Hotfixet kræver præcis én `cancel-in-progress: false`, forbyder `true` og gør testen obligatorisk i `test:workflow-action-contracts`.
-- **ISSUE-TRIP-D1-EXACT-MAIN-4.0.314 – ÅBEN DRIFTSGATE:** Tidligere grønne run kan ikke attestere hotfixets nye SHA. Hele idempotente D1-kæde skal bestå igen på den endelige hotfix-mergehead.
+- **ISSUE-RECOVERY-CONCURRENCY-LEGACY-TEST-4.0.314 – LUKKET I PR #228:** `test:dmi-marine-first-recovery` kræver præcis én `cancel-in-progress: false` og kører nu gennem `test:workflow-action-contracts`/`validate:source`.
+- **ISSUE-RECOVERY-INSPECT-ERROR-VISIBILITY-4.0.314 – LOKALT RETTET / AFVENTER EXACT-HEAD:** Inspect `33275438494` fejlede sikkert, men GitHubs checkmetadata viste kun exit 1. Hele loggen må ikke hentes under privacykontrakten. Hotfixet eksponerer kun allowlistede `ONE_TIME_GAP_*`-fejlkoder og maskerer vilkårlig tekst; ved succes kun descriptor-SHA og faste affected/synthetic/1h/3h-optællinger. 210/673-black-box-testen er grøn.
+- **ISSUE-RECOVERY-ANNOTATION-TEST-ENV-4.0.314 – LOKALT RETTET / AFVENTER NY EXACT-HEAD:** PR #230-run `33276791132`/`99164804850` stoppede i en test, som forventede lokal stderr, mens dens child-proces utilsigtet arvede runnerens `GITHUB_ACTIONS=true` og derfor korrekt brugte annotationens stdout. Testhelperen fjerner nu variablen i normale cases og sætter den kun eksplicit i Actions-cases. Hele 210/673-regressionen består med begge forældremiljøer; ingen produktionsvej eller data blev berørt.
+- **ISSUE-TRIP-D1-EXACT-MAIN-4.0.314 – BEVIST PÅ `9291250c` / SKAL GENTAGES EFTER DIAGNOSTIKMERGE:** D1 `33275218540` er helt grøn. Fordi hotfixet skaber en ny final-SHA, må dette bevis ikke genbruges til næste inspect.
 
 ## Historisk 4.0.312-roll-forward efter 4.0.311-backendstop – morgenhullet og engangsrekonstruktionen
 

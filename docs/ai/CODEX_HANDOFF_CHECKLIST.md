@@ -4,7 +4,7 @@
 - Åbn den eksisterende lokale RavRadar Git-mappe; opret ikke et nyt tomt projekt.
 - Kontrollér at `git status` viser de forventede dokumentationsændringer, og at `.git` stadig tilhører det eksisterende repository.
 - Læs `docs/ai/CODEX_START_HERE.md` og `AGENTS.md` før første kodeopgave.
-- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Offentlig drift er fortsat 4.0.310-nøddrift, og morgenhullet er ikke rekonstrueret. 4.0.314-kilden bestod PR #227; same-version-hotfixet bestod PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`. Efter docs-checkpointets merge kræves exact-main D1 på final SHA før inspect/apply. Den gamle 4.0.117-bootstrap er historik.
+- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Offentlig drift er fortsat 4.0.310-nøddrift, og morgenhullet er ikke rekonstrueret. PR #229 blev merged som `9291250c`; D1 `33275218540` er grøn, men inspect `33275438494` stoppede før descriptorupload, mutation, build og Pages. Den lokale diagnostikhotfix skal exact-head/merges og have nyt final-SHA D1 før ny inspect. Hent aldrig hele jobloggen eller artifacts for fejlkoden. Den gamle 4.0.117-bootstrap er historik.
 - Kør `npm run validate:rdks`; brug `npm run validate` før første ændringsrelease.
 - Den historiske 4.0.117-workflowbypass er lukket; genåbn kun sporet ved konkret regressionsbevis. Kræv fortsat, at ethvert nyt produktionsartifact har `npm run validate` og `npm run release:gate` som faktiske `success` efter frisk data. Topniveauets grønne runstatus alene tæller ikke.
 

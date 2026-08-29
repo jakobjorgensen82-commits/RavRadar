@@ -9,6 +9,7 @@
 - En normal schedule kan overhale inspect/apply, hvis D1 alene åbner Pages. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås.
 - Hele hvert GitHub run-/jobsvar skal parse- og shapevalideres samlet før id-iteration, og fælles concurrency må aldrig lade et indkommende push annullere en kørende apply.
 - En fuld-produktionsregression er også en PR-gatekontrakt. Hvis testen kun findes i `npm run validate`, kan exact-head source være grøn og frisk produktion stadig stoppe. Gør derfor testen direkte nåelig fra `validate:source` og lås semantikken — her præcis én `cancel-in-progress: false` — frem for en historisk tekstliteral.
+- Inspect `33275438494` beviste, at exit 1 alene ikke er en brugbar privacykompatibel domænefejl. Under GitHub Actions må rekonstruktions-CLI'en kun annotere /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl; alt andet bliver `ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE`. Ved succes er kun descriptor-SHA og de validerede affected/synthetic/1h/3h-optællinger tilladt. Hent ikke fuld joblog eller artifact for at omgå dette.
 
 ## 4.0.313 – nullable JSON og bladprojektion er en versionsgrænse
 
