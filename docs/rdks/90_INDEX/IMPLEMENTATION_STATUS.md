@@ -20,6 +20,7 @@
 - [x] Bestå exact-main D1 `33275218540`/`99160622956` på `9291250c` med alle storage-/Edge-/Worker-/sync-/slutattestationstrin.
 - [x] Stop inspect `33275438494`/`99161265720` i planforseglingen før descriptorupload, mutation, build og Pages.
 - [x] Implementér og målretstest allowlistet GitHub-fejlannotation for `ONE_TIME_GAP_*`, maskering af vilkårlig fejltekst og en separat succesannotation med kun descriptor-SHA samt faste 673-/prøve-/665-/8-optællinger.
+- [x] Stop PR #230's første exact-head `33276791132` på den miljøafhængige testassertion; isolér normal CLI fra `GITHUB_ACTIONS` og bevis hele 210/673-testen i begge forældremiljøer.
 - [ ] Bestå diagnostikhotfix exact-head/merge/no-op og nyt exact-main D1 på den nye final-SHA.
 - [ ] Kør ny inspect, aflæs kun den sanitiserede fejlkode, luk årsagen og gennemfør descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
 

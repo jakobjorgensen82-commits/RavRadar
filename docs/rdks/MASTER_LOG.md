@@ -4,6 +4,7 @@
 - Exact-main D1 `33275218540`/`99160622956` bestod source, Candidate G-databasekontrakt, ti EU-shards, headroom, Edge, maintenance, Worker, sync, D1-mode, slutreconciliation og slutattestation.
 - Read-only inspect `33275438494`/`99161265720` bestod hydration og kildeudtræk, men stoppede i planforseglingen. Descriptorrefusal/-upload, build og Pages var skipped; ingen descriptor, apply, data-/cachemutation eller publicering forekom.
 - Checkmetadata eksponerede kun exit 1. Hele jobloggen og artifacts blev ikke hentet. Lokal hotfix annoterer kun /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl og maskerer al anden tekst; ved succes kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger. Den målrettede syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-black-box-test er grøn.
+- PR #230's første head `e8f579ba` stoppede source-run `33276791132`/`99164804850` ved den målrettede test, før senere sourcechecks. Runnerens `GITHUB_ACTIONS=true` blev utilsigtet arvet af normale CLI-cases, som derfor korrekt brugte stdout-annotation frem for lokal stderr. Testhelperen isolerer nu miljøerne eksplicit; hele 210/673-testen er grøn med begge forældremiljøer. Ingen produktion eller data blev rørt.
 - Næste sikre kæde er diagnostikhotfix exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
 
 ## 2026-08-29 – 4.0.314 source merged; same-version sourcegate-hotfix før recovery

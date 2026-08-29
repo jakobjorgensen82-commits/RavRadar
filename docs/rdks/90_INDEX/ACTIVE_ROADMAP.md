@@ -17,6 +17,7 @@
 - [x] Helt grøn exact-main 4.0.314-D1 `33275218540`/`99160622956` på `9291250c` inklusive begge syncs, slutreconciliation og slutattestation.
 - [x] Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen før descriptorupload, mutation, build og Pages.
 - [x] Allowlist `ONE_TIME_GAP_*` som fejlannotation, maskér al anden fejltekst og eksponér kun descriptor-SHA plus faste optællinger ved succes; målrettet 210/673-black-box-test er grøn.
+- [x] Reproducer PR #230's første CI-stop under nedarvet `GITHUB_ACTIONS=true`, isolér testmiljøerne og bestå 210/673-regressionen i begge tilstande uden runtimeændring.
 - [ ] Diagnostikhotfix exact-head/merge/no-op, derefter nyt exact-main D1 på den nye final-SHA.
 - [ ] Ny inspect med sanitiseret fejlkode, evidensbaseret årsagslukning, CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.

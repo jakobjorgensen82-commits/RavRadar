@@ -12,6 +12,7 @@
 - Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`. Exact-main D1 `33275218540`/`99160622956` er helt grøn.
 - Inspect `33275438494`/`99161265720` stoppede i planforseglingen efter hydration/kildeudtræk og før descriptorupload, mutation, build og Pages. GitHubs sikre metadata viser kun exit 1; hele jobloggen og artifacts må ikke hentes.
 - Lokal hotfix annoterer kun allowlistede `ONE_TIME_GAP_*`-fejlkoder og maskerer al anden fejltekst. Ved succes annoteres kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger, så apply kan bindes uden joblog. Næste trin: exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig desktop/mobil/210/673.
+- PR #230-head `e8f579ba` stoppede exact-head `33276791132`/`99164804850` i testharnessen, ikke runtime: normale child-cases arvede `GITHUB_ACTIONS=true`. Lokal efterrettelse isolerer miljøerne eksplicit og består den komplette 210/673-test både med og uden forældreflag. Commit/push ny head, regenerér releasebevis og afvent ny exact-head før merge.
 - DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
 
 ## HISTORISK P0-HANDOFF – lokal 4.0.312 verifier-roll-forward

@@ -51,14 +51,19 @@ const deepKeys = value => {
   if (!value || typeof value !== 'object') return [];
   return Object.entries(value).flatMap(([key, child]) => [key, ...deepKeys(child)]);
 };
-const spawnOneTimeCli = (args, { githubActions = false } = {}) => spawnSync(process.execPath, [
-  path.resolve('scripts/one-time-candidate-g-gap-reconstruction.mjs'),
-  ...args,
-], {
-  cwd: process.cwd(),
-  encoding: 'utf8',
-  env: githubActions ? { ...process.env, GITHUB_ACTIONS: 'true' } : process.env,
-});
+const spawnOneTimeCli = (args, { githubActions = false } = {}) => {
+  const env = { ...process.env };
+  if (githubActions) env.GITHUB_ACTIONS = 'true';
+  else delete env.GITHUB_ACTIONS;
+  return spawnSync(process.execPath, [
+    path.resolve('scripts/one-time-candidate-g-gap-reconstruction.mjs'),
+    ...args,
+  ], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    env,
+  });
+};
 
 const annotatedKnownFailure = spawnOneTimeCli([], { githubActions: true });
 assert.notEqual(annotatedKnownFailure.status, 0);
