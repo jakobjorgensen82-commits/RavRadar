@@ -1,6 +1,17 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet før D1/Edge
+## Lokal 4.0.313-replay-roll-forward – 4.0.312 merged, backend ikke grøn
+
+- Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311/312/313-Pagesproduktion er udgivet.
+- 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` var korrekt no-op uden artifact/Pages.
+- Backend `33266229687`/job `99136669571` bestod source, Candidate G-constraint, D1-forberedelse og de første Edge-/Worker-beviser, men fejlede ved Supabase→D1-synk med `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forward og delvise grønne trin er ikke exact-head D1-readiness.
+- Rodårsagen er syntetisk reproduceret som 4.0.310's kendte nested nullblade mod 4.0.311's dataminimerede PostgREST-leafprojektion, som udelader null. Den gamle D1-hash og registryhash er korrekte og må ikke omskrives.
+- 4.0.313 tillader kun migration→migration-kompatibilitet efter lagret selvhash, ejer/id/shard, streng schema-v2 top-/nested-/privacyallowlist og eksakt lighed for alle bevarede ikke-null-/kerneværdier. Schema-v1 bruger kun bounded legacyprojektion. Live source, ukendte felter og reelle ændringer afvises uden mutation.
+- D1-row, payloadhash og eksisterende registryhash bevares byteidentisk; manglende registry må kun repareres med den verificerede gamle hash. Readback bruger samme stored-kontrakt. Gatewayfejl er faste kategorier uden ubetroet bodytekst.
+- 4.0.313 er kun lokal kildekandidat, men dens målrettede regressioner, uafhængige revision, fulde lokale `validate:source`, RDKS-, release-, versions- og geodatagate er grønne. Exact-head, merge, et helt grønt exact-main `[d1]`-run inklusive slutreconciliation/Edge/Worker/registry, ny inspect/CAS, apply, frisk produktion og offentlig 210/673 desktop/mobil mangler.
+- Candidate G, RavScore, vejr, DMI/Copernicus, state/recovery, geometri og punkter er uændrede. Trip protocol/header og observationsgrænsen forbliver 4.0.311.
+
+## Historisk 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet før D1/Edge
 
 - Offentlig produktionssandhed er fortsat 4.0.310. 4.0.311-kilden er exact-head-valideret og merged via PR #224, men rekonstruktionen er ikke anvendt, backend-/live-storage-/produktionsverificeret eller offentliggjort. 4.0.312 er den lokale roll-forward-kandidat.
 - Ejeren har godkendt præcis én undtagelse til RavRadars normale no-backfill-regel: morgenhullet 29. august må rekonstrueres som incident `RRGAP-2026-08-29-CANDIDATE-G-01`, fordi perioden ikke bruges til reel ravjagt. Undtagelsen må aldrig blive en generel fallback.

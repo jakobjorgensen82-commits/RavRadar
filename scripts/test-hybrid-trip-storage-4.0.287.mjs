@@ -856,6 +856,99 @@ const unsigned = await handleRequest(new Request(`${gatewayUrl}/v1/trips/count`,
 assert.equal(unsigned.status, 401);
 
 const configuration = { gatewayUrl, sharedSecret: gatewaySecret, fetchImpl: workerFetch, now: Date.now() };
+for (const [status, body, category] of [
+  [401, { ok: false, error: 'UNAUTHORIZED', detail: 'untrusted-detail' }, 'AUTH'],
+  [400, { ok: false, error: 'INVALID_REQUEST', detail: 'untrusted-detail' }, 'REQUEST_REJECTED'],
+  [409, { ok: false, error: 'TRIP_IDEMPOTENCY_CONFLICT', detail: 'untrusted-detail' }, 'IDEMPOTENCY_CONFLICT'],
+  [429, { ok: false, error: 'RATE_LIMITED', detail: 'untrusted-detail' }, 'RATE_LIMITED'],
+  [503, { ok: false, error: 'TEMPORARY', detail: 'untrusted-detail' }, 'UNAVAILABLE'],
+]) {
+  await assert.rejects(
+    storeCloudflareTrip({
+      ...configuration,
+      owner: userOwner,
+      payload,
+      fetchImpl: async () => new Response(JSON.stringify(body), { status }),
+    }),
+    error => error?.message === `TRIP_GATEWAY_UNAVAILABLE:${category}`,
+  );
+}
+for (const [status, errorCode] of [
+  [401, 'NOT_THE_AUTH_CODE'],
+  [400, 'NOT_THE_REQUEST_CODE'],
+  [409, 'NOT_THE_CONFLICT_CODE'],
+]) {
+  await assert.rejects(
+    storeCloudflareTrip({
+      ...configuration,
+      owner: userOwner,
+      payload,
+      fetchImpl: async () => new Response(JSON.stringify({
+        ok: false,
+        error: errorCode,
+        detail: 'untrusted-detail',
+      }), { status }),
+    }),
+    error => error?.message === 'TRIP_GATEWAY_UNAVAILABLE:HTTP_ERROR',
+  );
+}
+await assert.rejects(
+  storeCloudflareTrip({
+    ...configuration,
+    owner: userOwner,
+    payload,
+    fetchImpl: async () => new Response('untrusted-malformed-5xx-detail', { status: 503 }),
+  }),
+  error => error?.message === 'TRIP_GATEWAY_UNAVAILABLE:UNAVAILABLE',
+);
+await assert.rejects(
+  storeCloudflareTrip({
+    ...configuration,
+    owner: userOwner,
+    payload,
+    fetchImpl: async () => new Response(JSON.stringify({
+      ok: false,
+      error: 'synthetic-unallowlisted-detail-must-not-escape',
+    }), { status: 418 }),
+  }),
+  error => error?.message === 'TRIP_GATEWAY_UNAVAILABLE:HTTP_ERROR',
+);
+for (const response of [
+  new Response('untrusted-success-body-sentinel', { status: 200 }),
+  new Response(JSON.stringify({
+    ok: false,
+    error: 'untrusted-success-json-sentinel',
+  }), { status: 200 }),
+]) {
+  await assert.rejects(
+    storeCloudflareTrip({
+      ...configuration,
+      owner: userOwner,
+      payload,
+      fetchImpl: async () => response,
+    }),
+    error => (
+      error?.message === 'TRIP_GATEWAY_INVALID_RESPONSE'
+      && !error.message.includes('sentinel')
+    ),
+  );
+}
+const gatewayDeadlineController = new AbortController();
+const timedGatewayStore = storeCloudflareTrip({
+  ...configuration,
+  owner: userOwner,
+  payload,
+  fetchImpl: createBoundedFetch({
+    fetchImpl: pendingUntilAbort,
+    timeoutMs: 1_234,
+    timeoutSignalFactory: () => gatewayDeadlineController.signal,
+  }),
+});
+gatewayDeadlineController.abort(new DOMException('synthetic gateway deadline', 'TimeoutError'));
+await assert.rejects(timedGatewayStore, error => (
+  error?.code === TRIP_STORAGE_NETWORK_TIMEOUT_CODE
+  && error?.cause?.name === 'TimeoutError'
+));
 const first = await storeCloudflareTrip({ ...configuration, owner: userOwner, payload });
 assert.equal(first.duplicate, false);
 assert.ok(!lastRequestText.includes(userId));
@@ -879,7 +972,7 @@ const second = await storeCloudflareTrip({ ...configuration, owner: userOwner, p
 assert.equal(second.duplicate, true);
 await assert.rejects(
   storeCloudflareTrip({ ...configuration, owner: userOwner, payload: { ...payload, result: 'good', found: true } }),
-  /TRIP_GATEWAY_UNAVAILABLE/,
+  /TRIP_GATEWAY_UNAVAILABLE:IDEMPOTENCY_CONFLICT/,
 );
 const listed = await listCloudflareTrips({ ...configuration, ownerSubject: userOwner.subject, limit: 100 });
 assert.equal(listed.length, 1);
@@ -921,14 +1014,53 @@ const legacyReplaySource = {
   ...tripV2Base,
   client_observation_id: legacyReplayClientId,
   trip_id: legacyReplayTripId,
-  calibration_features: { appVersion: '4.0.310', reasonCodes: [] },
+  calibration_features: {
+    appVersion: '4.0.310',
+    totalScore: 50,
+    reasonCodes: [],
+  },
+  weather_snapshot: {
+    schemaVersion: 4,
+    provider: 'DMI',
+    current: { windSpeedMps: 7.5 },
+    score: { finalScore: 50 },
+    prediction: { modelVersion: 'candidate-g' },
+    matchedRuleIds: ['rule-safe'],
+    calibrationFeatures: {
+      appVersion: '4.0.310',
+      totalScore: 50,
+      reasonCodes: [],
+    },
+  },
   data_quality_flags: [],
 };
 const normalizedReplayPayload = externalTripPayload(legacyReplaySource);
 const legacyStoredPayload = {
   ...normalizedReplayPayload,
   calibration_eligible: true,
-  calibration_features: { appVersion: '4.0.310', reasonCodes: [] },
+  calibration_features: {
+    ...legacyReplaySource.calibration_features,
+    waveHeightM: null,
+  },
+  weather_snapshot: {
+    ...legacyReplaySource.weather_snapshot,
+    current: {
+      ...legacyReplaySource.weather_snapshot.current,
+      waveHeightM: null,
+    },
+    score: {
+      ...legacyReplaySource.weather_snapshot.score,
+      baseScore: null,
+    },
+    prediction: {
+      ...legacyReplaySource.weather_snapshot.prediction,
+      probability: null,
+    },
+    calibrationFeatures: {
+      ...legacyReplaySource.weather_snapshot.calibrationFeatures,
+      waveHeightM: null,
+    },
+  },
   data_quality_flags: [],
 };
 assert.equal(isLegacyUnattestedTripReplay(legacyStoredPayload, normalizedReplayPayload), true);
@@ -940,6 +1072,16 @@ assert.equal(isLegacyUnattestedTripReplay(legacyStoredPayload, {
 const legacyDigestPayload = { ...legacyStoredPayload };
 delete legacyDigestPayload.submitted_at;
 const legacyPayloadSha256 = await sha256Hex(canonicalJson(legacyDigestPayload));
+const incomingLegacyRecord = await externalTripRecord({
+  owner: userOwner,
+  payload: legacyReplaySource,
+  source: 'supabase-migration',
+});
+assert.notEqual(
+  legacyPayloadSha256,
+  incomingLegacyRecord.payload_sha256,
+  'Regressionen skal ramme kompatibilitetsgrenen, ikke den almindelige hash-lige dubletvej.',
+);
 const legacyShardDigest = await sha256Hex(legacyReplayTripId);
 const legacyShardIndex = Number.parseInt(legacyShardDigest.slice(0, 8), 16) % 10;
 const legacyDatabase = env[`TRIP_DB_${legacyShardIndex}`];
@@ -955,8 +1097,22 @@ legacyDatabase.rows.set(legacyReplayClientId, {
   payloadSha256: legacyPayloadSha256,
   source: 'supabase-migration',
 });
+env.TRIP_DB_0.registryRows.set(legacyReplayClientId, {
+  clientId: legacyReplayClientId,
+  tripId: legacyReplayTripId,
+  ownerSubject: userOwner.subject,
+  payloadSha256: legacyPayloadSha256,
+  targetDatabaseIndex: legacyShardIndex,
+});
 const legacyPayloadBeforeReplay = legacyDatabase.rows.get(legacyReplayClientId).payloadJson;
 const legacyHashBeforeReplay = legacyDatabase.rows.get(legacyReplayClientId).payloadSha256;
+const legacyRowBeforeReplay = structuredClone(
+  legacyDatabase.rows.get(legacyReplayClientId),
+);
+const legacyRegistryBeforeReplay = structuredClone(
+  env.TRIP_DB_0.registryRows.get(legacyReplayClientId),
+);
+const legacyRegistrySizeBeforeReplay = env.TRIP_DB_0.registryRows.size;
 const legacyReplay = await storeCloudflareTrip({
   ...configuration,
   owner: userOwner,
@@ -966,6 +1122,60 @@ const legacyReplay = await storeCloudflareTrip({
 assert.equal(legacyReplay.duplicate, true);
 assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadJson, legacyPayloadBeforeReplay);
 assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadSha256, legacyHashBeforeReplay);
+assert.deepEqual(
+  env.TRIP_DB_0.registryRows.get(legacyReplayClientId),
+  legacyRegistryBeforeReplay,
+);
+assert.deepEqual(legacyDatabase.rows.get(legacyReplayClientId), legacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, legacyRegistrySizeBeforeReplay);
+const repeatedLegacyReplay = await storeCloudflareTrip({
+  ...configuration,
+  owner: userOwner,
+  payload: legacyReplaySource,
+  source: 'supabase-migration',
+});
+assert.equal(repeatedLegacyReplay.duplicate, true);
+assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadJson, legacyPayloadBeforeReplay);
+assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadSha256, legacyHashBeforeReplay);
+assert.deepEqual(
+  env.TRIP_DB_0.registryRows.get(legacyReplayClientId),
+  legacyRegistryBeforeReplay,
+);
+assert.deepEqual(legacyDatabase.rows.get(legacyReplayClientId), legacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, legacyRegistrySizeBeforeReplay);
+env.TRIP_DB_0.registryRows.get(legacyReplayClientId).payloadSha256 = 'f'.repeat(64);
+await assert.rejects(
+  storeCloudflareTrip({
+    ...configuration,
+    owner: userOwner,
+    payload: legacyReplaySource,
+    source: 'supabase-migration',
+  }),
+  /TRIP_GATEWAY_UNAVAILABLE:IDEMPOTENCY_CONFLICT/,
+);
+assert.deepEqual(legacyDatabase.rows.get(legacyReplayClientId), legacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, legacyRegistrySizeBeforeReplay);
+env.TRIP_DB_0.registryRows.set(
+  legacyReplayClientId,
+  structuredClone(legacyRegistryBeforeReplay),
+);
+await assert.rejects(
+  storeCloudflareTrip({
+    ...configuration,
+    owner: userOwner,
+    payload: legacyReplaySource,
+    source: 'live',
+  }),
+  /TRIP_GATEWAY_UNAVAILABLE:IDEMPOTENCY_CONFLICT/,
+);
+assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadJson, legacyPayloadBeforeReplay);
+assert.equal(legacyDatabase.rows.get(legacyReplayClientId).payloadSha256, legacyHashBeforeReplay);
+assert.deepEqual(
+  env.TRIP_DB_0.registryRows.get(legacyReplayClientId),
+  legacyRegistryBeforeReplay,
+);
+assert.deepEqual(legacyDatabase.rows.get(legacyReplayClientId), legacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, legacyRegistrySizeBeforeReplay);
 await assert.rejects(
   storeCloudflareTrip({
     ...configuration,
@@ -984,11 +1194,21 @@ const rawLegacySource = {
   trip_id: rawLegacyTripId,
   schema_version: 1,
   weather_snapshot: legacyFreeformSnapshot,
+  calibration_features: {
+    appVersion: '4.0.310',
+    totalScore: 50,
+  },
 };
 const safeLegacyMigrationPayload = externalTripPayload(rawLegacySource);
 assert.deepEqual(safeLegacyMigrationPayload.weather_snapshot, projectedLegacySnapshot);
 const rawLegacyStoredPayload = externalTripPayload({ ...rawLegacySource, weather_snapshot: null });
 rawLegacyStoredPayload.weather_snapshot = structuredClone(legacyFreeformSnapshot);
+rawLegacyStoredPayload.calibration_features = {
+  ...rawLegacySource.calibration_features,
+  waveHeightM: null,
+  legacyDiagnostic: 'discarded-by-bounded-projection',
+  geohash: 'discarded-private-location-alias',
+};
 assert.equal(isLegacyProjectedTripReplay(rawLegacyStoredPayload, safeLegacyMigrationPayload), true);
 assert.equal(isLegacyCompatibleTripReplay(rawLegacyStoredPayload, safeLegacyMigrationPayload), true);
 assert.equal(isLegacyProjectedTripReplay(safeLegacyMigrationPayload, safeLegacyMigrationPayload), false);
@@ -996,6 +1216,13 @@ assert.equal(isLegacyProjectedTripReplay(rawLegacyStoredPayload, {
   ...safeLegacyMigrationPayload,
   result: 'good',
   found: true,
+}), false);
+assert.equal(isLegacyProjectedTripReplay(rawLegacyStoredPayload, {
+  ...safeLegacyMigrationPayload,
+  calibration_features: {
+    ...safeLegacyMigrationPayload.calibration_features,
+    totalScore: 51,
+  },
 }), false);
 const rawLegacyDigestPayload = { ...rawLegacyStoredPayload };
 delete rawLegacyDigestPayload.submitted_at;
@@ -1018,6 +1245,10 @@ rawLegacyDatabase.rows.set(rawLegacyClientId, {
 });
 const rawLegacyPayloadBeforeReplay = rawLegacyDatabase.rows.get(rawLegacyClientId).payloadJson;
 const rawLegacyHashBeforeReplay = rawLegacyDatabase.rows.get(rawLegacyClientId).payloadSha256;
+const rawLegacyRowBeforeReplay = structuredClone(
+  rawLegacyDatabase.rows.get(rawLegacyClientId),
+);
+const rawLegacyRegistrySizeBeforeReplay = env.TRIP_DB_0.registryRows.size;
 const rawLegacyReplay = await storeCloudflareTrip({
   ...configuration,
   owner: userOwner,
@@ -1027,6 +1258,31 @@ const rawLegacyReplay = await storeCloudflareTrip({
 assert.equal(rawLegacyReplay.duplicate, true);
 assert.equal(rawLegacyDatabase.rows.get(rawLegacyClientId).payloadJson, rawLegacyPayloadBeforeReplay);
 assert.equal(rawLegacyDatabase.rows.get(rawLegacyClientId).payloadSha256, rawLegacyHashBeforeReplay);
+assert.deepEqual(rawLegacyDatabase.rows.get(rawLegacyClientId), rawLegacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, rawLegacyRegistrySizeBeforeReplay + 1);
+const repairedRawLegacyRegistry = structuredClone(
+  env.TRIP_DB_0.registryRows.get(rawLegacyClientId),
+);
+assert.deepEqual(repairedRawLegacyRegistry, {
+  clientId: rawLegacyClientId,
+  tripId: rawLegacyTripId,
+  ownerSubject: userOwner.subject,
+  payloadSha256: rawLegacyPayloadSha256,
+  targetDatabaseIndex: rawLegacyShardIndex,
+});
+const repeatedRawLegacyReplay = await storeCloudflareTrip({
+  ...configuration,
+  owner: userOwner,
+  payload: rawLegacySource,
+  source: 'supabase-migration',
+});
+assert.equal(repeatedRawLegacyReplay.duplicate, true);
+assert.deepEqual(rawLegacyDatabase.rows.get(rawLegacyClientId), rawLegacyRowBeforeReplay);
+assert.equal(env.TRIP_DB_0.registryRows.size, rawLegacyRegistrySizeBeforeReplay + 1);
+assert.deepEqual(
+  env.TRIP_DB_0.registryRows.get(rawLegacyClientId),
+  repairedRawLegacyRegistry,
+);
 
 const matchedRulesClientId = '99999999-9999-4999-8999-999999999999';
 const matchedRulesTripId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -1320,6 +1576,22 @@ rawLegacyDatabase.rows.get(rawLegacyClientId).payloadSha256 = rawLegacyHashBefor
 
 const schemaTwoPayloadBeforeReadAudit = legacyDatabase.rows.get(legacyReplayClientId).payloadJson;
 const schemaTwoHashBeforeReadAudit = legacyDatabase.rows.get(legacyReplayClientId).payloadSha256;
+for (const unknownValue of [null, 'unexpected-stored-value']) {
+  const unknownTopLevelSchemaTwoPayload = {
+    ...JSON.parse(schemaTwoPayloadBeforeReadAudit),
+    unknown_stored_field: unknownValue,
+  };
+  const unknownTopLevelSchemaTwoDigest = { ...unknownTopLevelSchemaTwoPayload };
+  delete unknownTopLevelSchemaTwoDigest.submitted_at;
+  legacyDatabase.rows.get(legacyReplayClientId).payloadJson =
+    canonicalJson(unknownTopLevelSchemaTwoPayload);
+  legacyDatabase.rows.get(legacyReplayClientId).payloadSha256 =
+    await sha256Hex(canonicalJson(unknownTopLevelSchemaTwoDigest));
+  await assert.rejects(
+    listCloudflareTrips({ ...configuration, ownerSubject: userOwner.subject, limit: 100 }),
+    /TRIP_GATEWAY_UNAVAILABLE:REQUEST_REJECTED/,
+  );
+}
 const unsafeSchemaTwoPayload = {
   ...JSON.parse(schemaTwoPayloadBeforeReadAudit),
   weather_snapshot: { schemaVersion: 4, gpsTrack: [[55.1, 12.2]] },

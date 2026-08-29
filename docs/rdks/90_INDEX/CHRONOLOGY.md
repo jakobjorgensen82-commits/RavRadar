@@ -1,5 +1,11 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-29: 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` blev korrekt grøn no-op uden artifact/Pages.
+
+- 2026-08-29: Backend `33266229687`/job `99136669571` bestod source, Candidate G-constraint, D1-forberedelse og tidlige Edge-/Worker-gates, men fejlede Supabase→D1-synk med den faste fejl `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forwarden er ikke readiness. Rekonstruktion, vejr, artifact og Pages blev ikke kørt; offentlig 4.0.310-nøddrift og morgenhullet var urørte.
+
+- 2026-08-29: En syntetisk reproduktion beviste forskellen mellem 4.0.310's kendte nested nullblade og 4.0.311's bounded PostgREST-leafprojektion. Lokal 4.0.313 tillader kun migration→migration-kompatibilitet efter streng stored schema/privacy, eksakt non-null/core-lighed og gammel hash/registry; ingen row omskrives. Målrettede replay-, hybrid-D1-, privacy-, register-, error- og workflowtests er grønne. Exact-head/live-kæden afventer.
+
 - 2026-08-29: 4.0.311-kilden blev committed som `4c4699fe3a87a3b804da1d8beea204e4144a7a76`. PR #224 bestod exact-head `33263734108`/job `99129959870`, blev merged som `7c168b00af535415117c968a8c021a493b083137`, og pushworkflow `33263858078` blev korrekt grøn no-op uden build, artifact eller Pages, fordi exact-main-backendbevis endnu ikke fandtes.
 
 - 2026-08-29: Manuel backend `33263892151`/job `99130384780` modtog HTTP 201 for Candidate G-trip-quality-migrationens ene atomiske `BEGIN … COMMIT`-transaktion, men stoppede på post-SQL-katalogverifierens formatteringsfølsomme kontrol af canonical reason order. Den nye CHECK er med høj sandsynlighed fuldt committed, valideret og kommenteret; eneste alternativ er fuld rollback. `VALIDATE` kan have scannet rækker internt i PostgreSQL, men ingen observationspayload blev hentet til runneren eller logget, og der skete ingen rækkemutation. D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået, og offentlig side forblev 4.0.310.

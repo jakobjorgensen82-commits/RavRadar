@@ -1,3 +1,13 @@
+## 2026-08-29 – lokal 4.0.313 efter replaystop i 4.0.312-backend
+
+- PR #225 bestod exact-head `33266087776`/job `99136292810` og blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`; push `33266184326` var korrekt no-op uden artifact/Pages.
+- Backend `33266229687`/job `99136669571` nåede D1-/Edge-/Worker-led, men fejlede den idempotente sync med `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forward er ikke readiness; ingen rekonstruktion, vejrproduktion eller publicering fulgte.
+- Rodårsagen blev reproduceret uden produktionspayloads: 4.0.310 bevarede kendte nullblade i nested JSON, mens 4.0.311's server-side bladprojektion udelader null. Den semantisk samme migrationsrække fik derfor anden hash, mens D1/registry korrekt bevarede den gamle.
+- 4.0.313 afgrænser kompatibilitet til migration→migration, validerer gammel schema-v2 stored/readback før nullkomprimering, bruger bounded schema-v1-projektion og kræver alle non-null/core-/ejer-/id-/shardværdier eksakt. D1-row/hash/registry omskrives ikke; missing registry får kun gammel hash.
+- Safe error taxonomy skjuler untrusted/malformed body. Syntetiske tests dækker forskellige hashes, to replays, byteidentitet, registerreparation/modstrid, unknown/core/non-null, null-only parents, malformed 200/5xx og timeout.
+- Fuld lokal `scripts/validate-source.ps1`, RDKS-, release-, versions- og geodatagate samt uafhængig kode-/privacy-/dokumentationsrevision er grønne på den endelige præcommit-diff.
+- Exact-D1-interlocken omfatter 4.0.313, men ikke 4.0.314. Exact-head, merge, helt grøn backend, ny inspect/apply, frisk produktion og offentlig 210/673 mangler. Offentlig sandhed forbliver 4.0.310, og datahullet er ikke lukket.
+
 ## 2026-08-29 – 4.0.312-roll-forward efter 4.0.311-backendincident
 
 - 4.0.311-kilden blev committed som `4c4699fe3a87a3b804da1d8beea204e4144a7a76`. PR #224 bestod exact-head `33263734108`/job `99129959870` og blev merged som `7c168b00af535415117c968a8c021a493b083137`.

@@ -2,7 +2,15 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
-## Aktuel 4.0.312-læring
+## Aktuel 4.0.313-læring
+
+Et grønt database-/Worker-forløb frem til migrationen er ikke backend-readiness, hvis slutreconciliation fejler. Run `33266229687` nåede langt, men den faste syncfejl gjorde hele runnet rødt; failure-roll-forward er kun sikkerhed, ikke succesbevis.
+
+Dataminimering kan ændre kanonisk form uden at ændre den historiske betydning: 4.0.310 lagrede kendte nullblade, mens 4.0.311's server-side leafselect udelader dem. Den sikre løsning er ikke at slække hele payloadkontrakten, men at versionere præcis den gamle projektion, begrænse den til migration, bevise alle bevarede værdier og lade row/hash/registry stå urørte.
+
+Fejlhåndtering er også en privacygrænse. En JSON-parser kan lække dele af ubetroet response-body gennem sin exception. Fang derfor både non-2xx og 2xx parsefejl og eksponér kun faste kategorier.
+
+## Historisk 4.0.312-læring
 
 4.0.311 bestod exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`, men backend `33263892151` viste, at ekstern mutation og lokal postverifikation er to forskellige beviser. En HTTP 201 fra en atomisk SQL-transaktion efterfulgt af verifierfejl må behandles som mulig samlet commit, ikke automatisk som rollback eller som tilladelse til blind retry. I denne hændelse er CHECK/validering/kommentar med høj sandsynlighed committed samlet; det eneste atomiske alternativ er fuld rollback. PostgreSQLs `VALIDATE` kan have scannet rækker internt, men ingen observationspayload blev hentet til runneren eller logget, ingen rækkemutation skete, og downstream-D1/Edge/Worker/sync/weather/artifact/Pages blev ikke nået. Offentlig version er fortsat 4.0.310.
 

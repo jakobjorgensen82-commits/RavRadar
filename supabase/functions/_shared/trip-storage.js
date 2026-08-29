@@ -68,6 +68,10 @@ export const TRIP_INPUT_FIELD_NAMES = Object.freeze([
   'forecast_snapshot_id', 'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at', 'calibration_features',
   'data_quality_flags', 'forecast_target_at', 'report_accuracy',
 ]);
+const STORED_EXTERNAL_TRIP_FIELD_NAMES = new Set(
+  TRIP_INPUT_FIELD_NAMES.filter(key =>
+    key !== 'user_id' && key !== 'anonymous_id' && key !== 'gps'),
+);
 
 export const D1_TRIP_SCHEMA_STATEMENTS = Object.freeze([
   `create table if not exists trip_observations (
@@ -238,12 +242,80 @@ export function projectLegacyWeatherSnapshot(value) {
 
 export function projectLegacyExternalTripPayload(payload) {
   if (!isRecord(payload) || Number(payload.schema_version ?? 1) !== 1) return payload;
-  if (!Object.hasOwn(payload, 'weather_snapshot')) return payload;
-  const projectedSnapshot = projectLegacyWeatherSnapshot(payload.weather_snapshot);
+  const hasWeatherSnapshot = Object.hasOwn(payload, 'weather_snapshot');
+  const hasCalibrationFeatures = Object.hasOwn(payload, 'calibration_features');
+  if (!hasWeatherSnapshot && !hasCalibrationFeatures) return payload;
   const projected = { ...payload };
-  if (projectedSnapshot === undefined) delete projected.weather_snapshot;
-  else projected.weather_snapshot = projectedSnapshot;
+  if (hasWeatherSnapshot) {
+    const projectedSnapshot = projectLegacyWeatherSnapshot(payload.weather_snapshot);
+    if (projectedSnapshot === undefined) delete projected.weather_snapshot;
+    else projected.weather_snapshot = projectedSnapshot;
+  }
+  if (hasCalibrationFeatures) {
+    const projectedFeatures = projectLegacyCalibrationFeatures(payload.calibration_features);
+    if (projectedFeatures === undefined) delete projected.calibration_features;
+    else projected.calibration_features = projectedFeatures;
+  }
   return projected;
+}
+
+function compactReplayProjection(value, { keepEmptyRecord = false } = {}) {
+  if (value === null || value === undefined) return undefined;
+  if (!isRecord(value)) return value;
+  const compacted = {};
+  for (const [key, nested] of Object.entries(value)) {
+    const projected = compactReplayProjection(nested);
+    if (projected !== undefined) compacted[key] = projected;
+  }
+  return keepEmptyRecord || Object.keys(compacted).length > 0 ? compacted : undefined;
+}
+
+// The bounded PostgREST leaf projection never receives JSON null leaves. Old
+// D1 rows were produced from the complete 4.0.310 JSON documents and can still
+// contain those nulls plus fields that the privacy projection now discards.
+// Reproduce only that exact, documented projection for idempotency comparison;
+// never mutate the stored row or weaken the normal live-payload boundary.
+function projectStoredLegacyReplayPayload(payload) {
+  const schemaVersion = Number(payload.schema_version ?? 1);
+  if (schemaVersion === 2) {
+    // Schema-v2 was already a bounded public contract. Validate its original
+    // key/value shape before null compaction so an unknown null-valued alias
+    // cannot disappear and become an accepted replay difference.
+    assertStoredExternalTripContract(payload);
+  }
+  const projected = { ...payload };
+  if (Object.hasOwn(payload, 'weather_snapshot')) {
+    const sourceSnapshot = schemaVersion === 1
+      ? projectLegacyWeatherSnapshot(payload.weather_snapshot)
+      : payload.weather_snapshot;
+    const snapshot = compactReplayProjection(
+      sourceSnapshot,
+      { keepEmptyRecord: true },
+    );
+    if (snapshot === undefined) delete projected.weather_snapshot;
+    else projected.weather_snapshot = snapshot;
+  }
+  if (Object.hasOwn(payload, 'calibration_features')) {
+    const sourceFeatures = schemaVersion === 1
+      ? projectLegacyCalibrationFeatures(payload.calibration_features)
+      : payload.calibration_features;
+    const features = compactReplayProjection(sourceFeatures);
+    if (features === undefined) delete projected.calibration_features;
+    else projected.calibration_features = features;
+  }
+  return projected;
+}
+
+export function assertStoredExternalTripContract(payload) {
+  if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
+  if (Number(payload.schema_version ?? 1) !== 2) return true;
+  assertNoDirectIdentity(payload);
+  assertNoPrivateLocation(payload);
+  if (Object.keys(payload).some(key => !STORED_EXTERNAL_TRIP_FIELD_NAMES.has(key))) {
+    throw new Error('TRIP_PAYLOAD_FIELDS_INVALID');
+  }
+  assertExternalTripNestedContract(payload);
+  return true;
 }
 
 function assertCalibrationFeatureContract(value) {
@@ -479,7 +551,9 @@ function tripPayloadDigestValue(payload) {
   return value;
 }
 
-export function isLegacyUnattestedTripReplay(storedPayload, incomingPayload) {
+export function isLegacyUnattestedTripReplay(storedPayload, incomingPayload, {
+  allowMissingDerivedMatchedRuleIds = false,
+} = {}) {
   if (!isRecord(storedPayload) || !isRecord(incomingPayload)
     || Number(storedPayload.schema_version) !== 2
     || Number(incomingPayload.schema_version) !== 2) return false;
@@ -487,15 +561,22 @@ export function isLegacyUnattestedTripReplay(storedPayload, incomingPayload) {
   const legacyFlags = storedFlags === undefined
     || (Array.isArray(storedFlags) && storedFlags.length === 0);
   if (!legacyFlags || attestedTripRelease(storedPayload.calibration_features?.appVersion)) return false;
-  const normalized = normalizeExternalTripQualityBinding(storedPayload);
+  let normalized;
+  try {
+    normalized = externalTripPayload(projectStoredLegacyReplayPayload(storedPayload));
+  } catch {
+    return false;
+  }
   if (canonicalJson(tripPayloadDigestValue(normalized))
       === canonicalJson(tripPayloadDigestValue(storedPayload))) return false;
-  return Array.isArray(incomingPayload.data_quality_flags)
-    && canonicalJson(incomingPayload.data_quality_flags)
-      === canonicalJson([UNATTESTED_RAVSCORE_QUALITY_FLAG])
-    && incomingPayload.calibration_eligible === false
-    && canonicalJson(tripPayloadDigestValue(normalized))
-      === canonicalJson(tripPayloadDigestValue(incomingPayload));
+  if (!Array.isArray(incomingPayload.data_quality_flags)
+    || canonicalJson(incomingPayload.data_quality_flags)
+      !== canonicalJson([UNATTESTED_RAVSCORE_QUALITY_FLAG])
+    || incomingPayload.calibration_eligible !== false) return false;
+  if (canonicalJson(tripPayloadDigestValue(normalized))
+      === canonicalJson(tripPayloadDigestValue(incomingPayload))) return true;
+  return allowMissingDerivedMatchedRuleIds
+    && isLegacyMatchedRulesOnlyProjectionReplay(storedPayload, normalized, incomingPayload);
 }
 
 function isLegacyMatchedRulesOnlyProjectionReplay(storedPayload, projectedPayload, incomingPayload) {
@@ -526,7 +607,7 @@ export function isLegacyProjectedTripReplay(storedPayload, incomingPayload, {
     || Number(incomingPayload.schema_version ?? 1) !== 1) return false;
   let projected;
   try {
-    projected = externalTripPayload(storedPayload);
+    projected = externalTripPayload(projectStoredLegacyReplayPayload(storedPayload));
   } catch {
     return false;
   }
@@ -540,7 +621,7 @@ export function isLegacyProjectedTripReplay(storedPayload, incomingPayload, {
 
 export function isLegacyCompatibleTripReplay(storedPayload, incomingPayload, options = {}) {
   return isLegacyProjectedTripReplay(storedPayload, incomingPayload, options)
-    || isLegacyUnattestedTripReplay(storedPayload, incomingPayload);
+    || isLegacyUnattestedTripReplay(storedPayload, incomingPayload, options);
 }
 
 export async function externalTripRecord({ owner, payload, source = 'live' }) {
@@ -622,8 +703,31 @@ async function callTripGateway({ gatewayUrl, sharedSecret, pathname, body, fetch
     },
     body: bodyText,
   });
-  if (!response?.ok) throw new Error('TRIP_GATEWAY_UNAVAILABLE');
-  const result = await response.json();
+  if (!response?.ok) {
+    let failure = {};
+    if (response && typeof response.json === 'function') {
+      failure = await response.json().catch(() => ({}));
+    }
+    let category = 'HTTP_ERROR';
+    if (response?.status === 409 && failure?.error === 'TRIP_IDEMPOTENCY_CONFLICT') {
+      category = 'IDEMPOTENCY_CONFLICT';
+    } else if (response?.status === 400 && failure?.error === 'INVALID_REQUEST') {
+      category = 'REQUEST_REJECTED';
+    } else if (response?.status === 401 && failure?.error === 'UNAUTHORIZED') {
+      category = 'AUTH';
+    } else if (response?.status === 429) {
+      category = 'RATE_LIMITED';
+    } else if (Number(response?.status) >= 500) {
+      category = 'UNAVAILABLE';
+    }
+    throw new Error(`TRIP_GATEWAY_UNAVAILABLE:${category}`);
+  }
+  let result;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error('TRIP_GATEWAY_INVALID_RESPONSE');
+  }
   if (!isRecord(result) || result.ok !== true) throw new Error('TRIP_GATEWAY_INVALID_RESPONSE');
   return result;
 }

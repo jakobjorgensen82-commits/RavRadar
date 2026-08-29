@@ -1,3 +1,12 @@
+## 4.0.313-kandidat – afgrænset legacy-replay-roll-forward (2026-08-29)
+
+- Registrerer 4.0.312 PR #225/exact-head `33266087776`, merge `a5ece10d` og korrekt no-op push `33266184326`.
+- Registrerer, at backend `33266229687` bestod de tidlige D1-/Edge-/Worker-gates, men fejlede idempotent sync på `TRIP_GATEWAY_UNAVAILABLE`; failure-roll-forward tæller ikke som readiness.
+- Reproducerer 4.0.310-nullblade mod 4.0.311's bounded PostgREST-leafprojektion syntetisk og accepterer kun eksakt migration→migration-kompatibilitet.
+- Bevarer gamle D1-rækker, hashes og registry byteidentisk, afviser ukendte/core/non-null-forskelle og bruger faste ikke-lækkende gatewayfejl.
+- Udvider exact-D1-interlocken præcist til 4.0.313. Exact-head, merge, helt grøn backend, inspect/apply, frisk produktion og offentlig kontrol mangler; morgenhullet er fortsat ikke lukket, og offentlig sandhed er 4.0.310.
+- Candidate G, RavScore, vejr, state, geometri og punkter er uændrede. Se `CHANGELOG-4.0.313.md`, DEC-0082 og DEC-0109.
+
 ## 4.0.312-kandidat – robust PostgreSQL-verifikation før backend og rekonstruktion (2026-08-29)
 
 - Ruller 4.0.311 frem uden at ændre migrations-SQL, schema, Supabase-/Edge-/D1-runtime, Candidate G, RavScore, vejrdata eller rekonstruktionssemantik.

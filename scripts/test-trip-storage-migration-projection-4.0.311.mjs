@@ -9,6 +9,10 @@ import {
   projectSupabaseObservationRow,
   runMigration,
 } from './migrate-trip-storage-to-cloudflare.mjs';
+import {
+  externalTripPayload,
+  isLegacyCompatibleTripReplay,
+} from '../supabase/functions/_shared/trip-storage.js';
 
 const expectedPayloadColumns = [
   'zone_id', 'zone_name', 'coast_type', 'observed_at', 'submitted_at', 'hunt_mode', 'result', 'grams',
@@ -155,6 +159,173 @@ for (const forbiddenValue of [
   'synthetic private text', 'synthetic-private-image', 'synthetic-private-extra',
   'synthetic-private-weather', 'synthetic-private-geohash', '55.1',
 ]) assert.ok(!serializedProjection.includes(forbiddenValue));
+
+const legacyReplaySourceRow = {
+  ...sourceRow,
+  calibration_eligible: true,
+  data_quality_flags: [],
+  [alias('calibration_features', 'reasonCodes')]: [],
+  [alias('weather_snapshot', 'calibrationFeatures', 'reasonCodes')]: [],
+};
+const projectedLegacyReplay = externalTripPayload(projectSupabaseObservationRow(legacyReplaySourceRow));
+const storedSchemaTwoBeforeLeafProjection = {
+  ...projectedLegacyReplay,
+  calibration_eligible: true,
+  calibration_features: {
+    ...projectedLegacyReplay.calibration_features,
+    waveHeightM: null,
+    reasonCodes: [],
+  },
+  weather_snapshot: {
+    ...projectedLegacyReplay.weather_snapshot,
+    current: {
+      ...projectedLegacyReplay.weather_snapshot.current,
+      waveHeightM: null,
+    },
+    calibrationFeatures: {
+      ...projectedLegacyReplay.calibration_features,
+      waveHeightM: null,
+      reasonCodes: [],
+    },
+  },
+};
+delete storedSchemaTwoBeforeLeafProjection.data_quality_flags;
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaTwoBeforeLeafProjection,
+  projectedLegacyReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), true, 'Schema-v2 replay skal ligestille gamle nullblade med den nye fraværsprojektion.');
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaTwoBeforeLeafProjection,
+  { ...projectedLegacyReplay, result: 'good', found: true },
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'En reel schema-v2 kerneændring må aldrig skjules som legacyprojektion.');
+assert.equal(isLegacyCompatibleTripReplay(
+  {
+    ...storedSchemaTwoBeforeLeafProjection,
+    weather_snapshot: {
+      ...storedSchemaTwoBeforeLeafProjection.weather_snapshot,
+      unknownLegacyField: null,
+    },
+  },
+  projectedLegacyReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'Et ukendt schema-v2-felt må ikke forsvinde gennem nullkomprimeringen.');
+assert.equal(isLegacyCompatibleTripReplay(
+  {
+    ...storedSchemaTwoBeforeLeafProjection,
+    unknownLegacyTopLevel: null,
+  },
+  projectedLegacyReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'Et ukendt schema-v2-topfelt må ikke bortprojekteres.');
+assert.equal(isLegacyCompatibleTripReplay(
+  {
+    ...storedSchemaTwoBeforeLeafProjection,
+    weather_snapshot: {
+      ...storedSchemaTwoBeforeLeafProjection.weather_snapshot,
+      unknownLegacyField: 'ikke-en-tilladt-forskel',
+    },
+  },
+  projectedLegacyReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'Et ukendt ikke-null schema-v2-felt må aldrig accepteres.');
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaTwoBeforeLeafProjection,
+  {
+    ...projectedLegacyReplay,
+    calibration_features: {
+      ...projectedLegacyReplay.calibration_features,
+      totalScore: 51,
+    },
+  },
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'En ændret ikke-null kalibreringsværdi må aldrig accepteres.');
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaTwoBeforeLeafProjection,
+  {
+    ...projectedLegacyReplay,
+    weather_snapshot: {
+      ...projectedLegacyReplay.weather_snapshot,
+      current: {
+        ...projectedLegacyReplay.weather_snapshot.current,
+        windSpeedMps: 7.6,
+      },
+    },
+  },
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'En ændret ikke-null snapshotværdi må aldrig accepteres.');
+
+const nullableOnlySourceRow = {
+  ...sourceRow,
+  calibration_eligible: true,
+  data_quality_flags: [],
+};
+for (const projection of SUPABASE_OBSERVATION_LEAF_PROJECTIONS) {
+  delete nullableOnlySourceRow[projection.alias];
+}
+const nullableOnlyLeafPayload = projectSupabaseObservationRow(nullableOnlySourceRow);
+const nullableOnlyIncomingReplay = externalTripPayload(nullableOnlyLeafPayload);
+const nullableOnlyStoredReplay = {
+  ...nullableOnlyLeafPayload,
+  calibration_eligible: true,
+  data_quality_flags: [],
+  calibration_features: {
+    waveHeightM: null,
+  },
+  weather_snapshot: {
+    current: { waveHeightM: null },
+    score: { baseScore: null },
+    prediction: { probability: null },
+    calibrationFeatures: { waveHeightM: null },
+  },
+};
+assert.equal(isLegacyCompatibleTripReplay(
+  nullableOnlyStoredReplay,
+  nullableOnlyIncomingReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), true, 'Null-only nested forældre skal forsvinde som bladprojektionen, mens weather-roden bevares.');
+
+const storedSchemaOneBeforeLeafProjection = {
+  schema_version: 1,
+  client_observation_id: '77777777-7777-4777-8777-777777777777',
+  trip_id: '88888888-8888-4888-8888-888888888888',
+  observed_at: '2026-08-29T08:00:00.000Z',
+  submitted_at: '2026-08-29T08:30:00.000Z',
+  actual_zone_id: 'DK-B01-01',
+  actual_coastal_part_id: 'DK-B01-01-P01',
+  hunt_mode: 'beach',
+  result: 'none',
+  found: false,
+  weather_snapshot: {
+    schemaVersion: 4,
+    provider: 'DMI',
+    current: {
+      waveHeightM: null,
+      wavePeriodS: 6,
+      legacyDiagnostic: 'discarded-by-bounded-projection',
+    },
+    legacyDiagnostic: 'discarded-by-bounded-projection',
+  },
+};
+const projectedSchemaOneReplay = externalTripPayload({
+  ...storedSchemaOneBeforeLeafProjection,
+  weather_snapshot: {
+    schemaVersion: 4,
+    provider: 'DMI',
+    current: { wavePeriodS: 6 },
+  },
+});
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaOneBeforeLeafProjection,
+  projectedSchemaOneReplay,
+  { allowMissingDerivedMatchedRuleIds: true },
+), true, 'Schema-v1 replay skal bruge samme null-mod-fravær-semantik.');
+assert.equal(isLegacyCompatibleTripReplay(
+  storedSchemaOneBeforeLeafProjection,
+  { ...projectedSchemaOneReplay, result: 'good', found: true },
+  { allowMissingDerivedMatchedRuleIds: true },
+), false, 'En reel schema-v1 kerneændring må aldrig accepteres.');
 
 let fetchCall;
 const selectedResponseKeys = new Set([
