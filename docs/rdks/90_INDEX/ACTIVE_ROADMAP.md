@@ -1,12 +1,25 @@
 # RavRadar - aktivt roadmap
 
+## P0 4.0.310 – ekstern overtagelse efter ét manglende interval
+
+- [x] Bevis den aktive 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
+- [x] Sænk kun `external_watchdog=true` til 15 minutter og bevar intern 45-minuttersvagt.
+- [x] Bevar active/recent/manifest/concurrency samt alle data- og releasegates.
+- [x] Tilføj boundary- og dubletregressioner.
+- [x] Luk før-redningsproduktion, source/RDKS/håndbog/releasegate og geodatabevis.
+- [x] Genmål warmup til 5–12/48 timer, forkast tidligere kl. 15-ETA og bind ny tidligste READY til en ubrudt serie frem mod 2026-08-31 cirka kl. 06 dansk tid.
+- [ ] Luk exact-head, merge, post-merge-produktion og automatisk 15-minuttersbevis.
+
+Se DEC-0108. Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring.
+
 ## P0 4.0.309 – ekstern vagthund mod total schedule-stilhed
 
 - [x] Afgræns schedule-leveringsfejlen fra workflowkonfiguration, runnerkø og selve vejrbygningen.
 - [x] Bevar GitHub som normal scheduler og vælg ét eksternt, payloadfrit keepalivekald ved `04,19,34,49` UTC.
 - [x] Lås kaldet til eksplicit `external_watchdog=true` og DEC-0085's 45-minutters dual staleness.
-- [ ] Bestå lokale kontrakter, sourcegate, PR exact-head og frisk post-merge-produktion.
-- [ ] Opret/test ét cron-job, bevis to automatiske kald og genmål Candidate G-warmup.
+- [x] Bestå lokale kontrakter, sourcegate, PR #221 exact-head og frisk post-merge-produktion `33244062982`.
+- [x] Opret/test ét cron-job og bevis manuel samt to automatiske no-op-kald.
+- [x] Genmål Candidate G-warmup; komplet aktuelt vejr skjuler ikke, at 673 dele kun har 5–12/48 timer.
 
 Se DEC-0107. Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring.
 

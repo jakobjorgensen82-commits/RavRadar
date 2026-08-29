@@ -1,9 +1,17 @@
 # Aktive krav – samlet register
 
+## Hurtigere ekstern overtagelse – bindende fra 4.0.310
+
+- **REQ-WORKFLOW-EXTERNAL-ONE-MISSED-INTERVAL-001 – BINDENDE EJERBESLUTNING:** Når `external_watchdog=true`, må mere end 15 minutters samtidig gammel produktionshistorik og gammelt offentligt manifest uden aktiv/queued produktion bestille én normal `force=false`-produktion. Præcis 15 minutter er fortsat frisk.
+- **REQ-WORKFLOW-INTERNAL-WATCHDOG-45-001 – BINDENDE:** GitHubs native schedule-watchdog beholder 45 minutter. Almindelig manuel keepalive må ikke udløse produktionsvagten.
+- **REQ-WORKFLOW-EXTERNAL-NO-GATE-RELAXATION-001 – BINDENDE:** Den lavere eksterne grænse må ikke ændre current-hour, kildevalg, DMI/Copernicus, 210/673, Candidate G, state/recovery, validate/release, concurrency, deploy eller missingsemantik og må aldrig fylde huller med opfundne eller interpolerede værdier.
+
+Se DEC-0108.
+
 ## Ekstern schedulerstilhed – bindende fra 4.0.309
 
 - **REQ-WORKFLOW-EXTERNAL-SILENCE-WATCHDOG-001 – BINDENDE EJERBESLUTNING:** GitHub ejer fortsat normal produktion, pilot og cacheplan. Præcis ét eksternt cron-job må ved UTC-minut `04,19,34,49` dispatch'e `preserve-copernicus-current-shadow.yml` på `main` med `external_watchdog=true`. Det må ikke dispatch'e produktion, pilot, force, geometri eller modelarbejde direkte.
-- **REQ-WORKFLOW-EXTERNAL-WATCHDOG-FAIL-SAFE-001 – BINDENDE:** En almindelig manuel keepalive må ikke køre produktions-watchdoget. Det eksplicitte eksterne kald bevarer DEC-0085's 45-minutters krav om gammel workflowhistorik, gammelt offentligt manifest og fravær af aktiv produktion samt eksisterende concurrency og fulde produktionsgates.
+- **REQ-WORKFLOW-EXTERNAL-WATCHDOG-FAIL-SAFE-001 – BINDENDE / PRÆCISERET I 4.0.310:** En almindelig manuel keepalive må ikke køre produktions-watchdoget. Det eksplicitte eksterne kald bruger efter DEC-0108 mere end 15 minutters gammel workflowhistorik, gammelt offentligt manifest og fravær af aktiv/queued produktion; eksisterende concurrency og fulde produktionsgates bevares.
 - **REQ-WORKFLOW-EXTERNAL-WATCHDOG-PRIVACY-001 – BINDENDE:** Det eksterne kald må kun bære repository/workflow, `ref=main` og boolsk intent. Ingen vejrpayload, koordinater, rå U/V, private data, credentials fra RavRadar eller modelstate må sendes eller logges. Tokenet begrænses til RavRadar og Actions write; response-body gemmes ikke.
 
 Se DEC-0107. Dette er den senere afgrænsede ejerbeslutning, som REQ-WORKFLOW-GITHUB-SCHEDULE-001 tidligere krævede.

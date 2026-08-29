@@ -1,8 +1,15 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.310-kandidat – ekstern frekvens må ikke skabe egne datahuller
+
+- **ISSUE-EXTERNAL-WATCHDOG-45-MINUTE-TAKEOVER – RETTET LOKALT / AFVENTER CI-DRIFT:** 4.0.309-vagt `33246369618` bestilte korrekt redningsproduktion `33246376992`, men først cirka en time efter foregående produktionsstart. Kun eksternt `external_watchdog=true` bruger nu 15 minutter; GitHubs interne vagt beholder 45. Active/recent/manifest/concurrency og alle data-/releasegates er bevaret.
+- **ISSUE-NATIVE-SCHEDULE-DELIVERY-RECURRENCE – EKSTERNT AFBØDET / FORTSAT OVERVÅGET:** Intet native produktionsschedule fandtes omkring 09:29 UTC. Ét aktivt eksternt job er nu faktisk bevist, men samtidige udfald hos cron-job.org, GitHub API/Actions eller datakilder kan stadig give ærlig nøddrift og må ikke skjules med kunstige data.
+
+Se DEC-0108.
+
 ## 4.0.309-kandidat – ekstern afbødning af total schedulerstilhed
 
-- **ISSUE-GITHUB-SCHEDULE-SILENCE – EKSTERN AFBØDNING IMPLEMENTERET LOKALT / AKTIVERING AFVENTER:** Workflowene er aktive, og manuel `33241555811` bestod, men native schedule-events udeblev på tværs af produktion, pilot og keepalive. Ét eksplicit eksternt keepalivekald ved `04,19,34,49` UTC lukker den fælles schedulerafhængighed uden at starte produktion blindt. Exact-head, merge og faktisk cron-aktivering afventer.
+- **ISSUE-GITHUB-SCHEDULE-SILENCE – EKSTERN AFBØDNING AKTIV OG DRIFTSBEVIST:** Workflowene er aktive, og manuel `33241555811` bestod, men native schedule-events udeblev på tværs af produktion, pilot og keepalive. Ét eksplicit eksternt keepalivekald ved `04,19,34,49` UTC er aktivt som cron-job `8348098`; manuel, to no-op- og én dispatchgren er bevist gennem `33244853536`, `33245204517`, `33245798817` og `33246369618`.
 - **ISSUE-CANDIDATE-G-RECOVERY-TO-READY-PROGRESSION – NY SCHEDULERUSIKKERHED:** Offentlig `rr-20260829075656-210` er komplet 210/673, men primary har fortsat 0 aktive zoner/673 warmupdele og bruger den auditerede recovery. Den tidligere ETA forudsatte ubrudte nye produktionstimer og skal genberegnes efter stabil drift; ingen state eller modelregel ændres i 4.0.309.
 
 Se DEC-0107.

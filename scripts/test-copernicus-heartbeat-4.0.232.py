@@ -122,7 +122,9 @@ def main() -> None:
         "production-watchdog:",
         "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",
         "node scripts/check-production-watchdog.mjs",
-        "--maximum-silence-minutes 45",
+        "MAXIMUM_SILENCE_MINUTES:",
+        "external_watchdog == true && '15' || '45'",
+        '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"',
         "steps.watchdog.outputs.dispatch == 'true'",
     ):
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")

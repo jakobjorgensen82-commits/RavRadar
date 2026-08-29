@@ -1,5 +1,13 @@
 # RavRadar – overlevering til næste chat
 
+## Nyt øverste checkpoint – 4.0.310 hurtigere ekstern overtagelse
+
+- 4.0.309 er merged/produktionsverificeret via PR #221, exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og offentligt `rr-20260829085521-210`.
+- Ét aktivt cron-job, id `8348098`, gav manuel 204 samt automatiske no-op-runs `33245204517`/`33245798817`. Intet native produktionsschedule fandtes omkring 09:29 UTC.
+- 09:49-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992`; den bestod 09:00 UTC, målrettet Copernicus, 210/673, fulde gates og Pages og publicerede komplet `rr-20260829095610-210`. Cirka en time mellem produktionsstarterne var korrekt efter 45-minuttersreglen, men for langsomt som vedvarende erstatning for manglende native schedules.
+- 4.0.310 sænker kun `external_watchdog=true` til mere end 15 minutters dual staleness. Intern native vagt beholder 45 minutter; active/recent/manifest/concurrency og alle fulde data-/releasegates er uændrede.
+- Ingen kunstig/interpoleret historik, model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108 og fortsæt Sol/Ekstra høj gennem exact-head, produktion og automatisk grensbevis.
+
 ## Nyt øverste checkpoint – produktionslukket 4.0.306 og to isolerede Codex-worktrees
 
 - Offentlig baseline er produktionsverificeret 4.0.306/Candidate G fra runtimecommit `8ebbd4e7aaafee2a4a840749f35398355fe3fb03`. PR #217/exact-head `33212348031`, produktion `33212435923`, Pages `6148930627` og offentlig desktop-/390 px-kontrol er grønne. Frisk primary modnes ved 0/673 READY under komplet auditeret 673/673-recovery uden dækningshul. Broen bevarede cirka 36/48 timer; forventet primary-READY cirka 2026-08-29T09:00:00Z har omkring 16,5 timers margin til recoverygrænsen 2026-08-30T01:34:48Z. Se DEC-0104.

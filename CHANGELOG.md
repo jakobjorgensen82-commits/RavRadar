@@ -1,8 +1,16 @@
+## 4.0.310 – ekstern overtagelse efter ét manglende interval (2026-08-29)
+
+- 4.0.309-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992` efter fortsat native schedulerstilhed og beviste, at 45 minutter kunne give cirka en time mellem produktionsstarterne.
+- Sænker kun det eksplicitte eksterne `external_watchdog=true` til mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest. GitHubs interne vagt beholder 45 minutter.
+- Bevarer aktiv-run-/friskhedsblokering, concurrency, normal `force=false` og alle current-hour-, DMI/Copernicus-, 210/673-, Candidate G-, validate-, release- og deploygates.
+- Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring og ingen kunstig/interpoleret historik. Se DEC-0108 og `CHANGELOG-4.0.310.md`.
+
 ## 4.0.309 – ekstern vagthund mod GitHub-schedulerstilhed (2026-08-29)
 
 - Bevarer GitHubs normale 15-minuttersproduktion, Copernicus-pilot og cacheplan.
 - Tillader ét eksplicit, payloadfrit eksternt watchdog-kald ved `:04/:19/:34/:49` UTC.
 - Starter kun normal `force=false`-produktion efter 45 minutters gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion.
+- PR #221/exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og offentlig `rr-20260829085521-210` er grønne. Ét aktivt cron-job, id `8348098`, har bestået manuel test og de første to automatiske HTTP 204/no-op-kald som runs `33244853536`, `33245204517` og `33245798817`.
 - Almindelig manuel cachekørsel udløser ikke watchdoget; Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og punkter er uændrede. Se DEC-0107 og `CHANGELOG-4.0.309.md`.
 
 ## 4.0.308 – naturligt fosforspørgsmål og filtreret zonesøgning (2026-08-29)
