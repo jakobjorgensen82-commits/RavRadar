@@ -99,6 +99,7 @@ requireMarkers(tripStorageGate, [
   'test("^4\\\\.0\\\\.[0-9]+$")',
   'version.json could not be validated; this run remains a green no-op',
   '"4.0.311"',
+  '"4.0.312"',
   'RECONSTRUCTION_MODE" = "apply"',
   'RECONSTRUCTION_MODE" = "rollback"',
   'RECONSTRUCTION_MODE" = "cleanup"',
@@ -111,7 +112,7 @@ requireMarkers(tripStorageGate, [
   'EXPECTED_TRIP_STORAGE_MODE: d1',
   'node scripts/verify-trip-storage-edge.mjs',
   'node scripts/verify-cloudflare-trip-gateway.mjs',
-  'The live Edge contract is not exact 4.0.311 D1 mode',
+  'The live Edge contract is not the required Candidate G D1 mode',
   'The live Worker/registry contract could not be attested',
   'echo "ready=true" >> "$GITHUB_OUTPUT"',
   'this run remains a green no-op',
@@ -127,7 +128,7 @@ requireMarkers(d1BuildHeader, [
 
 function pagesProductionAllowed({ releaseVersion, reconstructionMode, exactD1Proof, liveD1Attestation }) {
   if (!/^4\.0\.[0-9]+$/.test(releaseVersion)) return false;
-  const requiresExactD1 = releaseVersion === '4.0.311'
+  const requiresExactD1 = ['4.0.311', '4.0.312'].includes(releaseVersion)
     || ['apply', 'rollback', 'cleanup'].includes(reconstructionMode);
   return !requiresExactD1 || (exactD1Proof && liveD1Attestation);
 }
@@ -144,7 +145,13 @@ assert.equal(pagesProductionAllowed({
 }), false, 'Et ældre exact-head D1-run må ikke åbne Pages efter en senere Supabase-rollback eller partial failure.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '4.0.312', reconstructionMode: 'none', exactD1Proof: false,
-}), true, 'Exact-head managementdeploy må ikke blive en permanent afhængighed efter 4.0.311.');
+}), false, '4.0.312-roll-forward må ikke deploye uden sit eget exact-head D1-bevis.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.312', reconstructionMode: 'none', exactD1Proof: true, liveD1Attestation: true,
+}), true, '4.0.312 må først åbne Pages efter exact-head D1-bevis og live attestation.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.313', reconstructionMode: 'none', exactD1Proof: false,
+}), true, 'Den afgrænsede first-release-interlock må ikke blive en permanent managementafhængighed.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '', reconstructionMode: 'none', exactD1Proof: false,
 }), false, 'Ugyldig versionsidentitet skal give grønt no-op, ikke bypass.');

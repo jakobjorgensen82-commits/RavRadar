@@ -1,6 +1,6 @@
-import { scoreRating } from "../core/score-engine.js?v=4.0.311";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.311";
-import { visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.311";
+import { scoreRating } from "../core/score-engine.js?v=4.0.312";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.312";
+import { visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.312";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');

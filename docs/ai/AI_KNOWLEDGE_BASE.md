@@ -17,7 +17,13 @@
 - Den næste samlede RavScore-model skal bevare provenance, trust, migration, tripbinding og cleanup, men interpolation må ikke blive dens normale missingregel.
 - Den næste models nødvej skal være målt-only og atomisk 210/673 med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
 
-Status 2026-08-29: kun lokal 4.0.311-kildekandidat; ingen apply eller produktionsverifikation endnu.
+### 4.0.312 roll-forward-status 2026-08-29
+
+4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`. Push-run `33263858078` var en korrekt grøn no-op uden artifact eller Pages. Backend-run `33263892151` nåede den atomiske SQL-forespørgsel, fik HTTP 201 og fejlede derefter på en flad `pg_get_constraintdef`-regex, som ikke tolererede PostgreSQLs ekstra parenteser omkring den kanoniske JSONPath.
+
+Den højt sandsynlige databasetilstand er samlet commit af CHECK, validering og kommentar; transaktionens eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Offentlig version er fortsat produktionsverificeret 4.0.310, og incident-rekonstruktionen er ikke anvendt.
+
+Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Målrettede tests, fuld lokal source/release/RDKS/håndbog/version og geodatakontrol er grønne, og exact-D1-interlocken omfatter 4.0.312. PR/exact-head, merge, backend, rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation mangler. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
 
 ## Produktions- og driftsverificeret 4.0.310 – ekstern og intern stilhedsgrænse er bevidst forskellige
 

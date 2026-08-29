@@ -1,6 +1,12 @@
 # Turlager – D1-drift, énvejscutover og roll-forward
 
-Denne runbook er den operative ledsager til DEC-0082 og DEC-0109. **Status ved 4.0.311-dokumentcheckpointet:** Kontrakten er lokalt implementeret/testet kandidat, men ikke CI-valideret, merged, kørt mod live-lager eller produktionsverificeret. Offentlig sandhed er fortsat 4.0.310. Runbooken må ikke bruges som bevis for, at cutover allerede er gennemført, og den må aldrig bruges til at udskrive private ture eller credentials.
+Denne runbook er den operative ledsager til DEC-0082 og DEC-0109. **Status ved 4.0.312-roll-forward-checkpointet:** 4.0.311-kilden bestod PR #224 exact-head CI `33263734108` på `4c4699fe`, blev merged som `7c168b00` og fik en korrekt grøn no-op-pushkørsel `33263858078` uden artifact eller Pages. Backendkørslen `33263892151` afsluttede ikke readiness; den stoppede i post-apply-katalogverifikationen før D1, Edge, Worker, sync, vejr, artifact og Pages. 4.0.312-kandidatens målrettede tests, hele lokale sourcegate, releasegate, RDKS/håndbog/version og særskilte geodatabevis er grønne; exact-head PR, merge og ny live backend mangler. Offentlig sandhed er fortsat produktionsverificeret 4.0.310. Runbooken må ikke bruges som bevis for, at cutover eller rekonstruktion er gennemført, og den må aldrig bruges til at udskrive private ture eller credentials.
+
+## 4.0.311-backendhændelsen og sikker genkørsel
+
+Kørsel `33263892151` modtog HTTP 201 for Candidate G-trip-quality-migrationen og fejlede derefter i den read-only kontrol af `pg_get_constraintdef`, fordi verifikatoren forventede en flad OR-tekst og ikke accepterede PostgreSQLs semantisk ækvivalente venstreparentesering. Migrations-SQL'en er én transaktion med drop/add-not-valid/validate/comment og uden `INSERT`, `UPDATE` eller `DELETE`. Den mulige Supabase-tilstand er derfor enten fuldt committed med valideret constraint og comment eller fuldt rullet tilbage; en halv eller uvalideret constrainttilstand kan ikke være efterladt. Ingen observationpayloads blev hentet til runneren eller logget, og ingen rækker blev muteret; constraintens interne `VALIDATE` kan have scannet rækker uden at ændre dem. Ingen efterfølgende backend- eller publiceringsdel blev nået.
+
+Den uændrede 4.0.311-kørsel må ikke genstartes som genvej. En sikker genkørsel starter først på en exact-head-grøn og merged 4.0.312-main. Den rettede read-only kontrol skal da acceptere den allerede aktuelle constraint uden mutation, hvis transaktionen blev committed; hvis den blev rullet tilbage, må den samme idempotente atomiske migration anvendes og genverificeres. Først når post-apply-katalogkontrollen er grøn, må D1-/Edge-/Worker-kæden fortsætte. Dette er roll-forward, ikke et bevis for, at nogen af de efterfølgende gates allerede er bestået.
 
 ## Arkitektur
 
@@ -8,7 +14,7 @@ Denne runbook er den operative ledsager til DEC-0082 og DEC-0109. **Status ved 4
 Browser → Supabase Auth/Edge → HMAC-pseudonym + allowlist → privat Cloudflare Worker → 10 EU-D1-shards
 ```
 
-Den færdige 4.0.311-kontrakt har konstant `[d1]`-identitet. Supabase kan kun være en kort initial bro ved en **helt ny** installation uden varig D1-controlmarkør og uden de ti eksisterende RavRadar-shards. Efter grønt capacity- og exact-main-bevis sættes præcis ét current-run installationstype-intent umiddelbart før første Edge-deploy: `d1_edge_predeploy_intent` for eksisterende D1 eller `fresh_edge_predeploy_intent` for genuine fresh. Existing-D1 får maintenance-kapabel Edge under uændret D1-mode/gammel Worker, derpå repair-intent og en udløbende lease før Worker. En partial existing-D1 Edge-deploy går kun D1 roll-forward; en partial fresh Edge-deploy går exact-main-bundet tilbage til Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation.
+Den i 4.0.311 mergede og af 4.0.312 fremførte kontrakt har konstant `[d1]`-identitet. Supabase kan kun være en kort initial bro ved en **helt ny** installation uden varig D1-controlmarkør og uden de ti eksisterende RavRadar-shards. Efter grønt capacity- og exact-main-bevis sættes præcis ét current-run installationstype-intent umiddelbart før første Edge-deploy: `d1_edge_predeploy_intent` for eksisterende D1 eller `fresh_edge_predeploy_intent` for genuine fresh. Existing-D1 får maintenance-kapabel Edge under uændret D1-mode/gammel Worker, derpå repair-intent og en udløbende lease før Worker. En partial existing-D1 Edge-deploy går kun D1 roll-forward; en partial fresh Edge-deploy går exact-main-bundet tilbage til Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation.
 
 ## Faste og behovsstyrede secrets
 
@@ -58,7 +64,7 @@ Værdier, token-id'er, konto-id og fuld privat gateway-origin må ikke kopieres 
 8. Alle Edge-prober har fem sekunders hard timeout. Attestér begge Edge-grænser i maintenance med to sammenhængende no-cache/no-store-par, vent 20 sekunder, genbekræft eksakt main og kræv mindst 600 sekunders resterende lease før første Worker-write. Secretinstallering, Worker-deploy og Worker-health er én samlet fail-closed gate på højst syv minutter.
 9. Kør første Supabase→D1-synk gennem den eksplicitte PostgREST-bladprojektion. Runneren må ikke hente `select=*`, hele fri-form-JSON-felter, GPS, koordinater, rå U/V, tekst/billeder eller ukendte kolonner; owner-id må kun bruges i memory til HMAC og må ikke logges.
 10. Kun ved en helt ny installation sættes current-run `activation_intent` og derefter `d1_activation_attempted=true` efter en ny exact-main-CAS. Legacyinstallationen har allerede fået markøren før quiescence. Aktivér D1, og attestér begge Edge-grænser uden cache i live D1-mode.
-11. Vent yderligere 20 sekunder, genbekræft eksakt main og kør afsluttende reconciliation. Genverificér begge Edge-grænser, Worker, SQL, global registry og D1-mode. Først et succesfuldt eksakt-head-bundet `[d1]`-run er gyldigt readinessbevis for en 4.0.311-Pagesproduktion.
+11. Vent yderligere 20 sekunder, genbekræft eksakt main og kør afsluttende reconciliation. Genverificér begge Edge-grænser, Worker, SQL, global registry og D1-mode. Først et succesfuldt eksakt-head-bundet `[d1]`-run er gyldigt readinessbevis for en 4.0.312-Pagesproduktion.
 
 Et rødt trin kan ikke tælle som readiness og stopper normal success-kæde. Guarded `continue-on-error` må kun bruges i den afgrænsede failure-kæde for at forsøge sikker genopretning; det må aldrig skjule en fejl, bevise readiness eller åbne artifact/Pages.
 
@@ -92,7 +98,7 @@ RavRadars Edge-gates begrænser normaltrafik til 2.000 observationer og 5.000 tu
 
 ## Sletning af en ejers ture
 
-Kommandoen `scripts/delete-trip-owner-data.mjs --confirm-delete-owner-data` må kun køres ved en verificeret ejerhenvendelse med credentials i procesmiljøet. `TARGET_SUPABASE_USER_ID` må ikke skrives som kommandolinjeargument eller i en delt log. Den 4.0.311-kandidatbundne kommando:
+Kommandoen `scripts/delete-trip-owner-data.mjs --confirm-delete-owner-data` må kun køres ved en verificeret ejerhenvendelse med credentials i procesmiljøet. `TARGET_SUPABASE_USER_ID` må ikke skrives som kommandolinjeargument eller i en delt log. Den 4.0.311-mergede og 4.0.312-roll-forward-bundne kommando:
 
 1. beregner HMAC-pseudonymet lokalt;
 2. skriver først ejerens globale D1-tombstone, så samtidige/nye reservationer stoppes;

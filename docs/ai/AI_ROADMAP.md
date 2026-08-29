@@ -1,14 +1,17 @@
-# AI Roadmap – RavRadar 4.0.309+
+# AI Roadmap – RavRadar 4.0.312+
 
 ## P0 nu – luk kun det ejerautoriserede morgenhul gennem DEC-0109
 
-1. Færdiggør lokalt tværgående review af state 2.1, trust, hard-outflow-suppression, checkpoint, measured-only fallback, workflow og trip-/databaseparitet.
-2. Bevar storage/privacy-kandidaten med installationstype-intent efter capacity/CAS, 20-/30-minutters lease, femsekunders Edge-prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
-3. Kør alle målrettede negative no-mutation-/privacy-/workflowtests samt RDKS/håndbog/version/sourcegate på den afsluttede kilde.
-4. Opret først derefter recovery-PR, luk exact-head, merge, kør eksakt-head `[d1]` backend og read-only inspect mod de eksakte artifacts.
-5. Apply kun ved eksakt descriptor- og mål-CAS; følg frisk produktion, fulde gates, Pages og offentlig desktop/mobil/210/673.
-6. Bevar privat rollback og kausal cleanup. Kald ikke P0 lukket eller produktionen genoprettet før offentlig beviskæde er grøn.
-7. Hent derefter nyeste grønne `main` ind i den separate DEC-0102-modelworktree. Bevar 72-timers atomisk measured-only emergency, og hold global koefficientlæring låst, indtil server-side signeret manifestbinding findes.
+1. [x] Luk 4.0.311-kilden gennem PR #224 exact-head CI `33263734108` og merge `7c168b00af535415117c968a8c021a493b083137`.
+2. [x] Bekræft at push-run `33263858078` var en korrekt no-op uden artifact/Pages, og at backend `33263892151` stoppede før D1/Edge/Worker/sync/weather/artifact/Pages efter atomisk SQL HTTP 201.
+3. [x] Afgræns databasetilstanden: CHECK/validering/kommentar er med høj sandsynlighed committed samlet; det eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og ingen destruktiv cleanup er nødvendig.
+4. [x] Implementér lokalt 4.0.312's strukturelle verifier: præcis én JSONPath-literal, tolerant over for parentesering, eksakt kanonisk path og fail-closed ved reorder, duplicate, extra eller ambiguous. Målrettede tests er grønne, og exact-D1-interlocken omfatter 4.0.312.
+5. [x] Luk fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol for 4.0.312. Bevar trip protocol/header 4.0.311.
+6. [ ] Opret egen PR, bestå exact-head og merge 4.0.312 sikkert.
+7. [ ] Kør backend igen kun fra eksakt 4.0.312-`main`; verifier read-only den allerede mulige constrainttilstand og fortsæt idempotent. Genkør ikke den uændrede 4.0.311-backend.
+8. [ ] Kør read-only inspect mod de eksakte artifacts. Apply kun ved eksakt descriptor- og mål-CAS; følg frisk produktion, fulde gates, Pages og offentlig desktop/mobil/210/673.
+9. [ ] Bevar privat rollback og kausal cleanup. Kald ikke P0 lukket eller produktionen genoprettet før offentlig beviskæde er grøn; offentlig sandhed er indtil da 4.0.310.
+10. [ ] Hent derefter nyeste grønne `main` ind i den separate DEC-0102-modelworktree. Bevar 72-timers atomisk measured-only emergency, og hold global koefficientlæring låst, indtil server-side signeret manifestbinding findes.
 
 Interpolation er ikke en roadmapfeature eller generel fallback; den er en enkelt ejerautoriseret incidentoperation. Sol/Ultra bevares gennem slutvalidering.
 

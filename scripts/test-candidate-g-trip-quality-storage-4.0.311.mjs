@@ -22,10 +22,89 @@ const tripSchema = JSON.parse(fs.readFileSync('docs/research/trip-evidence-v2.sc
 assert.equal(assertCandidateGTripQualityMigrationSql(migration), true);
 const verifiedConstraintRow = {
   convalidated: true,
-  definition: 'check schema_version = 1 or schema_version = 2 and calibration_eligible data_quality_flags actual_zone_id forecast_zone_id jsonb_path_query_array @ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested"',
+  definition: `CHECK (((schema_version = 1) OR ((schema_version = 2)
+    AND calibration_eligible AND data_quality_flags IS NOT NULL
+    AND actual_zone_id IS NOT NULL AND forecast_zone_id IS NOT NULL
+    AND (jsonb_path_query_array(
+      COALESCE((calibration_features -> 'reasonCodes'::text), '[]'::jsonb),
+      '$[*]?((@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested")'::jsonpath
+    ) = COALESCE(data_quality_flags, '[]'::jsonb)))))`,
   constraint_comment: 'Trip v2 DEC-0109-v2: exact quality allowlist and canonical quality-reason order; reconstructed, public-emergency and legacy-unattested snapshots are always excluded from calibration.',
 };
 assert.equal(assertCandidateGTripQualityConstraintRows([verifiedConstraintRow]), true);
+const rightParenthesizedConstraintRow = {
+  ...verifiedConstraintRow,
+  definition: verifiedConstraintRow.definition.replace(
+    '((@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested")',
+    '(@ == "public-emergency-last-complete" || (@ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested"))',
+  ),
+};
+assert.equal(assertCandidateGTripQualityConstraintRows([rightParenthesizedConstraintRow]), true,
+  'Semantisk uvæsentlig PostgreSQL-parentesering må ikke afvise den forseglede canonical path.');
+for (const decoyDefinition of [
+  verifiedConstraintRow.definition.replace('jsonb_path_query_array(', 'evil_jsonb_path_query_array('),
+  `${verifiedConstraintRow.definition.replace('jsonb_path_query_array(', 'coalesce(')}
+    AND 'jsonb_path_query_array(''[]''::jsonb, ''$[*]?(@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")''::jsonpath)'::text <> ''`,
+]) {
+  assert.throws(() => assertCandidateGTripQualityConstraintRows([{
+    ...verifiedConstraintRow,
+    definition: decoyDefinition,
+  }]), /canonical-reason-order/,
+  'Kun et ægte, eksakt navngivet jsonb_path_query_array-kald uden for SQL-strengliteraler må attesteres.');
+}
+const reorderedConstraintRow = {
+  ...verifiedConstraintRow,
+  definition: verifiedConstraintRow.definition.replace(
+    '((@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested")',
+    '((@ == "ravscore-reconstructed-derived-evidence" || @ == "public-emergency-last-complete") || @ == "ravscore-evidence-trust-unattested")',
+  ),
+};
+assert.throws(() => assertCandidateGTripQualityConstraintRows([reorderedConstraintRow]), /canonical-reason-order/,
+  'PostgreSQL-parenteser må tolereres, men den forseglede reason-code-rækkefølge må ikke ombyttes.');
+for (const alteredLiteral of [
+  'PUBLIC-EMERGENCY-LAST-COMPLETE',
+  'public-emergency-last-complete ',
+  ' public-emergency-last-complete',
+]) {
+  const inexactReasonConstraintRow = {
+    ...verifiedConstraintRow,
+    definition: verifiedConstraintRow.definition.replace(
+      'public-emergency-last-complete',
+      alteredLiteral,
+    ),
+  };
+  assert.throws(() => assertCandidateGTripQualityConstraintRows([inexactReasonConstraintRow]), /canonical-reason-order/,
+    'Reason-koder er case- og whitespace-følsomme og må ikke normaliseres inde i JSONPath-strengværdier.');
+}
+const duplicateReasonConstraintRow = {
+  ...verifiedConstraintRow,
+  definition: verifiedConstraintRow.definition.replace(
+    '@ == "ravscore-evidence-trust-unattested")',
+    '@ == "ravscore-evidence-trust-unattested" || @ == "ravscore-evidence-trust-unattested")',
+  ),
+};
+assert.throws(() => assertCandidateGTripQualityConstraintRows([duplicateReasonConstraintRow]), /canonical-reason-order/,
+  'En deparsertekst med dubleret canonical reason må ikke godkendes.');
+for (const unexpectedPath of [
+  '(@ == "unexpected" || (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested")',
+  '((@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested" || @ == "unexpected")',
+]) {
+  const extraPredicateConstraintRow = {
+    ...verifiedConstraintRow,
+    definition: verifiedConstraintRow.definition.replace(
+      '((@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence") || @ == "ravscore-evidence-trust-unattested")',
+      unexpectedPath,
+    ),
+  };
+  assert.throws(() => assertCandidateGTripQualityConstraintRows([extraPredicateConstraintRow]), /canonical-reason-order/,
+    'En ekstra predicate før eller efter den forseglede canonical path må ikke godkendes.');
+}
+const ambiguousCanonicalCallRow = {
+  ...verifiedConstraintRow,
+  definition: `${verifiedConstraintRow.definition} AND ${verifiedConstraintRow.definition.match(/jsonb_path_query_array\([\s\S]*?\n    \)/)?.[0]}`,
+};
+assert.throws(() => assertCandidateGTripQualityConstraintRows([ambiguousCanonicalCallRow]), /canonical-reason-order/,
+  'Præcis ét jsonb_path-kald må binde alle tre canonical reasons.');
 assert.throws(() => assertCandidateGTripQualityConstraintRows([{
   convalidated: false,
   definition: 'calibration_eligible data_quality_flags actual_zone_id forecast_zone_id jsonb_path_query_array public-emergency-last-complete ravscore-reconstructed-derived-evidence ravscore-evidence-trust-unattested',

@@ -1,6 +1,6 @@
-# Implementeringsstatus – lokal 4.0.311-kandidat til én Candidate G-rekonstruktion
+# Implementeringsstatus – lokal 4.0.312-roll-forward til 4.0.311-protokollen
 
-## P0 – ejerautoriseret morgenhul, endnu ikke anvendt i produktion
+## P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
 
 - [x] Afgræns incident, kilder, metode og privacy i policy samt DEC-0109.
 - [x] Lås 210/673, 665 × 1-timeskadence, 8 × 3-timerskadence, eksakte ankre og højst fem syntetiske prøver pr. del.
@@ -16,14 +16,20 @@
 - [x] Kræv exact-head `[d1]`-bevis før Pages. Efter capacity/CAS sættes existing-D1 eller fresh Edge-predeploy-intent umiddelbart før første Edge-deploy. Existing D1 bruger 20-minutters lease/30-minutters max, femsekunders prober, dobbeltattestation, 20-sekunders drain, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main-bundet Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
 - [x] Implementér én atomisk global D1-registry på control-sharden og owner-erasure tombstones, så tværshard-idempotens, konflikter og samtidige ejer-sletninger er fail-closed.
 - [x] Luk og målret test den deterministiske sikre projektion og no-mutation-replay/readback for historiske fri-form-snapshots på tværs af Supabase, Edge og D1. Migrationen bruger eksplicit server-side PostgREST-bladselect og læser aldrig `select=*`, hele fri-form-JSON, GPS/koordinater, rå U/V, fri tekst/billeder eller ukendte kolonner.
-- [ ] Bevar P2-kalibreringslåsen: schema-v2/`calibration_eligible` er kun klientattesteret og internt konsistent, ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring før særskilt server-side snapshotbinding.
-- [ ] Bestå alle målrettede reconstruction-, state-, audit-, fallback-, workflow-, trip-, Edge-, D1-/Supabase- og privacytests på den afsluttede kilde.
-- [ ] Bestå fuld sourcegate, version/RDKS/håndbogsidentitet og separat geodatabevis på PR'ens eksakte head.
-- [ ] Merge sikkert og gennemfør `inspect` mod de eksakte to artifacts; godkend kun apply ved uændret descriptor-/mål-CAS.
+- [x] Bevar P2-kalibreringslåsen: schema-v2/`calibration_eligible` er kun klientattesteret og internt konsistent, ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring før særskilt server-side snapshotbinding.
+- [x] Bestå alle målrettede reconstruction-, state-, audit-, fallback-, workflow-, trip-, Edge-, D1-/Supabase- og privacytests for 4.0.311-source.
+- [x] Bestå fuld sourcegate, version/RDKS/håndbogsidentitet og separat geodatabevis på PR #224's eksakte head `4c4699fe`; exact-head `33263734108`/`99129959870` er grøn.
+- [x] Merge PR #224 som `7c168b00` og bevis grøn push-no-op `33263858078` uden artifact/Pages.
+- [x] Stop backend `33263892151`/`99130384780` før D1/Edge efter falsk negativ post-SQL-katalogverifikation; dokumentér CHECK som enten fuldt committed/valideret/kommenteret eller fuldt rullet tilbage. `VALIDATE` kan have scannet rækker internt, men runneren hentede/loggede ingen observationspayload, og der skete ingen rækkemutation eller downstreamskrivning.
+- [x] Implementér 4.0.312's balancerede strukturelle exact-JSONPath-verifier og bestå målrettede positive/reordered/duplicate/ambiguous tests lokalt.
+- [x] Bestå 4.0.312's fulde lokale source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis.
+- [ ] Opret PR og bestå exact-head.
+- [ ] Merge sikkert og gennemfør grøn `[d1]`-backend på den nye eksakte main; genkør ikke uændret 4.0.311-workflow.
+- [ ] Gennemfør derefter `inspect` mod de eksakte to artifacts og godkend kun apply ved uændret descriptor-/mål-CAS.
 - [ ] Gennemfør apply, frisk normal produktion, fuld `validate`/`release:gate`, artifact, Pages og offentlig desktop/mobil/210/673-kontrol.
 - [ ] Bevar private rollback-/cleanupbeviser og dokumentér tilbagevenden til målt schema 2.0 efter naturligt rolloff eller kausal cleanup.
 
-Ingen produktion er manipuleret ved dette checkpoint. Offentlig sandhed er fortsat 4.0.310/nødvisning. Se DEC-0109.
+Ingen observationspayload blev hentet til runneren, logget eller ændret, og der skete ingen rækkemutation. D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Supabase-CHECK'en er med høj sandsynlighed atomisk committed/valideret/kommenteret; eneste alternativ er fuld rollback. Offentlig sandhed er fortsat 4.0.310/nødvisning. Se DEC-0109.
 
 Den kommende samlede model har desuden en bindende, endnu ikke slutvalideret nøddriftsgate: komplet målt-only atomisk 210/673-state, eksakt model/state/hashbinding, tydelig DA/DE/EN-status, højst 72 timer og aldrig længere end kortere prognoseudløb, ikke-kalibrerbare ture, automatisk frisk primary og fail-closed ved ukendt/rekonstrueret/tampered/udløbet state. Interpolation er ikke en normal fallback.
 

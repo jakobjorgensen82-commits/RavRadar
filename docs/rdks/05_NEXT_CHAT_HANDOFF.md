@@ -1,13 +1,16 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-29 lokal 4.0.311-kandidat efter genstart
+## Aktuelt P0 – 2026-08-29 lokal 4.0.312-roll-forward efter 4.0.311-backendstop
 
 - Offentlig drift er fortsat 4.0.310. Morgenhullet er ikke rekonstrueret i produktion endnu.
 - Ejerautoriteten gælder kun incident `RRGAP-2026-08-29-CANDIDATE-G-01`; se DEC-0109. Interpolér kun allerede afledt kystnormal strength mellem eksakte run-/artifactankre. Vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter og private payloads er forbudt.
 - Bevar schema 2.1/trust, calibration/hard-observed false, measured-only fallback, tripflags, inspect/apply/rollback/cleanup og alle normale releasegates.
-- Storagekandidaten sætter efter capacity/CAS existing-D1 eller fresh Edge-predeploy-intent lige før første Edge-deploy. Existing D1 går gennem Edge under uændret mode/gammel Worker → repair-intent → 20-minutters lease/30-minutters max → femsekunders dobbeltprober → 20-sekunders drain → mindst 600 sekunders restlease → samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Uden intent ingen recoverymutation. Stadig lokal kandidat, ikke livebevis.
-- Recoveryarbejdet overlevede computerens genstart. Branch og filer er intakte; intet er pushet, merged eller deployet. Den aktive redigeringskopi er den genoprettede plain workspace, som senere skal samles mekanisk tilbage i recovery-clonen før commit.
-- Færdiggør agenternes kode-/testreview, kør målrettede tests + RDKS/håndbog/version/geodatabevis + fuld sourcegate, og opret først derefter PR. Backend `[d1]`, apply og Pages kræver hver eksakt aktuelle main; apply kræver ny read-only inspect og eksakt descriptor-/mål-CAS.
+- 4.0.311-head `4c4699fe` bestod PR #224 exact-head `33263734108`/job `99129959870` og blev merged som `7c168b00`. Push `33263858078` var korrekt no-op uden build/artifact/Pages.
+- Backend `33263892151`/job `99130384780` modtog HTTP 201 for én atomisk CHECK-transaktion, men stoppede bagefter på en formatteringsfølsom katalogverifier. CHECK'en er med høj sandsynlighed fuldt committed/valideret/kommenteret; eneste alternativ er fuld rollback. `VALIDATE` kan have scannet rækker internt, men runneren hentede/loggede ingen observationspayload, og der skete ingen rækkemutation.
+- Kæden nåede ikke D1-prepare/capacity, Edge-predeploy, maintenance, Worker, sync, mode/reconcile, vejr, artifact eller Pages. Storage-intent-/lease-/roll-forward-kontrakten er derfor sourcebevis, ikke livebevis.
+- Lokal branch `codex/candidate-g-constraint-verifier-4.0.312` bruger nu balanceret, deparser-tolerant exact-JSONPath-verifikation. Positiv deparserform samt reordered, duplicate og ambiguous negatives er målrettet grønne.
+- Fuld lokal 4.0.312-source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis er grønne. Opret nu PR, bestå exact-head og merge. Genkør ikke uændret 4.0.311-backend.
+- Efter merge: kør `[d1]` på eksakt ny main. Først efter grøn backend køres ny read-only inspect, eksakt descriptor-/mål-CAS, apply, frisk normal produktion, fuld validate/releasegate og offentlig desktop/mobil/210/673.
 - Efter produktionsverificeret recovery hentes nyeste `main` ind i den separate DEC-0102-modelworktree. Dens næste beslutningsnummer skal ligge efter DEC-0109, og den må ikke gøre interpolation til generel missingregel. Modellen skal selv levere en målt-only atomisk 210/673-nødstate med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
 - Åbent P2: schema-v2/`calibration_eligible` er ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring og kald ikke feltet empirisk evidens, før en særskilt server-side snapshotbinding findes.
 
@@ -205,7 +208,7 @@ Anbefalet model/indsats: GPT-5.6 Sol/Ultra.
 ## Produktionsverificeret 4.0.287 – lagerarkitekturens udgangspunkt
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
-- Historisk 4.0.287-kontrakt var grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og daværende eksplicit Supabase-rollback. Rollbackdelen er afløst af det øverste 4.0.311-handoff.
+- Historisk 4.0.287-kontrakt var grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og daværende eksplicit Supabase-rollback. Rollbackdelen er afløst af det øverste 4.0.312-roll-forward-handoff, mens trust-/tripprotokollens kompatibilitetsgrænse forbliver 4.0.311.
 - Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget. Cloudflare-token er uden udløb; det installerede Supabase-PAT har udløb 25. august 2027, men må efter den aktuelle behovsstyrede politik nedenfor udløbe uden fornyelse.
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den korte health-udbredelsesforsinkelse.
 - PR #166 bestod exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` bestod privat Worker-grænse, pre-/post-migration, D1-Edge og ikke-skrivende CORS/login/feltkontrol; fire kilderækker blev migreret og genkørslen var idempotent.
