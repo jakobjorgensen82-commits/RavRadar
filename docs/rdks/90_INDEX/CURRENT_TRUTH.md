@@ -1,13 +1,23 @@
 # Current truth – gældende projektviden
 
-## 4.0.309-kandidat – ekstern vagthund mod total schedulerstilhed
+## 4.0.310-kandidat – ekstern overtagelse efter ét manglende interval
 
-- GitHubs tre native planer er aktive på `main`, og manuel ikke-tvungen produktion `33241555811` bestod hele den friske gate-, artifact- og Pages-kæde. Alligevel udeblev nye schedule-events efter den registrerede produktion 04:19 UTC; problemet ligger i schedule-leveringen, ikke i den tunge pipelines evne til at køre.
-- Normal produktion forbliver `14,29,44,59`, pilot `06` og intern cache/watchdog `07,17,27,37,47,57` UTC. Ét eksternt payloadfrit kald ved `04,19,34,49` må kun dispatch'e keepalive-workflowet med `external_watchdog=true`.
-- Den eksisterende 45-minutters kontrol kræver gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion. Almindelig manuel keepalive er fortsat en no-op, og alle tunge builds deler fortsat én concurrencygruppe.
-- Offentlig manifest fra `rr-20260829075656-210` er komplet 210/673, men primær Candidate G står fortsat i 673-deles warmup og den auditerede recovery er aktiv. Den tidligere READY-ETA er derfor ikke et afsluttet bevis; schedulerstabiliteten skal genetableres og eftermåles.
-- Candidate G, RavScore, modelsemantik, DMI/Copernicus-input, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se DEC-0107.
-- Målrettede heartbeat-, watchdog-, workflow- og håndbogstests, RDKS, releasegate og hele lokale `scripts/validate-source.ps1` er grønne. Det særskilte geodatabevis viser kun topversionsfeltet `4.0.308 → 4.0.309` i `data/kystdata.json` og `data/zones.geojson`; exact-head og ekstern aktivering afventer.
+- 4.0.309's første virkelige 45-minuttersgren blev bevist kl. 09:49 UTC: ekstern vagt `33246369618` fandt samtidig gammel produktionshistorik og gammelt manifest og bestilte normal redningsproduktion `33246376992`. Produktionen bestod current-hour, målrettet Copernicus, komplet 210/673, Candidate G-runtimeaudit, fuld validering, releasegate og Pages og publicerede `rr-20260829095610-210` med reference 09:00 UTC.
+- En efterfølgende offentlig, aggregeret kontrol af samme datasæt viser 0/673 memory-ready dele, 673 `WINDOW_INCOMPLETE` og kun 5–12 af de krævede 48 sammenhængende timer. Det aktuelle vejr er komplet, og den nye suffix er sammenhængende, men morgenens mistede historik blev ikke efterfyldt; den tidligere forventning om nøddriftsophør omkring kl. 15 dansk tid er derfor forkastet. Uden flere huller er tidligste realistiske fulde READY cirka 2026-08-31 kl. 06.15–06.30 dansk tid efter første afsluttede produktion over 48 timer.
+- Beviset viser også, at 45 minutter kan give cirka en time mellem produktionsstarterne, når GitHubs native schedules helt udebliver. Ejeren kræver, at for få eksterne starter ikke selv bliver årsag til datahuller.
+- Kun det eksplicitte eksterne `external_watchdog=true` sænkes derfor til mere end 15 minutters dual staleness. GitHubs interne native schedule-vagt beholder 45 minutter; aktiv/queued produktion, frisk runhistorik eller friskt manifest blokerer fortsat.
+- Redningsproduktionen er uændret `force=false` og skal fortsat gennem current-hour, målrettet Copernicus, 210/673, Candidate G-runtimeaudit, fuld validate/releasegate og Pages. Ingen delvise eller kunstige data kan publiceres.
+- Candidate G, RavScore, DMI/Copernicus-scoreinput, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se DEC-0108.
+
+## Produktions- og driftsverificeret 4.0.309 – ekstern vagthund mod total schedulerstilhed
+
+- PR #221 bestod exact-head `33244011544` på `6046e8a3f0eae43ed25126c5290e42c58d675c81`, blev merged som `aba3d669876efa515829e57871a4e8bc100c9de8`, og post-merge-produktion `33244062982` bestod frisk data, fuld validering, releasegate, artifact og Pages-deploy.
+- Offentlig `rr-20260829085521-210`, genereret 2026-08-29T08:55:21Z med reference 06:00Z, er komplet 210 zoner/673 kystdele. Primær Candidate G står fortsat ved 0 aktive zoner og 673 warmupdele under den komplette auditerede recovery `rr-20260827013448-210`; dens hårde 72-timersgrænse er 2026-08-30T01:34:48Z.
+- Præcis ét aktivt cron-job.org-job, id `8348098`, kalder keepalive-workflowet ved `04,19,34,49` UTC med `external_watchdog=true`. Manuel test gav HTTP 204 og GitHub-run `33244853536`; de første automatiske kald kl. 09:19 og 09:34 UTC gav også 204 og grønne runs `33245204517` og `33245798817`.
+- Begge automatiske vagter sprang korrekt produktionsdispatch over ved frisk offentlig produktion. Det andet no-op ved 09:34 UTC skyldtes, at manifestet kun var cirka 39 minutter gammelt; der fandtes ikke en ny native produktions-`schedule` omkring 09:29 UTC. Et no-op er derfor bevis for friskhedskontrollen, ikke i sig selv bevis for et leveret GitHub-schedule-event.
+- Normal produktion forbliver `14,29,44,59`, pilot `06` og intern cache/watchdog `07,17,27,37,47,57` UTC. Den eksisterende 45-minutters kontrol kræver gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion; almindelig manuel keepalive er fortsat en no-op, og alle tunge builds deler én concurrencygruppe.
+- Candidate G, RavScore, modelsemantik, DMI/Copernicus-input, state/cache/recovery, geometri og land-/vandpunkter er urørte. Ingen historik eller vejrdata er opfundet eller interpoleret. Se DEC-0107.
+- Målrettede heartbeat-, watchdog-, workflow- og håndbogstests, RDKS, releasegate og hele lokale `scripts/validate-source.ps1` er grønne. Det særskilte geodatabevis viser kun topversionsfeltet `4.0.308 → 4.0.309` i `data/kystdata.json` og `data/zones.geojson`.
 
 ## 4.0.308-kandidat – naturligt sikkerhedsspørgsmål og alle zonehits
 

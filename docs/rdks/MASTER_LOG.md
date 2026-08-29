@@ -1,10 +1,21 @@
+## 2026-08-29 – 4.0.310 sænker kun ekstern stilhedsgrænse
+
+- Den tredje automatiske 4.0.309-vagt `33246369618` ramte kl. 09:49 UTC efter fortsat manglende native schedules og bestilte normal redningsproduktion `33246376992`. Den bestod hele kæden og publicerede komplet `rr-20260829095610-210` med reference 09:00 UTC. 45-minuttersgrenen virker, men gav cirka en time mellem produktionsstarterne.
+- Offentlig aggregeret kontrol af primæren viste 0/673 memory-ready, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer. Det aktuelle vejr er komplet, men mistet morgenhistorik blev ikke gendannet; kl. 15-ETA er forkastet til fordel for tidligst cirka 2026-08-31 kl. 06.15–06.30 dansk tid uden nye huller.
+- Ejeren kræver, at vedvarende GitHub-schedulerstilhed ikke giver datahuller, fordi den eksterne vagt accepterer for få starter. Kun `external_watchdog=true` sænkes derfor til mere end 15 minutters samtidig gammel runhistorik og gammelt manifest.
+- GitHubs interne vagt beholder 45 minutter. Aktiv/queued produktion, frisk runhistorik, friskt manifest, begge concurrencygrupper og alle data-/releasegates bevares.
+- Candidate G, RavScore, DMI/Copernicus-scoreinput, state/cache/recovery, geometri, punkter og faktiske vejrdata er urørte; ingen historik opfindes eller interpoleres. Se DEC-0108.
+- Målrettede boundary-/workflowtests, RDKS, begge håndbøger, releaseversion, hele lokale `scripts/validate-source.ps1` og releasegate består. Særskilt geodatadiff viser kun topversion 4.0.309 → 4.0.310.
+
 ## 2026-08-29 – 4.0.309 lukker total GitHub-schedulerstilhed eksternt
 
 - GitHub-workflowene var aktive, runnerkøen var normal, og manuel produktion `33241555811` bestod hele den friske kæde, men schedule-events udeblev samtidig for produktion, pilot og keepalive.
 - Ejeren traf den senere afgrænsede beslutning, som DEC-0085 havde reserveret: ét eksternt cron-job kalder kun keepalive-workflowet ved `04,19,34,49` UTC med `external_watchdog=true`.
 - Dual staleness på 45 minutter, ingen aktiv produktion, begge concurrencygrupper og alle fulde produktionsgates bevares. Kaldet bærer ingen vejr-, model-, koordinat-, U/V- eller privat payload.
-- Offentlig primary er fortsat 673-deles warmup under auditeret recovery; ny ETA måles først efter stabil cadence. Se DEC-0107.
-- Målrettede tests, håndbogsgaten, RDKS, releasegate og hele lokale `validate:source` består. Geodataenes særskilte diff viser kun releaseversion; exact-head og ekstern aktivering afventer.
+- PR #221 bestod exact-head `33244011544` på `6046e8a3`, blev merged som `aba3d669`, og post-merge-produktion `33244062982` bestod hele den friske kæde. Offentlig `rr-20260829085521-210` er komplet 210/673.
+- Præcis ét cron-job.org-job, id `8348098`, er aktivt. Manuel prøve `33244853536` og automatiske prøver `33245204517`/`33245798817` gav HTTP 204 og korrekt no-op ved frisk produktion. Der kom fortsat ingen native produktions-`schedule` omkring 09:29 UTC; 09:34-no-op skyldtes et cirka 39 minutter gammelt manifest.
+- Offentlig primary er fortsat 673-deles warmup under auditeret recovery; ny ETA måles først efter stabil cadence. Ingen data eller historik er opfundet. Se DEC-0107.
+- Målrettede tests, håndbogsgaten, RDKS, releasegate og hele lokale `validate:source` består. Geodataenes særskilte diff viser kun releaseversion.
 
 ## 2026-08-29 – offentlig 4.0.307-kontrol udløser afgrænset 4.0.308
 

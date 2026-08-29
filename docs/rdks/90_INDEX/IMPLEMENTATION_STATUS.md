@@ -1,6 +1,19 @@
-# Implementeringsstatus – 4.0.309 ekstern produktionsvagthund
+# Implementeringsstatus – 4.0.310 hurtigere ekstern produktionsvagthund
 
-## 4.0.309-kandidat – luk total GitHub-schedulerstilhed eksternt
+## 4.0.310-kandidat – overtag efter ét manglende native interval
+
+- [x] Bevis den virkelige 45-minuttersgren: vagt `33246369618` bestiller redningsproduktion `33246376992`.
+- [x] Afgræns den lave frekvens til den eksterne grænse; bevar GitHubs interne 45-minuttersvagt.
+- [x] Sæt kun `external_watchdog=true` til 15 minutter og bevar active/recent/manifest/concurrency-værn.
+- [x] Test præcis 15 minutter, lige over grænsen, aktiv produktion, frisk runhistorik og friskt manifest.
+- [x] Følg før-redningsproduktion `33246376992` gennem 09:00 UTC, målrettet supplement, 210/673, fulde gates, deploy og komplet `rr-20260829095610-210`.
+- [x] Genmål offentlig primary: 0/673 READY, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer; forkast kl. 15-ETA og dokumentér tidligste realistiske READY omkring 2026-08-31 kl. 06.15–06.30 dansk tid uden nye huller.
+- [x] Bestå fuld lokal source-/RDKS-/håndbogs-/releasegate og særskilt geodatabevis med kun 4.0.309 → 4.0.310 i de to topfelter.
+- [ ] Bestå PR exact-head, merge, post-merge-produktion og automatisk offentlig 15-minuttersgrensbevis.
+
+Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0108.
+
+## Produktions- og driftsverificeret 4.0.309 – luk total GitHub-schedulerstilhed eksternt
 
 - [x] Bevis aktiv workflowkonfiguration, fungerende manuel produktion og samtidige native schedule-huller.
 - [x] Mål scheduleforskydning og reelle køretider uden private payloads eller rå vektorer.
@@ -8,11 +21,11 @@
 - [x] Gør `external_watchdog=true` eksplicit og bevar almindelig manuel keepalive som no-op.
 - [x] Bevar 45-minutters dual staleness, retry og begge concurrencygrupper.
 - [x] Bestå målrettede tests, RDKS, sourcegate og separat geodatabevis.
-- [ ] Bestå PR exact-head, merge og frisk post-merge-produktion.
-- [ ] Opret/test præcis ét cron-job og bevis mindst to automatiske HTTP 204/no-op-kald.
-- [ ] Genmål offentlig Candidate G-warmup og dokumentér ny ærlig tidshorisont.
+- [x] Bestå PR #221 exact-head `33244011544`, merge `aba3d669` og frisk post-merge-produktion `33244062982`.
+- [x] Opret/test præcis ét cron-job, id `8348098`, og bevis manuel 204/no-op `33244853536` samt automatiske 204/no-op-runs `33245204517` og `33245798817`.
+- [x] Genmål offentlig Candidate G-warmup og dokumentér ny ærlig tidshorisont: 5–12/48 timer ved 09:00 UTC-reference; kl. 15-ETA forkastet.
 
-Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring. Se DEC-0107.
+Seneste offentlige snapshot er `rr-20260829095610-210`: 210/673 komplet, primary 0 aktive zoner/673 warmupdele og 5–12/48 sammenhængende timer under komplet recovery. Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0107/0108.
 
 ## 4.0.308-kandidat – luk naturlig fosforformulering og tvetydig zonesøgning
 

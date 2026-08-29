@@ -1,10 +1,10 @@
 # RavRadar Håndbog
 
-## Ekstern sikkerhed mod stille vejrproduktion – 4.0.309
+## Ekstern sikkerhed mod stille vejrproduktion – 4.0.309/4.0.310
 
 RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et enkelt eksternt job kontrollerer forskudt ved UTC-minut 04, 19, 34 og 49, om hele GitHubs planlægning er blevet stille. Det starter ikke vejrproduktion blindt og sender ingen vejrdata ud af GitHub.
 
-Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er over 45 minutter gamle. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md).
+Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
 ## Naturlige sikkerhedsspørgsmål og bedre zonesøgning – 4.0.308
 
@@ -695,7 +695,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.309
+**Håndbogsversion:** 4.0.310
 
 **Opdateret:** 19. august 2026
 

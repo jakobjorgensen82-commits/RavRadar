@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "handbookVersion": "4.0.309",
+  "handbookVersion": "4.0.310",
   "title": "RavRadar Håndbog",
   "updatedAt": "2026-08-29",
   "sections": [
@@ -9,7 +9,7 @@
       "chapter": "84",
       "title": "Ekstern sikkerhed mod stille vejrproduktion",
       "summary": "Ét payloadfrit eksternt kald kan vække RavRadar, hvis hele GitHubs scheduler bliver stille, uden at starte produktion blindt.",
-      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> GitHub forsøger fortsat normal vejrproduktion hvert kvarter. Ét eksternt job kontrollerer forskudt ved UTC-minut 04, 19, 34 og 49, om hele GitHubs planlægning er blevet stille.</div><div class=\"handbook-stack\"><p><strong>Ingen blind produktion:</strong> Det eksterne kald starter kun keepalive-/watchdogworkflowet. GitHub bestiller først én normal produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er over 45 minutter gamle.</p><p><strong>Ingen data ud:</strong> Kaldet indeholder kun repository, workflow, <code>main</code> og et boolsk intent. Vejr, koordinater, rå strømvektorer, private data og Candidate G-state sendes ikke til den eksterne tjeneste.</p><p><strong>Uændrede grænser:</strong> Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se <code>DEC-0107</code>.</p></div>"
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> GitHub forsøger fortsat normal vejrproduktion hvert kvarter. Ét eksternt job kontrollerer forskudt ved UTC-minut 04, 19, 34 og 49, om hele GitHubs planlægning er blevet stille.</div><div class=\"handbook-stack\"><p><strong>Ingen blind produktion:</strong> Det eksterne kald starter kun keepalive-/watchdogworkflowet. Fra 4.0.310 kan det efter mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest bestille én normal produktion, når ingen produktion er aktiv eller i kø. GitHubs interne vagt beholder 45 minutter; præcis grænsealder og friske beviser giver no-op.</p><p><strong>Ingen data ud:</strong> Kaldet indeholder kun repository, workflow, <code>main</code> og et boolsk intent. Vejr, koordinater, rå strømvektorer, private data og Candidate G-state sendes ikke til den eksterne tjeneste.</p><p><strong>Uændrede grænser:</strong> Current-hour-, DMI/Copernicus-, 210/673-, Candidate G-, validate-, release- og deploygates er urørte. Der opfindes eller interpoleres ingen historik. Se <code>DEC-0107</code> og <code>DEC-0108</code>.</p></div>"
     },
     {
       "id": "public-natural-phrasing-zone-search-4-0-308",

@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.310-kandidat – ekstern og intern stilhedsgrænse er bevidst forskellige
+
+4.0.309's første virkelige redningsgren blev udløst af vagt `33246369618` kl. 09:49 UTC og bestilte produktion `33246376992`. Da den foregående produktionsstart lå cirka en time tidligere, var den fælles 45-minuttersgrænse for konservativ som vedvarende erstatning for helt manglende native schedules.
+
+Kun det autentificerede eksterne `external_watchdog=true` bruger derfor fra 4.0.310 mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest. GitHubs interne schedule-vagt beholder DEC-0085's 45 minutter. Begge veje afviser præcis grænsealder, aktiv/queued produktion, frisk runhistorik og friskt manifest og bestiller kun normal `force=false` under den fælles tunge concurrency. Datagates og Candidate G er urørte. Se DEC-0108.
+
 ## 4.0.309-kandidat – ekstern schedule-vagthund uden dataadgang
 
 GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.

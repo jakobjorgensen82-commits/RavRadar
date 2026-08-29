@@ -1,7 +1,7 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.309";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.309";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.309";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.309";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.310";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.310";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.310";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.310";
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;

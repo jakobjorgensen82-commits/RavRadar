@@ -2,11 +2,13 @@
 
 Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
-## Ekstern scheduler-vagthund (4.0.309)
+## Ekstern scheduler-vagthund (4.0.309/4.0.310)
 
 GitHub ejer fortsat normal vejrproduktion ved UTC-minut 14/29/44/59, Copernicus-piloten ved minut 06 og den interne cache-/watchdogplan ved 07/17/27/37/47/57. Fordi alle tre native planer afhænger af samme GitHub-scheduler, kalder ét eksternt cron-job keepalive-workflowet ved 04/19/34/49 UTC med `external_watchdog=true`.
 
-Kaldet starter ikke produktion eller pilot direkte. GitHub-workflowet kontrollerer selv, at ingen produktion er aktiv, og at både seneste produktionskørsel og det offentlige manifest er ældre end 45 minutter, før én normal `force=false`-produktion dispatch'es. Almindelig manuel keepalive udløser ikke watchdoget. Ingen vejrpayload, koordinater, rå U/V, private data eller modelstate sendes til den eksterne tjeneste. Se DEC-0107.
+Kaldet starter ikke produktion eller pilot direkte. GitHub-workflowet kontrollerer selv, at ingen produktion er aktiv, og at både seneste produktionskørsel og det offentlige manifest er gamle, før én normal `force=false`-produktion dispatch'es. Det eksplicitte eksterne intent bruger fra 4.0.310 mere end 15 minutter, så det kan overtage efter ét manglende native interval; GitHubs interne schedule-vagt beholder 45 minutter. Almindelig manuel keepalive udløser ikke watchdoget. Ingen vejrpayload, koordinater, rå U/V, private data eller modelstate sendes til den eksterne tjeneste. Se DEC-0107/0108.
+
+Driftsbeviset i 4.0.309 er præcis ét aktivt cron-job, id `8348098`: manuel prøve samt de første automatiske kald kl. 09:19 og 09:34 UTC gav HTTP 204 og grønne GitHub-runs `33244853536`, `33245204517` og `33245798817`. Produktionsdispatch blev korrekt sprunget over, fordi den offentlige produktion stadig var frisk. Ved 09:34 fandtes intet nyt native produktions-`schedule` omkring 09:29; manifestet var cirka 39 minutter gammelt. Kl. 09:49 bestilte vagt `33246369618` den virkelige redningsproduktion `33246376992`. No-op betyder derfor friskhed, ikke nødvendigvis en netop leveret GitHub-plan; denne cirka en-times startafstand er evidensen for 4.0.310's kortere eksterne grænse.
 
 ## Supplerende 3D-strøm og regional proxy (privat kandidat efter 4.0.231)
 

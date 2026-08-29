@@ -99,6 +99,10 @@ jobs:
         id: watchdog
         env:
           GH_TOKEN: ${{ github.token }}
+          # Den eksterne plan skal kunne overtage efter ét manglende native
+          # kvarter. GitHubs eget interne sikkerhedsnet beholder DEC-0085's
+          # konservative 45-minuttersgrænse.
+          MAXIMUM_SILENCE_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true && '15' || '45' }}
         run: |
           gh api \
             -H "Accept: application/vnd.github+json" \
@@ -108,7 +112,7 @@ jobs:
           node scripts/check-production-watchdog.mjs \
             --runs "$RUNNER_TEMP/ravradar-production-runs.json" \
             --manifest-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/manifest.json" \
-            --maximum-silence-minutes 45 \
+            --maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES" \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Dispatch one production after verified silence
