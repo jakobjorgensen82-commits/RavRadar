@@ -96,8 +96,14 @@ function exactContext(state) {
     && state?.profileId === CANDIDATE_G_STATE_PROFILE_ID;
 }
 
-function normalizedEvidence(evidence, label, { allowReconstructed = false } = {}) {
-  if (!Array.isArray(evidence) || evidence.length < 2 || evidence.length > 49) {
+function normalizedEvidence(evidence, label, {
+  allowReconstructed = false,
+  allowSingleMeasuredRightBracket = false,
+} = {}) {
+  const minimumEvidenceCount = allowSingleMeasuredRightBracket ? 1 : 2;
+  if (!Array.isArray(evidence)
+    || evidence.length < minimumEvidenceCount
+    || evidence.length > 49) {
     throw new Error(`ONE_TIME_GAP_${label}_EVIDENCE_COUNT`);
   }
   let previous = Number.NEGATIVE_INFINITY;
@@ -128,7 +134,10 @@ function normalizedEvidence(evidence, label, { allowReconstructed = false } = {}
   });
 }
 
-function stateRows(document, policy, label, { allowReconstructed = false } = {}) {
+function stateRows(document, policy, label, {
+  allowReconstructed = false,
+  allowSingleMeasuredRightBracket = false,
+} = {}) {
   if (typeof document?.datasetId !== 'string' || !document.datasetId.trim()
     || !finiteTime(document.productionReferenceAt)) {
     throw new Error(`ONE_TIME_GAP_${label}_DOCUMENT_IDENTITY`);
@@ -183,7 +192,10 @@ function stateRows(document, policy, label, { allowReconstructed = false } = {})
     if (!allowReconstructed && state.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION) {
       throw new Error(`ONE_TIME_GAP_${label}_SOURCE_SCHEMA_NOT_MEASURED_ONLY`);
     }
-    const evidence = normalizedEvidence(state.transportEvidence, label, { allowReconstructed });
+    const evidence = normalizedEvidence(state.transportEvidence, label, {
+      allowReconstructed,
+      allowSingleMeasuredRightBracket,
+    });
     const reconstructedCount = evidence.filter(isReconstructedTransportEvidence).length;
     if ((state.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION)
         !== (reconstructedCount > 0)) {
@@ -691,7 +703,9 @@ async function verifySourceBundles(policy, {
 
 function buildPlan({ before, after, target, policy, sourceBindings }) {
   const beforeRows = stateRows(before, policy, 'BEFORE');
-  const afterRows = stateRows(after, policy, 'AFTER');
+  const afterRows = stateRows(after, policy, 'AFTER', {
+    allowSingleMeasuredRightBracket: true,
+  });
   const targetRows = stateRows(target, policy, 'TARGET', { allowReconstructed: true });
   // A repeated apply against an already mutated target is an exact, pre-write
   // failure. The one-time operation never treats its own output as a new source.
@@ -754,6 +768,9 @@ function buildPlan({ before, after, target, policy, sourceBindings }) {
     // Artifact 3676 supplies the exact right bracket but is not required to
     // contain two later 3-hour intervals.
     const cadenceHours = nativeCadenceHours(beforeRow.evidence, targetRow.evidence);
+    if (afterRow.evidence.length === 1 && cadenceHours !== 3) {
+      throw new Error('ONE_TIME_GAP_SINGLE_AFTER_ANCHOR_CADENCE_NOT_ALLOWED');
+    }
     cadenceCounts[`${cadenceHours}h`] += 1;
     const synthetic = interpolateGap({ beforeAnchor, afterAnchor, cadenceHours, policy });
     const targetAtSyntheticTimes = new Map(targetRow.evidence.map(item => [item.time, item]));

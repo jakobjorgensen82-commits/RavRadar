@@ -1,18 +1,17 @@
-# Implementeringsstatus – lokal 4.0.313 replay-roll-forward til 4.0.311-protokollen
+# Implementeringsstatus – lokal 4.0.314 afteranker-roll-forward til 4.0.311-protokollen
 
-## P0 – 4.0.312 merged; replayårsag rettet lokalt; datahullet stadig åbent
+## P0 – 4.0.313 backend grøn; inspect-grænse rettet lokalt; datahullet stadig åbent
 
-- [x] Luk PR #225 exact-head `33266087776`/job `99136292810`, merge `a5ece10d` og korrekt no-op push `33266184326`.
-- [x] Klassificér backend `33266229687` som rød ved idempotent sync; delvis failure-roll-forward tæller ikke som readiness.
-- [x] Reproducer 4.0.310-nullblade mod 4.0.311-leafprojektion syntetisk uden private data.
-- [x] Begræns forskellig-hash-kompatibilitet til migration→migration; bevar live writes strengt eksakte.
-- [x] Valider schema-v2 stored top/nested/privacy før nullkomprimering og readback; brug bounded schema-v1 weather/calibrationprojektion.
-- [x] Bevar D1-row/hash/registry byteidentisk, reparér kun manglende registry med gammel hash, og afvis modstridende registry.
-- [x] Lås faste ikke-lækkende HTTP-/parse-/timeoutfejl og negative core/non-null/unknown-tests.
-- [x] Udvid exact-D1-interlocken til 4.0.313 og bevis, at 4.0.314 ikke er permanent låst.
-- [x] Bestå fuld lokal sourcegate, RDKS, release/version, uafhængig revision og rent geodatabevis på den endelige præcommit-diff.
-- [ ] Bestå PR exact-head, merge 4.0.313 og verificér automatisk no-op push.
-- [ ] Bestå hele exact-main `Deploy RavRadar trip storage [d1]` inklusive initial sync, slutreconciliation og afsluttende Edge/Worker/registryattestation.
+- [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11` og korrekt no-op push `33269584236`.
+- [x] Bestå hele exact-main D1-run `33269631305`/job `99145677813`, inklusive begge syncs, slutreconciliation og afsluttende Edge/Worker/registry/SQL.
+- [x] Stop read-only inspect `33269849748` ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; bevis nul descriptor, apply, mutation, artifact og Pages.
+- [x] Tillad præcis ét målt `AFTER`-højreanker kun ved uafhængigt bevist 3-timerskadence; bevar minimum to for før, target, rollback og cleanup.
+- [x] Test 673 dele/665×1h/8×3h/1.338 syntetiske prøver samt nul-after, singleton før/target/1h, replaymismatch, manglende eksakt target-afteranker og utilstrækkeligt cadencebevis fail-closed.
+- [x] Udvid exact-D1-interlocken til 4.0.314, bind inspect til D1, og hold normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Bevis at 4.0.315 ikke er permanent låst.
+- [x] Bestå fuld lokal source/RDKS/release/version/geodatagate på den endelige 4.0.314-diff.
+- [x] Bestå tre uafhængige slutreviews uden kodeblocker og luk reviewets to testpræcisionsfund.
+- [ ] Bestå PR exact-head, merge og verificér automatisk no-op push uden artifact/Pages.
+- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run; 4.0.313-beviset kan ikke genbruges på ny SHA.
 - [ ] Kør ny inspect, descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
 
 ## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
@@ -40,9 +39,9 @@
 - [x] Bestå 4.0.312's fulde lokale source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis.
 - [x] Luk PR #225 og exact-head `33266087776`; merge som `a5ece10d` og verificér korrekt no-op push `33266184326`.
 - [x] Kør `[d1]` på den nye eksakte 4.0.312-main; backend `33266229687` passerede verifier/D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness.
-- [x] Undlad `inspect`/apply efter den røde 4.0.312-backend og overfør den resterende livekæde til det aktuelle 4.0.313-afsnit øverst.
-- [x] Udfør ingen apply eller publicering under den røde 4.0.312-kæde; overfør frisk produktion, fulde gates, artifact, Pages og offentlig 210/673-kontrol til det aktuelle 4.0.313-afsnit.
-- [x] Overfør kravet om private rollback-/cleanupbeviser og dokumenteret tilbagevenden til målt schema 2.0 uændret til den aktuelle 4.0.313-livegate.
+- [x] Undlad `inspect`/apply efter den røde 4.0.312-backend og overfør den resterende livekæde til det aktuelle 4.0.314-afsnit øverst.
+- [x] Udfør ingen apply eller publicering under den røde 4.0.312-kæde; overfør frisk produktion, fulde gates, artifact, Pages og offentlig 210/673-kontrol til det aktuelle 4.0.314-afsnit.
+- [x] Overfør kravet om private rollback-/cleanupbeviser og dokumenteret tilbagevenden til målt schema 2.0 uændret til den aktuelle 4.0.314-livegate.
 
 I den tidligere 4.0.311-hændelse blev ingen observationspayload hentet til runneren, logget eller ændret, og der skete ingen rækkemutation; D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Supabase-CHECK'en er med høj sandsynlighed atomisk committed/valideret/kommenteret; eneste alternativ er fuld rollback. 4.0.312 passerede senere disse tidlige led, men fejlede migrationssynken. Offentlig sandhed er fortsat 4.0.310/nødvisning. Se DEC-0109.
 

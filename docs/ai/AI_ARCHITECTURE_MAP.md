@@ -1,6 +1,14 @@
 # AI Architecture Map – RavRadar
 
-## Lokal 4.0.313 – bounded legacy-replay mellem Supabase og D1
+## Lokal 4.0.314 – incidentlåst singleton-afteranker og release-overtakelås
+
+- `one-time-candidate-g-gap-reconstruction.mjs` accepterer ét målt evidenspunkt kun for rollen `AFTER`; før, target, rollback og cleanup beholder minimum to.
+- Singletonen kan kun fortsætte, når før- og targetserien uafhængigt beviser enstemmig 3-timerskadence. Eksakt state-replay, målanker, bracket, sourcebindings, descriptor og CAS er uændrede.
+- `update-and-deploy.yml` kræver exact-head D1 også for 4.0.314 og før inspect. Normal push/schedule/`none` forbliver no-op, indtil GitHub-metadata på samme head beviser både succesfuldt apply-step og Pages-job; apply/rollback/cleanup er fortsat mulige efter D1.
+- Den fælles produktions-concurrency annullerer aldrig et igangværende apply; køede normale runs genkontrollerer freshness. Hele hvert run-/jobsvar parse- og shapevalideres samlet, så delvist parseroutput ikke kan åbne gaten.
+- 4.0.315 er ulåst i regressionen. Låsen er incident- og releaseafgrænset, ikke en ny permanent managementafhængighed.
+
+## Historisk lokal 4.0.313 – bounded legacy-replay mellem Supabase og D1
 
 - `trip-source-projection.js` materialiserer kun eksplicitte PostgREST-blade; JSON-nullblade bliver bevidst ikke hentet.
 - `trip-storage.js` komprimerer kun kendte nullblade/tomme underobjekter for historisk replay, efter schema-v2 stored top/nested/privacy er valideret. Schema-v1 går gennem bounded weather/calibrationprojektion.
@@ -27,7 +35,7 @@
 
 Ingen geometri, punkt, koordinat, rå U/V, vejr-, bølge- eller vandstandsrekonstruktion indgår. `calibration_eligible` er kun en fail-closed klientattestation, ikke serverbevist manifestproveniens eller empirisk evidens; global koefficientlæring er P2-låst.
 
-Historisk status for dette arkitekturtrin: 4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`; push `33263858078` var en korrekt no-op. Backend `33263892151` fejlede efter atomisk SQL HTTP 201 i den gamle `pg_get_constraintdef`-regex. 4.0.312 lukkede verifieren gennem PR #225/exact-head `33266087776` og merge `a5ece10d`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken. Den blev derfor ikke readiness, rekonstruktion eller offentlig release. Se det aktuelle 4.0.313-afsnit øverst samt DEC-0109 og DEC-0102-addendum.
+Historisk status for dette arkitekturtrin: 4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`; push `33263858078` var en korrekt no-op. Backend `33263892151` fejlede efter atomisk SQL HTTP 201 i den gamle `pg_get_constraintdef`-regex. 4.0.312 lukkede verifieren gennem PR #225/exact-head `33266087776` og merge `a5ece10d`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken. Den blev derfor ikke readiness, rekonstruktion eller offentlig release. Se det aktuelle 4.0.314-afsnit øverst samt DEC-0109 og DEC-0102-addendum.
 
 ## Offentlig GPT-OSS-assistent i 4.0.291
 

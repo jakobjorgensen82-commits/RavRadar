@@ -1,10 +1,18 @@
-## 4.0.313-kandidat – afgrænset legacy-replay-roll-forward (2026-08-29)
+## 4.0.314-kandidat – singleton-afteranker og apply/Pages-overtakelås (2026-08-29)
+
+- Registrerer 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, korrekt no-op push `33269584236` og helt grøn exact-main D1-backend `33269631305`/`99145677813`.
+- Registrerer read-only inspect `33269849748`/`99146287609`, som stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
+- Accepterer ét målt afteranker kun for de uafhængigt beviste native 3-timersdele. Før, target, rollback og cleanup beholder minimum to, og alle replay-, bracket-, targetanker-, source-, descriptor- og CAS-gates bevares.
+- Udvider exact-D1 til 4.0.314, gør inspect D1-afhængig og holder normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Fælles concurrency annullerer aldrig apply, og hele hvert GitHub API-svar parse- og shapevalideres samlet, før id'er bruges. 4.0.315 er ulåst.
+- Candidate G-formel/model/state/trust, DMI/Copernicus, vejr, geometri, punkter og private data er uændrede. Datahullet er fortsat åbent indtil frisk produktion og offentlig 210/673-kontrol.
+
+## 4.0.313 – afgrænset legacy-replay-roll-forward, backendverificeret (2026-08-29)
 
 - Registrerer 4.0.312 PR #225/exact-head `33266087776`, merge `a5ece10d` og korrekt no-op push `33266184326`.
 - Registrerer, at backend `33266229687` bestod de tidlige D1-/Edge-/Worker-gates, men fejlede idempotent sync på `TRIP_GATEWAY_UNAVAILABLE`; failure-roll-forward tæller ikke som readiness.
 - Reproducerer 4.0.310-nullblade mod 4.0.311's bounded PostgREST-leafprojektion syntetisk og accepterer kun eksakt migration→migration-kompatibilitet.
 - Bevarer gamle D1-rækker, hashes og registry byteidentisk, afviser ukendte/core/non-null-forskelle og bruger faste ikke-lækkende gatewayfejl.
-- Udvider exact-D1-interlocken præcist til 4.0.313. Exact-head, merge, helt grøn backend, inspect/apply, frisk produktion og offentlig kontrol mangler; morgenhullet er fortsat ikke lukket, og offentlig sandhed er 4.0.310.
+- Udvider exact-D1-interlocken præcist til 4.0.313. PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og backend `33269631305` er grønne. Det efterfølgende read-only inspect stoppede før descriptor/apply; morgenhullet er fortsat ikke lukket, og offentlig sandhed er 4.0.310.
 - Candidate G, RavScore, vejr, state, geometri og punkter er uændrede. Se `CHANGELOG-4.0.313.md`, DEC-0082 og DEC-0109.
 
 ## 4.0.312-kandidat – robust PostgreSQL-verifikation før backend og rekonstruktion (2026-08-29)

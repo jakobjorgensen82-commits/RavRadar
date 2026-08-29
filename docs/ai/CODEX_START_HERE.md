@@ -2,14 +2,17 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-29 – lokal 4.0.313 replay-roll-forward
+## Aktuelt P0-checkpoint 2026-08-29 – lokal 4.0.314 efteranker-roll-forward
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
-- 4.0.312 er merged via PR #225/exact-head `33266087776` som `a5ece10d`; push `33266184326` var korrekt no-op. Backend `33266229687` fejlede legacy-sync og er ikke readiness.
-- 4.0.313 retter kun den syntetisk reproducerede forskel mellem gamle nested nullblade og bounded leafprojektion. Kompatibilitet er migration-only, schema/privacy-streng og no-mutation for row/hash/registry.
-- Målrettede replay/D1/privacy/registry/error/workflowtests, uafhængigt review, fuld lokal sourcegate, RDKS, release, version og geodatabevis er grønne. Exact-head, merge og live D1 mangler.
-- Kør aldrig reconstruction inspect/apply før et helt grønt exact-main `[d1]`-run. Kør ny inspect ved flyttet main/target; genbrug ikke gammel descriptor. Offentlig 210/673 og frisk produktion er slutgate.
-- Trip protocol/header og trustgrænse forbliver 4.0.311. Candidate G/RavScore/vejr/state/geometri/punkter er uændrede. Brug Sol/Ultra.
+- 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
+- Exact-main D1-backend `33269631305`/job `99145677813` bestod hele kæden inklusive begge syncs, slutreconciliation, Edge, Worker, registry og SQL. Det er backendbevis for 4.0.313, ikke exact-head-bevis for en ny 4.0.314-head.
+- Read-only inspect `33269849748`/job `99146287609` stoppede før descriptor/apply med den faste kode `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`. Ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
+- Rodårsagen er snæver: de otte native 3-timersdele kan have præcis ét gyldigt målt højreanker i after-kilden. 4.0.314 tillader singleton kun i `AFTER`, kun når før+aktuelt mål uafhængigt beviser enstemmig 3-timerskadence, og fortsat kun efter fuldt state-replay, eksakt target-anker og alle source-/CAS-gates. Nul punkter samt singleton i før/mål/1-timesdele afvises.
+- 4.0.314 er exact-D1-låst. Inspect kræver samme exact-head D1-bevis; normal produktion er desuden grøn no-op, indtil en succesfuld exact-head apply og Pages-deploy er bevist. 4.0.315 er regressionens første ulåste version, så incidentlåsen er ikke permanent.
+- Trip protocol/header og Candidate G model/formel/state-/trustsemantik forbliver 4.0.311/2.0–2.1. Ingen vejr, rå U/V, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
+
+## Historisk P0-checkpoint 2026-08-29 – lokal 4.0.313 replay-roll-forward
 
 ## Historisk P0-checkpoint 2026-08-29 – lokal 4.0.312 roll-forward
 
@@ -19,7 +22,7 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 - 4.0.312 er en app-/verifier-roll-forward og ændrer ikke trip protocol/header 4.0.311 eller den eksisterende `>=4.0.311`-migrationsgrænse.
 - Ejeren har godkendt præcis én rekonstruktion af Candidate G-morgenhullet som incident `RRGAP-2026-08-29-CANDIDATE-G-01`. Kun allerede afledt kystnormal strength mellem eksakte artifacts må interpoleres; ingen vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter eller private payloads.
 - Rekonstrueret state er schema 2.1 med eksplicit trust, ikke kalibreringsegnet og ikke gyldigt observeret udtransportbevis. Normal measured-only state/fallback er schema 2.0 og uændret.
-- Inspect/apply/rollback/cleanup, measured-only fallback, tripflags og releasekæden er bindende. Storagekandidaten sætter existing-D1/fresh Edge-predeploy-intent efter capacity/CAS. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial Edge går D1 roll-forward. Fresh partial Edge går exact-main/Supabase-secret/eksakt Edge/dobbelt attest. Uden intent ingen recoverymutation. Dette historiske næste-trin blev afløst, da 4.0.312 blev merged og dens backend fejlede migrationssynken; fortsæt kun fra det aktuelle 4.0.313-checkpoint ovenfor med Sol/Ultra.
+- Inspect/apply/rollback/cleanup, measured-only fallback, tripflags og releasekæden er bindende. Storagekandidaten sætter existing-D1/fresh Edge-predeploy-intent efter capacity/CAS. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial Edge går D1 roll-forward. Fresh partial Edge går exact-main/Supabase-secret/eksakt Edge/dobbelt attest. Uden intent ingen recoverymutation. Dette historiske næste-trin blev afløst, da 4.0.312 blev merged og dens backend fejlede migrationssynken; fortsæt kun fra det aktuelle 4.0.314-checkpoint ovenfor med Sol/Ultra.
 - Den integrerede næste model er fortsat separat under DEC-0102 og skal efter recovery integrere den nye grønne `main` samt bevare DEC-0109's trust-/provenancekontrakt uden generel interpolation. Den skal selv bevare én målt-only atomisk 210/673-nødstate i højst 72 timer og aldrig efter kortere forecastudløb. `calibration_eligible` er ikke serverbevist empirisk evidens; global koefficientlæring forbliver låst.
 
 ## Historisk arbejdscheckpoint 2026-08-24 – 4.0.273

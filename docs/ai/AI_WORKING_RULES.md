@@ -1,13 +1,21 @@
 # AI Working Rules – RavRadar
 
-## Aktuel recovery-/storage-regel fra 4.0.313
+## Aktuel recovery-/release-regel fra 4.0.314
+
+- Tillad singleton-evidens kun i den eksakte `AFTER`-rolle og kun som målt højreanker på uafhængigt bevist 3-timerskadence. Sænk aldrig den fælles evidensgrænse globalt.
+- Kræv state-replay og eksakt targetanker før interpolation; cadence skal komme fra before+target, aldrig hardcodes eller udledes af singletonen.
+- Et fejlet read-only inspect uden descriptor må hverken genbruges, omtales som apply eller føre til mutation. Kør nyt inspect efter ny exact-head D1-readiness.
+- 4.0.314-normalproduktion kræver exact-D1 og exact-head apply+Pages-bevis. Inspect/apply må køre efter D1; API-/metadatausikkerhed giver no-op. 4.0.315 skal forblive ulåst.
+- Ingen incoming push/schedule/force må annullere en kørende recovery. Parse- og shapevalidér hele hvert GitHub run-/jobsvar samlet, før et run-id anvendes.
+
+## Historisk recovery-/storage-regel fra 4.0.313
 
 - Forskellig payloadhash er kun legacykompatibel ved `supabase-migration` i begge ender og efter eksakt stored selvhash/ejer/id/shard/schema/privacy/non-null/core-bevis.
 - Komprimer kun kendte nullblade og tomme underobjekter gennem den dokumenterede projektion. Et ukendt schema-v2-felt, også null, er en fejl.
 - Omskriv aldrig gammel D1-row/hash/registry for at få en genkørsel grøn. Reparér kun missing registry med verified stored hash; modstrid stopper.
 - Læs aldrig fuld privat payload for at diagnosticere en konflikt. Brug syntetisk reproduktion og faste, datasikre fejlkategorier.
 - Et partial/failure-recovery-run er ikke readiness. Kræv hele exact-main D1-kæden inklusive slutreconciliation og slutattestation.
-- 4.0.314 må ikke overhale 4.0.313's incidentgate, selv om versionsinterlocken bevidst ophører dér.
+- 4.0.314 måtte ikke overhale 4.0.313's incidentgate; den risiko er nu konkret lukket af den aktuelle release-regel ovenfor.
 
 ## Historisk recovery-/storage-regel fra 4.0.312-roll-forwarden
 
@@ -18,7 +26,7 @@
 - Ved lagercutover sættes existing-D1/fresh Edge-predeploy-intent efter capacity/CAS før første Edge-write. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
 - Migreringsværktøjer må kun læse eksplicitte server-side safe blade. Data, som ikke må logges eller lagres, må heller ikke hentes “for en sikkerheds skyld”.
 - `calibration_eligible` åbner ikke læring uden server-side signeret manifestbinding. Den integrerede model skal bevare en atomisk målt-only 210/673-nødvej i højst 72 timer og aldrig efter kortere forecastudløb.
-- Det historiske checkpoint endte således: 4.0.312 bestod PR #225 exact-head `33266087776`, blev merged som `a5ece10d` og fik no-op push `33266184326`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness. Den operative fortsættelse er udelukkende det aktuelle 4.0.313-checkpoint ovenfor. Offentlig version er fortsat 4.0.310, og trip protocol/header forbliver 4.0.311.
+- Det historiske checkpoint endte således: 4.0.312 bestod PR #225 exact-head `33266087776`, blev merged som `a5ece10d` og fik no-op push `33266184326`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness. Den operative fortsættelse er udelukkende det aktuelle 4.0.314-checkpoint ovenfor. Offentlig version er fortsat 4.0.310, og trip protocol/header forbliver 4.0.311.
 
 ## 1. Systemisk fejlretning
 RavRadar fejlrettes som et system. Start med den konkrete observation og følg runtimekæden både bagud til input/kilde og fremad til score, UI, test og deployment. En rød test er et symptom, indtil årsagen er bevist.

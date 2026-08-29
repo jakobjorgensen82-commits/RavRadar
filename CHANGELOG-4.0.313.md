@@ -1,7 +1,7 @@
 # RavRadar 4.0.313 – afgrænset legacy-replay-roll-forward
 
 Dato: 2026-08-29
-Status: Lokal kildekandidat med grøn fuld source-/RDKS-/release-/versions-/geodatagate og uafhængig revision; exact-head CI, merge, helt grøn D1-backend, rekonstruktions-apply, frisk produktion og offentlig verifikation afventer.
+Status: Exact-head-valideret og merged. Exact-main D1-backend er helt grøn; rekonstruktions-apply, frisk produktion og offentlig verifikation afventer.
 
 ## Hvorfor denne version findes
 
@@ -31,10 +31,10 @@ Syntetiske regressioner dækker schema-v2-nulltab, null-only-underobjekter, sche
 
 Projektets fulde lokale `scripts/validate-source.ps1` bestod på den endelige præcommit-diff sammen med RDKS-, release-, versions- og geodatagaten. En uafhængig slutrevision fandt ingen resterende replay-, privacy-, idempotens- eller dokumentationsblocker.
 
-Exact-D1-releaseinterlocken omfatter 4.0.313. 4.0.314 er eksplicit ikke permanent versionslåst, men må ikke overhale denne incidents krævede grønne 4.0.313-backendkæde.
+Exact-D1-releaseinterlocken omfatter 4.0.313. PR #226 bestod exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op. Exact-main backend `33269631305`/job `99145677813` bestod begge syncs, slutreconciliation, Edge, Worker, registry og SQL.
 
 ## Uændrede forhold
 
 Candidate G, RavScore, 20/50/30, +10/-8, 13-timersgaten, mobilisering, DMI/Copernicus, vejrdata, state/recoverysemantik, geometri, land-/vandpunkter og private data er uændrede. Trip protocol/header og trustmigrationsgrænsen forbliver 4.0.311.
 
-Rekonstruktionen er ikke anvendt. Næste sikre rækkefølge er exact-head CI og merge, korrekt no-op push, et helt grønt exact-main `[d1]`-run inklusive slutreconciliation og Edge/Worker/registry-attestation, derefter en ny read-only inspect og descriptor-/mål-CAS-bundet apply, frisk normal produktion og offentlig desktop/mobil/210/673-verifikation.
+Rekonstruktionen er ikke anvendt. Read-only inspect `33269849748`/job `99146287609` stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet. Den sikre fortsættelse er 4.0.314's snævre singleton-afteranker-roll-forward, nyt exact-head D1-bevis, ny inspect, descriptor-/mål-CAS-bundet apply, frisk normal produktion og offentlig desktop/mobil/210/673-verifikation.

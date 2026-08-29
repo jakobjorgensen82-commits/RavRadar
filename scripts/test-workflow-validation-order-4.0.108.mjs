@@ -588,8 +588,8 @@ if (buildSection.includes('pages: write') || buildSection.includes('id-token: wr
 for (const protectedPilotPath of ["--exclude 'data/geometry-v2/'", "--exclude '.geometry-v2-work/'", "--exclude 'requirements-geometry.txt'"]) {
   if (!buildSection.includes(protectedPilotPath)) throw new Error(`Pages-artifact må ikke indeholde ${protectedPilotPath}`);
 }
-if (!text.includes("cancel-in-progress: ${{ (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none')")) throw new Error('Push-release skal kunne prioritere sig foran en ældre almindelig vejropdatering, mens rekonstruktion aldrig må annulleres.');
+if (!text.includes('cancel-in-progress: false')) throw new Error('Ingen incoming push, schedule, force eller recovery må annullere en kørende apply-/produktionskørsel.');
 if (!text.includes("'ravradar-geometry-v2-national'") || !text.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
-if (!text.includes('inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true')) throw new Error('Et nyere eksplicit geometri-job skal kunne erstatte sit ældre job uden at dele vejrkø.');
+if ((text.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Workflowet skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
 
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');

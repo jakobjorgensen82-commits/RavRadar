@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-## Én kontrolleret rekonstruktion af Candidate G-morgenhullet – lokal 4.0.313-roll-forward
+## Ét målt højreanker og sikker release-rækkefølge – lokal 4.0.314
+
+Morgenhullet er endnu ikke lukket, og offentlig RavRadar viser fortsat den komplette, målte 4.0.310-nødvisning. 4.0.313 er derimod sikkert merged og har bestået hele den levende D1-/Edge-/Worker-kæde. Den første efterfølgende inspektion var kun læsende og stoppede før descriptor eller dataændring.
+
+Årsagen var afgrænset til de otte kystdele, som naturligt har tre timers mellemrum mellem strømprøverne. Kilden efter hullet kan dér indeholde præcis én måling: det eksakte højreanker. Én måling fortæller ikke i sig selv kadencen. RavRadar accepterer den derfor kun som anker, når den komplette måleserie før hullet og den aktuelle målte serie begge uafhængigt viser samme enstemmige tre-timerskadence.
+
+Dette er ikke en generel lempelse. Før-kilden, det aktuelle mål, rollback og cleanup kræver fortsat flere målinger. Nul eftermålinger, ét punkt på en en-timesdel, et ændret state-resultat, manglende eller ændret målanker, uklar kadence eller en allerede udfyldt tid stopper inspektionen uden descriptor og uden mutation.
+
+Alle øvrige sikkerhedsbeviser er uændrede: eksakt model, profil og stateKey; reproducerbart state; højst seks timer mellem ankre; eksakte source-run/artifact/head-hashes; ingen vejr-, bølge-, vandstands-, koordinat- eller rå vektordata i descriptoren; og compare-and-swap mod det offentlige mål før apply.
+
+4.0.314 kan heller ikke overhale sin egen rekonstruktion. Samme eksakte main-commit skal først bestå hele D1-backenden. Inspect må derefter forsegle planen, og apply må køre med den eksakte descriptor. Almindelige push-, schedule- og `none`-produktioner forbliver en grøn no-op, indtil GitHub kan bevise både et succesfuldt apply-step og et succesfuldt Pages-deploy på samme commit. Manglende eller uforståelige metadata åbner intet, og et nyt push kan ikke annullere en igangværende apply.
+
+Låsen gælder kun denne recoveryrelease; testen beviser, at 4.0.315 ikke er permanent låst. Candidate G's formel, 20/50/30, model-id, målt schema 2.0, markeret schema 2.1, trust, nødvisning og forbud mod kalibrering på rekonstrueret evidens er uændrede. Først efter ny inspect, CAS-bundet apply, frisk normal produktion og offentlig 210/673-kontrol kan morgenhullet kaldes lukket.
+
+## Historisk: én kontrolleret rekonstruktion af Candidate G-morgenhullet – 4.0.313-roll-forward
 
 RavRadar har normalt en hård regel: manglende Candidate G-historik må ikke opfindes eller behandles som nul. Efter schedulerhullet om morgenen 29. august 2026 har ejeren godkendt præcis én undtagelse, fordi perioden ikke skal bruges til reel ravjagt. Incidentet hedder `RRGAP-2026-08-29-CANDIDATE-G-01`; beslutningen gælder ikke andre huller og må ikke blive en automatisk fallback.
 
@@ -26,7 +40,7 @@ Backendudgivelsen sker på samme eksakte main-head som Pages. Efter kapacitetsko
 
 Den kommende samlede RavScore-model får sin egen nøddrift som bindende acceptkrav. Kun den seneste komplette, målt-only, atomiske og hash-/model-/statebundne 210/673-pakke må bruges. Den vises tydeligt som ældre på dansk, tysk og engelsk, må højst være 72 timer gammel og må aldrig overskride en kortere prognose-/produktudløbsgrænse. Ture er ikke-kalibrerbare, og en ny komplet primary overtager automatisk og atomisk. Ukendt, blandet, rekonstrueret, manipuleret eller udløbet state lukkes fail-closed; nøddriften interpolerer ikke huller og aktiverer ikke en anden offentlig model.
 
-4.0.313 er den lokale roll-forward-kandidat. De målrettede migration-, idempotens-, registry-, privacy- og workflowregressioner, uafhængig diffrevision, fuld lokal `validate:source`, RDKS-, release-, versions- og geodatagate er grønne. Exact-head PR, merge, et helt grønt live `[d1]`-backendbevis, ny inspect/apply, frisk produktion og offentlig desktop/mobil/210/673 mangler fortsat ved dette checkpoint. Offentlig RavRadar er fortsat produktionsverificeret 4.0.310 i nøddrift, og morgenhullet er ikke ændret i produktion. Se [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md).
+Ved dette historiske checkpoint var 4.0.313 den lokale roll-forward-kandidat med grønne migration-, idempotens-, registry-, privacy-, workflow- og lokale releasegates. Den blev senere exact-head-valideret i PR #226, merged som `ff62ba11` og fik et helt grønt exact-main D1-backendbevis i `33269631305`. Den efterfølgende read-only inspect stoppede før descriptor eller mutation; den aktuelle sikre fortsættelse står i 4.0.314-afsnittet ovenfor. Offentlig RavRadar er fortsat produktionsverificeret 4.0.310 i nøddrift, og morgenhullet er ikke ændret i produktion. Se [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md).
 
 ## Ekstern sikkerhed mod stille vejrproduktion – 4.0.309/4.0.310
 
@@ -156,7 +170,7 @@ Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadar
 
 Før en tur forlader Supabase-grænsen, erstatter Edge brugerens eller den anonyme enheds id med et versionsbåret HMAC-pseudonym. Cloudflare modtager ikke bruger-id, mail, navn, login-token, GPS eller rute. Kaldet mellem Edge og Cloudflare er privat signeret og tidsbegrænset; samme klient-/tur-id kan prøves igen uden dublet, men afvises hvis indholdet ændres.
 
-Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. Den oprindelige 4.0.287-kontrakt tillod en manuel `TRIP_STORAGE_MODE=supabase` efter D1-cutover. Det er historik: den mergede 4.0.311-kilde afløser denne vej, fordi D1-only ture ellers kan blive skjult. Efter den varige D1-intent repareres kun fremad i D1; Supabase-broen findes kun ved en helt ny pre-intent-installation. 4.0.313 afgrænser den historiske migrationsgenafspilning uden at omskrive D1; et helt grønt exact-head `[d1]`-run mangler fortsat, så dette er ikke livebevis.
+Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. Den oprindelige 4.0.287-kontrakt tillod en manuel `TRIP_STORAGE_MODE=supabase` efter D1-cutover. Det er historik: den mergede 4.0.311-kilde afløser denne vej, fordi D1-only ture ellers kan blive skjult. Efter den varige D1-intent repareres kun fremad i D1; Supabase-broen findes kun ved en helt ny pre-intent-installation. 4.0.313 afgrænser den historiske migrationsgenafspilning uden at omskrive D1; exact-main D1-run `33269631305` har siden livebevist denne storagekæde. Rekonstruktionen kræver stadig sit eget nye exact-head 4.0.314-D1-bevis før inspect/apply.
 
 Et dagligt kontroljob læser kun leverandørernes størrelsestal – aldrig turpayloads – og advarer ved 70 % samt stopper ved 85 %. En eksplicit bekræftet driftskommando kan slette en ejers ture i begge lagre uden at udskrive id eller payload. Supabases varsel om mulig begrænsning fra 9. september 2026 overvåges fortsat, fordi login og Edge stadig bruger Supabase. Se [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
@@ -723,7 +737,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.313
+**Håndbogsversion:** 4.0.314
 
 **Opdateret:** 19. august 2026
 
