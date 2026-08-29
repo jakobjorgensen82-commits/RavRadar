@@ -1,9 +1,12 @@
-## 4.0.314-kandidat – singleton-afteranker og apply/Pages-overtakelås (2026-08-29)
+## 4.0.314 – source merged; same-version sourcegate-hotfix før recovery (2026-08-29)
 
 - Registrerer 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, korrekt no-op push `33269584236` og helt grøn exact-main D1-backend `33269631305`/`99145677813`.
 - Registrerer read-only inspect `33269849748`/`99146287609`, som stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
 - Accepterer ét målt afteranker kun for de uafhængigt beviste native 3-timersdele. Før, target, rollback og cleanup beholder minimum to, og alle replay-, bracket-, targetanker-, source-, descriptor- og CAS-gates bevares.
 - Udvider exact-D1 til 4.0.314, gør inspect D1-afhængig og holder normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Fælles concurrency annullerer aldrig apply, og hele hvert GitHub API-svar parse- og shapevalideres samlet, før id'er bruges. 4.0.315 er ulåst.
+- 4.0.314-kilden bestod PR #227 exact-head `33272564543`/job `99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var en tilsigtet grøn no-op uden build, artifact eller Pages.
+- Den ældre 4.0.313-produktion `33271863449`/job `99151692515` stoppede før releasegate og Pages på en stale marine-first-regression, som forventede den afløste dynamiske `cancel-in-progress`-tekst. Det var en test-/sourcegate-dækningsfejl, ikke evidens for fejl i den nye `cancel-in-progress: false`-kontrakt.
+- Same-version-hotfixet kræver præcis én `cancel-in-progress:` med værdien `false`, forbyder `true` og føjer `test:dmi-marine-first-recovery` til `test:workflow-action-contracts`, som `validate:source` allerede kører. Den fulde lokale source-/RDKS-/release-/versionsgate er grøn; exact-head PR, merge og no-op push afventer, og først derefter må D1 køres på den endelige merge-SHA.
 - Candidate G-formel/model/state/trust, DMI/Copernicus, vejr, geometri, punkter og private data er uændrede. Datahullet er fortsat åbent indtil frisk produktion og offentlig 210/673-kontrol.
 
 ## 4.0.313 – afgrænset legacy-replay-roll-forward, backendverificeret (2026-08-29)

@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-29: 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var tilsigtet grøn no-op. En allerede kørende 4.0.313-produktion `33271863449` stoppede før releasegate/Pages, fordi den gamle marine-first-test forventede den afløste concurrencytekst og ikke var med i PR-sourcegaten. Same-version-hotfixet retter assertionen semantisk og gør testen obligatorisk i `validate:source`; nyt exact-main D1, inspect/apply og offentlig verifikation afventer.
+
 - 2026-08-29: 4.0.313 blev exact-head-valideret i PR #226, merged som `ff62ba11`, gav korrekt no-op push og bestod hele D1-backend `33269631305`. Den efterfølgende read-only inspect `33269849748` stoppede før descriptor/apply på et legitimt singleton-afteranker for native 3-timersdele. Lokal 4.0.314 afgrænser dette til `AFTER` + uafhængigt cadence-/state-/targetankerbevis og tilføjer exact-D1/apply+Pages-overtakelås; offentlig 4.0.310 og datahullet er uændret.
 
 - 2026-08-29: 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` blev korrekt grøn no-op uden artifact/Pages.

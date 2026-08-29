@@ -1,15 +1,19 @@
 # RavRadar - aktivt roadmap
 
-## P0 lokal 4.0.314 – luk singleton-afteranker før engangsrekonstruktionen
+## P0 4.0.314 – luk sourcegate-hotfix før engangsrekonstruktionen
 
 - [x] Luk 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`.
 - [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT` og uden mutation.
 - [x] Afgræns singleton til ét målt `AFTER`-anker på uafhængigt bevist 3-timerskadence; bevar alle øvrige count/replay/bracket/CAS/privacygates.
 - [x] Lås 4.0.314 til exact-D1 og normal produktion til exact-head apply+Pages; bind inspect til D1 og bevis 4.0.315 ulåst.
-- [x] Luk fuld lokal source-/RDKS-/release-/versions-/geodatagate.
-- [x] Bestå tre uafhængige singleton-/workflow-/privacy-/versions-/dokumentationsreviews og luk de to fundne testpræcisionskanter.
-- [ ] PR, exact-head, merge og korrekt no-op push.
-- [ ] Helt grøn exact-main 4.0.314-D1-backend inklusive begge syncs, slutreconciliation og slutattestation.
+- [x] Luk fuld lokal source-/RDKS-/release-/versions-/geodatagate for PR #227-diffen før same-version-hotfixet.
+- [x] Bestå tre uafhængige reviews af PR #227-diffen og luk de to fundne testpræcisionskanter.
+- [x] Bestå PR #227/exact-head `33272564543`/`99153577550`, merge som `d1369d88` og korrekt no-op push `33272676071`.
+- [x] Bevis at ældre produktion `33271863449` stoppede før releasegate/Pages på en stale marine-first-test; ret assertionen og bind testen ind i `test:workflow-action-contracts`/`validate:source`.
+- [x] Fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
+- [x] Bestå to uafhængige hotfixrevisioner uden blocker.
+- [ ] Ny exact-head PR, merge og korrekt no-op push.
+- [ ] Helt grøn exact-main 4.0.314-D1-backend på den endelige hotfix-merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
 - [ ] Ny inspect/CAS, apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
 

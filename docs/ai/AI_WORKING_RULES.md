@@ -4,9 +4,10 @@
 
 - Tillad singleton-evidens kun i den eksakte `AFTER`-rolle og kun som målt højreanker på uafhængigt bevist 3-timerskadence. Sænk aldrig den fælles evidensgrænse globalt.
 - Kræv state-replay og eksakt targetanker før interpolation; cadence skal komme fra before+target, aldrig hardcodes eller udledes af singletonen.
-- Et fejlet read-only inspect uden descriptor må hverken genbruges, omtales som apply eller føre til mutation. Kør nyt inspect efter ny exact-head D1-readiness.
-- 4.0.314-normalproduktion kræver exact-D1 og exact-head apply+Pages-bevis. Inspect/apply må køre efter D1; API-/metadatausikkerhed giver no-op. 4.0.315 skal forblive ulåst.
+- Et fejlet read-only inspect uden descriptor må hverken genbruges, omtales som apply eller føre til mutation. Kør nyt inspect efter ny exact-main D1-readiness på den endelige merge-SHA.
+- 4.0.314-normalproduktion kræver exact-main D1 og descriptorbundet apply+Pages-bevis på samme SHA. Inspect/apply må køre efter D1; API-/metadatausikkerhed giver no-op. 4.0.315 skal forblive ulåst.
 - Ingen incoming push/schedule/force må annullere en kørende recovery. Parse- og shapevalidér hele hvert GitHub run-/jobsvar samlet, før et run-id anvendes.
+- Enhver test, som kan stoppe fuld produktion, skal være nåelig fra `validate:source`. Lås workflowsemantik, eksempelvis præcis én `cancel-in-progress: false`, ikke en forældet tekstexpression.
 
 ## Historisk recovery-/storage-regel fra 4.0.313
 

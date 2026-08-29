@@ -9,6 +9,7 @@ assert.match(bulk, /if marine_foundation_missing:/);
 assert.match(bulk, /atmosphereDeferredDuringMarineRecovery/);
 assert.doesNotMatch(bulk, /reserved_wind_rank = 0 if collection == "harmonie_dini_sf"/);
 assert.match(workflow, /timeout-minutes: 18/);
-assert.ok(workflow.includes("cancel-in-progress: ${{ github.event_name == 'push'"));
+assert.equal((workflow.match(/cancel-in-progress:/g) || []).length, 1);
+assert.ok(workflow.includes('cancel-in-progress: false'));
 assert.doesNotMatch(workflow, /cancel-in-progress: true/);
 console.log('OK: DKSS marine u\/v prioriteres før HARMONIE, når marinehorisonten mangler.');

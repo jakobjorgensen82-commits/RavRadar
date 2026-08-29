@@ -1,11 +1,12 @@
 # AI Architecture Map – RavRadar
 
-## Lokal 4.0.314 – incidentlåst singleton-afteranker og release-overtakelås
+## 4.0.314 source merged; same-version sourcegate-hotfix
 
 - `one-time-candidate-g-gap-reconstruction.mjs` accepterer ét målt evidenspunkt kun for rollen `AFTER`; før, target, rollback og cleanup beholder minimum to.
 - Singletonen kan kun fortsætte, når før- og targetserien uafhængigt beviser enstemmig 3-timerskadence. Eksakt state-replay, målanker, bracket, sourcebindings, descriptor og CAS er uændrede.
-- `update-and-deploy.yml` kræver exact-head D1 også for 4.0.314 og før inspect. Normal push/schedule/`none` forbliver no-op, indtil GitHub-metadata på samme head beviser både succesfuldt apply-step og Pages-job; apply/rollback/cleanup er fortsat mulige efter D1.
+- `update-and-deploy.yml` kræver exact-main D1 på den endelige merge-SHA også for 4.0.314 og før inspect. Normal push/schedule/`none` forbliver no-op, indtil GitHub-metadata på samme SHA beviser både succesfuldt descriptorbundet apply-step og Pages-job; apply/rollback/cleanup er fortsat mulige efter D1.
 - Den fælles produktions-concurrency annullerer aldrig et igangværende apply; køede normale runs genkontrollerer freshness. Hele hvert run-/jobsvar parse- og shapevalideres samlet, så delvist parseroutput ikke kan åbne gaten.
+- `test:dmi-marine-first-recovery` kræver præcis én `cancel-in-progress: false` og ligger i `test:workflow-action-contracts`, som `validate:source` kører. Dermed kan en stale fuld-produktionsassertion ikke igen passere PR-sourcegaten ubemærket.
 - 4.0.315 er ulåst i regressionen. Låsen er incident- og releaseafgrænset, ikke en ny permanent managementafhængighed.
 
 ## Historisk lokal 4.0.313 – bounded legacy-replay mellem Supabase og D1

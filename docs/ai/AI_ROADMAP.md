@@ -1,16 +1,20 @@
 # AI Roadmap – RavRadar 4.0.314+
 
-## P0 nu – få 4.0.314 sikkert gennem singleton-afteranker og rekonstruktion
+## P0 nu – få 4.0.314 sikkert gennem sourcegate-hotfix og rekonstruktion
 
 1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
 2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
 3. [x] Tillad singleton-afteranker kun for uafhængigt bevist native 3-timerskadence; bevar state-, bracket-, source- og CAS-beviserne.
 4. [x] Lås exact-D1 til 4.0.314, inspect til D1 og normal produktion til exact-head apply+Pages; bevis 4.0.315 ulåst.
-5. [x] Bestå målrettede og uafhængige recovery-/workflow-/privacytests samt fuld lokal source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
-6. [ ] Bestå PR exact-head, merge og verificér no-op push.
-7. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` inklusive begge syncs, slutreconciliation og slutattestation.
-8. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-9. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+5. [x] Bestå PR #227-diffens målrettede og uafhængige recovery-/workflow-/privacytests samt fulde lokale source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
+6. [x] Bestå PR #227/exact-head `33272564543`, merge `d1369d88` og no-op push `33272676071`.
+7. [x] Klassificér produktion `33271863449` som stale test-/sourcegate-stop før release/Pages; ret assertionen og bind testen ind i `test:workflow-action-contracts`.
+8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
+9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
+10. [ ] Bestå hotfix exact-head PR, merge og no-op push.
+11. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` på final merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
+12. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
+13. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
 
 ## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
 

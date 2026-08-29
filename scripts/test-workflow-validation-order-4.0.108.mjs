@@ -44,6 +44,10 @@ for (const marker of [
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
+const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-contracts'] || '';
+if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery')) {
+  throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');
+}
 for (const marker of [
   'npm run validate:rdks',
   'npm run test:feedback-learning',
