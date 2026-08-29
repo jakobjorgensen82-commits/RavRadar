@@ -1,13 +1,20 @@
-# RavRadar 4.0.314 – singleton-afteranker og sikker recoveryrelease
+# RavRadar 4.0.314 – policybundet cadence og sikker recoveryrelease
 
 Dato: 2026-08-29
-Status: Diagnostikhotfixet bestod PR #230 på exact-head `7ad1a98b` i `33277107562`/`99165644953`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op. Første exact-main D1 `33277253662` stoppede på en forbigående 503 efter Edge-deploy, men dens fail-closed roll-forward bestod; genkørslen `33277510537`/`99166722076` blev helt grøn på samme SHA. Read-only inspect `33277738135`/`99167394284` viste kun den sanitiserede kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY` og stoppede før descriptor, apply, build og Pages. Den afgrænsede source-hotfix tillader nu en eksakt replaybar, målt schema-2.0 før-primary i ærlig `WINDOW_INCOMPLETE` og kræver stadig, at det samlede target-reference-replay bliver `READY`. Lokal 210/673-regression er grøn; ny exact-head, merge, D1, inspect/apply og offentlig verifikation afventer.
+Status: Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` blev helt grøn. Read-only inspect `33279639424`/`99172534863` viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og stoppede før descriptor, apply, build og Pages. Den lokale cadencekorrektion bruger den eksisterende regionale policy som per-del-identitet, accepterer eksakte sparse 1/2/3h-afstande kun på policyklassificerede 1h-dele og hashbinder en koordinatfri projektion i descriptor/apply-CAS. Målrettet 210/673- og workflowtest, fuld lokal `validate:source`, RDKS/håndbog/security/releasegate og tre slutreviews er grønne; ny exact-head, merge, D1, inspect/apply og offentlig verifikation afventer. Offentlig sandhed er fortsat 4.0.310-nøddrift.
+
+## Policybundet cadence
+
+- Præcis de otte ejerautoriserede `dkss_lf`-dele i den versionsstyrede regionale proxy-policy er native 3h; alle øvrige er 1h. 665/8-totalen er en ekstra gate, ikke identitetskilden.
+- 1h-dele må have eksakte målte 1/2/3h-afstande inden for Candidate G's eksisterende continuitygrænse. De manglende interne slots forbliver manglende og indgår aldrig i engangsinterpolationen.
+- 3h-dele kræver eksakt 3h på både før- og targetkanten. Policy-ID-swap, 3h/2h-mismatch, nonintegral/>3h eller policyhashændring stopper før descriptor/apply.
+- Descriptoren indeholder kun cadencepolicy-projektionens SHA-256; apply genberegner den og hele planen før CAS. Actions-annotationen forbliver begrænset til descriptor-SHA og faste sikre optællinger.
 
 ## Hvorfor versionen findes
 
 4.0.313 blev exact-head-valideret i PR #226, merged som `ff62ba11` og bestod hele exact-main D1-backend `33269631305`. Den efterfølgende read-only inspect `33269849748` stoppede før descriptor og mutation med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`.
 
-After-artifactet kan for de otte native 3-timersdele legitimt indeholde kun det eksakte målte højreanker. Den fælles validator krævede mindst to punkter, selv om cadence allerede skulle bevises uafhængigt af before- og targetserien.
+After-artifactet kan for de otte policyklassificerede native 3-timersdele legitimt indeholde kun det eksakte målte højreanker. Den fælles validator krævede mindst to punkter, selv om policyen leverer cadenceidentiteten, og før- og targetkanten uafhængigt skal bevise kompatibilitet med den gennem mindst to eksakte 3h-intervaller.
 
 ## Afgrænset løsning
 

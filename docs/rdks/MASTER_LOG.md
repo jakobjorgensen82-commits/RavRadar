@@ -1,4 +1,13 @@
-## 2026-08-30 – før-primary-gaten afgrænset efter sanitiseret live-inspect
+## 2026-08-30 – policybundet cadence efter nyt sanitiseret live-inspect
+
+- Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele backendkæden.
+- Read-only inspect `33279639424`/`99172534863` stoppede i planforseglingen med den eneste sanitiserede kode `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Descriptor/apply/build/Pages var skipped; ingen data, cache eller offentlig drift blev ændret.
+- Tre source-/inferens-/testaudits afviste suffixmønsteret som cadenceautoritet. Den versionsstyrede regionale policy identificerer allerede præcis de otte ejerautoriserede `dkss_lf`-dele med native 3h; alle andre er 1h. 665/8 bevares som ekstra populationgate, ikke identitetskilde.
+- Lokal same-version-rettelse tillader eksakte målte 1/2/3h-afstande på policyklassificerede 1h-dele inden for Candidate G's eksisterende continuitygrænse, men rekonstruerer kun incidentets forseglede bracket. De otte 3h-dele kræver fortsat eksakt 3h på før- og targetkanten.
+- Descriptoren indeholder kun SHA-256 af en koordinatfri policyprojektion. Apply genlæser policyen, genberegner planen og kræver kanonisk CAS-lighed. Policy-id-swap, 3h/2h-mismatch, nonintegral cadence og hashændring stopper urørt.
+- Målrettet syntetisk 210/673 inspect/CAS/rollback/cleanup/checkpoint og workflowinterlock er grønne. Fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate og tre uafhængige slutreviews er grønne; dokumentationsfundene er rettet og proportionalt genvalideret. Exact-head/merge/D1/inspect og offentlig verifikation afventer. Offentlig sandhed er fortsat 4.0.310-nøddrift.
+
+## 2026-08-30 – historisk før-primary-gate efter sanitiseret live-inspect
 
 - Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op uden inspect/build/artifact/Pages.
 - Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 efter Edge. Hele den bundne fail-closed roll-forward bestod, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme SHA.

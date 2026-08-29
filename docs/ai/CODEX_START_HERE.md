@@ -2,7 +2,17 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-30 – før-primary-gate lokalt afgrænset
+## Aktuelt P0-checkpoint 2026-08-30 – cadencepolicy lokalt afgrænset
+
+- Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
+- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
+- Read-only inspect `33279639424`/`99172534863` stoppede før descriptor/apply/build/Pages og viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data eller cache blev ændret.
+- Lokal same-version-rettelse bruger den eksisterende regionale proxy-policy som identitetsautoritet for præcis otte `dkss_lf`-3h-dele; resten er 1h. Descriptoren binder kun en koordinatfri projektionshash, som apply genvaliderer.
+- 1h-dele accepterer eksakte målte 1/2/3h-afstande under Candidate G's eksisterende ≤3h continuity, men de manglende interne slots udfyldes aldrig. De otte 3h-dele kræver fortsat eksakt 3h på begge kanter og er de eneste med lovlig singleton-`AFTER`.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Næste rækkefølge: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → eventuelt CAS-apply/frisk produktion/offentlig 210/673.
+- Hent aldrig fuld inspectjoblog eller source-/descriptor-/rollbackartifacts. Brug kun allowlistet checkannotation. Ingen vejrdata, rå vektorer, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
+
+## Historisk P0-checkpoint 2026-08-30 – før-primary-gate lokalt afgrænset
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
 - PR #230 bestod exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea`, og push `33277217412` var korrekt no-op.

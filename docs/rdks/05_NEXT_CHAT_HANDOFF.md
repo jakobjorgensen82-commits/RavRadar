@@ -1,6 +1,15 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
+## Aktuelt P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
+
+- Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
+- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
+- Read-only inspect `33279639424`/`99172534863` stoppede uden descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`; ingen mutation skete.
+- Lokal rettelse bruger `data/current-regional-proxy-policy.json` som identitetsautoritet for præcis otte native-3h-dele. Den hashbinder kun en koordinatfri projektion; 1h-dele accepterer eksakte målte 1/2/3h-afstande uden intern interpolation, mens 3h-dele fortsat kræver eksakt 3h.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Fortsæt Sol/Ultra: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → kun ved succes CAS-apply/frisk produktion/offentlig 210/673 desktop/mobil.
+- Hent aldrig fuld joblog eller source-/descriptor-/rollbackartifact. Brug kun allowlistet annotation. Rør ikke vejr, rå vektorer, koordinater, geometri, punkter eller private payloads.
+
+## Historisk P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor
 
 - Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 er exact-head-valideret/merged som `ff62ba11`; push `33269584236` var no-op, og D1-backend `33269631305`/`99145677813` er helt grøn.

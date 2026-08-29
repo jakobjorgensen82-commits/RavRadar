@@ -1,5 +1,10 @@
-## 4.0.314 – før-primary-readiness afgrænset; recovery fortsat gated (2026-08-30)
+## 4.0.314 – cadencepolicy bundet; recovery fortsat gated (2026-08-30)
 
+- Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.
+- Read-only inspect `33279639424`/`99172534863` stoppede sikkert før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data, cache eller offentlig drift blev ændret.
+- Erstatter suffixbaseret cadencegæt med den eksisterende regionale proxy-policy som per-del-identitetsautoritet. Kun en koordinatfri projektionshash bindes i descriptor/apply-CAS; 665/8 bevares som ekstra populationgate.
+- Policyklassificerede 1h-dele accepterer eksakte målte 1/2/3h-afstande under Candidate G's eksisterende tre-timers continuitygrænse, uden at de manglende interne slots udfyldes. De otte `dkss_lf`-3h-dele kræver fortsat eksakt 3h på begge kanter og er de eneste med tilladt singleton-`AFTER`.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointregression og workflowinterlock, fuld lokal `validate:source`, RDKS/håndbog/security/releasegate og tre slutreviews er grønne. Exact-head/merge, nyt D1, ny inspect/apply og offentlig verifikation afventer; 4.0.310-nøddriften er fortsat offentlig sandhed.
 - PR #230 bestod på den korrigerede exact-head `7ad1a98b` i run `33277107562`/job `99165644953`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var en tilsigtet grøn no-op uden inspect, build, artifact eller Pages.
 - Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 i den uautentificerede trip-log-probe efter Edge-deploy. Hele den kontraktbundne fail-closed roll-forward bestod; der blev ikke kørt inspect. Den idempotente genkørsel `33277510537`/`99166722076` bestod derefter hele source-, storage-, Edge-, Worker-, sync-, reconciliation- og slutattestationskæden på samme `228725ea`.
 - Read-only inspect `33277738135`/`99167394284` bestod D1-readiness og stoppede før descriptor, apply, build og Pages med den nye datasikre kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Dermed blev hverken data, cache eller offentlig drift ændret.

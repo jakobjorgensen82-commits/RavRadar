@@ -1,6 +1,18 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.314 – luk den eksakt afgrænsede før-primary-gate
+## P0 4.0.314 – luk den policybundne cadencegate
+
+- [x] PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og no-op push `33279411885`.
+- [x] Exact-main D1 `33279463545`/`99172031927` helt grøn.
+- [x] Read-only inspect `33279639424`/`99172534863` stoppede uden descriptor/mutation ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`.
+- [x] Bind cadence pr. del til den eksisterende regionale policy, forsegl kun en koordinatfri projektionshash, og genvalider den ved apply-CAS.
+- [x] Bevar sparse 1/2/3h measured continuity på 1h-dele uden at udfylde interne slots; kræv eksakt 3h på de otte policydele.
+- [x] Målrettet 210/673 cadence-/CAS-regression og workflowinterlock grøn.
+- [x] Kør fuld lokal `validate:source` én gang, målrettede RDKS-/håndbogs-/security-/releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
+- [ ] Exact-head → merge/no-op → nyt D1 → ny read-only inspect.
+- [ ] Kun efter grøn descriptor: CAS-apply → frisk produktion/fulde gates → offentlig 210/673 desktop/mobil.
+
+## Historisk P0 4.0.314 – før-primary-gaten
 
 - [x] Luk 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`.
 - [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT` og uden mutation.

@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-## Ærlig før-primary og samlet READY-bevis – 4.0.314 lokalt rettet
+## Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
+
+Morgenhullet er stadig ikke lukket, og offentlig RavRadar viser fortsat den komplette målte 4.0.310-nødvisning. Før-primary-rettelsen bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og exact-main D1 `33279463545`/`99172031927` blev helt grøn. Den efterfølgende read-only inspect `33279639424`/`99172534863` stoppede sikkert før descriptor, apply, build og Pages med `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data eller cache blev ændret.
+
+Årsagen var ikke en ny manglende periode, men at inspect forsøgte at udlede kildens native cadence alene fra afstandene i den målte suffix. Candidate G har allerede en anden kontrakt: eksakte målte afstande på op til tre timer kan være samme sammenhængende transportbevis. På en en-timeskilde kan to eller tre timer derfor betyde et eller to udeblevne native slots. Det gør ikke serien til en ny cadence, og de udeblevne slots må ikke udfyldes.
+
+Cadenceidentiteten findes allerede i den versionsstyrede regionale proxy-policy. Præcis de otte ejerautoriserede `dkss_lf`-dele er native tre timer; alle øvrige dele er én time. Inspect bruger per-del-identiteten og beholder 665/8 som en ekstra populationgate. En total alene er ikke nok, fordi to fejlklassificerede dele ellers teoretisk kunne bytte plads.
+
+Policyindhold eller koordinater kommer ikke i descriptoren. RavRadar danner kun en koordinatfri projektion af de relevante policyfelter og sorterede del-id'er og forsegler projektionens SHA-256. Apply genlæser policyen, genberegner både hash og hele planen og kræver kanonisk descriptor-/target-CAS. En policy-ID-swap, dublet eller mangel, en 3h-del med 1/2h-afstand, nonintegral eller over tre timers afstand og en ændret policyhash stopper før mutation.
+
+På en policyklassificeret 1h-del accepteres kun eksakte heltalsafstande på 1, 2 eller 3 timer; de manglende interne tidspunkter forbliver manglende. De otte 3h-dele skal have mindst to eksakte 3h-intervaller på både før- og targetkanten og er fortsat de eneste, som må have et enkelt målt `AFTER`-anker. Kun det eksakte incident-bracket interpoleres. Det samlede 48-timers replay skal stadig blive `READY`, og alle source-, state-, trust-, rollback-, privacy- og releasegates består.
+
+Den målrettede syntetiske 210/673 inspect-/CAS-/rollback-/cleanup-/checkpointtest og workflowinterlock er grønne, inklusive sparse 2h-hourly, mixed 1/3-hourly, policy-ID-swap, ulovlig 3h/2h, nonintegral cadence og policyhash-CAS. Næste trin er resterende proportionale source-/RDKS-/reviewgates, exact-head PR, merge/no-op, nyt exact-main D1 og en ny read-only inspect. Først efter en forseglet descriptor, CAS-apply, frisk normal produktion og offentlig 210/673 desktop-/mobilkontrol kan hullet kaldes lukket.
+
+Candidate G's score, 20/50/30, +10/-8, 13-timersregel, DMI/Copernicus, vejr, nøddrift, geometri og punkter er uændrede.
+
+## Historisk: ærlig før-primary og samlet READY-bevis – 4.0.314 lokalt rettet
 
 Morgenhullet er stadig ikke lukket, og offentlig RavRadar viser fortsat den komplette målte 4.0.310-nødvisning. Diagnostikhotfixet er nu merged. Den nye D1-backend er grøn, og den efterfølgende read-only inspect stoppede sikkert før descriptor eller dataændring med den ene tilladte kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`.
 
