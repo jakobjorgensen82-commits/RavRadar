@@ -1,5 +1,12 @@
 # Kendte åbne og overvågede forhold
 
+## 4.0.309-kandidat – ekstern afbødning af total schedulerstilhed
+
+- **ISSUE-GITHUB-SCHEDULE-SILENCE – EKSTERN AFBØDNING IMPLEMENTERET LOKALT / AKTIVERING AFVENTER:** Workflowene er aktive, og manuel `33241555811` bestod, men native schedule-events udeblev på tværs af produktion, pilot og keepalive. Ét eksplicit eksternt keepalivekald ved `04,19,34,49` UTC lukker den fælles schedulerafhængighed uden at starte produktion blindt. Exact-head, merge og faktisk cron-aktivering afventer.
+- **ISSUE-CANDIDATE-G-RECOVERY-TO-READY-PROGRESSION – NY SCHEDULERUSIKKERHED:** Offentlig `rr-20260829075656-210` er komplet 210/673, men primary har fortsat 0 aktive zoner/673 warmupdele og bruger den auditerede recovery. Den tidligere ETA forudsatte ubrudte nye produktionstimer og skal genberegnes efter stabil drift; ingen state eller modelregel ændres i 4.0.309.
+
+Se DEC-0107.
+
 ## 4.0.308-kandidat – offentlig QA-opfølgning
 
 - **ISSUE-ASSISTANT-NATURAL-PHOSPHORUS-REFUSAL – RETTET LOKALT / AFVENTER RELEASE:** Det kildebundne emne krævede tidligere, at hvidt fosfor blev nævnt sammen med rav. Naturlige DA/DE/EN-spørgsmål om hvidt fosfor på stranden matcher nu det lokale officielle sikkerhedssvar og dækkes af tre sprogressioner.

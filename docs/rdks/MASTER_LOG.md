@@ -1,3 +1,11 @@
+## 2026-08-29 – 4.0.309 lukker total GitHub-schedulerstilhed eksternt
+
+- GitHub-workflowene var aktive, runnerkøen var normal, og manuel produktion `33241555811` bestod hele den friske kæde, men schedule-events udeblev samtidig for produktion, pilot og keepalive.
+- Ejeren traf den senere afgrænsede beslutning, som DEC-0085 havde reserveret: ét eksternt cron-job kalder kun keepalive-workflowet ved `04,19,34,49` UTC med `external_watchdog=true`.
+- Dual staleness på 45 minutter, ingen aktiv produktion, begge concurrencygrupper og alle fulde produktionsgates bevares. Kaldet bærer ingen vejr-, model-, koordinat-, U/V- eller privat payload.
+- Offentlig primary er fortsat 673-deles warmup under auditeret recovery; ny ETA måles først efter stabil cadence. Se DEC-0107.
+- Målrettede tests, håndbogsgaten, RDKS, releasegate og hele lokale `validate:source` består. Geodataenes særskilte diff viser kun releaseversion; exact-head og ekstern aktivering afventer.
+
 ## 2026-08-29 – offentlig 4.0.307-kontrol udløser afgrænset 4.0.308
 
 - PR #219 bestod exact-head `33220047699` på `f53a7133bc3f978fe7fb9d2d129733efada8f794` og blev merged som `6c0b6c49230393a3e4306a867dd3f4c3e845d234`.

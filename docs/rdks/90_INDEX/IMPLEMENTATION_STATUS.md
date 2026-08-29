@@ -1,4 +1,18 @@
-# Implementeringsstatus – 4.0.308 offentlig QA-opfølgning
+# Implementeringsstatus – 4.0.309 ekstern produktionsvagthund
+
+## 4.0.309-kandidat – luk total GitHub-schedulerstilhed eksternt
+
+- [x] Bevis aktiv workflowkonfiguration, fungerende manuel produktion og samtidige native schedule-huller.
+- [x] Mål scheduleforskydning og reelle køretider uden private payloads eller rå vektorer.
+- [x] Vælg ét eksternt keepalive-/watchdogkald ved `04,19,34,49` UTC frem for direkte produktion eller pilot.
+- [x] Gør `external_watchdog=true` eksplicit og bevar almindelig manuel keepalive som no-op.
+- [x] Bevar 45-minutters dual staleness, retry og begge concurrencygrupper.
+- [x] Bestå målrettede tests, RDKS, sourcegate og separat geodatabevis.
+- [ ] Bestå PR exact-head, merge og frisk post-merge-produktion.
+- [ ] Opret/test præcis ét cron-job og bevis mindst to automatiske HTTP 204/no-op-kald.
+- [ ] Genmål offentlig Candidate G-warmup og dokumentér ny ærlig tidshorisont.
+
+Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring. Se DEC-0107.
 
 ## 4.0.308-kandidat – luk naturlig fosforformulering og tvetydig zonesøgning
 

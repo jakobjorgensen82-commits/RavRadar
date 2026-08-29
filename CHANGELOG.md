@@ -1,3 +1,10 @@
+## 4.0.309 – ekstern vagthund mod GitHub-schedulerstilhed (2026-08-29)
+
+- Bevarer GitHubs normale 15-minuttersproduktion, Copernicus-pilot og cacheplan.
+- Tillader ét eksplicit, payloadfrit eksternt watchdog-kald ved `:04/:19/:34/:49` UTC.
+- Starter kun normal `force=false`-produktion efter 45 minutters gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion.
+- Almindelig manuel cachekørsel udløser ikke watchdoget; Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og punkter er uændrede. Se DEC-0107 og `CHANGELOG-4.0.309.md`.
+
 ## 4.0.308 – naturligt fosforspørgsmål og filtreret zonesøgning (2026-08-29)
 
 - Den offentlige 4.0.307-slutkontrol fandt, at “Hvad er hvidt fosfor på stranden?” blev afvist trods eksisterende kildeviden, og at `lyn` kun hoppede til den første matchende zone.

@@ -1,5 +1,13 @@
 # Aktive krav – samlet register
 
+## Ekstern schedulerstilhed – bindende fra 4.0.309
+
+- **REQ-WORKFLOW-EXTERNAL-SILENCE-WATCHDOG-001 – BINDENDE EJERBESLUTNING:** GitHub ejer fortsat normal produktion, pilot og cacheplan. Præcis ét eksternt cron-job må ved UTC-minut `04,19,34,49` dispatch'e `preserve-copernicus-current-shadow.yml` på `main` med `external_watchdog=true`. Det må ikke dispatch'e produktion, pilot, force, geometri eller modelarbejde direkte.
+- **REQ-WORKFLOW-EXTERNAL-WATCHDOG-FAIL-SAFE-001 – BINDENDE:** En almindelig manuel keepalive må ikke køre produktions-watchdoget. Det eksplicitte eksterne kald bevarer DEC-0085's 45-minutters krav om gammel workflowhistorik, gammelt offentligt manifest og fravær af aktiv produktion samt eksisterende concurrency og fulde produktionsgates.
+- **REQ-WORKFLOW-EXTERNAL-WATCHDOG-PRIVACY-001 – BINDENDE:** Det eksterne kald må kun bære repository/workflow, `ref=main` og boolsk intent. Ingen vejrpayload, koordinater, rå U/V, private data, credentials fra RavRadar eller modelstate må sendes eller logges. Tokenet begrænses til RavRadar og Actions write; response-body gemmes ikke.
+
+Se DEC-0107. Dette er den senere afgrænsede ejerbeslutning, som REQ-WORKFLOW-GITHUB-SCHEDULE-001 tidligere krævede.
+
 ## Offentlig QA-opfølgning – bindende fra 4.0.308
 
 - **REQ-ASSISTANT-NATURAL-PHOSPHORUS-001 – BINDENDE:** Naturlige DA/DE/EN-spørgsmål om hvidt fosfor på stranden skal lokalt finde RavRadars officielle sikkerhedssvar, også uden ordet rav. Sikkerhedsindhold og kildeproveniens må ikke lempes.

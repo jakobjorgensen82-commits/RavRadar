@@ -1,5 +1,9 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.309-kandidat – ekstern schedule-vagthund uden dataadgang
+
+GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.
+
 ## 4.0.308-kandidat – naturlige sikkerhedsformuleringer
 
 Den offentlige prøve viste, at den eksisterende kildebundne viden om hvidt fosfor var for snævert routet: “Hvad er hvidt fosfor på stranden?” manglede ordet rav og blev derfor afvist. DA/DE/EN-emnematchet genkender nu selve stofnavnet og naturlige strand-/fundformuleringer. Svaret, evidensklassen og den officielle Forsvaret-proveniens er uændrede; kun adgangsformuleringen er bredere. Se DEC-0106.
