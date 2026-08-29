@@ -223,7 +223,7 @@ jobs:
             exit 0
           fi
           requires_exact_d1=false
-          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
+          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$release_version" = "4.0.313" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
             requires_exact_d1=true
           fi
           if [ "$requires_exact_d1" != "true" ]; then
@@ -294,7 +294,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.312 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.313 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Download exact healthy pre-gap support artifact
         uses: actions/download-artifact@v8
@@ -428,7 +428,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.312 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Set up Node.js for one-time reconstruction mutation
         if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
@@ -707,7 +707,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')) }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.312 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -928,7 +928,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.312 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1069,7 +1069,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.312 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse reconstruction deploy without a successful fresh weather rebuild

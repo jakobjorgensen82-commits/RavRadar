@@ -100,6 +100,7 @@ requireMarkers(tripStorageGate, [
   'version.json could not be validated; this run remains a green no-op',
   '"4.0.311"',
   '"4.0.312"',
+  '"4.0.313"',
   'RECONSTRUCTION_MODE" = "apply"',
   'RECONSTRUCTION_MODE" = "rollback"',
   'RECONSTRUCTION_MODE" = "cleanup"',
@@ -128,7 +129,7 @@ requireMarkers(d1BuildHeader, [
 
 function pagesProductionAllowed({ releaseVersion, reconstructionMode, exactD1Proof, liveD1Attestation }) {
   if (!/^4\.0\.[0-9]+$/.test(releaseVersion)) return false;
-  const requiresExactD1 = ['4.0.311', '4.0.312'].includes(releaseVersion)
+  const requiresExactD1 = ['4.0.311', '4.0.312', '4.0.313'].includes(releaseVersion)
     || ['apply', 'rollback', 'cleanup'].includes(reconstructionMode);
   return !requiresExactD1 || (exactD1Proof && liveD1Attestation);
 }
@@ -151,7 +152,13 @@ assert.equal(pagesProductionAllowed({
 }), true, '4.0.312 må først åbne Pages efter exact-head D1-bevis og live attestation.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '4.0.313', reconstructionMode: 'none', exactD1Proof: false,
-}), true, 'Den afgrænsede first-release-interlock må ikke blive en permanent managementafhængighed.');
+}), false, '4.0.313-replayrettelsen må ikke deploye før dens egen exact-head D1-kæde er grøn.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.313', reconstructionMode: 'none', exactD1Proof: true, liveD1Attestation: true,
+}), true, '4.0.313 må først åbne Pages efter exact-head D1-bevis og live attestation.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: 'none', exactD1Proof: false,
+}), true, 'Den afgrænsede recoveryinterlock må ikke blive en permanent managementafhængighed.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '', reconstructionMode: 'none', exactD1Proof: false,
 }), false, 'Ugyldig versionsidentitet skal give grønt no-op, ikke bypass.');

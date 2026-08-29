@@ -1,6 +1,15 @@
 # AI Working Rules – RavRadar
 
-## Aktuel recovery-/storage-regel fra 4.0.312-roll-forwarden
+## Aktuel recovery-/storage-regel fra 4.0.313
+
+- Forskellig payloadhash er kun legacykompatibel ved `supabase-migration` i begge ender og efter eksakt stored selvhash/ejer/id/shard/schema/privacy/non-null/core-bevis.
+- Komprimer kun kendte nullblade og tomme underobjekter gennem den dokumenterede projektion. Et ukendt schema-v2-felt, også null, er en fejl.
+- Omskriv aldrig gammel D1-row/hash/registry for at få en genkørsel grøn. Reparér kun missing registry med verified stored hash; modstrid stopper.
+- Læs aldrig fuld privat payload for at diagnosticere en konflikt. Brug syntetisk reproduktion og faste, datasikre fejlkategorier.
+- Et partial/failure-recovery-run er ikke readiness. Kræv hele exact-main D1-kæden inklusive slutreconciliation og slutattestation.
+- 4.0.314 må ikke overhale 4.0.313's incidentgate, selv om versionsinterlocken bevidst ophører dér.
+
+## Historisk recovery-/storage-regel fra 4.0.312-roll-forwarden
 
 - Behandl `RRGAP-2026-08-29-CANDIDATE-G-01` som den eneste tilladte rekonstruktion. Den må aldrig blive en generel missing-, fallback- eller træningsregel.
 - Skeln altid lokal kandidat, exact-head CI, live backend, apply, frisk produktion og offentlig verifikation. Ingen af de første fem må omtales som den næste.
@@ -9,7 +18,7 @@
 - Ved lagercutover sættes existing-D1/fresh Edge-predeploy-intent efter capacity/CAS før første Edge-write. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
 - Migreringsværktøjer må kun læse eksplicitte server-side safe blade. Data, som ikke må logges eller lagres, må heller ikke hentes “for en sikkerheds skyld”.
 - `calibration_eligible` åbner ikke læring uden server-side signeret manifestbinding. Den integrerede model skal bevare en atomisk målt-only 210/673-nødvej i højst 72 timer og aldrig efter kortere forecastudløb.
-- Aktuel status må beskrives præcist: 4.0.311 er exact-head CI-grøn og merged, men backend stoppede; 4.0.312 har grøn målrettet test, fuld lokal source/release/RDKS/håndbog/version og geodatakontrol, mens exact-head PR/merge/backend/reconstruction/public-verifikation mangler. Offentlig version er fortsat 4.0.310. Trip protocol/header forbliver 4.0.311.
+- Det historiske checkpoint endte således: 4.0.312 bestod PR #225 exact-head `33266087776`, blev merged som `a5ece10d` og fik no-op push `33266184326`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness. Den operative fortsættelse er udelukkende det aktuelle 4.0.313-checkpoint ovenfor. Offentlig version er fortsat 4.0.310, og trip protocol/header forbliver 4.0.311.
 
 ## 1. Systemisk fejlretning
 RavRadar fejlrettes som et system. Start med den konkrete observation og følg runtimekæden både bagud til input/kilde og fremad til score, UI, test og deployment. En rød test er et symptom, indtil årsagen er bevist.

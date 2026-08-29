@@ -1,6 +1,6 @@
 # DEC-0109 – én afgrænset rekonstruktion af Candidate G-transportbevis
 
-**Status:** Ejer-godkendt 4.0.311-protokol; source exact-head-valideret og merged via PR #224, men backendkørsel `33263892151` stoppede før D1/Edge på en fejlagtig post-SQL-katalogverifikation. Lokal 4.0.312-roll-forward har strukturel verifier og grønne målrettede tests, fuld lokal source/release/RDKS/håndbog/version og geodatakontrol; PR exact-head, merge, backendgenkørsel, inspect/apply og produktion afventer.
+**Status:** Ejer-godkendt 4.0.311-protokol. 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810` og blev merged som `a5ece10d`, men backend `33266229687` fejlede den idempotente Supabase→D1-synk efter tidlige grønne D1/Edge/Worker-led. Lokal 4.0.313 retter det syntetisk reproducerede legacy-null-leaf/hash/registry-replay snævert; exact-head, merge, helt grøn backend, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
 
 **Dato:** 2026-08-29
 
@@ -43,6 +43,8 @@ Ejeren har udtrykkeligt besluttet, at netop dette dokumenterede hul må rekonstr
 5. Operativ `rollback` har to adskilte tidsdomæner. Eksakt før-state må kun gendannes, når hele det aktuelle dokument, Candidate G-state, dataset/reference og målidentitet stadig er byte-/hashidentisk med det umiddelbare post-apply-mål. Enhver senere descendant vælger automatisk descriptorbundet kausal cleanup i stedet; et gammelt checkpoint må aldrig overskrive nyere målt evidens.
 6. Kausal `cleanup` fjerner kun syntetiske prøver fra dette incident, bevarer alle nyere målte prøver, genberegner fra den målte højresuffix og vender tilbage til schema `2.0.0`. Alle 673 delscorer, zonescorer og public modes lukkes eksplicit som `WINDOW_INCOMPLETE`, indtil en obligatorisk frisk normal vejrproduktion har genopbygget og valideret vinduet.
 7. Før første 4.0.312-Pagesproduktion med denne kontrakt skal samme eksakte main-head have et succesfuldt `[d1]`-backenddeploy. 4.0.311 forbliver protokolgrænsen for trust-/tripfelterne og må ikke ommærkes. Efter D1-schema, capacity og exact-main-CAS sættes umiddelbart før første Edge-deploy præcis ét installationstype-intent: `d1_edge_predeploy_intent` for eksisterende D1 eller `fresh_edge_predeploy_intent` for genuine fresh. Legacy uden markør får desuden `legacy_activation_intent`/varig fase efter sit kapacitetsbundne CAS. Begge maintenance-kapable Edge-funktioner deployes under uændret mode/gammel Worker. Existing D1 dobbeltattesteres i D1-mode, får `d1_repair_intent` og en 20-minutters `maintenance:<deadline>`-lease; Edge afviser over 30 minutter og fortolker udløb som D1. Alle Edge-prober har fem sekunders hard timeout. Efter dobbelt maintenance-attestation og 20-sekunders drain skal mindst 600 sekunders lease restere før første Worker-write; secret, deploy og health er én samlet højst syv minutter lang gate. Genuine fresh forbliver Supabase indtil første synk og fresh `activation_intent`/markør. Partial existing-D1 Edge-deploy udløser kun exact-main-bundet D1 roll-forward. Partial fresh Edge-deploy før activation udløser exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Fejl før capacity/predeploy-CAS sætter intet intent og tillader nul ekstern recoverymutation. Efter D1-aktivering følger dobbeltattestation, drain, slutreconciliation og Edge-/Worker-/registry-/SQL-verifikation; manglende bevis giver no-op uden artifact/Pages.
+**4.0.313-præcisering til punkt 7:** 4.0.312 blev merged, men dens backendkæde blev ikke grøn og åbnede derfor aldrig Pages. Henvisningen til “første 4.0.312-Pagesproduktion” er operationelt erstattet af **første mulige 4.0.313-Pagesproduktion**. Samme exact-head `[d1]`-krav og 4.0.311-protokolgrænse består uændret.
+
 Legacy-D1 må kun klassificeres fra de eksakte ti EU-shards sammen med både run/head-bevis og GitHubs upaginerede jobbevis for run `33024408547`: ét job på første forsøg, alle ti bundne D1-trin `completed/success` og det alternative Supabase-rollbacktrin `completed/skipped`. Generel run-success uden stepattestation er tvetydig og skal stoppe før legacy-intent.
 
 8. Koderollback må først ske efter data-cleanup; ellers kan ældre kode møde schema 2.1 og skal med vilje stoppe fail-closed.
@@ -60,6 +62,18 @@ Legacy-D1 må kun klassificeres fra de eksakte ti EU-shards sammen med både run
 9. `calibration_eligible` og den interne snapshotkonsistens er ikke serverbevis mod et signeret offentligt manifest. Feltet må kun fungere som en konservativ udelukkelseslås, ikke som empirisk evidens eller tilladelse til global koefficientlæring. En senere læringsvej kræver særskilt server-side manifestbinding og beslutning.
 
 ## Beviser og statusgrænse
+
+### Nyeste checkpoint: 4.0.312 backendstop og lokal 4.0.313
+
+4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` var korrekt no-op uden artifact eller Pages. Backend `33266229687`/job `99136669571` bestod kilde, constraint, D1-forberedelse og de første Edge-/Worker-gates, men fejlede den idempotente Supabase→D1-synk med `TRIP_GATEWAY_UNAVAILABLE`. Dens failure-roll-forward er ikke readiness, og der blev ikke kørt inspect/apply, vejr, artifact eller Pages.
+
+Den reproducerede årsag er en kanonisk forskel mellem gamle 4.0.310-dokumenter med kendte nested nullblade og 4.0.311's dataminimerede PostgREST-bladprojektion, som udelader null. 4.0.313 må kun anerkende dette som identisk replay, når begge kilder er `supabase-migration`, stored schema-v2 top/nested/privacy valideres før nullkomprimering, alle bevarede non-null-/kerneværdier er eksakt ens, og stored selvhash, ejer, id og shard består. Schema-v1 bruger alene den bounded legacyprojektion.
+
+Den historiske D1-row, payloadhash og registryhash forbliver byteidentiske. Missing registry må kun repareres med den verificerede stored hash; en modstridende registry stopper. Readback håndhæver samme schema-v2 stored-allowlist, og gatewayfejl må ikke føre ubetroet response-body videre. Denne løsning er syntetisk testet, men er ikke et live D1-bevis.
+
+Status må først ændres, når 4.0.313 har bestået full sourcegate på exact PR-head, er merged, har et helt grønt exact-main `[d1]`-run inklusive slutreconciliation og afsluttende Edge/Worker/registry-attestation, og den efterfølgende nye inspect/CAS/apply/friske produktion/offentlige kontrol er grøn. En senere 4.0.314 må ikke overhale denne gate.
+
+### Historisk 4.0.311/4.0.312-evidens
 
 4.0.311-kilden bestod PR #224 exact-head `33263734108`/job `99129959870` på `4c4699fe3a87a3b804da1d8beea204e4144a7a76` og blev merged som `7c168b00af535415117c968a8c021a493b083137`. Pushworkflow `33263858078` blev derefter en grøn no-op uden artifact eller Pages, fordi backendbeviset endnu manglede.
 

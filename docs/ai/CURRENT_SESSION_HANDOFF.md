@@ -1,6 +1,18 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – lokal 4.0.312 verifier-roll-forward
+## AKTUELT P0-HANDOFF – lokal 4.0.313 legacy-replay-roll-forward
+
+- Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
+- 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d`, og push `33266184326` var korrekt no-op uden artifact/Pages.
+- Backend `33266229687`/job `99136669571` nåede D1/Edge/Worker, men fejlede idempotent Supabase→D1-sync med `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forwarden tæller ikke som readiness.
+- Rodårsagen er syntetisk reproduceret: kendte 4.0.310-nullblade bortfalder i 4.0.311's bounded PostgREST-leafprojektion, så samme historiske række får ny hash, mens D1/registry korrekt beholder gammel hash.
+- Lokal branch `codex/candidate-g-trip-replay-4.0.313` tillader kun migration→migration-kompatibilitet efter streng stored schema-v2 top/nested/privacy, bounded schema-v1, eksakt non-null/core/ejer/id/shard og selvhash. Row/hash/registry omskrives ikke; missing registry får kun gammel hash.
+- Safe error taxonomy, malformed body, timeout, null-only parents, to replays, byteidentitet, modstridende registry og unknown/core/non-null negatives er syntetisk grønne. Uafhængig slutrevision fandt ingen kode/privacy/idempotensblocker.
+- Fuld lokal `scripts/validate-source.ps1`, RDKS-, release-, versions- og geodatagate samt uafhængig dokumentations-/diffrevision er grønne på den endelige præcommit-diff. Næste trin er PR exact-head, merge, korrekt no-op push og derefter et helt grønt exact-main `[d1]`-run inklusive slutreconciliation og afsluttende Edge/Worker/registryattestation.
+- Først derefter køres ny inspect/CAS, apply, frisk normal produktion og offentlig desktop/mobil/210/673. En 4.0.314 må ikke overhale denne gate.
+- DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
+
+## HISTORISK P0-HANDOFF – lokal 4.0.312 verifier-roll-forward
 
 - 4.0.311-kilden bestod PR #224's exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`. Det efterfølgende push-run `33263858078` var en korrekt grøn no-op: exact-D1-readiness var endnu ikke levende, så intet nyt artifact eller Pages-deploy blev bygget.
 - Backend-run `33263892151` stoppede ved `canonical-reason-order` efter en atomisk SQL-forespørgsel med HTTP 201. Rodårsagen er verifierens flade regex mod PostgreSQLs parenteserede `pg_get_constraintdef`, ikke et påvist brud på selve constrainten.
@@ -8,7 +20,7 @@
 - Fejlen indtraf før D1-prepare/capacity, Edge-predeploy-intent, Edge, Worker, sync, vejropbygning, artifact og Pages. Ingen observationpayloads, koordinater eller rå U/V blev hentet til runneren, logget eller ændret; ingen row mutation forekom. Offentlig sandhed er fortsat produktionsverificeret 4.0.310, og morgenhullet er endnu ikke rekonstrueret.
 - Lokal 4.0.312 udtrækker strukturelt præcis én JSONPath-literal, tolererer deparserens parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. De målrettede positive og negative tests er grønne, og exact-D1-interlocken omfatter 4.0.312.
 - 4.0.312 ændrer ikke trip protocol/header 4.0.311, schema-/trustsemantik eller `>=4.0.311`-grænsen for konservativ observationsbrug. Den retter kun katalogverifikationen og dokumenterer den eksterne transaktionsgrænse.
-- Fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol er grønne på 4.0.312. Næste sikre rækkefølge er egen PR og exact-head, merge, derefter eksakt-main backend. Først når backend er grøn, må read-only inspect og en eventuel descriptor-/mål-CAS-bundet apply fortsætte; derefter kræves frisk produktion, fulde gates, Pages og offentlig desktop/mobil/210/673-verifikation.
+- Fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol var grønne på 4.0.312. Den efterfølgende PR #225/exact-head og merge lykkedes, men exact-main backend `33266229687` fejlede migrationssynken. Den historiske rækkefølge er derfor afløst; fortsæt kun via det aktuelle 4.0.313-handoff øverst, og kør ikke inspect/apply før en helt grøn ny backend.
 - DEC-0102-modellen skal efter recovery bevare den målte atomiske 210/673-nødvisning i højst 72 timer og aldrig efter kortere forecastudløb. Interpolation er ingen normal fallback. Schema-v2/`calibration_eligible` er endnu ikke serverbevist mod signeret public manifest, så global koefficientlæring forbliver P2-låst. Brug Sol/Ultra gennem slutvalidering; kvote må ikke reducere kvalitet eller gates.
 
 ## HISTORISK PRE-PR-CHECKPOINT – 2026-08-29 – ejerautoriseret rekonstruktion af morgenhul

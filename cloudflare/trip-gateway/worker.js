@@ -1,6 +1,7 @@
 import {
   assertNoDirectIdentity,
   assertNoPrivateLocation,
+  assertStoredExternalTripContract,
   canonicalJson,
   externalTripPayload,
   externalTripRecord,
@@ -98,10 +99,12 @@ async function compatibleStoredRow(row, record) {
     const storedHashValid = await sha256Hex(canonicalJson(storedDigestPayload)) === row.payload_sha256;
     if (!storedHashValid) return false;
     if (row.payload_sha256 === record.payload_sha256) return true;
+    if (row.source !== 'supabase-migration' || record.source !== 'supabase-migration') {
+      return false;
+    }
     const incomingPayload = JSON.parse(record.payload_json);
     return isLegacyCompatibleTripReplay(storedPayload, incomingPayload, {
-      allowMissingDerivedMatchedRuleIds:
-        row.source === 'supabase-migration' && record.source === 'supabase-migration',
+      allowMissingDerivedMatchedRuleIds: true,
     });
   } catch {
     return false;
@@ -128,7 +131,12 @@ async function purgeOwnerTrips(databaseList, ownerSubject) {
   return deleted;
 }
 
-async function reserveTripIdentity(controlDatabase, record, targetDatabaseIndex) {
+async function reserveTripIdentity(
+  controlDatabase,
+  record,
+  targetDatabaseIndex,
+  expectedPayloadSha256 = record.payload_sha256,
+) {
   await controlDatabase.prepare(
     `insert into trip_observation_registry (
       client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index
@@ -142,7 +150,7 @@ async function reserveTripIdentity(controlDatabase, record, targetDatabaseIndex)
     record.client_observation_id,
     record.trip_id,
     record.owner_subject,
-    record.payload_sha256,
+    expectedPayloadSha256,
     targetDatabaseIndex,
     record.owner_subject,
   ).run();
@@ -160,7 +168,7 @@ async function reserveTripIdentity(controlDatabase, record, targetDatabaseIndex)
     || rows[0].client_observation_id !== record.client_observation_id
     || (rows[0].trip_id ?? null) !== (record.trip_id ?? null)
     || rows[0].owner_subject !== record.owner_subject
-    || rows[0].payload_sha256 !== record.payload_sha256
+    || rows[0].payload_sha256 !== expectedPayloadSha256
     || Number(rows[0].target_database_index) !== targetDatabaseIndex) {
     throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
   }
@@ -178,7 +186,24 @@ async function storeTrip(env, body) {
     throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
   }
   const targetDatabaseIndex = await shardIndex(record);
-  await reserveTripIdentity(databaseList[0], record, targetDatabaseIndex);
+  if (rowsBefore.length === 1
+    && Number(rowsBefore[0].database_index) !== targetDatabaseIndex) {
+    throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
+  }
+  // A migration-only compatibility replay must keep both the historical D1
+  // row and its registry hash byte-identical. The incoming 4.0.311+
+  // privacy/trust projection has a different digest even though it represents
+  // the same legacy source row, so reserve/verify against the already-audited
+  // stored hash instead of silently rewriting either record.
+  const registryPayloadSha256 = rowsBefore.length === 1
+    ? rowsBefore[0].payload_sha256
+    : record.payload_sha256;
+  await reserveTripIdentity(
+    databaseList[0],
+    record,
+    targetDatabaseIndex,
+    registryPayloadSha256,
+  );
   let insert = { meta: { changes: 0 } };
   if (rowsBefore.length === 0) {
     const database = databaseList[targetDatabaseIndex];
@@ -237,8 +262,7 @@ async function listTrips(env, body) {
       }
       const schemaVersion = Number(storedPayload.schema_version ?? 1);
       if (schemaVersion === 2) {
-        assertNoDirectIdentity(storedPayload);
-        assertNoPrivateLocation(storedPayload);
+        assertStoredExternalTripContract(storedPayload);
       }
       const payload = externalTripPayload(storedPayload);
       assertNoDirectIdentity(payload);

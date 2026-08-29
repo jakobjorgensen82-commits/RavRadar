@@ -1,5 +1,13 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.313 – nullable JSON og bladprojektion er en versionsgrænse
+
+- Et JSON-dokument med kendte `null`-blade og et PostgREST-bladselect uden disse blade kan være samme historiske kilde, men får forskellig kanonisk hash.
+- Denne lighed må aldrig løses med generel tolerant JSON-sammenligning. Kun migration→migration må bruge en eksplicit versioneret projektion efter stored selvhash, ejer/id/shard, schema, privacy og eksakt non-null/core-lighed.
+- D1-row og registry er historisk evidens og omskrives ikke for at matche den nye projection. Missing registry må kun repareres med gammel verified hash.
+- Privacy gælder både input og readback. Et ukendt schema-v2-topfelt må ikke bortfiltreres, heller ikke når det er null.
+- Response-body er ubetroet data. Både fejlede og succesfulde malformed gateway-svar skal blive faste lokale fejl uden bodyudsnit.
+
 ## DEC-0109 – afledt rekonstruktion er en særskilt evidensklasse
 
 - Et komplet aktuelt vejrdatasæt kan godt have ufuldstændig Candidate G-memory; aktuelle vejrdata og 48-timers transportbevis er forskellige sandheder.
@@ -17,13 +25,13 @@
 - Den næste samlede RavScore-model skal bevare provenance, trust, migration, tripbinding og cleanup, men interpolation må ikke blive dens normale missingregel.
 - Den næste models nødvej skal være målt-only og atomisk 210/673 med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
 
-### 4.0.312 roll-forward-status 2026-08-29
+### Historisk 4.0.312-roll-forward-checkpoint 2026-08-29
 
 4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`. Push-run `33263858078` var en korrekt grøn no-op uden artifact eller Pages. Backend-run `33263892151` nåede den atomiske SQL-forespørgsel, fik HTTP 201 og fejlede derefter på en flad `pg_get_constraintdef`-regex, som ikke tolererede PostgreSQLs ekstra parenteser omkring den kanoniske JSONPath.
 
 Den højt sandsynlige databasetilstand er samlet commit af CHECK, validering og kommentar; transaktionens eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Offentlig version er fortsat produktionsverificeret 4.0.310, og incident-rekonstruktionen er ikke anvendt.
 
-Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Målrettede tests, fuld lokal source/release/RDKS/håndbog/version og geodatakontrol er grønne, og exact-D1-interlocken omfatter 4.0.312. PR/exact-head, merge, backend, rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation mangler. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
+Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Dette historiske checkpoint blev efterfølgende lukket gennem PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`. Backend `33266229687` bestod verifier-, D1-, Edge- og Workerleddene, men fejlede migrationssynken og er ikke readiness. Det resterende arbejde er operationelt flyttet til det aktuelle 4.0.313-checkpoint øverst; rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation er stadig ikke udført. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
 
 ## Produktions- og driftsverificeret 4.0.310 – ekstern og intern stilhedsgrænse er bevidst forskellige
 
