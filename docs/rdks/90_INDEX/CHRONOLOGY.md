@@ -1,5 +1,7 @@
 # Rekonstrueret chatkronologi
 
+- 2026-08-29: 4.0.313 blev exact-head-valideret i PR #226, merged som `ff62ba11`, gav korrekt no-op push og bestod hele D1-backend `33269631305`. Den efterfølgende read-only inspect `33269849748` stoppede før descriptor/apply på et legitimt singleton-afteranker for native 3-timersdele. Lokal 4.0.314 afgrænser dette til `AFTER` + uafhængigt cadence-/state-/targetankerbevis og tilføjer exact-D1/apply+Pages-overtakelås; offentlig 4.0.310 og datahullet er uændret.
+
 - 2026-08-29: 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` blev korrekt grøn no-op uden artifact/Pages.
 
 - 2026-08-29: Backend `33266229687`/job `99136669571` bestod source, Candidate G-constraint, D1-forberedelse og tidlige Edge-/Worker-gates, men fejlede Supabase→D1-synk med den faste fejl `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forwarden er ikke readiness. Rekonstruktion, vejr, artifact og Pages blev ikke kørt; offentlig 4.0.310-nøddrift og morgenhullet var urørte.

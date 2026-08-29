@@ -155,7 +155,12 @@ function buildDocument(kind) {
       evidence = series(addHours(leftAnchor, -48), leftAnchor, cadence, measuredStrength);
     } else {
       const end = kind === 'after' ? afterReference : targetReference;
-      evidence = series(rightAnchor, end, cadence, rightStrength);
+      // The sealed after artifact legitimately contains only its exact right
+      // bracket for the eight native 3-hour parts. Before + target still prove
+      // the native cadence independently.
+      evidence = kind === 'after' && cadence === 3
+        ? [{ time: rightAnchor, strength: rightStrength }]
+        : series(rightAnchor, end, cadence, rightStrength);
     }
     const currentState = state({
       stateKey: `sha256:${crypto.createHash('sha256').update(partId).digest('hex')}`,
@@ -363,6 +368,145 @@ await assert.rejects(
 );
 assert.equal(await fs.readFile(file('trust-conflict-target.json'), 'utf8'), trustConflictBytes);
 assert.equal(await exists(file('trust-conflict-descriptor.json')), false);
+
+const emptyAfter = structuredClone(after);
+emptyAfter.coastalParts.parts['part-672'].candidateG.currentState.transportEvidence = [];
+await writeJson('empty-after.json', emptyAfter);
+const emptyAfterTargetBytes = await fs.readFile(targetPath, 'utf8');
+const emptyAfterDescriptorPath = file('empty-after-descriptor.json');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    afterPath: file('empty-after.json'),
+    descriptorPath: emptyAfterDescriptorPath,
+  }),
+  /ONE_TIME_GAP_AFTER_EVIDENCE_COUNT/,
+);
+assert.equal(await fs.readFile(targetPath, 'utf8'), emptyAfterTargetBytes);
+assert.equal(await exists(emptyAfterDescriptorPath), false);
+
+const singletonBefore = structuredClone(before);
+const singletonBeforeOriginal = singletonBefore.coastalParts.parts['part-672'].candidateG.currentState;
+singletonBefore.coastalParts.parts['part-672'].candidateG.currentState = state({
+  stateKey: singletonBeforeOriginal.stateKey,
+  stateTime: beforeReference,
+  evidence: [singletonBeforeOriginal.transportEvidence.at(-1)],
+  mobilisationPotential: singletonBeforeOriginal.mobilisationPotential,
+});
+await writeJson('singleton-before.json', singletonBefore);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    beforePath: file('singleton-before.json'),
+    descriptorPath: file('singleton-before-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_BEFORE_EVIDENCE_COUNT/,
+);
+assert.equal(await exists(file('singleton-before-descriptor.json')), false);
+
+const singletonTarget = structuredClone(originalTarget);
+const singletonTargetOriginal = singletonTarget.coastalParts.parts['part-672'].candidateG.currentState;
+singletonTarget.coastalParts.parts['part-672'].candidateG.currentState = state({
+  stateKey: singletonTargetOriginal.stateKey,
+  stateTime: targetReference,
+  evidence: [singletonTargetOriginal.transportEvidence.at(-1)],
+  mobilisationPotential: singletonTargetOriginal.mobilisationPotential,
+});
+await writeJson('singleton-target.json', singletonTarget);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    targetPath: file('singleton-target.json'),
+    descriptorPath: file('singleton-target-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_TARGET_EVIDENCE_COUNT/,
+);
+assert.equal(await exists(file('singleton-target-descriptor.json')), false);
+
+const singletonOneHourAfter = structuredClone(after);
+const singletonOneHourOriginal = singletonOneHourAfter.coastalParts.parts['part-000'].candidateG.currentState;
+const singletonOneHourRightAnchor = singletonOneHourOriginal.transportEvidence.at(0);
+singletonOneHourAfter.coastalParts.parts['part-000'].candidateG.currentState = state({
+  stateKey: singletonOneHourOriginal.stateKey,
+  stateTime: singletonOneHourRightAnchor.time,
+  // Use the actual right bracket, so this negative isolates the 3h-only
+  // singleton gate instead of also depending on the maximum-gap gate.
+  evidence: [singletonOneHourRightAnchor],
+  mobilisationPotential: singletonOneHourOriginal.mobilisationPotential,
+});
+await writeJson('singleton-one-hour-after.json', singletonOneHourAfter);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    afterPath: file('singleton-one-hour-after.json'),
+    descriptorPath: file('singleton-one-hour-after-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_SINGLE_AFTER_ANCHOR_CADENCE_NOT_ALLOWED/,
+);
+assert.equal(await exists(file('singleton-one-hour-after-descriptor.json')), false);
+
+const singletonReplayMismatchAfter = structuredClone(after);
+const singletonReplayMismatchState = singletonReplayMismatchAfter.coastalParts
+  .parts['part-672'].candidateG.currentState;
+singletonReplayMismatchState.transportPotential = singletonReplayMismatchState.transportPotential >= 99
+  ? singletonReplayMismatchState.transportPotential - 1
+  : singletonReplayMismatchState.transportPotential + 1;
+await writeJson('singleton-replay-mismatch-after.json', singletonReplayMismatchAfter);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    afterPath: file('singleton-replay-mismatch-after.json'),
+    descriptorPath: file('singleton-replay-mismatch-after-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_AFTER_STATE_REPLAY_MISMATCH/,
+);
+assert.equal(await exists(file('singleton-replay-mismatch-after-descriptor.json')), false);
+
+const missingAfterAnchorTarget = structuredClone(originalTarget);
+const missingAfterAnchorOriginal = missingAfterAnchorTarget.coastalParts
+  .parts['part-672'].candidateG.currentState;
+missingAfterAnchorTarget.coastalParts.parts['part-672'].candidateG.currentState = state({
+  stateKey: missingAfterAnchorOriginal.stateKey,
+  stateTime: targetReference,
+  // Cadence and replay remain valid, but the exact measured AFTER bracket is
+  // absent from TARGET. Inspect must fail before descriptor or mutation.
+  evidence: missingAfterAnchorOriginal.transportEvidence.slice(1),
+  mobilisationPotential: missingAfterAnchorOriginal.mobilisationPotential,
+});
+await writeJson('missing-after-anchor-target.json', missingAfterAnchorTarget);
+const missingAfterAnchorTargetBytes = await fs.readFile(file('missing-after-anchor-target.json'), 'utf8');
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    targetPath: file('missing-after-anchor-target.json'),
+    descriptorPath: file('missing-after-anchor-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_TARGET_AFTER_ANCHOR_MISSING/,
+);
+assert.equal(
+  await fs.readFile(file('missing-after-anchor-target.json'), 'utf8'),
+  missingAfterAnchorTargetBytes,
+);
+assert.equal(await exists(file('missing-after-anchor-descriptor.json')), false);
+
+const twoPointTarget = structuredClone(originalTarget);
+const twoPointTargetOriginal = twoPointTarget.coastalParts.parts['part-672'].candidateG.currentState;
+twoPointTarget.coastalParts.parts['part-672'].candidateG.currentState = state({
+  stateKey: twoPointTargetOriginal.stateKey,
+  stateTime: targetReference,
+  evidence: twoPointTargetOriginal.transportEvidence.slice(-2),
+  mobilisationPotential: twoPointTargetOriginal.mobilisationPotential,
+});
+await writeJson('two-point-target.json', twoPointTarget);
+await assert.rejects(
+  inspectOneTimeGap({
+    ...common,
+    targetPath: file('two-point-target.json'),
+    descriptorPath: file('two-point-target-descriptor.json'),
+  }),
+  /ONE_TIME_GAP_NATIVE_CADENCE_UNPROVEN/,
+);
+assert.equal(await exists(file('two-point-target-descriptor.json')), false);
 
 const ambiguousCadenceTarget = structuredClone(originalTarget);
 const ambiguousPartId = 'part-000';

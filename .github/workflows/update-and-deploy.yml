@@ -85,7 +85,11 @@ permissions:
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
   group: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode != 'none' && 'ravradar-weather-production' || github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && 'ravradar-active-ravscore-shadow' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
-  cancel-in-progress: ${{ (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true || inputs.ravscore_active_shadow == true))) }}
+  # Recovery and normal weather share one production group. An incoming push,
+  # schedule or force run must never cancel a descriptor-bound apply between
+  # its local mutation, rollback artifact, full gates and Pages deployment.
+  # Queued normal runs re-check freshness and become cheap no-ops as needed.
+  cancel-in-progress: false
 
 jobs:
   current-hour-readiness:
@@ -223,7 +227,7 @@ jobs:
             exit 0
           fi
           requires_exact_d1=false
-          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$release_version" = "4.0.313" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
+          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$release_version" = "4.0.313" ] || [ "$release_version" = "4.0.314" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
             requires_exact_d1=true
           fi
           if [ "$requires_exact_d1" != "true" ]; then
@@ -251,13 +255,86 @@ jobs:
             echo "::notice title=Pages production deferred::The live Worker/registry contract could not be attested; this run remains a green no-op."
             exit 0
           fi
+          if [ "$release_version" = "4.0.314" ] && { [ -z "$RECONSTRUCTION_MODE" ] || [ "$RECONSTRUCTION_MODE" = "none" ]; }; then
+            if ! recovery_runs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-deploy.yml/runs?branch=main&status=completed&event=workflow_dispatch&per_page=100")"; then
+              echo "::notice title=Pages production deferred::Could not verify the exact-head reconstruction release; this run remains a green no-op."
+              exit 0
+            fi
+            if ! recovery_run_ids_json="$(jq -ce --arg sha "$EXPECTED_HEAD_SHA" '
+              if ((.workflow_runs | type) != "array")
+                or ((all(.workflow_runs[];
+                  (type == "object")
+                  and ((.id | type) == "number")
+                  and ((.head_sha | type) == "string")
+                  and ((.head_branch | type) == "string")
+                  and ((.conclusion | type) == "string")
+                  and ((.event | type) == "string")
+                )) | not)
+              then error("invalid workflow-runs response")
+              else [.workflow_runs[]
+                | select(.head_sha == $sha and .head_branch == "main" and .conclusion == "success" and .event == "workflow_dispatch")
+                | .id]
+              end
+            ' <<< "$recovery_runs_json")"; then
+              echo "::notice title=Pages production deferred::The reconstruction release response could not be validated; this run remains a green no-op."
+              exit 0
+            fi
+            apply_release_proven=false
+            recovery_metadata_valid=true
+            while IFS= read -r recovery_run_id; do
+              if ! [[ "$recovery_run_id" =~ ^[1-9][0-9]{8,}$ ]]; then
+                recovery_metadata_valid=false
+                break
+              fi
+              if ! recovery_jobs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/runs/${recovery_run_id}/jobs?per_page=100")"; then
+                recovery_metadata_valid=false
+                break
+              fi
+              if ! recovery_jobs_array="$(jq -ce '
+                if ((.jobs | type) != "array")
+                  or ((all(.jobs[];
+                    (type == "object")
+                    and ((.name | type) == "string")
+                    and ((.conclusion | type) == "string")
+                    and (((.steps == null) or ((.steps | type) == "array")))
+                    and (all(.steps[]?;
+                      (type == "object")
+                      and ((.name | type) == "string")
+                      and ((.conclusion | type) == "string")
+                    ))
+                  )) | not)
+                then error("invalid jobs response")
+                else .jobs
+                end
+              ' <<< "$recovery_jobs_json")"; then
+                recovery_metadata_valid=false
+                break
+              fi
+              if jq -e '
+                ([.[].steps[]? | select(.name == "Apply the descriptor-bound one-time Candidate G reconstruction" and .conclusion == "success")] | length) == 1
+                and ([.[] | select(.name == "Deploy prepared Pages artifact" and .conclusion == "success")] | length) == 1
+              ' <<< "$recovery_jobs_array" >/dev/null; then
+                apply_release_proven=true
+                break
+              fi
+            done < <(jq -r '.[] | tostring' <<< "$recovery_run_ids_json")
+            if [ "$recovery_metadata_valid" != "true" ]; then
+              echo "::notice title=Pages production deferred::The reconstruction release jobs could not be validated; this run remains a green no-op."
+              exit 0
+            fi
+            if [ "$apply_release_proven" != "true" ]; then
+              echo "::notice title=Pages production deferred::Apply and deploy the sealed one-time reconstruction on this exact main head before normal 4.0.314 production."
+              exit 0
+            fi
+            echo "The exact 4.0.314 reconstruction apply and Pages release have been attested."
+          fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "The exact source head and the live Edge/Worker backend have the required D1 contract."
 
   inspect-candidate-g-one-time-gap:
     name: Inspect and seal the one-time Candidate G gap reconstruction
-    needs: current-hour-readiness
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'inspect' && needs.current-hour-readiness.outputs.ready == 'true'
+    needs: [current-hour-readiness, trip-storage-readiness]
+    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'inspect' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -294,7 +371,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.313 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.314 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Download exact healthy pre-gap support artifact
         uses: actions/download-artifact@v8
@@ -428,7 +505,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Set up Node.js for one-time reconstruction mutation
         if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
@@ -707,7 +784,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')) }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Report skipped refresh
         if: steps.preflight.outputs.should_run != 'true'
@@ -928,7 +1005,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1069,7 +1146,7 @@ jobs:
           DMI_DEPLOYED_CACHE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/dmi-forecast-cache.json"
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.313 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse reconstruction deploy without a successful fresh weather rebuild

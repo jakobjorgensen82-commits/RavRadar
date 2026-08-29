@@ -74,12 +74,15 @@ for (const marker of [
 const concurrency = workflow.slice(position('concurrency:'), position('jobs:'));
 requireMarkers(concurrency, [
   "inputs.candidate_g_gap_reconstruction_mode != 'none' && 'ravradar-weather-production'",
-  "github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none'",
+  'cancel-in-progress: false',
 ], 'Rekonstruktions-concurrency');
-assert.ok(concurrency.includes(
-  "cancel-in-progress: ${{ (github.event_name != 'workflow_dispatch' || inputs.candidate_g_gap_reconstruction_mode == 'none') && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.force == true || inputs.geometry_v2_pilot == true || inputs.geometry_v2_national == true || inputs.ravscore_active_shadow == true))) }}",
-), 'Cancel-expressionen skal bevare push-prioritering, men være false for inspect/apply/cleanup.');
-assert.ok(!concurrency.includes("candidate_g_gap_reconstruction_mode != 'none') && (github.event_name == 'push'"), 'Rekonstruktion må ikke kunne annulleres af et nyere workflow.');
+assert.equal(count(concurrency, 'cancel-in-progress:'), 1);
+const cancelInProgress = /cancel-in-progress:\s*(\S+)/.exec(concurrency)?.[1];
+assert.equal(cancelInProgress, 'false');
+for (const incoming of ['push', 'schedule', 'none', 'force', 'inspect', 'apply', 'rollback', 'cleanup']) {
+  assert.equal(cancelInProgress === 'true', false,
+    `Indkommende ${incoming} må ikke annullere en igangværende recovery-/produktionskørsel.`);
+}
 
 const inspectStart = position('  inspect-candidate-g-one-time-gap:');
 const buildStart = position('  build-and-prepare:');
@@ -101,6 +104,7 @@ requireMarkers(tripStorageGate, [
   '"4.0.311"',
   '"4.0.312"',
   '"4.0.313"',
+  '"4.0.314"',
   'RECONSTRUCTION_MODE" = "apply"',
   'RECONSTRUCTION_MODE" = "rollback"',
   'RECONSTRUCTION_MODE" = "cleanup"',
@@ -115,11 +119,86 @@ requireMarkers(tripStorageGate, [
   'node scripts/verify-cloudflare-trip-gateway.mjs',
   'The live Edge contract is not the required Candidate G D1 mode',
   'The live Worker/registry contract could not be attested',
+  'actions/workflows/update-and-deploy.yml/runs?branch=main&status=completed&event=workflow_dispatch&per_page=100',
+  'recovery_run_ids_json="$(jq -ce',
+  'all(.workflow_runs[];',
+  'error("invalid workflow-runs response")',
+  '.head_sha == $sha',
+  '/actions/runs/${recovery_run_id}/jobs?per_page=100',
+  'recovery_jobs_array="$(jq -ce',
+  'all(.jobs[];',
+  'all(.steps[]?;',
+  'error("invalid jobs response")',
+  'Apply the descriptor-bound one-time Candidate G reconstruction',
+  'Deploy prepared Pages artifact',
+  'apply_release_proven=true',
+  'Apply and deploy the sealed one-time reconstruction on this exact main head',
   'echo "ready=true" >> "$GITHUB_OUTPUT"',
   'this run remains a green no-op',
 ], 'Exact-head D1 readiness-gaten');
 assert.ok(!tripStorageGate.includes('exit 1'),
   'Manglende exact-D1-bevis skal give et grønt no-op, ikke et bevidst rødt workflow.');
+assert.ok(!tripStorageGate.includes('recovery_run_ids="$(jq'),
+  'Run-id-listen må ikke bruge ubeskyttet jq-output, som kan være delvist ved parsefejl.');
+
+function validatedRecoveryRunIds(response, expectedHead) {
+  if (!response || !Array.isArray(response.workflow_runs)
+    || response.workflow_runs.some(run => !run || typeof run !== 'object'
+      || !Number.isInteger(run.id)
+      || typeof run.head_sha !== 'string'
+      || typeof run.head_branch !== 'string'
+      || typeof run.conclusion !== 'string'
+      || typeof run.event !== 'string')) {
+    throw new Error('invalid workflow-runs response');
+  }
+  return response.workflow_runs.filter(run => run.head_sha === expectedHead
+    && run.head_branch === 'main'
+    && run.conclusion === 'success'
+    && run.event === 'workflow_dispatch').map(run => run.id);
+}
+
+const proofHead = 'a'.repeat(40);
+const validProofRun = {
+  id: 33270000001,
+  head_sha: proofHead,
+  head_branch: 'main',
+  conclusion: 'success',
+  event: 'workflow_dispatch',
+};
+assert.deepEqual(validatedRecoveryRunIds({ workflow_runs: [validProofRun] }, proofHead), [33270000001]);
+assert.throws(() => validatedRecoveryRunIds({
+  workflow_runs: [validProofRun, { id: null }],
+}, proofHead), /invalid workflow-runs response/,
+'Et gyldigt første run må ikke overleve en malformed senere metadatarecord som delvist output.');
+
+function exactApplyAndPagesProof(jobs) {
+  if (!Array.isArray(jobs) || jobs.some(job => !job || typeof job !== 'object'
+    || typeof job.name !== 'string'
+    || typeof job.conclusion !== 'string'
+    || !(job.steps == null || Array.isArray(job.steps))
+    || (job.steps || []).some(step => !step || typeof step !== 'object'
+      || typeof step.name !== 'string' || typeof step.conclusion !== 'string'))) {
+    throw new Error('invalid jobs response');
+  }
+  const apply = jobs.flatMap(job => job.steps || []).filter(step =>
+    step.name === 'Apply the descriptor-bound one-time Candidate G reconstruction'
+      && step.conclusion === 'success');
+  const pages = jobs.filter(job => job.name === 'Deploy prepared Pages artifact'
+    && job.conclusion === 'success');
+  return apply.length === 1 && pages.length === 1;
+}
+assert.equal(exactApplyAndPagesProof([
+  { name: 'build-and-prepare', conclusion: 'success', steps: [{
+    name: 'Apply the descriptor-bound one-time Candidate G reconstruction', conclusion: 'success',
+  }] },
+  { name: 'Deploy prepared Pages artifact', conclusion: 'success', steps: [] },
+]), true);
+assert.throws(() => exactApplyAndPagesProof([
+  { name: 'build-and-prepare', conclusion: 'success', steps: [{
+    name: 'Apply the descriptor-bound one-time Candidate G reconstruction', conclusion: 'success',
+  }] },
+  { name: null, conclusion: 'success', steps: [] },
+]), /invalid jobs response/);
 
 const d1BuildHeader = workflow.slice(buildStart, workflow.indexOf('\n    steps:', buildStart));
 requireMarkers(d1BuildHeader, [
@@ -127,11 +206,21 @@ requireMarkers(d1BuildHeader, [
   "needs.trip-storage-readiness.outputs.ready == 'true'",
 ], 'Pages-produktionsjobbets D1-afhængighed');
 
-function pagesProductionAllowed({ releaseVersion, reconstructionMode, exactD1Proof, liveD1Attestation }) {
+function pagesProductionAllowed({
+  releaseVersion,
+  reconstructionMode,
+  exactD1Proof,
+  liveD1Attestation,
+  exactApplyAndPagesProof = false,
+}) {
   if (!/^4\.0\.[0-9]+$/.test(releaseVersion)) return false;
-  const requiresExactD1 = ['4.0.311', '4.0.312', '4.0.313'].includes(releaseVersion)
+  const requiresExactD1 = ['4.0.311', '4.0.312', '4.0.313', '4.0.314'].includes(releaseVersion)
     || ['apply', 'rollback', 'cleanup'].includes(reconstructionMode);
-  return !requiresExactD1 || (exactD1Proof && liveD1Attestation);
+  if (requiresExactD1 && !(exactD1Proof && liveD1Attestation)) return false;
+  if (releaseVersion === '4.0.314' && (!reconstructionMode || reconstructionMode === 'none')) {
+    return exactApplyAndPagesProof;
+  }
+  return true;
 }
 for (const eventName of ['push', 'schedule', 'workflow_dispatch']) {
   assert.equal(pagesProductionAllowed({
@@ -158,6 +247,25 @@ assert.equal(pagesProductionAllowed({
 }), true, '4.0.313 må først åbne Pages efter exact-head D1-bevis og live attestation.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '4.0.314', reconstructionMode: 'none', exactD1Proof: false,
+}), false, '4.0.314-afterankerrettelsen må ikke overhale sin egen exact-head D1-kæde.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: 'none', exactD1Proof: true, liveD1Attestation: true,
+}), false, '4.0.314-normalproduktion må ikke overhale inspect/apply efter et grønt D1-bevis.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: '', exactD1Proof: true, liveD1Attestation: true,
+}), false, 'Push og schedule uden mode skal også forblive grøn no-op før applybeviset.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: 'inspect', exactD1Proof: true, liveD1Attestation: true,
+}), true, 'Read-only inspect må åbnes efter exact-head D1-beviset.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: 'apply', exactD1Proof: true, liveD1Attestation: true,
+}), true, 'Descriptorbundet apply må åbnes efter exact-head D1-beviset.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.314', reconstructionMode: 'none', exactD1Proof: true,
+  liveD1Attestation: true, exactApplyAndPagesProof: true,
+}), true, 'Normal 4.0.314 må fortsætte efter exact-head apply- og Pages-bevis.');
+assert.equal(pagesProductionAllowed({
+  releaseVersion: '4.0.315', reconstructionMode: 'none', exactD1Proof: false,
 }), true, 'Den afgrænsede recoveryinterlock må ikke blive en permanent managementafhængighed.');
 assert.equal(pagesProductionAllowed({
   releaseVersion: '', reconstructionMode: 'none', exactD1Proof: false,
@@ -165,6 +273,8 @@ assert.equal(pagesProductionAllowed({
 const inspectJob = workflow.slice(inspectStart, buildStart);
 requireMarkers(inspectJob, [
   "if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'inspect'",
+  'needs: [current-hour-readiness, trip-storage-readiness]',
+  "needs.trip-storage-readiness.outputs.ready == 'true'",
   'permissions:\n      contents: read\n      actions: read',
   'descriptor_sha256: ${{ steps.inspect.outputs.descriptor_sha256 }}',
   'descriptor_artifact_id: ${{ steps.upload-descriptor.outputs.artifact-id }}',

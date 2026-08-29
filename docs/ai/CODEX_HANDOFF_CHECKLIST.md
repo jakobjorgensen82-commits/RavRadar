@@ -4,7 +4,7 @@
 - Åbn den eksisterende lokale RavRadar Git-mappe; opret ikke et nyt tomt projekt.
 - Kontrollér at `git status` viser de forventede dokumentationsændringer, og at `.git` stadig tilhører det eksisterende repository.
 - Læs `docs/ai/CODEX_START_HERE.md` og `AGENTS.md` før første kodeopgave.
-- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Offentlig drift er fortsat 4.0.310-nøddrift, og morgenhullet er ikke rekonstrueret. 4.0.312 blev merged via PR #225, men backend `33266229687` fejlede sync og er ikke readiness. 4.0.313 er lokal replay-roll-forward med grøn fuld lokal source-/RDKS-/release-/versions-/geodatagate og afventer exact-head, merge, helt grøn D1-backend, rekonstruktion og offentlig verifikation. Den gamle 4.0.117-bootstrap er historik.
+- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Offentlig drift er fortsat 4.0.310-nøddrift, og morgenhullet er ikke rekonstrueret. 4.0.313 er merged og D1-backendverificeret gennem `33269631305`; read-only inspect `33269849748` stoppede uden descriptor eller mutation. 4.0.314 er en lokal singleton-afteranker-roll-forward med grøn fuld lokal sourcegate og afventer exact-head, merge, nyt D1-run, inspect/apply og offentlig verifikation. Den gamle 4.0.117-bootstrap er historik.
 - Kør `npm run validate:rdks`; brug `npm run validate` før første ændringsrelease.
 - Den historiske 4.0.117-workflowbypass er lukket; genåbn kun sporet ved konkret regressionsbevis. Kræv fortsat, at ethvert nyt produktionsartifact har `npm run validate` og `npm run release:gate` som faktiske `success` efter frisk data. Topniveauets grønne runstatus alene tæller ikke.
 
@@ -24,6 +24,7 @@
 - kontroller at source-neutrality består
 - ved 4.0.311: bevis capacity/CAS→installationstype-intent, partial-existing→D1-roll-forward, partial-fresh→exact-main/Supabase/eksakt Edge/dobbelt attest, 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate
 - ved 4.0.313: bevis migration-only nullable replay, strict schema-v2 stored/readback, bounded schema-v1, forskellige gamle/nye hashes, byteidentisk row/hash/registry, missing-registry repair med gammel hash, modstridende registry-stop og faste ikke-lækkende fejl
+- ved 4.0.314: bevis singleton kun i målt `AFTER` på uafhængigt bevist 3-timerskadence, uændret replay/bracket/targetanker/source/CAS, ikke-annullerende concurrency samt exact-D1 → inspect/apply → apply+Pages-låst normalproduktion og ulåst 4.0.315
 - bevar `calibration_eligible` som udelukkelseslås; ingen global læring uden server-side signeret manifestbinding
 - commit med tydelig årsag/effekt
 - push og læs GitHub Actions-resultatet

@@ -1,3 +1,10 @@
+## 2026-08-29 – lokal 4.0.314 efter read-only singleton-afterankerstop
+
+- 4.0.313 bestod PR #226 exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`/`99145677813`.
+- Read-only inspect `33269849748`/`99146287609` stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
+- 4.0.314 tillader ét målt `AFTER`-anker kun ved uafhængigt bevist native 3-timerskadence og fuldt replay. Før/target/rollback/cleanup kræver fortsat mindst to; nul eller 1-times-singleton stopper.
+- Workflowet kræver exact-D1 for 4.0.314, D1 før inspect og exact-head apply+Pages før normal produktion. 4.0.315 er ulåst. Fuld lokal `scripts/validate-source.ps1`, releasegate, versionsgate og den metadataeksklusive geodatakontrol er grønne; exact-head, merge, nyt D1-run, inspect/apply, frisk produktion og offentlig 210/673-verifikation mangler. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+
 ## 2026-08-29 – lokal 4.0.313 efter replaystop i 4.0.312-backend
 
 - PR #225 bestod exact-head `33266087776`/job `99136292810` og blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`; push `33266184326` var korrekt no-op uden artifact/Pages.
@@ -6,7 +13,7 @@
 - 4.0.313 afgrænser kompatibilitet til migration→migration, validerer gammel schema-v2 stored/readback før nullkomprimering, bruger bounded schema-v1-projektion og kræver alle non-null/core-/ejer-/id-/shardværdier eksakt. D1-row/hash/registry omskrives ikke; missing registry får kun gammel hash.
 - Safe error taxonomy skjuler untrusted/malformed body. Syntetiske tests dækker forskellige hashes, to replays, byteidentitet, registerreparation/modstrid, unknown/core/non-null, null-only parents, malformed 200/5xx og timeout.
 - Fuld lokal `scripts/validate-source.ps1`, RDKS-, release-, versions- og geodatagate samt uafhængig kode-/privacy-/dokumentationsrevision er grønne på den endelige præcommit-diff.
-- Exact-D1-interlocken omfatter 4.0.313, men ikke 4.0.314. Exact-head, merge, helt grøn backend, ny inspect/apply, frisk produktion og offentlig 210/673 mangler. Offentlig sandhed forbliver 4.0.310, og datahullet er ikke lukket.
+- På dette 4.0.313-checkpoint omfattede exact-D1-interlocken kun 4.0.311–4.0.313. Senere 4.0.314 ændrer denne historiske grænse som beskrevet ovenfor. Exact-head, merge, helt grøn backend, ny inspect/apply, frisk produktion og offentlig 210/673 manglede fortsat her. Offentlig sandhed forblev 4.0.310, og datahullet var ikke lukket.
 
 ## 2026-08-29 – 4.0.312-roll-forward efter 4.0.311-backendincident
 

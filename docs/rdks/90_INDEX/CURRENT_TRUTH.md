@@ -1,15 +1,20 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.313-replay-roll-forward – 4.0.312 merged, backend ikke grøn
+## Lokal 4.0.314-afteranker-roll-forward – 4.0.313 backend grøn, datahullet åbent
 
-- Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311/312/313-Pagesproduktion er udgivet.
-- 4.0.312 bestod PR #225 exact-head `33266087776`/job `99136292810`, blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`, og push `33266184326` var korrekt no-op uden artifact/Pages.
-- Backend `33266229687`/job `99136669571` bestod source, Candidate G-constraint, D1-forberedelse og de første Edge-/Worker-beviser, men fejlede ved Supabase→D1-synk med `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forward og delvise grønne trin er ikke exact-head D1-readiness.
-- Rodårsagen er syntetisk reproduceret som 4.0.310's kendte nested nullblade mod 4.0.311's dataminimerede PostgREST-leafprojektion, som udelader null. Den gamle D1-hash og registryhash er korrekte og må ikke omskrives.
-- 4.0.313 tillader kun migration→migration-kompatibilitet efter lagret selvhash, ejer/id/shard, streng schema-v2 top-/nested-/privacyallowlist og eksakt lighed for alle bevarede ikke-null-/kerneværdier. Schema-v1 bruger kun bounded legacyprojektion. Live source, ukendte felter og reelle ændringer afvises uden mutation.
-- D1-row, payloadhash og eksisterende registryhash bevares byteidentisk; manglende registry må kun repareres med den verificerede gamle hash. Readback bruger samme stored-kontrakt. Gatewayfejl er faste kategorier uden ubetroet bodytekst.
-- 4.0.313 er kun lokal kildekandidat, men dens målrettede regressioner, uafhængige revision, fulde lokale `validate:source`, RDKS-, release-, versions- og geodatagate er grønne. Exact-head, merge, et helt grønt exact-main `[d1]`-run inklusive slutreconciliation/Edge/Worker/registry, ny inspect/CAS, apply, frisk produktion og offentlig 210/673 desktop/mobil mangler.
-- Candidate G, RavScore, vejr, DMI/Copernicus, state/recovery, geometri og punkter er uændrede. Trip protocol/header og observationsgrænsen forbliver 4.0.311.
+- Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311–4.0.314-Pagesproduktion er udgivet.
+- 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
+- Exact-main D1-run `33269631305`/job `99145677813` bestod source, constraint, D1-forberedelse, begge Supabase→D1-syncs, slutreconciliation, Edge, Worker, registry og SQL. Den tidligere null-leaf-replayfejl er dermed live lukket på 4.0.313.
+- Den nye read-only inspect `33269849748`/job `99146287609` stoppede før descriptorupload med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`. Ingen apply, data-/cachemutation, vejrbyg, artifact eller Pages forekom.
+- Koden krævede globalt mindst to evidenspunkter, selv om protokollen allerede siger, at after-artifactet kun leverer højre bracket og ikke behøver to senere 3-timersintervaller. 4.0.314 accepterer ét målt after-punkt kun for en del, hvis før- og targetserien uafhængigt beviser samme enstemmige native 3-timerskadence. Før, target, rollback og cleanup kræver fortsat mindst to; nul after-punkter og singleton ved 1 time stopper.
+- Eksakt state-replay, model/profil/stateKey, højreanker med samme tid/styrke i target, højst seks timers helt cadencebracket, ingen udfyldt syntetisk tid, source/run/artifact/head-binding, descriptorhash og apply-CAS er uændrede.
+- 4.0.314 kræver et nyt exact-main D1-run. Inspect afhænger af det; normal `none`-produktion kræver både D1 og et tidligere succesfuldt exact-head apply+Pages-bevis. Manglende eller malformed API-evidens giver grøn no-op. 4.0.315 er ikke versionslåst.
+- Målrettet 210/673-rekonstruktion, workflowkontrakter, fuld lokal source-/RDKS-/release-/versions-/geodatagate og tre uafhængige slutreviews er grønne. Exact-head, merge, nyt D1-run, inspect/apply, frisk produktion og offentlig kontrol mangler fortsat.
+- Candidate G-formlen, model-id, schema 2.0/2.1, trust, DMI/Copernicus, geometri og punkter er uændrede. Kun den ejerautoriserede incident-inspektions accept af det målte højreanker ændres.
+
+## Historisk lokal 4.0.313-replay-roll-forward – 4.0.312 merged, backend ikke grøn
+
+- Ved dette checkpoint var 4.0.313 kun lokal. Den blev senere exact-head-valideret i PR #226, merged som `ff62ba11` og backendverificeret gennem `33269631305`; det efterfølgende read-only inspect stoppede før descriptor eller mutation og førte til det aktuelle 4.0.314-afsnit ovenfor.
 
 ## Historisk 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet før D1/Edge
 

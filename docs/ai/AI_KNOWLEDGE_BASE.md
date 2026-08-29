@@ -1,5 +1,14 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.314 – et højreanker er ikke et cadencebevis
+
+- En gyldig målt after-state kan have ét punkt og stadig reproduceres som schema-2.0 `WINDOW_INCOMPLETE`; punktet kan være det eksakte højre bracket uden at bevise kadencen alene.
+- Tillad aldrig globalt minimum ét. Kun `AFTER` kan bruge singleton, og kun når before+target hver leverer mindst to enstemmige intervaller og uafhængigt beviser native 3-timerskadence.
+- Target skal indeholde samme målte afteranker med eksakt tid og strength. State-replay, seks-timers bracket, sourceartifact, descriptor og apply-CAS er separate beviser og må ikke sammenblandes.
+- Backend-readiness og rekonstruktionsreadiness er forskellige. 4.0.313's grønne D1-run gjorde ikke det efterfølgende fejlede inspect til succes.
+- En normal schedule kan overhale inspect/apply, hvis D1 alene åbner Pages. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås.
+- Hele hvert GitHub run-/jobsvar skal parse- og shapevalideres samlet før id-iteration, og fælles concurrency må aldrig lade et indkommende push annullere en kørende apply.
+
 ## 4.0.313 – nullable JSON og bladprojektion er en versionsgrænse
 
 - Et JSON-dokument med kendte `null`-blade og et PostgREST-bladselect uden disse blade kan være samme historiske kilde, men får forskellig kanonisk hash.
@@ -31,7 +40,7 @@
 
 Den højt sandsynlige databasetilstand er samlet commit af CHECK, validering og kommentar; transaktionens eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Offentlig version er fortsat produktionsverificeret 4.0.310, og incident-rekonstruktionen er ikke anvendt.
 
-Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Dette historiske checkpoint blev efterfølgende lukket gennem PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`. Backend `33266229687` bestod verifier-, D1-, Edge- og Workerleddene, men fejlede migrationssynken og er ikke readiness. Det resterende arbejde er operationelt flyttet til det aktuelle 4.0.313-checkpoint øverst; rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation er stadig ikke udført. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
+Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Dette historiske checkpoint blev efterfølgende lukket gennem PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`. Backend `33266229687` bestod verifier-, D1-, Edge- og Workerleddene, men fejlede migrationssynken og er ikke readiness. Det resterende arbejde er operationelt flyttet til det aktuelle 4.0.314-checkpoint øverst; rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation er stadig ikke udført. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
 
 ## Produktions- og driftsverificeret 4.0.310 – ekstern og intern stilhedsgrænse er bevidst forskellige
 

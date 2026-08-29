@@ -2,7 +2,13 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
-## Aktuel 4.0.313-læring
+## Aktuel 4.0.314-læring
+
+En count-validator må ikke gøre kildebracket og cadencebevis til samme ting. Det ene målte afteranker kan være nok som højre bracket, når state-replayet er eksakt, mens kadencen bevises uafhængigt og strengere af before+target. Undtagelsen skal være rolle- og cadenceafgrænset; global minimumssænkning ville være en generel evidenssvækkelse.
+
+En releaseinterlock skal beskytte hele rækkefølgen, ikke kun første eksterne gate. Efter et grønt D1-run kan et planlagt `none`-run ellers flytte public target før inspect/apply. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås. En incoming push må heller aldrig annullere en allerede kørende apply, og parseroutput må først bruges efter atomisk validering af hele metadataresponsen.
+
+## Historisk 4.0.313-læring
 
 Et grønt database-/Worker-forløb frem til migrationen er ikke backend-readiness, hvis slutreconciliation fejler. Run `33266229687` nåede langt, men den faste syncfejl gjorde hele runnet rødt; failure-roll-forward er kun sikkerhed, ikke succesbevis.
 

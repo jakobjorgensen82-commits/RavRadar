@@ -1,15 +1,15 @@
 # RavRadar - aktivt roadmap
 
-## P0 lokal 4.0.313 – luk replay før engangsrekonstruktionen
+## P0 lokal 4.0.314 – luk singleton-afteranker før engangsrekonstruktionen
 
-- [x] Registrér 4.0.312 PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
-- [x] Stop ved backend `33266229687` og klassificér den som ikke-readiness efter syncfejl.
-- [x] Reproducer null-leaf/hash/registryårsagen syntetisk og implementér migration-only, no-mutation-kompatibilitet.
-- [x] Lås strict schema-v2 stored/readback, bounded schema-v1, core/non-null-identitet og sikre fejlkategorier med målrettede tests.
-- [x] Kræv exact-D1 for 4.0.313 og frigiv den versionsspecifikke interlock igen ved 4.0.314.
-- [x] Luk fuld lokal source-/RDKS-/release-/versions-/geodatagate og uafhængigt review.
+- [x] Luk 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`.
+- [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT` og uden mutation.
+- [x] Afgræns singleton til ét målt `AFTER`-anker på uafhængigt bevist 3-timerskadence; bevar alle øvrige count/replay/bracket/CAS/privacygates.
+- [x] Lås 4.0.314 til exact-D1 og normal produktion til exact-head apply+Pages; bind inspect til D1 og bevis 4.0.315 ulåst.
+- [x] Luk fuld lokal source-/RDKS-/release-/versions-/geodatagate.
+- [x] Bestå tre uafhængige singleton-/workflow-/privacy-/versions-/dokumentationsreviews og luk de to fundne testpræcisionskanter.
 - [ ] PR, exact-head, merge og korrekt no-op push.
-- [ ] Helt grøn exact-main D1-backend inklusive begge syncs, slutreconciliation og slutattestation.
+- [ ] Helt grøn exact-main 4.0.314-D1-backend inklusive begge syncs, slutreconciliation og slutattestation.
 - [ ] Ny inspect/CAS, apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
 
@@ -28,7 +28,7 @@
 - [x] Bestå 4.0.312's fulde lokale source-/RDKS-/håndbogs-/versions-/releasegate og særskilte geodatadiff.
 - [x] Luk PR #225/exact-head `33266087776`, merge `a5ece10d` og korrekt no-op push `33266184326`.
 - [x] Kør `[d1]` på eksakt 4.0.312-main; backend `33266229687` passerede verifier/D1/Edge/Worker, men fejlede migrationssynken og tæller ikke som readiness.
-- [x] Undlad inspect/apply efter den røde backend og overfør den resterende livekæde til det aktuelle 4.0.313-afsnit ovenfor.
+- [x] Undlad inspect/apply efter den røde backend og overfør den resterende livekæde til det aktuelle 4.0.314-afsnit ovenfor.
 - [ ] Bevar P2-låsen: aktivér ingen global koefficientlæring, før schema-v2/snapshot er serverbevist mod signeret public manifest.
 - [ ] Efter den akutte genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
 - [ ] Erstat migrationsrunnerens mutable offset-pagination med stabil keyset-/snapshotpagination; bevar indtil da obligatorisk idempotent slutreconciliation og retry som reparationsvej.

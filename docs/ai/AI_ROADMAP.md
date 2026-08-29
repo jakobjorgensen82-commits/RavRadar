@@ -1,17 +1,16 @@
-# AI Roadmap – RavRadar 4.0.313+
+# AI Roadmap – RavRadar 4.0.314+
 
-## P0 nu – få 4.0.313 helt gennem backend før rekonstruktion
+## P0 nu – få 4.0.314 sikkert gennem singleton-afteranker og rekonstruktion
 
-1. [x] Luk 4.0.312 gennem PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
-2. [x] Registrér backend `33266229687` som rød ved sync; brug ikke failure-roll-forward som readiness.
-3. [x] Reproducer null-leaf/hash/registryårsagen syntetisk uden private data.
-4. [x] Implementér migration-only, strict stored schema/privacy, no-mutation row/hash/registry og safe error taxonomy.
-5. [x] Bestå målrettede og uafhængige replay/D1/privacy/registry/workflowtests.
-6. [x] Bestå fuld lokal source/RDKS/release/version/geodatagate og uafhængig slutrevision.
-7. [ ] Bestå PR exact-head, merge og verificér no-op push.
-8. [ ] Kør helt grøn exact-main `[d1]` inklusive begge syncs, slutreconciliation og slutattestation.
-9. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-10. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
+2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
+3. [x] Tillad singleton-afteranker kun for uafhængigt bevist native 3-timerskadence; bevar state-, bracket-, source- og CAS-beviserne.
+4. [x] Lås exact-D1 til 4.0.314, inspect til D1 og normal produktion til exact-head apply+Pages; bevis 4.0.315 ulåst.
+5. [x] Bestå målrettede og uafhængige recovery-/workflow-/privacytests samt fuld lokal source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
+6. [ ] Bestå PR exact-head, merge og verificér no-op push.
+7. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` inklusive begge syncs, slutreconciliation og slutattestation.
+8. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
+9. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
 
 ## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
 
@@ -22,7 +21,7 @@
 5. [x] Luk fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol for 4.0.312. Bevar trip protocol/header 4.0.311.
 6. [x] Luk PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
 7. [x] Kør backend fra eksakt 4.0.312-main; den bestod verifier/D1/Edge/Worker, men fejlede migrationssynken i `33266229687`. Klassificér den som ikke-readiness og overfør replayrettelsen til 4.0.313.
-8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde; overfør den uændrede CAS-/produktions-/public-gate til det aktuelle 4.0.313-afsnit ovenfor.
+8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde; overfør den uændrede CAS-/produktions-/public-gate til det aktuelle 4.0.314-afsnit ovenfor.
 9. [x] Bevar privat rollback og kausal cleanup; offentlig sandhed forblev korrekt 4.0.310.
 10. [x] Overfør integrationen af nyeste grønne `main`, 72-timers atomisk measured-only emergency og den låste globale koefficientlæring til det aktuelle DEC-0102-modeltrin ovenfor.
 
