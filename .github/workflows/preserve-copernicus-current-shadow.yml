@@ -8,6 +8,12 @@ on:
     types: [requested, completed]
     branches: [main]
   workflow_dispatch:
+    inputs:
+      external_watchdog:
+        description: "Kontrollér total GitHub-schedulerstilhed fra den eksterne, payloadfri vagthund"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -80,7 +86,7 @@ jobs:
             -F "inputs[force]=false"
 
   production-watchdog:
-    if: github.event_name == 'schedule'
+    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:

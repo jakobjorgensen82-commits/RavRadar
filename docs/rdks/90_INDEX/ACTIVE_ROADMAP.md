@@ -1,5 +1,15 @@
 # RavRadar - aktivt roadmap
 
+## P0 4.0.309 – ekstern vagthund mod total schedule-stilhed
+
+- [x] Afgræns schedule-leveringsfejlen fra workflowkonfiguration, runnerkø og selve vejrbygningen.
+- [x] Bevar GitHub som normal scheduler og vælg ét eksternt, payloadfrit keepalivekald ved `04,19,34,49` UTC.
+- [x] Lås kaldet til eksplicit `external_watchdog=true` og DEC-0085's 45-minutters dual staleness.
+- [ ] Bestå lokale kontrakter, sourcegate, PR exact-head og frisk post-merge-produktion.
+- [ ] Opret/test ét cron-job, bevis to automatiske kald og genmål Candidate G-warmup.
+
+Se DEC-0107. Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring.
+
 ## P1 4.0.296-kildekandidat – offentlig opstartsydelse
 
 - [x] Produktionsverificér 4.0.295's lazy detaljer, top-5-indeks og dataset+SHA-cache gennem PR #198 og grøn produktion.

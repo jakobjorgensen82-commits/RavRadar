@@ -117,7 +117,10 @@ def main() -> None:
         "retry-failed-production:",
         "contains(fromJSON('[\"failure\",\"timed_out\",\"startup_failure\"]'), github.event.workflow_run.conclusion)",
         "github.event.workflow_run.event == 'schedule'",
+        "external_watchdog:",
+        "default: false",
         "production-watchdog:",
+        "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",
         "node scripts/check-production-watchdog.mjs",
         "--maximum-silence-minutes 45",
         "steps.watchdog.outputs.dispatch == 'true'",
@@ -125,6 +128,8 @@ def main() -> None:
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")
     need("actions/cache/save@v6" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")
     need("actions/upload-artifact" not in workflow, "Heartbeat must never export raw cache evidence")
+    need("github.event_name == 'workflow_dispatch' && inputs.external_watchdog != true" not in workflow,
+         "An ordinary manual keepalive must not become an implicit production watchdog")
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     for marker in (
         "Inspect requested hour and authoritative target geometry",

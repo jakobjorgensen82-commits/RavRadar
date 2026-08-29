@@ -1,5 +1,14 @@
 # Current truth – gældende projektviden
 
+## 4.0.309-kandidat – ekstern vagthund mod total schedulerstilhed
+
+- GitHubs tre native planer er aktive på `main`, og manuel ikke-tvungen produktion `33241555811` bestod hele den friske gate-, artifact- og Pages-kæde. Alligevel udeblev nye schedule-events efter den registrerede produktion 04:19 UTC; problemet ligger i schedule-leveringen, ikke i den tunge pipelines evne til at køre.
+- Normal produktion forbliver `14,29,44,59`, pilot `06` og intern cache/watchdog `07,17,27,37,47,57` UTC. Ét eksternt payloadfrit kald ved `04,19,34,49` må kun dispatch'e keepalive-workflowet med `external_watchdog=true`.
+- Den eksisterende 45-minutters kontrol kræver gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion. Almindelig manuel keepalive er fortsat en no-op, og alle tunge builds deler fortsat én concurrencygruppe.
+- Offentlig manifest fra `rr-20260829075656-210` er komplet 210/673, men primær Candidate G står fortsat i 673-deles warmup og den auditerede recovery er aktiv. Den tidligere READY-ETA er derfor ikke et afsluttet bevis; schedulerstabiliteten skal genetableres og eftermåles.
+- Candidate G, RavScore, modelsemantik, DMI/Copernicus-input, state/cache/recovery, geometri og land-/vandpunkter er urørte. Se DEC-0107.
+- Målrettede heartbeat-, watchdog-, workflow- og håndbogstests, RDKS, releasegate og hele lokale `scripts/validate-source.ps1` er grønne. Det særskilte geodatabevis viser kun topversionsfeltet `4.0.308 → 4.0.309` i `data/kystdata.json` og `data/zones.geojson`; exact-head og ekstern aktivering afventer.
+
 ## 4.0.308-kandidat – naturligt sikkerhedsspørgsmål og alle zonehits
 
 - Den offentlige 4.0.307-kontrol fandt to afgrænsede restfejl: “Hvad er hvidt fosfor på stranden?” blev afvist, og en delstreng som `lyn` valgte kun første zonehit i stedet for at vise alle relevante zoner.

@@ -2,6 +2,12 @@
 
 Prioritet: DMI → Open-Meteo Marine → MET Norway → cache.
 
+## Ekstern scheduler-vagthund (4.0.309)
+
+GitHub ejer fortsat normal vejrproduktion ved UTC-minut 14/29/44/59, Copernicus-piloten ved minut 06 og den interne cache-/watchdogplan ved 07/17/27/37/47/57. Fordi alle tre native planer afhænger af samme GitHub-scheduler, kalder ét eksternt cron-job keepalive-workflowet ved 04/19/34/49 UTC med `external_watchdog=true`.
+
+Kaldet starter ikke produktion eller pilot direkte. GitHub-workflowet kontrollerer selv, at ingen produktion er aktiv, og at både seneste produktionskørsel og det offentlige manifest er ældre end 45 minutter, før én normal `force=false`-produktion dispatch'es. Almindelig manuel keepalive udløser ikke watchdoget. Ingen vejrpayload, koordinater, rå U/V, private data eller modelstate sendes til den eksterne tjeneste. Se DEC-0107.
+
 ## Supplerende 3D-strøm og regional proxy (privat kandidat efter 4.0.231)
 
 Den almindelige aktive kontrakt nedenfor er fortsat uændret i produktion. En separat privat workflowkandidat undersøger først Copernicus Baltic NEMO og derefter AMM15 for kystdele, hvor DMI ikke har et eksakt fælles U/V-par inden for 5 km. Piloten bruger officielle timebaserede 3D-datasæt, vælger nærmeste fælles U/V-vandkolonne og derefter dybeste fælles lag uden interpolation. Rå vektorer opbevares højst 168 timer i privat Actions-cache; supportrapporten indeholder kun kilde, tid, grid, lag, afstand og antal og kan ikke påvirke score eller offentlig runtime.

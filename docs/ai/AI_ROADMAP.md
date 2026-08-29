@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar 4.0.308+
+# AI Roadmap – RavRadar 4.0.309+
+
+## Aktiv P0-drift – ekstern schedulerstilhed
+
+- [x] Bevis at native schedule-events kan udeblive samtidig i produktion, pilot og keepalive, mens manuel produktion er grøn.
+- [x] Bevar GitHub-tiderne og tilføj kun ét eksplicit eksternt keepalive-/watchdogintent.
+- [x] Bevar 45-minutters dobbeltfriskhed, no-active-run og serialiseret tung produktion.
+- [ ] Luk source/exact-head/produktion, aktivér ét cron-job ved `04,19,34,49` UTC og verificér to automatiske kald.
+- [ ] Genmål primary/recovery efter stabil cadence; ændr ikke Candidate G eller DEC-0102-modellen i dette spor.
+
+Se DEC-0107.
 
 ## Aktivt smårettelsesspor – 4.0.308 offentlig QA-opfølgning
 

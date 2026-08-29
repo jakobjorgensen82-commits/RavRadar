@@ -1,5 +1,14 @@
 # RavRadar - aktuelt Codex-handoff
 
+## KILDEKANDIDAT P0 – 2026-08-29 – 4.0.309 ekstern schedulerstilhed
+
+- Branch `codex/external-weather-watchdog-4.0.309` starter fra `origin/main` `a9308254`/PR #220 og ændrer kun orkestrering, tests, version og dokumentation.
+- Manuel ikke-tvungen produktion `33241555811` bestod eksakt `main`, frisk data, Candidate G-runtimeaudit, fuld validate/releasegate, artifact og Pages. Native schedule-events udeblev fortsat.
+- Normal GitHub-plan bevares. Ét eksternt cron-job skal dispatch'e keepalive med `external_watchdog=true` ved `04,19,34,49` UTC; watchdoget bruger fortsat 45-minutters gammel workflowhistorik + gammelt offentligt manifest + ingen aktiv produktion.
+- Offentlig `rr-20260829075656-210` er komplet 210/673, men primary er fortsat i 673-deles warmup under recovery. Stabil cadence og ny ETA skal bevises efter aktivering.
+- Candidate G, RavScore, DMI/Copernicus-input, state/cache/recovery, DEC-0102, geometri, punkter og private data er urørte. Fortsæt Sol/Ekstra høj. Se DEC-0107.
+- Målrettede scheduler-/workflowtests, håndbogssynkronisering, RDKS, releasegate og hele lokale `scripts/validate-source.ps1` er grønne. Geodatadiffen ændrer kun de to topversionsfelter. Exact-head, merge, frisk post-merge-produktion og ekstern cron-aktivering afventer.
+
 ## KILDEKANDIDAT P1 – 2026-08-29 – 4.0.308 offentlig QA-opfølgning
 
 - 4.0.307 er merged via PR #219 som `6c0b6c49230393a3e4306a867dd3f4c3e845d234`; exact-head `33220047699` og fuld produktion `33220124166` er grønne.
