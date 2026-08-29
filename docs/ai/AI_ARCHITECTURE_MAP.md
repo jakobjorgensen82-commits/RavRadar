@@ -1,6 +1,6 @@
 # AI Architecture Map – RavRadar
 
-## Lokal 4.0.311-kandidat – én incidentlåst Candidate G-rekonstruktion
+## Lokal 4.0.312 roll-forward – én incidentlåst Candidate G-rekonstruktion
 
 - `data/admin/candidate-g-one-time-gap-reconstruction-20260829.json` – statisk allowlist for incident, eksakte source-runs/artifacts/head, 210/673, 665/8-kadence og forbudte dataklasser.
 - `scripts/one-time-candidate-g-gap-reconstruction.mjs` – read-only inspect, forseglet descriptor, source-/mål-CAS, apply, privat rollback, øjeblikkelig rollback og kausal cleanup.
@@ -14,9 +14,12 @@
 - `scripts/migrate-trip-storage-to-cloudflare.mjs` + shared source projection – eksplicit PostgREST top-/nested bladselect; ingen `select=*`, hele fri-form-JSON, GPS/koordinater, rå U/V, fri tekst/billeder eller ukendte kolonner i runner-memory. Owner-id lever kun længe nok til HMAC og logges ikke.
 - `supabase/functions/_shared/trip-storage.js` + `cloudflare/trip-gateway/worker.js` – type-/intervalallowlist, recursive privacygate, canonical readback, global atomisk `trip_observation_registry` på control-sharden og `trip_owner_erasure_tombstones` før sletning.
 - `.github/workflows/deploy-trip-storage.yml` – efter capacity/CAS sættes `d1_edge_predeploy_intent` eller `fresh_edge_predeploy_intent` før første Edge-deploy. Existing D1 bruger 20-/30-minutters lease, femsekunders probes, dobbeltattestation/drain, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Intet intent ved capacity/pre-CAS-fejl betyder nul recoverymutation. Den præcise live-rækkefølge læses altid fra workflowbyten; dokumentet er ikke livebevis.
+- `scripts/apply-candidate-g-trip-quality-migration.mjs` – 4.0.312-verifieren udtrækker strukturelt præcis én JSONPath-literal fra PostgreSQLs deparserede constraint, tolererer ekstra parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Den ændrer ikke trip protocol/header 4.0.311.
 - `ravscore-public-runtime-contract.js`, data-service og `app.js` – målt-only atomisk 210/673-emergency med eksakt model/state/hash, maksimum 72 timer og kortere forecastudløb, DA/DE/EN-status, automatisk frisk primary og non-calibration tripbinding. Denne kontrakt er en bindende acceptgate for DEC-0102-modellen og må ikke bruge interpolation.
 
-Ingen geometri, punkt, koordinat, rå U/V, vejr-, bølge- eller vandstandsrekonstruktion indgår. `calibration_eligible` er kun en fail-closed klientattestation, ikke serverbevist manifestproveniens eller empirisk evidens; global koefficientlæring er P2-låst. Status er lokal kandidat; se DEC-0109 og DEC-0102-addendum.
+Ingen geometri, punkt, koordinat, rå U/V, vejr-, bølge- eller vandstandsrekonstruktion indgår. `calibration_eligible` er kun en fail-closed klientattestation, ikke serverbevist manifestproveniens eller empirisk evidens; global koefficientlæring er P2-låst.
+
+Operationel status: 4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`; push `33263858078` var en korrekt no-op. Backend `33263892151` fejlede efter atomisk SQL HTTP 201 i den gamle `pg_get_constraintdef`-regex. CHECK/validering/kommentar er derfor med høj sandsynlighed committed samlet, mens det eneste atomiske alternativ er fuld rollback. Ingen observationspayload blev hentet til runneren eller logget, ingen rækkemutation skete, og D1, Edge, Worker, sync, vejr, artifact eller Pages blev ikke nået. Offentlig version er fortsat 4.0.310. 4.0.312's målrettede tests, fulde lokale source/release/RDKS/håndbog/version og geodatakontrol er grønne, og exact-D1-interlocken omfatter versionen; PR/exact-head, merge, backend, rekonstruktion og offentlig verifikation mangler. Se DEC-0109 og DEC-0102-addendum.
 
 ## Offentlig GPT-OSS-assistent i 4.0.291
 

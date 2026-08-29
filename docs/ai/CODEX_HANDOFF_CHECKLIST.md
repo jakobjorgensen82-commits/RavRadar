@@ -4,7 +4,7 @@
 - Åbn den eksisterende lokale RavRadar Git-mappe; opret ikke et nyt tomt projekt.
 - Kontrollér at `git status` viser de forventede dokumentationsændringer, og at `.git` stadig tilhører det eksisterende repository.
 - Læs `docs/ai/CODEX_START_HERE.md` og `AGENTS.md` før første kodeopgave.
-- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Ved 4.0.311-checkpointet er offentlig drift 4.0.310; 4.0.311 er kun lokal kandidat uden PR/merge/live/apply/produktion. Den gamle 4.0.117-bootstrap er historik.
+- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Offentlig drift er fortsat 4.0.310. 4.0.311 bestod exact-head og blev merged via PR #224, men backend stoppede før D1/Edge, og inspect/apply/produktion blev ikke kørt. 4.0.312 er lokalt source-/releasevalideret roll-forward og afventer PR exact-head, merge, backend, rekonstruktion og offentlig verifikation. Den gamle 4.0.117-bootstrap er historik.
 - Kør `npm run validate:rdks`; brug `npm run validate` før første ændringsrelease.
 - Den historiske 4.0.117-workflowbypass er lukket; genåbn kun sporet ved konkret regressionsbevis. Kræv fortsat, at ethvert nyt produktionsartifact har `npm run validate` og `npm run release:gate` som faktiske `success` efter frisk data. Topniveauets grønne runstatus alene tæller ikke.
 

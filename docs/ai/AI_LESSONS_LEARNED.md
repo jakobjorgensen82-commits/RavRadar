@@ -2,9 +2,11 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
-## Aktuel 4.0.311-læring
+## Aktuel 4.0.312-læring
 
-Punkterne nedenfor er udledt af den lokalt testede 4.0.311-kandidat. De er endnu ikke et live-, merge- eller produktionsbevis.
+4.0.311 bestod exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`, men backend `33263892151` viste, at ekstern mutation og lokal postverifikation er to forskellige beviser. En HTTP 201 fra en atomisk SQL-transaktion efterfulgt af verifierfejl må behandles som mulig samlet commit, ikke automatisk som rollback eller som tilladelse til blind retry. I denne hændelse er CHECK/validering/kommentar med høj sandsynlighed committed samlet; det eneste atomiske alternativ er fuld rollback. PostgreSQLs `VALIDATE` kan have scannet rækker internt, men ingen observationspayload blev hentet til runneren eller logget, ingen rækkemutation skete, og downstream-D1/Edge/Worker/sync/weather/artifact/Pages blev ikke nået. Offentlig version er fortsat 4.0.310.
+
+PostgreSQLs `pg_get_constraintdef` er semantisk deparsering, ikke en stabil bytekontrakt. 4.0.312 udtrækker derfor strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Målrettede tests samt fuld lokal source/release/RDKS/håndbog/version og geodatakontrol er grønne, og exact-D1-interlocken omfatter 4.0.312; PR/exact-head, merge, backend, reconstruction og public-verifikation mangler. App-roll-forwarden ændrer ikke trip protocol/header 4.0.311.
 
 - En modevælger er ikke rollback, hvis den kan skjule writes, der kun findes i det nye lager. Efter et D1 point-of-no-return skal recovery gå fremad og reconcile; rå Supabase-identiteter kan ikke genskabes sikkert fra HMAC-ejerskab.
 - Sæt installationstype-intent efter capacity/CAS og umiddelbart før første Edge-deploy. Så kan partial existing-D1 Edge gå D1 roll-forward, mens partial genuine-fresh Edge sikkert kan genoprette Supabase-secret, eksakt Edge og dobbelt Supabase-attestation.
@@ -13,6 +15,7 @@ Punkterne nedenfor er udledt af den lokalt testede 4.0.311-kandidat. De er endnu
 - Privacy skal begrænse det, processen **læser**, ikke kun det, den senere skriver. Server-side bladselect er nødvendig, så private/ukendte kolonner aldrig kommer ind i migrationsrunnerens memory.
 - “Kalibreringsegnet” er ikke empirisk evidens uden server-side binding til det signerede snapshot, brugeren faktisk så. Fail-closed udelukkelse kan bevares, mens global læring forbliver låst.
 - Nøddrift er en atomisk målt tilstand, ikke interpolation. 210/673, model/state/hashes, 72 timer og kortere forecastudløb skal være én kontrakt.
+- Når en ekstern transaktion kan være committed, skal næste trin være en read-only tilstandskontrol og en idempotent roll-forward fra ny exact-main-kode. Destruktiv cleanup, antaget rollback og genkørsel af samme kendt defekte verifier er forbudt.
 
 ## 1. En grøn lokal test kan være falsk tryghed
 I 4.0.117-forløbet bestod lokale tests, mens friske GitHub/DMI-kørsler stadig fandt fejl. Eksterne data, central Supabase-konfiguration, schedulerbudget og produktionscache kan ikke altid reproduceres fuldt lokalt. Brug derfor lokal validering som nødvendig, men ikke tilstrækkelig evidens.

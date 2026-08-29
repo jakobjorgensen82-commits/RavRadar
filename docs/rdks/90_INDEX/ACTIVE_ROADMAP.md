@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 lokal 4.0.311-kandidat – afgrænset morgenhul og datasikker D1-udrulning
+## P0 lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet sikkert
 
 - [x] Lås `RRGAP-2026-08-29-CANDIDATE-G-01` til eksakte artifacts og lineær interpolation af allerede afledt signeret kystnormal strength; interpolér ingen vejrdata, rå U/V, koordinater, geometri eller private payloads.
 - [x] Før schema 2.1/trust gennem state, public payloads, fallback, manifest, trips og observationer; udeluk rekonstruktion/nødvisning og uattesteret legacy fra kalibrering og observeret hard-outflow.
@@ -8,13 +8,19 @@
 - [x] Luk storage/privacy lokalt med eksplicit server-side bladprojektion/readback, global atomisk D1-registry, owner-erasure tombstones og no-mutation legacy replay.
 - [x] Lås cutover med installationstype-intent efter capacity/CAS, 20-/30-minutters lease, femsekunders Edge-prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Route partial existing Edge til D1 roll-forward og partial fresh Edge til exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation; uden intent ingen recoverymutation.
 - [x] Registrér næste models bindende målt-only, atomiske 210/673-nøddrift: eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
-- [ ] Bestå afsluttede målrettede suites og fuld `validate:source` på kandidatens eksakte PR-head; luk version/RDKS/Markdown-/webhåndbogsidentitet og særskilt geodatadiff.
-- [ ] Merge først efter grøn exact-head; kør `[d1]`-backenddeploy, read-only inspect, CAS-bundet apply, frisk normal produktion, fuld validate/releasegate og offentlig desktop/mobil/210/673-verifikation.
+- [x] Bestå 4.0.311's målrettede suites og fulde sourcegate på PR #224-head `4c4699fe`; exact-head `33263734108`/`99129959870` er grøn.
+- [x] Merge PR #224 som `7c168b00`; bevis at push `33263858078` er grøn no-op uden artifact/Pages, mens backendbevis mangler.
+- [x] Afgræns backendincident `33263892151`/`99130384780`: HTTP 201 fra én atomisk CHECK-transaktion, derefter falsk negativ katalogverifier; mulig tilstand er fuld committed/valideret/commented CHECK eller fuld rollback, aldrig en delvis constraint. `VALIDATE` kan have scannet rækker internt, men runneren hentede/loggede ingen observationspayload, og der skete ingen rækkemutation; D1/Edge/Worker/sync/vejr/artifact/Pages blev ikke nået.
+- [x] Erstat lokalt i 4.0.312 den flade regex med balanceret, deparser-tolerant exact-JSONPath-verifikation; behold fail-closed afvisning af ombytning, dublet og tvetydighed. Målrettede storage-tests er grønne.
+- [x] Bestå 4.0.312's fulde lokale source-/RDKS-/håndbogs-/versions-/releasegate og særskilte geodatadiff.
+- [ ] Opret PR og bestå exact-head.
+- [ ] Merge 4.0.312 sikkert og genkør `[d1]` på den nye eksakte main. En uændret 4.0.311-backend må ikke genstartes.
+- [ ] Kør først efter grøn backend read-only inspect, CAS-bundet apply, frisk normal produktion, fuld validate/releasegate og offentlig desktop/mobil/210/673-verifikation.
 - [ ] Bevar P2-låsen: aktivér ingen global koefficientlæring, før schema-v2/snapshot er serverbevist mod signeret public manifest.
-- [ ] Efter den akutte 4.0.311-genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
+- [ ] Efter den akutte genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
 - [ ] Erstat migrationsrunnerens mutable offset-pagination med stabil keyset-/snapshotpagination; bevar indtil da obligatorisk idempotent slutreconciliation og retry som reparationsvej.
 
-Indtil alle åbne punkter er grønne, er 4.0.311 kun lokal kandidat. Offentlig sandhed er fortsat 4.0.310 og den eksisterende målte nødvisning. Se DEC-0109 og DEC-0102-addendum.
+4.0.311-protokolkilden er merged, men ikke backend-/produktionsverificeret. 4.0.312 er fuldt lokalt source-/releasevalideret, men endnu ikke PR-/backend-/produktionsverificeret. Offentlig sandhed er fortsat 4.0.310 og den eksisterende målte nødvisning. Se DEC-0109 og DEC-0102-addendum.
 
 ## Produktions- og driftsverificeret P0 4.0.310 – ekstern overtagelse efter ét manglende interval
 

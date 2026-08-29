@@ -1,3 +1,13 @@
+## 2026-08-29 – 4.0.312-roll-forward efter 4.0.311-backendincident
+
+- 4.0.311-kilden blev committed som `4c4699fe3a87a3b804da1d8beea204e4144a7a76`. PR #224 bestod exact-head `33263734108`/job `99129959870` og blev merged som `7c168b00af535415117c968a8c021a493b083137`.
+- Pushworkflow `33263858078` bestod som tilsigtet no-op: intet build, artifact eller Pages blev oprettet, fordi exact-main-backendbevis manglede.
+- Manuel backend `33263892151`/job `99130384780` sendte den ene atomiske Candidate G-trip-quality-CHECK-transaktion og modtog HTTP 201. Den efterfølgende read-only katalogverifier fejlede, fordi en flad regex ikke accepterede PostgreSQLs semantisk ækvivalente `pg_get_constraintdef`-deparserform.
+- CHECK'en er med høj sandsynlighed fuldt committed, valideret og kommenteret; eneste konsistente alternativ er fuld transaktionsrollback. `VALIDATE` kan have scannet eksisterende rækker internt i PostgreSQL. Runneren hentede eller loggede ingen observationspayload, og migrationen udførte ingen `INSERT`, `UPDATE` eller `DELETE`.
+- Kæden stoppede før Supabase CLI-setup, D1-prepare/capacity, Edge-predeploy, maintenance, Worker, sync, mode/reconcile, vejr, artifact og Pages. Offentlig drift forblev 4.0.310, og rekonstruktionen blev ikke inspiceret eller anvendt.
+- Lokal 4.0.312 erstatter den flade regex med balanceret, deparser-tolerant udtrækning af præcis ét relevant `jsonb_path_query_array(...)`-kald og kræver de tre eksakte reason codes én gang hver i kanonisk rækkefølge. Ombytning, dublet og tvetydigt ekstra kald afvises; målrettede tests er grønne.
+- Målrettede tests, fuld lokal 4.0.312-source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis er grønne. Sikkert næste trin er PR exact-head og merge, derpå en ny exact-main `[d1]`-kørsel. Uændret 4.0.311-backend må ikke genkøres. Inspect/apply, frisk produktion og offentlig verifikation kommer først efter grøn backend.
+
 ## 2026-08-29 – lokal 4.0.311-kandidat til én ejerautoriseret Candidate G-rekonstruktion
 
 - Ejeren godkendte udtrykkeligt én undtagelse til no-backfill-reglen for morgenhullet og præciserede, at kvalitet, forskning og slutvalidering ikke må reduceres af Codex-kvote.
@@ -6,7 +16,7 @@
 - Inspect/apply/rollback/cleanup er afgrænset med descriptor-SHA, source-/mål-CAS, privat før-mutation-rollback og målt-only last-verified fallback. Almindelig missing-/nøddriftsadfærd er uændret uden for incidentet.
 - Tværgående review fandt og lukkede lokale Candidate G-/trip-storage-risici: hele active manifest bindes til ture; legacy schema-v2 bevares som uattesteret/non-calibration; predictionforbrugeren er fail-closed; migration/readback bruger kun en eksplicit server-side bladprojektion; D1 bruger global atomisk registry og owner-erasure tombstones.
 - Runner-loss-gennemgangen tilføjede installationstype-intents umiddelbart før første Edge-deploy efter capacity/CAS. Existing D1 bruger maintenance-kapabel Edge, repair-intent og 20-minutters lease med 30-minutters max; femsekunders prober, dobbeltattestation, drain, 600 sekunders restlease og én syvminutters Worker-gate beskytter cutover. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
-- DEC-0109, aktive krav, issues, status, håndbøger og AI-checkpoints registrerer kandidaten. Der er endnu ingen commit, PR, merge, inspect/apply, live-storagekørsel, produktion eller offentlig 4.0.311-verifikation.
+- Ved dette tidligere lokale checkpoint registrerede DEC-0109, aktive krav, issues, status, håndbøger og AI-checkpoints kandidaten; der var da endnu ingen commit, PR, merge, inspect/apply, live-storagekørsel, produktion eller offentlig 4.0.311-verifikation. Den senere source-/backendstatus står i checkpointet ovenfor.
 - Den samlede næste model under DEC-0102 fortsætter separat efter recovery og skal bevare trust-/provenance-/trip-/cleanupkontrakten uden at gøre interpolation til en normal modelregel. Dens nøddrift skal være målt-only og atomisk 210/673, højst 72 timer og kortere end eventuelt forecastudløb, med eksakt model/state/hash, DA/DE/EN-advarsel, ikke-kalibrerbare ture og automatisk frisk primary.
 - Et åbent P2-forhold er bevaret: `calibration_eligible` er klientattesteret og internt konsistent, men ikke serverbevist mod signeret public manifest. Det er ikke empirisk evidens; global koefficientlæring forbliver låst, indtil server-side snapshotbinding findes.
 
