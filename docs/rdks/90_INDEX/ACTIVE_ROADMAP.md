@@ -12,8 +12,9 @@
 - [x] Bevis at ældre produktion `33271863449` stoppede før releasegate/Pages på en stale marine-first-test; ret assertionen og bind testen ind i `test:workflow-action-contracts`/`validate:source`.
 - [x] Fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
 - [x] Bestå to uafhængige hotfixrevisioner uden blocker.
-- [ ] Ny exact-head PR, merge og korrekt no-op push.
-- [ ] Helt grøn exact-main 4.0.314-D1-backend på den endelige hotfix-merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
+- [x] Hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og korrekt no-op push `33274505196`.
+- [ ] Docs-checkpoint exact-head, merge og korrekt no-op push.
+- [ ] Helt grøn exact-main 4.0.314-D1-backend på den endelige docs-synkroniserede merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
 - [ ] Ny inspect/CAS, apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
 

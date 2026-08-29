@@ -1,6 +1,6 @@
 # DEC-0109 – én afgrænset rekonstruktion af Candidate G-transportbevis
 
-**Status:** Ejer-godkendt 4.0.311-protokol. 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var en tilsigtet grøn no-op. En ældre 4.0.313-produktion `33271863449` stoppede før releasegate/Pages på en stale marine-first-test, som manglede i PR-sourcegaten. Same-version-hotfixets fulde lokale source-/RDKS-/release-/versionsgate og to uafhængige revisioner er grønne; exact-head, merge/no-op, nyt exact-main D1 på final merge-SHA, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
+**Status:** Ejer-godkendt 4.0.311-protokol. 4.0.314-kilden bestod PR #227. Same-version-hotfixet bestod PR #228 exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var en tilsigtet grøn no-op uden build/inspect/Pages. Docs-checkpointets exact-head/merge/no-op, nyt exact-main D1 på den endelige merge-SHA, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
 
 **Dato:** 2026-08-29
 
@@ -71,7 +71,7 @@ Legacy-D1 må kun klassificeres fra de eksakte ti EU-shards sammen med både run
 
 En allerede kørende 4.0.313-produktion `33271863449`/job `99151692515` fortsatte under den nye no-cancel-kontrakt og stoppede ved fuld `npm run validate` før releasegate og Pages. `test:dmi-marine-first-recovery` forventede stadig den afløste eventafhængige `cancel-in-progress`-tekst og var ikke inkluderet i `test:workflow-action-contracts`, som `validate:source` kører. Fejlen var derfor en reel test-/sourcegate-dækningsfejl, ikke evidens for fejl i den nye `cancel-in-progress: false`-semantik.
 
-Same-version-hotfixet kræver præcis én `cancel-in-progress:` med værdien `false`, forbyder `true` og føjer marine-first-testen til workflowkontraktsuiten. Den fulde lokale gate og to uafhængige revisioner er grønne; hotfixets nye SHA skal nu bestå exact-head PR, merge og no-op push. Først derefter må exact-main D1 køres på den endelige merge-SHA, fulgt af ny inspect, descriptor-/mål-CAS-bundet apply, frisk produktion og offentlig 210/673 desktop-/mobilkontrol. Offentlig 4.0.310 og det åbne morgenhul er uændret.
+Same-version-hotfixet kræver præcis én `cancel-in-progress:` med værdien `false`, forbyder `true` og føjer marine-first-testen til workflowkontraktsuiten. Den fulde lokale gate, to uafhængige revisioner og PR #228 exact-head/merge/no-op er grønne. Efter dette docs-checkpoint må exact-main D1 køres på den endelige merge-SHA, fulgt af ny inspect, descriptor-/mål-CAS-bundet apply, frisk produktion og offentlig 210/673 desktop-/mobilkontrol. Offentlig 4.0.310 og det åbne morgenhul er uændret.
 
 ### Historisk checkpoint: 4.0.313 backend grøn, read-only inspect stoppet og lokal 4.0.314
 

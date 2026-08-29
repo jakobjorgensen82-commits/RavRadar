@@ -11,10 +11,11 @@
 7. [x] Klassificér produktion `33271863449` som stale test-/sourcegate-stop før release/Pages; ret assertionen og bind testen ind i `test:workflow-action-contracts`.
 8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
 9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
-10. [ ] Bestå hotfix exact-head PR, merge og no-op push.
-11. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` på final merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
-12. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-13. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+10. [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
+11. [ ] Bestå docs-checkpoint exact-head, merge og no-op push.
+12. [ ] Kør helt grøn exact-main 4.0.314 `[d1]` på final merge-SHA inklusive begge syncs, slutreconciliation og slutattestation.
+13. [ ] Kør ny inspect/CAS, apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
+14. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
 
 ## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
 

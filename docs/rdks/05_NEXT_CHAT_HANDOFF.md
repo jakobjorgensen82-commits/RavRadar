@@ -7,7 +7,7 @@
 - Read-only inspect `33269849748`/`99146287609` stoppede uden descriptor eller mutation på `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`.
 - 4.0.314 accepterer ét målt afteranker kun for uafhængigt bevist 3-timerskadence og bevarer alle øvrige fail-closed gates. PR #227/exact-head `33272564543`/`99153577550`, merge `d1369d88` og no-op push `33272676071` er grønne.
 - Ældre produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, som ikke var med i PR-sourcegaten. Same-version-branchen `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
-- Fuld lokal hotfixgate inklusive release/RDKS/version, nul geodatadiff og to uafhængige revisioner er grønne. Fortsæt Sol/Ultra: hotfix exact-head PR → merge/no-op → exact-main D1 på final merge-SHA → ny inspect → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Genbrug aldrig det fejlede inspects manglende descriptor.
+- Hotfix PR #228/exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196` er grønne. Fortsæt Sol/Ultra: docs-checkpoint exact-head/merge/no-op → exact-main D1 på final merge-SHA → ny inspect → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Genbrug aldrig det fejlede inspects manglende descriptor.
 
 ## Historisk P0 – 2026-08-29 lokal 4.0.313 replay-roll-forward
 

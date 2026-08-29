@@ -9,8 +9,8 @@
 - Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, ikke på den nye concurrencykontrakt. Branch `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i PR-sourcegaten.
 - Den mergede afteranker-kilde tillader ét målt afteranker kun på native 3-timersdele, når før+target uafhængigt beviser kadencen. Nul after, singleton før/target/1h, replaymismatch og utilstrækkeligt cadencebevis stopper.
 - Exact state-replay, target-anker, bracket, source/artifact/head, descriptorhash, apply-CAS, privacy, rollback og cleanup er uændrede.
-- Hotfixets fulde lokale source-/RDKS-/release-/versionsgate og to uafhængige revisioner er grønne; exact-head PR, merge og no-op push afventer. Derefter kræver 4.0.314 nyt exact-main D1-bevis på den endelige merge-SHA; inspect afhænger af det. Normal produktion er grøn no-op indtil descriptorbundet apply og Pages er succesbevist. 4.0.315 er ulåst.
-- Næste trin er PR exact-head, merge/no-op push, final-SHA D1, inspect, apply, frisk produktion og offentlig desktop/mobil/210/673.
+- Hotfixets PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op uden build/inspect/Pages. Efter docs-checkpointets merge kræver 4.0.314 nyt exact-main D1-bevis på den endelige merge-SHA; inspect afhænger af det. Normal produktion er grøn no-op indtil descriptorbundet apply og Pages er succesbevist. 4.0.315 er ulåst.
+- Næste trin er docs-checkpoint exact-head/merge/no-op, final-SHA D1, inspect, apply, frisk produktion og offentlig desktop/mobil/210/673.
 - DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
 
 ## HISTORISK P0-HANDOFF – lokal 4.0.312 verifier-roll-forward
