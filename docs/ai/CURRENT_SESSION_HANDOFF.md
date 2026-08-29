@@ -1,6 +1,6 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – 4.0.314 source merged; same-version sourcegate-hotfix
+## AKTUELT P0-HANDOFF – 4.0.314 D1 grøn; inspect stoppet; sanitiseret diagnostikhotfix
 
 - Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
 - 4.0.313 bestod PR #226 exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og hele exact-main D1-run `33269631305`/job `99145677813`.
@@ -9,8 +9,9 @@
 - Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, ikke på den nye concurrencykontrakt. Branch `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i PR-sourcegaten.
 - Den mergede afteranker-kilde tillader ét målt afteranker kun på native 3-timersdele, når før+target uafhængigt beviser kadencen. Nul after, singleton før/target/1h, replaymismatch og utilstrækkeligt cadencebevis stopper.
 - Exact state-replay, target-anker, bracket, source/artifact/head, descriptorhash, apply-CAS, privacy, rollback og cleanup er uændrede.
-- Hotfixets PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op uden build/inspect/Pages. Efter docs-checkpointets merge kræver 4.0.314 nyt exact-main D1-bevis på den endelige merge-SHA; inspect afhænger af det. Normal produktion er grøn no-op indtil descriptorbundet apply og Pages er succesbevist. 4.0.315 er ulåst.
-- Næste trin er docs-checkpoint exact-head/merge/no-op, final-SHA D1, inspect, apply, frisk produktion og offentlig desktop/mobil/210/673.
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`. Exact-main D1 `33275218540`/`99160622956` er helt grøn.
+- Inspect `33275438494`/`99161265720` stoppede i planforseglingen efter hydration/kildeudtræk og før descriptorupload, mutation, build og Pages. GitHubs sikre metadata viser kun exit 1; hele jobloggen og artifacts må ikke hentes.
+- Lokal hotfix annoterer kun allowlistede `ONE_TIME_GAP_*`-fejlkoder og maskerer al anden fejltekst. Ved succes annoteres kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger, så apply kan bindes uden joblog. Næste trin: exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig desktop/mobil/210/673.
 - DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
 
 ## HISTORISK P0-HANDOFF – lokal 4.0.312 verifier-roll-forward

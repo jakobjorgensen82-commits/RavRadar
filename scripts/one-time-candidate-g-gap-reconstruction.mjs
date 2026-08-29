@@ -1391,8 +1391,7 @@ export async function cleanupOneTimeGap({
   };
 }
 
-async function writeSanitizedGithubOutput(file, result) {
-  if (!file) return;
+function buildSanitizedGithubOutput(result) {
   if (result?.mode !== 'inspect'
     || !/^[a-f0-9]{64}$/.test(String(result.descriptorSha256 || ''))
     || !Number.isSafeInteger(result.affectedPartCount)
@@ -1422,7 +1421,25 @@ async function writeSanitizedGithubOutput(file, result) {
     || value < 0 || value > result.affectedPartCount)) {
     throw new Error('ONE_TIME_GAP_GITHUB_SENSITIVITY_OUTPUT_INVALID');
   }
+  return output;
+}
+
+async function writeSanitizedGithubOutput(file, result) {
+  if (!file) return;
+  const output = buildSanitizedGithubOutput(result);
   await fs.appendFile(file, `${Object.entries(output).map(([key, value]) => `${key}=${value}`).join('\n')}\n`);
+}
+
+function emitSanitizedGithubInspectionNotice(result) {
+  if (process.env.GITHUB_ACTIONS !== 'true' || result?.mode !== 'inspect') return;
+  const output = buildSanitizedGithubOutput(result);
+  console.log(`::notice title=Candidate G one-time reconstruction inspection::${[
+    `descriptor_sha256=${output.descriptor_sha256}`,
+    `affected_part_count=${output.affected_part_count}`,
+    `synthetic_sample_count=${output.synthetic_sample_count}`,
+    `cadence_1h=${output.cadence_1h}`,
+    `cadence_3h=${output.cadence_3h}`,
+  ].join(';')}`);
 }
 
 function parseArgs(argv) {
@@ -1469,12 +1486,28 @@ async function main() {
           ? await rollbackOrCleanupOneTimeGap(options)
           : await cleanupOneTimeGap(options);
   await writeSanitizedGithubOutput(options.githubOutputPath, result);
+  emitSanitizedGithubInspectionNotice(result);
   console.log(JSON.stringify(result));
+}
+
+const SAFE_CLI_ERROR_PATTERN = /^ONE_TIME_GAP_[A-Z0-9_]+$/;
+const SANITIZED_CLI_ERROR_FALLBACK = 'ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE';
+
+function emitSanitizedCliError(error) {
+  const message = String(error?.message || '');
+  const safeCode = SAFE_CLI_ERROR_PATTERN.test(message)
+    ? message
+    : SANITIZED_CLI_ERROR_FALLBACK;
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    console.log(`::error title=Candidate G one-time reconstruction::${safeCode}`);
+    return;
+  }
+  console.error(safeCode);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch(error => {
-    console.error(error.message);
+    emitSanitizedCliError(error);
     process.exitCode = 1;
   });
 }

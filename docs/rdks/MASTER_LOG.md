@@ -1,3 +1,11 @@
+## 2026-08-29 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
+
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250cc0809cc4dde9aaf3e20bf5b93c2837f2`, og push `33275147023` var korrekt no-op uden build/inspect/Pages.
+- Exact-main D1 `33275218540`/`99160622956` bestod source, Candidate G-databasekontrakt, ti EU-shards, headroom, Edge, maintenance, Worker, sync, D1-mode, slutreconciliation og slutattestation.
+- Read-only inspect `33275438494`/`99161265720` bestod hydration og kildeudtræk, men stoppede i planforseglingen. Descriptorrefusal/-upload, build og Pages var skipped; ingen descriptor, apply, data-/cachemutation eller publicering forekom.
+- Checkmetadata eksponerede kun exit 1. Hele jobloggen og artifacts blev ikke hentet. Lokal hotfix annoterer kun /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl og maskerer al anden tekst; ved succes kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger. Den målrettede syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-black-box-test er grøn.
+- Næste sikre kæde er diagnostikhotfix exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+
 ## 2026-08-29 – 4.0.314 source merged; same-version sourcegate-hotfix før recovery
 
 - 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var tilsigtet grøn no-op uden build/artifact/Pages.

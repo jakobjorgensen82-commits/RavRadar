@@ -1,6 +1,8 @@
 # DEC-0109 – én afgrænset rekonstruktion af Candidate G-transportbevis
 
-**Status:** Ejer-godkendt 4.0.311-protokol. 4.0.314-kilden bestod PR #227. Same-version-hotfixet bestod PR #228 exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var en tilsigtet grøn no-op uden build/inspect/Pages. Docs-checkpointets exact-head/merge/no-op, nyt exact-main D1 på den endelige merge-SHA, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
+**Status:** Ejer-godkendt 4.0.311-protokol. PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250c`, og push `33275147023` var korrekt no-op. Exact-main D1 `33275218540`/`99160622956` er helt grøn. Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen før descriptorupload, mutation, build og Pages. En lokal diagnostikhotfix allowlister kun `ONE_TIME_GAP_*` som GitHub-annotation; exact-head/merge, nyt final-SHA D1, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
+
+**Diagnostikpræcisering 2026-08-29:** En sikker incidentkæde skal være observerbar uden fuld joblog eller artifact. Under GitHub Actions må en fejlannotation kun indeholde tekst, som matcher /^ONE_TIME_GAP_[A-Z0-9_]+$/. Enhver anden fejltekst erstattes af `ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE`. En succesannotation må kun indeholde den validerede descriptor-SHA, affected-part count, synthetic-sample count og 1-/3-timers cadence counts; ingen kildereferencer, tider, strengths, payloads eller øvrige felter. Dette ændrer ikke inspect-/applysemantik, kildeindhold, descriptor, state eller data; det lukker kun et privacykompatibelt observationshul og gør den eksakte apply-binding aflæselig.
 
 **Dato:** 2026-08-29
 

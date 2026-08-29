@@ -2,7 +2,7 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-29 – 4.0.314 source merged; same-version sourcegate-hotfix
+## Aktuelt P0-checkpoint 2026-08-29 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
@@ -11,7 +11,9 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 - Rodårsagen er snæver: de otte native 3-timersdele kan have præcis ét gyldigt målt højreanker i after-kilden. 4.0.314 tillader singleton kun i `AFTER`, kun når før+aktuelt mål uafhængigt beviser enstemmig 3-timerskadence, og fortsat kun efter fuldt state-replay, eksakt target-anker og alle source-/CAS-gates. Nul punkter samt singleton i før/mål/1-timesdele afvises.
 - 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var tilsigtet grøn no-op uden build/artifact/Pages.
 - Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede før releasegate/Pages, fordi en stale marine-first-test stadig forventede den tidligere dynamiske concurrencytekst. Same-version-hotfixet kræver nu præcis én `cancel-in-progress: false` og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
-- 4.0.314 er exact-D1-låst. Hotfixets PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op. Efter dette docs-checkpoint kræver inspect et nyt exact-main D1-bevis på den endelige merge-SHA; normal produktion er grøn no-op, indtil samme SHA har succesfuldt descriptorbundet apply og Pages. 4.0.315 er fortsat ulåst.
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250c`, og push `33275147023` var korrekt no-op uden build/inspect/Pages. Exact-main D1 `33275218540`/`99160622956` bestod hele storage-/Edge-/Worker-/sync-/slutattestationskæden.
+- Read-only inspect `33275438494`/`99161265720` hydrerede mål og kilder, men stoppede i planforseglingen. Descriptorrefusal/-upload, build og Pages blev sprunget over; ingen descriptor, apply, data-/cachemutation eller publicering forekom.
+- Den sikre Actions-annotation viste kun exit 1, mens domænekoden kun fandtes i hele jobloggen. Hent ikke den log. Den lokale diagnostikhotfix annoterer kun /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl og maskerer alt andet; ved succes kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger. Målrettet 210/673-black-box-test er grøn. Efter exact-head/merge kræves nyt exact-main D1 på den nye final-SHA før ny inspect. Normal produktion forbliver no-op indtil descriptorbundet apply+Pages; 4.0.315 er ulåst.
 - Trip protocol/header og Candidate G model/formel/state-/trustsemantik forbliver 4.0.311/2.0–2.1. Ingen vejr, rå U/V, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
 
 ## Historisk P0-checkpoint 2026-08-29 – lokal 4.0.313 replay-roll-forward

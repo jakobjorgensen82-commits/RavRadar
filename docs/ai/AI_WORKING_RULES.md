@@ -8,6 +8,7 @@
 - 4.0.314-normalproduktion kræver exact-main D1 og descriptorbundet apply+Pages-bevis på samme SHA. Inspect/apply må køre efter D1; API-/metadatausikkerhed giver no-op. 4.0.315 skal forblive ulåst.
 - Ingen incoming push/schedule/force må annullere en kørende recovery. Parse- og shapevalidér hele hvert GitHub run-/jobsvar samlet, før et run-id anvendes.
 - Enhver test, som kan stoppe fuld produktion, skal være nåelig fra `validate:source`. Lås workflowsemantik, eksempelvis præcis én `cancel-in-progress: false`, ikke en forældet tekstexpression.
+- En incident-CLI må ikke kræve fuld joblog eller artifact for diagnose eller næste forseglede binding. Fejlannotation må kun indeholde en fast allowlistet domænekode; maskér al anden fejltekst. Succesannotation må kun indeholde descriptor-SHA og eksplicit validerede heltalsoptællinger. Black-box-test begge veje og bevis, at vilkårlige argumenter aldrig lækkes.
 
 ## Historisk recovery-/storage-regel fra 4.0.313
 

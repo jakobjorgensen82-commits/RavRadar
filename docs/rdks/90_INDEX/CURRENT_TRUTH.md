@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## 4.0.314 source merged; same-version sourcegate-hotfix – datahullet åbent
+## 4.0.314 D1 grøn; inspect stoppet før descriptor; diagnostikhotfix – datahullet åbent
 
 - Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311–4.0.314-Pagesproduktion er udgivet.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
@@ -11,7 +11,9 @@
 - 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var en tilsigtet grøn no-op.
 - Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede ved fuld `npm run validate` før releasegate/Pages, fordi en stale marine-first-test stadig forventede den afløste dynamiske concurrencytekst. Den grønne PR #227-sourcegate havde ikke denne test i sin workflowkontraktsuite; det var en reel gatedækningsfejl.
 - Same-version-hotfixet kræver præcis én `cancel-in-progress: false`, forbyder `true` og gør `test:dmi-marine-first-recovery` obligatorisk i `test:workflow-action-contracts`, som `validate:source` allerede kører. De målrettede workflowtests er grønne.
-- Hotfixets PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op uden build/inspect/Pages. Docs-checkpointets exact-head/merge/no-op afventer. Først derefter må et nyt exact-main D1-run køres på den endelige merge-SHA. Inspect afhænger af det; normal `none`-produktion kræver både D1 og et succesfuldt descriptorbundet apply+Pages-bevis. Manglende eller malformed API-evidens giver grøn no-op. 4.0.315 er ikke versionslåst.
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250cc0809cc4dde9aaf3e20bf5b93c2837f2`, og push `33275147023` var korrekt no-op uden build/inspect/Pages. Exact-main D1 `33275218540`/`99160622956` bestod alle 16 kritiske trin inklusive source, Candidate G-kontrakt, ti shards, headroom, Edge, maintenance, Worker, sync, D1-mode, slutreconciliation og slutattestation.
+- Read-only inspect `33275438494`/`99161265720` bestod D1-readiness, hydration og eksakt kildeudtræk, men stoppede i planforseglingen. Descriptorrefusal/-upload, build og Pages var skipped. Der findes ingen descriptor at anvende, og ingen data-/cachemutation eller publicering skete.
+- GitHubs sikre check-annotation eksponerede kun exit 1; domænekoden lå kun i hele jobloggen. Privacykontrakten forbyder at hente hele loggen eller artifacts. Den lokale diagnostikhotfix allowlister kun /^ONE_TIME_GAP_[A-Z0-9_]+$/ som fejlannotation og erstatter enhver anden fejltekst med `ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE`. Ved succes allowlistes kun descriptor-SHA, affected/synthetic counts og 1h/3h-cadence counts, så apply kan bindes uden joblog. Black-box-testen beviser fejl-, maskerings- og succesgrenene. Hotfixets nye final-SHA kræver nyt exact-main D1 før ny inspect; normal `none` kræver fortsat descriptorbundet apply+Pages. 4.0.315 er ikke versionslåst.
 - Candidate G-formlen, model-id, schema 2.0/2.1, trust, DMI/Copernicus, geometri og punkter er uændrede. Runtime-/model-/dataændringen er kun incident-inspektørens accept af det målte højreanker; same-version-hotfixet ændrer derudover kun tests og sourcegatedækning.
 
 ## Historisk lokal 4.0.313-replay-roll-forward – 4.0.312 merged, backend ikke grøn

@@ -10,6 +10,8 @@ En releaseinterlock skal beskytte hele rækkefølgen, ikke kun første eksterne 
 
 En test, som kan stoppe fuld produktion, men ikke kan nås fra PR'ens `validate:source`, er et hul i releasegaten. Produktion `33271863449` afslørede netop dette: runtimekontrakten `cancel-in-progress: false` var korrekt, mens en gammel marine-first-test stadig krævede den afløste tekst. Varig løsning er både semantisk assertion og eksplicit sourcegate-inklusion.
 
+En incident-CLI er kun operationelt sikker, hvis både fejl og næste forseglede binding kan aflæses uden hele jobloggen. Inspect `33275438494` stoppede korrekt før descriptor og mutation, men checkmetadata viste kun exit 1. Når artifacts og fulde logs er privacyafgrænsede, skal CLI'en selv udsende en allowlistet fejlannotation, maskere al uventet tekst og ved succes kun annotere descriptor-SHA samt faste validerede optællinger; ellers bliver et sikkert stop eller apply unødigt uobserverbart.
+
 ## Historisk 4.0.313-læring
 
 Et grønt database-/Worker-forløb frem til migrationen er ikke backend-readiness, hvis slutreconciliation fejler. Run `33266229687` nåede langt, men den faste syncfejl gjorde hele runnet rødt; failure-roll-forward er kun sikkerhed, ikke succesbevis.
