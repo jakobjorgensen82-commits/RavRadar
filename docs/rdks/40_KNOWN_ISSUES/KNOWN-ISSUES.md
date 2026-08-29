@@ -1,8 +1,8 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.310-kandidat – ekstern frekvens må ikke skabe egne datahuller
+## Produktions- og driftsverificeret 4.0.310 – ekstern frekvens må ikke skabe egne datahuller
 
-- **ISSUE-EXTERNAL-WATCHDOG-45-MINUTE-TAKEOVER – RETTET LOKALT / AFVENTER CI-DRIFT:** 4.0.309-vagt `33246369618` bestilte korrekt redningsproduktion `33246376992`, men først cirka en time efter foregående produktionsstart. Kun eksternt `external_watchdog=true` bruger nu 15 minutter; GitHubs interne vagt beholder 45. Active/recent/manifest/concurrency og alle data-/releasegates er bevaret.
+- **ISSUE-EXTERNAL-WATCHDOG-45-MINUTE-TAKEOVER – PRODUKTIONS- OG DRIFTSVERIFICERET LØST:** 4.0.309-vagt `33246369618` bestilte korrekt redningsproduktion `33246376992`, men først cirka en time efter foregående produktionsstart. 4.0.310 bruger kun eksternt 15 minutter; PR #222/exact-head, merge, post-merge-produktion og automatisk run `33248692042` → `33248699516` beviser den levende gren. GitHubs interne vagt beholder 45 minutter; active/recent/manifest/concurrency og alle data-/releasegates er bevaret.
 - **ISSUE-NATIVE-SCHEDULE-DELIVERY-RECURRENCE – EKSTERNT AFBØDET / FORTSAT OVERVÅGET:** Intet native produktionsschedule fandtes omkring 09:29 UTC. Ét aktivt eksternt job er nu faktisk bevist, men samtidige udfald hos cron-job.org, GitHub API/Actions eller datakilder kan stadig give ærlig nøddrift og må ikke skjules med kunstige data.
 
 Se DEC-0108.

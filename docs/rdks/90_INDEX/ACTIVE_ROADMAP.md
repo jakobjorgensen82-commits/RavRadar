@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.310 – ekstern overtagelse efter ét manglende interval
+## Produktions- og driftsverificeret P0 4.0.310 – ekstern overtagelse efter ét manglende interval
 
 - [x] Bevis den aktive 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
 - [x] Sænk kun `external_watchdog=true` til 15 minutter og bevar intern 45-minuttersvagt.
@@ -8,7 +8,7 @@
 - [x] Tilføj boundary- og dubletregressioner.
 - [x] Luk før-redningsproduktion, source/RDKS/håndbog/releasegate og geodatabevis.
 - [x] Genmål warmup til 5–12/48 timer, forkast tidligere kl. 15-ETA og bind ny tidligste READY til en ubrudt serie frem mod 2026-08-31 cirka kl. 06 dansk tid.
-- [ ] Luk exact-head, merge, post-merge-produktion og automatisk 15-minuttersbevis.
+- [x] Luk PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og automatisk vagt `33248692042`, som bestilte `33248699516` efter verificeret stilhed.
 
 Se DEC-0108. Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring.
 

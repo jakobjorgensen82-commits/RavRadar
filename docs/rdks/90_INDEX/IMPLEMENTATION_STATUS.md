@@ -1,6 +1,6 @@
 # Implementeringsstatus – 4.0.310 hurtigere ekstern produktionsvagthund
 
-## 4.0.310-kandidat – overtag efter ét manglende native interval
+## Produktions- og driftsverificeret 4.0.310 – overtag efter ét manglende native interval
 
 - [x] Bevis den virkelige 45-minuttersgren: vagt `33246369618` bestiller redningsproduktion `33246376992`.
 - [x] Afgræns den lave frekvens til den eksterne grænse; bevar GitHubs interne 45-minuttersvagt.
@@ -9,7 +9,7 @@
 - [x] Følg før-redningsproduktion `33246376992` gennem 09:00 UTC, målrettet supplement, 210/673, fulde gates, deploy og komplet `rr-20260829095610-210`.
 - [x] Genmål offentlig primary: 0/673 READY, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer; forkast kl. 15-ETA og dokumentér tidligste realistiske READY omkring 2026-08-31 kl. 06.15–06.30 dansk tid uden nye huller.
 - [x] Bestå fuld lokal source-/RDKS-/håndbogs-/releasegate og særskilt geodatabevis med kun 4.0.309 → 4.0.310 i de to topfelter.
-- [ ] Bestå PR exact-head, merge, post-merge-produktion og automatisk offentlig 15-minuttersgrensbevis.
+- [x] Bestå PR #222 exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121`/offentlig `rr-20260829103233-210` og automatisk 15-minuttersdispatch `33248692042` → produktion `33248699516`.
 
 Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0108.
 

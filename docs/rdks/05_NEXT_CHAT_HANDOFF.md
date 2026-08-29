@@ -6,7 +6,8 @@
 - Ét aktivt cron-job, id `8348098`, gav manuel 204 samt automatiske no-op-runs `33245204517`/`33245798817`. Intet native produktionsschedule fandtes omkring 09:29 UTC.
 - 09:49-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992`; den bestod 09:00 UTC, målrettet Copernicus, 210/673, fulde gates og Pages og publicerede komplet `rr-20260829095610-210`. Cirka en time mellem produktionsstarterne var korrekt efter 45-minuttersreglen, men for langsomt som vedvarende erstatning for manglende native schedules.
 - 4.0.310 sænker kun `external_watchdog=true` til mere end 15 minutters dual staleness. Intern native vagt beholder 45 minutter; active/recent/manifest/concurrency og alle fulde data-/releasegates er uændrede.
-- Ingen kunstig/interpoleret historik, model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108 og fortsæt Sol/Ekstra høj gennem exact-head, produktion og automatisk grensbevis.
+- PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og offentlig `rr-20260829103233-210` er grønne. Automatisk run `33248692042` bestod den mergede 15-minuttersgren og bestilte normal produktion `33248699516`.
+- Ingen kunstig/interpoleret historik, model-, state-, recovery-, geometri- eller punktændring i 4.0.310. Se DEC-0108.
 
 ## Nyt øverste checkpoint – produktionslukket 4.0.306 og to isolerede Codex-worktrees
 

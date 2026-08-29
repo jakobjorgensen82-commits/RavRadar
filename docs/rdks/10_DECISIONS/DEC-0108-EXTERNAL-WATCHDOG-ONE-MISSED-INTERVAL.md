@@ -1,6 +1,6 @@
 # DEC-0108 – ekstern vagthund overtager efter ét manglende interval
 
-**Status:** Besluttet og implementeret lokalt i 4.0.310; exact-head og produktion afventer
+**Status:** Aktiv og produktions-/driftsverificeret i 4.0.310
 **Dato:** 2026-08-29
 **Modelpåvirkning:** Ingen
 
@@ -27,6 +27,12 @@ Den offentlige, aggregerede eftermåling viste samtidig, hvorfor grænsen skal n
 Når GitHub ikke opretter de native schedules, undersøger den eksterne tjeneste fortsat hvert kvarter. Efter mere end 15 minutters samtidig run- og manifeststilhed kan den næste eksterne kontrol bestille en redningsproduktion, normalt efter 15–30 minutters dokumenteret stilhed i stedet for 45–60 minutter. Faktisk færdiggørelse afhænger fortsat af køretid og kilder.
 
 Dette fjerner en unødigt lav redningsfrekvens som mulig egenårsag til datahuller. Det garanterer ikke mod samtidige udfald hos cron-job.org, GitHub API/Actions eller datakilder; RavRadar skal fortsat fejle lukket og vise ærlig nød-/missingstatus ved reelle huller.
+
+## Aktiveringsbevis
+
+PR #222 bestod exact-head `33247789054` på `63ab1209f9dbaadfb347fcb6e4577ccd776d4489`, blev merged som `792648c3b179afc0a222ad8f0be54e85ae2aa824`, og post-merge-produktion `33247839121` bestod frisk runtime, fuld validering, releasegate, artifact og Pages. Offentlig `rr-20260829103233-210` er 4.0.310 og komplet 210/673.
+
+Det ene eksisterende cron-job kaldte automatisk den mergede kode kl. 10:49:07 UTC som run `33248692042`. Ingen native produktionsschedule var kommet i mellemtiden. Produktionshistorik og manifest var begge over den eksterne 15-minuttersgrænse; freshnesskontrollen og `Dispatch one production after verified silence` bestod, og præcis én normal `force=false`-produktion `33248699516` blev oprettet kl. 10:49:20 UTC på samme mergecommit. Ejeren vurderede dette sammen med den allerede fuldt grønne post-merge-produktion som tilstrækkeligt levende funktionsbevis og bad om ikke at fortsætte trin-for-trin-overvågning af den nye kørsel.
 
 ## Grænser
 

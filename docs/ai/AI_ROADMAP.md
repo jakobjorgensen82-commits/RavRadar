@@ -1,12 +1,12 @@
 # AI Roadmap – RavRadar 4.0.309+
 
-## Aktiv P0-drift – 4.0.310 overtagelse efter ét manglende interval
+## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
 
 - [x] Bevis 4.0.309's virkelige 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
 - [x] Sænk kun det eksplicitte eksterne intent til 15 minutter; bevar intern 45-minuttersvagt, dual freshness og no-active-run.
 - [x] Lås grænse-, active-, recent-run- og fresh-manifest-adfærd med målrettede tests.
 - [x] Luk før-redningsproduktion, fuld lokal validering og geodatabevis.
-- [ ] Luk exact-head, merge, post-merge-produktion og faktisk automatisk 15-minuttersgrensbevis.
+- [x] Luk PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og faktisk automatisk 15-minuttersdispatch `33248692042` → `33248699516`.
 
 Ingen model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108.
 
@@ -16,7 +16,7 @@ Ingen model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108.
 - [x] Bevar GitHub-tiderne og tilføj kun ét eksplicit eksternt keepalive-/watchdogintent.
 - [x] Bevar 45-minutters dobbeltfriskhed, no-active-run og serialiseret tung produktion i 4.0.309.
 - [x] Luk source/exact-head/produktion, aktivér ét cron-job ved `04,19,34,49` UTC og verificér manuel samt to automatiske no-op-kald.
-- [ ] Genmål primary/recovery efter stabil cadence; ændr ikke Candidate G eller DEC-0102-modellen i dette spor.
+- [x] Genmål primary/recovery til 5–12/48 timer ved 09:00 UTC-reference; ændr ikke Candidate G eller DEC-0102-modellen i dette spor.
 
 Se DEC-0107.
 
