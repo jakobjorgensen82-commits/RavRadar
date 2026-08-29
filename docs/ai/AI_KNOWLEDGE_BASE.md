@@ -8,6 +8,7 @@
 - Backend-readiness og rekonstruktionsreadiness er forskellige. 4.0.313's grønne D1-run gjorde ikke det efterfølgende fejlede inspect til succes.
 - En normal schedule kan overhale inspect/apply, hvis D1 alene åbner Pages. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås.
 - Hele hvert GitHub run-/jobsvar skal parse- og shapevalideres samlet før id-iteration, og fælles concurrency må aldrig lade et indkommende push annullere en kørende apply.
+- En fuld-produktionsregression er også en PR-gatekontrakt. Hvis testen kun findes i `npm run validate`, kan exact-head source være grøn og frisk produktion stadig stoppe. Gør derfor testen direkte nåelig fra `validate:source` og lås semantikken — her præcis én `cancel-in-progress: false` — frem for en historisk tekstliteral.
 
 ## 4.0.313 – nullable JSON og bladprojektion er en versionsgrænse
 

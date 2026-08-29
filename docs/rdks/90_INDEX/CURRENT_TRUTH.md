@@ -1,6 +1,6 @@
 # Current truth – gældende projektviden
 
-## Lokal 4.0.314-afteranker-roll-forward – 4.0.313 backend grøn, datahullet åbent
+## 4.0.314 source merged; same-version sourcegate-hotfix – datahullet åbent
 
 - Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311–4.0.314-Pagesproduktion er udgivet.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
@@ -8,9 +8,11 @@
 - Den nye read-only inspect `33269849748`/job `99146287609` stoppede før descriptorupload med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`. Ingen apply, data-/cachemutation, vejrbyg, artifact eller Pages forekom.
 - Koden krævede globalt mindst to evidenspunkter, selv om protokollen allerede siger, at after-artifactet kun leverer højre bracket og ikke behøver to senere 3-timersintervaller. 4.0.314 accepterer ét målt after-punkt kun for en del, hvis før- og targetserien uafhængigt beviser samme enstemmige native 3-timerskadence. Før, target, rollback og cleanup kræver fortsat mindst to; nul after-punkter og singleton ved 1 time stopper.
 - Eksakt state-replay, model/profil/stateKey, højreanker med samme tid/styrke i target, højst seks timers helt cadencebracket, ingen udfyldt syntetisk tid, source/run/artifact/head-binding, descriptorhash og apply-CAS er uændrede.
-- 4.0.314 kræver et nyt exact-main D1-run. Inspect afhænger af det; normal `none`-produktion kræver både D1 og et tidligere succesfuldt exact-head apply+Pages-bevis. Manglende eller malformed API-evidens giver grøn no-op. 4.0.315 er ikke versionslåst.
-- Målrettet 210/673-rekonstruktion, workflowkontrakter, fuld lokal source-/RDKS-/release-/versions-/geodatagate og tre uafhængige slutreviews er grønne. Exact-head, merge, nyt D1-run, inspect/apply, frisk produktion og offentlig kontrol mangler fortsat.
-- Candidate G-formlen, model-id, schema 2.0/2.1, trust, DMI/Copernicus, geometri og punkter er uændrede. Kun den ejerautoriserede incident-inspektions accept af det målte højreanker ændres.
+- 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var en tilsigtet grøn no-op.
+- Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede ved fuld `npm run validate` før releasegate/Pages, fordi en stale marine-first-test stadig forventede den afløste dynamiske concurrencytekst. Den grønne PR #227-sourcegate havde ikke denne test i sin workflowkontraktsuite; det var en reel gatedækningsfejl.
+- Same-version-hotfixet kræver præcis én `cancel-in-progress: false`, forbyder `true` og gør `test:dmi-marine-first-recovery` obligatorisk i `test:workflow-action-contracts`, som `validate:source` allerede kører. De målrettede workflowtests er grønne.
+- Hotfixets fulde lokale `validate:source`, RDKS, release- og versionsgate samt to uafhængige revisioner er grønne, og geodatadiffen er tom. Exact-head PR, merge og no-op push afventer. Først derefter må et nyt exact-main D1-run køres på den endelige merge-SHA. Inspect afhænger af det; normal `none`-produktion kræver både D1 og et succesfuldt descriptorbundet apply+Pages-bevis. Manglende eller malformed API-evidens giver grøn no-op. 4.0.315 er ikke versionslåst.
+- Candidate G-formlen, model-id, schema 2.0/2.1, trust, DMI/Copernicus, geometri og punkter er uændrede. Runtime-/model-/dataændringen er kun incident-inspektørens accept af det målte højreanker; same-version-hotfixet ændrer derudover kun tests og sourcegatedækning.
 
 ## Historisk lokal 4.0.313-replay-roll-forward – 4.0.312 merged, backend ikke grøn
 

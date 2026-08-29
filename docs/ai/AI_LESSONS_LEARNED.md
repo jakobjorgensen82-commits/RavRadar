@@ -8,6 +8,8 @@ En count-validator må ikke gøre kildebracket og cadencebevis til samme ting. D
 
 En releaseinterlock skal beskytte hele rækkefølgen, ikke kun første eksterne gate. Efter et grønt D1-run kan et planlagt `none`-run ellers flytte public target før inspect/apply. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås. En incoming push må heller aldrig annullere en allerede kørende apply, og parseroutput må først bruges efter atomisk validering af hele metadataresponsen.
 
+En test, som kan stoppe fuld produktion, men ikke kan nås fra PR'ens `validate:source`, er et hul i releasegaten. Produktion `33271863449` afslørede netop dette: runtimekontrakten `cancel-in-progress: false` var korrekt, mens en gammel marine-first-test stadig krævede den afløste tekst. Varig løsning er både semantisk assertion og eksplicit sourcegate-inklusion.
+
 ## Historisk 4.0.313-læring
 
 Et grønt database-/Worker-forløb frem til migrationen er ikke backend-readiness, hvis slutreconciliation fejler. Run `33266229687` nåede langt, men den faste syncfejl gjorde hele runnet rødt; failure-roll-forward er kun sikkerhed, ikke succesbevis.

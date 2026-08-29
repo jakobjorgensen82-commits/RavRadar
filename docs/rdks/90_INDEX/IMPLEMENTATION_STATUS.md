@@ -1,6 +1,6 @@
-# Implementeringsstatus – lokal 4.0.314 afteranker-roll-forward til 4.0.311-protokollen
+# Implementeringsstatus – 4.0.314 source merged; same-version sourcegate-hotfix
 
-## P0 – 4.0.313 backend grøn; inspect-grænse rettet lokalt; datahullet stadig åbent
+## P0 – afteranker source merged; productionstestgate rettes; datahullet stadig åbent
 
 - [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11` og korrekt no-op push `33269584236`.
 - [x] Bestå hele exact-main D1-run `33269631305`/job `99145677813`, inklusive begge syncs, slutreconciliation og afsluttende Edge/Worker/registry/SQL.
@@ -8,10 +8,15 @@
 - [x] Tillad præcis ét målt `AFTER`-højreanker kun ved uafhængigt bevist 3-timerskadence; bevar minimum to for før, target, rollback og cleanup.
 - [x] Test 673 dele/665×1h/8×3h/1.338 syntetiske prøver samt nul-after, singleton før/target/1h, replaymismatch, manglende eksakt target-afteranker og utilstrækkeligt cadencebevis fail-closed.
 - [x] Udvid exact-D1-interlocken til 4.0.314, bind inspect til D1, og hold normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Bevis at 4.0.315 ikke er permanent låst.
-- [x] Bestå fuld lokal source/RDKS/release/version/geodatagate på den endelige 4.0.314-diff.
-- [x] Bestå tre uafhængige slutreviews uden kodeblocker og luk reviewets to testpræcisionsfund.
-- [ ] Bestå PR exact-head, merge og verificér automatisk no-op push uden artifact/Pages.
-- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run; 4.0.313-beviset kan ikke genbruges på ny SHA.
+- [x] Bestå fuld lokal source/RDKS/release/version/geodatagate på PR #227-diffen før same-version-hotfixet.
+- [x] Bestå tre uafhængige slutreviews af PR #227-diffen og luk reviewets to testpræcisionsfund.
+- [x] Bestå PR #227 exact-head `33272564543`/`99153577550`, merge som `d1369d88` og verificér automatisk no-op push `33272676071` uden build/artifact/Pages.
+- [x] Klassificér 4.0.313-produktion `33271863449`/`99151692515` som fail-closed stop før releasegate/Pages på en stale marine-first-test, ikke som fejl i `cancel-in-progress: false`.
+- [x] Ret assertionen semantisk og føj `test:dmi-marine-first-recovery` til `test:workflow-action-contracts` med en selvbevisende sourcegate-kontrakt; målrettede tests er grønne.
+- [x] Bestå ny fuld lokal source/RDKS/release/versiongate med nul geodatadiff.
+- [x] Bestå to uafhængige hotfixrevisioner uden blocker.
+- [ ] Bestå hotfix exact-head PR, merge og no-op push.
+- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run på den endelige hotfix-merge-SHA; tidligere beviser kan ikke genbruges.
 - [ ] Kør ny inspect, descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
 
 ## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt

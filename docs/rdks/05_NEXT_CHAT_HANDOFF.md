@@ -1,13 +1,13 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-29 lokal 4.0.314 singleton-afteranker-roll-forward
+## Aktuelt P0 – 2026-08-29 4.0.314 source merged; same-version sourcegate-hotfix
 
 - Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 er exact-head-valideret/merged som `ff62ba11`; push `33269584236` var no-op, og D1-backend `33269631305`/`99145677813` er helt grøn.
 - Read-only inspect `33269849748`/`99146287609` stoppede uden descriptor eller mutation på `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`.
-- Lokal 4.0.314 accepterer ét målt afteranker kun for uafhængigt bevist 3-timerskadence og bevarer alle øvrige fail-closed gates. Målrettet 210/673-fixture, workflowtest, fuld lokal source-/RDKS-/release-/versions-/geodatagate og tre uafhængige slutreviews er grønne.
-- Exact-D1 gælder også 4.0.314. Inspect kræver D1, og normal produktion kræver exact-head apply+Pages-bevis; manglende/malformed metadata giver no-op. 4.0.315 er ulåst.
-- Fortsæt Sol/Ultra: PR exact-head → merge/no-op → nyt D1-run → ny inspect → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Genbrug aldrig det fejlede inspects manglende descriptor.
+- 4.0.314 accepterer ét målt afteranker kun for uafhængigt bevist 3-timerskadence og bevarer alle øvrige fail-closed gates. PR #227/exact-head `33272564543`/`99153577550`, merge `d1369d88` og no-op push `33272676071` er grønne.
+- Ældre produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, som ikke var med i PR-sourcegaten. Same-version-branchen `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
+- Fuld lokal hotfixgate inklusive release/RDKS/version, nul geodatadiff og to uafhængige revisioner er grønne. Fortsæt Sol/Ultra: hotfix exact-head PR → merge/no-op → exact-main D1 på final merge-SHA → ny inspect → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Genbrug aldrig det fejlede inspects manglende descriptor.
 
 ## Historisk P0 – 2026-08-29 lokal 4.0.313 replay-roll-forward
 

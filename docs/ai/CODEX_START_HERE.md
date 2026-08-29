@@ -2,14 +2,16 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-29 – lokal 4.0.314 efteranker-roll-forward
+## Aktuelt P0-checkpoint 2026-08-29 – 4.0.314 source merged; same-version sourcegate-hotfix
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.
 - Exact-main D1-backend `33269631305`/job `99145677813` bestod hele kæden inklusive begge syncs, slutreconciliation, Edge, Worker, registry og SQL. Det er backendbevis for 4.0.313, ikke exact-head-bevis for en ny 4.0.314-head.
 - Read-only inspect `33269849748`/job `99146287609` stoppede før descriptor/apply med den faste kode `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`. Ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
 - Rodårsagen er snæver: de otte native 3-timersdele kan have præcis ét gyldigt målt højreanker i after-kilden. 4.0.314 tillader singleton kun i `AFTER`, kun når før+aktuelt mål uafhængigt beviser enstemmig 3-timerskadence, og fortsat kun efter fuldt state-replay, eksakt target-anker og alle source-/CAS-gates. Nul punkter samt singleton i før/mål/1-timesdele afvises.
-- 4.0.314 er exact-D1-låst. Inspect kræver samme exact-head D1-bevis; normal produktion er desuden grøn no-op, indtil en succesfuld exact-head apply og Pages-deploy er bevist. 4.0.315 er regressionens første ulåste version, så incidentlåsen er ikke permanent.
+- 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var tilsigtet grøn no-op uden build/artifact/Pages.
+- Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede før releasegate/Pages, fordi en stale marine-first-test stadig forventede den tidligere dynamiske concurrencytekst. Same-version-hotfixet kræver nu præcis én `cancel-in-progress: false` og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
+- 4.0.314 er exact-D1-låst. Hotfixets fulde lokale source-/RDKS-/release-/versionsgate og to uafhængige revisioner er grønne; exact-head PR, merge og no-op push afventer. Derefter kræver inspect et nyt exact-main D1-bevis på den endelige merge-SHA; normal produktion er grøn no-op, indtil samme SHA har succesfuldt descriptorbundet apply og Pages. 4.0.315 er fortsat ulåst.
 - Trip protocol/header og Candidate G model/formel/state-/trustsemantik forbliver 4.0.311/2.0–2.1. Ingen vejr, rå U/V, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
 
 ## Historisk P0-checkpoint 2026-08-29 – lokal 4.0.313 replay-roll-forward

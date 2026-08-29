@@ -1,14 +1,16 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – lokal 4.0.314 singleton-afteranker-roll-forward
+## AKTUELT P0-HANDOFF – 4.0.314 source merged; same-version sourcegate-hotfix
 
 - Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
 - 4.0.313 bestod PR #226 exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og hele exact-main D1-run `33269631305`/job `99145677813`.
 - Read-only inspect `33269849748`/job `99146287609` fejlede før descriptor ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen apply, data- eller cachemutation og intet nyt descriptor-/releaseartifact eller Pages-deploy.
-- Branch `codex/candidate-g-after-anchor-4.0.314` tillader ét målt afteranker kun på native 3-timersdele, når før+target uafhængigt beviser kadencen. Nul after, singleton før/target/1h, replaymismatch og utilstrækkeligt cadencebevis stopper.
+- PR #227 bestod exact-head `33272564543`/`99153577550`, blev merged som `d1369d88`, og push `33272676071` var en korrekt grøn no-op.
+- Den ældre 4.0.313-produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, ikke på den nye concurrencykontrakt. Branch `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i PR-sourcegaten.
+- Den mergede afteranker-kilde tillader ét målt afteranker kun på native 3-timersdele, når før+target uafhængigt beviser kadencen. Nul after, singleton før/target/1h, replaymismatch og utilstrækkeligt cadencebevis stopper.
 - Exact state-replay, target-anker, bracket, source/artifact/head, descriptorhash, apply-CAS, privacy, rollback og cleanup er uændrede.
-- 4.0.314 kræver nyt exact-head D1-bevis; inspect afhænger af det. Normal produktion er grøn no-op indtil exact-head apply og Pages er succesbevist. 4.0.315 er ulåst.
-- Fuld lokal gate og tre uafhængige slutreviews er grønne. Næste trin er PR exact-head, merge/no-op push, ny 4.0.314-D1, ny inspect, apply, frisk produktion og offentlig desktop/mobil/210/673.
+- Hotfixets fulde lokale source-/RDKS-/release-/versionsgate og to uafhængige revisioner er grønne; exact-head PR, merge og no-op push afventer. Derefter kræver 4.0.314 nyt exact-main D1-bevis på den endelige merge-SHA; inspect afhænger af det. Normal produktion er grøn no-op indtil descriptorbundet apply og Pages er succesbevist. 4.0.315 er ulåst.
+- Næste trin er PR exact-head, merge/no-op push, final-SHA D1, inspect, apply, frisk produktion og offentlig desktop/mobil/210/673.
 - DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
 
 ## HISTORISK P0-HANDOFF – lokal 4.0.312 verifier-roll-forward
