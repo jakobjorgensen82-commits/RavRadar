@@ -373,7 +373,7 @@ jobs:
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
           WEATHER_USER_AGENT: "RavRadar/4.0.314 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
 
-      - name: Download exact healthy pre-gap support artifact
+      - name: Download exact bound pre-gap support artifact
         uses: actions/download-artifact@v8
         with:
           artifact-ids: 9707010150
@@ -605,7 +605,7 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
-      - name: Download exact healthy pre-gap support artifact for apply
+      - name: Download exact bound pre-gap support artifact for apply
         if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
         uses: actions/download-artifact@v8
         with:

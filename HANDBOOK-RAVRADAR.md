@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-## Ét målt højreanker og sikker release-rækkefølge – 4.0.314 D1 grøn, inspect stoppet
+## Ærlig før-primary og samlet READY-bevis – 4.0.314 lokalt rettet
+
+Morgenhullet er stadig ikke lukket, og offentlig RavRadar viser fortsat den komplette målte 4.0.310-nødvisning. Diagnostikhotfixet er nu merged. Den nye D1-backend er grøn, og den efterfølgende read-only inspect stoppede sikkert før descriptor eller dataændring med den ene tilladte kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`.
+
+Det viste sig ikke at være et nyt datahul. Før-runnet publicerede sin komplette målte nødvisning separat, mens supportartifactet korrekt bevarede den ærlige primary i `data/live/conditions.json`. Den primary kan være `WINDOW_INCOMPLETE` på sin egen reference. At kræve, at alle 673 før-states allerede var `READY`, var derfor et forkert blanketkrav.
+
+Lempelsen er snæver. Før-kilden skal fortsat være målt schema 2.0, indeholde mindst to strengt ordnede prøver og kunne reproduceres eksakt for modelkontekst, transportpotentiale, udtransporttimer, readiness, vindue, coverage og evidens. Nødvisningen bruges aldrig som kilde. Kun det samlede replay ved det aktuelle target må blive `READY`, og kun efter den ene eksakt bracketbundne interpolation. Et ældre hul, en for kort suffix, schema 2.1, en ukendt status eller en replayafvigelse stopper stadig før descriptor og mutation.
+
+Den positive regression bruger nu 673 ærlige, målte 24-timers `WINDOW_INCOMPLETE`-før-suffixer i stedet for 673 kunstigt komplette før-states. Hele 210/673 inspect-, CAS-, rollback-, cleanup- og checkpointforløbet består både med og uden et nedarvet GitHub Actions-miljø. Negativer beviser, at ældre huller og manipulerede states ikke kan skjules.
+
+PR #230 bestod exact-head `33277107562`/`99165644953`, blev merged som `228725ea`, og push `33277217412` var no-op. Første D1 `33277253662` stoppede på en forbigående 503 efter Edge, men hele fail-closed roll-forward bestod; genkørsel `33277510537`/`99166722076` blev helt grøn. Inspect `33277738135`/`99167394284` ændrede intet. Den nye source-hotfix skal nu gennem exact-head, merge, sit eget D1 og en ny inspect. Først efter descriptorbundet CAS-apply, frisk produktion og offentlig 210/673-kontrol kan hullet kaldes lukket.
+
+Candidate G's score, 20/50/30, +10/-8, 13-timersregel, DMI/Copernicus, vejr, nøddrift, geometri, punkter og private data er uændrede.
+
+## Historisk: ét målt højreanker og sikker release-rækkefølge – 4.0.314 D1 grøn, inspect stoppet
 
 Morgenhullet er endnu ikke lukket, og offentlig RavRadar viser fortsat den komplette, målte 4.0.310-nødvisning. 4.0.313 er derimod sikkert merged og har bestået hele den levende D1-/Edge-/Worker-kæde. Den første efterfølgende inspektion var kun læsende og stoppede før descriptor eller dataændring.
 

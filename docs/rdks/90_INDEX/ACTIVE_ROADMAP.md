@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.314 – luk sanitiseret inspectdiagnostik før engangsrekonstruktionen
+## P0 4.0.314 – luk den eksakt afgrænsede før-primary-gate
 
 - [x] Luk 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`.
 - [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT` og uden mutation.
@@ -18,8 +18,14 @@
 - [x] Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen før descriptorupload, mutation, build og Pages.
 - [x] Allowlist `ONE_TIME_GAP_*` som fejlannotation, maskér al anden fejltekst og eksponér kun descriptor-SHA plus faste optællinger ved succes; målrettet 210/673-black-box-test er grøn.
 - [x] Reproducer PR #230's første CI-stop under nedarvet `GITHUB_ACTIONS=true`, isolér testmiljøerne og bestå 210/673-regressionen i begge tilstande uden runtimeændring.
-- [ ] Diagnostikhotfix exact-head/merge/no-op, derefter nyt exact-main D1 på den nye final-SHA.
-- [ ] Ny inspect med sanitiseret fejlkode, evidensbaseret årsagslukning, CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+- [x] Diagnostikhotfix PR #230 exact-head `33277107562`/`99165644953`, merge `228725ea` og no-op push `33277217412`.
+- [x] Første D1 `33277253662` stoppede fail-closed på en forbigående 503 efter Edge med grøn roll-forward; genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme SHA.
+- [x] Read-only inspect `33277738135`/`99167394284` stoppede før descriptor/apply/build/Pages og viste kun `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`.
+- [x] Bevis separat målt nødvisning versus ærlig før-primary, fjern kun blanket-READY-kravet, og bevar source/replay/bracket/CAS/slut-READY.
+- [x] Test 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer positivt og ældre hul/replaytampering/schema 2.1/ukendt status negativt i begge parentmiljøer.
+- [x] Luk alle lokale dokumentations-, workflow-, privacy-, release- og geodatagates, hele `validate:source` og tre uafhængige slutreviews uden resterende blocker.
+- [ ] Same-version-hotfix exact-head/merge/no-op, nyt exact-main D1 og ny read-only inspect.
+- [ ] Ved grøn descriptor: CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
 - [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
 
 ## Historisk P0 lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet sikkert

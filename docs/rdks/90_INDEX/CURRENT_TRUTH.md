@@ -1,6 +1,16 @@
 # Current truth – gældende projektviden
 
-## 4.0.314 D1 grøn; inspect stoppet før descriptor; diagnostikhotfix – datahullet åbent
+## 4.0.314 – før-primary-gaten afgrænset lokalt; datahullet fortsat åbent
+
+- Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op uden inspect/build/artifact/Pages.
+- Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 i den uautentificerede trip-log-probe efter Edge-deploy. Alle failure-roll-forward-trin var grønne, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme `228725ea`.
+- Read-only inspect `33277738135`/`99167394284` bestod D1-readiness og stoppede før descriptor, apply, build og Pages med den sanitiserede kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Ingen data, cache eller offentlig drift blev ændret.
+- Før-runnet publicerede en separat komplet målt nødvisning, mens supportartifactets `data/live/conditions.json` er den ærlige primary og derfor legitimt kan være `WINDOW_INCOMPLETE`. Blanketkravet om 673/673 `READY` på før-reference var redundant med og stærkere end protokollen.
+- Den lokale same-version-rettelse bevarer målt schema 2.0, eksakt state-replay, mindst to punkter, model-/profil-/stateKey-identitet, cadence, bracket, targetanker, tom syntetisk tid, sourcebinding, descriptorhash og apply-CAS. Kun det samlede target-reference-replay må åbne `READY`. Et ældre hul, en for kort suffix, schema 2.1, ukendt status eller replayafvigelse stopper før descriptor.
+- Den positive 210/673-fixture bruger alle 673 før-states som ærlige 24-timers `WINDOW_INCOMPLETE`-suffixer. Hele inspect/CAS/rollback/cleanup/checkpoint-regressionen består med og uden nedarvet Actions-miljø; negative ældre-hul-/replay-/schema-/statuscases er grønne. Exact-head, merge, ny D1, inspect/apply, frisk produktion og offentlig desktop/mobil/210/673 afventer.
+- Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift. Morgenhullet er ikke rekonstrueret.
+
+## Historisk 4.0.314-checkpoint – D1 grøn; inspect stoppet før descriptor; diagnostikhotfix
 
 - Offentlig sandhed er fortsat produktionsverificeret 4.0.310 i målt, komplet nøddrift. Morgenhullet er ikke rekonstrueret, og ingen 4.0.311–4.0.314-Pagesproduktion er udgivet.
 - 4.0.313 bestod PR #226 exact-head `33269501339`/job `99145314693`, blev merged som `ff62ba116d08a7894d206d350ea5bdde199fe433`, og push `33269584236` var korrekt no-op uden artifact/Pages.

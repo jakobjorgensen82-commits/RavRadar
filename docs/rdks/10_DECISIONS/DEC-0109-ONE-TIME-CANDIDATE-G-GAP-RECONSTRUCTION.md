@@ -1,8 +1,10 @@
 # DEC-0109 – én afgrænset rekonstruktion af Candidate G-transportbevis
 
-**Status:** Ejer-godkendt 4.0.311-protokol. PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250c`, og push `33275147023` var korrekt no-op. Exact-main D1 `33275218540`/`99160622956` er helt grøn. Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen før descriptorupload, mutation, build og Pages. En lokal diagnostikhotfix allowlister kun `ONE_TIME_GAP_*` som GitHub-annotation; exact-head/merge, nyt final-SHA D1, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
+**Status:** Ejer-godkendt 4.0.311-protokol. Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op. Exact-main D1-genkørsel `33277510537`/`99166722076` er helt grøn. Read-only inspect `33277738135`/`99167394284` stoppede før descriptorupload, mutation, build og Pages med den sanitiserede kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. En lokal same-version-korrektion fjerner kun dette fejlagtige blanketkrav; exact-head/merge, nyt final-SHA D1, inspect/apply og produktion afventer. Offentlig sandhed er fortsat 4.0.310, og morgenhullet er ikke rekonstrueret.
 
 **Diagnostikpræcisering 2026-08-29:** En sikker incidentkæde skal være observerbar uden fuld joblog eller artifact. Under GitHub Actions må en fejlannotation kun indeholde tekst, som matcher /^ONE_TIME_GAP_[A-Z0-9_]+$/. Enhver anden fejltekst erstattes af `ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE`. En succesannotation må kun indeholde den validerede descriptor-SHA, affected-part count, synthetic-sample count og 1-/3-timers cadence counts; ingen kildereferencer, tider, strengths, payloads eller øvrige felter. Dette ændrer ikke inspect-/applysemantik, kildeindhold, descriptor, state eller data; det lukker kun et privacykompatibelt observationshul og gør den eksakte apply-binding aflæselig.
+
+**Før-primary-præcisering 2026-08-30:** Før-runnet publicerede den komplette målte nødvisning separat. Det eksakt bundne supportartifact bevarer derimod den ærlige primary i `data/live/conditions.json`, og den primary kan legitimt være `WINDOW_INCOMPLETE` på sin egen reference. Før-kilden behøver derfor ikke selv være 673/673 `READY`. Den skal fortsat være målt schema `2.0.0`, have mindst to strengt ordnede prøver, identisk model-/profil-/variant-/stateKey-kontekst og være fuldt reproducerbar for potentiale, udtransporttimer, readiness, vindue, coverage og evidens. Det er kun det samlede target-reference-replay efter den ene eksakt bracketbundne interpolation, der må blive `READY`. En for kort suffix, et ekstra tidsgab, missing, rekonstrueret schema 2.1, ukendt status eller replayafvigelse stopper før descriptor og mutation. Den separate nødvisning bruges aldrig som rekonstruktionskilde.
 
 **Dato:** 2026-08-29
 
@@ -67,7 +69,19 @@ Legacy-D1 må kun klassificeres fra de eksakte ti EU-shards sammen med både run
 
 ## Beviser og statusgrænse
 
-### Nyeste checkpoint: 4.0.314 source merged; same-version sourcegate-hotfix
+### Nyeste checkpoint: PR #230 merged; før-primary-gate lokalt afgrænset
+
+Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/job `99165644953` på `7ad1a98bb7ec125b6bdfa29c0593557390a6fd3b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var en korrekt grøn no-op uden inspect, build, artifact eller Pages.
+
+Første exact-main D1 `33277253662`/job `99166039224` stoppede efter Edge på en forbigående 503 i den uautentificerede trip-log-probe. Alle kontraktbundne failure-roll-forward-trin bestod, og inspect blev ikke kørt. Den idempotente genkørsel `33277510537`/job `99166722076` bestod derefter hele source-, storage-, Edge-, Worker-, sync-, reconciliation- og slutattestationskæden på samme merge-SHA.
+
+Read-only inspect `33277738135`/job `99167394284` bestod D1-readiness og stoppede før descriptorupload, apply, build og Pages med den eneste sanitiserede kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Ingen data, cache eller offentlig drift blev ændret.
+
+Kildeauditten beviser, at before-runnet publicerede en separat komplet målt nødvisning, mens det bundne supportartifacts `data/live/conditions.json` bevarede den ærlige primary. Den lokale same-version-korrektion fjerner derfor kun blanketkravet om 673/673 `READY` på before-reference. Measured-only schema 2.0, eksakt state-replay, mindst to prøver, model-/profil-/stateKey-identitet, cadence, bracket, targetanker, sourcebinding, descriptorhash, apply-CAS, privacy og samlet target-reference-`READY` består. Hele syntetiske 210/673-kæde er grøn med 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer i begge parentmiljøer; ældre hul, replaytampering, schema 2.1 og ukendt status stopper før descriptor.
+
+Denne korrektion er endnu lokal. Status må først ændres efter exact-head, merge/no-op, nyt exact-main D1, ny read-only inspect og — kun hvis descriptoren forsegles — descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates, Pages og offentlig 210/673 desktop-/mobilkontrol.
+
+### Historisk checkpoint: 4.0.314 source merged; same-version sourcegate-hotfix
 
 4.0.314-kilden bestod PR #227 exact-head `33272564543`/job `99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var en korrekt grøn no-op uden build, artifact eller Pages.
 
