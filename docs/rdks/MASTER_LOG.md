@@ -3,7 +3,7 @@
 - 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var tilsigtet grøn no-op uden build/artifact/Pages.
 - En allerede kørende 4.0.313-produktion `33271863449`/`99151692515` stoppede ved fuld `npm run validate` før releasegate/Pages. Den stale marine-first-test forventede den afløste dynamiske concurrencytekst og var ikke med i PR-sourcegatens workflowkontraktsuite.
 - Same-version-hotfixet ændrer ingen runtime-, recovery-, Candidate G-, data-, geometri- eller privacysemantik. Det kræver præcis én `cancel-in-progress: false` og gør `test:dmi-marine-first-recovery` obligatorisk i `test:workflow-action-contracts`/`validate:source`.
-- Den fulde lokale `validate:source`, RDKS, release- og versionsgate samt to uafhængige revisioner er grønne, og geodatadiffen er tom. Exact-head PR, merge/no-op, exact-main D1 på final merge-SHA, inspect/apply, frisk produktion og offentlig 210/673 mangler. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+- Den fulde lokale `validate:source`, RDKS, release- og versionsgate samt to uafhængige revisioner er grønne, og geodatadiffen er tom. Hotfix PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op. Docs-checkpoint, exact-main D1 på final merge-SHA, inspect/apply, frisk produktion og offentlig 210/673 mangler. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
 
 ## 2026-08-29 – historisk lokal 4.0.314 efter read-only singleton-afterankerstop
 

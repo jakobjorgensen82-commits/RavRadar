@@ -1,7 +1,7 @@
 # RavRadar 4.0.314 – singleton-afteranker og sikker recoveryrelease
 
 Dato: 2026-08-29
-Status: Kilden bestod PR #227 exact-head `33272564543`/job `99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var en tilsigtet grøn no-op. Same-version-testhotfixets fulde lokale `validate:source`, RDKS, release- og versionsgate samt to uafhængige revisioner er grønne; exact-head CI og merge samt nyt exact-main D1-run på den endelige hotfix-mergehead, inspect/apply, frisk produktion og offentlig verifikation afventer.
+Status: Kilden bestod PR #227 exact-head `33272564543` og blev merged som `d1369d88`. Same-version-testhotfixet bestod PR #228 exact-head `33274411880`/job `99158510299`, blev merged som `503697425dd107883b34537a6e5eafc46ab5dcc6`, og push `33274505196` var en tilsigtet grøn no-op uden build, inspect eller Pages. Nyt exact-main D1-run på den endelige docs-synkroniserede mergehead, inspect/apply, frisk produktion og offentlig verifikation afventer.
 
 ## Hvorfor versionen findes
 
@@ -25,7 +25,7 @@ Den fælles produktions-concurrency annullerer aldrig en kørende apply. Hele hv
 
 PR #227 beviste kilden på eksakt head og blev merged. En allerede kørende 4.0.313-produktion `33271863449`/job `99151692515` fortsatte som tilsigtet under `cancel-in-progress: false`, men fuld `npm run validate` fandt derefter en forældet testassertion, som stadig forventede den tidligere eventafhængige cancel-expression. Kæden stoppede før releasegate og Pages; offentlig drift og data blev ikke publiceret fra kørslen.
 
-Same-version-hotfixet ændrer ingen runtime- eller recoverysemantik. Det opdaterer den gamle assertion til præcis én `cancel-in-progress` med værdien `false` og fører testen ind i `test:workflow-action-contracts`, så PR'ens `validate:source` fremover fanger kontrakten. Den fulde lokale gate og to uafhængige revisioner er grønne; D1, inspect og apply forbliver blokeret, indtil hotfixets exact-head og merge er grønne.
+Same-version-hotfixet ændrer ingen runtime- eller recoverysemantik. Det opdaterer den gamle assertion til præcis én `cancel-in-progress` med værdien `false` og fører testen ind i `test:workflow-action-contracts`, så PR'ens `validate:source` fremover fanger kontrakten. Den fulde lokale gate, to uafhængige revisioner og PR #228 exact-head/merge/no-op er grønne; D1, inspect og apply forbliver blokeret, indtil docs-checkpointet er merged og exact-main D1 er grønt på den endelige SHA.
 
 ## Uændrede forhold
 

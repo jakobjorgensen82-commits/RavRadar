@@ -1,7 +1,7 @@
 # Release-rapport 4.0.314
 
 - Status: **BESTÅET**
-- Kontrolleret: 2026-08-29T20:46:41.245Z
+- Kontrolleret: 2026-08-29T21:01:18.634Z
 - Versionskonsistens: OK
 - Håndbog og RDKS: OK
 - Supabase- og rettighedskæde: OK

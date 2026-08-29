@@ -15,8 +15,9 @@
 - [x] Ret assertionen semantisk og føj `test:dmi-marine-first-recovery` til `test:workflow-action-contracts` med en selvbevisende sourcegate-kontrakt; målrettede tests er grønne.
 - [x] Bestå ny fuld lokal source/RDKS/release/versiongate med nul geodatadiff.
 - [x] Bestå to uafhængige hotfixrevisioner uden blocker.
-- [ ] Bestå hotfix exact-head PR, merge og no-op push.
-- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run på den endelige hotfix-merge-SHA; tidligere beviser kan ikke genbruges.
+- [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
+- [ ] Bestå docs-checkpoint exact-head PR, merge og no-op push.
+- [ ] Kør nyt helt grønt exact-main 4.0.314-D1-run på den endelige docs-synkroniserede merge-SHA; tidligere beviser kan ikke genbruges.
 - [ ] Kør ny inspect, descriptor-/mål-CAS-bundet apply, frisk normal produktion, fulde gates og offentlig 210/673 desktop/mobil.
 
 ## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
