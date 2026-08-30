@@ -16,6 +16,49 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
+const sourceGateRequirementMarkers = [
+  '-r requirements-dmi.txt',
+  '-r requirements-geometry.txt',
+  '-r requirements-copernicus.txt',
+];
+const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
+  .readFileSync(`${workflowDirectory}/${name}`, 'utf8')
+  .includes('npm run validate:source'));
+assert.deepEqual(
+  sourceGateWorkflowNames,
+  ['deploy-trip-storage.yml', 'update-and-deploy.yml', 'validate-pull-request.yml'],
+  'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
+);
+for (const workflowName of sourceGateWorkflowNames) {
+  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
+  let searchFrom = 0;
+  while (true) {
+    const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
+    if (sourceGateRun < 0) break;
+    const sourceGateStep = workflow.lastIndexOf('\n      - name:', sourceGateRun);
+    const dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
+    if (sourceGateStep < 0 || dependencyStep < 0) {
+      throw new Error(`${workflowName}: validate:source mangler en umiddelbart forudgående dependency-step.`);
+    }
+    const dependencyBlock = workflow.slice(dependencyStep, sourceGateStep);
+    const sourceGateBlockEnd = workflow.indexOf('\n\n', sourceGateStep);
+    const sourceGateBlock = workflow.slice(sourceGateStep, sourceGateBlockEnd < 0 ? workflow.length : sourceGateBlockEnd);
+    if (!dependencyBlock.includes('name: Install source-gate dependencies')) {
+      throw new Error(`${workflowName}: validate:source skal umiddelbart følge Install source-gate dependencies.`);
+    }
+    for (const marker of sourceGateRequirementMarkers) {
+      if (!dependencyBlock.includes(marker)) {
+        throw new Error(`${workflowName}: sourcegaten mangler det ejede requirements-sæt ${marker}.`);
+      }
+    }
+    const dependencyCondition = dependencyBlock.match(/^\s+if:\s+(.+)$/m)?.[1] || '';
+    const sourceGateCondition = sourceGateBlock.match(/^\s+if:\s+(.+)$/m)?.[1] || '';
+    if (dependencyCondition !== sourceGateCondition) {
+      throw new Error(`${workflowName}: dependency-step og validate:source skal have samme if-betingelse.`);
+    }
+    searchFrom = sourceGateRun + 1;
+  }
+}
 const historicalWavePilot = fs.readFileSync(`${workflowDirectory}/build-ravscore-historical-wave-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'workflow_dispatch:',
@@ -39,6 +82,10 @@ for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
   'fetch-depth: 0',
+  'timeout-minutes: 45',
+  '-r requirements-dmi.txt',
+  '-r requirements-geometry.txt',
+  '-r requirements-copernicus.txt',
   'npm run validate:source',
 ]) {
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
