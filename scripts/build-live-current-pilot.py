@@ -16,16 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from lib.copernicus_current import (
-    COPERNICUS_SOURCE_CONTRACTS,
-    DMI_VERIFIER_CONTRACT_ID,
-    RECORD_PROJECTION_CONTRACT_ID,
-    file_sha256,
-    live_record_projection_sha256,
-    validate_shadow,
-)
 from lib.copernicus_target_identity import target_fingerprint, targets_from_registry
-from lib.dmi_native_provenance import complete_native_source_for_hour
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,7 +33,6 @@ COPERNICUS_MAX_KM = 5.0
 REGIONAL_MAX_KM = 15.0
 COPERNICUS_SOURCES = ("copernicus-baltic-nemo", "copernicus-nws-amm15")
 REGIONAL_PREFIX = "REGIONAL_PROXY::"
-REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS = 12
 
 
 def arguments() -> argparse.Namespace:
@@ -96,7 +86,7 @@ def finite(value: Any) -> float | None:
 
 
 def valid_point(value: Any) -> list[float] | None:
-    if not isinstance(value, (list, tuple)) or len(value) != 2:
+    if not isinstance(value, (list, tuple)) or len(value) < 2:
         return None
     first, second = finite(value[0]), finite(value[1])
     return [first, second] if first is not None and second is not None else None
@@ -128,41 +118,39 @@ def in_capture_window(value: Any, now: datetime) -> bool:
     return -1 <= age_hours <= RETENTION_HOURS
 
 
-def capture_matches_valid_time(captured_value: Any, valid_value: Any, maximum_hours: float) -> bool:
-    try:
-        captured = parse_time(captured_value)
-        valid = parse_time(valid_value)
-    except Exception:
-        return False
-    return abs((valid - captured).total_seconds()) <= maximum_hours * 3600
-
-
 def valid_dmi_parts(document: dict[str, Any], targets: dict[str, dict[str, Any]]) -> tuple[set[str], dict[str, set[str]]]:
+    if int(document.get("currentVectorSemanticsVersion") or 0) != 3:
+        return set(), {}
+    selection = document.get("currentVectorSelection")
+    maximum = finite(document.get("currentMaxDistanceKm")) or COPERNICUS_MAX_KM
     covered: set[str] = set()
     times: dict[str, set[str]] = {}
     for part_id, target in targets.items():
-        entity_id = f"PART::{part_id}"
-        zone = (document.get("zones") or {}).get(entity_id) or {}
+        zone = (document.get("zones") or {}).get(f"PART::{part_id}") or {}
         sampling = target["waterPoint"]
         if not same_point(zone.get("samplingPoint"), sampling):
             continue
-        entity = {
-            "parentZoneId": target["parentZoneId"],
-            "entityType": "coastal-part",
-            "samplingContext": "coastal-part-water-point",
-            "samplingPoint": sampling,
-        }
-        for key, row in (zone.get("hourly") or {}).items():
+        for row in (zone.get("hourly") or {}).values():
             source = ((row or {}).get("sources") or {}).get("current") or {}
-            try:
-                valid_time = utc_iso(parse_time((row or {}).get("time") or key))
-            except Exception:
-                continue
+            point = valid_point(source.get("gridPoint"))
+            distance = finite(source.get("distanceKm"))
             if (
                 finite((row or {}).get("current-u")) is None
                 or finite((row or {}).get("current-v")) is None
-                or not complete_native_source_for_hour(source, "current", entity_id, entity, valid_time)
+                or str(source.get("provider") or "").lower() != "dmi"
+                or int(source.get("vectorSemanticsVersion") or 0) != 3
+                or not source.get("verticalLayer")
+                or source.get("vectorSelection") != selection
+                or not same_point(source.get("samplingPoint"), sampling)
+                or point is None
+                or distance is None
+                or distance > maximum
+                or haversine_km(sampling, point) > maximum + 0.01
             ):
+                continue
+            try:
+                valid_time = utc_iso(parse_time((row or {}).get("time")))
+            except Exception:
                 continue
             covered.add(part_id)
             times.setdefault(part_id, set()).add(valid_time)
@@ -193,87 +181,94 @@ def copernicus_entries(
     document: dict[str, Any],
     targets: dict[str, dict[str, Any]],
     fingerprint: str,
-    production_reference: datetime,
-    dmi_current_input_sha256: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    now: datetime,
+) -> list[dict[str, Any]]:
     if not document:
-        return [], None
-    try:
-        cache = validate_shadow(document, targets, require_collection=True)
-    except (TypeError, ValueError) as error:
-        raise RuntimeError(f"Copernicus range cache is invalid: {error}") from None
-    reference_text = utc_iso(production_reference)
-    collections = [
-        row for row in cache["collections"]
-        if row.get("status") == "COMPLETE" and row.get("productionReferenceAt") == reference_text
-    ]
-    if len(collections) != 1:
-        raise RuntimeError("Copernicus projection requires exactly one COMPLETE seal for productionReferenceAt")
-    collection = collections[0]
-    if (
-        collection.get("targetRegistrySha256") != fingerprint
-        or collection.get("dmiCurrentInputSha256") != dmi_current_input_sha256
-        or collection.get("dmiVerifierContractId") != DMI_VERIFIER_CONTRACT_ID
-    ):
-        raise RuntimeError("Copernicus COMPLETE seal does not match current target/DMI input identity")
-    seal_fields = (
-        "collectionId", "status", "productionReferenceAt", "rangeStartAt", "rangeEndAt",
-        "coldBridgeHours", "publicHourCount", "targetRegistrySha256", "dmiCurrentInputSha256",
-        "dmiVerifierContractId", "requiredPairsSha256", "requiredPairCount", "selectionPolicyId",
-        "recordRefsSha256", "sealedAt",
-    )
-    range_seal = {field: collection[field] for field in seal_fields}
-    acquisition_by_id = {row["acquisitionId"]: row for row in cache["acquisitions"]}
-    record_by_id = {row["recordId"]: row for row in cache["records"]}
-    selected: list[dict[str, Any]] = []
-    for ref in collection["recordRefs"]:
-        row = record_by_id[ref["recordId"]]
-        acquisition = acquisition_by_id[ref["acquisitionId"]]
-        part_id = row["partId"]
-        target = targets[part_id]
-        source = acquisition["source"]
-        product_id, dataset_id, dataset_version = COPERNICUS_SOURCE_CONTRACTS[source]
-        grid = canonical_point(row["gridPoint"])
-        distance = float(row["distanceKm"])
-        depth = float(row["verticalLayerM"])
+        return []
+    if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
+        raise RuntimeError("Copernicus raw cache lost its private/score-neutral contract")
+    records = list(document.get("records") or [])
+    authorized_times: set[str] = set()
+    for collection in document.get("collections") or []:
+        try:
+            valid_time = utc_iso(parse_time(collection.get("validTime")))
+            expected_count = int(collection.get("recordCount"))
+        except Exception:
+            continue
+        actual_count = sum(1 for row in records if row.get("validTime") == valid_time)
+        raw_target_ids = collection.get("targetPartIds")
+        if raw_target_ids is None:
+            target_identity_valid = collection.get("targetFingerprint") == fingerprint
+        else:
+            target_ids = [str(value or "") for value in raw_target_ids] if isinstance(raw_target_ids, list) else []
+            target_identity_valid = bool(
+                len(target_ids) == len(set(target_ids))
+                and all(part_id in targets for part_id in target_ids)
+                and collection.get("targetFingerprint")
+                == target_fingerprint([targets[part_id] for part_id in target_ids])
+            )
+        if target_identity_valid and expected_count >= 0 and actual_count == expected_count:
+            authorized_times.add(valid_time)
+
+    selected: dict[tuple[str, str], dict[str, Any]] = {}
+    source_rank = {source: index for index, source in enumerate(COPERNICUS_SOURCES)}
+    for row in records:
+        part_id = str(row.get("partId") or "")
+        target = targets.get(part_id)
+        source = str(row.get("source") or "")
+        sampling = canonical_point(row.get("samplingPoint"))
+        grid = canonical_point(row.get("gridPoint"))
+        distance = finite(row.get("distanceKm"))
+        depth = finite(row.get("verticalLayerM"))
+        u_value, v_value = finite(row.get("uMps")), finite(row.get("vMps"))
+        try:
+            valid_time = utc_iso(parse_time(row.get("validTime")))
+        except Exception:
+            continue
+        if (
+            target is None
+            or source not in source_rank
+            or valid_time not in authorized_times
+            or not in_capture_window(valid_time, now)
+            or not same_point(sampling, target["waterPoint"])
+            or grid is None
+            or distance is None
+            or distance > COPERNICUS_MAX_KM
+            or haversine_km(target["waterPoint"], grid) > COPERNICUS_MAX_KM + 0.01
+            or depth is None
+            or u_value is None
+            or v_value is None
+            or row.get("componentPair") != "same-time-cell-layer"
+            or row.get("interpolation") is not False
+        ):
+            continue
         entry = {
-            "recordProjectionContractId": RECORD_PROJECTION_CONTRACT_ID,
-            "recordId": row["recordId"],
-            "acquisitionId": acquisition["acquisitionId"],
-            "collectionId": collection["collectionId"],
-            "productionReferenceAt": collection["productionReferenceAt"],
             "partId": part_id,
             "parentZoneId": target["parentZoneId"],
-            "targetIdentityFingerprint": target_fingerprint([target]),
-            "validTime": row["validTime"],
-            "capturedAt": acquisition["acquisitionAt"],
-            "acquisitionAt": acquisition["acquisitionAt"],
-            "acquisitionStatus": acquisition["status"],
-            "requestContractId": acquisition["requestContractId"],
-            "selectionPolicyId": collection["selectionPolicyId"],
+            "validTime": valid_time,
             "samplingPoint": canonical_point(target["waterPoint"]),
             "provider": "copernicus",
             "sourceClass": "supplemental-local-current",
             "source": source,
-            "productId": product_id,
-            "datasetId": dataset_id,
-            "datasetVersion": dataset_version,
+            "productId": row.get("productId"),
+            "datasetId": row.get("datasetId"),
+            "datasetVersion": row.get("datasetVersion"),
             "gridPoint": grid,
             "distanceKm": round(distance, 5),
             "verticalLayer": f"depth:{depth:g}",
-            "verticalLayerM": depth,
             "verticalLayerRankM": depth,
-            "layerQuality": row["layerQuality"],
-            "sharedLayerCount": row["sharedLayerCount"],
+            "layerQuality": row.get("layerQuality"),
             "componentPair": "same-time-cell-layer",
             "interpolation": False,
             "vectorSemanticsVersion": 4,
-            "uMps": round(float(row["uMps"]), 5),
-            "vMps": round(float(row["vMps"]), 5),
+            "uMps": round(u_value, 5),
+            "vMps": round(v_value, 5),
         }
-        entry["recordProjectionSha256"] = live_record_projection_sha256(entry)
-        selected.append(entry)
-    return selected, range_seal
+        key = (part_id, valid_time)
+        previous = selected.get(key)
+        if previous is None or source_rank[source] < source_rank[str(previous["source"])]:
+            selected[key] = entry
+    return list(selected.values())
 
 
 def regional_entries(
@@ -312,15 +307,7 @@ def regional_entries(
         ):
             continue
         for sample in anchor.get("samples") or []:
-            if (
-                sample.get("collection") != "dkss_lf"
-                or not in_capture_window(sample.get("capturedAt"), now)
-                or not capture_matches_valid_time(
-                    sample.get("capturedAt"),
-                    sample.get("validTime"),
-                    REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS,
-                )
-            ):
+            if sample.get("collection") != "dkss_lf" or not in_capture_window(sample.get("capturedAt"), now):
                 continue
             grid = canonical_point(sample.get("gridPoint"))
             distance = finite(sample.get("distanceKm"))
@@ -330,36 +317,30 @@ def regional_entries(
             try:
                 valid_time = utc_iso(parse_time(sample.get("validTime")))
                 captured_at = parse_time(sample.get("capturedAt"))
-                model_run = parse_time(sample.get("modelRun"))
             except Exception:
                 continue
-            physical_distance = haversine_km(approved, grid) if grid is not None else math.inf
             if (
                 grid is None
                 or distance is None
                 or distance <= COPERNICUS_MAX_KM
                 or distance > REGIONAL_MAX_KM
-                or physical_distance > REGIONAL_MAX_KM + 0.01
-                or abs(physical_distance - distance) > 0.02
+                or haversine_km(approved, grid) > REGIONAL_MAX_KM + 0.01
                 or u_value is None
                 or v_value is None
                 or not bottom.get("verticalLayer")
                 or layer_rank is None
-                or model_run > parse_time(valid_time)
             ):
                 continue
             entry = {
                 "partId": part_id,
                 "parentZoneId": target["parentZoneId"],
-                "targetIdentityFingerprint": target_fingerprint([target]),
                 "validTime": valid_time,
-                "capturedAt": utc_iso(captured_at),
                 "samplingPoint": approved,
                 "provider": "dmi",
                 "sourceClass": "owner-approved-regional-proxy",
                 "source": "dmi-dkss-lf-regional-proxy",
                 "collection": "dkss_lf",
-                "modelRun": utc_iso(model_run),
+                "modelRun": sample.get("modelRun"),
                 "gridPoint": grid,
                 "distanceKm": round(distance, 5),
                 "verticalLayer": bottom.get("verticalLayer"),
@@ -388,12 +369,9 @@ def write_json(path: Path, value: dict[str, Any]) -> None:
 def main() -> int:
     args = arguments()
     now = parse_time(args.at) if args.at else datetime.now(timezone.utc)
-    if args.at and now != now.replace(minute=0, second=0, microsecond=0):
-        raise RuntimeError("Live-pilot production reference must be an exact UTC hour")
     control = read_json(args.control)
     mode = str(control.get("mode") or "")
-    control_schema = control.get("schemaVersion")
-    if isinstance(control_schema, bool) or control_schema != 1 or mode not in ("controlled-live", "dmi-only-rollback"):
+    if int(control.get("schemaVersion") or 0) != 1 or mode not in ("controlled-live", "dmi-only-rollback"):
         raise RuntimeError("Live-pilot control must select controlled-live or dmi-only-rollback")
     if control.get("credentialsPublic") is not False or control.get("currentDataPublic") is not True:
         raise RuntimeError("Live-pilot publication contract is invalid")
@@ -402,25 +380,13 @@ def main() -> int:
     targets = {row["partId"]: row for row in targets_list}
     fingerprint = target_fingerprint(targets_list)
     dmi = read_json(args.dmi)
-    dmi_current_input_sha256 = file_sha256(args.dmi)
     dmi_parts, dmi_times = valid_dmi_parts(dmi, targets)
     coverage_reference = now.replace(minute=0, second=0, microsecond=0)
     runtime_times = runtime_times_by_part(dmi, targets, coverage_reference)
 
     # The history remains available for live diagnosis in rollback mode.  Only
     # its use in score and arrows is disabled by ``enabled`` below.
-    copernicus, copernicus_range_seal = copernicus_entries(
-        read_json(args.copernicus, optional=True),
-        targets,
-        fingerprint,
-        coverage_reference,
-        dmi_current_input_sha256,
-    )
-    if enabled and copernicus_range_seal is None:
-        raise RuntimeError(
-            "Controlled-live current requires an exact COMPLETE Copernicus range seal, "
-            "including when the sealed DMI-gap matrix is empty"
-        )
+    copernicus = copernicus_entries(read_json(args.copernicus, optional=True), targets, fingerprint, now)
     policy = read_json(args.policy)
     regional = regional_entries(read_json(args.regional, optional=True), policy, targets, now)
     entries = sorted(copernicus + regional, key=lambda row: (row["validTime"], row["partId"], row["sourceClass"]))
@@ -499,7 +465,6 @@ def main() -> int:
         "targetFingerprint": fingerprint,
         "expectedPartCount": len(targets),
         "sourceOrder": ["dmi-local", "copernicus-baltic-nemo", "copernicus-nws-amm15", "dmi-dkss-lf-regional-proxy"],
-        "copernicusRangeSeal": copernicus_range_seal,
         "entries": entries,
     }
     safe_report = {
@@ -528,7 +493,6 @@ def main() -> int:
         "historyPartsBySelectedSource": history_counts,
         "supplementalRecordCount": len(entries),
         "copernicusRecordCount": len(copernicus),
-        "copernicusCompleteRangeSealPresent": copernicus_range_seal is not None,
         "regionalProxyRecordCount": len(regional),
         "sourceOrder": raw_projection["sourceOrder"],
         "coverageRequirement": len(targets),

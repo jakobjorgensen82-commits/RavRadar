@@ -10,8 +10,6 @@ import {
   rankingSupportRatio,
 } from '../js/core/zone-ranking.js';
 import { buildLocalZoneScore, selectLocalBestForDay } from '../js/core/local-zone-score.js';
-import { scoreRating } from '../js/core/score-presentation.js';
-import { isCompleteLocalScoreRow } from './lib/local-current-reference.mjs';
 
 const partsDocument = JSON.parse(fs.readFileSync('data/live/coastal-parts-v2.json', 'utf8'));
 const zones = Object.values(partsDocument.zones || {});
@@ -52,82 +50,12 @@ assert.ok(rows[0].rankingDisplayScore>=rows[1].rankingDisplayScore, 'Den viste o
 assert.equal(displayNationalRankingScore(-4),0);
 assert.equal(displayNationalRankingScore(100.8),100);
 
-assert.equal(displayNationalRankingScore('80'), null, 'Numeriske strenge maa ikke krydse den offentlige scoregraense.');
-assert.equal(scoreRating('80').level, 'unavailable', 'Praesentationslaget maa ikke genfortolke tekst som en gyldig score.');
-assert.equal(scoreRating(101).level, 'unavailable', 'Score uden for 0..100 skal vaere utilgaengelig.');
-assert.equal(analyzeRankingDirections(['0', '90']), null, 'Retningsstrenge maa ikke blive til modeldata.');
-assert.equal(
-  calculateNationalRanking({ score: '80', localCoverage: onlyPartResult.localCoverage }, spreadParts).rankingScore,
-  null,
-  'En tekstscore maa ikke faa en national rangering.',
-);
-assert.equal(
-  calculateNationalRanking({ score: 80, localCoverage: { ...onlyPartResult.localCoverage, comparisonPartCount: '4' } }, spreadParts).applied,
-  false,
-  'Et tekstligt delantal maa ikke udloese en korrektion.',
-);
-const poisonedRows = [
-  { zone: { id: 'poison' }, rankingScore: '99', result: { score: '99' } },
-  { zone: { id: 'valid' }, rankingScore: 1, result: { score: 1 } },
-].sort(compareNationalRankingRows);
-assert.equal(poisonedRows[0].zone.id, 'valid', 'Ugyldige tekstscorer skal sorteres efter enhver gyldig score.');
-assert.equal(isCompleteLocalScoreRow({
-  time: '2026-08-25T09:00:00.000Z',
-  waders: { status: 'whole-zone', score: '80', comparisonPartCount: 1 },
-  beach: { status: 'whole-zone', score: 80, comparisonPartCount: 1 },
-}, 1), false, 'En tekstscore maa aldrig kunne fuldende en lokal scoretime.');
-assert.equal(isCompleteLocalScoreRow({
-  time: '2026-08-25T09:00:00.000Z',
-  waders: { status: 'whole-zone', score: 80, comparisonPartCount: '1' },
-  beach: { status: 'whole-zone', score: 80, comparisonPartCount: 1 },
-}, 1), false, 'Et tekstligt delantal maa aldrig kunne fuldende en lokal scoretime.');
-assert.equal(isCompleteLocalScoreRow({
-  time: '2026-08-25T09:00:00.000Z',
-  waders: { status: 'whole-zone', score: 80, comparisonPartCount: 1 },
-  beach: { status: 'whole-zone', score: 80, comparisonPartCount: 1 },
-}, '1'), false, 'Det forventede delantal skal vaere et sikkert heltal.');
-
 const tiedRows = [
   addNationalRanking({ zone: { id: 'bred-lav-stoette' }, result: onlyPartResult }, spreadParts),
   addNationalRanking({ zone: { id: 'smal-fuld-stoette' }, result: { score: 80, localCoverage: { status: 'only-part', comparisonPartCount: 1 } } }, [{ onshoreDirectionDeg: 0 }]),
 ].sort(compareNationalRankingRows);
 assert.equal(tiedRows[0].zone.id, 'smal-fuld-stoette', 'Støttevurderingen skal fortsat afgøre den reelle områdescore.');
 
-const completeComponents = score => ({
-  huntability: score,
-  transport: score,
-  release: score,
-});
-const fullHistory = score => ({
-  scoreQuality: 'FULL_HISTORY', calibrationEligible: true,
-  scoreSemantics: 'EXACT_POINT_SCORE', conservativeTailResetApplied: false,
-  scoreBounds: {
-    lower: score, upper: score, modelUncertaintyPoints: 0,
-    rawLower: score, rawUpper: score,
-  },
-  historyCoverageHours: 48, historyReasonCodes: [],
-});
-const completeModeScore = (score, partId, name) => {
-  const history = fullHistory(score);
-  return {
-    ...history,
-    available: true,
-    status: 'whole-zone',
-    score,
-    components: completeComponents(score),
-    comparisonPartCount: 1,
-    winningPartId: partId,
-    winningPartName: name,
-    winningPartUncertain: false,
-    possibleWinningPartCount: 1,
-    possibleWinningParts: [{
-      partId,
-      name,
-      score,
-      scoreBounds: { ...history.scoreBounds },
-    }],
-  };
-};
 const modeSpecificCoastalParts = {
   enabled: true,
   generatedAt: '2026-08-25T09:00:00.000Z',
@@ -142,13 +70,13 @@ const modeSpecificCoastalParts = {
       hourly: [
         {
           time: '2026-08-25T09:00:00.000Z',
-          waders: completeModeScore(90, 'zone-a-part', 'A'),
-          beach: completeModeScore(30, 'zone-a-part', 'A'),
+          waders: { status: 'whole-zone', score: 90, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          beach: { status: 'whole-zone', score: 30, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
         },
         {
           time: '2026-08-25T10:00:00.000Z',
-          waders: completeModeScore(85, 'zone-a-part', 'A'),
-          beach: completeModeScore(35, 'zone-a-part', 'A'),
+          waders: { status: 'whole-zone', score: 85, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          beach: { status: 'whole-zone', score: 35, comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
         },
       ],
     },
@@ -158,13 +86,13 @@ const modeSpecificCoastalParts = {
       hourly: [
         {
           time: '2026-08-25T09:00:00.000Z',
-          waders: completeModeScore(40, 'zone-b-part', 'B'),
-          beach: completeModeScore(80, 'zone-b-part', 'B'),
+          waders: { status: 'whole-zone', score: 40, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          beach: { status: 'whole-zone', score: 80, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
         },
         {
           time: '2026-08-25T10:00:00.000Z',
-          waders: completeModeScore(45, 'zone-b-part', 'B'),
-          beach: completeModeScore(75, 'zone-b-part', 'B'),
+          waders: { status: 'whole-zone', score: 45, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          beach: { status: 'whole-zone', score: 75, comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
         },
       ],
     },

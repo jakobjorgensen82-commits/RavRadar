@@ -21,9 +21,7 @@ const equipment = await askRavRadar(
 assert.match(equipment, /polariserede|ravlygte|waders/i);
 assert.doesNotMatch(equipment, /Aktuelle RavRadar-data/);
 
-const tomorrow = new Date();
-tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-const date = tomorrow.toISOString().slice(0, 10);
+const date = new Date().toISOString().slice(0, 10);
 const at = hour => `${date}T${String(hour).padStart(2, '0')}:00:00.000Z`;
 const candidateValue = (score, partId) => ({
   score,
@@ -61,7 +59,7 @@ const coastalParts = {
         waders: {
           score: null,
           status: 'unavailable',
-          reasons: ['Den integrerede RavScore mangler sammenhængende data'],
+          reasons: ['Candidate G mangler sammenhængende data'],
         },
       }],
     },
@@ -81,18 +79,18 @@ const context = {
   conditions: { coastalParts },
 };
 
-const bestPlace = await askRavRadar('bedste sted i morgen?', context, { localOnly: true });
+const bestPlace = await askRavRadar('bedste sted i dag?', context, { localOnly: true });
 assert.match(bestPlace, /1\. Zone høj – score 81/);
 assert.match(bestPlace, /2\. Zone lav – score 55/);
 assert.doesNotMatch(bestPlace, /Zone uden data/);
 
-const bestTime = await askRavRadar('bedste tidspunkt i morgen?', context, { localOnly: true });
+const bestTime = await askRavRadar('bedste tidspunkt i dag?', context, { localOnly: true });
 assert.match(bestTime, /Zone høj/);
 assert.match(bestTime, /RavScore 81/);
 assert.match(bestTime, /72/);
 
 const noCandidateData = await askRavRadar(
-  'bedste sted i morgen?',
+  'bedste sted i dag?',
   { ...context, conditions: {} },
   { localOnly: true },
 );
@@ -113,4 +111,4 @@ try {
   globalThis.fetch = originalFetch;
 }
 
-console.log('OK: Spørg RavRadar bruger lokale integrerede scorer, udelader utilgængelige zoner og kalder ikke den deaktiverede fjernassistent.');
+console.log('OK: Spørg RavRadar bruger lokale Candidate G-scorer, udelader utilgængelige zoner og kalder ikke den deaktiverede fjernassistent.');

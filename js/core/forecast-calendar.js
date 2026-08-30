@@ -13,15 +13,6 @@ export function forecastDateKeyInTimeZone(now = Date.now(), timeZone = 'Europe/C
   return `${values.year}-${values.month}-${values.day}`;
 }
 
-export function forecastDateKeyForDayOffset(now = Date.now(), dayOffset = 0, timeZone = 'Europe/Copenhagen') {
-  const offset = Number(dayOffset);
-  if (!Number.isSafeInteger(offset)) throw new TypeError('Ugyldigt dagsskift til prognosekalenderen.');
-  const localDate = forecastDateKeyInTimeZone(now, timeZone);
-  const [year, month, day] = localDate.split('-').map(Number);
-  const civilDate = new Date(Date.UTC(year, month - 1, day + offset, 12));
-  return `${civilDate.getUTCFullYear()}-${String(civilDate.getUTCMonth() + 1).padStart(2, '0')}-${String(civilDate.getUTCDate()).padStart(2, '0')}`;
-}
-
 export function visibleForecastDays(days, {
   now = Date.now(),
   timeZone = 'Europe/Copenhagen',

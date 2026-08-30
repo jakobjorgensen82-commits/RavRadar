@@ -1,100 +1,33 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
-import {
-  RAVSCORE_BEST_TIME_POLICY_ID,
-  RAVSCORE_COMPONENT_SCHEMA_ID,
-  RAVSCORE_CURRENT_SUPPLY_POLICY,
-  RAVSCORE_EXPLANATION_SCHEMA_ID,
-  RAVSCORE_HUNTABILITY_POLICY,
-  RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
-  RAVSCORE_LAST_MILE_POLICY,
-  RAVSCORE_MODEL_BUNDLE_SHA256,
-  RAVSCORE_MODEL_CONTRACT_SHA256,
-  RAVSCORE_MODEL_CONTRACT,
-  RAVSCORE_MODEL_ID,
-  RAVSCORE_PRESENTATION_POLICY,
-  RAVSCORE_PRESENTATION_POLICY_ID,
-  RAVSCORE_PROFILE_ID,
-  RAVSCORE_RANKING_POLICY_ID,
-  RAVSCORE_STATE_SCHEMA_VERSION,
-  RAVSCORE_SCORE_QUALITY,
-  RAVSCORE_VARIANT_ID,
-  RAVSCORE_WAVE_MOBILISATION_POLICY,
-  RAVSCORE_WEIGHTS,
-} from '../js/core/ravscore-model-contract.js';
-import {
-  CANDIDATE_G_ROLLBACK_MODEL_ID,
-  PUBLIC_RAVSCORE_PROFILE_SELECTION,
-} from '../js/core/ravscore-public-model.js';
-import { assertIntegratedRavScoreSelection } from './lib/ravscore-profile-transition.mjs';
-import {
-  RAVSCORE_MODEL_BUNDLE_SHA256 as CANDIDATE_G_MODEL_BUNDLE_SHA256,
-  RAVSCORE_MODEL_CONTRACT_SHA256 as CANDIDATE_G_MODEL_CONTRACT_SHA256,
-} from './rollback-assets/ravscore-model-contract.js';
 
+const root=process.cwd();
+const read=rel=>fs.readFile(path.join(root,rel),'utf8');
+const exists=async rel=>{try{await fs.access(path.join(root,rel));return true}catch{return false}};
+const pkg=JSON.parse(await read('package.json'));
+const version=pkg.version;
 const errors=[];
 const ok=(cond,msg)=>{if(!cond)errors.push(msg)};
-const root=process.cwd();
-const {readText:read,readJson}=createRequiredFileReader(root,errors);
-const exists=async rel=>{try{await fs.access(path.join(root,rel));return true}catch{return false}};
-const pkg=await readJson('package.json',{scripts:{}});
-const packageScripts=pkg&&typeof pkg.scripts==='object'&&pkg.scripts!==null?pkg.scripts:{};
-const version=typeof pkg.version==='string'?pkg.version:'';
-ok(Boolean(version),'package.json mangler en gyldig releaseversion');
 
 const publicLearningTest=spawnSync(process.execPath,['scripts/test-public-learning-module-4.0.268.mjs'],{cwd:root,stdio:'inherit'});
 ok(publicLearningTest.status===0,'Det offentlige læringsmodul eller sproggaten fejlede');
 const publicScoreExplanationTest=spawnSync(process.execPath,['scripts/test-public-score-explanations-4.0.269.mjs'],{cwd:root,stdio:'inherit'});
 ok(publicScoreExplanationTest.status===0,'De offentlige RavScore-forklaringer eller den forenklede zonevisning fejlede');
-for(const rel of [
-  'scripts/build-ravscore-model-bundle.mjs',
-  'scripts/test-ravscore-model-bundle.mjs',
-  'scripts/test-candidate-g-rollback-bundle.mjs',
-  'scripts/test-ravscore-candidate-g-operational-rollback.mjs',
-  'scripts/test-prepare-candidate-g-operational-rollback.mjs',
-  'scripts/test-candidate-g-rollback-public-stage.mjs',
-  'scripts/test-candidate-g-rollback-trip-backend.mjs',
-  'scripts/test-candidate-g-rollback-assistant-local.mjs',
-  'scripts/test-ravscore-operational-pages-deployment.mjs',
-  'scripts/test-ravscore-active-explanation-presenter.mjs',
-  'scripts/test-ravscore-operational-activation.mjs',
-  'scripts/sync-ravscore-model-binding.mjs',
-  'scripts/test-ravscore-integrated-model.mjs',
-  'scripts/test-ravscore-integrated-state-pipeline.mjs',
-  'scripts/test-ravscore-integrated-generator.mjs',
-  'scripts/test-ravscore-public-model.mjs',
-  'scripts/test-ravscore-public-runtime-contract.mjs',
-  'scripts/test-ravscore-public-data-service-binding.mjs',
-  'scripts/test-ravscore-profile-transition.mjs',
-  'scripts/test-ravscore-continuation-checkpoint.mjs',
-  'scripts/test-protected-ravscore-continuation-checkpoint.mjs',
-  'scripts/test-private-production-runtime-bundle.mjs',
-  'scripts/test-private-production-runtime-workflow.mjs',
-  'scripts/test-pages-artifact-privacy.mjs',
-  'scripts/test-production-workflow-outcome.mjs',
-  'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
-  'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
-]){
-  const result=spawnSync(process.execPath,[rel],{cwd:root,stdio:'inherit'});
-  ok(result.status===0,`Den integrerede RavScore-releasekontrakt fejlede: ${rel}`);
-}
 
 const exactVersionFiles=['version.json','data/kystdata.json','data/zones.geojson','docs/handbook/content.json'];
 for(const rel of exactVersionFiles){
-  const doc=await readJson(rel,{});
+  const doc=JSON.parse(await read(rel));
   const value=rel.includes('handbook')?doc.handbookVersion:doc.version;
   ok(value===version,`${rel}: forventede ${version}, fandt ${value}`);
 }
 for(const rel of ['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','HANDBOOK-RAVRADAR.md','docs/rdks/MASTER_LOG.md',`CHANGELOG-${version}.md`]){
   const text=await read(rel); ok(text.includes(version),`${rel} mangler releaseversion ${version}`);
 }
-const handbook=await readJson('docs/handbook/content.json',{sections:[]});
-const handbookSections=Array.isArray(handbook.sections)?handbook.sections:[];
-ok(handbookSections.length>=51,'Håndbogen skal indeholde mindst 51 kapitler');
+const handbook=JSON.parse(await read('docs/handbook/content.json'));
+ok(Array.isArray(handbook.sections)&&handbook.sections.length>=51,'Håndbogen skal indeholde mindst 51 kapitler');
 for(const id of ['rav-egenskaber','tilstedevaerelse','boelger','stroem','vind','vandstand','langskyst','undertow','sortering','vegetation','kystmorfologi','stormforloeb','aflejring','jagtbarhed','score-implementering','procesindikator','retninger','regler','eksperimentdesign','stationer','admin-sikkerhed','release','domaene','ekspertmatrix','scenarier','kilder','fluidmekanik','dimensionsloese-tal','boelgespektrum','strandtilstande','kildelager-model','organisk-opskael','regional-oceanografi','datamaaling-usikkerhed','hypoteseregister','valideringsdesign','feltprotokol','fejlscenarier','kodematrix','kildekritik-detaljer','bibliografi','ekspertarbejdsgang','ordliste','flere-transportveje']){
-  ok(handbookSections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
+  ok(handbook.sections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
 }
 
 const handbookText=await read('HANDBOOK-RAVRADAR.md');
@@ -102,126 +35,21 @@ const handbookTextLower=handbookText.toLowerCase();
 for(const expertId of Array.from({length:22},(_,i)=>`E-${String(i+1).padStart(2,'0')}`)){
   ok(handbookText.includes(expertId),`Håndbogen mangler ekspertpunkt ${expertId}`);
 }
-for(const marker of ['0,03 m/s','0,15 m/s','48 timers','20 % søgeforhold','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi','størrelsen på et ravlager','én bølgeenergistyret mobiliseringstilstand']){
+for(const marker of ['0,03 m/s','0,15 m/s','13 timers fuld udtransport','48 timers','20 % søgeforhold','Chubarenko','GitHub Actions-kørsel','Shields-parameteren','bundskærspænding','hypoteseregister','annoteret faglig bibliografi','størrelsen på et ravlager','én bølgeenergistyret mobiliseringstilstand']){
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
-ok(handbookText.includes(RAVSCORE_MODEL_ID),'Håndbogen mangler den aktive integrerede RavScore-modelidentitet');
-ok(handbookTextLower.includes('schema 6')||handbookTextLower.includes('stateversion 6.0.0'),'Håndbogen mangler den integrerede state-/migrationskontrakt');
 const scoreEngine=await read('js/core/score-engine.js');
 for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Den historiske sammenligningsmotors forventede auditkonstant mangler: ${marker}`);
 }
 const candidateG=await read('js/core/ravscore-candidate-g.js');
 for(const marker of ['huntability: 0.20','transportAndDelivery: 0.50','mobilisation: 0.30','physicalBottleneckGate','actualOutboundTransport === true','transportPotential === 0','wadersHuntabilityLimit']){
-  ok(candidateG.includes(marker),`Candidate G-rollback-oraklet mangler auditkonstanten: ${marker}`);
+  ok(candidateG.includes(marker),`Den aktive Candidate G-motor mangler auditkonstanten: ${marker}`);
 }
-const integratedEngine=await read('js/core/ravscore-integrated.js');
-const integratedStatePipeline=await read('js/core/ravscore-integrated-state-pipeline.js');
-const integratedPublicModel=await read('js/core/ravscore-public-model.js');
-for(const marker of ['evaluateIntegratedLastMile','RAVSCORE_LAST_MILE_POLICY','ravScoreModelBinding','scoreCalculation']){
-  ok(integratedEngine.includes(marker),`Den aktive integrerede RavScore-motor mangler ${marker}`);
-}
-ok(!/physicalBottleneckGate|actualOutboundTransport|outboundEpisodeEffectiveHours\s*>=\s*13/.test(integratedEngine),
-'Den integrerede RavScore må ikke genindføre Candidate Gs 13-timers helscoregate');
-ok(integratedPublicModel.includes('outflowWholeScoreGateApplied: false'),
-'Den offentlige integrerede forklaring skal eksplicit afvise helscoregaten');
-ok(integratedStatePipeline.includes('CANDIDATE_G_STATE_SCHEMA_VERSION')
-  && integratedStatePipeline.includes('migrationApplied')
-  && integratedStatePipeline.includes('rollbackCandidateGMobilisationPotential'),
-'Schema-6-pipelinen mangler bundet Candidate G-migration og rollbackspor');
-ok(RAVSCORE_MODEL_ID==='RRS-COASTAL-PROCESS-INTEGRATED-1.1.0','Den aktive integrerede RavScore mangler sit faste model-id');
-ok(RAVSCORE_STATE_SCHEMA_VERSION==='6.0.0','Den aktive integrerede RavScore skal bruge state schema 6');
-ok(RAVSCORE_VARIANT_ID==='COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2','Den integrerede RavScore-variant er ikke låst');
-ok(RAVSCORE_PROFILE_ID==='cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5','Den integrerede RavScore-profil er ikke låst');
-ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_BUNDLE_SHA256),'Den integrerede RavScore mangler et gyldigt modelbundle-hash');
-ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_CONTRACT_SHA256)
-  && RAVSCORE_MODEL_CONTRACT_SHA256!==RAVSCORE_MODEL_BUNDLE_SHA256,
-'RavScore skal have adskilte, gyldige kontrakt- og implementeringsbundle-hashes');
-ok(/^[0-9a-f]{64}$/.test(CANDIDATE_G_MODEL_CONTRACT_SHA256)
-  && /^[0-9a-f]{64}$/.test(CANDIDATE_G_MODEL_BUNDLE_SHA256)
-  && CANDIDATE_G_MODEL_CONTRACT_SHA256!==CANDIDATE_G_MODEL_BUNDLE_SHA256,
-'Candidate G-rollback skal have adskilte kontrakt- og transitive implementeringsbundle-hashes');
-const publicDataService=await read('js/services/data-service.js');
-const publicManifestProducer=await read('scripts/public-conditions-lib.mjs');
-const pagesPrivacyAudit=await read('scripts/audit-pages-artifact-privacy.mjs');
-for(const marker of ['zoneRegistryPath','zoneRegistrySha256','zoneRegistryBytes']){
-  ok(publicDataService.includes(marker)
-    && publicManifestProducer.includes(marker)
-    && pagesPrivacyAudit.includes(marker),
-  `Den offentlige 210/673-pakke mangler atomisk zoneregisterbinding: ${marker}`);
-}
-ok(!publicDataService.includes('loadActiveZoneCollection()')
-  && !(await read('js/services/zone-registry.js')).includes("v=3.1.6"),
-'Zoneregisteret må ikke hentes ubundet ved siden af schema-4-manifestet');
-ok(JSON.stringify(RAVSCORE_WEIGHTS)===JSON.stringify({huntability:0.20,transport:0.50,mobilisation:0.30}),'Den integrerede RavScore mangler 20/50/30-prioren');
-ok(RAVSCORE_CURRENT_SUPPLY_POLICY.deadbandNormalSpeedMps===0.03
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.fullStrengthNormalSpeedMps===0.15
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.inboundPointsPerEffectiveHour===10
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.outboundPointsPerEffectiveHour===8
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.fullWeightHours===24
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours===48
-  && RAVSCORE_CURRENT_SUPPLY_POLICY.maximumGapHours===3,
-'Den integrerede RavScore mangler den låste strøm-/hukommelseskontrakt');
-ok(RAVSCORE_WAVE_MOBILISATION_POLICY.buildHalfLifeHours===4
-  && RAVSCORE_WAVE_MOBILISATION_POLICY.decayHalfLifeHours===48
-  && RAVSCORE_WAVE_MOBILISATION_POLICY.maximumBuildCreditAfterMissingOrGapHours===1,
-'Den integrerede RavScore mangler den låste 4/48-timers mobiliseringskontrakt');
-ok(RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor===0.85
-  && RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor===1
-  && RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare===0.15
-  && RAVSCORE_LAST_MILE_POLICY.deliveryEquation
-    ==='DELIVERY_EQUALS_SUPPLY_TIMES_ONE_MINUS_0_15_TIMES_W_TIMES_ONE_MINUS_APPROACH'
-  && RAVSCORE_LAST_MILE_POLICY.scoreEffect==='BOUNDED_SUPPLY_ATTENUATION_ONLY'
-  && RAVSCORE_LAST_MILE_POLICY.waveCanCreateSupply===false
-  && RAVSCORE_LAST_MILE_POLICY.waveCanIncreaseSupply===false
-  && RAVSCORE_LAST_MILE_POLICY.structuralUncertaintyAlways===true
-  && RAVSCORE_LAST_MILE_POLICY.numericPhysicalUncertaintyIntervalProvided===false
-  && RAVSCORE_LAST_MILE_POLICY.physicalDeliveryResolved===false
-  && RAVSCORE_LAST_MILE_POLICY.coherenceScoreEffect==='NONE_UNCERTAINTY_AND_EXPLANATION_ONLY'
-  && RAVSCORE_LAST_MILE_POLICY.missingDirectionPolicy
-    ==='ACTIVE_SCORE_HOUR_FAIL_CLOSED_HISTORICAL_DIRECTION_ENCLOSED_EXACT_CALM_NEUTRAL',
-'Det uopløste sidste-nærkystled skal være begrænset til 0,85–1, fail-closed og må ikke opfinde et numerisk fysisk interval');
-ok(RAVSCORE_SCORE_QUALITY.FULL_HISTORY==='FULL_HISTORY'
-  && RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE==='HISTORY_INCOMPLETE'
-  && RAVSCORE_SCORE_QUALITY.UNAVAILABLE==='UNAVAILABLE'
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.shownIncompleteScore==='LOWER_BOUND'
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.activeCurrentWindowHours===48
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionHours===168
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionScoreEffect==='NONE'
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.directInputMissingPolicy
-    ==='UNAVAILABLE_NO_INTERPOLATION_CARRY_OR_LOAN'
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.FULL_HISTORY===true
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.HISTORY_INCOMPLETE===false
-  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.UNAVAILABLE===false,
-'Den integrerede RavScore mangler den låste, konservative historikhulskontrakt');
-ok(RAVSCORE_HUNTABILITY_POLICY.waterLevelScoreEffect===0
-  && RAVSCORE_HUNTABILITY_POLICY.wadersFinalScoreCap===true
-  && RAVSCORE_HUNTABILITY_POLICY.beachFinalScoreCap===false
-  && RAVSCORE_HUNTABILITY_POLICY.requiredPhysicalInputs.windSpeedMps==='FINITE_NON_NEGATIVE_SCALAR'
-  && RAVSCORE_HUNTABILITY_POLICY.requiredPhysicalInputs.waveHeightM==='FINITE_NON_NEGATIVE_SCALAR'
-  && RAVSCORE_WAVE_MOBILISATION_POLICY.requiredPhysicalInputs.wavePeriodS
-    ==='FINITE_NON_NEGATIVE_SCALAR_AND_POSITIVE_WHEN_WAVE_HEIGHT_IS_POSITIVE',
-'Den integrerede jagtbarheds-/vandstandskontrakt er ændret');
-ok(RAVSCORE_MODEL_CONTRACT.componentSchemaId===RAVSCORE_COMPONENT_SCHEMA_ID
-  && RAVSCORE_MODEL_CONTRACT.explanationSchemaId===RAVSCORE_EXPLANATION_SCHEMA_ID
-  && RAVSCORE_MODEL_CONTRACT.rankingPolicyId===RAVSCORE_RANKING_POLICY_ID
-  && RAVSCORE_MODEL_CONTRACT.bestTimePolicyId===RAVSCORE_BEST_TIME_POLICY_ID
-  && RAVSCORE_MODEL_CONTRACT.presentationPolicyId===RAVSCORE_PRESENTATION_POLICY_ID
-  && RAVSCORE_PRESENTATION_POLICY.id===RAVSCORE_PRESENTATION_POLICY_ID,
-'Den integrerede model er ikke samlet bundet til komponenter, forklaringer, rangering, bedste tidspunkt og scorepræsentation');
-ok(RAVSCORE_MODEL_CONTRACT.uncertainty.localBathymetryIncluded===false
-  && RAVSCORE_MODEL_CONTRACT.uncertainty.resolvedSurfZoneIncluded===false
-  && RAVSCORE_MODEL_CONTRACT.uncertainty.localAmberInventoryObserved===false,
-'Den integrerede model må ikke foregive lokal batymetri, bølgeopløst surfzone eller observeret ravlager');
-ok(CANDIDATE_G_ROLLBACK_MODEL_ID==='RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3',
-'Candidate G skal være et eksplicit rollback-orakel, ikke en alternativ runtimeprofil');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0015-HANDBOOK-EVIDENCE-TRACEABILITY.md'),'RDKS mangler DEC-0015 om håndbogens sporbarhed');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0016-HANDBOOK-REFERENCE-WORK.md'),'RDKS mangler DEC-0016 om håndbogens substans');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0017-MULTIPLE-AMBER-PATHWAYS.md'),'RDKS mangler DEC-0017 om flere ravveje');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0018-ADMIN-PERSISTENCE-AND-AREA-INTEGRITY.md'),'RDKS mangler DEC-0018 om områdeintegritet og Supabase-persistens');
-const decisionFiles=await fs.readdir(path.join(root,'docs/rdks/10_DECISIONS'));
-ok(decisionFiles.includes('DEC-0110-RAVSCORE-INTEGRATED-COASTAL-PROCESS-MODEL.md'),
-'RDKS mangler den eksakte DEC-0110 om den integrerede RavScore-release');
 
 const areaModel=await read('js/core/geographic-areas.js');
 for(const marker of ['Nordjyske østkyst','auditGeographicAreas','matchingZoneIds'])ok(areaModel.includes(marker),`Områdemodellen mangler ${marker}`);
@@ -234,8 +62,6 @@ const sql=await read('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql');
 ok(/select\s+oid\s*,\s*conname\s+from\s+pg_constraint/i.test(sql),'Supabase SQL mangler oid-rettelsen');
 ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookVersion\": \"${version}\"`),'Supabase-installationsscriptets håndbog er forældet');
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
-const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
-const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -244,38 +70,8 @@ ok(supabaseAdminRest.includes("startsWith('sb_secret_')")&&supabaseAdminRest.inc
 ok(supabaseAdminRest.includes("parseJson(body)?.code==='PGRST303'")&&supabaseAdminRest.includes('attempt===1'),'Supabase requester mangler snæver én-gangs PGRST303-genprøvning');
 ok(supabaseAdminRest.includes("status===500&&parseJson(body)?.code==='57014'")&&supabaseAdminRest.includes('statement-timeout 57014'),'Supabase requester mangler snæver én-gangs statement-timeout-genprøvning');
 ok(pythonAdminSync.includes('fetch_admin_rows')&&pythonAdminSync.includes('PGRST303')&&pythonAdminSync.includes('GITHUB_ACTIONS'),'Python-adminhydrering mangler fail-closed PGRST303-kontrakt');
-ok(pythonAdminSync.includes('is_integrated_selection')
-  && pythonAdminSync.includes('preserve-local-integrated-candidate-g-cutover')
-  && pythonAdminSync.includes('use-central-integrated-runtime-truth')
-  && pythonAdminSync.includes('preserve-newer-local-integrated-release'),
-'Central adminhydrering mangler den integrerede cutover-/runtimekontrakt');
-ok(sync.includes('assertIntegratedRavScoreSelection')
-  && sync.includes('payload=central')
-  && sync.includes('Central RavScore-profil verificeret read-only; skrivning ejes af operationel atomisk CAS')
-  && operationalActivation.includes('writeCentralCas')
-  && operationalActivation.includes('ravradar_ravscore_operational_cas')
-  && operationalActivation.includes('p_expected_operational_version')
-  && operationalActivation.includes('p_expected_profile_version')
-  && operationalActivation.includes('p_operational_payload')
-  && operationalActivation.includes('p_profile_payload')
-  && operationalActivation.includes('Atomic RavScore operation/profile compare-and-swap lost a concurrent update')
-  && operationalCasMigration.includes('where document_key=\'ravscore-operational-model-activation\'')
-  && operationalCasMigration.includes('where document_key=\'ravscore-profile-selection\'')
-  && operationalCasMigration.includes('version=p_expected_operational_version')
-  && operationalCasMigration.includes('version=p_expected_profile_version')
-  && operationalCasMigration.includes('for update;'),
-'Central RavScore-persistens mangler den validerede atomiske operation/profil-CAS-cutover');
-const ravScoreProfileSelection=await readJson('data/admin/ravscore-profile-selection.json',{});
-try{
-  assertIntegratedRavScoreSelection(ravScoreProfileSelection,'Release RavScore profile');
-}catch(error){
-  ok(false,error.message);
-}
-ok(ravScoreProfileSelection.sourceVersion===version,'Den integrerede RavScore-profil følger ikke releaseversionen');
-ok(ravScoreProfileSelection.activeModelId===PUBLIC_RAVSCORE_PROFILE_SELECTION.activeModelId
-  && ravScoreProfileSelection.runtimeFallbackModelId===null
-  && ravScoreProfileSelection.crossModelRuntimeFallbackAllowed===false,
-'Den aktive RavScore-profil må ikke have en Candidate G- eller anden tværmodel-runtimefallback');
+ok(pythonAdminSync.includes('is_candidate_g_only_selection')&&pythonAdminSync.includes('preserved-owner-approved-candidate-g-only-contract'),'Central adminhydrering kan genindføre en gammel offentlig RavScore-konfiguration');
+ok(sync.includes('assertCandidateGOnlySelection')&&sync.includes('candidate-g-local-fail-closed'),'Central adminpersistens mangler Candidate G-only-kontrakten');
 const publicApp=await read('app.js');
 const publicI18n=await read('js/i18n.js');
 const publicAssistant=await read('js/services/rav-assistant.js');
@@ -283,546 +79,302 @@ const publicInfoPanel=await read('js/ui/info-panel.js');
 ok(!/calculateRavScore|selectBestTimeForDay|scoreFor\(/.test(publicApp),'Den offentlige app indeholder stadig en vej til den gamle RavScore-motor');
 ok(!/calculateRavScore|score-engine\.js/.test(publicAssistant),'Spørg RavRadar indeholder stadig en vej til den gamle RavScore-motor');
 ok(!/calculateRavScore|selectBestTimeForDay|bestHourForDay/.test(publicInfoPanel),'Informationspanelet indeholder stadig en vej til den gamle RavScore-motor');
-ok(!/Candidate G|isCandidateG|candidateG/.test(publicInfoPanel),'Informationspanelet må ikke vise Candidate G som den aktive offentlige RavScore');
 const workflow=await read('.github/workflows/update-and-deploy.yml');
 const workflowUserAgentVersions=[...workflow.matchAll(/RavRadar\/(\d+\.\d+\.\d+)/g)].map(match=>match[1]);
 ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versionsbåret RavRadar User-Agent');
 for(const workflowVersion of workflowUserAgentVersions){
   ok(workflowVersion===version,`Produktionsworkflowets User-Agent viser ${workflowVersion}, men releaseversionen er ${version}`);
 }
-const integratedTestChain=packageScripts['test:ravscore-integrated']??'';
 for(const marker of [
-  'test:ravscore-integrated-core',
-  'test:ravscore-integrated-generator',
-  'test:ravscore-integrated-public',
-  'test:ravscore-integrated-profile',
-  'test:ravscore-continuation-checkpoint',
-  'test:protected-ravscore-checkpoint',
-  'test:ravscore-model-binding',
+  'node scripts/restore-candidate-g-gap-checkpoint.mjs',
+  'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
+  'candidate-g-continuation-checkpoint-v2-',
+  'candidate-g-continuation-checkpoint-v1-',
+  'node scripts/candidate-g-continuation-checkpoint.mjs',
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
+  '--stage',
+  '--publish',
+  'candidate-g-last-ready-public-v2-',
+  'candidate-g-last-ready-public-v1-',
+  'Audit actual Candidate G public runtime before deploy',
 ]){
-  ok(integratedTestChain.includes(marker),`Den samlede integrerede RavScore-testkæde mangler ${marker}`);
+  ok(workflow.includes(marker),`Produktionsworkflowet mangler Candidate G-selvrecovery: ${marker}`);
 }
-const integratedCoreChain=packageScripts['test:ravscore-integrated-core']??'';
-for(const marker of [
-  'test-ravscore-wave-approach-state.mjs',
-  'test-ravscore-last-mile-integrated-state.mjs',
-  'test-ravscore-last-mile-candidate-migration.mjs',
-]){
-  ok(integratedCoreChain.split(marker).length-1===1,
-  `Den integrerede core-kæde skal køre ${marker} præcis én gang`);
-}
-for(const [scriptName,required] of [
-  ['test:score',['test:ravscore-integrated','test:ravscore-rollback-oracle']],
-  ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
-  ['validate:source',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
-]){
-  const chain=packageScripts[scriptName]??'';
-  for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
-  for(const forbidden of [
-    'test:candidate-g-public-recovery',
-    'test:ravscore-candidate-g-state-pipeline',
-    'test:ravscore-national-shadow-contract',
-    'audit-ravscore-candidate-g-public-shadow',
-    'test-ravscore-candidate-g-central-runtime',
-    'test-ravscore-profile-switch',
-  ]){
-    ok(!chain.includes(forbidden),`${scriptName} må ikke aktivere historisk Candidate G public runtime/shadow/recovery: ${forbidden}`);
-  }
-}
-for(const retiredScriptName of [
-  'hydrate:deployed-weather',
-  'test:candidate-g-public-recovery',
-  'test:ravscore-candidate-g-state-pipeline',
-  'test:ravscore-national-shadow-contract',
-]){
-  ok(!Object.hasOwn(packageScripts,retiredScriptName),
-  `Den pensionerede Candidate G/public-hydration-kontrakt må ikke være et aktivt package-script: ${retiredScriptName}`);
-}
-ok((packageScripts['hydrate:legacy-candidate-g-bootstrap']??'').includes('--legacy-candidate-g-bootstrap'),
-'Den offentlige hydration skal kun være tilgængelig som eksplicit Candidate G-engangsbootstrap');
-for(const [scriptName,markers] of [
-  ['test:protected-ravscore-checkpoint',['test-protected-ravscore-continuation-checkpoint.mjs']],
-  ['test:private-production-runtime',['test-private-production-runtime-bundle.mjs','test-private-production-runtime-workflow.mjs','test-protected-private-production-runtime.mjs','audit-tracked-runtime-privacy.mjs']],
-  ['test:pages-artifact-privacy',['test-pages-artifact-privacy.mjs']],
-  ['test:legacy-bootstrap-hydration',['test-hydrated-atomic-dataset-4.0.67.mjs','test-hydrate-deployed-weather-fail-closed-4.0.272.mjs']],
-  ['test:production-runtime-privacy',['test:private-production-runtime','test:pages-artifact-privacy']],
-]){
-  const chain=packageScripts[scriptName]??'';
-  for(const marker of markers)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
-}
-const rollbackOracleChain=packageScripts['test:ravscore-rollback-oracle']??'';
-ok(rollbackOracleChain.includes('test-ravscore-candidate-g.mjs')
-  && rollbackOracleChain.includes('test-ravscore-candidate-g-state-pipeline.mjs')
-  && rollbackOracleChain.includes('test:candidate-g-operational-rollback'),
-'Candidate G skal bevares som eksplicit testet rollback-orakel');
-const operationalRollbackChain=packageScripts['test:candidate-g-operational-rollback']??'';
-for(const marker of [
-  'build-candidate-g-rollback-bundle.mjs --check',
-  'test-candidate-g-rollback-bundle.mjs',
-  'test-ravscore-candidate-g-operational-rollback.mjs',
-  'test-prepare-candidate-g-operational-rollback.mjs',
-  'test-candidate-g-rollback-public-stage.mjs',
-  'test-candidate-g-rollback-trip-backend.mjs',
-  'test-candidate-g-rollback-assistant-local.mjs',
-  'test-ravscore-operational-pages-deployment.mjs',
-  'test-ravscore-active-explanation-presenter.mjs',
-  'test-ravscore-operational-activation.mjs',
-])ok(operationalRollbackChain.includes(marker),`Den operationelle Candidate G-rollbackgate mangler ${marker}`);
-for(const forbidden of ['central-runtime','profile-switch','public-shadow','public-recovery']){
-  ok(!rollbackOracleChain.includes(forbidden),`Rollback-oraklet må ikke genaktivere Candidate G ${forbidden}`);
-}
-ok(!(packageScripts['test:workflow-action-contracts']??'').includes('test-ravscore-active-shadow-workflow'),
-'Workflowkontrakten må ikke bevare Candidate G som aktiv shadowmodel');
-const workflowActionChain=packageScripts['test:workflow-action-contracts']??'';
-ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
-  && workflowActionChain.includes('test:candidate-g-gap-retirement')
-  && workflowActionChain.includes('test:production-workflow-outcome')
-  && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
-'Workflowkontrakten skal teste dispatchmatrix, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
-ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
-'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-for(const retiredScript of [
-  'test:candidate-g-gap-reconstruction',
-  'test:candidate-g-gap-workflow',
-  'test:candidate-g-gap-contract',
-]){
-  ok(packageScripts[retiredScript]===undefined,`Det pensionerede script ${retiredScript} må ikke kunne køres`);
-}
-ok((packageScripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
-'DEC-0109 skal være beskyttet af den negative pensionsgate');
-ok((packageScripts['validate:source']??'').includes('test:workflow-action-contracts'),
-'Kildegaten skal nå DEC-0109-pensionsgaten gennem workflowkontrakten');
-const tripEvidenceChain=packageScripts['test:trip-evidence-contract']??'';
-ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')
-  && tripEvidenceChain.includes('test-candidate-g-trip-quality-storage-4.0.311.mjs'),
-'Turgrundlaget skal direkte teste både schema-3-modelbinding og trip-quality-lagringskontrakten');
-const hybridTripChain=packageScripts['test:hybrid-trip-storage']??'';
-for(const marker of [
-  'test-hybrid-trip-storage-4.0.287.mjs',
-  'test-trip-storage-migration-projection-4.0.311.mjs',
-  'test-trip-storage-legacy-classification-4.0.311.mjs',
-]){
-  ok(hybridTripChain.includes(marker),`Hybrid turlagring mangler direkte D1-/migrationsbevis: ${marker}`);
-}
-ok((packageScripts['test:ravscore-integrated-public']??'').includes('test:ravscore-public-browser-closure'),
-'Den integrerede public-kæde mangler browserclosure-kontrakten');
-const integratedProfileChain=packageScripts['test:ravscore-integrated-profile']??'';
-ok(integratedProfileChain.includes('test-integrated-cutover-install-contract.mjs')
-  && integratedProfileChain.includes('test:integrated-cutover-readiness'),
-'Den integrerede profilkæde mangler SQL-/RPC-paritet eller cutover-readiness-kontrakten');
-ok(!(packageScripts['test:coastal-geometry-v2']??'').includes('test-ravscore-active-shadow-workflow'),
-'Geometritesten må ikke genaktivere Candidate G-shadowjobbet');
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
-const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
-const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
-const privateRuntimeBundle=await read('scripts/private-production-runtime-bundle.mjs');
-const privateRuntimeWorkflow=await read('scripts/private-production-runtime-workflow.mjs');
-const protectedPrivateRuntime=await read('scripts/protected-private-production-runtime.mjs');
-const trackedRuntimePrivacy=await read('scripts/audit-tracked-runtime-privacy.mjs');
-const pagesArtifactPrivacy=await read('scripts/audit-pages-artifact-privacy.mjs');
-const legacyHydration=await read('scripts/hydrate-deployed-weather.py');
+const continuationCheckpoint=await read('scripts/candidate-g-continuation-checkpoint.mjs');
 const productionWatchdog=await read('scripts/check-production-watchdog.mjs');
-const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs');
 const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-current-shadow.yml');
-for(const marker of [
-  'hours = matrix_hours(reference)',
-  'canonical_row_time(row.get("time") or key) != expected_time',
-  'complete_native_source_for_hour(source, "current", entity_id, entity, expected_time)',
-  '"rangeEndAt": utc_iso(hours[-1])',
-  '"requiredPairsSha256": required_pairs_sha256(required_pairs)',
-]){
-  ok(targetRegistry.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler native-timebindingen: ${marker}`);
-}
-const targetRegistryTestChain=packageScripts['test:copernicus-target-registry']??'';
-for(const marker of [
-  'test-copernicus-target-registry-4.0.244.py',
-  'test-copernicus-range-runner-v2.py',
-  'test-copernicus-range-checker-v2.py',
-]){
-  ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
-}
+ok(targetRegistry.includes('if candidate > requested_hour:'),'DMI-timeopløseren kan ikke bevise, at fremtidige modeltimer afvises');
 for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
   ok(workflow.includes(marker),`Produktionsworkflowet mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
 for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
 }
-for(const marker of [
-  "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",
-  'expectedPartCount: 673',
-  "cacheNamespace: 'ravscore-continuation-schema6-v2'",
-  "candidateGRollbackCompanionStatus: 'candidate-g-rollback-ready-companion'",
-  'compactDerivedStateOnly: true',
-  'weatherIncluded: false',
-  'scoresIncluded: false',
-  'rawVectorsIncluded: false',
-  'coordinatesIncluded: false',
-  'privateDataIncluded: false',
-  'stateSha256',
-  'generationSha256',
-  'candidateGRollbackCompanion',
-  'assertCandidateGRollbackContinuation',
-  "initialStateSource !== 'INTEGRATED_CONTINUATION'",
-  'checkpointMs > targetMs',
-  'checkpointMs <= deployedMs',
-]){
-  ok(continuationCheckpoint.includes(marker),`Schema-4 RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
-}
-for(const marker of [
-  "'ravscore-continuation-checkpoint'",
-  "'.cache/ravscore-continuation-checkpoint/checkpoint.json'",
-  'PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST',
-  'createSupabaseAdminRequester',
-  'loadRavScoreContinuationCheckpointForTarget',
-  '?document_key=eq.${encodeURIComponent(key)}&select=document_key,payload,version&limit=2',
-  "reason: 'protected-checkpoint-not-found'",
-  'targetUnchanged: true',
-  'await fs.rename(temporary, checkpointPath)',
-  'payloadLogged: false',
-]){
-  ok(protectedContinuationCheckpoint.includes(marker),`Protected checkpoint-kontrakten mangler ${marker}`);
-}
-for(const marker of ['expectedPartCount: 673','bundleContentSha256','modelBinding']){
-  ok(privateRuntimeBundle.includes(marker),`Det private runtimebundle mangler ${marker}`);
-}
-for(const marker of [
-  'Date.parse(target) - 72 * 3_600_000',
-  'Restored private runtime must remain outside the repository tree',
-  'privateDataLogged: false',
-]){
-  ok(privateRuntimeWorkflow.includes(marker),`Private runtime-workflowkontrakten mangler ${marker}`);
-}
-for(const marker of [
-  "documentKey: 'ravscore-private-production-runtime-pointer'",
-  "bucketId: 'ravradar-private-production-runtime'",
-  'maximumRawPayloadBytes:',
-  'maximumArchiveBytes: 50 * 1024 * 1024',
-  'uploadImmutable',
-  'compare-and-swap',
-  'previous: existing?.payload.current ?? null',
-  'removeExact',
-  'anonymousReadDenied: true',
-  'No compatible protected private runtime generation is available',
-]){
-  ok(protectedPrivateRuntime.includes(marker),`Protected private runtime mangler ${marker}`);
-}
-for(const marker of ['TRACKED_PUBLIC_LIVE_ALLOWLIST','git','ls-files','Private runtime files are tracked']){
-  ok(trackedRuntimePrivacy.includes(marker),`Tracked runtime-privacygaten mangler ${marker}`);
-}
-for(const marker of ['EXPECTED_LIVE_FILES','PRIVATE_FIELD','RAW_VECTOR_FIELD','loadPrivateRuntimeFingerprints']){
-  ok(pagesArtifactPrivacy.includes(marker),`Pages-privacygaten mangler ${marker}`);
-}
-for(const marker of ['--legacy-candidate-g-bootstrap','generic-public-private-runtime-hydration-retired','assert_legacy_candidate_g_cutover_source']){
-  ok(legacyHydration.includes(marker),`Legacy-only hydration mangler ${marker}`);
+for(const marker of ['expectedPartCount: 673','maximumCheckpointAgeHours: 72','weatherIncluded: false','scoresIncluded: false','rawVectorsIncluded: false','coordinatesIncluded: false','privateDataIncluded: false','stateSha256']){
+  ok(continuationCheckpoint.includes(marker),`Candidate G-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
 }
 for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale']){
   ok(productionWatchdog.includes(marker),`Produktions-watchdoget mangler fail-safe tilstanden: ${marker}`);
 }
-for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','MAXIMUM_SILENCE_MINUTES:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"']){
+for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"']){
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
 }
-const unsafePublicRecoveryUse=/\bfallbackRuntime\b|\brecoveryFallbackActive\b|(?:manifest|data)\.recoveryFallback\b|function\s+recoveryFallbackUrl\b|active-last-verified|last-verified-public/.test(publicDataService);
-ok(publicDataService.includes('sameRavScoreModelBinding')
-  && publicDataService.includes("'recoveryFallback' in manifest")
-  && publicDataService.includes("'emergencyFallback' in manifest")
-  && !unsafePublicRecoveryUse,
-'Offentlig dataindlæsning skal være atomisk schema-4 og må ikke omdirigeres til en public recoveryruntime');
-ok(!/recoveryFallbackActive|recoveryFallback\?/.test(publicApp),
-'Den offentlige app må ikke have en skjult Candidate G-/recoveryfallbackgren');
-ok(publicApp.includes("t('data.couldNotLoad')")
-  && publicI18n.includes('Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.')
-  && publicI18n.includes('Aktuelle Daten konnten nicht geladen werden. Alte Prognosen werden nicht angezeigt.')
-  && publicI18n.includes('Current data could not be loaded. Old forecasts are not shown.')
-  && publicI18n.includes('Den aktuelle atomiske prognosepakke kunne ikke verificeres. Ældre prognosedage vises ikke.')
-  && publicI18n.includes('Das aktuelle atomische Prognosepaket konnte nicht verifiziert werden. Ältere Prognosetage werden nicht angezeigt.')
-  && publicI18n.includes('The current atomic forecast bundle could not be verified. Older forecast days are not shown.'),
-'Den offentlige brugerflade mangler DA/DE/EN fail-closed-tekst for en uverificeret atomisk datapakke eller startup');
-const workflowPositions={
-  preflightCache:workflow.indexOf('name: Restore dataminimized weather preflight metadata'),
-  publicPreflightManifest:workflow.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
-  preflight:workflow.indexOf('name: Decide whether weather needs updating before private runtime download'),
-  privateRuntimeExpected:workflow.indexOf('name: Build current private-runtime restore expectation'),
-  privateRuntimeRestore:workflow.indexOf('name: Restore newest compatible private runtime from protected storage'),
-  privateRuntimeVerify:workflow.indexOf('name: Verify and restore the private production runtime bundle'),
-  privateRuntimeInstall:workflow.indexOf('name: Install only the allowlisted restored private runtime files'),
-  checkpointRestore:workflow.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
-  protectedCheckpointRestore:workflow.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
-  legacyBootstrapGate:workflow.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
-  legacyBootstrapImport:workflow.indexOf('name: Import exact public Candidate G runtime only for first integrated bootstrap'),
-  resolvedTarget:workflow.indexOf('name: Bind production to resolved DMI current hour'),
-  weather:workflow.indexOf('name: Update central weather cache'),
-  runtime:workflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  runtimeAudit:workflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
-  validate:workflow.indexOf('name: Validate full project after fresh weather and current provenance'),
-  releaseGate:workflow.indexOf('name: Run release governance gate after refreshed data validation'),
-  validateData:workflow.indexOf('name: Validate updated weather cache'),
-  checkpointBuild:workflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  checkpointSave:workflow.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  protectedCheckpointPublish:workflow.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
-  preflightStateBuild:workflow.indexOf('name: Build dataminimized weather preflight state after final gates'),
-  preflightStateSave:workflow.indexOf('name: Save dataminimized weather preflight state'),
-  privateRuntimeSpec:workflow.indexOf('name: Build private production runtime bundle specification'),
-  privateRuntimeCreate:workflow.indexOf('name: Create the next private production runtime bundle atomically'),
-  privateRuntimeSave:workflow.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
-  privateRuntimeAnonAudit:workflow.indexOf('name: Prove the private runtime object is not anonymously readable'),
-  artifact:workflow.indexOf('name: Build lean GitHub Pages artifact'),
-  pagesPrivacyAudit:workflow.indexOf('name: Audit the complete Pages artifact for private runtime material'),
-  pagesUpload:workflow.indexOf('name: Upload GitHub Pages artifact'),
-};
-for(const [step,position] of Object.entries(workflowPositions)){
-  ok(position>=0,`Produktionsworkflowet mangler integreret RavScore-trin: ${step}`);
-}
-const workflowOrder=[
-  'preflightCache','publicPreflightManifest','preflight','checkpointRestore','protectedCheckpointRestore',
-  'privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall',
-  'legacyBootstrapGate','legacyBootstrapImport',
-  'resolvedTarget','weather','runtime','runtimeAudit','validate','releaseGate','validateData',
-  'checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
-  'privateRuntimeSpec','privateRuntimeCreate','privateRuntimeSave','privateRuntimeAnonAudit','artifact','pagesPrivacyAudit','pagesUpload',
+const candidateGMemory=await read('js/core/ravscore-regime-memory.js');
+const candidateGStatePipeline=await read('js/core/ravscore-candidate-g-state-pipeline.js');
+const publicRecovery=await read('scripts/candidate-g-public-recovery-fallback.mjs');
+const publicDataService=await read('js/services/data-service.js');
+const gapRetirementTest=await read('scripts/test-candidate-g-gap-reconstruction-retired.mjs');
+const tripEvidenceContract=await read('js/services/trip-evidence-contract.js');
+const tripStorageWorkflow=await read('.github/workflows/deploy-trip-storage.yml');
+const tripQualityMigration=await read('supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql');
+const tripStorageShared=await read('supabase/functions/_shared/trip-storage.js');
+const tripStore=await read('supabase/functions/_shared/trip-store.ts');
+const tripGatewayWorker=await read('cloudflare/trip-gateway/worker.js');
+const tripGatewayMigration=await read('cloudflare/trip-gateway/migrations/001_trip_observations.sql');
+const tripGatewayVerification=await read('scripts/verify-cloudflare-trip-gateway.mjs');
+const tripEdgeVerification=await read('scripts/verify-trip-storage-edge.mjs');
+const tripEdgeReadiness=await read('scripts/lib/trip-storage-edge-readiness.mjs');
+const tripStorageMigration=await read('scripts/migrate-trip-storage-to-cloudflare.mjs');
+const tripStorageProjection=await read('supabase/functions/_shared/trip-source-projection.js');
+const tripStoragePreparation=await read('scripts/prepare-cloudflare-trip-storage.mjs');
+const tripStorageActivationMarker=await read('scripts/mark-cloudflare-trip-storage-activation.mjs');
+const tripStorageLegacyClassification=await read('scripts/lib/trip-storage-legacy-classification.mjs');
+const tripStorageBoundedFetch=await read('scripts/lib/bounded-fetch.mjs');
+const tripStorageAudit=await read('scripts/audit-cloudflare-trip-storage.mjs');
+const hybridTripStorageTest=await read('scripts/test-hybrid-trip-storage-4.0.287.mjs');
+const gapCheckpoint=JSON.parse(await read('data/admin/candidate-g-gap-checkpoint-recovery.json'));
+ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGMemory.includes('VERIFIED_TIME_GAP_SUFFIX_RESTART'),'Candidate G-hukommelsen mangler eksplicit opt-in til verificeret suffixgenstart');
+ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
+ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('unavailable-no-valid-fallback')&&publicRecovery.includes('inactive-no-valid-fallback'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller sikker frakobling fra frisk measured-only primary');
+ok(workflow.includes("steps.candidate-g-public-fallback-stage.outputs.fallback_available == 'true'"),'Workflowet må ikke gemme en tom eller udløbet Candidate G-fallbackcache');
+ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
+const retiredGapPaths=[
+  'scripts/one-time-candidate-g-gap-reconstruction.mjs',
+  'scripts/test-one-time-candidate-g-gap-reconstruction-4.0.311.mjs',
+  'scripts/test-one-time-candidate-g-gap-workflow-4.0.311.mjs',
+  'data/admin/candidate-g-one-time-gap-reconstruction-20260829.json',
 ];
-for(let index=1;index<workflowOrder.length;index+=1){
-  const before=workflowOrder[index-1];
-  const after=workflowOrder[index];
-  ok(workflowPositions[before]<workflowPositions[after],`Produktionsworkflowets rækkefølge er ugyldig: ${before} skal ligge før ${after}`);
+for(const retiredPath of retiredGapPaths){
+  ok(!(await exists(retiredPath)),`Den pensionerede engangsrekonstruktionssti findes stadig: ${retiredPath}`);
 }
-const lightweightPreflightSection=workflow.slice(workflowPositions.preflightCache,workflowPositions.checkpointRestore);
+for(const marker of ['candidate_g_gap_reconstruction_mode','inspect-candidate-g-one-time-gap','one-time-candidate-g-gap-reconstruction.mjs','.cache/candidate-g-gap-reconstruction','RRGAP-2026-08-29-CANDIDATE-G-01']){
+  ok(!workflow.includes(marker),`Produktionsworkflowet genåbner den pensionerede DEC-0109-sti: ${marker}`);
+}
+ok(pkg.scripts?.['test:candidate-g-gap-retirement']==='node scripts/test-candidate-g-gap-reconstruction-retired.mjs','Pensionsregressionen mangler package-binding');
+ok(String(pkg.scripts?.['test:candidate-g-public-recovery']||'').includes('test:candidate-g-gap-retirement'),'Fuld Candidate G-recoverytest mangler pensionsregressionen');
+ok(String(pkg.scripts?.['test:workflow-action-contracts']||'').includes('test:candidate-g-gap-retirement'),'Workflowkontrakten mangler pensionsregressionen');
+ok(gapRetirementTest.includes('Historical read/quality compatibility remains intentionally available'),'Pensionsregressionen må ikke fjerne historisk trust-/læsekompatibilitet');
+for(const marker of ['ravscore-reconstructed-derived-evidence','public-emergency-last-complete','ravscore-evidence-trust-unattested']){
+  ok(tripEvidenceContract.includes(marker),`Turkontrakten mangler Candidate G-kvalitetsmarkøren: ${marker}`);
+  ok(tripQualityMigration.includes(marker),`Databasemigrationen mangler Candidate G-kvalitetsmarkøren: ${marker}`);
+}
+ok(tripQualityMigration.includes('schema_version = 2 and')&&tripQualityMigration.includes('DEC-0109-v2'),'Tripdatabasens schema-2-/reason-order-attestation mangler');
+ok(tripStorageWorkflow.includes('apply-candidate-g-trip-quality-migration.mjs')&&tripStorageWorkflow.includes('verify-trip-storage-edge.mjs'),'Trip-storage-workflowet mangler migration eller live Edge-verifikation');
 for(const marker of [
-  'uses: actions/cache/restore@v6',
-  'path: .cache/weather-preflight-state',
-  'weather-preflight-state-v1-${{ runner.os }}-',
-  'name: Fetch only the deployed public manifest for weather preflight',
-  '--max-filesize 131072',
-  'node scripts/private-production-runtime-workflow.mjs materialize-preflight',
-  '--state "$state"',
-  '--public-manifest "$RAVRADAR_PREFLIGHT_WORK/public-manifest.json"',
-  '--output-root "$input_root"',
-  'cp scripts/check-weather-update.py "$input_root/scripts/check-weather-update.py"',
-  '(cd "$input_root" && python scripts/check-weather-update.py)',
-  'reason=verified-light-preflight-unavailable',
+  'Prepare ten EU-restricted D1 shards, schema and durable phase',
+  'Require safe D1 storage headroom',
+  'Record fail-closed intent for the already-live legacy D1 installation',
+  'Persist the D1 boundary before quiescing the legacy installation',
+  'Record current-run existing-D1 Edge predeployment intent',
+  'Record current-run fresh-Supabase Edge predeployment intent',
+  'Deploy exact maintenance-capable Edge functions while Worker and mode stay unchanged',
+  'Attest both exact Edge boundaries in unchanged D1 mode before leasing maintenance',
+  'Record current-run D1 repair intent immediately before quiescence',
+  'Enter fail-closed expiring maintenance for every existing D1 installation',
+  'TRIP_STORAGE_MODE="maintenance:$maintenance_until"',
+  'Preserve the initial Supabase bridge only for a genuinely fresh D1 installation',
+  'Require enough maintenance lease for bounded Worker replacement',
+  'Install deploy and attest the private D1 gateway after Edge quiescence',
+  'Record local fail-closed intent before a genuinely fresh D1 marker',
+  'Persist the point of no return immediately before fresh D1 activation',
+  'Activate normal Cloudflare D1 mode after verified Worker readiness',
+  'Restore Supabase only for a proven fresh pre-activation installation',
+  'Redeploy exact Edge functions for the restored fresh Supabase bridge',
+  'Persist or reconfirm the D1 boundary during failure roll-forward',
+  'Redeploy exact maintenance-capable Edge functions before failure maintenance',
+  'Enter fail-closed expiring maintenance during D1 failure roll-forward',
+  'Reinstall and redeploy the exact Worker after failure Edge quiescence',
+  'Preserve D1 after the point of no return and repair forward',
 ]){
-  ok(lightweightPreflightSection.includes(marker),`Tidlig dataminimeret vejrpreflight mangler ${marker}`);
-}
-ok(!lightweightPreflightSection.includes('protected-private-production-runtime.mjs')
-  && !lightweightPreflightSection.includes('/tmp/ravradar-private-production-runtime/bundle'),
-'Den tidlige vejrpreflight må ikke hente eller inspicere det fulde private runtimebundle');
-const privateRuntimeRestoreSection=workflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.legacyBootstrapGate);
-for(const marker of [
-  'node scripts/private-production-runtime-workflow.mjs expected',
-  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  'node scripts/protected-private-production-runtime.mjs',
-  '--restore',
-  'node scripts/private-production-runtime-bundle.mjs restore',
-  '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
-  '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--expected .cache/private-production-runtime-expected.json',
-  '--output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
-  'node scripts/private-production-runtime-workflow.mjs install',
-  '--restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
-]){
-  ok(privateRuntimeRestoreSection.includes(marker),`Private produktionsruntime-restore mangler ${marker}`);
-}
-for(const step of ['privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall']){
-  const start=workflowPositions[step];
-  const end=workflow.indexOf('\n      - name:',start+1);
-  const block=workflow.slice(start,end<0?workflow.length:end);
-  ok(block.includes("if: steps.preflight.outputs.should_run == 'true'"),
-    `${step} må ikke køre før den lette preflight har krævet en reel build`);
+  ok(tripStorageWorkflow.includes(marker),`Trip-storage-workflowet mangler envejs/fasebevidst cutovermarkør: ${marker}`);
 }
 for(const marker of [
-  'RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime',
-  'RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle',
-  'RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored',
+  "steps.d1_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'",
+  "steps.fresh_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'",
+  "steps.d1_repair_intent.outputs.d1_repair_intent == 'true'",
+  "steps.activation_intent.outputs.d1_activation_intent == 'true'",
 ]){
-  ok(workflow.includes(marker),`Workflowets private runtime-miljø mangler ${marker}`);
+  ok(tripStorageWorkflow.includes(marker),`Trip-storage-workflowet mangler current-run intentbinding: ${marker}`);
 }
-ok(!privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime'),
-'Det private produktionsbundle må ikke gendannes i repositoryets cachetræ');
-ok(!workflow.includes('private-production-runtime-v1-')
-  && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(workflow),
-'Det fulde private runtimebundle må ikke lagres i GitHub Actions cache');
-const checkpointRestoreSection=workflow.slice(workflowPositions.checkpointRestore,workflowPositions.privateRuntimeExpected);
+ok(!tripStorageWorkflow.includes('inputs.storage_mode')
+  &&!tripStorageWorkflow.includes('kontrolleret Supabase-rollback')
+  &&tripStorageWorkflow.includes('run-name: "Deploy RavRadar trip storage [d1]"'),
+  'Trip-storage-workflowet må ikke tilbyde Supabase-rollback efter D1 og skal bevare exact-head run-titlen');
+const tripStorageMainCasCount=(tripStorageWorkflow.match(/git fetch --no-tags --prune origin \+refs\/heads\/main:refs\/remotes\/origin\/main/g)||[]).length;
+ok(tripStorageMainCasCount>=16,`Trip-storage-workflowet har kun ${tripStorageMainCasCount} exact-main CAS-gates`);
+const cutoverOrder=[
+  'Prepare ten EU-restricted D1 shards, schema and durable phase',
+  'Require safe D1 storage headroom',
+  'Record current-run existing-D1 Edge predeployment intent',
+  'Record current-run fresh-Supabase Edge predeployment intent',
+  'Deploy exact maintenance-capable Edge functions while Worker and mode stay unchanged',
+  'Attest both exact Edge boundaries in unchanged D1 mode before leasing maintenance',
+  'Record current-run D1 repair intent immediately before quiescence',
+  'Enter fail-closed expiring maintenance for every existing D1 installation',
+  'Attest both Edge boundaries in fail-closed maintenance',
+  'Drain every bounded request from the preceding Edge generation',
+  'Require enough maintenance lease for bounded Worker replacement',
+  'Install deploy and attest the private D1 gateway after Edge quiescence',
+  'Idempotently synchronize existing Supabase trips into D1',
+  'Record local fail-closed intent before a genuinely fresh D1 marker',
+  'Persist the point of no return immediately before fresh D1 activation',
+  'Activate normal Cloudflare D1 mode after verified Worker readiness',
+  'Attest both Edge write and read boundaries in live D1 mode before final reconciliation',
+  'Drain the last bounded pre-D1 requests before final reconciliation',
+  'Reconcile every trip written before both Edge boundaries attested D1',
+  'Reverify both public Edge boundaries in live D1 mode',
+].map(marker=>tripStorageWorkflow.indexOf(marker));
+ok(cutoverOrder.every((index,i)=>index>=0&&(i===0||index>cutoverOrder[i-1])),'Trip-storage-workflowets normale maintenance-/D1-roll-forward står i usikker rækkefølge');
+const failureRollforwardOrder=[
+  'Restore Supabase only for a proven fresh pre-activation installation',
+  'Redeploy exact Edge functions for the restored fresh Supabase bridge',
+  'Attest the restored genuinely fresh Supabase bridge',
+  'Persist or reconfirm the D1 boundary during failure roll-forward',
+  'Redeploy exact maintenance-capable Edge functions before failure maintenance',
+  'Enter fail-closed expiring maintenance during D1 failure roll-forward',
+  'Attest both Edge boundaries in failure roll-forward maintenance',
+  'Drain the preceding Edge generation before failure Worker replacement',
+  'Require enough failure maintenance lease for bounded Worker replacement',
+  'Reinstall and redeploy the exact Worker after failure Edge quiescence',
+  'Preserve D1 after the point of no return and repair forward',
+  'Redeploy exact Edge functions during D1 failure roll-forward',
+  'Attest both Edge boundaries in D1 mode before failure reconciliation',
+  'Drain bounded pre-D1 requests during failure roll-forward',
+  'Reconcile the Supabase source during failure roll-forward',
+  'Reattest both Edge boundaries after failure roll-forward',
+].map(marker=>tripStorageWorkflow.indexOf(marker));
+ok(failureRollforwardOrder.every((index,i)=>index>=0&&(i===0||index>failureRollforwardOrder[i-1])),'Trip-storage-workflowets fresh-rollback/D1-roll-forward står i usikker rækkefølge');
+const standardWorkerDeployCount=(tripStorageWorkflow.match(/wrangler@4\.28\.1 deploy --config/g)||[]).length;
+ok(standardWorkerDeployCount===2&&!/wrangler(?:@[^\s]+)? versions deploy/.test(tripStorageWorkflow),'Worker-cutover skal bruge præcis to almindelige 100 %-deploys og må ikke kunne efterlade delt trafik');
 for(const marker of [
-  'uses: actions/cache/restore@v6',
-  'path: .cache/ravscore-continuation-checkpoint',
-  'ravscore-continuation-schema6-v2-',
-  "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
-  'node scripts/protected-ravscore-continuation-checkpoint.mjs',
-  '--restore',
-  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  'Check exact-head D1 trip-storage readiness',
+  'Deploy RavRadar trip storage [d1]',
+  'EXPECTED_TRIP_STORAGE_MODE: d1',
+  'node scripts/verify-trip-storage-edge.mjs',
+  'node scripts/verify-cloudflare-trip-gateway.mjs',
 ]){
-  ok(checkpointRestoreSection.includes(marker),`Protected schema-6 RavScore-restoren mangler ${marker}`);
+  ok(workflow.includes(marker),`Pages-interlocken mangler exact/live D1-bevis: ${marker}`);
 }
-ok(!checkpointRestoreSection.includes('node scripts/ravscore-continuation-checkpoint.mjs')
-  && !checkpointRestoreSection.includes('--target data/live/conditions.json'),
-'Schema-4 checkpoint-restoren må ikke mutere conditions direkte');
-const legacyBootstrapSection=workflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.resolvedTarget);
+for(const marker of ['projectLegacyExternalTripPayload','isLegacyCompatibleTripReplay','assertExternalTripNestedContract','assertNoPrivateLocation']){
+  ok(tripStorageShared.includes(marker),`Den fælles turlagergrænse mangler sikker legacy/current-kontrakt: ${marker}`);
+}
+for(const marker of ['trip_observation_registry','trip_owner_erasure_tombstones','ownerErased','purgeOwnerTrips','on conflict do nothing','TRIP_IDEMPOTENCY_CONFLICT','TRIP_STORED_RECORD_INTEGRITY_INVALID']){
+  ok(tripGatewayWorker.includes(marker),`D1-Workeren mangler atomisk idempotens-/readbackkontrakt: ${marker}`);
+}
+for(const marker of ['trip_observation_registry','trip_observation_registry_trip_unique','trip_observation_registry_owner_client_unique','trip_owner_erasure_tombstones','trip_storage_control']){
+  ok(tripGatewayMigration.includes(marker)&&tripStorageShared.includes(marker),`D1-skemaet mangler payloadfri global idempotens-/erasure-/fasekontrakt: ${marker}`);
+}
+ok(tripGatewayWorker.includes("contract_version: '4.0.311'")
+  &&tripGatewayWorker.includes('idempotency_registry_schema_version: 2')
+  &&tripGatewayWorker.includes('owner_erasure_tombstone_schema_version: 1')
+  &&tripGatewayVerification.includes("body?.contract_version === '4.0.311'")
+  &&tripGatewayVerification.includes('body?.idempotency_registry_schema_version === 2')
+  &&tripGatewayVerification.includes('body?.owner_erasure_tombstone_schema_version === 1'),
+  'Worker-health mangler eksakt registry-/erasure-versionsattestation');
+ok(tripStoragePreparation.includes('d1ActivationAttempted')
+  &&tripStoragePreparation.includes('GITHUB_OUTPUT')
+  &&tripStorageActivationMarker.includes('insert into trip_storage_control')
+  &&tripStorageActivationMarker.includes('d1_activation_attempted=true'),
+  'Den varige D1-fase kan ikke læses, skrives og genattesteres');
 for(const marker of [
-  "if: steps.preflight.outputs.should_run == 'true'",
-  'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
-  'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
-  "if: steps.legacy-bootstrap.outputs.required == 'true'",
-  'python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap',
-  'RAVRADAR_DEPLOYED_BASE_URL:',
+  'TRIP_STORAGE_SHARD_COUNT = 10',
+  '`ravradar-trips-${index}`',
+  'ravradar-trips-0..9',
+  'jurisdiction !== \'eu\'',
+  '33024408547',
+  '5c7f774d3f09a527628d97e08c3900d49eb41a89',
+  'workflow_dispatch',
+  '.github/workflows/deploy-trip-storage.yml',
+  '/jobs?filter=latest&per_page=100',
+  'Validate, migrate and deploy trip storage',
+  'Configure normal Cloudflare D1 mode',
+  'Configure explicit Supabase rollback mode',
+  'payload?.total_count !== 1',
+  'job?.run_attempt !== 1',
+  "rollback?.conclusion !== 'skipped'",
+  '/rel="next"/i',
 ]){
-  ok(legacyBootstrapSection.includes(marker),`Candidate G-engangsbootstrap mangler ${marker}`);
+  ok(tripStorageLegacyClassification.includes(marker),`Legacy-D1-klassifikationen mangler bundet evidens: ${marker}`);
 }
-ok((workflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
-  && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
-  && !workflow.includes('name: Hydrate latest deployed weather state'),
-'Generisk offentlig hydration skal være pensioneret; kun Candidate G-engangsbootstrap og den isolerede attesterede legacy-kilde må findes');
-const runtimeAuditSection=workflow.slice(workflowPositions.runtimeAudit,workflowPositions.validate);
-for(const marker of [
-  "if: steps.preflight.outputs.should_run == 'true'",
-  'node scripts/audit-ravscore-integrated-public-runtime.mjs',
-  '--input data/live/conditions.json',
+ok(tripStoragePreparation.includes('classifyExistingTripStorageDatabases')
+  &&tripStoragePreparation.includes('verifyLegacyActivationEvidence')
+  &&tripStoragePreparation.includes('fetchImpl: boundedFetch')
+  &&tripStoragePreparation.includes('legacy_d1_detected'),
+  'Prepare-trinnet klassificerer eller runverificerer ikke den eksakte legacy-D1-installation med en bundet request');
+for(const marker of ['resolution=ignore-duplicates,return=minimal','SUPABASE_IDEMPOTENCY_TIMESTAMPS','SUPABASE_IDEMPOTENCY_UUIDS','sameOwnerBinding','TRIP_IDEMPOTENCY_CONFLICT']){
+  ok(tripStore.includes(marker),`Supabase-fallback mangler no-overwrite/idempotensparitet: ${marker}`);
+}
+ok(tripStore.includes('Deno.env.get("TRIP_STORAGE_MODE")?.trim() || ""')
+  &&!tripStore.includes('Deno.env.get("TRIP_STORAGE_MODE") || "supabase"'),
+  'Manglende storage-mode må ikke stiltiende falde tilbage til Supabase efter D1-grænsen');
+ok(tripStore.includes('TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS = 30 * 60_000')
+  &&tripStore.includes('value.startsWith("maintenance:")')
+  &&tripStore.includes('if (now >= deadline) return "d1"')
+  &&tripStore.includes('TRIP_STORAGE_MAINTENANCE_LEASE_INVALID')
+  &&tripStore.includes('TRIP_STORAGE_MAINTENANCE')
+  &&tripEdgeReadiness.includes("['d1', 'supabase', 'maintenance']")
+  &&tripEdgeReadiness.includes('TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS = 5_000')
+  &&tripStoragePreparation.includes('legacy_d1_detected')
+  &&tripStoragePreparation.includes('classifyExistingTripStorageDatabases'),
+  'Eksisterende D1-installation kan ikke quiesces med en udløbende fail-closed lease før Worker-opgradering');
+for(const marker of ['EXPECTED_TRIP_STORAGE_MODE=d1|supabase|maintenance','x-ravradar-trip-contract-version','x-ravradar-trip-storage-mode']){
+  ok(tripEdgeVerification.toLowerCase().includes(marker.toLowerCase()),`Live Edge-verifikationen mangler mode-/versionskontrakt: ${marker}`);
+}
+ok(tripEdgeReadiness.includes('requiredConsecutiveSuccesses = 2')
+  &&tripEdgeReadiness.includes('consecutiveSuccesses += 1')
+  &&tripEdgeReadiness.includes('consecutiveSuccesses = 0')
+  &&tripEdgeReadiness.includes('cache: \'no-store\''),
+  'Edge-readiness kræver ikke to sammenhængende no-cache-beviser fra begge funktioner med femsekunders request-bound');
+for(const marker of ['AbortSignal.timeout(milliseconds)','AbortSignal.any([callerSignal, deadlineSignal])','TRIP_STORAGE_NETWORK_TIMEOUT_CODE']){
+  ok(tripStorageBoundedFetch.includes(marker),`Den fælles trip-storage-request-bound mangler: ${marker}`);
+}
+for(const [name,source] of [
+  ['audit',tripStorageAudit],
+  ['activation marker',tripStorageActivationMarker],
+  ['migration',tripStorageMigration],
+  ['prepare',tripStoragePreparation],
+  ['Worker verification',tripGatewayVerification],
+  ['Edge verification',tripEdgeVerification],
+  ['Edge readiness',tripEdgeReadiness],
 ]){
-  ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
+  ok(source.includes('bounded-fetch.mjs'),`Trip-storage ${name} bruger ikke den fælles hårde netværkstimeout`);
 }
-ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
-const checkpointSaveSection=workflow.slice(workflowPositions.checkpointBuild,workflowPositions.privateRuntimeSpec);
-for(const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
-  'node scripts/ravscore-continuation-checkpoint.mjs',
-  '--save',
-  '--source data/live/conditions.json',
-  'uses: actions/cache/save@v6',
-  'ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}',
-  'node scripts/protected-ravscore-continuation-checkpoint.mjs',
-  '--publish',
-  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
-]){
-  ok(checkpointSaveSection.includes(marker),`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
+ok(tripStorageProjection.includes('SUPABASE_OBSERVATION_LEAF_PROJECTIONS')
+  &&tripStorageProjection.includes('SUPABASE_IDEMPOTENCY_SELECT')
+  &&tripStorageProjection.includes('assertIdempotencySourceRow')
+  &&tripStorageMigration.includes('SAFE_MIGRATION_PAYLOAD_COLUMNS')
+  &&tripStorageMigration.includes('SUPABASE_OBSERVATION_LEAF_PROJECTIONS')
+  &&tripStorageMigration.includes("endpoint.searchParams.set('select', SUPABASE_OBSERVATION_SELECT)")
+  &&!tripStorageMigration.includes("endpoint.searchParams.set('select', '*')")
+  &&!tripStorageMigration.includes('select=*'),'Supabase→D1-migrationen er ikke låst til en eksplicit dataminimeret bladprojektion');
+ok(String(pkg.scripts?.['test:hybrid-trip-storage']||'').includes('test-trip-storage-migration-projection-4.0.311.mjs')
+  &&String(pkg.scripts?.['test:hybrid-trip-storage']||'').includes('test-trip-storage-legacy-classification-4.0.311.mjs'),
+  'Migrations-privacytesten og legacy-D1-evidenstesten indgår ikke begge i den obligatoriske lagergate');
+for(const marker of ['tripInputFieldNames4010','externalTripRecord4010','ravscore-evidence-trust-unattested']){
+  ok(hybridTripStorageTest.includes(marker),`Krydsversionstesten ny Edge→4.0.310 Worker mangler: ${marker}`);
 }
-ok(!checkpointSaveSection.includes('continue-on-error'),'Protected checkpoint-publicering må ikke skjule fejl');
-const preflightStateSaveSection=workflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
-for(const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
-  'node scripts/private-production-runtime-workflow.mjs create-preflight',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  '--output .cache/weather-preflight-state/state.json',
-  'uses: actions/cache/save@v6',
-  'path: .cache/weather-preflight-state',
-  'weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
-]){
-  ok(preflightStateSaveSection.includes(marker),`Dataminimeret vejrpreflight-bevaring mangler ${marker}`);
-}
-ok(!preflightStateSaveSection.includes('continue-on-error'),
-'Dataminimeret vejrpreflight-state skal bygges og gemmes fail-closed efter slutgates');
-const privateRuntimeSaveSection=workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.artifact);
-for(const marker of [
-  'node scripts/private-production-runtime-workflow.mjs create-spec',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  '--output .cache/private-production-runtime-create-spec.json',
-  'node scripts/private-production-runtime-bundle.mjs create',
-  '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
-  '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--spec .cache/private-production-runtime-create-spec.json',
-  'name: Reconfirm current main before protected private-runtime write',
-  'node scripts/protected-private-production-runtime.mjs',
-  '--publish',
-  '--expected .cache/private-production-runtime-expected.json',
-  '--source-head "$GITHUB_SHA"',
-  'name: Prove the private runtime object is not anonymously readable',
-  '--audit-anon',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
-]){
-  ok(privateRuntimeSaveSection.includes(marker),`Private produktionsruntime-bevaring mangler ${marker}`);
-}
-ok(!workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.privateRuntimeSave).includes('continue-on-error'),
-'Det private runtimebundle skal bygges fail-closed');
-for(const forbidden of [
-  'ravscore_active_shadow',
-  'ravscore-active-shadow:',
-  'Restore last verified Candidate G public fallback',
-  'Stage audited last verified Candidate G public fallback',
-  'Save last verified Candidate G public fallback',
-  'candidate-g-last-ready-public-v1-',
-  'candidate-g-public-recovery-fallback.mjs',
-  'Audit actual Candidate G public runtime before deploy',
-  'audit-ravscore-candidate-g-public-shadow.mjs',
-  'Publish bounded Candidate G recovery fallback',
-  'restore-candidate-g-continuation.mjs',
-  'restore-candidate-g-gap-checkpoint.mjs',
-  'candidate-g-continuation-checkpoint-v1-',
-  'candidate-g-continuation-checkpoint.mjs',
-]){
-  ok(!workflow.includes(forbidden),`Den aktive produktionsvej må ikke indeholde Candidate G-checkpoint/shadow/fallback: ${forbidden}`);
-}
-for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/']){
+ok(candidateGStatePipeline.includes('CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION'),'Candidate G-statepipelinen mangler særskilt rekonstrueret schema 2.1');
+ok(publicApp.includes("t('data.emergency'")&&publicI18n.includes('Dataene er ikke aktuelle')&&publicI18n.includes('Die Daten sind nicht aktuell')&&publicI18n.includes('The data is not current'),'Den offentlige brugerflade advarer ikke på DA/DE/EN om nøddriftens aktualitet');
+ok(String(gapCheckpoint.sourceRunId)==='33059522170'&&gapCheckpoint.sourceArtifactName==='RavRadar-support-3633'&&gapCheckpoint.maximumResumeGapHours===3,'Det engangs-godkendte Candidate G-gapcheckpoint er ikke låst til den verificerede kilde og tre timer');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0084-CANDIDATE-G-AUTOMATIC-GAP-RECOVERY.md'),'RDKS mangler DEC-0084 om Candidate G-selvrecovery');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md'),'RDKS mangler DEC-0085 om årsagstro produktion og bundet selvrecovery');
+ok(await exists('docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md'),'RDKS mangler DEC-0109 om den afgrænsede engangsrekonstruktion');
+for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json','data/live/dmi-water-stations.json']){
   ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }
-const pagesArtifactSection=workflow.slice(workflowPositions.artifact,workflowPositions.pagesPrivacyAudit);
-const expectedPagesLiveFiles=['coastal-parts-v2.json','manifest.json','public-condition-details.json','public-conditions.json'];
-const installedPagesLiveFiles=[...pagesArtifactSection.matchAll(/install -m 0644 "\$pages_source\/data\/live\/([^"\s]+)" "\$pages_destination\/data\/live\/([^"\s]+)"/g)]
-  .map(match=>{
-    ok(match[1]===match[2],`Pages-installationen må ikke omdøbe ${match[1]} til ${match[2]}`);
-    return match[1];
-  })
-  .sort();
-ok(JSON.stringify(installedPagesLiveFiles)===JSON.stringify(expectedPagesLiveFiles),
-`Pages-artifactets live-allowliste skal være præcis fire filer: ${installedPagesLiveFiles.join(', ')||'(ingen)'}`);
-const pagesLiveWriteLines=pagesArtifactSection.split('\n').map(line=>line.trim()).filter(line=>line.includes('$pages_destination/data/live'));
-ok(pagesLiveWriteLines.length===5
-  && pagesLiveWriteLines[0]==='mkdir -p "$pages_destination/data/live"'
-  && pagesLiveWriteLines.slice(1).every(line=>line.startsWith('install -m 0644 "$pages_source/data/live/')),
-'Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer');
-const pagesPrivacyAuditSection=workflow.slice(workflowPositions.pagesPrivacyAudit,workflowPositions.pagesUpload);
-for(const marker of [
-  'node scripts/audit-pages-artifact-privacy.mjs',
-  '--site _site',
-  '--private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
-  '--require-private-manifest',
-]){
-  ok(pagesPrivacyAuditSection.includes(marker),`Pages-privacygaten mangler ${marker}`);
-}
-ok(!pagesPrivacyAuditSection.includes('continue-on-error'),'Pages-privacygaten skal være fail-closed før upload');
-for(const marker of [
-  "'NOOP'",
-  "'DEFERRED'",
-  "'BUILT'",
-  "'DEPLOYED'",
-  "'FAILED'",
-  "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v1'",
-  'privatePayloadIncluded: false',
-  "return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED')",
-  "return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED')",
-]){
-  ok(productionWorkflowOutcome.includes(marker),`Produktionsslutstatuskontrakten mangler ${marker}`);
-}
-const deploymentTerminal=workflow.indexOf('name: Seal exact verified deployment terminal');
-const outcomeJob=workflow.indexOf('\n  production-outcome:');
-ok(workflow.indexOf('name: Deploy to GitHub Pages')<workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')
-  && workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')<deploymentTerminal
-  && deploymentTerminal<outcomeJob,
-'DEPLOYED må først forsegles efter Pages og offentlig exact model/210/673-verifikation');
-const outcomeSection=workflow.slice(outcomeJob);
-for(const marker of [
-  'if: always()',
-  'node scripts/production-workflow-outcome.mjs',
-  'name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}',
-  'path: .workflow-outcome/production-outcome.json',
-  "if: always() && steps.classify.outputs.status == 'FAILED'",
-  'exit 1',
-]){
-  ok(outcomeSection.includes(marker),`Workflowets terminalstatus mangler ${marker}`);
-}
-for(const forbidden of ['secrets.','SUPABASE_','data/live/','currentUMps','currentVMps','waterPoint','landPoint','coordinates']){
-  ok(!outcomeSection.includes(forbidden),`Det payloadfri terminalstatusjob må ikke indeholde ${forbidden}`);
-}
 ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
-for(const retiredGpsRuntime of ['js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js']){
-  ok(workflow.includes(`--exclude '${retiredGpsRuntime}'`),`Pages-workflow skal udelukke pensioneret GPS-runtime: ${retiredGpsRuntime}`);
-}
 ok(workflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
 ok(workflow.includes("--exclude '_support/'"),'Pages-workflow skal udelukke supportmappen fra det offentlige artifact');
 ok(workflow.includes("--exclude 'RavRadar-support-*.zip'"),'Pages-workflow skal udelukke support-ZIP fra det offentlige artifact');
@@ -841,17 +393,14 @@ ok(adminHtml.includes('>Kalibreringsgrundlag<')&&!adminHtml.includes('>Model-for
 const adminDashboard=await read('js/ui/admin-dashboard.js');
 ok(!/renderRules|renderKnowledge|openRuleEditor|queueAdminDocumentSave\('rules'|rules_(edit|publish)/.test(adminDashboard),'Skjult Regelværksted-kode må ikke være en aktiv del af adminmodulet');
 ok(!/adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/.test(adminDashboard),'Kalibreringsgrundlaget må ikke kunne aktivere eller tilbagerulle en lokal scoremodel');
-ok(adminDashboard.includes('Siden ændrer aldrig')
-  && adminDashboard.includes('den offentlige RavScore')
-  && !adminDashboard.includes('Siden ændrer aldrig Candidate G'),
-'Kalibreringsgrundlaget skal være tydeligt skrivebeskyttet uden at kalde Candidate G aktiv');
+ok(adminDashboard.includes('Siden ændrer aldrig Candidate G eller den offentlige RavScore'),'Kalibreringsgrundlaget skal være tydeligt skrivebeskyttet');
 const serviceWorker=await read('service-worker.js');
 ok(!/rule-engine|rule-service|(?:national|local|experimental)-rules\.json/.test(serviceWorker),'Regelværkstedets gamle motor og regelsæt må ikke ligge i den offentlige offlinepakke');
 const moduleClosureTest=await read('scripts/test-pages-module-closure-4.0.68.mjs');
 ok(moduleClosureTest.includes('Pages-artifact mangler browsermodul')&&moduleClosureTest.includes('handbook-review-store.js'),'Release mangler Pages-modullukningstest');
 ok(workflow.includes('SUPABASE_URL')&&workflow.includes('SUPABASE_SERVICE_ROLE_KEY'),'Workflow mangler Supabase secrets');
 ok(!workflow.includes('sb_secret_'),'En konkret sb_secret_-værdi må aldrig stå i workflowet');
-const manifest=await readJson('manifest.webmanifest',{});
+const manifest=JSON.parse(await read('manifest.webmanifest'));
 ok(String(manifest.start_url||'').startsWith('.'),'Manifest start_url skal være relativ for domæneskift');
 ok(!await exists('CNAME'),'CNAME må først aktiveres, når DNS og Supabase redirects er klar');
 const decision=await read('docs/rdks/10_DECISIONS/DEC-0013-RELEASE-GOVERNANCE.md');
@@ -863,8 +412,8 @@ for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
-const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema6Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,productionWorkflowOutcome:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
+const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
 await fs.mkdir('release',{recursive:true});
 await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
-await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Beskyttede Pages-filer: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
 console.log(`Release gate bestået for RavRadar ${version}.`);

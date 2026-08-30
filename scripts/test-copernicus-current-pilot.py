@@ -1,92 +1,219 @@
 #!/usr/bin/env python3
-"""Deterministic selection/sharding tests for Copernicus multi-time current."""
+"""Deterministic tests for the private Copernicus current selection contract."""
 from __future__ import annotations
 
-import importlib.util
-from datetime import datetime, timezone
+import json
+import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import numpy as np
 import xarray as xr
 
-from lib.copernicus_current import nearest_shared_uv, nearest_shared_uv_times, safe_record
+from lib.copernicus_current import load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow
+from lib.copernicus_target_identity import target_fingerprint
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def dataset() -> xr.Dataset:
-    u = np.full((2, 3, 1, 3), np.nan)
-    v = np.full((2, 3, 1, 3), np.nan)
-    # At 10 UTC the nearest column is dry; 9.02 is chosen at deepest shared 3 m.
+def need(condition: bool, message: str) -> None:
+    if not condition:
+        raise AssertionError(message)
+
+
+def synthetic_dataset() -> xr.Dataset:
+    # Nearest column (9.000, 57.000) is dry.  The next column has U/V at
+    # different individual levels but only one deepest shared level (3 m).
+    u = np.full((1, 3, 2, 3), np.nan)
+    v = np.full((1, 3, 2, 3), np.nan)
     u[0, :, 0, 1] = [0.1, 0.2, 0.3]
     v[0, :, 0, 1] = [0.4, 0.5, np.nan]
-    # At 11 UTC the same nearest column has only its top layer; selection is
-    # independently recomputed for that native time and may use 9.04 instead.
-    u[1, 0, 0, 1] = 0.2
-    u[1, :, 0, 2] = [0.6, 0.7, 0.8]
-    v[1, :, 0, 2] = [0.9, 1.0, 1.1]
+    u[0, :, 0, 2] = [0.6, 0.7, 0.8]
+    v[0, :, 0, 2] = [0.9, 1.0, 1.1]
     return xr.Dataset(
         data_vars={
             "uo": (("time", "depth", "latitude", "longitude"), u),
             "vo": (("time", "depth", "latitude", "longitude"), v),
         },
         coords={
-            "time": np.array(["2026-08-18T10:00:00", "2026-08-18T11:00:00"], dtype="datetime64[s]"),
-            "depth": [0.0, 3.0, 5.0], "latitude": [57.0], "longitude": [9.0, 9.02, 9.04],
+            "time": np.array(["2026-08-18T10:00:00"], dtype="datetime64[s]"),
+            "depth": [0.0, 3.0, 5.0],
+            "latitude": [57.0, 57.02],
+            "longitude": [9.0, 9.02, 9.04],
         },
     )
 
 
-target = {"partId": "p1", "parentZoneId": "z1", "name": "test", "waterPoint": [9.0, 57.0]}
-times = [datetime(2026, 8, 18, hour, tzinfo=timezone.utc) for hour in (10, 11)]
-records = nearest_shared_uv_times(
-    dataset(), target, source="fixture", product_id="product", dataset_id="dataset",
-    dataset_version="version", expected_times=times,
-)
-assert len(records) == 2
-assert records[0]["gridPoint"] == [9.02, 57.0] and records[0]["verticalLayerM"] == 3.0
-assert records[1]["gridPoint"] == [9.04, 57.0] and records[1]["verticalLayerM"] == 5.0
-assert all(row["componentPair"] == "same-time-cell-layer" and row["interpolation"] is False for row in records)
-assert "uMps" not in safe_record(records[0]) and "vMps" not in safe_record(records[0])
-
-try:
-    nearest_shared_uv_times(
-        dataset().isel(time=[0]), target, source="fixture", product_id="product", dataset_id="dataset",
-        dataset_version="version", expected_times=times,
+def main() -> None:
+    targets = load_targets(ROOT / "data/live/coastal-parts-v2.json")
+    need(len(targets) == 673, "The explicit full-coast research source must retain every central coastal part")
+    target = {"partId": "p1", "parentZoneId": "z1", "name": "test", "waterPoint": [9.0, 57.0]}
+    record = nearest_shared_uv(
+        synthetic_dataset(), target,
+        source="fixture", product_id="product", dataset_id="dataset", dataset_version="version",
     )
-except RuntimeError as error:
-    assert "missing 1 exact requested native hour" in str(error)
-else:
-    raise AssertionError("Missing native time must not be interpolated or held")
+    need(record is not None, "Expected a shared U/V column")
+    need(record["gridPoint"] == [9.02, 57.0], "Selection must skip the nearer dry cell")
+    need(record["verticalLayerM"] == 3.0, "Selection must use the deepest shared layer in the chosen column")
+    need(record["uMps"] == 0.2 and record["vMps"] == 0.5, "U/V must come from the same cell and layer")
+    need(record["interpolation"] is False, "Interpolation must remain disabled")
+    need("uMps" not in safe_record(record) and "vMps" not in safe_record(record), "Safe report must omit raw vectors")
 
-try:
-    nearest_shared_uv(
-        dataset(), target, source="fixture", product_id="product", dataset_id="dataset", dataset_version="version",
+    surface_dataset = synthetic_dataset().sel(depth=[0.0]).assign_coords(depth=[0.5016462])
+    surface_record = nearest_shared_uv(
+        surface_dataset, target,
+        source="fixture", product_id="product", dataset_id="dataset", dataset_version="version",
+        expected_time=datetime(2026, 8, 18, 10, tzinfo=timezone.utc),
     )
-except RuntimeError as error:
-    assert "exactly one time" in str(error)
-else:
-    raise AssertionError("Single-time selector must reject a multi-time dataset")
+    need(surface_record is not None and surface_record["layerQuality"] == "surface-only", "A non-zero top model layer must still be reported as surface-only")
 
-# Load the CLI module without executing main and prove fixed spatial shards are
-# bounded and independent of input ordering.
-spec = importlib.util.spec_from_file_location("copernicus_range_runner", ROOT / "scripts/run-copernicus-current-pilot.py")
-assert spec and spec.loader
-runner = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(runner)
-product = runner.PRODUCTS[0]
-many = [
-    {"partId": f"p-{index:03d}", "parentZoneId": "z", "name": "x", "waterPoint": [9.1 + (index % 10) * 0.01, 57.0 + (index // 10) * 0.01]}
-    for index in range(50)
-]
-forward = runner.spatial_shards(many, product)
-reverse = runner.spatial_shards(list(reversed(many)), product)
-assert [[row["partId"] for row in shard["targets"]] for shard in forward] == [
-    [row["partId"] for row in shard["targets"]] for shard in reverse
-]
-assert all(1 <= len(shard["targets"]) <= runner.SPATIAL_SHARD_MAX_TARGETS for shard in forward)
-for shard in forward:
-    runner.request_bounds(shard["targets"], product)
+    try:
+        nearest_shared_uv(
+            synthetic_dataset(), target,
+            source="fixture", product_id="product", dataset_id="dataset", dataset_version="version",
+            expected_time=datetime(2026, 8, 18, 11, tzinfo=timezone.utc),
+        )
+    except RuntimeError as error:
+        need("expected exact hour" in str(error), "Wrong-time rejection must explain the exact-hour contract")
+    else:
+        raise AssertionError("The pilot must reject a nearest-but-not-exact model hour")
 
-print("OK: Copernicus selection is native-time exact and spatial shards are deterministic and bounded.")
+    far_target = {**target, "partId": "far", "waterPoint": [8.5, 57.0]}
+    need(nearest_shared_uv(
+        synthetic_dataset(), far_target,
+        source="fixture", product_id="product", dataset_id="dataset", dataset_version="version",
+    ) is None, "The Copernicus local pilot must remain capped at 5 km")
+
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "shadow.json"
+        now = datetime(2026, 8, 18, 12, tzinfo=timezone.utc)
+        old = {**record, "validTime": (now - timedelta(hours=169)).isoformat().replace("+00:00", "Z")}
+        fresh = {**record, "validTime": (now - timedelta(hours=2)).isoformat().replace("+00:00", "Z")}
+        path.write_text(json.dumps({"schemaVersion": 1, "records": [old]}), encoding="utf-8")
+        shadow = update_shadow(path, [fresh], now)
+        need(len(shadow["records"]) == 1, "Shadow cache must prune records older than seven days")
+        need(shadow["scoreImpact"] is False and shadow["publicRuntime"] is False, "Pilot must stay private and score-neutral")
+        evidence = safe_shadow_summary(shadow)
+        need(evidence["recordCount"] == 1 and evidence["validTimeCount"] == 1, "Safe evidence must summarize retained times")
+        need(evidence["gridUnstableTargetSourceCount"] == 0 and evidence["layerUnstableTargetSourceCount"] == 0, "One observation must be stable")
+        serialized = json.dumps(evidence)
+        need("uMps" not in serialized and "vMps" not in serialized, "Multi-run evidence must omit raw vectors")
+
+        next_hour = {**record, "validTime": (now - timedelta(hours=1)).isoformat().replace("+00:00", "Z")}
+        two_times = update_shadow(path, [next_hour], now)
+        two_time_evidence = safe_shadow_summary(two_times)
+        need(len(two_times["records"]) == 2, "A restored shadow must retain both different valid times")
+        need(two_time_evidence["validTimeCount"] == 2, "Safe evidence must prove multi-time aggregation")
+
+        sibling_target = {**target, "partId": "p2", "waterPoint": [9.02, 57.0]}
+        sibling_record = {
+            **record,
+            "partId": "p2",
+            "samplingPoint": [9.02, 57.0],
+            "validTime": now.isoformat().replace("+00:00", "Z"),
+        }
+        original_identities = {row["partId"]: row for row in [target, sibling_target]}
+        original_fingerprint = target_fingerprint([target, sibling_target])
+        collected = update_shadow(
+            path,
+            [{**record, "validTime": now.isoformat().replace("+00:00", "Z")}, sibling_record],
+            now,
+            collection_time=now,
+            target_fingerprint=original_fingerprint,
+            target_identities=original_identities,
+            target_part_ids=["p1", "p2"],
+        )
+        need(collected["collections"][-1]["targetFingerprint"] == original_fingerprint,
+             "A completed hour must be bound to the authoritative target geometry")
+        moved_target = {**target, "waterPoint": [9.01, 57.0]}
+        moved_identities = {row["partId"]: row for row in [moved_target, sibling_target]}
+        moved_fingerprint = target_fingerprint([moved_target])
+        moved_record = {
+            **record,
+            "samplingPoint": [9.01, 57.0],
+            "validTime": now.isoformat().replace("+00:00", "Z"),
+        }
+        replaced = update_shadow(
+            path,
+            [moved_record],
+            now,
+            collection_time=now,
+            target_fingerprint=moved_fingerprint,
+            target_identities=moved_identities,
+            target_part_ids=["p1"],
+        )
+        same_hour = [row for row in replaced["records"] if row["validTime"] == moved_record["validTime"]]
+        need(len(same_hour) == 2 and any(row["samplingPoint"] == [9.01, 57.0] for row in same_hour),
+             "Recollection after a point move must replace only the moved part")
+        need(any(row["partId"] == "p2" and row["samplingPoint"] == [9.02, 57.0] for row in same_hour),
+             "An unchanged sibling part must retain its verified row")
+        need(replaced["collections"][-1]["targetFingerprint"] == target_fingerprint([moved_target, sibling_target]),
+             "Reconciled hour must carry the exact retained geometry fingerprint")
+        need(replaced["collections"][-1]["targetPartIds"] == ["p1", "p2"]
+             and replaced["collections"][-1]["recordCount"] == 2,
+             "Reconciled collection metadata must authorize every retained row")
+        need(not any(row["samplingPoint"] == [9.0, 57.0] for row in replaced["records"]),
+             "A moved point must invalidate its retained history at older hours as well")
+
+        retention_path = Path(directory) / "copernicus-current-sibling-retention.json"
+        earlier = now - timedelta(hours=1)
+        earlier_text = earlier.isoformat().replace("+00:00", "Z")
+        first_hour_records = [
+            {**record, "validTime": earlier_text},
+            {**sibling_record, "validTime": earlier_text},
+        ]
+        update_shadow(
+            retention_path,
+            first_hour_records,
+            now,
+            collection_time=earlier,
+            target_fingerprint=original_fingerprint,
+            target_identities=original_identities,
+            target_part_ids=["p1", "p2"],
+        )
+        moved_next_hour = update_shadow(
+            retention_path,
+            [moved_record],
+            now,
+            collection_time=now,
+            target_fingerprint=moved_fingerprint,
+            target_identities=moved_identities,
+            target_part_ids=["p1"],
+        )
+        earlier_rows = [row for row in moved_next_hour["records"] if row["validTime"] == earlier_text]
+        need(len(earlier_rows) == 1 and earlier_rows[0]["partId"] == "p2",
+             "Moving one point must preserve the unchanged sibling's older verified history")
+        earlier_collection = next(
+            row for row in moved_next_hour["collections"] if row["validTime"] == earlier_text
+        )
+        need(earlier_collection["targetPartIds"] == ["p2"] and earlier_collection["recordCount"] == 1,
+             "The preserved sibling hour must be re-authorized with its exact retained identity")
+
+    pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
+    keepalive_workflow = (ROOT / ".github/workflows/preserve-copernicus-current-shadow.yml").read_text(encoding="utf-8")
+    need("sample_time:" in pilot_workflow and '--at "$PILOT_SAMPLE_TIME"' in pilot_workflow,
+         "Manual pilot runs must support a quoted exact-hour backfill")
+    need("build-copernicus-target-registry.py" in pilot_workflow
+         and "--targets .cache/copernicus-current-targets.json" in pilot_workflow,
+         "Normal pilot runs must use the derived DMI-gap target registry")
+    need("7,17,27,37,47,57 * * * *" in keepalive_workflow,
+         "The small private cache must be refreshed more often than DMI cache churn can evict it")
+    need("actions/cache/restore@v6" in keepalive_workflow and "actions/cache/save@v6" not in keepalive_workflow,
+         "Keepalive must only refresh the existing private cache, not create redundant copies")
+    need("actions/upload-artifact" not in keepalive_workflow,
+         "Keepalive must never export the raw shadow to an artifact")
+    need("private-copernicus-current-pilot" in keepalive_workflow,
+         "Pilot and keepalive must serialize access to the same cache")
+    need("python3 scripts/check-copernicus-current-hour.py" in keepalive_workflow
+         and "uMps" not in keepalive_workflow and "vMps" not in keepalive_workflow,
+         "Keepalive must inspect presence without logging raw record contents")
+    need('workflows: ["Update weather and deploy RavRadar"]' in keepalive_workflow
+         and "validate-copernicus-current-pilot.yml/dispatches" in keepalive_workflow,
+         "The reliable external production heartbeat must dispatch a missing current hour")
+
+    print("OK: private Copernicus current selection, provenance safety and 168-hour retention")
+
+
+if __name__ == "__main__":
+    main()

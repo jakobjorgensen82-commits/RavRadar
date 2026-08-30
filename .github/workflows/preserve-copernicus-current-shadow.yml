@@ -27,30 +27,44 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.action == 'requested'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      current_hour_present: ${{ steps.cache-state.outputs.current_hour_present }}
+      target_hour: ${{ steps.cache-state.outputs.target_hour }}
     steps:
       - name: Check out trusted default-branch helper
         uses: actions/checkout@v7
 
-      - name: Restore and refresh the private sealed Copernicus range cache
-        id: range-cache
+      - name: Restore and refresh private seven-day Copernicus shadow cache
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-range-v2-keepalive-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-shadow-v1-keepalive-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            copernicus-current-range-v2-
             copernicus-current-shadow-v1-
 
-      - name: Report cache keepalive without reading private payloads
-        shell: bash
+      - name: Inspect current-hour coverage without logging raw vectors
+        id: cache-state
+        run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
+
+  dispatch-pilot:
+    needs: preserve
+    if: github.event_name == 'workflow_run' && github.event.action == 'requested' && needs.preserve.outputs.current_hour_present != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch private current-hour pilot when production requests a missing hour
         env:
-          MATCHED_CACHE_KEY: ${{ steps.range-cache.outputs.cache-matched-key }}
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if test -n "$MATCHED_CACHE_KEY"; then
-            echo "The existing private range cache was refreshed without reading its payload."
-          else
-            echo "No cache existed to refresh; the DMI-first production workflow will create an exact gap seal when needed."
-          fi
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/validate-copernicus-current-pilot.yml/dispatches" \
+            -f ref=main \
+            -f "inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}"
 
   retry-failed-production:
     if: github.event_name == 'workflow_run' && github.event.action == 'completed' && github.event.workflow_run.event == 'schedule' && contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)

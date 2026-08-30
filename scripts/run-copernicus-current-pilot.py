@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
-"""Acquire and atomically seal the private Copernicus current range cache."""
+"""Run the authenticated, private and score-neutral Copernicus current pilot."""
 from __future__ import annotations
 
 import argparse
 import importlib.metadata
 import json
-import math
 import os
 import shutil
 import sys
@@ -17,32 +16,12 @@ from typing import Any
 import copernicusmarine
 import xarray as xr
 
-from lib.copernicus_current import (
-    COMPONENT_PAIR,
-    FUTURE_ACQUISITION_FRESHNESS_HOURS,
-    LOCAL_MAX_DISTANCE_KM,
-    REQUEST_CONTRACT_ID,
-    SELECTION_POLICY_ID,
-    atomic_write_shadow,
-    file_sha256,
-    load_shadow,
-    load_targets,
-    make_acquisition,
-    make_coverage_collection,
-    make_record,
-    merge_cache_evidence,
-    nearest_shared_uv_times,
-    safe_shadow_summary,
-    select_required_records,
-    utc_iso,
-    validate_target_registry,
-)
+from lib.copernicus_current import LOCAL_MAX_DISTANCE_KM, load_targets, nearest_shared_uv, safe_record, safe_shadow_summary, update_shadow, utc_iso
 from lib.copernicus_target_identity import target_fingerprint
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_TARGETS = ROOT / ".cache/copernicus-current-targets.json"
-DEFAULT_AUTHORITATIVE_TARGETS = ROOT / "data/live/coastal-parts-v2.json"
+DEFAULT_TARGETS = ROOT / "data/live/coastal-parts-v2.json"
 DEFAULT_SHADOW = ROOT / ".cache/copernicus-current-shadow.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/copernicus-current-pilot.json"
 DEFAULT_SUMMARY = ROOT / "data/diagnostics/copernicus-current-pilot.txt"
@@ -69,70 +48,43 @@ PRODUCTS = [
         "maximumLongitude": 13.0,
         "minimumLatitude": 46.0,
         "maximumLatitude": 62.74324035644531,
+        # AMM15 masks the Baltic/Kattegat. Keep the pilot request bounded to
+        # west-coast and western-Limfjord candidates instead of downloading a
+        # dense rectangle across all of Denmark.
         "targetMinimumLongitude": 7.5,
         "targetMaximumLongitude": 9.5,
     },
 ]
 
-SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
-SPATIAL_SHARD_LATITUDE_DEGREES = 0.75
-SPATIAL_SHARD_MAX_TARGETS = 24
-SPATIAL_SHARD_POLICY_ID = "fixed-grid-1.25lon-0.75lat-max24-v1"
-
 
 def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
-    parser.add_argument("--authoritative-targets", type=Path, default=DEFAULT_AUTHORITATIVE_TARGETS)
+    parser.add_argument("--authoritative-targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
-    parser.add_argument("--at", help="Locked productionReferenceAt; must match the target registry")
-    parser.add_argument("--fixture-directory", type=Path, help="Use local NetCDF fixtures")
-    parser.add_argument("--acquisition-at", help="Deterministic actual acquisition clock for tests")
+    parser.add_argument("--at", help="UTC time to sample; defaults to the current hour")
+    parser.add_argument("--fixture-directory", type=Path, help="Use local NetCDF fixtures and skip authentication/download")
     return parser.parse_args()
 
 
-def parse_time(value: Any, label: str) -> datetime:
-    parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+def selected_time(value: str | None) -> datetime:
+    if value:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    else:
+        parsed = datetime.now(timezone.utc)
     if parsed.tzinfo is None:
-        raise ValueError(f"{label} must include a timezone")
-    return parsed.astimezone(timezone.utc)
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
 
-def selected_reference(value: str | None, registry: dict[str, Any]) -> datetime:
-    registry_reference = parse_time(registry["productionReferenceAt"], "registry production reference")
-    requested = registry_reference if value is None else parse_time(value, "requested production reference")
-    if requested != registry_reference:
-        raise RuntimeError("Copernicus production reference cannot be rebound after the DMI-gap matrix was built")
-    return registry_reference
-
-
-def eligible_target(target: dict[str, Any], product: dict[str, Any]) -> bool:
-    return bool(
-        product["targetMinimumLongitude"] <= target["waterPoint"][0] <= product["targetMaximumLongitude"]
+def eligible_targets(targets: list[dict[str, Any]], product: dict[str, Any]) -> list[dict[str, Any]]:
+    return [
+        target for target in targets
+        if product["targetMinimumLongitude"] <= target["waterPoint"][0] <= product["targetMaximumLongitude"]
         and product["minimumLatitude"] <= target["waterPoint"][1] <= product["maximumLatitude"]
-    )
-
-
-def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> list[dict[str, Any]]:
-    """Create fixed-cell, bounded and ordering-independent request shards."""
-    buckets: dict[tuple[int, int], list[dict[str, Any]]] = {}
-    for target in targets:
-        longitude, latitude = map(float, target["waterPoint"])
-        x = math.floor((longitude - float(product["minimumLongitude"])) / SPATIAL_SHARD_LONGITUDE_DEGREES)
-        y = math.floor((latitude - float(product["minimumLatitude"])) / SPATIAL_SHARD_LATITUDE_DEGREES)
-        buckets.setdefault((x, y), []).append(target)
-    shards: list[dict[str, Any]] = []
-    for bucket in sorted(buckets):
-        rows = sorted(buckets[bucket], key=lambda row: str(row["partId"]))
-        for offset in range(0, len(rows), SPATIAL_SHARD_MAX_TARGETS):
-            chunk = rows[offset:offset + SPATIAL_SHARD_MAX_TARGETS]
-            shards.append({
-                "shardId": f"{product['source']}:{bucket[0]}:{bucket[1]}:{offset // SPATIAL_SHARD_MAX_TARGETS}",
-                "targets": chunk,
-            })
-    return shards
+    ]
 
 
 def request_bounds(targets: list[dict[str, Any]], product: dict[str, Any]) -> tuple[float, float, float, float]:
@@ -140,27 +92,15 @@ def request_bounds(targets: list[dict[str, Any]], product: dict[str, Any]) -> tu
         raise RuntimeError(f"No eligible targets for {product['source']}")
     longitudes = [row["waterPoint"][0] for row in targets]
     latitudes = [row["waterPoint"][1] for row in targets]
-    bounds = (
+    return (
         max(product["minimumLongitude"], min(longitudes) - 0.12),
         min(product["maximumLongitude"], max(longitudes) + 0.12),
         max(product["minimumLatitude"], min(latitudes) - 0.08),
         min(product["maximumLatitude"], max(latitudes) + 0.08),
     )
-    if bounds[1] - bounds[0] > SPATIAL_SHARD_LONGITUDE_DEGREES + 0.240001:
-        raise RuntimeError("Copernicus longitude shard exceeded its deterministic bound")
-    if bounds[3] - bounds[2] > SPATIAL_SHARD_LATITUDE_DEGREES + 0.160001:
-        raise RuntimeError("Copernicus latitude shard exceeded its deterministic bound")
-    return bounds
 
 
-def download_subset(
-    product: dict[str, Any],
-    targets: list[dict[str, Any]],
-    start: datetime,
-    end: datetime,
-    output_directory: Path,
-    shard_index: int,
-) -> Path:
+def download_subset(product: dict[str, Any], targets: list[dict[str, Any]], at: datetime, output_directory: Path) -> Path:
     minimum_lon, maximum_lon, minimum_lat, maximum_lat = request_bounds(targets, product)
     response = copernicusmarine.subset(
         dataset_id=product["datasetId"],
@@ -170,10 +110,10 @@ def download_subset(
         maximum_longitude=maximum_lon,
         minimum_latitude=minimum_lat,
         maximum_latitude=maximum_lat,
-        start_datetime=start,
-        end_datetime=end,
+        start_datetime=at,
+        end_datetime=at,
         coordinates_selection_method="nearest",
-        output_filename=f"{product['source']}-{shard_index:03d}.nc",
+        output_filename=f"{product['source']}.nc",
         output_directory=output_directory,
         file_format="netcdf",
         service="geoseries",
@@ -187,226 +127,150 @@ def download_subset(
     return path
 
 
-def fixture_path(directory: Path, product: dict[str, Any], shard_index: int) -> Path:
-    shard = directory / f"{product['source']}-{shard_index:03d}.nc"
-    path = shard if shard.exists() else directory / f"{product['source']}.nc"
-    if not path.exists() or path.stat().st_size <= 0:
-        raise RuntimeError(f"Missing Copernicus fixture for {product['source']} shard {shard_index}")
+def fixture_path(directory: Path, product: dict[str, Any]) -> Path:
+    path = directory / f"{product['source']}.nc"
+    if not path.exists():
+        raise RuntimeError(f"Missing fixture {path}")
     return path
 
 
 def no_credentials_in_report(report: dict[str, Any]) -> None:
     serialized = json.dumps(report, ensure_ascii=False).lower()
-    for value in (
+    forbidden_values = [
         os.getenv("COPERNICUSMARINE_SERVICE_USERNAME", ""),
         os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD", ""),
-    ):
+    ]
+    for value in forbidden_values:
         if value and value.lower() in serialized:
-            raise RuntimeError("Credential material reached the safe Copernicus report")
-    if any(token in serialized for token in ("password", "service_username", "service_password", "samplingpoint", "gridpoint", "umps", "vmps")):
-        raise RuntimeError("Private field name reached the safe Copernicus report")
-
-
-def atomic_write_text(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    try:
-        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(text)
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
+            raise RuntimeError("Credential material reached the safe pilot report")
+    if any(token in serialized for token in ("password", "service_username", "service_password")):
+        raise RuntimeError("Credential field name reached the safe pilot report")
 
 
 def main() -> int:
     args = arguments()
-    registry = validate_target_registry(json.loads(args.targets.read_text(encoding="utf-8")))
-    reference = selected_reference(args.at, registry)
-    acquisition_at = parse_time(args.acquisition_at, "acquisition time") if args.acquisition_at else datetime.now(timezone.utc)
-    if abs((acquisition_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
-        raise RuntimeError("Actual Copernicus acquisition clock is outside four hours of the locked production reference")
-
+    at = selected_time(args.at)
+    targets = load_targets(args.targets)
     authoritative_targets = load_targets(args.authoritative_targets)
-    authoritative_by_part = {row["partId"]: row for row in authoritative_targets}
-    registry_targets = registry["targets"]
-    if registry["targetRegistrySha256"] != target_fingerprint(authoritative_targets):
-        raise RuntimeError("Copernicus target registry no longer matches the full central target registry")
-    for target in registry_targets:
+    authoritative_by_part = {target["partId"]: target for target in authoritative_targets}
+    for target in targets:
         authoritative = authoritative_by_part.get(target["partId"])
-        if authoritative is None or target_fingerprint([target]) != target_fingerprint([authoritative]):
-            raise RuntimeError("Copernicus target registry contains a changed central target identity")
-    target_identities = {row["partId"]: row for row in authoritative_targets}
-    required_pairs = registry["requiredPairs"]
-
-    existing = load_shadow(args.shadow, reference, target_identities)
-    existing_acquisitions, existing_records = merge_cache_evidence(existing, [], [], reference, target_identities)
-    existing_refs, initial_missing = select_required_records(
-        required_pairs, existing_acquisitions, existing_records, reference,
-    )
-    initial_missing_keys = {(row["partId"], row["validTime"]) for row in initial_missing}
-    remaining = set(initial_missing_keys)
-
-    if remaining and not args.fixture_directory:
+        if (
+            authoritative is None
+            or authoritative["parentZoneId"] != target["parentZoneId"]
+            or [round(float(value), 7) for value in authoritative["waterPoint"]]
+            != [round(float(value), 7) for value in target["waterPoint"]]
+        ):
+            raise RuntimeError(f"Selected Copernicus target is not identical to central geometry: {target['partId']}")
+    targets_fingerprint = target_fingerprint(targets)
+    target_identities = {
+        target["partId"]: {
+            "partId": target["partId"],
+            "parentZoneId": target["parentZoneId"],
+            "waterPoint": [
+                round(float(target["waterPoint"][0]), 7),
+                round(float(target["waterPoint"][1]), 7),
+            ],
+        }
+        for target in authoritative_targets
+    }
+    if targets and not args.fixture_directory:
         if not os.getenv("COPERNICUSMARINE_SERVICE_USERNAME") or not os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD"):
             raise RuntimeError("Copernicus credentials are required through environment secrets")
 
-    temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-range-"))
-    new_acquisitions: list[dict[str, Any]] = []
-    new_records: list[dict[str, Any]] = []
+    temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-"))
+    raw_records: list[dict[str, Any]] = []
     product_reports: list[dict[str, Any]] = []
+    selected_by_part: dict[str, dict[str, Any]] = {}
     try:
         for product in PRODUCTS:
-            source_targets = [row for row in registry_targets if eligible_target(row, product)]
-            source_shards = spatial_shards(source_targets, product)
-            product_record_count = 0
-            executed_shards = 0
-            surface_count = 0
-            for shard_index, shard in enumerate(source_shards):
-                times_by_part: dict[str, list[datetime]] = {}
-                for target in shard["targets"]:
-                    times = sorted(
-                        parse_time(valid_time, "required pair time")
-                        for part_id, valid_time in remaining if part_id == target["partId"]
-                    )
-                    if times:
-                        times_by_part[target["partId"]] = times
-                if not times_by_part:
-                    continue
-                executed_shards += 1
-                shard_targets = [row for row in shard["targets"] if row["partId"] in times_by_part]
-                native_times = sorted({value for values in times_by_part.values() for value in values})
-                start, end = native_times[0], native_times[-1]
-                path = (
-                    fixture_path(args.fixture_directory, product, shard_index)
-                    if args.fixture_directory
-                    else download_subset(product, shard_targets, start, end, temporary, shard_index)
-                )
-                # Bind the exact downloaded bytes before xarray/netCDF parsing.
-                subset_sha256 = file_sha256(path)
-                raw_records: list[dict[str, Any]] = []
+            product_targets = eligible_targets(targets, product)
+            records: list[dict[str, Any]] = []
+            if product_targets:
+                path = fixture_path(args.fixture_directory, product) if args.fixture_directory else download_subset(product, product_targets, at, temporary)
                 with xr.open_dataset(path) as dataset:
-                    for target in shard_targets:
-                        raw_records.extend(nearest_shared_uv_times(
+                    records = [
+                        record for target in product_targets
+                        if (record := nearest_shared_uv(
                             dataset,
                             target,
                             source=product["source"],
                             product_id=product["productId"],
                             dataset_id=product["datasetId"],
                             dataset_version=product["datasetVersion"],
-                            expected_times=times_by_part[target["partId"]],
-                        ))
-                acquisition = make_acquisition(
-                    source=product["source"],
-                    acquisition_at=acquisition_at,
-                    request_start_at=start,
-                    request_end_at=end,
-                    targets=shard_targets,
-                    native_valid_times=native_times,
-                    subset_sha256=subset_sha256,
-                    record_count=len(raw_records),
-                    request_contract_id=REQUEST_CONTRACT_ID,
-                )
-                records = [make_record(row, acquisition, target_identities[row["partId"]]) for row in raw_records]
-                if records:
-                    new_acquisitions.append(acquisition)
-                    new_records.extend(records)
-                for row in records:
-                    remaining.discard((row["partId"], row["validTime"]))
-                product_record_count += len(records)
-                surface_count += sum(row["layerQuality"] == "surface-only" for row in records)
+                            expected_time=at,
+                        )) is not None
+                    ]
+            raw_records.extend(records)
+            for record in records:
+                selected_by_part.setdefault(record["partId"], record)
             product_reports.append({
                 "source": product["source"],
                 "productId": product["productId"],
                 "datasetId": product["datasetId"],
                 "datasetVersion": product["datasetVersion"],
-                "spatialShardPolicyId": SPATIAL_SHARD_POLICY_ID,
-                "executedShardCount": executed_shards,
-                "verifiedPairCount": product_record_count,
-                "surfaceOnlyCount": surface_count,
+                "eligibleTargetCount": len(product_targets),
+                "verifiedWithin5KmCount": len(records),
+                "surfaceOnlyCount": sum(row["layerQuality"] == "surface-only" for row in records),
+                "validTimes": sorted({row["validTime"] for row in records}),
             })
     finally:
         shutil.rmtree(temporary, ignore_errors=True)
 
-    acquisitions, records = merge_cache_evidence(
-        existing, new_acquisitions, new_records, reference, target_identities,
-    )
-    record_refs, missing = select_required_records(required_pairs, acquisitions, records, reference)
-    if missing:
-        raise RuntimeError(
-            f"Copernicus range acquisition is incomplete for {len(missing)}/{len(required_pairs)} exact DMI-gap pairs"
-        )
-    collection = make_coverage_collection(
-        production_reference_at=reference,
-        target_registry_sha256=registry["targetRegistrySha256"],
-        dmi_current_input_sha256=registry["dmiCurrentInputSha256"],
-        required_pairs=required_pairs,
-        record_refs=record_refs,
-        sealed_at=acquisition_at,
-    )
-    shadow = atomic_write_shadow(
+    shadow = update_shadow(
         args.shadow,
-        acquisitions=acquisitions,
-        records=records,
-        collection=collection,
-        updated_at=acquisition_at,
+        raw_records,
+        datetime.now(timezone.utc),
+        collection_time=at,
+        target_fingerprint=targets_fingerprint,
         target_identities=target_identities,
+        target_part_ids=[target["partId"] for target in targets],
     )
-
-    source_by_acquisition = {row["acquisitionId"]: row["source"] for row in acquisitions}
-    selected_by_source = {source: 0 for source in source_by_acquisition.values()}
-    for ref in record_refs:
-        source = source_by_acquisition[ref["acquisitionId"]]
-        selected_by_source[source] = selected_by_source.get(source, 0) + 1
-    existing_ids = {row["recordId"] for row in existing_records}
-    reused_history_count = sum(
-        ref["recordId"] in existing_ids and parse_time(ref["validTime"], "ref time") < reference
-        for ref in record_refs
-    )
+    selected = [safe_record(selected_by_part[key]) for key in sorted(selected_by_part)]
     report = {
-        "schemaVersion": 2,
-        "generatedAt": utc_iso(acquisition_at),
-        "productionReferenceAt": utc_iso(reference),
-        "rangeStartAt": registry["rangeStartAt"],
-        "rangeEndAt": registry["rangeEndAt"],
+        "schemaVersion": 1,
+        "generatedAt": utc_iso(datetime.now(timezone.utc)),
+        "requestedTime": utc_iso(at),
         "source": "authenticated-copernicus-marine-toolbox" if not args.fixture_directory else "local-fixture",
         "toolboxVersion": importlib.metadata.version("copernicusmarine"),
-        "requestContractId": REQUEST_CONTRACT_ID,
-        "selectionPolicyId": SELECTION_POLICY_ID,
-        "spatialShardPolicyId": SPATIAL_SHARD_POLICY_ID,
-        "componentPair": COMPONENT_PAIR,
+        "selectionRule": "source-order-then-nearest-shared-uv-column-then-deepest-common-layer",
+        "sourceOrder": [row["source"] for row in PRODUCTS],
+        "maximumDistanceKm": LOCAL_MAX_DISTANCE_KM,
         "interpolation": False,
         "scoreImpact": False,
         "publicRuntime": False,
-        "credentialsIncluded": False,
-        "rawVectorsIncluded": False,
-        "targetCount": registry["targetCount"],
-        "requiredPairCount": len(required_pairs),
-        "verifiedPairCount": len(record_refs),
-        "missingPairCount": 0,
-        "reusedHistoricalPairCount": reused_history_count,
-        "newAcquisitionCount": len(new_acquisitions),
-        "selectedPairsBySource": dict(sorted(selected_by_source.items())),
-        "cacheRecordCount": len(records),
-        "cacheAcquisitionCount": len(acquisitions),
-        "completeCoverageCollectionCount": len(shadow["collections"]),
+        "retentionHours": 168,
+        "targetCount": len(targets),
+        "targetFingerprint": targets_fingerprint,
+        "verifiedUniqueTargetCount": len(selected),
+        "missingTargetCount": len(targets) - len(selected),
+        "shadowRecordCount": len(shadow.get("records") or []),
         "shadowEvidence": safe_shadow_summary(shadow),
         "products": product_reports,
+        "verifiedTargets": selected,
     }
     no_credentials_in_report(report)
-    atomic_write_text(args.report, json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
+    if any("uMps" in row or "vMps" in row for row in report["verifiedTargets"]):
+        raise RuntimeError("Raw U/V leaked into the safe pilot report")
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     lines = [
-        "RavRadar privat Copernicus-strømrange",
-        f"Produktionsreference: {report['productionReferenceAt']}",
-        f"Eksakte DMI-gappar: {report['verifiedPairCount']}/{report['requiredPairCount']}",
-        f"Genbrugte historiske par: {report['reusedHistoricalPairCount']}",
-        f"Nye komplette acquisitions: {report['newAcquisitionCount']}",
-        "Coverage-seal: COMPLETE",
-        "Interpolation/hold: nej",
+        "RavRadar privat Copernicus-strømpilot",
+        f"Genereret: {report['generatedAt']}",
+        f"Mål: {report['targetCount']}",
+        f"Unikke mål med eksakt fælles U/V inden for 5 km: {report['verifiedUniqueTargetCount']}",
+        f"Fortsat uden Copernicus-par: {report['missingTargetCount']}",
+        "Scorepåvirkning: nej",
+        "Offentlig runtime: nej",
+        "Interpolation: nej",
     ]
-    atomic_write_text(args.summary, "\n".join(lines) + "\n")
+    for product in product_reports:
+        lines.append(
+            f"{product['source']}: {product['verifiedWithin5KmCount']}/{product['eligibleTargetCount']} "
+            f"(kun overfladelag: {product['surfaceOnlyCount']})"
+        )
+    args.summary.parent.mkdir(parents=True, exist_ok=True)
+    args.summary.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print("\n".join(lines))
     return 0
 
@@ -414,6 +278,6 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
-    except Exception as error:
+    except Exception as error:  # concise CI failure without dumping credential-bearing state
         print(f"Copernicus pilot failed: {error}", file=sys.stderr)
         raise SystemExit(1)

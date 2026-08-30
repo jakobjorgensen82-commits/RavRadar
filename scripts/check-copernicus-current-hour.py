@@ -8,12 +8,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from lib.copernicus_current import (
-    TARGET_REGISTRY_KIND,
-    validate_legacy_shadow_for_migration,
-    validate_shadow,
-    validate_target_registry,
-)
 from lib.copernicus_target_identity import target_fingerprint, targets_from_registry
 
 
@@ -54,65 +48,20 @@ def inspect(
     target_hour: datetime,
     expected_fingerprint: str | None = None,
     expected_points: dict[str, tuple[float, float]] | None = None,
-    range_registry: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not path.exists() or path.stat().st_size <= 0:
         return {"cachePresent": False, "currentHourPresent": False, "targetFingerprintMatch": False, "recordCount": 0}
 
     document = json.loads(path.read_text(encoding="utf-8"))
-    if document.get("schemaVersion") == 2 and not isinstance(document.get("schemaVersion"), bool):
-        target_identities = {
-            row["partId"]: row for row in range_registry["targets"]
-        } if range_registry is not None else None
-        try:
-            cache = validate_shadow(document, target_identities)
-        except (TypeError, ValueError) as error:
-            raise RuntimeError(f"Private Copernicus schema-2 cache is invalid: {error}") from None
-        target_text = target_hour.isoformat().replace("+00:00", "Z")
-        matches = [
-            row for row in cache["collections"]
-            if row["status"] == "COMPLETE" and row["productionReferenceAt"] == target_text
-        ]
-        exact_match = len(matches) == 1
-        if exact_match and range_registry is not None:
-            collection = matches[0]
-            expected = {
-                "rangeStartAt": range_registry["rangeStartAt"],
-                "rangeEndAt": range_registry["rangeEndAt"],
-                "coldBridgeHours": range_registry["coldBridgeHours"],
-                "publicHourCount": range_registry["publicHourCount"],
-                "targetRegistrySha256": range_registry["targetRegistrySha256"],
-                "dmiCurrentInputSha256": range_registry["dmiCurrentInputSha256"],
-                "dmiVerifierContractId": range_registry["dmiVerifierContractId"],
-                "requiredPairsSha256": range_registry["requiredPairsSha256"],
-                "requiredPairCount": range_registry["requiredPairCount"],
-            }
-            exact_match = all(collection.get(key) == value for key, value in expected.items())
-        elif exact_match and expected_fingerprint is not None:
-            exact_match = matches[0].get("targetRegistrySha256") == expected_fingerprint
-        return {
-            "cachePresent": True,
-            "currentHourPresent": exact_match,
-            "targetFingerprintMatch": exact_match,
-            "recordCount": len(cache["records"]),
-        }
-
-    try:
-        validate_legacy_shadow_for_migration(document)
-    except (TypeError, ValueError) as error:
-        raise RuntimeError(f"Private Copernicus legacy cache is invalid: {error}") from None
-    if range_registry is not None:
-        # A schema-1 hour collection cannot attest the new target/DMI-bound
-        # -48..+117 matrix.  Force the one-way range acquisition/migration.
-        return {
-            "cachePresent": True,
-            "currentHourPresent": False,
-            "targetFingerprintMatch": False,
-            "recordCount": len(document["records"]),
-        }
     if document.get("schemaVersion") != 1:
         raise RuntimeError("Private Copernicus cache has an unsupported schema")
+    if document.get("retentionHours") != 168:
+        raise RuntimeError("Private Copernicus cache has an unsafe retention value")
+    if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
+        raise RuntimeError("Private Copernicus cache has unsafe runtime metadata")
     records = document.get("records")
+    if not isinstance(records, list):
+        raise RuntimeError("Private Copernicus cache records are malformed")
 
     record_times: list[datetime] = []
     for record in records:
@@ -193,31 +142,13 @@ def write_outputs(path: Path | None, state: dict[str, Any], target_hour: datetim
 def main() -> int:
     args = arguments()
     target_hour = utc_hour(args.at)
-    range_registry = None
-    target_rows = None
-    if args.targets:
-        target_document = json.loads(args.targets.read_text(encoding="utf-8"))
-        if target_document.get("kind") == TARGET_REGISTRY_KIND:
-            range_registry = validate_target_registry(target_document)
-            target_rows = range_registry["targets"]
-        else:
-            target_rows = targets_from_registry(args.targets)
-    expected_fingerprint = (
-        range_registry["targetRegistrySha256"] if range_registry is not None
-        else target_fingerprint(target_rows) if target_rows is not None
-        else None
-    )
+    target_rows = targets_from_registry(args.targets) if args.targets else None
+    expected_fingerprint = target_fingerprint(target_rows) if target_rows is not None else None
     expected_points = {
         row["partId"]: (round(float(row["waterPoint"][0]), 7), round(float(row["waterPoint"][1]), 7))
         for row in target_rows
     } if target_rows is not None else None
-    state = inspect(
-        args.shadow,
-        target_hour,
-        expected_fingerprint,
-        expected_points,
-        range_registry,
-    )
+    state = inspect(args.shadow, target_hour, expected_fingerprint, expected_points)
     write_outputs(args.github_output, state, target_hour)
     if not state["cachePresent"]:
         print("Private Copernicus cache is absent; current-hour collection is required")

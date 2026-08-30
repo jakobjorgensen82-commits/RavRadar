@@ -2,13 +2,9 @@ import fs from 'node:fs/promises';
 import { buildFlowArrowCandidates, installFlowArrows } from '../js/map/map-view.js';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 
 const failures=[];
 const need=(ok,message)=>{if(!ok)failures.push(message);};
-const modelBinding=ravScoreModelBinding();
-const scoreProfile=resolvePublicRavScoreProfile({modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true});
 const flowPoints={
   current:[10.1,56.1],wind:[10.2,56.2],
   sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'}
@@ -20,11 +16,11 @@ const part=(zoneId,name,point,currentDirectionDeg,windDirectionDeg,overrides={})
 const full={
   datasetId:'rr-arrow-density-test',generatedAt:'2026-08-15T12:00:00.000Z',
   zones:{Z1:{provider:'dmi',flowPoints,current:{currentDirectionDeg:80,windDirectionDeg:260},forecast:{hourly:[]}}},
-  coastalParts:{schemaVersion:2,enabled:true,modelBinding,scoreProfile,scoreAvailability:{schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:1,unavailableZoneCount:0,totalZoneCount:1,unavailableZones:[]},expectedPartCount:3,scoredPartCount:3,parts:{
+  coastalParts:{schemaVersion:1,enabled:true,expectedPartCount:3,scoredPartCount:3,parts:{
     P1:part('Z1','Del 1',[10,56],90,270,{flowPoints:{...flowPoints,sources:{current:'dmi-marine-grid',wind:'dmi-marine-wind-grid'}}}),
     P2:part('Z1','Del 2',[10.5,56.5],100,280,{flowPoints:{...flowPoints,sources:{current:'zone-marine-anchor',wind:'zone-marine-anchor'}}}),
     P3:part('Z1','Del 3',[11,57],110,290,{flowPoints:{current:[11.1,57.1],wind:[11.2,57.2],sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'}}})
-  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{available:true,status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1',modelBinding},beach:{available:true,status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1',modelBinding}}]}}}
+  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1'},beach:{status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1'}}]}}}
 };
 const startup=buildPublicConditions(full),details=buildPublicConditionDetails(full);
 need(Object.keys(startup.coastalParts.parts).join(',')==='P1','Startpakken skal kun bære det aktuelle vinderpunkts flowdata.');
@@ -104,10 +100,9 @@ need(overviewLayer.counts().wind===1&&overviewLayer.counts().current===1,'Det re
 need(closeLayer.counts().wind===2&&closeLayer.counts().current===2,'Det renderede indzoomede lag skal vise flere fysisk adskilte DMI-pile.');
 
 const updateWeather=await fs.readFile('scripts/update-weather.mjs','utf8');
-const productionAdapters=await fs.readFile('scripts/lib/ravscore-production-adapters.mjs','utf8');
 const app=await fs.readFile('app.js','utf8');
-need(updateWeather.includes('selectLatestLocalScoreRowAtOrBefore(hourly, generatedAt)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&/flowPointsFromForecastRecord\(\s*row\.record,\s*row\.waterPoint,\s*score\?\.time \?\? generatedAt,\s*row,/s.test(updateWeather),'Produktionsbygningen låser ikke score og pile til zonens samme faktiske time og delidentitet.');
-need(productionAdapters.includes('export function verifiedBulkCurrent')&&productionAdapters.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)')&&productionAdapters.includes('source?.verticalLayer'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
+need(updateWeather.includes('selectLatestLocalScoreRowAtOrBefore(hourly, generatedAt)')&&updateWeather.includes('row.scores.find(candidate => Date.parse(candidate.time) === Date.parse(currentReferenceAt))')&&updateWeather.includes('flowPointsFromForecastRecord(row.record, row.waterPoint, score?.time ?? generatedAt)'),'Produktionsbygningen låser ikke score og pile til zonens samme faktiske time.');
+need(updateWeather.includes('function verifiedBulkCurrent')&&updateWeather.includes('verifiedBulkCurrent(bulkCache, bulkZone, point, rowCurrent)')&&updateWeather.includes('samePoint(source?.samplingPoint, expectedSamplingPoint)'),'Scorebygningen accepterer strøm uden hver times dokumenterede vandkolonne og dybdelag.');
 need(updateWeather.includes('function withOnlyVerifiedCurrent')&&updateWeather.includes('const safeRecord = withOnlyVerifiedCurrent(record, zonePoint(feature));'),'Gamle prognosecacher kan stadig føre ikke-verificeret strøm til score eller pil.');
 const directDmiBlock=updateWeather.slice(updateWeather.indexOf('async function fromDmi('),updateWeather.indexOf('function mergeHourlyPreferDmi('));
 need(directDmiBlock.includes("['sea-mean-deviation', 'water-temperature']")&&!directDmiBlock.includes("['sea-mean-deviation', 'current-u'"),'Direkte ForecastEDR må ikke levere strøm uden dokumenteret fælles vandkolonne og dybdelag.');

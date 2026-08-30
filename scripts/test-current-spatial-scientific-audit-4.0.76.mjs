@@ -131,7 +131,7 @@ for(const part of expectedParts){
     if(!verifiedBulkRow(bz,part.waterPoint,syntheticRow)){failures.push(`${bulkId}: den viste DMI-strøm består ikke den lokale celle-/lagkontrol`);continue;}
     sourceClass='dmi-local';expectedArrowSource='dmi-marine-grid';
   }else{
-    const supplementalProof=verifiedLivePilotSource(currentProof,part,{requireStatus:true});
+    const supplementalProof=verifiedLivePilotSource(currentProof,part.waterPoint,{requireStatus:true});
     if(!supplementalProof){failures.push(`${bulkId}: den viste supplerende strøm består ikke celle-, lag-, afstands- og kildekontrollen`);continue;}
     if(dmiOnlyRollback){failures.push(`${bulkId}: rollbacktilstanden viser stadig supplerende strøm`);continue;}
     const selectedTimeMs=Date.parse(runtimePart?.current?.time);

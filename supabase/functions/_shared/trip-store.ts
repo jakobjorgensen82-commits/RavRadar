@@ -5,21 +5,11 @@ import {
   assertIdempotencySourceRow,
   projectSupabaseObservationRow,
 } from "./trip-source-projection.js";
-import { projectTripLogDto } from "../../../js/services/calibration-eligibility.js";
-import { ravScoreModelBinding } from "../../../js/core/ravscore-model-contract.js";
-
-const ACTIVE_RAVSCORE_TRIP_RPC = "ravradar_trip_v3_active_binding_admitted";
-const RAVSCORE_MODEL_NOT_ACTIVE = "RAVSCORE_MODEL_NOT_ACTIVE";
 
 const OWN_TRIP_FIELDS = [
-  "client_observation_id", "trip_id", "observed_at", "trip_started_at", "trip_ended_at",
-  "search_minutes", "search_coverage", "hunt_mode", "found", "result", "grams",
-  "actual_zone_id", "actual_coastal_part_id", "forecast_zone_id", "forecast_coastal_part_id",
-  "zone_name", "schema_version", "data_quality_flags", "model_version", "rav_score",
-  "calibration_eligible", "forecast_snapshot_id", "forecast_issued_at", "forecast_valid_at",
-  "forecast_captured_at", "calibration_features", "weather_snapshot", "wind_speed_mps",
-  "wind_direction_deg", "wave_height_m", "wave_period_s", "water_level_cm",
-  "current_speed_mps", "current_direction_deg",
+  "id", "client_observation_id", "trip_id", "observed_at", "trip_started_at", "trip_ended_at", "zone_id",
+  "search_minutes", "hunt_mode", "found", "result", "grams", "actual_zone_id",
+  "actual_coastal_part_id", "zone_name", "schema_version", "data_quality_flags",
 ].join(",");
 const SUPABASE_IDEMPOTENCY_TIMESTAMPS = [
   "observed_at", "trip_started_at", "trip_ended_at", "forecast_issued_at",
@@ -115,10 +105,6 @@ async function storeInSupabase(payload: Record<string, unknown>) {
     body: JSON.stringify(payload),
   }, 8_000);
   if (!response.ok) {
-    const errorText = (await response.text()).slice(0, 2_000);
-    if (errorText.includes(RAVSCORE_MODEL_NOT_ACTIVE)) {
-      throw new GatewayError(409, RAVSCORE_MODEL_NOT_ACTIVE);
-    }
     if (response.status === 409) throw new GatewayError(409, "TRIP_IDEMPOTENCY_CONFLICT");
     throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
   }
@@ -157,66 +143,6 @@ async function storeInSupabase(payload: Record<string, unknown>) {
   }
 }
 
-function requiredBindingFeature(features: Record<string, unknown>, name: string) {
-  const value = features[name];
-  if (typeof value !== "string" || !value) {
-    throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
-  }
-  return value;
-}
-
-export function activeRavScoreTripAdmissionBody(payload: Record<string, unknown>) {
-  const features = payload.calibration_features;
-  if (!features || typeof features !== "object" || Array.isArray(features)) {
-    throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
-  }
-  const binding = features as Record<string, unknown>;
-  return Object.freeze({
-    p_model_id: requiredBindingFeature(binding, "modelVersion"),
-    p_state_schema_version: requiredBindingFeature(binding, "modelStateVersion"),
-    p_variant_id: requiredBindingFeature(binding, "modelVariantId"),
-    p_profile_id: requiredBindingFeature(binding, "modelProfileId"),
-    p_component_schema_id: requiredBindingFeature(binding, "modelComponentSchemaId"),
-    p_explanation_schema_id: requiredBindingFeature(binding, "modelExplanationSchemaId"),
-    p_ranking_policy_id: requiredBindingFeature(binding, "modelRankingPolicyId"),
-    p_best_time_policy_id: requiredBindingFeature(binding, "modelBestTimePolicyId"),
-    p_presentation_policy_id: requiredBindingFeature(binding, "modelPresentationPolicyId"),
-    p_model_contract_sha256: requiredBindingFeature(binding, "modelContractSha256"),
-    p_model_bundle_sha256: requiredBindingFeature(binding, "modelBundleSha256"),
-    p_reason_codes: Array.isArray(binding.reasonCodes)
-      ? Object.freeze([...binding.reasonCodes])
-      : null,
-    p_calibration_eligible: payload.calibration_eligible === true,
-    p_actual_zone_id: String(payload.actual_zone_id ?? ""),
-    p_actual_coastal_part_id: String(payload.actual_coastal_part_id ?? ""),
-    p_forecast_zone_id: String(payload.forecast_zone_id ?? ""),
-    p_forecast_coastal_part_id: String(payload.forecast_coastal_part_id ?? ""),
-  });
-}
-
-async function assertActiveRavScoreTripBinding(payload: Record<string, unknown>) {
-  if (Number(payload.schema_version ?? 1) !== 3) return;
-  const url = requiredEnvironment("SUPABASE_URL");
-  const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
-  const response = await fetchWithTimeout(`${url}/rest/v1/rpc/${ACTIVE_RAVSCORE_TRIP_RPC}`, {
-    method: "POST",
-    headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(activeRavScoreTripAdmissionBody(payload)),
-  }, 5_000);
-  if (!response.ok) throw new GatewayError(503, "RAVSCORE_ADMISSION_UNAVAILABLE");
-  let admitted: unknown;
-  try {
-    admitted = await response.json();
-  } catch {
-    throw new GatewayError(503, "RAVSCORE_ADMISSION_UNAVAILABLE");
-  }
-  if (admitted !== true) throw new GatewayError(409, RAVSCORE_MODEL_NOT_ACTIVE);
-}
-
 async function listFromSupabase(userId: string, limit: number) {
   const url = requiredEnvironment("SUPABASE_URL");
   const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
@@ -227,13 +153,11 @@ async function listFromSupabase(userId: string, limit: number) {
   if (!response.ok) throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");
   const rows = await response.json();
   if (!Array.isArray(rows)) throw new GatewayError(503, "TRIP_LOG_INVALID");
-  const binding = ravScoreModelBinding();
-  return rows.map(row => projectTripLogDto(row, binding));
+  return rows;
 }
 
 export async function storeObservation(payload: Record<string, unknown>, authenticatedUserId: string | null) {
   const safePayload = projectLegacyExternalTripPayload(payload);
-  await assertActiveRavScoreTripBinding(safePayload);
   if (activeTripStorageMode() === "supabase") {
     await storeInSupabase(safePayload);
     return;
@@ -258,9 +182,7 @@ export async function listOwnTripObservations(userId: string, limit = 100) {
   try {
     const configuration = cloudflareConfiguration();
     const owner = await externalOwnerSubject({ userId, secret: configuration.secret });
-    const rows = await listCloudflareTrips({ ...configuration, ownerSubject: owner.subject, limit: safeLimit });
-    const binding = ravScoreModelBinding();
-    return rows.map(row => projectTripLogDto(row, binding));
+    return await listCloudflareTrips({ ...configuration, ownerSubject: owner.subject, limit: safeLimit });
   } catch (error) {
     if (error instanceof GatewayError) throw error;
     throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");

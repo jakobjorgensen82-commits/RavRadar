@@ -5,14 +5,3 @@ pnpm-lock.yaml
 .geometry-v2-work/
 .cache/ravscore-candidate-g-wind-led-analysis.json
 .cache/ravscore-candidate-g-wind-led-analysis.txt
-.cache/ravscore-continuation-checkpoint/
-.cache/private-production-runtime-*.json
-supabase/.temp/
-
-# Full weather/runtime material is private. Only the four content-addressed
-# public projection contracts may ever be tracked or staged from data/live.
-data/live/*
-!data/live/manifest.json
-!data/live/public-conditions.json
-!data/live/public-condition-details.json
-!data/live/coastal-parts-v2.json

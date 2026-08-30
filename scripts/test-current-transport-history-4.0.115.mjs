@@ -44,8 +44,8 @@ for(const mode of ['beach','waders']){
   assert.deepEqual(after.components,before.components,`shadow-v2 må ikke ændre ${mode}-delscorer`);
 }
 const publicDoc=buildPublicConditions({datasetId:'state-v2-test',generatedAt:'2026-08-06T03:00:00.000Z',zones:{test:{provider:'dmi',current:weather,history,forecast:{hourly:[]}}}});
-assert.deepEqual(publicDoc.zones.test.history,{maxWave24hM:1.3},
-  'Schema-4 må kun offentliggøre den bevidste kompakte history-allowlist, ikke shadow-v2-state.');
+assert.equal(publicDoc.zones.test.history.stateModelMode,'shadow-v2');
+assert.equal(publicDoc.zones.test.history.activeCurrentRegimeDurationHours,4);
 assert(!('samples24h' in publicDoc.zones.test),'Rå historik må ikke sendes til browseren.');
 assert(Buffer.byteLength(JSON.stringify(publicDoc))<3000,'De nye felter skal forblive kompakte.');
 

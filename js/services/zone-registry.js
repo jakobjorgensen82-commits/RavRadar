@@ -1,7 +1,8 @@
-const ZONE_REGISTRY_URL = './data/zones.geojson';
+const APP_VERSION = '3.1.6';
+const ZONE_REGISTRY_URL = `./data/zones.geojson?v=${APP_VERSION}`;
 let registryPromise = null;
 
-export function normalizeZoneRegistry(collection) {
+function normalize(collection) {
   const all = Array.isArray(collection?.features) ? collection.features : [];
   const active = all.filter(feature => feature?.properties?.zoneStatus === 'active');
   const legacy = all.filter(feature => feature?.properties?.zoneStatus !== 'active');
@@ -28,7 +29,7 @@ export async function loadZoneRegistry({ forceRefresh = false } = {}) {
     registryPromise = fetch(ZONE_REGISTRY_URL, { cache: 'no-store' }).then(async response => {
       if (!response.ok) throw new Error(`Zone Registry: HTTP ${response.status}`);
       const collection = await response.json();
-      const registry = normalizeZoneRegistry(collection);
+      const registry = normalize(collection);
       if (!registry.counts.registered) throw new Error('Zone Registry indeholder ingen zoner');
       if (registry.duplicates.length) throw new Error(`Zone Registry har dublerede id'er: ${registry.duplicates.join(', ')}`);
       return registry;

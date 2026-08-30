@@ -40,11 +40,11 @@ for (const marker of [
 ]) {
   assert.ok(workflow.includes(marker), `Workflowet mangler timeslåsen: ${marker}`);
 }
-const productionTargetCondition = "if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)";
+const productionTargetCondition = "if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)";
 assert.equal(
   workflow.split(productionTargetCondition).length - 1,
   2,
-  'Både cachegendannelse og timeinspektion skal beregne target_hour for push, schedule og alle produktioner, men ikke de private geometri-dispatches.'
+  'Både cachegendannelse og timeinspektion skal beregne target_hour for push, schedule og normale produktioner.'
 );
 assert.match(
   workflow,

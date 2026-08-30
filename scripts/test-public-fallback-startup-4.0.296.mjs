@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
-import { gzipSync } from 'node:zlib';
 import {
-  buildPublicManifest,
   buildPublicConditions,
   buildPublicConditionDetails,
   compactJson,
@@ -9,58 +7,26 @@ import {
 } from './public-conditions-lib.mjs';
 import { buildLocalZoneScore } from '../js/core/local-zone-score.js';
 import { addNationalRanking } from '../js/core/zone-ranking.js';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
-import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 
-const productionReferenceAt = '2026-08-28T09:00:00.000Z';
-const horizonTimes = Array.from({ length: 118 }, (_, index) =>
-  new Date(Date.parse(productionReferenceAt) + index * 3_600_000).toISOString());
-const zoneCount = 210;
-const coastalPartCount = 673;
-const modelBinding = ravScoreModelBinding();
-const scoreProfile = resolvePublicRavScoreProfile({
-  modelCoverageReady:true,
-  modelMemoryReady:true,
-  modelMigrationReady:true,
-});
+const dates = ['2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31', '2026-09-01'];
 const zones = {};
 const coastalZones = {};
 const parts = {};
-const verbose = 'Diagnostik som kun hører hjemme i behovshentede detaljer.';
-const fullHistoryQuality = score => ({
-  scoreQuality:'FULL_HISTORY',
-  calibrationEligible:true,
-  scoreSemantics:'EXACT_POINT_SCORE',
-  conservativeTailResetApplied:false,
-  scoreBounds:{lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score},
-  historyCoverageHours:48,
-  historyReasonCodes:[],
-});
+const verbose = 'Diagnostik som kun hører hjemme i behovshentede detaljer. '.repeat(30);
 const projectedCoverage = value => {
   const fields = [
     'available','status','score','winningPartId','winningPartName','scoreSpread','comparisonPartCount',
-    'validPartCount','expectedPartCount','scoreQuality','calibrationEligible','scoreSemantics',
-    'conservativeTailResetApplied','historyCoverageHours','historyReasonCodes','scoreBounds',
-    'winningPartUncertain','possibleWinningPartCount','possibleWinningParts','components','weather',
+    'validPartCount','expectedPartCount','components','weather',
   ];
   return {
     ...Object.fromEntries(fields.filter(field => value?.[field] !== undefined).map(field => [field,value[field]])),
-    scoreProfileId:modelBinding.modelId,
-    modelBinding,
-    ...(Array.isArray(value?.parts) ? {parts:value.parts.map(part => ({
-      partId:part.partId,name:part.name,score:part.score,
-      scoreQuality:part.scoreQuality,scoreBounds:{...part.scoreBounds},
-      historyCoverageHours:part.historyCoverageHours,
-      historyReasonCodes:[...part.historyReasonCodes],
-    }))} : {}),
+    ...(Array.isArray(value?.parts) ? {parts:value.parts.map(part => ({partId:part.partId,name:part.name,score:part.score}))} : {}),
   };
 };
 
-for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
+for (let zoneIndex = 0; zoneIndex < 12; zoneIndex += 1) {
   const zoneId = `zone-${zoneIndex}`;
-  const zonePartCount = zoneIndex < 43 ? 4 : 3;
-  const partIds = Array.from({ length: zonePartCount }, (_, index) => `${zoneId}-${index}`);
+  const partIds = [`${zoneId}-a`, `${zoneId}-b`, `${zoneId}-c`];
   for (const [partIndex, partId] of partIds.entries()) {
     parts[partId] = {
       id:partId, zoneId, name:`Del ${partIndex + 1}`,
@@ -77,76 +43,65 @@ for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
       current:{diagnostic:verbose}, forecast:{diagnostic:verbose}, candidateG:{diagnostic:verbose},
     };
   }
-  const hourly = horizonTimes.map((time, hourIndex) => {
+  const hourly = dates.flatMap((date, dayIndex) => [8, 9, 10].map((hour, hourIndex) => {
+    const time = `${date}T${String(hour).padStart(2, '0')}:00:00.000Z`;
     const value = modeIndex => {
-      const score = 40 + (zoneIndex % 20) + (hourIndex % 15) + modeIndex;
+      const score = 40 + zoneIndex + dayIndex + hourIndex + modeIndex;
       const winningPartId = partIds[modeIndex];
-      const quality = fullHistoryQuality(score);
       return {
         available:true,
-        modelBinding,
         status:zoneIndex % 3 === 0 ? 'whole-zone' : zoneIndex % 3 === 1 ? 'only-part' : 'multiple-parts',
         score,
-        ...quality,
         winningPartId,
         winningPartName:parts[winningPartId].name,
-        winningPartUncertain:false,
-        possibleWinningPartCount:1,
-        possibleWinningParts:[{
-          partId:winningPartId,name:parts[winningPartId].name,score,
-          scoreBounds:{...quality.scoreBounds},
-        }],
         scoreSpread:zoneIndex % 3 === 0 ? 4 : 12,
-        comparisonPartCount:zonePartCount,
-        validPartCount:zonePartCount,
-        expectedPartCount:zonePartCount,
+        comparisonPartCount:3,
+        validPartCount:3,
+        expectedPartCount:3,
         components:{huntability:score - 2,transport:score + 1,release:score},
         componentReasons:{huntability:[verbose],transport:[verbose],release:[verbose]},
-        explanation:{...modelBinding,transportDiagnostics:{diagnostic:verbose}},
+        explanation:{transportDiagnostics:{diagnostic:verbose}},
         weather:{windSpeedMps:4,waveHeightM:0.7,currentSpeedMps:0.12},
         reasons:[verbose],
         unavailableParts:[{partId:partIds[2],reason:verbose}],
         parts:partIds.map((partId, index) => ({
           partId,
           name:parts[partId].name,
-          score:score - Math.abs(index - modeIndex),
-          ...fullHistoryQuality(score - Math.abs(index - modeIndex)),
+          score:score - index,
           explanation:{diagnostic:verbose},
         })),
       };
     };
     return { time, waders:value(0), beach:value(1) };
-  });
+  }));
   zones[zoneId] = { forecast:{ hourly:hourly.map(row => ({time:row.time,windSpeedMps:4})) } };
-  coastalZones[zoneId] = {
-    expectedPartCount:zonePartCount,
-    scoredPartCount:zonePartCount,
-    hourly,
-  };
+  coastalZones[zoneId] = { expectedPartCount:3, scoredPartCount:3, hourly };
 }
-assert.equal(Object.keys(parts).length, coastalPartCount,
-  'The startup fixture must close the exact national 673-part package.');
 
 const full = {
   datasetId:'fallback-performance-contract',
-  generatedAt:productionReferenceAt,
-  productionReferenceAt,
+  generatedAt:'2026-08-28T09:00:00.000Z',
+  productionReferenceAt:'2026-08-28T09:00:00.000Z',
   zones,
   coastalParts:{
-    schemaVersion:2, enabled:true, modelBinding,
-    evidenceTrust:ravScoreVerifiedEvidenceTrust(), scoreProfile,
-    scoreAvailability:{schemaVersion:2,policy:'integrated-model-local-fail-closed',
-      allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,
-      allCurrentScoresFullHistory:true,fullHistoryModeCount:zoneCount*2,
-      historyIncompleteModeCount:0,historyIncompleteZoneCount:0,
-      evaluatedAt:productionReferenceAt,unavailableZones:[],historyIncompleteZones:[]},
-    expectedPartCount:Object.keys(parts).length,
+    schemaVersion:1, enabled:true, expectedPartCount:Object.keys(parts).length,
     scoredPartCount:Object.keys(parts).length, parts, zones:coastalZones,
   },
 };
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
+const legacyZones = Object.fromEntries(Object.entries(coastalZones).map(([zoneId, zone]) => [zoneId, {
+  expectedPartCount:zone.expectedPartCount,
+  scoredPartCount:zone.scoredPartCount,
+  currentReferenceAt:full.productionReferenceAt,
+  hourly:[zone.hourly.find(row => row.time === full.productionReferenceAt)],
+}]));
+const legacyCoastalParts = {
+  ...full.coastalParts,
+  parts:Object.fromEntries(Object.entries(parts).filter(([partId]) => partId.endsWith('-a') || partId.endsWith('-b'))),
+  zones:legacyZones,
+};
 
 for (const [zoneId] of Object.entries(coastalZones)) {
   const geometryParts = Object.values(parts).filter(part => part.zoneId === zoneId);
@@ -187,46 +142,36 @@ for (const forbidden of ['componentReasons','explanation','transportDiagnostics'
 }
 for (const winner of Object.values(startup.coastalParts.parts)) {
   assert.deepEqual(Object.keys(winner).sort(), [
-    'flowPoints','id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource',
-    'ravScoreEvidenceTrust','waterPoint','zoneId',
+    'flowPoints','id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource','waterPoint','zoneId',
   ]);
   assert.deepEqual(Object.keys(winner.flowPoints).sort(), ['current','sources','wind']);
   assert.equal(winner.flowPoints.sources.current, 'dmi-marine-grid');
 }
 
-const startupText = compactJson(startup);
-const detailsText = compactJson(details);
-const coastalPartsText = compactJson(full.coastalParts);
-const zoneRegistryText = compactJson({
-  type: 'FeatureCollection',
-  features: Object.keys(full.zones).map(id => ({
-    type: 'Feature', properties: { id, zoneStatus: 'active' }, geometry: null,
-  })),
-});
-const manifest = buildPublicManifest(full, startupText, detailsText, coastalPartsText, zoneRegistryText);
-assert.equal(manifest.schemaVersion, 4);
-assert.equal(manifest.complete, true);
-assert.equal(manifest.recoveryFallback, undefined);
-assert.equal(manifest.ravScoreRuntime.modelBinding.modelId, modelBinding.modelId);
-assert.equal(manifest.ravScoreRuntime.startup.fileSha256, sha256Text(startupText));
-assert.equal(manifest.ravScoreRuntime.details.fileSha256, sha256Text(detailsText));
-assert.equal(startup.ravScoreRuntime.datasetId, details.ravScoreRuntime.datasetId);
-assert.equal(startup.ravScoreRuntime.productionReferenceAt, details.ravScoreRuntime.productionReferenceAt);
-assert.deepEqual(startup.ravScoreRuntime.modelBinding, details.ravScoreRuntime.modelBinding);
+const legacyConditions = {...startup, coastalParts:legacyCoastalParts};
+const detailsHashBefore = sha256Text(compactJson(details));
+// Den strenge measured-only 210/673-opgradering testes i
+// test-candidate-g-public-recovery-fallback-4.0.288.mjs. Denne suite isolerer
+// den kompakte startup-projektion, scoreparitet og heap-/størrelsesbudgettet.
+const upgraded = {
+  descriptor:{
+    publicConditionsSha256:sha256Text(compactJson(startup)),
+    publicConditionDetailsSha256:detailsHashBefore,
+  },
+  conditions:startup,
+  details,
+};
+assert.strictEqual(upgraded.details, details, 'Recovery-opgraderingen må ikke erstatte detaljepakken.');
+assert.equal(sha256Text(compactJson(upgraded.details)), detailsHashBefore, 'Detaljepakkens hash blev ændret.');
+assert.equal(upgraded.conditions.datasetId, full.datasetId);
+assert.equal(upgraded.conditions.generatedAt, full.generatedAt);
+assert.equal(upgraded.conditions.productionReferenceAt, full.productionReferenceAt);
+assert.equal(upgraded.descriptor.publicConditionsSha256, sha256Text(compactJson(upgraded.conditions)));
+assert.equal(upgraded.descriptor.publicConditionDetailsSha256, detailsHashBefore);
 
-const fullBytes = Buffer.byteLength(compactJson(full));
-const startupBytes = Buffer.byteLength(startupText);
-const startupGzipBytes = gzipSync(startupText, { level: 9 }).byteLength;
-assert.ok(startupBytes < fullBytes * 0.25, `Den atomiske startpakke er ikke reduceret nok: ${fullBytes} -> ${startupBytes}.`);
-// VERIFIED_ONLY trust is intentionally repeated on every selectable winner so
-// account/trip evidence cannot inherit an unbound aggregate trust marker. Keep
-// the synthetic national upper bound explicit without removing that binding.
-// Schema 6 also binds exact quality/bounds to every current mode and compact
-// comparison row; 1.5 MB leaves about 13 % headroom over the 1,330,623-byte
-// national fixture while still failing on material startup-payload growth.
-assert.ok(startupBytes < 1_500_000,
-  `Den fulde 210/673 syntetiske atomiske startpakke er for stor: ${startupBytes}.`);
-assert.ok(startupGzipBytes < 50_000,
-  `Den komprimerede 210/673-startpakke er for stor: ${startupGzipBytes}.`);
+const legacyBytes = Buffer.byteLength(compactJson(legacyConditions));
+const upgradedBytes = Buffer.byteLength(compactJson(upgraded.conditions));
+assert.ok(upgradedBytes < legacyBytes * 0.25, `Recovery-startpakken er ikke reduceret nok: ${legacyBytes} -> ${upgradedBytes}.`);
+assert.ok(upgradedBytes < 250_000, `Den syntetiske recovery-startpakke er for stor: ${upgradedBytes}.`);
 
-console.log(`Public schema-4 startup: score-/rankingparitet, fælles modelbinding og ${fullBytes} -> ${startupBytes} byte består.`);
+console.log(`Public fallback startup 4.0.296: score-/rankingparitet, uændrede detaljer og ${legacyBytes} -> ${upgradedBytes} byte består.`);

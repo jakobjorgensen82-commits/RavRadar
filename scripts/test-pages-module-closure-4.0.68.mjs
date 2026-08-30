@@ -11,7 +11,6 @@ const excludes=[
  'data/diagnostics/','data/live/weather-health.json','data/live/ravradar-runtime-diagnostics.json',
  'data/live/dmi-water-stations.json','data/live/water-station-routing-audit.json','handbook.html',
  'handbook.css','documentation.html','js/ui/handbook.js','schemas/','supabase/','requirements-dmi.txt',
- 'js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js',
  'package.json','package-lock.json','CHANGELOG*.md','DELIVERY*.md','INSTALLATION-GUIDE*.md','B02-PLACEMENT-AUDIT.md'
 ];
 const args=['-a','./',`${site}/`,...excludes.flatMap(x=>['--exclude',x])];
@@ -58,9 +57,5 @@ while(queue.length){
  }
 }
 if(!visited.has('js/services/handbook-review-store.js')) throw new Error('Admin-importgrafen nåede ikke handbook-review-store.js');
-for(const retired of ['js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js']){
- if(visited.has(retired))throw new Error(`Den pensionerede GPS-runtime findes stadig i Pages-importgrafen: ${retired}`);
- try{await fs.access(path.join(site,retired));throw new Error(`Den pensionerede GPS-runtime findes stadig i Pages-artifactet: ${retired}`);}catch(error){if(error?.code!=='ENOENT')throw error;}
-}
 await fs.rm(site,{recursive:true,force:true});
 console.log(`Pages-modullukning bestået: ${visited.size} browsermoduler findes i deploy-artifactet.`);

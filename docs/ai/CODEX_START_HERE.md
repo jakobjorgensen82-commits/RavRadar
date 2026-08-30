@@ -2,17 +2,15 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-30 – integreret RavScore state 6
+## Aktuelt P0-checkpoint 2026-08-30 – 4.0.316 optional fallback
 
 - 4.0.315 bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Run `33299747300` frigav D1-/reconstruction-readiness og startede build; den gamle grøn-no-op-interlock er ikke længere blockeren.
 - Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. Intet nyt artifact/Pages blev publiceret.
 - 4.0.316 må lade en frisk measured-only primary publicere current+fem døgn uden fallback. Gammel/udløbet fallback skal være fraværende i manifest/public files og må aldrig vises. Kun forventet fallbackfravær er ikke-blokerende; uventet primary accounting/audit stopper fortsat.
 - Ingen syntetiske data, interpolation, backfill eller zonelån. DEC-0111-retirementen består.
-- DEC-0112 binder state `6.0.0` til konservativ `HISTORY_INCOMPLETE` lower/upper ved gyldige direkte input, tydelig auto-forsvindende DA/DE/EN-advarsel og `calibrationEligible=false`. Manglende direkte input er separat `UNAVAILABLE`/`null`. Current scorer kun 48 timer; 168 timers researchretention har ingen scoreeffekt; bølge- og last-mile-usikkerhedshaler lukkes efter henholdsvis 288 og 40 timer.
+- DEC-0112 binder DEC-0102-modelleverancen til `HISTORY_INCOMPLETE`-score ved gyldige direkte input, tydelig auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`. Manglende current/future-input er separat `UNAVAILABLE`.
 - Workflowmonolit, grøn-no-op-semantik og spredt version/docs/string-testkobling skal reduceres i modelleverancen, ikke i P0-hotfixen.
-- Offentlig 4.0.316/Candidate G er observeret som `rr-20260830091913-210` med 210/673, men 0 aktive/210 `UNAVAILABLE` ved utilstrækkelig strømhistorik. Dette er regressionsevidens, ikke state-6-releasebevis. Kald ikke state 6 live før exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol er bevist. Rør ikke geometri, zoner, punkter eller private data.
-- Feggesund-parenten er 118/118 wave-missing i sanitiseret `rr-20260830104132-210`, men de tre aktive part-id'er findes, har `marineCoverage=full`, og Candidate G-current er tilgængelig i begge modes. Kræv frisk integrated 3 × 118 part-level-bevis før kildeændring. Kun ved et reelt part-hul og dokumenteret umulig korrekt direkte data må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` vurderes særskilt; den er ikke implementeret eller generel fallback.
-- Slutbindingerne er fastlåst: aktiv `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae` over 43 filer og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer. Den fulde lokale proportionale matrix er grøn; PR exact-head, frisk produktion og offentlig verifikation er stadig åbne.
+- Kald ikke 4.0.316 live før exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol er bevist. Rør ikke geometri, zoner, punkter eller private data.
 
 ## Historisk P0-checkpoint 2026-08-30 – 4.0.315 retirement og frisk produktion
 
@@ -24,14 +22,15 @@ Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistent
 - P0 er ikke lukket ved lokal eller grøn topstatus. Kræv exact-head sourcegate, merge, en frisk normal produktion hvor fuld validate/releasegate, artifact og Pages faktisk kører, og offentlig 210/673-kontrol af aktuelle og femdøgnsprognoser.
 - Rør ikke geometri, zoner, land-/vandpunkter, private data eller geodata ud over den særskilt autoriserede rene topversionssynk.
 
-## Aktuelt modelcheckpoint 2026-08-30 – integreret RavScore state 6 under DEC-0110/DEC-0112
+## Historisk P0-checkpoint 2026-08-30 – cadencepolicy lokalt afgrænset
 
-- Offentlig produktionssandhed er 4.0.316 med Candidate G som eneste offentlige model. `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` er lokal releasekandidat og mangler exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Schema 5 er kun en aldrig-offentlig eksakt 5→6-migrationskilde.
-- Kandidaten bruger afgrænset kausal energivægtet wave-approach med fire timers halveringstid og en ældre hale, én DMI `FROM`→`TOWARD`-rotation og én 0,85–1-dæmpning af eksisterende supply. Fysisk levering er uopløst; DDM er kun statisk kontekst, Rainville 2026 kun buoyant-object-analogi, og ingen geometri eller punkter flyttes.
-- Candidate G-cutover bruger `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5`: signeret afledt kystnormal currentevidens genvægtes uden rå U/V; alle 673 schema-2-states skal give ét fælles target; wave-approach bruger 40 private præ-target-positioner fra coherent WAM-run pr. collection med same-cell provenance og kun højst fire timers same-run/same-cell-interpolation. Grænserne er `1/1024` udeladt EWMA-hale og `0.01171875` rå scorepoint før afrunding. Fejl bevarer Candidate G offentlig; ingen syntetisk/offentlig historik.
-- Ægte state-6-cold start bruger 0–48 faktisk tilgængelige private verificerede timer plus reel target og forbliver `HISTORY_INCOMPLETE`, indtil 288 timers kausal tail closure eller attestert migration/continuation. Candidate G-rollback bruger samme target uden dobbelt credit; checkpoint-only recovery kræver en separat beskyttet READY companion fra samme generation. Nøddrift er kun same-model og atomisk i højst 72 timer; WAM-bootstrapinterpolation gælder ikke nøddrift, og cross-model fallback er forbudt.
-- Ejeren opgav den fiktive morgenhulsrekonstruktion før descriptor/apply/mutation/publicering. DEC-0109 er kun historisk incident-/trustkontrakt. Kør ikke ny incident-inspect eller apply; de følgende 4.0.311–4.0.314-afsnit er revisionsspor.
-- Fortsæt Sol/Ultra gennem dokumentationslukning, uafhængig helhedsrevision, integration af seneste grønne `origin/main`, releaseversion, fulde gates, egen PR/merge, frisk produktion og offentlig browserkontrol. Den lokale proportionale matrix og slutdigests er allerede grønne/fastlåst som ovenfor. Læs eller vis aldrig private payloads, rå U/V eller koordinater.
+- Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
+- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
+- Read-only inspect `33279639424`/`99172534863` stoppede før descriptor/apply/build/Pages og viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data eller cache blev ændret.
+- Lokal same-version-rettelse bruger den eksisterende regionale proxy-policy som identitetsautoritet for præcis otte `dkss_lf`-3h-dele; resten er 1h. Descriptoren binder kun en koordinatfri projektionshash, som apply genvaliderer.
+- 1h-dele accepterer eksakte målte 1/2/3h-afstande under Candidate G's eksisterende ≤3h continuity, men de manglende interne slots udfyldes aldrig. De otte 3h-dele kræver fortsat eksakt 3h på begge kanter og er de eneste med lovlig singleton-`AFTER`.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Næste rækkefølge: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → eventuelt CAS-apply/frisk produktion/offentlig 210/673.
+- Hent aldrig fuld inspectjoblog eller source-/descriptor-/rollbackartifacts. Brug kun allowlistet checkannotation. Ingen vejrdata, rå vektorer, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
 
 ## Historisk P0-checkpoint 2026-08-30 – før-primary-gate lokalt afgrænset
 

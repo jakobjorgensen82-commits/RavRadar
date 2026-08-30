@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import crypto from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import {
   assistantPrompt,
@@ -8,25 +7,13 @@ import {
   normaliseAssistantLocale,
   normaliseAssistantTerminology,
   publicAssistantContext,
-  RAV_ASSISTANT_BINDING_HEADERS,
   RAV_ASSISTANT_FACTS,
-  RAV_ASSISTANT_KNOWLEDGE_SCHEMA,
-  RAV_ASSISTANT_KNOWLEDGE_SHA256,
   RAV_ASSISTANT_MODEL,
-  RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
   RAV_ASSISTANT_REFUSALS,
   RAV_ASSISTANT_WEIGHT_ANSWERS,
   routeAssistantQuestion,
-  sameAssistantRavScoreModelBinding,
   validateAssistantResult,
 } from '../supabase/functions/_shared/rav-assistant-contract.ts';
-import {
-  assertRavScoreModelBinding,
-  ravScoreModelBinding,
-} from '../js/core/ravscore-model-contract.js';
-import {
-  ravScoreModelBinding as candidateModelBinding,
-} from './rollback-assets/ravscore-model-contract.js';
 
 const read = (file) => readFile(file, 'utf8');
 const [edge, client, config, knowledge] = await Promise.all([
@@ -39,41 +26,6 @@ const [edge, client, config, knowledge] = await Promise.all([
 assert.equal(RAV_ASSISTANT_MODEL, '@cf/openai/gpt-oss-20b');
 assert.deepEqual(RAV_ASSISTANT_FACTS, knowledge.facts, 'Edge og eval skal bruge samme versionsbundne offentlige fakta.');
 assert.deepEqual(RAV_ASSISTANT_REFUSALS, knowledge.fixedRefusals, 'Edge og eval skal bruge samme faste afvisninger.');
-assertRavScoreModelBinding(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, 'Edge-assistentens RavScore-modelbinding');
-assert.deepEqual(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, ravScoreModelBinding());
-assert.deepEqual(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, knowledge.ravScoreModelBinding);
-assert.equal(RAV_ASSISTANT_KNOWLEDGE_SCHEMA, knowledge.schemaVersion);
-assert.equal(
-  RAV_ASSISTANT_KNOWLEDGE_SHA256,
-  crypto.createHash('sha256').update(JSON.stringify(knowledge.facts)).digest('hex'),
-  'Edge knowledge-hash skal binde den eksakte offentlige faktarække.',
-);
-assert.match(
-  client,
-  new RegExp(RAV_ASSISTANT_KNOWLEDGE_SHA256),
-  'Pages-klienten skal kræve samme eksakte faktahash som Edge og den offentlige vidensfil.',
-);
-assert.equal(sameAssistantRavScoreModelBinding(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING), true);
-assert.equal(sameAssistantRavScoreModelBinding(undefined), false,
-  'Den gamle 4.0.308-request uden binding skal afvises før integrerede fakta kan bruges.');
-assert.equal(sameAssistantRavScoreModelBinding({
-  modelId:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING.modelId,
-}), false, 'En delvis binding skal afvises.');
-assert.equal(sameAssistantRavScoreModelBinding({ ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, extra:true }), false);
-assert.equal(sameAssistantRavScoreModelBinding({
-  ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-  modelBundleSha256:'0'.repeat(64),
-}), false, 'En mismatched bundlebinding skal afvises.');
-assert.equal(sameAssistantRavScoreModelBinding({
-  ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-  modelContractSha256:'0'.repeat(64),
-}), false, 'En mismatched parameterkontrakt skal afvises.');
-assert.equal(sameAssistantRavScoreModelBinding(candidateModelBinding()), false,
-  'Candidate G-binding skal give 409 og lokal Pages-fallback; Edge må ikke være dual-model.');
-assert.throws(
-  () => assertRavScoreModelBinding({ ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, hiddenModelRevision: true }),
-  /exact key set/,
-);
 assert.equal(normaliseAssistantLocale('da'), 'da');
 assert.equal(normaliseAssistantLocale('de'), 'de');
 assert.equal(normaliseAssistantLocale('en'), 'en');
@@ -97,113 +49,19 @@ for (const question of [
   'How dangerous is a rip current?',
 ]) assert.equal(routeAssistantQuestion(question), 'provider', question);
 
-const exactBounds = score => ({
-  lower:score, upper:score, modelUncertaintyPoints:0, rawLower:score, rawUpper:score,
-});
-const fullScoreResult = Object.freeze({
-  available:true, score:68, level:'good', scoreQuality:'FULL_HISTORY',
-  calibrationEligible:true, scoreSemantics:'EXACT_POINT_SCORE',
-  conservativeTailResetApplied:false, scoreBounds:exactBounds(68),
-  historyCoverageHours:48, historyReasonCodes:[],
-});
-const unavailableScoreResult = Object.freeze({
-  available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
-  calibrationEligible:false, scoreSemantics:null,
-  conservativeTailResetApplied:false, scoreBounds:null,
-  historyCoverageHours:null, historyReasonCodes:[],
-});
-
 const safeContext = publicAssistantContext({
   mode: 'beach',
-  modelBinding: RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
   zone: { id: 'zone-1', name: 'Test Coast', coastType: 'strand', coordinates: [1, 2], secret: 'no' },
-  result: { ...fullScoreResult, internalDiagnostics:{ token:'no' } },
+  result: { available: true, score: 68, level: 'good', internalDiagnostics: { token: 'no' } },
   weather: { time: '2026-08-27T12:00:00Z', currentSpeedMps: 0.2, rawVector: { u: 1, v: 2 }, provider: 'internal' },
   account: { email: 'no@example.com' },
 }, 'en');
-assert.deepEqual(Object.keys(safeContext).sort(), ['locale', 'mode', 'modelBinding', 'result', 'weather', 'zone']);
-assert.deepEqual(safeContext.modelBinding, RAV_ASSISTANT_RAVSCORE_MODEL_BINDING);
-assert.equal(safeContext.result.available, true);
-assert.deepEqual(safeContext.result, {
-  ...fullScoreResult,
-});
+assert.deepEqual(Object.keys(safeContext).sort(), ['locale', 'mode', 'result', 'weather', 'zone']);
 assert.equal(JSON.stringify(safeContext).includes('coordinates'), false);
 assert.equal(JSON.stringify(safeContext).includes('token'), false);
 assert.equal(JSON.stringify(safeContext).includes('email'), false);
 assert.equal(JSON.stringify(safeContext).includes('rawVector'), false);
 assert.equal(JSON.stringify(safeContext).includes('provider'), false);
-for (const missingScore of [null, '', '   ', '68', false, true, undefined, [], {}, -1, 101]) {
-  assert.deepEqual(
-    publicAssistantContext({
-      modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-      result:{ ...fullScoreResult, score:missingScore, scoreBounds:exactBounds(68) },
-    }, 'en').result,
-    unavailableScoreResult,
-    `Edge-konteksten må ikke omdanne ${String(missingScore)} til score 0`,
-  );
-}
-for (const field of [
-  'windSpeedMps', 'windDirectionDeg', 'waveHeightM', 'wavePeriodS',
-  'waterLevelCm', 'currentSpeedMps', 'currentDirectionDeg', 'waterTemperatureC',
-]) {
-  for (const malformed of ['7.2', true, [7.2], { value:7.2 }]) {
-    const projected = publicAssistantContext({
-      modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-      result:fullScoreResult,
-      weather:{ [field]:malformed },
-    }, 'en');
-    assert.equal(projected.weather[field], null,
-      `Edge-kontekstens ${field} må ikke typekonvertere ${JSON.stringify(malformed)}`);
-  }
-}
-assert.deepEqual(
-  publicAssistantContext({
-    modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-    result:{
-      available:false, score:68, level:'good', scoreQuality:'UNAVAILABLE',
-      calibrationEligible:false, scoreSemantics:null,
-      conservativeTailResetApplied:false, scoreBounds:null, historyCoverageHours:null,
-      historyReasonCodes:[],
-    },
-  }, 'en').result,
-  {
-    available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
-    calibrationEligible:false, scoreSemantics:null,
-    conservativeTailResetApplied:false, scoreBounds:null, historyCoverageHours:null,
-    historyReasonCodes:[],
-  },
-  'Edge-konteksten kræver available === true før en score må deles',
-);
-assert.deepEqual(
-  publicAssistantContext({
-    modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-    result:{
-      available:true, score:57, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
-      calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
-      conservativeTailResetApplied:false,
-      scoreBounds:{lower:57,upper:76,modelUncertaintyPoints:19,rawLower:56.5,rawUpper:76.2},
-      historyCoverageHours:11,
-      historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
-    },
-  }, 'en').result,
-  {
-    available:true, score:57, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
-    calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
-    conservativeTailResetApplied:false,
-    scoreBounds:{lower:57,upper:76,modelUncertaintyPoints:19,rawLower:56.5,rawUpper:76.2},
-    historyCoverageHours:11,
-    historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
-  },
-  'Edge-konteksten skal bevare den numeriske historikufuldstændige score og kvalitetsmærkning',
-);
-assert.deepEqual(
-  publicAssistantContext({
-    modelBinding:{ ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, modelBundleSha256:'0'.repeat(64) },
-    result:fullScoreResult,
-  }, 'en').result,
-  unavailableScoreResult,
-  'Edge skal neutralisere scorekontekst med mismatched modelbinding.',
-);
 
 const prompt = JSON.parse(assistantPrompt('Can waves move amber?', safeContext, 'en'));
 assert.equal(prompt.requestedLocale, 'en');
@@ -212,39 +70,24 @@ assert.equal(prompt.publicFacts.length, 38);
 const uvFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'identification.uv-clue-not-proof');
 assert.match(uvFact?.text || '', /395 nanometres/);
 assert.doesNotMatch(uvFact?.text || '', /365 nanometres/);
-const lastMileFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'transport.grid-not-surf-zone');
-assert.match(lastMileFact?.text || '', /causal energy-weighted W\/N\/T EWMA/);
-assert.match(lastMileFact?.text || '', /four-hour half-life/);
-assert.match(lastMileFact?.text || '', /decaying older tail/);
-assert.match(lastMileFact?.text || '', /up to 15 percent/);
-assert.match(lastMileFact?.text || '', /never create or increase supply/);
-assert.match(lastMileFact?.text || '', /at most 7\.5 raw RavScore points before final rounding/);
-assert.match(lastMileFact?.text || '', /displayed integer can move by 8 points/);
-assert.match(lastMileFact?.text || '', /does not remove structural last-mile uncertainty/);
-assert.doesNotMatch(lastMileFact?.text || '', /four-hour wave-approach prior/,
-  'Fire timer er halveringstid med ældre hale, ikke et fast wave-approach-vindue.');
-assert.doesNotMatch(lastMileFact?.text || '', /score-neutral/,
-  'Schema-5-assistenten må ikke gentage den pensionerede neutrale sidste-mile-kontrakt.');
-assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /50% delivery potential/);
-assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /bounded wave-approach attenuation/);
 assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);
 assert.match(assistantSystemInstruction(), /Can you guarantee a find/);
 assert.match(assistantSystemInstruction(), /safety\.not-a-safety-rating/);
 assert.match(assistantSystemInstruction(), /huntability\.waders-wind-led/);
-assert.match(assistantSystemInstruction(), /mobiliseringsmulighed/);
-assert.match(assistantSystemInstruction(), /Mobilisierungsmöglichkeit/);
+assert.match(assistantSystemInstruction(), /ravmobilisering/);
+assert.match(assistantSystemInstruction(), /Bernsteinmobilisierung/);
 assert.match(assistantSystemInstruction(), /Never create hybrid words/);
-assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobilisering.', 'da'), '20 % jagtbarhed og 30 % mobiliseringsmulighed.');
-assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Mobilisierungsmöglichkeit');
-assert.equal(normaliseAssistantTerminology('20 % Jagtbarheit und 30 % Bernsteinmobilisierung', 'de'), '20 % Suchbarkeit und 30 % Mobilisierungsmöglichkeit');
+assert.equal(normaliseAssistantTerminology('20 % ravjagtbarhed og 30 % ambermobilisering.', 'da'), '20 % jagtbarhed og 30 % ravmobilisering.');
+assert.equal(normaliseAssistantTerminology('huntability und amber mobilisation', 'de'), 'Suchbarkeit und Bernsteinmobilisierung');
+assert.equal(normaliseAssistantTerminology('20 % Jagtbarheit und 30 % Bernsteinmobilisierung', 'de'), '20 % Suchbarkeit und 30 % Bernsteinmobilisierung');
 
 const fixedGermanWeights = validateAssistantResult({
   schemaVersion: 'rav-assistant-response-v1', locale: 'de', disposition: 'answer',
-  answer: 'Das integrierte Modell: 20 % Jagdbarheit, 50 % Transport, 30 % Bernsteinmobilisierung.',
-  evidenceIds: ['score.integrated-only', 'score.weights-20-50-30'],
+  answer: 'Candidate G: 20 % Jagdbarheit, 50 % Transport, 30 % Bernsteinmobilisierung.',
+  evidenceIds: ['score.candidate-g-only', 'score.weights-20-50-30'],
 }, 'de');
 assert.equal(fixedGermanWeights.answer, RAV_ASSISTANT_WEIGHT_ANSWERS.de);
-assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and mobilisation opportunity');
+assert.equal(normaliseAssistantTerminology('Suchbarkeit and Bernsteinmobilisierung', 'en'), 'huntability and amber mobilisation');
 
 const valid = {
   schemaVersion: 'rav-assistant-response-v1', locale: 'en', disposition: 'answer',
@@ -283,17 +126,6 @@ assert.match(edge, /minute: 6, hour: 40, globalDay: 300/);
 assert.match(edge, /fetchWithTimeout[\s\S]*7_000/);
 assert.match(edge, /validateAssistantResult/);
 assert.match(edge, /routeAssistantQuestion/);
-assert.match(edge, /!sameAssistantRavScoreModelBinding\(body\.context\?\.modelBinding\)/);
-assert.match(edge, /MODEL_BINDING_MISMATCH[\s\S]{0,80}409/,
-  'Manglende/delvis/ekstra/mismatch binding skal give fail-closed 409.');
-for (const [key, header] of Object.entries(RAV_ASSISTANT_BINDING_HEADERS)) {
-  assert.match(edge, new RegExp(`RAV_ASSISTANT_BINDING_HEADERS\\.${key}`), `${header} skal returneres af Edge.`);
-  assert.match(client, new RegExp(header), `${header} skal verificeres af Pages-klienten.`);
-}
-assert.match(edge, /Access-Control-Expose-Headers/);
-assert.match(client, /responseBindingMatches/);
-assert.match(client, /modelBinding:\{ \.\.\.ACTIVE_RAVSCORE_MODEL_BINDING \}/);
-assert.match(client, /\|\| localAnswer\(/, 'Manglende eller mismatched headers skal give lokal fallback.');
 assert.doesNotMatch(edge, /OPENAI_API_KEY|OPENAI_MODEL|api\.openai\.com/);
 assert.doesNotMatch(client, /CLOUDFLARE_ACCOUNT_ID|CLOUDFLARE_WORKERS_AI_TOKEN|Bearer\s/);
 assert.match(config, /ravAssistantRemoteEnabled:\s*true/);

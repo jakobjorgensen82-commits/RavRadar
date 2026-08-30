@@ -202,13 +202,6 @@ for (const flags of [
 }
 assert.throws(() => externalTripPayload({
   ...tripV2Base,
-  calibration_eligible: false,
-  calibration_features: { reasonCodes: ['ravscore-history-incomplete'] },
-  data_quality_flags: ['ravscore-history-incomplete'],
-}), /TRIP_DATA_QUALITY_FLAGS_INVALID/,
-'HISTORY_INCOMPLETE belongs only to the integrated schema-3 contract, never historical schema 2');
-assert.throws(() => externalTripPayload({
-  ...tripV2Base,
   calibration_features: { appVersion: '4.0.311', reasonCodes: [] },
   data_quality_flags: null,
 }), /TRIP_DATA_QUALITY_FLAGS_INVALID/);

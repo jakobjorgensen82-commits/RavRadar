@@ -1,6 +1,4 @@
 const CLOUDFLARE_WORKER_SUFFIX = '.workers.dev';
-const CANDIDATE_G_ROLLBACK_MODEL_ID =
-  'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
 const OWNER_PREFIX = Object.freeze({ user: 'usr_v1_', anonymous: 'anon_v1_' });
 const DIRECT_IDENTITY_KEYS = new Set([
   'anonymousid', 'displayname', 'email', 'fullname', 'phonenumber', 'profile', 'userid'
@@ -10,32 +8,12 @@ const DIRECT_IDENTITY_KEYS = new Set([
 // as lat, lng, geoCoordinates and gpsTrack cannot carry precise position.
 const PRIVATE_LOCATION_KEY_PATTERN = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track|location)/i;
 const CALIBRATION_FEATURE_KEYS = new Set([
-  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
-  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
-  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
-  'modelBundleSha256', 'totalScore', 'huntabilityScore', 'transportScore',
-  'scoreBoundLower', 'scoreBoundUpper', 'scoreBoundModelUncertaintyPoints',
-  'scoreBoundRawLower', 'scoreBoundRawUpper', 'historyCoverageHours',
-  'scoreQuality', 'scoreSemantics', 'scoreCalibrationEligible',
-  'conservativeTailResetApplied', 'historyReasonCodes',
+  'modelVersion', 'appVersion', 'totalScore', 'huntabilityScore', 'transportScore',
   'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
   'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
   'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
   'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
 ]);
-const CALIBRATION_REQUIRED_TEXT_KEYS = Object.freeze([
-  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
-  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
-  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
-  'modelBundleSha256', 'scoreQuality', 'scoreSemantics',
-]);
-const CALIBRATION_REQUIRED_SCORE_KEYS = Object.freeze([
-  'totalScore', 'scoreBoundLower', 'scoreBoundUpper',
-  'scoreBoundModelUncertaintyPoints', 'scoreBoundRawLower', 'scoreBoundRawUpper',
-  'historyCoverageHours', 'huntabilityScore', 'transportScore', 'mobilisationScore',
-]);
-const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
-const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const WEATHER_SNAPSHOT_KEYS = new Set([
   'schemaVersion', 'capturedAt', 'sourceGeneratedAt', 'forecastTime', 'provider',
   'current', 'score', 'prediction', 'matchedRuleIds', 'forecastSnapshotId',
@@ -52,9 +30,6 @@ const WEATHER_SCORE_KEYS = new Set(['baseScore', 'finalScore', 'level']);
 const WEATHER_PREDICTION_KEYS = new Set(['probability', 'confidence', 'modelVersion']);
 const CALIBRATION_FEATURE_RANGES = Object.freeze({
   totalScore: [0, 100], huntabilityScore: [0, 100], transportScore: [0, 100],
-  scoreBoundLower:[0,100],scoreBoundUpper:[0,100],
-  scoreBoundModelUncertaintyPoints:[0,100],scoreBoundRawLower:[0,100],
-  scoreBoundRawUpper:[0,100],historyCoverageHours:[0,48],
   mobilisationScore: [0, 100], windSpeedMs: [0, 100], windDirectionDeg: [0, 360],
   waveHeightM: [0, 30], wavePeriodS: [0, 40], waveDirectionDeg: [0, 360],
   currentSpeedMs: [0, 10], currentDirectionDeg: [0, 360], waterLevelM: [-20, 20],
@@ -69,25 +44,18 @@ const SNAPSHOT_CURRENT_RANGES = Object.freeze({
 });
 export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG = 'ravscore-reconstructed-derived-evidence';
 export const PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG = 'public-emergency-last-complete';
-export const HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG = 'ravscore-history-incomplete';
 export const UNATTESTED_RAVSCORE_QUALITY_FLAG = 'ravscore-evidence-trust-unattested';
 export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
-  HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
   UNATTESTED_RAVSCORE_QUALITY_FLAG,
 ]);
-const LEGACY_TRIP_QUALITY_FLAG_COMBINATIONS = new Set([
+const TRIP_QUALITY_FLAG_COMBINATIONS = new Set([
   '[]',
   JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG]),
   JSON.stringify([RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
   JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]),
   JSON.stringify([UNATTESTED_RAVSCORE_QUALITY_FLAG]),
-]);
-const TRIP_QUALITY_FLAG_COMBINATIONS = new Set([
-  ...LEGACY_TRIP_QUALITY_FLAG_COMBINATIONS,
-  JSON.stringify([HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG]),
-  JSON.stringify([PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG]),
 ]);
 
 export const TRIP_INPUT_FIELD_NAMES = Object.freeze([
@@ -174,12 +142,6 @@ function assertAllowedRecord(value, allowedKeys, errorCode) {
   if (Object.keys(value).some(key => !allowedKeys.has(key))) throw new Error(errorCode);
 }
 
-function assertExactRecord(value, allowedKeys, errorCode) {
-  assertAllowedRecord(value, allowedKeys, errorCode);
-  if (Object.keys(value).length !== allowedKeys.size
-    || [...allowedKeys].some(key => !Object.hasOwn(value, key))) throw new Error(errorCode);
-}
-
 function assignProjected(output, key, value) {
   if (value !== undefined) output[key] = value;
 }
@@ -200,15 +162,12 @@ function projectLegacyCalibrationFeatures(value) {
   const projected = {};
   for (const key of CALIBRATION_FEATURE_KEYS) {
     const nested = value[key];
-    if (key === 'reasonCodes' || key === 'historyReasonCodes') {
+    if (key === 'reasonCodes') {
       if (Array.isArray(nested)) {
-        projected[key] = nested
+        projected.reasonCodes = nested
           .filter(item => typeof item === 'string' && item.length <= 128)
           .slice(0, 12);
       }
-    } else if (key === 'scoreCalibrationEligible'
-      || key === 'conservativeTailResetApplied') {
-      if (typeof nested === 'boolean') projected[key]=nested;
     } else if (Object.hasOwn(CALIBRATION_FEATURE_RANGES, key)) {
       assignProjected(projected, key, projectedNumberOrNull(nested, CALIBRATION_FEATURE_RANGES[key]));
     } else assignProjected(projected, key, projectedTextOrNull(nested, 128));
@@ -349,7 +308,7 @@ function projectStoredLegacyReplayPayload(payload) {
 
 export function assertStoredExternalTripContract(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  if (![2, 3].includes(Number(payload.schema_version ?? 1))) return true;
+  if (Number(payload.schema_version ?? 1) !== 2) return true;
   assertNoDirectIdentity(payload);
   assertNoPrivateLocation(payload);
   if (Object.keys(payload).some(key => !STORED_EXTERNAL_TRIP_FIELD_NAMES.has(key))) {
@@ -359,69 +318,18 @@ export function assertStoredExternalTripContract(payload) {
   return true;
 }
 
-function assertCalibrationFeatureContract(value, exact = false) {
-  if (value === null || value === undefined) {
-    if (exact) throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
-    return;
-  }
-  if (exact) assertExactRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
-  else assertAllowedRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
+function assertCalibrationFeatureContract(value) {
+  if (value === null || value === undefined) return;
+  assertAllowedRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
   for (const [key, nested] of Object.entries(value)) {
-    if (key === 'reasonCodes' || key === 'historyReasonCodes') {
+    if (key === 'reasonCodes') {
       if (!Array.isArray(nested) || nested.length > 12
         || nested.some(item => typeof item !== 'string' || item.length > 128)) {
         throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
       }
-    } else if (key === 'scoreCalibrationEligible'
-      || key === 'conservativeTailResetApplied') {
-      if(typeof nested!=='boolean')throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
     } else if (Object.hasOwn(CALIBRATION_FEATURE_RANGES, key)) {
       assertBoundedNumberOrNull(nested, CALIBRATION_FEATURE_RANGES[key], 'TRIP_CALIBRATION_FEATURES_INVALID');
     } else assertBoundedTextOrNull(nested, 128, 'TRIP_CALIBRATION_FEATURES_INVALID');
-  }
-  if (exact && (CALIBRATION_REQUIRED_TEXT_KEYS.some(key => (
-    typeof value[key] !== 'string' || !ID_PATTERN.test(value[key])
-  ))
-    || !SHA256_PATTERN.test(value.modelContractSha256)
-    || !SHA256_PATTERN.test(value.modelBundleSha256)
-    || CALIBRATION_REQUIRED_SCORE_KEYS.some(key => (
-      typeof value[key] !== 'number' || !Number.isFinite(value[key])
-    ))
-    || !Number.isInteger(value.totalScore)
-    || value.reasonCodes.some(code => !ID_PATTERN.test(code)))) {
-    throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
-  }
-  if(exact){
-    const historyReasons=value.historyReasonCodes;
-    const boundsValid=value.totalScore===value.scoreBoundLower
-      &&value.scoreBoundLower<=value.scoreBoundUpper
-      &&value.scoreBoundRawLower<=value.scoreBoundRawUpper
-      &&Math.abs(value.scoreBoundModelUncertaintyPoints
-        -(value.scoreBoundUpper-value.scoreBoundLower))<=1e-9;
-    const reasonsValid=Array.isArray(historyReasons)
-      &&new Set(historyReasons).size===historyReasons.length
-      &&historyReasons.every(code=>/^[A-Z][A-Z0-9_]{0,127}$/.test(code));
-    const candidateGRollback=value.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID;
-    const full=value.scoreQuality==='FULL_HISTORY'
-      &&value.scoreCalibrationEligible===!candidateGRollback
-      &&value.historyCoverageHours===48&&historyReasons.length===0
-      &&value.scoreBoundLower===value.scoreBoundUpper
-      &&value.scoreBoundRawLower===value.scoreBoundRawUpper
-      &&['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
-        .includes(value.scoreSemantics)
-      &&value.conservativeTailResetApplied
-        ===(value.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE');
-    const exactCandidateGRollback=!candidateGRollback
-      ||(value.scoreSemantics==='EXACT_POINT_SCORE'
-        &&value.conservativeTailResetApplied===false);
-    const incomplete=value.scoreQuality==='HISTORY_INCOMPLETE'
-      &&value.scoreCalibrationEligible===false
-      &&historyReasons.length>0
-      &&value.scoreSemantics==='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
-      &&typeof value.conservativeTailResetApplied==='boolean';
-    if(!boundsValid||!reasonsValid||!exactCandidateGRollback||(!full&&!incomplete)){
-      throw new Error('TRIP_CALIBRATION_SCORE_QUALITY_INVALID');
-    }
   }
 }
 
@@ -432,17 +340,9 @@ function assertFlatSnapshotRecord(value, allowedKeys) {
   }
 }
 
-function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exactCurrent = false) {
-  if (value === null || value === undefined) {
-    if (exactCurrent) throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
-    return;
-  }
-  if (exactCurrent) {
-    assertExactRecord(value, new Set([
-      'schemaVersion', 'capturedAt', 'forecastSnapshotId', 'forecastIssuedAt',
-      'forecastValidAt', 'calibrationFeatures',
-    ]), 'TRIP_WEATHER_SNAPSHOT_INVALID');
-  } else assertAllowedRecord(value, WEATHER_SNAPSHOT_KEYS, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false) {
+  if (value === null || value === undefined) return;
+  assertAllowedRecord(value, WEATHER_SNAPSHOT_KEYS, 'TRIP_WEATHER_SNAPSHOT_INVALID');
   for (const [key, nested] of Object.entries(value)) {
     if (key === 'current') {
       assertFlatSnapshotRecord(nested, WEATHER_CURRENT_KEYS);
@@ -464,7 +364,7 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exac
       assertBoundedNumberOrNull(nested.confidence, [0, 1], 'TRIP_WEATHER_SNAPSHOT_INVALID');
       assertBoundedTextOrNull(nested.modelVersion, 128, 'TRIP_WEATHER_SNAPSHOT_INVALID');
     }
-    else if (key === 'calibrationFeatures') assertCalibrationFeatureContract(nested, exactCurrent);
+    else if (key === 'calibrationFeatures') assertCalibrationFeatureContract(nested);
     else if (key === 'matchedRuleIds') {
       if (!Array.isArray(nested) || nested.length > 40
         || nested.some(item => typeof item !== 'string' || item.length > 120)) {
@@ -481,24 +381,8 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exac
 
 export function assertExternalTripNestedContract(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  const schemaVersion = Number(payload.schema_version ?? 1);
-  assertCalibrationFeatureContract(payload.calibration_features, schemaVersion === 3);
-  assertWeatherSnapshotContract(payload.weather_snapshot, schemaVersion === 1, schemaVersion === 3);
-  if (schemaVersion === 3) {
-    const snapshot = payload.weather_snapshot;
-    if (snapshot.schemaVersion !== 4
-      || typeof snapshot.forecastSnapshotId !== 'string'
-      || snapshot.forecastSnapshotId !== payload.forecast_snapshot_id
-      || !['capturedAt', 'forecastIssuedAt', 'forecastValidAt'].every(key => (
-        typeof snapshot[key] === 'string' && Number.isFinite(Date.parse(snapshot[key]))
-      ))
-      || snapshot.capturedAt !== payload.forecast_captured_at
-      || snapshot.forecastIssuedAt !== payload.forecast_issued_at
-      || snapshot.forecastValidAt !== payload.forecast_valid_at
-      || canonicalJson(snapshot.calibrationFeatures) !== canonicalJson(payload.calibration_features)) {
-      throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
-    }
-  }
+  assertCalibrationFeatureContract(payload.calibration_features);
+  assertWeatherSnapshotContract(payload.weather_snapshot, Number(payload.schema_version ?? 1) === 1);
   return true;
 }
 
@@ -537,14 +421,10 @@ export function normalizeExternalTripQualityBinding(payload) {
 }
 
 export function assertExternalTripQualityBinding(payload) {
-  if (!isRecord(payload) || ![2, 3].includes(Number(payload.schema_version))) return;
-  const schemaVersion = Number(payload.schema_version);
-  const combinations = schemaVersion === 3
-    ? TRIP_QUALITY_FLAG_COMBINATIONS
-    : LEGACY_TRIP_QUALITY_FLAG_COMBINATIONS;
+  if (!isRecord(payload) || Number(payload.schema_version) !== 2) return;
   const flags = payload.data_quality_flags;
   if (!Array.isArray(flags)
-    || !combinations.has(JSON.stringify(flags))) {
+    || !TRIP_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(flags))) {
     throw new Error('TRIP_DATA_QUALITY_FLAGS_INVALID');
   }
   const reasonCodes = payload.calibration_features?.reasonCodes;
@@ -554,24 +434,10 @@ export function assertExternalTripQualityBinding(payload) {
   if (JSON.stringify(qualityReasons) !== JSON.stringify(flags)) {
     throw new Error('TRIP_QUALITY_REASON_BINDING_INVALID');
   }
-  const features=payload.calibration_features;
-  if(schemaVersion===3){
-    const historyFlag=flags.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG);
-    if((features?.scoreQuality==='HISTORY_INCOMPLETE')!==historyFlag
-      ||(historyFlag&&features?.scoreCalibrationEligible!==false)
-      ||(!historyFlag&&features?.scoreQuality!=='FULL_HISTORY')){
-      throw new Error('TRIP_SCORE_QUALITY_FLAG_BINDING_INVALID');
-    }
-  }
   const sameForecastContext = payload.actual_zone_id === payload.forecast_zone_id
     && payload.actual_coastal_part_id === payload.forecast_coastal_part_id;
-  const eligibilityValid = schemaVersion === 3
-    ? typeof payload.calibration_eligible === 'boolean'
-      && (flags.length === 0 || payload.calibration_eligible === false)
-      && (payload.calibration_eligible !== true
-        || features?.scoreCalibrationEligible === true)
-    : payload.calibration_eligible === (sameForecastContext && flags.length === 0);
-  if (!eligibilityValid) {
+  const expectedEligibility = sameForecastContext && flags.length === 0;
+  if (payload.calibration_eligible !== expectedEligibility) {
     throw new Error('TRIP_CALIBRATION_ELIGIBILITY_INVALID');
   }
 }
@@ -652,11 +518,7 @@ export function externalTripPayload(payload) {
     ? structuredClone(payload)
     : JSON.parse(JSON.stringify(payload));
   const source = projectLegacyExternalTripPayload(cloned);
-  const normalized = normalizeExternalTripQualityBinding(source);
-  const schemaVersion = Number(normalized.schema_version ?? 1);
-  const clone = schemaVersion === 3
-    ? { ...normalized, calibration_eligible: false, gps: null }
-    : normalized;
+  const clone = normalizeExternalTripQualityBinding(source);
   const external = {};
   for (const key of TRIP_INPUT_FIELD_NAMES) {
     if (key === 'user_id' || key === 'anonymous_id' || key === 'gps') continue;
@@ -664,8 +526,8 @@ export function externalTripPayload(payload) {
     if (value === null || value === undefined) continue;
     external[key] = value;
   }
-  external.schema_version = schemaVersion;
-  if (![1, 2, 3].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
+  external.schema_version = Number(clone.schema_version ?? 1);
+  if (![1, 2].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
   assertNoDirectIdentity(external);
   assertNoPrivateLocation(external);
   assertExternalTripNestedContract(external);
