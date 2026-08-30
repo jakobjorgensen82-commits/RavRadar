@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { gzipSync } from 'node:zlib';
 import {
   buildPublicManifest,
   buildPublicConditions,
@@ -27,16 +28,32 @@ const zones = {};
 const coastalZones = {};
 const parts = {};
 const verbose = 'Diagnostik som kun hører hjemme i behovshentede detaljer.';
+const fullHistoryQuality = score => ({
+  scoreQuality:'FULL_HISTORY',
+  calibrationEligible:true,
+  scoreSemantics:'EXACT_POINT_SCORE',
+  conservativeTailResetApplied:false,
+  scoreBounds:{lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score},
+  historyCoverageHours:48,
+  historyReasonCodes:[],
+});
 const projectedCoverage = value => {
   const fields = [
     'available','status','score','winningPartId','winningPartName','scoreSpread','comparisonPartCount',
-    'validPartCount','expectedPartCount','components','weather',
+    'validPartCount','expectedPartCount','scoreQuality','calibrationEligible','scoreSemantics',
+    'conservativeTailResetApplied','historyCoverageHours','historyReasonCodes','scoreBounds',
+    'winningPartUncertain','possibleWinningPartCount','possibleWinningParts','components','weather',
   ];
   return {
     ...Object.fromEntries(fields.filter(field => value?.[field] !== undefined).map(field => [field,value[field]])),
     scoreProfileId:modelBinding.modelId,
     modelBinding,
-    ...(Array.isArray(value?.parts) ? {parts:value.parts.map(part => ({partId:part.partId,name:part.name,score:part.score}))} : {}),
+    ...(Array.isArray(value?.parts) ? {parts:value.parts.map(part => ({
+      partId:part.partId,name:part.name,score:part.score,
+      scoreQuality:part.scoreQuality,scoreBounds:{...part.scoreBounds},
+      historyCoverageHours:part.historyCoverageHours,
+      historyReasonCodes:[...part.historyReasonCodes],
+    }))} : {}),
   };
 };
 
@@ -64,13 +81,21 @@ for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
     const value = modeIndex => {
       const score = 40 + (zoneIndex % 20) + (hourIndex % 15) + modeIndex;
       const winningPartId = partIds[modeIndex];
+      const quality = fullHistoryQuality(score);
       return {
         available:true,
         modelBinding,
         status:zoneIndex % 3 === 0 ? 'whole-zone' : zoneIndex % 3 === 1 ? 'only-part' : 'multiple-parts',
         score,
+        ...quality,
         winningPartId,
         winningPartName:parts[winningPartId].name,
+        winningPartUncertain:false,
+        possibleWinningPartCount:1,
+        possibleWinningParts:[{
+          partId:winningPartId,name:parts[winningPartId].name,score,
+          scoreBounds:{...quality.scoreBounds},
+        }],
         scoreSpread:zoneIndex % 3 === 0 ? 4 : 12,
         comparisonPartCount:zonePartCount,
         validPartCount:zonePartCount,
@@ -84,7 +109,8 @@ for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
         parts:partIds.map((partId, index) => ({
           partId,
           name:parts[partId].name,
-          score:score - index,
+          score:score - Math.abs(index - modeIndex),
+          ...fullHistoryQuality(score - Math.abs(index - modeIndex)),
           explanation:{diagnostic:verbose},
         })),
       };
@@ -109,7 +135,11 @@ const full = {
   coastalParts:{
     schemaVersion:2, enabled:true, modelBinding,
     evidenceTrust:ravScoreVerifiedEvidenceTrust(), scoreProfile,
-    scoreAvailability:{schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,unavailableZones:[]},
+    scoreAvailability:{schemaVersion:2,policy:'integrated-model-local-fail-closed',
+      allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,
+      allCurrentScoresFullHistory:true,fullHistoryModeCount:zoneCount*2,
+      historyIncompleteModeCount:0,historyIncompleteZoneCount:0,
+      evaluatedAt:productionReferenceAt,unavailableZones:[],historyIncompleteZones:[]},
     expectedPartCount:Object.keys(parts).length,
     scoredPartCount:Object.keys(parts).length, parts, zones:coastalZones,
   },
@@ -186,11 +216,17 @@ assert.deepEqual(startup.ravScoreRuntime.modelBinding, details.ravScoreRuntime.m
 
 const fullBytes = Buffer.byteLength(compactJson(full));
 const startupBytes = Buffer.byteLength(startupText);
+const startupGzipBytes = gzipSync(startupText, { level: 9 }).byteLength;
 assert.ok(startupBytes < fullBytes * 0.25, `Den atomiske startpakke er ikke reduceret nok: ${fullBytes} -> ${startupBytes}.`);
 // VERIFIED_ONLY trust is intentionally repeated on every selectable winner so
 // account/trip evidence cannot inherit an unbound aggregate trust marker. Keep
 // the synthetic national upper bound explicit without removing that binding.
-assert.ok(startupBytes < 900_000,
+// Schema 6 also binds exact quality/bounds to every current mode and compact
+// comparison row; 1.5 MB leaves about 13 % headroom over the 1,330,623-byte
+// national fixture while still failing on material startup-payload growth.
+assert.ok(startupBytes < 1_500_000,
   `Den fulde 210/673 syntetiske atomiske startpakke er for stor: ${startupBytes}.`);
+assert.ok(startupGzipBytes < 50_000,
+  `Den komprimerede 210/673-startpakke er for stor: ${startupGzipBytes}.`);
 
 console.log(`Public schema-4 startup: score-/rankingparitet, fælles modelbinding og ${fullBytes} -> ${startupBytes} byte består.`);

@@ -55,7 +55,7 @@ Følgende værdier skal hentes fra kodekontrakten og må ikke kopieres ind i par
 | Eksakt aldrig-offentlig state-5-migration | `integrated-schema5-ready-point-to-schema6-history-bounds-v1` |
 | Rollback | `integrated-schema6-to-candidate-g-schema2-v3` |
 | Parameterkontrakt | `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` |
-| Transitiv implementeringsbundle | `modelBundleSha256=101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e`; 43 kanonisk normaliserede transitive implementeringsfiler |
+| Transitiv implementeringsbundle | `modelBundleSha256=74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`; 43 kanonisk normaliserede transitive implementeringsfiler |
 
 Den serialiserede runtimebinding består præcist af model-, state-, variant-, profil-, komponent-, forklarings-, rangerings-, best-time- og præsentations-id samt de to adskilte hashes: 11 felter i alt. `modelContractSha256` binder den kanoniske parameterkontrakt. `modelBundleSha256` binder den transitive implementering, så en ændring i en indlæst evaluator, adapter, policy eller anden kanonisk modelafhængighed ikke kan gemme sig bag uændret parameter-JSON. Migration og rollback er særskilte overgangskontrakter. Hver continuation-state, hvert checkpoint og den centrale profilselection skal bære og matche alle 11 felter; det samme gælder payload, cache, forklaring og release. Et model-id eller én hash alene er aldrig nok. Ovenstående state-6-værdier er reproduceret af bundlegeneratoren over præcis 43 filer på den lokale 4.0.317-kandidat; de er ikke i sig selv exact-head- eller produktionsbevis. DEC-0112 er autoritativ for den numeriske `HISTORY_INCOMPLETE`-kontrakt og for 5→6-overgangen.
 

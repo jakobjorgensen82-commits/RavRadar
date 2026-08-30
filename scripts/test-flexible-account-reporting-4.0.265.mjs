@@ -104,7 +104,7 @@ const startInput = {
   forecastCalibrationEligible: true,
   dataQualityFlags: [],
   calibrationFeatures: {
-    modelVersion: activeModelBinding.modelId, appVersion: '4.0.315',
+    modelVersion: activeModelBinding.modelId, appVersion: '4.0.317',
     modelStateVersion: activeModelBinding.stateSchemaVersion,
     modelVariantId: activeModelBinding.variantId,
     modelProfileId: activeModelBinding.profileId,
@@ -115,7 +115,13 @@ const startInput = {
     modelPresentationPolicyId: activeModelBinding.presentationPolicyId,
     modelContractSha256: activeModelBinding.modelContractSha256,
     modelBundleSha256: activeModelBinding.modelBundleSha256,
-    totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50,
+    totalScore: 50, scoreBoundLower: 50, scoreBoundUpper: 50,
+    scoreBoundModelUncertaintyPoints: 0, scoreBoundRawLower: 50,
+    scoreBoundRawUpper: 50, historyCoverageHours: 48,
+    scoreQuality: 'FULL_HISTORY', scoreSemantics: 'EXACT_POINT_SCORE',
+    scoreCalibrationEligible: true, conservativeTailResetApplied: false,
+    historyReasonCodes: [],
+    huntabilityScore: 50, transportScore: 50, mobilisationScore: 50,
     reasonCodes: []
   }
 };

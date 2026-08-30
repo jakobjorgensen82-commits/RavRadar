@@ -17,7 +17,7 @@ Den aktive state-6-kandidat er bundet til:
 - rangering `direction-broad-19-history-tie-v2`,
 - bedste tidspunkt `score-history-water-tie-earliest-v3`,
 - `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, som binder parameterkontrakten,
-- `modelBundleSha256=101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e`, som binder præcis 43 kanonisk normaliserede transitive implementeringsfiler.
+- `modelBundleSha256=74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`, som binder præcis 43 kanonisk normaliserede transitive implementeringsfiler.
 
 Den tidligere pre-split-selvtest og de numeriske scenarier længere nede blev kørt mod den historiske state-5-releasekandidat, som aldrig blev offentlig. Dens kontrakthash var `0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da`, og dens bundlehash var `27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd`. Resultaterne er analytisk genbrug og regressionsevidens, ikke state-6-slutbevis. State-6-bundlebindingen er slutregenereret, og den fulde lokale proportionale audit-/testmatrix er grøn:
 
@@ -27,7 +27,7 @@ OK: PASSED_SYNTHETIC_OFFLINE_CONTRACT_AND_SENSITIVITY_AUDIT;
 24 frozen-component pairs;
 model RRS-COASTAL-PROCESS-INTEGRATED-1.1.0;
 modelContractSha256 778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7;
-modelBundleSha256 101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e;
+modelBundleSha256 74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae;
 43 transitive files; local proportional matrix passed
 ```
 

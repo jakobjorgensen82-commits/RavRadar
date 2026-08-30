@@ -12,7 +12,11 @@ import {
   projectTripStoragePayload,
   tripEvidenceIntegrityIssues
 } from './calibration-eligibility.js?v=4.0.317';
-import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.317';
+import {
+  RAVSCORE_MODEL_ID,
+  assertRavScoreModelBinding,
+  ravScoreModelBinding
+} from '../core/ravscore-model-contract.js?v=4.0.317';
 import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.317';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
@@ -29,8 +33,13 @@ function read(key,fallback=[]){try{return JSON.parse(localStorage.getItem(key)||
 function write(key,value){localStorage.setItem(key,JSON.stringify(value));}
 function anonymousId(){const key='ravradar-anonymous-id';let value=localStorage.getItem(key);if(!value){value=crypto.randomUUID();localStorage.setItem(key,value);}return value;}
 function publicWeatherSnapshot(weather){const source=weather&&typeof weather==='object'?weather:{};return Object.fromEntries(WEATHER_SNAPSHOT_FIELDS.map(key=>[key,source[key]??null]));}
-function publicPredictionSnapshot(prediction){const source=prediction&&typeof prediction==='object'?prediction:{};return {probability:source.probability??null,confidence:source.confidence??null,modelVersion:source.modelVersion??null};}
-function immutableWeatherSnapshot(weather,scoreResult,prediction){return structuredClone({schemaVersion:SNAPSHOT_SCHEMA_VERSION,capturedAt:new Date().toISOString(),sourceGeneratedAt:weather?.generatedAt??null,forecastTime:weather?.time??null,provider:weather?.provider??null,current:publicWeatherSnapshot(weather),score:{baseScore:scoreResult?.baseScore??scoreResult?.score??null,finalScore:scoreResult?.score??null,level:scoreResult?.level??null},prediction:publicPredictionSnapshot(prediction||scoreResult?.prediction),matchedRuleIds:(scoreResult?.ruleEvaluation?.matches??[]).map(match=>String(match?.id??match?.ruleId??'').slice(0,120)).filter(Boolean).slice(0,40)});}
+function immutableWeatherSnapshot(weather,scoreResult){return structuredClone({schemaVersion:SNAPSHOT_SCHEMA_VERSION,capturedAt:new Date().toISOString(),sourceGeneratedAt:weather?.generatedAt??null,forecastTime:weather?.time??null,provider:weather?.provider??null,current:publicWeatherSnapshot(weather),score:{baseScore:scoreResult?.baseScore??scoreResult?.score??null,finalScore:scoreResult?.score??null,level:scoreResult?.level??null},matchedRuleIds:(scoreResult?.ruleEvaluation?.matches??[]).map(match=>String(match?.id??match?.ruleId??'').slice(0,120)).filter(Boolean).slice(0,40)});}
+function observedRavScoreModelVersion(scoreResult){
+  try{
+    assertRavScoreModelBinding(scoreResult?.modelBinding,'Observation RavScore model binding');
+    return RAVSCORE_MODEL_ID;
+  }catch{return null;}
+}
 function record(value){return Boolean(value)&&typeof value==='object'&&!Array.isArray(value);}
 function assignProjected(output,key,value){if(value!==undefined)output[key]=value;}
 function projectedText(value,maximum){if(value===null)return null;return typeof value==='string'&&value.length<=maximum?value:undefined;}
@@ -93,8 +102,8 @@ async function postRemote(row){
   if(!response.ok)throw new Error('Turen kunne ikke sendes lige nu. Den bliver liggende på enheden, så du kan prøve igen.');
 }
 export async function syncPendingObservations(){if(!enabled)return getObservationSyncStatus();const queue=readMigratedRows(OUTBOX_KEY),remaining=[];for(const row of queue){try{await postRemote({...row,sync_status:undefined,sync_error:undefined});upsertLocal({...row,sync_status:'synced',synced_at:new Date().toISOString(),sync_error:null});}catch(error){remaining.push({...row,sync_status:'pending',sync_error:error.message});upsertLocal({...row,sync_status:'pending',sync_error:error.message});}}write(OUTBOX_KEY,remaining);localStorage.setItem('ravradar-observation-last-sync',new Date().toISOString());return getObservationSyncStatus();}
-export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null,prediction=null}){
-  const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:prediction?.probability??scoreResult?.prediction?.probability??null,ai_confidence:prediction?.confidence??scoreResult?.prediction?.confidence??null,model_version:prediction?.modelVersion??null,weather_snapshot:immutableWeatherSnapshot(weather,scoreResult,prediction),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
+export async function submitObservation({zone,huntMode,result,grams=null,scoreResult,weather,gps=null,tripId=null,observedAt=null}){
+  const session=currentSession();const row={id:crypto.randomUUID(),zone_id:zone.id,zone_name:zone.name,coast_type:zone.coastType||null,observed_at:observedAt||new Date().toISOString(),submitted_at:new Date().toISOString(),hunt_mode:huntMode,result,grams:grams===''||grams==null?null:Number(grams),anonymous_id:anonymousId(),user_id:session?.user?.id||null,trip_id:tripId,gps,rav_score:scoreResult?.score??null,score_level:scoreResult?.level??null,ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion(scoreResult),weather_snapshot:immutableWeatherSnapshot(weather,scoreResult),wind_speed_mps:weather?.windSpeedMps??null,wind_direction_deg:weather?.windDirectionDeg??null,wave_height_m:weather?.waveHeightM??null,wave_period_s:weather?.wavePeriodS??null,water_level_cm:weather?.waterLevelCm??null,current_speed_mps:weather?.currentSpeedMps??null,current_direction_deg:weather?.currentDirectionDeg??null,water_temperature_c:weather?.waterTemperatureC??null,sync_status:enabled?'pending':'local'};
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
 export async function submitTripEvidenceObservation(columns){

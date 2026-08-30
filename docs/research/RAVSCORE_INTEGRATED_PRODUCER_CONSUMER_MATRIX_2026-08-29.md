@@ -20,7 +20,7 @@ Alle rækker i matrixen bruger denne kanoniske binding fra `js/core/ravscore-mod
 | Rangering | `direction-broad-19-history-tie-v2` |
 | Bedste tidspunkt | `score-history-water-tie-earliest-v3` |
 | Parameterkontrakt | `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` |
-| Transitiv implementeringsbundle | `modelBundleSha256=101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e`; 43 kanonisk normaliserede transitive implementeringsfiler |
+| Transitiv implementeringsbundle | `modelBundleSha256=74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`; 43 kanonisk normaliserede transitive implementeringsfiler |
 
 Et match på model-id eller parameterhash uden resten af bindingen er inkompatibelt. Producenter og forbrugere kontrollerer både parameterkontrakten og den transitive implementeringsbundle. Dual-hash-red-team-fundet er lukket lokalt: `modelContractSha256` og `modelBundleSha256` følger den fulde 11-feltsbinding transitivt og afvises særskilt ved mismatch. Bundlegeneratoren reproducerer ovenstående digest over præcis 43 filer; matrixen er fortsat ikke exact-head- eller produktionsbevis.
 

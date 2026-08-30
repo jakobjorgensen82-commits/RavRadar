@@ -23,8 +23,12 @@ for (const file of [
   assert.match(workflow, new RegExp(`--exclude '${file.replaceAll('/', '\\/')}'`),
     `${file} must be absent from the public Pages artifact`);
 }
-assert.match(observationService, /ai_probability:null,ai_confidence:null,model_version:RAVSCORE_MODEL_ID/,
-  'legacy-compatible observations must bind the integrated RavScore and never persist an invented probability');
+assert.match(observationService,
+  /ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion\(scoreResult\)/,
+  'legacy-compatible observations must never persist an invented probability or unverified model identity');
+assert.match(observationService,
+  /assertRavScoreModelBinding\(scoreResult\?\.modelBinding,'Observation RavScore model binding'\)/,
+  'legacy-compatible observations may bind the integrated model only after exact 11-field validation');
 assert.doesNotMatch(observationService, /publicPredictionSnapshot|scoreResult\?\.prediction|prediction\?\.probability/,
   'observation persistence must not revive the retired probability layer');
 
