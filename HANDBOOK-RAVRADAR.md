@@ -1,6 +1,22 @@
 # RavRadar Håndbog
 
-## Aktuelle prognoser genåbnes uden rekonstruktion – 4.0.315 hotfixkandidat
+## Frisk vejrvisning kræver ikke en gyldig ældre reserve – 4.0.316 hotfixkandidat
+
+4.0.315-rettelsen virkede på sin første hovedopgave. PR #233 bestod kildekontrollen i run `33299676128`, blev merged som `63d789a4`, og den efterfølgende kørsel `33299747300` kom forbi den gamle D1-lås og startede den normale vejrbygning. Den tidligere grønne no-op var derfor ikke længere stopklodsen.
+
+Kørslen stoppede i stedet rødt, da RavRadar skulle gøre en ældre, senest verificeret Candidate G-pakke klar som reserve. Der fandtes ingen komplet målt reserve, som både var under 72 timer gammel og stadig havde gyldige prognosetimer. Det var korrekt ikke at vise den gamle reserve, men en frisk ny vejrpakkes udgivelse blev dermed blokeret af, at en ældre reserve ikke fandtes.
+
+I 4.0.316 er reserven valgfri, når den nye primary er frisk, udelukkende målt og har bestået alle sine egne kontroller. Findes en gyldig komplet reserve, kan den stadig bruges. Findes den ikke, bliver der ikke vist gamle data: den gamle eller udløbne reserve fjernes fra manifestet og fra de offentlige reservefiler. Fraværet må ikke blokere aktuelle forhold eller femdøgnsprognosen.
+
+Denne ændring gør ikke primary mindre streng. Uventede antal, forskel mellem manifest og filer, auditfejl eller manglende aktuelle/fremtidige input stopper stadig udgivelsen. RavRadar interpolerer ikke huller, låner ikke fra nabozoner og opfinder ingen historik eller syntetiske data.
+
+Ejeren har samtidig truffet en bindende beslutning for den kommende samlede RavScore-model. Hvis historikken er ufuldstændig, men den konkrete times direkte aktuelle eller fremtidige input er gyldige, skal hele current- og femdøgnsfladen fortsat have score med en tydelig advarsel på dansk, tysk og engelsk. Advarslen skal stå ved score, detaljer, femdøgnsvisning, admin og ekspert og forsvinde automatisk, når historikken igen er komplet. Sådanne resultater er altid `calibrationEligible=false`. Mangler de direkte input, er timen derimod utilgængelig. Dette er en senere modelkontrakt og er ikke implementeret af P0-hotfixen.
+
+Modelleverancen skal også reducere tre systemiske risici: det meget store workflow, uklare grøn-no-op/skipped-resultater og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. Det arbejde må ikke gøre 4.0.316-hotfixen større.
+
+4.0.316 er ikke live endnu. Først efter exact-head-kontrol, merge, en frisk fuld produktion med validering, releasegate, artifact og Pages samt offentlig kontrol af 210 zoner/673 kystdele og aktuelle/femdøgnsprognoser kan udgaven kaldes produktionsverificeret. Se DEC-0112.
+
+## Historisk: Aktuelle prognoser skulle genåbnes uden rekonstruktion – 4.0.315 blev ikke deployet
 
 RavRadar kunne ikke længere vise aktuelle data eller prognoser, selv om de seneste workflowkørsler så grønne ud. Årsagen var en midlertidig sikkerhedslås fra 4.0.314: normal vejrproduktion måtte først bygge, når samme version kunne bevise en succesfuld, descriptorbundet engangsrekonstruktion og et efterfølgende Pages-deploy. Ejeren trak operationen tilbage, før der fandtes en descriptor eller et apply. Kravet kunne derfor aldrig opfyldes, og grøn betød i praksis no-op uden build, artifact eller Pages.
 
@@ -12,7 +28,7 @@ Normal produktion er fortsat udelukkende målt. Manglende historik forbliver man
 
 Hotfixen ændrer ikke Candidate G-formlen, 20/50/30, +10/-8, 13-timersreglen, DMI/Copernicus, vejrsemantik, storage, geometri, zoner eller land-/vandpunkter. Normal produktion skal stadig bestå current-hour, friskhed, 210/673, fuld validering, releasegate, artifact og Pages.
 
-4.0.315 er først produktionslukket, når exact-head-kildegaten er grøn, hotfixen er merged, en frisk normal produktion faktisk har kørt alle fulde trin uden skip, og offentlig manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser er verificeret. En grøn workflowoversigt alene er ikke nok. Se DEC-0111.
+PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `33299747300` frigav D1-gaten og startede build, men stoppede senere på manglende gyldig fallback før artifact/Pages. 4.0.315 blev derfor ikke produktionsverificeret; næste afgrænsede skridt står i 4.0.316-kapitlet ovenfor. Se DEC-0111 og DEC-0112.
 
 > **Historikadvarsel:** De fire rekonstruktionskapitler nedenfor frem til **“Ekstern sikkerhed mod stille vejrproduktion”** er kun revisionsspor. DEC-0111 trak DEC-0109-operationen tilbage før descriptor/apply. Der må ikke køres nyt reconstruction-D1, inspect, apply, rollback eller cleanup; kapitlet om 4.0.315 ovenfor er den aktuelle regel.
 
@@ -787,7 +803,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.315
+**Håndbogsversion:** 4.0.316
 
 **Opdateret:** 19. august 2026
 

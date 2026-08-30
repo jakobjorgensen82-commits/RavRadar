@@ -1,6 +1,17 @@
-# AI Roadmap – RavRadar 4.0.315+
+# AI Roadmap – RavRadar 4.0.316+
 
-## P0 nu – pensionér stale interlock og gendan friske prognoser
+## P0 nu – publicér frisk primary uden gyldig ældre fallback
+
+1. [x] Bestå PR #233 exact-head `33299676128`, merge `63d789a4` og bevis i run `33299747300`, at D1-gaten frigives og build starter.
+2. [x] Afgræns rødt stop til fallbackstaging uden kandidat inden for 72 timer/prognosehorisont; intet artifact/Pages blev publiceret.
+3. [x] Bind DEC-0112 og 4.0.316-kontrakten: optional fallback, aldrig gammel/udløbet public fallback og streng primary accounting/audit.
+4. [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
+5. [x] Registrér workflowmonolit, grøn-no-op og version/docs/string-testkobling som modelarkitekturroadmap uden P0-scopeudvidelse.
+6. [ ] Bestå målrettede docs/RDKS/security/handbook/version/releasegates og exact-head sourcegate.
+7. [ ] Merge, kør frisk fuld produktion og verificér artifact/Pages samt offentlig 210/673/current/fem døgn.
+8. [ ] Fortsæt derefter DEC-0102-producent-/forbrugermatrix og arkitekturreduktion.
+
+## Historisk P0 – pensionér stale interlock og gendan friske prognoser
 
 1. [x] Bevis umuligt 4.0.314 apply+Pages-prerequisite og grøn no-op-rodårsag.
 2. [x] Bevis offentlig primary >8 timer, measured-only recovery >72 timer og ingen anvendte syntetiske data.

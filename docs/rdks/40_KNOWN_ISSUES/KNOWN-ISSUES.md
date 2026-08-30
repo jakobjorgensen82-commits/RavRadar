@@ -1,10 +1,17 @@
 # Kendte åbne og overvågede forhold
 
-## 4.0.315 – stale reconstruction-interlock udløste offentlig P0
+## 4.0.316 – frisk primary blokeret af fraværende gyldig fallback
 
-- **ISSUE-PRODUCTION-STALE-RECONSTRUCTION-INTERLOCK-4.0.315 – LOKALT RETTET / AFVENTER EXACT-HEAD, MERGE OG PRODUKTION:** Den tilbagetrukne 4.0.314-operation efterlod normal produktion afhængig af et descriptorbundet apply+Pages-bevis, som aldrig kunne eksistere. Jobs kunne være grønne no-ops, mens primary blev mere end otte timer gammel og measured-only recovery overskred 72 timer. 4.0.315 pensionerer hele operationelle sti og interlock; P0 er først lukket, når en normal post-merge-kørsel faktisk har bestået build, fuld validate/releasegate, artifact og Pages, og aktuelle/femdøgnsprognoser er offentligt verificeret.
+- **ISSUE-FRESH-PRIMARY-BLOCKED-BY-EXPIRED-FALLBACK-4.0.316 – LOKALT RETTET / AFVENTER GATES OG LIVEBEVIS:** Post-merge-run `33299747300` frigav 4.0.315-D1-gaten og startede build, men stoppede ved fallbackstaging, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. En frisk primary skal kunne fortsætte uden fallback; gammel/udløbet fallback skal være fraværende i manifest/public files og må aldrig vises.
+- **ISSUE-PUBLIC-WEATHER-UNAVAILABLE-4.0.316 – ÅBEN P0 INDTIL LIVEBEVIS:** PR #233/exact-head `33299676128` og merge `63d789a4` beviser retirementkilden, men 4.0.315 publicerede ikke nyt artifact/Pages. P0 lukkes først efter 4.0.316 exact-head/merge, frisk fuld produktion og offentlig current+femdøgns-/210/673-kontrol.
+- **ISSUE-PRIMARY-ACCOUNTING-MUST-STAY-FAIL-CLOSED-4.0.316 – AKTIV RELEASEGATE:** Kun forventet fravær af en ugyldig fallback må være ikke-blokerende. Uventede primaryoptællinger, manifest-/filafvigelser, auditfejl eller manglende direkte input skal fortsat stoppe; ingen syntetiske data må skabes.
+- **ISSUE-RAVSCORE-HISTORY-INCOMPLETE-CONSUMER-COVERAGE – ÅBEN MODELLEVERANCE / IKKE P0-HOTFIX:** DEC-0102/DEC-0112 kræver score over current+fem døgn ved gyldige direkte input, DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert, automatisk bortfald og `calibrationEligible=false`. Producent-/forbrugermatricen og arkitekturreduktionen mangler endnu og må ikke foregives implementeret i 4.0.316.
+
+## Historisk 4.0.315 – stale reconstruction-interlock blev pensioneret; næste gate stoppede rødt
+
+- **ISSUE-PRODUCTION-STALE-RECONSTRUCTION-INTERLOCK-4.0.315 – SOURCE/MERGE/POST-MERGE BEVIST PENSIONERET:** Den tilbagetrukne 4.0.314-operation havde efterladt normal produktion afhængig af et umuligt descriptorbundet apply+Pages-bevis. PR #233/exact-head `33299676128`, merge `63d789a4` og run `33299747300`, som frigav D1-gaten og startede build, beviser pensioneringen. Runnet stoppede senere ved fallbackstaging og gav derfor ikke et live releasebevis.
 - **ISSUE-CANDIDATE-G-MORNING-GAP-20260829 – LUKKET SOM TILBAGETRUKKET UDEN ANVENDELSE:** Ingen descriptor blev forseglet, ingen apply/rollback/cleanup blev kørt, og ingen syntetiske eller interpolerede data blev anvendt eller deployet. Manglende historik forbliver manglende under normal measured-only drift.
-- **ISSUE-PUBLIC-WEATHER-EXPIRED-4.0.315 – ÅBEN P0 INDTIL LIVEBEVIS:** Den offentlige besked **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”** er korrekt fail-closed adfærd, men betyder, at brugerne mangler prognoser. En grøn workflowoversigt uden et kørt produktionsjob må ikke lukke dette issue.
+- **ISSUE-PUBLIC-WEATHER-EXPIRED-4.0.315 – AFLØST AF 4.0.316-P0:** Den offentlige besked **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”** var korrekt fail-closed adfærd. 4.0.315 nåede build, men ikke artifact/Pages; den fortsatte offentlige hændelse føres nu under 4.0.316-issue ovenfor.
 
 ## Historisk 4.0.314 – cadencepolicy afgrænset; rekonstruktionssporet senere tilbagetrukket
 

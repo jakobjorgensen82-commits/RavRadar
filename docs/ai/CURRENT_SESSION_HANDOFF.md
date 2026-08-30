@@ -1,8 +1,17 @@
 # RavRadar - aktuelt Codex-handoff
 
-> **Historikregel:** Alle sektioner mærket **HISTORISK** er kun revisionsspor og må ikke læses som aktuelle driftsordrer. Den aldrig anvendte DEC-0109-operation er trukket tilbage af DEC-0111; intet nyt reconstruction-D1, inspect, apply, rollback eller cleanup må udføres. Kun det aktuelle 4.0.315-handoff nedenfor styrer næste produktionstrin.
+> **Historikregel:** Alle sektioner mærket **HISTORISK** er kun revisionsspor og må ikke læses som aktuelle driftsordrer. Den aldrig anvendte DEC-0109-operation er trukket tilbage af DEC-0111; intet nyt reconstruction-D1, inspect, apply, rollback eller cleanup må udføres. Kun det aktuelle 4.0.316-handoff nedenfor styrer næste produktionstrin.
 
-## AKTUELT P0-HANDOFF – 4.0.315 retirement og frisk normal produktion
+## AKTUELT P0-HANDOFF – 4.0.316 optional fallback for frisk measured-only primary
+
+- PR #233/exact-head `33299676128` bestod og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav den tidligere D1-/reconstruction-readiness og startede build.
+- Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. Artifact/Pages blev ikke publiceret.
+- 4.0.316 gør fallback valgfri for frisk primary. Gammel/udløbet fallback fjernes fra manifest/public files og må aldrig vises; forventet fravær må ikke blokere current+fem døgn. Uventet primary accounting/audit forbliver fail-closed.
+- Ingen syntetiske data. DEC-0112 binder senere DEC-0102-arbejde til `HISTORY_INCOMPLETE`-score, auto-forsvindende DA/DE/EN-advarsel og `calibrationEligible=false`; direct-input-mangel er separat `UNAVAILABLE`.
+- Workflowmonolit, grøn-no-op-semantik og version/docs/string-testkobling er modelarkitekturroadmap, ikke P0-scope.
+- Næste: målrettede gates → exact-head → merge → frisk fuld produktion → artifact/Pages → offentlig 210/673/current/femdøgnskontrol. 4.0.316 er lokal kandidat, ikke live.
+
+## HISTORISK P0-HANDOFF – 4.0.315 retirement og frisk normal produktion
 
 - 4.0.314's tilbagetrukne one-time operation efterlod normal vejrproduktion afhængig af et umuligt apply+Pages-bevis. Workflowet kunne være grønt med build/artifact/Pages skipped.
 - Offentlig primary var >8 timer og measured-only recovery >72 timer; siden viste korrekt fail-closed besked, men ingen aktuelle eller femdøgnsprognoser.

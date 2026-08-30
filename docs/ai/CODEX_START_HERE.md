@@ -2,7 +2,17 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-30 – 4.0.315 retirement og frisk produktion
+## Aktuelt P0-checkpoint 2026-08-30 – 4.0.316 optional fallback
+
+- 4.0.315 bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Run `33299747300` frigav D1-/reconstruction-readiness og startede build; den gamle grøn-no-op-interlock er ikke længere blockeren.
+- Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. Intet nyt artifact/Pages blev publiceret.
+- 4.0.316 må lade en frisk measured-only primary publicere current+fem døgn uden fallback. Gammel/udløbet fallback skal være fraværende i manifest/public files og må aldrig vises. Kun forventet fallbackfravær er ikke-blokerende; uventet primary accounting/audit stopper fortsat.
+- Ingen syntetiske data, interpolation, backfill eller zonelån. DEC-0111-retirementen består.
+- DEC-0112 binder DEC-0102-modelleverancen til `HISTORY_INCOMPLETE`-score ved gyldige direkte input, tydelig auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`. Manglende current/future-input er separat `UNAVAILABLE`.
+- Workflowmonolit, grøn-no-op-semantik og spredt version/docs/string-testkobling skal reduceres i modelleverancen, ikke i P0-hotfixen.
+- Kald ikke 4.0.316 live før exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol er bevist. Rør ikke geometri, zoner, punkter eller private data.
+
+## Historisk P0-checkpoint 2026-08-30 – 4.0.315 retirement og frisk produktion
 
 - 4.0.314's tilbagetrukne one-time Candidate G-operation efterlod en aktiv readiness, som krævede et apply+Pages-bevis, der aldrig kunne eksistere. Normale vejrjobs blev grønne no-ops uden build, artifact eller Pages.
 - Offentlig primary er observeret mere end otte timer gammel, og den målte recovery er over sin absolutte 72-timersgrænse. RavRadar viser derfor ærligt **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**, men kan ikke vise prognoser.

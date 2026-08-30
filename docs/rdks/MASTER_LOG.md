@@ -1,3 +1,12 @@
+## 2026-08-30 – 4.0.316 gør fallback valgfri for frisk measured-only primary
+
+- 4.0.315-retirementen bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav D1-/reconstruction-readiness og startede build, hvilket lukker den tidligere grøn-no-op-interlock som aktuel blocker.
+- Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**. Ingen komplet measured-only fallback var samtidig inden for 72 timer og sin kortere prognosehorisont; artifact og Pages blev ikke publiceret.
+- DEC-0112 gør fallback valgfri for en frisk primary. Ugyldig/gammel fallback må aldrig vises og fjernes fra manifest/public files; forventet fravær må ikke blokere aktuelle og femdøgnsdata. Primary accounting/audit og alle normale gates forbliver fail-closed. Ingen syntetiske data skabes.
+- DEC-0102/aktive krav binder `HISTORY_INCOMPLETE` til fortsat current+femdøgnsscore ved gyldige direkte input, tydelig auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`; manglende direkte input er separat `UNAVAILABLE`.
+- Ejerens systemiske bekymring om workflowmonolit, grøn-no-op-semantik og version/docs/string-testkobling er registreret som arkitekturroadmap for modelleverancen og er ikke blandet ind i P0-hotfixen.
+- 4.0.316 er lokal kandidat uden livepåstand. Exact-head, merge, fuld frisk produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol afventer.
+
 ## 2026-08-30 – 4.0.315 pensionerer stale rekonstruktionsinterlock efter offentlig P0
 
 - Ejeren trak den planlagte DEC-0109-engangsoperation tilbage, før et inspect forseglede en descriptor og før apply, rollback, cleanup eller anden mutation. Ingen syntetiske eller interpolerede Candidate G-data blev nogensinde anvendt eller publiceret.

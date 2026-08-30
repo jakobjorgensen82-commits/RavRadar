@@ -1,6 +1,19 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-30 stale interlock pensioneres i 4.0.315
+> **Historikregel:** Alle efterfølgende sektioner mærket historisk er kun revisionsspor. Kun 4.0.316-afsnittet nedenfor styrer P0-arbejdet; gamle rekonstruktionsordrer må ikke udføres.
+
+## Aktuelt P0 – 2026-08-30 optional fallback i 4.0.316
+
+- PR #233/exact-head `33299676128` var grøn og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav 4.0.315-D1-gaten og startede build; retirementen virkede.
+- Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. Intet nyt artifact/Pages blev publiceret.
+- 4.0.316 gør fallback valgfri for en frisk measured-only primary. Gammel/udløbet fallback må aldrig vises og skal fjernes fra manifest/public files; forventet fravær må ikke blokere current+fem døgn. Uventet primary accounting/audit forbliver fail-closed.
+- Ingen syntetiske data, interpolation, backfill eller zonelån. DEC-0111-retirementen består.
+- DEC-0112 binder også den senere DEC-0102-model: `HISTORY_INCOMPLETE` scorer current+fem døgn ved gyldige direkte input med auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
+- Arkitekturproblemerne workflowmonolit, grøn-no-op og spredt version/docs/string-testkobling hører til modelleverancens roadmap, ikke denne P0-diff.
+- Næste sikre rækkefølge: målrettede gates → exact-head → merge → frisk normal produktion med fuld validate/releasegate/artifact/Pages → offentlig 210/673/current/femdøgnskontrol. 4.0.316 er ikke live før det bevis.
+- Ingen private data, joblogs, geometri, zoner eller land-/vandpunkter må indgå.
+
+## Historisk P0 – 2026-08-30 stale interlock pensioneret i 4.0.315
 
 - 4.0.314's tilbagetrukne one-time operation efterlod normal produktion afhængig af et umuligt descriptorbundet apply+Pages-bevis. Jobs kunne være grønne, mens build, artifact og Pages var skipped.
 - Offentlig primary passerede otte timer og measured-only recovery 72 timer; siden viser korrekt fail-closed tekst, men aktuelle og femdøgnsprognoser mangler.
