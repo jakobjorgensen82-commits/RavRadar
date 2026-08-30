@@ -35,7 +35,7 @@ En maskeret, for fjern, for lav, inkonsistent, flerkørsels- eller ufuldstændig
 
 ## Privacy, kapacitet og drift
 
-Piloten er en isoleret mode i det allerede registrerede, manuelt startede workflow `build-ravscore-historical-wave-pilot.yml`. Dermed kan den køres mod en specifik branch/ref, før modelarbejdet merges. Den har kun `contents: read`, har ingen schedule, deploy, cache-save eller produktionsskrivning og genbruger de eksisterende Copernicus- og Supabase-secrets uden at gemme dem.
+Piloten er en isoleret mode i det allerede registrerede, manuelt startede workflow `build-ravscore-historical-wave-pilot.yml`. GitHub registrerer inputkontrakten fra default branch, så branch-only dispatch genbruger det eksisterende frie `year`-felt: et firecifret år kører den historiske pilot, mens `feggesund:<eksakt UTC-time>` vælger feasibility-jobbet. Dermed kan piloten køres mod en specifik branch/ref før modelarbejdet merges uden et nyt workflow-id eller en forudgående merge. Den har kun `contents: read`, har ingen schedule, deploy, cache-save eller produktionsskrivning og genbruger de eksisterende Copernicus- og Supabase-secrets uden at gemme dem.
 
 Hver af de berørte dele bruger et exact-point dry-run og et exact-point subset for både statisk og dynamisk data i hvert produkt. Dry-run-estimatet må højst være 8 MiB pr. produkt, og de faktiske midlertidige filer højst 16 MiB pr. produkt. Filerne slettes før artifactet skrives.
 

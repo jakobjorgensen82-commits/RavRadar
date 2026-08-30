@@ -14,9 +14,12 @@ assert "push:" not in text
 assert "pull_request:" not in text
 assert "contents: read" in text
 assert "contents: write" not in text
-assert "feggesund_wave_feasibility" in text
-assert "if: inputs.mode == 'historical'" in text
-assert "if: inputs.mode == 'feggesund_wave_feasibility'" in text
+assert "feggesund:<exact UTC hour>" in text
+assert "if: ${{ !startsWith(inputs.year, 'feggesund:') }}" in text
+assert "if: ${{ startsWith(inputs.year, 'feggesund:') }}" in text
+assert "mode:" not in text
+assert "target_hour:" not in text
+assert 'TARGET_HOUR="${PILOT_SELECTOR#feggesund:}"' in text
 assert "scripts/test-feggesund-copernicus-wave-pilot.py" in text
 assert "scripts/pilot-feggesund-copernicus-wave.py" in text
 assert "--target-hour \"$TARGET_HOUR\"" in text
@@ -31,7 +34,7 @@ assert "rawNetcdfStored" in text
 assert "COPERNICUSMARINE_SERVICE_USERNAME" in text
 assert "COPERNICUSMARINE_SERVICE_PASSWORD" in text
 assert "SUPABASE_SERVICE_ROLE_KEY" in text
-assert "os.environ['TARGET_HOUR']" in text
+assert "steps.target.outputs.target_hour" in text
 
 for forbidden in (
     "actions/deploy-pages",

@@ -3,34 +3,22 @@ name: Build private RavScore historical wave pilot
 on:
   workflow_dispatch:
     inputs:
-      mode:
-        description: "Isolated manual research mode"
-        required: true
-        default: "historical"
-        type: choice
-        options:
-          - historical
-          - fegggesund_wave_feasibility
       year:
-        description: "Complete year for bounded wave event discovery (1993-current)"
+        description: "Historical year, or feggesund:<exact UTC hour> for the isolated feasibility mode"
         required: true
         default: "2024"
-        type: string
-      target_hour:
-        description: "Exact UTC hour for Feggesund target-40..target+117 feasibility"
-        required: false
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: private-ravscore-wave-pilot-${{ inputs.mode }}
+  group: private-ravscore-wave-pilot-${{ startsWith(inputs.year, 'feggesund:') && 'feggesund' || 'historical' }}
   cancel-in-progress: false
 
 jobs:
   build:
-    if: inputs.mode == 'historical'
+    if: ${{ !startsWith(inputs.year, 'feggesund:') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -158,7 +146,7 @@ jobs:
             .cache/ravscore-historical-candidate-f-comparison.txt
 
   fegggesund-wave-feasibility:
-    if: inputs.mode == 'feggesund_wave_feasibility'
+    if: ${{ startsWith(inputs.year, 'feggesund:') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -186,11 +174,18 @@ jobs:
         run: python scripts/test-feggesund-copernicus-wave-pilot.py
 
       - name: Require an exact manually selected UTC hour
+        id: target
         env:
-          TARGET_HOUR: ${{ inputs.target_hour }}
+          PILOT_SELECTOR: ${{ inputs.year }}
         run: |
+          case "$PILOT_SELECTOR" in
+            fegggesund:*) ;;
+            *) exit 1 ;;
+          esac
+          TARGET_HOUR="${PILOT_SELECTOR#feggesund:}"
           test -n "$TARGET_HOUR"
-          python -c "import os; from datetime import datetime; v=os.environ['TARGET_HOUR']; d=datetime.fromisoformat(v.replace('Z','+00:00')); assert d.tzinfo and d.minute == d.second == d.microsecond == 0"
+          python -c "import sys; from datetime import datetime; v=sys.argv[1]; d=datetime.fromisoformat(v.replace('Z','+00:00')); assert d.tzinfo and d.minute == d.second == d.microsecond == 0" "$TARGET_HOUR"
+          echo "target_hour=$TARGET_HOUR" >> "$GITHUB_OUTPUT"
 
       - name: Rebuild latest centrally approved sampling points without publishing
         env:
@@ -216,7 +211,7 @@ jobs:
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
-          TARGET_HOUR: ${{ inputs.target_hour }}
+          TARGET_HOUR: ${{ steps.target.outputs.target_hour }}
         run: >-
           python scripts/pilot-feggesund-copernicus-wave.py
           --target-hour "$TARGET_HOUR"
