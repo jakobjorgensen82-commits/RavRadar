@@ -20,7 +20,7 @@ requireMatch(reviewStore,/deleteLocalHandbookDraft/,'Lokale nødkladder kan ikke
 requireMatch(dashboard,/Gældende sandhed/,'Dokumentationscenteret mangler Current Truth.');
 requireMatch(dashboard,/Implementeringsstatus/,'Dokumentationscenteret mangler implementeringsstatus.');
 requireMatch(dashboard,/Kendte problemer/,'Dokumentationscenteret mangler kendte problemer.');
-requireMatch(dashboard,/Siden ændrer aldrig Candidate G eller den offentlige RavScore/,'Kalibreringsgrundlaget forklarer ikke, at det er skrivebeskyttet.');
+requireMatch(dashboard,/Siden ændrer aldrig[^.]*den offentlige RavScore/,'Kalibreringsgrundlaget forklarer ikke, at det er skrivebeskyttet.');
 if(/adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/.test(dashboard))failures.push('Kalibreringsgrundlaget indeholder stadig lokal modelaktivering eller rollback.');
 requireMatch(siteTest,/Manglende fil \(404\)/,'Sitetesten skelner ikke 404 fra timeout.');
 requireMatch(siteTest,/Timeout/,'Sitetesten mangler særskilt timeoutklassifikation.');

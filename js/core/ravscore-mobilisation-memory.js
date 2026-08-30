@@ -1,8 +1,4 @@
-const finite = value => value !== null
-  && value !== undefined
-  && value !== ''
-  && typeof value !== 'boolean'
-  && Number.isFinite(Number(value));
+const finite = value => typeof value === 'number' && Number.isFinite(value);
 const clamp = (value, minimum = 0, maximum = 100) => Math.max(minimum, Math.min(maximum, Number(value)));
 
 export const WAVE_MOBILISATION_ENERGY_POINTS = Object.freeze([

@@ -22,34 +22,62 @@ def manifest(version, active=True, approved=True):
     }
 
 
-def ravscore_selection(version, active=True, approved=True, legacy=False):
+def candidate_g_selection(version):
     candidate_id = MODULE.CANDIDATE_G_PROFILE_ID
-    payload = {
+    return {
         "schemaVersion": "2.0.0",
         "sourceVersion": version,
         "switchVersion": f"RAVSCORE-PROFILE-SWITCH-{version}",
         "requestedProfileId": candidate_id,
         "candidateProfileId": candidate_id,
         "rollbackProfileId": None,
-        "status": "owner-approved-candidate-g-only-local-fail-closed" if approved else "draft",
-        "candidateActivationEnabled": active,
-        "prePublicWarmupAccepted": approved,
+        "status": "owner-approved-candidate-g-only-local-fail-closed",
+        "candidateActivationEnabled": True,
+        "prePublicWarmupAccepted": True,
         "automaticActivationAllowed": False,
         "publicAvailabilityPolicy": "candidate-g-local-fail-closed",
         "legacyPublicFallbackAllowed": False,
-        "activationAuthority": "DEC-0060" if approved else "",
-        "evidence": {"ownerReviewDecisionId": "DEC-0060-OWNER" if approved else None},
+        "activationAuthority": "DEC-0072",
+        "evidence": {"ownerReviewDecisionId": "DEC-0072-OWNER"},
     }
-    if legacy:
-        payload.update({
-            "requestedProfileId": "RRS-CURRENT-B0-4.0.247",
-            "rollbackProfileId": "RRS-CURRENT-B0-4.0.247",
-            "candidateActivationEnabled": False,
-            "publicAvailabilityPolicy": None,
-            "legacyPublicFallbackAllowed": True,
-            "status": "owner-approved-global-rollback",
-        })
+
+
+def integrated_selection(version, active=True):
+    payload = json.loads(MODULE.INTEGRATED_PROFILE_PATH.read_text(encoding="utf8"))
+    payload["sourceVersion"] = version
+    payload["modelActivationEnabled"] = active
     return payload
+
+
+def candidate_g_rollback_selection(version):
+    candidate = MODULE.expected_candidate_g_binding()
+    integrated = integrated_selection(version)
+    return {
+        "schemaVersion": "3.0.0",
+        "sourceVersion": version,
+        "switchVersion": "RAVSCORE-PROFILE-SWITCH-CANDIDATE-G-ROLLBACK-1.0.0",
+        "requestedProfileId": candidate["modelId"],
+        "activeModelId": candidate["modelId"],
+        **{key: candidate[key] for key in (
+            "stateSchemaVersion", "variantId", "profileId", "componentSchemaId",
+            "explanationSchemaId", "rankingPolicyId", "bestTimePolicyId",
+            "presentationPolicyId", "modelContractSha256", "modelBundleSha256",
+        )},
+        "rollbackModelId": integrated["activeModelId"],
+        "runtimeFallbackModelId": None,
+        "modelActivationEnabled": True,
+        "automaticActivationAllowed": False,
+        "publicAvailabilityPolicy": "candidate-g-local-fail-closed",
+        "crossModelRuntimeFallbackAllowed": False,
+        "migrationRequiredAtFirstCutover": False,
+        "status": "owner-approved-candidate-g-rollback-only-local-fail-closed",
+        "activationAuthority": "DEC-0108-manual-candidate-g-rollback",
+        "evidence": {
+            "decisionId": "DEC-0108",
+            "exactHeadValidationRequired": True,
+            "freshProductionValidationRequired": True,
+        },
+    }
 
 
 class ActivationPrecedenceTest(unittest.TestCase):
@@ -69,38 +97,80 @@ class ActivationPrecedenceTest(unittest.TestCase):
 
 
 class RavScoreSelectionPrecedenceTest(unittest.TestCase):
-    def test_newer_explicit_owner_selection_crosses_central_boundary(self):
+    def test_exact_candidate_g_to_newer_integrated_cutover_is_preserved(self):
         self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), ravscore_selection("4.0.260")))
+            integrated_selection("4.0.308"), candidate_g_selection("4.0.307")))
 
-    def test_first_owner_selection_is_preserved_when_central_version_is_missing(self):
+    def test_first_integrated_install_is_preserved_when_central_is_missing(self):
         self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), {}))
+            integrated_selection("4.0.307"), {}))
 
-    def test_equal_or_newer_legacy_central_selection_can_never_reintroduce_fallback(self):
+    def test_active_candidate_overlay_is_validated_but_integrated_build_profile_is_preserved(self):
+        central = candidate_g_rollback_selection("4.0.309")
+        self.assertTrue(MODULE.is_candidate_g_rollback_selection(central))
+        self.assertEqual(
+            MODULE.ravscore_selection_hydration_action(
+                integrated_selection("4.0.309"), central
+            ),
+            "preserve-local-integrated-for-candidate-maintenance",
+        )
+
+    def test_forged_candidate_overlay_binding_is_fatal(self):
+        for field in (
+            "variantId", "profileId", "componentSchemaId", "explanationSchemaId",
+            "rankingPolicyId", "bestTimePolicyId", "presentationPolicyId",
+            "modelContractSha256", "modelBundleSha256",
+        ):
+            forged = candidate_g_rollback_selection("4.0.309")
+            forged[field] = f"forged-{field}"
+            self.assertFalse(MODULE.is_candidate_g_rollback_selection(forged))
+            with self.assertRaisesRegex(RuntimeError, "Unknown or conflicting"):
+                MODULE.ravscore_selection_hydration_action(
+                    integrated_selection("4.0.309"), forged
+                )
+
+    def test_candidate_g_cutover_must_be_monotonically_newer(self):
+        with self.assertRaisesRegex(RuntimeError, "not newer"):
+            MODULE.ravscore_selection_hydration_action(
+                integrated_selection("4.0.306"), candidate_g_selection("4.0.306"))
+
+    def test_equal_or_newer_same_bundle_central_remains_authoritative(self):
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            integrated_selection("4.0.307"), integrated_selection("4.0.307")))
+        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
+            integrated_selection("4.0.307"), integrated_selection("4.0.308")))
+
+    def test_newer_local_release_of_same_bundle_is_preserved(self):
         self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), ravscore_selection("4.0.261", legacy=True)))
-        self.assertTrue(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), ravscore_selection("9.9.999", legacy=True)))
+            integrated_selection("4.0.308"), integrated_selection("4.0.307")))
 
-    def test_equal_or_newer_valid_candidate_g_only_central_remains_authoritative(self):
-        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), ravscore_selection("4.0.261")))
-        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261"), ravscore_selection("4.0.262")))
+    def test_unknown_central_model_or_bundle_is_fatal(self):
+        unknown = integrated_selection("9.9.999")
+        unknown["modelBundleSha256"] = "unknown"
+        with self.assertRaisesRegex(RuntimeError, "Unknown or conflicting"):
+            MODULE.ravscore_selection_hydration_action(
+                integrated_selection("4.0.307"), unknown)
 
-    def test_unapproved_or_inactive_selection_never_wins(self):
-        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261", approved=False), ravscore_selection("4.0.260")))
-        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            ravscore_selection("4.0.261", active=False), ravscore_selection("4.0.260")))
+        unknown_contract = integrated_selection("9.9.999")
+        unknown_contract["modelContractSha256"] = "unknown"
+        with self.assertRaisesRegex(RuntimeError, "Unknown or conflicting"):
+            MODULE.ravscore_selection_hydration_action(
+                integrated_selection("4.0.307"), unknown_contract)
+
+    def test_inactive_local_selection_is_fatal(self):
+        with self.assertRaisesRegex(RuntimeError, "Local integrated"):
+            MODULE.ravscore_selection_hydration_action(
+                integrated_selection("4.0.307", active=False),
+                candidate_g_selection("4.0.306"),
+            )
 
     def test_complete_contract_is_required(self):
-        incomplete = ravscore_selection("4.0.261")
+        incomplete = integrated_selection("4.0.307")
         incomplete.pop("publicAvailabilityPolicy")
-        self.assertFalse(MODULE.is_candidate_g_only_selection(incomplete))
-        self.assertFalse(MODULE.preserve_newer_owner_approved_ravscore_selection(
-            incomplete, ravscore_selection("4.0.260", legacy=True)))
+        self.assertFalse(MODULE.is_integrated_selection(incomplete, integrated_selection("4.0.307")))
+        with self.assertRaisesRegex(RuntimeError, "Local integrated"):
+            MODULE.ravscore_selection_hydration_action(
+                incomplete, candidate_g_selection("4.0.306"))
 
 
 class CentralAdminRequestTest(unittest.TestCase):

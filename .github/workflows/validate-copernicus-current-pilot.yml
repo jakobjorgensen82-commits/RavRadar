@@ -58,13 +58,8 @@ jobs:
           python scripts/apply-central-zone-reviews.py
           node scripts/build-public-coastal-parts-v2.mjs
 
-      - name: Hydrate latest deployed DMI coverage for target selection
-        env:
-          RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          WEATHER_USER_AGENT: "RavRadar Copernicus target selector (${{ github.server_url }}/${{ github.repository }})"
-        run: python scripts/hydrate-deployed-weather.py
-
       - name: Restore latest progressive private DMI coverage for target selection
+        id: dmi-coverage-cache
         uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
@@ -72,7 +67,22 @@ jobs:
           restore-keys: |
             dmi-zone-cache-v1-${{ runner.os }}-
 
-      - name: Select only current DMI gaps unless a full-coast audit was explicitly requested
+      - name: Inspect private DMI coverage availability
+        id: dmi-coverage
+        shell: bash
+        env:
+          MATCHED_CACHE_KEY: ${{ steps.dmi-coverage-cache.outputs.cache-matched-key }}
+        run: |
+          if test -n "$MATCHED_CACHE_KEY" && test -f data/live/dmi-bulk-cache.json; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+            echo "A restored private DMI cache is available for contract and freshness validation."
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "No private DMI cache was restored; a checkout file alone is never treated as a cache hit."
+          fi
+
+      - name: Seal the exact target-48 through target+117 DMI gap matrix
+        if: steps.dmi-coverage.outputs.available == 'true'
         id: target-registry
         env:
           PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
@@ -82,33 +92,41 @@ jobs:
           args=()
           if [ -n "$PILOT_SAMPLE_TIME" ]; then args+=(--at "$PILOT_SAMPLE_TIME"); fi
           if [ "$PILOT_FULL_COAST" = "true" ]; then args+=(--full-coast); fi
-          args+=(--nearest-dmi-hour --github-output "$GITHUB_OUTPUT")
+          args+=(--github-output "$GITHUB_OUTPUT")
           python scripts/build-copernicus-target-registry.py "${args[@]}"
 
       - name: Run deterministic pilot tests
         run: |
           python scripts/test-copernicus-current-pilot.py
+          python scripts/test-copernicus-range-runner-v2.py
+          python scripts/test-copernicus-range-checker-v2.py
           python scripts/test-copernicus-shadow-retention-4.0.232.py
+          python scripts/test-live-current-pilot-4.0.232.py
           python scripts/test-current-regional-proxy-policy.py
 
-      - name: Restore private seven-day Copernicus shadow cache
+      - name: Restore private sealed Copernicus range cache
+        if: steps.dmi-coverage.outputs.available == 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-shadow-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-range-v2-
             copernicus-current-shadow-v1-
 
-      - name: Inspect requested hour and authoritative target geometry
+      - name: Inspect the exact sealed DMI-gap range
+        if: steps.dmi-coverage.outputs.available == 'true'
         id: cache-state
         run: >-
-          python scripts/check-copernicus-current-hour.py
+          python scripts/check-copernicus-current-range.py
           --at "${{ steps.target-registry.outputs.target_hour }}"
-          --targets .cache/copernicus-current-targets.json
+          --registry .cache/copernicus-current-targets.json
+          --dmi data/live/dmi-bulk-cache.json
+          --targets data/live/coastal-parts-v2.json
           --github-output "$GITHUB_OUTPUT"
 
       - name: Verify Copernicus secrets are configured
-        if: steps.cache-state.outputs.current_hour_present != 'true'
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -116,26 +134,42 @@ jobs:
           test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
           test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
 
-      - name: Run authenticated score-neutral current pilot
-        if: steps.cache-state.outputs.current_hour_present != 'true'
+      - name: Complete only the exact sealed DMI-gap range
+        id: acquisition
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
-          python scripts/run-copernicus-current-pilot.py
+          python scripts/run-copernicus-current-pilot-with-retry.py
+          --attempts 2
+          --timeout-seconds 600
+          --backoff-seconds 20
+          --
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "${{ steps.target-registry.outputs.target_hour }}"
 
-      - name: Save private seven-day Copernicus shadow cache
-        if: steps.cache-state.outputs.current_hour_present != 'true' && success()
+      - name: Prove the resulting exact range seal
+        if: steps.dmi-coverage.outputs.available == 'true'
+        run: >-
+          python scripts/check-copernicus-current-range.py
+          --at "${{ steps.target-registry.outputs.target_hour }}"
+          --registry .cache/copernicus-current-targets.json
+          --dmi data/live/dmi-bulk-cache.json
+          --targets data/live/coastal-parts-v2.json
+          --require-complete
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Save private sealed Copernicus range cache
+        if: steps.dmi-coverage.outputs.available == 'true' && success()
         uses: actions/cache/save@v6
         with:
           path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-shadow-v1-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reject secret or raw-vector leakage from support report
-        if: steps.cache-state.outputs.current_hour_present != 'true'
+        if: steps.acquisition.outcome == 'success'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -160,7 +194,7 @@ jobs:
           PY
 
       - name: Upload private support evidence
-        if: steps.cache-state.outputs.current_hour_present != 'true'
+        if: steps.acquisition.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: copernicus-current-pilot-${{ github.run_number }}
@@ -171,5 +205,9 @@ jobs:
             data/diagnostics/copernicus-current-pilot.txt
 
       - name: Report safe duplicate suppression
-        if: steps.cache-state.outputs.current_hour_present == 'true'
-        run: echo "Requested UTC hour already exists for the centrally approved target geometry; authenticated download skipped."
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present == 'true'
+        run: echo "The exact target-48 through target+117 DMI-gap range is already sealed; authenticated download skipped."
+
+      - name: Report safe private-cache skip
+        if: steps.dmi-coverage.outputs.available != 'true'
+        run: echo "Optional Copernicus pilot skipped because no private DMI target cache was restored; production weather coverage is unchanged."

@@ -14,6 +14,9 @@ URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
 ACTIVATION_KEY = "coastal-parts-v2-activation"
 RAVSCORE_PROFILE_KEY = "ravscore-profile-selection"
+INTEGRATED_PROFILE_PATH = ROOT / "data/admin/ravscore-profile-selection.json"
+CANDIDATE_G_CONTRACT_PATH = ROOT / "scripts/rollback-assets/ravscore-model-contract.js"
+CANDIDATE_G_BUNDLE_PATH = ROOT / "scripts/rollback-assets/ravscore-model-bundle.generated.js"
 CANDIDATE_G_PROFILE_ID = "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3"
 CANDIDATE_G_SCHEMA_VERSION = "2.0.0"
 CANDIDATE_G_AVAILABILITY_POLICY = "candidate-g-local-fail-closed"
@@ -31,6 +34,51 @@ MAP = {
 def version_tuple(value):
     match = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", str(value or ""))
     return tuple(map(int, match.groups())) if match else None
+
+
+def js_exported_string(path, name):
+    """Read one sealed generated ESM string without executing repository code."""
+    try:
+        source = path.read_text(encoding="utf8")
+    except OSError as error:
+        raise RuntimeError(f"Sealed Candidate G source is unreadable: {path.name}") from error
+    match = re.search(
+        rf"export\s+const\s+{re.escape(name)}\s*=\s*['\"]([^'\"]+)['\"]\s*;",
+        source,
+    )
+    if not match:
+        raise RuntimeError(f"Sealed Candidate G source lacks {name}")
+    return match.group(1)
+
+
+def expected_candidate_g_binding():
+    names = {
+        "modelId": "RAVSCORE_MODEL_ID",
+        "stateSchemaVersion": "RAVSCORE_STATE_SCHEMA_VERSION",
+        "variantId": "RAVSCORE_VARIANT_ID",
+        "profileId": "RAVSCORE_PROFILE_ID",
+        "componentSchemaId": "RAVSCORE_COMPONENT_SCHEMA_ID",
+        "explanationSchemaId": "RAVSCORE_EXPLANATION_SCHEMA_ID",
+        "rankingPolicyId": "RAVSCORE_RANKING_POLICY_ID",
+        "bestTimePolicyId": "RAVSCORE_BEST_TIME_POLICY_ID",
+        "presentationPolicyId": "RAVSCORE_PRESENTATION_POLICY_ID",
+    }
+    binding = {
+        key: js_exported_string(CANDIDATE_G_CONTRACT_PATH, export_name)
+        for key, export_name in names.items()
+    }
+    binding["modelContractSha256"] = js_exported_string(
+        CANDIDATE_G_BUNDLE_PATH, "GENERATED_RAVSCORE_MODEL_CONTRACT_SHA256"
+    )
+    binding["modelBundleSha256"] = js_exported_string(
+        CANDIDATE_G_BUNDLE_PATH, "GENERATED_RAVSCORE_MODEL_BUNDLE_SHA256"
+    )
+    if binding["modelId"] != CANDIDATE_G_PROFILE_ID or not all(
+        re.fullmatch(r"[0-9a-f]{64}", binding[key] or "")
+        for key in ("modelContractSha256", "modelBundleSha256")
+    ):
+        raise RuntimeError("Sealed Candidate G binding is invalid")
+    return binding
 
 
 def preserve_newer_owner_approved_activation(local, central):
@@ -75,26 +123,120 @@ def is_candidate_g_only_selection(payload):
     )
 
 
-def preserve_newer_owner_approved_ravscore_selection(local, central):
-    """Keep Candidate G-only authoritative across central hydration.
-
-    The old public profile is no longer a permitted admin rollback. A central
-    legacy/rollback document must therefore never overwrite the versioned
-    Candidate G-only contract, even if that stale document carries an equal or
-    syntactically newer version. A valid equal/newer Candidate G-only central
-    document remains authoritative.
-    """
-    local_version = version_tuple(local.get("sourceVersion")) if isinstance(local, dict) else None
-    central_version = version_tuple(central.get("sourceVersion")) if isinstance(central, dict) else None
-    return bool(
-        is_candidate_g_only_selection(local)
-        and local_version
-        and (
-            not is_candidate_g_only_selection(central)
-            or central_version is None
-            or local_version > central_version
+def is_candidate_g_rollback_selection(payload):
+    """Accept only the sealed schema-3 Candidate G operational overlay."""
+    if not isinstance(payload, dict):
+        return False
+    candidate = expected_candidate_g_binding()
+    integrated = expected_integrated_selection()
+    evidence = payload.get("evidence") or {}
+    binding_matches = (
+        payload.get("requestedProfileId") == candidate["modelId"]
+        and payload.get("activeModelId") == candidate["modelId"]
+        and all(
+            payload.get(field) == candidate[field]
+            for field in (
+                "stateSchemaVersion", "variantId", "profileId", "componentSchemaId",
+                "explanationSchemaId", "rankingPolicyId", "bestTimePolicyId",
+                "presentationPolicyId", "modelContractSha256", "modelBundleSha256",
+            )
         )
     )
+    return bool(
+        version_tuple(payload.get("sourceVersion"))
+        and payload.get("schemaVersion") == "3.0.0"
+        and payload.get("switchVersion")
+        == "RAVSCORE-PROFILE-SWITCH-CANDIDATE-G-ROLLBACK-1.0.0"
+        and binding_matches
+        and payload.get("rollbackModelId") == integrated.get("activeModelId")
+        and payload.get("runtimeFallbackModelId") is None
+        and payload.get("modelActivationEnabled") is True
+        and payload.get("automaticActivationAllowed") is False
+        and payload.get("publicAvailabilityPolicy") == CANDIDATE_G_AVAILABILITY_POLICY
+        and payload.get("crossModelRuntimeFallbackAllowed") is False
+        and payload.get("migrationRequiredAtFirstCutover") is False
+        and payload.get("status")
+        == "owner-approved-candidate-g-rollback-only-local-fail-closed"
+        and payload.get("activationAuthority") == "DEC-0108-manual-candidate-g-rollback"
+        and evidence.get("decisionId") == "DEC-0108"
+        and evidence.get("exactHeadValidationRequired") is True
+        and evidence.get("freshProductionValidationRequired") is True
+    )
+
+
+def expected_integrated_selection():
+    try:
+        return json.loads(INTEGRATED_PROFILE_PATH.read_text(encoding="utf8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise RuntimeError("Local integrated RavScore profile is unreadable") from error
+
+
+def is_integrated_selection(payload, expected=None):
+    """Validate the complete integrated-model-only activation contract."""
+    if not isinstance(payload, dict):
+        return False
+    expected = expected if isinstance(expected, dict) else expected_integrated_selection()
+    source_version = str(payload.get("sourceVersion") or "")
+    exact_fields = (
+        "schemaVersion", "switchVersion", "requestedProfileId", "activeModelId",
+        "stateSchemaVersion", "variantId", "profileId", "componentSchemaId",
+        "explanationSchemaId", "rankingPolicyId", "bestTimePolicyId",
+        "presentationPolicyId", "modelContractSha256", "modelBundleSha256", "rollbackModelId",
+        "runtimeFallbackModelId", "publicAvailabilityPolicy",
+        "crossModelRuntimeFallbackAllowed", "migrationRequiredAtFirstCutover",
+    )
+    evidence = payload.get("evidence") or {}
+    expected_evidence = expected.get("evidence") or {}
+    return bool(
+        version_tuple(source_version)
+        and all(payload.get(field) == expected.get(field) for field in exact_fields)
+        and payload.get("modelActivationEnabled") is True
+        and payload.get("automaticActivationAllowed") is False
+        and str(payload.get("status") or "").startswith(
+            "owner-approved-integrated-model-only-"
+        )
+        and bool(str(payload.get("activationAuthority") or "").strip())
+        and evidence.get("decisionId") == expected_evidence.get("decisionId") == "DEC-0108"
+        and evidence.get("exactHeadValidationRequired") is True
+        and evidence.get("freshProductionValidationRequired") is True
+    )
+
+
+def ravscore_selection_hydration_action(local, central):
+    """Resolve central hydration without permitting a cross-model overwrite.
+
+    The only first-cutover predecessor is the exact Candidate G-only contract.
+    Once the integrated bundle exists centrally, the same/newer central version
+    is runtime truth. Unknown models, bundles or newer conflicting documents are
+    fatal and are never silently replaced.
+    """
+    expected = expected_integrated_selection()
+    if not is_integrated_selection(local, expected):
+        raise RuntimeError("Local integrated RavScore selection is invalid")
+    local_version = version_tuple(local.get("sourceVersion")) if isinstance(local, dict) else None
+    central_version = version_tuple(central.get("sourceVersion")) if isinstance(central, dict) else None
+    if not central:
+        return "preserve-local-integrated-first-install"
+    if is_candidate_g_only_selection(central):
+        if central_version is None or not (local_version and local_version > central_version):
+            raise RuntimeError("Integrated RavScore cutover is not newer than Candidate G")
+        return "preserve-local-integrated-candidate-g-cutover"
+    if is_candidate_g_rollback_selection(central):
+        # The operational status/controller is central truth. The build checkout
+        # deliberately keeps the exact integrated profile long enough to build
+        # the fresh private dual-model runtime; only the separately audited
+        # Candidate stage may become the public overlay.
+        return "preserve-local-integrated-for-candidate-maintenance"
+    if is_integrated_selection(central, expected):
+        if central_version is not None and local_version is not None and central_version >= local_version:
+            return "use-central-integrated-runtime-truth"
+        return "preserve-newer-local-integrated-release"
+    raise RuntimeError("Unknown or conflicting central RavScore selection")
+
+
+def preserve_newer_owner_approved_ravscore_selection(local, central):
+    """Compatibility wrapper used by existing audits."""
+    return ravscore_selection_hydration_action(local, central).startswith("preserve-")
 
 
 def write_document(document_key, payload):
@@ -112,8 +254,11 @@ def write_document(document_key, payload):
             local = json.loads(target.read_text(encoding="utf8"))
         except (OSError, json.JSONDecodeError):
             local = None
-        if preserve_newer_owner_approved_ravscore_selection(local, payload):
-            return "preserved-owner-approved-candidate-g-only-contract"
+        action = ravscore_selection_hydration_action(local, payload)
+        if action.startswith("preserve-"):
+            return action
+        if action != "use-central-integrated-runtime-truth":
+            raise RuntimeError(f"Unsupported RavScore hydration action: {action}")
     target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
     return "central"
 

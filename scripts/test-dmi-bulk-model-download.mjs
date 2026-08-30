@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 
-const [bulk, updater, workflow, hydrator, preflight, packageJson] = await Promise.all([
+const [bulk, nativeProvenance, updater, workflow, hydrator, preflight, packageJson] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
+  fs.readFile('scripts/lib/dmi_native_provenance.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
   fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
@@ -52,12 +54,26 @@ assert.match(bulk, /build_ocean_diagnostics/);
 assert.match(bulk, /select_common_vector_candidate/);
 assert.match(bulk, /water_source_parameter_allowed/);
 assert.match(bulk, /invalidatedMismatchedVectors/);
-assert.match(bulk, /PARSER_VERSION = 18/);
-assert.match(bulk, /CURRENT_VECTOR_SEMANTICS_VERSION = 3/);
-assert.match(bulk, /nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer/);
+assert.match(bulk, /PARSER_VERSION = 19/);
+assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
+assert.match(bulk, /PRIVATE_REPLAY_RETENTION_HOURS = max\(\s*54,/);
+assert.match(bulk, /previous\.get\("spatialProvenanceVersion"\) == SPATIAL_PROVENANCE_VERSION/,
+  'legacy bulkcache uden eksakt spatial proveniens må ikke ramme fresh-cache genvejen');
+assert.match(bulk, /int\(previous\.get\("privateReplayRetentionHours"\) or 0\) >= 54/,
+  'fresh-cache genbrug skal bevare hele den private replaybro');
+assert.match(bulk, /select_common_grid_tuple/);
+assert.match(bulk, /nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation/);
+assert.match(bulk, /observed_run_cadence_hours/);
+assert.match(bulk, /catalogScheduleFresh/);
+assert.match(bulk, /rejectedStaleRun/);
+assert.match(bulk, /assetIdentitySha256/);
+assert.match(bulk, /Registration\/last-use time is not acquisition time/);
+assert.match(bulk, /invalidatedIncompleteComponentProvenance/);
+assert.match(nativeProvenance, /CURRENT_VECTOR_SEMANTICS_VERSION = 3/);
+assert.match(nativeProvenance, /nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer/);
 assert.match(bulk, /prefer_current_hour_candidate/);
 assert.match(bulk, /CLOSER_CURRENT_COLUMN_SELECTED_FOR_NATIVE_TIME/);
-assert.match(bulk, /CURRENT_MAX_DISTANCE_KM = 5\.0/);
+assert.match(nativeProvenance, /CURRENT_MAX_DISTANCE_KM = 5\.0/);
 assert.match(bulk, /prefer_vector_choice/);
 assert.match(bulk, /currentFieldShadow/);
 assert.match(bulk, /prune_previous_sampling_mismatches/);
@@ -68,7 +84,7 @@ assert.match(bulk, /native_component_source/);
 assert.match(bulk, /water_temperature_surface_layer/);
 assert.match(bulk, /rejectedNonSurfaceWaterTemperatureMessages/);
 assert.match(bulk, /"modelRun": model_run/);
-assert.match(bulk, /"nativeValidTime": valid_time/);
+assert.match(bulk, /"nativeValidTime": valid_iso/);
 assert.match(bulk, /PARAMETER_MAP_VERSION = 4/);
 assert.match(bulk, /return canonical/);
 assert.match(bulk, /"water-temperature": \(/);
@@ -119,6 +135,17 @@ assert.match(hydrator, /data\/diagnostics\/dmi-ocean-diagnostics\.json/);
 assert.match(hydrator, /data\/diagnostics\/dmi-ocean-summary\.txt/);
 assert.match(preflight, /new-dmi-model/);
 assert.match(preflight, /RAVRADAR_MAX_STALE_MINUTES/);
+
+const provenanceParity = spawnSync(
+  process.env.PYTHON || 'python',
+  ['scripts/test-dmi-native-provenance.py'],
+  { encoding: 'utf8' },
+);
+assert.equal(
+  provenanceParity.status,
+  0,
+  `DMI native producer/verifier parity failed:\n${provenanceParity.stdout}\n${provenanceParity.stderr}`,
+);
 assert.match(preflight, /missing-ocean-diagnostics/);
 assert.match(preflight, /dmi-cache-incomplete/);
 assert.match(preflight, /marine-warmup-pending/);

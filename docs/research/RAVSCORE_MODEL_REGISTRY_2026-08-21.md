@@ -1,11 +1,12 @@
-# RavScore-modelregister 2026-08-21
+# RavScore-modelregister – opdateret 2026-08-29
 
 ## Aktive og historiske modeller
 
 | ID | Status | Vægte | Formål |
 | --- | --- | --- | --- |
+| RRS-COASTAL-PROCESS-INTEGRATED-1.0.0 | Lokal samlet releasekandidat; bliver eneste offentlige model efter sikker DEC-0108-cutover | 20/50/30 | Én integreret kæde for tilførsel, 4/48-bølgemobilisering, 24/48-strømtransport, score-neutralt strukturelt sidste led og jagtbarhed; state 4.0.0 |
 | RRS-LEGACY-WEIGHTS-4.0.241 | Historisk sammenligning | 40/35/25 | Viser virkningen af den tidligere vægtning på samme komponenter |
-| RRS-CURRENT-B0-4.0.247 | Global rollback i 4.0.261 | 25/40/35 | Fail-closed reference ved manglende eller ugyldig Candidate G-projektion |
+| RRS-CURRENT-B0-4.0.247 | Historisk rollback i Candidate G's aktiveringsforløb | 25/40/35 | Må ikke vælges som skjult eller global fallback efter DEC-0108-cutover |
 | RRS-CAND-A-SMOOTH-EVENT | Forskningskandidat | 25/40/35 | Glatte kurver og hændelseshukommelse |
 | RRS-CAND-B-DELIVERY-RETENTION | Forskningskandidat | 25/40/35 | A plus levering og fastholdelse |
 | RRS-CAND-C-WEAKEST-LINK | Forskningskandidat | 25/40/35 | B plus mild svageste-led-begrænsning |
@@ -19,9 +20,24 @@
 | RRS-CANDIDATE-G-50-50-NO-DIRECT-WIND-WADERS-WIND-LED-4.0.258 | Waders-kontraktreference | 20/50/30 + vindstyret waders-loft | Vind er hovedsignal, WAM er blødt fradrag; transportfortolkningen er senere erstattet af DEC-0055 |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-1 | Historisk strømstyret revisionsspor | 20/50/30 + strømreservoir + vindstyret waders-loft | Transportpotentiale 0 fra 13 timer, men totalscore kunne fortsat være 35; erstattet af ejerens slutscorebeslutning |
 | RRS-CANDIDATE-G-CURRENT-LED-OUTFLOW-8-RESEARCH-2 | Transportreference | 20/50/30 + strømreservoir + udtransportgate + vindstyret waders-loft | Faktisk kraftig udtransport med udtømt transportpotentiale giver slutscore 0, mens delscorer bevares; mobiliseringen er senere erstattet af DEC-0056 |
-| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Gældende profil i 4.0.261 under ejer-godkendt pre-public opvarmning | 20/50/30 + afgrænset strømevidens + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Fast 48-timers transportvindue efter DEC-0059; DEC-0060 tillader ærligt mærket aktiv score før vinduet er komplet, mens legacy bevares som global rollback |
+| RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3 | Offentlig forgænger gennem 4.0.308; privat migrations-/offline-/rollback-orakel, mens integreret er aktiv | 20/50/30 + afgrænset strømevidens + bølgeenergitilstand + udtransportgate + vindstyret waders-loft | Schema 2 kan migreres én gang til state 4 og kan rekonstrueres ved en manuel hel rollback. Den må aldrig køre samtidig offentligt med den integrerede model; først efter controller-CAS, deploy og offentlig 210/673-verifikation kan den igen blive den ene offentlige model |
 
-## Stabile kandidatregler
+## Aktiv integreret kontrakt efter sikker cutover
+
+| Regel-ID | Mekanisme | Vigtig begrænsning |
+| --- | --- | --- |
+| RRS-I1-EXACT-MODEL-STATE-BINDING | Model `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0`, state `4.0.0`, variant, profil, `modelContractSha256` og `modelBundleSha256` følger generator, fire offentlige filer, checkpoint, private bundle og forbrugere | Parameterhash binder kontrakten; bundlehash binder 34+ kanonisk normaliserede transitive implementeringsfiler; mismatch er fatal |
+| RRS-I2-CURRENT-SUPPLY-MEMORY | Kystnormal verificeret strøm bygger +10 eller nedbryder -8 pr. effektiv fuld time efter 0,03→0,15 m/s; fuld vægt 24 timer og cosinusfade til 0 ved 48 timer | Højst tre timers gap og 49 evidenspunkter; 13 timers udtransport kan tømme transport, men nulstiller ikke hele score |
+| RRS-I3-WAVE-MOBILISATION-MEMORY | Relativ `Hs² × T` bygger en 0–100-tilstand med fire timers halveringstid og aftager over 48 timer | Missing bygger ikke; højst én times eksplicit recovery-credit; ikke fundkalibreret eller bundskær |
+| RRS-I4-STRUCTURAL-LAST-MILE | `delivery = transportPotential × 1`; `physicalDeliveryResolved=false`; fysisk interval `null`; bølgeretning er diagnostisk | Faktoren 1 betyder score-neutral uobserveret effekt, ikke 100 % fysisk levering; ingen lokal bathymetri/surfzonepræcision |
+| RRS-I5-HUNTABILITY | Strand uden jagtbarhedsloft; waders begrænses af vindstyret jagtbarhed med blødt WAM-fradrag | Søgeeffektivitet, ikke sikkerhed eller ukendt bund/dybde/adgang |
+| RRS-I6-WATER-TIEBREAK | Vandstand giver 0 scorepoint; waders vælger ved eksakt scorelighed lavere kendt vand, så ikke-stigende vand, så tidligste; strand vælger tidligste | Faldende vand kan både ledsage udtransport og blotlægning/koncentration bag revler; intet universelt fysisk fortegn |
+| RRS-I7-MIGRATION-ROLLBACK | Candidate G schema 2 migreres én gang via `candidate-g-schema2-to-integrated-schema4-v1`; rollback via `integrated-schema4-to-candidate-g-schema2-v1` | Ingen opdigtet historik, gamle scorer kopieres ikke, og rollback kræver nyt atomisk build |
+| RRS-I8-OPERATIONAL-ROLLBACK-CONTROLLER | Privat `ravScoreCandidateGRollback`; controller `ravscore-operational-model-activation`/`ravscore-operational-model-activation-v3`; status `INTEGRATED_ACTIVE`/fravær → `CANDIDATE_G_PENDING` → verificeret `CANDIDATE_G_ACTIVE` eller abort | Scheduler kan ikke initiere; `PENDING` stopper deploy; Candidate G-observationer er `calibrationEligible=false`; separat kontrakt-/bundle-SHA afventer slutregeneration |
+
+Den aktive variant er `COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1`, og profilen er `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3`. Endelige værdier for `modelContractSha256` og `modelBundleSha256` dokumenteres først efter regeneration på afsluttet head. Den integrerede model er endnu kun lokal releasekandidat; Candidate G er eneste offentlige model, indtil alle gates er grønne.
+
+## Historiske stabile kandidatregler
 
 | Regel-ID | Model | Mekanisme | Vigtig begrænsning |
 | --- | --- | --- | --- |
@@ -42,7 +58,7 @@
 | RRS-M3-WAVE-ENERGY-MEMORY | G current-led RESEARCH-3 | Én kausal mobiliseringstilstand bygger på bølgehøjde² × periode og aftrappes 4/48 timer | Relativ proxy uden bunddybde; halveringstiderne er ikke fundkalibrerede |
 | RRS-P1-CENTRAL-DERIVED-STATE | G current-led RESEARCH-3 | Transport genafspilles fra et fast 48-timers vindue af afledt kystnormal strøm; mobilisering fortsætter versions- og kontekstbundet | Kun tidspunkt, afledt styrke og mobiliseringsstate må persistéres; missing/tidsgab er fail-closed |
 
-De historiske kandidater forbliver score-neutrale sammenligningsspor. DEC-0060 vælger kun `RESEARCH-3` som gældende 4.0.261-profil under den ikke-offentlige opvarmning; `RRS-CURRENT-B0-4.0.247` er global rollback. Se DEC-0046 og DEC-0058–0060.
+De historiske kandidater forbliver offline sammenligningsspor. DEC-0060 valgte `RESEARCH-3` i Candidate G's aktiveringsforløb, hvor `RRS-CURRENT-B0-4.0.247` var global rollback. DEC-0108 erstatter denne aktive struktur: efter sikker cutover er den integrerede model eneste offentlige scoreejer, Candidate G er privat migrations-/offline-/rollback-orakel og kan kun igen blive den ene offentlige model gennem den eksplicitte manuelle hel-rollback ovenfor; `RRS-CURRENT-B0` er kun historik. Se DEC-0046, DEC-0058–0060 og DEC-0108.
 
 ## Registertilfoejelse efter exact-commit-koersel 32521046654
 

@@ -14,7 +14,36 @@
 
 Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring. Se DEC-0107.
 
-## 4.0.308-kandidat – luk naturlig fosforformulering og tvetydig zonesøgning
+## Lokal releasekandidat – integreret næste RavScore-generation
+
+- [x] Start fra og genverificér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at overskrive 4.0.307-ejerpakken.
+- [x] Opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN/UTILSTRÆKKELIG EVIDENS-matricen for hele Candidate G.
+- [x] Design og implementér én samlet årsagsmodel med fælles model-id, stateversion, forklaringer, profil, migration og rollback.
+- [x] Adskil muligt lager/tilførsel, bølgemobilisering, lokal gridstrøm, strukturelt sidste nærkystled, jagtbarhed og usikkerhed uden at foregive lokal surfzone- eller batymetripræcision.
+- [x] Bevar 20/50/30, 0,03/0,15 m/s og +10/-8; erstat 13-timers helscore-gaten med 24 timers fuld strømvægt og cosinusfade til nul ved 48 timer; gør 4/48-bølgemobilisering statefuld og fail-closed ved manglende evidens.
+- [x] Luk migrationens lange bølgegap med tidsbundet seed, konservativ restart og positive/negative gaptests; markér løsningen lokalt grøn, men ikke produktionsverificeret.
+- [x] Behandl faldende vandstand tosidet og score-neutralt: mulig udtransport samt blotlægning/koncentration bag revler indgår som kontekst og tie-break, ikke som universel retningseffekt.
+- [x] Implementér plug-and-play recovery med eksklusiv validitetsprioritet exact point → integreret continuation → checkpoint → dybt valideret Candidate G. Ugyldig exact point stopper; en ugyldig ordinær kandidat skygger ikke for en gyldig lavere prioritet. Hvis ingen statekilde findes, genafspilles præcis de 48 allerede hentede, private og proveniensverificerede kildetimer target−48 h til target−1 h; offentlige/syntetiske pre-target-rækker afvises, komplette data giver `READY` ved første offentlige target, og manglende/ugyldig bro stopper med `RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING` frem for offentlig warmup.
+- [x] Implementér fuld 11-felts model-/state-/hashbundet schema-4-runtime for hver continuation-state, checkpoint og central profilselection, med fire offentlige livefiler, kompakt checkpoint, privat otte-fils produktionsbundle inklusive Copernicus-range-cache, beskyttet driftscheckpoint og fail-closed restore. Stop fremtidig versionskopiering for det allowlistede operationelle checkpoint uden at slette eksisterende `admin_document_versions`-historik.
+- [x] Fjern samtidige offentlige shadow-/fallback-/adaptive modeller; bevar Candidate G's varme projektion kun privat som rollback-orakel og kræv et separat manuelt, fuldt verificeret modelskift, hvis Candidate G igen skal være den ene offentlige model.
+- [x] Implementér de unikke migrations-id'er `20260829010000` → `20260829020000`, samlet protected readiness, eksakt Edge-`409` ved manglende/forkert binding og lokal Candidate G i gammel klient uden servermodelmix. Genverificér `origin/main == GITHUB_SHA` efter dry-run og umiddelbart før første eksterne backendskrivning; fortsæt post-write fra samme validerede snapshot.
+- [x] Harden current-proveniens: afled kanonisk 0,01 m/s-fart og toward-retning fra det eksakte verificerede U/V-par, normalisér 360° til 0° og ignorer modstridende parallelle cachefelter; DMI- og Copernicus-fixtures dækker grænsen.
+- [x] Harden hele den aktive model-/state-/runtime-/recovery-/public-kæde til endelige JSON-tal; numeriske strenge og andre coercible typer afvises som invalid/missing. Slutpakken genkøres efter bundle-regeneration.
+- [x] Implementér operationel v3-controller for første `INTEGRATED_PENDING`-cutover, manuel Candidate G-rollback, manuel integreret return og afgrænset Candidate-refresh. Hvert skift bevarer central source-profil under `PENDING`, verificerer target Pages implementation+210/673 og sætter derefter `ACTIVE` + central target-profil atomisk; crash/retry reconcilerer source/requested/third manifest fail-closed. Candidate rollback deployer ingen Candidate G-assistent-Edge, bruger integreret Edge-`409` + deterministiske lokale DA/DE/EN-svar og lagrer schema-3-ture Candidate G-bundet med `calibration_eligible=false`; endelige Candidate G-kontrakt-/bundlehashes afventer slutregeneration.
+- [x] Luk producent-/forbrugermatricen for generator, 210/673, ranking, bedste tid, zonedetalje, femdøgnsvisning, strand/waders, DA/DE/EN, lokal/Edge-assistent, observationer, konto/ture, admin, ekspertflader, håndbøger, profil, workflows, audits og releasegates.
+- [x] Dokumentér scenarier, invariants, ablation, følsomhed og datasikre replays uden at påstå empirisk bedre fundpræcision.
+- [x] Harmoniser aktiv RDKS, Markdown-/webhåndbog og dokumentationstests; marker 4.0.308/Candidate G som offentlig indtil cutover og ældre Candidate G-afsnit som historik.
+- [x] Kør første målrettede model-, state-, migration-, runtime-, workflow-, privacy-, assistent- og 210/673-kontraktpakke.
+- [x] Luk red-team-fundet, så både `modelContractSha256` og `modelBundleSha256` faktisk følger hele 11-feltsruntimebindingen og afvises separat ved mismatch.
+- [ ] Regenerér og lås først de endelige kontrakt-/bundleværdier på den afsluttede implementeringshead.
+- [ ] Luk uafhængige model-, runtime/privacy-, forbruger- og operationel rollback-red-team-audits og gentag helhedsrevisionen efter rettelser.
+- [ ] Bestå afsluttende målrettede tests, fuld lokal sourcegate/RDKS/geodatabevis og releasegate på versionssat kandidat.
+- [ ] Hent og integrér endnu en gang seneste grønne `origin/main`; genvalider den eksakte afsluttede head.
+- [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy samt offentlig desktop-/mobilkontrol.
+
+Se DEC-0108 og forskningspakken `docs/research/RAVSCORE_INTEGRATED_*_2026-08-29.md`. Offentligheden bruger fortsat Candidate G/4.0.308, indtil sidste releasepunkt er lukket.
+
+## Produktionsverificeret 4.0.308 – luk naturlig fosforformulering og tvetydig zonesøgning
 
 - [x] Reproducer den offentlige afvisning af “Hvad er hvidt fosfor på stranden?”.
 - [x] Udvid DA/DE/EN-emnematchet til naturlige formuleringer uden at lempe eller omskrive det officielt kildebundne sikkerhedssvar.
@@ -22,7 +51,7 @@ Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændri
 - [x] Filtrér den eksisterende rullemenu til alle delstrengsmatches ved både afslut tur og manuel indberetning; bevar rydning og fuld liste.
 - [x] Tilføj tre naturlige fosforregressioner og fler-match-/ryd-kontrakt.
 - [x] Bestå fuld lokal sourcegate, RDKS, geodatabevis og versionslukning.
-- [ ] Bestå PR exact-head, merge, frisk produktion og offentlig slutkontrol.
+- [x] Bestå PR #220 exact-head `33221847955` på `698f2e15b32aaff711c8b4e1907236b81a4a6327`, merge `a93082548c4cc1ddbe9c75ce303d334530a534c4`, frisk produktion/deploy `33221916441` og offentlig mobil-/desktopkontrol.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0106.
 
@@ -66,23 +95,24 @@ Se DEC-0104.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0103.
 
-## Ejer-godkendt og ikke implementeret – integreret næste RavScore-generation
+## Ejer-godkendt arbejdsgrundlag – integreret næste RavScore-generation
 
-- [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.
+- [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars verificerede modelgridstrøm; gridstrømmen er heller ikke en lokal bundstrømsmåling.
 - [x] Verificér mod aktuel kode, at Candidate G allerede adskiller jagtbarhed, strømstyret transport, bølgeenergimobilisering og afhængig bølgelanding.
 - [x] Lås arbejdsformen: én isoleret, autonom model-worktree, én samlet kandidat, ingen offentlig fragmentudgivelse og ingen ekstra offentlig shadowmodel.
 - [x] Lås genbrugsprincippet: alle aktive led auditeres og fungerende dele bevares, medmindre en dokumenteret analyse begrunder erstatning.
 - [x] Lås det parallelle smårettelsesspor til ikke-modelkode og kræv, at modelsporet integrerer seneste grønne `main` før slutvalidering.
 - [x] Lås plug-and-play som acceptkrav: kandidaten skal selv levere kompatibilitet, adaptere, state-migration og rollback til RavRadars eksisterende system; ingen senere RavRadar-ombygning må stå tilbage.
 - [x] Lås grænserne: ingen private payloads, geometri eller land-/vandpunkter; ingen påstand om empirisk bedre fundrate uden repræsentative funddata.
-- [ ] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN-matricen.
-- [ ] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
-- [ ] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
-- [ ] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
-- [ ] Model-worktree: gennemfør scenarie-, ablations-, følsomheds-, regressions-, integrations- og fuld releasevalidering mod seneste `main`.
+- [x] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN/UTILSTRÆKKELIG EVIDENS-matricen.
+- [x] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
+- [x] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/checkpoint og releasegates.
+- [x] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
+- [x] Model-worktree: gennemfør første scenarie-, ablations-, følsomheds-, regressions- og integrationsvalidering mod 4.0.308-main.
+- [ ] Model-worktree: luk red-team-fund, gentag fuld releasevalidering og integrér seneste grønne `main` ved sidste checkpoint.
 - [ ] Udgiv først efter samlet modelbeslutning, exact-head, frisk produktion og offentlig kontrol.
 
-Se DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig version forbliver 4.0.305.
+Se DEC-0102, DEC-0108 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig version forbliver 4.0.308, indtil den samlede kandidat er verificeret.
 
 ## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 

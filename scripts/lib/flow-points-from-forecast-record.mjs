@@ -38,7 +38,7 @@ function haversineKm(first, second) {
   return 6371.0088 * 2 * Math.atan2(Math.sqrt(term), Math.sqrt(1 - term));
 }
 
-function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
+function exactCurrentGrid(record, expectedSamplingPoint, at = null, part = null) {
   const completeness = record?.model?.completeness ?? {};
   const maximumDistance = coordinate(completeness.currentMaxDistanceKm) ?? 5;
   let rows = [...(record?.hourly ?? [])].sort((a, b) => Date.parse(a?.time ?? '') - Date.parse(b?.time ?? ''));
@@ -52,8 +52,15 @@ function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
   for (const row of rows) {
     if (coordinate(row?.currentUMps) === null || coordinate(row?.currentVMps) === null) continue;
     const source = row?.currentProvenance?.status === 'verified' ? row.currentProvenance : row?.sources?.current;
-    const liveProof = verifiedLivePilotSource(source, expectedSamplingPoint, { requireStatus: true });
-    if (liveProof) return { point: liveProof.gridPoint, source: liveProof.arrowSource };
+    const liveProof = verifiedLivePilotSource(source, part, { requireStatus: true });
+    if (liveProof) return {
+      point: liveProof.gridPoint,
+      source: liveProof.arrowSource,
+      sourceClass: liveProof.arrowSource === 'dmi-regional-proxy-grid'
+        ? 'owner-approved-regional-proxy'
+        : 'supplemental-local-current',
+      distanceKm: liveProof.distanceKm,
+    };
     if (Number(completeness.currentVectorSemanticsVersion) !== 3) continue;
     if (!samePoint(completeness.samplingPoint, expectedSamplingPoint)) continue;
     if (String(source?.provider ?? '').toLowerCase() !== 'dmi') continue;
@@ -64,7 +71,12 @@ function exactCurrentGrid(record, expectedSamplingPoint, at = null) {
     const distance = coordinate(source?.distanceKm);
     if (!point || distance === null || distance > maximumDistance) continue;
     if (haversineKm(expectedSamplingPoint, point) > maximumDistance + 0.01) continue;
-    return { point, source: 'dmi-marine-grid' };
+    return {
+      point,
+      source: 'dmi-marine-grid',
+      sourceClass: 'local-model-grid',
+      distanceKm: distance,
+    };
   }
   return null;
 }
@@ -76,10 +88,10 @@ function validFallback(value) {
   return longitude === null || latitude === null ? null : [longitude, latitude];
 }
 
-export function flowPointsFromForecastRecord(record, fallbackPoint, at = null) {
+export function flowPointsFromForecastRecord(record, fallbackPoint, at = null, part = null) {
   const fallback = validFallback(fallbackPoint);
   const grid = record?.model?.completeness?.gridPoints ?? {};
-  const currentGrid = exactCurrentGrid(record, fallback, at);
+  const currentGrid = exactCurrentGrid(record, fallback, at, part);
   const primaryWindGrid = exactGridPair(grid, 'wind-u-10m', 'wind-v-10m');
   const marineWindGrid = primaryWindGrid ? null : exactGridPair(grid, 'wind-tail-u-10m', 'wind-tail-v-10m');
   const windGrid = primaryWindGrid || marineWindGrid;
@@ -87,6 +99,13 @@ export function flowPointsFromForecastRecord(record, fallbackPoint, at = null) {
   const waveLon = coordinate(waveRow?.longitude);
   const waveLat = coordinate(waveRow?.latitude);
   const waveGrid = waveLon !== null && waveLat !== null ? [waveLon, waveLat] : null;
+  const sourceMetadata = currentGrid ? {
+    current: {
+      source: currentGrid.source,
+      sourceClass: currentGrid.sourceClass,
+      distanceKm: currentGrid.distanceKm,
+    },
+  } : {};
   return {
     current: currentGrid?.point || fallback,
     wind: windGrid || fallback,
@@ -95,6 +114,7 @@ export function flowPointsFromForecastRecord(record, fallbackPoint, at = null) {
       current: currentGrid?.source || 'zone-marine-anchor',
       wind: primaryWindGrid ? 'dmi-atmospheric-grid' : marineWindGrid ? 'dmi-marine-wind-grid' : 'zone-marine-anchor',
       wave: waveGrid ? 'dmi-wave-grid' : 'zone-marine-anchor'
-    }
+    },
+    ...(currentGrid ? { sourceMetadata } : {}),
   };
 }

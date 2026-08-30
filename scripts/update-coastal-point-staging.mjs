@@ -2,9 +2,21 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
+  RAVSCORE_WAVE_MOBILISATION_POLICY,
+  ravScoreModelBinding,
+} from '../js/core/ravscore-model-contract.js';
 import { buildDmiForecastHourly, createDmiForecastRecord, selectDmiForecastAt } from './lib/dmi-forecast-store.mjs';
-import { candidateGStateKey, POINT_STAGE_READY } from './lib/coastal-point-staging-contract.mjs';
+import {
+  POINT_STAGE_READY,
+  POINT_STAGE_SCHEMA_VERSION,
+  assertCandidateGCoastalPointMigrationInput,
+  assertCoastalPointStageModelBinding,
+  assertIntegratedCoastalPointContinuation,
+  coastalPointStageIdentity,
+} from './lib/coastal-point-staging-contract.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const PRIVATE_DMI = path.join(ROOT, '.cache/coastal-point-staging/dmi.json');
@@ -13,13 +25,18 @@ const PRIVATE_STATUS = path.join(ROOT, '.cache/coastal-point-staging/status.json
 const PUBLIC_STATUS = path.join(ROOT, 'data/live/coastal-point-staging-status.json');
 const REQUIRED_HORIZON_HOURS = 96;
 const MAX_CURRENT_DISTANCE_KM = 5;
+const MODEL_BINDING = ravScoreModelBinding();
 
 const finite = value => value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value));
 const samePoint = (left, right, tolerance = 1e-7) => Array.isArray(left) && Array.isArray(right)
   && left.length >= 2 && right.length >= 2
   && left.slice(0, 2).every((value, index) => finite(value) && Math.abs(Number(value) - Number(right[index])) <= tolerance);
 const read = async (file, fallback = {}) => {
-  try { return JSON.parse(await fs.readFile(file, 'utf8')); } catch { return fallback; }
+  try { return JSON.parse(await fs.readFile(file, 'utf8')); }
+  catch (error) {
+    if (error?.code === 'ENOENT') return fallback;
+    throw error;
+  }
 };
 const atomicWrite = async (file, value) => {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -105,6 +122,65 @@ function verifiedCurrent(sample, stage, dmiDocument) {
   );
 }
 
+function legacyMigrationReady(state) {
+  return state?.transportMemoryReady === true
+    && state?.transportMemoryStatus === 'READY'
+    && Number(state?.transportMemoryWindowHours) === 48
+    && Number(state?.transportMemoryCoverageHours) >= 48;
+}
+
+function initialStageState(previousState, stage, identity) {
+  const row = previousState?.stages?.[stage.stageId];
+  if (!row) return { state: null, source: 'COLD_START' };
+  if (previousState.schemaVersion === 1) {
+    if (row.stateKey !== identity.expectedCandidateGStateKey) {
+      throw new Error(`${stage.partId}: legacy staging-state har inkompatibel samplingbinding`);
+    }
+    if (!row.continuationState) return { state: null, source: 'COLD_START' };
+    assertCandidateGCoastalPointMigrationInput(
+      row.continuationState,
+      identity.expectedCandidateGStateKey,
+      `${stage.partId} legacy staging-state`,
+    );
+    return legacyMigrationReady(row.continuationState)
+      ? { state: row.continuationState, source: 'CANDIDATE_G_SCHEMA2_MIGRATION' }
+      : { state: null, source: 'CANDIDATE_G_INCOMPLETE_COLD_START' };
+  }
+  if (previousState.schemaVersion !== POINT_STAGE_SCHEMA_VERSION) {
+    throw new Error(`${stage.partId}: staging-state har ukendt schema`);
+  }
+  assertCoastalPointStageModelBinding(
+    previousState.ravScoreModelBinding,
+    'Coastal-point staging-state model binding',
+  );
+  assertCoastalPointStageModelBinding(
+    row.ravScoreModelBinding,
+    `${stage.partId} staging-state model binding`,
+  );
+  if (row.samplingContextKey !== identity.samplingContextKey) {
+    throw new Error(`${stage.partId}: staging-state har inkompatibel sampling context`);
+  }
+  if (row.continuationState) {
+    assertIntegratedCoastalPointContinuation(row.continuationState, {
+      samplingContextKey: identity.samplingContextKey,
+      label: `${stage.partId} staging-state`,
+    });
+    return { state: row.continuationState, source: 'INTEGRATED_CONTINUATION' };
+  }
+  if (row.pendingCandidateGMigrationState) {
+    assertCandidateGCoastalPointMigrationInput(
+      row.pendingCandidateGMigrationState,
+      identity.expectedCandidateGStateKey,
+      `${stage.partId} pending Candidate G migration`,
+    );
+    if (!legacyMigrationReady(row.pendingCandidateGMigrationState)) {
+      throw new Error(`${stage.partId}: pending Candidate G migration er ikke READY`);
+    }
+    return { state: row.pendingCandidateGMigrationState, source: 'CANDIDATE_G_SCHEMA2_MIGRATION' };
+  }
+  return { state: null, source: row.initialStateSource ?? 'COLD_START' };
+}
+
 export async function updateStaging({
   now = new Date().toISOString(),
   productionReference = null,
@@ -114,13 +190,34 @@ export async function updateStaging({
   publicStatusPath = PUBLIC_STATUS,
 } = {}) {
   const referenceAt = floorHour(productionReference ?? process.env.RAVRADAR_PRODUCTION_TARGET_HOUR ?? now);
-  const [dmi, previousState] = await Promise.all([read(privateDmiPath), read(privateStatePath, { schemaVersion: 1, stages: {} })]);
+  const [dmi, previousState] = await Promise.all([
+    read(privateDmiPath),
+    read(privateStatePath, {
+      schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+      ravScoreModelBinding: MODEL_BINDING,
+      stages: {},
+    }),
+  ]);
   const stages = Object.entries(dmi?.candidates ?? {}).map(([stageId, value]) => ({ stageId, ...value }));
-  const nextState = { schemaVersion: 1, updatedAt: now, stages: {} };
+  if (![1, POINT_STAGE_SCHEMA_VERSION].includes(previousState?.schemaVersion)) {
+    throw new Error('Coastal-point staging-state har ukendt schema');
+  }
+  if (previousState.schemaVersion === POINT_STAGE_SCHEMA_VERSION) {
+    assertCoastalPointStageModelBinding(
+      previousState.ravScoreModelBinding,
+      'Coastal-point staging-state model binding',
+    );
+  }
+  const nextState = {
+    schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+    ravScoreModelBinding: MODEL_BINDING,
+    updatedAt: now,
+    stages: {},
+  };
   const privateEntries = [];
   const publicEntries = [];
   for (const stage of stages) {
-    const stateKey = candidateGStateKey({
+    const identity = coastalPointStageIdentity({
       partId: stage.partId,
       waterPoint: stage.waterPoint,
       onshoreDirectionDeg: stage.onshoreDirectionDeg,
@@ -131,10 +228,8 @@ export async function updateStaging({
     catch (error) { conversionError = error instanceof Error ? error.message : String(error); }
     const sample = record ? selectDmiForecastAt(record, referenceAt, { toleranceMinutes: 5 }) : null;
     const currentVerified = verifiedCurrent(sample, stage, dmi);
-    const initial = previousState?.stages?.[stage.stageId]?.stateKey === stateKey
-      ? previousState.stages[stage.stageId].continuationState
-      : null;
-    const series = sample ? buildCandidateGDerivedStateSeries([{
+    const initial = initialStageState(previousState, stage, identity);
+    const series = sample ? buildIntegratedRavScoreStateSeries([{
       time: sample.time,
       currentSpeedMps: currentVerified ? sample.currentSpeedMps : null,
       currentAlignment: currentVerified
@@ -143,8 +238,24 @@ export async function updateStaging({
       currentVerified,
       waveHeightM: sample.waveHeightM,
       wavePeriodS: sample.wavePeriodS,
-    }], { stateKey, initialState: initial, nativeCadenceHoldHours: 3 }) : null;
-    const continuationState = series?.continuationState ?? initial ?? null;
+    }], {
+      samplingContextKey: identity.samplingContextKey,
+      initialState: initial.state,
+      expectedCandidateGStateKey: identity.expectedCandidateGStateKey,
+      nativeCadenceHoldHours: 3,
+    }) : null;
+    const continuationState = series?.continuationState
+      ?? (initial.source === 'INTEGRATED_CONTINUATION' ? initial.state : null);
+    if (continuationState) {
+      assertIntegratedCoastalPointContinuation(continuationState, {
+        samplingContextKey: identity.samplingContextKey,
+        label: `${stage.partId} next staging-state`,
+      });
+    }
+    const pendingCandidateGMigrationState = !sample
+      && initial.source === 'CANDIDATE_G_SCHEMA2_MIGRATION'
+      ? initial.state
+      : null;
     const horizons = record ? {
       current: componentHorizon(record, referenceAt, ['currentUMps', 'currentVMps']),
       wave: componentHorizon(record, referenceAt, ['waveHeightM', 'wavePeriodS']),
@@ -152,15 +263,36 @@ export async function updateStaging({
       waterLevel: componentHorizon(record, referenceAt, ['waterLevelCm']),
     } : { current: 0, wave: 0, wind: 0, waterLevel: 0 };
     const forecastReady = Object.values(horizons).every(hours => hours >= REQUIRED_HORIZON_HOURS);
-    const memoryReady = continuationState?.transportMemoryReady === true
-      && Number(continuationState?.transportMemoryCoverageHours) >= 48;
+    const currentMemoryReady = continuationState?.currentMemoryReady === true
+      && RAVSCORE_CURRENT_SUPPLY_POLICY.readyStatuses.includes(continuationState?.currentMemoryStatus);
+    const waveMemoryReady = continuationState?.waveMemoryReady === true
+      && RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(continuationState?.waveMemoryStatus);
+    const memoryReady = currentMemoryReady && waveMemoryReady;
     const reasonCodes = [];
     if (conversionError) reasonCodes.push('PRIVATE_DMI_CONVERSION_FAILED');
     if (!currentVerified) reasonCodes.push('CURRENT_GRID_NOT_VERIFIED');
     if (!forecastReady) reasonCodes.push('FORECAST_HORIZON_INCOMPLETE');
-    if (!memoryReady) reasonCodes.push('CANDIDATE_G_MEMORY_WARMUP');
+    if (!currentMemoryReady) reasonCodes.push('INTEGRATED_CURRENT_MEMORY_WARMUP');
+    if (!waveMemoryReady) reasonCodes.push('INTEGRATED_WAVE_MEMORY_WARMUP');
     const status = currentVerified && forecastReady && memoryReady ? POINT_STAGE_READY : 'collecting';
-    nextState.stages[stage.stageId] = { revision: stage.revision, partId: stage.partId, stateKey, continuationState, updatedAt: now };
+    if (status === POINT_STAGE_READY) {
+      assertIntegratedCoastalPointContinuation(continuationState, {
+        samplingContextKey: identity.samplingContextKey,
+        requireReady: true,
+        label: `${stage.partId} READY staging-state`,
+      });
+    }
+    nextState.stages[stage.stageId] = {
+      revision: stage.revision,
+      partId: stage.partId,
+      samplingContextKey: identity.samplingContextKey,
+      ravScoreModelBinding: identity.modelBinding,
+      continuationState,
+      ...(pendingCandidateGMigrationState ? { pendingCandidateGMigrationState } : {}),
+      initialStateSource: series?.initialStateSource ?? initial.source,
+      migrationApplied: series?.migrationApplied === true,
+      updatedAt: now,
+    };
     const safe = {
       zoneId: stage.zoneId,
       partId: stage.partId,
@@ -170,14 +302,30 @@ export async function updateStaging({
       checkedAt: now,
       currentGridVerified: currentVerified,
       forecastHorizonHours: horizons,
-      transportMemoryCoverageHours: Number(continuationState?.transportMemoryCoverageHours ?? 0),
-      transportMemoryWindowHours: Number(continuationState?.transportMemoryWindowHours ?? 48),
+      currentMemoryReady,
+      currentMemoryStatus: continuationState?.currentMemoryStatus ?? 'COLD_START',
+      currentMemoryCoverageHours: Number(continuationState?.currentMemoryCoverageHours ?? 0),
+      currentMemoryWindowHours: Number(continuationState?.currentMemoryWindowHours ?? 48),
+      waveMemoryReady,
+      waveMemoryStatus: continuationState?.waveMemoryStatus ?? 'COLD_START',
       reasonCodes,
     };
     publicEntries.push(safe);
-    privateEntries.push({ ...safe, stageId: stage.stageId, stateKey, continuationState });
+    privateEntries.push({
+      ...safe,
+      stageId: stage.stageId,
+      samplingContextKey: identity.samplingContextKey,
+      ravScoreModelBinding: identity.modelBinding,
+      migrationApplied: series?.migrationApplied === true,
+    });
   }
-  const publicDocument = { schemaVersion: 1, generatedAt: now, automaticActivationAllowed: false, entries: publicEntries };
+  const publicDocument = {
+    schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+    ravScoreModelBinding: MODEL_BINDING,
+    generatedAt: now,
+    automaticActivationAllowed: false,
+    entries: publicEntries,
+  };
   const privateDocument = { ...publicDocument, entries: privateEntries };
   await Promise.all([
     atomicWrite(privateStatePath, nextState),

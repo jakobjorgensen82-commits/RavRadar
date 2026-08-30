@@ -3,12 +3,20 @@ import fs from 'node:fs/promises';
 import { buildPublicConditions, buildPublicConditionDetails, compactJson } from './public-conditions-lib.mjs';
 import { selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { addNationalRanking, compareNationalRankingRows } from '../js/core/zone-ranking.js';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 
 const dates = ['2026-08-28', '2026-08-29', '2026-08-30', '2026-08-31', '2026-09-01'];
 const zoneCount = 6;
 const zones = {};
 const coastalZones = {};
 const parts = {};
+const modelBinding = ravScoreModelBinding();
+const scoreProfile = resolvePublicRavScoreProfile({
+  modelCoverageReady: true,
+  modelMemoryReady: true,
+  modelMigrationReady: true,
+});
 
 for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
   const zoneId = `zone-${zoneIndex}`;
@@ -22,11 +30,12 @@ for (let zoneIndex = 0; zoneIndex < zoneCount; zoneIndex += 1) {
       const score = 30 + zoneIndex * 5 + dayIndex + hourIndex * 4 + modeIndex;
       return {
         available:true,status:'only-part',score,
+        modelBinding,scoreProfileId:modelBinding.modelId,
         winningPartId:firstPartId,winningPartName:firstPartId,
         scoreSpread:12,comparisonPartCount:2,
         components:{huntability:score,transport:score,release:score},
         componentReasons:{huntability:['test'],transport:['test'],release:['test']},
-        explanation:{weights:{huntability:.2,transport:.5,release:.3}},
+        explanation:{...modelBinding,weights:{huntability:.2,transport:.5,release:.3}},
         weather:{windSpeedMps:4},
         parts:[{partId:firstPartId,name:firstPartId,score}],
       };
@@ -42,12 +51,16 @@ const full = {
   generatedAt:'2026-08-28T07:00:00.000Z',
   productionReferenceAt:'2026-08-28T07:00:00.000Z',
   zones,
-  coastalParts:{schemaVersion:1,enabled:true,expectedPartCount:zoneCount*2,scoredPartCount:zoneCount*2,parts,zones:coastalZones},
+  coastalParts:{
+    schemaVersion:2,enabled:true,modelBinding,scoreProfile,
+    scoreAvailability:{schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,unavailableZones:[]},
+    expectedPartCount:zoneCount*2,scoredPartCount:zoneCount*2,parts,zones:coastalZones,
+  },
 };
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
-assert.equal(startup.nationalForecast.schemaVersion, 1);
+assert.equal(startup.nationalForecast.schemaVersion, 2);
 assert.deepEqual(startup.nationalForecast.dates, dates);
 
 for (const mode of ['waders', 'beach']) {
@@ -71,7 +84,7 @@ for (const mode of ['waders', 'beach']) {
 const nationalText = JSON.stringify(startup.nationalForecast);
 assert.ok(Buffer.byteLength(nationalText) < 20_000, 'Det nationale femdøgnsindeks er ikke længere kompakt.');
 assert.ok(Buffer.byteLength(nationalText) < Buffer.byteLength(compactJson(details)), 'Indekset reducerer ikke opstartspayloaden.');
-for (const forbidden of ['waterPoint','landPoint','componentReasons','explanation','onshoreDirectionDeg']) {
+for (const forbidden of ['"waterPoint"','"landPoint"','"componentReasons"','"explanation"','"onshoreDirectionDeg"']) {
   assert.ok(!nationalText.includes(forbidden), `Det kompakte indeks lækker unødvendigt felt: ${forbidden}`);
 }
 

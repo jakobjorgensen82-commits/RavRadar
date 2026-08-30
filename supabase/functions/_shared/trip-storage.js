@@ -1,19 +1,13 @@
+import {
+  CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
+  TRIP_STORAGE_INPUT_FIELD_NAMES,
+  assertNoSensitiveTripData,
+  projectTripStoragePayload,
+} from '../../../js/services/calibration-eligibility.js';
+
 const CLOUDFLARE_WORKER_SUFFIX = '.workers.dev';
 const OWNER_PREFIX = Object.freeze({ user: 'usr_v1_', anonymous: 'anon_v1_' });
-const DIRECT_IDENTITY_KEYS = new Set([
-  'anonymousid', 'displayname', 'email', 'fullname', 'phonenumber', 'profile', 'userid'
-]);
-
-export const TRIP_INPUT_FIELD_NAMES = Object.freeze([
-  'zone_id', 'zone_name', 'coast_type', 'observed_at', 'submitted_at', 'hunt_mode', 'result', 'grams',
-  'anonymous_id', 'user_id', 'trip_id', 'gps', 'rav_score', 'score_level', 'ai_probability', 'ai_confidence',
-  'model_version', 'weather_snapshot', 'wind_speed_mps', 'wind_direction_deg', 'wave_height_m', 'wave_period_s',
-  'water_level_cm', 'current_speed_mps', 'current_direction_deg', 'water_temperature_c', 'client_observation_id',
-  'schema_version', 'trip_started_at', 'trip_ended_at', 'search_minutes', 'search_coverage', 'actual_zone_id',
-  'actual_coastal_part_id', 'forecast_zone_id', 'forecast_coastal_part_id', 'calibration_eligible', 'found',
-  'forecast_snapshot_id', 'forecast_issued_at', 'forecast_valid_at', 'forecast_captured_at', 'calibration_features',
-  'data_quality_flags', 'forecast_target_at', 'report_accuracy',
-]);
+export const TRIP_INPUT_FIELD_NAMES = TRIP_STORAGE_INPUT_FIELD_NAMES;
 
 export const D1_TRIP_SCHEMA_STATEMENTS = Object.freeze([
   `create table if not exists trip_observations (
@@ -78,38 +72,32 @@ export async function externalOwnerSubject({ userId = null, anonymousId = null, 
   return { kind, subject: `${OWNER_PREFIX[kind]}${bytesToBase64Url(new Uint8Array(signature))}` };
 }
 
-function normalizedKey(key) {
-  return String(key).toLowerCase().replace(/[^a-z0-9]/g, '');
-}
-
 export function assertNoDirectIdentity(value, depth = 0) {
-  if (depth > 8) throw new Error('TRIP_PAYLOAD_TOO_DEEP');
-  if (Array.isArray(value)) {
-    value.forEach(entry => assertNoDirectIdentity(entry, depth + 1));
-    return;
-  }
-  if (!isRecord(value)) return;
-  for (const [key, nested] of Object.entries(value)) {
-    if (DIRECT_IDENTITY_KEYS.has(normalizedKey(key))) throw new Error('DIRECT_IDENTITY_NOT_ALLOWED');
-    assertNoDirectIdentity(nested, depth + 1);
-  }
+  return assertNoSensitiveTripData(value, {}, 'externalTripPayload', depth);
 }
 
-export function externalTripPayload(payload) {
+export function externalTripPayload(payload, { historicalMigration = false } = {}) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  const clone = typeof structuredClone === 'function'
-    ? structuredClone(payload)
-    : JSON.parse(JSON.stringify(payload));
-  const external = {};
-  for (const key of TRIP_INPUT_FIELD_NAMES) {
-    if (key === 'user_id' || key === 'anonymous_id' || key === 'gps') continue;
-    const value = clone[key];
-    if (value === null || value === undefined) continue;
-    if (key === 'data_quality_flags' && Array.isArray(value) && value.length === 0) continue;
-    external[key] = value;
+  const schemaVersion = payload.schema_version ?? 1;
+  if (!Number.isInteger(schemaVersion) || ![1, 2, CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION].includes(schemaVersion)) {
+    throw new Error('TRIP_SCHEMA_VERSION_INVALID');
   }
-  external.schema_version = Number(clone.schema_version ?? 1);
-  if (![1, 2].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
+  // D1 cannot participate in the same database row lock as the operational
+  // RavScore CAS. It therefore preserves exact schema-3 model/evidence bytes
+  // but is deliberately never a calibration-evidence store for this model
+  // generation. Supabase is the only path where true eligibility is admitted
+  // and serialized atomically against an ACTIVE model/profile pair.
+  const forceIneligible = schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION
+    || (!historicalMigration && schemaVersion < CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION);
+  const normalizedPayload = forceIneligible
+    ? { ...payload, schema_version: schemaVersion, calibration_eligible: false, gps: null }
+    : { ...payload, schema_version: schemaVersion, gps: null };
+  const external = projectTripStoragePayload(normalizedPayload, {
+    includeOwnerIdentifiers: false,
+    omitNull: true,
+    historicalMigration,
+  });
+  external.schema_version = schemaVersion;
   assertNoDirectIdentity(external);
   return external;
 }
@@ -129,7 +117,7 @@ export async function externalTripRecord({ owner, payload, source = 'live' }) {
     throw new Error('TRIP_OWNER_INVALID');
   }
   if (!['live', 'supabase-migration'].includes(source)) throw new Error('TRIP_SOURCE_INVALID');
-  const externalPayload = externalTripPayload(payload);
+  const externalPayload = externalTripPayload(payload, { historicalMigration: source === 'supabase-migration' });
   const clientObservationId = externalPayload.client_observation_id;
   if (typeof clientObservationId !== 'string' || !clientObservationId) throw new Error('TRIP_CLIENT_ID_REQUIRED');
   if (typeof externalPayload.observed_at !== 'string' || typeof externalPayload.submitted_at !== 'string') {

@@ -1,6 +1,8 @@
-import { scoreRating } from "../core/score-engine.js?v=4.0.309";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.309";
 import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.309";
-import { visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.309";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.309";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.309";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.309";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -24,12 +26,15 @@ const directionArrow = (value, type = "current") => {
 const directionMetric = (type, speed, speedSuffix, direction, digits = 1) => `<span class="direction-reading">${directionArrow(direction,type)}<span>${formatMetric(speed,speedSuffix,digits)} · ${compass(direction)}</span></span>`;
 const MOBILISATION_DEFINITION = t('score.mobilisationDefinition');
 const scoreLabel = result => result?.available ? t(`map.${result.level}`) : t('score.unavailable');
+const bestTimeReasonText = best => best?.selectionReason
+  ? t(bestTimeSelectionReasonI18nKey(best.selectionReason))
+  : t('score.bestTimeBody', { future:best?.isNow ? t('score.bestTimeFuture') : '' });
 
 function groupForecastHours(forecast) {
   const groups = new Map();
   for (const hour of forecast?.hourly || []) {
-    const date = String(hour.time || "").slice(0, 10);
-    if (!date) continue;
+    let date;
+    try { date = forecastDateKeyInTimeZone(hour?.time); } catch { continue; }
     if (!groups.has(date)) groups.set(date, []);
     groups.get(date).push(hour);
   }
@@ -81,61 +86,23 @@ function displayContextPanel(result, context = {}) {
 
 
 
-function stateExplanationPanel(result) {
-  const state=result?.explanation?.transportEvent?.stateExplanation;
-  if(!state?.summary)return '';
-  const facts=getLanguage()==='da'?(state.facts||[]).map(item=>`<li>${escapeHtml(item)}</li>`).join(''):'';
-  const metrics=[];
-  if(Number.isFinite(Number(state.mobilisationPotential)))metrics.push(`<span>${t('score.state.wavePotential')} <b>${Math.round(state.mobilisationPotential)}/100</b></span>`);
-  if(Number.isFinite(Number(state.nearshorePotential)))metrics.push(`<span>${t('score.state.nearshorePotential')} <b>${Math.round(state.nearshorePotential)}/100</b></span>`);
-  const phaseLabels={
-    'højenergifase':t('score.phase.highEnergy'),
-    'efterstorm/indtransport':t('score.phase.afterStorm'),
-    'vedvarende nærkystpotentiale':t('score.phase.retained'),
-    'udtransport/nedbrydning':t('score.phase.outbound'),
-    'indtransport opbygges':t('score.phase.inbound'),
-    'rolig fase':t('score.phase.calm'),
-    'ukendt fase':t('score.phase.unknown')
-  };
-  return `<section class="state-explanation"><p class="eyebrow dark">${t('score.recentMeaning')}</p><h3>${escapeHtml(phaseLabels[state.phase]||t('score.phase.unknown'))}</h3><p>${escapeHtml(getLanguage()==='da'?state.summary:t('score.state.body'))}</p>${metrics.length?`<div class="state-metrics">${metrics.join('')}</div>`:''}${facts?`<details><summary>${t('score.historyDetails')}</summary><ul>${facts}</ul><p class="muted">${t('score.historyIncluded')}</p></details>`:''}</section>`;
+function integratedExplanationPanel(result) {
+  const presentation = presentActiveRavScoreExplanation(result, { language:getLanguage() });
+  if (!presentation.available) return '';
+  const facts = presentation.facts.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+  return `<section class="state-explanation integrated-explanation"><p class="eyebrow dark">${t('score.recentMeaning')}</p><h3>${escapeHtml(presentation.title)}</h3><p>${escapeHtml(presentation.summary)}</p><details><summary>${t('score.historyDetails')}</summary><ul>${facts}</ul></details></section>`;
 }
 
-function coastTransportExplanation(result) {
-  const explanation = result?.explanation?.transportDiagnostics?.coastTransportExplanation;
-  if (!explanation?.summary) return "";
-  const items = (explanation.items || []).map(item => `<li class="${item.selected ? "selected" : ""}"><b>${escapeHtml(item.name)}</b>${getLanguage()==='da'?`: ${escapeHtml(item.text.replace(`${item.name}: `,""))}`:''}${item.selected && explanation.items.length > 1 ? ` <span class="anchor-used">${t('score.coast.selected')}</span>` : ""}</li>`).join("");
-  return `<section class="coast-transport-explanation"><h3>${t('score.coast.title')}</h3><p>${getLanguage()==='da'?escapeHtml(explanation.summary):t('score.coast.body')}</p>${items ? `<details><summary>${t('score.coast.details')}</summary><ul>${items}</ul><p class="muted">${t('score.coast.body')}</p></details>` : ""}</section>`;
-}
-
-const CANDIDATE_G_PHASE_LABELS = {
-  INBOUND_BUILDUP: "Indtransport bygges op",
-  OUTBOUND_EROSION: "Udgående strøm reducerer transporten",
-  OUTBOUND_TRANSPORT: "Kraftig udtransport",
-  RETAINED_OR_NEUTRAL: "Tidligere transport bevares",
-  PASSIVE_NEUTRAL_DECAY: "Tidligere transport aftager",
-  NATIVE_CADENCE_HOLD: "Venter på næste naturlige strømmåling",
-  SAME_TIME_HOLD: "Samme måletid fastholdes",
-  BOUNDED_MEMORY_WARMUP: "Strømhistorikken bygges op",
-  UNVERIFIED_PAUSE: "Ny strøm kan ikke verificeres",
-};
-const CANDIDATE_G_DIRECTION_LABELS = {
-  INBOUND: "Ind mod kystdelen",
-  ALONG_COAST: "Mest langs kysten",
-  OUTBOUND: "Væk fra kystdelen",
-};
-const CANDIDATE_G_MEMORY_LABELS = {
-  READY: "Klar",
-  WINDOW_INCOMPLETE: "Historikvinduet er endnu ikke fuldt",
-  WINDOW_HAS_MISSING_EVIDENCE: "Historikvinduet har en manglende måling",
-  WINDOW_HAS_TIME_GAP: "Historikvinduet har et tidshul",
-  LATEST_SAMPLE_MISSING: "Den nyeste strømmåling mangler",
-};
-const technicalScore = value => hasNumber(value) ? `${Math.round(Number(value))}/100` : "Ikke leveret";
+const technicalScore = value => hasNumber(value)
+  ? `${Math.round(Number(value))}/100`
+  : t('common.missing');
 const technicalDateTime = value => {
   const date = new Date(value);
   return value && Number.isFinite(date.getTime())
-    ? new Intl.DateTimeFormat("da-DK", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" }).format(date)
-    : "Ikke leveret";
+    ? new Intl.DateTimeFormat(getLocale(), {
+      day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit",
+    }).format(date)
+    : t('common.missing');
 };
 
 function debugPanel(zone, result, condition) {
@@ -143,65 +110,66 @@ function debugPanel(zone, result, condition) {
   const debugCondition = result.localWeather || condition;
   const d = result.explanation?.transportDiagnostics || {};
   const mobilisation = result.explanation?.mobilisationDiagnostics || {};
-  const isCandidateG = d.engine === "CANDIDATE_G";
+  const integrated = d.engine === "INTEGRATED_COASTAL_PROCESS";
   const provider = debugCondition.providerLabel || debugCondition.provider || debugCondition.currentProvenance?.provider || "DMI";
-  if (!isCandidateG) return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content"><p class="debug-warning"><b>Teknisk visning kan ikke vises.</b> Den offentlige Candidate G-diagnostik blev ikke leveret for denne beregning.</p></div></details>`;
+  if (!integrated) return `<details class="debug-panel"><summary>${t('score.debug.summary')}</summary><div class="debug-content"><p class="debug-warning"><b>${t('score.debug.unavailable')}</b></p></div></details>`;
   const verified = d.measurementStatus === "VERIFIED";
   const held = d.measurementStatus === "NATIVE_CADENCE_HOLD";
   const currentMeasurement = verified
-    ? `${compass(debugCondition.currentDirectionDeg)} (mod-retning)`
+    ? `${compass(debugCondition.currentDirectionDeg)}`
     : held
-      ? "Ingen ny måling denne time; seneste verificerede tilstand fastholdes"
-      : "Ingen verificeret strømmåling denne time";
+      ? t('score.debug.nativeHold')
+      : t('score.debug.noVerifiedCurrent');
   const currentDifference = verified && hasNumber(d.currentDirectionDifferenceDeg)
     ? `${Math.round(Number(d.currentDirectionDifferenceDeg))}°`
-    : held ? "Fastholdes fra seneste verificerede måling" : "Kan ikke beregnes uden verificeret måling";
+    : t('common.missing');
   const currentClass = verified
-    ? CANDIDATE_G_DIRECTION_LABELS[d.currentDirectionClass] || "Retningen ligger uden for den kendte klassifikation"
-    : held ? "Seneste verificerede klassifikation fastholdes i modellen" : "Kan ikke klassificeres uden verificeret måling";
-  const memoryStatus = CANDIDATE_G_MEMORY_LABELS[d.transportMemoryStatus]
-    || d.transportMemoryStatus
-    || "Historikstatus blev ikke leveret";
-  const memoryCoverage = hasNumber(d.transportMemoryCoverageHours) && hasNumber(d.transportMemoryWindowHours)
-    ? `${Math.round(Number(d.transportMemoryCoverageHours))} af ${Math.round(Number(d.transportMemoryWindowHours))} timer · ${memoryStatus}`
-    : memoryStatus;
-  const phase = CANDIDATE_G_PHASE_LABELS[d.currentTransition] || d.currentTransition || "Fase blev ikke leveret";
-  const outboundHours = hasNumber(d.outboundEpisodeEffectiveHours)
-    ? `${Number(d.outboundEpisodeEffectiveHours).toFixed(1).replace(".", ",")} effektive timer`
-    : "Ingen udgående episode registreret";
-  const outboundLoss = hasNumber(d.outboundEpisodeLossPoints)
-    ? `${Math.round(Number(d.outboundEpisodeLossPoints))} point`
-    : "Ikke leveret";
+    ? t(d.currentDirectionClass === 'INBOUND' ? 'score.direction.inbound'
+      : d.currentDirectionClass === 'OUTBOUND' ? 'score.direction.outbound'
+        : 'score.direction.along')
+    : t('score.direction.unknown');
+  const memoryCoverage = hasNumber(d.currentMemoryCoverageHours)
+    && hasNumber(d.currentMemoryWindowHours)
+    ? `${Math.round(Number(d.currentMemoryCoverageHours))}/${Math.round(Number(d.currentMemoryWindowHours))} h · ${d.currentMemoryStatus || t('common.missing')}`
+    : d.currentMemoryStatus || t('common.missing');
+  const lastMileEffect = d.lastMileScoreEffect === 'NONE'
+    ? t('score.debug.noScoreEffect')
+    : t('common.missing');
+  const structuralUncertainty = d.lastMileStructuralUncertainty === true
+    ? t('common.yes')
+    : t('common.no');
   const rows = [
-    ["Transportpotentiale", technicalScore(d.transportPotential), "Opbygget af det dokumenterede strømforløb."],
-    ["Levering mod kysten", technicalScore(d.deliveryPotential), "Hvor meget af transportpotentialet der kan leveres kystnært."],
-    ["Samlet transportkomponent", technicalScore(d.transportAndDelivery), "65 % transportpotentiale og 35 % levering mod kysten."],
-    ["Rav i bevægelse", technicalScore(mobilisation.mobilisationPotential), "Bølgeforløbets opbyggede mobilisering."],
+    [t('score.debug.supply'), technicalScore(d.supplyPotential), t('score.debug.supplyMeaning')],
+    [t('score.debug.lastMileFactor'), lastMileEffect, t('score.debug.lastMileMeaning')],
+    [t('score.debug.transport'), technicalScore(d.transportPotential), t('score.debug.transportMeaning')],
+    [t('score.debug.mobilisation'), technicalScore(mobilisation.mobilisationPotential), t('score.debug.mobilisationMeaning')],
   ].map(([name,value,meaning]) => `<tr><td>${name}</td><td>${value}</td><td>${meaning}</td></tr>`).join("");
-  return `<details class="debug-panel"><summary>Debug: vis alle mellemregninger</summary><div class="debug-content">
-    <p class="debug-warning"><b>Teknisk Candidate G-visning.</b> Bruges til at kontrollere, at målinger, kystretning, historik og score passer fysisk sammen. Vinden indgår ikke direkte i transportscoren.</p>
+  return `<details class="debug-panel"><summary>${t('score.debug.summary')}</summary><div class="debug-content">
+    <p class="debug-warning"><b>${t('score.debug.integratedWarning')}</b> ${t('score.debug.gridCaveat')}</p>
     <div class="debug-grid">
-      <div><span>Zone-ID</span><strong>${escapeHtml(debugZone.id)}</strong></div>
-      <div><span>Scoremotor</span><strong>Candidate G · 20/50/30</strong></div>
-      <div><span>Datakilde</span><strong>${escapeHtml(provider)}</strong></div>
-      <div><span>Pålandsretning</span><strong>${compass(debugZone.onshoreDirectionDeg)}</strong></div>
-      <div><span>Retningskilde</span><strong>${escapeHtml(debugZone.onshoreDirectionSource || "Ikke angivet")}</strong></div>
-      <div><span>Aktuel strømstatus</span><strong>${escapeHtml(currentMeasurement)}</strong></div>
-      <div><span>Forskel strøm/kyst</span><strong>${escapeHtml(currentDifference)}</strong></div>
-      <div><span>Strømklassifikation</span><strong>${escapeHtml(currentClass)}</strong></div>
-      <div><span>Transportens måletid</span><strong>${technicalDateTime(d.transportReferenceAt)}</strong></div>
-      <div><span>Strømhistorik</span><strong>${escapeHtml(memoryCoverage)}</strong></div>
-      <div><span>Historisk fase</span><strong>${escapeHtml(phase)}</strong></div>
-      <div><span>Udgående episode</span><strong>${escapeHtml(outboundHours)}</strong></div>
-      <div><span>Tab ved udgående strøm</span><strong>${escapeHtml(outboundLoss)}</strong></div>
-      <div><span>Kraftig udtransport</span><strong>${d.actualOutboundTransport ? "Ja" : "Nej"}</strong></div>
-      <div><span>Transportpotentiale</span><strong>${technicalScore(d.transportPotential)}</strong></div>
-      <div><span>Levering mod kysten</span><strong>${technicalScore(d.deliveryPotential)}</strong></div>
-      <div><span>Samlet transportkomponent</span><strong>${technicalScore(d.transportAndDelivery)}</strong></div>
-      <div><span>Rav i bevægelse</span><strong>${technicalScore(mobilisation.mobilisationPotential)}</strong></div>
-      <div><span>Endelig RavScore</span><strong>${result.score ?? "–"}/100</strong></div>
+      <div><span>${t('score.debug.zone')}</span><strong>${escapeHtml(debugZone.id)}</strong></div>
+      <div><span>${t('score.debug.engine')}</span><strong>${t('score.debug.engineValue')}</strong></div>
+      <div><span>${t('score.debug.source')}</span><strong>${escapeHtml(provider)}</strong></div>
+      <div><span>${t('score.debug.onshore')}</span><strong>${compass(debugZone.onshoreDirectionDeg)}</strong></div>
+      <div><span>${t('score.debug.directionSource')}</span><strong>${escapeHtml(debugZone.onshoreDirectionSource || t('common.missing'))}</strong></div>
+      <div><span>${t('score.debug.currentStatus')}</span><strong>${escapeHtml(currentMeasurement)}</strong></div>
+      <div><span>${t('score.debug.currentDifference')}</span><strong>${escapeHtml(currentDifference)}</strong></div>
+      <div><span>${t('score.debug.currentClass')}</span><strong>${escapeHtml(currentClass)}</strong></div>
+      <div><span>${t('score.debug.currentReference')}</span><strong>${technicalDateTime(d.currentReferenceAt)}</strong></div>
+      <div><span>${t('score.debug.currentMemory')}</span><strong>${escapeHtml(memoryCoverage)}</strong></div>
+      <div><span>${t('score.debug.currentTransition')}</span><strong>${escapeHtml(d.currentTransition || t('common.missing'))}</strong></div>
+      <div><span>${t('score.debug.supply')}</span><strong>${technicalScore(d.supplyPotential)}</strong></div>
+      <div><span>${t('score.debug.lastMileStatus')}</span><strong>${escapeHtml(d.lastMileStatus || t('common.missing'))}</strong></div>
+      <div><span>${t('score.debug.lastMileFactor')}</span><strong>${lastMileEffect}</strong></div>
+      <div><span>${t('score.debug.lastMileRange')}</span><strong>${structuralUncertainty}</strong></div>
+      <div><span>${t('score.debug.transport')}</span><strong>${technicalScore(d.transportPotential)}</strong></div>
+      <div><span>${t('score.debug.mobilisation')}</span><strong>${technicalScore(mobilisation.mobilisationPotential)}</strong></div>
+      <div><span>${t('score.debug.waveStatus')}</span><strong>${escapeHtml(mobilisation.waveMemoryStatus || t('common.missing'))}</strong></div>
+      <div><span>${t('score.debug.waveReference')}</span><strong>${technicalDateTime(mobilisation.waveLastVerifiedAt)}</strong></div>
+      <div><span>${t('score.debug.waterContext')}</span><strong>${escapeHtml(result.explanation?.waterLevelContext?.phase || t('common.missing'))}</strong></div>
+      <div><span>${t('score.debug.final')}</span><strong>${result.score ?? "–"}/100</strong></div>
     </div>
-    <h4>Candidate G’s beregningsled</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>Led</th><th>Værdi</th><th>Betydning</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <h4>${t('score.debug.stages')}</h4><div class="debug-table-wrap"><table class="debug-table"><thead><tr><th>${t('score.debug.stage')}</th><th>${t('score.debug.value')}</th><th>${t('score.debug.meaning')}</th></tr></thead><tbody>${rows}</tbody></table></div>
   </div></details>`;
 }
 
@@ -241,10 +209,10 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
     const render = index => {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
-      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>${t('score.bestTime')} <b>${best.isNow?t('common.now'):hourLabel(h.time)}</b></p><p class="muted">${t('score.bestTimeBody',{future:best.isNow?t('score.bestTimeFuture'):''})}</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>${t('score.compare')}</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?t('common.now'):hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>${t('score.noBestTime')}</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
+      detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>${t('score.bestTime')} <b>${best.isNow?t('common.now'):hourLabel(h.time)}</b></p><p class="muted" data-best-time-selection-reason="${escapeHtml(best.selectionReason?.code || 'UNKNOWN')}">${bestTimeReasonText(best)}</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>${t('score.compare')}</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?t('common.now'):hourLabel(candidate.time)}</span><b>RavScore ${candidate.score}</b></li>`).join("")}</ol></details>`:""}`:`<p>${t('score.noBestTime')}</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
         ${displayContextPanel(r,{scope:best.displayScope,partName:r.localPartName,time:h.time})}
         ${localCoveragePanel(r,{showMapButton:false})}
-        <div class="component-list compact metric-sized">${componentDetails(t('score.huntability'),"huntability",r,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",r,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",r,MOBILISATION_DEFINITION)}</div>${r.available ? coastTransportExplanation(r) : ""}
+        <div class="component-list compact metric-sized">${componentDetails(t('score.huntability'),"huntability",r,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",r,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",r,MOBILISATION_DEFINITION)}</div>${r.available ? integratedExplanationPanel(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(h.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(h.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(h.waterTemperatureC,"°C")}</strong></div></div>`;
     };
     forecastSection.querySelectorAll(".forecast-score-day").forEach((button,index) => button.addEventListener("click",()=>render(index)));
@@ -271,8 +239,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${localCoveragePanel(result)}
     ${displayContextPanel(result,options.displayContext)}
     ${componentHtml}
-    ${result.available ? stateExplanationPanel(result) : ""}
-    ${result.available ? coastTransportExplanation(result) : ""}
+    ${result.available ? integratedExplanationPanel(result) : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
     ${result.available ? `<div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",condition.windSpeedMps,"m/s",condition.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(condition.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(condition.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",condition.currentSpeedMps,"m/s",condition.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(condition.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(condition.waterTemperatureC,"°C")}</strong></div></div>` : ""}
     ${forecastPanel(days,zone,mode,options.history||{},condition,result,options.bestByDate||{})}${tidePanel(days)}`;

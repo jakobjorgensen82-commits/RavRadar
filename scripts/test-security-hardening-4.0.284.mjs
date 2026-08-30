@@ -4,7 +4,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { publicAssistantContext } from '../js/services/rav-assistant.js';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { EXPERT_PERMISSION_IDS } from '../js/services/permissions-service.js';
+import {
+  RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
+  sameAssistantRavScoreModelBinding,
+} from '../supabase/functions/_shared/rav-assistant-contract.ts';
 
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=relative=>readFile(path.join(root,relative),'utf8');
@@ -33,7 +38,23 @@ const publicContext=publicAssistantContext({
   conditions:{private:'må ikke med'},
   knowledge_rules:['må ikke med'],
 });
-assert.deepEqual(Object.keys(publicContext).sort(),['locale','mode','result','weather','zone']);
+assert.deepEqual(Object.keys(publicContext).sort(),['locale','mode','modelBinding','result','weather','zone']);
+assert.deepEqual(publicContext.modelBinding,ravScoreModelBinding());
+assert.deepEqual(Object.keys(publicContext.modelBinding).sort(),[
+  'bestTimePolicyId','componentSchemaId','explanationSchemaId','modelBundleSha256','modelContractSha256','modelId',
+  'presentationPolicyId','profileId','rankingPolicyId','stateSchemaVersion','variantId',
+]);
+assert.equal(sameAssistantRavScoreModelBinding(publicContext.modelBinding),true);
+assert.equal(sameAssistantRavScoreModelBinding({...publicContext.modelBinding,extra:true}),false);
+assert.equal(sameAssistantRavScoreModelBinding({
+  ...publicContext.modelBinding,modelBundleSha256:'0'.repeat(64),
+}),false);
+assert.deepEqual(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,publicContext.modelBinding);
+const canonicalisedFromHostileBinding=publicAssistantContext({
+  modelBinding:{...publicContext.modelBinding,extra:true,modelBundleSha256:'0'.repeat(64)},
+});
+assert.deepEqual(canonicalisedFromHostileBinding.modelBinding,publicContext.modelBinding,
+  'Klienten må kun sende sin canonical exact active binding, aldrig en indsprøjtet binding.');
 assert.equal(publicContext.locale,'da');
 assert.equal('reasons' in publicContext.result,false);
 assert.equal('secret' in publicContext.zone,false);

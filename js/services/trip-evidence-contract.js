@@ -1,29 +1,35 @@
-export const TRIP_EVIDENCE_SCHEMA_VERSION = 2;
+export const TRIP_EVIDENCE_SCHEMA_VERSION = 3;
 export const TRIP_SEARCH_COVERAGE = Object.freeze(['partial', 'normal', 'thorough']);
 export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 
+import {
+  RAVSCORE_CALIBRATION_ELIGIBLE,
+  ravScoreModelBinding,
+} from '../core/ravscore-model-contract.js?v=4.0.308';
+import {
+  CALIBRATION_NUMERIC_RANGES,
+  CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
+  CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
+  assertNoSensitiveTripData,
+  assertTripObservationNestedPrivacy,
+  calibrationFeatureBinding,
+  expectedCalibrationEligibility,
+  isExactCalibrationModelBinding,
+  isPublicEmergencyCalibrationFeatures,
+  sameCalibrationModelBinding,
+  tripEvidenceIntegrityIssues,
+} from './calibration-eligibility.js?v=4.0.308';
+
+export const TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY =
+  CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY;
+
 const MAX_SEARCH_MINUTES = 24 * 60;
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const FORBIDDEN_REMOTE_KEY = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track)/i;
-const CALIBRATION_RANGES = Object.freeze({
-  totalScore: [0, 100],
-  huntabilityScore: [0, 100],
-  transportScore: [0, 100],
-  mobilisationScore: [0, 100],
-  windSpeedMs: [0, 100],
-  windDirectionDeg: [0, 360],
-  waveHeightM: [0, 30],
-  wavePeriodS: [0, 40],
-  waveDirectionDeg: [0, 360],
-  currentSpeedMs: [0, 10],
-  currentDirectionDeg: [0, 360],
-  waterLevelM: [-20, 20],
-  waterLevelTrendM3h: [-10, 10],
-  maxWaveHeight24hM: [0, 30],
-  hoursSinceEnergyPeak: [0, 168],
-  sustainedOnshoreHours: [0, 168]
-});
+if (TRIP_EVIDENCE_SCHEMA_VERSION !== CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION) {
+  throw new Error('Tripkontrakten og kalibreringsvalidatoren har forskellig schemaversion.');
+}
 
 function requiredId(value, label) {
   const normalized = String(value || '').trim();
@@ -45,7 +51,11 @@ function requiredIso(value, label) {
 
 function optionalGrams(value, found) {
   if (!found || value === '' || value == null) return null;
-  const grams = Number(value);
+  const grams = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.trim())
+      ? Number(value.replace(',', '.'))
+      : Number.NaN;
   if (!Number.isFinite(grams) || grams < 0 || grams > 10000) {
     throw new Error('Gram skal være et tal mellem 0 og 10000.');
   }
@@ -60,8 +70,8 @@ function assertChoice(value, allowed, label) {
 
 function rangedNumber(value, key) {
   if (value == null || value === '') return null;
-  const number = Number(value);
-  const [minimum, maximum] = CALIBRATION_RANGES[key];
+  const number = typeof value === 'number' ? value : Number.NaN;
+  const [minimum, maximum] = CALIBRATION_NUMERIC_RANGES[key];
   if (!Number.isFinite(number) || number < minimum || number > maximum) {
     throw new Error(`${key} ligger uden for det tilladte interval.`);
   }
@@ -69,19 +79,18 @@ function rangedNumber(value, key) {
 }
 
 export function assertTripEvidencePrivacy(value, path = 'tripEvidence') {
-  if (Array.isArray(value)) {
-    value.forEach((entry, index) => assertTripEvidencePrivacy(entry, `${path}[${index}]`));
-    return true;
+  if (value && typeof value === 'object' && !Array.isArray(value)
+    && value.gps !== null && value.gps !== undefined) {
+    throw new Error(`Præcis position må ikke sendes (${path}.gps).`);
   }
-  if (!value || typeof value !== 'object') return true;
-  for (const [key, entry] of Object.entries(value)) {
-    if (FORBIDDEN_REMOTE_KEY.test(key)) {
-      if (entry !== null) throw new Error(`Præcis position må ikke sendes (${path}.${key}).`);
-      continue;
+  try {
+    return assertNoSensitiveTripData(value, { allowRootOwnerFields: true }, path);
+  } catch (error) {
+    if (error?.message === 'PRECISE_LOCATION_NOT_ALLOWED') {
+      throw new Error(`Præcis position må ikke sendes (${path}).`);
     }
-    assertTripEvidencePrivacy(entry, `${path}.${key}`);
+    throw error;
   }
-  return true;
 }
 
 export function createForecastSnapshotReference({ manifest = null, conditions = null, id = null, issuedAt = null, validAt = null, capturedAt = null } = {}) {
@@ -108,11 +117,42 @@ export function createForecastSnapshotReference({ manifest = null, conditions = 
 }
 
 export function createCalibrationFeatureSnapshot(input = {}) {
+  if (input.modelBinding !== null && input.modelBinding !== undefined
+    && !isExactCalibrationModelBinding(input.modelBinding)) {
+    throw new Error('RavScore-modelbindingen i turgrundlaget har et ugyldigt eksakt feltsæt.');
+  }
   const snapshot = {
     modelVersion: requiredId(input.modelVersion, 'Modelversion'),
     appVersion: requiredId(input.appVersion, 'Appversion')
   };
-  for (const key of Object.keys(CALIBRATION_RANGES)) snapshot[key] = rangedNumber(input[key], key);
+  const bindingFields = input.modelBinding && typeof input.modelBinding === 'object' && !Array.isArray(input.modelBinding)
+    ? {
+      modelStateVersion: input.modelBinding.stateSchemaVersion,
+      modelVariantId: input.modelBinding.variantId,
+      modelProfileId: input.modelBinding.profileId,
+      modelComponentSchemaId: input.modelBinding.componentSchemaId,
+      modelExplanationSchemaId: input.modelBinding.explanationSchemaId,
+      modelRankingPolicyId: input.modelBinding.rankingPolicyId,
+      modelBestTimePolicyId: input.modelBinding.bestTimePolicyId,
+      modelPresentationPolicyId: input.modelBinding.presentationPolicyId,
+      modelContractSha256: input.modelBinding.modelContractSha256,
+      modelBundleSha256: input.modelBinding.modelBundleSha256,
+    }
+    : Object.fromEntries([
+      'modelStateVersion','modelVariantId','modelProfileId','modelComponentSchemaId',
+      'modelExplanationSchemaId','modelRankingPolicyId','modelBestTimePolicyId','modelPresentationPolicyId',
+      'modelContractSha256','modelBundleSha256',
+    ].filter(key => input[key] !== undefined).map(key => [key, input[key]]));
+  if (Object.keys(bindingFields).length !== 10) throw new Error('RavScore-modelbindingen i turgrundlaget er ufuldstændig.');
+  for (const [key, value] of Object.entries(bindingFields)) snapshot[key] = requiredId(value, key);
+  if (!SHA256_PATTERN.test(snapshot.modelContractSha256)
+    || !SHA256_PATTERN.test(snapshot.modelBundleSha256)) {
+    throw new Error('RavScore-modelbindingens hashes er ugyldige.');
+  }
+  if (input.modelBinding && snapshot.modelVersion !== input.modelBinding.modelId) {
+    throw new Error('Modelversionen og RavScore-modelbindingen i turgrundlaget er forskellige.');
+  }
+  for (const key of Object.keys(CALIBRATION_NUMERIC_RANGES)) snapshot[key] = rangedNumber(input[key], key);
   for (const key of ['totalScore', 'huntabilityScore', 'transportScore', 'mobilisationScore']) {
     if (snapshot[key] == null) throw new Error(`${key} mangler.`);
   }
@@ -160,9 +200,11 @@ export function buildTripEvidence(input = {}) {
   const started = requiredIso(input.startedAt, 'Starttid');
   const ended = requiredIso(input.endedAt, 'Sluttid');
   if (ended.time <= started.time) throw new Error('Sluttid skal ligge efter starttid.');
+  if (ended.time - started.time > MAX_SEARCH_MINUTES * 60000) {
+    throw new Error('En søgetur kan højst vare 24 timer.');
+  }
 
   const searchMinutes = Math.max(1, Math.round((ended.time - started.time) / 60000));
-  if (searchMinutes > MAX_SEARCH_MINUTES) throw new Error('En søgetur kan højst vare 24 timer.');
 
   const snapshot = input.forecastSnapshot || {};
   const issued = requiredIso(snapshot.issuedAt, 'Prognosens udstedelsestid');
@@ -178,6 +220,12 @@ export function buildTripEvidence(input = {}) {
   const coastalPartId = requiredId(input.coastalPartId, 'Kystdel');
   const forecastZoneId = requiredId(input.forecastZoneId || zoneId, 'Zone ved turstart');
   const forecastCoastalPartId = requiredId(input.forecastCoastalPartId || coastalPartId, 'Kystdel ved turstart');
+  const calibrationFeatures = createCalibrationFeatureSnapshot(input.calibrationFeatures || {});
+  const publicEmergency = isPublicEmergencyCalibrationFeatures(calibrationFeatures);
+  const modelEligible = sameCalibrationModelBinding(
+    calibrationFeatureBinding(calibrationFeatures),
+    ravScoreModelBinding(),
+  );
   const evidence = Object.freeze({
     schemaVersion: TRIP_EVIDENCE_SCHEMA_VERSION,
     tripId: requiredUuid(input.tripId, 'Tur-id'),
@@ -191,14 +239,18 @@ export function buildTripEvidence(input = {}) {
     coastalPartId,
     forecastZoneId,
     forecastCoastalPartId,
-    calibrationEligible: zoneId === forecastZoneId && coastalPartId === forecastCoastalPartId,
+    calibrationEligible: RAVSCORE_CALIBRATION_ELIGIBLE === true
+      && modelEligible
+      && !publicEmergency
+      && zoneId === forecastZoneId
+      && coastalPartId === forecastCoastalPartId,
     found: input.found,
     grams: optionalGrams(input.grams, input.found),
     forecastSnapshotId: requiredId(snapshot.id, 'Prognose-id'),
     forecastIssuedAt: issued.iso,
     forecastValidAt: valid.iso,
     forecastCapturedAt: captured.iso,
-    calibrationFeatures: createCalibrationFeatureSnapshot(input.calibrationFeatures || {})
+    calibrationFeatures
   });
   assertTripEvidencePrivacy(evidence);
   return evidence;
@@ -229,8 +281,36 @@ export function toObservationTripColumns(evidence) {
     forecast_issued_at: evidence.forecastIssuedAt,
     forecast_valid_at: evidence.forecastValidAt,
     forecast_captured_at: evidence.forecastCapturedAt,
-    calibration_features: evidence.calibrationFeatures
+    calibration_features: evidence.calibrationFeatures,
+    model_version: evidence.calibrationFeatures.modelVersion,
+    rav_score: evidence.calibrationFeatures.totalScore,
+    weather_snapshot: {
+      schemaVersion: 4,
+      capturedAt: evidence.forecastCapturedAt,
+      forecastSnapshotId: evidence.forecastSnapshotId,
+      forecastIssuedAt: evidence.forecastIssuedAt,
+      forecastValidAt: evidence.forecastValidAt,
+      calibrationFeatures: evidence.calibrationFeatures,
+    },
+    wind_speed_mps: evidence.calibrationFeatures.windSpeedMs,
+    wind_direction_deg: evidence.calibrationFeatures.windDirectionDeg,
+    wave_height_m: evidence.calibrationFeatures.waveHeightM,
+    wave_period_s: evidence.calibrationFeatures.wavePeriodS,
+    water_level_cm: evidence.calibrationFeatures.waterLevelM == null
+      ? null
+      : Number((evidence.calibrationFeatures.waterLevelM * 100).toFixed(9)),
+    current_speed_mps: evidence.calibrationFeatures.currentSpeedMs,
+    current_direction_deg: evidence.calibrationFeatures.currentDirectionDeg,
   };
-  assertTripEvidencePrivacy(columns);
+  assertTripObservationNestedPrivacy(columns);
+  const issues = tripEvidenceIntegrityIssues(columns);
+  if (issues.length) throw new Error(`Turgrundlaget er internt inkonsistent (${issues.join(', ')}).`);
+  const publicEmergency = isPublicEmergencyCalibrationFeatures(columns.calibration_features);
+  const expectedEligible = RAVSCORE_CALIBRATION_ELIGIBLE === true
+    && !publicEmergency
+    && expectedCalibrationEligibility(columns, ravScoreModelBinding());
+  if (columns.calibration_eligible !== expectedEligible) {
+    throw new Error('Turgrundlagets kalibreringsstatus er inkonsistent.');
+  }
   return columns;
 }

@@ -10,13 +10,13 @@
 
 Se DEC-0107.
 
-## Aktivt smårettelsesspor – 4.0.308 offentlig QA-opfølgning
+## Produktionsverificeret smårettelsesspor – 4.0.308 offentlig QA-opfølgning
 
 - [x] Reproducer og ret den naturlige DA/DE/EN-fosforformulering med uændret officielt sikkerhedssvar.
 - [x] Vis alle delstrengsmatches i den bevarede zone-rullemenu ved afslut tur og manuel indberetning.
 - [x] Tilføj målrettede sprog- og fler-match-regressioner.
 - [x] Luk source/RDKS/geodatabevis.
-- [ ] Luk exact-head, produktion og offentlig browserkontrol.
+- [x] Luk PR #220 exact-head `33221847955`, merge `a93082548c4cc1ddbe9c75ce303d334530a534c4`, fuld produktion/deploy `33221916441` og offentlig mobil-/desktopkontrol.
 
 Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0106.
 
@@ -33,36 +33,44 @@ Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0106.
 
 Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 
-## Aktivt smårettelsesspor – 4.0.306
+## Afsluttet smårettelsesspor – 4.0.306
 
 - [x] Implementér ejerens ikke-modelrelaterede UI-, lærings-, oversættelses- og assistentrettelser.
 - [x] Luk målrettede tests, source/RDKS, exact-head, produktion og offentlig kontrol.
 - [x] Dokumentér merge, så DEC-0102-modelworktree kan integrere nyeste `origin/main`.
 
-## P0 ejer-godkendt – én integreret næste RavScore-generation
+## P0 lokal releasekandidat – én integreret næste RavScore-generation
 
-- [ ] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.
-- [ ] Læs hele RDKS-startkæden, aktuelle modelbeslutninger, håndbog, evidensbase og faktisk 4.0.305-kode før ændring.
-- [ ] Klassificér hvert aktivt modelled som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**; genbrug fungerende kode og kontrakter som udgangspunkt.
-- [ ] Udbyg primær evidens om bølgeomformning, orbitalbevægelse, undertow/returstrøm, rip-/langskyststrøm, lette partikler, retention, vandstand og modelusikkerhed.
-- [ ] Design én samlet årsagsmodel for tilførsel, mobilisering, transport, nærkystlevering/aflejring, jagtbarhed og usikkerhed uden dobbelt-tælling.
-- [ ] Implementér kandidaten ende til ende med nyt model-/state-id, migrations-/rollbackvej, missingsemantik og almindelige forklaringer.
-- [ ] Gør kandidaten plug-and-play på seneste RavRadar-`main`: nødvendige adaptere, projektioner, migration og rollback implementeres i modelsporet, så ingen senere RavRadar-ombygning er nødvendig.
-- [ ] Kortlæg og regressionsbevis alle model-forbrugere: DA/DE/EN, lokal/Edge **Spørg RavRadar**, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, workflows, audits og releasegates.
-- [ ] Sammenlign gammel og ny model på invariants, kanoniske/ekstreme/modstridende scenarier, missing, ablation, følsomhed og datasikre historiske/offentlige replays.
-- [ ] Hent og integrér løbende smårettelser fra `origin/main`; før slutrelease skal den eksakte seneste grønne `main` være bevaret.
-- [ ] Kør fuld score-, DMI-, state-, privacy-, RDKS-, release- og browservalidering og luk først gennem én samlet PR, exact-head, produktion og offentlig kontrol.
+- [x] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.
+- [x] Læs hele RDKS-startkæden, aktuelle modelbeslutninger, håndbog, evidensbase og faktisk produktionsbaseline før ændring.
+- [x] Klassificér hvert aktivt modelled som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**; genbrug fungerende kode og kontrakter som udgangspunkt.
+- [x] Udbyg primær evidens om bølgeomformning, orbitalbevægelse, undertow/returstrøm, rip-/langskyststrøm, lette partikler, retention, vandstand og modelusikkerhed.
+- [x] Design én samlet årsagsmodel for tilførsel, mobilisering, transport, nærkystlevering/aflejring, jagtbarhed og usikkerhed uden dobbelt-tælling.
+- [x] Implementér kandidaten ende til ende med nyt model-/state-id, migrations-/rollbackvej, missingsemantik og almindelige forklaringer.
+- [x] Gør kandidaten plug-and-play på seneste RavRadar-`main`: nødvendige adaptere, projektioner, migration og rollback implementeres i modelsporet, så ingen senere RavRadar-ombygning er nødvendig.
+- [x] Kortlæg og regressionsbevis alle model-forbrugere: DA/DE/EN, lokal/Edge **Spørg RavRadar**, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, workflows, audits og releasegates.
+- [x] Sammenlign gammel og ny model på invariants, kanoniske/ekstreme/modstridende scenarier, missing, ablation, følsomhed og datasikre replays uden fundpræcisionspåstand.
+- [x] Integrér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at miste 4.0.307-ejerpakken.
+- [x] Implementér observationsatomisk backend-/Edge-/Pages-cutover og manuel Candidate G central-/Pages-rollback med fail-closed `PENDING`, eksakt 210/673-gate, schedulerforbud, privat rollbackprojektion, ingen Candidate G-assistent-Edge, integreret Edge-`409` + lokale DA/DE/EN-svar og Candidate G-bundet schema-3-lagring uden kalibrering. Efter dry-run genverificeres `HEAD == origin/main == GITHUB_SHA` umiddelbart før første eksterne backendskrivning; post-write bruger samme snapshot.
+- [x] Luk dual-hash-fundet med separat `modelContractSha256`/`modelBundleSha256` gennem hele 11-feltsbindingen og negative mismatchprøver.
+- [ ] Luk de resterende red-team-fund og regenerér først derefter slutdigests på afsluttet head.
+- [ ] Gentag helhedsrevision, målrettede regressioner og fuld score-, DMI-, state-, privacy-, RDKS- og releasevalidering på afsluttet kandidat.
+- [ ] Hent og integrér seneste grønne `origin/main` ved sidste checkpoint og luk gennem én samlet PR, exact-head, frisk produktion/deploy og offentlig 210/673 mobil-/desktopkontrol.
 
 Ingen offentlig delrelease, ekstra offentlig shadowmodel, kunstig historik, privat payload, geometri- eller land-/vandpunktændring er tilladt. Uden repræsentative fund/nulfund må modellen ikke kaldes empirisk bevist mere fundpræcis. Se DEC-0102.
 
-## Parallelt P1 – mindre rettelser uden modeloverlap
+## Afsluttet parallelt P1 – mindre rettelser uden modeloverlap
 
-- [ ] Modtag ejerens mindre rettelser i en separat isoleret worktree og implementér dem fra seneste grønne `main`.
-- [ ] Hold Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden og alle modelbeslutninger uden for dette spor.
-- [ ] Følg normal målrettet test, RDKS, version, exact-head, merge, produktion og offentlig verifikation for hver reel produktændring.
-- [ ] Dokumentér merges tydeligt, så modelsporet kan integrere dem uden at miste funktioner.
+- [x] Modtag ejerens mindre rettelser i en separat isoleret worktree og implementér dem fra seneste grønne `main`.
+- [x] Hold Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden og alle modelbeslutninger uden for dette spor.
+- [x] Følg normal målrettet test, RDKS, version, exact-head, merge, produktion og offentlig verifikation for hver reel produktændring.
+- [x] Dokumentér og integrér PR #220/4.0.308 i modelsporet uden at miste funktioner.
 
 Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er beskyttede i begge spor.
+
+## Historisk roadmaparkiv
+
+De versionsmærkede punkter nedenfor bevarer status ved deres daværende checkpoints. Ord som **aktiv**, **nu**, **næste** og åbne afkrydsningsfelter dér er historik og må ikke tilsidesætte den aktuelle 4.0.308-/DEC-0108-plan ovenfor eller nyere `CURRENT_TRUTH`, `IMPLEMENTATION_STATUS` og `KNOWN-ISSUES`.
 
 ## Produktionsverificeret 4.0.294 – naturlige oprindelsesformuleringer
 

@@ -42,7 +42,8 @@ export function createPublicTripEvidenceRuntime({
         conditions: context.conditions,
         coastalPart: context.coastalPart,
         appVersion: context.appVersion,
-        modelVersion: context.modelVersion
+        modelVersion: context.modelVersion,
+        modelBinding: context.modelBinding
       });
       return controller.start({
         tripId: prepared.tripId,

@@ -1,0 +1,437 @@
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import {
+  RAVSCORE_MODEL_BUNDLE_SHA256,
+  RAVSCORE_MODEL_CONTRACT_SHA256,
+  RAVSCORE_MODEL_CONTRACT,
+  RAVSCORE_MODEL_ID,
+  RAVSCORE_LAST_MILE_POLICY,
+  RAVSCORE_WEIGHTS,
+  ravScoreModelBinding,
+} from '../js/core/ravscore-model-contract.js';
+import {
+  canonicalBundleJson,
+  computeRavScoreModelBundle,
+} from './build-ravscore-model-bundle.mjs';
+import {
+  classifyWaterLevelContext,
+  evaluateIntegratedLastMile,
+  evaluateRavScoreIntegrated,
+} from '../js/core/ravscore-integrated.js';
+import { evaluateIntegratedHuntability } from '../js/core/ravscore-huntability.js';
+import {
+  PHASE_D_HUNTABILITY_PROFILES,
+  evaluatePhaseDHuntability,
+} from '../js/core/phase-d-process-candidate.js';
+
+const digest = crypto.createHash('sha256')
+  .update(canonicalBundleJson(RAVSCORE_MODEL_CONTRACT))
+  .digest('hex');
+assert.equal(RAVSCORE_MODEL_CONTRACT_SHA256, digest, 'model contract digest must bind the canonical contract');
+const implementationBundle = await computeRavScoreModelBundle();
+assert.equal(RAVSCORE_MODEL_BUNDLE_SHA256, implementationBundle.modelBundleSha256,
+  'model bundle hash must bind the transitive implementation closure');
+assert.notEqual(RAVSCORE_MODEL_BUNDLE_SHA256, RAVSCORE_MODEL_CONTRACT_SHA256,
+  'implementation and parameter-contract digests must remain distinct identities');
+assert.equal(ravScoreModelBinding().modelId, RAVSCORE_MODEL_ID);
+assert.equal(ravScoreModelBinding().modelContractSha256, RAVSCORE_MODEL_CONTRACT_SHA256);
+assert.equal(ravScoreModelBinding().modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
+assert.deepEqual(RAVSCORE_WEIGHTS, { huntability: 0.2, transport: 0.5, mobilisation: 0.3 });
+
+for (const mode of ['beach', 'waders']) {
+  for (const windSpeedMps of [0, 6, 7, 10, 15, 20]) {
+    for (const waveHeightM of [0, 0.25, 0.7, 1.2, 2.5, 4]) {
+      const current = evaluateIntegratedHuntability(mode, { windSpeedMps, waveHeightM });
+      const legacy = evaluatePhaseDHuntability(mode, { windSpeedMps, waveHeightM }, {
+        profile: PHASE_D_HUNTABILITY_PROFILES.WADERS_WIND_LED_WAVE_20,
+      });
+      assert.ok(current.available);
+      assert.ok(Math.abs(current.value - legacy.value) < 1e-9, `${mode} huntability must be preserved`);
+    }
+  }
+}
+
+const requiredHuntabilityInputFailures = [
+  {
+    label: 'missing wind',
+    weather: { waveHeightM: 0.25 },
+    requiredInput: 'windSpeedMps',
+    inputStatus: 'MISSING',
+    reasonSuffix: 'WIND_INPUT_MISSING',
+  },
+  {
+    label: 'blank wind',
+    weather: { windSpeedMps: '   ', waveHeightM: 0.25 },
+    requiredInput: 'windSpeedMps',
+    inputStatus: 'MISSING',
+    reasonSuffix: 'WIND_INPUT_MISSING',
+  },
+  {
+    label: 'negative wind',
+    weather: { windSpeedMps: -0.01, waveHeightM: 0.25 },
+    requiredInput: 'windSpeedMps',
+    inputStatus: 'INVALID',
+    reasonSuffix: 'WIND_INPUT_INVALID',
+  },
+  {
+    label: 'boolean wind',
+    weather: { windSpeedMps: false, waveHeightM: 0.25 },
+    requiredInput: 'windSpeedMps',
+    inputStatus: 'INVALID',
+    reasonSuffix: 'WIND_INPUT_INVALID',
+  },
+  {
+    label: 'numeric-string wind',
+    weather: { windSpeedMps: '3', waveHeightM: 0.25 },
+    requiredInput: 'windSpeedMps',
+    inputStatus: 'INVALID',
+    reasonSuffix: 'WIND_INPUT_INVALID',
+  },
+  {
+    label: 'missing wave height',
+    weather: { windSpeedMps: 3 },
+    requiredInput: 'waveHeightM',
+    inputStatus: 'MISSING',
+    reasonSuffix: 'WAVE_HEIGHT_INPUT_MISSING',
+  },
+  {
+    label: 'negative wave height',
+    weather: { windSpeedMps: 3, waveHeightM: -0.01 },
+    requiredInput: 'waveHeightM',
+    inputStatus: 'INVALID',
+    reasonSuffix: 'WAVE_HEIGHT_INPUT_INVALID',
+  },
+  {
+    label: 'array wave height',
+    weather: { windSpeedMps: 3, waveHeightM: [] },
+    requiredInput: 'waveHeightM',
+    inputStatus: 'INVALID',
+    reasonSuffix: 'WAVE_HEIGHT_INPUT_INVALID',
+  },
+];
+
+for (const mode of ['beach', 'waders']) {
+  const calm = evaluateIntegratedHuntability(mode, { windSpeedMps: 0, waveHeightM: 0 });
+  assert.equal(calm.available, true, `${mode}: physical zero values must remain valid`);
+  assert.equal(calm.value, 100, `${mode}: physical zero values must preserve the existing curve`);
+  assert.equal(calm.inputCoverage, 1);
+
+  for (const failure of requiredHuntabilityInputFailures) {
+    const unavailable = evaluateIntegratedHuntability(mode, failure.weather);
+    assert.equal(unavailable.available, false, `${mode}: ${failure.label} must fail closed`);
+    assert.equal(unavailable.value, null, `${mode}: ${failure.label} must not invent a score`);
+    assert.equal(unavailable.reason, `${mode.toUpperCase()}_${failure.reasonSuffix}`);
+    assert.equal(unavailable.requiredInput, failure.requiredInput);
+    assert.equal(unavailable.inputStatus, failure.inputStatus);
+    assert.equal('inputCoverage' in unavailable, false);
+  }
+}
+
+const activeOffshore = evaluateIntegratedLastMile({
+  supplyPotential: 100,
+  weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 270 },
+  onshoreDirectionDeg: 270,
+});
+assert.equal(activeOffshore.alignment, -1);
+assert.equal(activeOffshore.factor, 1);
+assert.equal(activeOffshore.transport, 100);
+assert.equal(activeOffshore.scoreEffect, 'NONE');
+assert.equal(activeOffshore.structuralUncertainty, true);
+assert.equal(activeOffshore.physicalDeliveryResolved, false);
+assert.equal(activeOffshore.plausibleTransportRange, null);
+assert.equal(activeOffshore.status, 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL');
+assert.equal(RAVSCORE_LAST_MILE_POLICY.numericPhysicalUncertaintyIntervalProvided, false);
+const noSupply = evaluateIntegratedLastMile({
+  supplyPotential: 0,
+  weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 90 },
+  onshoreDirectionDeg: 270,
+});
+assert.equal(noSupply.transport, 0, 'waves may not create supply');
+const unknownDirection = evaluateIntegratedLastMile({
+  supplyPotential: 80,
+  weather: { waveHeightM: 2, wavePeriodS: 8 },
+  onshoreDirectionDeg: 270,
+});
+assert.equal(unknownDirection.status, 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN');
+assert.equal(unknownDirection.factor, 1);
+assert.equal(unknownDirection.transport, 80);
+assert.equal(unknownDirection.plausibleTransportRange, null);
+assert.deepEqual(unknownDirection.missing, ['wave-direction']);
+
+for (const [label, value] of [
+  ['negative', -0.01],
+  ['above range', 100.01],
+  ['boolean', false],
+  ['array', []],
+  ['numeric string', '80'],
+]) {
+  const invalidSupply = evaluateIntegratedLastMile({
+    supplyPotential: value,
+    weather: { waveHeightM: 0.3, wavePeriodS: 4 },
+    onshoreDirectionDeg: 270,
+  });
+  assert.equal(invalidSupply.available, false, `${label} supply state must fail closed`);
+  assert.equal(invalidSupply.transport, null);
+}
+
+const baseState = {
+  currentMemoryReady: true,
+  currentMemoryStatus: 'READY',
+  currentTransition: 'VERIFIED_REPLAY',
+  currentVerified: true,
+  currentReferenceAt: '2026-08-29T09:00:00.000Z',
+  supplyPotential: 0,
+  waveMemoryReady: true,
+  waveMemoryStatus: 'READY',
+  waveLastVerifiedAt: '2026-08-29T09:00:00.000Z',
+  mobilisationPotential: 90,
+};
+
+const readyZeroCurrentSupplyMaximum = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: {
+    windSpeedMps: 0,
+    waveHeightM: 0,
+    wavePeriodS: 0,
+    waveDirectionDeg: 90,
+  },
+}, { state: { ...baseState, supplyPotential: 0, mobilisationPotential: 100 } });
+assert.equal(readyZeroCurrentSupplyMaximum.available, true,
+  'a verified ready current-supply component of zero is not missing current evidence');
+assert.deepEqual(readyZeroCurrentSupplyMaximum.components, {
+  huntability: 100,
+  transport: 0,
+  mobilisation: 100,
+});
+assert.deepEqual(readyZeroCurrentSupplyMaximum.scoreCalculation.weightedContributions, {
+  huntability: 20,
+  transport: 0,
+  mobilisation: 30,
+});
+assert.equal(readyZeroCurrentSupplyMaximum.score, 50,
+  '20/50/30 must cap ready-zero-current beach opportunity at 50 before any waders cap');
+const fairMinimum = RAVSCORE_MODEL_CONTRACT.presentation.levels
+  .find(item => item.level === 'fair')?.minimum;
+assert.equal(fairMinimum, 55);
+assert.ok(readyZeroCurrentSupplyMaximum.score < fairMinimum,
+  'ready-zero-current opportunity may be poor/weak but never fair/good');
+assert.ok(readyZeroCurrentSupplyMaximum.explanation.limitations
+  .includes('LOCAL_AMBER_INVENTORY_UNOBSERVED'));
+
+const missingCurrentSupplyState = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: {
+    windSpeedMps: 0,
+    waveHeightM: 0,
+    wavePeriodS: 0,
+    waveDirectionDeg: 90,
+  },
+}, { state: { ...baseState, currentMemoryReady: false } });
+assert.equal(missingCurrentSupplyState.available, false,
+  'missing current evidence must fail closed instead of being reinterpreted as transport zero');
+assert.equal(missingCurrentSupplyState.reason, 'CURRENT_SUPPLY_STATE_NOT_READY');
+assert.equal(missingCurrentSupplyState.score, null);
+
+for (const mode of ['beach', 'waders']) {
+  for (const failure of requiredHuntabilityInputFailures.filter(item => item.label !== 'blank wind')) {
+    const unavailable = evaluateRavScoreIntegrated({
+      mode,
+      zone: { onshoreDirectionDeg: 270 },
+      weather: {
+        wavePeriodS: 4,
+        waveDirectionDeg: 90,
+        ...failure.weather,
+      },
+    }, { state: baseState });
+    assert.equal(unavailable.available, false, `${mode}: full model ${failure.label} must fail closed`);
+    assert.equal(unavailable.score, null, `${mode}: full model ${failure.label} must not emit a score`);
+    assert.equal(unavailable.reason, `${mode.toUpperCase()}_${failure.reasonSuffix}`);
+    assert.equal('confidence' in unavailable, false, `${mode}: unavailable must not claim confidence`);
+    assert.notEqual(unavailable.confidence?.dataStatus, 'READY');
+    assert.equal('components' in unavailable, false, `${mode}: unavailable must not expose score components`);
+    assert.equal('scoreCalculation' in unavailable, false, `${mode}: unavailable must not expose a calculation`);
+  }
+}
+const result = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: {
+    windSpeedMps: 3,
+    waveHeightM: 0.25,
+    wavePeriodS: 4,
+    waveDirectionDeg: 90,
+    currentSpeedMps: 0.12,
+    currentDirectionDeg: 90,
+    waterLevelCm: 20,
+    waterLevelTrendCm3h: -3,
+  },
+}, { state: baseState });
+assert.ok(result.available);
+for (const [key, expected] of Object.entries(ravScoreModelBinding())) {
+  assert.equal(result.explanation[key], expected,
+    `evaluator explanation must carry exact ${key}`);
+}
+assert.ok(result.score > 0,
+  'ready zero recent current-supply is not proof of no conditional local amber opportunity');
+assert.equal(result.diagnostics.waterLevelContext.scoreEffectPoints, 0);
+assert.equal(result.diagnostics.waterLevelContext.phase, 'FALLING');
+assert.equal(result.diagnostics.waterLevelContext.currentRelation, 'ALONG_OR_WEAK');
+assert.equal(result.diagnostics.waterLevelContext.currentRelationDeadbandMps, 0.03);
+assert.equal(result.diagnostics.waterLevelContext.trendSemantics,
+  'FORWARD_3H_MODEL_CHANGE_NOT_TIDAL_PHASE');
+assert.equal(result.explanation.findProbability, false);
+assert.equal(result.confidence.modelConfidence, 'low');
+assert.equal(result.confidence.dataStatus, 'READY_WITH_STRUCTURAL_LAST_MILE_UNCERTAINTY');
+assert.equal(result.scoreCalculation.finalScore, result.score);
+assert.equal(
+  Math.round(Object.values(result.scoreCalculation.weightedContributions).reduce((sum, value) => sum + value, 0)),
+  result.score,
+);
+
+const thirteenHourEquivalent = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 3, waveHeightM: 0.25, wavePeriodS: 4, waveDirectionDeg: 90 },
+}, { state: baseState });
+assert.notEqual(thirteenHourEquivalent.score, 0, 'no separate 13-hour whole-score gate may exist');
+
+const wadersStopped = evaluateRavScoreIntegrated({
+  mode: 'waders',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 15, waveHeightM: 0.7, wavePeriodS: 5, waveDirectionDeg: 90 },
+}, { state: { ...baseState, supplyPotential: 100, mobilisationPotential: 100 } });
+assert.equal(wadersStopped.score, 0);
+assert.equal(wadersStopped.scoreCalculation.wadersHuntabilityMaximum, 0);
+
+for (const trend of [-1, 0, 1, null]) {
+  const water = classifyWaterLevelContext(
+    { waterLevelCm: 5, waterLevelTrendCm3h: trend },
+    { currentSupply:0.2, currentAlignment:-1, currentVerified:true },
+  );
+  assert.equal(water.scoreEffectPoints, 0);
+  assert.equal(water.transportEffect, 'NONE');
+}
+
+const fallingCurrentCases = [
+  { label:'outbound', direction:180, state:baseState, relation:'OUTBOUND' },
+  { label:'inbound', direction:0, state:baseState, relation:'INBOUND' },
+  { label:'along', direction:90, state:baseState, relation:'ALONG_OR_WEAK' },
+  { label:'unknown', direction:180, state:{ ...baseState, currentVerified:false }, relation:'UNKNOWN_OR_NATIVE_HOLD' },
+  { label:'native hold', direction:180, state:{ ...baseState, currentTransition:'NATIVE_CADENCE_HOLD' }, relation:'UNKNOWN_OR_NATIVE_HOLD' },
+];
+const fallingCurrentResults = fallingCurrentCases.map(({ label, direction:currentDirectionDeg, state, relation }) => {
+  const evaluated = evaluateRavScoreIntegrated({
+    mode:'beach',
+    zone:{ onshoreDirectionDeg:0 },
+    weather:{
+      windSpeedMps:3,
+      waveHeightM:0.5,
+      wavePeriodS:5,
+      waveDirectionDeg:180,
+      waterLevelCm:5,
+      waterLevelTrendCm3h:-2,
+      currentSpeedMps:0.15,
+      currentDirectionDeg,
+    },
+  }, { state:{ ...state, supplyPotential:0, mobilisationPotential:100 } });
+  assert.equal(evaluated.available, true, `${label}: konteksten må ikke gøre scoren utilgængelig`);
+  assert.equal(evaluated.components.transport, 0, `${label}: fælleskonteksten må ikke ændre transportpotentialet`);
+  assert.equal(evaluated.components.mobilisation, 100, `${label}: høj mobilisering skal bevares ved nul transport`);
+  assert.equal(evaluated.diagnostics.waterLevelContext.currentRelation, relation, `${label}: forkert strømklasse`);
+  assert.equal(evaluated.diagnostics.waterLevelContext.scoreEffectPoints, 0);
+  assert.equal(evaluated.diagnostics.waterLevelContext.transportEffect, 'NONE');
+  return evaluated;
+});
+assert.equal(new Set(fallingCurrentResults.map(entry => entry.scoreCalculation.rawScore)).size, 1,
+  'FALLING×strømklassen er forklaringskontekst og må ikke ændre score');
+for (const currentAlignment of [-0.2, 0.2]) {
+  assert.equal(classifyWaterLevelContext(
+    { waterLevelCm:5, waterLevelTrendCm3h:-1 },
+    { currentSupply:0.15, currentAlignment, currentVerified:true },
+  ).currentRelation, 'ALONG_OR_WEAK', '±0,03 m/s skal høre til dødzoneklassen');
+}
+
+const contextInvariantWeather = {
+  windSpeedMps: 5,
+  waveHeightM: 1.2,
+  wavePeriodS: 7,
+  waveDirectionDeg: 180,
+};
+const contextInvariantScores = [
+  { waterLevelCm: -40, waterLevelTrendCm3h: -12, waterTemperatureC: -1 },
+  { waterLevelCm: 0, waterLevelTrendCm3h: 0, waterTemperatureC: 8 },
+  { waterLevelCm: 85, waterLevelTrendCm3h: 18, waterTemperatureC: 25 },
+].map(context => evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { ...contextInvariantWeather, ...context },
+}, { state: { ...baseState, supplyPotential: 62, mobilisationPotential: 71 } }));
+assert.ok(contextInvariantScores.every(entry => entry.available));
+assert.equal(new Set(contextInvariantScores.map(entry => entry.scoreCalculation.rawScore)).size, 1,
+  'vandstand og vandtemperatur er forklaringskontekst og må ikke ændre RavScore');
+assert.deepEqual(
+  contextInvariantScores.map(entry => entry.diagnostics.waterLevelContext.phase),
+  ['FALLING', 'STABLE', 'RISING'],
+  'vandstandens fase skal fortsat være synlig, selv om dens scoreeffekt er nul',
+);
+
+const missingCurrent = evaluateRavScoreIntegrated({}, { state: { ...baseState, currentMemoryReady: false } });
+assert.equal(missingCurrent.available, false);
+assert.equal(missingCurrent.score, null);
+const missingWave = evaluateRavScoreIntegrated({}, { state: { ...baseState, waveMemoryReady: false } });
+assert.equal(missingWave.available, false);
+assert.equal(missingWave.score, null);
+
+for (const malformedState of [
+  { ...baseState, currentMemoryStatus: 'ARBITRARY' },
+  { ...baseState, waveMemoryStatus: 'MISSING_INPUT' },
+  { ...baseState, supplyPotential: -0.01 },
+  { ...baseState, supplyPotential: 100.01 },
+  { ...baseState, mobilisationPotential: -0.01 },
+  { ...baseState, mobilisationPotential: 100.01 },
+  { ...baseState, supplyPotential: '50' },
+  { ...baseState, mobilisationPotential: '50' },
+]) {
+  const unavailable = evaluateRavScoreIntegrated({
+    mode: 'beach',
+    zone: { onshoreDirectionDeg: 270 },
+    weather: { windSpeedMps: 3, waveHeightM: 0.4, wavePeriodS: 5 },
+  }, { state: malformedState });
+  assert.equal(unavailable.available, false, 'forged state must fail closed');
+  assert.equal(unavailable.score, null);
+}
+
+const negativePeriod = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 3, waveHeightM: 0.4, wavePeriodS: -0.01 },
+}, { state: baseState });
+assert.equal(negativePeriod.available, false,
+  'negative period must not be converted to calm-wave evidence by the full evaluator');
+assert.equal(negativePeriod.score, null);
+
+const numericStringWave = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 3, waveHeightM: '0.4', wavePeriodS: 5 },
+}, { state: baseState });
+assert.equal(numericStringWave.available, false,
+  'numeric-string weather must fail closed instead of entering the physical model');
+assert.equal(numericStringWave.score, null);
+
+const unknownWaveDirection = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 3, waveHeightM: 0.4, wavePeriodS: 5 },
+}, { state: baseState });
+assert.equal(unknownWaveDirection.available, true);
+assert.equal(
+  unknownWaveDirection.confidence.dataStatus,
+  'READY_WITH_STRUCTURAL_AND_DIRECTION_UNCERTAINTY',
+);
+assert.equal(unknownWaveDirection.components.transport, baseState.supplyPotential,
+  'missing outer-wave direction is score-neutral because the local surf-zone path is unresolved');
+
+console.log('Integreret RavScore-kontrakt, jagtbarhed, sidste nærkystled og score: bestået.');

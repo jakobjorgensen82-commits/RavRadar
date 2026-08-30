@@ -14,6 +14,7 @@ globalThis.localStorage = {
 const i18n = await import(`../js/i18n.js?v=${releaseVersion}`);
 const assistant = await import('../js/services/rav-assistant.js');
 const tripDialogModule = await import('../js/ui/trip-evidence-dialog.js');
+const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
 
 const danishKeys = Object.keys(i18n.MESSAGES.da).sort();
 const intentionallyShared = {
@@ -34,6 +35,12 @@ assert.equal(i18n.getLanguage(), 'da', 'Dansk skal være standard uden et gemt v
 assert.equal(i18n.t('header.trip.start'), 'Start ravtur');
 assert.equal(i18n.t('header.trip.start', {}, 'de'), 'Bernsteintour starten');
 assert.equal(i18n.t('header.trip.start', {}, 'en'), 'Start amber trip');
+assert.match(i18n.t('data.emergency', { time:'29/08 12:00' }, 'da'),
+  /Nøddrift:[\s\S]*29\/08 12:00[\s\S]*uden kalibreringsberettigelse/);
+assert.match(i18n.t('data.emergency', { time:'29.08. 12:00' }, 'de'),
+  /Notbetrieb:[\s\S]*29\.08\. 12:00[\s\S]*ohne Kalibrierungsberechtigung/);
+assert.match(i18n.t('data.emergency', { time:'29 Aug, 12:00' }, 'en'),
+  /Emergency mode:[\s\S]*29 Aug, 12:00[\s\S]*without calibration eligibility/);
 const searchableZones = [
   { id: 'lynaes', name: 'Hundested og Lynæs' },
   { id: 'lyngsaa', name: 'Lyngså' },
@@ -94,7 +101,19 @@ try {
 let remoteRequest = null;
 globalThis.fetch = async (url, options) => {
   remoteRequest = { url:String(url), options, body:JSON.parse(options.body) };
-  return { ok:true, json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }) };
+  const binding = ravScoreModelBinding();
+  return {
+    ok:true,
+    headers:new Headers({
+      'x-ravradar-model-id':binding.modelId,
+      'x-ravradar-model-state-version':binding.stateSchemaVersion,
+      'x-ravradar-model-contract-sha256':binding.modelContractSha256,
+      'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
+      'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
+      'x-ravradar-assistant-knowledge-sha256':'39b0d33bd347418716cfccb7b20d711775bf520634c498d30c0b11c2cf24a5d2',
+    }),
+    json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
+  };
 };
 try {
   const remoteAnswer = await assistant.askRavRadar('Kan ravets kemiske sammensætning variere mellem forskellige geologiske perioder?', {}, { language:'da' });
@@ -169,7 +188,7 @@ for (const html of [aboutHtml, learnHtml]) {
 }
 for (const language of ['de', 'en']) {
   const score = i18n.t('learn.score', {}, language);
-  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '13']) assert.ok(score.includes(marker), `${language} mangler Candidate G-markøren ${marker} i grundbogen.`);
+  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '48', 'score-neutral']) assert.ok(score.includes(marker), `${language} mangler den integrerede modelmarkør ${marker} i grundbogen.`);
   assert.match(i18n.t('learn.knowledge', {}, language), /not.*safe|Sicherheit/i, `${language} mangler grundbogens sikkerhedsgrænse.`);
   assert.equal((i18n.t('learn.knowledge', {}, language).match(/https:\/\//g) || []).length, 7, `${language} skal bevare alle syv faglige kildelinks.`);
   assert.match(i18n.t('about.support', {}, language), /id="mobilepay-qr"/, `${language} skal bevare QR-målet.`);

@@ -1,13 +1,16 @@
-const finite = value => Number.isFinite(Number(value));
+const finite = value => typeof value === 'number' && Number.isFinite(value);
 
 export function isCompleteLocalScoreRow(row, expectedPartCount) {
-  const expected = Number(expectedPartCount);
-  if (!Number.isFinite(Date.parse(row?.time ?? '')) || !Number.isFinite(expected) || expected < 1) return false;
+  const expected = expectedPartCount;
+  if (!Number.isFinite(Date.parse(row?.time ?? ''))
+    || !Number.isSafeInteger(expected)
+    || expected < 1) return false;
   return ['waders', 'beach'].every(mode => {
     const value = row?.[mode];
     return value?.status !== 'uncertain'
       && finite(value?.score)
-      && Number(value?.comparisonPartCount) === expected;
+      && Number.isSafeInteger(value?.comparisonPartCount)
+      && value.comparisonPartCount === expected;
   });
 }
 

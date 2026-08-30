@@ -50,7 +50,7 @@ export function formatCoverageFailure(snapshot) {
   const examples = [...snapshot.missingZoneIds, ...snapshot.unknownZoneIds].slice(0, 5).join(', ');
   const coverage = `${snapshot.conditionZoneCount}/${snapshot.activeZoneCount} zoner`;
   if (snapshot.status === 'dataset-mismatch') {
-    return 'Lokalt manifest og conditions tilhører ikke samme dataset. Kør npm run hydrate:deployed-weather og derefter npm run validate.';
+    return 'Lokalt manifest og conditions tilhører ikke samme dataset. Kør den skrivebeskyttede deployaudit; byg derefter en frisk atomisk runtime gennem produktionsworkflowet før fuld validering.';
   }
   if (snapshot.status === 'stale-coverage-mismatch') {
     return [

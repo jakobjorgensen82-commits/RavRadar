@@ -40,7 +40,7 @@ for (const marker of [
   'Miniordbog'
 ]) assert.ok(learning.includes(marker), `Læringsmodulet mangler: ${marker}`);
 
-for (const marker of ['20 %', '50 %', '30 %', 'Vind under 6 m/s', 'ved 15 m/s', 'går i nul efter 13 timer']) {
+for (const marker of ['20 %', '50 %', '30 %', 'Vind under 6 m/s', 'ved 15 m/s', 'seneste 48 timer', 'uopløst og score-neutral', 'De andre komponenter nulstilles ikke']) {
   assert.ok(learning.includes(marker), `Den aktive model forklares ikke korrekt: ${marker}`);
 }
 assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må ikke stå i det offentlige læringsmodul');
@@ -55,7 +55,7 @@ assert.match(learning, /Kyst B[\s\S]*flow-arrow">↑<\/span><small>Strøm langs 
 assert.match(learningDe, /Küste B[\s\S]*flow-arrow">↑<\/span><small>Strömung entlang der Küste/, 'Tysk Kyst B skal have opadgående pil');
 assert.match(learningEn, /Coast B[\s\S]*flow-arrow">↑<\/span><small>Current along the coast/, 'Engelsk Kyst B skal have opadgående pil');
 assert.match(learningCss, /\.coast-b\{transform:rotate\(0\)/, 'Kyst B-stregen skal effektivt være lodret');
-assert.match(learning, /Koldt vand kan gøre rav lettere at mobilisere/, 'Koldt vands betydning for mobilisering skal forklares');
+assert.match(learning, /Koldere saltvand er normalt lidt tættere end varmere saltvand med samme saltindhold/, 'Temperaturens lille og salinitetsafhængige tæthedseffekt skal forklares nøgternt');
 assert.match(learning, /TiR96bdTRr0[\s\S]*Rav Jagt/, 'Temperaturforklaringen skal kreditere og linke til Rav Jagts video');
 assert.match(learning, /rav-jagt-where-is-amber\.svg/, 'Rav Jagts kysttværsnit skal indgå i læringskæden');
 assert.match(learning, /På havbunden[\s\S]*I vandsøjlen uden for revlerne[\s\S]*På ydersiden af revlerne[\s\S]*Mellem revler og strand[\s\S]*I vandkanten[\s\S]*På stranden/, 'Rav Jagts seks positioner skal stå i faglig rækkefølge');

@@ -19,8 +19,7 @@ const payload = remoteObservationPayload({
   gps: { latitude: 55, longitude: 8 },
   route: [{ latitude: 55, longitude: 8 }],
   track: [{ latitude: 55, longitude: 8 }],
-  sync_status: 'pending',
-  weather_snapshot: { schemaVersion: 4 }
+  sync_status: 'pending'
 });
 
 assert.equal(payload.client_observation_id, clientId);

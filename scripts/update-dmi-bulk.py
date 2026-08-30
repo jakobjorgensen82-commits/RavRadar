@@ -35,6 +35,21 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches
+from lib.dmi_native_provenance import (
+    COLLECTION_FAMILY,
+    COMPONENT_FIELD_SET,
+    COMPONENT_KIND,
+    COMPONENT_SPATIAL_SELECTION,
+    CURRENT_MAX_DISTANCE_KM,
+    CURRENT_PREFERRED_DISTANCE_KM,
+    CURRENT_VECTOR_SELECTION,
+    CURRENT_VECTOR_SEMANTICS_VERSION,
+    MARINE_COLLECTIONS,
+    SPATIAL_PROVENANCE_VERSION,
+    complete_native_source_for_hour,
+    component_collection_allowed,
+    sampling_identity,
+)
 from lib.coastal_point_staging import (
     load_private_document as load_coastal_point_stage,
     prune_hours as prune_coastal_point_stage_hours,
@@ -112,13 +127,15 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 18
+PARSER_VERSION = 19
 PARAMETER_MAP_VERSION = 4
 GRID_LOOKUP_VERSION = 7
-CURRENT_VECTOR_SEMANTICS_VERSION = 3
-CURRENT_VECTOR_SELECTION = "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer"
-CURRENT_PREFERRED_DISTANCE_KM = 3.0
-CURRENT_MAX_DISTANCE_KM = 5.0
+# The integrated model can replay at most 48 hours before its first public
+# target. Keep a bounded private buffer with one full native-cadence safety
+# margin; this cache is never part of the Pages artifact.
+PRIVATE_REPLAY_RETENTION_HOURS = max(
+    54, int(os.getenv("DMI_BULK_PRIVATE_REPLAY_RETENTION_HOURS", "60"))
+)
 CURRENT_FIELD_SHADOW_PARTS_PER_RUN = max(1, int(os.getenv("CURRENT_FIELD_SHADOW_PARTS_PER_RUN", "15")))
 CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION = max(
     1, int(os.getenv("CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION", "5"))
@@ -127,10 +144,6 @@ CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
     0, int(os.getenv("CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN", "3"))
 )
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
-COLLECTION_FAMILY = {
-    "dkss_idw": "marine", "dkss_nsbs": "marine", "dkss_lf": "marine",
-    "harmonie_dini_sf": "wind", "wam_dw": "wave", "wam_nsb": "wave",
-}
 TARGETS = {
     "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"],
     "wind": ["wind-u-10m", "wind-v-10m"],
@@ -139,10 +152,11 @@ TARGETS = {
 REQUIRED_TARGETS = {
     "marine": {"sea-mean-deviation", "current-u", "current-v"},
     "wind": {"wind-u-10m", "wind-v-10m"},
-    "wave": {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"},
+    # Height and period drive mobilisation. Direction remains useful context but
+    # is not allowed to block the score tuple when it is absent or on another cell.
+    "wave": {"significant-wave-height", "dominant-wave-period"},
 }
 
-MARINE_COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf"}
 MARINE_PARAMETERS = {"sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"}
 MARINE_SCALAR_PARAMETERS = MARINE_PARAMETERS - {"current-u", "current-v"}
 VECTOR_PAIRS = {
@@ -224,14 +238,14 @@ def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, An
 
 def item_run(item: dict[str, Any]) -> str | None:
     props = item.get("properties") or {}
-    for key in ("forecast:reference_datetime", "reference_datetime", "modelRun", "model_run", "created"):
+    for key in ("forecast:reference_datetime", "reference_datetime", "modelRun", "model_run"):
         value = iso(props.get(key))
         if value:
             return value
-    match = re.search(r"(20\d{2})[-_]?([01]\d)[-_]?([0-3]\d)[T_]?([0-2]\d)", str(item.get("id", "")))
-    if match:
-        return f"{match.group(1)}-{match.group(2)}-{match.group(3)}T{match.group(4)}:00:00Z"
-    return iso(props.get("datetime") or props.get("start_datetime"))
+    # Publication and valid-time metadata are not model-run identity.  If DMI
+    # omits every explicit run field, this item is unusable rather than guessed
+    # from `created`, the item id or the forecast-valid timestamp.
+    return None
 
 
 def item_valid(item: dict[str, Any]) -> str | None:
@@ -241,6 +255,46 @@ def item_valid(item: dict[str, Any]) -> str | None:
         if value:
             return value
     return None
+
+
+def item_timestamp(item: dict[str, Any], key: str) -> str | None:
+    """Return only an explicit STAC timestamp; never infer publication time."""
+    return iso((item.get("properties") or {}).get(key))
+
+
+def observed_run_cadence_hours(runs: dict[str, list[dict[str, Any]]]) -> float | None:
+    """Infer publication cadence only from the currently returned STAC runs."""
+    ordered = sorted({epoch(run) for run in runs if epoch(run)})
+    differences = [
+        (after - before) / 3600.0
+        for before, after in zip(ordered, ordered[1:])
+        if 0 < after - before <= 48 * 3600
+    ]
+    if not differences:
+        return None
+    differences.sort()
+    middle = len(differences) // 2
+    return round(
+        differences[middle] if len(differences) % 2 else (differences[middle - 1] + differences[middle]) / 2,
+        3,
+    )
+
+
+def observed_publication_lag_hours(runs: dict[str, list[dict[str, Any]]]) -> float | None:
+    """Use explicit STAC `created` only; missing metadata yields no invented lag."""
+    lags = []
+    for run, rows in runs.items():
+        run_lags = []
+        for row in rows:
+            created = epoch(row.get("itemCreatedAt"))
+            if created and epoch(run) and created >= epoch(run):
+                run_lags.append((created - epoch(run)) / 3600.0)
+        if run_lags:
+            # Forecast-step items can be updated independently. The earliest
+            # explicit creation is the observed run-publication event; using a
+            # far-tail item's later creation would falsely extend freshness.
+            lags.append(min(run_lags))
+    return round(max(lags), 3) if lags else None
 
 
 def asset_map(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -365,7 +419,18 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
         href, size, _description = asset
         if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + (HOURS + 6) * 3600:
             continue
-        row = {"valid": valid, "href": href, "size": size, "id": item.get("id")}
+        item_id = str(item.get("id") or "").strip()
+        if not item_id:
+            stats["itemsWithoutGrib"] += 1
+            continue
+        row = {
+            "valid": valid,
+            "href": href,
+            "size": size,
+            "id": item_id,
+            "itemCreatedAt": item_timestamp(item, "created"),
+            "itemUpdatedAt": item_timestamp(item, "updated"),
+        }
         runs.setdefault(run, []).append(row)
         stats["forecastStepAssets"] += 1
         if len(stats["sampleItems"]) < 5:
@@ -380,6 +445,36 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
         preferred_run,
         retention_horizon_hours=retention_horizon_hours,
     )
+    latest_run = str(run_selection["latestRun"])
+    cadence_hours = observed_run_cadence_hours(runs)
+    publication_lag_hours = observed_publication_lag_hours(runs)
+    latest_run_age_hours = max(0.0, (time.time() - epoch(latest_run)) / 3600.0)
+    selected_run_lag_hours = max(0.0, (epoch(latest_run) - epoch(run)) / 3600.0)
+    # A retained progressive run may trail the latest partial generation by at
+    # most one cadence observed in this exact STAC response. Entire-catalog
+    # freshness is checked only when both cadence and explicit STAC creation lag
+    # exist; absent metadata remains unknown instead of being fabricated.
+    selected_within_observed_schedule = (
+        run == latest_run
+        or cadence_hours is not None and selected_run_lag_hours <= cadence_hours + 1e-6
+    )
+    catalog_schedule_fresh = (
+        cadence_hours is not None
+        and publication_lag_hours is not None
+        and latest_run_age_hours <= cadence_hours + publication_lag_hours + 1e-6
+    )
+    run_selection.update({
+        "observedRunCadenceHours": cadence_hours,
+        "observedPublicationLagHours": publication_lag_hours,
+        "latestRunAgeHours": round(latest_run_age_hours, 3),
+        "selectedRunLagBehindLatestHours": round(selected_run_lag_hours, 3),
+        "selectedWithinObservedSchedule": selected_within_observed_schedule,
+        "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
+    })
+    if not selected_within_observed_schedule or catalog_schedule_fresh is False:
+        stats.update(run_selection)
+        stats["rejectedStaleRun"] = True
+        return None, [], stats
     stats.update(run_selection)
     unique: dict[str, dict[str, Any]] = {}
     minimum_valid_epoch = time.time() - 3600
@@ -392,7 +487,14 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
         if row["valid"] in unique:
             stats["duplicateValidTimes"] += 1
             continue
-        unique[row["valid"]] = row
+        unique[row["valid"]] = {
+            **row,
+            "collection": collection,
+            "modelRun": run,
+            "observedRunCadenceHours": cadence_hours,
+            "latestRun": latest_run,
+            "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
+        }
     rows = sorted(unique.values(), key=lambda r: epoch(r["valid"]))
     stats["selectedForecastSteps"] = min(len(rows), MAX_ASSETS_PER_COLLECTION)
     return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
@@ -453,18 +555,52 @@ def register_raw_cache_asset(
     collection: str | None,
     model_run: str | None,
     valid_time: str | None,
+    *,
+    item_id: str | None = None,
+    item_created_at: str | None = None,
+    item_updated_at: str | None = None,
+    acquired_at: str | None = None,
 ) -> None:
     if not collection or not model_run or not valid_time:
         return
     document = load_raw_cache_manifest()
     assets = document.setdefault("assets", {})
+    registered_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    previous = assets.get(path.name) or {}
+    canonical_href = href.split("?", 1)[0].split("#", 1)[0]
+    asset_identity_sha256 = hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
+    normalized_item_id = str(item_id or "").strip() or None
+    same_capture_identity = bool(
+        previous.get("collection") == collection
+        and iso(previous.get("modelRun")) == iso(model_run)
+        and iso(previous.get("validTime")) == iso(valid_time)
+        and previous.get("itemId") == normalized_item_id
+        and previous.get("assetIdentitySha256") == asset_identity_sha256
+    )
     assets[path.name] = {
-        "canonicalHref": href.split("?", 1)[0].split("#", 1)[0],
+        "canonicalHref": canonical_href,
+        "assetIdentitySha256": asset_identity_sha256,
         "collection": collection,
         "modelRun": model_run,
         "validTime": valid_time,
+        "itemId": normalized_item_id,
+        "itemCreatedAt": (
+            iso(item_created_at) if item_created_at
+            else previous.get("itemCreatedAt") if same_capture_identity else None
+        ),
+        "itemUpdatedAt": (
+            iso(item_updated_at) if item_updated_at
+            else previous.get("itemUpdatedAt") if same_capture_identity else None
+        ),
+        # Registration/last-use time is not acquisition time.  Preserve an
+        # already proven capture only for the exact same item identity, or use
+        # a timestamp supplied by the code path that actually downloaded it.
+        "acquiredAt": (
+            previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))
+            else iso(acquired_at) if acquired_at else None
+        ),
         "bytes": path.stat().st_size,
-        "lastUsedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "lastUsedAt": registered_at,
     }
     save_raw_cache_manifest(document)
 
@@ -537,16 +673,34 @@ def download_asset(
     collection: str | None = None,
     model_run: str | None = None,
     valid_time: str | None = None,
+    item_id: str | None = None,
+    item_created_at: str | None = None,
+    item_updated_at: str | None = None,
 ) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     path = cached_asset_path(href)
     if path.exists() and path.stat().st_size > 0:
-        try:
-            os.utime(path, None)
-        except OSError:
-            pass
-        register_raw_cache_asset(path, href, collection, model_run, valid_time)
-        return path, True
+        capture = (
+            raw_cache_source_capture(path, collection, model_run, valid_time)
+            if collection and model_run and valid_time else None
+        )
+        expected_asset_identity = hashlib.sha256(
+            href.split("?", 1)[0].split("#", 1)[0].encode("utf-8")
+        ).hexdigest()
+        if (
+            capture
+            and capture.get("itemId") == str(item_id or "").strip()
+            and capture.get("assetIdentitySha256") == expected_asset_identity
+        ):
+            try:
+                os.utime(path, None)
+            except OSError:
+                pass
+            register_raw_cache_asset(
+                path, href, collection, model_run, valid_time,
+                item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
+            )
+            return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
     with DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
@@ -565,8 +719,42 @@ def download_asset(
                     raise RuntimeError("DMI bulk download budget exceeded during asset download")
                 tmp.write(chunk)
     tmp_path.replace(path)
-    register_raw_cache_asset(path, href, collection, model_run, valid_time)
+    acquired_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    register_raw_cache_asset(
+        path, href, collection, model_run, valid_time,
+        item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
+        acquired_at=acquired_at,
+    )
     return path, False
+
+
+def raw_cache_source_capture(
+    path: pathlib.Path,
+    collection: str,
+    model_run: str,
+    valid_time: str,
+) -> dict[str, Any] | None:
+    """Resolve an exact local capture without inventing STAC/acquisition facts."""
+    row = (load_raw_cache_manifest().get("assets") or {}).get(path.name) or {}
+    if not (
+        row.get("collection") == collection
+        and iso(row.get("modelRun")) == iso(model_run)
+        and iso(row.get("validTime")) == iso(valid_time)
+        and str(row.get("itemId") or "").strip()
+        and iso(row.get("acquiredAt"))
+        and re.fullmatch(r"[0-9a-f]{64}", str(row.get("assetIdentitySha256") or ""))
+    ):
+        return None
+    capture = {
+        "itemId": str(row["itemId"]),
+        "assetIdentitySha256": str(row["assetIdentitySha256"]),
+        "acquiredAt": iso(row["acquiredAt"]),
+    }
+    if iso(row.get("itemCreatedAt")):
+        capture["itemCreatedAt"] = iso(row["itemCreatedAt"])
+    if iso(row.get("itemUpdatedAt")):
+        capture["itemUpdatedAt"] = iso(row["itemUpdatedAt"])
+    return capture
 
 
 def safe_get(gid: int, key: str) -> Any:
@@ -674,6 +862,11 @@ def grid_signature(gid: int) -> tuple[Any, ...]:
         "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
     )
     return tuple(safe_get(gid, key) for key in keys)
+
+
+def grid_definition_sha256(gid: int) -> str:
+    canonical = json.dumps(grid_signature(gid), ensure_ascii=False, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -859,6 +1052,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     except Exception:
         return {}
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
+    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, list[dict[str, float]]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         rows = []
@@ -872,6 +1066,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 "latitude": candidate["latitude"],
                 "longitude": candidate["longitude"],
                 "distanceKm": candidate["distanceKm"],
+                "gridDefinitionSha256": definition_sha256,
             })
         if rows:
             resolved[zone_id] = rows
@@ -904,6 +1099,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     except Exception:
         return {}
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
+    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, dict[str, float]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         for candidate in candidates:
@@ -914,6 +1110,8 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "latitude": candidate["latitude"],
                     "longitude": candidate["longitude"],
                     "distanceKm": candidate["distanceKm"],
+                    "index": int(candidate["index"]),
+                    "gridDefinitionSha256": definition_sha256,
                 }
                 break
     return resolved
@@ -1083,12 +1281,127 @@ def parameter_zones(collection: str, parameter: str, zones: list[dict[str, Any]]
     return base_regular
 
 
-def native_component_source(collection: str, model_run: str, valid_time: str, **extra: Any) -> dict[str, Any]:
+def candidate_cell_key(candidate: dict[str, Any]) -> tuple[str, float, float] | None:
+    definition = str(candidate.get("gridDefinitionSha256") or "")
+    latitude, longitude = candidate.get("latitude"), candidate.get("longitude")
+    if not (
+        re.fullmatch(r"[0-9a-f]{64}", definition)
+        and isinstance(latitude, (int, float)) and math.isfinite(float(latitude))
+        and isinstance(longitude, (int, float)) and math.isfinite(float(longitude))
+    ):
+        return None
+    return definition, round(float(latitude), 7), round(float(longitude), 7)
+
+
+def select_common_grid_tuple(
+    candidates_by_parameter: dict[str, list[dict[str, Any]]],
+    required_parameters: tuple[str, ...],
+) -> dict[str, dict[str, Any]] | None:
+    """Select one exact grid definition/cell shared by every required field."""
+    indexed: dict[str, dict[tuple[str, float, float], dict[str, Any]]] = {}
+    for parameter in required_parameters:
+        rows: dict[tuple[str, float, float], dict[str, Any]] = {}
+        for candidate in candidates_by_parameter.get(parameter) or []:
+            key = candidate_cell_key(candidate)
+            if key is None:
+                continue
+            previous = rows.get(key)
+            if previous is None or float(candidate["distanceKm"]) < float(previous["distanceKm"]):
+                rows[key] = candidate
+        if not rows:
+            return None
+        indexed[parameter] = rows
+    common = set.intersection(*(set(indexed[parameter]) for parameter in required_parameters))
+    if not common:
+        return None
+    selected_key = min(
+        common,
+        key=lambda key: (
+            max(float(indexed[parameter][key]["distanceKm"]) for parameter in required_parameters),
+            key,
+        ),
+    )
+    return {parameter: indexed[parameter][selected_key] for parameter in required_parameters}
+
+
+def native_component_source(
+    collection: str,
+    model_run: str,
+    valid_time: str,
+    *,
+    component: str,
+    zone: dict[str, Any],
+    grid_candidate: dict[str, Any],
+    capture: dict[str, Any] | None,
+    spatial_selection: str,
+    optional_field_set: tuple[str, ...] = (),
+    **extra: Any,
+) -> dict[str, Any] | None:
+    identity = sampling_identity(zone)
+    cell_key = candidate_cell_key(grid_candidate)
+    run_iso, valid_iso = iso(model_run), iso(valid_time)
+    optional_fields = tuple(optional_field_set)
+    item_id = str((capture or {}).get("itemId") or "").strip()
+    asset_identity = str((capture or {}).get("assetIdentitySha256") or "")
+    acquired_at = iso((capture or {}).get("acquiredAt"))
+    item_created_at = iso((capture or {}).get("itemCreatedAt"))
+    item_updated_at = iso((capture or {}).get("itemUpdatedAt"))
+    physical_distance = (
+        haversine_km(
+            float(zone["lat"]), float(zone["lon"]),
+            float(grid_candidate.get("latitude")), float(grid_candidate.get("longitude")),
+        )
+        if identity and cell_key else None
+    )
+    if not (
+        identity
+        and cell_key
+        and capture
+        and component_collection_allowed(component, collection)
+        and component in COMPONENT_FIELD_SET
+        and spatial_selection == COMPONENT_SPATIAL_SELECTION[component]
+        and (
+            optional_fields in {(), ("mean-wave-dir",)} if component == "wave"
+            else optional_fields == ()
+        )
+        and run_iso and valid_iso
+        and epoch(valid_iso) >= epoch(run_iso)
+        and isinstance(grid_candidate.get("distanceKm"), (int, float))
+        and math.isfinite(float(grid_candidate["distanceKm"]))
+        and float(grid_candidate["distanceKm"]) >= 0
+        and physical_distance is not None
+        and math.isclose(float(grid_candidate["distanceKm"]), physical_distance, rel_tol=0, abs_tol=0.02)
+        and item_id
+        and re.fullmatch(r"[0-9a-f]{64}", asset_identity)
+        and acquired_at
+        and ((capture or {}).get("itemCreatedAt") is None or item_created_at)
+        and ((capture or {}).get("itemUpdatedAt") is None or item_updated_at)
+    ):
+        return None
+    definition, latitude, longitude = cell_key
     return {
         "provider": "dmi",
+        "fallback": False,
         "collection": collection,
-        "modelRun": model_run,
-        "nativeValidTime": valid_time,
+        "collectionFamily": COLLECTION_FAMILY[collection],
+        "component": component,
+        "componentKind": COMPONENT_KIND[component],
+        "fieldSet": list(COMPONENT_FIELD_SET[component]),
+        "optionalFieldSet": list(optional_fields),
+        "modelRun": run_iso,
+        "nativeValidTime": valid_iso,
+        "leadTimeHours": round((epoch(valid_iso) - epoch(run_iso)) / 3600.0, 3),
+        **identity,
+        "gridPoint": [longitude, latitude],
+        "gridDefinitionSha256": definition,
+        "distanceKm": round(float(grid_candidate["distanceKm"]), 5),
+        "spatialSelection": spatial_selection,
+        "spatialSemanticsVersion": SPATIAL_PROVENANCE_VERSION,
+        "itemId": item_id,
+        "assetIdentitySha256": asset_identity,
+        "acquiredAt": acquired_at,
+        **({"itemCreatedAt": item_created_at} if item_created_at else {}),
+        **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
     }
 
@@ -1099,6 +1412,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  private_stage_output: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
+    scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
     selected_vector_choices: dict[tuple[str, str], dict[str, Any]] = {}
     research_vector_choices: dict[str, list[dict[str, Any]]] = {}
     research_target_by_id = {
@@ -1106,6 +1420,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         if zone.get("researchCurrent")
         and (not zone.get("requiredCollection") or zone.get("requiredCollection") == collection)
     }
+    zone_by_id = {str(zone.get("id")): zone for zone in zones if zone.get("id")}
+    source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1165,8 +1481,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         cache[parameter] = zone_candidates
                         if first_key not in cache or second_key not in cache:
                             continue
-                        pair = select_common_vector_candidate(cache[first_key], cache[second_key])
-                        if not pair:
+                        grid_tuple = select_common_grid_tuple(cache, (first_key, second_key))
+                        if not grid_tuple:
                             if family in {"current", "wind-tail"}:
                                 search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                                     "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
@@ -1179,7 +1495,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                     # Preserve the established top-level diagnostic contract.
                                     search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
                             continue
-                        first, second = pair
+                        first, second = grid_tuple[first_key], grid_tuple[second_key]
                         selection_key = (family, zone["id"])
                         candidate_choice = vector_choice(first, second, layer_key, layer_rank)
                         if family == "current" and zone.get("researchCurrent"):
@@ -1259,20 +1575,42 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
                             point["collections"][key] = collection
-                        source_extra = {}
+                        source_extra = {
+                            "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+                            "vectorSemanticsVersion": 1,
+                        }
                         if family == "current":
                             source_extra = {
                                 "verticalLayer": layer_key,
                                 "verticalLayerRankM": round(layer_rank, 3),
-                                "distanceKm": round(distance, 5),
-                                "gridPoint": [round(float(first["longitude"]), 7), round(float(first["latitude"]), 7)],
-                                "samplingPoint": [round(float(zone["lon"]), 7), round(float(zone["lat"]), 7)],
                                 "vectorSelection": CURRENT_VECTOR_SELECTION,
                                 "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
                             }
-                        hour.setdefault("sources", {})[PARAMETER_COMPONENT[first_key]] = native_component_source(
-                            collection, model_run, valid_time, **source_extra
+                        component = PARAMETER_COMPONENT[first_key]
+                        source = native_component_source(
+                            collection,
+                            model_run,
+                            valid_time,
+                            component=component,
+                            zone=zone,
+                            grid_candidate=first,
+                            capture=source_capture,
+                            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                            **source_extra,
                         )
+                        if source:
+                            hour.setdefault("sources", {})[component] = source
+                        else:
+                            (hour.get("sources") or {}).pop(component, None)
+                    continue
+
+                if parameter in {"significant-wave-height", "mean-wave-dir", "dominant-wave-period"}:
+                    candidates = valid_candidates_batch(gid, collection, wanted)
+                    diagnostics["batchedGridReads"] = int(diagnostics.get("batchedGridReads") or 0) + 1
+                    for zone in wanted:
+                        zone_candidates = candidates.get(zone["id"]) or []
+                        if zone_candidates:
+                            scalar_tuple_candidates.setdefault(("wave", str(zone["id"])), {})[parameter] = zone_candidates
                     continue
 
                 resolved = nearest_valid_batch(gid, collection, wanted)
@@ -1312,15 +1650,28 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         touched.add(zone["id"])
                     hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
                     hour[parameter] = nearest["value"]
+                    component = PARAMETER_COMPONENT[parameter]
                     source_extra = {}
                     point_extra = {}
                     if parameter == "water-temperature" and scalar_layer is not None:
                         layer_key, layer_rank = scalar_layer
                         source_extra = {"verticalLayer": layer_key, "verticalLayerRankM": layer_rank}
                         point_extra = source_extra
-                    hour.setdefault("sources", {})[PARAMETER_COMPONENT[parameter]] = native_component_source(
-                        collection, model_run, valid_time, **source_extra
+                    source = native_component_source(
+                        collection,
+                        model_run,
+                        valid_time,
+                        component=component,
+                        zone=zone,
+                        grid_candidate=nearest,
+                        capture=source_capture,
+                        spatial_selection="nearest-valid-grid-cell-no-spatial-interpolation",
+                        **source_extra,
                     )
+                    if source:
+                        hour.setdefault("sources", {})[component] = source
+                    else:
+                        (hour.get("sources") or {}).pop(component, None)
                     point["gridPoints"][parameter] = {
                         **{k: round(v, 5) for k, v in nearest.items() if k != "value"},
                         **point_extra,
@@ -1330,6 +1681,74 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     break
             finally:
                 codes_release(gid)
+    # Wave height and period are one score-bearing physical tuple. Finalise only
+    # after all GRIB messages have been inspected, and retain direction only when
+    # its field resolves to that same exact grid definition/cell.
+    for (component, zone_id), candidates_by_parameter in scalar_tuple_candidates.items():
+        if component != "wave":
+            continue
+        zone = zone_by_id.get(zone_id)
+        if not zone:
+            continue
+        required = COMPONENT_FIELD_SET["wave"]
+        selected = select_common_grid_tuple(candidates_by_parameter, required)
+        if not selected:
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "NO_SHARED_HEIGHT_PERIOD_GRID_CELL"
+            continue
+        height = selected["significant-wave-height"]
+        period = selected["dominant-wave-period"]
+        distance = max(float(height["distanceKm"]), float(period["distanceKm"]))
+        if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "VALID_POINT_TOO_FAR"
+            continue
+        destination = private_stage_output if zone.get("privateStage") else output
+        if destination is None:
+            continue
+        point = destination["zones"].setdefault(zone_id, {"hourly": {}, "gridPoints": {}, "collections": {}})
+        hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
+        hour["significant-wave-height"] = height["value"]
+        hour["dominant-wave-period"] = period["value"]
+        hour.pop("mean-wave-dir", None)
+        optional_fields: tuple[str, ...] = ()
+        direction_by_cell = {
+            candidate_cell_key(candidate): candidate
+            for candidate in candidates_by_parameter.get("mean-wave-dir") or []
+            if candidate_cell_key(candidate) is not None
+        }
+        direction = direction_by_cell.get(candidate_cell_key(height))
+        if direction is not None:
+            hour["mean-wave-dir"] = direction["value"]
+            optional_fields = ("mean-wave-dir",)
+        for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
+            point["gridPoints"][parameter] = {
+                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index"}},
+            }
+            point["collections"][parameter] = collection
+        if direction is not None:
+            point["gridPoints"]["mean-wave-dir"] = {
+                **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in direction.items() if key not in {"value", "index"}},
+            }
+            point["collections"]["mean-wave-dir"] = collection
+        else:
+            point["gridPoints"].pop("mean-wave-dir", None)
+            point["collections"].pop("mean-wave-dir", None)
+        source = native_component_source(
+            collection,
+            model_run,
+            valid_time,
+            component="wave",
+            zone=zone,
+            grid_candidate=height,
+            capture=source_capture,
+            spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
+            optional_field_set=optional_fields,
+        )
+        if source:
+            hour.setdefault("sources", {})["wave"] = source
+        else:
+            (hour.get("sources") or {}).pop("wave", None)
+        if not zone.get("privateStage"):
+            touched.add(zone_id)
     if (
         current_shadow is not None
         and research_target_by_id
@@ -1833,10 +2252,43 @@ def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
     return removed
 
 
+def sanitize_component_provenance(zone_id: str, zone: dict[str, Any]) -> list[str]:
+    removed: list[str] = []
+    component_fields = {
+        "current": ("current-u", "current-v"),
+        "wind": ("wind-u-10m", "wind-v-10m", "wind-speed-10m", "wind-dir-10m"),
+        "windTail": ("wind-tail-u-10m", "wind-tail-v-10m", "wind-tail-speed-10m", "wind-tail-dir-10m"),
+        "wave": ("significant-wave-height", "dominant-wave-period", "mean-wave-dir"),
+        "waterLevel": ("sea-mean-deviation",),
+        "waterTemperature": ("water-temperature",),
+    }
+    for valid_time, hour in (zone.get("hourly") or {}).items():
+        sources = hour.get("sources") or {}
+        for component, fields in component_fields.items():
+            if not any(field in hour for field in fields):
+                continue
+            if complete_native_source_for_hour(sources.get(component), component, zone_id, zone, valid_time):
+                continue
+            for field in fields:
+                hour.pop(field, None)
+            sources.pop(component, None)
+            removed.append(f"{valid_time}:{component}")
+        if sources:
+            hour["sources"] = sources
+        else:
+            hour.pop("sources", None)
+    return removed
+
+
 def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int]) -> None:
-    cutoff, horizon = time.time() - 6 * 3600, time.time() + (HOURS + 6) * 3600
+    cutoff = time.time() - PRIVATE_REPLAY_RETENTION_HOURS * 3600
+    horizon = time.time() + (HOURS + 6) * 3600
     invalidated_vectors = {}
+    invalidated_component_provenance = {}
     for zone_id, zone in result["zones"].items():
+        provenance_removed = sanitize_component_provenance(zone_id, zone)
+        if provenance_removed:
+            invalidated_component_provenance[zone_id] = provenance_removed
         removed = sanitize_vector_integrity(zone)
         if removed:
             invalidated_vectors[zone_id] = removed
@@ -1888,7 +2340,9 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     # må ikke forveksles med, at zonen er faldet ud af pipeline-strukturen.
     diag = result["diagnostics"]
     diag["invalidatedMismatchedVectors"] = invalidated_vectors
+    diag["invalidatedIncompleteComponentProvenance"] = invalidated_component_provenance
     diag["downloadedBytes"] = budget["bytes"]
+    diag["privateReplayRetentionHours"] = PRIVATE_REPLAY_RETENTION_HOURS
     diag["freshZoneCount"] = len(fresh_zone_ids)
     production_zones = {
         zone_id: zone for zone_id, zone in result["zones"].items()
@@ -2221,6 +2675,9 @@ def replay_current_field_shadow_from_cache(
                     collection=collection,
                     model_run=model_run,
                     valid_time=str(asset.get("valid") or ""),
+                    item_id=str(asset.get("id") or "") or None,
+                    item_created_at=asset.get("itemCreatedAt"),
+                    item_updated_at=asset.get("itemUpdatedAt"),
                 )
                 resolved.append((asset, path))
                 bootstrap_remaining -= 1
@@ -2251,6 +2708,9 @@ def replay_current_field_shadow_from_cache(
                 collection,
                 model_run,
                 str(asset.get("valid") or ""),
+                item_id=str(asset.get("id") or "") or None,
+                item_created_at=asset.get("itemCreatedAt"),
+                item_updated_at=asset.get("itemUpdatedAt"),
             )
             replay_diagnostics: dict[str, Any] = {
                 "batchedGridReads": 0,
@@ -2387,6 +2847,8 @@ def main() -> int:
         and previous.get("zones")
         and time.time() - previous_generated < REFRESH_MINUTES * 60
         and marine_cache_healthy
+        and previous.get("spatialProvenanceVersion") == SPATIAL_PROVENANCE_VERSION
+        and int(previous.get("privateReplayRetentionHours") or 0) >= 54
         and zone_registry_unchanged
         and not coastal_point_stage_targets
     ):
@@ -2523,7 +2985,7 @@ def main() -> int:
     }
     initial_zone_records = {
         zone_id: {
-            "samplingPoint": [round(float(zone_config_by_id[zone_id]["lon"]), 7), round(float(zone_config_by_id[zone_id]["lat"]), 7)],
+            **(sampling_identity(zone_config_by_id[zone_id]) or {}),
             "hourly": {},
             "gridPoints": {},
             "collections": {},
@@ -2538,6 +3000,8 @@ def main() -> int:
               "currentVectorSelection": CURRENT_VECTOR_SELECTION,
               "currentPreferredDistanceKm": CURRENT_PREFERRED_DISTANCE_KM,
               "currentMaxDistanceKm": CURRENT_MAX_DISTANCE_KM,
+              "spatialProvenanceVersion": SPATIAL_PROVENANCE_VERSION,
+              "privateReplayRetentionHours": PRIVATE_REPLAY_RETENTION_HOURS,
               "zones": initial_zone_records, "runs": {},
               "collectionState": dict(previous.get("collectionState") or {}),
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
@@ -2656,6 +3120,16 @@ def main() -> int:
                     ):
                         cached_path = cached_asset_path(str(asset.get("href") or ""))
                         if cached_path.is_file():
+                            register_raw_cache_asset(
+                                cached_path,
+                                str(asset.get("href") or ""),
+                                collection,
+                                run,
+                                asset["valid"],
+                                item_id=str(asset.get("id") or "") or None,
+                                item_created_at=asset.get("itemCreatedAt"),
+                                item_updated_at=asset.get("itemUpdatedAt"),
+                            )
                             private_diagnostics: dict[str, Any] = {
                                 "gribFieldInventory": {},
                                 "persistentFieldInventory": {},
@@ -2687,6 +3161,9 @@ def main() -> int:
                         collection=collection,
                         model_run=run,
                         valid_time=asset["valid"],
+                        item_id=str(asset.get("id") or "") or None,
+                        item_created_at=asset.get("itemCreatedAt"),
+                        item_updated_at=asset.get("itemUpdatedAt"),
                     )
                 except RuntimeError as exc:
                     if "budget" in str(exc).lower():

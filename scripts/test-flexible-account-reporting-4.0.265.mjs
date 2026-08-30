@@ -101,6 +101,11 @@ const startInput = {
   },
   calibrationFeatures: {
     modelVersion: 'ravscore-test', appVersion: '4.0.265',
+    modelStateVersion: 'test-state', modelVariantId: 'test-variant', modelProfileId: 'test-profile',
+    modelComponentSchemaId: 'test-components', modelExplanationSchemaId: 'test-explanations',
+    modelRankingPolicyId: 'test-ranking', modelBestTimePolicyId: 'test-best-time',
+    modelPresentationPolicyId: 'test-presentation', modelContractSha256: '0'.repeat(64),
+    modelBundleSha256: '1'.repeat(64),
     totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50
   }
 };

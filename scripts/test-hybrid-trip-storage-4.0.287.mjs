@@ -52,6 +52,25 @@ assert.equal('anonymous_id' in external, false);
 assert.equal('gps' in external, false);
 assert.equal(external.schema_version, 1);
 assert.throws(() => externalTripPayload({ ...payload, weather_snapshot: { email: 'forbidden@example.test' } }), /DIRECT_IDENTITY_NOT_ALLOWED/);
+assert.throws(() => externalTripPayload({ ...payload, weather_snapshot: { contactEmail: 'forbidden' } }), /DIRECT_IDENTITY_NOT_ALLOWED/);
+assert.throws(() => externalTripPayload({ ...payload, calibration_features: { accountUserId: 'forbidden' } }), /DIRECT_IDENTITY_NOT_ALLOWED/);
+assert.throws(() => externalTripPayload({ ...payload, weather_snapshot: { startCoordinates: [1, 2] } }), /PRECISE_LOCATION_NOT_ALLOWED/);
+assert.throws(() => externalTripPayload({ ...payload, calibration_features: { gpsTrack: [] } }), /PRECISE_LOCATION_NOT_ALLOWED/);
+assert.equal(externalTripPayload({ ...payload, schema_version: 2, calibration_eligible: true }).calibration_eligible, false, 'Levende schema-2-skrivninger skal have samme afledte status i D1 og Supabase.');
+assert.equal(externalTripPayload(
+  { ...payload, schema_version: 2, calibration_eligible: true },
+  { historicalMigration: true },
+).calibration_eligible, true, 'Historisk D1-idempotens må ikke omskrive allerede lagrede schema-2-bytes.');
+assert.throws(() => externalTripPayload({ ...payload, data_quality_flags: ['owner@example.test'] }), /TRIP_DATA_QUALITY_FLAGS_INVALID/);
+assert.throws(() => externalTripPayload({ ...payload, weather_snapshot: { schemaVersion: 99, legacySafe: true } }), /TRIP_WEATHER_SNAPSHOT_SCHEMA_INVALID/);
+assert.equal(externalTripPayload(
+  { ...payload, weather_snapshot: { schemaVersion: 99, legacySafe: true } },
+  { historicalMigration: true },
+).weather_snapshot.legacySafe, true, 'Eksisterende ikke-følsomme migrationsbytes skal forblive idempotente.');
+assert.throws(() => externalTripPayload(
+  { ...payload, weather_snapshot: { schemaVersion: 99, contactEmail: 'forbidden' } },
+  { historicalMigration: true },
+), /DIRECT_IDENTITY_NOT_ALLOWED/);
 assert.equal(canonicalJson({ z: 1, nested: { b: 2, a: 1 } }), canonicalJson({ nested: { a: 1, b: 2 }, z: 1 }));
 assert.equal(normalizeCloudflareGatewayUrl(gatewayUrl), gatewayUrl);
 assert.throws(() => normalizeCloudflareGatewayUrl('https://example.com'), /TRIP_GATEWAY_URL_INVALID/);
@@ -210,8 +229,9 @@ assert.match(tripStore, /value !== "d1" && value !== "supabase"/);
 assert.match(tripStore, /TRIP_PSEUDONYM_SECRET_V1/);
 assert.match(tripStore, /TRIP_GATEWAY_SHARED_SECRET/);
 assert.match(tripStore, /storeInSupabase/);
+assert.equal((tripStore.match(/projectTripLogDto\(/g) || []).length, 2);
 assert.match(submitFunction, /storeObservation/);
-assert.match(submitFunction, /const boundUserId = userId && payload\.user_id === userId \? userId : null/);
+assert.match(submitFunction, /const boundUserId = userId && validatedPayload\.user_id === userId \? userId : null/);
 assert.match(tripLogFunction, /requireAuthenticatedUserId/);
 assert.match(tripLogFunction, /listOwnTripObservations/);
 console.log('Hybrid turlagring: EU-D1-sharding, pseudonymisering, HMAC, idempotens, privat turlæsning og Supabase-rollback består.');

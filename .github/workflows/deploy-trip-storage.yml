@@ -43,9 +43,20 @@ jobs:
 
       - uses: actions/checkout@v7
 
+      - name: Verify checked-out commit is still the exact main head
+        run: |
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ] || [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "Main moved or checkout does not match GITHUB_SHA; refusing backend cutover."
+            exit 1
+          fi
+
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Verify committed integrated cutover identity
+        run: node scripts/integrated-cutover-readiness.mjs assert-source
 
       - uses: actions/setup-python@v7
         with:
@@ -60,6 +71,91 @@ jobs:
 
       - name: Validate exact source head before external writes
         run: npm run validate:source
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: latest
+
+      - name: Require backend cutover credentials before external writes
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Required Supabase cutover credentials are missing; no backend write was attempted."
+            exit 1
+          fi
+
+      - name: Build isolated exact-migration workdir
+        run: |
+          cutover_dir="$(mktemp -d "$RUNNER_TEMP/ravradar-supabase-cutover.XXXXXX")"
+          echo "RAVRADAR_CUTOVER_WORKDIR=$cutover_dir" >> "$GITHUB_ENV"
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir --output "$cutover_dir"
+
+      - name: Link exact production project without schema writes
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase link --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Capture migration history and dry-run without logging connection output
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if ! (cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase migration list --linked) > "$RUNNER_TEMP/ravradar-migration-list-initial.txt" 2>&1; then
+            echo "Supabase migration history could not be read; refusing backend cutover."
+            exit 1
+          fi
+          node scripts/integrated-cutover-readiness.mjs hydrate-history \
+            --migration-list "$RUNNER_TEMP/ravradar-migration-list-initial.txt" \
+            --workdir "$RAVRADAR_CUTOVER_WORKDIR"
+          if ! (cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase migration list --linked) > "$RUNNER_TEMP/ravradar-migration-list-before.txt" 2>&1; then
+            echo "Normalized Supabase migration history could not be read; refusing backend cutover."
+            exit 1
+          fi
+          if ! (cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase db push --linked --dry-run) > "$RUNNER_TEMP/ravradar-db-push-dry-run.txt" 2>&1; then
+            echo "Supabase migration dry-run failed; refusing backend cutover."
+            exit 1
+          fi
+
+      - name: Fail closed unless only committed cutover migrations are pending
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs plan
+          --migration-list "$RUNNER_TEMP/ravradar-migration-list-before.txt"
+          --dry-run "$RUNNER_TEMP/ravradar-db-push-dry-run.txt"
+          --migrations-directory "$RAVRADAR_CUTOVER_WORKDIR/supabase/migrations"
+
+      - name: Reverify exact main immediately before the first external write
+        run: |
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ] || [ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]; then
+            echo "Main moved before the first backend write; refusing backend cutover."
+            exit 1
+          fi
+
+      - name: Apply the exact committed idempotent schema migrations
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if ! (cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase db push --linked) > "$RUNNER_TEMP/ravradar-db-push-apply.txt" 2>&1; then
+            echo "Supabase db push failed; readiness remains unpublished."
+            exit 1
+          fi
+
+      - name: Read back applied migration metadata without table rows
+        env:
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          if ! (cd "$RAVRADAR_CUTOVER_WORKDIR" && supabase migration list --linked) > "$RUNNER_TEMP/ravradar-migration-list-after.txt" 2>&1; then
+            echo "Supabase post-migration history could not be read; readiness remains unpublished."
+            exit 1
+          fi
+          node scripts/integrated-cutover-readiness.mjs applied --migration-list "$RUNNER_TEMP/ravradar-migration-list-after.txt"
+
+      - name: Verify schema-3 and exact model binding through metadata-only RPC
+        run: node scripts/integrated-cutover-readiness.mjs verify-db
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Prepare ten EU-restricted D1 shards and schema
         if: inputs.storage_mode == 'd1'
@@ -87,10 +183,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
-        with:
-          version: latest
 
       - name: Configure normal Cloudflare D1 mode
         if: inputs.storage_mode == 'd1'
@@ -123,3 +215,10 @@ jobs:
         run: node scripts/verify-trip-storage-edge.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: "true"
+
+      - name: Publish protected exact-head cutover readiness after every gate
+        run: node scripts/integrated-cutover-readiness.mjs publish
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

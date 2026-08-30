@@ -4,11 +4,21 @@
 
 GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.
 
-## 4.0.308-kandidat – naturlige sikkerhedsformuleringer
+## Aktuel modelstatus 2026-08-29 – offentlig Candidate G, lokal integreret releasekandidat
+
+Den senest produktionsverificerede offentlige baseline er 4.0.308 på mergecommit `a93082548c4cc1ddbe9c75ce303d334530a534c4`; Candidate G er fortsat den eneste offentlige model. Den lokalt implementerede efterfølger er én samlet model, `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0`, med state `4.0.0`, 20/50/30 og en fælles binding gennem `modelContractSha256` for parameterkontrakten og `modelBundleSha256` for den transitive implementeringslukning. Slutdigests fastlåses først på den afsluttede head, og lokal dokumentation eller test er ikke produktionsbevis.
+
+Den integrerede kandidat bevarer 0,03/0,15 m/s og +10/-8, men bruger 24 timers fuld strømvægt og cosinusfade til nul ved 48 timer. Bølgemobilisering følger `Hs² × T` med 4/48-timers forløb. Et stærkt fralandsforløb kan fortsat gøre transportbeviset 0 efter cirka 13 effektive timer, men nulstiller ikke hele RavScore. Vandstand giver 0 direkte point, og `delivery = transportPotential × 1` betyder score-neutral uafklaret sidste mile — ikke 100 % fysisk levering.
+
+Modelgridstrøm er ikke lokal bundnær strøm, undertow, feeder-/langskyststrøm eller ripstrøm. Faldende vand kan både ledsage søværts transport af noget mobilt rav og blotlægge eller koncentrere rav bag revler. Uden lokal batymetri og en bølgeopløst surfzonemodel kan RavRadar ikke tildele et universelt fortegn eller foregive lokal landingspræcision. Modellen må beskrives som fysisk og teknisk forbedret, hvor forskning og regressioner understøtter det, men ikke som empirisk mere fundpræcis uden repræsentative fund og nul-fund.
+
+Første cutover genbruger eksisterende valideret, afledt Candidate G-vejr/state gennem den kontrollerede schema-2→schema-4-migration, så der ikke kræves flerdages ny cache eller kunstig historik. Recovery vælger exact point-aktivering → gyldig integreret continuation → gyldigt checkpoint → dybt valideret Candidate G-state. Ugyldig exact point stopper straks; en ugyldig ordinær kandidat må ikke skygge for en gyldig lavere prioritet. Hvis ingen statekilde findes, genafspilles før første offentlige target præcis 48 timer allerede hentet, privat og proveniensverificeret strøm/bølge. Pre-target-rækker publiceres ikke, og manglende bro stopper med `RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING` frem for offentlig warmup. Normal fortsættelse bruger privat otte-fils runtime med forseglet Copernicus-range-cache eller beskyttet checkpoint; Pages får kun fire hashbundne livefiler. Checkpointmigrationen stopper fremtidig versionskopiering for operationelle dokumenter uden at slette eksisterende `admin_document_versions`. Efter backendens dry-run genverificeres `origin/main == GITHUB_SHA` umiddelbart før første eksterne skrivning, og post-write-rækken bruger samme validerede snapshot. Første cutover skriver `INTEGRATED_PENDING` med source/requested-manifesthash og bevarer central Candidate-profil under integreret Pages-deploy; exact offentlig implementation+210/673 udløser derefter atomisk `INTEGRATED_ACTIVE` + central integrated 11-feltsprofil. Retry completer ved target, aborterer/rekonsoliderer ved source og stopper ved tredje manifesthash. Candidate G bliver derefter kun privat migration-/offline-/rollback-orakel. Manuel rollback går via `CANDIDATE_G_PENDING` til `CANDIDATE_G_ACTIVE`, og manuel integrated return går via `INTEGRATED_PENDING`; begge bruger samme durable PENDING/reconcile. Scheduler må kun refreshe allerede aktiv Candidate G. Der deployes ingen Candidate G-assistent-Edge; integreret Edge-`409` udløser deterministiske lokale DA/DE/EN-svar, og schema-3-ture gemmes Candidate G-bundet med `calibration_eligible=false`. Candidate G er aldrig samtidig eller automatisk offentlig fallback. Se DEC-0108 og de integrerede design-, evidens- og producent-/forbrugerdokumenter fra 2026-08-29.
+
+## Produktionsverificeret 4.0.308 – naturlige sikkerhedsformuleringer
 
 Den offentlige prøve viste, at den eksisterende kildebundne viden om hvidt fosfor var for snævert routet: “Hvad er hvidt fosfor på stranden?” manglede ordet rav og blev derfor afvist. DA/DE/EN-emnematchet genkender nu selve stofnavnet og naturlige strand-/fundformuleringer. Svaret, evidensklassen og den officielle Forsvaret-proveniens er uændrede; kun adgangsformuleringen er bredere. Se DEC-0106.
 
-## 4.0.307-kandidat – 152 kildeklassificerede lokale emner og rettet scopegrænse
+## Produktionsverificeret 4.0.307 – 152 kildeklassificerede lokale emner og rettet scopegrænse
 
 Den ekstra høje audit erstatter antagelsen om, at seks nye emnefamilier var en tilstrækkelig breddeudvidelse. Et deterministisk katalog giver nu 152 DA/DE/EN-emner oven på de 17 eksisterende intent-kontrakter og testes med 456 katalogspørgsmål uden netværk eller AI-kvote. Hvert emne har evidensklasse og kilde-ID. De 27 offentligt registrerede kilder omfatter ekstern ravforskning, fagfællebedømt kystanalogi, officielle kyst-/sikkerheds-/regelkilder, RavRadars større forskningsgrundlag og Rav Jagt som navngiven praktisk ekspert. Specifik lokal viden vælges før brede standardsvar; dynamiske sted-/tid-/scoresvar bevarer deres Candidate G-vej.
 
@@ -16,7 +26,7 @@ Browser og Edge bruger Unicode-helordsgrænser, så `Skagen` ikke rammer det uve
 
 Den visuelle mobilprøve fandt en skjult afhængighed: UI'en ventede tidligere på prognosedetaljer før alle spørgsmål. `ravQuestionNeedsConditionDetails` begrænser nu denne venten til dynamisk bedste sted, bedste tid og score. Katalogsvar, sikkerhed og generel forskning svarer lokalt, selv når detaljefilen er utilgængelig.
 
-## 4.0.306-kandidat
+## Historisk 4.0.306-kandidat
 
 Det separate smårettelsesspor ændrer offentlig tekst/UI, Grundbogen og read-only Spørg RavRadar-viden. Aktiv UV-angivelse er 395 nm; koldt vand forklares tydeligere som mobiliseringsfaktor uden nyt scoreinput. Zonesøgning, pilesignatur, Rav Jagt-illustration og synlige BernsteinScore/AmberScore er tilføjet. Candidate G/modelsporet er urørt. Se DEC-0103.
 
@@ -128,10 +138,11 @@ Ved Codex-overgangen blev dette produktionsverificeret: tre Limfjordszoner havde
 ## Vandstandskilder
 Vandstandskilder omfatter observationsstationer og prognosepunkter. Observationsstatus og forecast/cache-status er forskellige begreber. En kilde kan fortsat være prognosebrugbar, mens dens gyldige forecastcache består, selv om nye observationer midlertidigt udebliver. Aktiv adminrouting vinder over auto-routing; auto primær/sekundær, afstande, vægte og metode skal være synlige og konsistente gennem score og prognoser.
 
-## RavScore og historisk state
-RavScore bruger aktuelle og dokumenterede forhold. Eksisterende pålidelige morfologidata bevares. Den historiske state-model beregnes i pipeline og er fortsat skyggetilstand i 4.0.117; den skal valideres fagligt før nye numeriske scorebidrag aktiveres. Faktisk DMI-strøm er eneste gyldige strømgrundlag for transportstate.
+## Historisk 4.0.117-grundlag – RavScore og state
 
-En større kildekritisk forskningsrunde er planlagt som P3, men ikke startet. Den skal senere validere hele kæden fra frigivelse til jagtbarhed, auditere den faktiske scorekode og særskilt undersøge, om rumlige strømstrukturer tilfører information ud over punktvise DMI-vektorer. Indtil en separat, evidensbaseret beslutning eventuelt siger andet, bruges generelle strømbånd fortsat hverken som scoreinput eller fallback. Forskningen har ingen automatisk tilladelse til at ændre RavScore.
+Ved 4.0.117 brugte RavScore aktuelle og dokumenterede forhold, mens den daværende historiske state-model fortsat var skyggetilstand og krævede faglig validering før nye numeriske bidrag. Dette er et historisk fundament, ikke den aktuelle modelstatus. Candidate G blev senere offentlig, og DEC-0102/0107 har siden gennemført den planlagte kildekritiske forsknings- og implementeringsrunde som en lokal integreret releasekandidat.
+
+Den vedvarende regel er, at faktisk verificeret DMI-/godkendt Copernicus-gridstrøm er transportgrundlag, mens generelle strømbånd hverken er scoreinput eller fallback. Nye numeriske virkninger kræver fortsat en særskilt evidensbaseret beslutning og får ingen automatisk aktivering.
 
 ## Performance
 Public klienten skal starte hurtigt. Store råhistorikker, private audits og tunge beregninger må ikke flyttes til browserstartup. Den historiske målsætning/baseline er ca. 2–3,5 sekunder; tidligere regression mod ca. 13 sekunder er en advarsel om at holde pipelinearbejde server-/buildside.

@@ -9,6 +9,8 @@ const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
 const productionContract = fs.readFileSync('supabase/migrations/20260823_account_trip_log_contract.sql', 'utf8');
 const uploadContract = fs.readFileSync('supabase/migrations/20260823_observation_upload_contract.sql', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
+const learning = fs.readFileSync('js/services/learning-analysis.js', 'utf8');
+const calibration = fs.readFileSync('js/services/calibration-eligibility.js', 'utf8');
 
 for (const marker of [
   'account.history',
@@ -17,8 +19,19 @@ for (const marker of [
   'getOwnTripObservations',
   'mergeOwnRows',
   'client_observation_id',
+  'accountTripBindingStatus',
+  'RAVSCORE_CALIBRATION_ELIGIBLE',
   'account.pending'
 ]) assert.match(account, new RegExp(marker));
+
+assert.match(calibration, /TRIP_LOG_DTO_FIELD_NAMES[\s\S]*'model_binding'/,
+  'Den private turlog-DTO skal medtage den eksakte, ikke-følsomme modelbinding.');
+assert.match(calibration, /model_binding: isExactCalibrationModelBinding\(binding\)/,
+  'Turlog-DTO må kun serialisere en komplet eksakt modelbinding.');
+
+assert.doesNotMatch(account,
+  /row\.calibration_binding_status\s*\|\|/,
+  'Kontofladen må ikke stole på serverens integrerede bindingsklassifikation under Candidate rollback.');
 
 assert.doesNotMatch(account, /Der oprettes ikke en ekstra kopi i databasen/, 'Turloggen må ikke vise intern databaseforklaring.');
 
@@ -47,7 +60,8 @@ for (const column of ['forecast_target_at', 'report_accuracy']) {
 }
 assert.match(uploadContract, /notify pgrst, 'reload schema'/);
 assert.doesNotMatch(uploadContract, /\b(?:delete|truncate|update)\b/i, 'Uploadmigrationen må ikke ændre eller slette eksisterende observationer.');
-assert.match(observations, /\.\.\.columns/);
+assert.doesNotMatch(observations, /^\s*\.\.\.columns,\s*$/m, 'Historiske rækker må ikke spredes ukontrolleret til lokal eller ekstern lagring.');
+assert.match(observations, /data_quality_flags:\[\.\.\.columns\.data_quality_flags\]/);
 assert.match(accountContract, /forecast_target_at: report\.observedAt/);
 assert.match(accountContract, /report_accuracy: 'exact'/);
 
@@ -58,6 +72,6 @@ assert.match(auth, /authRequest\("\/user"\)/);
 assert.match(auth, /redirect_to=\$\{encodeURIComponent\(redirectTo\)\}/);
 assert.match(auth, /await hydrateSessionUser\(\)\.catch/);
 assert.match(app, /openAccountDialog\(accountDialog,userDataContext\(\)\)/);
-assert.match(app, /getLocalObservations\(\)/, 'Den eksisterende lokale læringsmodel skal fortsat have sine observationer.');
+assert.match(learning, /getLocalObservations\(\)/, 'Den eksisterende lokale læringsmodel skal fortsat have sine observationer.');
 
 console.log('Brugerkonto og turlog: privat Edge-læsning, Supabase-rollback og forklaring af loginlink består.');

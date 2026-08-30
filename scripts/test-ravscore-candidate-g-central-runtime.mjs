@@ -119,7 +119,11 @@ const full = {
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
-const manifest = buildPublicManifest(full, compactJson(startup), compactJson(details));
+const zoneRegistryText = compactJson({
+  type: 'FeatureCollection',
+  features: [{ type: 'Feature', properties: { id: 'zone1', zoneStatus: 'active' }, geometry: null }],
+});
+const manifest = buildPublicManifest(full, compactJson(startup), compactJson(details), '{}\n', zoneRegistryText);
 assert.equal(startup.coastalParts.parts.part1.candidateG, undefined,
   'Candidate G-state hører kun til den behovshentede detaljepakke.');
 assert.equal(startup.coastalParts.parts.part1.current, undefined,

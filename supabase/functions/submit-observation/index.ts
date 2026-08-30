@@ -2,22 +2,23 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { assertAllowedOrigin, corsHeaders, enforceRateLimits, GatewayError, jsonResponse, readJsonObject, resolveAuthenticatedUserId, safeGatewayError } from "../_shared/public-gateway.ts";
 import { storeObservation } from "../_shared/trip-store.ts";
 import { TRIP_INPUT_FIELD_NAMES } from "../_shared/trip-storage.js";
+import { ravScoreModelBinding } from "../../../js/core/ravscore-model-contract.js";
+import { ravScoreModelBinding as candidateGRollbackModelBinding } from "../../../scripts/rollback-assets/ravscore-model-contract.js";
+import {
+  CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
+  assertTripObservationNestedPrivacy,
+  submittedCalibrationEligibilityMatches,
+  tripEvidenceIntegrityIssues,
+} from "../../../js/services/calibration-eligibility.js";
 
 const ALLOWED_FIELDS = new Set(TRIP_INPUT_FIELD_NAMES);
 
-const LOCATION_KEYS = new Set(["gps", "latitude", "longitude", "coordinates", "position", "route", "track", "location"]);
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SEARCH_COVERAGE = new Set(["partial", "normal", "thorough"]);
 const ACCOUNT_REPORT_FLAG = "account-manual";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function containsPrivateLocation(value: unknown): boolean {
-  if (Array.isArray(value)) return value.some(containsPrivateLocation);
-  if (!isRecord(value)) return false;
-  return Object.entries(value).some(([key, nested]) => LOCATION_KEYS.has(key.toLowerCase()) || containsPrivateLocation(nested));
 }
 
 function assertSafeStructure(value: unknown, depth = 0) {
@@ -53,7 +54,7 @@ function requireTimestamp(value: unknown, field: string) {
 }
 
 function requireNumber(value: unknown, field: string, minimum: number, maximum: number, integer = false) {
-  const number = Number(value);
+  const number = typeof value === "number" ? value : Number.NaN;
   if (!Number.isFinite(number) || number < minimum || number > maximum || (integer && !Number.isInteger(number))) {
     throw new GatewayError(400, `INVALID_${field.toUpperCase()}`);
   }
@@ -70,7 +71,7 @@ function validateResult(payload: Record<string, unknown>) {
 function validateTripContract(payload: Record<string, unknown>, schemaVersion: number) {
   const flags = Array.isArray(payload.data_quality_flags) ? payload.data_quality_flags : [];
   const accountReport = schemaVersion === 1 && flags.includes(ACCOUNT_REPORT_FLAG);
-  if (schemaVersion !== 2 && !accountReport) return;
+  if (![2, CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION].includes(schemaVersion) && !accountReport) return;
 
   requireUuid(payload.trip_id, "trip_id");
   requireTimestamp(payload.trip_started_at, "trip_started_at");
@@ -83,12 +84,10 @@ function validateTripContract(payload: Record<string, unknown>, schemaVersion: n
   if (!SEARCH_COVERAGE.has(String(payload.search_coverage))) throw new GatewayError(400, "INVALID_SEARCH_COVERAGE");
   requireText(payload.actual_zone_id, "actual_zone_id", 160);
   requireText(payload.actual_coastal_part_id, "actual_coastal_part_id", 160);
-  if (payload.calibration_eligible !== (schemaVersion === 2 && payload.actual_zone_id === payload.forecast_zone_id && payload.actual_coastal_part_id === payload.forecast_coastal_part_id)) {
-    throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
-  }
   if (typeof payload.found !== "boolean") throw new GatewayError(400, "INVALID_FOUND");
 
   if (accountReport) {
+    if (payload.calibration_eligible !== false) throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
     if (payload.forecast_zone_id != null || payload.forecast_coastal_part_id != null || payload.forecast_snapshot_id != null || payload.calibration_features != null) {
       throw new GatewayError(400, "HISTORICAL_FORECAST_NOT_ALLOWED");
     }
@@ -105,17 +104,29 @@ function validateTripContract(payload: Record<string, unknown>, schemaVersion: n
   for (const score of ["totalScore", "huntabilityScore", "transportScore", "mobilisationScore"]) {
     requireNumber(payload.calibration_features[score], score, 0, 100);
   }
+  if (schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION && tripEvidenceIntegrityIssues(payload).length) {
+    throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
+  }
+  if (schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION
+    && !submittedCalibrationEligibilityMatches(payload, ravScoreModelBinding(), {
+      ineligibleBindings: [candidateGRollbackModelBinding()],
+    })) {
+    throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
+  }
 }
 
 function validatePayload(payload: Record<string, unknown>) {
   const unknown = Object.keys(payload).filter((key) => !ALLOWED_FIELDS.has(key));
   if (unknown.length) throw new GatewayError(400, "UNKNOWN_FIELDS");
   if (payload.gps !== null && payload.gps !== undefined) throw new GatewayError(400, "PRECISE_LOCATION_NOT_ALLOWED");
-  if (containsPrivateLocation(payload.weather_snapshot) || containsPrivateLocation(payload.calibration_features)) {
-    throw new GatewayError(400, "PRECISE_LOCATION_NOT_ALLOWED");
-  }
   assertSafeStructure(payload.weather_snapshot);
   assertSafeStructure(payload.calibration_features);
+  try {
+    assertTripObservationNestedPrivacy(payload);
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "INVALID_NESTED_DATA";
+    throw new GatewayError(400, code);
+  }
 
   if (payload.zone_id !== null && payload.zone_id !== undefined && !Number.isSafeInteger(payload.zone_id)) throw new GatewayError(400, "INVALID_ZONE_ID");
   requireText(payload.actual_zone_id ?? payload.zone_name, "zone", 160);
@@ -130,15 +141,17 @@ function validatePayload(payload: Record<string, unknown>) {
   requireUuid(payload.user_id, "user_id", true);
   requireUuid(payload.trip_id, "trip_id", true);
 
-  const grams = payload.grams == null ? null : Number(payload.grams);
-  if (grams !== null && (!Number.isFinite(grams) || grams < 0 || grams > 10000)) throw new GatewayError(400, "INVALID_GRAMS");
-  const schemaVersion = payload.schema_version == null ? 1 : Number(payload.schema_version);
-  if (![1, 2].includes(schemaVersion)) throw new GatewayError(400, "INVALID_SCHEMA_VERSION");
+  const grams = payload.grams == null ? null : payload.grams;
+  if (grams !== null && (typeof grams !== "number" || !Number.isFinite(grams) || grams < 0 || grams > 10000)) throw new GatewayError(400, "INVALID_GRAMS");
+  const schemaVersion = payload.schema_version == null ? 1 : payload.schema_version;
+  if (!Number.isInteger(schemaVersion) || ![1, 2, CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION].includes(schemaVersion as number)) throw new GatewayError(400, "INVALID_SCHEMA_VERSION");
+  const numericSchemaVersion = schemaVersion as number;
   if (payload.data_quality_flags != null && (!Array.isArray(payload.data_quality_flags) || payload.data_quality_flags.length > 20 || payload.data_quality_flags.some((item) => typeof item !== "string" || item.length > 80))) {
     throw new GatewayError(400, "INVALID_DATA_QUALITY_FLAGS");
   }
   validateResult(payload);
-  validateTripContract(payload, schemaVersion);
+  validateTripContract(payload, numericSchemaVersion);
+  return payload;
 }
 
 Deno.serve(async (request) => {
@@ -146,22 +159,22 @@ Deno.serve(async (request) => {
     assertAllowedOrigin(request);
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request) });
     const payload = await readJsonObject(request, 64 * 1024);
-    validatePayload(payload);
+    const validatedPayload = validatePayload(payload);
     await enforceRateLimits(request, "submit-observation", { minute: 4, hour: 50, globalDay: 2000 });
 
     const userId = await resolveAuthenticatedUserId(request);
-    if (payload.user_id && payload.user_id !== userId) throw new GatewayError(403, "USER_MISMATCH");
-    const boundUserId = userId && payload.user_id === userId ? userId : null;
-    const observedAt = Date.parse(String(payload.observed_at));
+    if (validatedPayload.user_id && validatedPayload.user_id !== userId) throw new GatewayError(403, "USER_MISMATCH");
+    const boundUserId = userId && validatedPayload.user_id === userId ? userId : null;
+    const observedAt = Date.parse(String(validatedPayload.observed_at));
     if (!userId && (observedAt < Date.now() - 7 * 86400_000 || observedAt > Date.now() + 10 * 60_000)) {
       throw new GatewayError(403, "LOGIN_REQUIRED_FOR_HISTORICAL_REPORT");
     }
-    if (!userId && Array.isArray(payload.data_quality_flags) && payload.data_quality_flags.includes("account-manual")) {
+    if (!userId && Array.isArray(validatedPayload.data_quality_flags) && validatedPayload.data_quality_flags.includes("account-manual")) {
       throw new GatewayError(403, "LOGIN_REQUIRED_FOR_ACCOUNT_REPORT");
     }
 
     await storeObservation({
-      ...payload,
+      ...validatedPayload,
       submitted_at: new Date().toISOString(),
       user_id: boundUserId,
       gps: null,

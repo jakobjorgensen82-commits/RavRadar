@@ -1,13 +1,36 @@
 import {
   createCalibrationFeatureSnapshot,
   createForecastSnapshotReference,
-  createTripStartRecord
+  createTripStartRecord,
+  TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
 } from './trip-evidence-contract.js?v=4.0.309';
+import {
+  assertRavScoreModelBinding,
+  ravScoreModelBinding,
+} from '../core/ravscore-model-contract.js?v=4.0.309';
+import {
+  RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
+  assertPublicRuntimeAvailability,
+  canonicalPublicRuntimeJson,
+  sameRavScoreModelBinding,
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.309';
 
 function finiteOrNull(value, scale = 1) {
   if (value == null || value === '') return null;
-  const number = Number(value);
-  return Number.isFinite(number) ? number * scale : null;
+  return typeof value === 'number' && Number.isFinite(value) ? value * scale : null;
+}
+
+function hasCompleteNumericScore(modeState) {
+  return typeof modeState?.score === 'number'
+    && Number.isFinite(modeState.score)
+    && modeState.score >= 0
+    && modeState.score <= 100
+    && ['huntability', 'transport', 'release'].every(key => (
+      typeof modeState?.components?.[key] === 'number'
+      && Number.isFinite(modeState.components[key])
+      && modeState.components[key] >= 0
+      && modeState.components[key] <= 100
+    ));
 }
 
 export function createTripStartFromPublicState({
@@ -20,22 +43,58 @@ export function createTripStartFromPublicState({
   conditions,
   coastalPart,
   appVersion,
-  modelVersion
+  modelVersion,
+  modelBinding = null
 } = {}) {
   if (!conditions?.available && conditions?.available !== undefined) throw new Error('De offentlige forhold er ikke tilgængelige.');
   if (manifest?.datasetId && conditions?.datasetId && manifest.datasetId !== conditions.datasetId) {
     throw new Error('Manifest og offentlige forhold tilhører ikke samme datasæt.');
   }
+  const runtimeAvailability = conditions?.publicRuntimeAvailability;
+  assertPublicRuntimeAvailability(runtimeAvailability, manifest, {
+    modelBinding: ravScoreModelBinding(),
+  });
   if (String(coastalPart?.zoneId || '') !== String(zoneId || '')) {
     throw new Error('Kystdelen tilhører ikke den valgte zone.');
   }
 
   const zone = conditions?.zones?.[zoneId];
-  const weather = zone?.current;
   const modeState = coastalPart?.current?.[mode];
-  if (!weather || !modeState?.components || !Number.isFinite(Number(modeState.score))) {
+  const weather = coastalPart?.current?.weather || zone?.current;
+  const publicEmergency = runtimeAvailability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY;
+  if (publicEmergency && (conditions.detailsAvailable !== true
+    || coastalPart?.current?.time !== runtimeAvailability.selectedReferenceAt
+    || zone?.currentReferenceAt !== runtimeAvailability.selectedReferenceAt
+    || conditions?.coastalParts?.zones?.[zoneId]?.currentReferenceAt
+      !== runtimeAvailability.selectedReferenceAt)) {
+    throw new Error('Nøddriftens turgrundlag er ikke bundet til det valgte aktuelle prognosetidspunkt.');
+  }
+  if (!weather || !hasCompleteNumericScore(modeState)) {
     throw new Error('Den valgte kystdel mangler en komplet aktuel score.');
   }
+  if (publicEmergency && (!modeState?.weather
+    || canonicalPublicRuntimeJson(weather)
+      !== canonicalPublicRuntimeJson({ ...modeState.weather, time: runtimeAvailability.selectedReferenceAt }))) {
+    throw new Error('Nøddriftens RavScore og lokale vejr er ikke det samme forseglede snapshot.');
+  }
+  const runtimeBinding = conditions?.ravScoreRuntime?.modelBinding ?? null;
+  const manifestBinding = manifest?.ravScoreModelBinding ?? null;
+  const coastalPartsBinding = conditions?.coastalParts?.modelBinding ?? null;
+  for (const [label, binding] of [
+    ['Offentlig runtime-modelbinding', runtimeBinding],
+    ['Manifestets RavScore-modelbinding', manifestBinding],
+    ['Kystdelenes RavScore-modelbinding', coastalPartsBinding],
+    ['Turens RavScore-modelbinding', modelBinding],
+    ['Turens score-modelbinding', modeState.modelBinding],
+  ]) {
+    assertRavScoreModelBinding(binding, label);
+  }
+  const canonical = ravScoreModelBinding();
+  if (![runtimeBinding, manifestBinding, coastalPartsBinding, modelBinding, modeState.modelBinding]
+    .every(value => sameRavScoreModelBinding(value, canonical))) {
+    throw new Error('Turens RavScore og offentlige runtime bruger ikke samme modelbundle.');
+  }
+  if (modelVersion !== canonical.modelId) throw new Error('Turens modelversion matcher ikke RavScore-modelbindingen.');
 
   const history = zone?.history || {};
   const forecastSnapshot = createForecastSnapshotReference({
@@ -47,6 +106,7 @@ export function createTripStartFromPublicState({
   const calibrationFeatures = createCalibrationFeatureSnapshot({
     appVersion,
     modelVersion,
+    modelBinding: runtimeBinding,
     totalScore: modeState.score,
     huntabilityScore: modeState.components.huntability,
     transportScore: modeState.components.transport,
@@ -63,7 +123,7 @@ export function createTripStartFromPublicState({
     maxWaveHeight24hM: finiteOrNull(history.maxWave24hM),
     hoursSinceEnergyPeak: finiteOrNull(history.hoursSinceHighEnergy),
     sustainedOnshoreHours: null,
-    reasonCodes: []
+    reasonCodes: publicEmergency ? [TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY] : []
   });
 
   return createTripStartRecord({
