@@ -3,9 +3,6 @@ import fs from 'node:fs';
 import { buildLocalZoneScore, selectLocalBestForDay } from '../js/core/local-zone-score.js';
 import { buildPublicConditions, buildPublicConditionDetails } from './public-conditions-lib.mjs';
 import { mergeConditionDetails } from '../js/services/data-service.js';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
-import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
-import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 
 const generatedAt='2026-08-19T12:00:00.000Z';
 const zoneCount=210;
@@ -13,17 +10,6 @@ const partCount=673;
 const zones={};
 const parts={};
 const runtimeZones={};
-const modelBinding=ravScoreModelBinding();
-const scoreProfile=resolvePublicRavScoreProfile({modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true});
-const fullHistoryQuality=score=>({
-  scoreQuality:'FULL_HISTORY',
-  calibrationEligible:true,
-  scoreSemantics:'EXACT_POINT_SCORE',
-  conservativeTailResetApplied:false,
-  scoreBounds:{lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score},
-  historyCoverageHours:48,
-  historyReasonCodes:[],
-});
 let nextPart=0;
 
 const weather=(zoneIndex,dayIndex,modeIndex)=>({
@@ -37,46 +23,6 @@ const weather=(zoneIndex,dayIndex,modeIndex)=>({
   currentDirectionDeg:(zoneIndex*19+dayIndex*23+modeIndex*31)%360,
   waterTemperatureC:12+zoneIndex/100+dayIndex/10,
   currentProvenance:{status:'verified',provider:'synthetic-safe-metadata'}
-});
-
-const explanation=(time,score)=>({
-  ...modelBinding,
-  rawScore:score,
-  roundedScore:score,
-  finalScore:score,
-  formula:'Søgeforhold 20 % + relativt transportbevis 50 % + mobiliseringsmulighed 30 %',
-  weights:{huntability:.2,transport:.5,release:.3},
-  contributions:{huntability:12,transport:30,release:18},
-  transportDiagnostics:{
-    engine:'INTEGRATED_COASTAL_PROCESS',
-    currentReferenceAt:time,
-    currentMemoryReady:true,
-    currentMemoryStatus:'READY',
-    currentMemoryCoverageHours:48,
-    currentMemoryWindowHours:48,
-    lastMileStatus:'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
-    lastMileScoreEffect:'BOUNDED_SUPPLY_ATTENUATION_ONLY',
-    lastMileDeliveryFactor:.92,
-    lastMileWaveActivity:.8,
-    lastMileApproach:1/3,
-    lastMileStructuralUncertainty:true,
-    lastMilePhysicalDeliveryResolved:false,
-    resolvedSurfZoneIncluded:false,
-  },
-  mobilisationDiagnostics:{mobilisationPotential:60,waveMemoryStatus:'READY'},
-  waterLevelContext:{
-    available:true,
-    phase:'STABLE',
-    jointContextCode:'STABLE_CURRENT_NOT_INTERPRETED_AS_TIDAL_PHASE',
-    currentRelation:'ALONG_OR_WEAK',
-    currentRelationDeadbandMps:0.03,
-    trendSemantics:'FORWARD_3H_MODEL_CHANGE_NOT_TIDAL_PHASE',
-    scoreEffectPoints:0,
-    transportEffect:'NONE',
-  },
-  uncertainty:{dataStatus:'READY_WITH_STRUCTURAL_LAST_MILE_UNCERTAINTY',limitations:['SURF_ZONE_UNRESOLVED']},
-  scoreIsSafetyAdvice:false,
-  scoreIsFindProbability:false,
 });
 
 for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
@@ -96,21 +42,18 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
       const winningPartId=ids[(dayIndex+modeIndex)%ids.length];
       const localWeather=weather(zoneIndex,dayIndex,modeIndex);
       const score=60+dayIndex+modeIndex;
-      const quality=fullHistoryQuality(score);
       row[mode]={
-        available:true,modelBinding,...quality,status:'only-part',score,winningPartId,winningPartName:parts[winningPartId].name,
-        winningPartUncertain:false,possibleWinningPartCount:1,
-        possibleWinningParts:[{partId:winningPartId,name:parts[winningPartId].name,score,scoreBounds:{...quality.scoreBounds}}],
+        status:'only-part',score,winningPartId,winningPartName:parts[winningPartId].name,
         scoreSpread:9,comparisonPartCount:count,
         components:{huntability:score-2,transport:score+1,release:score-1},
         componentReasons:{huntability:[`jagt-${zoneId}-${dayIndex}-${mode}`],transport:[`transport-${zoneId}-${dayIndex}-${mode}`],release:[`mobilisering-${zoneId}-${dayIndex}-${mode}`]},
-        explanation:explanation(time,score),
+        explanation:{formula:'lokal test',weights:{huntability:.4,transport:.35,release:.25},contributions:{huntability:24,transport:22,release:15},transportDiagnostics:{coastTransportExplanation:{summary:`kyst-${zoneId}-${dayIndex}-${mode}`,items:[]}}},
         weather:localWeather,
         parts:[{partId:winningPartId,name:parts[winningPartId].name,score}]
       };
       if(dayIndex===0){
         const current=parts[winningPartId].current||{time,weather:localWeather};
-        current[mode]={available:true,modelBinding,...fullHistoryQuality(score),score,components:row[mode].components,componentReasons:row[mode].componentReasons,explanation:row[mode].explanation};
+        current[mode]={score,components:row[mode].components,componentReasons:row[mode].componentReasons,explanation:row[mode].explanation};
         parts[winningPartId].current=current;
       }
     }
@@ -121,8 +64,7 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
 }
 
 assert.equal(nextPart,partCount,'Den landsdækkende regression skal dække præcis 673 lokale kystdele.');
-const scoreAvailability={schemaVersion:2,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,allCurrentScoresFullHistory:true,fullHistoryModeCount:zoneCount*2,historyIncompleteModeCount:0,historyIncompleteZoneCount:0,evaluatedAt:generatedAt,unavailableZones:[],historyIncompleteZones:[]};
-const full={datasetId:'local-display-consistency',generatedAt,productionReferenceAt:generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:2,enabled:true,generatedAt,modelBinding,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreProfile,scoreAvailability,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
+const full={datasetId:'local-display-consistency',generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:1,enabled:true,generatedAt,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
 const merged=mergeConditionDetails({...buildPublicConditions(full),available:true},buildPublicConditionDetails(full));
 let checkedTabs=0;
 for(const [zoneId,zone] of Object.entries(merged.coastalParts.zones)){
@@ -138,7 +80,7 @@ for(const [zoneId,zone] of Object.entries(merged.coastalParts.zones)){
       assert.equal(selected.hour.windDirectionDeg,expected.weather.windDirectionDeg,`${zoneId}/${mode}/${row.time}: vindretningen kommer ikke fra vinderposten.`);
       assert.equal(selected.hour.waterTemperatureC,expected.weather.waterTemperatureC,`${zoneId}/${mode}/${row.time}: vandtemperaturen kommer ikke fra vinderposten.`);
       assert.equal(selected.result.componentReasons.transport[0],expected.componentReasons.transport[0],`${zoneId}/${mode}/${row.time}: transportforklaringen kommer ikke fra vinderposten.`);
-      assert.equal(selected.result.explanation.transportDiagnostics.currentReferenceAt,expected.explanation.transportDiagnostics.currentReferenceAt,`${zoneId}/${mode}/${row.time}: den integrerede strømforklaring kommer ikke fra vinderposten.`);
+      assert.equal(selected.result.explanation.transportDiagnostics.coastTransportExplanation.summary,expected.explanation.transportDiagnostics.coastTransportExplanation.summary,`${zoneId}/${mode}/${row.time}: kystforklaringen kommer ikke fra vinderposten.`);
       checkedTabs+=1;
     }
   }
@@ -155,9 +97,9 @@ assert.match(app,/display\.result,display\.weather/,'Zonepanelet får ikke score
 assert.match(app,/zoneReferenceAt\|\|state\.conditions\.productionReferenceAt\|\|state\.conditions\.generatedAt/,'Aktuel lokal score bruger ikke zonens komplette fælles current-reference.');
 assert.match(app,/bestByDate/,'Zonepanelet genbruger ikke den nationale lokale dagsbeslutning.');
 assert.match(ui,/best:bestByDate\[day\.date\]\|\|unavailable\(day\)/,'Femdøgnspanelet bruger ikke den fælles lokale dagsbeslutning eller lukker lokalt ved manglende data.');
-assert.match(ui,/t\('score\.unavailable'\)/,'Manglende lokal integreret RavScore er ikke tydeligt mærket for brugeren.');
-assert.match(producer,/componentReasons:\s*winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
-assert.match(producer,/waterTemperatureC:\s*weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
+assert.match(ui,/t\('score\.unavailable'\)/,'Manglende lokal Candidate G-score er ikke tydeligt mærket for brugeren.');
+assert.match(producer,/componentReasons:winner\.detail\?\.componentReasons/,'Producenten fører ikke vinderens forklaring med til prognosen.');
+assert.match(producer,/waterTemperatureC:weather\.waterTemperatureC/,'Producenten fører ikke vinderens vandtemperatur med til prognosen.');
 assert.match(producer,/selectLatestLocalScoreRowAtOrBefore\(hourly, generatedAt\)/,'Producenten vælger ikke seneste kausale fælles time ved eller før zonens visningstid.');
 
 console.log(`OK: ${zoneCount} zoner, ${partCount} kystdele og ${checkedTabs} lokale femdøgnsvisninger bruger samme vinder, tidspunkt, score, vejr og forklaring.`);

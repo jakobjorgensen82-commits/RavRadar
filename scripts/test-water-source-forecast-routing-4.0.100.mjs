@@ -3,30 +3,12 @@ import { buildWaterSourceForecastIndex, applyWaterSourceForecastStatus, applyWat
 const generatedAt='2026-08-05T06:02:00Z';
 const currentHour='2026-08-05T06:00:00.000Z';
 const times=Array.from({length:40},(_,i)=>new Date(Date.parse(currentHour)+i*3*3600000).toISOString());
-const rows=(base,collection,key,samplingPoint)=>Object.fromEntries(times.map((time,i)=>[time,{
-  time,
-  'sea-mean-deviation':(base+i)/100,
-  sources:{waterLevel:{
-    provider:'dmi',fallback:false,collection,collectionFamily:'marine',
-    component:'waterLevel',componentKind:'marine-water-level-scalar',
-    fieldSet:['sea-mean-deviation'],optionalFieldSet:[],
-    modelRun:'2026-08-05T00:00:00Z',nativeValidTime:time,
-    leadTimeHours:(Date.parse(time)-Date.parse('2026-08-05T00:00:00Z'))/3600000,
-    entityId:`SOURCE::${key}`,parentZoneId:`SOURCE::${key}`,entityType:'water-level-source',
-    samplingContext:'water-level-source-point',samplingPoint,gridPoint:samplingPoint,
-    gridDefinitionSha256:'a'.repeat(64),distanceKm:0,
-    spatialSelection:'nearest-valid-grid-cell-no-spatial-interpolation',spatialSemanticsVersion:1,
-    itemId:`item-${key}-${i}`,assetIdentitySha256:'b'.repeat(64),acquiredAt:generatedAt,
-  }}
-}]));
+const rows=(base,collection)=>Object.fromEntries(times.map((time,i)=>[time,{time,'sea-mean-deviation':(base+i)/100,sources:{waterLevel:{provider:'dmi',collection,modelRun:'2026-08-05T00:00:00Z',nativeValidTime:time}}}]));
 const sources=[
  {sourceKey:'oceanobs:A',stationId:'A',name:'Målestation A',sourceType:'observation-station',point:[10,56],registryStatus:'active'},
  {sourceKey:'tidewater:B',stationId:'B',name:'Prognosepunkt B',sourceType:'forecast-point',point:[11,56],registryStatus:'active-forecast-point'}
 ];
-const bulk={generatedAt,timeStrideHours:3,zones:{
-  'SOURCE::oceanobs:A':{hourly:rows(0,'dkss_idw','oceanobs:A',[10,56])},
-  'SOURCE::tidewater:B':{hourly:rows(30,'dkss_nsbs','tidewater:B',[11,56])},
-}};
+const bulk={generatedAt,timeStrideHours:3,zones:{'SOURCE::oceanobs:A':{hourly:rows(0,'dkss_idw')},'SOURCE::tidewater:B':{hourly:rows(30,'dkss_nsbs')}}};
 const index=buildWaterSourceForecastIndex(sources,bulk,generatedAt);
 assert.equal(index.size,2);
 assert.equal(index.get('oceanobs:A').hourly[0].time,currentHour,'Kildeindekset skal bevare den igangværende klokktime efter timevinduet er passeret.');

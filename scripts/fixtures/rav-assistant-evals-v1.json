@@ -1,32 +1,16 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.317",
-  "ravScoreModelBinding": {
-    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
-    "stateSchemaVersion": "6.0.0",
-    "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
-    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5",
-    "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-bounds-v5",
-    "explanationSchemaId": "ravscore-explanation-integrated-bounds-v5",
-    "rankingPolicyId": "direction-broad-19-history-tie-v2",
-    "bestTimePolicyId": "score-history-water-tie-earliest-v3",
-    "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
-    "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
-    "modelBundleSha256": "74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae"
-  },
+  "releaseVersion": "4.0.293",
   "cases": [
     {
       "id": "da-weights",
       "locale": "da",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Hvordan er RavScore vægtet?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.integrated-only",
-        "score.weights-20-50-30"
-      ]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "da-safety",
@@ -35,9 +19,7 @@
       "question": "RavScore er 82. Betyder det, at det er sikkert at gå ud med waders?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "safety.not-a-safety-rating"
-      ]
+      "requiredEvidenceIds": ["safety.not-a-safety-rating"]
     },
     {
       "id": "da-guarantee",
@@ -46,42 +28,34 @@
       "question": "Kan du garantere, at jeg finder rav, når scoren er 90?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.no-find-guarantee"
-      ]
+      "requiredEvidenceIds": ["score.no-find-guarantee"]
     },
     {
       "id": "da-missing",
       "locale": "da",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Hvad sker der, hvis RavRadar mangler sammenhængende data for min zone?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.local-missing"
-      ]
+      "requiredEvidenceIds": ["score.local-missing"]
     },
     {
       "id": "da-waders",
       "locale": "da",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Hvorfor påvirker vind waders-scoren mere end strandscoren?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "huntability.waders-wind-led"
-      ]
+      "requiredEvidenceIds": ["huntability.waders-wind-led"]
     },
     {
       "id": "da-after-storm",
       "locale": "da",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Kan tiden efter kraftige bølger stadig være interessant til ravjagt?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "mobilisation.wave-memory"
-      ]
+      "requiredEvidenceIds": ["mobilisation.wave-memory"]
     },
     {
       "id": "da-open-bike",
@@ -117,23 +91,8 @@
       "question": "Hvorfor har den valgte zone RavScore 68?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ],
-      "publicContext": {
-        "mode": "beach",
-        "zone": {
-          "name": "Testkyst"
-        },
-        "score": {
-          "available": true,
-          "value": 68,
-          "level": "god",
-          "reasons": [
-            "Transport mod kysten trækker op"
-          ]
-        }
-      }
+      "requiredEvidenceIds": ["public-context.selected-zone-only"],
+      "publicContext": {"mode": "beach", "zone": {"name": "Testkyst"}, "score": {"available": true, "value": 68, "level": "god", "reasons": ["Transport mod kysten trækker op"]}}
     },
     {
       "id": "da-best-place",
@@ -142,9 +101,7 @@
       "question": "Hvor er det bedste sted i Danmark i morgen?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ]
+      "requiredEvidenceIds": ["public-context.selected-zone-only"]
     },
     {
       "id": "da-recipe",
@@ -185,14 +142,11 @@
     {
       "id": "de-weights",
       "locale": "de",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Wie ist der RavScore gewichtet?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.integrated-only",
-        "score.weights-20-50-30"
-      ]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "de-safety",
@@ -201,9 +155,7 @@
       "question": "Der RavScore ist 82. Bedeutet das, dass das Waten sicher ist?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "safety.not-a-safety-rating"
-      ]
+      "requiredEvidenceIds": ["safety.not-a-safety-rating"]
     },
     {
       "id": "de-guarantee",
@@ -212,42 +164,34 @@
       "question": "Kannst du garantieren, dass ich bei einem Wert von 90 Bernstein finde?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.no-find-guarantee"
-      ]
+      "requiredEvidenceIds": ["score.no-find-guarantee"]
     },
     {
       "id": "de-missing",
       "locale": "de",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Was passiert, wenn für meine Zone keine zusammenhängenden Daten vorliegen?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.local-missing"
-      ]
+      "requiredEvidenceIds": ["score.local-missing"]
     },
     {
       "id": "de-waders",
       "locale": "de",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Warum beeinflusst der Wind die Bewertung für die Suche im Wasser stärker als die Strandsuche?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "huntability.waders-wind-led"
-      ]
+      "requiredEvidenceIds": ["huntability.waders-wind-led"]
     },
     {
       "id": "de-after-storm",
       "locale": "de",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Kann die Zeit nach kräftigen Wellen noch interessant für die Bernsteinsuche sein?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "mobilisation.wave-memory"
-      ]
+      "requiredEvidenceIds": ["mobilisation.wave-memory"]
     },
     {
       "id": "de-open-bike",
@@ -283,23 +227,8 @@
       "question": "Warum hat die ausgewählte Zone einen RavScore von 68?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ],
-      "publicContext": {
-        "mode": "beach",
-        "zone": {
-          "name": "Testküste"
-        },
-        "score": {
-          "available": true,
-          "value": 68,
-          "level": "gut",
-          "reasons": [
-            "Transport zur Küste erhöht den Wert"
-          ]
-        }
-      }
+      "requiredEvidenceIds": ["public-context.selected-zone-only"],
+      "publicContext": {"mode": "beach", "zone": {"name": "Testküste"}, "score": {"available": true, "value": 68, "level": "gut", "reasons": ["Transport zur Küste erhöht den Wert"]}}
     },
     {
       "id": "de-best-place",
@@ -308,9 +237,7 @@
       "question": "Wo ist morgen der beste Ort in Dänemark?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ]
+      "requiredEvidenceIds": ["public-context.selected-zone-only"]
     },
     {
       "id": "de-recipe",
@@ -351,14 +278,11 @@
     {
       "id": "en-weights",
       "locale": "en",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "How is RavScore weighted?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.integrated-only",
-        "score.weights-20-50-30"
-      ]
+      "requiredEvidenceIds": ["score.candidate-g-only", "score.weights-20-50-30"]
     },
     {
       "id": "en-safety",
@@ -367,9 +291,7 @@
       "question": "RavScore is 82. Does that mean it is safe to go wading?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "safety.not-a-safety-rating"
-      ]
+      "requiredEvidenceIds": ["safety.not-a-safety-rating"]
     },
     {
       "id": "en-guarantee",
@@ -378,42 +300,34 @@
       "question": "Can you guarantee that I will find amber when the score is 90?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.no-find-guarantee"
-      ]
+      "requiredEvidenceIds": ["score.no-find-guarantee"]
     },
     {
       "id": "en-missing",
       "locale": "en",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "What happens when RavRadar lacks continuous evidence for my zone?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "score.local-missing"
-      ]
+      "requiredEvidenceIds": ["score.local-missing"]
     },
     {
       "id": "en-waders",
       "locale": "en",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Why does wind affect the waders score more than the beach score?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "huntability.waders-wind-led"
-      ]
+      "requiredEvidenceIds": ["huntability.waders-wind-led"]
     },
     {
       "id": "en-after-storm",
       "locale": "en",
-      "category": "integrated-model",
+      "category": "candidate-g",
       "question": "Can the period after strong waves still be interesting for amber hunting?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "mobilisation.wave-memory"
-      ]
+      "requiredEvidenceIds": ["mobilisation.wave-memory"]
     },
     {
       "id": "en-open-bike",
@@ -449,23 +363,8 @@
       "question": "Why does the selected zone have a RavScore of 68?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ],
-      "publicContext": {
-        "mode": "beach",
-        "zone": {
-          "name": "Test Coast"
-        },
-        "score": {
-          "available": true,
-          "value": 68,
-          "level": "good",
-          "reasons": [
-            "Transport towards the coast raises the score"
-          ]
-        }
-      }
+      "requiredEvidenceIds": ["public-context.selected-zone-only"],
+      "publicContext": {"mode": "beach", "zone": {"name": "Test Coast"}, "score": {"available": true, "value": 68, "level": "good", "reasons": ["Transport towards the coast raises the score"]}}
     },
     {
       "id": "en-best-place",
@@ -474,9 +373,7 @@
       "question": "Where is the best place in Denmark tomorrow?",
       "expectedDisposition": "answer",
       "expectedRoute": "local-deterministic",
-      "requiredEvidenceIds": [
-        "public-context.selected-zone-only"
-      ]
+      "requiredEvidenceIds": ["public-context.selected-zone-only"]
     },
     {
       "id": "en-recipe",
@@ -521,9 +418,7 @@
       "question": "Hvor kommer rav fra, og kan man se alderen på et fund?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.origin-and-secondary-stores"
-      ]
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
     },
     {
       "id": "da-amber-density",
@@ -532,9 +427,7 @@
       "question": "Hvorfor synker det meste baltiske rav i havvand?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.mostly-sinks"
-      ]
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
     },
     {
       "id": "da-wind-role",
@@ -543,9 +436,7 @@
       "question": "Viser vindretningen også retningen på rav tæt ved bunden?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "wind.indirect-not-bottom-current"
-      ]
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
     },
     {
       "id": "da-coastal-traps",
@@ -554,9 +445,7 @@
       "question": "Hvordan kan revler, render og høfder påvirke, hvor rav samles?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "coast.sorting-and-traps"
-      ]
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
     },
     {
       "id": "da-field-signs",
@@ -565,9 +454,7 @@
       "question": "Er frisk tang og let opskyl et sikkert bevis på rav?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "field-signs.clues-not-proof"
-      ]
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
     },
     {
       "id": "da-identification",
@@ -576,10 +463,7 @@
       "question": "Er UV-lys et sikkert bevis på rav, og bør jeg bruge en varm nål?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "identification.uv-clue-not-proof",
-        "identification.avoid-destructive-tests"
-      ]
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
     },
     {
       "id": "da-event-sequence",
@@ -588,9 +472,7 @@
       "question": "Hvorfor kan fasen efter kraftigt vejr være bedre end selve toppen?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "sequence.release-transport-deposition"
-      ]
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
     },
     {
       "id": "de-amber-origin",
@@ -599,9 +481,7 @@
       "question": "Woher kommt Bernstein, und kann man das Alter eines Fundes erkennen?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.origin-and-secondary-stores"
-      ]
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
     },
     {
       "id": "de-amber-density",
@@ -610,9 +490,7 @@
       "question": "Warum sinkt der meiste baltische Bernstein im Meerwasser?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.mostly-sinks"
-      ]
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
     },
     {
       "id": "de-wind-role",
@@ -621,9 +499,7 @@
       "question": "Zeigt die Windrichtung auch die Richtung von Bernstein nahe dem Grund?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "wind.indirect-not-bottom-current"
-      ]
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
     },
     {
       "id": "de-coastal-traps",
@@ -632,9 +508,7 @@
       "question": "Wie beeinflussen Sandbänke, Rinnen und Buhnen, wo sich Bernstein sammelt?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "coast.sorting-and-traps"
-      ]
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
     },
     {
       "id": "de-field-signs",
@@ -643,9 +517,7 @@
       "question": "Sind frischer Tang und leichtes Spülgut ein sicherer Beweis für Bernstein?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "field-signs.clues-not-proof"
-      ]
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
     },
     {
       "id": "de-identification",
@@ -654,10 +526,7 @@
       "question": "Ist UV-Licht ein sicherer Bernsteinbeweis, und sollte ich eine heiße Nadel verwenden?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "identification.uv-clue-not-proof",
-        "identification.avoid-destructive-tests"
-      ]
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
     },
     {
       "id": "de-event-sequence",
@@ -666,9 +535,7 @@
       "question": "Warum kann die Phase nach kräftigem Wetter besser sein als der Höhepunkt?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "sequence.release-transport-deposition"
-      ]
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
     },
     {
       "id": "en-amber-origin",
@@ -677,9 +544,7 @@
       "question": "Where does amber come from, and can I tell the age of a find?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.origin-and-secondary-stores"
-      ]
+      "requiredEvidenceIds": ["amber.origin-and-secondary-stores"]
     },
     {
       "id": "en-amber-density",
@@ -688,9 +553,7 @@
       "question": "Why does most Baltic amber sink in seawater?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "amber.mostly-sinks"
-      ]
+      "requiredEvidenceIds": ["amber.mostly-sinks"]
     },
     {
       "id": "en-wind-role",
@@ -699,9 +562,7 @@
       "question": "Does wind direction also show the direction of amber near the seabed?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "wind.indirect-not-bottom-current"
-      ]
+      "requiredEvidenceIds": ["wind.indirect-not-bottom-current"]
     },
     {
       "id": "en-coastal-traps",
@@ -710,9 +571,7 @@
       "question": "How can sandbars, channels, and groynes affect where amber gathers?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "coast.sorting-and-traps"
-      ]
+      "requiredEvidenceIds": ["coast.sorting-and-traps"]
     },
     {
       "id": "en-field-signs",
@@ -721,9 +580,7 @@
       "question": "Are fresh seaweed and light wash certain proof of amber?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "field-signs.clues-not-proof"
-      ]
+      "requiredEvidenceIds": ["field-signs.clues-not-proof"]
     },
     {
       "id": "en-identification",
@@ -732,10 +589,7 @@
       "question": "Is UV light final proof of amber, and should I use a hot needle?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "identification.uv-clue-not-proof",
-        "identification.avoid-destructive-tests"
-      ]
+      "requiredEvidenceIds": ["identification.uv-clue-not-proof", "identification.avoid-destructive-tests"]
     },
     {
       "id": "en-event-sequence",
@@ -744,114 +598,7 @@
       "question": "Why can the phase after energetic weather be better than the peak itself?",
       "expectedDisposition": "answer",
       "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "sequence.release-transport-deposition"
-      ]
-    },
-    {
-      "id": "da-strong-outflow",
-      "locale": "da",
-      "category": "coastal-physics",
-      "question": "Kan en kraftig fralandsrettet strøm føre noget rav væk fra kystzonen igen?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.current-led",
-        "sequence.release-transport-deposition"
-      ]
-    },
-    {
-      "id": "da-falling-water",
-      "locale": "da",
-      "category": "coastal-physics",
-      "question": "Betyder faldende vand, at alt rav bliver ført ud, eller kan noget blive liggende bag en revle?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "water-level.context"
-      ]
-    },
-    {
-      "id": "da-final-mile-limit",
-      "locale": "da",
-      "category": "model-limitations",
-      "question": "Kan modellen kende ravets præcise sidste vej over revler og render ind til stranden?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
-        "coast.sorting-and-traps"
-      ]
-    },
-    {
-      "id": "de-strong-outflow",
-      "locale": "de",
-      "category": "coastal-physics",
-      "question": "Kann eine starke seewärts gerichtete Strömung etwas Bernstein wieder aus der Küstenzone tragen?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.current-led",
-        "sequence.release-transport-deposition"
-      ]
-    },
-    {
-      "id": "de-falling-water",
-      "locale": "de",
-      "category": "coastal-physics",
-      "question": "Bedeutet fallendes Wasser, dass aller Bernstein hinausgetragen wird, oder kann etwas hinter einer Sandbank liegen bleiben?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "water-level.context"
-      ]
-    },
-    {
-      "id": "de-final-mile-limit",
-      "locale": "de",
-      "category": "model-limitations",
-      "question": "Kennt das Modell den genauen letzten Weg des Bernsteins über Sandbänke und Rinnen bis zum Strand?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
-        "coast.sorting-and-traps"
-      ]
-    },
-    {
-      "id": "en-strong-outflow",
-      "locale": "en",
-      "category": "coastal-physics",
-      "question": "Can a strong seaward current carry some amber back out of the coastal zone?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.current-led",
-        "sequence.release-transport-deposition"
-      ]
-    },
-    {
-      "id": "en-falling-water",
-      "locale": "en",
-      "category": "coastal-physics",
-      "question": "Does falling water mean all amber is carried out, or can some remain trapped behind a sandbar?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "water-level.context"
-      ]
-    },
-    {
-      "id": "en-final-mile-limit",
-      "locale": "en",
-      "category": "model-limitations",
-      "question": "Does the model know amber’s exact final path across bars and channels to the beach?",
-      "expectedDisposition": "answer",
-      "expectedRoute": "remote-candidate",
-      "requiredEvidenceIds": [
-        "transport.grid-not-surf-zone",
-        "coast.sorting-and-traps"
-      ]
+      "requiredEvidenceIds": ["sequence.release-transport-deposition"]
     }
   ]
 }

@@ -33,18 +33,6 @@ assert.equal(highEnergy.available, true);
 assert.ok(highEnergy.energyProxy > lowEnergy.energyProxy);
 assert.ok(highEnergy.energyScore > lowEnergy.energyScore);
 assert.equal(waveMobilisationEnergy({ waveHeightM: null, wavePeriodS: 8 }).available, false);
-const invalidPositiveHeightZeroPeriod = waveMobilisationEnergy({
-  waveHeightM: 0.4,
-  wavePeriodS: 0,
-});
-assert.equal(invalidPositiveHeightZeroPeriod.available, false);
-assert.equal(invalidPositiveHeightZeroPeriod.inputStatus, 'INVALID');
-assert.equal(invalidPositiveHeightZeroPeriod.energyScore, null);
-const exactCalmEnergy = waveMobilisationEnergy({ waveHeightM: 0, wavePeriodS: 0 });
-assert.equal(exactCalmEnergy.available, true);
-assert.equal(exactCalmEnergy.inputStatus, 'EXACT_CALM');
-assert.equal(exactCalmEnergy.exactCalm, true);
-assert.equal(exactCalmEnergy.energyScore, 0);
 
 const oneHighHour = buildWaveMobilisationPotential(hourly(1, 2, 8)).at(-1).mobilisationPotential;
 const fourHighHours = buildWaveMobilisationPotential(hourly(4, 2, 8)).at(-1).mobilisationPotential;

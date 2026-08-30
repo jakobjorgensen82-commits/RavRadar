@@ -1,4 +1,8 @@
-const finite = value => typeof value === 'number' && Number.isFinite(value);
+const finite = value => value !== null
+  && value !== undefined
+  && value !== ''
+  && typeof value !== 'boolean'
+  && Number.isFinite(Number(value));
 const clamp = (value, minimum = 0, maximum = 100) => Math.max(minimum, Math.min(maximum, Number(value)));
 
 export const WAVE_MOBILISATION_ENERGY_POINTS = Object.freeze([
@@ -22,37 +26,6 @@ export const WAVE_MOBILISATION_RECOMMENDED_RESEARCH_PROFILE = Object.freeze({
   boundaryPolicy: 'CARRY_FORWARD_COMPACT_DERIVED_MOBILISATION_STATE',
 });
 
-/**
- * Classifies the physical wave tuple without coercion. A zero height is the
- * only exact-calm case; a positive height cannot physically have a zero
- * period and must therefore fail closed rather than become neutral evidence.
- */
-export function classifyWavePhysicalTuple({ waveHeightM, wavePeriodS } = {}) {
-  if (!finite(waveHeightM) || !finite(wavePeriodS)) {
-    return Object.freeze({
-      available: false,
-      inputStatus: 'MISSING',
-      exactCalm: false,
-      active: false,
-    });
-  }
-  if (waveHeightM < 0 || wavePeriodS < 0 || (waveHeightM > 0 && wavePeriodS <= 0)) {
-    return Object.freeze({
-      available: false,
-      inputStatus: 'INVALID',
-      exactCalm: false,
-      active: false,
-    });
-  }
-  const exactCalm = waveHeightM === 0;
-  return Object.freeze({
-    available: true,
-    inputStatus: exactCalm ? 'EXACT_CALM' : 'ACTIVE',
-    exactCalm,
-    active: !exactCalm,
-  });
-}
-
 function interpolate(value, points = WAVE_MOBILISATION_ENERGY_POINTS) {
   if (!finite(value)) return null;
   const input = Math.max(0, Number(value));
@@ -69,19 +42,14 @@ function interpolate(value, points = WAVE_MOBILISATION_ENERGY_POINTS) {
 }
 
 export function waveMobilisationEnergy({ waveHeightM, wavePeriodS } = {}) {
-  const physical = classifyWavePhysicalTuple({ waveHeightM, wavePeriodS });
-  if (!physical.available) {
-    return {
-      ...physical,
-      energyProxy: null,
-      energyScore: null,
-    };
+  if (!finite(waveHeightM) || !finite(wavePeriodS)) {
+    return { available: false, energyProxy: null, energyScore: null };
   }
-  const height = waveHeightM;
-  const period = wavePeriodS;
+  const height = Math.max(0, Number(waveHeightM));
+  const period = Math.max(0, Number(wavePeriodS));
   const energyProxy = height ** 2 * period;
   return {
-    ...physical,
+    available: true,
     energyProxy,
     energyScore: interpolate(energyProxy),
   };

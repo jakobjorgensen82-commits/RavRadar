@@ -1,10 +1,8 @@
-import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.317";
-import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.317";
-import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.317";
-import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.317";
-import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.317";
-import { RAVSCORE_CALIBRATION_ELIGIBLE, ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.317";
-import { accountTripBindingStatus } from "../services/calibration-eligibility.js?v=4.0.317";
+import { authEnabled, currentSession, sendMagicLink, signInWithPassword, signOut, signUpWithPassword } from "../services/auth-service.js?v=4.0.316";
+import { getLocalObservations, getOwnTripObservations, submitAccountTripReportObservation } from "../services/observation-service.js?v=4.0.316";
+import { buildAccountTripReport, toAccountObservationColumns } from "../services/account-trip-report-contract.js?v=4.0.316";
+import { openAccountTripReportDialog } from "./trip-evidence-dialog.js?v=4.0.316";
+import { formatDateTime, formatNumber, t } from "../i18n.js?v=4.0.316";
 
 function escapeHtml(value = "") {
   return String(value).replace(/[&<>'"]/g, character => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", "'":"&#39;", '"':"&quot;" })[character]);
@@ -67,13 +65,9 @@ function renderHistoryRows(rows, context) {
     const grams = found && Number.isFinite(Number(row.grams)) ? `<span>${escapeHtml(formatNumber(row.grams, { maximumFractionDigits:1 }))} g</span>` : '';
     const pending = row._source === 'device' && row.sync_status !== 'synced' ? `<span class="trip-log-pending">${t('account.pending')}</span>` : '';
     const manual = row.data_quality_flags?.includes('account-manual') ? `<span>${t('account.manual')}</span>` : '';
-    const bindingStatus = accountTripBindingStatus(row, ravScoreModelBinding(), {
-      allowCalibration: RAVSCORE_CALIBRATION_ELIGIBLE,
-    });
-    const bindingLabel = `<span>${t(`account.binding.${bindingStatus}`)}</span>`;
     return `<article class="trip-log-row">
       <div><strong>${escapeHtml(tripDate(row))}</strong><span>${escapeHtml(zone)} · ${escapeHtml(part)}</span></div>
-      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${t(found ? 'account.found' : 'account.notFound')}</span>${grams}${bindingLabel}${manual}${pending}</div>
+      <div class="trip-log-facts"><span>${huntModeLabel(row.hunt_mode)}</span><span>${escapeHtml(minutesLabel(row.search_minutes))}</span><span class="${found ? 'trip-found' : 'trip-not-found'}">${t(found ? 'account.found' : 'account.notFound')}</span>${grams}${manual}${pending}</div>
     </article>`;
   }).join('');
 }

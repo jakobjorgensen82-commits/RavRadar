@@ -108,10 +108,12 @@ def main() -> None:
         'workflows: ["Update weather and deploy RavRadar"]',
         "types: [requested, completed]",
         "branches: [main]",
-        "copernicus-current-range-v2-keepalive-",
-        "copernicus-current-range-v2-",
-        "Report cache keepalive without reading private payloads",
-        "github.event_name != 'workflow_run' || github.event.action == 'requested'",
+        "python3 scripts/check-copernicus-current-hour.py",
+        "github.event_name == 'workflow_run' && github.event.action == 'requested'",
+        "needs.preserve.outputs.current_hour_present != 'true'",
+        "actions: write",
+        "validate-copernicus-current-pilot.yml/dispatches",
+        "-f ref=main",
         "retry-failed-production:",
         "contains(fromJSON('[\"failure\",\"timed_out\",\"startup_failure\"]'), github.event.workflow_run.conclusion)",
         "github.event.workflow_run.event == 'schedule'",
@@ -130,28 +132,20 @@ def main() -> None:
     need("actions/upload-artifact" not in workflow, "Heartbeat must never export raw cache evidence")
     need("github.event_name == 'workflow_dispatch' && inputs.external_watchdog != true" not in workflow,
          "An ordinary manual keepalive must not become an implicit production watchdog")
-    need("check-copernicus-current-hour.py" not in workflow,
-         "Keepalive must not mistake one hour for an exact range proof")
-    need("validate-copernicus-current-pilot.yml/dispatches" not in workflow,
-         "Keepalive must not start a duplicate acquisition before the DMI gap matrix exists")
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     for marker in (
-        "Inspect the exact sealed DMI-gap range",
-        "scripts/check-copernicus-current-range.py",
-        "--registry .cache/copernicus-current-targets.json",
-        "--dmi data/live/dmi-bulk-cache.json",
-        "--targets data/live/coastal-parts-v2.json",
+        "Inspect requested hour and authoritative target geometry",
+        "--targets .cache/copernicus-current-targets.json",
         "build-copernicus-target-registry.py",
         "full_coast:",
-        "steps.cache-state.outputs.complete_range_present != 'true'",
-        "--timeout-seconds 600",
+        "steps.cache-state.outputs.current_hour_present != 'true'",
         "Report safe duplicate suppression",
     ):
         need(marker in pilot_workflow, f"Pilot workflow is missing geometry-aware duplicate control: {marker}")
-    preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  retry-failed-production:")]
-    need("actions: write" not in preserve_section, "Read-only cache keepalive may not receive Actions write permission")
+    preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  dispatch-pilot:")]
+    need("actions: write" not in preserve_section, "Only the minimal dispatch job may receive Actions write permission")
 
-    print("OK: GitHub-owned keepalive preserves range evidence without duplicate acquisition or private reads")
+    print("OK: GitHub-owned production heartbeat safely dispatches one private pilot per missing UTC hour")
 
 
 if __name__ == "__main__":

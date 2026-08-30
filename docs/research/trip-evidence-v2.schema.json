@@ -77,7 +77,7 @@
     "grams": {
       "oneOf": [
         { "type": "null" },
-        { "type": "number", "minimum": 0, "maximum": 10000 }
+        { "type": "number", "minimum": 0, "maximum": 100000 }
       ]
     },
     "forecastSnapshotId": { "$ref": "#/$defs/id" },

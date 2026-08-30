@@ -16,49 +16,6 @@ for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
   }
 }
-const sourceGateRequirementMarkers = [
-  '-r requirements-dmi.txt',
-  '-r requirements-geometry.txt',
-  '-r requirements-copernicus.txt',
-];
-const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
-  .readFileSync(`${workflowDirectory}/${name}`, 'utf8')
-  .includes('npm run validate:source'));
-assert.deepEqual(
-  sourceGateWorkflowNames,
-  ['deploy-trip-storage.yml', 'update-and-deploy.yml', 'validate-pull-request.yml'],
-  'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
-);
-for (const workflowName of sourceGateWorkflowNames) {
-  const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
-  let searchFrom = 0;
-  while (true) {
-    const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
-    if (sourceGateRun < 0) break;
-    const sourceGateStep = workflow.lastIndexOf('\n      - name:', sourceGateRun);
-    const dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
-    if (sourceGateStep < 0 || dependencyStep < 0) {
-      throw new Error(`${workflowName}: validate:source mangler en umiddelbart forudgående dependency-step.`);
-    }
-    const dependencyBlock = workflow.slice(dependencyStep, sourceGateStep);
-    const sourceGateBlockEnd = workflow.indexOf('\n\n', sourceGateStep);
-    const sourceGateBlock = workflow.slice(sourceGateStep, sourceGateBlockEnd < 0 ? workflow.length : sourceGateBlockEnd);
-    if (!dependencyBlock.includes('name: Install source-gate dependencies')) {
-      throw new Error(`${workflowName}: validate:source skal umiddelbart følge Install source-gate dependencies.`);
-    }
-    for (const marker of sourceGateRequirementMarkers) {
-      if (!dependencyBlock.includes(marker)) {
-        throw new Error(`${workflowName}: sourcegaten mangler det ejede requirements-sæt ${marker}.`);
-      }
-    }
-    const dependencyCondition = dependencyBlock.match(/^\s+if:\s+(.+)$/m)?.[1] || '';
-    const sourceGateCondition = sourceGateBlock.match(/^\s+if:\s+(.+)$/m)?.[1] || '';
-    if (dependencyCondition !== sourceGateCondition) {
-      throw new Error(`${workflowName}: dependency-step og validate:source skal have samme if-betingelse.`);
-    }
-    searchFrom = sourceGateRun + 1;
-  }
-}
 const historicalWavePilot = fs.readFileSync(`${workflowDirectory}/build-ravscore-historical-wave-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'workflow_dispatch:',
@@ -81,11 +38,6 @@ const pullRequestValidation = fs.readFileSync(`${workflowDirectory}/validate-pul
 for (const marker of [
   'pull_request:',
   'permissions:\n  contents: read',
-  'fetch-depth: 0',
-  'timeout-minutes: 45',
-  '-r requirements-dmi.txt',
-  '-r requirements-geometry.txt',
-  '-r requirements-copernicus.txt',
   'npm run validate:source',
 ]) {
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
@@ -96,10 +48,6 @@ const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-con
 if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery')) {
   throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');
 }
-if (!workflowActionContracts.includes('npm run test:production-workflow-outcome')
-  || packageJson?.scripts?.['test:production-workflow-outcome'] !== 'node scripts/test-production-workflow-outcome.mjs') {
-  throw new Error('Den maskinlæsbare produktionsslutstatus skal være registreret i workflow-kontraktsuiten.');
-}
 for (const marker of [
   'npm run validate:rdks',
   'npm run test:feedback-learning',
@@ -108,50 +56,17 @@ for (const marker of [
   'npm run test:adaptive-prediction',
   'npm run test:admin-feature-reachability',
   'npm run test:current-transport-history',
-  'npm run test:ravscore-integrated',
-  'npm run test:ravscore-rollback-oracle',
   'npm run test:production-hour-lock',
   'npm run test:dmi-acquisition',
   'npm run test:dmi-bulk-forecast-integration',
   'npm run test:live-current-pilot',
   'npm run test:water-source-production-chain',
-  'npm run test:legacy-bootstrap-hydration',
-  'npm run test:production-runtime-privacy',
   'npm run test:workflow-action-contracts',
   'python -m py_compile scripts/build-ravscore-historical-wave-pilot.py scripts/test-ravscore-historical-wave-pilot.py',
   'node --check scripts/audit-online-browser-playwright-4.0.237.mjs',
   'npm run release:gate',
 ]) {
   if (!sourceValidation.includes(marker)) throw new Error('validate:source mangler ' + marker);
-}
-const packageScripts = packageJson?.scripts || {};
-for (const retiredName of [
-  'hydrate:deployed-weather',
-  'test:candidate-g-public-recovery',
-  'test:ravscore-candidate-g-state-pipeline',
-  'test:ravscore-national-shadow-contract',
-]) {
-  if (Object.hasOwn(packageScripts, retiredName)) {
-    throw new Error(`Den pensionerede produktionskontrakt må ikke være et aktivt package-script: ${retiredName}`);
-  }
-}
-if (!packageScripts['hydrate:legacy-candidate-g-bootstrap']?.includes('--legacy-candidate-g-bootstrap')) {
-  throw new Error('Den eneste offentlige hydration-kommando skal være den eksplicitte engangsbootstrap for Candidate G.');
-}
-for (const [name, marker] of Object.entries({
-  'test:protected-ravscore-checkpoint': 'test-protected-ravscore-continuation-checkpoint.mjs',
-  'test:private-production-runtime': 'test-protected-private-production-runtime.mjs',
-  'test:pages-artifact-privacy': 'test-pages-artifact-privacy.mjs',
-  'test:legacy-bootstrap-hydration': 'test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
-})) {
-  if (!packageScripts[name]?.includes(marker)) throw new Error(`${name} mangler ${marker}`);
-}
-if (!packageScripts['test:ravscore-integrated']?.includes('npm run test:protected-ravscore-checkpoint')) {
-  throw new Error('Den integrerede RavScore-testkæde skal inkludere protected checkpoint-kontrakten.');
-}
-if (!packageScripts.validate?.includes('npm run test:production-runtime-privacy')
-  || !packageScripts.validate?.includes('npm run test:hydrated-atomic-dataset')) {
-  throw new Error('Fuld validering skal håndhæve privat runtime-/Pages-beskyttelse og legacy-only hydration.');
 }
 if (/\b(?:push|schedule|workflow_dispatch):/.test(pullRequestValidation)) {
   throw new Error('PR-kildegaten maa kun kunne startes af pull_request.');
@@ -171,9 +86,7 @@ for (const marker of [
   'python scripts/test-copernicus-shadow-retention-4.0.232.py',
   'python scripts/test-current-regional-proxy-policy.py',
   'dmi-zone-cache-v1-${{ runner.os }}-',
-  'python scripts/run-copernicus-current-pilot-with-retry.py',
-  'python scripts/check-copernicus-current-range.py',
-  'copernicus-current-range-v2-',
+  'python scripts/run-copernicus-current-pilot.py',
   'def raw_vector_present(value):',
   'data/diagnostics/copernicus-current-pilot.json',
   'retention-days: 7',
@@ -184,14 +97,14 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'python3 scripts/check-copernicus-current-hour.py', 'target_hour: ${{ steps.cache-state.outputs.target_hour }}', 'inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}', 'validate-copernicus-current-pilot.yml/dispatches', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", 'node scripts/check-production-watchdog.mjs']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
   throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
 }
-const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  retry-failed-production:'));
-if (copernicusPreserveSection.includes('actions: write')) throw new Error('Det payloadfri Copernicus-keepalivejob må ikke få Actions-skriveret.');
+const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
+if (copernicusPreserveSection.includes('actions: write')) throw new Error('Kun det minimale Copernicus-dispatchjob må få Actions-skriveret.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'schedule:',
@@ -209,13 +122,6 @@ for (const marker of [
   '--nearest-dmi-hour',
   'Inspect targeted Copernicus coverage after fresh DMI',
   'Fill only exact-hour DMI gaps from Copernicus',
-  'Require complete target/DMI-bound Copernicus current range before scoring',
-  'python scripts/check-copernicus-current-range.py',
-  '--registry .cache/copernicus-current-targets.json',
-  '--dmi data/live/dmi-bulk-cache.json',
-  '--targets data/live/coastal-parts-v2.json',
-  '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  '--require-complete',
   'Save targeted private Copernicus supplement',
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
@@ -241,97 +147,32 @@ for (const forbidden of ["'docs/**'", "'*.md'", "'data/**'", "'scripts/**'", "'.
   if (pushBlock.includes(forbidden)) throw new Error('Dokumentationsskip er for bredt: ' + forbidden);
 }
 const positions = {
-  preflightCache: text.indexOf('name: Restore dataminimized weather preflight metadata'),
-  publicPreflightManifest: text.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
-  preflight: text.indexOf('name: Decide whether weather needs updating before private runtime download'),
-  privateRuntimeExpected: text.indexOf('name: Build current private-runtime restore expectation'),
-  privateRuntimeRestore: text.indexOf('name: Restore newest compatible private runtime from protected storage'),
-  privateRuntimeInspect: text.indexOf('name: Inspect private production runtime availability'),
-  privateRuntimeVerify: text.indexOf('name: Verify and restore the private production runtime bundle'),
-  privateRuntimeInstall: text.indexOf('name: Install only the allowlisted restored private runtime files'),
-  continuationRestore: text.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
-  protectedCheckpointRestore: text.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
-  legacyBootstrapGate: text.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
-  legacyBootstrapImport: text.indexOf('name: Import exact public Candidate G runtime only for first integrated bootstrap'),
-  legacyCutoverImport: text.indexOf('name: Import exact legacy Candidate G into an isolated first-cutover source root'),
-  legacySourceFetch: text.indexOf('name: Fetch exact public Candidate G source commit for first cutover attestation'),
-  legacySourceAttestation: text.indexOf('name: Seal privacy-safe local attestation of the legacy Candidate G source'),
+  hydrate: text.indexOf('name: Hydrate latest deployed weather state'),
+  gapCheckpoint: text.indexOf('name: Inspect failed-run Candidate G gap checkpoint recovery'),
+  continuationRestore: text.indexOf('name: Restore latest compact Candidate G continuation checkpoint'),
+  preflight: text.indexOf('name: Decide whether weather needs updating'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
+  fallbackRestore: text.indexOf('name: Restore last verified Candidate G public fallback'),
+  fallbackStage: text.indexOf('name: Stage audited last verified Candidate G public fallback'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
-  copernicusRangeGate: text.indexOf('name: Require complete target/DMI-bound Copernicus current range before scoring'),
-  liveCurrentBuild: text.indexOf('name: Build public seven-day current history and controlled live selection'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
   runtime: text.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  publicAudit: text.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  continuationBuild: text.indexOf('name: Build compact Candidate G continuation checkpoint'),
+  continuationSave: text.indexOf('name: Save compact Candidate G continuation checkpoint before final gates'),
+  publicAudit: text.indexOf('name: Audit actual Candidate G public runtime before deploy'),
+  fallbackPublish: text.indexOf('name: Publish bounded Candidate G recovery fallback when current runtime is warming up'),
   reference: text.indexOf('name: Generate and strictly validate production reference zones'),
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
-  validateData: text.indexOf('name: Validate updated weather cache'),
-  protectedWriteHeadCheck: text.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact'),
-  pointPromotion: text.indexOf('name: Atomically promote the validated point candidate in central admin storage'),
-  continuationBuild: text.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  continuationSave: text.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  protectedCheckpointPublish: text.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
-  preflightStateBuild: text.indexOf('name: Build dataminimized weather preflight state after final gates'),
-  preflightStateSave: text.indexOf('name: Save dataminimized weather preflight state'),
-  privateRuntimeSpec: text.indexOf('name: Build private production runtime bundle specification'),
-  privateRuntimeCreate: text.indexOf('name: Create the next private production runtime bundle atomically'),
-  privateRuntimeSave: text.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
-  privateRuntimeAnonAudit: text.indexOf('name: Prove the private runtime object is not anonymously readable'),
   artifact: text.indexOf('name: Build lean GitHub Pages artifact'),
-  pagesPrivacyAudit: text.indexOf('name: Audit the complete Pages artifact for private runtime material'),
-  pagesUpload: text.indexOf('name: Upload GitHub Pages artifact'),
 };
 for (const [name, pos] of Object.entries(positions)) {
   if (pos < 0) throw new Error(`Mangler workflowtrin: ${name}`);
 }
-const expected = [
-  'preflightCache',
-  'publicPreflightManifest',
-  'preflight',
-  'continuationRestore',
-  'protectedCheckpointRestore',
-  'privateRuntimeExpected',
-  'privateRuntimeRestore',
-  'privateRuntimeInspect',
-  'privateRuntimeVerify',
-  'privateRuntimeInstall',
-  'legacyBootstrapGate',
-  'legacyBootstrapImport',
-  'legacyCutoverImport',
-  'legacySourceAttestation',
-  'sourceGate',
-  'dmiBulk',
-  'targetedCopernicus',
-  'resolvedCurrentHour',
-  'copernicusRangeGate',
-  'liveCurrentBuild',
-  'weather',
-  'provenance',
-  'runtime',
-  'publicAudit',
-  'reference',
-  'validate',
-  'gate',
-  'validateData',
-  'protectedWriteHeadCheck',
-  'pointPromotion',
-  'continuationBuild',
-  'continuationSave',
-  'protectedCheckpointPublish',
-  'preflightStateBuild',
-  'preflightStateSave',
-  'privateRuntimeSpec',
-  'privateRuntimeCreate',
-  'privateRuntimeSave',
-  'privateRuntimeAnonAudit',
-  'artifact',
-  'pagesPrivacyAudit',
-  'pagesUpload',
-];
+const expected = ['hydrate','preflight','sourceGate','fallbackStage','gapCheckpoint','dmiBulk','targetedCopernicus','resolvedCurrentHour','weather','provenance','runtime','publicAudit','fallbackPublish','reference','validate','gate','artifact'];
 for (let i = 1; i < expected.length; i += 1) {
   const before = expected[i - 1];
   const after = expected[i];
@@ -345,10 +186,6 @@ for (const marker of [
   'permissions:\n  contents: read',
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'npm run validate:source',
-  'Validate exact source head before external writes',
-  'Reconfirm current origin/main before the Candidate G database contract',
-  'Atomically apply and verify the Candidate G trip-quality contract',
-  'Reconfirm current origin/main before D1 schema and phase inspection',
   'node scripts/prepare-cloudflare-trip-storage.mjs',
   'node scripts/mark-cloudflare-trip-storage-activation.mjs',
   'node scripts/audit-cloudflare-trip-storage.mjs',
@@ -368,27 +205,6 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(tripStorageDeployment)
 }
 if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.includes('id-token: write') || tripStorageDeployment.includes('deploy-pages')) {
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
-}
-const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
-const tripQualityCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before the Candidate G database contract');
-const tripQualityWrite = tripStorageDeployment.indexOf('name: Atomically apply and verify the Candidate G trip-quality contract');
-const d1SchemaCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before D1 schema and phase inspection');
-const d1SchemaWrite = tripStorageDeployment.indexOf('name: Prepare ten EU-restricted D1 shards, schema and durable phase');
-if (!(exactSourceValidation < tripQualityCas && tripQualityCas < tripQualityWrite
-  && tripQualityWrite < d1SchemaCas && d1SchemaCas < d1SchemaWrite)) {
-  throw new Error('Turlager-deploymentet skal have en sen exact-main-CAS umiddelbart før både trip-quality-write og D1-schema-/fasewrite.');
-}
-for (const [name, section] of [
-  ['trip quality', tripStorageDeployment.slice(tripQualityCas, tripQualityWrite)],
-  ['D1 schema', tripStorageDeployment.slice(d1SchemaCas, d1SchemaWrite)],
-]) {
-  for (const marker of [
-    'git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main',
-    'test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"',
-    'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
-  ]) {
-    if (!section.includes(marker)) throw new Error(`${name}-write mangler en umiddelbar exact-main-CAS-markør: ${marker}`);
-  }
 }
 const supabasePatConsumers = workflowFiles.filter((name) =>
   fs.readFileSync(`${workflowDirectory}/${name}`, 'utf8').includes('SUPABASE_ACCESS_TOKEN')
@@ -627,348 +443,91 @@ for (const marker of ['workflow_dispatch:', 'schedule:', 'permissions:\n  conten
 if (tripStorageMonitor.includes('pages: write') || tripStorageMonitor.includes('id-token: write') || tripStorageMonitor.includes('deploy-pages')) {
   throw new Error('Turlager-overvågningen må ikke kunne deploye Pages.');
 }
-const lightweightPreflightSection = text.slice(positions.preflightCache, positions.continuationRestore);
-for (const marker of [
-  'uses: actions/cache/restore@v6',
-  'path: .cache/weather-preflight-state',
-  'weather-preflight-state-v1-${{ runner.os }}-',
-  'name: Fetch only the deployed public manifest for weather preflight',
-  '--max-filesize 131072',
-  'node scripts/private-production-runtime-workflow.mjs materialize-preflight',
-  '--state "$state"',
-  '--public-manifest "$RAVRADAR_PREFLIGHT_WORK/public-manifest.json"',
-  '--output-root "$input_root"',
-  'cp scripts/check-weather-update.py "$input_root/scripts/check-weather-update.py"',
-  '(cd "$input_root" && python scripts/check-weather-update.py)',
-  'reason=verified-light-preflight-unavailable',
-]) {
-  if (!lightweightPreflightSection.includes(marker)) throw new Error(`Tidlig dataminimeret vejrpreflight mangler ${marker}`);
-}
-if (lightweightPreflightSection.includes('protected-private-production-runtime.mjs')
-  || lightweightPreflightSection.includes('/tmp/ravradar-private-production-runtime/bundle')) {
-  throw new Error('Den tidlige vejrpreflight må ikke hente eller inspicere det fulde private runtimebundle.');
-}
-
-const privateRuntimeRestoreSection = text.slice(positions.privateRuntimeExpected, positions.legacyBootstrapGate);
-for (const marker of [
-  'RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime',
-  'RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle',
-  'RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored',
-]) {
-  if (!text.includes(marker)) throw new Error(`Workflowets private runtime-miljø mangler ${marker}`);
-}
-for (const marker of [
-  'node scripts/private-production-runtime-workflow.mjs expected',
-  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  '--output .cache/private-production-runtime-expected.json',
-  'node scripts/protected-private-production-runtime.mjs',
-  '--restore',
-  'node scripts/private-production-runtime-bundle.mjs restore',
-  '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
-  '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--expected .cache/private-production-runtime-expected.json',
-  '--output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
-  'node scripts/private-production-runtime-workflow.mjs install',
-  '--restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
-]) {
-  if (!privateRuntimeRestoreSection.includes(marker)) throw new Error(`Private runtime-restore mangler ${marker}`);
-}
-for (const step of [
-  'privateRuntimeExpected',
-  'privateRuntimeRestore',
-  'privateRuntimeInspect',
-  'privateRuntimeVerify',
-  'privateRuntimeInstall',
-]) {
-  const start = positions[step];
-  const end = text.indexOf('\n      - name:', start + 1);
-  const block = text.slice(start, end < 0 ? text.length : end);
-  if (!block.includes("if: steps.preflight.outputs.should_run == 'true'")) {
-    throw new Error(`${step} må ikke køre før den lette preflight har krævet en reel build.`);
-  }
-}
-if (privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime')) {
-  throw new Error('Det private produktionsbundle må ikke gendannes i repositoryets cachetræ.');
-}
-if (text.includes('private-production-runtime-v1-')
-  || /actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(text)) {
-  throw new Error('Det fulde private runtimebundle må aldrig lagres i GitHub Actions cache.');
-}
-
-const continuationRestoreSection = text.slice(positions.continuationRestore, positions.privateRuntimeExpected);
-for (const marker of [
-  'uses: actions/cache/restore@v6',
-  'path: .cache/ravscore-continuation-checkpoint',
-  'ravscore-continuation-schema6-v2-',
-  "if: steps.preflight.outputs.should_run == 'true'",
-  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
-  'node scripts/protected-ravscore-continuation-checkpoint.mjs',
-  '--restore',
-  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
-]) {
-  if (!continuationRestoreSection.includes(marker)) throw new Error(`Protected schema-6 checkpoint-restore mangler ${marker}`);
-}
-if (continuationRestoreSection.includes('node scripts/ravscore-continuation-checkpoint.mjs')
-  || continuationRestoreSection.includes('--target data/live/conditions.json')) {
-  throw new Error('Checkpoint-restoren må ikke mutere conditions direkte; update-weather skal indlæse den validerede kompakte fil.');
-}
-
-const legacyBootstrapSection = text.slice(positions.legacyBootstrapGate, positions.sourceGate);
+const publicAuditBlockEnd = text.indexOf('\n\n', positions.publicAudit);
+const publicAuditBlock = text.slice(positions.publicAudit,
+  publicAuditBlockEnd < 0 ? text.length : publicAuditBlockEnd);
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
-  'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
-  'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
-  "if: steps.legacy-bootstrap.outputs.required == 'true'",
-  'python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap',
-  'RAVRADAR_DEPLOYED_BASE_URL:',
-]) {
-  if (!legacyBootstrapSection.includes(marker)) throw new Error(`Engangsbootstrap-gaten mangler ${marker}`);
-}
-if ((text.match(/python scripts\/hydrate-deployed-weather\.py/g) || []).length !== 2
-  || !legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
-  || text.includes('name: Hydrate latest deployed weather state')) {
-  throw new Error('Generisk offentlig hydration skal være pensioneret; kun første-cutover-bootstrap og den isolerede attesterede legacy-kilde må findes.');
-}
-if (!(positions.legacyCutoverImport < positions.legacySourceFetch
-  && positions.legacySourceFetch < positions.legacySourceAttestation)) {
-  throw new Error('Den eksakte Candidate G Git-kilde skal hentes efter isoleret public import og før lokal attestation.');
-}
-const legacyFetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
-if (text.split(legacyFetchCommand).length - 1 !== 2
-  || text.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 2) {
-  throw new Error('Både build-attestation og deploy-verifikation skal hente og bekræfte præcis den pinnede Candidate G-sourcecommit.');
-}
-const legacyDeployFetch = text.indexOf(
-  'name: Fetch exact public Candidate G source commit for first cutover verification',
-);
-const legacyPublicVerification = text.indexOf(
-  'name: Verify the complete currently public source model before begin CAS',
-);
-if (legacyDeployFetch < 0 || legacyPublicVerification < 0
-  || legacyDeployFetch >= legacyPublicVerification) {
-  throw new Error('Deployjobbet skal hente den pinnede Candidate G-kilde før offentlig byteverifikation og begin CAS.');
-}
-for (const forbidden of [
-  'candidate-normalization',
-  'normalization-begin',
-  'normalization-complete',
-  'integrated-normalization',
-  'ravscore-integrated-after-normalization',
-  'LEGACY_CANDIDATE_G_NORMALIZATION_PENDING',
-]) {
-  if (text.includes(forbidden)) throw new Error(`Den døde Candidate-normaliseringsomvej må ikke findes: ${forbidden}`);
-}
-for (const marker of [
-  'legacy-candidate-g)',
-  'test "$INITIAL_CUTOVER_REQUIRED" = "true"',
-  'test "$GITHUB_EVENT_NAME" = "push"',
-  'action="integrated-cutover"',
-  "if: steps.operational-action.outputs.action == 'integrated-cutover'",
-  'node scripts/verify-legacy-candidate-g-source.mjs attest',
-  'node scripts/verify-legacy-candidate-g-source.mjs verify',
-  '--attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"',
-  'node scripts/ravscore-operational-activation.mjs return-begin',
-  '"${source_attestation[@]}"',
-  '--source-implementation-closure-sha256 "$source_closure_sha256"',
-  '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
-]) {
-  if (!text.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER mangler ${marker}`);
-}
-for (const marker of [
-  'candidate_g_gap_reconstruction_mode',
-  'inspect-candidate-g-one-time-gap',
-  'one-time-candidate-g-gap-reconstruction.mjs',
-  '.cache/candidate-g-gap-reconstruction',
-]) {
-  if (text.includes(marker)) throw new Error(`Den opgivne DEC-0109-sti må ikke genåbnes i workflowet: ${marker}`);
-}
-
-const publicAuditBlock = text.slice(positions.publicAudit, positions.reference);
-for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true'",
-  'node scripts/audit-ravscore-integrated-public-runtime.mjs',
+  'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
   '--input data/live/conditions.json',
-  '--output .geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
 ]) {
   if (!publicAuditBlock.includes(marker)) {
-    throw new Error(`Den faktiske integrerede public runtime-gate mangler ${marker}`);
+    throw new Error(`Den faktiske Candidate G public runtime-gate mangler ${marker}`);
   }
 }
 if (publicAuditBlock.includes('continue-on-error')) {
-  throw new Error('Den faktiske integrerede public runtime-gate må ikke være vejledende.');
+  throw new Error('Den faktiske Candidate G public runtime-gate må ikke være vejledende.');
 }
-for (const forbidden of [
-  'Inspect verified Candidate G continuation recovery',
-  'restore-candidate-g-continuation.mjs',
-  'Inspect failed-run Candidate G gap checkpoint recovery',
-  'restore-candidate-g-gap-checkpoint.mjs',
+const gapCheckpointSection = text.slice(positions.gapCheckpoint, positions.dmiBulk);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'node scripts/restore-candidate-g-gap-checkpoint.mjs',
+  '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'uses: actions/download-artifact@v8',
+  'run-id: ${{ steps.candidate-g-gap-checkpoint.outputs.source_run_id }}',
+  'unzip -p .cache/candidate-g-gap-checkpoint-artifact/RavRadar-support-3633.zip',
+  'project/data/live/conditions.json',
+  'Restore only verified compact suffix from failed Candidate G run',
+]) {
+  if (!gapCheckpointSection.includes(marker)) throw new Error(`Candidate G-gapcheckpointet mangler ${marker}`);
+}
+for (const marker of [
+  'uses: actions/cache/restore@v6',
+  'candidate-g-continuation-checkpoint-v2-',
   'candidate-g-continuation-checkpoint-v1-',
   'node scripts/candidate-g-continuation-checkpoint.mjs',
-]) {
-  if (text.includes(forbidden)) {
-    throw new Error(`Den aktive produktionsvej må ikke bevare den historiske engangsrecovery: ${forbidden}`);
-  }
-}
-for (const forbidden of [
-  'Candidate G public fallback',
-  'candidate-g-public-recovery-fallback.mjs',
-  'candidate-g-last-ready-public',
-]) {
-  if (text.includes(forbidden)) {
-    throw new Error(`Den integrerede produktionsvej må ikke bevare Candidate G-publicering eller shadow: ${forbidden}`);
-  }
-}
-if (/ravscore_active_shadow|ravscore-active-shadow:|ravradar-active-ravscore-shadow/.test(text)) {
-  throw new Error('Det pensionerede active-shadow-entrypoint må ikke genindføres ved siden af candidate-dry-run.');
-}
-const candidateRollbackStage = text.slice(
-  text.indexOf('name: Seal Candidate G rollback or maintenance plan from the fresh private runtime'),
-  text.indexOf('name: Seal integrated return or initial cutover plan after backend and public gates'),
-);
-for (const marker of [
-  "startsWith(steps.operational-action.outputs.action, 'candidate-')",
-  'node scripts/prepare-candidate-g-operational-rollback.mjs',
-  'node scripts/install-candidate-g-rollback-stage.mjs',
-  'node scripts/audit-candidate-g-rollback-public-runtime.mjs',
-  '--source-model "$source_model"',
-  '--source-implementation-closure-sha256 "$source_closure_sha256"',
-  '--requested-implementation-closure-sha256 "$requested_closure_sha256"',
-  'source_model="candidate-g"',
-]) {
-  if (!candidateRollbackStage.includes(marker)) throw new Error(`Candidate-dry-run rollbackauditen mangler ${marker}`);
-}
-const candidateRefreshBegin = text.indexOf('name: Begin scheduled Candidate G refresh with exact central CAS');
-const pagesDeploy = text.indexOf('name: Deploy to GitHub Pages', candidateRefreshBegin);
-const candidateRefreshComplete = text.indexOf('name: Refresh already active Candidate G central evidence after public verification');
-if (!(candidateRefreshBegin >= 0 && candidateRefreshBegin < pagesDeploy
-  && pagesDeploy < candidateRefreshComplete)) {
-  throw new Error('Candidate G scheduler-maintenance skal være refresh-begin → Pages → refresh-complete.');
-}
-const candidateRefreshBeginBlock = text.slice(candidateRefreshBegin,
-  text.indexOf('\n      - name:', candidateRefreshBegin + 1));
-for (const marker of [
-  'ravscore-operational-activation.mjs refresh-begin',
-  '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
-  '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
-  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
-]) {
-  if (!candidateRefreshBeginBlock.includes(marker)) throw new Error(`Candidate G refresh-begin mangler ${marker}`);
-}
-const integratedMaintenance = text.indexOf('name: Reseal ordinary integrated production without changing model identity');
-if (!(integratedMaintenance > pagesDeploy)
-  || !text.slice(integratedMaintenance, text.indexOf('\n      - name:', integratedMaintenance + 1))
-    .includes('ravscore-operational-activation.mjs integrated-maintenance')) {
-  throw new Error('Almindelig integreret produktion skal reseales efter Pages uden en femte transitionstype.');
-}
-for (const marker of [
-  '--observations "$RAVRADAR_OPERATIONAL_WORK/observations.json"',
-  '--readiness "$RAVRADAR_OPERATIONAL_WORK/handoff/integrated-readiness.json"',
-  '--audit "$RAVRADAR_OPERATIONAL_WORK/handoff/public-audit.json"',
-  'ravscore-operational-pages-attempt-terminal-v1',
-  'ravscore-operational-recovery-$attempt_run_id-$attempt_number',
-  'deploy_step_conclusion',
-]) {
-  if (!text.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
-}
-const deploymentDecisionSection = text.slice(
-  text.indexOf('name: Decide whether this sealed artifact may deploy'),
-  text.indexOf('name: Upload privacy-safe operational handoff evidence'),
-);
-for (const marker of [
-  'if [ "$action" = "candidate-dry-run" ]',
-  'echo "should_deploy=false" >> "$GITHUB_OUTPUT"',
-  'Candidate G dry-run completed without public or central activation.',
-]) {
-  if (!deploymentDecisionSection.includes(marker)) throw new Error(`Candidate-dry-run deploygaten mangler ${marker}`);
-}
-assert.equal(
-  (text.match(/name: Atomically promote the validated point candidate in central admin storage/g) || []).length,
-  1,
-  'Det validerede punkt må kun promoveres én gang pr. produktionsbuild.',
-);
-assert.equal(
-  (text.match(/run: python scripts\/promote-coastal-point-activation\.py/g) || []).length,
-  1,
-  'Pointpromoter-scriptet må kun kaldes én gang pr. produktionsbuild.',
-);
-for (const name of [
-  'Atomically promote the validated point candidate in central admin storage',
-  'Save atomic schema-6 and Candidate G rollback checkpoint after final gates',
-  'Publish atomic RavScore checkpoint to protected admin storage',
-]) {
-  const start = text.indexOf(`name: ${name}`);
-  const end = text.indexOf('\n      - name:', start + 1);
-  const block = text.slice(start, end);
-  if (!block.includes("steps.operational-action.outputs.action != 'candidate-dry-run'")) {
-    throw new Error(`${name} skal være fail-closed under candidate-dry-run.`);
-  }
-}
-const continuationSaveSection = text.slice(positions.continuationBuild, positions.privateRuntimeSpec);
-for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
-  'node scripts/ravscore-continuation-checkpoint.mjs',
-  '--save',
-  '--source data/live/conditions.json',
-  'uses: actions/cache/save@v6',
-  'ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}',
-  'node scripts/protected-ravscore-continuation-checkpoint.mjs',
-  '--publish',
+  '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]) {
-  if (!continuationSaveSection.includes(marker)) throw new Error(`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
+  if (!gapCheckpointSection.includes(marker)) throw new Error(`Det generiske Candidate G-checkpoint mangler ${marker}`);
 }
-if (continuationSaveSection.includes('continue-on-error')) {
-  throw new Error('Protected checkpoint-publicering må ikke skjule fejl.');
+if (!(positions.gapCheckpoint < positions.continuationRestore && positions.continuationRestore < positions.dmiBulk)) {
+  throw new Error('Det generiske Candidate G-checkpoint skal anvendes efter engangsrecovery og før frisk DMI.');
 }
-const preflightStateSaveSection = text.slice(positions.preflightStateBuild, positions.privateRuntimeSpec);
+const fallbackStageSection = text.slice(positions.fallbackRestore, positions.dmiBulk);
 for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
-  'node scripts/private-production-runtime-workflow.mjs create-preflight',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  '--output .cache/weather-preflight-state/state.json',
+  'uses: actions/cache/restore@v6',
+  'candidate-g-last-ready-public-v2-',
+  'candidate-g-last-ready-public-v1-',
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
+  '--stage',
+  '--github-output "$GITHUB_OUTPUT"',
   'uses: actions/cache/save@v6',
-  'path: .cache/weather-preflight-state',
-  'weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
+  "steps.candidate-g-public-fallback-stage.outputs.fallback_available == 'true'",
+  "steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true'",
 ]) {
-  if (!preflightStateSaveSection.includes(marker)) throw new Error(`Dataminimeret vejrpreflight-bevaring mangler ${marker}`);
+  if (!fallbackStageSection.includes(marker)) throw new Error(`Candidate G-nødgrundlaget mangler ${marker}`);
 }
-if (preflightStateSaveSection.includes('continue-on-error')) {
-  throw new Error('Dataminimeret vejrpreflight-state skal bygges og gemmes fail-closed efter slutgates.');
+if (!(positions.fallbackRestore < positions.fallbackStage && positions.fallbackStage < positions.dmiBulk)) {
+  throw new Error('Candidate G-nødcachen skal restore v2→v1 før staging og frisk DMI.');
 }
-const privateRuntimeCreateSection = text.slice(positions.privateRuntimeSpec, positions.artifact);
+const fallbackPublishBlockEnd = text.indexOf('\n\n', positions.fallbackPublish);
+const fallbackPublishBlock = text.slice(positions.fallbackPublish,
+  fallbackPublishBlockEnd < 0 ? text.length : fallbackPublishBlockEnd);
 for (const marker of [
-  'node scripts/private-production-runtime-workflow.mjs create-spec',
-  '--repository-root "$GITHUB_WORKSPACE"',
-  '--output .cache/private-production-runtime-create-spec.json',
-  'node scripts/private-production-runtime-bundle.mjs create',
-  '--private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"',
-  '--bundle "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE"',
-  '--spec .cache/private-production-runtime-create-spec.json',
-  'name: Reconfirm current main before protected private-runtime write',
-  'node scripts/protected-private-production-runtime.mjs',
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'node scripts/candidate-g-public-recovery-fallback.mjs',
   '--publish',
-  '--expected .cache/private-production-runtime-expected.json',
-  '--source-head "$GITHUB_SHA"',
-  'name: Prove the private runtime object is not anonymously readable',
-  '--audit-anon',
-  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
-  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  '--audit .geometry-v2-work/candidate-g-public-runtime-audit.json',
 ]) {
-  if (!privateRuntimeCreateSection.includes(marker)) throw new Error(`Private runtime-bevaring mangler ${marker}`);
+  if (!fallbackPublishBlock.includes(marker)) throw new Error(`Candidate G-nødpubliceringen mangler ${marker}`);
 }
-const privateRuntimeCriticalSection = text.slice(positions.privateRuntimeSpec, positions.privateRuntimeSave);
-const privateRuntimeSaveSection = text.slice(positions.privateRuntimeSave, text.indexOf('\n\n', positions.privateRuntimeSave));
-if (privateRuntimeCriticalSection.includes('continue-on-error')
-  || privateRuntimeSaveSection.includes('continue-on-error')
-  || privateRuntimeCreateSection.includes('path: .cache/private-production-runtime')) {
-  throw new Error('Det private runtimebundle skal bygges fail-closed uden for repositoryet.');
+if (fallbackPublishBlock.includes('continue-on-error')) {
+  throw new Error('Candidate G-nødpubliceringen må ikke skjule fejl.');
+}
+const continuationSaveSection = text.slice(positions.continuationBuild, positions.publicAudit);
+for (const marker of [
+  'node scripts/candidate-g-continuation-checkpoint.mjs',
+  '--save',
+  'uses: actions/cache/save@v6',
+  'candidate-g-continuation-checkpoint-v2-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  if (!continuationSaveSection.includes(marker)) throw new Error(`Candidate G-checkpointbevaringen mangler ${marker}`);
+}
+if (!(positions.runtime < positions.continuationBuild
+  && positions.continuationBuild < positions.continuationSave
+  && positions.continuationSave < positions.publicAudit)) {
+  throw new Error('Kompakt Candidate G-state skal gemmes umiddelbart efter runtimebygning og før de sidste gates.');
 }
 const beforeWeather = text.slice(0, positions.weather);
 if (/run:\s+npm run validate(?:\n|$)/.test(beforeWeather) || beforeWeather.includes('npm run release:gate')) {
@@ -999,8 +558,8 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
-  throw new Error('Private GeoDanmark-dispatches skal udelukke det almindelige build- og deployjob.');
+if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)")) {
+  throw new Error('Private GeoDanmark- og RavScore-dispatches skal udelukke det almindelige build- og deployjob.');
 }
 const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));
 for (const marker of ['geometry_v2_national == true', 'python scripts/build-national-geometry-v2-plan.py', 'python scripts/fetch-geodanmark-national.py', 'python scripts/validate-geodanmark-national-source.py', 'python scripts/analyze-geodanmark-national.py', 'python scripts/fetch-national-water-exclusions.py', 'python scripts/analyze-national-coastal-topology.py', 'python scripts/validate-national-topology-audit.py', 'python scripts/build-national-coastal-parts.py', 'python scripts/validate-national-coastal-parts.py', 'python scripts/build-national-local-part-names.py', 'python scripts/validate-national-local-part-names.py', 'python scripts/build-national-local-part-points.py', 'python scripts/validate-national-local-part-points.py', 'python scripts/validate-national-local-part-dmi-grid.py', 'python scripts/build-national-weather-shadow-contract.py', 'python scripts/validate-national-multi-step-series.py', 'node scripts/validate-national-state-history.mjs', 'python scripts/validate-national-local-part-wind-series.py', 'node scripts/validate-national-shadow-score.mjs', 'Upload compact national geometry-v2 QA artifact', 'national-source-manifest.json', 'national-source-qa.json', 'national-source-qa.geojson', 'national-topology-audit.json', 'national-topology-audit.geojson', 'national-coastal-parts.json', 'national-coastal-parts.geojson', 'national-local-part-name-suggestions.json', 'national-local-part-point-pairs.json', 'national-local-part-dmi-grid.json', 'national-weather-shadow-contract.json', 'national-multi-step-series-validation.json', 'national-state-history-validation.json', 'national-local-part-wind-series.json', 'national-shadow-score-validation.json', 'Upload private national geometry-v2 source artifact']) {
@@ -1026,28 +585,7 @@ for (const marker of [
 if (geometryPilotSection.includes('pages: write') || geometryPilotSection.includes('id-token: write')) throw new Error('GeoDanmark-pilotjobbet må ikke have Pages-skriverettigheder.');
 if (!text.includes('needs: build-and-prepare')) throw new Error('Deployjobbet skal afhænge af det færdige buildjob.');
 const buildSection = text.slice(text.indexOf('build-and-prepare:'), text.indexOf('deploy-pages:'));
-const deploySection = text.slice(text.indexOf('deploy-pages:'), text.indexOf('production-outcome:'));
-const buildTimeoutMinutes = Number(buildSection.match(/^    timeout-minutes: (\d+)$/m)?.[1]);
-const dmiBulkEnd = text.indexOf('\n      - name:', positions.dmiBulk + 1);
-const dmiBulkSection = text.slice(
-  positions.dmiBulk,
-  dmiBulkEnd < 0 ? text.length : dmiBulkEnd,
-);
-const dmiStepTimeoutMinutes = Number(dmiBulkSection.match(/^        timeout-minutes: (\d+)$/m)?.[1]);
-const bootstrapRuntimeSeconds = Number(
-  dmiBulkSection.match(/DMI_BULK_MAX_RUNTIME_SECONDS:.*'([0-9]+)'\s*\|\|\s*'900'/)?.[1],
-);
-if (!Number.isFinite(buildTimeoutMinutes)
-  || !Number.isFinite(dmiStepTimeoutMinutes)
-  || !Number.isFinite(bootstrapRuntimeSeconds)) {
-  throw new Error('WAM-bootstrap timeoutkontrakten kunne ikke aflæses entydigt.');
-}
-if (dmiStepTimeoutMinutes * 60 < bootstrapRuntimeSeconds + 300) {
-  throw new Error('DMI-step-timeout skal rumme bootstrap-runtime plus mindst fem minutters sikker afslutningsmargin.');
-}
-if (buildTimeoutMinutes < dmiStepTimeoutMinutes + 30) {
-  throw new Error('Buildjobbet skal rumme hele DMI-steppet plus mindst 30 minutter til forudgående og efterfølgende gates.');
-}
+const deploySection = text.slice(text.indexOf('deploy-pages:'));
 if (buildSection.includes('environment:\n      name: github-pages')) throw new Error('Det tunge buildjob må ikke holde github-pages-miljøet.');
 if (!deploySection.includes('environment:\n      name: github-pages')) throw new Error('Kun deployjobbet skal eje github-pages-miljøet.');
 if (!deploySection.includes('pages: write') || !deploySection.includes('id-token: write')) throw new Error('Deployjobbet mangler minimale Pages-rettigheder.');
@@ -1055,127 +593,8 @@ if (buildSection.includes('pages: write') || buildSection.includes('id-token: wr
 for (const protectedPilotPath of ["--exclude 'data/geometry-v2/'", "--exclude '.geometry-v2-work/'", "--exclude 'requirements-geometry.txt'"]) {
   if (!buildSection.includes(protectedPilotPath)) throw new Error(`Pages-artifact må ikke indeholde ${protectedPilotPath}`);
 }
-const pagesArtifactSection = text.slice(positions.artifact, positions.pagesPrivacyAudit);
-if (!pagesArtifactSection.includes("--exclude 'data/live/'")) {
-  throw new Error('Pages-artifactet skal ekskludere hele data/live før den minimale allowliste installeres.');
-}
-const expectedPagesLiveFiles = [
-  'coastal-parts-v2.json',
-  'manifest.json',
-  'public-condition-details.json',
-  'public-conditions.json',
-];
-const installedPagesLiveFiles = [...pagesArtifactSection.matchAll(
-  /install -m 0644 "\$pages_source\/data\/live\/([^"\s]+)" "\$pages_destination\/data\/live\/([^"\s]+)"/g,
-)].map((match) => {
-  if (match[1] !== match[2]) throw new Error(`Pages-installationen omdøber en livefil: ${match[1]} -> ${match[2]}`);
-  return match[1];
-}).sort();
-if (JSON.stringify(installedPagesLiveFiles) !== JSON.stringify(expectedPagesLiveFiles)) {
-  throw new Error(`Pages-artifactets live-allowliste skal være præcis fire filer: ${installedPagesLiveFiles.join(', ') || '(ingen)'}`);
-}
-const pagesLiveWriteLines = pagesArtifactSection.split('\n')
-  .map((line) => line.trim())
-  .filter((line) => line.includes('$pages_destination/data/live'));
-if (pagesLiveWriteLines.length !== 5
-  || pagesLiveWriteLines[0] !== 'mkdir -p "$pages_destination/data/live"'
-  || pagesLiveWriteLines.slice(1).some((line) => !line.startsWith('install -m 0644 "$pages_source/data/live/'))) {
-  throw new Error('Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer.');
-}
-const pagesPrivacyAuditSection = text.slice(positions.pagesPrivacyAudit, positions.pagesUpload);
-for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true'",
-  'node scripts/audit-pages-artifact-privacy.mjs',
-  '--site _site',
-  '--private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"',
-  '--require-private-manifest',
-]) {
-  if (!pagesPrivacyAuditSection.includes(marker)) throw new Error(`Pages-privacygaten mangler ${marker}`);
-}
-if (pagesPrivacyAuditSection.includes('continue-on-error')) {
-  throw new Error('Pages-privacygaten skal være fail-closed før artifact-upload.');
-}
-const productionConcurrencySection = text.slice(text.indexOf('\nconcurrency:'), text.indexOf('\njobs:'));
-if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
+if (!text.includes('cancel-in-progress: false')) throw new Error('Ingen incoming push, schedule, force eller recovery må annullere en kørende apply-/produktionskørsel.');
 if (!text.includes("'ravradar-geometry-v2-national'") || !text.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
 if ((text.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Workflowet skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
-
-const deploymentPosition = text.indexOf('name: Deploy to GitHub Pages');
-const publicVerificationPosition = text.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact');
-const failureReconciliationPosition = text.indexOf('name: Reconcile an ambiguous failed transition from observed public identity');
-const deploymentTerminalPosition = text.indexOf('name: Seal exact verified deployment terminal');
-const outcomeJobPosition = text.indexOf('\n  production-outcome:');
-if (!(deploymentPosition < publicVerificationPosition
-  && publicVerificationPosition < failureReconciliationPosition
-  && failureReconciliationPosition < deploymentTerminalPosition
-  && deploymentTerminalPosition < outcomeJobPosition)) {
-  throw new Error('DEPLOYED-beviset skal ligge efter Pages, offentlig exact 210/673-verifikation og alle activation/reconciliation-trin.');
-}
-const deploymentTerminalSection = text.slice(deploymentTerminalPosition, outcomeJobPosition);
-for (const marker of [
-  'id: deployment-terminal',
-  "if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
-  'echo "deployed_verified=true" >> "$GITHUB_OUTPUT"',
-]) {
-  if (!deploymentTerminalSection.includes(marker)) throw new Error(`Deployment-terminalen mangler ${marker}`);
-}
-
-for (const marker of [
-  'preflight_should_run: ${{ steps.preflight.outputs.should_run }}',
-  'weather_outcome: ${{ steps.weather.outcome }}',
-  'full_validation_outcome: ${{ steps.full-validation.outcome }}',
-  'release_gate_outcome: ${{ steps.release-gate.outcome }}',
-  'pages_build_outcome: ${{ steps.pages-build.outcome }}',
-  'pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}',
-  'handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}',
-  'pages_configure_outcome: ${{ steps.pages-configure.outcome }}',
-  'pages_upload_outcome: ${{ steps.pages-upload.outcome }}',
-  'artifact_built: ${{ steps.pages-build.outputs.built }}',
-  'id: full-validation',
-  'id: release-gate',
-  'id: pages-build',
-  'id: pages-privacy',
-  'id: handoff-upload',
-  'id: pages-configure',
-  'id: pages-upload',
-  'echo "built=true" >> "$GITHUB_OUTPUT"',
-]) {
-  if (!buildSection.includes(marker)) throw new Error(`Buildets slutstatusbevis mangler ${marker}`);
-}
-
-const outcomeSection = text.slice(outcomeJobPosition);
-for (const marker of [
-  'name: Classify exact weather production outcome',
-  'if: always()',
-  'contents: read',
-  'node scripts/production-workflow-outcome.mjs',
-  '--output .workflow-outcome/production-outcome.json',
-  '--github-output "$GITHUB_OUTPUT"',
-  '--summary "$GITHUB_STEP_SUMMARY"',
-  'name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}',
-  'path: .workflow-outcome/production-outcome.json',
-  'if-no-files-found: error',
-  "if: always() && steps.classify.outputs.status == 'FAILED'",
-  'exit 1',
-]) {
-  if (!outcomeSection.includes(marker)) throw new Error(`Produktionsslutstatusjobbet mangler ${marker}`);
-}
-const outcomeNeeds = [...outcomeSection.slice(
-  outcomeSection.indexOf('    needs:'),
-  outcomeSection.indexOf('    if: always()'),
-).matchAll(/^      - ([a-z0-9-]+)$/gm)].map((match) => match[1]);
-assert.deepEqual(outcomeNeeds, [
-  'validate-dispatch',
-  'reconcile-operational-pending',
-  'current-hour-readiness',
-  'trip-storage-readiness',
-  'build-and-prepare',
-  'geometry-v2-national',
-  'geometry-v2-pilot',
-  'deploy-pages',
-]);
-for (const forbidden of ['secrets.', 'SUPABASE_', 'data/live/', 'currentUMps', 'currentVMps', 'waterPoint', 'landPoint', 'coordinates']) {
-  if (outcomeSection.includes(forbidden)) throw new Error(`Det payloadfri outcomejob må ikke indeholde ${forbidden}`);
-}
 
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');

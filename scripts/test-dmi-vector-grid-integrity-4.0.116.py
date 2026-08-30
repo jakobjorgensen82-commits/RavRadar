@@ -73,29 +73,19 @@ print("OK: DMI water temperature accepts only the explicit surface layer.")
 # owner-approved 5 km cap and prefers the 0-3 km band.
 from pathlib import Path
 bulk_source = Path("scripts/update-dmi-bulk.py").read_text()
-provenance_source = Path("scripts/lib/dmi_native_provenance.py").read_text()
 assert 'DMI_BULK_GRID_CANDIDATES", "64"' in bulk_source
 assert 'DMI_BULK_LIMFJORD_GRID_CANDIDATES", "128"' in bulk_source
 assert '0.20, 0.26' in bulk_source
 assert 'MAX_GRID_DISTANCE_KM = {"limfjord": 24.0' in bulk_source
 assert 'vector_candidates.setdefault((family, zone["id"], layer_key), {})' in bulk_source
-assert 'CURRENT_PREFERRED_DISTANCE_KM = 3.0' in provenance_source
-assert 'CURRENT_MAX_DISTANCE_KM = 5.0' in provenance_source
+assert 'CURRENT_PREFERRED_DISTANCE_KM = 3.0' in bulk_source
+assert 'CURRENT_MAX_DISTANCE_KM = 5.0' in bulk_source
 assert 'prefer_vector_choice(previous_choice, candidate_choice)' in bulk_source
 assert 'CURRENT_POINT_OVER_5KM' in bulk_source
 assert '"verticalLayer": layer_key' in bulk_source
 assert '"vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION' in bulk_source
-assert '"gridPoint": [longitude, latitude]' in bulk_source
-assert '"samplingPoint": [round(sampling_point[0], 7)' in provenance_source
-assert 'def select_common_grid_tuple(' in bulk_source
-assert 'gridDefinitionSha256' in bulk_source
-assert '"componentKind": COMPONENT_KIND[component]' in bulk_source
-assert '"entityId": entity_id' in provenance_source
-assert '"parentZoneId": parent_zone_id' in provenance_source
-assert '"fieldSet": list(COMPONENT_FIELD_SET[component])' in bulk_source
-assert 'previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))' in bulk_source
-assert 'else iso(acquired_at) if acquired_at else None' in bulk_source
-assert 'PRIVATE_REPLAY_RETENTION_HOURS = max(' in bulk_source
+assert '"gridPoint": [round(float(first["longitude"]), 7)' in bulk_source
+assert '"samplingPoint": [round(float(zone["lon"]), 7)' in bulk_source
 assert 'rejectedNonSurfaceWaterTemperatureMessages' in bulk_source
 assert 'water_temperature_surface_layer' in bulk_source
 assert 'family in {"current", "wind-tail"}' in bulk_source

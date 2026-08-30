@@ -261,7 +261,7 @@ async function listTrips(env, body) {
         throw new Error('TRIP_STORED_RECORD_INTEGRITY_INVALID');
       }
       const schemaVersion = Number(storedPayload.schema_version ?? 1);
-      if ([2, 3].includes(schemaVersion)) {
+      if (schemaVersion === 2) {
         assertStoredExternalTripContract(storedPayload);
       }
       const payload = externalTripPayload(storedPayload);

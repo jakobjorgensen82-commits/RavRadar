@@ -3,13 +3,6 @@ import { assertAllowedOrigin, enforceRateLimits, GatewayError, jsonResponse, rea
 import { storeObservation } from "../_shared/trip-store.ts";
 import { tripStorageReadinessHeaders } from "../_shared/trip-storage-readiness.ts";
 import { assertExternalTripNestedContract, assertExternalTripQualityBinding, assertNoPrivateLocation, normalizeExternalTripQualityBinding, projectLegacyExternalTripPayload, TRIP_INPUT_FIELD_NAMES } from "../_shared/trip-storage.js";
-import { ravScoreModelBinding } from "../../../js/core/ravscore-model-contract.js";
-import { ravScoreModelBinding as candidateGRollbackModelBinding } from "../../../scripts/rollback-assets/ravscore-model-contract.js";
-import {
-  CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
-  submittedCalibrationEligibilityMatches,
-  tripEvidenceIntegrityIssues,
-} from "../../../js/services/calibration-eligibility.js";
 
 const ALLOWED_FIELDS = new Set(TRIP_INPUT_FIELD_NAMES);
 
@@ -71,7 +64,7 @@ function validateResult(payload: Record<string, unknown>) {
 function validateTripContract(payload: Record<string, unknown>, schemaVersion: number) {
   const flags = Array.isArray(payload.data_quality_flags) ? payload.data_quality_flags : [];
   const accountReport = schemaVersion === 1 && flags.includes(ACCOUNT_REPORT_FLAG);
-  if (![2, 3].includes(schemaVersion) && !accountReport) return;
+  if (schemaVersion !== 2 && !accountReport) return;
 
   requireUuid(payload.trip_id, "trip_id");
   requireTimestamp(payload.trip_started_at, "trip_started_at");
@@ -103,16 +96,6 @@ function validateTripContract(payload: Record<string, unknown>, schemaVersion: n
   if (!isRecord(payload.calibration_features)) throw new GatewayError(400, "INVALID_CALIBRATION_FEATURES");
   for (const score of ["totalScore", "huntabilityScore", "transportScore", "mobilisationScore"]) {
     requireNumber(payload.calibration_features[score], score, 0, 100);
-  }
-  if (schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION
-    && tripEvidenceIntegrityIssues(payload).length) {
-    throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
-  }
-  if (schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION
-    && !submittedCalibrationEligibilityMatches(payload, ravScoreModelBinding(), {
-      ineligibleBindings: [candidateGRollbackModelBinding()],
-    })) {
-    throw new GatewayError(400, "INVALID_CALIBRATION_ELIGIBILITY");
   }
   try {
     assertExternalTripQualityBinding(payload);
@@ -154,7 +137,7 @@ function validatePayload(payload: Record<string, unknown>) {
   const grams = payload.grams == null ? null : Number(payload.grams);
   if (grams !== null && (!Number.isFinite(grams) || grams < 0 || grams > 10000)) throw new GatewayError(400, "INVALID_GRAMS");
   const schemaVersion = payload.schema_version == null ? 1 : Number(payload.schema_version);
-  if (![1, 2, 3].includes(schemaVersion)) throw new GatewayError(400, "INVALID_SCHEMA_VERSION");
+  if (![1, 2].includes(schemaVersion)) throw new GatewayError(400, "INVALID_SCHEMA_VERSION");
   if (payload.data_quality_flags != null && (!Array.isArray(payload.data_quality_flags) || payload.data_quality_flags.length > 20 || payload.data_quality_flags.some((item) => typeof item !== "string" || item.length > 80))) {
     throw new GatewayError(400, "INVALID_DATA_QUALITY_FLAGS");
   }

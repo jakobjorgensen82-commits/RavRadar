@@ -85,14 +85,10 @@ Når recoverykandidatens grønne `main` senere integreres, skal modelsporet beva
 5. Ture, observationer og andre læringskandidater bundet til en `HISTORY_INCOMPLETE`-score skal være `calibrationEligible=false` gennem browser, Edge, D1/Supabase, schema, manifest og audit. Scoretypen er brugerinformation, ikke empirisk kalibreringsevidens.
 6. Producent-/forbrugermatricen og releasegaten skal bevise samme kvalitetsstatus og advarsel for current, fem døgn, score/detalje, rangering/beste tidspunkt, ture/observationer, lokal/Edge-assistent, admin/ekspert, startup/detaljer/hashes, recovery og offentlig browser. Blandede kvaliteter må ikke sammenlignes eller præsenteres som ens uden en særskilt dokumenteret policy.
 
-DEC-0112 fastlægger nu den eksakte numeriske løsning: state `6.0.0` viser den konservative nedre grænse og fører en øvre grænse gennem hele 20/50/30-kæden; strøm bruger fortsat 48 aktive timer, bølgemobiliseringens usikkerhedshale lukkes efter 288 timer og last-mile-momenter efter 40 timer. 168 timers researchretention har ingen scoreeffekt. Manglende direkte input er fortsat `UNAVAILABLE`. Den historiske state-5-kandidat var aldrig offentlig og kan kun være eksakt 5→6-migrationskilde.
-
 ## Bindende arkitekturkrav til modelleverancen
 
 Den systemiske gæld fra de seneste P0-forløb må ikke skubbes til en uspecificeret senere oprydning. DEC-0102-leverancen skal reducere monolitisk workflowkobling, gøre success/no-op/skipped til eksplicit maskinlæsbar semantik og samle versions-, dokumentations- og kontraktmetadata, så tests validerer adfærd frem for spredte tekstliteraler. Dette er en modelleverancegate, men må ikke udvide den afgrænsede 4.0.316-hotfix. Se DEC-0112.
 
-Semantikdelen er lokalt implementeret med terminalerne `NOOP`, `DEFERRED`, `BUILT`, `DEPLOYED` og `FAILED`. Klassifikationen er bevisdrevet: fulde buildgates må ikke skjules af et grønt job, og `DEPLOYED` kan først udstedes efter Pages og den eksakte offentlige model-/implementation-/210/673-kontrol. Statusartefactet er payloadfrit, og `FAILED` gør fortsat workflowet rødt. Opsplitning af workflowmonolitten og samling af version/docs/kontraktmetadata forbliver åbne leverancegates.
-
 ## Konsekvens nu
 
-Dette dokument er plan-, scope- og autoritetsgrundlag. `HISTORY_INCOMPLETE`-beslutningen er implementeret i den lokale state-6-modelkandidat under DEC-0112, men er ikke en påstand om en ny offentlig model: Candidate G forbliver offentlig indtil hele cutoverkæden er bevist. Der ændres ingen geometri, land-/vandpunkter eller private data ved dette addendum.
+Dette dokument er alene plan-, scope- og autoritetsgrundlag. `HISTORY_INCOMPLETE`-beslutningen implementeres ikke af 4.0.316-P0-hotfixen og er ikke en påstand om en ny offentlig model. Der ændres ingen modelscore, geometri, land-/vandpunkter eller private data ved dette addendum.

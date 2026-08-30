@@ -1,8 +1,6 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.317
-
-## Frisk vejrvisning kræver ikke en gyldig ældre reserve – offentlig 4.0.316
+## Frisk vejrvisning kræver ikke en gyldig ældre reserve – 4.0.316 hotfixkandidat
 
 4.0.315-rettelsen virkede på sin første hovedopgave. PR #233 bestod kildekontrollen i run `33299676128`, blev merged som `63d789a4`, og den efterfølgende kørsel `33299747300` kom forbi den gamle D1-lås og startede den normale vejrbygning. Den tidligere grønne no-op var derfor ikke længere stopklodsen.
 
@@ -12,11 +10,11 @@ I 4.0.316 er reserven valgfri, når den nye primary er frisk, udelukkende målt 
 
 Denne ændring gør ikke primary mindre streng. Uventede antal, forskel mellem manifest og filer, auditfejl eller manglende aktuelle/fremtidige input stopper stadig udgivelsen. RavRadar interpolerer ikke huller, låner ikke fra nabozoner og opfinder ingen historik eller syntetiske data.
 
-Ejeren har samtidig truffet en bindende beslutning for den kommende samlede RavScore-model. Hvis historikken er ufuldstændig, men den konkrete times direkte input er gyldige, skal hele current- og femdøgnsfladen fortsat have en konservativ nedre score med en medfølgende øvre grænse og en tydelig advarsel på dansk, tysk og engelsk. Advarslen står ved score, detaljer, femdøgnsvisning, admin og ekspert og forsvinder automatisk, når historikken igen er komplet. Sådanne resultater er altid `calibrationEligible=false`. Mangler de direkte input, er timen derimod utilgængelig. Dette er implementeret i den lokale state-6-modelkandidat, ikke i Candidate G.
+Ejeren har samtidig truffet en bindende beslutning for den kommende samlede RavScore-model. Hvis historikken er ufuldstændig, men den konkrete times direkte aktuelle eller fremtidige input er gyldige, skal hele current- og femdøgnsfladen fortsat have score med en tydelig advarsel på dansk, tysk og engelsk. Advarslen skal stå ved score, detaljer, femdøgnsvisning, admin og ekspert og forsvinde automatisk, når historikken igen er komplet. Sådanne resultater er altid `calibrationEligible=false`. Mangler de direkte input, er timen derimod utilgængelig. Dette er en senere modelkontrakt og er ikke implementeret af P0-hotfixen.
 
 Modelleverancen skal også reducere tre systemiske risici: det meget store workflow, uklare grøn-no-op/skipped-resultater og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. Det arbejde må ikke gøre 4.0.316-hotfixen større.
 
-Offentlig 4.0.316 er observeret friskt som datasæt `rr-20260830091913-210` med 210 zoner og 673 kystdele. Candidate G havde dog 0 aktive zoner og 210 `UNAVAILABLE`, fordi den sammenhængende strømhistorik var utilstrækkelig. Det er bevis for den gamle all-or-nothing-regression, ikke for den lokale state-6-model. Se DEC-0112.
+4.0.316 er ikke live endnu. Først efter exact-head-kontrol, merge, en frisk fuld produktion med validering, releasegate, artifact og Pages samt offentlig kontrol af 210 zoner/673 kystdele og aktuelle/femdøgnsprognoser kan udgaven kaldes produktionsverificeret. Se DEC-0112.
 
 ## Historisk: Aktuelle prognoser skulle genåbnes uden rekonstruktion – 4.0.315 blev ikke deployet
 
@@ -36,21 +34,15 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.317 state-6-testkandidat
+Morgenhullet er stadig ikke lukket, og offentlig RavRadar viser fortsat den komplette målte 4.0.310-nødvisning. Før-primary-rettelsen bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og exact-main D1 `33279463545`/`99172031927` blev helt grøn. Den efterfølgende read-only inspect `33279639424`/`99172534863` stoppede sikkert før descriptor, apply, build og Pages med `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data eller cache blev ændret.
 
-Candidate G er fortsat den eneste offentlige model i den produktionsverificerede appbaseline 4.0.316. `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` med state `6.0.0` er den lokalt implementerede 4.0.317-testkandidat under DEC-0110/DEC-0112; den er ikke exact-head-valideret, merged, deployet eller offentligt browserverificeret endnu. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
+Årsagen var ikke en ny manglende periode, men at inspect forsøgte at udlede kildens native cadence alene fra afstandene i den målte suffix. Candidate G har allerede en anden kontrakt: eksakte målte afstande på op til tre timer kan være samme sammenhængende transportbevis. På en en-timeskilde kan to eller tre timer derfor betyde et eller to udeblevne native slots. Det gør ikke serien til en ny cadence, og de udeblevne slots må ikke udfyldes.
 
-Releasekandidaten bevarer 20/50/30, 0,03/0,15 m/s, +10/-8, 24/48-timers strømhukommelse og 4/48-timers bølgemobilisering. Det sidste nærkystled bruger en kausal energivægtet bølgeapproach med fire timers halveringstid og en ældre hale. DMI-WAM `FROM` roteres én gang +180° til `TOWARD` mod den uændrede kystnormal, og `factor=clamp(1-0.15×W×(1-approach),0.85,1)` dæmper eksisterende supply præcis én gang. Bølger skaber eller øger aldrig supply; højst 7,5 rå totalscorepoint kan fjernes før slutafrunding; vist RavScore kan derfor ændres 8 point. Aktiv retningsmissing fejler lukket. Kun `waveHeightM=0` er eksakt calm og neutral; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket.
+Cadenceidentiteten findes allerede i den versionsstyrede regionale proxy-policy. Præcis de otte ejerautoriserede `dkss_lf`-dele er native tre timer; alle øvrige dele er én time. Inspect bruger per-del-identiteten og beholder 665/8 som en ekstra populationgate. En total alene er ikke nok, fordi to fejlklassificerede dele ellers teoretisk kunne bytte plads.
 
-Den fysiske levering er fortsat uopløst: `physicalDeliveryResolved=false` og fysisk interval `null`. DDM 2024/v2 er et 50 × 50 m statisk middelgrid med dybde/kilde/opmålingsår, moderne søopmåling og også lavtvandsdata fra satellit/lidar. Det er ikke fravalgt for mangel på lavtvandsdata, men fordi utilstrækkeligt dækkede celler interpoleres, kystlinjen er generaliseret 1:100.000, og produktet ikke opløser dynamiske revler, ripkanaler eller en bølgeopløst surfzone. Det kan være kontekst, men er ikke scoreinput. Rainville 2026 er kun buoyant-object-analogi, og der påstås ingen empirisk højere fundpræcision. Ingen geometri, kystnormal eller land-/vandpunkter flyttes.
+Policyindhold eller koordinater kommer ikke i descriptoren. RavRadar danner kun en koordinatfri projektion af de relevante policyfelter og sorterede del-id'er og forsegler projektionens SHA-256. Apply genlæser policyen, genberegner både hash og hele planen og kræver kanonisk descriptor-/target-CAS. En policy-ID-swap, dublet eller mangel, en 3h-del med 1/2h-afstand, nonintegral eller over tre timers afstand og en ændret policyhash stopper før mutation.
 
-Ved ægte cold start bruger `bounded-private-48h-history-cold-replay-v3` de 0–48 private, verificerede timer, der faktisk findes, plus den reelle targettime og registrerer forventede, komplette og ukendte kausale positioner. Scoren er `HISTORY_INCOMPLETE` med konservative bounds — også efter 48/48 og markøren `VERIFIED_CAUSAL_HISTORY_WINDOW`, fordi bølgemobiliseringens ukendte hale først lukkes efter 288 timers kausal recovery. Kortere/gappede forløb mærkes `UNKNOWN_HISTORY_INTERVAL`. Først closure eller en attestert migration/continuation giver `FULL_HISTORY`. Candidate G-rollback bruger samme target uden dobbelt recovery-credit og kræver en særskilt beskyttet READY companion ved checkpoint-only recovery. Under manuel rollback kan kun en eksakt `READY`/`memoryReady` Candidate G-runtime projicere sin egen mode-score som exact full-history med collapsed bounds og 48 timers coverage; non-READY/mismatch stopper, og `calibrationEligible=false` består. Nøddrift må kun bruge en komplet, atomisk og hashbundet continuation fra samme model i højst 72 timer eller kortere forecastudløb; cross-model fallback og interpolation er forbudt.
-
-Feggesund/`DK-B05-11` mangler 118/118 bølgefelter i det sanitiserede parent-zone-forecast `rr-20260830104132-210`. Men de tre aktive kystdele findes, er markeret med fuld marine dækning, og Candidate G-current virker for strand og waders. Den nye model beregner fra 673 kystdelsserier, så en frisk integreret produktion skal først vise, om de tre dele faktisk mangler nogen af deres 118 direkte bølgetimer. En nabozoneproxy kan derfor være helt unødvendig.
-
-Kun hvis der bevises et reelt hul på kystdelsniveau, og korrekte direkte DMI- eller egnede officielle alternative data viser sig helt umulige, har ejeren tilladt, at konservativ nabozoneinterpolation kan **vurderes** for netop denne ene zone. Det er ikke implementeret, ikke en generel fallback og ikke tilladelse til at opfinde historik, låne strøm eller flytte punkter/kystnormal. Et faktisk manglende direkte part-input er fortsat `UNAVAILABLE`, indtil en eventuel særskilt beslutning og fulde data-, usikkerheds-, drifts-, test- og rollbackbeviser foreligger.
-
-Ejeren opgav den planlagte fiktive rekonstruktion af morgenhullet efter de dokumenterede read-only stop og før descriptor, apply, mutation, artifact eller offentliggørelse. De operative GitHub-inputs/job, incidentpolicyen og mutatoren er fjernet, og en negativ gate forhindrer genåbning. Kun konservativ læsning og kvalitetsklassifikation af historiske markører består. DEC-0109 er historisk dokumentation; de følgende 4.0.311–4.0.314-afsnit er revisionsspor og ikke åbne udførelsesplaner.
+På en policyklassificeret 1h-del accepteres kun eksakte heltalsafstande på 1, 2 eller 3 timer; de manglende interne tidspunkter forbliver manglende. De otte 3h-dele skal have mindst to eksakte 3h-intervaller på både før- og targetkanten og er fortsat de eneste, som må have et enkelt målt `AFTER`-anker. Kun det eksakte incident-bracket interpoleres. Det samlede 48-timers replay skal stadig blive `READY`, og alle source-, state-, trust-, rollback-, privacy- og releasegates består.
 
 Den målrettede syntetiske 210/673 inspect-/CAS-/rollback-/cleanup-/checkpointtest og workflowinterlock var grønne, inklusive sparse 2h-hourly, mixed 1/3-hourly, policy-ID-swap, ulovlig 3h/2h, nonintegral cadence og policyhash-CAS. Den daværende plan var proportionale source-/RDKS-/reviewgates, exact-head PR, merge/no-op, nyt exact-main D1 og en ny read-only inspect før et eventuelt descriptorbundet CAS-apply. Planen blev aldrig gennemført og er trukket tilbage af DEC-0111; der må ikke køres nyt inspect eller apply.
 
@@ -66,7 +58,7 @@ Lempelsen er snæver. Før-kilden skal fortsat være målt schema 2.0, indeholde
 
 Den positive regression bruger nu 673 ærlige, målte 24-timers `WINDOW_INCOMPLETE`-før-suffixer i stedet for 673 kunstigt komplette før-states. Hele 210/673 inspect-, CAS-, rollback-, cleanup- og checkpointforløbet består både med og uden et nedarvet GitHub Actions-miljø. Negativer beviser, at ældre huller og manipulerede states ikke kan skjules.
 
-PR #230 bestod exact-head `33277107562`/`99165644953`, blev merged som `228725ea`, og push `33277217412` var no-op. Første D1 `33277253662` stoppede på en forbigående 503 efter Edge, men hele fail-closed roll-forward bestod; genkørsel `33277510537`/`99166722076` blev helt grøn. Inspect `33277738135`/`99167394284` ændrede intet. Ved dette historiske checkpoint var næste plan exact-head, merge, nyt D1, ny inspect og kun derefter descriptorbundet CAS-apply. Ejeren opgav siden udførelsen før descriptor/apply/mutation/offentliggørelse; der findes ingen åben rekonstruktionsplan.
+PR #230 bestod exact-head `33277107562`/`99165644953`, blev merged som `228725ea`, og push `33277217412` var no-op. Første D1 `33277253662` stoppede på en forbigående 503 efter Edge, men hele fail-closed roll-forward bestod; genkørsel `33277510537`/`99166722076` blev helt grøn. Inspect `33277738135`/`99167394284` ændrede intet. Den daværende source-hotfix skulle have været gennem exact-head, merge, sit eget D1 og en ny inspect før et eventuelt descriptorbundet CAS-apply. DEC-0111 trak planen tilbage; disse trin må ikke udføres.
 
 Candidate G's score, 20/50/30, +10/-8, 13-timersregel, DMI/Copernicus, vejr, nøddrift, geometri, punkter og private data er uændrede.
 
@@ -121,12 +113,6 @@ Ved dette historiske checkpoint var 4.0.313 den lokale roll-forward-kandidat med
 RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et enkelt eksternt job kontrollerer forskudt ved UTC-minut 04, 19, 34 og 49, om hele GitHubs planlægning er blevet stille. Det starter ikke vejrproduktion blindt og sender ingen vejrdata ud af GitHub.
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
-
-## Status for det aktuelle modelarbejde – lokal 4.0.317-testkandidat, ikke produktion
-
-Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver den lokalt implementerede 4.0.317-testkandidat, som først må blive offentlig ved ét atomisk cutover efter grøn exact-head-kontrol, merge, fuld produktion og offentlig mobil-/desktopkontrol.
-
-Den offentlige baseline er 4.0.316 med Candidate G. Der findes ingen ekstra offentlig shadowmodel. Hvis 4.0.317 består det samlede DEC-0110/DEC-0112-cutover, bliver `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` den eneste offentlige model, mens Candidate G kun ligger privat som migrations-/offline-/rollback-orakel. Testkandidaten mangler exact-head, merge, frisk produktion og offentlig desktop-/mobilkontrol. Kun en senere særskilt, manuel og fuldt verificeret hel rollback kan gøre Candidate G til den ene offentlige model igen; den er aldrig en samtidig eller automatisk fallback. Denne lokale dokumentation er ikke i sig selv et produktionsbevis.
 
 ## Naturlige sikkerhedsspørgsmål og bedre zonesøgning – 4.0.308
 
@@ -234,8 +220,6 @@ Ejeren har godkendt offentlig aktivering i 4.0.291. Cloudflare-kontoen er Worker
 
 ## Årsagstro produktion og robust genopretning – 4.0.289
 
-> **Historisk revisionsspor:** Dette afsnit beskriver Candidate G-driften i 4.0.289–4.0.306. Den aktive integrerede kontrakt står i kapitel 54–56 og DEC-0110; versionsafsnittets daværende 13-timersregel er ikke aktiv efter cutover.
-
 > **Driftspræcisering i 4.0.306:** Candidate G er fortsat den eneste offentlige model. En afbrudt udviklingskørsel efterlod et nyere schema-3-checkpoint, mens den offentlige runtime fortsat var Candidate G/schema 2. Restoren genkender kun denne ene eksakte modelkontekst med samme `stateKey` for alle kystdele. Den genbruger signerede strømevidens og den uændrede mobilisering, men rekonstruerer Candidate G's egne +10/-8-/13-timerstal før filskrivning; den kopierer aldrig vejr, score, rå U/V, koordinater eller private data. Ukendt/blandet kontekst eller en tidsregression ændrer intet. Se DEC-0104.
 
 RavRadar må aldrig vælge en prognosetime efter den UTC-time, som produktionskørslen blev låst til. Hvis den eksakte DMI-strømtime ikke findes, vælges kun den bedst dækkede, nærmeste time bagud inden for tre timer. Copernicus udfylder derefter kun de eksakte DMI-huller og får højst to forsøg på seks minutter. Fortsat fejl stopper den nye produktion uden at erstatte et fungerende datasæt.
@@ -257,8 +241,6 @@ Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive 
 Et dagligt kontroljob læser kun leverandørernes størrelsestal – aldrig turpayloads – og advarer ved 70 % samt stopper ved 85 %. En eksplicit bekræftet driftskommando kan slette en ejers ture i begge lagre uden at udskrive id eller payload. Supabases varsel om mulig begrænsning fra 9. september 2026 overvåges fortsat, fordi login og Edge stadig bruger Supabase. Se [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
 ## Rullende Candidate G-kontinuitet og kontrol før udgivelse – 4.0.286
-
-> **Historisk revisionsspor:** Afsnittet bevarer 4.0.286's Candidate G-kontrakt. Den aktive integrerede state-6-recovery og private cold-start-bro står i kapitel 55 og DEC-0110/DEC-0112.
 
 Når den fælles reference ligger mellem native strømprøver, kan en virkelig kompakt prøve lige før 48-timersgrænsen bevise, at forløbet er sammenhængende. Dette bevis skal også følge den kompakte tilstand til næste rullende reference; ellers kan næste time fejlagtigt miste den første del af de dokumenterede 48 timer.
 
@@ -344,7 +326,7 @@ Den centralt gemte eksperthåndbog håndteres senere af den eksisterende beskytt
 
 Rettelsen ændrer ingen RavScore-regel, vejrfysik, zone, kystgeometri eller land-/vandpunkt. `data/kystdata.json` og `data/zones.geojson` ændrer kun versionsfeltet til 4.0.275.
 
-## Historisk 4.0.274: Candidate G-only og lokal scoretilgængelighed
+## Candidate G-only og lokal scoretilgængelighed – 4.0.274
 
 RavRadar bruger nu kun **Candidate G: 20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Den gamle 25/40/35-model er historik og kan ikke længere overtage den offentlige side, hvis der mangler en måling eller en sammenhængende Candidate G-tilstand.
 
@@ -364,30 +346,26 @@ Den offentlige grundbog er fagligt præciseret efter ejerens feltgennemgang og e
 
 - Pilen ved **Kyst A** peger nu fysisk mod kysten.
 - Koldere saltvand beskrives som en lille forøgelse af vandets tæthed og ravets opdrift, ikke som en forklaring på at almindeligt rav pludselig flyder. Vinterens bedre muligheder knyttes fortsat primært til mobilisering, transport, vandstandsændringer og adgang til nye lag.
-- Overfladestrøm, vind og den verificerede modelgridstrøm holdes adskilt. Det dybeste tilgængelige modelgridlag er ikke en måling af lokal bundnær strøm, undertow eller ripcirkulation.
+- Overfladestrøm, vind og bundnær strøm holdes adskilt. Grundbogen siger nu direkte, at RavRadar koncentrerer sig om en **bundnær repræsentation** af strømmen.
 - Retning forklares med kystnære eksempler: samme vind eller strøm kan have forskellig betydning, fordi kyststrækninger vender forskelligt, og fordi det foregående forløb har betydning.
 - Ejerens praktiske erfaring med rav ved revlehuller, på kystsiden af hullet og på bagsiden af revlen nær hullet er medtaget som mulige samlesteder – ikke som en universel regel.
 - Der skal også søges bag en frisk, våd tanglinje. Grus er fjernet som almindeligt ravtegn.
 - Speciallygter med andre, ikke offentligt oplyste bølgelængder omtales alene som praktisk erfaring: nogle kan gøre det lettere at se rav gennem alger i vand. Der opfindes ingen bølgelængde og ingen dokumenteret universalvirkning.
-- En irrelevant myteboks er fjernet, og afsnittet om fralandsvind skelner nu tydeligt mellem vindens virkning på overfladen og den kystnormale modelgridstrøms transportbevis.
+- En irrelevant myteboks er fjernet, og afsnittet om fralandsvind skelner nu tydeligt mellem vindens virkning på overfladen og den bundnære strøms transport.
 
 Fysik, aktiv RavRadar-kontrakt og praktisk felterfaring er skilt fra hinanden i [DEC-0070](docs/rdks/10_DECISIONS/DEC-0070-PUBLIC-GROUNDBOOK-FIELD-CORRECTIONS.md) og [forskningsnotatet](docs/research/PUBLIC_LEARNING_FIELD_CORRECTIONS_4.0.271.md). Rettelsen ændrer ikke RavScore, vejrdata, kystgeometri eller land-/vandpunkter.
 
 ## Før-lancering, ekspert og synlig rangering – 4.0.270
 
-> **Historisk revisionsspor:** Dette er 4.0.270's leverancebeskrivelse. Candidate G- og 13-timersomtalen nedenfor er den daværende offentlige kontrakt, ikke den aktive integrerede sandhed.
-
 De to nationale lister viser nu den samme **områdescore**, som de sorterer efter. Områdescoren bevarer DEC-0049's beskyttelse mod, at områder med mange kyststrækninger får flere lodder i lotteriet: den tager både områdets bedste RavScore og støtten fra flere kyststrækninger med. Højeste viste områdescore står derfor altid øverst. Når et område åbnes, vises fortsat den bedste kyststræknings almindelige RavScore.
 
 Adminens første lagerkontrol omfatter nu også `coastline-overrides`, så en eksisterende kystoverstyring ikke vises som en falsk fejl. Ekspertens håndbog, rettigheder, reviewkø, kortfunktioner og centrale dokumentkontrakter er gennemgået målrettet. Eksperten kan læse og kommentere håndbogen med `admin_access`, `handbook_view` og `handbook_review` uden at få fuld ret til score, vejr eller kystdata.
 
-Ekspertens arbejdsplan, kodekapitel, scenarier og hypoteseregister beskrev den daværende aktive Candidate G med 20/50/30, 48 timers transportvindue, +10/-8-forløbet, 13-timersreglen, waderskurven 6–15 m/s og én bølgeenergistyret mobiliseringstilstand. Gamle 25/40/35-regler var historik; DEC-0072 havde fjernet dem som offentlig rollback. Versionsværktøjet synkroniserer hele webhåndbogen til Supabase-installationsfilen og stopper, hvis kopierne afviger.
+Ekspertens arbejdsplan, kodekapitel, scenarier og hypoteseregister beskriver den aktive Candidate G med 20/50/30, 48 timers transportvindue, +10/-8-forløbet, 13-timersreglen, waderskurven 6–15 m/s og én bølgeenergistyret mobiliseringstilstand. Gamle 25/40/35-regler er historik; DEC-0072 har fjernet dem som offentlig rollback. Versionsværktøjet synkroniserer nu hele webhåndbogen til Supabase-installationsfilen og stopper, hvis kopierne afviger.
 
 Den naturlige 210/673-produktion og Supabase Free-forbruget er kontrolleret dataminimeret. Der er ikke ændret lokale RavScore-tal, farver, scoremodel, vejrdata, geometri eller land-/vandpunkter. Se DEC-0069 og `docs/research/PRELAUNCH_EXPERT_ADMIN_REVIEW_4.0.270.md`.
 
 ## Aktuelle scoreforklaringer og enkel zonevisning – 4.0.269
-
-> **Historisk revisionsspor:** Dette afsnit dokumenterer den offentlige 4.0.269-leverance. Candidate G var den daværende model. Den aktive integrerede kontrakt står i kapitel 54–56; vandstand giver ingen direkte score og kan ikke i sig selv fastslå den lokale sidste-mil-retning.
 
 Når en bruger åbner en RavScore-komponent, skal **Hvorfor denne score?** forklare den viste kystdels faktiske forhold. Søgeforhold omtaler den aktuelle vind og ved waders også den aktuelle bølgeuro. Transport omtaler den aktuelle strømstyrke, om strømmen går ind mod, langs med eller væk fra kysten, og hvordan de seneste timers sammenhængende strøm har bygget eller nedbrudt transporten. Rav i bevægelse omtaler den aktuelle bølgehøjde og den bølgevirkning, der er bygget op over tid.
 
@@ -399,13 +377,11 @@ Den offentlige **Fundprognose** er skjult, indtil RavRadar har et repræsentativ
 
 Det tomme **Vælg et område på kortet**-felt er fjernet. Kortvalget virker som før, og informationspanelet åbner, når brugeren vælger et område. Kildeafsnittet beskriver nu DMI som førstevalg, de dokumenterede Copernicus Marine- og DMI-regionalveje for godkendte strømhuller, Open-Meteo/MET Norway ved dokumenterede øvrige vejrdatagab samt OpenStreetMap, Leaflet og de angivne billedleverandører.
 
-Candidate G var den daværende aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Afsnittets tidligere globale 25/40/35-reserve var erstattet af DEC-0072: et datahul gjorde kun den konkrete Candidate G-score utilgængelig. 4.0.269 ændrede ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
+Candidate G er fortsat den aktive model med **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. Afsnittets tidligere globale 25/40/35-reserve er erstattet af DEC-0072: et datahul gør kun den konkrete Candidate G-score utilgængelig. 4.0.269 ændrede ingen scoretal, vejrkilder, Supabase-kontrakt, geometri eller land-/vandpunkter. Se DEC-0068 og `docs/research/PUBLIC_SCORE_EXPLANATION_REVIEW_4.0.269.md`.
 
 4.0.269 er produktionsverificeret. PR #120 bestod exact-head `32703138969` på `37de330c` og blev merged som `d745e0ba`. Produktion `32703271897` udgav `rr-20260824080543-210` på 210 zoner og 673 kystdele efter frisk vejr, fuld validering og releasegate. Den offentlige browseraudit bestod 420 aktuelle visninger, 2.100 femdøgnsvisninger og 673 kystdelsreferencer uden kontrol-, konsol-, side- eller HTTP-fejl.
 
 ## Grundbog i ravjagt og almindeligt brugersprog – 4.0.268
-
-> **Historisk revisionsspor:** Dette afsnit bevarer 4.0.268's daværende Candidate G-forklaring. Grundbogens aktive modeltekst følger nu den integrerede kontrakt i kapitel 54 og har ingen 13-timers helscore-gate.
 
 RavRadars offentlige læringsmodul er nu en grundbog i ravjagt for begyndere og øvede. Det starter ikke med appens knapper. Det følger i stedet den fysiske kæde fra ravets egenskaber og mulige lagre gennem mobilisering, transport, kystens sortering, felttegn og selve jagten. Først derefter forklares RavRadar som et værktøj, der omsætter en del af denne viden til en score.
 
@@ -415,7 +391,7 @@ Modulet forklarer blandt andet, hvorfor det meste rav synker i almindeligt dansk
 
 Felt- og metodeafsnittene dækker frisk opskyl, tang, træ, frø, kul, skaller, strandjagt, vandkant, waders og UV-lys. En ravlygte omkring 395 nm kan få baltisk rav til at fluorescere tydeligt, men lyset er ikke et endeligt ægthedsbevis; varme nåle, ild og andre ødelæggende hjemmetests frarådes.
 
-Candidate G blev forklaret til sidst med den daværende aktive vægtning **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse**. Waders var bedst under 6 m/s og faldt til 0 ved 15 m/s. Kraftig udtransport trak transporten ned fra første time og gav nul efter 13 timer. Disse tal var RavRadars testede arbejdsregler, ikke universelle naturgrænser.
+Candidate G forklares til sidst med den aktive vægtning **20 % søgeforhold, 50 % transport og 30 % rav i bevægelse**. Waders er bedst under 6 m/s og falder til 0 ved 15 m/s. Kraftig udtransport trækker transporten ned fra første time og giver nul efter 13 timer. Disse tal er RavRadars testede arbejdsregler, ikke universelle naturgrænser.
 
 Den samtidige sproggennemgang fjerner tekniske standardord fra normal brugerstatus og fejltekst. Brugeren møder blandt andet **loginforbindelse**, **senest opdateret** og **kyststrækning** i stedet for leverandørnavn, datasæt og databaseudtryk. Admin- og debugværktøjer forbliver bevidst tekniske.
 
@@ -471,7 +447,7 @@ Et **magic link** er et engangslink, der sendes til brugerens mail og logger bru
 
 Candidate G og 20/50/30 er uændret. De synlige hovedord er gjort enklere: **Søgeforhold**, **Transport mod kysten** og **Rav i bevægelse**. Søgeforhold handler om, hvor effektivt man kan lede – ikke om sikkerhed. RavScore vurderer ravmuligheden, ikke om turen er sikker.
 
-## Historisk 4.0.263: Candidate G bruger den aktuelle fælles zonereference
+## Candidate G bruger den aktuelle fælles zonereference – 4.0.263
 
 4.0.262 rettede den fejl, som holdt transporten på 0 overalt: Candidate G accepterer produktionens dokumenterede strømbeviser med op til tre timers afstand og regner med den faktiske tid mellem dem. Den første produktionskørsel beviste 110 positive transportpotentialer og 563, som fortsat var 0 på grund af de faktiske forhold – ikke 0 overalt.
 
@@ -489,7 +465,7 @@ Profilvalget gemmes centralt og følger startpakke, detaljepakke og manifest. In
 
 De følgende Candidate G-afsnit beskriver den historiske, score-neutrale forberedelse. Deres udsagn om, at Candidate G endnu ikke var aktiv eller at 25/40/35 var gældende, er versionshistorik. Den aktuelle kontrakt er DEC-0060-aktiveringen med DEC-0061's native cadence og DEC-0062's aktuelle referencescope. 4.0.263 er produktionsverificeret på 210 zoner og 673 kystdele med eksakt replay, særskilt aktiv shadow og fuld browserkontrol.
 
-## Historisk Candidate G-princip: fast transportvindue uden maskinstart
+## Candidate G glemmer maskinens startværdi efter et fast vindue
 
 Candidate G beregner nu transport ud fra et fast, rullende vindue med de seneste 48 timers sammenhængende og verificerede strøm mod eller væk fra kysten. Beregningen begynder ved en fast rand på 0, som betyder, at der ikke antages nogen dokumenteret indtransport før vinduet. Den betyder ikke, at der har været fralandsstrøm.
 
@@ -499,7 +475,7 @@ RavRadar gemmer kun tidspunkt og afledt kystnormal strømstyrke i vinduet. Nativ
 
 I 4.0.260 var Candidate G endnu ikke slået til, og den offentlige RavScore var derfor fortsat `25/40/35`. Denne historiske aktiveringsstatus er erstattet af 4.0.261/4.0.262; hukommelsesmekanikken og forbuddet mod geometri-, punkt-, bund-, privatdata- og sikkerhedsændringer består.
 
-## Historisk 4.0.260: Candidate G's score-neutrale omskifterforberedelse
+## Candidate G's score-neutrale omskifterforberedelse – 4.0.260
 
 RavRadar har nu en versionsbundet omskifter, som kan vælge én RavScore-model for hele Danmark og vende tilbage til den hidtidige model. I 4.0.260 står omskifteren fortsat på `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Brugernes score, farver, zonevindere og bedste tidspunkt er derfor uændrede.
 
@@ -511,7 +487,7 @@ Den valgte model følger med både den lille startpakke, detaljepakken og manife
 
 Candidate G's forklaring holder jagtbarhed, transport og mobilisering adskilt. Ved dokumenteret udtømt kraftig fralandsstrøm bruges den aftalte forklaring og samlet score 0, mens de øvrige delscorer stadig kan forklares. Sikkerhed, bund, dybde, render, revler, adgang og automatisk stedegnethed indgår ikke.
 
-## Historisk 4.0.259: Candidate G føres gennem den centrale pipeline
+## Candidate G føres gennem den centrale pipeline – 4.0.259
 
 I 4.0.259 beregnede RavRadar Candidate G for alle 673 kystdele som en adskilt kontrolscore. Den var endnu ikke den synlige RavScore: brugerne fik på dette tidspunkt `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`. Candidate G's `20/50/30` lå i et særskilt diagnostisk felt, som farve og zonevinder ikke læste. Candidate G blev aktiv i 4.0.261; se det aktuelle afsnit øverst.
 
@@ -525,7 +501,7 @@ Første produktionskørsel startede den nye hukommelse på 0. Det var en sikker 
 
 Rollback i 4.0.259 var, at den aktive 25/40/35-score ignorerede Candidate G-feltet. Fra 4.0.260 valgte en eksakt versionsbundet profil den samme legacy-score som standard og rollback. Det er historik: DEC-0072 tillader nu kun Candidate G offentligt. Geometri, land-/vandpunkter, bund, dybde, adgang og sikkerhedsadvarsler indgår ikke i ændringen.
 
-## Historisk Candidate G: strømstyret transporthukommelse
+## Candidate G lader strømmen styre transporthukommelsen
 
 I dette historiske udviklingstrin var RavRadars offentlige score fortsat `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`, mens Candidate G med `20/50/30` endnu var privat. Den status er erstattet: Candidate G er nu aktiv.
 
@@ -541,7 +517,7 @@ I 4.0.259 var kandidaten koblet score-neutralt til den centrale pipeline, og i 4
 
 Ingen nye rådata, bundmodel, dybde, render, geometri eller land-/vandpunkter indgår i dette arbejde.
 
-## Historisk 4.0.258: Candidate G bruger vindstyret waders-jagtbarhed
+## Candidate G bruger vindstyret waders-jagtbarhed – 4.0.258
 
 I 4.0.258 var RavRadars offentlige score stadig `25 % jagtbarhed`, `40 % transport` og `35 % mobilisering`, og Candidate G var et privat beslutningsforslag med `20/50/30`. Den historiske status er erstattet; Candidate G er nu aktiv med `20/50/30`.
 
@@ -775,7 +751,7 @@ Den aktuelle offentlige bestand er 210 hovedzoner. De tre Vadehavszoner `DK-B04-
 
 Den lokale datavalidering er fortsat streng. Hvis zone- og vejrlisterne ikke matcher, stopper den. Er vejrsnapshotet samtidig udløbet, forklarer den nu, at der er tale om et **forældet lokalt vejrsnapshot**, ikke automatisk en produktionsfejl. `npm run audit:deployed-zone-weather` kan kontrollere den deployede bestand uden at skrive. En fuld frisk kørsel skal først hente central adminstatus og anvende tombstones, derefter hente eller bygge vejr og til sidst køre alle gates.
 
-Den tidligere generiske kommando `npm run hydrate:deployed-weather` er pensioneret. En fuld frisk runtime skal komme gennem produktionsworkflowets centrale adminhydrering, private runtime-/checkpointkontrol og nye vejrbygning. Kun første kontrollerede skift fra Candidate G har en eksplicit legacy-bootstrap; den må aldrig bruges som almindelig genvej omkring en dækningsfejl.
+`npm run hydrate:deployed-weather` opdaterer kun mutable vejrfiler. Kommandoen erstatter ikke central adminhydrering og må ikke bruges til at omgå eller skjule en reel dækningsfejl.
 
 4.0.208 er produktionsverificeret i GitHub Actions #31848912461 på commit `7a3382f200a72b702d814ba4d8ca205dc4523369`. Den fulde kæde og deploy bestod, og den direkte efterkontrol viste version 4.0.208, 210/210 matchende zoner og vejrposter samt vejrdata til alle tre Vadehavszoner.
 
@@ -827,7 +803,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.317
+**Håndbogsversion:** 4.0.316
 
 **Opdateret:** 19. august 2026
 
@@ -874,7 +850,7 @@ Håndbogen er den faglige og tekniske reference for RavRadar. RDKS er bindende f
 
 *Håndbogens rolle som fælles sandhed for ejer, eksperter og udvikling.*
 
-RavRadar er et beslutningsstøttesystem til ravjagt langs danske kyster. Systemet samler prognoser, lokale kystdata og den forklarlige integrerede RavScore-model. Det skal hjælpe med at vælge sted og tidspunkt, men må aldrig fremstille en høj score som et løfte eller en procentchance for fund. Ekspertviden kan føre til nye hypoteser og senere scoreændringer, men først efter en versionsstyret ændring af den autoritative kode, målrettede tests og den fulde releasekæde.
+RavRadar er et beslutningsstøttesystem til ravjagt langs danske kyster. Systemet samler prognoser, lokale kystdata og den forklarlige Candidate G-scoremodel. Det skal hjælpe med at vælge sted og tidspunkt, men må aldrig fremstille en høj score som et løfte om fund. Ekspertviden kan føre til nye hypoteser og senere scoreændringer, men først efter en versionsstyret ændring af den autoritative kode, målrettede tests og den fulde releasekæde.
 
 Håndbogen er skrevet til tre målgrupper: ejeren, eksterne rav-/sediment-/kysteksperter og fremtidige udviklere. En ekspert skal kunne læse dokumentet uden at kende koden og forstå både den faglige hypotese, de konkrete tærskler og hvor systemet er usikkert.
 
@@ -899,7 +875,7 @@ RavRadar-hypotese | Plausibel mekanisme eller arbejdsværdi | Simulering, scenar
 RavRadar-valideret | Understøttet af kontrollerede projektdata og hold-out-test | Modeljustering med versionshistorik | Universel naturvidenskabelig sandhed
 En kilde skal vurderes efter relevans, målemetode, skala og overførbarhed. Forskning i plastpartikler kan være nyttig som analogi, fordi visse plasttyper og rav har lav densitet og kan kobles til organisk opskyl, men plast og rav er ikke identiske. Form, størrelse, overflade, biofilm, vandmætning og bundkontakt kan ændre transporten væsentligt.
 
-Når ekspertens udsagn strider mod den nuværende kode, skal udsagnet registreres som en ændringshypotese. Først når mekanisme, geografi, betingelser, forventet effekt og test er beskrevet, kan det omsættes til en versionsstyret ændring af den aktive model.
+Når ekspertens udsagn strider mod den nuværende kode, skal udsagnet registreres som en ændringshypotese. Først når mekanisme, geografi, betingelser, forventet effekt og test er beskrevet, kan det omsættes til en versionsstyret ændring af Candidate G.
 
 
 ## 3. Ravets fysiske egenskaber og hvorfor densitet alene ikke er nok
@@ -926,7 +902,7 @@ Ekspertpunkt E-01: Fastlæg hvilke ravstørrelser og -former de nuværende tærs
 
 ### 3.1 Densitet, opdrift og reduceret neddykket vægt
 
-Baltisk rav omtales i den relevante kystlitteratur typisk med en materialedensitet omkring 1,05–1,10 g/cm³. Havvandets densitet varierer med saltholdighed og temperatur. Det betyder, at størstedelen er svagt negativt flydende: ravet synker, men den neddykkede vægt er langt mindre end for kvarts med densitet omkring 2,65 g/cm³. Den lille densitetsforskel kan gøre rav følsomt over for vertikale turbulensimpulser, bølgeorbitaler og kontakt med organisk materiale. Variation mellem stykker findes, men den gør ikke rav til en generel positivt flydende overfladetracer.
+Baltisk rav omtales i den relevante kystlitteratur typisk med en materialedensitet omkring 1,05–1,09 g/cm³. Havvandets densitet varierer med saltholdighed og temperatur. Det betyder, at et stykke rav ofte er svagt negativt flydende: det synker, men den neddykkede vægt er langt mindre end for kvarts med densitet omkring 2,65 g/cm³. Den lille densitetsforskel kan gøre rav følsomt over for svage vertikale turbulensimpulser, bølgeorbitaler og kontakt med organisk materiale. Det er dog ikke det samme som neutral opdrift.
 
 ### 3.2 Form, orientering og effektiv modstand
 
@@ -936,7 +912,7 @@ To ravstykker med samme masse kan reagere forskelligt. Et fladt stykke har stør
 
 Et ravstykke, der ligger frit oven på glat sand, er ikke i samme tilstand som et stykke, der er klemt mellem grus, indlejret i tørv eller dækket af et tyndt sandlag. Den kritiske belastning for at frigøre stykket kan derfor være bestemt af mekanisk låsning snarere end af ravets egen masse. RavRadar bruger i dag vejrhistorik som indirekte proxy for denne frigørelse, men beregner ikke lokal bundskærspænding eller begravelsesdybde.
 
-Implementeret i den aktive integrerede scorevej i `js/core/ravscore-integrated.js` og tilstandskæden i `js/core/ravscore-integrated-state-pipeline.js`. `js/core/coastal-process-model.js` er en særskilt historisk procesindikator og ændrer ikke den integrerede score. Der findes ingen partikelstørrelses-, synkehastigheds-, bundskærspændings- eller begravelsesmodel.
+Implementeret i den aktive scorevej i `js/core/ravscore-candidate-g.js` og tilstandskæden i `js/core/ravscore-candidate-g-state-pipeline.js`. `js/core/coastal-process-model.js` leverer en forklarende procesindikator, men ændrer ikke Candidate G-scoren. Der findes ingen partikelstørrelses-, synkehastigheds-, bundskærspændings- eller begravelsesmodel.
 
 
 ## 4. Tilstedeværelse og kildelagre
@@ -974,9 +950,9 @@ Den klassiske kæde er:
 
 - Jagtbarhed: sigt, bølgehøjde og praktisk adgang gør eftersøgning realistisk; sikkerhed vurderes separat.
 
-Den aktive integrerede RavScore har tre numeriske hovedkomponenter: søgeforhold, relativt transportbevis fra verificeret gridstrøm mod kystzonen og rav i bevægelse. Mobiliseringen er én sammenhængende bølgeenergistyret tilstand. RavRadar kender ikke det faktiske ravlager, og tilstedeværelse, koncentration, aflejring og retention er ikke selvstændige scorekomponenter.
+Den aktive RavScore har tre numeriske hovedkomponenter: søgeforhold, transport mod kysten og rav i bevægelse. Mobiliseringen er én sammenhængende bølgeenergistyret tilstand; den vælger ikke længere mellem to gamle frigivelsesmodeller. RavRadar kender ikke det faktiske ravlager, og tilstedeværelse og koncentration er ikke selvstændige scorekomponenter.
 
-Modelkritik: En vægtet sum kan være over nul, selv om det relative transportbevis står på nul. Det er bevidst: nul i dette led betyder, at det rullende strømforløb ikke dokumenterer kystvendt tilførsel, ikke at alt rav er bevist fjernet. Scoren skal derfor læses sammen med delscorerne og den faste usikkerhedsmarkering; den er hverken en fundchance eller bevis for fuld proceskæde.
+Modelkritik: En vægtet sum kan give en pæn score, selv om ét led er svagt. Candidate G har derfor en særregel: transport 0 giver samlet score 0, selv om mobilisering eller søgeforhold er gode.
 
 
 ## 6. Bølger, orbitalbevægelse, brydning og turbulens
@@ -987,11 +963,9 @@ Bølger påvirker rav på flere skalaer. På dybere vand giver bølgeorbitaler f
 
 Bølger er derfor ikke kun en 'ind mod land'-mekanisme. Den enkelte orbitalbevægelse er oscillerende, og nettotransporten afhænger af bølgeasymmetri, strandhældning, strøm, undertow, Stokes drift, sedimentets respons og hvor i profilen partiklen befinder sig. RavRadar bruger ikke en fuld bølge-resolverende partikelmodel.
 
-I den historiske 25/40/35-frigivelsesscore gav maksimal bølgehøjde mindst 1,5 m +14 point. En separat forskningsindikator brugte grænserne 1,2 og 2,0 m. De tal er ikke den aktive kontrakt. Den integrerede model bruger i stedet bølgehøjde og periode i energi-proxyen `Hs² × T` og én mobiliseringstilstand, der bygges op med cirka fire timers halveringstid og aftager med cirka 48 timers halveringstid.
+I den historiske 25/40/35-frigivelsesscore gav maksimal bølgehøjde mindst 1,5 m +14 point. En separat forskningsindikator brugte grænserne 1,2 og 2,0 m. De tal er ikke den aktive Candidate G-kontrakt. Candidate G bruger i stedet bølgehøjde og periode i én mobiliseringstilstand, der bygges op over cirka fire timer og aftager med cirka 48 timers halveringstid.
 
 Ved waders påvirker bølger kun søgeforholdene som et blødt fradrag på højst 20 point oven på vindkurven. De kan ikke hæve scoren eller alene skabe et hårdt stop. Strandjagt har ikke wadersloftet.
-
-Det er bevidst, at bølgehøjden optræder to steder, men rollerne må ikke blandes. `Hs² × T` bygger over tid et fysisk mobiliseringssignal for allerede tilgængeligt rav i 30 %-leddet. Den aktuelle bølgehøjde i søgeforhold beskriver i stedet, hvor let metoden er at udføre: især om krusninger og sø gør det sværere at se ved waders, mens strand bruger sin bevarede søgekurve. Søgevejen kan ikke bygge mobilisering eller give transport-/sidste-mile-point. En ru sø kan derfor både sætte materiale i bevægelse og gøre det sværere at finde; det er to forskellige følger, ikke samme positive bølgebidrag talt to gange.
 
 Ekspertpunkt E-03: Vurder om bølgehøjde og periode beskriver mobiliseringens styrke og varighed godt nok ved forskellige danske kyster.
 
@@ -1007,22 +981,22 @@ Når bølger bevæger sig mod lavere vand, falder gruppehastigheden, bølgen bli
 
 På strandfladen kommer vandet ind som uprush og løber tilbage som backwash. De to faser er ikke symmetriske: vanddybde, hastighed, infiltration, turbulens og sedimentkoncentration ændres gennem cyklussen. Rav kan føres op i swash og efterlades, men kan også genmobiliseres af backwash. Aflejring kræver derfor ikke blot pålandsgående bølger; den kræver en kombination af timing, faldende energi, strandhældning og partikelegenskaber.
 
-Evidens: Generel bølge- og sedimentfysik er veletableret. Modellens fire/48-timers forløb og energi-kurve er testede arbejdsregler, ikke fundkalibrerede naturgrænser.
+Evidens: Generel bølge- og sedimentfysik er veletableret. Candidate G's fire/48-timers forløb er en testet arbejdsregel, ikke en fundkalibreret naturgrænse.
 
 
-## 7. Modelgridstrøm: retning, styrke og transportbevis
+## 7. Strøm: retning, hastighed og bundnær transport
 
 *Hvordan strøm tolkes, og hvorfor en 180°-fejl er kritisk.*
 
 Strømdata i RavRadar tolkes oceanografisk som den retning, vandet bevæger sig mod. Vindretning tolkes meteorologisk som den retning, vinden kommer fra. En 180°-fejl i strømkonventionen kan få udtransport til at ligne indtransport og er derfor en kritisk regression.
 
-Strømmen projiceres vinkelret på den lokale kyststrækning. Positiv kystnormal gridstrøm er indgående, negativ er udgående, og næsten parallel strøm giver kun en lille komponent. 0,03 m/s er dødzone, og 0,15 m/s tæller som fuld styrke. Grænserne er produkt- og forskningspriorer, ikke naturkonstanter.
+Strømmen projiceres vinkelret på den lokale kyststrækning. Positiv kystnormal strøm er indgående, negativ er udgående, og næsten parallel strøm giver kun en lille komponent. 0,03 m/s er dødzone, og 0,15 m/s tæller som fuld styrke.
 
-Fuld indgående strøm giver +10 point pr. effektiv time, og fuld udgående strøm giver -8 fra første effektive time. De seneste 24 timer vægtes fuldt; ældre evidens dæmpes glat til nul ved 48 timer. Forløbet genafspilles fra en fast nulrand og kan nå nul efter et længere udgående forløb. Den gamle 13-timersregel, som nulstillede hele RavScore, er fjernet. Et transportled på nul betyder manglende positivt gridstrømsbevis i vinduet, ikke dokumenteret tømning af kystens ravlager.
+Fuld indgående strøm bygger 10 transportpoint pr. effektiv time. Fuld udgående strøm trækker 8 point fra første effektive time og udtømmer transporten fra 13 timer. De seneste 48 timers sammenhængende, afledte strømevidens genafspilles fra en fast rand; transport 0 giver samlet RavScore 0.
 
-Modeldata repræsenterer en verificeret strøm i en modelgridcelle og må ikke kaldes surfzonens undertow, feederstrøm, langskyststrøm eller ripstrøm. Lodret shear, bølgestrøm, revler, render og lokale hvirvler kan afvige væsentligt. Releasekandidaten lader derfor kun den kausale energivægtede bølgeapproach med fire timers halveringstid og en ældre hale dæmpe det eksisterende supply én gang med højst 15 %; den fysiske sidste levering forbliver eksplicit uopløst.
+Modeldata repræsenterer ikke nødvendigvis præcis den bundnære strøm, som et ravstykke oplever i surfzonen. Lodret shear, bølgestrøm, revler, render og lokale hvirvler kan afvige fra modellens gridcelle.
 
-Ekspertpunkt E-04: Vurder dødzone, fuld styrke, +10/-8 pr. effektiv time og 24/48-timers aldersvægten ved forskellige kysttyper.
+Ekspertpunkt E-04: Vurder dødzone, fuld styrke, +10/-8 pr. time og 13-timers udtømning ved forskellige kysttyper.
 
 ### 7.1 Hvilken strøm måler modellen?
 
@@ -1036,7 +1010,7 @@ Bølger kan øge koncentrationen af mobile partikler ved at løfte dem fra bunde
 
 Én pålandsretning er kun en lokal normalvektor. Ved bugter, odder og uregelmæssige kyster kan samme strøm være indgående på én del og udgående på en anden. RavRadar bruger derfor lokale kystdele og flere retninger; eksperten bør kontrollere, om de beskriver den jagtbare kyst rimeligt.
 
-Implementeret i: `js/core/direction-anchors.js`, `js/core/ravscore-current-supply-memory.js`, `js/core/ravscore-integrated-state-pipeline.js` og `js/core/ravscore-integrated.js`.
+Implementeret i: `js/core/direction-anchors.js`, `js/core/ravscore-candidate-g.js` og `js/core/ravscore-candidate-g-state-pipeline.js`.
 
 
 ## 8. Vindens direkte og indirekte rolle
@@ -1045,7 +1019,7 @@ Implementeret i: `js/core/direction-anchors.js`, `js/core/ravscore-current-suppl
 
 Vind påvirker ravtransport indirekte ved at skabe bølger, ændre vandstand og drive overfladelag og organisk opskyl. Den kan også flytte allerede strandet tørt let materiale på stranden. Men vindretningen alene beskriver ikke den bundnære transport.
 
-Den integrerede model giver ikke vindretningen direkte transportpoint og giver heller ikke vind direkte mobiliseringspoint. Gridstrømmen står for det relative transportbevis, mens vindens fysiske virkning på mobilisering kommer gennem de modellerede bølger.
+Candidate G giver ikke vindretningen direkte transportpoint og giver heller ikke vind direkte mobiliseringspoint. Strømmen står for transporten, mens vindens fysiske virkning på mobilisering kommer gennem bølgerne.
 
 Ved waders er vindhastigheden hovedsignal for søgeforhold: 100 til og med 6 m/s, derefter 80 ved 7, 60 ved 8, 35 ved 10, 10 ved 13 og 0 ved 15 m/s. Strandjagt har ikke dette loft.
 
@@ -1060,9 +1034,7 @@ Ekspertpunkt E-05: Vurder vindkurven for waders og situationer, hvor vind, bølg
 
 Vandstand er ikke blot et antal centimeter. Den flytter brydningszonen, oversvømmer eller blotlægger revler og tanglinjer, ændrer hvilke render der er aktive og bestemmer hvor bølgerne afleverer materiale.
 
-Den integrerede model viser vandstand og ændring som nyttig kontekst uden at lægge den ind i 20/50/30-regnestykket. `waterLevelTrendCm3h` er den fremadrettede modelændring fra den viste time til tre timer senere, aldrig en observeret ebbe, flod eller tidevandsfase. Stigende vand kan flytte den aktive kystzone og i nogle forløb føre allerede indgående materiale længere ind, men det beviser ikke indtransport. Faldende vand bestemmer heller ikke strømretningen; det kan falde sammen med verificeret søværts gridstrøm og dermed med en mulig søværts transportvej for noget mobilt rav. Lavere vand kan samtidig blotlægge rav, som allerede er afleveret eller fastholdt på land- eller læsiden af revler, så et mindre område bliver lettere at afsøge end hele havbunden. Det er en søgbarhedsfordel og ikke bevis for, at vandstandsfaldet fysisk har koncentreret ravet. Uden lokal batymetri, revlegeometri og en bølgeopløst surfzonemodel kan RavRadar ikke afgøre, hvilken virkning der dominerer på den enkelte kystdel.
-
-RavRadar laver ikke en ekstra “hele vandsøjlen”-strøm ud fra vandstandens trend og interpolerer den ikke med gridstrømmen. DMI's DKSS beregner et tredimensionalt fysisk havfelt med atmosfærisk forcing og tidevands-sealevel ved åbne rande og leverer selv current-U/V. Copernicus Baltic NEMO leverer tilsvarende fysiske hastighedsfelter, også som særskilte øjeblikkelige og detidede produkter. Modelstrømmen er derfor et samlet modeludfald, ikke bevis for hver lokal proces eller for ens retning i hele vandsøjlen. En ekstra vandstandsregel kunne dobbeltregne korreleret dynamik og ville stadig ikke fortælle fortegnet i surfzonen. Se [DMI's DKSS-dokumentation](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-storm-surge-model-dkss) og [Copernicus' produktbeskrivelse](https://data.marine.copernicus.eu/product/BALTICSEA_ANALYSISFORECAST_PHY_003_006/description).
+Candidate G viser vandstand og ændring som nyttig kontekst uden at lægge den ind i 20/50/30-regnestykket. Stigende vand kan føre allerede indgående materiale længere ind, men et lavt niveau er ikke i sig selv indtransport. De tidligere +8/+3/-4-trin tilhørte den historiske 25/40/35-model.
 
 Vadehavet kræver særbehandling. Store sekventielle ændringer kan være ægte tidevand og må ikke automatisk udglattes. Et mønster, der skifter unaturligt mellem datakilder time for time, er derimod en dataintegritetsfejl.
 
@@ -1072,7 +1044,7 @@ Ekspertpunkt E-06: Vurder om vandstand senere bør indgå, og i så fald hvordan
 
 ### 9.1 Absolut niveau versus ændring
 
-Den samme stigning eller det samme fald kan have forskellig betydning, afhængigt af udgangspunkt, kystprofil, tidevandsfase, bølger og strøm. Den integrerede model bruger derfor ikke vandstand i den aktive score. For waders bruges lavere kendt vandstand og derefter ikke-stigende vand kun til at vælge mellem tidspunkter med præcis samme RavScore; strandvalg bruger det tidligste scorelige tidspunkt.
+Den samme stigning kan have forskellig betydning, afhængigt af om den sker fra meget lavt til normalt niveau eller fra normalt til højvande. Candidate G bruger ikke vandstand i den aktive score og undgår derfor at gætte med én fælles lodret reference.
 
 ### 9.2 Meteorologisk vandstand og tidevand
 
@@ -1089,7 +1061,7 @@ En station kan midlertidigt mangle en ny observation, mens dens senest hentede p
 
 Bølger, der rammer kysten skråt, kan skabe en langskyst strøm og transportere materiale parallelt med stranden. Rav kan derfor komme fra en nabozone, selv når den lokale strøm ikke peger direkte mod land. Odder, bugter, havne, revler og indløb kan ændre eller afbryde transportvejen.
 
-Næsten parallel gridstrøm giver kun en lille kystnormal komponent i den integrerede model. Modellen følger ikke et transportnetværk mellem nabozoner og kan derfor overse vigtig langskyst tilførsel eller bypass. Den foregiver heller ikke, at den målte gridstrøm er den bølgedrevne langskyststrøm inde i surfzonen.
+Næsten parallel strøm giver kun en lille kystnormal komponent i Candidate G. Modellen følger ikke et transportnetværk mellem nabozoner og kan derfor overse vigtig langskyst tilførsel eller bypass.
 
 Et fagligt bedre system bør skelne mellem: (a) lokal indtransport, (b) langskyst tilførsel, (c) konvergens hvor transporten bremser eller mødes, og (d) bypass hvor materialet fortsætter forbi zonen.
 
@@ -1100,30 +1072,13 @@ Ekspertpunkt E-07: Udpeg zoner hvor langskyst transport sandsynligvis er vigtige
 
 *Hvorfor store indkommende bølger også kan skabe udadgående bundnær transport.*
 
-Når bølger fører vand ind i surfzonen, skal vandmassen returnere, men processerne må ikke slås sammen. Undertow er den vertikalt fordelte, gennemsnitlige tværkyst-returstrøm under bølgerne. Feeder- og langskyststrøm løber langs stranden og kan samle flow mod en kanal eller fortsætte langs kysten. En ripstrøm er den mere lokaliserede søværts jet gennem en kanal eller langs en grænse. Det betyder, at store indkommende bølger ikke automatisk giver netto indtransport af alle partikler.
+Når bølger fører vand ind i surfzonen, skal vandmassen returnere. Returtransport kan foregå som undertow, feeder currents og ripstrømme. Det betyder, at store indkommende bølger ikke automatisk giver netto indtransport af alle partikler.
 
 Et ravstykke kan påvirkes af indgående swash i den øvre strandzone, men af udadgående returstrøm nær bunden længere ude. Nettoretningen afhænger af, hvornår stykket er suspenderet, hvor højt i vandsøjlen det befinder sig, og hvor hurtigt det aflejres.
 
-RavRadar har ingen eksplicit undertow-, feeder-, langskyst- eller ripstrømsmodel. Den verificerede kystnormale gridstrøm kan nedbryde det relative transportbevis fra første effektive udgående time, men den bruges ikke som stedfortræder for surfzonens returvand. Et nul i transportleddet nulstiller ikke hele scoren og beviser ikke, at ravet er væk. Om rav faktisk strander, fanges bag en revle, passerer langs kysten eller føres ud gennem en rende, forbliver en synligt deklareret sidste-mile-usikkerhed.
+RavRadar har ingen eksplicit undertow- eller ripstrømsmodel. Candidate G lader den verificerede kystnormale modelstrøm nedbryde transporten fra første effektive udgående time; 13 timers fuld udtransport giver transport 0 og dermed samlet score 0. Lokale surfzoneprocesser kan stadig afvige.
 
 Ekspertpunkt E-08: Vurder hvornår høj bølgeenergi og udadgående modelstrøm kræver mere lokal faseviden end den nuværende transporthukommelse.
-
-### 11.1 Hvad primærstudierne kan – og ikke kan – støtte
-
-- [Faria m.fl. (2000), DOI 10.1029/2000JC900084](https://doi.org/10.1029/2000JC900084) undersøgte undertow over én revlekyst. Studiet viser, at returstrømmen har en rumlig struktur, og at de største model-/observationsafvigelser lå over revlen. Det støtter ikke, at en grov gridstrøm kan bruges som undertow.
-- [Reniers m.fl. (2009), DOI 10.1029/2008JC005153](https://doi.org/10.1029/2008JC005153) fandt i deres felt- og modelopsætning, at surfzoneretention krævede både Stokes-drift og lavfrekvente bevægelser; cirka 20 % af de observerede driftere forlod surfzonen. Forenklede udeladelser gav meget forskellige resultater. Tallet er ikke en dansk rav-landingsandel.
-- [Gallop m.fl. (2018), DOI 10.1016/j.margeo.2018.07.015](https://doi.org/10.1016/j.margeo.2018.07.015) viste på en dobbelt revlekyst, at bølgebrydning over revler ændrede ripcirkulation, retention og udveksling ud af surfzonen. Resultatet gør lokal batymetri og brydningsmønster relevant, men leverer ikke en landsregel.
-- [MacMahan m.fl. (2010), DOI 10.1016/j.margeo.2009.09.011](https://doi.org/10.1016/j.margeo.2009.09.011) observerede, at ripstrømme kan indgå i recirkulerende hvirvler og tilbageholde driftere frem for blot at eksportere dem direkte til havs.
-- [Aagaard m.fl. (1997), DOI 10.1016/S0025-3227(97)00025-X](https://doi.org/10.1016/S0025-3227(97)00025-X) er feltmålinger fra én revlekyst. De fandt en tidevandsafhængig tærskel, hvor lavvande aktiverede kraftig søværts rip- og sedimenttransport, mens den oscillerende transport uden for surfzonen var landværts. Det er evidens for tosidet og stedafhængig procesadfærd – ikke for, at faldende vand altid fører materiale ud.
-- [Aagaard, Black og Greenwood (2002), DOI 10.1016/S0025-3227(02)00193-7](https://doi.org/10.1016/S0025-3227(02)00193-7) viste med feltbaseret parameterisering, at nettotransport over revler afhænger af undertow, bølgeskævhed, orbitalhastighed, relativ dybde og bundhældning. Selv højenergiforløb kan derfor ende land- eller søværts.
-- [Moulton m.fl. (2017), DOI 10.1002/2016JC012222](https://doi.org/10.1002/2016JC012222) viser, at rip-/undertowfeltet afhænger af lokal revle-/kanalgeometri, bølgebrydning, setup og batymetri. Det gør en grov modelgridstrøm uegnet som proxy for lokal surfzonecirkulation.
-- [Haller m.fl. (2002), DOI 10.1029/2001JC000955](https://doi.org/10.1029/2001JC000955) er et laboratorieforsøg på en fast revlestrand med periodiske ripkanaler. Det dokumenterer, at feederstrøm og ripcirkulation afhænger af revle-/kanalmorfologi og bølgebrydning, men er ikke feltbevis for en lavvandsregel.
-- [Mouragues m.fl. (2020), DOI 10.1029/2020JC016259](https://doi.org/10.1029/2020JC016259) er et treugers feltstudie på en bestemt revle-/forbjergskyst. Små ændringer i bølger og vandstand ændrede cirkulationen; en deflektions-rip var stærkest omkring lavvande under moderate bølger, mens andre forløb gav landværts strøm eller lokale hvirvler. Det er feltbevis for stedafhængighed, ikke en landsregel.
-- [Jalón-Rojas m.fl. (2025), DOI 10.5194/gmd-18-319-2025](https://doi.org/10.5194/gmd-18-319-2025) viste i en bølgeopløst 2DV-model, at en partikels vertikale position og densitet ændrer dens eksponering for landværts Stokes-drift og søværts undertow. Mikropartiklerne er en mekanistisk analogi, ikke ravkalibrering.
-- [Lofty m.fl. (2023), DOI 10.1016/j.watres.2023.120329](https://doi.org/10.1016/j.watres.2023.120329) målte 5 mm-rav omkring 1 041 kg/m³ og fulgte det som lavdensitets naturlig partikel i bedload og saltation. Det viser, at rav ikke generelt er en fri overfladetracer; åbent-kanal-forsøget er ikke en dansk surfzonemodel.
-- [Chubarenko og Stepanova (2017), DOI 10.1016/j.envpol.2017.01.085](https://doi.org/10.1016/j.envpol.2017.01.085) beskriver baltisk rav omkring 1,05–1,10 g/cm³ som normalt synkende og forbinder den hypotetiske gentagne migration strand↔undersøisk skråning med fælles vind-, bølge-, strøm- og roll-processer. Systematisk feltkalibrering mangler; søværts bevægelse beviser derfor ikke, at alt rav er væk.
-
-Den forsvarlige samlede konklusion er derfor tosidet: Faldende vand bestemmer ikke strømretningen, men kan i nogle lokale revle-/rendesystemer falde sammen med en søværts transportvej for mobilt rav. Lavere vand kan samtidig blotlægge rav, som allerede er afleveret eller fastholdt bag revler eller ved kanter, og dermed gøre et mere afgrænset område lettere at afsøge. Det er ikke bevis for, at vandstandsfaldet fysisk har koncentreret ravet. Søværts bevægelse kan desuden indgå i gentagen migration og mulig senere tilbageførsel; den beviser ikke, at alt rav er væk. Hverken gridstrøm, vandstand eller bølger alene bestemmer sidste-mile-fortegnet. RavRadar mangler lokal batymetri, en bølgeopløst surfzonemodel og ravets lokale partikelstate. Releasekandidaten bruger derfor kun den afgrænsede kausale energivægtede wave-approach med fire timers halveringstid og en ældre hale til at dæmpe allerede eksisterende supply; fysisk levering forbliver uopløst, mens vandstand giver 0 direkte scorepoint.
 
 
 ## 12. Hydrodynamisk sortering og ledsagematerialer
@@ -1134,7 +1089,7 @@ Kysttransport sorterer materiale efter mere end densitet. Størrelse, form, ruhe
 
 En frisk tanglinje kan være et nyttigt felttegn, fordi let organisk materiale og rav kan være transporteret og strandet under samme hændelse. Men tang kan også være flyttet uden rav, være gammel, omlejret af vind eller komme fra et andet lag i vandsøjlen.
 
-Den integrerede model giver ingen statisk bonus for tang, ålegræs, rev eller lavt vand. Oplysningerne er faglig kontekst og kan senere afprøves mod komplette ture.
+Candidate G giver ingen statisk bonus for tang, ålegræs, rev eller lavt vand. Oplysningerne er faglig kontekst og kan senere afprøves mod komplette ture.
 
 Ekspertpunkt E-09: Rangér ledsagematerialer efter deres værdi som indikator og beskriv, hvornår de er tegn på frisk aflejring versus gammel omlejring.
 
@@ -1147,7 +1102,7 @@ Vegetation påvirker rav på mindst fire måder: flydende tang kan transportere 
 
 Forskning i retention af lavdensitetspartikler i marine vegetationskanopier støtter mekanismen som analogi, men RavRadar har ingen måling af vegetationens tæthed, sæson eller tilstand. Feltet seagrass er statisk og groft.
 
-Den historiske 25/40/35-model gav +3 for tang/ålegræs ved indgående strøm, og en separat forskningsindikator brugte 12 retentionpoint. Hverken Candidate G eller den integrerede efterfølger giver en statisk bonus. Vegetation omtales derfor som faglig kontekst og et muligt fremtidigt kalibreringspunkt, ikke som en aktiv scoreregel.
+Den historiske 25/40/35-model gav +3 for tang/ålegræs ved indgående strøm, og en separat forskningsindikator brugte 12 retentionpoint. Candidate G giver ingen statisk bonus for tang eller ålegræs. Vegetation omtales derfor som faglig kontekst og et muligt fremtidigt kalibreringspunkt, ikke som en aktiv scoreregel.
 
 Ekspertpunkt E-10: Beskriv sæson-, dybde- og stormafhængig retention i tang/ålegræs og om statisk zoneflag bør erstattes af dynamisk observation.
 
@@ -1160,7 +1115,7 @@ Kystformen bestemmer, hvordan bølger bryder, hvor strømmen accelererer, og hvo
 
 RavRadar klassificerer heuristisk vestkyst, østkyst, fjordsystemer, odder, rev, lavt vand, vegetation og flere kystretninger. Klassifikationen er ikke en detaljeret morfodynamisk model.
 
-Den historiske 25/40/35-model brugte statiske bonusser for lavt vand, rev, vegetation og vestkyst. Hverken Candidate G eller den integrerede efterfølger bruger disse som scorebonus. Bund, dybde, render, revler og lokal grundegnethed er bevidst udeladt, fordi RavRadar ikke har den landsdækkende lokale batymetri og surfzoneopløsning, der skulle til for at bruge dem sikkert.
+Den historiske 25/40/35-model brugte statiske bonusser for lavt vand, rev, vegetation og vestkyst. Candidate G bruger ingen af disse som scorebonus. Bund, dybde, render, revler og lokal grundegnethed er bevidst udeladt, fordi grove geodata kan være misvisende uden lokalkendskab.
 
 Ekspertpunkt E-11: Auditér om de statiske zoneegenskaber er korrekt registreret, og om de bør påvirke transport, frigivelse, retention eller kun forklaring.
 
@@ -1171,9 +1126,9 @@ Ekspertpunkt E-11: Auditér om de statiske zoneegenskaber er korrekt registreret
 
 Ravjagt efter en storm kan være bedre end under stormens maksimum. Høj energi kan først frigøre materiale; derefter kan fortsat strøm transportere det; til sidst kan faldende energi og vandstand gøre det synligt og jagtbart.
 
-Den historiske 25/40/35-frigivelsesscore startede på 22 og brugte faste stormtidsbonusser. Den separate procesindikators hændelsesfaser var forskning. Den integrerede model genbruger Candidate G's veldækkede princip om en sammenhængende bølgeenergistyret mobiliseringstilstand: opbygning med cirka fire timers halveringstid og langsom aftrapning med cirka 48 timers halveringstid.
+Den historiske 25/40/35-frigivelsesscore startede på 22 og brugte faste stormtidsbonusser. Den separate procesindikators hændelsesfaser var forskning. Candidate G bruger i stedet en sammenhængende bølgeenergistyret mobiliseringstilstand: opbygning over cirka fire timer og langsom aftrapning med cirka 48 timers halveringstid.
 
-Der er fortsat ingen aktiv, redigerbar landsregel i `rules/national-rules.json` eller `rules/local-rules.json`, som fastholder en høj score efter storm. Hukommelsen ligger i modellens 24/48-timers aldersvægtede strømforløb og dens særskilte mobiliseringstilstand – ikke i en manuel persistence-regel.
+Der er fortsat ingen aktiv, redigerbar landsregel i `rules/national-rules.json` eller `rules/local-rules.json`, som fastholder en høj score efter storm. Hukommelsen ligger i Candidate G's faste 48-timers transportvindue og dens særskilte mobiliseringstilstand – ikke i en manuel persistence-regel.
 
 Ekspertpunkt E-12: Fastlæg hændelsesfaser for forskellige kysttyper og hvilke betingelser der afbryder persistens – eksempelvis stærk udstrømning, ny stormretning eller meget lav vandstand.
 
@@ -1183,7 +1138,7 @@ Et højt bølge- eller vindmaksimum kan mobilisere materiale, men det bedste jag
 
 ### 15.2 Hysterese og hukommelse
 
-Kystsystemet har hukommelse: bundprofil, sedimentkoncentration og ravlager ved tidspunkt t afhænger af timerne og dagene før. Den historiske model før Candidate G brugte 24-timers maksimum og tid siden høj energi som en enkel hukommelse. Den integrerede model bruger et deterministisk strømforløb, hvor de første 24 timer vægtes fuldt og evidens derefter falder glat til nul ved 48 timer, plus en særskilt bølgemobiliseringstilstand. Den modellerer fortsat ikke ravlagerets størrelse eller hvor meget et lager allerede er tømt.
+Kystsystemet har hukommelse: bundprofil, sedimentkoncentration og ravlager ved tidspunkt t afhænger af timerne og dagene før. Den historiske model før Candidate G brugte 24-timers maksimum og tid siden høj energi som en enkel hukommelse. Den aktive Candidate G bruger i stedet et fast 48-timers strømvindue og en særskilt mobiliseringstilstand; den modellerer fortsat ikke ravlagerets faktiske størrelse eller hvor meget lager der allerede er tømt.
 
 ### 15.3 Retningsskift
 
@@ -1196,47 +1151,43 @@ Litteraturen om baltisk rav peger på stærke og langvarige storme samt en efter
 
 Aflejring sker, når transportkapaciteten falder eller partiklen møder en fælde. Det kan være ved swashgrænsen, bag en revle, i en tanglinje, i læ af en odde, ved en strandvold eller i en lavning. Flere opskylslinjer kan repræsentere forskellige vandstande og hændelser.
 
-Efter aflejring kan rav flyttes igen af næste bølge, backwash, faldende vand og tilhørende strøm, vind på stranden, fodtrafik eller ny storm. Faldende vand kan altså både falde sammen med udadgående bevægelse og gøre et tidligere depot bag en revle eller i en opskylslinje synligt. En synlig tanglinje er derfor et øjebliksbillede af en dynamisk proces.
+Efter aflejring kan rav flyttes igen af næste bølge, faldende vand, vind på stranden, fodtrafik eller ny storm. En synlig tanglinje er derfor et øjebliksbillede af en dynamisk proces.
 
-RavRadar modellerer ikke strandingsposition eller sandsynlig højde på stranden. Vandstandsændring er score-neutral kontekst; ved scorelighed kan vandstand kun påvirke waders-valget af tidspunkt. Jagtformen påvirker søgeforholdene, ikke en skjult aflejringsberegning.
+RavRadar modellerer ikke eksplicit strandingsposition eller sandsynlig højde på stranden. Vandstandsændring og jagtform bruges som indirekte signaler.
 
 Ekspertpunkt E-13: Beskriv hvilke kombinationer af faldende vand, bølgeaftagning og kystprofil der bedst forudsiger synlige opskylslinjer.
 
 
 ## Historisk 4.0.242-model: jagtbarhed, sigt og sikkerhed
 
-*Dette afsnit dokumenterer den tidligere 25/40/35-model. Den aktive integrerede kontrakt står i kapitel 18 og 54.*
+*Dette afsnit dokumenterer den tidligere 25/40/35-model. Den aktuelle Candidate G-kontrakt står øverst og i kapitel 54.*
 
-Fra 4.0.242 vægtede den daværende score jagtbarhed 25 %, transport 40 % og mobilisering 35 %. Afsnittet bevares som historisk revisionsspor. Candidate G erstattede den med 20/50/30; den integrerede model bevarer de vægte og de afprøvede jagtbarhedskurver, men har et nyt fælles model-id, stateformat og en ny transport-/usikkerhedskontrakt.
+Fra 4.0.242 vægtede den daværende score jagtbarhed 25 %, transport 40 % og mobilisering 35 %. Afsnittet bevares som historisk revisionsspor. Candidate G med 20/50/30 er nu aktiv og bruger den senere vindstyrede waderskurve.
 
-I den historiske model startede waders-jagtbarhed på 60 og brugte de daværende vind- og bølgetrin. De tal må ikke bruges som beskrivelse af den aktive model. Den integrerede model bevarer Candidate G's fulde waders-jagtbarhed til og med 6 m/s, faldet til 0 ved 15 m/s og bølger som et blødt fradrag på højst 20 procent af et negativt gab. Strandjagt har intet wadersloft.
+I den historiske model startede waders-jagtbarhed på 60 og brugte de daværende vind- og bølgetrin. De tal må ikke bruges som beskrivelse af den aktive model. Candidate G giver fuld waders-jagtbarhed til og med 6 m/s, falder trinvis til 0 ved 15 m/s og bruger bølger som et blødt fradrag på højst 20 point. Strandjagt har intet wadersloft.
 
 Disse tærskler er observations- og produktarbejdsværdier. Lokal bund, mørke, strømstyrke, temperatur, is, adgang og brugerens erfaring indgår ikke fuldt. Appen må ikke erstatte egen sikkerhedsvurdering.
 
 Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om strøm, temperatur og bølgeperiode skal kunne blokere anbefalingen helt.
 
 
-**Historiske bølger i transporten:** I 4.0.241 vurderede den daværende model ikke kun bølgehøjden. En længere bølgeperiode betød mere relativ bølgeenergi, og bølgernes bevægelsesretning blev sammenholdt med den lokale retning fra hav mod land. Effekten kunne højst flytte den historiske transportdel 12 point op eller ned. Manglende periode, retning, højde eller lokal kystretning ændrede ikke denne historiske transportscore. Reglen er erstattet af den afgrænsede DEC-0110-kontrakt i næste kapitel.
+**Bølger i transporten:** Fra 4.0.241 vurderer RavRadar ikke kun bølgehøjden. En længere bølgeperiode betyder mere relativ bølgeenergi, og bølgernes bevægelsesretning sammenholdes med den lokale retning fra hav mod land. Effekten kan højst flytte transportdelen 12 point op eller ned. Mangler periode, retning, højde eller lokal kystretning, ændrer bølgerne ikke transportscoren. Dette er en forsigtig arbejdsmodel og ikke en beregning af bundforskydning.
 
 **Sikkerhed:** RavScore vurderer ravmuligheden, ikke om det er sikkert at gå i vandet. En høj score kan godt optræde samtidig med farlige lokale forhold. Appen må aldrig erstatte egen sikkerhedsvurdering.
 
-## 18. Den integrerede RavScore-kandidat
+## 18. Den aktive Candidate G-kode
 
-*4.0.317-testkandidatens beregning, trin for trin; den bliver først offentlig ved det samlede, verificerede cutover.*
+*Den faktiske offentlige beregning, trin for trin.*
 
-Den implementerede lokale 4.0.317-testkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Indtil exact-head, merge, frisk produktion og offentlig kontrol er Candidate G fortsat eneste offentlige model.
-
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. Den er låst med `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`. Bundlefingeraftrykket dækker præcis 43 kanonisk normaliserede, transitive implementeringsfiler. Disse værdier beskriver den lokale 4.0.317-testkandidat; de er ikke bevis for offentlig aktivering.
+Candidate G beregnes i `js/core/ravscore-candidate-g.js`, tilstanden bygges i `js/core/ravscore-candidate-g-state-pipeline.js`, og den offentlige profil håndhæves i `js/core/ravscore-profile-switch.js`. `js/core/score-engine.js` bevares kun til historiske sammenligninger og er ikke en offentlig fallback. Den gamle rod-fil `ravscore.js` er historisk og må ikke bruges som beskrivelse af den aktive app.
 
 ### 18.1 Hovedformel
 
-`grundscore = søgeforhold × 0,20 + levering mod kystzonen × 0,50 + rav i bevægelse × 0,30`
+`grundscore = søgeforhold × 0,20 + transport mod kysten × 0,50 + rav i bevægelse × 0,30`
 
-Tilførslen er den aldersvægtede gridstrømsbaserede supply frem mod kystzonen. Det sidste nærkyststykke bruger en kausal energivægtet bølgeapproach med fire timers halveringstid, afledt som `W/N/T` med en ældre hale. DMI-WAM-retning betyder, hvor bølgerne kommer `FROM`, og roteres derfor præcis én gang +180° til `TOWARD` før sammenligning med den uændrede eksisterende kystnormal. `normalAlignment` er det energivægtede normalmoment divideret med aktivitet, `approach=clamp((normalAlignment+0,25)/1,25,0,1)`, `factor=clamp(1-0.15×W×(1-approach),0.85,1)`, og `delivery=supply×factor` beregnes præcis én gang. Bølger kan aldrig skabe eller øge supply, og de kan højst fjerne 7,5 rå RavScore-point før slutafrunding; den viste heltalsscore kan derfor ændres 8 point. Aktiv retningsmissing fejler lukket. Kun `waveHeightM=0` er eksakt calm og neutral; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket.
+Transportleddet består internt af 65 % dokumenteret transportpotentiale og 35 % afhængig levering. Bølger og timing kan kun påvirke leveringen, når strømmen allerede har skabt transportpotentiale. Det svageste af transport og mobilisering kan give en mild samlet begrænsning på højst 15 %; et godt søgevejr kan derfor ikke helt skjule et svagt fysisk led.
 
-Faktoren er en forsigtig teknisk proxy, ikke et fysisk landingsinterval. `physicalDeliveryResolved=false`, fysisk interval er `null`, og RavRadar foregiver ikke lokal surfzonepræcision. DDM's officielle 50 m-dybdegrid kan give statisk forskningskontekst, men opløser ikke dynamiske revler, ripkanaler eller surfzoneprocesser og er derfor ikke scoreinput. Rainville m.fl. 2026 målte positivt flydende overfladedriftere, ikke negativt flydende rav med mulig bundkontakt; studiet er alene procesanalogi og aldrig ravkalibrering. Ingen kystnormal, geometri eller land-/vandpunkter flyttes.
-
-Ved waders kan slutscoren ikke overstige søgeforholdene. Ellers afrundes den vægtede sum til 0–100. Der findes ingen helscore-gate ved 13 timers udgående strøm, ingen 65/35-blanding og ingen adaptiv legacyjustering. 15 % er kun den øvre dæmpningsgrænse i det ene delivery-led. Et nul i supply kan derfor godt stå sammen med ikke-nul mobilisering og søgeforhold; det er ikke en påstand om fund eller om et kendt ravlager.
+Ved waders kan slutscoren ikke overstige søgeforholdene. Ved dokumenteret fuld udtransport med transportpotentiale 0 sættes hele RavScore til 0. Ellers afrundes resultatet til 0–100. Den adaptive legacyjustering og de gamle statiske bonusser lægges ikke oven i Candidate G.
 
 ### 18.2 Niveauer
 
@@ -1248,35 +1199,19 @@ Score | Visning
 0–34 | Dårlig
 ### 18.3 Transportberegning
 
-Den verificerede gridstrøm vinkelret på den lokale kyst omsættes til en signeret styrke. Under 0,03 m/s er signalet neutralt; ved 0,15 m/s eller mere tæller det fuldt. Fuld indgående strøm giver +10 point pr. effektiv time, og fuld udgående strøm giver -8. Svagere strøm skaleres. Evidens er fuldt vægtet til 24 timer og dæmpes derefter med en glat cosinuskurve til nul ved 48 timer. Genafspilningen starter fra en fast nulrand, kan bruge én reel kadencebro før vinduesgrænsen og accepterer højst tre timers eksplicit hold uden opdigtet bevægelse. Mangler scoretimens direkte strøm, er timen `UNAVAILABLE`. Mangler kun ældre historik, beregner state 6 i stedet en nedre bane med stærkest tilladt udstrømning og en øvre bane med stærkest tilladt indstrømning under den samme kerne; den opfinder ingen måling.
+Den verificerede strøm vinkelret på den lokale kyst omsættes til en styrke mellem 0 og 1. Under 0,03 m/s er signalet neutralt. Ved 0,15 m/s eller mere tæller det fuldt. Fuld indgående strøm bygger 10 point pr. effektiv time; fuld udgående strøm trækker 8 point. Svagere strøm skaleres. De seneste 48 timers sammenhængende beviser genafspilles fra en fast rand, og tidsafstanden mellem målinger tæller. Manglende data er et hul, ikke neutral strøm.
 
 ### 18.4 Rav i bevægelse
 
-Bølgehøjde og bølgeperiode omsættes til energi-proxyen `Hs² × T` og derfra en relativ energi-score. Mobiliseringstilstanden bygges gradvist op med cirka fire timers halveringstid og falder med cirka 48 timers halveringstid. Et hul må ikke opfinde mobilisering: state holdes uden ny opbygning, og efter et længere hul gives højst én times ny opbygningskredit ved første ægte prøve. Vind og strøm giver ikke ekstra mobiliseringspoint. Modellen kender ikke størrelsen på et ravlager og skelner ikke sikkert mellem ny frigivelse og genmobilisering.
+Bølgehøjde og bølgeperiode omsættes til ét energiindeks. Mobiliseringstilstanden bygges gradvist op med cirka fire timers halveringstid og falder med cirka 48 timers halveringstid. Vind og strøm giver ikke ekstra mobiliseringspoint. Modellen påstår ikke at kende størrelsen på et ravlager eller at skelne sikkert mellem ny frigivelse og genmobilisering.
 
 ### 18.5 Søgeforhold
 
-Ved waders giver vind til og med 6 m/s fuld vindscore. Derefter falder den trinvist gennem 7/80, 8/60, 10/35 og 13/10 til 15/0. Bølger kan kun reducere den med 20 procent af det negative gab mellem vind- og bølgekurven. Strandscoren bevarer de eksisterende vind- og bølgekurver og kombinerer det svageste signal med det vægtede gennemsnit. Strandjagt har ikke wadersloftet. Delen beskriver søgeeffektivitet, ikke sikkerhed.
+Ved waders giver vind til og med 6 m/s fuld vindscore. Derefter falder den trinvist gennem 7/80, 8/60, 10/35 og 13/10 til 15/0. Bølger kan kun give et blødt fradrag på højst 20 point. Strandjagt har ikke wadersloftet. Delen beskriver søgeeffektivitet, ikke sikkerhed.
 
 ### 18.6 Forklarbarhed og profilvalg
 
-Den offentlige projektion viser de tre komponenter, 20/50/30-vægtene, deres bidrag, den aktuelle profil, supply-/delivery-/mobiliseringsforløbet samt den strukturelle sidste-mile-usikkerhed. Den markerer, at gridstrøm ikke er surfzonens undertow eller ripstrøm, og at scoren ikke er fundprocent. Ufuldstændig historik giver fortsat score og prognose med konservative bounds; kun manglende direkte obligatoriske input gør den konkrete zone, søgemåde og time `UNAVAILABLE`. Hverken Candidate G eller den gamle 25/40/35-model kan overtage automatisk, og profiler blandes aldrig. Candidate G kan kun igen blive den ene offentlige model gennem den manuelle, fuldt verificerede hel rollback i kapitel 55.1.
-
-### 18.7 Cold start, nøddrift og evidenstillid
-
-Migrationen `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5` genbruger Candidate G's signerede, allerede afledte kystnormale strømstyrker og genvægter dem efter den nye currentkerne. Den læser eller kopierer ikke rå U/V og påstår derfor ikke, at resultatet er identisk med en genberegning fra rå strømvektorer. Wave-approach bygges fra 40 private præ-target-timer i ét sammenhængende DMI WAM-run pr. anvendt collection og med samme modelcelle. Kun en manglende WAM-time mellem native endepunkter højst fire timer fra hinanden må interpoleres, og kun inden for samme run, collection, gitter og celle. Den udeladte ældre EWMA-hale er højst `1/1024`, svarende til højst `0,01171875` konservativt beregnede rå scorepoint før afrunding.
-
-Alle 673 Candidate G-states skal være gyldige schema 2, passe til det uforanderlige kystdelsregister og pege på præcis samme kanoniske targettime. Hvis targetet er blandet, en state er ugyldig eller det sammenhængende WAM-run ikke kan skaffes, stopper skiftet, og Candidate G forbliver offentlig. Der dannes ingen syntetisk eller offentlig historik. En ægte state-6-cold start bruger de 0–48 private, verificerede timepositioner, der faktisk findes, plus den reelle targetrække og forbliver `HISTORY_INCOMPLETE`, indtil 288 timers tail closure eller attestert migration/continuation. Rollback `integrated-schema6-to-candidate-g-schema2-v3` bruger samme targettid uden dobbelt recovery-credit. Checkpoint-only recovery bruger atomisk checkpointschema 4/cache-v2 med 673 schema-6-states og en parret, beskyttet READY Candidate G-companion schema 1 fra samme generation; den må aldrig dannes af incomplete state 6. Den lokale, aldrig-offentlige state-5-kandidat kan kun være eksakt `READY`-migrationskilde gennem `integrated-schema5-ready-point-to-schema6-history-bounds-v1`; aktiv cache og checkpoint er schema 6.
-
-### 18.8 Ufuldstændig historik uden opdigtede data
-
-State 6 har tre eksplicitte scorekvaliteter. `FULL_HISTORY` betyder, at den nedre og øvre beregningsbane er faldet sammen; semantikken kan være fysisk beregnet `EXACT_POINT_SCORE` eller den faste konservative modelclosure `CONSERVATIVE_TAIL_RESET_POINT_SCORE`. Sidstnævnte er kalibreringsegnet modelpolitik, ikke fysisk eksakt state. `HISTORY_INCOMPLETE` betyder, at direkte input i scoretimen er gyldige, men et ældre historikled stadig kan ændre resultatet; RavRadar viser da den konservative nedre score og fører den øvre grænse, spændet, årsagerne og dækningen med. `UNAVAILABLE` betyder, at et direkte obligatorisk input mangler eller er ugyldigt, og scoren er `null`.
-
-Strøm bruger fortsat kun 48 aktive timer. Ukendte ældre intervaller omsluttes med de stærkest tilladte ud- og indgående baner under +10/-8-kernen. Efter 288 timer lukkes scoringens wave-bane til lower-bound-sporet, hvor den størst mulige resterende rå scoreeffekt er `0,46875` point. Efter 40 timer lukkes scoringens last-mile-bane til minimum-factor-sporet med højst `1/1024` udeladt momentandel. `conservativeResetAt` markerer closure, senere huller åbner bounds fra det konservative scoringstrack, og fysisk/rollback point state bevares separat. Disse grænser er modelpolitik, ikke fysisk konfidensinterval.
-
-RavRadar må beholde 168 timers datasikker researchhistorik til replay, audit og senere undersøgelse, men den har ingen scoreeffekt og forlænger ikke 48-timers currentvinduet. `HISTORY_INCOMPLETE` er altid ikke-kalibrerbar. Ranglister bruger den viste numeriske score først; kun ved præcis samme score kommer `FULL_HISTORY` før `HISTORY_INCOMPLETE`. Advarslen vises på dansk, tysk og engelsk og forsvinder automatisk, når alle historikgrænser er lukket.
-
-Nøddrift må kun fortsætte en komplet, atomisk og hashbundet state fra samme integrerede model i højst 72 timer eller kortere forecastudløb. Cross-model fallback og interpolation er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke i sig selv kalibreringsgrundlag. Den planlagte fiktive udførelse af morgenhullet blev opgivet før descriptor, apply, mutation eller offentliggørelse; den afgrænsede DEC-0109-kontrakt bevares kun som historisk sikkerhedsreference.
+Den offentlige projektion viser de tre komponenter, 20/50/30-vægtene, deres bidrag, den aktuelle profil, transportforløbet, mobiliseringsforløbet og en eventuel udtransportregel. Hvis Candidate G ikke kan beregnes komplet, bliver kun den konkrete zone, søgemåde og time utilgængelig. Den gamle 25/40/35-model kan ikke overtage, og profiler blandes aldrig mellem steder, timer eller jagtformer.
 
 
 ## 19. Procesindikatoren for hændelsesfase
@@ -1309,7 +1244,7 @@ Ekspertpunkt E-15: Vurder om flere kystankre skal vægtes efter kystlængde, eks
 
 *En kontrolleret vej fra ekspertudsagn til produktion.*
 
-Det tidligere Regelværksted er taget ud af aktiv administration. Det kunne kun afprøve enkle øjebliksbilleder og kunne ikke sikkert gennemføre den integrerede models to historiktilstande, lokale datagater, aldersvægtning, migration, sidste-mile-usikkerhed, wadersloft og øvrige invariants. En direkte knap fra fri tekst til produktionsscore ville derfor give falsk sikkerhed.
+Det tidligere Regelværksted er taget ud af aktiv administration. Det kunne kun afprøve enkle øjebliksbilleder og kunne ikke sikkert gennemføre Candidate G's 48-timers historik, lokale datagater, transport-nul, wadersloft og øvrige invariants. En direkte knap fra fri tekst til produktionsscore ville derfor give en falsk sikkerhed.
 
 En ændringshypotese skal indeholde: påstand, mekanisme, geografi, jagtform, målbare betingelser, tidsvindue, forventet effekt, evidensklasse, tillid, kilde, testeksempler og modbeviser.
 
@@ -1317,8 +1252,8 @@ Arbejdsgangen er:
 
 - Registrér observationen eller kommentaren i håndbogsreviewet – uden scoreeffekt.
 - Formulér en testbar hypotese med tydelig geografi, jagtform og tidslig mekanisme.
-- Omsæt en accepteret hypotese til den autoritative modelkode og en bindende RDKS-beslutning.
-- Test positive, negative, grænse- og regressionsscenarier, herunder historik, nul transportbevis, last-mile-usikkerhed, wadersloft og lokal fail-closed.
+- Omsæt en accepteret hypotese til den autoritative Candidate G-kode og en bindende RDKS-beslutning.
+- Test positive, negative, grænse- og regressionsscenarier, herunder historik, transport-nul, wadersloft og lokal fail-closed.
 - Kør kildegate og produktionsgates på PR'ens eksakte head.
 - Merge, deploy og verificér den offentlige runtime.
 - Evaluer senere mod ture med både fund og nul-fund, før yderligere kalibrering.
@@ -1379,10 +1314,6 @@ I admin viser kortfarverne den routing, der faktisk er aktiv for zonen. Grøn be
 
 Feedback gemmer et uforanderligt vejrsnapshot, score, modelversion, zone, jagtform og resultat. Både fund og nul-fund er nødvendige. Persondata og samtykke skal håndteres separat.
 
-Kontoens turlog viser turens oprindelige, uforanderlige modelbinding og status. DTO'en indeholder kun den privacy-sikre eksakte `model_binding`, ikke rå vejrfeatures. Siden udleder aktuelle, historiske og ikke-kalibreringsegnede poster på ny mod det aktive kanoniske modeloverlay og stoler ikke på en gammel serverlabel. Under integreret drift er eksakt integrerede ture aktuelle, mens Candidate G-ture er historiske og ikke egnede. Under en Candidate G-rollback bliver eksakt Candidate G aktuelle, men fortsat `calibration_eligible=false`, mens integrerede ture vises som historiske. Ingen gemt tur ommærkes.
-
-Nye schema-3-ture accepteres kun med RavRadars eksakte 11-feltsbinding for enten den integrerede model eller den forseglede Candidate G-rollback. En integreret tur kan kun være kalibreringsegnet, når faktisk zone og kystdel matcher prognosen; Candidate G er altid ikke-kalibreringsegnet. En ukendt eller forfalsket modelbinding afvises både før submit og i databasen.
-
 Den aktive læringsanalyse måler i dag kun, om observationsgrundlaget er bredt og balanceret nok til senere analyse. Den har `calibrationLocked=true`, udsteder ingen automatiske scoreforslag og ændrer hverken hovedvægte, zoner eller målepunkter. En eventuel fremtidig kalibrering kræver et særskilt, versionsstyret beslutningsgrundlag med tidslig og geografisk hold-out.
 
 AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypoteser. AI må ikke selv ændre produktionsmodellen. En AI-konklusion er ikke faglig evidens.
@@ -1391,7 +1322,7 @@ AI må strukturere fri tekst, forklare score, finde mønstre og foreslå hypotes
 
 Hele den offentlige flade bruger ét centralt tekstkatalog til dansk, tysk og engelsk. Dansk er standard og fallback; brugeren vælger med et stabilt flagikon og tydeligt sprognavn, og valget huskes lokalt. Hovedside, prognoser, områdepanel, konto/login, turformularer, den lokale assistent, **Om RavRadar** og alle 12 sektioner i **Grundbog i ravjagt** følger valget. Admin-, ekspert- og interne flader forbliver danske.
 
-Spørg RavRadar afviser uvedkommende emner og forsøg på at få credentials eller interne oplysninger både i browseren og igen i Edge, før en ekstern model kan kaldes. Bedste sted, bedste tidspunkt og konkret RavScore beregnes af den versionsbundne integrerede model og må ikke opfindes af AI. Konto-/turdata, persondata, præcis position, rå vektorer og interne diagnoser må aldrig sendes til modellen.
+Spørg RavRadar afviser uvedkommende emner og forsøg på at få credentials eller interne oplysninger både i browseren og igen i Edge, før en ekstern model kan kaldes. Bedste sted, bedste tidspunkt og konkret RavScore beregnes fortsat af Candidate G og må ikke opfindes af AI. Konto-/turdata, persondata, præcis position, rå vektorer og interne diagnoser må aldrig sendes til modellen.
 
 Ejeren har valgt og godkendt offentlig aktivering af Cloudflare `@cf/openai/gpt-oss-20b` efter reproducerbare dansk/tysk/engelsk-evals; Gemini bruges kun som intern kvalitetsreference under de aktuelle EØS-vilkår. Server-side Edge håndhæver CORS, inputgrænser, tre rate limits, syv sekunders timeout, struktureret output-/evidensvalidering og lokal fallback. Ingen leverandørcredential findes i browseren. Cloudflare-kontoen er Free / $0 med 10.000 neuroner pr. døgn og uden betalt overflow. Dialogen forklarer den begrænsede dagskvote og den fortsatte lokale funktion på alle tre sprog.
 
@@ -1476,22 +1407,22 @@ CNAME må først tilføjes, når DNS og Supabase redirects er klar. Ellers kan l
 
 *De vigtigste åbne spørgsmål, som skal vurderes i forhold til den model RavRadar faktisk bruger nu.*
 
-Den integrerede model bruger 20 % søgeforhold, 50 % relativt gridstrømsbaseret transportbevis frem mod kystzonen og 30 % rav i bevægelse. Eksperten bør for hvert punkt skrive, om antagelsen virker rigtig, give et konkret eksempel, fortælle hvor i Danmark det gælder og beskrive en observation, der kunne vise, at antagelsen er forkert.
+Candidate G bruger 20 % søgeforhold, 50 % transport og 30 % rav i bevægelse. Eksperten bør for hvert punkt skrive, om antagelsen virker rigtig, give et konkret eksempel, fortælle hvor i Danmark det gælder og beskrive en observation, der kunne vise, at antagelsen er forkert.
 
 ID | Emne | Hvad RavRadar gør i dag | Det vil vi gerne have vurderet
 --- | --- | --- | ---
 E-01 | Ravstørrelse og form | Behandler rav som én type | Om størrelse og form kræver forskellige regler
 E-02 | Tilgængeligt ravlager | Beregner ikke lagerets størrelse | Tegn på at et område er tømt eller genopfyldt
 E-03 | Bølger og mobilisering | Bruger højde, periode, cirka fire timers opbygning og 48 timers halveringstid | Om styrke og tidsforløb passer ved forskellige kyster
-E-04 | Transporttilstand | Dødzone ved 0,03 m/s, fuld styrke ved 0,15 m/s, +10/-8 pr. effektiv time, fuld vægt i 24 timer og glat dæmpning til 48 timer | Om grænser, tempo og aldersvægt er rigtige
+E-04 | Transporttilstand | Dødzone ved 0,03 m/s, fuld styrke ved 0,15 m/s, +10/-8 point pr. effektiv time og transport 0 efter 13 timers fuld udtransport | Om grænser og tempo er rigtige
 E-05 | Waders og vind | 100 til 6 m/s og trinvis fald til 0 ved 15 m/s | Om krusninger, læ og eksponering kræver lokale forskelle
-E-06 | Vandstand | Viser fremadrettet 3-timers niveauændring som score-neutral kontekst; bruger kun lavere kendt vand som søgbarhedsprioritet ved scorelighed for waders | Hvornår faldende vand falder sammen med søværts transport, eller lavere vand blotlægger allerede afleveret/fastholdt rav bag revler; ingen fysisk koncentration kan udledes af vandstand alene
+E-06 | Vandstand | Viser niveau og ændring som kontekst, men giver ingen Candidate G-point | Hvad høj, lav, stigende og faldende vandstand betyder lokalt
 E-07 | Transport langs kysten | Bruger primært den lokale komponent mod eller væk fra land | Vigtige transportforløb mellem naboområder
-E-08 | Udadgående strøm | Reducerer relativt gridstrømsbevis fra første effektive time uden at nulstille hele scoren | Hvornår rav forsvinder, lagres nær kysten eller vender tilbage
-E-09 | Ledsagemateriale | Giver ikke statiske scorepoint | Hvilke friske felttegn der er mest pålidelige
+E-08 | Udadgående strøm | Reducerer transport fra første effektive time | Hvornår rav forsvinder, lagres nær kysten eller vender tilbage
+E-09 | Ledsagemateriale | Giver ikke statiske Candidate G-point | Hvilke friske felttegn der er mest pålidelige
 E-10 | Tang og ålegræs | Har grove oplysninger, men ingen statisk bonus | Hvornår vegetation er transportør, fælde eller skjul
 E-11 | Kystform, bund og dybde | Er bevidst udeladt af den aktive score | Hvilke forhold der bør forklares eller senere testes
-E-12 | Hukommelse | Transport vægtes fuldt 24 timer og dæmpes til 48; mobilisering bruger cirka fire/48 timer | Om opbygning og aftrapning varer rigtigt
+E-12 | Hukommelse | Transport bruger 48 timer; mobilisering cirka fire/48 timer | Om opbygning og aftrapning varer rigtigt
 E-13 | Aflejring | Beregner ikke den præcise opskylslinje | Hvilke forløb der giver en tydelig, jagtbar aflejring
 E-14 | Søgeforhold | Vurderer søgeeffektivitet, ikke sikkerhed | Hvad der gør strand- og waderssøgning let eller svært
 E-15 | Buede kyster | Bruger lokale kystdele; områdescoren kombinerer den bedste RavScore med støtte fra flere kystdele | Om delene repræsenterer de steder, man faktisk leder
@@ -1502,7 +1433,6 @@ E-19 | Forskellige kysttyper | Bruger fælles grundtærskler og lokale retninger
 E-20 | Efterprøvning | Har mekanisk test, men få repræsentative fundture | Enkle nul-fund, observationer og feltforsøg
 E-21 | Turdata | Gemmer dato/tid, zone, kystdel, jagtform, søgetid, grundighed, fundstatus og et dataminimeret vejrbillede; ikke GPS eller rute | Hvilke få felter der giver mest læring
 E-22 | Genmobilisering | Bruger én bølgeenergistyret mobiliseringstilstand og påstår ikke at kende et nærkystlager | Tegn der skelner genmobilisering fra ny frigivelse
-E-23 | Sidste nærkyststykke | Dæmper eksisterende supply én gang med et afgrænset kausalt energivægtet wave-approach-led med fire timers halveringstid og en ældre hale og markerer fysisk levering som uopløst | Hvilke målbare data der kan skelne stranding, revlefangst, langskyst passage og eksport gennem render
 
 
 ## 31. Gennemregnede faglige scenarier
@@ -1512,8 +1442,8 @@ E-23 | Sidste nærkyststykke | Dæmper eksisterende supply én gang med et afgr�
 Scenario A – stærk indgående strøm efter høj bølgeenergi, roligt nu
 Tidligere høje bølger har bygget mobiliseringstilstanden op. Strømmen har derefter en tydelig komponent mod land og bygger transporttilstanden op. Når vinden nu er lav, er waders-søgeforholdene gode. Dette er den hændelsesrækkefølge, modellen er bygget til at rangere højt.
 
-Scenario B – høj bølgeenergi nu, gridstrøm væk fra land
-Rav kan være sat i bevægelse, mens waders-søgeforholdene falder på grund af vinden. Udadgående gridstrøm reducerer transportbeviset med op til otte point pr. effektiv time og kan bringe komponenten til 0. Hele scoren nulstilles ikke: modellen ved ikke, om et sekundært ravlager stadig ligger bag revler eller i opskyl, og gridstrømmen er ikke en måling af surfzonens returstrømme. Forklaringen skal vise konflikten i stedet for at skjule den.
+Scenario B – høj bølgeenergi nu, strøm væk fra land
+Rav kan være sat i bevægelse, mens waders-søgeforholdene falder på grund af vinden. Udadgående strøm reducerer transporten med op til otte point pr. effektiv time. Efter 13 timers fuld udtransport er transporten 0, og særreglen gør hele RavScore 0, selv om rav stadig kan være i bevægelse.
 
 Scenario C – roligt vejr uden nylig bølgeenergi
 Søgeforholdene kan være meget gode, men mobilisering og transport kan være lave. Scoren bør derfor være middel eller lav. Der kan stadig findes gammelt rav; modellen vurderer ikke lageret.
@@ -1531,13 +1461,7 @@ Data ældre end friskhedsgrænsen må ikke vises som aktuelle. Siden skal hente 
 
 Følgende kilder understøtter den generelle procesforståelse. De validerer ikke automatisk RavRadars numeriske tærskler:
 
-- Chubarenko, I. m.fl. (2017), *Microplastics in sea coastal zone: Lessons learned from the Baltic amber*. Environmental Pollution 224, DOI [10.1016/j.envpol.2017.01.085](https://doi.org/10.1016/j.envpol.2017.01.085). Ravspecifik kilde om mulig gentagen migration mellem strand og undervandsskråning; forfatterne fremhæver, at systematisk ravmonitorering mangler. Den fastsætter ingen dansk tærskel eller universel retningseffekt.
-
-- Aagaard, T., Black, K.P. & Greenwood, B. (2002), *Cross-shore suspended sediment transport in the surf zone: a field-based parameterization*. Marine Geology 185, DOI [10.1016/S0025-3227(02)00193-7](https://doi.org/10.1016/S0025-3227(02)00193-7). Viser land- og søværts nettotransport som funktion af lokal bølge-, strøm-, dybde- og hældningsdynamik; ingen ravfaktor.
-
-- Jalón-Rojas, I. m.fl. (2025), *A wave-resolving two-dimensional vertical Lagrangian approach to model microplastic transport in nearshore waters*. Geoscientific Model Development 18, DOI [10.5194/gmd-18-319-2025](https://doi.org/10.5194/gmd-18-319-2025). Mekanistisk analogi for Stokes-drift, undertow og partikelposition; ikke ravkalibrering.
-
-- Lofty, J. m.fl. (2023), *Microplastic and natural sediment in bed load saltation: Material does not dictate the fate*. Water Research 243, DOI [10.1016/j.watres.2023.120329](https://doi.org/10.1016/j.watres.2023.120329). 5 mm-rav omkring 1 041 kg/m³ blev målt som lavdensitets bedload/saltation i åbent kanalflow; ikke dansk surfzonevalidering.
+- Chubarenko, I. m.fl. (2017), *Microplastics in sea coastal zone: Lessons learned from the Baltic amber*. Marine Pollution Bulletin. Vigtig analogi mellem rav, lavdensitetspartikler, stormmobilisering og strandingsprocesser. https://www.sciencedirect.com/science/article/abs/pii/S0269749116316402
 
 - Davidson, B. m.fl. (2023), *Beaching model for buoyant marine debris in bore-driven swash*. Flow. Laboratorie-/modelarbejde om partikelstranding i swash og betydningen af partikelinerti og indgangsbetingelser. https://www.cambridge.org/core/journals/flow/article/beaching-model-for-buoyant-marine-debris-in-boredriven-swash/DBBD345FD31CCA10CC21F29744EA1A57
 
@@ -1640,16 +1564,16 @@ Supplerende spørgsmål til E-01: Definér et realistisk forsøgsprogram for kri
 En havtilstand består af mange bølgekomponenter. Signifikant bølgehøjde opsummerer højden, men ikke hele spektret.
 
 ### 36.1 Periode
-Lange bølger påvirker typisk bunden på større dybde og kan give en anden surfzone end korte vindbølger. Den integrerede model bruger derfor både bølgehøjde og periode i den timevise `Hs² × T`-proxy.
+Lange bølger påvirker typisk bunden på større dybde og kan give en anden surfzone end korte vindbølger. Candidate G bruger derfor både bølgehøjde og periode i den timevise energi-proxy.
 
 ### 36.2 Retning og kysteksponering
 Den relevante bølgeretning skal sammenholdes med lokal kystnormal, revler og lægivende geometri. En offshore modelretning kan blive refrakteret, før bølgen når stranden. Ét havanker er derfor en approximation.
 
 ### 36.3 Fetch og varighed
-Lokal vind over kort fetch kan give stejle, korte bølger, mens fjern swell kan ankomme efter at den lokale vind er faldet. Den integrerede model samler den timevise energi-proxy i én mobiliseringstilstand, som bygges med cirka fire timers halveringstid og derefter aftager med cirka 48 timers halveringstid. En kort spids tæller derfor ikke som mange timers vedvarende energi.
+Lokal vind over kort fetch kan give stejle, korte bølger, mens fjern swell kan ankomme efter at den lokale vind er faldet. Candidate G samler den timevise energi-proxy i én mobiliseringstilstand, som bygges over cirka fire timer og derefter aftager med cirka 48 timers halveringstid. En kort spids tæller derfor ikke som mange timers vedvarende energi.
 
 ### 36.4 Den aktuelle begrænsning
-RavRadar bruger ikke hele bølgespektret og modellerer heller ikke lokal refraktion, brydning ved revler eller præcis bundbelastning. Retningen bruges kun i den afgrænsede kausale energivægtede approach-proxy med fire timers halveringstid og en ældre hale, som kan dæmpe allerede eksisterende supply højst 15 % og aldrig øge den. Den må ikke fortolkes som lokal surfzonefysik eller fysisk landingsandel. En større eller lokalt præcis effekt kræver robuste lokale input og hold-out-data.
+RavRadar bruger ikke hele bølgespektret og modellerer heller ikke lokal refraktion, brydning ved revler eller præcis bundbelastning. Bølgeretning eller en mere detaljeret spektral model må kun tilføjes, hvis robuste input og hold-out-data viser en stabil forbedring i forhold til Candidate G.
 
 
 ## 37. Strandprofiler, revler og morfodynamiske tilstande
@@ -1711,7 +1635,7 @@ Uddybning af E-09 og E-10: Definér en praktisk klassifikation af opskyl, som ka
 
 ## 40. Dansk regional oceanografi og hvorfor én landsregel er utilstrækkelig
 
-*Nordsø, Skagerrak, Kattegat, Bælter, Øresund og Vadehav har forskellige dynamikker. Den integrerede model bruger fortsat samme grundtærskler i hele landet og lokale kystretninger, fordi den ikke har valideret grundlag for regionale tal.*
+*Nordsø, Skagerrak, Kattegat, Bælter, Øresund og Vadehav har forskellige dynamikker. Candidate G bruger dog i dag de samme grundtærskler i hele landet og lokale kystretninger.*
 
 Danmarks kyster ligger i flere hydrodynamiske regimer. En regel, der virker på en åben Nordsøkyst, kan være forkert i et beskyttet farvand eller tidevandspræget vadeområde.
 
@@ -1753,16 +1677,15 @@ En score bør ledsages af datadækning, alder og centrale usikkerheder. Et tal u
 
 ID | Hypotese | Nuværende implementering | Kan afkræftes ved
 --- | --- | --- | ---
-H-01 | Bølgehøjde og periode kan beskrive relativ mobilisering af allerede tilgængeligt rav. | `Hs² × T`, cirka fire timers opbygnings- og 48 timers aftrapningshalveringstid. | Komplette ture viser systematisk et andet energi- eller tidsforløb.
-H-02 | Den lokale kystnormale gridstrøm er et brugbart relativt signal om tilførsel frem mod kystzonen. | Dødzone 0,03 m/s, fuld styrke 0,15 m/s og fuld 24-timers vægt med glat dæmpning til 48 timer. | Repræsentative fund-/nul-fundforløb eller bedre feltmålinger peger på andre grænser, dybder eller kysttyper.
-H-03 | Vedvarende udgående gridstrøm reducerer gradvist det relative tilførselsbevis, men beviser ikke at kystens ravlager er tømt. | Op til -8 point pr. effektiv time; transportkomponenten kan nå 0 uden at nulstille hele RavScore. | Kontrollerede forløb viser en anden styrke/tid, eller lokal surfzoneevidens viser systematisk modsat transport.
+H-01 | Bølgehøjde og periode kan beskrive, hvor meget allerede tilgængeligt rav er i bevægelse. | Ét mobiliseringsforløb med cirka fire timers opbygning og 48 timers halveringstid. | Komplette ture viser systematisk et andet energi- eller tidsforløb.
+H-02 | Den lokale strømkomponent mod land er hovedsignalet for transport. | Dødzone 0,03 m/s, fuld styrke 0,15 m/s og 48 timers genafspilning. | Fund og nul-fund peger på andre grænser eller en stærk kysttypeforskel.
+H-03 | Vedvarende udgående strøm fjerner gradvist transportmuligheden. | Op til -8 point pr. effektiv time og transport 0 efter 13 timers fuld udtransport. | Kontrollerede forløb viser fortsat ny indtransport under samme dokumenterede udstrømning.
 H-04 | Direkte vindpoint vil dobbeltregne, fordi vinden allerede påvirker bølger, strøm og waders-søgning. | Ingen direkte vindpoint i transport eller mobilisering. | Sammenlignelige ture viser en selvstændig vindeffekt efter kontrol for bølger, strøm og jagtform.
 H-05 | Søgeeffektiviteten med waders falder gradvist, når vindens krusninger tiltager. | Fuld score til 6 m/s og 0 ved 15 m/s med et blødt bølgefradrag. | Observationer viser et andet forløb eller tydelige regionale forskelle.
-H-06 | Et komplet 48-timers strømvindue er langt nok til, at maskinens oprindelige startværdi ikke betyder noget. | Fast nulrand, fuld vægt i 24 timer og deterministisk cosinusdæmpning til 48 timer. | Samme komplette vejrforløb giver forskellige sluttilstande eller ældre dokumenteret strøm ændrer resultatet væsentligt.
-H-07 | Grove statiske oplysninger om rev, lavt vand, tang og ålegræs er for usikre til automatiske landsbonusser. | Ingen aktive scorepoint fra disse felter. | Et repræsentativt datasæt viser stabil merværdi uden at skabe kendte lokale fejl.
+H-06 | Et komplet 48-timers strømvindue er langt nok til, at maskinens oprindelige startværdi ikke betyder noget. | Fast rand og deterministisk genafspilning. | Samme komplette vejrforløb giver forskellige sluttilstande eller ældre dokumenteret strøm ændrer resultatet væsentligt.
+H-07 | Grove statiske oplysninger om rev, lavt vand, tang og ålegræs er for usikre til automatiske landsbonusser. | Ingen Candidate G-point fra disse felter. | Et repræsentativt datasæt viser stabil merværdi uden at skabe kendte lokale fejl.
 H-08 | Lokale kystdele beskriver retningen bedre end én grov zonelinje. | Hver del vurderes lokalt; zonens bedste synlige score vises. | Modellen overvurderer systematisk zoner, hvor kun en lille eller irrelevant del vender gunstigt.
 H-09 | Rav kan genmobiliseres uden en ny stor storm, men lageret kan ikke observeres direkte. | Samme bølgeenergistyrede mobiliseringstilstand; intet særskilt lagerpoint. | Ekspert- og turdata kan målbart skelne et stabilt nærkystlager fra ny mobilisering.
-H-10 | Offshore bølgeapproach kan afgrænset dæmpe sandsynligheden for sidste levering, men løser ikke surfzone, revler og strandflade. | Kausal energivægtet `W/N/T`-EWMA med fire timers halveringstid og en ældre hale giver `factor=0,85–1,00` og `delivery=supply×factor` én gang; `physicalDeliveryResolved=false` og fysisk interval er `null`. | Lokal dynamisk batymetri/surfzonemodellering eller repræsentativt feltgrundlag giver en validerbar lokal funktion.
 
 Hypoteseregisteret skal opdateres, når scorelogik ændres. En hypotese må ikke slettes, blot fordi den afvises; den skal arkiveres med resultat og version.
 
@@ -1813,8 +1736,8 @@ Ekspertpunkt E-21: Gennemgå protokollen og fjern felter, der ikke kan registrer
 ### 45.1 Høj score, intet lager
 Vejret er ideelt, men området er udtømt eller har lav ravtilstedeværelse. Diagnosen er ikke nødvendigvis forkert transport; den kan være kildelager.
 
-### 45.2 Ikke-nul score ved udgående gridstrøm
-I den integrerede model falder transportbeviset fra første effektive time med udgående strøm og kan nå 0. Hele RavScore nulstilles ikke, fordi modellen hverken observerer ravlageret eller den lokale surfzone og derfor ikke kan bevise, at alt rav er fjernet. Brugerforklaringen skal vise det lave transportled og den strukturelle sidste-mile-usikkerhed; retningskonvention, lokal kystnormal og pilesymbol skal stadig auditeres.
+### 45.2 Grøn score ved offshore strøm
+I Candidate G falder transporten fra første effektive time med udgående strøm, og transport 0 tvinger samlet RavScore til 0. Retningskonvention, lokal kystnormal og pilesymbol skal stadig auditeres.
 
 ### 45.3 God lokal lomme skjult af zonegennemsnit
 En lille bugt eller havnelæ kan være god, selv om zonens repræsentative modelpunkt er middelmådigt. Dette taler for flere ankre eller finere zoner – men også mod overfortolkning af små modeldetaljer.
@@ -1830,19 +1753,13 @@ Gamle prognoser må ikke fremstå som aktuelle. Dataalder valideres, og for gamm
 
 *Hvor eksperten og udvikleren finder den konkrete implementering.*
 
-Emne | Kandidatfil | Kontrol
+Emne | Aktiv fil | Kontrol
 
-Integreret score og 20/50/30 | js/core/ravscore-integrated.js | scripts/test-ravscore-integrated-model.mjs
+Candidate G-score og 20/50/30 | js/core/ravscore-candidate-g.js | scripts/test-ravscore-candidate-g.mjs
 
-Gridstrømsforløb 24/48 timer | js/core/ravscore-current-supply-memory.js | scripts/test-ravscore-current-supply-memory.mjs
+48-timers tilstand | js/core/ravscore-candidate-g-state-pipeline.js | scripts/test-ravscore-candidate-g-state-pipeline.mjs
 
-Bølgemobilisering 4/48 timer | js/core/ravscore-wave-mobilisation-state.js | scripts/test-ravscore-wave-mobilisation-state.mjs
-
-Samlet state, migration og rollback | js/core/ravscore-integrated-state-pipeline.js | scripts/test-ravscore-integrated-state-pipeline.mjs
-
-Offentlig model- og payloadbinding | js/core/ravscore-public-model.js | scripts/test-ravscore-public-model.mjs
-
-Offentlig runtimekontrakt | js/core/ravscore-public-runtime-contract.js | scripts/test-ravscore-public-runtime-contract.mjs
+Eneste offentlige profil | js/core/ravscore-profile-switch.js | scripts/test-ravscore-profile-switch-4.0.260.mjs
 
 Procesfase uden direkte scorevirkning | js/core/coastal-process-model.js | scripts/test-process-model-4.0.33.mjs
 
@@ -1858,7 +1775,7 @@ Stationsrouting | data/water-level-station-routing.json | Stationstopologi og ca
 
 Håndbog | docs/handbook/content.json | scripts/release-gate.mjs
 
-Candidate G er fortsat den eneste offentlige scorevej, mens 4.0.317 testes. Efter et sikkert integreret cutover bevares Candidate G-filerne kun til migration, rollbackkontrol, historiske sammenligninger og forskning. `js/core/score-engine.js`, `js/core/rule-engine.js` og gamle regelfiler er ikke samtidige offentlige scoreveje.
+`js/core/score-engine.js`, `js/core/rule-engine.js` og gamle regelfiler findes kun til historiske sammenligninger og forskning. De er ikke en offentlig scorevej.
 Historiske rodfiler kan stadig findes i projektet af kompatibilitets- eller dokumentationsgrunde. Håndbogen skal altid pege på den aktive fil og tydeligt mærke historiske implementeringer.
 
 
@@ -1898,38 +1815,7 @@ Langvarig lokal erfaring kan opdage mønstre, som modeller og publikationer over
 - Coastal Wiki/Van Rijn: Sand transport. Samlet faglig oversigt over bedload, suspension, bølge- og strømkomponenter samt tidsforsinkelse i ikke-stationær transport.
 
 - DMI Frie Data og API-dokumentation. Autoritativ kilde til hvilke observations- og prognoseprodukter RavRadar henter; dokumenterer datakilden, ikke ravfysikken.
-
-- DMI WAM- og DKSS-dokumentation. Autoritativ for bølgeretningens `FROM`-semantik, bølge-/vandstandsprodukter og deres modelbegrænsninger; dokumenterer datakilden, ikke ravfysikken eller lokal surfzonelevering.
-
-- Geodatastyrelsen, [Danmarks Dybdemodel 2024/v2](https://gst.dk/ansvarsomraader/soekort-og-marine-data/soeopmaaling-og-dybdedata/danmarks-dybdemodel). Det officielle 50 × 50 m middelgrid fører dybde, kilde og opmålingsår, prioriterer moderne søopmåling og indeholder også 2024-lavtvandsdata fra satellit/lidar. Utilstrækkeligt dækkede celler interpoleres, kystlinjen er generaliseret 1:100.000, og modellen opløser ikke dynamiske revler, aktuelle ripkanaler eller en bølgeopløst surfzone. Derfor er den statisk kontekst, ikke RavScore-input.
-
-- Rainville m.fl. (2026), DOI [10.1029/2025JC022422](https://doi.org/10.1029/2025JC022422). Nærkystdriftere viser, at brydende bølger kan strande flydende objekter; RavRadar bruger kun studiet som buoyant-object-analogi, aldrig som ravkalibrering.
-
-- Faria m.fl. (2000), “The mean undertow profile under a monochromatic wave: measurements and numerical modelling”, Journal of Geophysical Research, DOI [10.1029/2000JC900084](https://doi.org/10.1029/2000JC900084). Viser undertows rumlige struktur over en revlekyst og modelusikkerhed over revlen; kan ikke omsætte RavRadars gridstrøm til lokal undertow.
-
-- Reniers m.fl. (2009), “Surf zone surface retention on a rip-channeled beach”, Journal of Geophysical Research, DOI [10.1029/2008JC005153](https://doi.org/10.1029/2008JC005153). Understøtter, at Stokes-drift, lavfrekvente bevægelser og lokal cirkulation er nødvendige for at forstå retention og udveksling. Studiets cirka 20 % observerede exits er ikke en universel landings- eller eksportandel.
-
-- Gallop m.fl. (2018), “Rip current circulation and surf zone retention on a double barred beach”, Marine Geology, DOI [10.1016/j.margeo.2018.07.015](https://doi.org/10.1016/j.margeo.2018.07.015). Understøtter, at revlebrydning og lokal morfologi kan ændre ripcirkulation, retention og exit.
-
-- MacMahan m.fl. (2010), “Mean Lagrangian flow behavior on an open coast rip-channeled beach: A new perspective”, Marine Geology, DOI [10.1016/j.margeo.2009.09.011](https://doi.org/10.1016/j.margeo.2009.09.011). Viser, at ripstrøm kan recirkulere og tilbageholde flydere frem for at være ren søværts eksport.
-
-- Aagaard, Greenwood & Nielsen (1997), “Mean currents and sediment transport in a rip channel”, Marine Geology 140, DOI [10.1016/S0025-3227(97)00025-X](https://doi.org/10.1016/S0025-3227(97)00025-X). Ét feltstudie knytter lavvande til stærk offshore rip-/sedimenttransport på en revlekyst, samtidig med landværts oscillerende transport uden for surfzonen. Det støtter stedafhængighed, ikke en generel faldende-vand-regel.
-
-- Aagaard, Black & Greenwood (2002), “Cross-shore suspended sediment transport in the surf zone: a field-based parameterization”, Marine Geology 185, DOI [10.1016/S0025-3227(02)00193-7](https://doi.org/10.1016/S0025-3227(02)00193-7). Nettoretningen over revler afhænger af undertow, bølgeskævhed, orbitalhastighed, relativ dybde og bundhældning; kilden giver ingen ravspecifik faktor.
-
-- Jalón-Rojas m.fl. (2025), “A wave-resolving two-dimensional vertical Lagrangian approach to model microplastic transport in nearshore waters”, Geoscientific Model Development 18, DOI [10.5194/gmd-18-319-2025](https://doi.org/10.5194/gmd-18-319-2025). Vertikal position, densitet og stigende/synkende adfærd ændrer Stokes-/undertoweksponering; lavdensitetsplast er analogi, ikke ravkalibrering.
-
-- Lofty m.fl. (2023), “Microplastic and natural sediment in bed load saltation: Material does not dictate the fate”, Water Research 243, DOI [10.1016/j.watres.2023.120329](https://doi.org/10.1016/j.watres.2023.120329). Laboratoriet brugte 5 mm-rav omkring 1 041 kg/m³ som lavdensitets naturlig partikel og målte bedload/saltation. Det afviser en generel fri-overfladetracer-antagelse, men er ikke en marin dansk surfzonevalidering.
-
-- Moulton m.fl. (2017), Journal of Geophysical Research: Oceans, DOI [10.1002/2016JC012222](https://doi.org/10.1002/2016JC012222). Understøtter, at rip-/undertowfeltet afhænger af lokal revle-/kanalgeometri, bølgebrydning, setup og batymetri; RavRadars gridstrøm kan ikke erstatte disse felter.
-
-- Haller m.fl. (2002), Journal of Geophysical Research, DOI [10.1029/2001JC000955](https://doi.org/10.1029/2001JC000955). Laboratorieforsøg på en fast revlestrand med ripkanaler; dokumenterer morfologiafhængig feeder-/ripcirkulation, ikke lavvandsfeltbevis.
-
-- Mouragues m.fl. (2020), “High-Energy Surf Zone Currents and Headland Rips at a Geologically Constrained Mesotidal Beach”, Journal of Geophysical Research: Oceans, DOI [10.1029/2020JC016259](https://doi.org/10.1029/2020JC016259). Treugers feltstudie af bølge-, vandstands- og morfologiafhængige strømregimer; ingen universel lavvandsregel.
-
-- Chubarenko m.fl. (2017), Environmental Pollution 224, DOI [10.1016/j.envpol.2017.01.085](https://doi.org/10.1016/j.envpol.2017.01.085). Fremhæver mangel på systematisk ravmonitorering og opstiller gentagen migration mellem strand og undervandsskråning med mulig tilbageførsel over dage som hypotese.
-
-Kildelisten skal udvides løbende. Hver ny scoreantagelse skal pege på mindst én mekanistisk kilde eller være tydeligt mærket som ekspertobservation eller RavRadar-hypotese. En ændring bliver først aktiv gennem den versionsstyrede model- og releaseproces.
+Kildelisten skal udvides løbende. Hver ny scoreantagelse skal pege på mindst én mekanistisk kilde eller være tydeligt mærket som ekspertobservation eller RavRadar-hypotese. En ændring bliver først aktiv gennem den versionsstyrede Candidate G- og releaseproces.
 
 
 ## 49. Ekspertens review-arbejdsgang
@@ -1942,7 +1828,7 @@ Kildelisten skal udvides løbende. Hver ny scoreantagelse skal pege på mindst �
 - Angiv forventet retning og størrelse på modelændringen.
 - Vedlæg kilde, data eller gentagne observationer.
 - Foreslå en test og et kriterium for accept eller afvisning.
-- Ejeren vurderer forslaget; en accepteret ændring bliver først aktiv, når RDKS, den autoritative modelkode, de relevante tests og den versionerede release er opdateret og verificeret.
+- Ejeren vurderer forslaget; en accepteret ændring bliver først aktiv, når RDKS, Candidate G-koden, de relevante tests og den versionerede release er opdateret og verificeret.
 En ekspertkommentar ændrer aldrig håndbogen eller scoremotoren direkte. Den gemmes i Supabase med versionshistorik og kan accepteres, afvises eller omsættes til en kontrolleret kodeændring af ejeren og udviklingsprocessen.
 
 
@@ -1979,7 +1865,7 @@ En ekspertkommentar ændrer aldrig håndbogen eller scoremotoren direkte. Den ge
 
 *Hvorfor RavRadar ikke må gøre den fulde stormkæde til en absolut sandhed.*
 
-Den klassiske stormfortælling er vigtig, men ufuldstændig. Rav kan flyttes gennem gentagne korte cyklusser mellem strand, swashzone, revle, rende, tang og helt lavt vand. **Fagligt** er det nyttigt at skelne mellem et primært lager, der kræver egentlig frigivelse, og et sekundært nærkystlager, hvor rav allerede er hydrodynamisk tilgængeligt. Den aktive model observerer eller klassificerer ikke disse lagre; den bruger den samme mobiliseringstilstand for begge mulige forløb.
+Den klassiske stormfortælling er vigtig, men ufuldstændig. Rav kan flyttes gennem gentagne korte cyklusser mellem strand, swashzone, revle, rende, tang og helt lavt vand. Derfor skelner modellen nu mellem et **primært lager**, der kræver egentlig frigivelse, og et **sekundært nærkystlager**, hvor rav allerede er hydrodynamisk tilgængeligt.
 
 ### 51.1 Primærlager
 
@@ -1995,13 +1881,13 @@ Moderate bølger kan løfte eller rulle ravet, mens en indgående eller skrå st
 
 ### 51.4 Aktiv implementering
 
-Den integrerede model har ét mobiliseringsspor. Bølgehøjde og bølgeperiode danner energi-proxyen `Hs² × T`, som opbygges under hændelsen og derefter aftager gradvist med hukommelse. Aktuel vind, gridstrøm, vandstand, rev og vegetation giver ikke ekstra mobiliseringspoint. Gridstrømmen indgår i stedet i den særskilte transportkomponent.
+Candidate G har ét mobiliseringsspor. Bølgehøjde og bølgeperiode danner ét energiindeks, som opbygges under hændelsen og derefter aftager gradvist med hukommelse. Aktuel vind, strøm, vandstand, rev og vegetation giver ikke ekstra mobiliseringspoint. Strømmen indgår i stedet i den særskilte transportkomponent.
 
-Modellen kan derfor ikke afgøre, om et konkret ravstykke stammer fra en primær frigivelse eller en senere nærkystgenmobilisering. Den gamle procesindikator kan beskrive et hypotetisk forløb, men ændrer ikke den integrerede score.
+Modellen kan derfor ikke afgøre, om et konkret ravstykke stammer fra en primær frigivelse eller en senere nærkystgenmobilisering. Processindikatoren kan beskrive et sandsynligt forløb, men ændrer ikke Candidate G-scoren.
 
 Ekspertpunkt E-22: Vurder om fremtidige data kan skelne pålideligt mellem primær mobilisering og nærkystgenmobilisering uden at blande transport og mobilisering sammen.
 
-Implementeret i: **js/core/ravscore-integrated.js**, **js/core/ravscore-wave-mobilisation-state.js**, **js/core/ravscore-integrated-state-pipeline.js** og den score-neutrale historiske **js/core/coastal-process-model.js**.
+Implementeret i: **js/core/ravscore-candidate-g.js**, **js/core/ravscore-candidate-g-state-pipeline.js** og den score-neutrale **js/core/coastal-process-model.js**.
 
 
 ## Sproglig standard fra 4.0.69
@@ -2021,77 +1907,45 @@ For vandstandsstationer betyder det, at RavRadar viser separat, om stationen er 
 Den samlede funktionstest viser **fejl**, **advarsler** og **bestået** særskilt. En langsom ressource er en advarsel, mens en manglende kritisk fil er en fejl.
 
 
-## 54. Sådan beregner den integrerede RavScore-kandidat det samlede rav- og søgeindeks
+## 54. Sådan regner RavRadar ud, om rav sandsynligvis kommer ind
 
-*Den lokale 4.0.317-testkandidats modelkontrakt i almindeligt dansk; Candidate G er stadig offentlig.*
+*Den aktuelle Candidate G-kontrakt i almindeligt dansk.*
 
-RavRadar vurderer tre forskellige led: om man kan lede effektivt, om den verificerede gridstrøm giver relativ evidens for transport frem mod kystzonen, og om bølger kan have sat allerede tilgængeligt rav i bevægelse. En høj score er et modelindeks – ikke et løfte, en procentchance eller bevis for, at rav har klaret det sidste stykke ind.
+RavRadar vurderer tre forskellige led: om man kan lede effektivt, om strømmen fører let materiale mod kysten, og om bølger har sat allerede tilgængeligt rav i bevægelse. En høj score er en modelvurdering – ikke et løfte om fund.
 
-### 54.1 Kandidatens vægtning
+### 54.1 Den aktive vægtning
 
-Den integrerede model bevarer den ejerbesluttede vægtning **20 % søgeforhold, 50 % transport frem mod kystzonen og 30 % rav i bevægelse**. Vægtene er en faglig produktprior og er ikke kalibreret mod et repræsentativt fund-/nul-fundgrundlag. De tre dele holdes adskilt for at mindske dobbeltregning.
+Candidate G bruger **20 % søgeforhold, 50 % transport mod kysten og 30 % rav i bevægelse**. De tre dele holdes adskilt, så samme vejrhændelse ikke belønnes flere gange under forskellige navne.
 
 **Søgeforhold** beskriver, hvor effektivt man kan lede på den valgte måde. Ved waders er vinden hovedsignalet: fuld score til og med 6 m/s, derefter trinvis fald til 0 ved 15 m/s. Bølger kan give et blødt fradrag på højst 20 point. Den samlede waders-score kan ikke overstige søgeforholdene. Strandjagt har ikke dette loft.
 
-**Transport frem mod kystzonen** styres af verificeret gridstrøm vinkelret på den lokale kyststrækning. Fuld indgående strøm giver +10 point pr. effektiv time, og fuld udgående strøm giver -8 fra første effektive time. De seneste 24 timer vægtes fuldt; evidens falder glat til nul ved 48 timer. Neutral strøm ændrer ikke forløbet, mens manglende strøm er et hul – ikke et nul. Den tidligere 13-timers helscore-gate findes ikke.
+**Transport mod kysten** styres af verificeret strøm vinkelret på den lokale kyststrækning. Fuld indgående strøm bygger 10 point pr. effektiv time. Fuld udgående strøm trækker 8 point fra første effektive time og udtømmer transporten fra 13 timer. Svagere strøm skaleres. Neutral strøm ændrer ikke potentialet, mens manglende strøm er et hul – ikke et nul.
 
-**Rav i bevægelse** styres af bølgehøjde og bølgeperiode gennem `Hs² × T` som ét sammenhængende forløb. Mobiliseringen bygges gradvist op med cirka fire timers halveringstid og falder langsomt bagefter med cirka 48 timers halveringstid. Vind giver ikke direkte mobiliseringspoint, og strømmen regnes kun i transportleddet.
+**Rav i bevægelse** styres af bølgehøjde og bølgeperiode som ét sammenhængende forløb. Mobiliseringen bygges gradvist op over cirka fire timer og falder langsomt bagefter med cirka 48 timers halveringstid. Vind giver ikke direkte mobiliseringspoint, og strømmen regnes i transportleddet.
 
-**Det sidste stykke** er forbedret, men ikke erklæret fysisk løst. Modellen bruger en kausal energivægtet bølgeapproach med fire timers halveringstid, afledt som `W/N/T` med en ældre hale. DMI-WAM-retningen er `FROM` og roteres præcis én gang +180° til `TOWARD` mod den uændrede eksisterende kystnormal. `factor=clamp(1-0.15×W×(1-approach),0.85,1)` og `delivery=supply×factor` bruges én gang. Dermed kan bølger aldrig skabe eller øge supply, og den rå totalscore kan højst dæmpes 7,5 point før slutafrunding; den viste heltalsscore kan derfor ændres 8 point. Aktiv retningsmissing fejler lukket. Kun `waveHeightM=0` er eksakt calm og neutral; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket. Bølgeorbitaler, gridstrøm, surfzonens undertow, feeder-/langskyststrøm og ripstrømme er fortsat forskellige processer.
+### 54.2 Hukommelse og fail-closed
 
-**Vandstand** giver ingen scorepoint. `waterLevelTrendCm3h` er den fremadrettede modelændring fra den viste time til tre timer senere, aldrig en aflæst ebbe, flod eller tidevandsfase. Faldende vand bestemmer derfor ikke strømretningen. RavRadar viser i stedet en score-neutral fælleskontekst: faldende vand samtidig med verificeret udgående, indgående eller langs/for svag kystnormal gridstrøm – eller ukendt/native-hold strøm. Grænsen for langs/for svag er ±0,03 m/s. Lavere vand kan blotlægge allerede afleveret eller fastholdt rav bag revler og gøre et afgrænset område lettere at afsøge; det beviser ikke fysisk koncentration.
+Transporten genafspilles fra et fast rullende vindue med de seneste 48 timers sammenhængende, afledte strømevidens. Et komplet vindue gør resultatet uafhængigt af computerens oprindelige startværdi. De otte særskilt godkendte Limfjordsproxyer leverer ægte strømprøver på en native tretimerskadence. Mellem to sådanne prøver kan RavRadar i højst tre timer fastholde den seneste afledte transporttilstand, men der lægges ingen ny bevægelse eller evidens til, og der vises ingen strømretning, hastighed eller pil for mellemtimen. Næste ægte prøve bruger den faktiske tidsafstand. Fremtidige prøver kan aldrig bruges til den aktuelle time, og RavRadar opfinder ikke mellemliggende timesmålinger.
 
-Ved præcis scorelighed bruger waders-visningen lavere kendt vandstand og derefter en ikke-stigende fremadrettet 3-timers modelændring som praktisk tidsvalg; strandvisningen vælger det tidligste tidspunkt. Visningen returnerer den eksakte udvælgelsesårsag. Lavere vand er kun en søgbarhedsprioritet mellem samme RavScore, ikke evidens for mere rav og ikke en sikkerhedsvurdering.
-
-DKSS-/NEMO-kæden har ingen direkte dubletterm i RavScore: current-U/V driver transportleddet, mens vandstand har nul scoreeffekt. Der er dog residual korrelation, fordi strøm og vandstand kan dele forcing og dynamik i havmodellerne. En ekstra “vandstand = strøm”-regel ville derfor kunne dobbeltregne korreleret information uden at opløse undertow, feeder-/langskyststrøm eller ripstrøm.
-
-### 54.2 Hukommelse, konservative grænser og fail-closed
-
-Transporten genafspilles fra en fast nulrand over de seneste 48 timers afledte strømevidens. Et komplet vindue gør resultatet uafhængigt af computerens oprindelige startværdi. De otte særskilt godkendte Limfjordsproxyer leverer ægte strømprøver på en native tretimerskadence. Mellem to sådanne prøver kan RavRadar i højst tre timer fastholde den seneste afledte tilstand uden at lægge bevægelse eller evidens til; der vises ingen opdigtet retning, hastighed eller pil. Fremtidige prøver kan aldrig bruges til den aktuelle time.
-
-Hvis scoretimens direkte strøm-, bølge- eller søgeinput mangler eller er ugyldigt, bliver kun den konkrete zone, søgemåde og time `UNAVAILABLE`; der vises ingen erstatningsscore. Hvis de direkte input er gyldige, men den ældre historik er ufuldstændig, viser RavRadar derimod en konservativ `HISTORY_INCOMPLETE`-score: den nedre mulige score vises, den øvre grænse og årsagen følger med, og en tydelig advarsel står ved score, detaljer og femdøgnsvisning. Advarslen forsvinder automatisk, når grænserne falder sammen. Admin og ekspert ser samme status. RavRadar blander ikke model-id, stateformat eller profiler mellem steder, tider og jagtformer.
-
-Bølgemobiliseringens langsomme 48-timers aftagning kræver en længere matematisk usikkerhedshale end current: state 6 lukker den efter 288 timer, hvor den størst mulige resterende rå scorepåvirkning er `0,46875` point. Last-mile-retningen lukkes efter 40 timer med højst `1/1024` udeladt momentandel. Den private retention på 168 timer er kun research-/auditgrundlag og giver ingen scorepoint. Det er altså ikke en forlængelse af currentvinduet fra 48 timer til syv dage.
-
-En komplet tidligere state kan kun bruges som nøddrift, når hele 210/673-pakken er atomisk hashbundet til den samme integrerede model, og kun i højst 72 timer eller kortere forecastudløb. Candidate G kan ikke være automatisk fallback, og manglende timer interpoleres ikke. Kun evidenstilliden `VERIFIED_ONLY` er kalibreringsegnet. Rekonstrueret eller emergency-båret score kan godt bevares som tydeligt markeret brugerhistorik, men må ikke kalibrere modellen; almindelige ture er heller ikke i sig selv et kalibreringsgrundlag.
+Hvis en nødvendig Candidate G-beregning mangler, bliver kun den konkrete zone, søgemåde og time utilgængelig. Den vises ikke med en erstatningsscore og udelades fra de relevante ranglister, mens øvrige gyldige Candidate G-scorer fortsætter. Adminforsiden viser, om alle er aktive, og forklarer lokale huller. RavRadar blander ikke scoreprofiler mellem steder, tider eller jagtformer.
 
 ### 54.3 Hvad modellen bevidst ikke gør
 
-Modellen siger ikke, at den fysiske levering er løst: `physicalDeliveryResolved=false` og fysisk interval er `null`. DDM's officielle 50 m-dybdegrid kan være statisk forsknings-/forklaringskontekst, men har ikke dynamiske revler, ripkanaler eller bølgeopløst surfzone og er derfor ikke scoreinput. Rainville m.fl. 2026 er alene buoyant-object-analogi og ikke ravkalibrering. Kystnormal, geometri og land-/vandpunkter flyttes ikke. Faste oplysninger om rev, lavt vand, tang eller ålegræs skaber heller ikke scorepoint. Modellen observerer ikke ravlager, strandingssted eller fundudfald.
+Bunddybde, render, revler, adgang, automatisk stedegnethed og sikkerhedsadvarsler indgår ikke. Grove steddata kan overse kendte lokale passager. Faste oplysninger om rev, lavt vand, tang eller ålegræs skaber heller ikke Candidate G-point. Vandstand, temperatur og kortpile kan vises som nyttige forhold uden nødvendigvis at være en del af den aktive score.
 
 ### 54.4 Hvad eksperten især skal kontrollere
 
-Eksperten bør vurdere gridstrømmens retning i forhold til den konkrete kyst, +10/-8-forløbet, 24/48-timers aldersvægten, waders-vindkurven, bølgeenergiens fire/48-timers forløb og den afgrænsede kausale energivægtede bølgeapproach med fire timers halveringstid og en ældre hale. Især skal eksperten udfordre, om DMI `FROM`→`TOWARD`-fortolkningen, kystnormalen og den ensrettede højst 15 % dæmpning giver rimelig mekanisk adfærd uden at blive fortolket som lokal surfzonepræcision. En kommentar bør beskrive kysttype, målbare forhold, forventet virkning, hvor stor forskellen bør være, og hvilken observation der kunne modbevise forslaget.
+Eksperten bør vurdere, om strømretningen i forhold til den konkrete kyst, opbygningen og tabet over tid, waders-vindkurven og mobiliseringens fire/48-timers forløb giver den rigtige retning og styrke. En kommentar bør beskrive kysttype, målbare forhold, forventet virkning, hvor stor forskellen bør være, og hvilken observation der kunne modbevise forslaget.
 
-Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den må ikke kaldes empirisk mere fundpræcis, før den er valideret på et repræsentativt grundlag med både fund og nul-fund.
+Modellen er mekanisk og fysisk kontrolleret, men endnu ikke statistisk efterkalibreret på mange repræsentative ture med både fund og nul-fund.
 
 ## 55. Sådan holdes den hurtige brugerfil og den fulde diagnosefil sammen
 
-Den lokale 4.0.317-testkandidat bygger én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Candidate G forbliver offentlig, indtil hele cutoverkæden er bevist.
+RavRadar gemmer de samme vejrforhold i to forskellige udgaver. Den lille brugerfil indeholder alt det, der skal bruges på kortet, i scorerne og i femdøgnsprognosen. Den store fil indeholder desuden tekniske spor, som kun er nødvendige for administration og fejlsøgning.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten som `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, mens `modelBundleSha256` binder præcis 43 kanonisk normaliserede, transitive implementeringsfiler som `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. Begge værdier kommer fra den regenererede fælles 4.0.317-modelbinding.
+Den lille fil beregnes altid direkte fra den store fil med den samme faste opskrift. GitHub må ikke genbruge en lille fil fra én vejrberegning sammen med en stor fil fra en anden. Derfor bygger RavRadar brugerfilen igen efter hydrering og lige før publicering. Manifestet indeholder både datasættets id, filens størrelse og et digitalt fingeraftryk. Hvis én af disse værdier ikke passer, stopper releasen i stedet for at vise blandede eller forældede data.
 
-Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
-
-Et separat beskyttet checkpoint indeholder kun den afledte, kompakte state-6-fortsættelsestilstand inklusive history bounds. Ved første skift fra Candidate G bruger migrationen `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5`. Den validerer og genvægter Candidate G's signerede, allerede afledte kystnormale currentevidens uden at læse eller kopiere rå U/V og uden at påstå lighed med en rå genberegning. Wave-approach genopbygges af 40 private præ-target-positioner fra ét sammenhængende DMI WAM-run pr. anvendt collection med same-cell native provenance. Kun et WAM-gap mellem native endepunkter højst fire timer fra hinanden i samme run, collection, gitter og celle må interpoleres; cross-run, cross-cell og tvetydig retning afvises. `1/1024` er øvre grænse for den udeladte EWMA-hale, og `0,01171875` er den konservative øvre rå-scorefejl før afrunding.
-
-Inden acquisition valideres præcis 673 schema-2-states mod det uforanderlige kystdelsregister og deres state keys. Den samme rene recoveryfunktion skal give præcis ét fælles kanonisk target. Mixed target, manglende eller ugyldig state og utilgængeligt coherent WAM-run stopper fail-closed; Candidate G forbliver offentlig. Når en attestert state findes, kan modellen starte uden ny cache. Uden state genafspilles 0–48 faktisk tilgængelige private timer og scoren vises som `HISTORY_INCOMPLETE`; den opfinder aldrig historik, og `FULL_HISTORY` kræver 288-timers closure eller attestert migration/continuation. Den kontrollerede WAM-interpolation er kun en privat bootstrapregel inden for ét dokumenteret run; den gælder ikke 72-timers nøddrift.
-
-Hver continuation-state, checkpointet og den centrale profilselection skal matche den fulde 11-feltsbinding. Candidate G-rollback `integrated-schema6-to-candidate-g-schema2-v3` beregnes fra samme targettid uden dobbelt recovery-credit. Schema 5 var aldrig offentlig og må alene accepteres som eksakt `READY`-migrationskilde med de fastlåste historiske hashes gennem `integrated-schema5-ready-point-to-schema6-history-bounds-v1`; efter migrationen er den ikke cache eller normal recovery. Fremtidige opdateringer af den operationelle checkpointnøgle kopieres ikke til `admin_document_versions`, men alle eksisterende versionsrækker bevares; migration og publicering sletter ingen historik. Candidate G kan kun bruges som én kontrolleret migrations-/rollbackkilde og aldrig som automatisk offentlig nødmodel.
-
-Den tidligere planlagte fiktive udførelse af morgenhullet blev opgivet efter read-only stop og før descriptor, apply, mutation eller offentliggørelse. Den afgrænsede historiske kontrakt bevares i DEC-0109, men er ikke en normal recoveryregel.
-
-Pages-auditten kræver de fire tilladte livefiler, afviser andre live-, admin-, cache- og diagnostikfiler og sammenligner også filfingeraftryk mod den private runtimebundle. Opdelingen ændrer ikke scorer, kortfarver, bedste tidspunkt eller viste vejrdata; den beskytter kontinuitet og privatliv uden at gøre browserstarten tung.
-
-Modelskiftet omfatter også serveren. `20260829010000_ravscore_operational_documents_no_history.sql` etablerer først de private driftsdokumenter og runtimebucket; derefter anvendes `20260829020000_integrated_trip_calibration_binding.sql`. Protected readiness binder begge id'er og skrives først efter samlet migrationsmetadata-, database- og Edge-readback. Efter den skrivefri dry-run genhenter backendworkflowet `origin/main` og kræver, at den stadig er lig `GITHUB_SHA`, umiddelbart før den første eksterne backendskrivning; resten af skriverækken bruger samme validerede checkout og migrationssnapshot. Backend og Edge gøres klar, mens Candidate G stadig er offentlig, og må kun behandle et datasæt under dets eksakte modelbinding. Mangler bindingen eller er den forkert, svarer ny Edge eksakt HTTP `409`, så en gammel klient bruger sin lokale Candidate G frem for et blandet serversvar.
-
-Første modelskift er push-only. Controlleren registrerer først den offentlige Candidate G-kilde og skriver derefter `INTEGRATED_PENDING`, mens den centrale profil fortsat er Candidate G. Det integrerede Pages-artifact deployes og kontrolleres for eksakt implementering, 210 zoner og 673 kystdele. Først derefter sætter én beskyttet handling samtidigt status til `INTEGRATED_ACTIVE` og central profil til den integrerede 11-feltsbinding. Efter et afbrudt skift genoptager RavRadar kun, hvis den offentlige manifesthash er det aftalte mål; er den fortsat kilden, aborteres overgangen med kildeprofilen bevaret; er den noget tredje, bliver `PENDING` stående og normal drift stopper. Dermed kan central profil ikke kalde modellen integreret, mens Candidate G stadig er den offentlige side. Assistentens Edge rulles ikke tilbage til en særskilt Candidate G-version.
-
-### 55.1 Operationel hel rollback
-
-En hel rollback efter integreret drift startes manuelt og har id'et `integrated-schema6-to-candidate-g-schema2-v3` og overgangstypen `CANDIDATE_G_ROLLBACK`. Rollbackprojektionen bygges fra samme targettid som den integrerede state uden at give samme time dobbelt recovery-credit. Controlleren `ravscore-operational-model-activation` bruger schema `ravscore-operational-model-activation-v3`. Den observerer den integrerede offentlige kilde, skriver `CANDIDATE_G_PENDING` og bevarer den integrerede centrale profil, mens Candidate G-Pages deployes. Først efter offentlig kontrol af præcis 210 zoner, 673 kystdele og den eksakte Candidate G-implementeringsbinding sætter én beskyttet handling samtidigt `CANDIDATE_G_ACTIVE` og central Candidate G-profil. En senere manuel tilbagevenden bruger `INTEGRATED_RETURN` og `INTEGRATED_PENDING` efter samme mønster.
-
-Efter et afbrudt skift sammenlignes den offentlige manifesthash med den gemte kilde og det gemte mål. Mål betyder fuld genkontrol og færdiggørelse; kilde betyder abort/rekonsolidering til kildens aktive status; alt andet bliver fail-closed i `PENDING`. Scheduleren kan hverken førstegangsaktivere, rollbacke eller returnere en model. Den kan kun udføre `CANDIDATE_G_REFRESH` for en allerede `CANDIDATE_G_ACTIVE` drift med samme eksakte binding. Der deployes ingen særskilt Candidate G-assistent-Edge. Assistentens integrerede Edge afviser Candidate G-bindingen med eksakt HTTP `409`, hvorefter klienten bruger de eksisterende deterministiske lokale svar på dansk, tysk eller engelsk. Schema-3-ture og -observationer lagres fortsat under den eksakte Candidate G-binding med `calibration_eligible=false`. Denne local-only adfærd er tilsigtet fail-closed, ikke en skjult dualmodel eller serverbaseret Candidate G-fallback. Den forseglede Candidate G-rollbackbinding har `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 transitive filer. Dermed kan Candidate G efter en kontrolleret hel rollback være den ene offentlige scoremodel, men aldrig samtidig shadowmodel eller automatisk fallback.
+Denne opdeling ændrer ikke RavScore, kortfarver, bedste tidspunkt eller de viste vejrdata. Den reducerer kun den mængde intern diagnostik, som en almindelig bruger ellers skulle hente.
 
 ## 56. Hvor står strømpilene, og hvilken vej peger de?
 
@@ -2642,9 +2496,9 @@ Aktuelle vejrforhold på indberetningstidspunktet bruges aldrig som et historisk
 
 Ved en startet tur betyder **Svar senere**, at turen bevares lokalt. **Afslut uden at indberette** kræver bekræftelse og rydder turen uden en observations- eller serverpost.
 
-## Historisk v4.0.249: privat RavScore-kandidat-shadow
+## v4.0.249: privat RavScore-kandidat-shadow
 
-I 4.0.249 beregnede den private nationale shadow-validator A, B og C på samme lokale kontekst som den daværende aktive score. Den brugte 24 timers hændelseshistorik og 72 timers strømforløb, opdelte kandidat B i strøm mod, langs og væk fra kysten og gemte kun dataminimerede forskelle. Dette er et historisk forarbejde til Candidate G, som senere blev offentlig og fortsat er den eneste offentlige model i 4.0.316, og videre til den lokale integrerede releasekandidat; se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
+I 4.0.249 beregnede den private nationale shadow-validator A, B og C på samme lokale kontekst som den daværende aktive score. Den brugte 24 timers hændelseshistorik og 72 timers strømforløb, opdelte kandidat B i strøm mod, langs og væk fra kysten og gemte kun dataminimerede forskelle. Dette er et historisk forarbejde til den nu aktive Candidate G; se DEC-0047 og `docs/research/RAVSCORE_PRIVATE_SHADOW_METHOD_2026-08-21.md`.
 
 ## Privat sammenligning af RavScore paa den kyst brugerne ser (4.0.250)
 
@@ -2682,7 +2536,7 @@ Før en eventuel ændring skal den private nationale kontrol køres med frisk ce
 
 Ingen geometri, land-/vandpunkter, DMI-kilder, pile, offentlig forklaring eller aktiv score er ændret af analysen.
 
-## Historisk Candidate G: score, waders, pil og historik i samme kontrakt
+## Candidate G: score, waders, pil og historik i samme kontrakt
 
 *Historisk udviklingsspor:* Den beskrevne 50/50-variant og `20/45/35` er erstattet. Aktuel privat retning er `RESEARCH-3`, `20/50/30`, vindkurve til 0 ved 15 m/s, strømstyret transport og én bølgeenergistyret mobiliseringstilstand.
 
@@ -2704,7 +2558,7 @@ Forskningsresultatet indeholder nu én maskinlæsbar forklaring med de eksakte k
 
 Den historiske nationale shadow brugte en snæver native-DKSS-testkontrakt og scorede derfor 243 af 673 dele. Det må ikke læses som 430 huller i den almindelige vejrproduktion. Den aktuelle produktion dokumenterer 673/673 strømidentiteter gennem DMI, Copernicus eller godkendt proxy. Før en offentlig kobling skal en ny shadow bruge netop den endelige fallback-kompatible Candidate G-kontrakt. Candidate G bruger ingen statisk lokal bonus for rev, lavt vand eller vegetation, og en hovedzones generelle morfologi må ikke bruges som lokal genvej.
 
-Dette afsnit er historik. Candidate G blev offentlig med `20/50/30`, modeafhængige søgeforhold, strømstyret transport og bølgeenergimobilisering; pipeline, forklaringer, daværende rollback, national slutshadow og fulde gates blev gennemført i 4.0.261–4.0.263. Candidate G er fortsat den produktionsverificerede offentlige 4.0.316-model, indtil det integrerede cutover er bevist. Mens integreret er aktiv, er Candidate G et privat migrations-/offline-/rollback-orakel; en senere manuel hel rollback kræver nyt, fuldt verificeret offentligt skift.
+Dette afsnit er historik. Candidate G er nu aktiv med `20/50/30`, modeafhængige søgeforhold, strømstyret transport og bølgeenergimobilisering. Den offentlige pipeline, forklaringer, rollback, nationale slutshadow og fulde gates blev gennemført i 4.0.261–4.0.263.
 
 ## Candidate G: ét forslag til ejerreview
 
@@ -2719,7 +2573,7 @@ Ved det historiske udviklingstrin blev den private analyse genkørt uden nye rå
 På dette historiske tidspunkt var `20/45/35` et analysecentrum. Ejeren valgte siden `20/50/30` som aktiv Candidate G-vægt. Komplette ture, reelle nul-fund og geografisk/tidslig hold-out kan senere bruges til efterkalibrering. `25/40/35` var senere global rollback, men DEC-0072 har fjernet den fra den offentlige runtime.
 
 Der hentes ikke yderligere rådata til de øvrige dele som led i dette mekaniske beslutningsgrundlag. En eventuel offentlig aktivering er en særskilt opgave med landsdækkende inputkontrakt, ejerbeslutning og fulde valideringsgates.
-# Historisk: Candidate G fortsætter kun fra dokumenteret tilstand – 4.0.272
+# Candidate G fortsætter kun fra dokumenteret tilstand – 4.0.272
 
 En produktionskørsel mistede den tidligere Candidate G-tilstand, fordi hentningen af det offentlige manifest og den tilhørende conditions-fil fik timeout, men vejropbygningen fortsatte. Det fik alle kystdele til at starte uden tidligere transport- og mobiliseringshukommelse og gav derfor et landsdækkende, kunstigt lavt scorebillede. Senere timer kunne godt acceptere den nye state, men de fortsatte så blot fra den forkerte nulstart.
 
