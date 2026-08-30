@@ -1,6 +1,16 @@
-# AI Roadmap – RavRadar 4.0.314+
+# AI Roadmap – RavRadar 4.0.315+
 
-## P0 nu – få 4.0.314 sikkert gennem diagnostikhotfix og rekonstruktion
+## P0 nu – pensionér stale interlock og gendan friske prognoser
+
+1. [x] Bevis umuligt 4.0.314 apply+Pages-prerequisite og grøn no-op-rodårsag.
+2. [x] Bevis offentlig primary >8 timer, measured-only recovery >72 timer og ingen anvendte syntetiske data.
+3. [x] Pensionér operationel workflow-/actuator-/descriptor-/package-/releasegateflade og opret DEC-0111.
+4. [ ] Bestå målrettede retirement-, workflow-, RDKS-, håndbogs-, versions- og releasegates samt exact-head sourcegate.
+5. [ ] Merge og kør frisk normal produktion med build, fuld validate, releasegate, artifact og Pages faktisk success.
+6. [ ] Verificér offentligt frisk 210/673 manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser.
+7. [ ] Fortsæt derefter den integrerede model uden at genindføre interpolation.
+
+## Historisk P0 – få 4.0.314 gennem diagnostikhotfix og rekonstruktion
 
 1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
 2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
@@ -32,7 +42,7 @@
 9. [x] Bevar privat rollback og kausal cleanup; offentlig sandhed forblev korrekt 4.0.310.
 10. [x] Overfør integrationen af nyeste grønne `main`, 72-timers atomisk measured-only emergency og den låste globale koefficientlæring til det aktuelle DEC-0102-modeltrin ovenfor.
 
-Interpolation er ikke en roadmapfeature eller generel fallback; den er en enkelt ejerautoriseret incidentoperation. Sol/Ultra bevares gennem slutvalidering.
+Interpolation er ikke en roadmapfeature eller fallback. Den tidligere incidentoperation blev tilbagetrukket uden anvendelse og må ikke genåbnes. Sol/Ultra bevares gennem slutvalidering.
 
 ## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
 

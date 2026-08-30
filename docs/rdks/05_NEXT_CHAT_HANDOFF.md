@@ -1,6 +1,15 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
+## Aktuelt P0 – 2026-08-30 stale interlock pensioneres i 4.0.315
+
+- 4.0.314's tilbagetrukne one-time operation efterlod normal produktion afhængig af et umuligt descriptorbundet apply+Pages-bevis. Jobs kunne være grønne, mens build, artifact og Pages var skipped.
+- Offentlig primary passerede otte timer og measured-only recovery 72 timer; siden viser korrekt fail-closed tekst, men aktuelle og femdøgnsprognoser mangler.
+- Ingen descriptor blev forseglet, ingen apply/rollback/cleanup blev kørt, og ingen syntetiske data blev anvendt eller deployet.
+- DEC-0111 erstatter DEC-0109 operationelt. 4.0.315 pensionerer operationsinput/jobs, actuator, descriptor og apply+Pages-attestationen. Historical exact-D1-jobbet bevares for 4.0.311–4.0.314, men 4.0.315 går eksplicit `ready=true`. Measured-only recovery, defensive trust-/turkvalitetslæsere og alle normale fulde releasegates består.
+- Næste sikre rækkefølge er målrettede lokale gates → exact-head sourcegate → merge → frisk normal production med build/validate/releasegate/artifact/Pages faktisk kørt → offentlig 210/673 og prognosekontrol. Grøn topstatus alene er ikke bevis.
+- Ingen private data, joblogs, geometri, zoner eller land-/vandpunkter skal indgå.
+
+## Historisk P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
 
 - Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
 - PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.

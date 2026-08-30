@@ -1,6 +1,14 @@
 # AI Architecture Map – RavRadar
 
-## 4.0.314 source merged; same-version sourcegate-hotfix
+## 4.0.315 retirementarkitektur
+
+- `.github/workflows/update-and-deploy.yml` har ingen one-time reconstruction-input eller inspect/apply/rollback/cleanup-job. Det eksisterende `trip-storage-readiness` og build-afhængigheden bevares for historical exact-D1 på 4.0.311–4.0.314; version 4.0.315 sætter eksplicit `ready=true` før normal build og kan ikke blokeres af reconstruction-bevis.
+- CLI-aktuatoren, incidentets admin-descriptor og de gamle operationstests/packagebindinger er fjernet. En negativ retirement-test og releasegate kræver deres fortsatte fravær.
+- Normal measured-only `restore-candidate-g-gap-checkpoint.mjs`, continuation-checkpoint og public recovery bevares. De rekonstruerer ikke manglende værdier.
+- Runtime-, schema- og trip-lag må fortsat genkende markeret eller ukendt reconstructed evidence fail-closed. Disse læse-/kvalitetsgrænser har ingen operationel skrivevej.
+- Releasekæden er fortsat current-hour → central adminhydrering → frisk DMI/Copernicus → 210/673 → fuld validate/releasegate → artifact → Pages. Efter merge skal den faktisk køre; skipped job er ikke succes.
+
+## Historisk 4.0.314 source merged; same-version sourcegate-hotfix
 
 - `one-time-candidate-g-gap-reconstruction.mjs` accepterer ét målt evidenspunkt kun for rollen `AFTER`; før, target, rollback og cleanup beholder minimum to.
 - Singletonen kan kun fortsætte, når før- og targetserien uafhængigt beviser enstemmig 3-timerskadence. Eksakt state-replay, målanker, bracket, sourcebindings, descriptor og CAS er uændrede.

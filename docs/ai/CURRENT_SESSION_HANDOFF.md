@@ -1,13 +1,23 @@
 # RavRadar - aktuelt Codex-handoff
 
-## AKTUELT P0-HANDOFF – 4.0.314 cadencepolicy lokalt afgrænset
+> **Historikregel:** Alle sektioner mærket **HISTORISK** er kun revisionsspor og må ikke læses som aktuelle driftsordrer. Den aldrig anvendte DEC-0109-operation er trukket tilbage af DEC-0111; intet nyt reconstruction-D1, inspect, apply, rollback eller cleanup må udføres. Kun det aktuelle 4.0.315-handoff nedenfor styrer næste produktionstrin.
+
+## AKTUELT P0-HANDOFF – 4.0.315 retirement og frisk normal produktion
+
+- 4.0.314's tilbagetrukne one-time operation efterlod normal vejrproduktion afhængig af et umuligt apply+Pages-bevis. Workflowet kunne være grønt med build/artifact/Pages skipped.
+- Offentlig primary var >8 timer og measured-only recovery >72 timer; siden viste korrekt fail-closed besked, men ingen aktuelle eller femdøgnsprognoser.
+- Ingen descriptor/apply/mutation eller syntetiske data nåede produktion. DEC-0111 pensionerer operationen og dens interlock.
+- 4.0.315 bevarer measured-only checkpoint/continuation/recovery, defensive trust-/turkvalitetslæsere og alle normale full-production gates.
+- Næste: målrettede gates → exact-head sourcegate → merge → frisk normal produktion med build/validate/releasegate/artifact/Pages faktisk kørt → offentlig 210/673/prognosekontrol. Grøn topstatus alene lukker ikke P0.
+
+## HISTORISK P0-HANDOFF – 4.0.314 cadencepolicy lokalt afgrænset
 
 - Offentlig drift er fortsat produktionsverificeret 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
 - PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
 - Read-only inspect `33279639424`/`99172534863` stoppede før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og muterede intet.
 - Den sikre annotation beviser kun, at suffixbaseret cadenceklassifikation var tvetydig; den fastslår ikke seriens native cadence. Den lokale rettelse fjerner dette gæt ved at binde de otte native-3h-dele til den eksisterende `dkss_lf`-policy og alle øvrige til 1h; descriptor/apply binder en koordinatfri projektionshash, og genkørslen skal derefter afgøre måleafstandenes kompatibilitet med identiteten.
 - Eksakte 1/2/3h-afstande på 1h-dele forbliver measured sparse continuity og udfyldes ikke. 3h-dele kræver eksakt 3h på før/target, og alle øvrige bracket/source/trust/CAS/slut-`READY`-gates bevares.
-- Målrettet 210/673- og workflowtest, fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate samt kode-, algoritme-, sikkerheds- og dokumentationsreview er grønne. Næste sikre rækkefølge er: exact-head/merge/no-op → nyt final-SHA D1 → read-only inspect → kun ved descriptor CAS-apply → frisk normal produktion → fulde gates → offentlig 210/673 desktop/mobil.
+- Målrettet 210/673- og workflowtest, fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate samt kode-, algoritme-, sikkerheds- og dokumentationsreview var grønne. Den daværende planlagte rækkefølge var exact-head/merge/no-op → nyt final-SHA D1 → read-only inspect → eventuelt descriptorbundet CAS-apply. Den blev aldrig gennemført og er trukket tilbage af DEC-0111; ingen del af den må udføres.
 
 ## HISTORISK P0-HANDOFF – 4.0.314 før-primary-gate lokalt afgrænset
 
@@ -18,7 +28,7 @@
 - Før-runnet publicerede en separat komplet målt nødvisning. Det bundne supportartifacts `data/live/conditions.json` er den ærlige primary og kan derfor legitimt være `WINDOW_INCOMPLETE` på sin egen reference.
 - Lokal source-hotfix fjerner kun blanketkravet om 673/673 før-`READY`. Før-state skal stadig være målt schema 2.0, mindst to punkter og eksakt replaybar. Kun samlet target-reference-replay må blive `READY` efter den ene bracketbundne interpolation; ældre hul, for kort suffix, schema 2.1, ukendt status eller replayafvigelse stopper før descriptor.
 - Den positive fixture bruger 673 ærlige 24-timers `WINDOW_INCOMPLETE`-suffixer. Hele 210/673 inspect/CAS/rollback/cleanup/checkpoint-testen består med og uden nedarvet Actions-miljø; nye negativer består.
-- Næste sikre rækkefølge: lokale tværgående gates/review → exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → descriptorbundet CAS-apply → frisk normal produktion → fulde gates → offentlig 210/673 desktop/mobil. Først derefter er hullet lukket, og DEC-0102-modelsporet integrerer nyeste grønne main.
+- Den daværende planlagte rækkefølge var lokale tværgående gates/review → exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → descriptorbundet CAS-apply. Den blev aldrig gennemført og er afløst af DEC-0111; der må ikke køres ny reconstruction-D1, inspect eller apply. Hullet forbliver manglende measured-only historik.
 
 ## HISTORISK P0-HANDOFF – sanitiseret diagnostikhotfix før before-primary-fejlkoden
 
@@ -31,7 +41,7 @@
 - Exact state-replay, target-anker, bracket, source/artifact/head, descriptorhash, apply-CAS, privacy, rollback og cleanup er uændrede.
 - Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`. Exact-main D1 `33275218540`/`99160622956` er helt grøn.
 - Inspect `33275438494`/`99161265720` stoppede i planforseglingen efter hydration/kildeudtræk og før descriptorupload, mutation, build og Pages. GitHubs sikre metadata viser kun exit 1; hele jobloggen og artifacts må ikke hentes.
-- Lokal hotfix annoterer kun allowlistede `ONE_TIME_GAP_*`-fejlkoder og maskerer al anden fejltekst. Ved succes annoteres kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger, så apply kan bindes uden joblog. Næste trin: exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig desktop/mobil/210/673.
+- Den lokale hotfix annoterede kun allowlistede `ONE_TIME_GAP_*`-fejlkoder og maskerede al anden fejltekst. Ved en tænkt succes skulle kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger have bundet et apply uden joblog. De daværende næste trin var exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → eventuelt CAS-apply; de blev aldrig gennemført og er trukket tilbage af DEC-0111. De må ikke udføres.
 - PR #230-head `e8f579ba` stoppede exact-head `33276791132`/`99164804850` i testharnessen, ikke runtime: normale child-cases arvede `GITHUB_ACTIONS=true`. Lokal efterrettelse isolerer miljøerne eksplicit og består den komplette 210/673-test både med og uden forældreflag. Commit/push ny head, regenerér releasebevis og afvent ny exact-head før merge.
 - DEC-0102-modelsporet og last-mile fortsætter efter recovery på nyeste grønne main; Candidate G er eneste offentlige model indtil den samlede kandidat er færdig.
 
@@ -43,7 +53,7 @@
 - Fejlen indtraf før D1-prepare/capacity, Edge-predeploy-intent, Edge, Worker, sync, vejropbygning, artifact og Pages. Ingen observationpayloads, koordinater eller rå U/V blev hentet til runneren, logget eller ændret; ingen row mutation forekom. Offentlig sandhed er fortsat produktionsverificeret 4.0.310, og morgenhullet er endnu ikke rekonstrueret.
 - Lokal 4.0.312 udtrækker strukturelt præcis én JSONPath-literal, tolererer deparserens parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. De målrettede positive og negative tests er grønne, og exact-D1-interlocken omfatter 4.0.312.
 - 4.0.312 ændrer ikke trip protocol/header 4.0.311, schema-/trustsemantik eller `>=4.0.311`-grænsen for konservativ observationsbrug. Den retter kun katalogverifikationen og dokumenterer den eksterne transaktionsgrænse.
-- Fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol var grønne på 4.0.312. Den efterfølgende PR #225/exact-head og merge lykkedes, men exact-main backend `33266229687` fejlede migrationssynken. Den historiske rækkefølge er derfor afløst; fortsæt kun via det aktuelle 4.0.314-handoff øverst, og kør ikke inspect/apply før en helt grøn ny backend.
+- Fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol var grønne på 4.0.312. Den efterfølgende PR #225/exact-head og merge lykkedes, men exact-main backend `33266229687` fejlede migrationssynken. Den daværende rekonstruktionsrækkefølge blev senere helt afløst af DEC-0111; den må ikke genoptages, og der må ikke køres inspect/apply.
 - DEC-0102-modellen skal efter recovery bevare den målte atomiske 210/673-nødvisning i højst 72 timer og aldrig efter kortere forecastudløb. Interpolation er ingen normal fallback. Schema-v2/`calibration_eligible` er endnu ikke serverbevist mod signeret public manifest, så global koefficientlæring forbliver P2-låst. Brug Sol/Ultra gennem slutvalidering; kvote må ikke reducere kvalitet eller gates.
 
 ## HISTORISK PRE-PR-CHECKPOINT – 2026-08-29 – ejerautoriseret rekonstruktion af morgenhul

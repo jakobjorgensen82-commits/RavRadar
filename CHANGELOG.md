@@ -1,3 +1,14 @@
+## 4.0.315 – pensioneret stale rekonstruktionsinterlock (2026-08-30)
+
+- Lukker en offentlig P0, hvor 4.0.314's tilbagetrukne one-time Candidate G-operation stadig var prerequisite for normal vejrproduktion. Det umulige apply+Pages-bevis gjorde jobs grønne no-ops uden build, artifact eller Pages.
+- Den offentlige primary var mere end otte timer gammel, og measured-only recovery var over sin absolutte 72-timersgrænse. RavRadar viste derfor korrekt **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**, men aktuelle og femdøgnsprognoser var utilgængelige.
+- Ingen descriptor blev forseglet, ingen apply/rollback/cleanup blev kørt, og ingen syntetiske eller interpolerede Candidate G-data blev anvendt, gemt i offentlig runtime eller deployet.
+- DEC-0111 erstatter DEC-0109 operationelt. Operationsinput/jobs, aktuator, admin-descriptor, gamle operationstests og package-/releasegatebindinger pensioneres; apply+Pages-attestationen fjernes. Historical exact-D1-jobbet bevares for 4.0.311–4.0.314, men 4.0.315 returnerer eksplicit `ready=true`.
+- Normal drift er fortsat measured-only. Gap-checkpoint, continuation, senest-komplet recovery, current-hour, DMI/Copernicus, 210/673, fuld validate/releasegate, artifact og Pages bevares. Defensive trust-/schema-/turkvalitetslæsere bevares fail-closed, men kan ikke skabe rekonstrueret state.
+- Den eksisterende trip-quality workflowtest normaliserer kun CRLF i workflowteksten i hukommelsen, så dens uændrede regexkontrakt også kan køre på Windows; ingen produktionssemantik ændres.
+- Kandidaten kræver fortsat målrettede lokale gates, exact-head sourcegate, merge, en frisk normal produktion med de fulde trin faktisk kørt og offentlig kontrol af frisk manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser. Grøn topstatus alene er ikke releasebevis.
+- Candidate G-formel, RavScore, DMI/Copernicus, vejrsemantik, trip-storage-kontrakt, geometri, zoner og land-/vandpunkter er uændrede. Kun de autoriserede topversionsfelter i geodata følger releaseversionen.
+
 ## 4.0.314 – cadencepolicy bundet; recovery fortsat gated (2026-08-30)
 
 - Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.

@@ -1,6 +1,16 @@
 # Current truth – gældende projektviden
 
-## 4.0.314 – cadenceautoriteten afgrænset lokalt; datahullet fortsat åbent
+## 4.0.315 – tilbagetrukket rekonstruktionssti pensioneret; målt produktion skal genåbnes
+
+- 4.0.314's midlertidige reconstruction-readiness krævede et succesfuldt descriptorbundet apply+Pages-bevis på samme SHA, før normal produktion måtte bygge. Da ejeren trak engangsoperationen tilbage før descriptor og apply, var beviset umuligt; normale vejrjobs kunne derfor være grønne, mens build, artifact og Pages blev skipped.
+- Det gav en offentlig P0: primary blev mere end otte timer gammel, og den komplette målte recovery overskred sin absolutte 72-timersgrænse. Den offentlige fail-closed tekst **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”** var ærlig, men prognoserne var utilgængelige.
+- Ingen syntetiske eller interpolerede Candidate G-data blev nogensinde anvendt, gemt i offentlig runtime eller deployet. De historiske inspect-runs stoppede før descriptor og mutation.
+- DEC-0111 tilbagetrækker DEC-0109 uden anvendelse. 4.0.315 fjerner operationsinput/jobs, aktuator, admin-descriptor og apply+Pages-attestationen. Det eksisterende `trip-storage-readiness`-job bevares kun som historisk exact-D1-gate for 4.0.311–4.0.314; 4.0.315 sætter eksplicit `ready=true` og kan ikke blokeres af det.
+- Normal produktion er igen measured-only og skal fortsat gennem current-hour, friskhed, DMI/Copernicus, 210/673, fuld `validate`, `release:gate`, artifact og Pages. Measured-only checkpoint/continuation/recovery bevares; manglende historik forbliver manglende.
+- Defensive trust-, provenance-, schema- og turkvalitetslæsere bevares fail-closed for kompatibilitet, men kan ikke skabe rekonstrueret state og er ikke en operationel tilladelse.
+- 4.0.315 er endnu kun en lokal hotfixkandidat. Kildegaten skal være grøn på eksakt PR-head, og efter merge skal en frisk normal produktion faktisk køre build, begge fulde gates, artifact og Pages. Grøn topstatus med skipped produktion er ikke et releasebevis.
+
+## Historisk 4.0.314 – cadenceautoriteten afgrænset lokalt; datahullet forblev åbent
 
 - Før-primary-rettelsen bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op uden inspect, build eller Pages. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.
 - Read-only inspect `33279639424`/`99172534863` stoppede i planforseglingen med kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Descriptor, apply, build og Pages blev sprunget over; ingen data, cache eller offentlig drift blev ændret.

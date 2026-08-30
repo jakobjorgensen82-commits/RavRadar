@@ -112,7 +112,7 @@ for (const marker of [
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
   'Targeted supplement pending',
-  "inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.force != true",
+  "github.event_name == 'workflow_dispatch' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
@@ -557,7 +557,7 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)")) {
+if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)")) {
   throw new Error('Private GeoDanmark- og RavScore-dispatches skal udelukke det almindelige build- og deployjob.');
 }
 const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));
@@ -567,7 +567,7 @@ for (const marker of ['geometry_v2_national == true', 'python scripts/build-nati
 if (geometryNationalSection.includes('pages: write') || geometryNationalSection.includes('id-token: write')) throw new Error('Det nationale GeoDanmark-job må ikke have Pages-skriverettigheder.');
 const geometryPilotSection = text.slice(text.indexOf('geometry-v2-pilot:'), text.indexOf('deploy-pages:'));
 for (const marker of [
-  "inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_pilot == true",
+  "inputs.geometry_v2_pilot == true",
   'DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}',
   'python scripts/sync-admin-config.py',
   'python scripts/apply-central-zone-reviews.py',

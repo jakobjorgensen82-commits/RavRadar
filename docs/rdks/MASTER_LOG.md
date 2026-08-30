@@ -1,3 +1,11 @@
+## 2026-08-30 – 4.0.315 pensionerer stale rekonstruktionsinterlock efter offentlig P0
+
+- Ejeren trak den planlagte DEC-0109-engangsoperation tilbage, før et inspect forseglede en descriptor og før apply, rollback, cleanup eller anden mutation. Ingen syntetiske eller interpolerede Candidate G-data blev nogensinde anvendt eller publiceret.
+- 4.0.314's normale vejrproduktion krævede fortsat et succesfuldt descriptorbundet apply+Pages-bevis på samme SHA. Beviset var derfor umuligt, men readiness returnerede grøn no-op i stedet for fejl; build, artifact og Pages blev skipped.
+- Offentlig primary passerede otte timers alder, og measured-only recovery passerede den absolutte 72-timersgrænse. RavRadar lukkede korrekt fail-closed med **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**, men aktuelle og femdøgnsprognoser var utilgængelige.
+- DEC-0111 erstatter DEC-0109 operationelt. 4.0.315 pensionerer operationsinput/jobs, actuator, admin-descriptor, gamle operationstests og apply+Pages-attestationen. Historical exact-D1-jobbet bevares for 4.0.311–4.0.314, men returnerer eksplicit `ready=true` for 4.0.315. Normal measured-only checkpoint/continuation/recovery og alle almindelige production/releasegates bevares.
+- Defensive reconstruction-trust/schema/turkvalitetslæsere bevares fail-closed som kompatibilitet, ikke som eksekverbar sti. Hotfixen er ikke produktionsverificeret før exact-head sourcegate, merge, en faktisk frisk normal produktion med fulde gates/artifact/Pages og offentlig 210/673/prognosekontrol.
+
 ## 2026-08-30 – policybundet cadence efter nyt sanitiseret live-inspect
 
 - Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele backendkæden.
