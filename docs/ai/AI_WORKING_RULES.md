@@ -1,6 +1,23 @@
 # AI Working Rules – RavRadar
 
-## Aktuel recovery-/release-regel fra 4.0.314
+## Aktuel 4.0.316 fallback-, scorekvalitets- og release-regel
+
+- Behandl frisk primary og last-verified fallback som separate kontrakter. En gyldig fallback kan stages; forventet fravær må ikke blokere en ellers gyldig primary; gammel/udløbet fallback skal fjernes fra manifest/public files og må aldrig vises.
+- Lemp aldrig primary accounting, audit, current-hour, direkte input/provenance, 210/673, validate eller releasegate for at opnå publicering. Skeln eksplicit mellem **ingen gyldig fallback** og **uventet integritetsfejl**.
+- Skab aldrig syntetiske data, interpolation, backfill, carry-forward eller zonelån som fallback.
+- Under DEC-0102 er `HISTORY_INCOMPLETE` scorebærende over current+fem døgn, når direkte input er gyldige, men skal bære auto-forsvindende DA/DE/EN-advarsel og `calibrationEligible=false`. Manglende direkte input er separat `UNAVAILABLE`.
+- Hold workflowmonolit-, no-op/status- og version/docs/string-testrefaktorering ude af 4.0.316-P0. Gennemfør den som bindende modelarkitekturroadmap med semantiske gates.
+- Kald ikke 4.0.316 stabil eller live på baggrund af lokale tests. Kræv exact-head, merge, faktisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol.
+
+## Historisk 4.0.315-retirement- og produktionsregel
+
+- Genindfør aldrig DEC-0109's workflowinput, aktuator, descriptor, inspect/apply/rollback/cleanup eller apply+Pages-prerequisite. Det bevarede historical exact-D1-job for 4.0.311–4.0.314 skal fortsat returnere `ready=true` for 4.0.315. Beslutningen blev tilbagetrukket uden anvendelse.
+- Normal produktion er measured-only. Et hul forbliver et hul; lån, interpolation og backfill fra andre tider eller zoner er forbudt.
+- Skeln mellem grøn topstatus og et faktisk produktionsbevis. Kræv, at build, fuld validate, releasegate, artifact og Pages har kørt og bestået på den mergede SHA.
+- Bevar normal gap-checkpoint, continuation og senest-komplet recovery inden for deres egne integritets-, forecast- og aldersgrænser. Bevar defensive trust-/turkvalitetslæsere, men behandl dem aldrig som tilladelse til at skabe state.
+- Ved offentlig stale-/expirybesked er P0 ikke lukket, før frisk manifest/startpakke/detaljer, 210/673 og aktuelle/femdøgnsprognoser er verificeret.
+
+## Historisk recovery-/release-regel fra 4.0.314
 
 - Tillad singleton-evidens kun i den eksakte `AFTER`-rolle og kun som målt højreanker på uafhængigt bevist 3-timerskadence. Sænk aldrig den fælles evidensgrænse globalt.
 - Kræv state-replay og eksakt targetanker før interpolation; cadence skal komme fra before+target, aldrig hardcodes eller udledes af singletonen.

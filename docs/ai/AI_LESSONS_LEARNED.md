@@ -2,7 +2,15 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
-## Aktuel 4.0.314-læring
+## Aktuel 4.0.316-læring
+
+En valgfri recoverykapacitet må ikke blive en skjult forudsætning for en frisk primary. Systemet skal skelne maskinelt mellem **gyldig fallback**, **forventet ingen fallback** og **integritetsfejl**. Kun den midterste tilstand kan fortsætte uden reservedatasæt; gammel eller udløbet fallback skal fjernes, mens primary accounting og audit forbliver fail-closed.
+
+Topniveauets grøn/rød-status er ikke tilstrækkelig processemantik. Et run skal kunne fortælle entydigt, om det producerede, gjorde no-op, skippede eller stoppede ved en gate. Workflowmonolit, spredt versions-/dokumentationsmetadata og tekstfølsomme tests forstærker ellers P0-konsekvensen. Den strukturelle rettelse hører til den planlagte modelleverance, ikke til en akut fallbackhotfix.
+
+Historikmangel, fallbackfravær og manglende direkte current/future-input er forskellige tilstande. `HISTORY_INCOMPLETE` kan være scorebærende med tydelig advarsel og kalibreringsudelukkelse; manglende direkte input er stadig utilgængeligt.
+
+## Historisk 4.0.314-læring
 
 En count-validator må ikke gøre kildebracket og cadencebevis til samme ting. Det ene målte afteranker kan være nok som højre bracket, når state-replayet er eksakt, mens kadencen bevises uafhængigt og strengere af before+target. Undtagelsen skal være rolle- og cadenceafgrænset; global minimumssænkning ville være en generel evidenssvækkelse.
 

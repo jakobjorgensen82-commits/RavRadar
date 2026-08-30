@@ -1,6 +1,6 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.315 – samlet integreret RavScore-releasekandidat
+## Model-P0 – samlet integreret RavScore under DEC-0110, ikke udgivet
 
 - [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
 - [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
@@ -9,9 +9,33 @@
 - [x] Bind v4-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`/`0.01171875`-grænser; fejl bevarer Candidate G offentlig uden syntetisk/offentlig historik. Bevar særskilt ægte cold start på præcis 48 private verificerede timepositioner plus reel target, same-time rollback uden dobbelt credit og same-model atomisk nøddrift højst 72 timer uden cross-model fallback/interpolation.
 - [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
 - [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
-- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige model på desktop og mobil. Indtil da er 4.0.310/Candidate G fortsat produktionssandhed.
+- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige model på desktop og mobil. Indtil da er 4.0.310/Candidate G fortsat produktionssandhed. Den separate 4.0.316-P0 nedenfor er autoritativ for den aktuelle offentlige fejl og hotfix.
 
-## Historisk P0 4.0.314 – opgivet rekonstruktionsspor
+## P0 4.0.316 – publicér frisk primary uden at vise udløbet fallback
+
+- [x] Bestå 4.0.315 PR #233 exact-head `33299676128`, merge `63d789a4` og bevis i run `33299747300`, at D1-gaten frigives og build starter.
+- [x] Afgræns det nye stop til fallbackstaging uden kandidat inden for 72 timer/prognosehorisont; bevis at artifact/Pages ikke blev publiceret.
+- [x] Bind DEC-0112: gyldig fallback er valgfri for frisk measured-only primary; gammel/udløbet fallback fjernes fra manifest/public files og må aldrig vises.
+- [x] Bevar primary accounting/audit fail-closed og nul syntetiske data/interpolation/backfill/zonelån.
+- [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
+- [x] Placér workflowmonolit, grøn-no-op-semantik og version/docs/string-testkobling i modelarkitekturroadmapet; udvid ikke P0-hotfixen.
+- [ ] Bestå målrettede fallback-/RDKS-/håndbogs-/security-/versions-/releasegates og exact-head sourcegate.
+- [ ] Merge 4.0.316, kør frisk fuld produktion og publicér artifact/Pages.
+- [ ] Verificér offentligt 210/673 samt aktuelle og femdøgnsprognoser; ingen livepåstand før bevis.
+
+## Historisk P0 4.0.315 – pensionér stale interlock og nå normal build
+
+- [x] Bevis at den tilbagetrukne operation efterlod et umuligt apply+Pages-prerequisite og gjorde normale jobs til grønne no-ops.
+- [x] Bevis offentlig konsekvens: primary >8 timer, measured-only recovery >72 timer og fail-closed prognoseudfald.
+- [x] Bevis at ingen descriptor/apply/mutation eller syntetiske data nogensinde nåede produktion.
+- [x] Fjern den operationelle workflow-/actuator-/descriptor-/package-/releasegateflade og opret en negativ retirement-regression.
+- [x] Dokumentér DEC-0111 og markér DEC-0109 historisk, tilbagetrukket uden anvendelse.
+- [x] Bestå målrettede RDKS-/håndbogs-/workflow-/versions-/releasegates og PR #233 exact-head `33299676128`.
+- [x] Merge som `63d789a4`; run `33299747300` frigav D1-gaten og startede build, men stoppede senere før artifact/Pages.
+- [ ] Offentlig verifikation blev ikke opnået i 4.0.315 og er flyttet til 4.0.316-P0 ovenfor.
+- [ ] Fortsæt derefter DEC-0102-modelsporet uden at genindføre interpolation.
+
+## Historisk P0 4.0.314 – policybundet cadencegate
 
 - [x] PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og no-op push `33279411885`.
 - [x] Exact-main D1 `33279463545`/`99172031927` helt grøn.

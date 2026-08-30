@@ -1,6 +1,30 @@
-# Implementeringsstatus – 4.0.315 integreret RavScore-releasekandidat
+# Implementeringsstatus – 4.0.316 optional-fallback-hotfix efter rødt post-merge-build
 
-## Historisk lukket uden udførelse – 4.0.314 cadenceautoritet
+## P0 – frisk primary må publiceres uden gyldig ældre fallback
+
+- [x] Bestå PR #233 exact-head `33299676128` og merge 4.0.315 som `63d789a4`.
+- [x] Bevis i post-merge-run `33299747300`, at den pensionerede D1-/reconstruction-readiness frigives og normal build starter.
+- [x] Afgræns næste stop til **“Stage audited last verified Candidate G public fallback”**: ingen measured-only fallback var samtidig inden for 72 timer og sin kortere prognosehorisont; intet artifact/Pages blev publiceret.
+- [x] Gør ingen-fallback til forventet tilstand for en ellers frisk measured-only primary; gammel/udløbet fallback må ikke vises og fjernes fra manifest/public files.
+- [x] Bevar fail-closed primary accounting/audit og forbuddet mod syntetiske data, interpolation, backfill og zonelån.
+- [x] Opret DEC-0112 og bind DEC-0102/aktive krav til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk recovery, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
+- [x] Registrér workflowmonolit, grøn-no-op-semantik og spredt version/docs/string-testkobling som modelarkitektur-roadmap uden at udvide P0-hotfixen.
+- [ ] Bestå målrettede fallback-, RDKS-, håndbogs-, security-, versions- og releasegates samt exact-head sourcegate på 4.0.316.
+- [ ] Merge 4.0.316 og kør frisk normal produktion med fuld validate, releasegate, artifact og Pages faktisk success.
+- [ ] Verificér offentligt 210/673, frisk manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser. Først da er P0 live lukket.
+
+## Historisk P0 – 4.0.315 pensionerede rekonstruktionsstien og nåede build
+
+- [x] Bevis rodårsagen: 4.0.314 krævede et tidligere descriptorbundet apply+Pages-bevis, som ikke kunne eksistere efter ejerens tilbagetrækning; normale jobs blev derfor grønne no-ops uden build, artifact eller Pages.
+- [x] Registrér den offentlige konsekvens: primary var mere end otte timer gammel, recovery var over den absolutte 72-timersgrænse, og RavRadar lukkede ærligt med **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**
+- [x] Bevis at intet inspect forseglede en descriptor, og at ingen syntetiske eller interpolerede data blev anvendt eller deployet.
+- [x] Pensionér operationsinput/jobs, actuator, admin-descriptor, apply+Pages-attestation og package-/releasegatebindinger; bevar det versionsafgrænsede historical exact-D1-job med eksplicit `ready=true` for 4.0.315, defensive trust-/schema-/turkvalitetslæsere og normal measured-only recovery.
+- [x] Opret DEC-0111 og markér DEC-0109 historisk, tilbagetrukket uden anvendelse og ikke-eksekverbar.
+- [x] Bestå målrettede retirement-, workflow-, RDKS-, håndbogs-, versions- og releasegates samt PR #233 exact-head `33299676128`.
+- [x] Merge 4.0.315 som `63d789a4`; post-merge-run `33299747300` frigav D1-gaten og startede build, men stoppede senere på manglende gyldig fallback.
+- [ ] Offentlig frisk manifest/startpakke/detaljer, 210/673 samt aktuelle og femdøgnsprognoser blev ikke opnået i 4.0.315; livebeviset er flyttet til 4.0.316 ovenfor.
+
+## Historisk P0 – cadenceautoritet lokalt afgrænset; datahullet forblev åbent
 
 - [x] Bestå PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og korrekt no-op push `33279411885`.
 - [x] Bestå exact-main D1 `33279463545`/`99172031927` på `d539fc9d`.

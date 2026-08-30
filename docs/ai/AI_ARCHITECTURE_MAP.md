@@ -1,6 +1,23 @@
 # AI Architecture Map – RavRadar
 
-## 4.0.314 source merged; same-version sourcegate-hotfix
+## 4.0.316 publiceringsarkitektur – optional fallback, streng primary
+
+- Den friske measured-only primary og last-verified fallback er to separate publiceringsinputs. Primary kan bygge current+fem døgn uden fallback, når alle egne input-, provenance-, 210/673-, accounting-, audit-, validate- og releasegates består.
+- Fallbackstaging har tre udfald: gyldig komplet measured-only pakke stages; forventet ingen gyldig pakke giver eksplicit fravær; malformed/accounting-/auditafvigelse stopper. Kun den midterste tilstand er ikke-blokerende.
+- En ugyldig/gammel fallback fjernes fra manifest og publicerede fallbackfiler, så en tidligere Pages-kopi ikke kan hænge ved. Den må aldrig blandes ind i primary.
+- DEC-0102-modelaksen `HISTORY_INCOMPLETE` er uafhængig af runtime-fallback og direkte-input-availability. Gyldige current/future-input giver score med quality/warning og `calibrationEligible=false`; manglende direkte input giver `UNAVAILABLE`.
+- Modelleverancen skal splitte monolitisk workflowansvar, gøre success/no-op/skipped maskinlæsbar og samle version/docs/kontraktmetadata. 4.0.316 ændrer kun fallback/publiceringsgrænsen.
+- PR #233/exact-head `33299676128`, merge `63d789a4` og run `33299747300` er kilde-/årsagsbevis, ikke live 4.0.316-bevis.
+
+## Historisk 4.0.315 retirementarkitektur
+
+- `.github/workflows/update-and-deploy.yml` har ingen one-time reconstruction-input eller inspect/apply/rollback/cleanup-job. Det eksisterende `trip-storage-readiness` og build-afhængigheden bevares for historical exact-D1 på 4.0.311–4.0.314; version 4.0.315 sætter eksplicit `ready=true` før normal build og kan ikke blokeres af reconstruction-bevis.
+- CLI-aktuatoren, incidentets admin-descriptor og de gamle operationstests/packagebindinger er fjernet. En negativ retirement-test og releasegate kræver deres fortsatte fravær.
+- Normal measured-only `restore-candidate-g-gap-checkpoint.mjs`, continuation-checkpoint og public recovery bevares. De rekonstruerer ikke manglende værdier.
+- Runtime-, schema- og trip-lag må fortsat genkende markeret eller ukendt reconstructed evidence fail-closed. Disse læse-/kvalitetsgrænser har ingen operationel skrivevej.
+- Releasekæden er fortsat current-hour → central adminhydrering → frisk DMI/Copernicus → 210/673 → fuld validate/releasegate → artifact → Pages. Efter merge skal den faktisk køre; skipped job er ikke succes.
+
+## Historisk 4.0.314 source merged; same-version sourcegate-hotfix
 
 - `one-time-candidate-g-gap-reconstruction.mjs` accepterer ét målt evidenspunkt kun for rollen `AFTER`; før, target, rollback og cleanup beholder minimum to.
 - Singletonen kan kun fortsætte, når før- og targetserien uafhængigt beviser enstemmig 3-timerskadence. Eksakt state-replay, målanker, bracket, sourcebindings, descriptor og CAS er uændrede.

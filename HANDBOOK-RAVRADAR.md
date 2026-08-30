@@ -1,6 +1,40 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.315
+**Håndbogsversion:** 4.0.316
+
+## Frisk vejrvisning kræver ikke en gyldig ældre reserve – 4.0.316 hotfixkandidat
+
+4.0.315-rettelsen virkede på sin første hovedopgave. PR #233 bestod kildekontrollen i run `33299676128`, blev merged som `63d789a4`, og den efterfølgende kørsel `33299747300` kom forbi den gamle D1-lås og startede den normale vejrbygning. Den tidligere grønne no-op var derfor ikke længere stopklodsen.
+
+Kørslen stoppede i stedet rødt, da RavRadar skulle gøre en ældre, senest verificeret Candidate G-pakke klar som reserve. Der fandtes ingen komplet målt reserve, som både var under 72 timer gammel og stadig havde gyldige prognosetimer. Det var korrekt ikke at vise den gamle reserve, men en frisk ny vejrpakkes udgivelse blev dermed blokeret af, at en ældre reserve ikke fandtes.
+
+I 4.0.316 er reserven valgfri, når den nye primary er frisk, udelukkende målt og har bestået alle sine egne kontroller. Findes en gyldig komplet reserve, kan den stadig bruges. Findes den ikke, bliver der ikke vist gamle data: den gamle eller udløbne reserve fjernes fra manifestet og fra de offentlige reservefiler. Fraværet må ikke blokere aktuelle forhold eller femdøgnsprognosen.
+
+Denne ændring gør ikke primary mindre streng. Uventede antal, forskel mellem manifest og filer, auditfejl eller manglende aktuelle/fremtidige input stopper stadig udgivelsen. RavRadar interpolerer ikke huller, låner ikke fra nabozoner og opfinder ingen historik eller syntetiske data.
+
+Ejeren har samtidig truffet en bindende beslutning for den kommende samlede RavScore-model. Hvis historikken er ufuldstændig, men den konkrete times direkte aktuelle eller fremtidige input er gyldige, skal hele current- og femdøgnsfladen fortsat have score med en tydelig advarsel på dansk, tysk og engelsk. Advarslen skal stå ved score, detaljer, femdøgnsvisning, admin og ekspert og forsvinde automatisk, når historikken igen er komplet. Sådanne resultater er altid `calibrationEligible=false`. Mangler de direkte input, er timen derimod utilgængelig. Dette er en senere modelkontrakt og er ikke implementeret af P0-hotfixen.
+
+Modelleverancen skal også reducere tre systemiske risici: det meget store workflow, uklare grøn-no-op/skipped-resultater og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. Det arbejde må ikke gøre 4.0.316-hotfixen større.
+
+4.0.316 er ikke live endnu. Først efter exact-head-kontrol, merge, en frisk fuld produktion med validering, releasegate, artifact og Pages samt offentlig kontrol af 210 zoner/673 kystdele og aktuelle/femdøgnsprognoser kan udgaven kaldes produktionsverificeret. Se DEC-0112.
+
+## Historisk: Aktuelle prognoser skulle genåbnes uden rekonstruktion – 4.0.315 blev ikke deployet
+
+RavRadar kunne ikke længere vise aktuelle data eller prognoser, selv om de seneste workflowkørsler så grønne ud. Årsagen var en midlertidig sikkerhedslås fra 4.0.314: normal vejrproduktion måtte først bygge, når samme version kunne bevise en succesfuld, descriptorbundet engangsrekonstruktion og et efterfølgende Pages-deploy. Ejeren trak operationen tilbage, før der fandtes en descriptor eller et apply. Kravet kunne derfor aldrig opfyldes, og grøn betød i praksis no-op uden build, artifact eller Pages.
+
+Da hændelsen blev opdaget, var den offentlige primary mere end otte timer gammel, og den komplette målte recovery var ældre end sin absolutte 72-timersgrænse. RavRadar viste derfor korrekt **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”** Det var ærligt fail-closed, men det betød også, at brugerne ingen aktuelle eller femdøgnsprognoser kunne se.
+
+Ingen syntetiske eller interpolerede Candidate G-data blev nogensinde anvendt. De historiske read-only inspect-kørsler stoppede før descriptor, apply og mutation. 4.0.315 pensionerer nu operationsinput og -jobs, aktuator, admin-descriptor, rollback/cleanupflade og apply+Pages-attestationen. Det eksisterende historical exact-D1-job bevares for 4.0.311–4.0.314, men 4.0.315 går eksplicit videre med `ready=true` og kan ikke blokeres af rekonstruktionsbevis.
+
+Normal produktion er fortsat udelukkende målt. Manglende historik forbliver manglende og udfyldes ikke. De normale measured-only gap-checkpoints, continuation og senest-komplette recovery bevares under deres eksisterende integritets-, 210/673-, forecast- og aldersgrænser. Defensive trust-, schema- og turkvalitetslæsere bevares også, så ukendt eller historisk markeret evidens fortsat afvises eller klassificeres fail-closed; de kan ikke skabe rekonstrueret state.
+
+Hotfixen ændrer ikke Candidate G-formlen, 20/50/30, +10/-8, 13-timersreglen, DMI/Copernicus, vejrsemantik, storage, geometri, zoner eller land-/vandpunkter. Normal produktion skal stadig bestå current-hour, friskhed, 210/673, fuld validering, releasegate, artifact og Pages.
+
+PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `33299747300` frigav D1-gaten og startede build, men stoppede senere på manglende gyldig fallback før artifact/Pages. 4.0.315 blev derfor ikke produktionsverificeret; næste afgrænsede skridt står i 4.0.316-kapitlet ovenfor. Se DEC-0111 og DEC-0112.
+
+> **Historikadvarsel:** De fire rekonstruktionskapitler nedenfor frem til **“Ekstern sikkerhed mod stille vejrproduktion”** er kun revisionsspor. DEC-0111 trak DEC-0109-operationen tilbage før descriptor/apply. Der må ikke køres nyt reconstruction-D1, inspect, apply, rollback eller cleanup; kapitlet om 4.0.315 ovenfor er den aktuelle regel.
+
+## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
 ## Aktuel status – 4.0.315 integreret RavScore-releasekandidat
 
@@ -13,6 +47,10 @@ Den fysiske levering er fortsat uopløst: `physicalDeliveryResolved=false` og fy
 Ægte cold start kræver præcis 48 private, verificerede timer plus den reelle targettime. Candidate G-rollback bruger samme target uden dobbelt recovery-credit. Nøddrift må kun bruge en komplet, atomisk og hashbundet continuation fra samme model i højst 72 timer eller kortere forecastudløb; cross-model fallback og interpolation er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet, mens reconstructed/emergency og ture ikke er kalibreringsgrundlag.
 
 Ejeren opgav den planlagte fiktive rekonstruktion af morgenhullet efter de dokumenterede read-only stop og før descriptor, apply, mutation, artifact eller offentliggørelse. De operative GitHub-inputs/job, incidentpolicyen og mutatoren er fjernet, og en negativ gate forhindrer genåbning. Kun konservativ læsning og kvalitetsklassifikation af historiske markører består. DEC-0109 er historisk dokumentation; de følgende 4.0.311–4.0.314-afsnit er revisionsspor og ikke åbne udførelsesplaner.
+
+Den målrettede syntetiske 210/673 inspect-/CAS-/rollback-/cleanup-/checkpointtest og workflowinterlock var grønne, inklusive sparse 2h-hourly, mixed 1/3-hourly, policy-ID-swap, ulovlig 3h/2h, nonintegral cadence og policyhash-CAS. Den daværende plan var proportionale source-/RDKS-/reviewgates, exact-head PR, merge/no-op, nyt exact-main D1 og en ny read-only inspect før et eventuelt descriptorbundet CAS-apply. Planen blev aldrig gennemført og er trukket tilbage af DEC-0111; der må ikke køres nyt inspect eller apply.
+
+Candidate G's score, 20/50/30, +10/-8, 13-timersregel, DMI/Copernicus, vejr, nøddrift, geometri og punkter er uændrede.
 
 ## Historisk: ærlig før-primary og samlet READY-bevis – 4.0.314 lokalt rettet
 
@@ -38,13 +76,13 @@ Dette er ikke en generel lempelse. Før-kilden, det aktuelle mål, rollback og c
 
 Alle øvrige sikkerhedsbeviser er uændrede: eksakt model, profil og stateKey; reproducerbart state; højst seks timer mellem ankre; eksakte source-run/artifact/head-hashes; ingen vejr-, bølge-, vandstands-, koordinat- eller rå vektordata i descriptoren; og compare-and-swap mod det offentlige mål før apply.
 
-4.0.314 kan heller ikke overhale sin egen rekonstruktion. Samme eksakte main-commit skal først bestå hele D1-backenden. Inspect må derefter forsegle planen, og apply må køre med den eksakte descriptor. Almindelige push-, schedule- og `none`-produktioner forbliver en grøn no-op, indtil GitHub kan bevise både et succesfuldt apply-step og et succesfuldt Pages-deploy på samme commit. Manglende eller uforståelige metadata åbner intet, og et nyt push kan ikke annullere en igangværende apply.
+Den historiske 4.0.314-lås var designet til at forhindre, at releasen overhalede sin egen planlagte rekonstruktion: samme main-commit skulle først have bestået D1, hvorefter inspect skulle have forseglet planen og et apply skulle have brugt den eksakte descriptor. Det uopfyldelige apply+Pages-krav gjorde senere normale produktioner til grønne no-ops. DEC-0111 pensionerede kravet før operationen blev anvendt; normal 4.0.315-produktion må ikke vente på inspect/apply-bevis.
 
 Kilden bestod PR #227 exact-head `33272564543`, blev merged som `d1369d88`, og push `33272676071` var korrekt no-op. En ældre 4.0.313-produktion stoppede før releasegate og Pages, fordi en forældet marine-first-test stadig forventede den gamle dynamiske concurrencytekst og ikke var med i PR-sourcegaten. Same-version-hotfixet ændrer kun testen og dens gate-dækning: præcis én `cancel-in-progress: false` kræves, og testen kører nu gennem `validate:source`. Runtime, model og data er uændrede.
 
 Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250c`, og push `33275147023` var korrekt no-op. D1 `33275218540`/`99160622956` bestod derefter hele storage-/Edge-/Worker-/sync-kæden. Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen efter hydration og kildeudtræk, men før descriptorupload. Der blev ikke ændret data, bygget vejr eller deployet Pages.
 
-Den sikre GitHub-status viste kun exit 1. RavRadar henter ikke hele jobloggen eller kilderne for at finde årsagen. Diagnostikhotfixet gør i stedet kun faste `ONE_TIME_GAP_*`-fejlkoder synlige og skjuler enhver anden fejltekst. En vellykket inspect viser kun descriptorens SHA og fire faste, ikke-følsomme optællinger: berørte dele, syntetiske prøver og 1-/3-timers cadencefordeling. Dermed kan næste apply bindes eksakt uden at læse jobloggen. PR #230's første kildekontrol fandt en ren testmiljøfejl: lokale stderr-tests arvede GitHubs annotationstilstand. Testharnessen isolerer nu normal og Actions-tilstand og består hele 210/673-forløbet i begge miljøer; ingen produktion eller data blev rørt. Den nye final-SHA skal igen bestå D1 før en ny inspect. Låsen gælder kun denne recoveryrelease; 4.0.315 er ikke permanent låst. Candidate G's formel, 20/50/30, model-id, målt schema 2.0, markeret schema 2.1, trust, nødvisning og forbud mod kalibrering på rekonstrueret evidens er uændrede. Først efter ny inspect, CAS-bundet apply, frisk normal produktion og offentlig 210/673-kontrol kan morgenhullet kaldes lukket.
+Den sikre GitHub-status viste kun exit 1. RavRadar hentede ikke hele jobloggen eller kilderne for at finde årsagen. Diagnostikhotfixet gjorde i stedet kun faste `ONE_TIME_GAP_*`-fejlkoder synlige og skjulte enhver anden fejltekst. En tænkt vellykket inspect skulle kun have vist descriptorens SHA og fire faste, ikke-følsomme optællinger, så et efterfølgende apply kunne bindes uden joblog. PR #230's første kildekontrol fandt en ren testmiljøfejl; testharnessen isolerede normal og Actions-tilstand og bestod hele 210/673-forløbet i begge miljøer. Den daværende plan krævede et nyt final-SHA-D1 og inspect før CAS-apply. DEC-0111 trak planen tilbage før descriptor/apply; intet nyt D1, inspect eller apply må køres for rekonstruktionen. Candidate G's formel, 20/50/30, model-id, measured-only drift, trust og nødvisning er uændrede.
 
 ## Historisk: én kontrolleret rekonstruktion af Candidate G-morgenhullet – 4.0.313-roll-forward
 
@@ -54,7 +92,7 @@ Kun den allerede afledte, signerede **kystnormale transportstyrke** mellem eksak
 
 Målt Candidate G-state forbliver schema 2.0.0. En state, som stadig indeholder en rekonstrueret prøve, er schema 2.1.0 og mærkes **afledt rekonstruktion – ikke målt** gennem state, score, startup, detaljer, manifest og hashes. Den må godt gøre 48-timersvinduet teknisk `READY`, men den er ikke kalibreringsevidens og må ikke alene bevise, at 13 timers faktisk udtransport er observeret. Ældre eller ukendt kode afviser schema 2.1 fail-closed.
 
-Apply må kun ske manuelt på den eksakte descriptor og et uændret hydreret mål. RavRadar skriver en privat rollback før første mutation og beviser på en isoleret kopi, at apply og direkte rollback er byteidentiske. Den eksakte rollback må kun bruges, mens målet stadig er den uændrede umiddelbare post-apply-state; ellers fjerner kausal cleanup kun dette incidents syntetiske prøver, beholder alle nyere målinger og vender tilbage til ærlig schema 2.0/warmup. Rekonstruktionskørsler kan ikke skrive de delte continuation-, checkpoint- eller last-ready-caches, og alle 673 scoreveje forbliver lukkede, indtil en obligatorisk frisk normal produktion er komplet. Den målte nødvisning må ikke erstattes af en rekonstrueret “last verified”-kopi.
+Den aldrig anvendte plan foreskrev, at et apply kun skulle have været manuelt på en eksakt descriptor og et uændret hydreret mål, med privat rollback før første mutation og kausal cleanup som senere sikkerhedsvej. Ingen descriptor, mutation eller syntetisk state blev skabt. DEC-0111 trak operationen tilbage; apply, rollback og cleanup må ikke udføres. De defensive cache- og trustkontrakter består, men kan ikke skabe rekonstrueret state.
 
 Ture bindes til det datasæt, brugeren faktisk så. Appen skal føre hele det aktive manifest videre; både startup- og kystdels-trust skal findes og være identiske, før en tur kan bindes. En rekonstrueret score får `ravscore-reconstructed-derived-evidence`, mens en vist komplet nødvisning får `public-emergency-last-complete`. Begge typer er fortsat brugerhistorik, men er altid `calibration_eligible=false` gennem browser, Edge, D1/Supabase, schema og installation.
 
@@ -72,7 +110,7 @@ Backendudgivelsen sker på samme eksakte main-head som Pages. Efter kapacitetsko
 
 Den kommende samlede RavScore-model får sin egen nøddrift som bindende acceptkrav. Kun den seneste komplette, målt-only, atomiske og hash-/model-/statebundne 210/673-pakke må bruges. Den vises tydeligt som ældre på dansk, tysk og engelsk, må højst være 72 timer gammel og må aldrig overskride en kortere prognose-/produktudløbsgrænse. Ture er ikke-kalibrerbare, og en ny komplet primary overtager automatisk og atomisk. Ukendt, blandet, rekonstrueret, manipuleret eller udløbet state lukkes fail-closed; nøddriften interpolerer ikke huller og aktiverer ikke en anden offentlig model.
 
-Ved dette historiske checkpoint var 4.0.313 den lokale roll-forward-kandidat med grønne migration-, idempotens-, registry-, privacy-, workflow- og lokale releasegates. Den blev senere exact-head-valideret i PR #226, merged som `ff62ba11` og fik et helt grønt exact-main D1-backendbevis i `33269631305`. Den efterfølgende read-only inspect stoppede før descriptor eller mutation; den aktuelle sikre fortsættelse står i 4.0.314-afsnittet ovenfor. Offentlig RavRadar er fortsat produktionsverificeret 4.0.310 i nøddrift, og morgenhullet er ikke ændret i produktion. Se [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md).
+Ved dette historiske checkpoint var 4.0.313 den lokale roll-forward-kandidat med grønne migration-, idempotens-, registry-, privacy-, workflow- og lokale releasegates. Den blev senere exact-head-valideret i PR #226, merged som `ff62ba11` og fik et helt grønt exact-main D1-backendbevis i `33269631305`. Den efterfølgende read-only inspect stoppede før descriptor eller mutation. Den daværende fortsættelsesplan stod i 4.0.314-afsnittene ovenfor, men er siden trukket tilbage af DEC-0111 og må ikke udføres. Morgenhullet blev ikke ændret i produktion. Se den historiske [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md) og den gældende DEC-0111.
 
 ## Ekstern sikkerhed mod stille vejrproduktion – 4.0.309/4.0.310
 
@@ -210,7 +248,7 @@ Supabase håndterer fortsat login, profiler, rettigheder, rate limit og RavRadar
 
 Før en tur forlader Supabase-grænsen, erstatter Edge brugerens eller den anonyme enheds id med et versionsbåret HMAC-pseudonym. Cloudflare modtager ikke bruger-id, mail, navn, login-token, GPS eller rute. Kaldet mellem Edge og Cloudflare er privat signeret og tidsbegrænset; samme klient-/tur-id kan prøves igen uden dublet, men afvises hvis indholdet ændres.
 
-Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. Den oprindelige 4.0.287-kontrakt tillod en manuel `TRIP_STORAGE_MODE=supabase` efter D1-cutover. Det er historik: den mergede 4.0.311-kilde afløser denne vej, fordi D1-only ture ellers kan blive skjult. Efter den varige D1-intent repareres kun fremad i D1; Supabase-broen findes kun ved en helt ny pre-intent-installation. 4.0.313 afgrænser den historiske migrationsgenafspilning uden at omskrive D1; exact-main D1-run `33269631305` har siden livebevist denne storagekæde. Rekonstruktionen kræver stadig sit eget nye exact-main D1-bevis på den endelige docs-synkroniserede merge-SHA før inspect/apply.
+Eksisterende ture kopieres idempotent før og efter selve skiftet uden at blive slettet i Supabase. Normal drift dobbeltgemmer ikke. Den oprindelige 4.0.287-kontrakt tillod en manuel `TRIP_STORAGE_MODE=supabase` efter D1-cutover. Det er historik: den mergede 4.0.311-kilde afløser denne vej, fordi D1-only ture ellers kan blive skjult. Efter den varige D1-intent repareres kun fremad i D1; Supabase-broen findes kun ved en helt ny pre-intent-installation. 4.0.313 afgrænser den historiske migrationsgenafspilning uden at omskrive D1; exact-main D1-run `33269631305` har siden livebevist denne storagekæde. Den planlagte rekonstruktion blev aldrig anvendt og er trukket tilbage af DEC-0111; den kræver intet nyt D1-bevis, og der må ikke køres inspect/apply for den. Turlagerets egne kontrakter fortsætter uafhængigt.
 
 Et dagligt kontroljob læser kun leverandørernes størrelsestal – aldrig turpayloads – og advarer ved 70 % samt stopper ved 85 %. En eksplicit bekræftet driftskommando kan slette en ejers ture i begge lagre uden at udskrive id eller payload. Supabases varsel om mulig begrænsning fra 9. september 2026 overvåges fortsat, fordi login og Edge stadig bruger Supabase. Se [DEC-0082](docs/rdks/10_DECISIONS/DEC-0082-HYBRID-AUTH-AND-EU-TRIP-STORAGE.md).
 
@@ -785,7 +823,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.314
+**Håndbogsversion:** 4.0.316
 
 **Opdateret:** 19. august 2026
 

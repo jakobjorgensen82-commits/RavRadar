@@ -1,4 +1,4 @@
-## 4.0.315-releasekandidat – integreret RavScore (ikke udgivet, 2026-08-30)
+## Ikke udgivet modelarbejde – integreret RavScore under DEC-0110 (2026-08-30)
 
 - Samler næste RavScore under DEC-0110 som én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponent `ravscore-components-huntability-delivery-mobilisation-v4`, forklaring `ravscore-explanation-integrated-v4` og 20/50/30.
 - Fjerner den historiske 13-timers helscore-gate. Et langt stærkt udgående forløb kan fortsat gøre transportbeviset 0, men det beviser ikke, at ravlageret er tømt, og nulstiller ikke søgeforhold eller mobilisering.
@@ -17,8 +17,29 @@
 - Låser red-team-kravet om observationsatomisk backend-/Edge-/Pages-cutover: migration `20260829010000_ravscore_operational_documents_no_history.sql` før `20260829020000_integrated_trip_calibration_binding.sql`, samlet protected readiness, eksakt Edge-`409`, eksklusiv point → bundle → checkpoint → engangsimport og durable v3-controller. Første push-only cutover observerer Candidate G-kildemanifestet, skriver `INTEGRATED_PENDING` med source/requested-hash og bevarer central Candidate-profil under integreret Pages-deploy; efter exact implementation+210/673 sætter én RPC samtidigt `INTEGRATED_ACTIVE` og central integrated 11-feltsprofil. Retry completer ved targethash, aborterer/rekonsoliderer ved sourcehash og stopper fail-closed ved tredje hash. Migrationen bevarer eksisterende `admin_document_versions`, og backendworkflowet genverificerer `origin/main == GITHUB_SHA` efter dry-run før første eksterne write.
 - Tilføjer operationel Candidate G-helrollback og integreret tilbagevenden med samme source/PENDING/target/reconcile. Rollback/return er manual-only; scheduler kan kun `CANDIDATE_G_REFRESH` på allerede aktiv Candidate G med uændret binding. Der deployes ingen særskilt Candidate G-assistent-Edge: integreret Edge svarer `409`, klienten bruger deterministiske lokale DA/DE/EN-svar, og schema-3-ture gemmes Candidate G-bundet med `calibration_eligible=false`. Det er fail-closed/local-only og ikke en skjult dualmodel. Separate rollback-kontrakt-/bundlehashes afventer slutregeneration; exact-head-, produktions- og offentlig bevisførelse er fortsat åben.
 - Den lokale kandidat er fysisk motiveret og mekanisk regressionstestet, men må ikke kaldes empirisk mere fundpræcis uden repræsentative fund og nul-fund.
-- **Status:** Releasekandidat; ikke exact-head-valideret, merged, udgivet eller produktionsverificeret. Offentlig 4.0.310 fortsætter på Candidate G, indtil exact-head, merge, frisk fuld produktion, releasegate og offentlig mobil-/desktopkontrol er grønne.
+- **Status:** Modelarbejde; ikke exact-head-valideret, merged, udgivet eller produktionsverificeret. Offentlig 4.0.310 fortsætter på Candidate G, indtil exact-head, merge, frisk fuld produktion, releasegate og offentlig mobil-/desktopkontrol er grønne. Den separate 4.0.316-P0-status nedenfor er autoritativ for den aktuelle produktionsfejl og hotfix.
 
+## 4.0.316 – frisk primary uden gyldig ældre fallback (2026-08-30)
+
+- PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav 4.0.315-D1-gaten og startede build, men stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og sin prognosehorisont. Intet nyt artifact/Pages blev publiceret.
+- Gør last-verified fallback valgfri for en frisk measured-only primary, som består egne current-hour-, direkte input/provenance-, 210/673-, accounting-, audit-, validate- og releasegates.
+- Gammel, udløbet, ufuldstændig, ukendt, blandet, rekonstrueret eller manipuleret fallback må aldrig vises. Den skal være fraværende i manifestet og fjernes fra publicerede fallbackfiler; forventet fravær må ikke blokere current+fem døgn.
+- Uventet primary accounting/audit og manglende direkte input forbliver fail-closed. Ingen syntetiske eller interpolerede data skabes.
+- DEC-0112/DEC-0102 binder den kommende model til `HISTORY_INCOMPLETE`-score over current+fem døgn ved gyldige direkte input, auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`; direct-input-mangel er separat `UNAVAILABLE`.
+- Workflowmonolit, grøn-no-op/skipped-semantik og spredt version/docs/string-testkobling er bindende modelarkitekturroadmap og udvider ikke P0-hotfixen.
+- 4.0.316 er lokal kandidat uden livepåstand. Exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol afventer.
+- Candidate G, RavScore, DMI/Copernicus, storage, geometri, zoner og land-/vandpunkter er uændrede af hotfixen.
+
+## 4.0.315 – pensioneret stale rekonstruktionsinterlock (2026-08-30)
+
+- Lukker en offentlig P0, hvor 4.0.314's tilbagetrukne one-time Candidate G-operation stadig var prerequisite for normal vejrproduktion. Det umulige apply+Pages-bevis gjorde jobs grønne no-ops uden build, artifact eller Pages.
+- Den offentlige primary var mere end otte timer gammel, og measured-only recovery var over sin absolutte 72-timersgrænse. RavRadar viste derfor korrekt **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**, men aktuelle og femdøgnsprognoser var utilgængelige.
+- Ingen descriptor blev forseglet, ingen apply/rollback/cleanup blev kørt, og ingen syntetiske eller interpolerede Candidate G-data blev anvendt, gemt i offentlig runtime eller deployet.
+- DEC-0111 erstatter DEC-0109 operationelt. Operationsinput/jobs, aktuator, admin-descriptor, gamle operationstests og package-/releasegatebindinger pensioneres; apply+Pages-attestationen fjernes. Historical exact-D1-jobbet bevares for 4.0.311–4.0.314, men 4.0.315 returnerer eksplicit `ready=true`.
+- Normal drift er fortsat measured-only. Gap-checkpoint, continuation, senest-komplet recovery, current-hour, DMI/Copernicus, 210/673, fuld validate/releasegate, artifact og Pages bevares. Defensive trust-/schema-/turkvalitetslæsere bevares fail-closed, men kan ikke skabe rekonstrueret state.
+- Den eksisterende trip-quality workflowtest normaliserer kun CRLF i workflowteksten i hukommelsen, så dens uændrede regexkontrakt også kan køre på Windows; ingen produktionssemantik ændres.
+- Kandidaten kræver fortsat målrettede lokale gates, exact-head sourcegate, merge, en frisk normal produktion med de fulde trin faktisk kørt og offentlig kontrol af frisk manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser. Grøn topstatus alene er ikke releasebevis.
+- Candidate G-formel, RavScore, DMI/Copernicus, vejrsemantik, trip-storage-kontrakt, geometri, zoner og land-/vandpunkter er uændrede. Kun de autoriserede topversionsfelter i geodata følger releaseversionen.
 ## 4.0.314 – cadencepolicy bundet; recovery fortsat gated (2026-08-30)
 
 - Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.

@@ -9,7 +9,7 @@ import {
 const migration = fs.readFileSync('supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql', 'utf8');
 const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
 const installer = fs.readFileSync('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql', 'utf8');
-const workflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8');
+const workflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n');
 const edgeVerification = fs.readFileSync('scripts/verify-trip-storage-edge.mjs', 'utf8');
 const publicRuntime = fs.readFileSync('js/services/trip-evidence-runtime.js', 'utf8');
 const observationService = fs.readFileSync('js/services/observation-service.js', 'utf8');

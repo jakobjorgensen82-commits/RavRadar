@@ -1,10 +1,26 @@
 # AI Knowledge Base – RavRadar
 
-## Aktuel 4.0.315-modelsandhed
+## Aktuelt DEC-0110-modelarbejde – ikke udgivet
 
 - Offentlig 4.0.310 bruger fortsat Candidate G. DEC-0110-releasekandidaten er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `5.0.0` med v4's signerede Candidate G-current-reweight og bounded 40-timers private WAM-migrationsbro, afgrænset kausal energivægtet wave-approach, særskilt ægte 48-timers privat cold start, same-model atomisk nøddrift højst 72 timer og `VERIFIED_ONLY` som eneste kalibreringsegnede trust.
 - Ejeren opgav den fiktive morgenhulsrekonstruktion før descriptor, apply, mutation eller publicering. DEC-0109 bevares kun historisk; bestil ikke ny incident-inspect/apply og overfør aldrig interpolation til den integrerede model.
-- Kandidaten er pending exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Den må ikke kaldes offentlig eller empirisk mere fundpræcis endnu.
+- Kandidaten er pending exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Den må ikke kaldes offentlig eller empirisk mere fundpræcis endnu. Den separate 4.0.316-status nedenfor er autoritativ for den aktuelle offentlige P0 og ændrer ikke Candidate G-formlen.
+
+## 4.0.316 – fraværende fallback er ikke det samme som ugyldig primary
+
+- PR #233/exact-head `33299676128` og merge `63d789a4` pensionerede den stale D1-interlock. Run `33299747300` startede build og stoppede først ved fallbackstaging; det er rødt årsagsbevis, ikke et deploybevis.
+- En fallback er en valgfri reserve for en frisk measured-only primary. Ingen kandidat inden for 72 timer og prognosehorisonten skal give eksplicit fravær, ikke blokere current+fem døgn.
+- Gammel/udløbet fallback må aldrig vises eller blive hængende i manifest/public files. Malformed fallback eller uventet primary accounting/audit er fortsat fejl og må ikke forveksles med forventet fravær.
+- `HISTORY_INCOMPLETE`, public fallback og direct-input-availability er tre separate akser. Den kommende model scorer current+fem døgn ved gyldige direkte input med tydelig DA/DE/EN-advarsel og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
+- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er kandidat, indtil fuld post-merge produktion og offentlig kontrol findes.
+
+## Historisk 4.0.315 – en grøn no-op er ikke frisk produktion
+
+- En workflowstatus kan være grøn, selv om et readiness-job har sat `ready=false` og alle produktionsjobs er skipped. Verificér derfor altid build, fuld validate, releasegate, artifact og Pages som faktisk kørte trin.
+- Den tilbagetrukne DEC-0109-operation efterlod et umuligt apply+Pages-prerequisite. Det gjorde normale 4.0.314-kørsler grønne no-ops, mens public primary blev >8 timer og measured-only recovery >72 timer.
+- Ingen descriptor, apply eller syntetisk data fandtes. DEC-0111 pensionerer aktuator, descriptor og interlock i 4.0.315; normal drift er measured-only, og manglende historik forbliver manglende.
+- Bevar defensive reconstruction-trust/schema/turkvalitetslæsere fail-closed. De er inputklassifikation og kompatibilitet, ikke en actuator.
+- Et P0-retirement er først lukket efter exact-head sourcegate, merge, faktisk frisk produktion med fulde gates og offentlig kontrol af aktuelle og femdøgnsprognoser.
 
 ## Historisk 4.0.314 – cadenceidentitet kommer fra policy, ikke suffixafstand
 
@@ -34,12 +50,12 @@
 - Privacy gælder både input og readback. Et ukendt schema-v2-topfelt må ikke bortfiltreres, heller ikke når det er null.
 - Response-body er ubetroet data. Både fejlede og succesfulde malformed gateway-svar skal blive faste lokale fejl uden bodyudsnit.
 
-## Historisk DEC-0109 – afledt rekonstruktion er en særskilt evidensklasse
+## Historisk DEC-0109 – aldrig anvendt og operationelt erstattet af DEC-0111
 
 Ejeren opgav udførelsen, før der fandtes descriptor, apply, mutation, artifact eller offentliggørelse. Afsnittet nedenfor beskriver derfor kun den bevarede negative trust-/rollbackkontrakt, ikke en åben operationsplan.
 
 - Et komplet aktuelt vejrdatasæt kan godt have ufuldstændig Candidate G-memory; aktuelle vejrdata og 48-timers transportbevis er forskellige sandheder.
-- Den eneste godkendte rekonstruktion er incident `RRGAP-2026-08-29-CANDIDATE-G-01`. Den bruger lineær interpolation af allerede afledt signeret kystnormal `strength` mellem eksakte målte ankre. Det gør ikke prøven målt og siger intet nyt om rå strøm, vejr, bølger, vandstand eller surfzonen.
+- Den historisk godkendte rekonstruktion for incident `RRGAP-2026-08-29-CANDIDATE-G-01` blev trukket tilbage før descriptor/apply og må ikke eksekveres. De følgende punkter beskriver kun den defensive klassifikation, som ældre eller ukendt input fortsat skal møde fail-closed.
 - Målt state er schema 2.0.0. State med levende rekonstrueret prøve er schema 2.1.0 og skal bære trust helt ud i mode, diagnostik, startup/detaljer, manifest/hash og turbinding. Ældre/ukendt kode skal afvise den fail-closed.
 - Rekonstrueret transportmemory kan være teknisk READY, men `calibrationEligible=false` og `hardObservedOuttransportEligible=false`. En rekonstrueret passage af +10/-8/13-timersmekanikken er ikke observeret bevis for faktisk udtransport.
 - Inspect er read-only og descriptorforseglet. Apply er source-/mål-CAS-bundet og skriver privat rollback først. Cleanup fjerner kun incidentets syntetiske prøver, bevarer nyere målinger og vender tilbage til schema 2.0/warmup.

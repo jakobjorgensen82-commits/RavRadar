@@ -62,7 +62,7 @@ Samtidig er flere tal og koblinger ejer-/forskningspriorer, ikke naturkonstanter
 
 Det mindre rettelsesspor må merge først og løbende til `main`. Modelsporet må ikke antage, at dets start-`main` forbliver aktuel. Før modelrelease skal det bevise, at seneste smårettelser og alle deres regressioner er bevaret. Ved reel fil-/kontraktkonflikt vælger modelsporet ikke tavst en side, men følger nyere RDKS og faktisk `main`-adfærd.
 
-## Emergency-addendum fra DEC-0109 – bindende for den samlede model
+## Measured-only emergency-addendum – historisk afledt af DEC-0109, fortsat bindende
 
 Den integrerede model skal levere sin egen fulde nøddriftskontrakt som del af plug-and-play-gaten. Den må ikke bero på en senere RavRadar-tilpasning:
 
@@ -70,12 +70,25 @@ Den integrerede model skal levere sin egen fulde nøddriftskontrakt som del af p
 2. Nødgrundlaget må højst være 72 timer gammelt og skal desuden respektere den kortere reelle prognose-/produktudløbsgrænse. Ukendt, rekonstrueret, tampered, ufuldstændigt eller udløbet grundlag lukkes fail-closed; interpolation og backfill er ikke en nødmekanisme.
 3. DA/DE/EN skal tydeligt fortælle, at brugeren ser den senest komplette, ældre måling. Appen genvurderer friskhed/udløb og skifter automatisk og atomisk tilbage til den første nye komplette primary. En nødtur bindes til det faktisk viste manifest som `public-emergency-last-complete` og er altid `calibration_eligible=false`.
 4. State-, cache-, checkpoint-, recovery-, startup-, detalje-, trip-, admin-, scheduler-, audit- og releaseforbrugere skal alle bevise samme kontrakt. Et fail-open kaldested eller en cache, der kan stage rekonstrueret/ukendt state som last verified, er en modelreleaseblokker.
-5. DEC-0109's engangsinterpolation for `RRGAP-2026-08-29-CANDIDATE-G-01` er kun en incidentbundet driftsundtagelse. Den kommende model overtager trust-/provenance-/cleanupgrænserne, men aldrig undtagelsen som normal algoritme, fallback eller træningsdata.
+5. DEC-0109's engangsinterpolation for `RRGAP-2026-08-29-CANDIDATE-G-01` blev tilbagetrukket uden anvendelse af DEC-0111 og må ikke eksekveres. Den kommende model overtager generisk fail-closed trust/provenance, turbinding og measured-only recovery, men aldrig actuator-, descriptor-, interpolation-, apply-, rollback- eller cleanupoperationen som algoritme, fallback eller træningsdata.
 
 Schema-v2-feltet `calibration_eligible` og den nuværende trustbinding er kun klientattesteret og internt konsistent; serveren beviser endnu ikke snapshottene mod det signerede offentlige manifest. Det er derfor ikke empirisk evidens og må ikke bruges til global koefficientlæring. Den eksisterende kalibreringslås skal bevares, indtil en særskilt server-side snapshot-/manifestbinding er designet, implementeret og valideret.
 
 Når recoverykandidatens grønne `main` senere integreres, skal modelsporet bevare dens driftsgrænse uden at gøre den til modelalgoritme: efter capacity/CAS sættes existing-D1 eller fresh Edge-predeploy-intent; existing D1 bruger 20-minutters lease med 30-minutters max, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main-bundet Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden current-run intent sker nul recoverymutation.
 
+## Bindende ejeraddendum 2026-08-30 – `HISTORY_INCOMPLETE` skal fortsat give score
+
+1. `HISTORY_INCOMPLETE` er en særskilt scorekvalitet og må ikke behandles som synonym for manglende current/future-input. Når den konkrete scoretimes direkte aktuelle eller fremtidige input er gyldige, skal modellen fortsat producere scores for hele current- og femdøgnsfladen, selv om det rullende historikvindue er ufuldstændigt.
+2. Dette er dækning over hele tidsfladen, ikke tilladelse til at opfinde historik. Den eksakte behandling af historikafhængige komponenter skal være modelbundet, fysisk begrundet og regressionsbevist; der må ikke ske interpolation, backfill, carry-forward eller lån fra en anden zone.
+3. Manglende eller ugyldigt direkte current/future-input er en separat `UNAVAILABLE`-tilstand for den berørte time. Den må aldrig åbnes af `HISTORY_INCOMPLETE`.
+4. Score, detalje, femdøgnsvisning, admin og ekspertflade skal vise en tydelig DA/DE/EN-advarsel med stabil semantik. Advarslen skal forsvinde automatisk på det første output, hvor den nødvendige sammenhængende historik igen er komplet; ingen sticky flag eller manuel reset er tilladt.
+5. Ture, observationer og andre læringskandidater bundet til en `HISTORY_INCOMPLETE`-score skal være `calibrationEligible=false` gennem browser, Edge, D1/Supabase, schema, manifest og audit. Scoretypen er brugerinformation, ikke empirisk kalibreringsevidens.
+6. Producent-/forbrugermatricen og releasegaten skal bevise samme kvalitetsstatus og advarsel for current, fem døgn, score/detalje, rangering/beste tidspunkt, ture/observationer, lokal/Edge-assistent, admin/ekspert, startup/detaljer/hashes, recovery og offentlig browser. Blandede kvaliteter må ikke sammenlignes eller præsenteres som ens uden en særskilt dokumenteret policy.
+
+## Bindende arkitekturkrav til modelleverancen
+
+Den systemiske gæld fra de seneste P0-forløb må ikke skubbes til en uspecificeret senere oprydning. DEC-0102-leverancen skal reducere monolitisk workflowkobling, gøre success/no-op/skipped til eksplicit maskinlæsbar semantik og samle versions-, dokumentations- og kontraktmetadata, så tests validerer adfærd frem for spredte tekstliteraler. Dette er en modelleverancegate, men må ikke udvide den afgrænsede 4.0.316-hotfix. Se DEC-0112.
+
 ## Konsekvens nu
 
-Dette dokument er alene plan-, scope- og autoritetsgrundlag. Offentlig runtime er fortsat Candidate G/4.0.310 ved 4.0.311-dokumentcheckpointet; hverken recoverykandidaten eller den integrerede næste model er merged, anvendt eller produktionsverificeret. Der ændres ingen modelscore, geometri, land-/vandpunkter eller private data ved dette addendum.
+Dette dokument er alene plan-, scope- og autoritetsgrundlag. `HISTORY_INCOMPLETE`-beslutningen implementeres ikke af 4.0.316-P0-hotfixen og er ikke en påstand om en ny offentlig model. Der ændres ingen modelscore, geometri, land-/vandpunkter eller private data ved dette addendum.

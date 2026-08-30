@@ -589,7 +589,15 @@ export async function stageRecoveryFallback({
   }
 
   const selected = selectNewestRecoveryFallbackCandidate(candidates, { nowMs });
-  if (!selected) throw new Error('Intet komplet, auditeret Candidate G-datasæt inden for 72 timer og egen prognosehorisont kunne klargøres til nødvisning.');
+  if (!selected) {
+    return {
+      status: 'unavailable-no-valid-fallback',
+      datasetId: null,
+      ageHours: null,
+      cacheRefreshed: false,
+      fallbackAvailable: false,
+    };
+  }
   const cacheRefreshed = !cachedBundle
     || cachedBundle.descriptor?.publicConditionsSha256 !== selected.bundle.descriptor.publicConditionsSha256
     || cachedBundle.descriptor?.publicConditionDetailsSha256 !== selected.bundle.descriptor.publicConditionDetailsSha256;
@@ -599,6 +607,7 @@ export async function stageRecoveryFallback({
     datasetId: selected.bundle.descriptor.datasetId,
     ageHours: selected.validation.ageHours,
     cacheRefreshed,
+    fallbackAvailable: true,
   };
 }
 
@@ -606,6 +615,19 @@ async function removeIfPresent(file) {
   await fs.unlink(file).catch(error => {
     if (error?.code !== 'ENOENT') throw error;
   });
+}
+
+async function deactivateRecoveryFallback({ manifest, manifestPath, outputRoot, status, ready, warmup }) {
+  delete manifest.recoveryFallback;
+  await atomicWrite(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  await removeIfPresent(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicConditionsName));
+  await removeIfPresent(path.join(outputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicDetailsName));
+  return {
+    status,
+    datasetId: manifest.datasetId,
+    primaryMemoryReadyPartCount: ready,
+    primaryWarmupPartCount: warmup,
+  };
 }
 
 export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs = Date.now() }) {
@@ -618,11 +640,14 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   const publicConditionsPath = path.join(outputRoot, policy.publicConditionsName);
   const publicDetailsPath = path.join(outputRoot, policy.publicDetailsName);
   if (ready === policy.expectedPartCount) {
-    delete manifest.recoveryFallback;
-    await atomicWrite(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-    await removeIfPresent(publicConditionsPath);
-    await removeIfPresent(publicDetailsPath);
-    return { status: 'inactive-current-runtime-ready', datasetId: manifest.datasetId };
+    return deactivateRecoveryFallback({
+      manifest,
+      manifestPath,
+      outputRoot,
+      status: 'inactive-current-runtime-ready',
+      ready,
+      warmup,
+    });
   }
   const completeAccounting = ready + warmup === policy.expectedPartCount;
   const globalRecovery = ready === 0 && warmup === policy.expectedPartCount;
@@ -630,9 +655,22 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   if (!completeAccounting || (!globalRecovery && !boundedLocalRecovery)) {
     throw new Error(`Uventet delvis national Candidate G-recovery: ready=${ready}, warmup=${warmup}.`);
   }
-  const bundle = upgradeRecoveryFallbackBundle(await readCacheBundle(cacheRoot));
-  const validation = validateRecoveryFallbackBundle(bundle, { nowMs });
-  if (!validation.ok) throw new Error(`Candidate G-nødvisningen er ikke publicerbar: ${validation.errors.join(',')}`);
+  let bundle = null;
+  let validation = null;
+  try {
+    bundle = upgradeRecoveryFallbackBundle(await readCacheBundle(cacheRoot));
+    validation = validateRecoveryFallbackBundle(bundle, { nowMs });
+  } catch {}
+  if (!bundle || !validation?.ok) {
+    return deactivateRecoveryFallback({
+      manifest,
+      manifestPath,
+      outputRoot,
+      status: 'inactive-no-valid-fallback',
+      ready,
+      warmup,
+    });
+  }
   await writeCacheBundle(cacheRoot, bundle);
   await atomicWrite(publicConditionsPath, compactJson(bundle.conditions));
   await atomicWrite(publicDetailsPath, compactJson(bundle.details));
@@ -697,6 +735,7 @@ async function main() {
   const githubOutput = value('--github-output', '');
   if (githubOutput && Object.hasOwn(result, 'cacheRefreshed')) {
     await fs.appendFile(githubOutput, `cache_refreshed=${result.cacheRefreshed ? 'true' : 'false'}\n`);
+    await fs.appendFile(githubOutput, `fallback_available=${result.fallbackAvailable ? 'true' : 'false'}\n`);
   }
   console.log(JSON.stringify(result));
 }
