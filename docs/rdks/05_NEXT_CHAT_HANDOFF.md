@@ -1,5 +1,59 @@
 # RavRadar – overlevering til næste chat
 
+## Aktuelt P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
+
+- Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
+- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
+- Read-only inspect `33279639424`/`99172534863` stoppede uden descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`; ingen mutation skete.
+- Lokal rettelse bruger `data/current-regional-proxy-policy.json` som identitetsautoritet for præcis otte native-3h-dele. Den hashbinder kun en koordinatfri projektion; 1h-dele accepterer eksakte målte 1/2/3h-afstande uden intern interpolation, mens 3h-dele fortsat kræver eksakt 3h.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Fortsæt Sol/Ultra: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → kun ved succes CAS-apply/frisk produktion/offentlig 210/673 desktop/mobil.
+- Hent aldrig fuld joblog eller source-/descriptor-/rollbackartifact. Brug kun allowlistet annotation. Rør ikke vejr, rå vektorer, koordinater, geometri, punkter eller private payloads.
+
+## Historisk P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor
+
+- Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
+- 4.0.313 er exact-head-valideret/merged som `ff62ba11`; push `33269584236` var no-op, og D1-backend `33269631305`/`99145677813` er helt grøn.
+- Read-only inspect `33269849748`/`99146287609` stoppede uden descriptor eller mutation på `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`.
+- 4.0.314 accepterer ét målt afteranker kun for uafhængigt bevist 3-timerskadence og bevarer alle øvrige fail-closed gates. PR #227/exact-head `33272564543`/`99153577550`, merge `d1369d88` og no-op push `33272676071` er grønne.
+- Ældre produktion `33271863449`/`99151692515` stoppede før releasegate/Pages på en stale marine-first-test, som ikke var med i PR-sourcegaten. Same-version-branchen `codex/candidate-g-concurrency-contract-4.0.314` retter assertionen og gør testen obligatorisk i `test:workflow-action-contracts`/`validate:source`.
+- PR #229/exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023` er grønne. D1 `33275218540`/`99160622956` er helt grøn. Inspect `33275438494`/`99161265720` stoppede derefter i planforseglingen; descriptorupload, build og Pages blev skipped, og ingen mutation skete.
+- Hent ikke hele jobloggen eller artifacts. Diagnostikhotfixet gør kun allowlistede `ONE_TIME_GAP_*`-koder synlige som annotation og maskerer alt andet. Fortsæt Sol/Ultra: exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → luk den sanitiserede årsag → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil.
+
+## Historisk P0 – 2026-08-29 lokal 4.0.313 replay-roll-forward
+
+- Offentlig drift er fortsat 4.0.310 i komplet målt nøddrift; morgenhullet er ikke rekonstrueret.
+- 4.0.312: PR #225, exact-head `33266087776`/job `99136292810`, merge `a5ece10d`, korrekt no-op push `33266184326`.
+- Backend `33266229687`/`99136669571` fejlede idempotent sync efter tidlige D1/Edge/Worker-led. Failure-roll-forward er ikke readiness.
+- Lokal 4.0.313 retter kun 4.0.310-nullblade mod 4.0.311-leafprojektion, migration-only og uden at omskrive row/hash/registry. Strict stored/readback, bounded schema-v1 og safe errors er syntetisk og uafhængigt grønne.
+- Næste: full source/RDKS/release/version/geodata, PR exact-head, merge, no-op push, helt grøn exact-main D1-kæde. Først derefter ny inspect/CAS, apply, frisk produktion og offentlig 210/673.
+- Genbrug ikke en gammel descriptor efter flyttet main/target. Lad ikke 4.0.314 overhale gate. Fortsæt Sol/Ultra.
+- Efter P0 integreres grøn main i DEC-0102-modelworktree; last-mile skal være retningsbestemt på eksisterende bølgehistorik, mens Candidate G forbliver eneste offentlige model indtil samlet release.
+
+## Historisk P0 – 2026-08-29 lokal 4.0.312-roll-forward efter 4.0.311-backendstop
+
+- Offentlig drift er fortsat 4.0.310. Morgenhullet er ikke rekonstrueret i produktion endnu.
+- Ejerautoriteten gælder kun incident `RRGAP-2026-08-29-CANDIDATE-G-01`; se DEC-0109. Interpolér kun allerede afledt kystnormal strength mellem eksakte run-/artifactankre. Vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter og private payloads er forbudt.
+- Bevar schema 2.1/trust, calibration/hard-observed false, measured-only fallback, tripflags, inspect/apply/rollback/cleanup og alle normale releasegates.
+- 4.0.311-head `4c4699fe` bestod PR #224 exact-head `33263734108`/job `99129959870` og blev merged som `7c168b00`. Push `33263858078` var korrekt no-op uden build/artifact/Pages.
+- Backend `33263892151`/job `99130384780` modtog HTTP 201 for én atomisk CHECK-transaktion, men stoppede bagefter på en formatteringsfølsom katalogverifier. CHECK'en er med høj sandsynlighed fuldt committed/valideret/kommenteret; eneste alternativ er fuld rollback. `VALIDATE` kan have scannet rækker internt, men runneren hentede/loggede ingen observationspayload, og der skete ingen rækkemutation.
+- Kæden nåede ikke D1-prepare/capacity, Edge-predeploy, maintenance, Worker, sync, mode/reconcile, vejr, artifact eller Pages. Storage-intent-/lease-/roll-forward-kontrakten er derfor sourcebevis, ikke livebevis.
+- Lokal branch `codex/candidate-g-constraint-verifier-4.0.312` bruger nu balanceret, deparser-tolerant exact-JSONPath-verifikation. Positiv deparserform samt reordered, duplicate og ambiguous negatives er målrettet grønne.
+- Fuld lokal 4.0.312-source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis var grønne. PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326` lukkede dette historiske trin.
+- Den efterfølgende `[d1]`-backend `33266229687` passerede verifier/D1/Edge/Worker, men fejlede migrationssynken og åbnede ikke inspect/apply eller Pages. Den operative fortsættelse er afløst af det aktuelle 4.0.314-handoff øverst.
+- Efter produktionsverificeret recovery hentes nyeste `main` ind i den separate DEC-0102-modelworktree. Dens næste beslutningsnummer skal ligge efter DEC-0109, og den må ikke gøre interpolation til generel missingregel. Modellen skal selv levere en målt-only atomisk 210/673-nødstate med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
+- Åbent P2: schema-v2/`calibration_eligible` er ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring og kald ikke feltet empirisk evidens, før en særskilt server-side snapshotbinding findes.
+
+Anbefalet model/indsats: GPT-5.6 Sol/Ultra.
+
+## Nyt øverste checkpoint – 4.0.310 hurtigere ekstern overtagelse
+
+- 4.0.309 er merged/produktionsverificeret via PR #221, exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og offentligt `rr-20260829085521-210`.
+- Ét aktivt cron-job, id `8348098`, gav manuel 204 samt automatiske no-op-runs `33245204517`/`33245798817`. Intet native produktionsschedule fandtes omkring 09:29 UTC.
+- 09:49-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992`; den bestod 09:00 UTC, målrettet Copernicus, 210/673, fulde gates og Pages og publicerede komplet `rr-20260829095610-210`. Cirka en time mellem produktionsstarterne var korrekt efter 45-minuttersreglen, men for langsomt som vedvarende erstatning for manglende native schedules.
+- 4.0.310 sænker kun `external_watchdog=true` til mere end 15 minutters dual staleness. Intern native vagt beholder 45 minutter; active/recent/manifest/concurrency og alle fulde data-/releasegates er uændrede.
+- PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og offentlig `rr-20260829103233-210` er grønne. Automatisk run `33248692042` bestod den mergede 15-minuttersgren og bestilte normal produktion `33248699516`.
+- Ingen kunstig/interpoleret historik, model-, state-, recovery-, geometri- eller punktændring i 4.0.310. Se DEC-0108.
+
 ## Nyt øverste checkpoint – produktionslukket 4.0.306 og to isolerede Codex-worktrees
 
 - Offentlig baseline er produktionsverificeret 4.0.306/Candidate G fra runtimecommit `8ebbd4e7aaafee2a4a840749f35398355fe3fb03`. PR #217/exact-head `33212348031`, produktion `33212435923`, Pages `6148930627` og offentlig desktop-/390 px-kontrol er grønne. Frisk primary modnes ved 0/673 READY under komplet auditeret 673/673-recovery uden dækningshul. Broen bevarede cirka 36/48 timer; forventet primary-READY cirka 2026-08-29T09:00:00Z har omkring 16,5 timers margin til recoverygrænsen 2026-08-30T01:34:48Z. Se DEC-0104.
@@ -183,7 +237,7 @@
 ## Produktionsverificeret 4.0.287 – lagerarkitekturens udgangspunkt
 
 - Den færdige lagerarkitektur er Supabase Auth/Edge og ti EU-låste Cloudflare D1-shards; rå ID, mail, navn, JWT, GPS og rute forlader ikke Supabase-grænsen.
-- Lokal kontrakt er grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og eksplicit Supabase-rollback.
+- Historisk 4.0.287-kontrakt var grøn for service-HMAC, pseudonymisering, idempotens, turlog, ejer-sletning, pre/post-cutover-migration, kapacitetskontrol og daværende eksplicit Supabase-rollback. Rollbackdelen er afløst af det aktuelle 4.0.314-roll-forward-handoff øverst, mens trust-/tripprotokollens kompatibilitetsgrænse forbliver 4.0.311.
 - Infrastruktur-PR #162/#163, dedikeret Cloudflare-konto, mindst-mulige tokens, krypterede GitHub-secrets og rollback-Edge-deploy `33014772035` er grønne. Værdier og private ture blev ikke vist eller logget. Cloudflare-token er uden udløb; det installerede Supabase-PAT har udløb 25. august 2027, men må efter den aktuelle behovsstyrede politik nedenfor udløbe uden fornyelse.
 - PR #164/exact-head `33019055639` blev merged som `e9cd20ee`. Første D1-run `33019198166` oprettede ti EU-shards og deployede Workeren, men stoppede sikkert før migration/Edge på den korte health-udbredelsesforsinkelse.
 - PR #166 bestod exact-head `33019805663` og blev merged som `2d12c085`. Cutover `33019868542` bestod privat Worker-grænse, pre-/post-migration, D1-Edge og ikke-skrivende CORS/login/feltkontrol; fire kilderækker blev migreret og genkørslen var idempotent.

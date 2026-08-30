@@ -1,8 +1,73 @@
+## 4.0.314 – cadencepolicy bundet; recovery fortsat gated (2026-08-30)
+
+- Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele kæden.
+- Read-only inspect `33279639424`/`99172534863` stoppede sikkert før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data, cache eller offentlig drift blev ændret.
+- Erstatter suffixbaseret cadencegæt med den eksisterende regionale proxy-policy som per-del-identitetsautoritet. Kun en koordinatfri projektionshash bindes i descriptor/apply-CAS; 665/8 bevares som ekstra populationgate.
+- Policyklassificerede 1h-dele accepterer eksakte målte 1/2/3h-afstande under Candidate G's eksisterende tre-timers continuitygrænse, uden at de manglende interne slots udfyldes. De otte `dkss_lf`-3h-dele kræver fortsat eksakt 3h på begge kanter og er de eneste med tilladt singleton-`AFTER`.
+- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointregression og workflowinterlock, fuld lokal `validate:source`, RDKS/håndbog/security/releasegate og tre slutreviews er grønne. Exact-head/merge, nyt D1, ny inspect/apply og offentlig verifikation afventer; 4.0.310-nøddriften er fortsat offentlig sandhed.
+- PR #230 bestod på den korrigerede exact-head `7ad1a98b` i run `33277107562`/job `99165644953`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var en tilsigtet grøn no-op uden inspect, build, artifact eller Pages.
+- Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 i den uautentificerede trip-log-probe efter Edge-deploy. Hele den kontraktbundne fail-closed roll-forward bestod; der blev ikke kørt inspect. Den idempotente genkørsel `33277510537`/`99166722076` bestod derefter hele source-, storage-, Edge-, Worker-, sync-, reconciliation- og slutattestationskæden på samme `228725ea`.
+- Read-only inspect `33277738135`/`99167394284` bestod D1-readiness og stoppede før descriptor, apply, build og Pages med den nye datasikre kode `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`. Dermed blev hverken data, cache eller offentlig drift ændret.
+- Den bundne før-run publicerede den komplette målte nødvisning separat, mens supportartifactets `data/live/conditions.json` korrekt bevarede den ærlige primary. Før-primary må derfor være målt schema 2.0 og eksakt replaybar `WINDOW_INCOMPLETE`; kun det samlede target-reference-replay efter den ene forseglede bracketinterpolation skal være `READY`. En for kort suffix, et ekstra hul, schema 2.1, ukendt status eller replayafvigelse stopper fortsat før descriptor.
+- Den syntetiske positive fixture bruger nu 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-states. Hele 210/673 inspect/CAS/rollback/cleanup/checkpoint-regressionen består med og uden nedarvet Actions-miljø, mens ældre huller og manipulerede før-states fejler lukket. Same-version-rettelsens exact-head, merge, nye D1, inspect/apply og offentlige verifikation afventer.
+- Registrerer 4.0.313 PR #226/exact-head `33269501339`, merge `ff62ba11`, korrekt no-op push `33269584236` og helt grøn exact-main D1-backend `33269631305`/`99145677813`.
+- Registrerer read-only inspect `33269849748`/`99146287609`, som stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
+- Accepterer ét målt afteranker kun for de uafhængigt beviste native 3-timersdele. Før, target, rollback og cleanup beholder minimum to, og alle replay-, bracket-, targetanker-, source-, descriptor- og CAS-gates bevares.
+- Udvider exact-D1 til 4.0.314, gør inspect D1-afhængig og holder normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Fælles concurrency annullerer aldrig apply, og hele hvert GitHub API-svar parse- og shapevalideres samlet, før id'er bruges. 4.0.315 er ulåst.
+- 4.0.314-kilden bestod PR #227 exact-head `33272564543`/job `99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var en tilsigtet grøn no-op uden build, artifact eller Pages.
+- Den ældre 4.0.313-produktion `33271863449`/job `99151692515` stoppede før releasegate og Pages på en stale marine-first-regression, som forventede den afløste dynamiske `cancel-in-progress`-tekst. Det var en test-/sourcegate-dækningsfejl, ikke evidens for fejl i den nye `cancel-in-progress: false`-kontrakt.
+- Same-version-hotfixet kræver præcis én `cancel-in-progress:` med værdien `false`, forbyder `true` og føjer `test:dmi-marine-first-recovery` til `test:workflow-action-contracts`, som `validate:source` allerede kører. PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `503697425dd107883b34537a6e5eafc46ab5dcc6`, og push `33274505196` var korrekt no-op uden build/inspect/Pages.
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250cc0809cc4dde9aaf3e20bf5b93c2837f2`, og push `33275147023` var korrekt no-op. Exact-main D1 `33275218540`/`99160622956` bestod alle kritiske storage-, Edge-, Worker-, sync- og slutattestationstrin.
+- Read-only inspect `33275438494`/`99161265720` stoppede i planforseglingen efter kildehydrering/-udtræk og før descriptorupload; build og Pages var skipped, så ingen data blev ændret eller publiceret. Den sikre API viste kun exit 1. Diagnostikhotfixet annoterer derfor kun allowlistede `ONE_TIME_GAP_*`-fejlkoder. Ved succes annoteres kun descriptor-SHA og de faste 673-/prøve-/665-/8-optællinger; vilkårlig tekst maskeres, og den målrettede 210/673-black-box-regression er grøn.
+- PR #230's første exact-head `e8f579ba`/`33276791132` stoppede kun i testharnessen: normale CLI-cases arvede runnerens `GITHUB_ACTIONS=true` og skrev korrekt på annotationens stdout i stedet for den forventede lokale stderr. Harnessen isolerer nu miljøerne eksplicit, og hele 210/673-regressionen er grøn både med og uden nedarvet Actions-miljø. Ingen produktion eller data blev berørt.
+- Candidate G-formel/model/state/trust, DMI/Copernicus, vejr, geometri, punkter og private data er uændrede. Datahullet er fortsat åbent indtil frisk produktion og offentlig 210/673-kontrol.
+
+## 4.0.313 – afgrænset legacy-replay-roll-forward, backendverificeret (2026-08-29)
+
+- Registrerer 4.0.312 PR #225/exact-head `33266087776`, merge `a5ece10d` og korrekt no-op push `33266184326`.
+- Registrerer, at backend `33266229687` bestod de tidlige D1-/Edge-/Worker-gates, men fejlede idempotent sync på `TRIP_GATEWAY_UNAVAILABLE`; failure-roll-forward tæller ikke som readiness.
+- Reproducerer 4.0.310-nullblade mod 4.0.311's bounded PostgREST-leafprojektion syntetisk og accepterer kun eksakt migration→migration-kompatibilitet.
+- Bevarer gamle D1-rækker, hashes og registry byteidentisk, afviser ukendte/core/non-null-forskelle og bruger faste ikke-lækkende gatewayfejl.
+- Udvider exact-D1-interlocken præcist til 4.0.313. PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og backend `33269631305` er grønne. Det efterfølgende read-only inspect stoppede før descriptor/apply; morgenhullet er fortsat ikke lukket, og offentlig sandhed er 4.0.310.
+- Candidate G, RavScore, vejr, state, geometri og punkter er uændrede. Se `CHANGELOG-4.0.313.md`, DEC-0082 og DEC-0109.
+
+## 4.0.312-kandidat – robust PostgreSQL-verifikation før backend og rekonstruktion (2026-08-29)
+
+- Ruller 4.0.311 frem uden at ændre migrations-SQL, schema, Supabase-/Edge-/D1-runtime, Candidate G, RavScore, vejrdata eller rekonstruktionssemantik.
+- Erstatter den skrøbelige flade regex mod `pg_get_constraintdef` med en balanceret, quote-bevidst kontrol af præcis ét `jsonb_path_query_array`-kald og den forseglede reason-code-rækkefølge. PostgreSQLs semantisk uvæsentlige venstre- eller højreparentesering accepteres; ombytning, dubletter, ekstra predicates og tvetydige ekstra kald afvises fortsat.
+- Udvider de målrettede regressioner med realistisk PostgreSQL-deparsertekst og negative cases. Målrettede tests, hele lokale sourcegate, releasegate, RDKS/håndbog/version og særskilt geodatabevis er grønne; exact-head PR, merge og live backend mangler endnu.
+- Bevarer first-release-interlocken for 4.0.312: Pages/vejrproduktion forbliver en grøn no-op, indtil den eksakte `main` har et grønt `[d1]`-backendbevis. Inspect/apply, frisk produktion og offentlig kontrol er ikke kørt.
+- Offentlig RavRadar er fortsat produktionsverificeret 4.0.310. Se `CHANGELOG-4.0.312.md` og DEC-0109.
+
+## 4.0.311 – merged kilde; backend stoppet før drift (2026-08-29)
+
+- Tilføjer en manuelt aktiveret, incidentlåst inspect/apply/rollback/cleanup-kæde for `RRGAP-2026-08-29-CANDIDATE-G-01`, inklusive isoleret byteidentisk apply→rollback-bevis og kausal descendant-cleanup.
+- Rekonstruerer kun allerede afledt, signeret kystnormal Candidate G-transportstyrke mellem eksakte før-/efterankre; ingen vejr-, bølge-, vandstands-, U/V-, koordinat-, geometri-, punkt- eller privat data interpoleres eller publiceres.
+- Løfter kun state med levende rekonstruktionsmarkør til schema 2.1.0, fører trust gennem public payloads og gør den hverken kalibreringsegnet eller gyldig som observeret 13-timers udtransportbevis.
+- Bevarer målt-only last-verified nødvisning, karantæner reconstruction-mode fra delte continuation/checkpoint/fallbackcaches og kræver frisk normal 673-delsgenberegning før genåbning.
+- Binder ture fra rekonstrueret score eller vist nødvisning til eksakte ikke-kalibrerbare kvalitetsflags gennem klient, Edge, D1/Supabase, schema og installer.
+- Bevarer aktive/pending schema-v2-ture fra før 4.0.311, men markerer manglende trust som `ravscore-evidence-trust-unattested` og udelukker dem fail-closed fra kalibrering.
+- Ændrer eller sletter ikke allerede gemte pre-4.0.311 schema-v2-observationer. Den lokale prediction-/kalibreringsforbruger medtager kun observationer med `appVersion >= 4.0.311`, `calibration_eligible=true` og eksakt attesteret tom kvalitetsflagliste.
+- Lukker nested browser/Edge/D1-privacy med ét testlåst lokationsaliasmønster, type-/intervalallowlist og en deterministisk, no-mutation-kompatibel projektion af historiske fri-form-snapshots.
+- Kræver exact-head `[d1]`-backendbevis før Pages. Maintenance-kapabel Edge predeployes under uændret mode/gammel Worker; existing D1 dobbeltattesteres før en 20-minutters lease, drain og den højst syv minutter lange Worker-gate, mens genuine fresh forbliver i Supabase gennem første synk. Partial existing D1 repareres kun fremad; partial fresh genopretter Supabase-secret og eksakt Edge. Legacy-installationen kræver både eksakte ti EU-shards og jobniveau-bevis fra run `33024408547`: alle D1-trin `completed/success`, Supabase-rollback `completed/skipped`. Uverificerbar readiness giver ingen Pages-udgivelse.
+- PR #224 på head `4c4699fe` bestod exact-head CI `33263734108` og blev merged som `7c168b00`. Pushkørslen `33263858078` bestod som tilsigtet no-op, fordi first-release-interlocken endnu ikke havde et live exact-head D1-bevis; intet artifact eller Pages-deploy blev bygget.
+- Backendkørslen `33263892151` mod den mergede kilde stoppede efter HTTP 201 fra den atomiske CHECK-transaktion, da den efterfølgende read-only katalogverifikation ikke accepterede PostgreSQLs venstreparenteserede `pg_get_constraintdef`. Transaktionen indeholder ingen row writes og kan kun være fuldt committed med valideret constraint og comment eller fuldt rullet tilbage; der findes ingen halv constrainttilstand.
+- Ingen private payloads, D1-, Edge-, Worker-, sync-, vejr-, artifact- eller Pagesændringer blev udført. 4.0.311 blev derfor ikke en produktionsrelease, og rekonstruktionens inspect/apply blev ikke kørt. 4.0.312 erstatter kun den fejlslagne verifier/testvej og fører den uændrede kontrakt sikkert frem. Se DEC-0109 og `CHANGELOG-4.0.311.md`.
+
+## 4.0.310 – ekstern overtagelse efter ét manglende interval (2026-08-29)
+
+- 4.0.309-vagt `33246369618` bestilte den første virkelige redningsproduktion `33246376992` efter fortsat native schedulerstilhed og beviste, at 45 minutter kunne give cirka en time mellem produktionsstarterne.
+- Sænker kun det eksplicitte eksterne `external_watchdog=true` til mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest. GitHubs interne vagt beholder 45 minutter.
+- PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121`, offentlig `rr-20260829103233-210` og automatisk 15-minuttersdispatch `33248692042` → `33248699516` er grønne.
+- Bevarer aktiv-run-/friskhedsblokering, concurrency, normal `force=false` og alle current-hour-, DMI/Copernicus-, 210/673-, Candidate G-, validate-, release- og deploygates.
+- Ingen model-, score-, input-, state-, recovery-, geometri- eller punktændring og ingen kunstig/interpoleret historik. Se DEC-0108 og `CHANGELOG-4.0.310.md`.
+
 ## 4.0.309 – ekstern vagthund mod GitHub-schedulerstilhed (2026-08-29)
 
 - Bevarer GitHubs normale 15-minuttersproduktion, Copernicus-pilot og cacheplan.
 - Tillader ét eksplicit, payloadfrit eksternt watchdog-kald ved `:04/:19/:34/:49` UTC.
 - Starter kun normal `force=false`-produktion efter 45 minutters gammel workflowhistorik, gammelt offentligt manifest og ingen aktiv produktion.
+- PR #221/exact-head `33244011544`, merge `aba3d669`, produktion `33244062982` og offentlig `rr-20260829085521-210` er grønne. Ét aktivt cron-job, id `8348098`, har bestået manuel test og de første to automatiske HTTP 204/no-op-kald som runs `33244853536`, `33245204517` og `33245798817`.
 - Almindelig manuel cachekørsel udløser ikke watchdoget; Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og punkter er uændrede. Se DEC-0107 og `CHANGELOG-4.0.309.md`.
 
 ## Ikke udgivet – integreret RavScore-releasekandidat (2026-08-29)

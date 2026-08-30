@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
@@ -13,10 +14,18 @@ import {
   buildBoundedCurrentTransportMemory,
   CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+  isReconstructedTransportEvidence,
+  ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+  ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE,
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
 } from '../js/core/ravscore-regime-memory.js';
 
 export const CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
+  acceptedLegacySchemaVersions: Object.freeze([1]),
   expectedPartCount: 673,
   maximumCheckpointAgeHours: 72,
   allowedMemoryStatuses: Object.freeze(['READY', 'WINDOW_INCOMPLETE']),
@@ -25,12 +34,6 @@ export const CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY = Object.freeze({
 const finiteTime = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const sha256 = value => crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex');
-const contextKey = value => [
-  value?.schemaVersion,
-  value?.modelId,
-  value?.variantId,
-  value?.profileId,
-].join('|');
 const sameModelContext = (left, right) => left?.schemaVersion === right?.schemaVersion
   && left?.modelId === right?.modelId
   && left?.variantId === right?.variantId
@@ -41,6 +44,12 @@ const candidateGContext = Object.freeze({
   variantId: CANDIDATE_G_STATE_VARIANT_ID,
   profileId: CANDIDATE_G_STATE_PROFILE_ID,
 });
+const reconstructedCandidateGContext = Object.freeze({
+  ...candidateGContext,
+  schemaVersion: CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
+});
+const isCandidateGContext = value => sameModelContext(value, candidateGContext)
+  || sameModelContext(value, reconstructedCandidateGContext);
 const interruptedNextGenerationContext = Object.freeze({
   schemaVersion: '3.0.0',
   modelId: 'RRS-COASTAL-CAUSAL-CHAIN-1',
@@ -77,8 +86,8 @@ function reconstructCandidateGTransport(state) {
 
 function stateForCandidateGTarget(state, targetState) {
   if (!targetState || state.stateKey !== targetState.stateKey) return null;
-  if (!sameModelContext(targetState, candidateGContext)) return null;
-  if (sameModelContext(state, candidateGContext)) return { state, adaptation: null };
+  if (!isCandidateGContext(targetState)) return null;
+  if (isCandidateGContext(state)) return { state, adaptation: null };
   if (!sameModelContext(state, interruptedNextGenerationContext)) return null;
   const reconstructed = reconstructCandidateGTransport(state);
   if (!reconstructed) return null;
@@ -89,7 +98,25 @@ function stateForCandidateGTarget(state, targetState) {
 }
 
 function compactState(state, partId) {
-  if (!state || !finiteTime(state.time) || !finiteTime(state.transportReferenceAt)
+  const expectedStateKeys = [
+    'mobilisationPotential',
+    'modelId',
+    'outboundEpisodeEffectiveHours',
+    'profileId',
+    'schemaVersion',
+    'stateKey',
+    'time',
+    'transportEvidence',
+    'transportMemoryCoverageHours',
+    'transportMemoryReady',
+    'transportMemoryStatus',
+    'transportMemoryWindowHours',
+    'transportPotential',
+    'transportReferenceAt',
+    'variantId',
+  ];
+  if (!state || Object.keys(state).sort().join(',') !== expectedStateKeys.join(',')
+    || !finiteTime(state.time) || !finiteTime(state.transportReferenceAt)
     || Date.parse(state.transportReferenceAt) > Date.parse(state.time)
     || (Date.parse(state.time) - Date.parse(state.transportReferenceAt)) / 3_600_000
       > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours
@@ -110,8 +137,13 @@ function compactState(state, partId) {
   let previousEvidenceMs = Number.NEGATIVE_INFINITY;
   const referenceMs = Date.parse(state.transportReferenceAt);
   const transportEvidence = state.transportEvidence.map(evidence => {
+    const reconstructed = isReconstructedTransportEvidence(evidence);
+    const expectedKeys = reconstructed
+      ? 'incidentId,provenance,strength,time'
+      : 'strength,time';
     if (!finiteTime(evidence?.time) || !Number.isFinite(evidence?.strength)
-      || evidence.strength < -1 || evidence.strength > 1) {
+      || evidence.strength < -1 || evidence.strength > 1
+      || Object.keys(evidence || {}).sort().join(',') !== expectedKeys) {
       throw new Error(`Ugyldig kompakt transport-evidens for kystdel ${partId}`);
     }
     const evidenceMs = Date.parse(evidence.time);
@@ -119,10 +151,50 @@ function compactState(state, partId) {
       throw new Error(`Ikke-kausal transport-evidens for kystdel ${partId}`);
     }
     previousEvidenceMs = evidenceMs;
-    return { time: new Date(evidence.time).toISOString(), strength: Number(evidence.strength) };
+    return reconstructed
+      ? {
+        time: new Date(evidence.time).toISOString(),
+        strength: Number(evidence.strength),
+        provenance: RECONSTRUCTED_TRANSPORT_EVIDENCE_PROVENANCE,
+        incidentId: ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID,
+      }
+      : { time: new Date(evidence.time).toISOString(), strength: Number(evidence.strength) };
   });
   if (Date.parse(transportEvidence.at(-1)?.time ?? '') !== referenceMs) {
     throw new Error(`Kompakt transport-evidens slutter ikke ved referencen for kystdel ${partId}`);
+  }
+  const reconstructedEvidenceCount = transportEvidence.filter(isReconstructedTransportEvidence).length;
+  const candidateContextMatches = isCandidateGContext(state)
+    && ((state.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION)
+      === (reconstructedEvidenceCount > 0));
+  const interruptedAdapterContextMatches = sameModelContext(state, interruptedNextGenerationContext)
+    && reconstructedEvidenceCount === 0;
+  if (!candidateContextMatches && !interruptedAdapterContextMatches) {
+    throw new Error(`Candidate G-state og rekonstruktionsproveniens matcher ikke for kystdel ${partId}`);
+  }
+  // Schema 2.1 carries owner-authorized reconstructed evidence and therefore
+  // must be exactly replayable before it may enter either a checkpoint or a
+  // restore. Measured-only schema 2.0 keeps DEC-0071/DEC-0072's historical
+  // compatibility: older checkpoints may be mechanically valid even when
+  // their cached summary fields predate today's stricter replay oracle.
+  if (candidateContextMatches && reconstructedEvidenceCount > 0) {
+    const replay = buildBoundedCurrentTransportMemory(transportEvidence, {
+      ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+      referenceTime: new Date(state.transportReferenceAt).toISOString(),
+      restartAfterVerifiedTimeGap: true,
+    });
+    const replayMatches = replay.result
+      && Math.abs(Number(replay.result.transportPotential) - Number(state.transportPotential)) < 1e-9
+      && Math.abs(Number(replay.result.outboundEpisodeEffectiveHours)
+        - Number(state.outboundEpisodeEffectiveHours)) < 1e-9
+      && replay.memoryReady === state.transportMemoryReady
+      && replay.status === state.transportMemoryStatus
+      && Number(replay.windowHours) === Number(state.transportMemoryWindowHours)
+      && Math.abs(Number(replay.coverageHours) - Number(state.transportMemoryCoverageHours)) < 1e-9
+      && JSON.stringify(replay.evidence) === JSON.stringify(transportEvidence);
+    if (!replayMatches) {
+      throw new Error(`Candidate G-checkpointets state kan ikke reproduceres for kystdel ${partId}`);
+    }
   }
   return {
     schemaVersion: state.schemaVersion,
@@ -157,6 +229,85 @@ function checkpointRows(document, expectedPartCount) {
   return rows;
 }
 
+function compactCheckpointEvidenceTrust(document, rows, checkpointSchemaVersion) {
+  const syntheticSampleCount = rows.reduce((sum, [, state]) => sum
+    + state.transportEvidence.filter(isReconstructedTransportEvidence).length, 0);
+  if (!syntheticSampleCount) {
+    const verifiedOnly = {
+      schemaVersion: 1,
+      status: 'VERIFIED_ONLY',
+      calibrationEligible: true,
+      hardObservedOuttransportEligible: true,
+      incidentId: null,
+      affectedPartCount: 0,
+      syntheticSampleCount: 0,
+      activeUntil: null,
+    };
+    const source = document?.coastalParts?.evidenceTrust;
+    if (checkpointSchemaVersion === CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
+      && source != null
+      && (Object.keys(source).sort().join(',') !== Object.keys(verifiedOnly).sort().join(',')
+        || Object.entries(verifiedOnly).some(([key, value]) => source[key] !== value))) {
+      throw new Error('Measured-only Candidate G-checkpoint mangler exact verified-only trust-binding');
+    }
+    return verifiedOnly;
+  }
+  if (checkpointSchemaVersion !== 2) {
+    throw new Error('Trust-bearing Candidate G-state kræver checkpoint schema 2');
+  }
+  const source = document?.coastalParts?.evidenceTrust;
+  const expectedReconstructedTrustKeys = [
+    'activeUntil',
+    'affectedPartCount',
+    'calibrationEligible',
+    'decisionId',
+    'descriptorSha256',
+    'evidenceClassification',
+    'hardObservedOuttransportEligible',
+    'incidentId',
+    'method',
+    'schemaVersion',
+    'status',
+    'syntheticSampleCount',
+  ];
+  const affectedPartCount = rows.filter(([, state]) => state.transportEvidence
+    .some(isReconstructedTransportEvidence)).length;
+  const latestSyntheticMs = Math.max(...rows.flatMap(([, state]) => state.transportEvidence
+    .filter(isReconstructedTransportEvidence)
+    .map(evidence => Date.parse(evidence.time))));
+  const expectedActiveUntil = new Date(latestSyntheticMs
+    + (CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours * 3_600_000)).toISOString();
+  if (Object.keys(source || {}).sort().join(',') !== expectedReconstructedTrustKeys.join(',')
+    || source?.schemaVersion !== 1
+    || source?.status !== RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS
+    || source?.incidentId !== ONE_TIME_GAP_RECONSTRUCTION_INCIDENT_ID
+    || source?.decisionId !== ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID
+    || source?.method !== RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD
+    || source?.evidenceClassification !== RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION
+    || source?.calibrationEligible !== false
+    || source?.hardObservedOuttransportEligible !== false
+    || !/^[a-f0-9]{64}$/.test(String(source?.descriptorSha256 || ''))
+    || source?.affectedPartCount !== affectedPartCount
+    || source?.syntheticSampleCount !== syntheticSampleCount
+    || source?.activeUntil !== expectedActiveUntil) {
+    throw new Error('Candidate G-checkpointets reconstruction trust-binding er ugyldig');
+  }
+  return {
+    schemaVersion: 1,
+    status: source.status,
+    incidentId: source.incidentId,
+    decisionId: ONE_TIME_GAP_RECONSTRUCTION_DECISION_ID,
+    method: RECONSTRUCTED_TRANSPORT_EVIDENCE_METHOD,
+    evidenceClassification: RECONSTRUCTED_TRANSPORT_EVIDENCE_CLASSIFICATION,
+    calibrationEligible: false,
+    hardObservedOuttransportEligible: false,
+    descriptorSha256: source.descriptorSha256,
+    affectedPartCount,
+    syntheticSampleCount,
+    activeUntil: expectedActiveUntil,
+  };
+}
+
 async function atomicWrite(file, text) {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.tmp-${process.pid}`;
@@ -180,6 +331,11 @@ export async function saveContinuationCheckpoint({
       throw new Error(`Candidate G-checkpointet indeholder fremtidig state for kystdel ${partId}`);
     }
   }
+  const evidenceTrust = compactCheckpointEvidenceTrust(
+    source,
+    rows,
+    CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
+  );
   const checkpoint = {
     schemaVersion: CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
     status: 'candidate-g-compact-continuation',
@@ -187,6 +343,8 @@ export async function saveContinuationCheckpoint({
     productionReferenceAt: new Date(source.productionReferenceAt).toISOString(),
     partCount: rows.length,
     stateSha256: sha256(rows),
+    payloadSha256: sha256({ rows, evidenceTrust }),
+    evidenceTrust,
     states: Object.fromEntries(rows),
     privacy: {
       compactDerivedStateOnly: true,
@@ -202,7 +360,9 @@ export async function saveContinuationCheckpoint({
 }
 
 function validateCheckpoint(checkpoint, expectedPartCount) {
-  if (checkpoint?.schemaVersion !== CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
+  const acceptedSchema = checkpoint?.schemaVersion === CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
+    || CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.acceptedLegacySchemaVersions.includes(checkpoint?.schemaVersion);
+  if (!acceptedSchema
     || !['candidate-g-compact-continuation', 'ravscore-compact-continuation'].includes(checkpoint?.status)
     || !checkpoint?.datasetId || !finiteTime(checkpoint.productionReferenceAt)
     || Number(checkpoint.partCount) !== expectedPartCount
@@ -211,7 +371,9 @@ function validateCheckpoint(checkpoint, expectedPartCount) {
     || checkpoint?.privacy?.scoresIncluded !== false
     || checkpoint?.privacy?.rawVectorsIncluded !== false
     || checkpoint?.privacy?.coordinatesIncluded !== false
-    || checkpoint?.privacy?.privateDataIncluded !== false) {
+    || checkpoint?.privacy?.privateDataIncluded !== false
+    || (checkpoint?.schemaVersion === CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
+      && (!Object.hasOwn(checkpoint, 'evidenceTrust') || checkpoint.evidenceTrust == null))) {
     throw new Error('Candidate G-checkpointets descriptor er ugyldig');
   }
   const rows = Object.entries(checkpoint.states || {})
@@ -220,13 +382,28 @@ function validateCheckpoint(checkpoint, expectedPartCount) {
   if (rows.length !== expectedPartCount || sha256(rows) !== checkpoint.stateSha256) {
     throw new Error('Candidate G-checkpointets kompakte state matcher ikke integriteten');
   }
+  if (checkpoint.schemaVersion === 1
+    && rows.some(([, state]) => state.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
+      || state.transportEvidence.some(isReconstructedTransportEvidence))) {
+    throw new Error('Legacy Candidate G-checkpoint må kun indeholde source-backed schema-2.0.0-state');
+  }
+  const evidenceTrust = compactCheckpointEvidenceTrust(
+    { coastalParts: { evidenceTrust: checkpoint.evidenceTrust } },
+    rows,
+    checkpoint.schemaVersion,
+  );
+  if (checkpoint.schemaVersion === CANDIDATE_G_CONTINUATION_CHECKPOINT_POLICY.schemaVersion
+    && (!/^[a-f0-9]{64}$/.test(String(checkpoint.payloadSha256 || ''))
+      || sha256({ rows, evidenceTrust }) !== checkpoint.payloadSha256)) {
+    throw new Error('Candidate G-checkpointets state og trust-binding matcher ikke payload-integriteten');
+  }
   const checkpointMs = Date.parse(checkpoint.productionReferenceAt);
   for (const [partId, state] of rows) {
     if (Date.parse(state.time) > checkpointMs || Date.parse(state.transportReferenceAt) > checkpointMs) {
       throw new Error(`Candidate G-checkpointet indeholder fremtidig state for kystdel ${partId}`);
     }
   }
-  return rows;
+  return { rows, evidenceTrust };
 }
 
 export async function restoreContinuationCheckpoint({
@@ -254,17 +431,21 @@ export async function restoreContinuationCheckpoint({
   if ((requestedAt - checkpointAt) / 3_600_000 > maximumCheckpointAgeHours) {
     return { restored: false, reason: 'checkpoint-too-old' };
   }
-  const rows = validateCheckpoint(checkpoint, expectedPartCount);
+  const { rows, evidenceTrust } = validateCheckpoint(checkpoint, expectedPartCount);
   const targetParts = target?.coastalParts?.parts || {};
   if (Object.keys(targetParts).length !== expectedPartCount) throw new Error('Det hydrerede mål matcher ikke checkpointets delantal');
   const planned = [];
   let incompatiblePartCount = 0;
   let regressedPartCount = 0;
-  const sourceContexts = new Set();
+  const sourceKinds = new Set();
   for (const [partId, state] of rows) {
     const candidate = targetParts[partId]?.candidateG;
     const targetState = candidate?.currentState;
-    sourceContexts.add(contextKey(state));
+    sourceKinds.add(isCandidateGContext(state)
+      ? 'candidate-g'
+      : sameModelContext(state, interruptedNextGenerationContext)
+        ? 'interrupted-next-generation'
+        : 'unsupported');
     if (targetState && (Date.parse(state.time) < Date.parse(targetState.time)
       || Date.parse(state.transportReferenceAt) < Date.parse(targetState.transportReferenceAt))) {
       regressedPartCount += 1;
@@ -277,14 +458,14 @@ export async function restoreContinuationCheckpoint({
     }
     planned.push({ candidate, ...selected });
   }
-  if (sourceContexts.size !== 1) {
+  if (sourceKinds.has('unsupported') || sourceKinds.size !== 1) {
     return {
       restored: false,
       reason: 'checkpoint-model-context-mixed',
       sourceDatasetId: checkpoint.datasetId,
       checkpointAt: checkpoint.productionReferenceAt,
       partCount: rows.length,
-      sourceContextCount: sourceContexts.size,
+      sourceContextCount: sourceKinds.size,
       targetUnchanged: true,
     };
   }
@@ -317,6 +498,7 @@ export async function restoreContinuationCheckpoint({
   for (const item of planned) {
     item.candidate.currentState = item.state;
   }
+  target.coastalParts.evidenceTrust = evidenceTrust;
   await atomicWrite(targetPath, `${JSON.stringify(target, null, 2)}\n`);
   return {
     restored: true,
@@ -337,8 +519,11 @@ function parseArgs(argv) {
   const result = { mode: null };
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
-    if (value === '--save') result.mode = 'save';
-    else if (value === '--restore') result.mode = 'restore';
+    if (value === '--save' || value === '--restore') {
+      const nextMode = value.slice(2);
+      if (result.mode) throw new Error('Brug præcis én af --save eller --restore');
+      result.mode = nextMode;
+    }
     else if (value === '--source') result.sourcePath = argv[++index];
     else if (value === '--target') result.targetPath = argv[++index];
     else if (value === '--checkpoint') result.checkpointPath = argv[++index];

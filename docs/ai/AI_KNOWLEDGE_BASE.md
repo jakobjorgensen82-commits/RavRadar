@@ -1,5 +1,66 @@
 # AI Knowledge Base – RavRadar
 
+## 4.0.314 – cadenceidentitet kommer fra policy, ikke suffixafstand
+
+- Candidate G's maksimumsgab på tre timer er en continuityregel. På en autoritativ 1h-del kan observerede eksakte 2/3h-afstande være manglende native slots; de er ikke en ny cadence og må ikke automatisk udfyldes.
+- Den eksisterende regionale proxy-policy identificerer præcis de otte ejerautoriserede `dkss_lf`-dele med native 3h. Brug per-del-identiteten og behold 665/8 som separat populationgate; en total alene kan ikke opdage et identitetsbytte.
+- Inspect må kun hashbinde en koordinatfri projektion af de relevante policyfelter og sorterede del-id'er. Apply genberegner både policyprojektion og hele planen og kræver kanonisk descriptor-/target-CAS.
+- En policyklassificeret 3h-del kræver mindst to eksakte 3h-intervaller på både før- og targetkanten. Kun derefter er singleton-`AFTER` tilladt. En 1h-del kræver eksakte heltalsafstande i `{1,2,3}`; nonintegral eller >3h stopper.
+- Interpolationens domæne er fortsat kun incidentets forseglede venstre/højre bracket. Et andet manglende punkt i en ellers lovlig suffix forbliver manglende, og finalt 48h non-restart replay skal stadig være `READY`.
+- Live-inspect `33279639424` viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og stoppede før descriptor/mutation. Det er årsagsevidens, ikke bevis for gennemført rekonstruktion.
+
+## 4.0.314 – et højreanker er ikke et cadencebevis
+
+- En gyldig målt after-state kan have ét punkt og stadig reproduceres som schema-2.0 `WINDOW_INCOMPLETE`; punktet kan være det eksakte højre bracket uden at bevise kadencen alene.
+- Tillad aldrig globalt minimum ét. Kun `AFTER` kan bruge singleton, og kun når before+target hver leverer mindst to enstemmige intervaller og uafhængigt beviser native 3-timerskadence.
+- Target skal indeholde samme målte afteranker med eksakt tid og strength. State-replay, seks-timers bracket, sourceartifact, descriptor og apply-CAS er separate beviser og må ikke sammenblandes.
+- Backend-readiness og rekonstruktionsreadiness er forskellige. 4.0.313's grønne D1-run gjorde ikke det efterfølgende fejlede inspect til succes.
+- En normal schedule kan overhale inspect/apply, hvis D1 alene åbner Pages. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås.
+- Hele hvert GitHub run-/jobsvar skal parse- og shapevalideres samlet før id-iteration, og fælles concurrency må aldrig lade et indkommende push annullere en kørende apply.
+- En fuld-produktionsregression er også en PR-gatekontrakt. Hvis testen kun findes i `npm run validate`, kan exact-head source være grøn og frisk produktion stadig stoppe. Gør derfor testen direkte nåelig fra `validate:source` og lås semantikken — her præcis én `cancel-in-progress: false` — frem for en historisk tekstliteral.
+- Inspect `33275438494` beviste, at exit 1 alene ikke er en brugbar privacykompatibel domænefejl. Under GitHub Actions må rekonstruktions-CLI'en kun annotere /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl; alt andet bliver `ONE_TIME_GAP_SANITIZED_FAILURE_UNAVAILABLE`. Ved succes er kun descriptor-SHA og de validerede affected/synthetic/1h/3h-optællinger tilladt. Hent ikke fuld joblog eller artifact for at omgå dette.
+
+## 4.0.313 – nullable JSON og bladprojektion er en versionsgrænse
+
+- Et JSON-dokument med kendte `null`-blade og et PostgREST-bladselect uden disse blade kan være samme historiske kilde, men får forskellig kanonisk hash.
+- Denne lighed må aldrig løses med generel tolerant JSON-sammenligning. Kun migration→migration må bruge en eksplicit versioneret projektion efter stored selvhash, ejer/id/shard, schema, privacy og eksakt non-null/core-lighed.
+- D1-row og registry er historisk evidens og omskrives ikke for at matche den nye projection. Missing registry må kun repareres med gammel verified hash.
+- Privacy gælder både input og readback. Et ukendt schema-v2-topfelt må ikke bortfiltreres, heller ikke når det er null.
+- Response-body er ubetroet data. Både fejlede og succesfulde malformed gateway-svar skal blive faste lokale fejl uden bodyudsnit.
+
+## DEC-0109 – afledt rekonstruktion er en særskilt evidensklasse
+
+- Et komplet aktuelt vejrdatasæt kan godt have ufuldstændig Candidate G-memory; aktuelle vejrdata og 48-timers transportbevis er forskellige sandheder.
+- Den eneste godkendte rekonstruktion er incident `RRGAP-2026-08-29-CANDIDATE-G-01`. Den bruger lineær interpolation af allerede afledt signeret kystnormal `strength` mellem eksakte målte ankre. Det gør ikke prøven målt og siger intet nyt om rå strøm, vejr, bølger, vandstand eller surfzonen.
+- Målt state er schema 2.0.0. State med levende rekonstrueret prøve er schema 2.1.0 og skal bære trust helt ud i mode, diagnostik, startup/detaljer, manifest/hash og turbinding. Ældre/ukendt kode skal afvise den fail-closed.
+- Rekonstrueret transportmemory kan være teknisk READY, men `calibrationEligible=false` og `hardObservedOuttransportEligible=false`. En rekonstrueret passage af +10/-8/13-timersmekanikken er ikke observeret bevis for faktisk udtransport.
+- Inspect er read-only og descriptorforseglet. Apply er source-/mål-CAS-bundet og skriver privat rollback først. Cleanup fjerner kun incidentets syntetiske prøver, bevarer nyere målinger og vender tilbage til schema 2.0/warmup.
+- Last-verified offentlig nødvisning er målt-only. Ture fra nødvisning eller rekonstrueret score gemmes som erfaring, men må aldrig indgå i kalibrering.
+- Fravær af de nye trustfelter er ikke bevis for measured-only. Aktive/pending schema-v2-ture fra før 4.0.311 bevares som `ravscore-evidence-trust-unattested` med `calibrationEligible=false`; migrationen må ikke slette brugerens tur eller lade den fail-open til kalibrering.
+- Allerede persistérede pre-4.0.311 schema-v2-observationer backfilles, omskrives eller slettes ikke. Prediction-/kalibreringsforbrugeren er den konservative migrationsgrænse: en række kan kun medtages ved `calibration_features.appVersion >= 4.0.311`, eksplicit `calibration_eligible=true` og eksakt attesteret `data_quality_flags=[]`; alt andet udelukkes lokalt uden databaseændring.
+- Tripmigration/readback må kun se en eksplicit server-side bladprojektion. `select=*`, hele fri-form-JSON, lokation/GPS, geohash/UTM, rå U/V, fri tekst/billeder og ukendte/private ekstrakolonner må ikke komme ind i runner-memory. Owner-id bruges kun kortvarigt til HMAC og logges ikke.
+- Ti D1-shards deler én atomisk global registry for id/ejer/hash/målshard. Ejer-sletning skriver en global tombstone før rows/registry fjernes, så samtidige og senere writes stoppes.
+- Efter capacity/CAS identificerer current-run Edge-predeploy-intent installationstypen. Existing D1 bruger 20-minutters lease/30-minutters max, femsekunders prober, dobbeltattestation, drain, 600 sekunders restlease og samlet syvminutters Worker-gate; partial Edge går D1 roll-forward. Fresh partial Edge før activation går exact-main-bundet til Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- `calibration_eligible=true` er ikke et serverbevis mod signeret public manifest. Det er en udelukkelseslås, ikke empirisk evidens, og må ikke åbne global koefficientlæring.
+- Den næste samlede RavScore-model skal bevare provenance, trust, migration, tripbinding og cleanup, men interpolation må ikke blive dens normale missingregel.
+- Den næste models nødvej skal være målt-only og atomisk 210/673 med eksakt model/state/hash, højst 72 timer og kortere forecastudløb, DA/DE/EN-advarsel, non-calibration trips og automatisk frisk primary.
+
+### Historisk 4.0.312-roll-forward-checkpoint 2026-08-29
+
+4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`. Push-run `33263858078` var en korrekt grøn no-op uden artifact eller Pages. Backend-run `33263892151` nåede den atomiske SQL-forespørgsel, fik HTTP 201 og fejlede derefter på en flad `pg_get_constraintdef`-regex, som ikke tolererede PostgreSQLs ekstra parenteser omkring den kanoniske JSONPath.
+
+Den højt sandsynlige databasetilstand er samlet commit af CHECK, validering og kommentar; transaktionens eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Offentlig version er fortsat produktionsverificeret 4.0.310, og incident-rekonstruktionen er ikke anvendt.
+
+Den lokale 4.0.312-verifier udtrækker strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Dette historiske checkpoint blev efterfølgende lukket gennem PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`. Backend `33266229687` bestod verifier-, D1-, Edge- og Workerleddene, men fejlede migrationssynken og er ikke readiness. Det resterende arbejde er operationelt flyttet til det aktuelle 4.0.314-checkpoint øverst; rekonstruktions-inspect/apply, frisk produktion og offentlig verifikation er stadig ikke udført. Trip protocol/header og den konservative observationsgrænse forbliver 4.0.311.
+
+## Produktions- og driftsverificeret 4.0.310 – ekstern og intern stilhedsgrænse er bevidst forskellige
+
+4.0.309's første virkelige redningsgren blev udløst af vagt `33246369618` kl. 09:49 UTC og bestilte produktion `33246376992`. Da den foregående produktionsstart lå cirka en time tidligere, var den fælles 45-minuttersgrænse for konservativ som vedvarende erstatning for helt manglende native schedules.
+
+Kun det autentificerede eksterne `external_watchdog=true` bruger derfor fra 4.0.310 mere end 15 minutters samtidig gammel runhistorik og gammelt offentligt manifest. GitHubs interne schedule-vagt beholder DEC-0085's 45 minutter. Begge veje afviser præcis grænsealder, aktiv/queued produktion, frisk runhistorik og friskt manifest og bestiller kun normal `force=false` under den fælles tunge concurrency. Datagates og Candidate G er urørte. Se DEC-0108.
+
+PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og offentlig `rr-20260829103233-210` er grønne. Det automatiske eksterne run `33248692042` beviste den mergede 15-minuttersgren og bestilte præcis én normal produktion `33248699516` efter fortsat native schedulerstilhed.
+
 ## 4.0.309-kandidat – ekstern schedule-vagthund uden dataadgang
 
 GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.

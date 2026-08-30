@@ -99,14 +99,17 @@ const startInput = {
     validAt: '2026-08-23T06:00:00.000Z',
     capturedAt: '2026-08-23T06:00:00.000Z'
   },
+  forecastCalibrationEligible: true,
+  dataQualityFlags: [],
   calibrationFeatures: {
-    modelVersion: 'ravscore-test', appVersion: '4.0.265',
+    modelVersion: 'ravscore-test', appVersion: '4.0.311',
     modelStateVersion: 'test-state', modelVariantId: 'test-variant', modelProfileId: 'test-profile',
     modelComponentSchemaId: 'test-components', modelExplanationSchemaId: 'test-explanations',
     modelRankingPolicyId: 'test-ranking', modelBestTimePolicyId: 'test-best-time',
     modelPresentationPolicyId: 'test-presentation', modelContractSha256: '0'.repeat(64),
     modelBundleSha256: '1'.repeat(64),
-    totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50
+    totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50,
+    reasonCodes: []
   }
 };
 beginTripEvidence(startInput, store);
@@ -157,7 +160,8 @@ assert.match(account, /submitAccountTripReportObservation\(toAccountObservationC
 assert.match(observationService, /\/functions\/v1\/submit-observation/);
 assert.match(submitObservationFunction, /storeObservation/);
 assert.match(tripStore, /rest\/v1\/observations\?on_conflict=client_observation_id/);
-assert.match(tripStore, /tripStorageMode\(\) === "supabase"/);
+assert.match(tripStore, /activeTripStorageMode\(\) === "supabase"/);
+assert.match(tripStore, /if \(mode === "maintenance"\) throw new GatewayError\(503, "TRIP_STORAGE_MAINTENANCE"\)/);
 assert.doesNotMatch(observationService, /rest\/v1\/(?:manual_reports|account_reports|trip_reports)/);
 assert.match(observationService, /historicalSnapshotStatus:HISTORICAL_SNAPSHOT_UNAVAILABLE/);
 assert.match(app, /status==='discarded'/);

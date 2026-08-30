@@ -18,6 +18,7 @@
     "forecastZoneId",
     "forecastCoastalPartId",
     "calibrationEligible",
+    "dataQualityFlags",
     "found",
     "grams",
     "forecastSnapshotId",
@@ -40,6 +41,38 @@
     "forecastZoneId": { "$ref": "#/$defs/id" },
     "forecastCoastalPartId": { "$ref": "#/$defs/id" },
     "calibrationEligible": { "type": "boolean" },
+    "dataQualityFlags": {
+      "oneOf": [
+        { "type": "array", "maxItems": 0 },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "public-emergency-last-complete" }],
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "ravscore-reconstructed-derived-evidence" }],
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "public-emergency-last-complete" },
+            { "const": "ravscore-reconstructed-derived-evidence" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "ravscore-evidence-trust-unattested" }],
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
     "found": { "type": "boolean" },
     "grams": {
       "oneOf": [
@@ -53,6 +86,12 @@
     "forecastCapturedAt": { "$ref": "#/$defs/dateTime" },
     "calibrationFeatures": { "$ref": "#/$defs/calibrationFeatures" }
   },
+  "allOf": [
+    {
+      "if": { "properties": { "dataQualityFlags": { "minItems": 1 } } },
+      "then": { "properties": { "calibrationEligible": { "const": false } } }
+    }
+  ],
   "$defs": {
     "id": {
       "type": "string",

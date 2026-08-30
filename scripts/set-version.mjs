@@ -32,8 +32,8 @@ const versionPattern=new RegExp(`\\b${escaped}\\b`,'g');
 for(const file of ['index.html','admin.html','documentation.html','handbook.html','service-worker.js','app.js','js/ui/admin-dashboard.js','js/ui/admin-app.js','js/services/zone-registry.js']){
  let text=await fs.readFile(file,'utf8');
  text=text.replace(versionPattern,version);
- // Disse filer bærer kun den aktive app-version. Ret også drift fra ældre releases.
- text=text.replace(/4\.0\.\d+/g,version);
+ // Erstat kun den faktisk foregående release. Historiske migrationsgrænser og
+ // driftsforklaringer i de samme filer er semantik, ikke aktive versionsfelter.
  await fs.writeFile(file,text);
 }
 

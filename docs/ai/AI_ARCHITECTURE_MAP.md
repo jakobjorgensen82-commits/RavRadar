@@ -1,5 +1,43 @@
 # AI Architecture Map – RavRadar
 
+## 4.0.314 source merged; same-version sourcegate-hotfix
+
+- `one-time-candidate-g-gap-reconstruction.mjs` accepterer ét målt evidenspunkt kun for rollen `AFTER`; før, target, rollback og cleanup beholder minimum to.
+- Singletonen kan kun fortsætte, når før- og targetserien uafhængigt beviser enstemmig 3-timerskadence. Eksakt state-replay, målanker, bracket, sourcebindings, descriptor og CAS er uændrede.
+- `update-and-deploy.yml` kræver exact-main D1 på den endelige merge-SHA også for 4.0.314 og før inspect. Normal push/schedule/`none` forbliver no-op, indtil GitHub-metadata på samme SHA beviser både succesfuldt descriptorbundet apply-step og Pages-job; apply/rollback/cleanup er fortsat mulige efter D1.
+- Den fælles produktions-concurrency annullerer aldrig et igangværende apply; køede normale runs genkontrollerer freshness. Hele hvert run-/jobsvar parse- og shapevalideres samlet, så delvist parseroutput ikke kan åbne gaten.
+- `test:dmi-marine-first-recovery` kræver præcis én `cancel-in-progress: false` og ligger i `test:workflow-action-contracts`, som `validate:source` kører. Dermed kan en stale fuld-produktionsassertion ikke igen passere PR-sourcegaten ubemærket.
+- 4.0.315 er ulåst i regressionen. Låsen er incident- og releaseafgrænset, ikke en ny permanent managementafhængighed.
+
+## Historisk lokal 4.0.313 – bounded legacy-replay mellem Supabase og D1
+
+- `trip-source-projection.js` materialiserer kun eksplicitte PostgREST-blade; JSON-nullblade bliver bevidst ikke hentet.
+- `trip-storage.js` komprimerer kun kendte nullblade/tomme underobjekter for historisk replay, efter schema-v2 stored top/nested/privacy er valideret. Schema-v1 går gennem bounded weather/calibrationprojektion.
+- `worker.js` åbner forskellig-hash-kompatibilitet kun for migration→migration. Den gamle D1-row og registryhash forbliver canonical; missing registry backfilles med gammel stored hash.
+- Readback bruger samme schema-v2 stored-gate. Gatewayklienten oversætter ubetroede/malformed svar til faste kategorier uden bodytekst.
+- `update-and-deploy.yml` holder 4.0.313 Pages som no-op, indtil samme exact main har et helt grønt `[d1]`-backendbevis.
+
+## Historisk lokal 4.0.312 roll-forward – én incidentlåst Candidate G-rekonstruktion
+
+- `data/admin/candidate-g-one-time-gap-reconstruction-20260829.json` – statisk allowlist for incident, eksakte source-runs/artifacts/head, 210/673, 665/8-kadence og forbudte dataklasser.
+- `scripts/one-time-candidate-g-gap-reconstruction.mjs` – read-only inspect, forseglet descriptor, source-/mål-CAS, apply, privat rollback, øjeblikkelig rollback og kausal cleanup.
+- `js/core/ravscore-regime-memory.js` + `ravscore-candidate-g-state-pipeline.js` – markeret derived evidence, schema 2.1 under aktiv markør, schema 2.0 for measured-only og fail-closed normalisering.
+- `scripts/update-weather.mjs`, `public-conditions-lib.mjs` og Candidate G-audit – trustprojektion, public hashbinding og suppression af rekonstruktionsafhængig hard observed-outflow.
+- Continuation-checkpoint/-restore – cache schema 2 med payloadhash og trust; snæver read-bridge for gamle measured-only schema-1-caches.
+- `candidate-g-public-recovery-fallback.mjs` – measured-only last-verified fallback; legacybro kræver oprindelige hashes, 210/673/1.346 og 673 målte schema-2.0-states.
+- `app.js`, `trip-evidence-public-adapter.js`, `trip-evidence-contract.js`, observationservice og Edge/D1/Supabase/schema/installer – hele `activeManifest` føres til turkonteksten; startup-/kystdels-/manifest-trust skal være til stede og identiske før eksakt `ravscore-reconstructed-derived-evidence`/`public-emergency-last-complete`-binding og `calibration_eligible=false`. Pre-4.0.311 aktive/pending schema-v2-ture uden trust bevares gennem den fail-closed `ravscore-evidence-trust-unattested`-migration.
+- Den lokale prediction-/kalibreringsforbruger – udelukker databasebevarede schema-v2-observationer fail-closed, medmindre appversionen er mindst 4.0.311, eligibility er eksplicit sand, og kvalitetsflaglisten er den eksakte attesterede tomme liste. Migreringen skriver ikke tilbage til observationstabellen.
+- `.github/workflows/update-and-deploy.yml` – manuelle `inspect`/`apply`/`cleanup`-modes i samme produktions-concurrency og med uændrede fulde deploygates.
+- `scripts/migrate-trip-storage-to-cloudflare.mjs` + shared source projection – eksplicit PostgREST top-/nested bladselect; ingen `select=*`, hele fri-form-JSON, GPS/koordinater, rå U/V, fri tekst/billeder eller ukendte kolonner i runner-memory. Owner-id lever kun længe nok til HMAC og logges ikke.
+- `supabase/functions/_shared/trip-storage.js` + `cloudflare/trip-gateway/worker.js` – type-/intervalallowlist, recursive privacygate, canonical readback, global atomisk `trip_observation_registry` på control-sharden og `trip_owner_erasure_tombstones` før sletning.
+- `.github/workflows/deploy-trip-storage.yml` – efter capacity/CAS sættes `d1_edge_predeploy_intent` eller `fresh_edge_predeploy_intent` før første Edge-deploy. Existing D1 bruger 20-/30-minutters lease, femsekunders probes, dobbeltattestation/drain, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Intet intent ved capacity/pre-CAS-fejl betyder nul recoverymutation. Den præcise live-rækkefølge læses altid fra workflowbyten; dokumentet er ikke livebevis.
+- `scripts/apply-candidate-g-trip-quality-migration.mjs` – 4.0.312-verifieren udtrækker strukturelt præcis én JSONPath-literal fra PostgreSQLs deparserede constraint, tolererer ekstra parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Den ændrer ikke trip protocol/header 4.0.311.
+- `ravscore-public-runtime-contract.js`, data-service og `app.js` – målt-only atomisk 210/673-emergency med eksakt model/state/hash, maksimum 72 timer og kortere forecastudløb, DA/DE/EN-status, automatisk frisk primary og non-calibration tripbinding. Denne kontrakt er en bindende acceptgate for DEC-0102-modellen og må ikke bruge interpolation.
+
+Ingen geometri, punkt, koordinat, rå U/V, vejr-, bølge- eller vandstandsrekonstruktion indgår. `calibration_eligible` er kun en fail-closed klientattestation, ikke serverbevist manifestproveniens eller empirisk evidens; global koefficientlæring er P2-låst.
+
+Historisk status for dette arkitekturtrin: 4.0.311 bestod PR #224 exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`; push `33263858078` var en korrekt no-op. Backend `33263892151` fejlede efter atomisk SQL HTTP 201 i den gamle `pg_get_constraintdef`-regex. 4.0.312 lukkede verifieren gennem PR #225/exact-head `33266087776` og merge `a5ece10d`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken. Den blev derfor ikke readiness, rekonstruktion eller offentlig release. Se det aktuelle 4.0.314-afsnit øverst samt DEC-0109 og DEC-0102-addendum.
+
 ## Offentlig GPT-OSS-assistent i 4.0.291
 
 - `config.js` – offentlig aktivering gennem `ravAssistantRemoteEnabled=true`; `false` er kill switch/rollback.

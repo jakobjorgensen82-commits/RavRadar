@@ -1,4 +1,4 @@
-import { getLocalObservations } from "../services/observation-service.js?v=4.0.309";
+import { getLocalObservations } from "../services/observation-service.js?v=4.0.314";
 
 function legacyTripCount() {
   try {

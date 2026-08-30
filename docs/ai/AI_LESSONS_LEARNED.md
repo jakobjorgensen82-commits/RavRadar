@@ -2,6 +2,39 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.314-læring
+
+En count-validator må ikke gøre kildebracket og cadencebevis til samme ting. Det ene målte afteranker kan være nok som højre bracket, når state-replayet er eksakt, mens kadencen bevises uafhængigt og strengere af before+target. Undtagelsen skal være rolle- og cadenceafgrænset; global minimumssænkning ville være en generel evidenssvækkelse.
+
+En releaseinterlock skal beskytte hele rækkefølgen, ikke kun første eksterne gate. Efter et grønt D1-run kan et planlagt `none`-run ellers flytte public target før inspect/apply. Kræv derfor et vedvarende exact-head apply+Pages-bevis for normal produktion, men lad inspect/apply passere efter D1, og bevis en eksplicit senere version uden permanent lås. En incoming push må heller aldrig annullere en allerede kørende apply, og parseroutput må først bruges efter atomisk validering af hele metadataresponsen.
+
+En test, som kan stoppe fuld produktion, men ikke kan nås fra PR'ens `validate:source`, er et hul i releasegaten. Produktion `33271863449` afslørede netop dette: runtimekontrakten `cancel-in-progress: false` var korrekt, mens en gammel marine-first-test stadig krævede den afløste tekst. Varig løsning er både semantisk assertion og eksplicit sourcegate-inklusion.
+
+En incident-CLI er kun operationelt sikker, hvis både fejl og næste forseglede binding kan aflæses uden hele jobloggen. Inspect `33275438494` stoppede korrekt før descriptor og mutation, men checkmetadata viste kun exit 1. Når artifacts og fulde logs er privacyafgrænsede, skal CLI'en selv udsende en allowlistet fejlannotation, maskere al uventet tekst og ved succes kun annotere descriptor-SHA samt faste validerede optællinger; ellers bliver et sikkert stop eller apply unødigt uobserverbart.
+
+## Historisk 4.0.313-læring
+
+Et grønt database-/Worker-forløb frem til migrationen er ikke backend-readiness, hvis slutreconciliation fejler. Run `33266229687` nåede langt, men den faste syncfejl gjorde hele runnet rødt; failure-roll-forward er kun sikkerhed, ikke succesbevis.
+
+Dataminimering kan ændre kanonisk form uden at ændre den historiske betydning: 4.0.310 lagrede kendte nullblade, mens 4.0.311's server-side leafselect udelader dem. Den sikre løsning er ikke at slække hele payloadkontrakten, men at versionere præcis den gamle projektion, begrænse den til migration, bevise alle bevarede værdier og lade row/hash/registry stå urørte.
+
+Fejlhåndtering er også en privacygrænse. En JSON-parser kan lække dele af ubetroet response-body gennem sin exception. Fang derfor både non-2xx og 2xx parsefejl og eksponér kun faste kategorier.
+
+## Historisk 4.0.312-læring
+
+4.0.311 bestod exact-head CI `33263734108` og blev merged som `7c168b00af535415117c968a8c021a493b083137`, men backend `33263892151` viste, at ekstern mutation og lokal postverifikation er to forskellige beviser. En HTTP 201 fra en atomisk SQL-transaktion efterfulgt af verifierfejl må behandles som mulig samlet commit, ikke automatisk som rollback eller som tilladelse til blind retry. I denne hændelse er CHECK/validering/kommentar med høj sandsynlighed committed samlet; det eneste atomiske alternativ er fuld rollback. PostgreSQLs `VALIDATE` kan have scannet rækker internt, men ingen observationspayload blev hentet til runneren eller logget, ingen rækkemutation skete, og downstream-D1/Edge/Worker/sync/weather/artifact/Pages blev ikke nået. Offentlig version er fortsat 4.0.310.
+
+PostgreSQLs `pg_get_constraintdef` er semantisk deparsering, ikke en stabil bytekontrakt. 4.0.312 udtrækker derfor strukturelt præcis én JSONPath-literal, tolererer parentesering, kræver den eksakte kanoniske path og afviser reorder, duplicate, extra og ambiguous. Målrettede tests samt fuld lokal source/release/RDKS/håndbog/version og geodatakontrol er grønne, og exact-D1-interlocken omfatter 4.0.312; PR/exact-head, merge, backend, reconstruction og public-verifikation mangler. App-roll-forwarden ændrer ikke trip protocol/header 4.0.311.
+
+- En modevælger er ikke rollback, hvis den kan skjule writes, der kun findes i det nye lager. Efter et D1 point-of-no-return skal recovery gå fremad og reconcile; rå Supabase-identiteter kan ikke genskabes sikkert fra HMAC-ejerskab.
+- Sæt installationstype-intent efter capacity/CAS og umiddelbart før første Edge-deploy. Så kan partial existing-D1 Edge gå D1 roll-forward, mens partial genuine-fresh Edge sikkert kan genoprette Supabase-secret, eksakt Edge og dobbelt Supabase-attestation.
+- Maintenance må ikke blive permanent ved runner-tab. Normal lease er 20 minutter, hard max er 30, Edge-prober er fem sekunder, og udløb genåbner D1. Kræv 600 sekunders restlease før den samlede højst syv minutter lange Worker-write-gate.
+- Uden current-run intent ved capacity/pre-CAS-fejl må failure-kæden udføre nul recoverymutation. Historisk markør/legacyfund er ikke i sig selv autoritet.
+- Privacy skal begrænse det, processen **læser**, ikke kun det, den senere skriver. Server-side bladselect er nødvendig, så private/ukendte kolonner aldrig kommer ind i migrationsrunnerens memory.
+- “Kalibreringsegnet” er ikke empirisk evidens uden server-side binding til det signerede snapshot, brugeren faktisk så. Fail-closed udelukkelse kan bevares, mens global læring forbliver låst.
+- Nøddrift er en atomisk målt tilstand, ikke interpolation. 210/673, model/state/hashes, 72 timer og kortere forecastudløb skal være én kontrakt.
+- Når en ekstern transaktion kan være committed, skal næste trin være en read-only tilstandskontrol og en idempotent roll-forward fra ny exact-main-kode. Destruktiv cleanup, antaget rollback og genkørsel af samme kendt defekte verifier er forbudt.
+
 ## 1. En grøn lokal test kan være falsk tryghed
 I 4.0.117-forløbet bestod lokale tests, mens friske GitHub/DMI-kørsler stadig fandt fejl. Eksterne data, central Supabase-konfiguration, schedulerbudget og produktionscache kan ikke altid reproduceres fuldt lokalt. Brug derfor lokal validering som nødvendig, men ikke tilstrækkelig evidens.
 

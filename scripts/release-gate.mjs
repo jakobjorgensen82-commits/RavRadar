@@ -414,7 +414,6 @@ for(const marker of ['production-run-active','recent-production-run','public-pro
 for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','--maximum-silence-minutes 45']){
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
 }
-const publicDataService=await read('js/services/data-service.js');
 ok(publicDataService.includes('sameRavScoreModelBinding')
   && !/fallbackRuntime|recoveryFallback/.test(publicDataService),
 'Offentlig dataindlæsning skal være atomisk schema-4 og må ikke omdirigeres til en public recoveryruntime');

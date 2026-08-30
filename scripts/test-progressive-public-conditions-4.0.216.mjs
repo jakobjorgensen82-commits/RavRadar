@@ -35,6 +35,8 @@ let mismatchRejected=false;try{mergeConditionDetails(startup,{...details,dataset
 if(!mismatchRejected)throw new Error('Detaljer fra et andet datasæt blev ikke afvist.');
 let timeMismatchRejected=false;try{mergeConditionDetails(startup,{...details,productionReferenceAt:'2026-08-15T12:00:00.000Z'});}catch{timeMismatchRejected=true;}
 if(!timeMismatchRejected)throw new Error('Detaljer fra et andet produktionstidspunkt blev ikke afvist.');
+let trustMismatchRejected=false;try{mergeConditionDetails(startup,{...details,ravScoreEvidenceTrust:{...details.ravScoreEvidenceTrust,unexpected:true}});}catch{trustMismatchRejected=true;}
+if(!trustMismatchRejected)throw new Error('Detaljer med ændret eller udvidet RavScore-evidenstillid blev ikke afvist.');
 const zoneRegistryText=compactJson({type:'FeatureCollection',features:[{type:'Feature',properties:{id:'z1',zoneStatus:'active'},geometry:null}]});
 const startText=compactJson(startup),detailsText=compactJson(details);
 let incompleteManifestRejected=false;

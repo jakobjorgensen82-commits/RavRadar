@@ -1,6 +1,104 @@
-# Implementeringsstatus – 4.0.309 ekstern produktionsvagthund
+# Implementeringsstatus – 4.0.314 cadencepolicy-hotfix efter sikkert inspect-stop
 
-## 4.0.309-kandidat – luk total GitHub-schedulerstilhed eksternt
+## P0 – cadenceautoritet lokalt afgrænset; datahullet stadig åbent
+
+- [x] Bestå PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og korrekt no-op push `33279411885`.
+- [x] Bestå exact-main D1 `33279463545`/`99172031927` på `d539fc9d`.
+- [x] Stop read-only inspect `33279639424`/`99172534863` før descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og bevis nul mutation.
+- [x] Erstat suffixgæt med den eksisterende policybundne identitet for præcis otte `dkss_lf`-3h-dele; hash kun en koordinatfri projektion og genvalider den ved apply-CAS.
+- [x] Tillad kun eksakte 1/2/3-timersafstande på policyklassificerede 1h-dele uden at syntetisere de manglende interne slots; kræv fortsat eksakt 3h på de otte 3h-dele.
+- [x] Bestå målrettet 210/673 cadence-/descriptor-/CAS-test og workflowinterlocktest.
+- [x] Bestå den fulde lokale `validate:source` én gang samt de målrettede RDKS-, håndbogs-, security- og releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
+- [ ] Bestå same-version exact-head/merge/no-op og nyt exact-main D1 på endelig SHA.
+- [ ] Kør ny read-only inspect; kun ved forseglet descriptor fortsættes med CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+
+## Historisk P0 – before-primary afgrænset lokalt
+
+- [x] Bestå PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, merge `228725ea` og korrekt no-op push `33277217412`.
+- [x] Klassificér første D1 `33277253662` som fail-closed stop på en forbigående 503 efter Edge; bevis alle roll-forward-trin grønne og nul inspect.
+- [x] Bestå idempotent exact-main D1-genkørsel `33277510537`/`99166722076` på `228725ea`.
+- [x] Stop read-only inspect `33277738135`/`99167394284` ved den sanitiserede `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY` før descriptor, apply, build og Pages.
+- [x] Bevis, at supportartifactets før-fil er den ærlige primary, mens runnets komplette målte nødvisning blev skrevet separat.
+- [x] Fjern kun blanketkravet om før-`READY`; bevar measured-only schema 2.0, fuldt replay, minimum to, cadence, bracket, targetanker, sourcebinding, descriptorhash, CAS og slut-`READY`.
+- [x] Gør den positive fixture 673/673 `WINDOW_INCOMPLETE` med 24-timers målte suffixer, og bevis ældre hul, replaytampering, schema 2.1 og ukendt status fail-closed.
+- [x] Bestå hele syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-regressionen både med og uden nedarvet `GITHUB_ACTIONS`.
+- [x] Bestå målrettede workflow-, RDKS-, håndbogs-, security-, release- og geodatagates, hele lokale `validate:source` samt tre uafhængige slutreviews uden resterende blocker.
+- [ ] Bestå same-version-hotfix exact-head/merge/no-op og nyt exact-main D1 på den nye SHA.
+- [ ] Kør ny read-only inspect; hvis descriptoren forsegles, gennemfør eksakt CAS-bundet apply, frisk normal produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+
+## Historisk P0 – diagnostikhotfix før before-primary-fejlkoden
+
+- [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11` og korrekt no-op push `33269584236`.
+- [x] Bestå hele exact-main D1-run `33269631305`/job `99145677813`, inklusive begge syncs, slutreconciliation og afsluttende Edge/Worker/registry/SQL.
+- [x] Stop read-only inspect `33269849748` ved `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; bevis nul descriptor, apply, mutation, artifact og Pages.
+- [x] Tillad præcis ét målt `AFTER`-højreanker kun ved uafhængigt bevist 3-timerskadence; bevar minimum to for før, target, rollback og cleanup.
+- [x] Test 673 dele/665×1h/8×3h/1.338 syntetiske prøver samt nul-after, singleton før/target/1h, replaymismatch, manglende eksakt target-afteranker og utilstrækkeligt cadencebevis fail-closed.
+- [x] Udvid exact-D1-interlocken til 4.0.314, bind inspect til D1, og hold normal produktion i grøn no-op indtil exact-head apply+Pages-bevis. Bevis at 4.0.315 ikke er permanent låst.
+- [x] Bestå fuld lokal source/RDKS/release/version/geodatagate på PR #227-diffen før same-version-hotfixet.
+- [x] Bestå tre uafhængige slutreviews af PR #227-diffen og luk reviewets to testpræcisionsfund.
+- [x] Bestå PR #227 exact-head `33272564543`/`99153577550`, merge som `d1369d88` og verificér automatisk no-op push `33272676071` uden build/artifact/Pages.
+- [x] Klassificér 4.0.313-produktion `33271863449`/`99151692515` som fail-closed stop før releasegate/Pages på en stale marine-first-test, ikke som fejl i `cancel-in-progress: false`.
+- [x] Ret assertionen semantisk og føj `test:dmi-marine-first-recovery` til `test:workflow-action-contracts` med en selvbevisende sourcegate-kontrakt; målrettede tests er grønne.
+- [x] Bestå ny fuld lokal source/RDKS/release/versiongate med nul geodatadiff.
+- [x] Bestå to uafhængige hotfixrevisioner uden blocker.
+- [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
+- [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
+- [x] Bestå exact-main D1 `33275218540`/`99160622956` på `9291250c` med alle storage-/Edge-/Worker-/sync-/slutattestationstrin.
+- [x] Stop inspect `33275438494`/`99161265720` i planforseglingen før descriptorupload, mutation, build og Pages.
+- [x] Implementér og målretstest allowlistet GitHub-fejlannotation for `ONE_TIME_GAP_*`, maskering af vilkårlig fejltekst og en separat succesannotation med kun descriptor-SHA samt faste 673-/prøve-/665-/8-optællinger.
+- [x] Stop PR #230's første exact-head `33276791132` på den miljøafhængige testassertion; isolér normal CLI fra `GITHUB_ACTIONS` og bevis hele 210/673-testen i begge forældremiljøer.
+- [x] Bestå diagnostikhotfix exact-head/merge/no-op og nyt exact-main D1 på `228725ea`.
+- [x] Kør ny inspect og aflæs kun den sanitiserede `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY`-kode; den aktuelle fortsættelse står i P0-blokken ovenfor.
+
+## Historisk P0 – 4.0.311 source merged; backend stoppet før D1/Edge; rekonstruktion endnu ikke anvendt
+
+- [x] Afgræns incident, kilder, metode og privacy i policy samt DEC-0109.
+- [x] Lås 210/673, 665 × 1-timeskadence, 8 × 3-timerskadence, eksakte ankre og højst fem syntetiske prøver pr. del.
+- [x] Adskil målt schema 2.0.0 fra rekonstrueret schema 2.1.0 og før trust gennem Candidate G-/public-kontrakten.
+- [x] Gør rekonstrueret evidens ikke-kalibrerbar og uegnet som observeret 13-timers udtransportbevis.
+- [x] Implementér read-only inspect, CAS-bundet apply, privat før-mutation-rollback, direkte rollback mod umiddelbar post-apply-CAS og kausal cleanup.
+- [x] Bevis isoleret apply→direkte rollback, begræns eksakt rollback til den byte-/hashidentiske umiddelbare state og brug kun kausal cleanup mod senere descendants.
+- [x] Karantæn reconstruction-mode fra delt continuation/checkpoint/last-ready-cache og luk alle 673 scorer indtil obligatorisk frisk normal genberegning.
+- [x] Bevar målt-only last-verified fallback og afvis rekonstrueret/tampered staging.
+- [x] Bind ture/observationer til faktisk vist primary/fallback med hele active manifest, identisk startup-/kystdels-trust og eksakte kvalitetsflags gennem klient, Edge, D1/Supabase, schema og installer.
+- [x] Bevar pre-4.0.311 aktive/pending schema-v2-ture uden trust som `ravscore-evidence-trust-unattested` og `calibration_eligible=false` i stedet for fail-open eller datatab.
+- [x] Bevar allerede gemte pre-4.0.311 schema-v2-observationer byte-/databaseuændret og lad den lokale prediction-/kalibreringsforbruger kræve `appVersion >= 4.0.311`, `calibration_eligible=true` og eksakt attesteret tom `data_quality_flags`-liste før inklusion.
+- [x] Kræv exact-head `[d1]`-bevis før Pages. Efter capacity/CAS sættes existing-D1 eller fresh Edge-predeploy-intent umiddelbart før første Edge-deploy. Existing D1 bruger 20-minutters lease/30-minutters max, femsekunders prober, dobbeltattestation, 20-sekunders drain, 600 sekunders restlease og samlet syvminutters Worker-gate. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main-bundet Supabase-secret, eksakt Edge-redeploy og dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- [x] Implementér én atomisk global D1-registry på control-sharden og owner-erasure tombstones, så tværshard-idempotens, konflikter og samtidige ejer-sletninger er fail-closed.
+- [x] Luk og målret test den deterministiske sikre projektion og no-mutation-replay/readback for historiske fri-form-snapshots på tværs af Supabase, Edge og D1. Migrationen bruger eksplicit server-side PostgREST-bladselect og læser aldrig `select=*`, hele fri-form-JSON, GPS/koordinater, rå U/V, fri tekst/billeder eller ukendte kolonner.
+- [x] Bevar P2-kalibreringslåsen: schema-v2/`calibration_eligible` er kun klientattesteret og internt konsistent, ikke serverbevist mod signeret public manifest. Aktivér ingen global koefficientlæring før særskilt server-side snapshotbinding.
+- [x] Bestå alle målrettede reconstruction-, state-, audit-, fallback-, workflow-, trip-, Edge-, D1-/Supabase- og privacytests for 4.0.311-source.
+- [x] Bestå fuld sourcegate, version/RDKS/håndbogsidentitet og separat geodatabevis på PR #224's eksakte head `4c4699fe`; exact-head `33263734108`/`99129959870` er grøn.
+- [x] Merge PR #224 som `7c168b00` og bevis grøn push-no-op `33263858078` uden artifact/Pages.
+- [x] Stop backend `33263892151`/`99130384780` før D1/Edge efter falsk negativ post-SQL-katalogverifikation; dokumentér CHECK som enten fuldt committed/valideret/kommenteret eller fuldt rullet tilbage. `VALIDATE` kan have scannet rækker internt, men runneren hentede/loggede ingen observationspayload, og der skete ingen rækkemutation eller downstreamskrivning.
+- [x] Implementér 4.0.312's balancerede strukturelle exact-JSONPath-verifier og bestå målrettede positive/reordered/duplicate/ambiguous tests lokalt.
+- [x] Bestå 4.0.312's fulde lokale source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis.
+- [x] Luk PR #225 og exact-head `33266087776`; merge som `a5ece10d` og verificér korrekt no-op push `33266184326`.
+- [x] Kør `[d1]` på den nye eksakte 4.0.312-main; backend `33266229687` passerede verifier/D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness.
+- [x] Undlad `inspect`/apply efter den røde 4.0.312-backend og overfør den resterende livekæde til det aktuelle 4.0.314-afsnit øverst.
+- [x] Udfør ingen apply eller publicering under den røde 4.0.312-kæde; overfør frisk produktion, fulde gates, artifact, Pages og offentlig 210/673-kontrol til det aktuelle 4.0.314-afsnit.
+- [x] Overfør kravet om private rollback-/cleanupbeviser og dokumenteret tilbagevenden til målt schema 2.0 uændret til den aktuelle 4.0.314-livegate.
+
+I den tidligere 4.0.311-hændelse blev ingen observationspayload hentet til runneren, logget eller ændret, og der skete ingen rækkemutation; D1, Edge, Worker, sync, vejr, artifact og Pages blev ikke nået. Supabase-CHECK'en er med høj sandsynlighed atomisk committed/valideret/kommenteret; eneste alternativ er fuld rollback. 4.0.312 passerede senere disse tidlige led, men fejlede migrationssynken. Offentlig sandhed er fortsat 4.0.310/nødvisning. Se DEC-0109.
+
+Den kommende samlede model har desuden en bindende, endnu ikke slutvalideret nøddriftsgate: komplet målt-only atomisk 210/673-state, eksakt model/state/hashbinding, tydelig DA/DE/EN-status, højst 72 timer og aldrig længere end kortere prognoseudløb, ikke-kalibrerbare ture, automatisk frisk primary og fail-closed ved ukendt/rekonstrueret/tampered/udløbet state. Interpolation er ikke en normal fallback.
+
+# Historisk implementeringsstatus – 4.0.310 hurtigere ekstern produktionsvagthund
+
+## Produktions- og driftsverificeret 4.0.310 – overtag efter ét manglende native interval
+
+- [x] Bevis den virkelige 45-minuttersgren: vagt `33246369618` bestiller redningsproduktion `33246376992`.
+- [x] Afgræns den lave frekvens til den eksterne grænse; bevar GitHubs interne 45-minuttersvagt.
+- [x] Sæt kun `external_watchdog=true` til 15 minutter og bevar active/recent/manifest/concurrency-værn.
+- [x] Test præcis 15 minutter, lige over grænsen, aktiv produktion, frisk runhistorik og friskt manifest.
+- [x] Følg før-redningsproduktion `33246376992` gennem 09:00 UTC, målrettet supplement, 210/673, fulde gates, deploy og komplet `rr-20260829095610-210`.
+- [x] Genmål offentlig primary: 0/673 READY, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer; forkast kl. 15-ETA og dokumentér tidligste realistiske READY omkring 2026-08-31 kl. 06.15–06.30 dansk tid uden nye huller.
+- [x] Bestå fuld lokal source-/RDKS-/håndbogs-/releasegate og særskilt geodatabevis med kun 4.0.309 → 4.0.310 i de to topfelter.
+- [x] Bestå PR #222 exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121`/offentlig `rr-20260829103233-210` og automatisk 15-minuttersdispatch `33248692042` → produktion `33248699516`.
+
+Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0108.
+
+## Produktions- og driftsverificeret 4.0.309 – luk total GitHub-schedulerstilhed eksternt
 
 - [x] Bevis aktiv workflowkonfiguration, fungerende manuel produktion og samtidige native schedule-huller.
 - [x] Mål scheduleforskydning og reelle køretider uden private payloads eller rå vektorer.
@@ -8,11 +106,11 @@
 - [x] Gør `external_watchdog=true` eksplicit og bevar almindelig manuel keepalive som no-op.
 - [x] Bevar 45-minutters dual staleness, retry og begge concurrencygrupper.
 - [x] Bestå målrettede tests, RDKS, sourcegate og separat geodatabevis.
-- [ ] Bestå PR exact-head, merge og frisk post-merge-produktion.
-- [ ] Opret/test præcis ét cron-job og bevis mindst to automatiske HTTP 204/no-op-kald.
-- [ ] Genmål offentlig Candidate G-warmup og dokumentér ny ærlig tidshorisont.
+- [x] Bestå PR #221 exact-head `33244011544`, merge `aba3d669` og frisk post-merge-produktion `33244062982`.
+- [x] Opret/test præcis ét cron-job, id `8348098`, og bevis manuel 204/no-op `33244853536` samt automatiske 204/no-op-runs `33245204517` og `33245798817`.
+- [x] Genmål offentlig Candidate G-warmup og dokumentér ny ærlig tidshorisont: 5–12/48 timer ved 09:00 UTC-reference; kl. 15-ETA forkastet.
 
-Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring. Se DEC-0107.
+Seneste offentlige snapshot er `rr-20260829095610-210`: 210/673 komplet, primary 0 aktive zoner/673 warmupdele og 5–12/48 sammenhængende timer under komplet recovery. Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0107/0108.
 
 ## Lokal releasekandidat – integreret næste RavScore-generation
 
@@ -326,7 +424,7 @@ Candidate G 20/50/30, fysik, vejr, normal sortering, konto-/turdata, privatliv, 
 
 Assistentaktiveringen ændrer ingen score-, vejr-, konto-/tur-, geometri- eller prognosedata. Se DEC-0083 og DEC-0088.
 
-## Produktionsverificeret 4.0.287 – endeligt EU-turlager med Supabase-rollback
+## Historisk produktionsverificeret 4.0.287 – EU-turlagerets oprindelige Supabase-rollback
 
 - [x] Bevar Supabase som Auth-, profil-, rettigheds-, rate-limit- og offentlig Edge-grænse.
 - [x] Pseudonymisér ejer-id med en separat versionsbåret HMAC-secret og fjern rå identitet, JWT, GPS og rute før ekstern lagring.
@@ -334,7 +432,7 @@ Assistentaktiveringen ændrer ingen score-, vejr-, konto-/tur-, geometri- eller 
 - [x] Fordel tur-id'er deterministisk over ti EU-låste D1-shards og saml privat ejerlog uden direkte identitet.
 - [x] Lås kanonisk payload-hash, klient-/tur-idempotens og konfliktstop.
 - [x] Migrér Supabase idempotent uden kildesletning og rekonsiliér både før og efter Edge-cutover.
-- [x] Bevar eksplicit `TRIP_STORAGE_MODE=supabase` uden automatisk fallback eller normal dual-write.
+- [x] Historisk 4.0.287: eksplicit `TRIP_STORAGE_MODE=supabase` uden automatisk fallback eller normal dual-write. Post-cutover-delen afløses af 4.0.311-kandidatens varige D1/roll-forward, når den er liveverificeret.
 - [x] Tilføj daglig payloadfri 70/85 %-kapacitetskontrol og manuel, eksplicit bekræftet ejersletning i begge lagre.
 - [x] Lås D1-, HMAC-, privatlivs-, turlog-, workflow-, CORS- og rollbackkontrakten med målrettede tests.
 - [x] Bestå fuld lokal `scripts/validate-source.ps1` inklusive releasegate på den færdige kandidat.

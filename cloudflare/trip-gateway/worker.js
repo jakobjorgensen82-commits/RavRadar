@@ -1,7 +1,11 @@
 import {
   assertNoDirectIdentity,
+  assertNoPrivateLocation,
+  assertStoredExternalTripContract,
   canonicalJson,
+  externalTripPayload,
   externalTripRecord,
+  isLegacyCompatibleTripReplay,
   sha256Hex,
   verifyTripGatewaySignature,
 } from '../../supabase/functions/_shared/trip-storage.js';
@@ -74,37 +78,163 @@ async function shardIndex(record) {
   return Number.parseInt(digest.slice(0, 8), 16) % DATABASE_BINDINGS.length;
 }
 
-async function storeTrip(env, body) {
-  const record = await validatedRecord(body);
-  const database = databases(env)[await shardIndex(record)];
-  const insert = await database.prepare(
-    `insert into trip_observations (
-      storage_schema_version, owner_subject, owner_kind, trip_id, client_observation_id,
-      observed_at, submitted_at, payload_json, payload_sha256, source
-    ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+async function matchingTripRows(databaseList, record) {
+  const rowsByDatabase = await Promise.all(databaseList.map(async (database, index) => {
+    const verification = await databaseList[index].prepare(
+      `select owner_subject, payload_sha256, payload_json, source from trip_observations
+        where client_observation_id = ? or (? is not null and trip_id = ?)
+        limit 2`
+    ).bind(record.client_observation_id, record.trip_id, record.trip_id).all();
+    return (verification?.results || []).map(row => ({ ...row, database_index: index }));
+  }));
+  return rowsByDatabase.flat();
+}
+
+async function compatibleStoredRow(row, record) {
+  if (row.owner_subject !== record.owner_subject) return false;
+  try {
+    const storedPayload = JSON.parse(String(row.payload_json || ''));
+    const storedDigestPayload = { ...storedPayload };
+    delete storedDigestPayload.submitted_at;
+    const storedHashValid = await sha256Hex(canonicalJson(storedDigestPayload)) === row.payload_sha256;
+    if (!storedHashValid) return false;
+    if (row.payload_sha256 === record.payload_sha256) return true;
+    if (row.source !== 'supabase-migration' || record.source !== 'supabase-migration') {
+      return false;
+    }
+    const incomingPayload = JSON.parse(record.payload_json);
+    return isLegacyCompatibleTripReplay(storedPayload, incomingPayload, {
+      allowMissingDerivedMatchedRuleIds: true,
+    });
+  } catch {
+    return false;
+  }
+}
+
+async function ownerErased(controlDatabase, ownerSubject) {
+  const query = await controlDatabase.prepare(
+    `select owner_subject from trip_owner_erasure_tombstones
+      where owner_subject = ?
+      limit 1`
+  ).bind(ownerSubject).all();
+  return (query?.results || []).length === 1;
+}
+
+async function purgeOwnerTrips(databaseList, ownerSubject) {
+  let deleted = 0;
+  for (const database of databaseList) {
+    const result = await database.prepare('delete from trip_observations where owner_subject = ?').bind(ownerSubject).run();
+    deleted += Number(result?.meta?.changes || 0);
+  }
+  await databaseList[0].prepare('delete from trip_observation_registry where owner_subject = ?').bind(ownerSubject).run();
+  if (!Number.isSafeInteger(deleted) || deleted < 0) throw new Error('TRIP_DELETE_INVALID');
+  return deleted;
+}
+
+async function reserveTripIdentity(
+  controlDatabase,
+  record,
+  targetDatabaseIndex,
+  expectedPayloadSha256 = record.payload_sha256,
+) {
+  await controlDatabase.prepare(
+    `insert into trip_observation_registry (
+      client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index
+    )
+    select ?, ?, ?, ?, ?
+    where not exists (
+      select 1 from trip_owner_erasure_tombstones where owner_subject = ?
+    )
     on conflict do nothing`
   ).bind(
-    record.storage_schema_version,
-    record.owner_subject,
-    record.owner_kind,
-    record.trip_id,
     record.client_observation_id,
-    record.observed_at,
-    record.submitted_at,
-    record.payload_json,
-    record.payload_sha256,
-    record.source,
+    record.trip_id,
+    record.owner_subject,
+    expectedPayloadSha256,
+    targetDatabaseIndex,
+    record.owner_subject,
   ).run();
-  const verification = await database.prepare(
-    `select owner_subject, payload_sha256 from trip_observations
+  const verification = await controlDatabase.prepare(
+    `select client_observation_id, trip_id, owner_subject, payload_sha256, target_database_index
+      from trip_observation_registry
       where client_observation_id = ? or (? is not null and trip_id = ?)
       limit 2`
   ).bind(record.client_observation_id, record.trip_id, record.trip_id).all();
   const rows = verification?.results || [];
-  if (rows.length !== 1 || rows[0].owner_subject !== record.owner_subject || rows[0].payload_sha256 !== record.payload_sha256) {
+  if (await ownerErased(controlDatabase, record.owner_subject)) {
+    throw new Error('TRIP_OWNER_ERASED');
+  }
+  if (rows.length !== 1
+    || rows[0].client_observation_id !== record.client_observation_id
+    || (rows[0].trip_id ?? null) !== (record.trip_id ?? null)
+    || rows[0].owner_subject !== record.owner_subject
+    || rows[0].payload_sha256 !== expectedPayloadSha256
+    || Number(rows[0].target_database_index) !== targetDatabaseIndex) {
     throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
   }
-  return { duplicate: Number(insert?.meta?.changes || 0) === 0 };
+}
+
+async function storeTrip(env, body) {
+  const record = await validatedRecord(body);
+  const databaseList = databases(env);
+  if (await ownerErased(databaseList[0], record.owner_subject)) {
+    throw new Error('TRIP_OWNER_ERASED');
+  }
+  const rowsBefore = await matchingTripRows(databaseList, record);
+  if (rowsBefore.length > 1
+    || (rowsBefore.length === 1 && !await compatibleStoredRow(rowsBefore[0], record))) {
+    throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
+  }
+  const targetDatabaseIndex = await shardIndex(record);
+  if (rowsBefore.length === 1
+    && Number(rowsBefore[0].database_index) !== targetDatabaseIndex) {
+    throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
+  }
+  // A migration-only compatibility replay must keep both the historical D1
+  // row and its registry hash byte-identical. The incoming 4.0.311+
+  // privacy/trust projection has a different digest even though it represents
+  // the same legacy source row, so reserve/verify against the already-audited
+  // stored hash instead of silently rewriting either record.
+  const registryPayloadSha256 = rowsBefore.length === 1
+    ? rowsBefore[0].payload_sha256
+    : record.payload_sha256;
+  await reserveTripIdentity(
+    databaseList[0],
+    record,
+    targetDatabaseIndex,
+    registryPayloadSha256,
+  );
+  let insert = { meta: { changes: 0 } };
+  if (rowsBefore.length === 0) {
+    const database = databaseList[targetDatabaseIndex];
+    insert = await database.prepare(
+      `insert into trip_observations (
+        storage_schema_version, owner_subject, owner_kind, trip_id, client_observation_id,
+        observed_at, submitted_at, payload_json, payload_sha256, source
+      ) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      on conflict do nothing`
+    ).bind(
+      record.storage_schema_version,
+      record.owner_subject,
+      record.owner_kind,
+      record.trip_id,
+      record.client_observation_id,
+      record.observed_at,
+      record.submitted_at,
+      record.payload_json,
+      record.payload_sha256,
+      record.source,
+    ).run();
+  }
+  if (await ownerErased(databaseList[0], record.owner_subject)) {
+    await purgeOwnerTrips(databaseList, record.owner_subject);
+    throw new Error('TRIP_OWNER_ERASED');
+  }
+  const rows = await matchingTripRows(databaseList, record);
+  if (rows.length !== 1 || !await compatibleStoredRow(rows[0], record)) {
+    throw new Error('TRIP_IDEMPOTENCY_CONFLICT');
+  }
+  return { duplicate: rowsBefore.length > 0 || Number(insert?.meta?.changes || 0) === 0 };
 }
 
 async function listTrips(env, body) {
@@ -113,20 +243,34 @@ async function listTrips(env, body) {
   if (typeof ownerSubject !== 'string' || !/^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/.test(ownerSubject)) {
     throw new Error('TRIP_OWNER_INVALID');
   }
+  const databaseList = databases(env);
+  if (await ownerErased(databaseList[0], ownerSubject)) return [];
   const collected = [];
-  for (const database of databases(env)) {
+  for (const database of databaseList) {
     const query = await database.prepare(
-      `select payload_json, observed_at from trip_observations
+      `select payload_json, payload_sha256, observed_at from trip_observations
         where owner_subject = ?
         order by observed_at desc
         limit ?`
     ).bind(ownerSubject, limit).all();
     for (const row of query?.results || []) {
-      const payload = JSON.parse(String(row.payload_json || ''));
+      const storedPayload = JSON.parse(String(row.payload_json || ''));
+      const storedDigestPayload = { ...storedPayload };
+      delete storedDigestPayload.submitted_at;
+      if (await sha256Hex(canonicalJson(storedDigestPayload)) !== row.payload_sha256) {
+        throw new Error('TRIP_STORED_RECORD_INTEGRITY_INVALID');
+      }
+      const schemaVersion = Number(storedPayload.schema_version ?? 1);
+      if (schemaVersion === 2) {
+        assertStoredExternalTripContract(storedPayload);
+      }
+      const payload = externalTripPayload(storedPayload);
       assertNoDirectIdentity(payload);
+      assertNoPrivateLocation(payload);
       collected.push(payload);
     }
   }
+  if (await ownerErased(databaseList[0], ownerSubject)) return [];
   collected.sort((left, right) => String(right.observed_at || '').localeCompare(String(left.observed_at || '')));
   return collected.slice(0, limit);
 }
@@ -146,19 +290,27 @@ async function deleteOwnerTrips(env, body) {
   if (typeof ownerSubject !== 'string' || !/^(?:usr|anon)_v1_[A-Za-z0-9_-]{43}$/.test(ownerSubject)) {
     throw new Error('TRIP_OWNER_INVALID');
   }
-  let deleted = 0;
-  for (const database of databases(env)) {
-    const result = await database.prepare('delete from trip_observations where owner_subject = ?').bind(ownerSubject).run();
-    deleted += Number(result?.meta?.changes || 0);
-  }
-  if (!Number.isSafeInteger(deleted) || deleted < 0) throw new Error('TRIP_DELETE_INVALID');
-  return deleted;
+  const databaseList = databases(env);
+  await databaseList[0].prepare(
+    `insert into trip_owner_erasure_tombstones (owner_subject)
+      values (?)
+      on conflict do nothing`
+  ).bind(ownerSubject).run();
+  return purgeOwnerTrips(databaseList, ownerSubject);
 }
 
 export async function handleRequest(request, env) {
   const url = new URL(request.url);
   if (request.method === 'GET' && url.pathname === '/health') {
-    return json(200, { ok: true, service: 'ravradar-trip-gateway', storage_schema_version: 1, shards: 10 });
+    return json(200, {
+      ok: true,
+      service: 'ravradar-trip-gateway',
+      contract_version: '4.0.311',
+      storage_schema_version: 1,
+      idempotency_registry_schema_version: 2,
+      owner_erasure_tombstone_schema_version: 1,
+      shards: 10,
+    });
   }
   if (request.method !== 'POST' || !['/v1/trips/store', '/v1/trips/list', '/v1/trips/count', '/v1/trips/delete-owner'].includes(url.pathname)) {
     return json(404, { ok: false, error: 'NOT_FOUND' });

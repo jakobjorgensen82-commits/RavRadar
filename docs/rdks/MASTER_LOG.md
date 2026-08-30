@@ -1,10 +1,95 @@
+## 2026-08-30 – policybundet cadence efter nyt sanitiseret live-inspect
+
+- Før-primary-hotfixet bestod PR #231 exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d4b3bd33ac3437c6d697c32796c93d776`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` bestod hele backendkæden.
+- Read-only inspect `33279639424`/`99172534863` stoppede i planforseglingen med den eneste sanitiserede kode `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Descriptor/apply/build/Pages var skipped; ingen data, cache eller offentlig drift blev ændret.
+- Tre source-/inferens-/testaudits afviste suffixmønsteret som cadenceautoritet. Den versionsstyrede regionale policy identificerer allerede præcis de otte ejerautoriserede `dkss_lf`-dele med native 3h; alle andre er 1h. 665/8 bevares som ekstra populationgate, ikke identitetskilde.
+- Lokal same-version-rettelse tillader eksakte målte 1/2/3h-afstande på policyklassificerede 1h-dele inden for Candidate G's eksisterende continuitygrænse, men rekonstruerer kun incidentets forseglede bracket. De otte 3h-dele kræver fortsat eksakt 3h på før- og targetkanten.
+- Descriptoren indeholder kun SHA-256 af en koordinatfri policyprojektion. Apply genlæser policyen, genberegner planen og kræver kanonisk CAS-lighed. Policy-id-swap, 3h/2h-mismatch, nonintegral cadence og hashændring stopper urørt.
+- Målrettet syntetisk 210/673 inspect/CAS/rollback/cleanup/checkpoint og workflowinterlock er grønne. Fuld lokal `validate:source`, målrettet RDKS/håndbog/security/releasegate og tre uafhængige slutreviews er grønne; dokumentationsfundene er rettet og proportionalt genvalideret. Exact-head/merge/D1/inspect og offentlig verifikation afventer. Offentlig sandhed er fortsat 4.0.310-nøddrift.
+
+## 2026-08-30 – historisk før-primary-gate efter sanitiseret live-inspect
+
+- Diagnostikhotfixet bestod PR #230 exact-head `33277107562`/`99165644953` på `7ad1a98b`, blev merged som `228725ea98a04e5d34c4bf4c74d40799e94081a0`, og push `33277217412` var korrekt no-op uden inspect/build/artifact/Pages.
+- Første exact-main D1 `33277253662`/`99166039224` stoppede på en forbigående 503 efter Edge. Hele den bundne fail-closed roll-forward bestod, og inspect blev ikke kørt. Genkørsel `33277510537`/`99166722076` bestod hele backendkæden på samme SHA.
+- Read-only inspect `33277738135`/`99167394284` viste kun `ONE_TIME_GAP_BEFORE_NOT_UNIFORMLY_READY` og stoppede før descriptor, apply, build og Pages. Ingen data-/cachemutation eller publicering skete.
+- Supportartifactets før-fil er den ærlige primary; runnets komplette målte nødvisning blev skrevet separat. Blanketkravet om, at alle før-states allerede var `READY`, var derfor stærkere end kilde- og beslutningskontrakten.
+- Lokal same-version-rettelse bevarer measured-only schema 2.0, fuldt state-replay, minimum to, identitet, cadence, bracket, targetanker, sourcebinding, descriptor/CAS/privacy og kræver fortsat samlet target-reference-`READY`. Den udfylder ikke ældre huller.
+- Hele syntetiske 210/673-kæde består med 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer i begge parentmiljøer. For kort suffix, ekstra hul, replaytampering, schema 2.1 og ukendt status stopper før descriptor. Exact-head, merge, nyt D1, inspect/apply og offentlig verifikation afventer.
+
+## 2026-08-29 – D1 grøn; inspect stoppet før descriptor; sanitiseret diagnostikhotfix
+
+- Docs-checkpoint PR #229 bestod exact-head `33275025105`/`99160126852`, blev merged som `9291250cc0809cc4dde9aaf3e20bf5b93c2837f2`, og push `33275147023` var korrekt no-op uden build/inspect/Pages.
+- Exact-main D1 `33275218540`/`99160622956` bestod source, Candidate G-databasekontrakt, ti EU-shards, headroom, Edge, maintenance, Worker, sync, D1-mode, slutreconciliation og slutattestation.
+- Read-only inspect `33275438494`/`99161265720` bestod hydration og kildeudtræk, men stoppede i planforseglingen. Descriptorrefusal/-upload, build og Pages var skipped; ingen descriptor, apply, data-/cachemutation eller publicering forekom.
+- Checkmetadata eksponerede kun exit 1. Hele jobloggen og artifacts blev ikke hentet. Lokal hotfix annoterer kun /^ONE_TIME_GAP_[A-Z0-9_]+$/ ved fejl og maskerer al anden tekst; ved succes kun descriptor-SHA samt validerede affected/synthetic/1h/3h-optællinger. Den målrettede syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-black-box-test er grøn.
+- PR #230's første head `e8f579ba` stoppede source-run `33276791132`/`99164804850` ved den målrettede test, før senere sourcechecks. Runnerens `GITHUB_ACTIONS=true` blev utilsigtet arvet af normale CLI-cases, som derfor korrekt brugte stdout-annotation frem for lokal stderr. Testhelperen isolerer nu miljøerne eksplicit; hele 210/673-testen er grøn med begge forældremiljøer. Ingen produktion eller data blev rørt.
+- Næste sikre kæde er diagnostikhotfix exact-head/merge/no-op → nyt final-SHA D1 → ny inspect → evidensbaseret årsagslukning → CAS-apply → frisk produktion → offentlig 210/673 desktop/mobil. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+
+## 2026-08-29 – 4.0.314 source merged; same-version sourcegate-hotfix før recovery
+
+- 4.0.314-kilden bestod PR #227 exact-head `33272564543`/`99153577550`, blev merged som `d1369d88bfa24d28fa0371fbfa50cff9d3642d58`, og push `33272676071` var tilsigtet grøn no-op uden build/artifact/Pages.
+- En allerede kørende 4.0.313-produktion `33271863449`/`99151692515` stoppede ved fuld `npm run validate` før releasegate/Pages. Den stale marine-first-test forventede den afløste dynamiske concurrencytekst og var ikke med i PR-sourcegatens workflowkontraktsuite.
+- Same-version-hotfixet ændrer ingen runtime-, recovery-, Candidate G-, data-, geometri- eller privacysemantik. Det kræver præcis én `cancel-in-progress: false` og gør `test:dmi-marine-first-recovery` obligatorisk i `test:workflow-action-contracts`/`validate:source`.
+- Den fulde lokale `validate:source`, RDKS, release- og versionsgate samt to uafhængige revisioner er grønne, og geodatadiffen er tom. Hotfix PR #228 bestod exact-head `33274411880`/`99158510299`, blev merged som `50369742`, og push `33274505196` var korrekt no-op. Docs-checkpoint, exact-main D1 på final merge-SHA, inspect/apply, frisk produktion og offentlig 210/673 mangler. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+
+## 2026-08-29 – historisk lokal 4.0.314 efter read-only singleton-afterankerstop
+
+- 4.0.313 bestod PR #226 exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og helt grøn D1-backend `33269631305`/`99145677813`.
+- Read-only inspect `33269849748`/`99146287609` stoppede før descriptor/apply med `ONE_TIME_GAP_AFTER_EVIDENCE_COUNT`; ingen data eller cache blev ændret, og intet nyt descriptor-/releaseartifact eller Pages-deploy blev oprettet.
+- 4.0.314 tillader ét målt `AFTER`-anker kun ved uafhængigt bevist native 3-timerskadence og fuldt replay. Før/target/rollback/cleanup kræver fortsat mindst to; nul eller 1-times-singleton stopper.
+- Workflowet kræver exact-D1 for 4.0.314, D1 før inspect og exact-head apply+Pages før normal produktion. 4.0.315 er ulåst. Fuld lokal `scripts/validate-source.ps1`, releasegate, versionsgate og den metadataeksklusive geodatakontrol er grønne; exact-head, merge, nyt D1-run, inspect/apply, frisk produktion og offentlig 210/673-verifikation mangler. Offentlig sandhed er fortsat 4.0.310, og datahullet er ikke lukket.
+
+## 2026-08-29 – lokal 4.0.313 efter replaystop i 4.0.312-backend
+
+- PR #225 bestod exact-head `33266087776`/job `99136292810` og blev merged som `a5ece10d1b99fe2a4d45346cadf7225870622a7a`; push `33266184326` var korrekt no-op uden artifact/Pages.
+- Backend `33266229687`/job `99136669571` nåede D1-/Edge-/Worker-led, men fejlede den idempotente sync med `TRIP_GATEWAY_UNAVAILABLE`. Failure-roll-forward er ikke readiness; ingen rekonstruktion, vejrproduktion eller publicering fulgte.
+- Rodårsagen blev reproduceret uden produktionspayloads: 4.0.310 bevarede kendte nullblade i nested JSON, mens 4.0.311's server-side bladprojektion udelader null. Den semantisk samme migrationsrække fik derfor anden hash, mens D1/registry korrekt bevarede den gamle.
+- 4.0.313 afgrænser kompatibilitet til migration→migration, validerer gammel schema-v2 stored/readback før nullkomprimering, bruger bounded schema-v1-projektion og kræver alle non-null/core-/ejer-/id-/shardværdier eksakt. D1-row/hash/registry omskrives ikke; missing registry får kun gammel hash.
+- Safe error taxonomy skjuler untrusted/malformed body. Syntetiske tests dækker forskellige hashes, to replays, byteidentitet, registerreparation/modstrid, unknown/core/non-null, null-only parents, malformed 200/5xx og timeout.
+- Fuld lokal `scripts/validate-source.ps1`, RDKS-, release-, versions- og geodatagate samt uafhængig kode-/privacy-/dokumentationsrevision er grønne på den endelige præcommit-diff.
+- På dette 4.0.313-checkpoint omfattede exact-D1-interlocken kun 4.0.311–4.0.313. Senere 4.0.314 ændrer denne historiske grænse som beskrevet ovenfor. Exact-head, merge, helt grøn backend, ny inspect/apply, frisk produktion og offentlig 210/673 manglede fortsat her. Offentlig sandhed forblev 4.0.310, og datahullet var ikke lukket.
+
+## 2026-08-29 – 4.0.312-roll-forward efter 4.0.311-backendincident
+
+- 4.0.311-kilden blev committed som `4c4699fe3a87a3b804da1d8beea204e4144a7a76`. PR #224 bestod exact-head `33263734108`/job `99129959870` og blev merged som `7c168b00af535415117c968a8c021a493b083137`.
+- Pushworkflow `33263858078` bestod som tilsigtet no-op: intet build, artifact eller Pages blev oprettet, fordi exact-main-backendbevis manglede.
+- Manuel backend `33263892151`/job `99130384780` sendte den ene atomiske Candidate G-trip-quality-CHECK-transaktion og modtog HTTP 201. Den efterfølgende read-only katalogverifier fejlede, fordi en flad regex ikke accepterede PostgreSQLs semantisk ækvivalente `pg_get_constraintdef`-deparserform.
+- CHECK'en er med høj sandsynlighed fuldt committed, valideret og kommenteret; eneste konsistente alternativ er fuld transaktionsrollback. `VALIDATE` kan have scannet eksisterende rækker internt i PostgreSQL. Runneren hentede eller loggede ingen observationspayload, og migrationen udførte ingen `INSERT`, `UPDATE` eller `DELETE`.
+- Kæden stoppede før Supabase CLI-setup, D1-prepare/capacity, Edge-predeploy, maintenance, Worker, sync, mode/reconcile, vejr, artifact og Pages. Offentlig drift forblev 4.0.310, og rekonstruktionen blev ikke inspiceret eller anvendt.
+- Lokal 4.0.312 erstatter den flade regex med balanceret, deparser-tolerant udtrækning af præcis ét relevant `jsonb_path_query_array(...)`-kald og kræver de tre eksakte reason codes én gang hver i kanonisk rækkefølge. Ombytning, dublet og tvetydigt ekstra kald afvises; målrettede tests er grønne.
+- Målrettede tests, fuld lokal 4.0.312-source-/RDKS-/håndbogs-/versions-/releasegate og separat geodatabevis er grønne. Sikkert næste trin er PR exact-head og merge, derpå en ny exact-main `[d1]`-kørsel. Uændret 4.0.311-backend må ikke genkøres. Inspect/apply, frisk produktion og offentlig verifikation kommer først efter grøn backend.
+
+## 2026-08-29 – lokal 4.0.311-kandidat til én ejerautoriseret Candidate G-rekonstruktion
+
+- Ejeren godkendte udtrykkeligt én undtagelse til no-backfill-reglen for morgenhullet og præciserede, at kvalitet, forskning og slutvalidering ikke må reduceres af Codex-kvote.
+- Incidentet er låst som `RRGAP-2026-08-29-CANDIDATE-G-01`. Kun de eksakte supportartifacts før/efter og deres allerede afledte signerede kystnormale styrke må bruges; vejr, bølger, vandstand, rå U/V, koordinater, geometri, punkter og private payloads er forbudt.
+- Den lokale kandidat skelner schema 2.0 målt fra schema 2.1 rekonstrueret, fører trust gennem state/public payloads, undertrykker rekonstruktionsafhængig hard-outflow og markerer ture ikke-kalibrerbare.
+- Inspect/apply/rollback/cleanup er afgrænset med descriptor-SHA, source-/mål-CAS, privat før-mutation-rollback og målt-only last-verified fallback. Almindelig missing-/nøddriftsadfærd er uændret uden for incidentet.
+- Tværgående review fandt og lukkede lokale Candidate G-/trip-storage-risici: hele active manifest bindes til ture; legacy schema-v2 bevares som uattesteret/non-calibration; predictionforbrugeren er fail-closed; migration/readback bruger kun en eksplicit server-side bladprojektion; D1 bruger global atomisk registry og owner-erasure tombstones.
+- Runner-loss-gennemgangen tilføjede installationstype-intents umiddelbart før første Edge-deploy efter capacity/CAS. Existing D1 bruger maintenance-kapabel Edge, repair-intent og 20-minutters lease med 30-minutters max; femsekunders prober, dobbeltattestation, drain, 600 sekunders restlease og én syvminutters Worker-gate beskytter cutover. Partial existing Edge går D1 roll-forward; partial fresh Edge går exact-main → Supabase-secret → eksakt Edge-redeploy → dobbelt Supabase-attestation. Uden intent ved capacity/pre-CAS-fejl sker nul recoverymutation.
+- Ved dette tidligere lokale checkpoint registrerede DEC-0109, aktive krav, issues, status, håndbøger og AI-checkpoints kandidaten; der var da endnu ingen commit, PR, merge, inspect/apply, live-storagekørsel, produktion eller offentlig 4.0.311-verifikation. Den senere source-/backendstatus står i checkpointet ovenfor.
+- Den samlede næste model under DEC-0102 fortsætter separat efter recovery og skal bevare trust-/provenance-/trip-/cleanupkontrakten uden at gøre interpolation til en normal modelregel. Dens nøddrift skal være målt-only og atomisk 210/673, højst 72 timer og kortere end eventuelt forecastudløb, med eksakt model/state/hash, DA/DE/EN-advarsel, ikke-kalibrerbare ture og automatisk frisk primary.
+- Et åbent P2-forhold er bevaret: `calibration_eligible` er klientattesteret og internt konsistent, men ikke serverbevist mod signeret public manifest. Det er ikke empirisk evidens; global koefficientlæring forbliver låst, indtil server-side snapshotbinding findes.
+
+## 2026-08-29 – 4.0.310 sænker kun ekstern stilhedsgrænse
+
+- Den tredje automatiske 4.0.309-vagt `33246369618` ramte kl. 09:49 UTC efter fortsat manglende native schedules og bestilte normal redningsproduktion `33246376992`. Den bestod hele kæden og publicerede komplet `rr-20260829095610-210` med reference 09:00 UTC. 45-minuttersgrenen virker, men gav cirka en time mellem produktionsstarterne.
+- Offentlig aggregeret kontrol af primæren viste 0/673 memory-ready, 673 `WINDOW_INCOMPLETE` og 5–12/48 sammenhængende timer. Det aktuelle vejr er komplet, men mistet morgenhistorik blev ikke gendannet; kl. 15-ETA er forkastet til fordel for tidligst cirka 2026-08-31 kl. 06.15–06.30 dansk tid uden nye huller.
+- Ejeren kræver, at vedvarende GitHub-schedulerstilhed ikke giver datahuller, fordi den eksterne vagt accepterer for få starter. Kun `external_watchdog=true` sænkes derfor til mere end 15 minutters samtidig gammel runhistorik og gammelt manifest.
+- GitHubs interne vagt beholder 45 minutter. Aktiv/queued produktion, frisk runhistorik, friskt manifest, begge concurrencygrupper og alle data-/releasegates bevares.
+- Candidate G, RavScore, DMI/Copernicus-scoreinput, state/cache/recovery, geometri, punkter og faktiske vejrdata er urørte; ingen historik opfindes eller interpoleres. Se DEC-0108.
+- Målrettede boundary-/workflowtests, RDKS, begge håndbøger, releaseversion, hele lokale `scripts/validate-source.ps1` og releasegate består. Særskilt geodatadiff viser kun topversion 4.0.309 → 4.0.310.
+- PR #222 bestod exact-head `33247789054` på `63ab1209`, blev merged som `792648c3`, og post-merge-produktion `33247839121` publicerede komplet `rr-20260829103233-210` efter alle gates. Det automatiske eksterne run `33248692042` bestod den mergede 15-minutterskontrol og bestilte præcis én normal produktion `33248699516`; ejeren vurderede dette som tilstrækkeligt levende driftsbevis og fravalgte fortsat trin-for-trin-overvågning.
+
 ## 2026-08-29 – 4.0.309 lukker total GitHub-schedulerstilhed eksternt
 
 - GitHub-workflowene var aktive, runnerkøen var normal, og manuel produktion `33241555811` bestod hele den friske kæde, men schedule-events udeblev samtidig for produktion, pilot og keepalive.
 - Ejeren traf den senere afgrænsede beslutning, som DEC-0085 havde reserveret: ét eksternt cron-job kalder kun keepalive-workflowet ved `04,19,34,49` UTC med `external_watchdog=true`.
 - Dual staleness på 45 minutter, ingen aktiv produktion, begge concurrencygrupper og alle fulde produktionsgates bevares. Kaldet bærer ingen vejr-, model-, koordinat-, U/V- eller privat payload.
-- Offentlig primary er fortsat 673-deles warmup under auditeret recovery; ny ETA måles først efter stabil cadence. Se DEC-0107.
-- Målrettede tests, håndbogsgaten, RDKS, releasegate og hele lokale `validate:source` består. Geodataenes særskilte diff viser kun releaseversion; exact-head og ekstern aktivering afventer.
+- PR #221 bestod exact-head `33244011544` på `6046e8a3`, blev merged som `aba3d669`, og post-merge-produktion `33244062982` bestod hele den friske kæde. Offentlig `rr-20260829085521-210` er komplet 210/673.
+- Præcis ét cron-job.org-job, id `8348098`, er aktivt. Manuel prøve `33244853536` og automatiske prøver `33245204517`/`33245798817` gav HTTP 204 og korrekt no-op ved frisk produktion. Der kom fortsat ingen native produktions-`schedule` omkring 09:29 UTC; 09:34-no-op skyldtes et cirka 39 minutter gammelt manifest.
+- Offentlig primary er fortsat 673-deles warmup under auditeret recovery; ny ETA måles først efter stabil cadence. Ingen data eller historik er opfundet. Se DEC-0107.
+- Målrettede tests, håndbogsgaten, RDKS, releasegate og hele lokale `validate:source` består. Geodataenes særskilte diff viser kun releaseversion.
 
 ## 2026-08-29 – integreret RavScore-dokumentationscheckpoint, lokalt og ikke udgivet
 

@@ -6,7 +6,7 @@ export const CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE
 
 export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
   schemaVersion: '2.0.0',
-  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.309',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.314',
   requestedProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
   rollbackProfileId: null,
   candidateProfileId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
@@ -388,6 +388,7 @@ export function projectCandidateGForPublic(candidate, { mode, profile, context =
     components: { huntability, transport, release },
     componentReasons,
     reasons,
+    evidenceTrust: context.evidenceTrust ?? null,
     explanation: {
       modelId: CANDIDATE_G_RAVSCORE_PROFILE_ID,
       switchVersion: profile.switchVersion,
@@ -417,6 +418,7 @@ export function projectCandidateGForPublic(candidate, { mode, profile, context =
         outboundEpisodeLossPoints: finite(context.outboundEpisodeLossPoints)
           ? Number(context.outboundEpisodeLossPoints) : null,
         actualOutboundTransport: context.actualOutboundTransport === true,
+        evidenceTrust: context.evidenceTrust ?? null,
         windDirectlyIncluded: false,
         outflowExhaustionGateApplied: candidate.outflowExhaustionGateApplied === true,
       },
@@ -455,6 +457,7 @@ export function selectPublicRavScoreResult({ profile, candidateG, candidateState
     transportMemoryWindowHours: context.transportMemoryWindowHours
       ?? candidateState?.transportMemoryWindowHours ?? null,
     currentTransition: context.currentTransition ?? candidateState?.currentTransition ?? null,
+    evidenceTrust: context.evidenceTrust ?? candidateState?.evidenceTrust ?? null,
   };
   return projectCandidateGForPublic(candidateG, { mode, profile, context: diagnosticContext });
 }

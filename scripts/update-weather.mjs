@@ -68,6 +68,13 @@ import {
 import {
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
+import {
+  CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import {
+  RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
+  isReconstructedTransportEvidence,
+} from '../js/core/ravscore-regime-memory.js';
 
 const ZONES_PATH = 'data/zones.geojson';
 const COASTAL_PARTS_SOURCE_PATH = 'data/geometry-v2/active-national-coastal-parts/manifest.json';
@@ -1354,6 +1361,10 @@ function scoreCoastalPartsRuntime(
   pointStateInjections = {},
   checkpointStates = {},
 ) {
+  const previousEvidenceTrust = previousCoastalParts?.evidenceTrust ?? null;
+  if (previousEvidenceTrust?.status === RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS) {
+    throw new Error('Integrated RavScore cutover refuses Candidate G source with active reconstructed evidence trust');
+  }
   const parentById = new Map(parentFeatures.map(feature => [feature.properties?.id, feature]));
   const activePartIds = new Set(Object.values(contract?.zones ?? {})
     .flatMap(parts => Array.isArray(parts) ? parts.map(part => part?.partId).filter(Boolean) : []));
@@ -1382,6 +1393,17 @@ function scoreCoastalPartsRuntime(
       const legacyCandidateGMigrationState = previousCandidateGContinuation === null
         ? existingPart?.candidateG?.currentState ?? null
         : null;
+      for (const candidateState of [previousCandidateGContinuation, legacyCandidateGMigrationState]) {
+        if (!candidateState) continue;
+        const transportEvidence = candidateState?.transport?.evidence;
+        const reconstructedEvidenceCount = Array.isArray(transportEvidence)
+          ? transportEvidence.filter(isReconstructedTransportEvidence).length
+          : 0;
+        if (candidateState.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
+          || reconstructedEvidenceCount > 0) {
+          throw new Error('Integrated RavScore cutover refuses Candidate G schema 2.1 or reconstructed transport samples');
+        }
+      }
       // A READY exact-point activation is the only state allowed to outrank an
       // existing integrated continuation. General checkpoints remain below
       // an existing exact-context state and above the one-time legacy source.

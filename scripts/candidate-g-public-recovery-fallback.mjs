@@ -2,6 +2,17 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  buildBoundedCurrentTransportMemory,
+  CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
+  isReconstructedTransportEvidence,
+} from '../js/core/ravscore-regime-memory.js';
+import {
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_PROFILE_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+  CANDIDATE_G_STATE_VARIANT_ID,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { auditCandidateGPublicShadow } from './audit-ravscore-candidate-g-public-shadow.mjs';
 import {
   buildPublicConditions,
@@ -13,7 +24,8 @@ import {
 } from './public-conditions-lib.mjs';
 
 export const CANDIDATE_G_RECOVERY_FALLBACK_POLICY = Object.freeze({
-  schemaVersion: 1,
+  schemaVersion: 2,
+  legacySchemaVersion: 1,
   expectedZoneCount: 210,
   expectedPartCount: 673,
   maximumLocalWarmupPartCount: 6,
@@ -27,6 +39,191 @@ export const CANDIDATE_G_RECOVERY_FALLBACK_POLICY = Object.freeze({
 
 const readJson = async file => JSON.parse(await fs.readFile(file, 'utf8'));
 const hoursOld = (generatedAt, nowMs) => (nowMs - Date.parse(generatedAt || '')) / 3_600_000;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const STATE_KEY_PATTERN = /^sha256:[a-f0-9]{64}$/;
+const COMPACT_STATE_KEYS = Object.freeze([
+  'mobilisationPotential',
+  'modelId',
+  'outboundEpisodeEffectiveHours',
+  'profileId',
+  'schemaVersion',
+  'stateKey',
+  'time',
+  'transportReferenceAt',
+  'transportEvidence',
+  'transportMemoryCoverageHours',
+  'transportMemoryReady',
+  'transportMemoryStatus',
+  'transportMemoryWindowHours',
+  'transportPotential',
+  'variantId',
+].sort());
+
+const VERIFIED_ONLY_TRUST = Object.freeze({
+  schemaVersion: 1,
+  status: 'VERIFIED_ONLY',
+  calibrationEligible: true,
+  hardObservedOuttransportEligible: true,
+  incidentId: null,
+  affectedPartCount: 0,
+  syntheticSampleCount: 0,
+  activeUntil: null,
+});
+
+function trustSha256(value) {
+  return sha256Text(compactJson(value));
+}
+
+function verifiedOnlyTrust(value) {
+  return value && !Array.isArray(value)
+    && Object.keys(value).sort().join(',') === Object.keys(VERIFIED_ONLY_TRUST).sort().join(',')
+    && value?.schemaVersion === VERIFIED_ONLY_TRUST.schemaVersion
+    && value?.status === VERIFIED_ONLY_TRUST.status
+    && value?.calibrationEligible === true
+    && value?.hardObservedOuttransportEligible === true
+    && value?.incidentId === null
+    && Number(value?.affectedPartCount) === 0
+    && Number(value?.syntheticSampleCount) === 0
+    && value?.activeUntil === null;
+}
+
+function finiteInRange(value, minimum, maximum) {
+  return typeof value !== 'boolean' && value !== null && value !== ''
+    && Number.isFinite(Number(value)) && Number(value) >= minimum && Number(value) <= maximum;
+}
+
+function exactReadyAuditMetadata(descriptor) {
+  const audit = descriptor?.audit;
+  return audit?.status === 'passed'
+    && Number(audit.zoneCount) === CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedZoneCount
+    && Number(audit.partCount) === CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount
+    && Number(audit.memoryReadyPartCount) === CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount
+    && Number(audit.modeEvaluationCount) === CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount * 2
+    && Number(audit.scoreReconstructionMismatchCount) === 0;
+}
+
+function measuredOnlyReadyProjection(details) {
+  const errors = [];
+  const coastal = details?.coastalParts;
+  const parts = Object.entries(coastal?.parts || {});
+  const zones = Object.entries(coastal?.zones || {});
+  if (parts.length !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount) {
+    errors.push('MEASURED_STATE_PART_COUNT_MISMATCH');
+  }
+  if (zones.length !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedZoneCount) {
+    errors.push('MEASURED_STATE_ZONE_COUNT_MISMATCH');
+  }
+  if (Number(coastal?.expectedPartCount) !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount
+    || Number(coastal?.scoredPartCount) !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount) {
+    errors.push('MEASURED_STATE_COASTAL_ACCOUNTING_MISMATCH');
+  }
+  let readyPartCount = 0;
+  let measuredStateCount = 0;
+  let modeEvaluationCount = 0;
+  const partCountByZone = new Map();
+  for (const [, part] of parts) {
+    partCountByZone.set(part?.zoneId, (partCountByZone.get(part?.zoneId) || 0) + 1);
+  }
+  for (const [zoneId, zone] of zones) {
+    if (Number(zone?.expectedPartCount) !== (partCountByZone.get(zoneId) || 0)
+      || Number(zone?.scoredPartCount) !== Number(zone?.expectedPartCount)) {
+      errors.push('MEASURED_STATE_ZONE_ACCOUNTING_MISMATCH');
+      break;
+    }
+  }
+  for (const [partId, part] of parts) {
+    const candidate = part?.candidateG;
+    const state = candidate?.currentState;
+    let valid = true;
+    const reject = () => { valid = false; };
+    if (!part?.zoneId || !coastal?.zones?.[part.zoneId]) reject();
+    if (candidate?.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
+      || candidate?.modelId !== CANDIDATE_G_STATE_MODEL_ID
+      || candidate?.variantId !== CANDIDATE_G_STATE_VARIANT_ID
+      || candidate?.profileId !== CANDIDATE_G_STATE_PROFILE_ID) reject();
+    if (candidate?.transportMemoryReady !== true
+      || candidate?.transportMemoryStatus !== 'READY'
+      || Number(candidate?.transportMemoryCoverageHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours) reject();
+    if (!state || Object.keys(state).sort().join(',') !== COMPACT_STATE_KEYS.join(',')) reject();
+    if (state?.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
+      || state?.modelId !== CANDIDATE_G_STATE_MODEL_ID
+      || state?.variantId !== CANDIDATE_G_STATE_VARIANT_ID
+      || state?.profileId !== CANDIDATE_G_STATE_PROFILE_ID
+      || !STATE_KEY_PATTERN.test(String(state?.stateKey || ''))) reject();
+    if (state?.transportMemoryReady !== true
+      || state?.transportMemoryStatus !== 'READY'
+      || Number(state?.transportMemoryWindowHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
+      || Number(state?.transportMemoryCoverageHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours) reject();
+    if (!finiteInRange(state?.transportPotential, 0, 100)
+      || !finiteInRange(state?.outboundEpisodeEffectiveHours, 0, Number.MAX_SAFE_INTEGER)
+      || !finiteInRange(state?.mobilisationPotential, 0, 100)) reject();
+    const referenceMs = Date.parse(candidate?.transportReferenceAt || '');
+    if (!Number.isFinite(referenceMs)
+      || state?.transportReferenceAt !== candidate?.transportReferenceAt
+      || state?.time !== candidate?.referenceAt
+      || state?.time !== part?.current?.time) reject();
+    const evidence = state?.transportEvidence;
+    if (!Array.isArray(evidence) || evidence.length < 17 || evidence.length > 49) reject();
+    if (Array.isArray(evidence)) {
+      for (let index = 0; index < evidence.length; index += 1) {
+        const item = evidence[index];
+        const itemMs = Date.parse(item?.time || '');
+        const previousMs = index ? Date.parse(evidence[index - 1]?.time || '') : null;
+        if (!item || Object.keys(item).sort().join(',') !== 'strength,time'
+          || !Number.isFinite(itemMs)
+          || item.time !== new Date(itemMs).toISOString()
+          || !finiteInRange(item.strength, -1, 1)
+          || (index > 0 && (!(itemMs > previousMs)
+            || (itemMs - previousMs) / 3_600_000 > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.maximumGapHours))) reject();
+      }
+      if (Date.parse(evidence.at(-1)?.time || '') !== referenceMs) reject();
+    }
+    try {
+      const replay = buildBoundedCurrentTransportMemory(evidence || [], {
+        referenceTime: candidate?.transportReferenceAt,
+      });
+      if (replay.memoryReady !== true || replay.status !== 'READY'
+        || Number(replay.coverageHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
+        || Math.abs(Number(replay.result?.transportPotential) - Number(state?.transportPotential)) > 1e-9
+        || Math.abs(Number(replay.result?.outboundEpisodeEffectiveHours)
+          - Number(state?.outboundEpisodeEffectiveHours)) > 1e-9) reject();
+    } catch {
+      reject();
+    }
+    for (const mode of ['waders', 'beach']) {
+      const modeState = candidate?.modes?.[mode];
+      const activeState = part?.current?.[mode];
+      if (modeState?.available === true
+        && finiteInRange(modeState?.score, 0, 100)
+        && activeState?.available === true
+        && Number(activeState?.score) === Number(modeState?.score)) modeEvaluationCount += 1;
+      else reject();
+    }
+    if (valid) {
+      readyPartCount += 1;
+      measuredStateCount += 1;
+    } else if (errors.length < 12) {
+      errors.push(`MEASURED_STATE_INVALID:${partId}`);
+    }
+  }
+  if (readyPartCount !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount) {
+    errors.push('MEASURED_READY_STATE_COUNT_MISMATCH');
+  }
+  if (modeEvaluationCount !== CANDIDATE_G_RECOVERY_FALLBACK_POLICY.expectedPartCount * 2) {
+    errors.push('MEASURED_MODE_EVALUATION_COUNT_MISMATCH');
+  }
+  return { errors, readyPartCount, measuredStateCount, modeEvaluationCount };
+}
+
+function reconstructionSummary(full) {
+  const parts = Object.values(full?.coastalParts?.parts || {});
+  const reconstructedByPart = parts.map(part => (part?.candidateG?.currentState?.transportEvidence || [])
+    .filter(isReconstructedTransportEvidence).length);
+  return {
+    reconstructedPartCount: reconstructedByPart.filter(count => count > 0).length,
+    reconstructedTransportEvidenceCount: reconstructedByPart.reduce((sum, count) => sum + count, 0),
+  };
+}
 
 async function atomicWrite(file, text) {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -62,8 +259,30 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   if (Object.keys(conditions?.zones || {}).length !== policy.expectedZoneCount) errors.push('STARTUP_ZONE_COUNT_MISMATCH');
   if (Object.keys(details?.zones || {}).length !== policy.expectedZoneCount) errors.push('DETAIL_ZONE_COUNT_MISMATCH');
   if (Object.keys(details?.coastalParts?.parts || {}).length !== policy.expectedPartCount) errors.push('COASTAL_PART_COUNT_MISMATCH');
-  if (Number(descriptor?.audit?.memoryReadyPartCount) !== policy.expectedPartCount) errors.push('MEMORY_READY_COUNT_MISMATCH');
-  if (Number(descriptor?.audit?.modeEvaluationCount) !== policy.expectedPartCount * 2) errors.push('MODE_EVALUATION_COUNT_MISMATCH');
+  if (!exactReadyAuditMetadata(descriptor)) errors.push('READY_AUDIT_METADATA_MISMATCH');
+  if (Number(descriptor?.audit?.reconstructedPartCount) !== 0
+    || Number(descriptor?.audit?.reconstructedTransportEvidenceCount) !== 0) {
+    errors.push('RECONSTRUCTED_SOURCE_NOT_ALLOWED');
+  }
+  const stateInspection = measuredOnlyReadyProjection(details);
+  errors.push(...stateInspection.errors);
+  const conditionTrust = conditions?.ravScoreEvidenceTrust;
+  const detailTrust = details?.ravScoreEvidenceTrust;
+  const partTrustBound = Object.values(details?.coastalParts?.parts || {}).every(part =>
+    verifiedOnlyTrust(part?.candidateG?.evidenceTrust));
+  if (!verifiedOnlyTrust(descriptor?.ravScoreEvidenceTrust)
+    || !verifiedOnlyTrust(conditionTrust)
+    || !verifiedOnlyTrust(detailTrust)
+    || !verifiedOnlyTrust(conditions?.coastalParts?.evidenceTrust)
+    || !verifiedOnlyTrust(details?.coastalParts?.evidenceTrust)
+    || !partTrustBound
+    || trustSha256(descriptor?.ravScoreEvidenceTrust) !== descriptor?.ravScoreEvidenceTrustSha256
+    || trustSha256(conditionTrust) !== descriptor?.ravScoreEvidenceTrustSha256
+    || trustSha256(detailTrust) !== descriptor?.ravScoreEvidenceTrustSha256
+    || trustSha256(conditions?.coastalParts?.evidenceTrust) !== descriptor?.ravScoreEvidenceTrustSha256
+    || trustSha256(details?.coastalParts?.evidenceTrust) !== descriptor?.ravScoreEvidenceTrustSha256) {
+    errors.push('SOURCE_EVIDENCE_TRUST_MISMATCH');
+  }
   const generatedAt = descriptor?.generatedAt || conditions?.generatedAt;
   const age = hoursOld(generatedAt, nowMs);
   if (!Number.isFinite(age) || age < 0) errors.push('GENERATED_AT_INVALID');
@@ -78,13 +297,91 @@ export function validateRecoveryFallbackBundle({ descriptor, conditions, details
   return { ok: errors.length === 0, errors, ageHours: Number.isFinite(age) ? age : null };
 }
 
+export function validateLegacyRecoveryFallbackBundle({ descriptor, conditions, details }, {
+  nowMs = Date.now(),
+  enforceAge = true,
+} = {}) {
+  const policy = CANDIDATE_G_RECOVERY_FALLBACK_POLICY;
+  const errors = [];
+  if (descriptor?.schemaVersion !== policy.legacySchemaVersion) errors.push('LEGACY_DESCRIPTOR_SCHEMA_MISMATCH');
+  if (descriptor?.status !== 'last-verified-candidate-g-ready') errors.push('DESCRIPTOR_STATUS_MISMATCH');
+  if (!descriptor?.datasetId || descriptor.datasetId !== conditions?.datasetId || descriptor.datasetId !== details?.datasetId) {
+    errors.push('DATASET_ID_MISMATCH');
+  }
+  if (!descriptor?.generatedAt || descriptor.generatedAt !== conditions?.generatedAt
+    || descriptor.generatedAt !== details?.generatedAt) errors.push('GENERATED_AT_MISMATCH');
+  if (!exactReadyAuditMetadata(descriptor)) errors.push('READY_AUDIT_METADATA_MISMATCH');
+  if (Object.keys(conditions?.zones || {}).length !== policy.expectedZoneCount
+    || Object.keys(details?.zones || {}).length !== policy.expectedZoneCount
+    || Object.keys(details?.coastalParts?.parts || {}).length !== policy.expectedPartCount) {
+    errors.push('LEGACY_PUBLIC_COVERAGE_MISMATCH');
+  }
+  const conditionsText = compactJson(conditions);
+  const detailsText = compactJson(details);
+  if (!SHA256_PATTERN.test(String(descriptor?.publicConditionsSha256 || ''))
+    || descriptor.publicConditionsSha256 !== sha256Text(conditionsText)) errors.push('STARTUP_HASH_MISMATCH');
+  if (!SHA256_PATTERN.test(String(descriptor?.publicConditionDetailsSha256 || ''))
+    || descriptor.publicConditionDetailsSha256 !== sha256Text(detailsText)) errors.push('DETAIL_HASH_MISMATCH');
+  const hasTrustField = descriptor?.ravScoreEvidenceTrust !== undefined
+    || descriptor?.ravScoreEvidenceTrustSha256 !== undefined
+    || conditions?.ravScoreEvidenceTrust !== undefined
+    || conditions?.coastalParts?.evidenceTrust !== undefined
+    || details?.ravScoreEvidenceTrust !== undefined
+    || details?.coastalParts?.evidenceTrust !== undefined
+    || Object.values(details?.coastalParts?.parts || {}).some(part => part?.candidateG?.evidenceTrust !== undefined);
+  if (hasTrustField) errors.push('LEGACY_PARTIAL_TRUST_MARKER_NOT_ALLOWED');
+  const stateInspection = measuredOnlyReadyProjection(details);
+  errors.push(...stateInspection.errors);
+  const generatedAt = descriptor?.generatedAt || conditions?.generatedAt;
+  const age = hoursOld(generatedAt, nowMs);
+  if (!Number.isFinite(age) || age < 0) errors.push('GENERATED_AT_INVALID');
+  if (enforceAge && age > policy.maximumAgeHours) errors.push('FALLBACK_TOO_OLD');
+  const validUntilMs = Date.parse(descriptor?.validUntil || '');
+  if (!Number.isFinite(validUntilMs)) errors.push('FORECAST_VALID_UNTIL_INVALID');
+  if (enforceAge && Number.isFinite(validUntilMs) && nowMs > validUntilMs) errors.push('FALLBACK_FORECAST_EXPIRED');
+  return {
+    ok: errors.length === 0,
+    errors,
+    ageHours: Number.isFinite(age) ? age : null,
+    stateInspection,
+  };
+}
+
 // En bevaret nødvisning kan være bygget af en ældre appversion. Genopbyg kun
 // dens offentlige opstartsprojektion og deterministiske femdøgnsindeks fra den
 // allerede auditerede detaljepakke, og bind projektionen til en ny hash.
 // Detaljepakken, dataset-id, tider, scorer og Candidate G-state ændres ikke.
 export function upgradeRecoveryFallbackBundle(bundle) {
-  const conditions = bundle?.conditions || {};
-  const details = bundle?.details || {};
+  const sourceDescriptor = bundle?.descriptor || {};
+  const sourceConditions = bundle?.conditions || {};
+  const sourceDetails = bundle?.details || {};
+  const legacy = sourceDescriptor.schemaVersion === CANDIDATE_G_RECOVERY_FALLBACK_POLICY.legacySchemaVersion;
+  const sourceValidation = legacy
+    ? validateLegacyRecoveryFallbackBundle(bundle, { enforceAge: false })
+    : validateRecoveryFallbackBundle(bundle, { enforceAge: false });
+  if (!sourceValidation.ok) {
+    throw new Error(`Candidate G-fallbackkilden kan ikke opgraderes: ${sourceValidation.errors.join(',')}`);
+  }
+  const evidenceTrust = VERIFIED_ONLY_TRUST;
+  const details = {
+    ...sourceDetails,
+    ravScoreEvidenceTrust: evidenceTrust,
+    coastalParts: {
+      ...sourceDetails.coastalParts,
+      evidenceTrust,
+      parts: Object.fromEntries(Object.entries(sourceDetails.coastalParts?.parts || {}).map(([partId, part]) => [partId, {
+        ...part,
+        candidateG: { ...part?.candidateG, evidenceTrust },
+      }])),
+    },
+  };
+  const conditions = {
+    ...sourceConditions,
+    ravScoreEvidenceTrust: evidenceTrust,
+    coastalParts: sourceConditions.coastalParts
+      ? { ...sourceConditions.coastalParts, evidenceTrust }
+      : sourceConditions.coastalParts,
+  };
   const zones = Object.fromEntries(Object.entries(conditions.zones || {}).map(([zoneId, zone]) => [zoneId, {
     ...zone,
     forecast: details.zones?.[zoneId]?.forecast || zone?.forecast || { hourly: [] },
@@ -102,13 +399,33 @@ export function upgradeRecoveryFallbackBundle(bundle) {
     productionReferenceAt: conditions.productionReferenceAt || details.productionReferenceAt || null,
     coastalParts: details.coastalParts || conditions.coastalParts || null,
   });
-  const upgradedConditions = { ...conditions, nationalForecast, coastalParts };
+  const upgradedConditions = { ...conditions, ravScoreEvidenceTrust: evidenceTrust, nationalForecast, coastalParts };
+  const upgradedDescriptor = {
+    ...sourceDescriptor,
+    schemaVersion: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.schemaVersion,
+    publicConditionsSha256: sha256Text(compactJson(upgradedConditions)),
+    publicConditionDetailsSha256: sha256Text(compactJson(details)),
+    ravScoreEvidenceTrust: evidenceTrust,
+    ravScoreEvidenceTrustSha256: trustSha256(evidenceTrust),
+    audit: {
+      ...sourceDescriptor.audit,
+      reconstructedPartCount: 0,
+      reconstructedTransportEvidenceCount: 0,
+    },
+    ...(legacy ? {
+      legacyUpgrade: {
+        sourceSchemaVersion: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.legacySchemaVersion,
+        originalPublicConditionsSha256: sourceDescriptor.publicConditionsSha256,
+        originalPublicConditionDetailsSha256: sourceDescriptor.publicConditionDetailsSha256,
+        verifiedPartCount: sourceValidation.stateInspection.readyPartCount,
+        verifiedModeEvaluationCount: sourceValidation.stateInspection.modeEvaluationCount,
+        measuredOnlyStateCount: sourceValidation.stateInspection.measuredStateCount,
+      },
+    } : {}),
+  };
   return {
     ...bundle,
-    descriptor: {
-      ...(bundle?.descriptor || {}),
-      publicConditionsSha256: sha256Text(compactJson(upgradedConditions)),
-    },
+    descriptor: upgradedDescriptor,
     conditions: upgradedConditions,
     details,
   };
@@ -117,16 +434,27 @@ export function upgradeRecoveryFallbackBundle(bundle) {
 export function selectNewestRecoveryFallbackCandidate(candidates, { nowMs = Date.now() } = {}) {
   return candidates
     .map(candidate => {
-      const bundle = upgradeRecoveryFallbackBundle(candidate.bundle);
-      return { ...candidate, bundle, validation: validateRecoveryFallbackBundle(bundle, { nowMs }) };
+      try {
+        const bundle = upgradeRecoveryFallbackBundle(candidate.bundle);
+        return { ...candidate, bundle, validation: validateRecoveryFallbackBundle(bundle, { nowMs }) };
+      } catch (error) {
+        return { ...candidate, bundle: candidate.bundle, validation: { ok: false, errors: [error.message] } };
+      }
     })
     .filter(candidate => candidate.validation.ok)
     .sort((left, right) => Date.parse(right.bundle.descriptor.generatedAt) - Date.parse(left.bundle.descriptor.generatedAt))[0] || null;
 }
 
-function descriptorFor({ full, publicDocument, detailsDocument, audit }) {
+function descriptorFor({ full, publicDocument, detailsDocument, audit, reconstruction }) {
   const publicText = compactJson(publicDocument);
   const detailsText = compactJson(detailsDocument);
+  const evidenceTrust = publicDocument?.ravScoreEvidenceTrust;
+  if (!verifiedOnlyTrust(evidenceTrust)
+    || trustSha256(evidenceTrust) !== trustSha256(detailsDocument?.ravScoreEvidenceTrust)
+    || reconstruction.reconstructedPartCount !== 0
+    || reconstruction.reconstructedTransportEvidenceCount !== 0) {
+    throw new Error('Et rekonstrueret eller ubundet READY-datasæt må ikke mærkes som senest verificeret.');
+  }
   return {
     schemaVersion: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.schemaVersion,
     status: 'last-verified-candidate-g-ready',
@@ -137,6 +465,8 @@ function descriptorFor({ full, publicDocument, detailsDocument, audit }) {
     maximumAgeHours: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.maximumAgeHours,
     publicConditionsSha256: sha256Text(publicText),
     publicConditionDetailsSha256: sha256Text(detailsText),
+    ravScoreEvidenceTrust: evidenceTrust,
+    ravScoreEvidenceTrustSha256: trustSha256(evidenceTrust),
     audit: {
       status: audit.status,
       zoneCount: audit.coverage.zoneCount,
@@ -144,6 +474,8 @@ function descriptorFor({ full, publicDocument, detailsDocument, audit }) {
       memoryReadyPartCount: audit.stateContinuation.memoryReadyPartCount,
       modeEvaluationCount: audit.coverage.modeEvaluationCount,
       scoreReconstructionMismatchCount: audit.scoreReconstructionMismatchCount,
+      reconstructedPartCount: reconstruction.reconstructedPartCount,
+      reconstructedTransportEvidenceCount: reconstruction.reconstructedTransportEvidenceCount,
     },
     privacy: {
       compactPublicProjectionOnly: true,
@@ -185,7 +517,8 @@ async function fetchDeployedBundle(baseUrl, manifest) {
   ]);
   return {
     descriptor: {
-      schemaVersion: 1,
+      schemaVersion: Number(fallback.schemaVersion
+        ?? CANDIDATE_G_RECOVERY_FALLBACK_POLICY.legacySchemaVersion),
       status: 'last-verified-candidate-g-ready',
       datasetId: fallback.datasetId,
       generatedAt: fallback.generatedAt,
@@ -194,6 +527,8 @@ async function fetchDeployedBundle(baseUrl, manifest) {
       maximumAgeHours: fallback.maximumAgeHours,
       publicConditionsSha256: fallback.publicConditionsSha256,
       publicConditionDetailsSha256: fallback.publicConditionDetailsSha256,
+      ravScoreEvidenceTrust: fallback.ravScoreEvidenceTrust,
+      ravScoreEvidenceTrustSha256: fallback.ravScoreEvidenceTrustSha256,
       audit: fallback.sourceAudit,
       privacy: fallback.privacy,
     },
@@ -231,16 +566,19 @@ export async function stageRecoveryFallback({
   try {
     const full = await readJson(sourcePath);
     const audit = auditCandidateGPublicShadow(full);
+    const reconstruction = reconstructionSummary(full);
     const policy = CANDIDATE_G_RECOVERY_FALLBACK_POLICY;
     if (audit.status === 'passed'
       && audit.stateContinuation.memoryReadyPartCount === policy.expectedPartCount
-      && audit.coverage.modeEvaluationCount === policy.expectedPartCount * 2) {
+      && audit.coverage.modeEvaluationCount === policy.expectedPartCount * 2
+      && reconstruction.reconstructedPartCount === 0
+      && reconstruction.reconstructedTransportEvidenceCount === 0) {
       const publicDocument = buildPublicConditions(full);
       const detailsDocument = buildPublicConditionDetails(full);
       candidates.push({
         status: 'staged-hydrated-ready-dataset',
         bundle: {
-          descriptor: descriptorFor({ full, publicDocument, detailsDocument, audit }),
+          descriptor: descriptorFor({ full, publicDocument, detailsDocument, audit, reconstruction }),
           conditions: publicDocument,
           details: detailsDocument,
         },
@@ -299,7 +637,7 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
   await atomicWrite(publicConditionsPath, compactJson(bundle.conditions));
   await atomicWrite(publicDetailsPath, compactJson(bundle.details));
   manifest.recoveryFallback = {
-    schemaVersion: 1,
+    schemaVersion: CANDIDATE_G_RECOVERY_FALLBACK_POLICY.schemaVersion,
     status: 'active-last-verified',
     reason: globalRecovery
       ? 'candidate-g-verified-time-gap-recovery'
@@ -313,6 +651,8 @@ export async function publishRecoveryFallback({ auditPath, manifestPath, cacheRo
     conditionDetailsPath: `./${policy.publicDetailsName}`,
     publicConditionsSha256: bundle.descriptor.publicConditionsSha256,
     publicConditionDetailsSha256: bundle.descriptor.publicConditionDetailsSha256,
+    ravScoreEvidenceTrust: bundle.descriptor.ravScoreEvidenceTrust,
+    ravScoreEvidenceTrustSha256: bundle.descriptor.ravScoreEvidenceTrustSha256,
     sourceAudit: bundle.descriptor.audit,
     primaryDatasetId: manifest.datasetId,
     primaryGeneratedAt: manifest.generatedAt,

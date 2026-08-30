@@ -3,6 +3,7 @@ import {
   CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY,
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
   deriveCurrentTransportEvidence,
+  isReconstructedTransportEvidence,
 } from './ravscore-regime-memory.js';
 import {
   buildWaveMobilisationPotential,
@@ -10,6 +11,7 @@ import {
 } from './ravscore-mobilisation-memory.js';
 
 export const CANDIDATE_G_STATE_SCHEMA_VERSION = '2.0.0';
+export const CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION = '2.1.0';
 export const CANDIDATE_G_STATE_MODEL_ID =
   'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
 export const CANDIDATE_G_STATE_VARIANT_ID =
@@ -32,13 +34,23 @@ function validTransportEvidence(value, transportReferenceAt) {
   let previousTime = null;
   for (const item of value) {
     if (!item || typeof item !== 'object' || Array.isArray(item) || !validTime(item.time)) return false;
+    const keys = Object.keys(item).sort().join(',');
+    const expectedKeys = isReconstructedTransportEvidence(item)
+      ? 'incidentId,provenance,strength,time'
+      : 'strength,time';
+    if (keys !== expectedKeys) return false;
     if (item.strength !== null && (!finite(item.strength)
       || Number(item.strength) < -1 || Number(item.strength) > 1)) return false;
+    if (isReconstructedTransportEvidence(item) && !finite(item.strength)) return false;
     const time = Date.parse(item.time);
     if (previousTime !== null && time <= previousTime) return false;
     previousTime = time;
   }
   return previousTime === Date.parse(transportReferenceAt);
+}
+
+function reconstructedEvidenceCount(value) {
+  return Array.isArray(value) ? value.filter(isReconstructedTransportEvidence).length : 0;
 }
 
 function compatibility(initialState, stateKey, firstSampleTime) {
@@ -48,7 +60,8 @@ function compatibility(initialState, stateKey, firstSampleTime) {
   if (typeof initialState !== 'object' || Array.isArray(initialState)) {
     return { accepted: false, reason: 'INVALID_PREVIOUS_STATE' };
   }
-  if (initialState.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION) {
+  if (![CANDIDATE_G_STATE_SCHEMA_VERSION, CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION]
+    .includes(initialState.schemaVersion)) {
     return { accepted: false, reason: 'SCHEMA_VERSION_CHANGED' };
   }
   if (initialState.modelId !== CANDIDATE_G_STATE_MODEL_ID) {
@@ -83,7 +96,9 @@ function compatibility(initialState, stateKey, firstSampleTime) {
     || Number(initialState.transportMemoryCoverageHours) > CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
     || Number(initialState.transportMemoryWindowHours) !== CURRENT_TRANSPORT_BOUNDED_MEMORY_POLICY.windowHours
     || typeof initialState.transportMemoryStatus !== 'string'
-    || !validTransportEvidence(initialState.transportEvidence, transportReferenceAt)) {
+    || !validTransportEvidence(initialState.transportEvidence, transportReferenceAt)
+    || (initialState.schemaVersion === CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION)
+      !== (reconstructedEvidenceCount(initialState.transportEvidence) > 0)) {
     return { accepted: false, reason: 'INVALID_PREVIOUS_STATE' };
   }
   if (firstSampleTime && Date.parse(initialState.time) > Date.parse(firstSampleTime)) {
@@ -94,7 +109,14 @@ function compatibility(initialState, stateKey, firstSampleTime) {
 
 function compactState(stateKey, row) {
   return {
-    schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+    // Measured-only states remain schema 2.0.0. Only the sanctioned union
+    // shape with reconstructed evidence is 2.1.0, so pre-DEC-0109 code rejects
+    // trust-bearing state rather than stripping the marker. Once every marked
+    // sample ages out (or exact rollback restores the pre-change state), the
+    // compact state safely returns to 2.0.0.
+    schemaVersion: reconstructedEvidenceCount(row.transportEvidence) > 0
+      ? CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION
+      : CANDIDATE_G_STATE_SCHEMA_VERSION,
     modelId: CANDIDATE_G_STATE_MODEL_ID,
     variantId: CANDIDATE_G_STATE_VARIANT_ID,
     profileId: CANDIDATE_G_STATE_PROFILE_ID,

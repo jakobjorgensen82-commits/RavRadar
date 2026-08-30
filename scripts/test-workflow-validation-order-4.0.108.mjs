@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const path = '.github/workflows/update-and-deploy.yml';
@@ -43,6 +44,10 @@ for (const marker of [
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
+const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-contracts'] || '';
+if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery')) {
+  throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');
+}
 for (const marker of [
   'npm run validate:rdks',
   'npm run test:feedback-learning',
@@ -114,7 +119,9 @@ for (const marker of [
   'python scripts/test-copernicus-shadow-retention-4.0.232.py',
   'python scripts/test-current-regional-proxy-policy.py',
   'dmi-zone-cache-v1-${{ runner.os }}-',
-  'python scripts/run-copernicus-current-pilot.py',
+  'python scripts/run-copernicus-current-pilot-with-retry.py',
+  'python scripts/check-copernicus-current-range.py',
+  'copernicus-current-range-v2-',
   'def raw_vector_present(value):',
   'data/diagnostics/copernicus-current-pilot.json',
   'retention-days: 7',
@@ -125,14 +132,14 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'python3 scripts/check-copernicus-current-hour.py', 'target_hour: ${{ steps.cache-state.outputs.target_hour }}', 'inputs[sample_time]=${{ needs.preserve.outputs.target_hour }}', 'validate-copernicus-current-pilot.yml/dispatches', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", 'node scripts/check-production-watchdog.mjs']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs']) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
   throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
 }
-const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
-if (copernicusPreserveSection.includes('actions: write')) throw new Error('Kun det minimale Copernicus-dispatchjob må få Actions-skriveret.');
+const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  retry-failed-production:'));
+if (copernicusPreserveSection.includes('actions: write')) throw new Error('Det payloadfri Copernicus-keepalivejob må ikke få Actions-skriveret.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'schedule:',
@@ -140,7 +147,7 @@ for (const marker of [
   'current-hour-readiness:',
   'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
   'Targeted supplement pending',
-  "github.event_name == 'workflow_dispatch' && inputs.force != true",
+  "inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
@@ -260,15 +267,19 @@ const tripStorageDeployment = fs.readFileSync(`${workflowDirectory}/deploy-trip-
 for (const marker of [
   'workflow_dispatch:',
   'permissions:\n  contents: read',
-  'storage_mode:',
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'npm run validate:source',
-  'Reverify exact main immediately before the first external write',
+  'Validate exact source head before external writes',
+  'Reconfirm current origin/main before the Candidate G database contract',
+  'Atomically apply and verify the Candidate G trip-quality contract',
+  'Reconfirm current origin/main before D1 schema and phase inspection',
   'node scripts/prepare-cloudflare-trip-storage.mjs',
+  'node scripts/mark-cloudflare-trip-storage-activation.mjs',
   'node scripts/audit-cloudflare-trip-storage.mjs',
   'wrangler@4.28.1 deploy',
   'node scripts/verify-cloudflare-trip-gateway.mjs',
   'node scripts/migrate-trip-storage-to-cloudflare.mjs',
+  'TRIP_STORAGE_MODE="maintenance:$maintenance_until"',
   'TRIP_STORAGE_MODE=d1',
   'TRIP_STORAGE_MODE=supabase',
   'supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"',
@@ -282,11 +293,26 @@ if (/\b(?:push|pull_request|schedule|workflow_run):/.test(tripStorageDeployment)
 if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.includes('id-token: write') || tripStorageDeployment.includes('deploy-pages')) {
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
-const lastMainReverification = tripStorageDeployment.lastIndexOf('Reverify exact main immediately before the first external write');
-const firstBackendWrite = tripStorageDeployment.indexOf('supabase db push --linked)');
-if (!(lastMainReverification > tripStorageDeployment.indexOf('supabase db push --linked --dry-run')
-  && lastMainReverification < firstBackendWrite)) {
-  throw new Error('Turlager-deploymentet skal genverificere exact main efter dry-run og før første eksterne write.');
+const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
+const tripQualityCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before the Candidate G database contract');
+const tripQualityWrite = tripStorageDeployment.indexOf('name: Atomically apply and verify the Candidate G trip-quality contract');
+const d1SchemaCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before D1 schema and phase inspection');
+const d1SchemaWrite = tripStorageDeployment.indexOf('name: Prepare ten EU-restricted D1 shards, schema and durable phase');
+if (!(exactSourceValidation < tripQualityCas && tripQualityCas < tripQualityWrite
+  && tripQualityWrite < d1SchemaCas && d1SchemaCas < d1SchemaWrite)) {
+  throw new Error('Turlager-deploymentet skal have en sen exact-main-CAS umiddelbart før både trip-quality-write og D1-schema-/fasewrite.');
+}
+for (const [name, section] of [
+  ['trip quality', tripStorageDeployment.slice(tripQualityCas, tripQualityWrite)],
+  ['D1 schema', tripStorageDeployment.slice(d1SchemaCas, d1SchemaWrite)],
+]) {
+  for (const marker of [
+    'git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main',
+    'test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"',
+    'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
+  ]) {
+    if (!section.includes(marker)) throw new Error(`${name}-write mangler en umiddelbar exact-main-CAS-markør: ${marker}`);
+  }
 }
 const supabasePatConsumers = workflowFiles.filter((name) =>
   fs.readFileSync(`${workflowDirectory}/${name}`, 'utf8').includes('SUPABASE_ACCESS_TOKEN')
@@ -294,12 +320,230 @@ const supabasePatConsumers = workflowFiles.filter((name) =>
 if (JSON.stringify(supabasePatConsumers) !== JSON.stringify(['deploy-trip-storage.yml'])) {
   throw new Error(`Supabase-PAT må kun bruges af det manuelle turlager-deployment, ikke af normal drift eller overvågning: ${supabasePatConsumers.join(', ') || '(ingen)'}`);
 }
-if (!tripStorageDeployment.includes("if: inputs.storage_mode == 'd1'") || tripStorageDeployment.includes('continue-on-error')) {
-  throw new Error('D1-deploymentet skal være eksplicit og må ikke skjule fejl eller falde automatisk tilbage.');
+if (tripStorageDeployment.includes('storage_mode:')
+  || tripStorageDeployment.includes('inputs.storage_mode')
+  || tripStorageDeployment.includes('kontrolleret Supabase-rollback')) {
+  throw new Error('Efter den varige D1-grænse må workflowet ikke tilbyde en operativ Supabase-rollback.');
 }
-if ((tripStorageDeployment.match(/node scripts\/migrate-trip-storage-to-cloudflare\.mjs/g) || []).length !== 2) {
-  throw new Error('D1-cutover skal migrere både før og efter Edge-skiftet, så ingen ture efterlades i Supabase-vinduet.');
+if (tripStorageDeployment.includes('wrangler versions deploy')
+  || (tripStorageDeployment.match(/npx --yes wrangler@4\.28\.1 deploy/g) || []).length !== 2) {
+  throw new Error('Worker-cutover skal bruge to idempotente standard-wrangler-deploys til 100% trafik og må ikke bruge gradual/split deployment.');
 }
+if ((tripStorageDeployment.match(/node scripts\/migrate-trip-storage-to-cloudflare\.mjs/g) || []).length !== 3) {
+  throw new Error('D1-cutover skal synkronisere før og efter mode-skiftet samt kunne gentage reconciliation ved failure roll-forward.');
+}
+const prepareD1Position = tripStorageDeployment.indexOf('name: Prepare ten EU-restricted D1 shards, schema and durable phase');
+const legacyIntentPosition = tripStorageDeployment.indexOf('name: Record fail-closed intent for the already-live legacy D1 installation');
+const legacyMarkerPosition = tripStorageDeployment.indexOf('name: Persist the D1 boundary before quiescing the legacy installation');
+const d1EdgePredeployIntentPosition = tripStorageDeployment.indexOf('name: Record current-run existing-D1 Edge predeployment intent');
+const freshEdgePredeployIntentPosition = tripStorageDeployment.indexOf('name: Record current-run fresh-Supabase Edge predeployment intent');
+const edgeDeployPosition = tripStorageDeployment.indexOf('name: Deploy exact maintenance-capable Edge functions while Worker and mode stay unchanged');
+const preleaseD1AttestationPosition = tripStorageDeployment.indexOf('name: Attest both exact Edge boundaries in unchanged D1 mode before leasing maintenance');
+const repairIntentPosition = tripStorageDeployment.indexOf('name: Record current-run D1 repair intent immediately before quiescence');
+const maintenancePosition = tripStorageDeployment.indexOf('name: Enter fail-closed expiring maintenance for every existing D1 installation');
+const bridgePosition = tripStorageDeployment.indexOf('name: Preserve the initial Supabase bridge only for a genuinely fresh D1 installation');
+const maintenanceAttestationPosition = tripStorageDeployment.indexOf('name: Attest both Edge boundaries in fail-closed maintenance');
+const bridgeAttestationPosition = tripStorageDeployment.indexOf('name: Attest both Edge boundaries in the genuinely fresh Supabase bridge');
+const oldGenerationDrainPosition = tripStorageDeployment.indexOf('name: Drain every bounded request from the preceding Edge generation');
+const deployWorkerPosition = tripStorageDeployment.indexOf('name: Install deploy and attest the private D1 gateway after Edge quiescence');
+const firstMigrationPosition = tripStorageDeployment.indexOf('name: Idempotently synchronize existing Supabase trips into D1');
+const d1IntentPosition = tripStorageDeployment.indexOf('name: Record local fail-closed intent before a genuinely fresh D1 marker');
+const d1MarkerPosition = tripStorageDeployment.indexOf('name: Persist the point of no return immediately before fresh D1 activation');
+const d1ModePosition = tripStorageDeployment.indexOf('name: Activate normal Cloudflare D1 mode after verified Worker readiness');
+const preReconcileAttestationPosition = tripStorageDeployment.indexOf('name: Attest both Edge write and read boundaries in live D1 mode before final reconciliation');
+const supabaseDrainPosition = tripStorageDeployment.indexOf('name: Drain the last bounded pre-D1 requests before final reconciliation');
+const reconcilePosition = tripStorageDeployment.indexOf('name: Reconcile every trip written before both Edge boundaries attested D1');
+const finalEdgeProbePosition = tripStorageDeployment.indexOf('name: Reverify both public Edge boundaries in live D1 mode');
+for (const [name, position] of Object.entries({
+  prepareD1Position,
+    legacyIntentPosition,
+    legacyMarkerPosition,
+    d1EdgePredeployIntentPosition,
+    freshEdgePredeployIntentPosition,
+    edgeDeployPosition,
+    preleaseD1AttestationPosition,
+    repairIntentPosition,
+    maintenancePosition,
+    bridgePosition,
+  maintenanceAttestationPosition,
+  bridgeAttestationPosition,
+  oldGenerationDrainPosition,
+  deployWorkerPosition,
+  firstMigrationPosition,
+  d1IntentPosition,
+  d1MarkerPosition,
+  d1ModePosition,
+  preReconcileAttestationPosition,
+  supabaseDrainPosition,
+  reconcilePosition,
+  finalEdgeProbePosition,
+})) {
+  if (position < 0) throw new Error(`Turlager-deploymentet mangler den sikre cutoverfase ${name}.`);
+}
+if (!(prepareD1Position < legacyIntentPosition
+  && legacyIntentPosition < legacyMarkerPosition
+  && legacyMarkerPosition < d1EdgePredeployIntentPosition
+  && d1EdgePredeployIntentPosition < freshEdgePredeployIntentPosition
+  && freshEdgePredeployIntentPosition < edgeDeployPosition
+  && edgeDeployPosition < preleaseD1AttestationPosition
+  && preleaseD1AttestationPosition < repairIntentPosition
+  && repairIntentPosition < maintenancePosition
+  && prepareD1Position < bridgePosition
+  && edgeDeployPosition < bridgePosition
+  && edgeDeployPosition < maintenanceAttestationPosition
+  && edgeDeployPosition < bridgeAttestationPosition
+  && maintenanceAttestationPosition < oldGenerationDrainPosition
+  && bridgeAttestationPosition < oldGenerationDrainPosition
+  && oldGenerationDrainPosition < deployWorkerPosition
+  && deployWorkerPosition < firstMigrationPosition
+  && firstMigrationPosition < d1IntentPosition
+  && d1IntentPosition < d1MarkerPosition
+  && d1MarkerPosition < d1ModePosition
+  && firstMigrationPosition < d1ModePosition
+  && d1ModePosition < preReconcileAttestationPosition
+  && preReconcileAttestationPosition < supabaseDrainPosition
+  && supabaseDrainPosition < reconcilePosition
+  && d1ModePosition < reconcilePosition
+  && reconcilePosition < finalEdgeProbePosition)) {
+  throw new Error('Turlager-cutover skal være legacy-marker → maintenance/new Edge-attestation/dræn → Worker → sync → frisk markør → D1-attestation/dræn → reconciliation → slutattestation.');
+}
+if ((tripStorageDeployment.match(/node scripts\/verify-trip-storage-edge\.mjs/g) || []).length !== 9) {
+  throw new Error('Turlager-cutover skal attestere begge Edge-funktioner i normal- og begge fasebevidste failure-forløb.');
+}
+if (!tripStorageDeployment.includes('EXPECTED_TRIP_STORAGE_MODE: supabase')
+  || !tripStorageDeployment.includes('EXPECTED_TRIP_STORAGE_MODE: maintenance')
+  || !tripStorageDeployment.includes('EXPECTED_TRIP_STORAGE_MODE: d1')) {
+  throw new Error('Turlager-cutover mangler eksplicit maintenance-/fresh-bridge-/D1-attestation.');
+}
+if (!tripStorageDeployment.includes('Restore Supabase only for a proven fresh pre-activation installation')
+  || !tripStorageDeployment.includes("steps.prepare_d1.outcome == 'success'")
+  || !tripStorageDeployment.includes("steps.prepare_d1.outputs.d1_activation_attempted != 'true'")
+  || !tripStorageDeployment.includes("steps.prepare_d1.outputs.legacy_d1_detected != 'true'")
+  || !tripStorageDeployment.includes("steps.fresh_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'")
+  || !tripStorageDeployment.includes("steps.legacy_activation_intent.outputs.d1_activation_intent != 'true'")
+  || !tripStorageDeployment.includes("steps.d1_repair_intent.outputs.d1_repair_intent != 'true'")
+  || !tripStorageDeployment.includes("steps.activation_intent.outputs.d1_activation_intent != 'true'")
+  || !tripStorageDeployment.includes('Redeploy exact Edge functions for the restored fresh Supabase bridge')
+  || !tripStorageDeployment.includes('Persist or reconfirm the D1 boundary during failure roll-forward')
+  || !tripStorageDeployment.includes("steps.legacy_activation_intent.outputs.d1_activation_intent == 'true'")
+  || !tripStorageDeployment.includes("steps.d1_edge_predeploy_intent.outputs.edge_predeploy_intent == 'true'")
+  || !tripStorageDeployment.includes("steps.d1_repair_intent.outputs.d1_repair_intent == 'true'")
+  || !tripStorageDeployment.includes("steps.activation_intent.outputs.d1_activation_intent == 'true'")
+  || !tripStorageDeployment.includes("steps.failure_d1_marker.outcome == 'success'")
+  || !tripStorageDeployment.includes('Redeploy exact maintenance-capable Edge functions before failure maintenance')
+  || !tripStorageDeployment.includes('Enter fail-closed expiring maintenance during D1 failure roll-forward')
+  || !tripStorageDeployment.includes('Attest both Edge boundaries in failure roll-forward maintenance')
+  || !tripStorageDeployment.includes('Reinstall and redeploy the exact Worker after failure Edge quiescence')
+  || !tripStorageDeployment.includes('Preserve D1 after the point of no return and repair forward')
+  || !tripStorageDeployment.includes('TRIP_STORAGE_MODE="maintenance:$maintenance_until"')
+  || !tripStorageDeployment.includes('test "$remaining_seconds" -ge 600')) {
+  throw new Error('Failure recovery skal skelne før/efter den varige D1-grænse og reparere fremad efter den.');
+}
+const failureRestorePosition = tripStorageDeployment.indexOf('name: Restore Supabase only for a proven fresh pre-activation installation');
+const failureExactHeadPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before any failure-recovery mutation');
+const failureFreshEdgeCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before restored fresh-Supabase Edge deployment');
+const failureFreshEdgePosition = tripStorageDeployment.indexOf('name: Redeploy exact Edge functions for the restored fresh Supabase bridge');
+const failureFreshAttestationPosition = tripStorageDeployment.indexOf('name: Attest the restored genuinely fresh Supabase bridge');
+const failureMarkerCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before failure roll-forward D1 phase persistence');
+const failureMarkerPosition = tripStorageDeployment.indexOf('name: Persist or reconfirm the D1 boundary during failure roll-forward');
+const failureMaintenanceEdgeCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before maintenance-capable failure Edge predeployment');
+const failureMaintenanceEdgePosition = tripStorageDeployment.indexOf('name: Redeploy exact maintenance-capable Edge functions before failure maintenance');
+const failureMaintenanceCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before failure roll-forward expiring maintenance');
+const failureMaintenancePosition = tripStorageDeployment.indexOf('name: Enter fail-closed expiring maintenance during D1 failure roll-forward');
+const failureMaintenanceAttestationPosition = tripStorageDeployment.indexOf('name: Attest both Edge boundaries in failure roll-forward maintenance');
+const failureMaintenanceDrainPosition = tripStorageDeployment.indexOf('name: Drain the preceding Edge generation before failure Worker replacement');
+const failureWorkerCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main immediately before failure Worker replacement');
+const failureLeasePosition = tripStorageDeployment.indexOf('name: Require enough failure maintenance lease for bounded Worker replacement');
+const failureWorkerPosition = tripStorageDeployment.indexOf('name: Reinstall and redeploy the exact Worker after failure Edge quiescence');
+const failureD1EdgeCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main before failure D1 secret and Edge deployment');
+const failureRollForwardPosition = tripStorageDeployment.indexOf('name: Preserve D1 after the point of no return and repair forward');
+const failureEdgePosition = tripStorageDeployment.indexOf('name: Redeploy exact Edge functions during D1 failure roll-forward');
+const failureD1AttestationPosition = tripStorageDeployment.indexOf('name: Attest both Edge boundaries in D1 mode before failure reconciliation');
+if (!(finalEdgeProbePosition < failureExactHeadPosition
+  && failureExactHeadPosition < failureRestorePosition
+  && failureRestorePosition < failureFreshEdgeCasPosition
+  && failureFreshEdgeCasPosition < failureFreshEdgePosition
+  && failureFreshEdgePosition < failureFreshAttestationPosition
+  && failureFreshAttestationPosition < failureMarkerCasPosition
+  && failureMarkerCasPosition < failureMarkerPosition
+  && failureMarkerPosition < failureMaintenanceEdgeCasPosition
+  && failureMaintenanceEdgeCasPosition < failureMaintenanceEdgePosition
+  && failureMaintenanceEdgePosition < failureMaintenanceCasPosition
+  && failureMaintenanceCasPosition < failureMaintenancePosition
+  && failureMaintenanceEdgePosition < failureMaintenanceAttestationPosition
+  && failureMaintenancePosition < failureMaintenanceAttestationPosition
+  && failureMaintenanceAttestationPosition < failureMaintenanceDrainPosition
+  && failureMaintenanceDrainPosition < failureWorkerCasPosition
+  && failureWorkerCasPosition < failureLeasePosition
+  && failureLeasePosition < failureWorkerPosition
+  && failureWorkerPosition < failureD1EdgeCasPosition
+  && failureD1EdgeCasPosition < failureRollForwardPosition
+  && failureRollForwardPosition < failureEdgePosition
+  && failureEdgePosition < failureD1AttestationPosition)) {
+  throw new Error('Fasebevidst failure recovery skal være fresh Supabase-repair eller marker → exact Edge → expiring maintenance-attestation/dræn → lease/CAS → Worker → D1/Edge-attestation.');
+}
+const failureRecovery = tripStorageDeployment.slice(failureExactHeadPosition);
+if (!failureRecovery.includes('id: failure_exact_head')
+  || !failureRecovery.includes('id: failure_fresh_edge_exact_head')
+  || !failureRecovery.includes('id: failure_marker_exact_head')
+  || !failureRecovery.includes('id: failure_maintenance_exact_head')
+  || !failureRecovery.includes('id: failure_maintenance_edge_exact_head')
+  || !failureRecovery.includes('id: failure_worker_exact_head')
+  || !failureRecovery.includes('id: failure_d1_edge_exact_head')
+  || !failureRecovery.includes('id: failure_reconcile_exact_head')) {
+  throw new Error('Hver separat failure-recovery-skrivefamilie skal have sin egen sene exact-main CAS.');
+}
+const failureDrainPosition = tripStorageDeployment.indexOf('name: Drain bounded pre-D1 requests during failure roll-forward');
+const failureReconcileCasPosition = tripStorageDeployment.indexOf('name: Reconfirm exact main immediately before failure roll-forward reconciliation');
+const failureReconcilePosition = tripStorageDeployment.indexOf('name: Reconcile the Supabase source during failure roll-forward');
+const failureFinalAttestationPosition = tripStorageDeployment.indexOf('name: Reattest both Edge boundaries after failure roll-forward');
+const failureFinalWorkerPosition = tripStorageDeployment.indexOf('name: Reattest Worker after failure roll-forward');
+if (!(failureD1AttestationPosition < failureDrainPosition
+  && failureDrainPosition < failureReconcileCasPosition
+  && failureReconcileCasPosition < failureReconcilePosition
+  && failureReconcilePosition < failureFinalAttestationPosition
+  && failureFinalAttestationPosition < failureFinalWorkerPosition)
+  || !tripStorageDeployment.includes("steps.failure_reconcile_exact_head.outcome == 'success'")) {
+  throw new Error('Failure-reconciliation skal ske efter D1-attestation/dræn, med frisk exact-main CAS og efterfølgende dobbelt slutattestation.');
+}
+if (!tripStorageDeployment.includes('continue-on-error: true')
+  || tripStorageDeployment.slice(0, failureExactHeadPosition).includes('continue-on-error: true')) {
+  throw new Error('Kun de eksplicitte failure-recovery-trin må fortsætte for at samle datasikker evidens.');
+}
+if ((tripStorageDeployment.match(/git fetch --no-tags --prune origin \+refs\/heads\/main:refs\/remotes\/origin\/main/g) || []).length < 16) {
+  throw new Error('Turlager-deploymentet skal genbekræfte current main før hver beskyttet ekstern skrivefamilie.');
+}
+
+function recoveryRoute({
+  exactHead = true,
+  prepareOutcome = 'success',
+  activationMarker = false,
+  legacyD1 = false,
+  legacyIntent = false,
+  d1EdgeIntent = false,
+  repairIntent = false,
+  freshEdgeIntent = false,
+  freshIntent = false,
+} = {}) {
+  if (!exactHead || prepareOutcome !== 'success') return 'no-mutation';
+  if (legacyIntent || d1EdgeIntent || repairIntent || freshIntent) return 'd1-roll-forward';
+  if (!activationMarker && !legacyD1 && freshEdgeIntent) return 'supabase';
+  return 'no-mutation';
+}
+assert.equal(recoveryRoute({ prepareOutcome: 'failed', legacyD1: true }), 'no-mutation');
+assert.equal(recoveryRoute({ activationMarker: false, legacyD1: false }), 'no-mutation');
+assert.equal(recoveryRoute({ freshEdgeIntent: true }), 'supabase');
+assert.equal(recoveryRoute({ activationMarker: true }), 'no-mutation');
+assert.equal(recoveryRoute({ legacyD1: true }), 'no-mutation');
+assert.equal(recoveryRoute({ legacyD1: true, legacyIntent: true }), 'd1-roll-forward');
+assert.equal(recoveryRoute({ activationMarker: true, d1EdgeIntent: true }), 'd1-roll-forward');
+assert.equal(recoveryRoute({ activationMarker: true, repairIntent: true }), 'd1-roll-forward');
+assert.equal(recoveryRoute({ freshIntent: true }), 'd1-roll-forward');
+assert.equal(recoveryRoute({
+  legacyD1: true,
+  legacyIntent: true,
+  exactHead: false,
+}), 'no-mutation');
 const tripStorageMonitor = fs.readFileSync(`${workflowDirectory}/monitor-trip-storage.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of ['workflow_dispatch:', 'schedule:', 'permissions:\n  contents: read', 'CLOUDFLARE_AUDIT_API_TOKEN', 'node scripts/audit-cloudflare-trip-storage.mjs']) {
   if (!tripStorageMonitor.includes(marker)) throw new Error(`Turlager-overvågningen mangler ${marker}`);
@@ -372,10 +616,25 @@ for (const marker of [
 ]) {
   if (!legacyBootstrapSection.includes(marker)) throw new Error(`Engangsbootstrap-gaten mangler ${marker}`);
 }
-if ((text.match(/python scripts\/hydrate-deployed-weather\.py/g) || []).length !== 2
+const oneTimeInspectionSection = text.slice(
+  text.indexOf('  inspect-candidate-g-one-time-gap:'),
+  text.indexOf('  build-and-prepare:'),
+);
+if ((text.match(/python scripts\/hydrate-deployed-weather\.py/g) || []).length !== 3
   || !legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
   || text.includes('name: Hydrate latest deployed weather state')) {
-  throw new Error('Generisk offentlig hydration skal være pensioneret; kun bootstrap og den isolerede Candidate-kildenormalisering må findes.');
+  throw new Error('Generisk offentlig hydration skal være pensioneret; kun bootstrap, den descriptorbundne engangsinspektion og isoleret Candidate-kildenormalisering må findes.');
+}
+for (const marker of [
+  "inputs.candidate_g_gap_reconstruction_mode == 'inspect'",
+  'permissions:\n      contents: read\n      actions: read',
+  'name: Hydrate the exact current public Candidate G target',
+]) {
+  if (!oneTimeInspectionSection.includes(marker)) throw new Error(`Den isolerede engangsinspektion mangler ${marker}`);
+}
+if (oneTimeInspectionSection.includes('pages: write') || oneTimeInspectionSection.includes('id-token: write')
+  || oneTimeInspectionSection.includes('actions/deploy-pages') || oneTimeInspectionSection.includes('SUPABASE_SERVICE_ROLE_KEY')) {
+  throw new Error('Den descriptorbundne engangsinspektion må ikke kunne publicere eller skrive til beskyttede systemer.');
 }
 
 const publicAuditBlock = text.slice(positions.publicAudit, positions.reference);
@@ -405,17 +664,23 @@ for (const forbidden of [
   }
 }
 for (const forbidden of [
-  'ravscore_active_shadow',
-  'ravscore-active-shadow:',
   'Candidate G public fallback',
   'candidate-g-public-recovery-fallback.mjs',
   'candidate-g-last-ready-public',
-  'audit-ravscore-candidate-g-public-shadow.mjs',
-  'Candidate G public shadow',
 ]) {
   if (text.includes(forbidden)) {
     throw new Error(`Den integrerede produktionsvej må ikke bevare Candidate G-publicering eller shadow: ${forbidden}`);
   }
+}
+const privateRollbackAuditStart = text.indexOf('ravscore-active-shadow:');
+const privateRollbackAuditEnd = text.indexOf('geometry-v2-pilot:', privateRollbackAuditStart);
+const privateRollbackAudit = text.slice(privateRollbackAuditStart, privateRollbackAuditEnd);
+for (const marker of ['audit-ravscore-candidate-g-public-shadow.mjs', 'uses: actions/upload-artifact@v7']) {
+  if (!privateRollbackAudit.includes(marker)) throw new Error(`Den private Candidate G-rollbackaudit mangler ${marker}`);
+}
+if (privateRollbackAudit.includes('pages: write') || privateRollbackAudit.includes('id-token: write')
+  || privateRollbackAudit.includes('actions/deploy-pages')) {
+  throw new Error('Den private Candidate G-rollbackaudit må ikke kunne publicere eller deploye.');
 }
 const continuationSaveSection = text.slice(positions.continuationBuild, positions.privateRuntimeSpec);
 for (const marker of [
@@ -493,8 +758,8 @@ if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new 
 
 if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
 if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
-  throw new Error('Private GeoDanmark-dispatches skal udelukke det almindelige build- og deployjob.');
+if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)")) {
+  throw new Error('Private GeoDanmark- og RavScore-dispatches skal udelukke det almindelige build- og deployjob.');
 }
 const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));
 for (const marker of ['geometry_v2_national == true', 'python scripts/build-national-geometry-v2-plan.py', 'python scripts/fetch-geodanmark-national.py', 'python scripts/validate-geodanmark-national-source.py', 'python scripts/analyze-geodanmark-national.py', 'python scripts/fetch-national-water-exclusions.py', 'python scripts/analyze-national-coastal-topology.py', 'python scripts/validate-national-topology-audit.py', 'python scripts/build-national-coastal-parts.py', 'python scripts/validate-national-coastal-parts.py', 'python scripts/build-national-local-part-names.py', 'python scripts/validate-national-local-part-names.py', 'python scripts/build-national-local-part-points.py', 'python scripts/validate-national-local-part-points.py', 'python scripts/validate-national-local-part-dmi-grid.py', 'python scripts/build-national-weather-shadow-contract.py', 'python scripts/validate-national-multi-step-series.py', 'node scripts/validate-national-state-history.mjs', 'python scripts/validate-national-local-part-wind-series.py', 'node scripts/validate-national-shadow-score.mjs', 'Upload compact national geometry-v2 QA artifact', 'national-source-manifest.json', 'national-source-qa.json', 'national-source-qa.geojson', 'national-topology-audit.json', 'national-topology-audit.geojson', 'national-coastal-parts.json', 'national-coastal-parts.geojson', 'national-local-part-name-suggestions.json', 'national-local-part-point-pairs.json', 'national-local-part-dmi-grid.json', 'national-weather-shadow-contract.json', 'national-multi-step-series-validation.json', 'national-state-history-validation.json', 'national-local-part-wind-series.json', 'national-shadow-score-validation.json', 'Upload private national geometry-v2 source artifact']) {
@@ -503,7 +768,7 @@ for (const marker of ['geometry_v2_national == true', 'python scripts/build-nati
 if (geometryNationalSection.includes('pages: write') || geometryNationalSection.includes('id-token: write')) throw new Error('Det nationale GeoDanmark-job må ikke have Pages-skriverettigheder.');
 const geometryPilotSection = text.slice(text.indexOf('geometry-v2-pilot:'), text.indexOf('deploy-pages:'));
 for (const marker of [
-  "github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true",
+  "inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_pilot == true",
   'DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}',
   'python scripts/sync-admin-config.py',
   'python scripts/apply-central-zone-reviews.py',
@@ -568,7 +833,9 @@ for (const marker of [
 if (pagesPrivacyAuditSection.includes('continue-on-error')) {
   throw new Error('Pages-privacygaten skal være fail-closed før artifact-upload.');
 }
-if (!/concurrency:[\s\S]{0,500}cancel-in-progress: false/.test(text)) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
+const productionConcurrencySection = text.slice(text.indexOf('\nconcurrency:'), text.indexOf('\njobs:'));
+if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
 if (!text.includes("'ravradar-geometry-v2-national'") || !text.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
+if ((text.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Workflowet skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
 
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');

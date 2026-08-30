@@ -1,8 +1,10 @@
 # DEC-0107 – ekstern vagthund mod total GitHub-schedulerstilhed
 
-**Status:** Implementeret lokalt i 4.0.309; afventer exact-head, produktion og ekstern aktivering
+**Status:** Aktiv og produktions-/driftsverificeret i 4.0.309
 **Dato:** 2026-08-29
 **Modelpåvirkning:** Ingen
+
+**Senere præcisering:** DEC-0108 sænker fra 4.0.310 kun det eksplicitte eksterne intents dobbelte stilhedsgrænse til mere end 15 minutter. GitHubs interne schedule-vagt beholder 45 minutter; øvrige sikkerheds-, privacy-, concurrency- og releasekrav nedenfor består.
 
 ## Evidens
 
@@ -22,6 +24,14 @@ Det eksisterende 45-minutters watchdog ligger i et workflow, som selv startes af
 6. Den fælles `private-copernicus-current-pilot`-concurrency serialiserer interne og eksterne vagthundskørsler. Den eksisterende `ravradar-weather-production`-concurrency bevarer højst ét tungt build.
 7. Det eksterne kald indeholder kun repository, workflow, `ref=main` og det boolske intent. Ingen vejrpayload, koordinater, rå U/V, credentials fra RavRadar, private data eller modelstate forlader GitHub. GitHub-tokenet begrænses til RavRadar og `Actions: write`; cron-job.org må ikke gemme response-body.
 8. Aktivering kræver først exact-head og merge, derefter én deaktiveret test med forventet HTTP 204 og dokumenteret no-op ved frisk produktion, og til sidst mindst to automatiske 15-minutterskald. Der må ikke oprettes flere RavRadar-job i cron-job.org.
+
+## Aktiveringsbevis
+
+PR #221 bestod exact-head `33244011544` på `6046e8a3f0eae43ed25126c5290e42c58d675c81`, blev merged som `aba3d669876efa515829e57871a4e8bc100c9de8`, og post-merge-produktion `33244062982` frigav det komplette offentlige datasæt `rr-20260829085521-210` gennem fuld validering, releasegate og Pages.
+
+Der findes præcis ét aktivt RavRadar-job i cron-job.org, id `8348098`. Den deaktiverede manuelle test gav HTTP 204 og GitHub-run `33244853536`; efter aktivering gav de første automatiske kald kl. 09:19 og 09:34 UTC også HTTP 204 og runs `33245204517`/`33245798817`. Alle tre vagtkørsler bestod, og produktionsdispatch blev korrekt sprunget over ved frisk offentlig produktion.
+
+Der fandtes ikke en ny native produktions-`schedule` omkring 09:29 UTC. Ved det andet automatiske kald var det offentlige manifest cirka 39 minutter gammelt og dermed under 45-minuttersgrænsen. Det dokumenterer både det fortsatte native leveringshul og den valgte vagts sikre no-op-adfærd; et sprunget dispatch må ikke fortolkes som bevis for, at GitHub-scheduleren netop har kørt.
 
 ## Tidsvirkning
 

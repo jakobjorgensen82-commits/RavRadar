@@ -1,23 +1,24 @@
 import { fetchWithTimeout, GatewayError } from "./public-gateway.ts";
-import { externalOwnerSubject, listCloudflareTrips, storeCloudflareTrip } from "./trip-storage.js";
-import { projectTripLogDto } from "../../../js/services/calibration-eligibility.js";
-import { ravScoreModelBinding } from "../../../js/core/ravscore-model-contract.js";
-
-const ACTIVE_RAVSCORE_TRIP_RPC = "ravradar_trip_v3_active_binding_admitted";
-const RAVSCORE_MODEL_NOT_ACTIVE = "RAVSCORE_MODEL_NOT_ACTIVE";
+import { canonicalJson, externalOwnerSubject, externalTripPayload, listCloudflareTrips, projectLegacyExternalTripPayload, storeCloudflareTrip } from "./trip-storage.js";
+import {
+  SUPABASE_IDEMPOTENCY_SELECT,
+  assertIdempotencySourceRow,
+  projectSupabaseObservationRow,
+} from "./trip-source-projection.js";
 
 const OWN_TRIP_FIELDS = [
-  "client_observation_id", "trip_id", "observed_at", "trip_started_at", "trip_ended_at",
-  "search_minutes", "search_coverage", "hunt_mode", "found", "result", "grams",
-  "actual_zone_id", "actual_coastal_part_id", "forecast_zone_id", "forecast_coastal_part_id",
-  "zone_name", "schema_version", "data_quality_flags", "model_version", "rav_score",
-  "calibration_eligible", "forecast_snapshot_id", "forecast_issued_at", "forecast_valid_at",
-  "forecast_captured_at", "calibration_features", "weather_snapshot", "wind_speed_mps",
-  "wind_direction_deg", "wave_height_m", "wave_period_s", "water_level_cm",
-  "current_speed_mps", "current_direction_deg",
+  "id", "client_observation_id", "trip_id", "observed_at", "trip_started_at", "trip_ended_at", "zone_id",
+  "search_minutes", "hunt_mode", "found", "result", "grams", "actual_zone_id",
+  "actual_coastal_part_id", "zone_name", "schema_version", "data_quality_flags",
 ].join(",");
+const SUPABASE_IDEMPOTENCY_TIMESTAMPS = [
+  "observed_at", "trip_started_at", "trip_ended_at", "forecast_issued_at",
+  "forecast_valid_at", "forecast_captured_at", "forecast_target_at",
+];
+const SUPABASE_IDEMPOTENCY_UUIDS = ["client_observation_id", "trip_id"];
 
-export type TripStorageMode = "d1" | "supabase";
+export type TripStorageMode = "d1" | "supabase" | "maintenance";
+export const TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS = 30 * 60_000;
 
 function requiredEnvironment(name: string) {
   const value = Deno.env.get(name)?.trim();
@@ -25,10 +26,28 @@ function requiredEnvironment(name: string) {
   return value;
 }
 
-export function tripStorageMode(): TripStorageMode {
-  const value = (Deno.env.get("TRIP_STORAGE_MODE") || "supabase").trim().toLowerCase();
-  if (value !== "d1" && value !== "supabase") throw new GatewayError(503, "TRIP_STORAGE_MODE_INVALID");
-  return value;
+export function tripStorageMode(now = Date.now()): TripStorageMode {
+  const rawValue = Deno.env.get("TRIP_STORAGE_MODE")?.trim() || "";
+  const value = rawValue.toLowerCase();
+  if (value === "d1" || value === "supabase") return value;
+  if (value.startsWith("maintenance:")) {
+    const rawDeadline = rawValue.slice("maintenance:".length);
+    const deadline = Date.parse(rawDeadline);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(rawDeadline)
+      || !Number.isFinite(deadline)
+      || deadline - now > TRIP_STORAGE_MAINTENANCE_MAX_LEASE_MS) {
+      throw new GatewayError(503, "TRIP_STORAGE_MAINTENANCE_LEASE_INVALID");
+    }
+    if (now >= deadline) return "d1";
+    return "maintenance";
+  }
+  throw new GatewayError(503, "TRIP_STORAGE_MODE_INVALID");
+}
+
+function activeTripStorageMode(): Exclude<TripStorageMode, "maintenance"> {
+  const mode = tripStorageMode();
+  if (mode === "maintenance") throw new GatewayError(503, "TRIP_STORAGE_MAINTENANCE");
+  return mode;
 }
 
 function cloudflareConfiguration() {
@@ -38,6 +57,38 @@ function cloudflareConfiguration() {
     secret: requiredEnvironment("TRIP_PSEUDONYM_SECRET_V1"),
     fetchImpl: (input: RequestInfo | URL, init: RequestInit = {}) => fetchWithTimeout(input, init, 8_000),
   };
+}
+
+function idempotencyPayload(payload: Record<string, unknown>) {
+  const projected = { ...externalTripPayload(payload) };
+  delete projected.submitted_at;
+  if (Number(projected.schema_version ?? 1) === 1) {
+    if (Array.isArray(projected.data_quality_flags) && projected.data_quality_flags.length === 0) {
+      delete projected.data_quality_flags;
+    }
+    if (projected.weather_snapshot && typeof projected.weather_snapshot === "object"
+      && !Array.isArray(projected.weather_snapshot)
+      && Object.keys(projected.weather_snapshot).length === 0) {
+      delete projected.weather_snapshot;
+    }
+  }
+  for (const field of SUPABASE_IDEMPOTENCY_TIMESTAMPS) {
+    const value = projected[field];
+    if (typeof value === "string" && Number.isFinite(Date.parse(value))) {
+      projected[field] = new Date(value).toISOString();
+    }
+  }
+  for (const field of SUPABASE_IDEMPOTENCY_UUIDS) {
+    if (typeof projected[field] === "string") projected[field] = projected[field].toLowerCase();
+  }
+  return projected;
+}
+
+function sameOwnerBinding(stored: Record<string, unknown>, expected: Record<string, unknown>) {
+  const expectedUserId = typeof expected.user_id === "string" && expected.user_id ? expected.user_id : null;
+  if (expectedUserId) return String(stored.user_id || "").toLowerCase() === expectedUserId.toLowerCase();
+  return (stored.user_id === null || stored.user_id === undefined)
+    && String(stored.anonymous_id || "").toLowerCase() === String(expected.anonymous_id || "").toLowerCase();
 }
 
 async function storeInSupabase(payload: Record<string, unknown>) {
@@ -51,84 +102,45 @@ async function storeInSupabase(payload: Record<string, unknown>) {
       "Content-Type": "application/json",
       Prefer: "resolution=ignore-duplicates,return=minimal",
     },
-    body: JSON.stringify(
-      Number(payload.schema_version ?? 1) < 3
-        ? { ...payload, calibration_eligible: false }
-        : payload,
-    ),
+    body: JSON.stringify(payload),
   }, 8_000);
   if (!response.ok) {
-    // The database trigger closes the read/write race between the Edge
-    // admission probe and the final insert. Never relay the upstream body: it
-    // may contain implementation details. Only the bounded trigger sentinel
-    // is mapped to the retryable public transition response.
-    const errorText = (await response.text()).slice(0, 2_000);
-    if (errorText.includes(RAVSCORE_MODEL_NOT_ACTIVE)) {
-      throw new GatewayError(409, RAVSCORE_MODEL_NOT_ACTIVE);
-    }
+    if (response.status === 409) throw new GatewayError(409, "TRIP_IDEMPOTENCY_CONFLICT");
     throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
   }
-}
-
-function requiredBindingFeature(features: Record<string, unknown>, name: string) {
-  const value = features[name];
-  if (typeof value !== "string" || !value) throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
-  return value;
-}
-
-export function activeRavScoreTripAdmissionBody(payload: Record<string, unknown>) {
-  const features = payload.calibration_features;
-  if (!features || typeof features !== "object" || Array.isArray(features)) {
-    throw new GatewayError(400, "INVALID_TRIP_EVIDENCE_INTEGRITY");
-  }
-  const binding = features as Record<string, unknown>;
-  return Object.freeze({
-    p_model_id: requiredBindingFeature(binding, "modelVersion"),
-    p_state_schema_version: requiredBindingFeature(binding, "modelStateVersion"),
-    p_variant_id: requiredBindingFeature(binding, "modelVariantId"),
-    p_profile_id: requiredBindingFeature(binding, "modelProfileId"),
-    p_component_schema_id: requiredBindingFeature(binding, "modelComponentSchemaId"),
-    p_explanation_schema_id: requiredBindingFeature(binding, "modelExplanationSchemaId"),
-    p_ranking_policy_id: requiredBindingFeature(binding, "modelRankingPolicyId"),
-    p_best_time_policy_id: requiredBindingFeature(binding, "modelBestTimePolicyId"),
-    p_presentation_policy_id: requiredBindingFeature(binding, "modelPresentationPolicyId"),
-    p_model_contract_sha256: requiredBindingFeature(binding, "modelContractSha256"),
-    p_model_bundle_sha256: requiredBindingFeature(binding, "modelBundleSha256"),
-    p_reason_codes: Array.isArray(binding.reasonCodes)
-      ? Object.freeze([...binding.reasonCodes])
-      : null,
-    p_calibration_eligible: payload.calibration_eligible === true,
-    p_actual_zone_id: String(payload.actual_zone_id ?? ""),
-    p_actual_coastal_part_id: String(payload.actual_coastal_part_id ?? ""),
-    p_forecast_zone_id: String(payload.forecast_zone_id ?? ""),
-    p_forecast_coastal_part_id: String(payload.forecast_coastal_part_id ?? ""),
-  });
-}
-
-async function assertActiveRavScoreTripBinding(payload: Record<string, unknown>) {
-  if (Number(payload.schema_version ?? 1) !== 3) return;
-  const url = requiredEnvironment("SUPABASE_URL");
-  const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
-  const response = await fetchWithTimeout(`${url}/rest/v1/rpc/${ACTIVE_RAVSCORE_TRIP_RPC}`, {
-    method: "POST",
-    headers: {
-      apikey: serviceKey,
-      authorization: `Bearer ${serviceKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(activeRavScoreTripAdmissionBody(payload)),
-  }, 5_000);
-  if (!response.ok) throw new GatewayError(503, "RAVSCORE_ADMISSION_UNAVAILABLE");
-  let admitted: unknown;
+  const clientObservationId = String(payload.client_observation_id || "");
+  if (!clientObservationId) throw new GatewayError(400, "TRIP_CLIENT_ID_REQUIRED");
+  const readbackUrl = new URL("/rest/v1/observations", `${url}/`);
+  readbackUrl.searchParams.set("select", SUPABASE_IDEMPOTENCY_SELECT);
+  readbackUrl.searchParams.set("client_observation_id", `eq.${clientObservationId}`);
+  readbackUrl.searchParams.set("limit", "2");
+  const readback = await fetchWithTimeout(
+    readbackUrl,
+    { headers: { apikey: serviceKey, authorization: `Bearer ${serviceKey}` } },
+    8_000,
+  );
+  if (!readback.ok) throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
+  let rows: unknown;
   try {
-    admitted = await response.json();
+    rows = await readback.json();
   } catch {
-    throw new GatewayError(503, "RAVSCORE_ADMISSION_UNAVAILABLE");
+    throw new GatewayError(503, "OBSERVATION_STORE_INTEGRITY_INVALID");
   }
-  // False covers PENDING, missing central truth, profile drift and a binding
-  // that is not the single ACTIVE model. The client retains the row in its
-  // outbox and retries after the atomic activation completes.
-  if (admitted !== true) throw new GatewayError(409, RAVSCORE_MODEL_NOT_ACTIVE);
+  if (!Array.isArray(rows) || rows.length !== 1) {
+    throw new GatewayError(503, "OBSERVATION_STORE_INTEGRITY_INVALID");
+  }
+  let equivalent = false;
+  try {
+    assertIdempotencySourceRow(rows[0]);
+    const projectedStoredPayload = projectSupabaseObservationRow(rows[0]);
+    equivalent = sameOwnerBinding(rows[0], payload)
+      && canonicalJson(idempotencyPayload(projectedStoredPayload)) === canonicalJson(idempotencyPayload(payload));
+  } catch {
+    throw new GatewayError(503, "OBSERVATION_STORE_INTEGRITY_INVALID");
+  }
+  if (!equivalent) {
+    throw new GatewayError(409, "TRIP_IDEMPOTENCY_CONFLICT");
+  }
 }
 
 async function listFromSupabase(userId: string, limit: number) {
@@ -141,24 +153,23 @@ async function listFromSupabase(userId: string, limit: number) {
   if (!response.ok) throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");
   const rows = await response.json();
   if (!Array.isArray(rows)) throw new GatewayError(503, "TRIP_LOG_INVALID");
-  const binding = ravScoreModelBinding();
-  return rows.map(row => projectTripLogDto(row, binding));
+  return rows;
 }
 
 export async function storeObservation(payload: Record<string, unknown>, authenticatedUserId: string | null) {
-  await assertActiveRavScoreTripBinding(payload);
-  if (tripStorageMode() === "supabase") {
-    await storeInSupabase(payload);
+  const safePayload = projectLegacyExternalTripPayload(payload);
+  if (activeTripStorageMode() === "supabase") {
+    await storeInSupabase(safePayload);
     return;
   }
   try {
     const configuration = cloudflareConfiguration();
     const owner = await externalOwnerSubject({
       userId: authenticatedUserId,
-      anonymousId: authenticatedUserId ? null : String(payload.anonymous_id || ""),
+      anonymousId: authenticatedUserId ? null : String(safePayload.anonymous_id || ""),
       secret: configuration.secret,
     });
-    await storeCloudflareTrip({ ...configuration, owner, payload, source: "live" });
+    await storeCloudflareTrip({ ...configuration, owner, payload: safePayload, source: "live" });
   } catch (error) {
     if (error instanceof GatewayError) throw error;
     throw new GatewayError(503, "OBSERVATION_STORE_UNAVAILABLE");
@@ -167,13 +178,11 @@ export async function storeObservation(payload: Record<string, unknown>, authent
 
 export async function listOwnTripObservations(userId: string, limit = 100) {
   const safeLimit = Math.max(1, Math.min(200, Math.round(Number(limit) || 100)));
-  if (tripStorageMode() === "supabase") return listFromSupabase(userId, safeLimit);
+  if (activeTripStorageMode() === "supabase") return listFromSupabase(userId, safeLimit);
   try {
     const configuration = cloudflareConfiguration();
     const owner = await externalOwnerSubject({ userId, secret: configuration.secret });
-    const rows = await listCloudflareTrips({ ...configuration, ownerSubject: owner.subject, limit: safeLimit });
-    const binding = ravScoreModelBinding();
-    return rows.map(row => projectTripLogDto(row, binding));
+    return await listCloudflareTrips({ ...configuration, ownerSubject: owner.subject, limit: safeLimit });
   } catch (error) {
     if (error instanceof GatewayError) throw error;
     throw new GatewayError(503, "TRIP_LOG_UNAVAILABLE");

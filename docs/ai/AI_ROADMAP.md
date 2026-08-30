@@ -1,12 +1,56 @@
-# AI Roadmap – RavRadar 4.0.309+
+# AI Roadmap – RavRadar 4.0.314+
+
+## P0 nu – få 4.0.314 sikkert gennem diagnostikhotfix og rekonstruktion
+
+1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
+2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
+3. [x] Tillad singleton-afteranker kun for uafhængigt bevist native 3-timerskadence; bevar state-, bracket-, source- og CAS-beviserne.
+4. [x] Lås exact-D1 til 4.0.314, inspect til D1 og normal produktion til exact-head apply+Pages; bevis 4.0.315 ulåst.
+5. [x] Bestå PR #227-diffens målrettede og uafhængige recovery-/workflow-/privacytests samt fulde lokale source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
+6. [x] Bestå PR #227/exact-head `33272564543`, merge `d1369d88` og no-op push `33272676071`.
+7. [x] Klassificér produktion `33271863449` som stale test-/sourcegate-stop før release/Pages; ret assertionen og bind testen ind i `test:workflow-action-contracts`.
+8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
+9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
+10. [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
+11. [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
+12. [x] Bestå exact-main 4.0.314 `[d1]` `33275218540`/`99160622956` inklusive begge syncs, slutreconciliation og slutattestation.
+13. [x] Stop read-only inspect `33275438494`/`99161265720` fail-closed i planforseglingen før descriptorupload, mutation, build og Pages.
+14. [ ] Exact-head-valider og merge den allowlistede GitHub-fejlannotation og den særskilte minimale succesannotation; kør ny exact-main D1 på den nye final-SHA.
+15. [ ] Kør ny inspect, aflæs kun den sanitiserede domænekode, ret årsagen evidensbaseret og gennemfør CAS-apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
+16. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+
+## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
+
+1. [x] Luk 4.0.311-kilden gennem PR #224 exact-head CI `33263734108` og merge `7c168b00af535415117c968a8c021a493b083137`.
+2. [x] Bekræft at push-run `33263858078` var en korrekt no-op uden artifact/Pages, og at backend `33263892151` stoppede før D1/Edge/Worker/sync/weather/artifact/Pages efter atomisk SQL HTTP 201.
+3. [x] Afgræns databasetilstanden: CHECK/validering/kommentar er med høj sandsynlighed committed samlet; det eneste atomiske alternativ er fuld rollback. Ingen observationpayloads blev hentet til runneren, logget eller ændret, ingen row mutation forekom, og ingen destruktiv cleanup er nødvendig.
+4. [x] Implementér lokalt 4.0.312's strukturelle verifier: præcis én JSONPath-literal, tolerant over for parentesering, eksakt kanonisk path og fail-closed ved reorder, duplicate, extra eller ambiguous. Målrettede tests er grønne, og exact-D1-interlocken omfatter 4.0.312.
+5. [x] Luk fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol for 4.0.312. Bevar trip protocol/header 4.0.311.
+6. [x] Luk PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
+7. [x] Kør backend fra eksakt 4.0.312-main; den bestod verifier/D1/Edge/Worker, men fejlede migrationssynken i `33266229687`. Klassificér den som ikke-readiness og overfør replayrettelsen til 4.0.313.
+8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde; overfør den uændrede CAS-/produktions-/public-gate til det aktuelle 4.0.314-afsnit ovenfor.
+9. [x] Bevar privat rollback og kausal cleanup; offentlig sandhed forblev korrekt 4.0.310.
+10. [x] Overfør integrationen af nyeste grønne `main`, 72-timers atomisk measured-only emergency og den låste globale koefficientlæring til det aktuelle DEC-0102-modeltrin ovenfor.
+
+Interpolation er ikke en roadmapfeature eller generel fallback; den er en enkelt ejerautoriseret incidentoperation. Sol/Ultra bevares gennem slutvalidering.
+
+## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
+
+- [x] Bevis 4.0.309's virkelige 45-minuttersgren med vagt `33246369618` og redningsproduktion `33246376992`.
+- [x] Sænk kun det eksplicitte eksterne intent til 15 minutter; bevar intern 45-minuttersvagt, dual freshness og no-active-run.
+- [x] Lås grænse-, active-, recent-run- og fresh-manifest-adfærd med målrettede tests.
+- [x] Luk før-redningsproduktion, fuld lokal validering og geodatabevis.
+- [x] Luk PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247839121` og faktisk automatisk 15-minuttersdispatch `33248692042` → `33248699516`.
+
+Ingen model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108.
 
 ## Aktiv P0-drift – ekstern schedulerstilhed
 
 - [x] Bevis at native schedule-events kan udeblive samtidig i produktion, pilot og keepalive, mens manuel produktion er grøn.
 - [x] Bevar GitHub-tiderne og tilføj kun ét eksplicit eksternt keepalive-/watchdogintent.
-- [x] Bevar 45-minutters dobbeltfriskhed, no-active-run og serialiseret tung produktion.
-- [ ] Luk source/exact-head/produktion, aktivér ét cron-job ved `04,19,34,49` UTC og verificér to automatiske kald.
-- [ ] Genmål primary/recovery efter stabil cadence; ændr ikke Candidate G eller DEC-0102-modellen i dette spor.
+- [x] Bevar 45-minutters dobbeltfriskhed, no-active-run og serialiseret tung produktion i 4.0.309.
+- [x] Luk source/exact-head/produktion, aktivér ét cron-job ved `04,19,34,49` UTC og verificér manuel samt to automatiske no-op-kald.
+- [x] Genmål primary/recovery til 5–12/48 timer ved 09:00 UTC-reference; ændr ikke Candidate G eller DEC-0102-modellen i dette spor.
 
 Se DEC-0107.
 
@@ -178,7 +222,7 @@ P1-oversættelse og Spørg RavRadar kan nu fortsætte i den ejerbekræftede ræk
 - [x] Bevar Supabase til Auth, profiler, rettigheder, rate limit og Edge; flyt normal turvækst til ti EU-låste Cloudflare D1-shards.
 - [x] Send kun HMAC-pseudonymiseret ejerskab og allowlistede turdata til Cloudflare; forbyd rå ID, mail, navn, JWT, GPS og rute.
 - [x] Signér hele servicekaldet, håndhæv tidsgrænse, kanonisk hash og idempotens.
-- [x] Migrér før/efter cutover uden kildesletning; behold eksplicit Supabase-rollback og idempotent vej tilbage.
+- [x] Historisk 4.0.287: migrér før/efter cutover uden kildesletning og behold den daværende Supabase-rollback. Post-cutover rollbackdelen er afløst af 4.0.311-kandidatens varige D1/roll-forward.
 - [x] Overvåg lager uden payloads ved 70/85 % og understøt eksplicit ejersletning på tværs af begge lagre.
 - [x] Opret live Cloudflare-konto, mindst-mulige credentials og krypterede GitHub-secrets efter godkendelse; bestå infrastrukturens exact-head/merge og rollback-Edge-deploy.
 - [x] Bestå kandidatens exact-head/merge, opret/skema-verificér ti live EU-shards og deploy Worker; stop første cutover sikkert før migration/Edge på health-udbredelsesforsinkelsen.

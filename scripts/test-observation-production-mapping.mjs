@@ -10,7 +10,12 @@ globalThis.localStorage = {
 };
 globalThis.window = { addEventListener() {} };
 
-const { remoteObservationPayload } = await import('../js/services/observation-service.js?production-mapping-test=1');
+const {
+  getLocalObservations,
+  getObservationSyncStatus,
+  projectLegacyObservationWeatherSnapshot,
+  remoteObservationPayload,
+} = await import('../js/services/observation-service.js?production-mapping-test=1');
 const clientId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const payload = remoteObservationPayload({
   id: clientId,
@@ -31,5 +36,62 @@ for (const key of ['id', 'route', 'track', 'sync_status']) assert.equal(key in p
 const legacyNumeric = remoteObservationPayload({ id: clientId, zone_id: 42, gps: null });
 assert.equal(legacyNumeric.zone_id, 42);
 assert.equal(legacyNumeric.actual_zone_id, null);
+
+const legacySnapshot = {
+  schemaVersion: 2,
+  capturedAt: '2026-08-01T10:00:00.000Z',
+  provider: 'dmi',
+  current: {
+    provider: 'dmi', windSpeedMps: 7, currentDirectionDeg: 210,
+    u: 0.2, v: -0.1, geohash: 'u3butz', utm: { easting: 500000 },
+    point: [55.1, 12.2], metadata: { latitude: 55.1, longitude: 12.2 },
+  },
+  score: { baseScore: 45, finalScore: 50, level: 'medium', metadata: { raw: true } },
+  prediction: { probability: 0.4, confidence: 0.5, modelVersion: 'legacy', point: [55.1, 12.2] },
+  matchedRules: [
+    { id: 'legacy-rule-1', metadata: { geohash: 'u3butz' } },
+    { ruleId: 'legacy-rule-2', current: { u: 0.2, v: -0.1 } },
+  ],
+  metadata: { raw: true },
+};
+const expectedSnapshot = {
+  schemaVersion: 2,
+  capturedAt: '2026-08-01T10:00:00.000Z',
+  provider: 'dmi',
+  current: { provider: 'dmi', windSpeedMps: 7, currentDirectionDeg: 210 },
+  score: { baseScore: 45, finalScore: 50, level: 'medium' },
+  prediction: { probability: 0.4, confidence: 0.5, modelVersion: 'legacy' },
+  matchedRuleIds: ['legacy-rule-1', 'legacy-rule-2'],
+};
+assert.deepEqual(projectLegacyObservationWeatherSnapshot(legacySnapshot), expectedSnapshot);
+const legacyRow = {
+  id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+  schema_version: 1,
+  zone_id: 'DK-B01-01',
+  weather_snapshot: legacySnapshot,
+  sync_status: 'pending',
+};
+values.set('ravradar-observations-v2', JSON.stringify([legacyRow]));
+values.set('ravradar-observation-outbox-v1', JSON.stringify([legacyRow]));
+assert.deepEqual(getLocalObservations()[0].weather_snapshot, expectedSnapshot);
+assert.equal(getObservationSyncStatus().pending, 1);
+assert.deepEqual(JSON.parse(values.get('ravradar-observations-v2'))[0].weather_snapshot, expectedSnapshot);
+assert.deepEqual(JSON.parse(values.get('ravradar-observation-outbox-v1'))[0].weather_snapshot, expectedSnapshot);
+assert.deepEqual(remoteObservationPayload(legacyRow).weather_snapshot, expectedSnapshot);
+
+const strictSchemaTwoSnapshot = { schemaVersion: 4, metadata: { mustBeRejectedRemotely: true } };
+assert.deepEqual(
+  remoteObservationPayload({
+    id: clientId,
+    schema_version: 2,
+    zone_id: 'DK-B01-01',
+    weather_snapshot: strictSchemaTwoSnapshot,
+    calibration_eligible: false,
+    calibration_features: { reasonCodes: ['ravscore-evidence-trust-unattested'] },
+    data_quality_flags: ['ravscore-evidence-trust-unattested'],
+  }).weather_snapshot,
+  strictSchemaTwoSnapshot,
+  'Browser migration must not sanitize schema-2 rows past the strict remote validator.',
+);
 
 console.log('Observation production mapping: OK');
