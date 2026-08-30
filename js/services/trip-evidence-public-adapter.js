@@ -4,7 +4,7 @@ import {
   createTripStartRecord,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG
-} from './trip-evidence-contract.js?v=4.0.314';
+} from './trip-evidence-contract.js?v=4.0.315';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const TRUST_FIELDS = Object.freeze([

@@ -62,7 +62,7 @@ Samtidig er flere tal og koblinger ejer-/forskningspriorer, ikke naturkonstanter
 
 Det mindre rettelsesspor må merge først og løbende til `main`. Modelsporet må ikke antage, at dets start-`main` forbliver aktuel. Før modelrelease skal det bevise, at seneste smårettelser og alle deres regressioner er bevaret. Ved reel fil-/kontraktkonflikt vælger modelsporet ikke tavst en side, men følger nyere RDKS og faktisk `main`-adfærd.
 
-## Emergency-addendum fra DEC-0109 – bindende for den samlede model
+## Measured-only emergency-addendum – historisk afledt af DEC-0109, fortsat bindende
 
 Den integrerede model skal levere sin egen fulde nøddriftskontrakt som del af plug-and-play-gaten. Den må ikke bero på en senere RavRadar-tilpasning:
 
@@ -70,7 +70,7 @@ Den integrerede model skal levere sin egen fulde nøddriftskontrakt som del af p
 2. Nødgrundlaget må højst være 72 timer gammelt og skal desuden respektere den kortere reelle prognose-/produktudløbsgrænse. Ukendt, rekonstrueret, tampered, ufuldstændigt eller udløbet grundlag lukkes fail-closed; interpolation og backfill er ikke en nødmekanisme.
 3. DA/DE/EN skal tydeligt fortælle, at brugeren ser den senest komplette, ældre måling. Appen genvurderer friskhed/udløb og skifter automatisk og atomisk tilbage til den første nye komplette primary. En nødtur bindes til det faktisk viste manifest som `public-emergency-last-complete` og er altid `calibration_eligible=false`.
 4. State-, cache-, checkpoint-, recovery-, startup-, detalje-, trip-, admin-, scheduler-, audit- og releaseforbrugere skal alle bevise samme kontrakt. Et fail-open kaldested eller en cache, der kan stage rekonstrueret/ukendt state som last verified, er en modelreleaseblokker.
-5. DEC-0109's engangsinterpolation for `RRGAP-2026-08-29-CANDIDATE-G-01` er kun en incidentbundet driftsundtagelse. Den kommende model overtager trust-/provenance-/cleanupgrænserne, men aldrig undtagelsen som normal algoritme, fallback eller træningsdata.
+5. DEC-0109's engangsinterpolation for `RRGAP-2026-08-29-CANDIDATE-G-01` blev tilbagetrukket uden anvendelse af DEC-0111 og må ikke eksekveres. Den kommende model overtager generisk fail-closed trust/provenance, turbinding og measured-only recovery, men aldrig actuator-, descriptor-, interpolation-, apply-, rollback- eller cleanupoperationen som algoritme, fallback eller træningsdata.
 
 Schema-v2-feltet `calibration_eligible` og den nuværende trustbinding er kun klientattesteret og internt konsistent; serveren beviser endnu ikke snapshottene mod det signerede offentlige manifest. Det er derfor ikke empirisk evidens og må ikke bruges til global koefficientlæring. Den eksisterende kalibreringslås skal bevares, indtil en særskilt server-side snapshot-/manifestbinding er designet, implementeret og valideret.
 

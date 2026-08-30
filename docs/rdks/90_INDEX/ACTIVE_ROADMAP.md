@@ -1,6 +1,18 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.314 – luk den policybundne cadencegate
+## P0 4.0.315 – pensionér stale interlock og gendan aktuelle prognoser
+
+- [x] Bevis at den tilbagetrukne operation efterlod et umuligt apply+Pages-prerequisite og gjorde normale jobs til grønne no-ops.
+- [x] Bevis offentlig konsekvens: primary >8 timer, measured-only recovery >72 timer og fail-closed prognoseudfald.
+- [x] Bevis at ingen descriptor/apply/mutation eller syntetiske data nogensinde nåede produktion.
+- [x] Fjern den operationelle workflow-/actuator-/descriptor-/package-/releasegateflade og opret en negativ retirement-regression.
+- [x] Dokumentér DEC-0111 og markér DEC-0109 historisk, tilbagetrukket uden anvendelse.
+- [ ] Bestå målrettede RDKS-/håndbogs-/workflow-/versions-/releasegates og exact-head sourcegate.
+- [ ] Merge og kør frisk normal production med build, fuld validate, releasegate, artifact og Pages som success, ikke skipped.
+- [ ] Verificér offentligt frisk manifest/startpakke/detaljer, 210/673 samt aktuelle og femdøgnsprognoser; luk først derefter P0.
+- [ ] Fortsæt derefter DEC-0110-modelsporet uden at genindføre interpolation.
+
+## Historisk P0 4.0.314 – policybundet cadencegate
 
 - [x] PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og no-op push `33279411885`.
 - [x] Exact-main D1 `33279463545`/`99172031927` helt grøn.

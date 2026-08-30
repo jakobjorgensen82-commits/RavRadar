@@ -1,6 +1,17 @@
-# Implementeringsstatus – 4.0.314 cadencepolicy-hotfix efter sikkert inspect-stop
+# Implementeringsstatus – 4.0.315 retirement-hotfix efter grønne no-op-produktioner
 
-## P0 – cadenceautoritet lokalt afgrænset; datahullet stadig åbent
+## P0 – tilbagetrukket rekonstruktionssti fjernet; frisk målt produktion afventer
+
+- [x] Bevis rodårsagen: 4.0.314 krævede et tidligere descriptorbundet apply+Pages-bevis, som ikke kunne eksistere efter ejerens tilbagetrækning; normale jobs blev derfor grønne no-ops uden build, artifact eller Pages.
+- [x] Registrér den offentlige konsekvens: primary var mere end otte timer gammel, recovery var over den absolutte 72-timersgrænse, og RavRadar lukkede ærligt med **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**
+- [x] Bevis at intet inspect forseglede en descriptor, og at ingen syntetiske eller interpolerede data blev anvendt eller deployet.
+- [x] Pensionér operationsinput/jobs, actuator, admin-descriptor, apply+Pages-attestation og package-/releasegatebindinger; bevar det versionsafgrænsede historical exact-D1-job med eksplicit `ready=true` for 4.0.315, defensive trust-/schema-/turkvalitetslæsere og normal measured-only recovery.
+- [x] Opret DEC-0111 og markér DEC-0109 historisk, tilbagetrukket uden anvendelse og ikke-eksekverbar.
+- [ ] Bestå målrettede retirement-, workflow-, RDKS-, håndbogs-, versions- og releasegates på den endelige diff samt eksakt PR-head sourcegate.
+- [ ] Merge 4.0.315 og kør én frisk normal produktion, hvor build, fuld validate, releasegate, artifact og Pages faktisk er success og ikke skipped.
+- [ ] Verificér offentlig frisk manifest/startpakke/detaljer, 210/673 samt aktuelle og femdøgnsprognoser. Først derefter er P0 produktionslukket.
+
+## Historisk P0 – cadenceautoritet lokalt afgrænset; datahullet forblev åbent
 
 - [x] Bestå PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og korrekt no-op push `33279411885`.
 - [x] Bestå exact-main D1 `33279463545`/`99172031927` på `d539fc9d`.

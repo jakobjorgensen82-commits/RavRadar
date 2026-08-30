@@ -2,7 +2,17 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-30 – cadencepolicy lokalt afgrænset
+## Aktuelt P0-checkpoint 2026-08-30 – 4.0.315 retirement og frisk produktion
+
+- 4.0.314's tilbagetrukne one-time Candidate G-operation efterlod en aktiv readiness, som krævede et apply+Pages-bevis, der aldrig kunne eksistere. Normale vejrjobs blev grønne no-ops uden build, artifact eller Pages.
+- Offentlig primary er observeret mere end otte timer gammel, og den målte recovery er over sin absolutte 72-timersgrænse. RavRadar viser derfor ærligt **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”**, men kan ikke vise prognoser.
+- Ingen descriptor blev forseglet, ingen apply/rollback/cleanup blev kørt, og ingen syntetiske eller interpolerede data blev anvendt eller deployet.
+- DEC-0111 tilbagetrækker DEC-0109 uden anvendelse. 4.0.315 fjerner operationsinput/jobs, actuator og apply+Pages-attestationen. `trip-storage-readiness` bevares for historical exact-D1 på 4.0.311–4.0.314, men returnerer eksplicit `ready=true` for 4.0.315.
+- Bevar measured-only gap-checkpoint, continuation og senest-komplet recovery samt defensive trust-/schema-/turkvalitetslæsere. De defensive læsere kan ikke skabe data og er ikke en operationel tilladelse.
+- P0 er ikke lukket ved lokal eller grøn topstatus. Kræv exact-head sourcegate, merge, en frisk normal produktion hvor fuld validate/releasegate, artifact og Pages faktisk kører, og offentlig 210/673-kontrol af aktuelle og femdøgnsprognoser.
+- Rør ikke geometri, zoner, land-/vandpunkter, private data eller geodata ud over den særskilt autoriserede rene topversionssynk.
+
+## Historisk P0-checkpoint 2026-08-30 – cadencepolicy lokalt afgrænset
 
 - Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
 - PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.

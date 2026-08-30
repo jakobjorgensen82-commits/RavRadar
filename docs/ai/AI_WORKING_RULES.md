@@ -1,6 +1,14 @@
 # AI Working Rules – RavRadar
 
-## Aktuel recovery-/release-regel fra 4.0.314
+## Aktuel 4.0.315-retirement- og produktionsregel
+
+- Genindfør aldrig DEC-0109's workflowinput, aktuator, descriptor, inspect/apply/rollback/cleanup eller apply+Pages-prerequisite. Det bevarede historical exact-D1-job for 4.0.311–4.0.314 skal fortsat returnere `ready=true` for 4.0.315. Beslutningen blev tilbagetrukket uden anvendelse.
+- Normal produktion er measured-only. Et hul forbliver et hul; lån, interpolation og backfill fra andre tider eller zoner er forbudt.
+- Skeln mellem grøn topstatus og et faktisk produktionsbevis. Kræv, at build, fuld validate, releasegate, artifact og Pages har kørt og bestået på den mergede SHA.
+- Bevar normal gap-checkpoint, continuation og senest-komplet recovery inden for deres egne integritets-, forecast- og aldersgrænser. Bevar defensive trust-/turkvalitetslæsere, men behandl dem aldrig som tilladelse til at skabe state.
+- Ved offentlig stale-/expirybesked er P0 ikke lukket, før frisk manifest/startpakke/detaljer, 210/673 og aktuelle/femdøgnsprognoser er verificeret.
+
+## Historisk recovery-/release-regel fra 4.0.314
 
 - Tillad singleton-evidens kun i den eksakte `AFTER`-rolle og kun som målt højreanker på uafhængigt bevist 3-timerskadence. Sænk aldrig den fælles evidensgrænse globalt.
 - Kræv state-replay og eksakt targetanker før interpolation; cadence skal komme fra before+target, aldrig hardcodes eller udledes af singletonen.

@@ -125,7 +125,7 @@ const candidateGMemory=await read('js/core/ravscore-regime-memory.js');
 const candidateGStatePipeline=await read('js/core/ravscore-candidate-g-state-pipeline.js');
 const publicRecovery=await read('scripts/candidate-g-public-recovery-fallback.mjs');
 const publicDataService=await read('js/services/data-service.js');
-const oneTimeGapReconstruction=await read('scripts/one-time-candidate-g-gap-reconstruction.mjs');
+const gapRetirementTest=await read('scripts/test-candidate-g-gap-reconstruction-retired.mjs');
 const tripEvidenceContract=await read('js/services/trip-evidence-contract.js');
 const tripStorageWorkflow=await read('.github/workflows/deploy-trip-storage.yml');
 const tripQualityMigration=await read('supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql');
@@ -149,31 +149,22 @@ ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGM
 ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
 ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller fail-closed audit');
 ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
-for(const marker of ['inspectOneTimeGap','applyOneTimeGap','rollbackOneTimeGap','cleanupOneTimeGap','rawVectorsIncluded: false','coordinatesIncluded: false','privateDataIncluded: false']){
-  ok(oneTimeGapReconstruction.includes(marker),`Engangsrekonstruktionen mangler operativ integritets-/privatlivskontrakt: ${marker}`);
+const retiredGapPaths=[
+  'scripts/one-time-candidate-g-gap-reconstruction.mjs',
+  'scripts/test-one-time-candidate-g-gap-reconstruction-4.0.311.mjs',
+  'scripts/test-one-time-candidate-g-gap-workflow-4.0.311.mjs',
+  'data/admin/candidate-g-one-time-gap-reconstruction-20260829.json',
+];
+for(const retiredPath of retiredGapPaths){
+  ok(!(await exists(retiredPath)),`Den pensionerede engangsrekonstruktionssti findes stadig: ${retiredPath}`);
 }
-for(const scriptName of ['validate','validate:source']){
-  const command=String(pkg.scripts?.[scriptName]||'');
-  for(const marker of ['test:candidate-g-gap-reconstruction','test:candidate-g-gap-workflow']){
-    ok(command.includes(marker),`${scriptName} mangler obligatorisk 4.0.311-recoverytest: ${marker}`);
-  }
+for(const marker of ['candidate_g_gap_reconstruction_mode','inspect-candidate-g-one-time-gap','one-time-candidate-g-gap-reconstruction.mjs','.cache/candidate-g-gap-reconstruction','RRGAP-2026-08-29-CANDIDATE-G-01']){
+  ok(!workflow.includes(marker),`Produktionsworkflowet genåbner den pensionerede DEC-0109-sti: ${marker}`);
 }
-for(const marker of ['postChangeDocumentSha256','postChangeTargetIdentitySha256','rollbackOrCleanupOneTimeGap','ONE_TIME_GAP_ROLLBACK_BINDING_INVALID','ONE_TIME_GAP_CLEANUP_NEWER_MEASURED_SUFFIX_MISSING']){
-  ok(oneTimeGapReconstruction.includes(marker),`Engangsrekonstruktionen mangler eksakt rollback-/cleanupkontrakt: ${marker}`);
-}
-for(const marker of ['candidate_g_gap_reconstruction_mode','one-time-candidate-g-gap-reconstruction.mjs','candidate-g-gap-reconstruction-inspection-']){
-  ok(workflow.includes(marker),`Produktionsworkflowet mangler DEC-0109-kæden: ${marker}`);
-}
-for(const marker of [
-  'Prove apply then direct rollback is exact on an isolated copy',
-  'cmp --silent',
-  'Roll back exact post-apply state or causally clean the deployed descendant',
-  'Causally remove only the descriptor-bound reconstructed evidence',
-  'Refuse reconstruction deploy without a successful fresh weather rebuild',
-  "inputs.candidate_g_gap_reconstruction_mode == 'none'",
-]){
-  ok(workflow.includes(marker),`Produktionsworkflowet mangler isoleret transaktions-/cachekarantæne: ${marker}`);
-}
+ok(pkg.scripts?.['test:candidate-g-gap-retirement']==='node scripts/test-candidate-g-gap-reconstruction-retired.mjs','Pensionsregressionen mangler package-binding');
+ok(String(pkg.scripts?.['test:candidate-g-public-recovery']||'').includes('test:candidate-g-gap-retirement'),'Fuld Candidate G-recoverytest mangler pensionsregressionen');
+ok(String(pkg.scripts?.['test:workflow-action-contracts']||'').includes('test:candidate-g-gap-retirement'),'Workflowkontrakten mangler pensionsregressionen');
+ok(gapRetirementTest.includes('Historical read/quality compatibility remains intentionally available'),'Pensionsregressionen må ikke fjerne historisk trust-/læsekompatibilitet');
 for(const marker of ['ravscore-reconstructed-derived-evidence','public-emergency-last-complete','ravscore-evidence-trust-unattested']){
   ok(tripEvidenceContract.includes(marker),`Turkontrakten mangler Candidate G-kvalitetsmarkøren: ${marker}`);
   ok(tripQualityMigration.includes(marker),`Databasemigrationen mangler Candidate G-kvalitetsmarkøren: ${marker}`);

@@ -92,7 +92,7 @@ assert.match(workflow, /workflow_dispatch/);
 assert.match(workflow, /^\s+schedule:/m);
 assert.match(workflow, /cron: ["']14,29,44,59 \* \* \* \*["']/);
 assert.match(workflow, /current-hour-readiness/);
-assert.match(workflow, /github\.event_name == 'workflow_dispatch' && inputs\.candidate_g_gap_reconstruction_mode == 'none' && inputs\.force != true/);
+assert.match(workflow, /github\.event_name == 'workflow_dispatch' && inputs\.force != true/);
 assert.match(workflow, /CHECK_CURRENT_HOUR/);
 assert.match(workflow, /target_hour: \$\{\{ steps\.cache-state\.outputs\.target_hour \}\}/);
 assert.match(workflow, /RAVRADAR_PRODUCTION_TARGET_HOUR: \$\{\{ needs\.current-hour-readiness\.outputs\.target_hour \}\}/);
