@@ -27,7 +27,9 @@ assert.doesNotMatch(bulk, /asset\["parameterHint"\]/);
 assert.match(bulk, /forecast-step GRIB inventory/);
 assert.match(bulk, /recognizedParameters/);
 assert.match(bulk, /TIME_STRIDE_HOURS/);
-assert.match(bulk, /minimum_valid_epoch = time\.time\(\) - 3600/);
+assert.match(bulk,
+  /minimum_valid_epoch\s*=\s*\(\s*epoch\(minimum_valid_time\)\s*if minimum_valid_time is not None\s*else time\.time\(\) - 3600\s*\)/,
+  'run selection must honor an explicit private replay boundary and retain the one-hour fallback');
 assert.match(bulk, /expiredForecastStepsSkipped/);
 assert.match(bulk, /select_forecast_run/);
 assert.match(bulk, /preferredProgressiveRunRetained/);
@@ -99,7 +101,10 @@ assert.match(bulk, /write_ocean_diagnostics/);
 assert.match(workflow, new RegExp(`RavRadar/${appVersion.replaceAll('.', '\\.')}`));
 assert.match(workflow, /current-field-shadow\.json/);
 assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
-assert.match(workflow, /timeout-minutes: 18/);
+assert.match(
+  workflow,
+  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
+);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);

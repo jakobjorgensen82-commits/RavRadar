@@ -12,6 +12,7 @@ import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_SCORE_QUALITY,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
@@ -84,6 +85,27 @@ const state = {
   waveMemoryStatus: 'READY',
   waveLastVerifiedAt: '2026-08-29T09:00:00.000Z',
   mobilisationPotential: 70,
+  lastMileMemoryReady: true,
+  lastMileMemoryStatus: 'READY',
+  lastMileEvidenceStatus: 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+  lastMileWaveActivity: 1,
+  lastMileNormalAlignment: -1,
+  lastMileTangentAlignment: 0,
+  lastMileCoherence: 1,
+  lastMileApproach: 0,
+  lastMileFactor: 0.85,
+  historyScoreView: {
+    available: true,
+    quality: RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+    calibrationEligible: true,
+    coverageHours: 48,
+    requiredHours: 48,
+    reasonCodes: [],
+    conservativeTailResetApplied: false,
+    current: { lowerPotential: 80, upperPotential: 80 },
+    waveMobilisation: { lowerPotential: 70, upperPotential: 70 },
+    lastMile: { lowerFactor: 0.85, upperFactor: 0.85 },
+  },
 };
 const weather = {
   windSpeedMps: 5,
@@ -101,6 +123,8 @@ const result = evaluateRavScoreIntegrated({
   weather,
   zone: { onshoreDirectionDeg: 270 },
 }, { state });
+assert.equal(result.available, true,
+  `public projection fixture must be a valid state-6 model result, got ${result.reason}`);
 const projected = projectIntegratedRavScoreForPublic(result, {
   mode: 'beach',
   profile,
@@ -181,6 +205,8 @@ const score = {
     currentMemoryStatus: 'READY',
     waveMemoryReady: true,
     waveMemoryStatus: 'MIGRATED_READY',
+    lastMileMemoryReady: true,
+    lastMileMemoryStatus: 'READY',
     modes: { beach: compactMode, waders: compactMode },
   },
 };

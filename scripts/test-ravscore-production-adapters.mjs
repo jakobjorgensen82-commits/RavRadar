@@ -586,7 +586,12 @@ assert.deepEqual({
 });
 
 const time = '2026-08-29T12:00:00.000Z';
-const scoreRow = (score, available = true) => ({
+const scoreRow = (score, available = true, scoreQuality = 'FULL_HISTORY', {
+  upper = scoreQuality === 'FULL_HISTORY' ? score : Math.min(100, score + 10),
+  historyCoverageHours = scoreQuality === 'FULL_HISTORY' ? 48 : 24,
+  historyReasonCodes = scoreQuality === 'FULL_HISTORY' ? [] : ['CURRENT_HISTORY_INCOMPLETE'],
+  conservativeTailResetApplied = false,
+} = {}) => ({
   time,
   weather: {
     waveHeightM: 1.2,
@@ -598,20 +603,44 @@ const scoreRow = (score, available = true) => ({
     modes: Object.fromEntries(['waders', 'beach'].map(mode => [mode, available ? {
       available: true,
       score,
+      scoreQuality,
+      calibrationEligible: scoreQuality === 'FULL_HISTORY',
+      scoreSemantics: scoreQuality === 'FULL_HISTORY'
+        ? conservativeTailResetApplied
+          ? 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'
+          : 'EXACT_POINT_SCORE'
+        : 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+      conservativeTailResetApplied,
+      scoreBounds: {
+        lower: score,
+        upper,
+        modelUncertaintyPoints: upper - score,
+        rawLower: score,
+        rawUpper: upper,
+      },
+      historyCoverageHours,
+      historyReasonCodes,
       components: { huntability: score, transport: score, release: score },
       explanation: { transportDiagnostics: { coastTransportExplanation: 'bounded' } },
     } : {
       available: false,
       score: null,
+      scoreQuality: 'UNAVAILABLE',
+      calibrationEligible: false,
+      scoreSemantics: null,
+      conservativeTailResetApplied: false,
+      scoreBounds: null,
+      historyCoverageHours: null,
+      historyReasonCodes: [],
       unavailability: { code: 'FIXTURE_MISSING', messageDa: 'Fixture mangler.' },
     }])),
   },
 });
 const selectedMode = (row, mode) => row.ravScoreModel.modes[mode];
-const zoneRows = values => values.map(([partId, score, available = true]) => ({
+const zoneRows = values => values.map(([partId, score, available = true, scoreQuality = 'FULL_HISTORY']) => ({
   partId,
   name: partId,
-  scores: [scoreRow(score, available)],
+  scores: [scoreRow(score, available, scoreQuality)],
 }));
 
 const several = buildIntegratedZoneHourlyProjection({
@@ -623,6 +652,59 @@ assert.equal(several[0].waders.status, 'several-parts');
 assert.deepEqual(several[0].waders.modelBinding, ravScoreModelBinding());
 assert.deepEqual(several[0].waders.parts.map(item => item.partId), ['A', 'B']);
 assert.equal(several[0].waders.winningPartId, 'A');
+assert.equal(several[0].waders.scoreQuality, 'FULL_HISTORY');
+assert.equal(several[0].waders.calibrationEligible, true);
+assert.equal(several[0].waders.historyCoverageHours, 48);
+assert.deepEqual(several[0].waders.historyReasonCodes, []);
+assert.deepEqual(several[0].waders.scoreBounds, {
+  lower:80,upper:80,modelUncertaintyPoints:0,rawLower:80,rawUpper:80,
+});
+assert.equal(several[0].waders.scoreSemantics, 'EXACT_POINT_SCORE');
+assert.equal(several[0].waders.winningPartUncertain, false);
+assert.deepEqual(several[0].waders.possibleWinningParts.map(item=>item.partId), ['A']);
+assert.deepEqual(several[0].waders.parts.map(item=>({
+  partId:item.partId,
+  scoreQuality:item.scoreQuality,
+  scoreBounds:item.scoreBounds,
+  historyCoverageHours:item.historyCoverageHours,
+  historyReasonCodes:item.historyReasonCodes,
+})), [
+  {partId:'A',scoreQuality:'FULL_HISTORY',scoreBounds:{
+    lower:80,upper:80,modelUncertaintyPoints:0,rawLower:80,rawUpper:80,
+  },historyCoverageHours:48,historyReasonCodes:[]},
+  {partId:'B',scoreQuality:'FULL_HISTORY',scoreBounds:{
+    lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73,
+  },historyCoverageHours:48,historyReasonCodes:[]},
+], 'FULL_HISTORY comparison parts must retain collapsed bounds without changing their scores');
+
+const exactWinnerWithResetLoser = buildIntegratedZoneHourlyProjection({
+  rows: [
+    {partId:'A',name:'A',scores:[scoreRow(80)]},
+    {partId:'B',name:'B',scores:[scoreRow(70,true,'FULL_HISTORY',{
+      conservativeTailResetApplied:true,
+    })]},
+  ],
+  expectedPartCount:2,
+  selectedMode,
+});
+assert.equal(exactWinnerWithResetLoser[0].waders.conservativeTailResetApplied,false,
+  'a non-winning reset part must not relabel an exact FULL_HISTORY zone score');
+assert.equal(exactWinnerWithResetLoser[0].waders.scoreSemantics,'EXACT_POINT_SCORE');
+
+const resetWinnerWithExactLoser = buildIntegratedZoneHourlyProjection({
+  rows: [
+    {partId:'A',name:'A',scores:[scoreRow(80,true,'FULL_HISTORY',{
+      conservativeTailResetApplied:true,
+    })]},
+    {partId:'B',name:'B',scores:[scoreRow(70)]},
+  ],
+  expectedPartCount:2,
+  selectedMode,
+});
+assert.equal(resetWinnerWithExactLoser[0].waders.conservativeTailResetApplied,true,
+  'a reset FULL_HISTORY winner must retain its own point-score semantics');
+assert.equal(resetWinnerWithExactLoser[0].waders.scoreSemantics,
+  'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
 
 const only = buildIntegratedZoneHourlyProjection({
   rows: zoneRows([['A', 80], ['B', 72], ['C', 60]]),
@@ -672,6 +754,12 @@ const unavailable = buildIntegratedZoneHourlyProjection({
 });
 assert.equal(unavailable[0].waders.available, false);
 assert.equal(unavailable[0].waders.score, null);
+assert.equal(unavailable[0].waders.scoreQuality, 'UNAVAILABLE');
+assert.equal(unavailable[0].waders.calibrationEligible, false);
+assert.equal(unavailable[0].waders.historyCoverageHours, null);
+assert.deepEqual(unavailable[0].waders.historyReasonCodes, []);
+assert.equal(unavailable[0].waders.parts, undefined,
+  'UNAVAILABLE must not manufacture a secondary score list');
 assert.deepEqual(unavailable[0].waders.modelBinding, ravScoreModelBinding(),
   'a local unavailable result must remain bound to the one active public model');
 assert.deepEqual(unavailable[0].waders.unavailableParts.map(item => item.partId), ['B']);
@@ -684,6 +772,8 @@ const missingExpectedPart = buildIntegratedZoneHourlyProjection({
 assert.equal(missingExpectedPart[0].waders.available, false);
 assert.equal(missingExpectedPart[0].waders.unavailability.code,
   'INTEGRATED_RAVSCORE_PART_COVERAGE_INCOMPLETE');
+assert.equal(missingExpectedPart[0].waders.historyCoverageHours, null);
+assert.deepEqual(missingExpectedPart[0].waders.historyReasonCodes, []);
 assert.match(missingExpectedPart[0].waders.reasons.join(' '), /forventede kystdele mangler/i);
 assert.deepEqual(missingExpectedPart[0].waders.modelBinding, ravScoreModelBinding());
 
@@ -693,6 +783,79 @@ const tie = buildIntegratedZoneHourlyProjection({
   selectedMode,
 });
 assert.equal(tie[0].waders.winningPartId, 'A', 'equal scores must use stable part-id tie breaking');
+
+const qualityTie = buildIntegratedZoneHourlyProjection({
+  rows: zoneRows([['A', 80, true, 'HISTORY_INCOMPLETE'], ['B', 80], ['C', 60]]),
+  expectedPartCount: 3,
+  selectedMode,
+});
+assert.equal(qualityTie[0].waders.winningPartId, 'B',
+  'FULL_HISTORY may outrank HISTORY_INCOMPLETE only when their numeric scores tie exactly');
+assert.equal(qualityTie[0].waders.scoreQuality, 'HISTORY_INCOMPLETE');
+assert.deepEqual(qualityTie[0].waders.scoreBounds, {
+  lower:80,upper:90,modelUncertaintyPoints:10,rawLower:80,rawUpper:90,
+});
+assert.equal(qualityTie[0].waders.winningPartUncertain, true);
+assert.deepEqual(qualityTie[0].waders.possibleWinningParts.map(item=>item.partId), ['A','B']);
+assert.deepEqual(qualityTie[0].waders.parts.map(item=>({
+  partId:item.partId,
+  scoreQuality:item.scoreQuality,
+  scoreBounds:item.scoreBounds,
+  historyCoverageHours:item.historyCoverageHours,
+  historyReasonCodes:item.historyReasonCodes,
+})), [
+  {partId:'B',scoreQuality:'FULL_HISTORY',scoreBounds:{
+    lower:80,upper:80,modelUncertaintyPoints:0,rawLower:80,rawUpper:80,
+  },historyCoverageHours:48,historyReasonCodes:[]},
+  {partId:'A',scoreQuality:'HISTORY_INCOMPLETE',scoreBounds:{
+    lower:80,upper:90,modelUncertaintyPoints:10,rawLower:80,rawUpper:90,
+  },historyCoverageHours:24,historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE']},
+], 'mixed comparison parts must retain each part own quality, bounds, coverage and reasons');
+
+const higherIncomplete = buildIntegratedZoneHourlyProjection({
+  rows: zoneRows([['A', 81, true, 'HISTORY_INCOMPLETE'], ['B', 80], ['C', 60]]),
+  expectedPartCount: 3,
+  selectedMode,
+});
+assert.equal(higherIncomplete[0].waders.winningPartId, 'A',
+  'a higher numeric HISTORY_INCOMPLETE score must not be demoted below a lower FULL_HISTORY score');
+assert.equal(higherIncomplete[0].waders.calibrationEligible, false);
+assert.equal(higherIncomplete[0].waders.score, 81);
+assert.equal(higherIncomplete[0].waders.scoreBounds.upper, 91);
+assert.equal(higherIncomplete[0].waders.winningPartUncertain, false);
+
+const uncertainLoser = buildIntegratedZoneHourlyProjection({
+  rows: [
+    {partId:'A',name:'A',scores:[scoreRow(60)]},
+    {partId:'B',name:'B',scores:[scoreRow(59,true,'HISTORY_INCOMPLETE',{upper:90})]},
+  ],
+  expectedPartCount:2,
+  selectedMode,
+});
+for (const mode of ['waders','beach']) {
+  assert.equal(uncertainLoser[0][mode].score,60);
+  assert.equal(uncertainLoser[0][mode].scoreQuality,'HISTORY_INCOMPLETE');
+  assert.equal(uncertainLoser[0][mode].calibrationEligible,false);
+  assert.equal(uncertainLoser[0][mode].scoreSemantics,'CONSERVATIVE_ENCLOSING_LOWER_BOUND');
+  assert.deepEqual(uncertainLoser[0][mode].scoreBounds,{
+    lower:60,upper:90,modelUncertaintyPoints:30,rawLower:60,rawUpper:90,
+  });
+  assert.equal(uncertainLoser[0][mode].winningPartId,'A');
+  assert.equal(uncertainLoser[0][mode].winningPartUncertain,true);
+  assert.deepEqual(uncertainLoser[0][mode].possibleWinningParts.map(item=>item.partId),['A','B']);
+}
+
+const sevenPartBoundary = buildIntegratedZoneHourlyProjection({
+  rows: zoneRows([
+    ['P7',70],['P6',63],['P5',62],['P4',61],['P3',60],['P2',59],['P1',58],
+  ]),
+  expectedPartCount:7,
+  selectedMode,
+});
+assert.equal(sevenPartBoundary[0].waders.status,'several-parts',
+  'the exact seven-point margin must remain inclusive with seven parts');
+assert.deepEqual(sevenPartBoundary[0].waders.parts.map(item=>item.partId),['P7','P6']);
+assert.equal(sevenPartBoundary[0].waders.possibleWinningPartCount,1);
 
 assert.throws(() => buildIntegratedZoneHourlyProjection({
   rows: zoneRows([['A', 80], ['A', 75]]),
@@ -735,7 +898,7 @@ assert.deepEqual({
   ready: projected.ravScoreModel.lastMileMemoryReady,
   status: projected.ravScoreModel.lastMileMemoryStatus,
 }, { referenceAt: time, ready: true, status: 'READY' },
-'the integrated part projection must carry schema-5 last-mile readiness into every public consumer');
+'the integrated part projection must carry schema-6 last-mile readiness into every public consumer');
 assert.equal(projected.current.ravScoreModel, undefined);
 
 console.log('RavScore-produktionsadapter: strømproof, fail-closed zoner, vinder og 7-punktsmargin består.');

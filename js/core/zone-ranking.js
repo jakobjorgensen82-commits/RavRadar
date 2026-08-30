@@ -4,6 +4,9 @@ const MAX_CORRECTION_POINTS = 19;
 const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const finiteScore = value => finite(value) && value >= 0 && value <= 100;
+const scoreQualityRank = result => result?.scoreQuality === 'FULL_HISTORY' ? 0
+  : result?.scoreQuality === 'HISTORY_INCOMPLETE' ? 1
+    : 2;
 
 function normalizeDirection(value) {
   if (!finite(value)) return null;
@@ -39,8 +42,10 @@ export function rankingSupportRatio(result, partCount) {
 }
 
 export function calculateNationalRanking(result, parts) {
-  const rawScore = finiteScore(result?.score) ? result.score : null;
-  const unchanged = { rankingScore: rawScore, correctionPoints: 0, applied: false, modelId: 'direction-broad-19-v1' };
+  const rawScore = result?.available === false || result?.scoreQuality === 'UNAVAILABLE'
+    ? null
+    : finiteScore(result?.score) ? result.score : null;
+  const unchanged = { rankingScore: rawScore, correctionPoints: 0, applied: false, modelId: 'direction-broad-19-history-tie-v2' };
   if (rawScore === null || !Array.isArray(parts) || parts.length <= 1) return unchanged;
 
   const coverage = result?.localCoverage;
@@ -59,7 +64,7 @@ export function calculateNationalRanking(result, parts) {
     rankingScore: rawScore - correctionPoints,
     correctionPoints,
     applied: correctionPoints > 0,
-    modelId: 'direction-broad-19-v1',
+    modelId: 'direction-broad-19-history-tie-v2',
     opportunityIndex,
     supportRatio,
     uniqueDirectionCount: directionAnalysis.uniqueDirectionCount,
@@ -77,8 +82,12 @@ export function displayNationalRankingScore(value) {
 
 export function compareNationalRankingRows(left, right) {
   const rankingValue = row => finite(row?.rankingScore)
+    && row?.result?.available !== false
+    && row?.result?.scoreQuality !== 'UNAVAILABLE'
     ? row.rankingScore
-    : finiteScore(row?.result?.score) ? row.result.score : null;
+    : row?.result?.available !== false
+      && row?.result?.scoreQuality !== 'UNAVAILABLE'
+      && finiteScore(row?.result?.score) ? row.result.score : null;
   const leftRanking = rankingValue(left);
   const rightRanking = rankingValue(right);
   if (leftRanking === null || rightRanking === null) {
@@ -95,5 +104,7 @@ export function compareNationalRankingRows(left, right) {
     if (rightScore === null && leftScore !== null) return -1;
     return 0;
   }
-  return rightScore - leftScore;
+  const scoreDifference = rightScore - leftScore;
+  if (scoreDifference !== 0) return scoreDifference;
+  return scoreQualityRank(left?.result) - scoreQualityRank(right?.result);
 }

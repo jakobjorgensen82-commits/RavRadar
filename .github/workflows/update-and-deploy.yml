@@ -434,8 +434,11 @@ jobs:
       RAVRADAR_LEGACY_SOURCE_ROOT: /tmp/ravradar-legacy-candidate-source
       RAVRADAR_CANDIDATE_STAGE: /tmp/ravradar-candidate-g-pages
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
+      RAVRADAR_PREFLIGHT_WORK: .cache/weather-preflight-work
+      RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
     outputs:
       should_deploy: ${{ steps.deployment-decision.outputs.should_deploy }}
+      preflight_should_run: ${{ steps.preflight.outputs.should_run }}
       operational_action: ${{ steps.operational-action.outputs.action }}
       operational_model: ${{ steps.operational-model.outputs.model }}
       central_version: ${{ steps.operational-model.outputs.central_version }}
@@ -443,6 +446,15 @@ jobs:
       deployment_model: ${{ steps.deployment-decision.outputs.deployment_model }}
       integrated_implementation_closure_sha256: ${{ steps.integrated-implementation.outputs.closure_sha256 }}
       active_deployment_id: ${{ steps.operational-model.outputs.active_deployment_id }}
+      weather_outcome: ${{ steps.weather.outcome }}
+      full_validation_outcome: ${{ steps.full-validation.outcome }}
+      release_gate_outcome: ${{ steps.release-gate.outcome }}
+      pages_build_outcome: ${{ steps.pages-build.outcome }}
+      pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}
+      handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}
+      pages_configure_outcome: ${{ steps.pages-configure.outcome }}
+      pages_upload_outcome: ${{ steps.pages-upload.outcome }}
+      artifact_built: ${{ steps.pages-build.outputs.built }}
 
     steps:
       - uses: actions/checkout@v7
@@ -550,28 +562,123 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Restore dataminimized weather preflight metadata
+        id: weather-preflight-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-preflight-state
+          key: weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            weather-preflight-state-v1-${{ runner.os }}-
+
+      - name: Fetch only the deployed public manifest for weather preflight
+        id: public-preflight-manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RAVRADAR_PREFLIGHT_WORK"
+          manifest="$RAVRADAR_PREFLIGHT_WORK/public-manifest.json"
+          if curl --fail --silent --show-error --location \
+            --connect-timeout 10 --max-time 20 --max-filesize 131072 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?weather-preflight=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output "$manifest"; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            rm -f "$manifest"
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Weather preflight will build::The small deployed manifest could not be attested."
+          fi
+
+      - name: Decide whether weather needs updating before private runtime download
+        id: preflight
+        shell: bash
+        env:
+          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
+          RAVRADAR_MAX_STALE_MINUTES: 30
+          RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
+          WEATHER_USER_AGENT: "RavRadar/4.0.317 (${{ github.server_url }}/${{ github.repository }})"
+          PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
+          PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
+        run: |
+          set -uo pipefail
+          state=.cache/weather-preflight-state/state.json
+          input_root="$RAVRADAR_PREFLIGHT_WORK/input"
+          if test -n "$PREFLIGHT_CACHE_KEY" && test "$PUBLIC_MANIFEST_AVAILABLE" = "true" && test -f "$state"; then
+            rm -rf "$input_root"
+            mkdir -p "$input_root/scripts"
+            if node scripts/private-production-runtime-workflow.mjs materialize-preflight \
+              --repository-root "$GITHUB_WORKSPACE" \
+              --state "$state" \
+              --public-manifest "$RAVRADAR_PREFLIGHT_WORK/public-manifest.json" \
+              --output-root "$input_root"; then
+              cp scripts/check-weather-update.py "$input_root/scripts/check-weather-update.py"
+              if (cd "$input_root" && python scripts/check-weather-update.py); then
+                exit 0
+              fi
+            fi
+          fi
+          echo "should_run=true" >> "$GITHUB_OUTPUT"
+          echo "dmi_changed=false" >> "$GITHUB_OUTPUT"
+          echo "reason=verified-light-preflight-unavailable" >> "$GITHUB_OUTPUT"
+          echo "age_minutes=unknown" >> "$GITHUB_OUTPUT"
+          echo "Weather build required because no matching dataminimized preflight state was available."
+
+      - name: Report skipped refresh
+        if: steps.preflight.outputs.should_run != 'true'
+        run: |
+          echo "RavRadar weather is fresh and no newer DMI model run was found."
+          echo "Reason: ${{ steps.preflight.outputs.reason }}"
+          echo "Weather age: ${{ steps.preflight.outputs.age_minutes }} minutes"
+
       - name: Install production geometry tools
+        if: steps.preflight.outputs.should_run == 'true'
         run: python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
 
       - name: Build constrained natural zone coastlines
+        if: steps.preflight.outputs.should_run == 'true'
         run: python scripts/refine-coastlines-constrained-4.0.48.py
 
       - name: Sync centrally saved admin configuration
+        if: steps.preflight.outputs.should_run == 'true'
         run: python scripts/sync-admin-config.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Apply centrally approved zone geometry and deletions
+        if: steps.preflight.outputs.should_run == 'true'
         run: python scripts/apply-central-zone-reviews.py
 
+      - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
+        if: steps.preflight.outputs.should_run == 'true'
+        id: ravscore-checkpoint-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/ravscore-continuation-checkpoint
+          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ravscore-continuation-schema6-v2-
+
+      - name: Restore protected atomic RavScore checkpoint when cache is absent
+        if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
+        run: >-
+          node scripts/protected-ravscore-continuation-checkpoint.mjs
+          --restore
+          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Build current private-runtime restore expectation
+        if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/private-production-runtime-workflow.mjs expected
           --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --output .cache/private-production-runtime-expected.json
 
       - name: Restore newest compatible private runtime from protected storage
+        if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/protected-private-production-runtime.mjs
           --restore
@@ -584,6 +691,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Inspect private production runtime availability
+        if: steps.preflight.outputs.should_run == 'true'
         id: private-runtime-state
         shell: bash
         run: |
@@ -596,7 +704,7 @@ jobs:
           fi
 
       - name: Verify and restore the private production runtime bundle
-        if: steps.private-runtime-state.outputs.available == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
         run: >-
           node scripts/private-production-runtime-bundle.mjs restore
           --private-root "$RAVRADAR_PRIVATE_RUNTIME_ROOT"
@@ -605,33 +713,14 @@ jobs:
           --output "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
 
       - name: Install only the allowlisted restored private runtime files
-        if: steps.private-runtime-state.outputs.available == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.private-runtime-state.outputs.available == 'true'
         run: >-
           node scripts/private-production-runtime-workflow.mjs install
           --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           --repository-root "$GITHUB_WORKSPACE"
 
-      - name: Restore the latest compact schema-5 RavScore checkpoint
-        if: steps.private-runtime-state.outputs.available != 'true'
-        id: ravscore-checkpoint-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            ravscore-continuation-schema5-v3-
-
-      - name: Restore protected compact RavScore checkpoint when cache is absent
-        if: steps.private-runtime-state.outputs.available != 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
-        run: >-
-          node scripts/protected-ravscore-continuation-checkpoint.mjs
-          --restore
-          --target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
       - name: Resolve the one-time Candidate G bootstrap gate
+        if: steps.preflight.outputs.should_run == 'true'
         id: legacy-bootstrap
         shell: bash
         env:
@@ -651,7 +740,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.317 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.legacy-bootstrap.outputs.required == 'true'
@@ -675,7 +764,16 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.308 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.317 (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Fetch exact public Candidate G source commit for first cutover attestation
+        if: steps.operational-action.outputs.action == 'integrated-cutover'
+        shell: bash
+        run: |
+          legacy_source_head="$(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD);")"
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"
 
       - name: Seal privacy-safe local attestation of the legacy Candidate G source
         id: legacy-source
@@ -695,6 +793,7 @@ jobs:
           echo "implementation_closure_sha256=$implementation_closure_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Preserve deployed DMI zone cache as safe fallback
+        if: steps.preflight.outputs.should_run == 'true'
         shell: bash
         run: |
           mkdir -p .cache
@@ -710,22 +809,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - name: Decide whether weather needs updating
-        id: preflight
-        run: python scripts/check-weather-update.py
-        env:
-          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
-          RAVRADAR_MAX_STALE_MINUTES: 30
-          RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
-
-      - name: Report skipped refresh
-        if: steps.preflight.outputs.should_run != 'true'
-        run: |
-          echo "RavRadar weather is fresh and no newer DMI model run was found."
-          echo "Reason: ${{ steps.preflight.outputs.reason }}"
-          echo "Weather age: ${{ steps.preflight.outputs.age_minutes }} minutes"
 
       - name: Run fast source gate before expensive data refresh
         if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'
@@ -848,7 +931,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.317 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -971,6 +1054,17 @@ jobs:
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
 
+      - name: Require complete target/DMI-bound Copernicus current range before scoring
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          python scripts/check-copernicus-current-range.py
+          --shadow .cache/copernicus-current-shadow.json
+          --registry .cache/copernicus-current-targets.json
+          --dmi data/live/dmi-bulk-cache.json
+          --targets data/live/coastal-parts-v2.json
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --require-complete
+
       - name: Save targeted private Copernicus supplement
         if: steps.preflight.outputs.should_run == 'true' && success()
         uses: actions/cache/save@v6
@@ -1000,7 +1094,7 @@ jobs:
           DMI_OBSERVATION_INTERVAL_MINUTES: 60
           WEATHER_REQUEST_TIMEOUT_MS: 25000
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
-          WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.317 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1034,10 +1128,12 @@ jobs:
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
 
       - name: Validate full project after fresh weather and current provenance
+        id: full-validation
         if: steps.preflight.outputs.should_run == 'true'
         run: npm run validate
 
       - name: Run release governance gate after refreshed data validation
+        id: release-gate
         if: steps.preflight.outputs.should_run == 'true'
         run: npm run release:gate
 
@@ -1097,7 +1193,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Build compact schema-5 RavScore continuation checkpoint after final gates
+      - name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
@@ -1105,12 +1201,12 @@ jobs:
           --source data/live/conditions.json
           --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
 
-      - name: Save compact schema-5 RavScore continuation checkpoint after final gates
+      - name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reconfirm current main before protected RavScore write
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
@@ -1120,7 +1216,7 @@ jobs:
           test "$GITHUB_REF" = "refs/heads/main"
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
-      - name: Publish compact RavScore checkpoint to protected admin storage
+      - name: Publish atomic RavScore checkpoint to protected admin storage
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
@@ -1129,6 +1225,20 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Build dataminimized weather preflight state after final gates
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        run: >-
+          node scripts/private-production-runtime-workflow.mjs create-preflight
+          --repository-root "$GITHUB_WORKSPACE"
+          --output .cache/weather-preflight-state/state.json
+
+      - name: Save dataminimized weather preflight state
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-preflight-state
+          key: weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build private production runtime bundle specification
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
@@ -1269,13 +1379,6 @@ jobs:
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
           RAVRADAR_INTEGRATED_RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
 
-      - name: Atomically promote the validated point candidate in central admin storage
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
-        run: python scripts/promote-coastal-point-activation.py
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
       - name: Generate implementation and coverage audit
         if: steps.preflight.outputs.should_run == 'true'
         continue-on-error: true
@@ -1358,6 +1461,7 @@ jobs:
           node scripts/sync-protected-admin-assets.mjs
 
       - name: Build lean GitHub Pages artifact
+        id: pages-build
         if: steps.preflight.outputs.should_run == 'true'
         shell: bash
         run: |
@@ -1415,8 +1519,10 @@ jobs:
             pages_source="$RAVRADAR_CANDIDATE_STAGE"
           fi
           build_pages_site "$pages_source" _site
+          echo "built=true" >> "$GITHUB_OUTPUT"
 
       - name: Audit the complete Pages artifact for private runtime material
+        id: pages-privacy
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/audit-pages-artifact-privacy.mjs
@@ -1494,6 +1600,7 @@ jobs:
           echo "deployment_model=$deployment_model" >> "$GITHUB_OUTPUT"
 
       - name: Upload privacy-safe operational handoff evidence
+        id: handoff-upload
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/upload-artifact@v7
         with:
@@ -1503,10 +1610,12 @@ jobs:
           if-no-files-found: error
 
       - name: Configure GitHub Pages
+        id: pages-configure
         if: steps.deployment-decision.outputs.should_deploy == 'true'
         uses: actions/configure-pages@v6
 
       - name: Upload GitHub Pages artifact
+        id: pages-upload
         if: steps.deployment-decision.outputs.should_deploy == 'true'
         uses: actions/upload-pages-artifact@v5
         with:
@@ -1946,6 +2055,10 @@ jobs:
       actions: read
       pages: write
       id-token: write
+    outputs:
+      deployment_outcome: ${{ steps.deployment.outcome }}
+      public_verification_outcome: ${{ steps.public-verification.outcome }}
+      deployed_verified: ${{ steps.deployment-terminal.outputs.deployed_verified }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -1958,6 +2071,15 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Fetch exact public Candidate G source commit for first cutover verification
+        if: needs.build-and-prepare.outputs.operational_action == 'integrated-cutover'
+        shell: bash
+        run: |
+          legacy_source_head="$(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD);")"
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"
 
       - name: Download sealed operational handoff
         uses: actions/download-artifact@v8
@@ -2333,4 +2455,93 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Seal exact verified deployment terminal
+        id: deployment-terminal
+        if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'
+        shell: bash
+        run: echo "deployed_verified=true" >> "$GITHUB_OUTPUT"
+
+  production-outcome:
+    name: Classify exact weather production outcome
+    needs:
+      - validate-dispatch
+      - reconcile-operational-pending
+      - current-hour-readiness
+      - trip-storage-readiness
+      - build-and-prepare
+      - geometry-v2-national
+      - geometry-v2-pilot
+      - deploy-pages
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      status: ${{ steps.classify.outputs.status }}
+      reason_code: ${{ steps.classify.outputs.reason_code }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Classify one privacy-safe machine-readable terminal outcome
+        id: classify
+        env:
+          RAVRADAR_OUTCOME_SOURCE_HEAD: ${{ github.sha }}
+          RAVRADAR_OUTCOME_RUN_ID: ${{ github.run_id }}
+          RAVRADAR_OUTCOME_RUN_ATTEMPT: ${{ github.run_attempt }}
+          RAVRADAR_OUTCOME_EVENT_NAME: ${{ github.event_name }}
+          RAVRADAR_OUTCOME_REF_IS_MAIN: ${{ github.ref == 'refs/heads/main' }}
+          RAVRADAR_OUTCOME_GEOMETRY_PILOT: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true }}
+          RAVRADAR_OUTCOME_GEOMETRY_NATIONAL: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true }}
+          RAVRADAR_OUTCOME_JOB_VALIDATE_DISPATCH: ${{ needs.validate-dispatch.result }}
+          RAVRADAR_OUTCOME_JOB_RECONCILE: ${{ needs.reconcile-operational-pending.result }}
+          RAVRADAR_OUTCOME_JOB_CURRENT_READINESS: ${{ needs.current-hour-readiness.result }}
+          RAVRADAR_OUTCOME_JOB_TRIP_READINESS: ${{ needs.trip-storage-readiness.result }}
+          RAVRADAR_OUTCOME_JOB_BUILD: ${{ needs.build-and-prepare.result }}
+          RAVRADAR_OUTCOME_JOB_GEOMETRY_NATIONAL: ${{ needs.geometry-v2-national.result }}
+          RAVRADAR_OUTCOME_JOB_GEOMETRY_PILOT: ${{ needs.geometry-v2-pilot.result }}
+          RAVRADAR_OUTCOME_JOB_DEPLOY: ${{ needs.deploy-pages.result }}
+          RAVRADAR_OUTCOME_CURRENT_READY: ${{ needs.current-hour-readiness.outputs.ready }}
+          RAVRADAR_OUTCOME_TRIP_READY: ${{ needs.trip-storage-readiness.outputs.ready }}
+          RAVRADAR_OUTCOME_PREFLIGHT_SHOULD_RUN: ${{ needs.build-and-prepare.outputs.preflight_should_run }}
+          RAVRADAR_OUTCOME_OPERATIONAL_ACTION: ${{ needs.build-and-prepare.outputs.operational_action }}
+          RAVRADAR_OUTCOME_SHOULD_DEPLOY: ${{ needs.build-and-prepare.outputs.should_deploy }}
+          RAVRADAR_OUTCOME_WEATHER: ${{ needs.build-and-prepare.outputs.weather_outcome }}
+          RAVRADAR_OUTCOME_FULL_VALIDATION: ${{ needs.build-and-prepare.outputs.full_validation_outcome }}
+          RAVRADAR_OUTCOME_RELEASE_GATE: ${{ needs.build-and-prepare.outputs.release_gate_outcome }}
+          RAVRADAR_OUTCOME_PAGES_BUILD: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
+          RAVRADAR_OUTCOME_PAGES_PRIVACY: ${{ needs.build-and-prepare.outputs.pages_privacy_outcome }}
+          RAVRADAR_OUTCOME_HANDOFF_UPLOAD: ${{ needs.build-and-prepare.outputs.handoff_upload_outcome }}
+          RAVRADAR_OUTCOME_PAGES_CONFIGURE: ${{ needs.build-and-prepare.outputs.pages_configure_outcome }}
+          RAVRADAR_OUTCOME_PAGES_UPLOAD: ${{ needs.build-and-prepare.outputs.pages_upload_outcome }}
+          RAVRADAR_OUTCOME_ARTIFACT_BUILT: ${{ needs.build-and-prepare.outputs.artifact_built }}
+          RAVRADAR_OUTCOME_DEPLOYMENT: ${{ needs.deploy-pages.outputs.deployment_outcome }}
+          RAVRADAR_OUTCOME_PUBLIC_VERIFICATION: ${{ needs.deploy-pages.outputs.public_verification_outcome }}
+          RAVRADAR_OUTCOME_DEPLOYED_VERIFIED: ${{ needs.deploy-pages.outputs.deployed_verified }}
+        run: >-
+          node scripts/production-workflow-outcome.mjs
+          --output .workflow-outcome/production-outcome.json
+          --github-output "$GITHUB_OUTPUT"
+          --summary "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the payload-free terminal outcome
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .workflow-outcome/production-outcome.json
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Preserve failed production as a red workflow
+        if: always() && steps.classify.outputs.status == 'FAILED'
+        shell: bash
+        run: |
+          echo "The exact production outcome is FAILED; see the payload-free outcome artifact." >&2
+          exit 1
 

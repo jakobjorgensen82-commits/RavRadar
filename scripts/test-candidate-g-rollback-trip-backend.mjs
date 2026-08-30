@@ -19,6 +19,9 @@ import {
   storeObservation,
 } from '../supabase/functions/_shared/trip-store.ts';
 import { ravScoreModelBinding as candidateModelBinding } from './rollback-assets/ravscore-model-contract.js';
+import {
+  projectReadyCandidateGRollbackScoreQuality,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 
 const repositoryRoot = process.cwd();
 const temporaryRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-candidate-trip-'));
@@ -103,6 +106,39 @@ try {
       },
     },
   };
+  const candidateReadyState = {
+    transportMemoryReady: true,
+    transportMemoryStatus: 'READY',
+    transportMemoryWindowHours: 48,
+    transportMemoryCoverageHours: 48,
+  };
+  const candidateReadyMode = projectReadyCandidateGRollbackScoreQuality({
+    available: true,
+    score: 64,
+    scoreProfileId: candidateBinding.modelId,
+    components: { huntability: 71, transport: 66, release: 55 },
+    modelBinding: candidateBinding,
+    explanation: {
+      transportDiagnostics: { ...candidateReadyState },
+    },
+  }, candidateReadyState);
+  assert.deepEqual(candidateReadyMode.scoreBounds, {
+    lower: 64,
+    upper: 64,
+    modelUncertaintyPoints: 0,
+    rawLower: 64,
+    rawUpper: 64,
+  });
+  assert.equal(candidateReadyMode.scoreQuality, 'FULL_HISTORY');
+  assert.equal(candidateReadyMode.calibrationEligible, false);
+  assert.throws(() => projectReadyCandidateGRollbackScoreQuality(
+    candidateReadyMode,
+    { ...candidateReadyState, transportMemoryStatus: 'WINDOW_INCOMPLETE' },
+  ), /exact READY 48-hour state/);
+  assert.throws(() => projectReadyCandidateGRollbackScoreQuality({
+    ...candidateReadyMode,
+    modelBinding: { ...candidateBinding, modelBundleSha256: 'f'.repeat(64) },
+  }, candidateReadyState), /incompatible modelBundleSha256/);
   const publicState = {
     manifest: candidateManifest,
     conditions: {
@@ -142,11 +178,7 @@ try {
       ravScoreEvidenceTrust: verifiedEvidenceTrust,
       current: {
         time: '2026-08-29T12:00:00.000Z',
-        waders: {
-          score: 64,
-          components: { huntability: 71, transport: 66, release: 55 },
-          modelBinding: candidateBinding,
-        },
+        waders: candidateReadyMode,
       },
     },
   };
@@ -209,6 +241,7 @@ try {
     modelVersion: forgedBinding.modelId,
     modelContractSha256: forgedBinding.modelContractSha256,
     modelBundleSha256: forgedBinding.modelBundleSha256,
+    scoreCalibrationEligible: true,
   };
   const forgedPayload = {
     ...payload,
@@ -297,6 +330,7 @@ try {
     modelPresentationPolicyId: integratedBinding.presentationPolicyId,
     modelContractSha256: integratedBinding.modelContractSha256,
     modelBundleSha256: integratedBinding.modelBundleSha256,
+    scoreCalibrationEligible: true,
   };
   const integratedEligiblePayload = {
     ...payload,
@@ -434,6 +468,51 @@ try {
   assert.deepEqual(emergencyAdmissionBody.p_reason_codes,
     [emergencyReason],
     'Edge admission must pass the exact bounded reason array to the SQL gate');
+
+  const historyIncompleteReason = 'ravscore-history-incomplete';
+  const historyIncompleteFeatures = {
+    ...integratedFeatures,
+    scoreBoundUpper: 78,
+    scoreBoundModelUncertaintyPoints: 14,
+    scoreBoundRawUpper: 78,
+    scoreQuality: 'HISTORY_INCOMPLETE',
+    scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    scoreCalibrationEligible: false,
+    conservativeTailResetApplied: false,
+    historyCoverageHours: 19,
+    historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    reasonCodes: [historyIncompleteReason],
+  };
+  const integratedHistoryIncompletePayload = {
+    ...integratedEligiblePayload,
+    calibration_eligible: false,
+    data_quality_flags: [historyIncompleteReason],
+    calibration_features: historyIncompleteFeatures,
+    weather_snapshot: {
+      ...integratedEligiblePayload.weather_snapshot,
+      calibrationFeatures: historyIncompleteFeatures,
+    },
+  };
+  assert.deepEqual(tripEvidenceIntegrityIssues(integratedHistoryIncompletePayload), []);
+  assert.deepEqual(
+    externalTripPayload(integratedHistoryIncompletePayload).data_quality_flags,
+    [historyIncompleteReason],
+  );
+  assert.equal(submittedCalibrationEligibilityMatches(
+    integratedHistoryIncompletePayload,
+    integratedBinding,
+    { ineligibleBindings: [candidateBinding] },
+  ), true, 'Exact integrated HISTORY_INCOMPLETE evidence must remain storable but ineligible');
+  assert.equal(submittedCalibrationEligibilityMatches({
+    ...integratedHistoryIncompletePayload,
+    calibration_eligible: true,
+  }, integratedBinding, { ineligibleBindings: [candidateBinding] }), false,
+  'Integrated HISTORY_INCOMPLETE evidence must never be calibration eligible');
+  assert.deepEqual(
+    activeRavScoreTripAdmissionBody(integratedHistoryIncompletePayload).p_reason_codes,
+    [historyIncompleteReason],
+    'Edge admission must pass the exact HISTORY_INCOMPLETE reason to SQL',
+  );
   const forgedEmergencyPayload = {
     ...forgedPayload,
     calibration_features: {
@@ -516,11 +595,23 @@ try {
     /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,800}public-emergency-last-complete[\s\S]{0,800}p_calibration_eligible = false/,
     'SQL must allow only the exact integrated emergency reason as an ineligible same-model override');
   assert.match(migrationSql,
+    /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,1000}ravscore-history-incomplete[\s\S]{0,1000}p_calibration_eligible = false/,
+    'SQL must allow HISTORY_INCOMPLETE only as an ineligible integrated-model reason');
+  const candidateReasonBlock = migrationSql.slice(
+    migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END'),
+    migrationSql.indexOf('else false\n  end;', migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END')),
+  );
+  assert.doesNotMatch(candidateReasonBlock, /'\["ravscore-history-incomplete"\]'::jsonb/,
+    'Candidate G rollback must not accept the new integrated-only history quality');
+  assert.match(migrationSql,
     /ravradar_trip_v3_active_binding_admitted\([\s\S]{0,900}p_reason_codes jsonb[\s\S]{0,5000}'reasonCodes', p_reason_codes/,
     'The active SQL admission gate must receive and validate the exact reason array');
   assert.match(migrationSql,
     /new\.calibration_features -> 'reasonCodes',[\s\S]{0,200}new\.calibration_eligible/,
     'The database trigger must pass immutable trip reason codes to the active gate');
+  assert.match(migrationSql,
+    /ravradar_trip_v3_score_quality_allowed\([\s\S]*scoreBoundModelUncertaintyPoints[\s\S]*FULL_HISTORY[\s\S]*HISTORY_INCOMPLETE[\s\S]*CONSERVATIVE_ENCLOSING_LOWER_BOUND/i,
+    'SQL must revalidate immutable score bounds and quality semantics');
   assert.match(migrationSql,
     /RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'[\s\S]*modelContractSha256' = '[a-f0-9]{64}'[\s\S]*modelBundleSha256' = '[a-f0-9]{64}'[\s\S]*RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END[\s\S]*p_calibration_eligible = false/,
     'SQL must allow only the exact sealed Candidate G binding and force it ineligible');

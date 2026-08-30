@@ -1,9 +1,16 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT,
   LEGACY_CANDIDATE_G_MODEL_ID,
   LEGACY_CANDIDATE_G_PROFILE_SWITCH,
+  LEGACY_CANDIDATE_G_RELEASE_VERSION,
+  LEGACY_CANDIDATE_G_SOURCE_HEAD,
+  LEGACY_CANDIDATE_G_SOURCE_TREE,
   LEGACY_CANDIDATE_G_STATE_SCHEMA_VERSION,
+  legacyCandidateGCentralProfile,
+  legacyCandidateGSourceIdentity,
 } from './lib/ravscore-legacy-candidate-g-source.mjs';
 import {
   attestLegacyCandidateGSource,
@@ -18,6 +25,47 @@ const productionReferenceAt = '2026-08-29T13:00:00.000Z';
 const startupBytes = Buffer.from('{"legacy":"startup"}\n');
 const detailsBytes = Buffer.from('{"legacy":"details"}\n');
 const digest = value => crypto.createHash('sha256').update(value).digest('hex');
+
+assert.equal(LEGACY_CANDIDATE_G_RELEASE_VERSION, '4.0.316');
+assert.equal(LEGACY_CANDIDATE_G_SOURCE_HEAD,
+  '49dd4cb454656bdf629e5df760176705e38d2cb0');
+assert.equal(LEGACY_CANDIDATE_G_SOURCE_TREE,
+  '975c3e9432cea7780564ffd56766bc1f0a0a9763');
+assert.equal(LEGACY_CANDIDATE_G_PROFILE_SWITCH,
+  'RAVSCORE-PROFILE-SWITCH-4.0.316');
+assert.equal(LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
+  'a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606');
+assert.notEqual(LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
+  '1bd8b3171f127e158e578c98e76597f8fadeaeafb267ffbd26aaa9e318d8ca45',
+  'the 4.0.316 public source closure must not reuse the stale a930 closure');
+assert.notEqual(LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
+  '1c00465c3760b7765552bbaf07829cb165c3de79d964394c87176d26a588a6fd',
+  'the 4.0.316 public source closure must not omit deployed score or trip modules');
+assert.equal(LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT, 53);
+const sourceIdentity = legacyCandidateGSourceIdentity();
+assert.equal(sourceIdentity.sourceContractSha256,
+  '2f888a16190e9e43e44536536029f1b0021a1b850195524aa2312664ca74810b');
+assert.equal(sourceIdentity.sourceBundleSha256,
+  'e04a0db79feabae09184aa0e2430c2c5a300948065e64dde4c57ae0287767ce4');
+assert.deepEqual(legacyCandidateGCentralProfile(), {
+  schemaVersion: '2.0.0',
+  sourceVersion: '4.0.316',
+  switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.316',
+  requestedProfileId: LEGACY_CANDIDATE_G_MODEL_ID,
+  rollbackProfileId: null,
+  candidateProfileId: LEGACY_CANDIDATE_G_MODEL_ID,
+  candidateActivationEnabled: true,
+  prePublicWarmupAccepted: true,
+  automaticActivationAllowed: false,
+  publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
+  legacyPublicFallbackAllowed: false,
+  status: 'owner-approved-candidate-g-only-local-fail-closed',
+  activationAuthority: 'DEC-0072-owner-decision-2026-08-24',
+  evidence: {
+    freshFinalShadowRunId: null,
+    ownerReviewDecisionId: 'DEC-0072-CANDIDATE-G-ONLY-LOCAL-AVAILABILITY',
+  },
+});
 
 const manifest = Object.freeze({
   schemaVersion: 2,
@@ -97,15 +145,23 @@ assert.throws(() => attestLegacyCandidateGSource({
 
 const baseline = await baselineImplementationSources();
 const baselinePaths = baseline.map(item => item.relative);
+assert.equal(baseline.length, LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT);
 for (const transitive of [
   'js/services/data-service.js',
   'js/core/local-zone-score.js',
   'js/core/zone-ranking.js',
   'js/services/rav-assistant.js',
   'js/services/trip-evidence-contract.js',
+  'js/core/adaptive-model.js',
+  'js/core/prediction-engine.js',
+  'js/core/score-engine.js',
+  'js/core/coastal-process-model.js',
+  'js/core/debug-trace.js',
+  'js/core/direction-anchors.js',
+  'js/services/trip-service.js',
 ]) {
   assert.ok(baselinePaths.includes(transitive),
-    `the recursive a930 closure must include ${transitive}`);
+    `the recursive 49dd closure must include ${transitive}`);
 }
 
 function response(bytes) {
@@ -142,6 +198,8 @@ assert.equal(verification.privatePayloadRead, false);
 assert.equal(verification.privatePayloadLogged, false);
 assert.match(verification.implementationClosureSha256, /^[a-f0-9]{64}$/);
 assert.equal(verification.implementationClosureSha256,
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256);
+assert.equal(verification.implementationClosureSha256,
   await legacyCandidateGImplementationClosureSha256(),
   'the first-cutover plan and live legacy verifier must use one exact closure');
 
@@ -156,7 +214,21 @@ await assert.rejects(() => verifyLegacyCandidateGSource({
   expectedManifest: manifest,
   localAttestation: attestation,
   fetchImpl: fetchFrom(mutatedFiles),
-}), /implementation drifted from 4\.0\.308: js\/services\/data-service\.js/,
+}), /implementation drifted from 4\.0\.316: js\/services\/data-service\.js/,
 'a transitive score consumer mutation must invalidate the legacy source seal');
 
-console.log('Legacy Candidate G source: exact schema-2 210/673 attestation, recursive a930 module closure and transitive mutation rejection passed.');
+const newlyCoveredFiles = new Map(files);
+newlyCoveredFiles.set('js/core/score-engine.js', Buffer.concat([
+  files.get('js/core/score-engine.js'),
+  Buffer.from('\n// forbidden public score drift\n'),
+]));
+await assert.rejects(() => verifyLegacyCandidateGSource({
+  baseUrl: 'https://legacy-source.example.test/',
+  sourceHead,
+  expectedManifest: manifest,
+  localAttestation: attestation,
+  fetchImpl: fetchFrom(newlyCoveredFiles),
+}), /implementation drifted from 4\.0\.316: js\/core\/score-engine\.js/,
+'a deployed score module mutation must invalidate the complete 4.0.316 source seal');
+
+console.log('Legacy Candidate G source: exact schema-2 210/673 attestation, recursive 49dd module closure and transitive mutation rejection passed.');

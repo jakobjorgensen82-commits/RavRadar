@@ -4,12 +4,15 @@
 
 - [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
 - [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
-- [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, kausal energivægtet bølgeapproach med fire timers halveringstid og en ældre hale samt afgrænset `delivery=supply×factor` uden wave-created supply.
+- [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5-profil/komponent/forklaring, kausal energivægtet bølgeapproach samt afgrænset `delivery=supply×factor` uden wave-created supply.
 - [x] Bevar fysisk usikkerhed ærligt: `physicalDeliveryResolved=false`, fysisk interval `null`, ingen empirisk fundpræcisionspåstand, vandstand score-neutral og DDM 50 m kun som statisk kontekst.
-- [x] Bind v4-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`/`0.01171875`-grænser; fejl bevarer Candidate G offentlig uden syntetisk/offentlig historik. Bevar særskilt ægte cold start på præcis 48 private verificerede timepositioner plus reel target, same-time rollback uden dobbelt credit og same-model atomisk nøddrift højst 72 timer uden cross-model fallback/interpolation.
+- [x] Bind v5-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`-grænse. Bevar schema 5 kun som eksakt, aldrig-offentlig 5→6-ready-migrationskilde; aktiv cache/checkpoint/recovery er schema 6, rollback er v3, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
+- [x] Adskil direkte inputmissing som `UNAVAILABLE` fra historikmissing som numerisk konservativ `HISTORY_INCOMPLETE`; bevar 48 h aktiv currenthistorik, 168 h score-neutral researchretention, 288 h wave-tail og 40 h last-mile-closure med eksplicit `conservativeResetAt`.
+- [x] Bind `direction-broad-19-history-tie-v2` og `score-history-water-tie-earliest-v3`: numerisk score først, `FULL_HISTORY` kun ved eksakt tie, derefter eksisterende ranking-/vand-/tidsregler.
 - [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
+- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 bølgetimer. Parent-zone `rr-20260830104132-210` er 118/118 missing, men delene findes og har `marineCoverage=full`, så en proxy kan være unødvendig. Kun ved et reelt part-level-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis denne ene zone gå til særskilt RDKS/adapter/proveniens/usikkerhed/kapacitet/rollback; den er ikke implementeret.
 - [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
-- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige model på desktop og mobil. Indtil da er 4.0.310/Candidate G fortsat produktionssandhed. Den separate 4.0.316-P0 nedenfor er autoritativ for den aktuelle offentlige fejl og hotfix.
+- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige state-6-model på desktop og mobil. Indtil da er 4.0.316/Candidate G fortsat produktionssandhed, ikke shadowmodel.
 
 ## P0 4.0.316 – publicér frisk primary uden at vise udløbet fallback
 
@@ -19,9 +22,9 @@
 - [x] Bevar primary accounting/audit fail-closed og nul syntetiske data/interpolation/backfill/zonelån.
 - [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
 - [x] Placér workflowmonolit, grøn-no-op-semantik og version/docs/string-testkobling i modelarkitekturroadmapet; udvid ikke P0-hotfixen.
-- [ ] Bestå målrettede fallback-/RDKS-/håndbogs-/security-/versions-/releasegates og exact-head sourcegate.
-- [ ] Merge 4.0.316, kør frisk fuld produktion og publicér artifact/Pages.
-- [ ] Verificér offentligt 210/673 samt aktuelle og femdøgnsprognoser; ingen livepåstand før bevis.
+- [x] Bestå målrettede fallback-/RDKS-/håndbogs-/security-/versions-/releasegates og exact-head sourcegate.
+- [x] Merge 4.0.316, kør frisk fuld produktion og publicér artifact/Pages.
+- [x] Verificér offentlig frisk 4.0.316-primary som `rr-20260830091913-210` med 210/673. Candidate G gav 0 aktive zoner/210 `UNAVAILABLE` på grund af utilstrækkelig sammenhængende currenthistorik; dette er regressionsevidens, ikke state-6-bevis.
 
 ## Historisk P0 4.0.315 – pensionér stale interlock og nå normal build
 

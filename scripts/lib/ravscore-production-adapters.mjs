@@ -31,6 +31,49 @@ const finite = value => typeof value === 'number' && Number.isFinite(value)
   ? value
   : null;
 
+const scoreQualityRank = value => value === 'FULL_HISTORY' ? 0
+  : value === 'HISTORY_INCOMPLETE' ? 1
+    : 2;
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower', 'upper', 'modelUncertaintyPoints', 'rawLower', 'rawUpper',
+]);
+
+function exactAvailableScoreContract(value) {
+  const bounds = value?.scoreBounds;
+  if (value?.available !== true
+    || finite(value.score) === null
+    || !bounds || typeof bounds !== 'object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())
+      !== JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || SCORE_BOUND_FIELDS.some(field => finite(bounds[field]) === null)
+    || bounds.lower < 0 || bounds.upper > 100 || bounds.lower > bounds.upper
+    || bounds.rawLower < 0 || bounds.rawUpper > 100 || bounds.rawLower > bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints - (bounds.upper - bounds.lower)) > 1e-9
+    || value.score !== bounds.lower
+    || finite(value.historyCoverageHours) === null
+    || value.historyCoverageHours < 0 || value.historyCoverageHours > 48
+    || !Array.isArray(value.historyReasonCodes)
+    || value.historyReasonCodes.some(code => typeof code !== 'string'
+      || !/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
+    || new Set(value.historyReasonCodes).size !== value.historyReasonCodes.length
+    || typeof value.conservativeTailResetApplied !== 'boolean') return false;
+  if (value.scoreQuality === 'FULL_HISTORY') {
+    return value.calibrationEligible === true
+      && value.historyCoverageHours === 48
+      && value.historyReasonCodes.length === 0
+      && bounds.lower === bounds.upper
+      && bounds.rawLower === bounds.rawUpper
+      && ['EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+        .includes(value.scoreSemantics)
+      && value.conservativeTailResetApplied
+        === (value.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+  }
+  return value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && value.calibrationEligible === false
+    && value.historyReasonCodes.length > 0
+    && value.scoreSemantics === 'CONSERVATIVE_ENCLOSING_LOWER_BOUND';
+}
+
 const round = (value, digits) => Number.isFinite(value)
   ? Number(value.toFixed(digits))
   : null;
@@ -476,18 +519,22 @@ export function buildIntegratedZoneHourlyProjection({
           score: detail?.score,
           detail,
           weather: scoreRow?.weather,
+          scoreContractValid: exactAvailableScoreContract(detail),
         };
       });
-      const available = evaluated.filter(row => row.detail?.available === true
-        && Number.isFinite(row.score));
+      const available = evaluated.filter(row => row.scoreContractValid);
       if (available.length !== expectedPartCount) {
         const missingExpectedPartCount = Math.max(0, expectedPartCount - evaluated.length);
-        const unavailableParts = evaluated.filter(row => row.detail?.available !== true).map(row => ({
+        const unavailableParts = evaluated.filter(row => !row.scoreContractValid).map(row => ({
           partId: row.partId,
           name: row.name,
-          code: row.detail?.unavailability?.code ?? 'INTEGRATED_RAVSCORE_MISSING',
-          reason: row.detail?.unavailability?.messageDa
-            ?? 'RavScore-datagrundlaget mangler for denne kystdel.',
+          code: row.detail?.available === true
+            ? 'INTEGRATED_RAVSCORE_QUALITY_INVALID'
+            : row.detail?.unavailability?.code ?? 'INTEGRATED_RAVSCORE_MISSING',
+          reason: row.detail?.available === true
+            ? 'RavScore-resultatets kvalitets- eller intervalkontrakt er ugyldig for denne kystdel.'
+            : row.detail?.unavailability?.messageDa
+              ?? 'RavScore-datagrundlaget mangler for denne kystdel.',
         }));
         const reasons = [...new Set([
           ...unavailableParts.map(part => part.reason),
@@ -503,6 +550,13 @@ export function buildIntegratedZoneHourlyProjection({
           status: 'unavailable',
           available: false,
           score: null,
+          scoreBounds: null,
+          scoreQuality: 'UNAVAILABLE',
+          calibrationEligible: false,
+          scoreSemantics: null,
+          conservativeTailResetApplied: false,
+          historyCoverageHours: null,
+          historyReasonCodes: [],
           validPartCount: available.length,
           expectedPartCount,
           unavailableParts,
@@ -519,10 +573,37 @@ export function buildIntegratedZoneHourlyProjection({
         continue;
       }
       available.sort((left, right) => right.score - left.score
+        || scoreQualityRank(left.detail?.scoreQuality)
+          - scoreQualityRank(right.detail?.scoreQuality)
         || left.partId.localeCompare(right.partId));
       const winner = available[0];
       const high = winner.score;
       const low = available.at(-1).score;
+      const lower = Math.max(...available.map(row => row.detail.scoreBounds.lower));
+      const upper = Math.max(...available.map(row => row.detail.scoreBounds.upper));
+      const rawLower = Math.max(...available.map(row => row.detail.scoreBounds.rawLower));
+      const rawUpper = Math.max(...available.map(row => row.detail.scoreBounds.rawUpper));
+      const historyIncomplete = available.some(row =>
+        row.detail.scoreQuality === 'HISTORY_INCOMPLETE');
+      const historyCoverageHours = Math.min(...available
+        .map(row => row.detail.historyCoverageHours));
+      const historyReasonCodes = [...new Set(available
+        .flatMap(row => row.detail.scoreQuality === 'HISTORY_INCOMPLETE'
+          ? row.detail.historyReasonCodes : []))].sort();
+      const conservativeTailResetApplied = historyIncomplete
+        ? available.some(row => row.detail.conservativeTailResetApplied === true)
+        : winner.detail.conservativeTailResetApplied === true;
+      const possibleWinningParts = available
+        .filter(row => row.detail.scoreBounds.upper >= lower)
+        .sort((left, right) => left.partId.localeCompare(right.partId))
+        .map(row => ({
+          partId: row.partId,
+          name: row.name,
+          score: row.score,
+          scoreBounds: { ...row.detail.scoreBounds },
+        }));
+      const winningPartUncertain = historyIncomplete
+        && possibleWinningParts.some(part => part.partId !== winner.partId);
       const near = available.filter(row => high - row.score <= marginPoints);
       const status = high - low <= marginPoints
         ? 'whole-zone'
@@ -533,11 +614,31 @@ export function buildIntegratedZoneHourlyProjection({
         modelBinding: ravScoreModelBinding(),
         available: true,
         status,
-        score: high,
+        score: lower,
+        scoreBounds: {
+          lower,
+          upper,
+          modelUncertaintyPoints: upper - lower,
+          rawLower,
+          rawUpper,
+        },
         winningPartId: winner.partId,
         winningPartName: winner.name,
+        winningPartUncertain,
+        possibleWinningPartCount: possibleWinningParts.length,
+        possibleWinningParts,
         scoreSpread: high - low,
         comparisonPartCount: available.length,
+        scoreQuality: historyIncomplete ? 'HISTORY_INCOMPLETE' : 'FULL_HISTORY',
+        calibrationEligible: !historyIncomplete,
+        scoreSemantics: historyIncomplete
+          ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+          : conservativeTailResetApplied
+            ? 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'
+            : 'EXACT_POINT_SCORE',
+        conservativeTailResetApplied,
+        historyCoverageHours,
+        historyReasonCodes,
         components: winner.detail?.components ?? {},
         componentReasons: winner.detail?.componentReasons ?? {},
         explanation: {
@@ -562,7 +663,15 @@ export function buildIntegratedZoneHourlyProjection({
         },
         parts: status === 'whole-zone'
           ? []
-          : near.map(({ partId, name, score }) => ({ partId, name, score })),
+          : near.map(({ partId, name, score, detail }) => ({
+            partId,
+            name,
+            score,
+            scoreQuality: detail.scoreQuality,
+            scoreBounds: { ...detail.scoreBounds },
+            historyCoverageHours: detail.historyCoverageHours,
+            historyReasonCodes: [...detail.historyReasonCodes],
+          })),
       };
     }
     return result;

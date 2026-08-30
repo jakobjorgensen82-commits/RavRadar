@@ -9,6 +9,13 @@ import { presentActiveRavScoreExplanation as presentIntegrated } from '../js/cor
 const integrated = {
   available:true,
   score:64,
+  scoreQuality:'FULL_HISTORY',
+  calibrationEligible:true,
+  scoreSemantics:'EXACT_POINT_SCORE',
+  conservativeTailResetApplied:false,
+  scoreBounds:{ lower:64, upper:64, modelUncertaintyPoints:0, rawLower:64, rawUpper:64 },
+  historyCoverageHours:48,
+  historyReasonCodes:[],
   components:{ huntability:70, transport:60, release:62 },
   modelBinding:integratedBinding(),
   localWeather:{ currentProvenance:{ status:'verified', sourceClass:'local-model-grid', distanceKm:3.2 } },
@@ -111,6 +118,13 @@ try {
   const candidate = {
     available:true,
     score:58,
+    scoreQuality:'FULL_HISTORY',
+    calibrationEligible:false,
+    scoreSemantics:'EXACT_POINT_SCORE',
+    conservativeTailResetApplied:false,
+    scoreBounds:{ lower:58, upper:58, modelUncertaintyPoints:0, rawLower:58, rawUpper:58 },
+    historyCoverageHours:48,
+    historyReasonCodes:[],
     components:{ huntability:68, transport:51, release:63 },
     modelBinding:candidateContract.ravScoreModelBinding(),
     localWeather:{

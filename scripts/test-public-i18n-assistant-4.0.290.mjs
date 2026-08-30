@@ -110,7 +110,7 @@ globalThis.fetch = async (url, options) => {
       'x-ravradar-model-contract-sha256':binding.modelContractSha256,
       'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
       'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
-      'x-ravradar-assistant-knowledge-sha256':'03e021cf28393c6f38493233b5e94fe1a231d9d14ff4fa31d86861f5862540a7',
+      'x-ravradar-assistant-knowledge-sha256':'6c35d63a21cd8a04f3bb2013fecf642af62f3cb6be6e7cb0b3b8a1b7860e205a',
     }),
     json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
   };
@@ -137,7 +137,13 @@ try {
 const publicContext = assistant.publicAssistantContext({
   locale:'en', privateNote:'must-not-leak', zone:{id:'west',name:'West coast',secret:'x'},
   modelBinding: ravScoreModelBinding(),
-  result:{available:true,score:73,level:'fair',reasons:['internal wording']},
+  result:{
+    available:true,score:73,level:'fair',reasons:['internal wording'],
+    scoreQuality:'FULL_HISTORY',calibrationEligible:true,
+    scoreSemantics:'EXACT_POINT_SCORE',conservativeTailResetApplied:false,
+    scoreBounds:{lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73},
+    historyCoverageHours:48,historyReasonCodes:[],
+  },
   weather:{windSpeedMps:4.2,currentSpeedMps:.11,rawVector:{u:1,v:2}},
 }, 'en');
 assert.equal(publicContext.locale, 'en');
@@ -150,7 +156,12 @@ const mixedModelContext = assistant.publicAssistantContext({
   modelBinding:{ ...ravScoreModelBinding(), modelBundleSha256:'0'.repeat(64) },
   result:{ available:true, score:73, level:'fair' },
 }, 'en');
-assert.deepEqual(mixedModelContext.result, { available:false, score:null, level:null },
+assert.deepEqual(mixedModelContext.result, {
+  available:false,score:null,level:null,
+  scoreQuality:'UNAVAILABLE',calibrationEligible:false,scoreSemantics:null,
+  conservativeTailResetApplied:false,scoreBounds:null,
+  historyCoverageHours:null,historyReasonCodes:[],
+},
   'Klienten må ikke sende en score til Edge under en anden dataset-/modelbinding.');
 
 const indexHtml = await fs.readFile(path.join(ROOT, 'index.html'), 'utf8');

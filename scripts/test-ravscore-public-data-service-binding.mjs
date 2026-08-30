@@ -99,12 +99,30 @@ const zoneCollection = {
 const zoneRegistryText = compactJson(zoneCollection);
 
 function score(value, winningPart, comparisonPartCount, time) {
+  const scoreBounds = {
+    lower:value, upper:value, modelUncertaintyPoints:0, rawLower:value, rawUpper:value,
+  };
   return {
     available: true,
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: true,
+    scoreSemantics: 'EXACT_POINT_SCORE',
+    conservativeTailResetApplied: false,
+    scoreBounds,
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
     status: 'whole-zone',
     score: value,
     winningPartId: winningPart.partId,
     winningPartName: winningPart.name,
+    winningPartUncertain: false,
+    possibleWinningPartCount: 1,
+    possibleWinningParts: [{
+      partId: winningPart.partId,
+      name: winningPart.name,
+      score: value,
+      scoreBounds: { ...scoreBounds },
+    }],
     scoreSpread: 0,
     comparisonPartCount,
     validPartCount: comparisonPartCount,
@@ -173,14 +191,19 @@ function full(datasetId, scoreValue) {
       evidenceTrust: ravScoreVerifiedEvidenceTrust(),
       scoreProfile,
       scoreAvailability: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         policy: 'integrated-model-local-fail-closed',
         allZonesActive: true,
         activeZoneCount: zoneIds.length,
         unavailableZoneCount: 0,
         totalZoneCount: zoneIds.length,
+        allCurrentScoresFullHistory: true,
+        fullHistoryModeCount: zoneIds.length * 2,
+        historyIncompleteModeCount: 0,
+        historyIncompleteZoneCount: 0,
         evaluatedAt: generatedAt,
         unavailableZones: [],
+        historyIncompleteZones: [],
       },
       expectedPartCount: allPartRows.length,
       scoredPartCount: allPartRows.length,
@@ -527,6 +550,7 @@ const nextEmergencyHour = await service.reevaluatePublicConditions({
   conditions: emergency,
   now: Date.parse(generatedAt) + 10 * 3_600_000 + 5 * 60_000,
 });
+assert.equal(nextEmergencyHour.available, true, warnings.join('\n'));
 assert.equal(nextEmergencyHour.publicRuntimeAvailability.selectedReferenceAt, horizonTimes[10]);
 assert.equal(nextEmergencyHour.coastalParts.parts['part-1'].current.waders.score, 71);
 const expired = await service.reevaluatePublicConditions({

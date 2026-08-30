@@ -4,6 +4,8 @@ import { forecastDateKeyForDayOffset, forecastDateKeyInTimeZone } from '../js/co
 import { presentIntegratedRavScoreExplanation } from '../js/core/ravscore-integrated-explanation-presenter.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { askRavRadar, publicAssistantContext } from '../js/services/rav-assistant.js';
+import { setLanguage, t } from '../js/i18n.js';
+import { bindZoneInfoInteractions } from '../js/ui/info-panel.js';
 
 const memory = new Map();
 globalThis.localStorage ??= {
@@ -16,6 +18,13 @@ function integratedResult(waterPhase = 'FALLING', currentRelation = 'OUTBOUND') 
   return {
     available: true,
     score: 64,
+    scoreBounds:{lower:64,upper:64,modelUncertaintyPoints:0,rawLower:64,rawUpper:64},
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: true,
+    scoreSemantics:'EXACT_POINT_SCORE',
+    conservativeTailResetApplied:false,
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
     modelBinding,
     level: 'fair',
     components: { huntability: 72, transport: 61, release: 60 },
@@ -60,6 +69,29 @@ function integratedResult(waterPhase = 'FALLING', currentRelation = 'OUTBOUND') 
   };
 }
 
+function setExactScore(result,score){
+  result.score=score;
+  result.scoreBounds={lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score};
+  return result;
+}
+
+function historyIncompleteResult(reasonCode,{coverage=48,currentGap=false,status}={}){
+  const result=integratedResult();
+  result.scoreQuality='HISTORY_INCOMPLETE';
+  result.calibrationEligible=false;
+  result.scoreSemantics='CONSERVATIVE_ENCLOSING_LOWER_BOUND';
+  result.conservativeTailResetApplied=false;
+  result.historyCoverageHours=coverage;
+  result.historyReasonCodes=[reasonCode];
+  result.scoreBounds={lower:64,upper:78,modelUncertaintyPoints:14,rawLower:64,rawUpper:78};
+  result.explanation.transportDiagnostics.currentMemoryReady=!currentGap;
+  result.explanation.transportDiagnostics.currentMemoryStatus=currentGap
+    ? 'WINDOW_HAS_TIME_GAP':'READY';
+  result.explanation.transportDiagnostics.lastMileStatus=status
+    ?? 'LAST_MILE_HISTORY_INCOMPLETE_ENCLOSING_BOUND';
+  return result;
+}
+
 const languageExpectations = {
   da: [/kausal energivægtet W\/N\/T-EWMA/, /fire timers halveringstid/, /ældre timer med aftagende vægt/, /højst 15 %/, /aldrig skabe eller øge/, /fysisk uopløst/, /0 scorepoint/, /undertow/, /feeder- eller langskyststrøm/, /ripstrømme/, /noget mobilt rav ud/, /lokal batymetri/],
   de: [/kausaler energiegewichteter W\/N\/T-EWMA/, /Halbwertszeit von vier Stunden/, /ältere Stunden.*abnehmendem Gewicht/, /höchstens 15 %/, /niemals erzeugen oder erhöhen/, /physikalisch unaufgelöst/, /0 Scorepunkte/, /Undertow/, /Küstenlängs-/, /Rippströmungen/, /Teil mobilen Bernsteins seewärts/, /lokale Bathymetrie/],
@@ -70,8 +102,10 @@ for (const [language, patterns] of Object.entries(languageExpectations)) {
   assert.equal(presentation.available, true, `${language}: integreret forklaring skal være tilgængelig`);
   const text = [presentation.title, presentation.summary, ...presentation.facts].join('\n');
   for (const pattern of patterns) assert.match(text, pattern, `${language}: forklaringen mangler ${pattern}`);
-  assert.match(presentation.facts[0], language === 'en' ? /47\.5 of 48/ : /47,5 (?:af|von) 48/,
-    `${language}: memory coverage må ikke afrundes op til et falsk komplet vindue`);
+  assert.match(presentation.facts[0], language === 'en' ? /48 verified history hours.*48-hour/
+    : language === 'de' ? /48 verifizierte Verlaufsstunden.*48-Stunden/
+      : /48 verificerede historiktimer.*48-timers/,
+  `${language}: FULL_HISTORY skal forklare det kontraktlige komplette 48-timers vindue`);
   assert.match(text, language === 'da' ? /fortsat fysisk uopløst/i
     : language === 'de' ? /bleibt physikalisch unaufgelöst/i
       : /remains physically unresolved/i,
@@ -118,7 +152,7 @@ for (const [currentRelation, pattern] of Object.entries(fallingContexts)) {
   }
 }
 const zeroTransportHighMobilisation = integratedResult('FALLING', 'OUTBOUND');
-zeroTransportHighMobilisation.score = 44;
+setExactScore(zeroTransportHighMobilisation,44);
 zeroTransportHighMobilisation.components.transport = 0;
 zeroTransportHighMobilisation.components.release = 100;
 zeroTransportHighMobilisation.explanation.mobilisationDiagnostics.mobilisationPotential = 100;
@@ -161,6 +195,46 @@ for (const factor of [0.849999, 1.000001]) {
   assert.equal(presentIntegratedRavScoreExplanation(invalidDeliveryFactor).available, false,
     `presenteren skal afvise leveringsfaktor ${factor} uden for 0,85..1,00`);
 }
+
+const gapCases=[
+  ['CURRENT_HISTORY_INCOMPLETE',{coverage:17,currentGap:true}],
+  ['WAVE_HISTORY_INCOMPLETE',{coverage:48}],
+  ['LAST_MILE_HISTORY_INCOMPLETE',{coverage:48}],
+];
+for(const [reasonCode,options] of gapCases){
+  for(const language of ['da','de','en']){
+    const result=historyIncompleteResult(reasonCode,options);
+    const presentation=presentIntegratedRavScoreExplanation(result,{language});
+    assert.equal(presentation.available,true,`${reasonCode}/${language}: gapscore skal forklares`);
+    assert.match(presentation.sections.scoreQuality,language==='da'?/forsigtigt minimum.*64–78/i
+      :language==='de'?/vorsichtiger Mindestwert.*64–78/i
+        :/conservative minimum.*64–78/i);
+    assert.match(presentation.sections.memory,language==='da'?/dækningsomfang.*ikke bevis.*ubrudt/i
+      :language==='de'?/Deckungsumfang.*nicht.*lückenlosen/i
+        :/coverage, not proof of an unbroken/i);
+    const answer=await askRavRadar(
+      language==='da'?'Hvorfor denne score?':language==='de'?'Warum dieser BernsteinScore?':'Why this AmberScore?',
+      {zone:{id:'z1',name:'Testkyst'},result,weather:{}},
+      {language,localOnly:true},
+    );
+    assert.match(answer,/64[–-]78/,
+      `${reasonCode}/${language}: assistentsvaret skal vise minimumsintervallet`);
+    assert.doesNotMatch(answer,/ikke nok prognosedata|nicht genug Prognosedaten|not enough forecast data/i);
+  }
+}
+const tailResetResult=integratedResult();
+tailResetResult.scoreSemantics='CONSERVATIVE_TAIL_RESET_POINT_SCORE';
+tailResetResult.conservativeTailResetApplied=true;
+tailResetResult.explanation.transportDiagnostics.lastMileStatus=
+  'LAST_MILE_CONSERVATIVE_TAIL_RESET_POINT';
+const tailResetPresentation=presentIntegratedRavScoreExplanation(tailResetResult,{language:'da'});
+assert.equal(tailResetPresentation.available,true);
+assert.match(tailResetPresentation.sections.scoreQuality,/tidsgrænse/i);
+
+const forgedGap=historyIncompleteResult('CURRENT_HISTORY_INCOMPLETE',{coverage:17,currentGap:true});
+forgedGap.scoreBounds.upper=63;
+assert.equal(presentIntegratedRavScoreExplanation(forgedGap).available,false,
+  'presenteren skal fejle lukket ved et forfalsket interval');
 const legacyNeutralLastMile = integratedResult();
 legacyNeutralLastMile.explanation.transportDiagnostics.lastMileScoreEffect = 'NONE';
 assert.equal(presentIntegratedRavScoreExplanation(legacyNeutralLastMile).available, false,
@@ -240,20 +314,65 @@ for (const language of Object.keys(questions)) {
 
 const boundAssistantContext = publicAssistantContext({
   modelBinding:ravScoreModelBinding(),
-  result:{ available:true, score:73, level:'fair' },
+  result:{
+    available:true, score:73, level:'fair', scoreQuality:'FULL_HISTORY',
+    calibrationEligible:true, scoreSemantics:'EXACT_POINT_SCORE',
+    conservativeTailResetApplied:false,
+    scoreBounds:{lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73},
+    historyCoverageHours:48, historyReasonCodes:[],
+  },
 }, 'da');
-assert.deepEqual(boundAssistantContext.result, { available:true, score:73, level:'fair' },
+assert.deepEqual(boundAssistantContext.result, {
+  available:true, score:73, level:'fair', scoreQuality:'FULL_HISTORY',
+  calibrationEligible:true, scoreSemantics:'EXACT_POINT_SCORE',
+  conservativeTailResetApplied:false,
+  scoreBounds:{lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73},
+  historyCoverageHours:48, historyReasonCodes:[],
+},
   'assistenten skal bevare en tilgængelig score med eksakt aktiv dataset-/modelbinding');
+const historyIncompleteAssistantContext = publicAssistantContext({
+  modelBinding:ravScoreModelBinding(),
+  result:{
+    available:true, score:61, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
+    calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    conservativeTailResetApplied:false,
+    scoreBounds:{lower:61,upper:75,modelUncertaintyPoints:14,rawLower:61,rawUpper:75},
+    historyCoverageHours:19,
+    historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+  },
+}, 'da');
+assert.deepEqual(historyIncompleteAssistantContext.result, {
+  available:true, score:61, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
+  calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+  conservativeTailResetApplied:false,
+  scoreBounds:{lower:61,upper:75,modelUncertaintyPoints:14,rawLower:61,rawUpper:75},
+  historyCoverageHours:19,
+  historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+}, 'assistenten skal bevare en datasikker numerisk HISTORY_INCOMPLETE-score');
 const mixedAssistantContext = publicAssistantContext({
   modelBinding:{ ...ravScoreModelBinding(), modelBundleSha256:'0'.repeat(64) },
-  result:{ available:true, score:73, level:'fair' },
+  result:{
+    available:true, score:73, level:'fair', scoreQuality:'FULL_HISTORY',
+    calibrationEligible:true, scoreSemantics:'EXACT_POINT_SCORE',
+    conservativeTailResetApplied:false,
+    scoreBounds:{lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73},
+    historyCoverageHours:48, historyReasonCodes:[],
+  },
 }, 'da');
-assert.deepEqual(mixedAssistantContext.result, { available:false, score:null, level:null },
+assert.deepEqual(mixedAssistantContext.result, {
+  available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
+  calibrationEligible:false, scoreSemantics:null,conservativeTailResetApplied:false,
+  scoreBounds:null,historyCoverageHours:null, historyReasonCodes:[],
+},
   'assistenten skal fjerne en score, når dataset- og aktiv modelbinding ikke matcher eksakt');
 
 for (const missingScore of [null, '', '   ', '73', false, true, undefined, [], {}, -1, 101]) {
   const context = publicAssistantContext({ result:{ available:true, score:missingScore, level:'poor' } }, 'da');
-  assert.deepEqual(context.result, { available:false, score:null, level:null },
+  assert.deepEqual(context.result, {
+    available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
+    calibrationEligible:false, scoreSemantics:null,conservativeTailResetApplied:false,
+    scoreBounds:null,historyCoverageHours:null, historyReasonCodes:[],
+  },
     `assistentkontekst må ikke omdanne ${String(missingScore)} til score 0`);
 }
 for (const field of [
@@ -271,7 +390,11 @@ for (const field of [
 }
 assert.deepEqual(
   publicAssistantContext({ result:{ available:false, score:73, level:'fair' } }, 'en').result,
-  { available:false, score:null, level:null },
+  {
+    available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
+    calibrationEligible:false, scoreSemantics:null,conservativeTailResetApplied:false,
+    scoreBounds:null,historyCoverageHours:null, historyReasonCodes:[],
+  },
   'en score må ikke frigives, medmindre available er eksakt true',
 );
 const unavailableAnswer = await askRavRadar('Hvorfor denne score?', {
@@ -289,7 +412,7 @@ assert.equal(forecastDateKeyForDayOffset('2026-10-24T22:30:00.000Z', 1), '2026-1
   'efterårsskiftet skal følge den københavnske kalenderdag');
 
 const futureResult = integratedResult('STABLE');
-futureResult.score = 71;
+setExactScore(futureResult,71);
 const coastalParts = {
   enabled:true,
   generatedAt:'2026-03-30T08:00:00.000Z',
@@ -301,6 +424,11 @@ const coastalParts = {
       status:'whole-zone',
       winningPartId:'p1',
       winningPartName:'Testdel',
+      winningPartUncertain:false,
+      possibleWinningPartCount:1,
+      possibleWinningParts:[{
+        partId:'p1',name:'Testdel',score:71,scoreBounds:{...futureResult.scoreBounds},
+      }],
       comparisonPartCount:1,
       weather:{windSpeedMps:4,waveHeightM:1,currentSpeedMps:.1,waterLevelCm:0},
     },
@@ -313,17 +441,23 @@ assert.match(tomorrowAnswer, /RavScore 71|score 71/i,
   'assistentens injicerede ur skal finde den københavnske morgendag over DST-skiftet');
 
 const pastResult = integratedResult('STABLE');
-pastResult.score = 99;
+setExactScore(pastResult,99);
 const comingResult = integratedResult('STABLE');
-comingResult.score = 60;
+setExactScore(comingResult,60);
 const todayParts = structuredClone(coastalParts);
 todayParts.generatedAt = '2026-03-29T11:00:00.000Z';
 todayParts.zones.z1.hourly = [
   { time:'2026-03-29T06:00:00.000Z', waders:{
-    ...pastResult, status:'whole-zone', winningPartId:'p1', winningPartName:'Testdel', comparisonPartCount:1,
+    ...pastResult, status:'whole-zone', winningPartId:'p1', winningPartName:'Testdel',
+    winningPartUncertain:false,possibleWinningPartCount:1,
+    possibleWinningParts:[{partId:'p1',name:'Testdel',score:99,scoreBounds:{...pastResult.scoreBounds}}],
+    comparisonPartCount:1,
   } },
   { time:'2026-03-29T11:00:00.000Z', waders:{
-    ...comingResult, status:'whole-zone', winningPartId:'p1', winningPartName:'Testdel', comparisonPartCount:1,
+    ...comingResult, status:'whole-zone', winningPartId:'p1', winningPartName:'Testdel',
+    winningPartUncertain:false,possibleWinningPartCount:1,
+    possibleWinningParts:[{partId:'p1',name:'Testdel',score:60,scoreBounds:{...comingResult.scoreBounds}}],
+    comparisonPartCount:1,
   } },
 ];
 const injectedTodayAnswer = await askRavRadar('Hvornår er bedste tidspunkt i dag?', {
@@ -332,6 +466,93 @@ const injectedTodayAnswer = await askRavRadar('Hvornår er bedste tidspunkt i da
 assert.match(injectedTodayAnswer, /RavScore 60|score 60/i,
   'assistentens ISO-injicerede ur skal frasortere dagens allerede passerede højere score');
 assert.doesNotMatch(injectedTodayAnswer, /RavScore 99|score 99/i);
+
+function renderSecondaryScoreLists(language,{coverageKind='several-parts'}={}) {
+  setLanguage(language);
+  const selected=historyIncompleteResult('CURRENT_HISTORY_INCOMPLETE',{
+    coverage:24,currentGap:true,
+  });
+  selected.localPartName=coverageKind==='only-part'?'Ufuldstændig del':'Fuld del';
+  selected.winningPartUncertain=true;
+  selected.localCoverage={scoreSpread:2,winningPartName:selected.localPartName};
+  selected.localCoverageSummary={
+    kind:coverageKind,
+    parts:coverageKind==='only-part'?[{
+      name:'Ufuldstændig del',score:64,scoreQuality:'HISTORY_INCOMPLETE',
+      scoreBounds:{lower:64,upper:78,modelUncertaintyPoints:14,rawLower:64,rawUpper:78},
+      historyCoverageHours:24,historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+    }]:[
+      {name:'Fuld del',score:64,scoreQuality:'FULL_HISTORY',
+        scoreBounds:{lower:64,upper:64,modelUncertaintyPoints:0,rawLower:64,rawUpper:64},
+        historyCoverageHours:48,historyReasonCodes:[]},
+      {name:'Ufuldstændig del',score:62,scoreQuality:'HISTORY_INCOMPLETE',
+        scoreBounds:{lower:62,upper:75,modelUncertaintyPoints:13,rawLower:62,rawUpper:75},
+        historyCoverageHours:24,historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE']},
+    ],
+  };
+  const summaries=[{
+    date:'2026-03-30',hours:[],best:{
+      recommended:true,isNow:false,displayScope:'local',
+      hour:{time:'2026-03-30T08:00:00.000Z'},result:selected,
+      candidates:[
+        {time:'2026-03-30T08:00:00.000Z',score:64,scoreQuality:'HISTORY_INCOMPLETE',
+          scoreBounds:{lower:64,upper:78,modelUncertaintyPoints:14,rawLower:64,rawUpper:78},
+          historyCoverageHours:24,historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],isNow:false},
+        {time:'2026-03-30T09:00:00.000Z',score:63,scoreQuality:'FULL_HISTORY',
+          scoreBounds:{lower:63,upper:63,modelUncertaintyPoints:0,rawLower:63,rawUpper:63},
+          historyCoverageHours:48,historyReasonCodes:[],isNow:false},
+        {time:'2026-03-30T10:00:00.000Z',score:0,scoreQuality:'UNAVAILABLE',
+          scoreBounds:null,historyCoverageHours:null,historyReasonCodes:[],isNow:false},
+      ],
+    },
+  }];
+  const detail={innerHTML:''};
+  const dayButton={
+    classList:{toggle(){}},setAttribute(){},addEventListener(){},
+  };
+  const forecastSection={
+    querySelector(selector){
+      if(selector==='.forecast-payload')return {textContent:JSON.stringify(summaries)};
+      if(selector==='[data-forecast-detail]')return detail;
+      return null;
+    },
+    querySelectorAll(selector){return selector==='.forecast-score-day'?[dayButton]:[];},
+  };
+  const element={
+    addEventListener(){},removeEventListener(){},
+    querySelector(selector){return selector==='[data-forecast-section]'?forecastSection:null;},
+  };
+  bindZoneInfoInteractions(element,{id:'z1',name:'Testzone'},'waders',{});
+  return detail.innerHTML;
+}
+
+for(const language of ['da','de','en']){
+  const html=renderSecondaryScoreLists(language);
+  assert.equal((html.match(/class="score-quality-inline"/g)||[]).length,2,
+    `${language}: kun de to HISTORY_INCOMPLETE-sekundærrækker skal have kompakt markør`);
+  assert.equal((html.match(/data-history-reasons="CURRENT_HISTORY_INCOMPLETE"/g)||[]).length,2,
+    `${language}: alternative tider og delscorer skal bevare maskinlæsbare årsagskoder`);
+  assert.match(html,/64–78/,
+    `${language}: den alternative HISTORY_INCOMPLETE-time skal vise sit interval`);
+  assert.match(html,/62–75/,
+    `${language}: HISTORY_INCOMPLETE-delscoren skal vise sit eget interval`);
+  assert.match(html,/<b>RavScore 63<\/b><\/li>/,
+    `${language}: FULL_HISTORY-alternativet skal beholde sin hidtidige punktvisning`);
+  assert.match(html,new RegExp(t('score.historyIncomplete.short',{},language)),
+    `${language}: den kompakte advarsel skal være lokaliseret`);
+  assert.match(html,new RegExp(t('score.unavailable',{},language)),
+    `${language}: UNAVAILABLE skal vises som utilgængelig`);
+  assert.doesNotMatch(html,/RavScore 0/,
+    `${language}: UNAVAILABLE må aldrig gengives som en nulscore`);
+  const onlyPartHtml=renderSecondaryScoreLists(language,{coverageKind:'only-part'});
+  const expectedOnlyPartText=t('score.local.only.text',{
+    part:'Ufuldstændig del',
+    score:`64–78 · ${t('score.historyIncomplete.short')}`,
+  });
+  assert.ok(onlyPartHtml.includes(expectedOnlyPartText),
+    `${language}: enkelt-kystdelsteksten må ikke fremstille minimumsværdien som en sikker punktscore`);
+}
+setLanguage('da');
 
 const [panelSource, assistantSource, edgeSource, appSource, generatorSource, workerSource,
   developerSource, workflowSource, trackerSource] = await Promise.all([
@@ -356,8 +577,11 @@ assert.match(appSource, /forecastDateKeyInTimeZone\(hour\?\.time\)/,
 assert.match(generatorSource, /forecastDateKeyInTimeZone\(row\?\.time\)/,
   'producentens prognosedatoer skal bruge den fælles københavnske kalender');
 assert.match(edgeSource,
-  /const scoreAvailable = result\.available === true[\s\S]{0,180}numericScore >= 0[\s\S]{0,80}numericScore <= 100/,
+  /const basicScoreAvailable = modelBindingMatches[\s\S]{0,180}result\.available === true[\s\S]{0,180}numericScore >= 0[\s\S]{0,80}numericScore <= 100/,
   'Edge-assistenten skal have samme strenge availability- og scoreintervalkontrakt');
+assert.match(edgeSource,
+  /scoreQuality:"HISTORY_INCOMPLETE"[\s\S]{0,120}calibrationEligible:false/,
+  'Edge-assistenten skal bevare historikufuldstændig scorekvalitet uden kalibreringsret');
 assert.match(edgeSource, /typeof value === "number" && Number\.isFinite\(value\)/,
   'Edge-assistenten må ikke typekonvertere offentlige fysiske tal');
 assert.match(edgeSource, /undertow, feeder or longshore currents, rip currents/,

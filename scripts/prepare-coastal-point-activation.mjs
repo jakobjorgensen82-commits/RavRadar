@@ -8,13 +8,16 @@ import {
   activatedRecoveryEntries,
   POINT_STAGE_READY,
   POINT_STAGE_SCHEMA_VERSION,
+  assertCandidateGCoastalPointRollbackContinuation,
   assertCoastalPointActivationStateInjection,
   assertCoastalPointStageModelBinding,
   assertIntegratedCoastalPointContinuation,
+  buildCoastalPointActivationStatePair,
   coastalPointStageIdentity,
   promotedDirectionDocument,
   stagedEntries,
 } from './lib/coastal-point-staging-contract.mjs';
+import { projectVerifiedPrivateStageDmiZoneToPart } from './lib/coastal-point-stage-dmi-adapter.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const REVIEWS = path.join(ROOT, 'data/admin/direction-reviews.json');
@@ -47,9 +50,16 @@ const samePoint = (left, right, tolerance = 1e-7) => Array.isArray(left) && Arra
   && left.length >= 2 && right.length >= 2
   && left.slice(0, 2).every((value, index) => Number.isFinite(Number(value))
     && Math.abs(Number(value) - Number(right[index])) <= tolerance);
+const floorHour = value => new Date(
+  Math.floor(Date.parse(value) / 3_600_000) * 3_600_000,
+).toISOString();
 
-function normalizePromotedDmiZone(zone) {
-  const normalized = structuredClone(zone);
+function normalizePromotedDmiZone(zone, candidate) {
+  const normalized = projectVerifiedPrivateStageDmiZoneToPart(zone, {
+    stageId: candidate.stageId,
+    zoneId: candidate.zoneId,
+    part: { ...candidate.part, zoneId: candidate.zoneId },
+  });
   for (const hour of Object.values(normalized?.hourly ?? {})) {
     for (const [uKey, vKey, speedKey, directionKey] of [
       ['wind-u-10m', 'wind-v-10m', 'wind-speed-10m', 'wind-dir-10m'],
@@ -97,7 +107,8 @@ export async function prepareActivation({
     await clearTransientActivationFiles(injectionPath, pendingPath);
     return { prepared: false, reason: 'no-activation-request' };
   }
-  const legacyStagingCache = privateState?.schemaVersion === 1 || privateStatus?.schemaVersion === 1;
+  const legacyStagingCache = [1, 2].includes(privateState?.schemaVersion)
+    || [1, 2].includes(privateStatus?.schemaVersion);
   if (legacyStagingCache) {
     await updateStaging({
       now,
@@ -114,7 +125,7 @@ export async function prepareActivation({
   }
   if (privateState?.schemaVersion !== POINT_STAGE_SCHEMA_VERSION
     || privateStatus?.schemaVersion !== POINT_STAGE_SCHEMA_VERSION) {
-    throw new Error('Coastal-point aktivering kræver canonical schema-4 staging-state');
+    throw new Error('Coastal-point aktivering kræver canonical schema-3 dual-state staging-state');
   }
   assertCoastalPointStageModelBinding(
     privateState.ravScoreModelBinding,
@@ -127,6 +138,9 @@ export async function prepareActivation({
   const statuses = new Map((privateStatus.entries ?? []).map(entry => [entry.stageId, entry]));
   const stateRows = privateState.stages ?? {};
   const maximumStatusAgeMs = 2 * 60 * 60 * 1000;
+  const activationTargetReferenceAt = floorHour(
+    productionReference ?? process.env.RAVRADAR_PRODUCTION_TARGET_HOUR ?? now,
+  );
   for (const candidate of candidates) {
     const status = statuses.get(candidate.stageId);
     const state = stateRows[candidate.stageId];
@@ -152,15 +166,27 @@ export async function prepareActivation({
       || state?.samplingContextKey !== identity.samplingContextKey
       || status.currentMemoryReady !== true
       || status.waveMemoryReady !== true
+      || status.lastMileMemoryReady !== true
+      || status.candidateGRollbackReady !== true
+      || status.dualStateTargetBound !== true
       || !state?.continuationState
-      || state.pendingCandidateGMigrationState) {
-      throw new Error(`${candidate.partId}: READY-status mangler eksakt integreret modeltilstand`);
+      || !state?.candidateGRollbackContinuationState) {
+      throw new Error(`${candidate.partId}: READY-status mangler eksakt dual-state modeltilstand`);
     }
     assertIntegratedCoastalPointContinuation(state.continuationState, {
       samplingContextKey: identity.samplingContextKey,
       requireReady: true,
       label: `${candidate.partId} READY activation-state`,
     });
+    assertCandidateGCoastalPointRollbackContinuation(
+      state.candidateGRollbackContinuationState,
+      identity.expectedCandidateGStateKey,
+      { requireReady: true, label: `${candidate.partId} READY Candidate G companion` },
+    );
+    if (state.continuationState.time !== activationTargetReferenceAt
+      || state.candidateGRollbackContinuationState.time !== activationTargetReferenceAt) {
+      throw new Error(`${candidate.partId}: READY dual-state tilhører ikke aktiveringens targettime`);
+    }
     if (!dmiZone || !samePoint(dmiZone.samplingPoint, candidate.part.waterPoint)) {
       throw new Error(`${candidate.partId}: READY-status mangler eksakt privat DMI-serie`);
     }
@@ -174,17 +200,27 @@ export async function prepareActivation({
     ? directionDocument
     : promotedDirectionDocument(directionDocument, candidates, activatedAt);
   const publicDmi = await read(publicDmiPath);
-  const states = {};
+  const statePairs = {};
   for (const candidate of candidates) {
     publicDmi.zones ??= {};
-    publicDmi.zones[`PART::${candidate.partId}`] = normalizePromotedDmiZone(privateDmi.zones[candidate.stageId]);
-    states[candidate.partId] = structuredClone(stateRows[candidate.stageId].continuationState);
+    publicDmi.zones[`PART::${candidate.partId}`] = normalizePromotedDmiZone(
+      privateDmi.zones[candidate.stageId],
+      candidate,
+    );
+    const identity = coastalPointStageIdentity(candidate.part);
+    statePairs[candidate.partId] = buildCoastalPointActivationStatePair({
+      partId: candidate.partId,
+      samplingContextKey: identity.samplingContextKey,
+      expectedCandidateGStateKey: identity.expectedCandidateGStateKey,
+      integratedState: stateRows[candidate.stageId].continuationState,
+      candidateGState: stateRows[candidate.stageId].candidateGRollbackContinuationState,
+    });
   }
   const injection = {
     schemaVersion: POINT_STAGE_SCHEMA_VERSION,
     ravScoreModelBinding: MODEL_BINDING,
     preparedAt: now,
-    states,
+    statePairs,
   };
   assertCoastalPointActivationStateInjection(injection);
   const pending = recoveryOnly ? null : {

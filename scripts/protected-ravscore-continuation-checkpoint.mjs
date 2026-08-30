@@ -28,6 +28,7 @@ function safeMetadata(loaded) {
     checkpointAt: loaded.checkpointAt,
     targetReferenceAt: loaded.targetReferenceAt,
     ageHours: loaded.ageHours,
+    continuationAvailable: loaded.continuationAvailable,
     partCount: loaded.partCount,
     modelId: loaded.modelId,
     stateSchemaVersion: loaded.stateSchemaVersion,
@@ -111,11 +112,14 @@ function checkpointsAreEquivalent(left, right) {
     'datasetId',
     'productionReferenceAt',
     'continuationStateContractSha256',
+    'generationSha256',
     'partCount',
     'stateSha256',
   ];
   return fields.every(field => left?.[field] === right?.[field])
-    && JSON.stringify(left?.modelBinding) === JSON.stringify(right?.modelBinding);
+    && JSON.stringify(left?.modelBinding) === JSON.stringify(right?.modelBinding)
+    && JSON.stringify(left?.candidateGRollbackCompanion)
+      === JSON.stringify(right?.candidateGRollbackCompanion);
 }
 
 async function invokeProtectedRequest(request, suffix, options, operation) {
@@ -228,6 +232,9 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
     targetReference,
     temporaryRoot,
   });
+  if (!local.continuationAvailable) {
+    throw new Error('Expired schema-6 continuation checkpoints cannot be published');
+  }
   const key = PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;
   const existingRow = await readExactProtectedCheckpointRow(request, { allowMissing: true });
   let expectedVersion;

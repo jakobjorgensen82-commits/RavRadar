@@ -233,10 +233,10 @@ assert.deepEqual(Object.keys(readiness), [
 assert.equal(readiness.sourceHead, SOURCE_HEAD);
 assert.equal(readiness.tripSchemaVersion, 3);
 assert.equal(readiness.tripBindingPolicyId,
-  'ravradar-trip-v3-exact-integrated-candidate-g-emergency-v2');
+  'ravradar-trip-v3-exact-integrated-candidate-g-history-emergency-v3');
 assert.match(readiness.tripBindingPolicySha256, /^[a-f0-9]{64}$/);
 assert.equal(readiness.tripActiveAdmissionPolicyId,
-  'ravradar-trip-v3-exact-operational-active-reasons-v2');
+  'ravradar-trip-v3-exact-operational-active-reasons-v3');
 assert.match(readiness.tripActiveAdmissionPolicySha256, /^[a-f0-9]{64}$/);
 assert.equal(readiness.modelContractSha256, readiness.modelBinding.modelContractSha256);
 assert.equal(readiness.modelBundleSha256, readiness.modelBinding.modelBundleSha256);

@@ -11,6 +11,10 @@ export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object.freeze([
   'js/core/ravscore-current-supply-memory.js',
   'js/core/ravscore-wave-mobilisation-state.js',
   'js/core/ravscore-integrated-state-pipeline.js',
+  'scripts/lib/coastal-point-staging-contract.mjs',
+  'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs',
+  'scripts/rollback-assets/ravscore-model-contract.js',
+  'scripts/rollback-assets/ravscore-model-bundle.generated.js',
   'scripts/ravscore-continuation-checkpoint.mjs',
 ]);
 

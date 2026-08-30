@@ -26,11 +26,15 @@ const CALIBRATION_FEATURE_PATHS = Object.freeze([
   'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
   'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
   'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
-  'modelBundleSha256', 'totalScore', 'huntabilityScore', 'transportScore',
+  'modelBundleSha256', 'totalScore', 'scoreBoundLower', 'scoreBoundUpper',
+  'scoreBoundModelUncertaintyPoints', 'scoreBoundRawLower', 'scoreBoundRawUpper',
+  'historyCoverageHours', 'huntabilityScore', 'transportScore',
   'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
   'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
   'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
-  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
+  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'scoreQuality',
+  'scoreSemantics', 'scoreCalibrationEligible', 'conservativeTailResetApplied',
+  'historyReasonCodes', 'reasonCodes',
 ].map(key => [key]));
 
 const WEATHER_SNAPSHOT_PATHS = Object.freeze([

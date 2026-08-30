@@ -59,11 +59,17 @@ function profileFor(binding, kind) {
 function runtimeFor(binding, kind) {
   const scoreProfile = profileFor(binding, kind);
   const scoreAvailability = {
+    schemaVersion: 2,
     policy: scoreProfile.publicAvailabilityPolicy,
     allZonesActive: true,
     activeZoneCount: 210,
     unavailableZoneCount: 0,
     totalZoneCount: 210,
+    allCurrentScoresFullHistory: true,
+    fullHistoryModeCount: 420,
+    historyIncompleteModeCount: 0,
+    historyIncompleteZoneCount: 0,
+    historyIncompleteZones: [],
   };
   return {
     manifest: {
@@ -111,6 +117,7 @@ assert.equal(integrated.diagnosticScoreProfile.modelContractSha256,
   integratedBinding.modelContractSha256);
 assert.equal(integrated.diagnosticScoreProfile.publicShadow, false);
 assert.equal(integrated.diagnosticScoreProfile.crossModelFallback, false);
+assert.equal(integrated.historyQuality.allCurrentScoresFullHistory, true);
 assert.deepEqual(integrated.diagnosticScoreProfile.weights,
   { huntability: 20, transport: 50, mobilisation: 30 });
 
@@ -203,7 +210,7 @@ for (const [label, mutate, pattern] of [
   ['mixed activation contract', runtime => mutateBothProfiles(runtime, profile => {
     profile.activationState = 'manual-candidate-g-only-local-fail-closed';
     profile.publicAvailabilityPolicy = 'candidate-g-local-fail-closed';
-  }), /ukendt eller blandet driftsvej/],
+  }), /ukendt eller blandet driftsvej|Scoretilgængelighed/],
   ['cross-model fallback', runtime => mutateBothProfiles(runtime,
     profile => { profile.crossModelRuntimeFallbackAllowed = true; }), /invalid or unsafe|ukendt eller blandet/],
   ['runtime fallback model', runtime => mutateBothProfiles(runtime,
@@ -236,6 +243,41 @@ mutateBothProfiles(incompleteIntegratedRuntime,
 assert.throws(() => resolveAdminActivePublicRavScore(incompleteIntegratedRuntime),
   /ukendt eller blandet driftsvej/,
   'Admin må ikke legitimere en integreret aktiv profil før alle cutover-readinessflags er sande.');
+
+const historyIncompleteIntegratedRuntime = clone(integratedRuntime);
+mutateBothProfiles(historyIncompleteIntegratedRuntime, profile => {
+  profile.modelMemoryReady = false;
+  profile.advisories = ['LOCAL_MODEL_MEMORY_INCOMPLETE'];
+});
+for (const availability of [
+  historyIncompleteIntegratedRuntime.manifest.ravScoreAvailability,
+  historyIncompleteIntegratedRuntime.conditions.coastalParts.scoreAvailability,
+]) {
+  availability.allCurrentScoresFullHistory = false;
+  availability.fullHistoryModeCount = 418;
+  availability.historyIncompleteModeCount = 2;
+  availability.historyIncompleteZoneCount = 1;
+  availability.historyIncompleteZones = [{
+    zoneId: 'ZONE-1',
+    modes: ['waders', 'beach'],
+    historyCoverageHours: 24,
+    historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+  }];
+}
+const historyIncompleteIntegrated = resolveAdminActivePublicRavScore(
+  historyIncompleteIntegratedRuntime,
+);
+assert.equal(historyIncompleteIntegrated.kind, 'integrated');
+assert.equal(historyIncompleteIntegrated.scoreProfile.modelMemoryReady, false);
+assert.equal(historyIncompleteIntegrated.historyQuality.allCurrentScoresFullHistory, false);
+assert.equal(historyIncompleteIntegrated.historyQuality.calibrationEligible, false);
+
+const malformedHistoryRuntime = clone(historyIncompleteIntegratedRuntime);
+malformedHistoryRuntime.conditions.coastalParts.scoreAvailability
+  .historyIncompleteZones[0].historyReasonCodes = [];
+assert.throws(() => resolveAdminActivePublicRavScore(malformedHistoryRuntime),
+  /ukendt eller blandet driftsvej/,
+  'Admin must reject an incomplete-history readiness bypass without safe reason codes.');
 
 assert.throws(() => resolveAdminActivePublicRavScore({
   manifest: null,

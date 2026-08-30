@@ -591,14 +591,14 @@ assert.throws(() => operationalCandidateRefreshTransition({
   deploymentId: 'forbidden-hidden-candidate-switch',
 }), /cannot change the exact active model binding/);
 
-// The first production cutover goes directly from the exact 4.0.308 legacy
+// The first production cutover goes directly from the exact 4.0.316 legacy
 // source to integrated. The external 12-field attestation never enters the
 // controller; all three controller bindings remain the common 11-field shape.
 const legacyProfile = legacyCandidateGCentralProfile();
 assertLegacyCandidateGCentralProfile(legacyProfile);
 for (const mutated of [
-  { ...legacyProfile, sourceVersion: '4.0.307' },
-  { ...legacyProfile, switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.307' },
+  { ...legacyProfile, sourceVersion: '4.0.315' },
+  { ...legacyProfile, switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.315' },
   { ...legacyProfile, status: 'owner-approved-candidate-g-only-forged' },
   { ...legacyProfile, activationAuthority: 'DEC-UNKNOWN' },
   { ...legacyProfile, evidence: { ...legacyProfile.evidence, ownerReviewDecisionId: 'FORGED' } },
@@ -620,7 +620,7 @@ const legacyManifest = Object.freeze({
   publicConditionDetailsBytes: 456,
   ravScoreProfile: Object.freeze({
     schemaVersion: '2.0.0',
-    switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.308',
+    switchVersion: 'RAVSCORE-PROFILE-SWITCH-4.0.316',
     requestedProfileId: legacyCandidateGControllerBinding().modelId,
     activeProfileId: legacyCandidateGControllerBinding().modelId,
     candidateProfileId: legacyCandidateGControllerBinding().modelId,

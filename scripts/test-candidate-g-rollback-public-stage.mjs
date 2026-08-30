@@ -63,10 +63,37 @@ function score(scoreValue, winningPartId, winningPartName, partCount) {
     status: 'whole-zone',
     score: scoreValue,
     baseScore: scoreValue,
+    scoreBounds: {
+      lower: scoreValue,
+      upper: scoreValue,
+      modelUncertaintyPoints: 0,
+      rawLower: scoreValue,
+      rawUpper: scoreValue,
+    },
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: false,
+    scoreSemantics: 'EXACT_POINT_SCORE',
+    conservativeTailResetApplied: false,
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
     level: 'fair',
     label: 'Middel',
     winningPartId,
     winningPartName,
+    winningPartUncertain: false,
+    possibleWinningPartCount: 1,
+    possibleWinningParts: [{
+      partId: winningPartId,
+      name: winningPartName,
+      score: scoreValue,
+      scoreBounds: {
+        lower: scoreValue,
+        upper: scoreValue,
+        modelUncertaintyPoints: 0,
+        rawLower: scoreValue,
+        rawUpper: scoreValue,
+      },
+    }],
     scoreSpread: 2,
     comparisonPartCount: partCount,
     validPartCount: partCount,
@@ -252,14 +279,19 @@ function buildNationalFixture() {
           currentPilotMode: 'unavailable',
           currentPilotEnabled: false,
           scoreAvailability: {
-            schemaVersion: 1,
+            schemaVersion: 2,
             policy: 'candidate-g-local-fail-closed',
             allZonesActive: true,
             activeZoneCount: 210,
             unavailableZoneCount: 0,
             totalZoneCount: 210,
+            allCurrentScoresFullHistory: true,
+            fullHistoryModeCount: 420,
+            historyIncompleteModeCount: 0,
+            historyIncompleteZoneCount: 0,
             evaluatedAt: reference,
             unavailableZones: [],
+            historyIncompleteZones: [],
           },
           parts,
           zones,
@@ -270,6 +302,14 @@ function buildNationalFixture() {
 }
 
 const fixture = buildNationalFixture();
+const fixtureAvailability = fixture.full.ravScoreCandidateGRollback.runtime.scoreAvailability;
+assert.equal(fixtureAvailability.allCurrentScoresFullHistory, true);
+assert.equal(fixtureAvailability.fullHistoryModeCount, 420);
+assert.equal(fixtureAvailability.historyIncompleteModeCount, 0);
+assert.equal(fixtureAvailability.historyIncompleteZoneCount, 0);
+assert.equal(fixture.full.ravScoreCandidateGRollback.runtime.zones['rollback-zone-1']
+  .hourly[0].beach.calibrationEligible, false,
+'Candidate G FULL_HISTORY score rows must remain calibration-ineligible');
 const prepared = prepareCandidateGOperationalRollback(fixture.full, {
   expectedDatasetId: datasetId,
   sourceHead,
@@ -374,6 +414,11 @@ try {
   const manifestPath = path.join(stageRoot, 'data', 'live', 'manifest.json');
   const pristineStartup = await fs.readFile(startupPath, 'utf8');
   const pristineManifest = await fs.readFile(manifestPath, 'utf8');
+  const stagedAvailability = JSON.parse(pristineStartup).coastalParts.scoreAvailability;
+  assert.equal(stagedAvailability.allCurrentScoresFullHistory, true);
+  assert.equal(stagedAvailability.fullHistoryModeCount, 420);
+  assert.equal(stagedAvailability.historyIncompleteModeCount, 0);
+  assert.equal(stagedAvailability.historyIncompleteZoneCount, 0);
   for (const [label, file, mutate] of [
     ['partial Candidate profile', manifestPath, document => {
       delete document.ravScoreProfile.rankingPolicyId;

@@ -17,6 +17,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
+        with:
+          # The source gate seals the exact production Candidate G source at
+          # its pinned historical commit. A one-commit PR checkout cannot
+          # prove those immutable Git bytes.
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:

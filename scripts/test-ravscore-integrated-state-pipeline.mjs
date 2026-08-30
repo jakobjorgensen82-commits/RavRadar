@@ -25,6 +25,10 @@ import {
   RAVSCORE_MODEL_ID,
   RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_ROLLBACK_ID,
+  RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION,
+  RAVSCORE_STATE_V5_MIGRATION_ID,
+  RAVSCORE_STATE_V5_MODEL_BUNDLE_SHA256,
+  RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256,
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
 import {
@@ -33,6 +37,9 @@ import {
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 
 const HOUR_MS = 3_600_000;
+const close = (actual, expected, tolerance = 1e-9) => {
+  assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} != ${expected}`);
+};
 const IMMUTABLE_ONSHORE_DIRECTION_DEG = 90;
 const buildIntegratedRavScoreStateSeries = (samples = [], options = {}) =>
   buildIntegratedRavScoreStateSeriesRaw(samples, {
@@ -124,13 +131,19 @@ const coldReplaySamples = Array.from({ length: 49 }, (_, index) => ({
   ...currentSample,
   time: time(index - 48),
 }));
+const coldReplayProof = ({ complete = 48, targetReferenceAt = time(0) } = {}) => ({
+  recoveryId: RAVSCORE_COLD_REPLAY_ID,
+  expectedCausalPositionCount: 48,
+  completeCausalPositionCount: complete,
+  boundedUnknownPositionCount: 48 - complete,
+  historyTransition: complete === 48
+    ? RAVSCORE_RECOVERY_POLICY.completeHistoryTransition
+    : RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition,
+  targetReferenceAt,
+});
 const coldReplay = buildIntegratedRavScoreStateSeries(coldReplaySamples, {
   samplingContextKey,
-  coldReplayBootstrap: {
-    recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: 48,
-    targetReferenceAt: time(0),
-  },
+  coldReplayBootstrap: coldReplayProof(),
 });
 assert.throws(() => ravScoreSamplingContextKey({
   partId: 'TEST-PART',
@@ -193,9 +206,12 @@ assert.throws(() => buildIntegratedRavScoreStateSeries(
 ), /verified current sample lacks exact signed evidence/,
 'a coercible exact-signal field must fail closed instead of falling back to display values');
 assert.deepEqual(coldReplay.continuationState.lineage, {
+  boundedUnknownPositionCount: 0,
+  completeCausalPositionCount: 48,
+  expectedCausalPositionCount: 48,
+  historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
   recoveryId: RAVSCORE_COLD_REPLAY_ID,
   source: 'VERIFIED_PRIVATE_PROVENANCE_REPLAY',
-  replayedHourCount: 48,
   targetReferenceAt: time(0),
 });
 assert.equal(coldReplay.rows[0].continuationState.lineage, null,
@@ -209,6 +225,22 @@ assert.equal(assertIntegratedCoastalPointContinuation(coldReplay.continuationSta
   requireReady: true,
 }), coldReplay.continuationState,
 'a verified cold-replay continuation must pass the production checkpoint boundary');
+assert.deepEqual(Object.keys(coldReplay.continuationState.historyBounds).sort(), [
+  'current', 'lastMile', 'schemaVersion', 'waveMobilisation',
+], 'schema-6 continuation must expose only the canonical data-minimised history-bound groups');
+assert.throws(() => assertIntegratedCoastalPointContinuation({
+  ...coldReplay.continuationState,
+  historyBounds: {
+    ...coldReplay.continuationState.historyBounds,
+    current: {
+      ...coldReplay.continuationState.historyBounds.current,
+      unexpectedRawCurrent: 0.1,
+    },
+  },
+}, {
+  samplingContextKey,
+}), /historyBounds\.current.*canonical field-allowlist/,
+'schema-6 checkpoint boundary must fail closed on unknown nested history fields');
 assert.throws(() => assertIntegratedCoastalPointContinuation({
   ...coldReplay.continuationState,
   lineage: {
@@ -219,20 +251,65 @@ assert.throws(() => assertIntegratedCoastalPointContinuation({
   samplingContextKey,
 }), /canonical field-allowlist/,
 'mixed or extended cold-replay lineage must fail closed at the checkpoint boundary');
-assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples.slice(1), {
+const {
+  historyBounds: omittedSchema6HistoryBounds,
+  currentNativeHoldIntervalEnds: omittedSchema6NativeHoldIntervals,
+  ...schema5ReadyBody
+} = coldReplay.continuationState;
+assert.ok(omittedSchema6HistoryBounds, 'schema-6 fixture must contain history bounds');
+assert.deepEqual(omittedSchema6NativeHoldIntervals, [],
+  'schema-6 fixture must carry an explicit empty native-hold interval proof');
+const schema5ReadyState = {
+  ...schema5ReadyBody,
+  schemaVersion: RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION,
+  profileId:
+    'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4',
+  componentSchemaId: 'ravscore-components-huntability-delivery-mobilisation-v4',
+  explanationSchemaId: 'ravscore-explanation-integrated-v4',
+  rankingPolicyId: 'direction-broad-19-v1',
+  bestTimePolicyId: 'score-water-tie-earliest-v2',
+  modelContractSha256: RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256,
+  modelBundleSha256: RAVSCORE_STATE_V5_MODEL_BUNDLE_SHA256,
+};
+const schema5Upgrade = buildIntegratedRavScoreStateSeries([], {
   samplingContextKey,
-  coldReplayBootstrap: {
-    recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: 48,
-    targetReferenceAt: time(0),
-  },
-}), /exact verified 48-hour bridge/,
-'47 cached hours must not be labelled as a verified 48-hour cold replay');
-const nonPlainColdReplayProof = Object.assign(Object.create({ inherited: true }), {
-  recoveryId: RAVSCORE_COLD_REPLAY_ID,
-  replayedHourCount: 48,
-  targetReferenceAt: time(0),
+  initialState: schema5ReadyState,
 });
+assert.equal(schema5Upgrade.initialStateAccepted, true);
+assert.equal(schema5Upgrade.initialStateSource, 'INTEGRATED_SCHEMA5_READY_POINT_MIGRATION');
+assert.equal(schema5Upgrade.stateV5MigrationApplied, true);
+assert.equal(schema5Upgrade.stateV5MigrationId, RAVSCORE_STATE_V5_MIGRATION_ID);
+assert.equal(schema5Upgrade.continuationState.schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
+assert.deepEqual(schema5Upgrade.continuationState.historyBounds.current, {
+  lowerPotential: schema5ReadyState.supplyPotential,
+  upperPotential: schema5ReadyState.supplyPotential,
+});
+assert.deepEqual(schema5Upgrade.continuationState.historyBounds.waveMobilisation, {
+  lowerPotential: schema5ReadyState.mobilisationPotential,
+  upperPotential: schema5ReadyState.mobilisationPotential,
+  lastUnknownAt: null,
+  conservativeResetAt: null,
+});
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...schema5ReadyState,
+    historyBounds: omittedSchema6HistoryBounds,
+  },
+}), /not eligible for deterministic migration/,
+'schema-5 migration must fail closed on an extra schema-6 field');
+const partialColdReplay = buildIntegratedRavScoreStateSeries(coldReplaySamples.slice(1), {
+  samplingContextKey,
+  coldReplayBootstrap: coldReplayProof({ complete: 47 }),
+});
+assert.equal(partialColdReplay.initialStateSource,
+  'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY');
+assert.equal(partialColdReplay.continuationState.lineage.historyTransition,
+  'UNKNOWN_HISTORY_INTERVAL');
+const nonPlainColdReplayProof = Object.assign(
+  Object.create({ inherited: true }),
+  coldReplayProof(),
+);
 assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples, {
   samplingContextKey,
   coldReplayBootstrap: nonPlainColdReplayProof,
@@ -240,22 +317,16 @@ assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples, {
 'cold-replay proof must be one exact plain object, not a prototype-bearing lookalike');
 assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples, {
   samplingContextKey,
-  coldReplayBootstrap: {
-    recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: 48,
+  coldReplayBootstrap: coldReplayProof({
     targetReferenceAt: time(0).replace('.000Z', 'Z'),
-  },
+  }),
 }), /target is invalid/,
 'cold-replay target proof must use the exact canonical UTC representation');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: legacyState,
   expectedCandidateGStateKey: candidateGStateKey,
-  coldReplayBootstrap: {
-    recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: 48,
-    targetReferenceAt: time(0),
-  },
+  coldReplayBootstrap: coldReplayProof(),
 }), /cannot combine continuation and cold replay/);
 
 const migrated = buildIntegratedRavScoreStateSeries([currentSample], {
@@ -363,6 +434,212 @@ const missingWave = buildIntegratedRavScoreStateSeries([{
 assert.equal(missingWave.rows[0].waveMemoryReady, false);
 assert.equal(missingWave.rows[0].waveMemoryStatus, 'MISSING_INPUT');
 
+const currentHistoryHoleThenValid = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(1),
+  currentSpeedMps: null,
+  currentAlignment: null,
+  currentVerified: false,
+}, {
+  ...currentSample,
+  time: time(2),
+}], {
+  samplingContextKey,
+  initialState: migrated.continuationState,
+});
+assert.equal(currentHistoryHoleThenValid.rows[0].currentDirectInputAvailable, false);
+assert.equal(currentHistoryHoleThenValid.rows[0].historyScoreView.quality, 'UNAVAILABLE');
+assert.equal(currentHistoryHoleThenValid.rows[1].currentDirectInputAvailable, true);
+assert.equal(currentHistoryHoleThenValid.rows[1].historyScoreView.quality, 'HISTORY_INCOMPLETE');
+assert.equal(currentHistoryHoleThenValid.rows[1].historyScoreView.calibrationEligible, false);
+assert.ok(currentHistoryHoleThenValid.rows[1].historyScoreView.reasonCodes
+  .includes('CURRENT_HISTORY_MISSING_EVIDENCE'));
+assert.ok(currentHistoryHoleThenValid.rows[1].supplyPotential
+  <= currentHistoryHoleThenValid.rows[1].supplyPotentialUpper);
+
+const knownEnergyUnknownDirection = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(1),
+  waveDirectionDeg: null,
+}], {
+  samplingContextKey,
+  initialState: migrated.continuationState,
+});
+const unknownDirectionBounds = knownEnergyUnknownDirection.continuationState.historyBounds.lastMile;
+assert.equal(knownEnergyUnknownDirection.rows[0].historyScoreView.quality, 'HISTORY_INCOMPLETE');
+assert.deepEqual(knownEnergyUnknownDirection.rows[0].historyScoreView.reasonCodes, [
+  'LAST_MILE_HISTORY_INCOMPLETE',
+]);
+assert.ok(unknownDirectionBounds.minimumFactorTrack.normalMoment
+  < unknownDirectionBounds.maximumFactorTrack.normalMoment);
+close(
+  unknownDirectionBounds.minimumFactorTrack.activityMoment,
+  unknownDirectionBounds.maximumFactorTrack.activityMoment,
+);
+
+const historyClosureSamples = [{
+  ...currentSample,
+  time: time(1),
+  waveHeightM: null,
+  wavePeriodS: null,
+  waveDirectionDeg: null,
+}, ...Array.from({ length: 288 }, (_, index) => ({
+  ...currentSample,
+  time: time(index + 2),
+}))];
+const historyClosure = buildIntegratedRavScoreStateSeries(historyClosureSamples, {
+  samplingContextKey,
+  initialState: migrated.continuationState,
+});
+const beforeLastMileClosure = historyClosure.rows.find(row => row.time === time(40));
+const atLastMileClosure = historyClosure.rows.find(row => row.time === time(41));
+assert.notEqual(beforeLastMileClosure.continuationState.historyBounds.lastMile.lastUnknownAt, null,
+  'last-mile uncertainty must remain explicit before the exact 40-hour tail boundary');
+assert.equal(
+  atLastMileClosure.continuationState.historyBounds.lastMile.lastUnknownAt,
+  time(1),
+  'last-mile closure must retain the causal unknown-tail origin',
+);
+assert.equal(
+  atLastMileClosure.continuationState.historyBounds.lastMile.conservativeResetAt,
+  time(41),
+  'last-mile closure must be marked as a conservative scoring-track reset',
+);
+assert.deepEqual(
+  atLastMileClosure.continuationState.historyBounds.lastMile.maximumFactorTrack,
+  atLastMileClosure.continuationState.historyBounds.lastMile.minimumFactorTrack,
+  'last-mile closure must continue the already shown minimum-factor track',
+);
+const beforeWaveClosure = historyClosure.rows.find(row => row.time === time(288));
+const atWaveClosure = historyClosure.rows.find(row => row.time === time(289));
+assert.notEqual(beforeWaveClosure.continuationState.historyBounds.waveMobilisation.lastUnknownAt, null,
+  'mobilisation uncertainty must remain explicit before the exact 12-day boundary');
+assert.ok(0.3 * (
+  beforeWaveClosure.mobilisationPotentialUpper
+    - beforeWaveClosure.mobilisationPotentialLower
+) <= 0.46875 + 1e-9,
+'the remaining mobilisation-only raw-score width must be below half a point before truncation');
+assert.equal(
+  atWaveClosure.continuationState.historyBounds.waveMobilisation.lastUnknownAt,
+  time(1),
+  'mobilisation closure must retain the causal unknown-tail origin',
+);
+assert.equal(
+  atWaveClosure.continuationState.historyBounds.waveMobilisation.conservativeResetAt,
+  time(289),
+  'wave closure must be marked as a conservative scoring-track reset',
+);
+assert.equal(atWaveClosure.historyScoreView.quality, 'FULL_HISTORY');
+assert.equal(atWaveClosure.historyScoreView.calibrationEligible, true);
+assert.deepEqual(atWaveClosure.historyScoreView.reasonCodes, []);
+assert.equal(atWaveClosure.historyScoreView.conservativeTailResetApplied, true);
+close(atWaveClosure.mobilisationPotentialLower, atWaveClosure.mobilisationPotentialUpper);
+assert.ok(atWaveClosure.mobilisationPotentialLower <= atWaveClosure.mobilisationPotential,
+  'tail closure must never replace the shown lower trajectory with a higher point state');
+const afterWaveClosure = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(290),
+}], {
+  samplingContextKey,
+  initialState: atWaveClosure.continuationState,
+});
+assert.equal(afterWaveClosure.initialStateAccepted, true,
+  'a serialized conservative tail reset must resume as exact schema-6 continuation');
+assert.equal(afterWaveClosure.rows[0].historyScoreView.quality, 'FULL_HISTORY');
+assert.equal(afterWaveClosure.rows[0].historyScoreView.conservativeTailResetApplied, true);
+close(
+  afterWaveClosure.rows[0].mobilisationPotentialLower,
+  afterWaveClosure.rows[0].mobilisationPotentialUpper,
+);
+assert.ok(
+  afterWaveClosure.rows[0].mobilisationPotentialLower
+    <= afterWaveClosure.rows[0].mobilisationPotential,
+  'the conservative scoring trajectory must remain ordered after resume',
+);
+const resumedLastMileClosure = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(42),
+}], {
+  samplingContextKey,
+  initialState: atLastMileClosure.continuationState,
+});
+assert.equal(resumedLastMileClosure.initialStateAccepted, true,
+  'a serialized 40-hour last-mile reset must resume exactly');
+assert.equal(
+  resumedLastMileClosure.rows[0].continuationState.historyBounds.lastMile.conservativeResetAt,
+  time(41),
+  'resuming must not move or repeatedly reapply the last-mile reset marker',
+);
+const gapAfterReset = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(290),
+  waveHeightM: null,
+  wavePeriodS: null,
+  waveDirectionDeg: null,
+}], {
+  samplingContextKey,
+  initialState: atWaveClosure.continuationState,
+});
+assert.equal(gapAfterReset.rows[0].historyScoreView.quality, 'HISTORY_INCOMPLETE',
+  'a new verified-history gap after reset must reopen bounded scoring');
+assert.equal(
+  gapAfterReset.rows[0].continuationState.historyBounds.waveMobilisation.conservativeResetAt,
+  null,
+  'a new wave gap must clear the superseded wave reset marker',
+);
+assert.equal(
+  gapAfterReset.rows[0].continuationState.historyBounds.waveMobilisation.lastUnknownAt,
+  time(290),
+);
+assert.equal(
+  gapAfterReset.rows[0].continuationState.historyBounds.lastMile.conservativeResetAt,
+  null,
+  'a new last-mile gap must clear the superseded last-mile reset marker',
+);
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...atWaveClosure.continuationState,
+    historyBounds: {
+      ...atWaveClosure.continuationState.historyBounds,
+      waveMobilisation: {
+        ...atWaveClosure.continuationState.historyBounds.waveMobilisation,
+        conservativeResetAt: null,
+      },
+    },
+  },
+}), /missing its required conservativeResetAt marker/,
+'removing an authentic expired-tail reset marker must fail closed');
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...schema5Upgrade.continuationState,
+    historyBounds: {
+      ...schema5Upgrade.continuationState.historyBounds,
+      waveMobilisation: {
+        ...schema5Upgrade.continuationState.historyBounds.waveMobilisation,
+        lastUnknownAt: null,
+        conservativeResetAt: schema5Upgrade.continuationState.time,
+      },
+    },
+  },
+}), /not bound to an expired unknown tail/,
+'forging a conservative reset marker onto attested exact history must fail closed');
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...atWaveClosure.continuationState,
+    historyBounds: {
+      ...atWaveClosure.continuationState.historyBounds,
+      waveMobilisation: {
+        ...atWaveClosure.continuationState.historyBounds.waveMobilisation,
+        conservativeResetAt: time(290),
+      },
+    },
+  },
+}), /conservativeResetAt.*invalid/,
+'a future conservative reset marker must fail closed');
+
 const missingCurrentAt = hour => ({
   ...currentSample,
   time: time(hour),
@@ -380,6 +657,50 @@ const dmiThenMissing = buildIntegratedRavScoreStateSeries([
 assert.equal(dmiThenMissing.rows[0].currentMemoryReady, false,
   'DMI/non-regional current cannot authorize a native cadence hold');
 assert.equal(dmiThenMissing.rows[0].currentTransition, 'UNVERIFIED_MISSING');
+
+const unattestedOneHourHole = buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(2),
+}], {
+  samplingContextKey,
+  initialState: migrated.continuationState,
+});
+const unattestedGapRow = unattestedOneHourHole.rows[0];
+assert.equal(unattestedGapRow.currentMemoryReady, false);
+assert.equal(unattestedGapRow.currentMemoryStatus, 'WINDOW_HAS_TIME_GAP');
+assert.equal(unattestedGapRow.historyScoreView.quality, 'HISTORY_INCOMPLETE');
+assert.equal(unattestedGapRow.historyScoreView.coverageHours, 47);
+assert.deepEqual(
+  unattestedGapRow.continuationState.currentNativeHoldIntervalEnds,
+  [],
+  'a sparse jump must never manufacture native cadence attestation',
+);
+for (let index = 0; index <= 40; index += 1) {
+  const hiddenStrength = -1 + index / 20;
+  const hiddenNormalSpeed = Math.abs(hiddenStrength) <= 1e-12
+    ? 0
+    : Math.sign(hiddenStrength) * (0.03 + 0.12 * Math.abs(hiddenStrength));
+  const completion = buildIntegratedRavScoreStateSeries([{
+    ...currentSample,
+    time: time(1),
+    currentSpeedMps: Math.abs(hiddenNormalSpeed),
+    currentAlignment: Math.sign(hiddenNormalSpeed),
+  }, {
+    ...currentSample,
+    time: time(2),
+  }], {
+    samplingContextKey,
+    initialState: migrated.continuationState,
+  }).rows.at(-1);
+  assert.equal(completion.currentMemoryReady, true);
+  assert.ok(
+    completion.supplyPotential
+      >= unattestedGapRow.historyScoreView.current.lowerPotential - 1e-9
+      && completion.supplyPotential
+        <= unattestedGapRow.historyScoreView.current.upperPotential + 1e-9,
+    `state completion ${hiddenStrength} escaped its sparse-history current bounds`,
+  );
+}
 
 const regionalAuthorization = {
   sourceClass: 'owner-approved-regional-proxy',
@@ -414,6 +735,50 @@ assert.deepEqual(nativeHold.rows[0].currentReferenceProvenance, {
   status: 'verified',
   ...regionalAuthorization,
 }, 'regional hold must retain its bounded source class and exact verified distance');
+
+const verifiedAfterNativeHold = buildIntegratedRavScoreStateSeries([{
+  ...regionalCurrentSample,
+  time: time(3),
+}], {
+  samplingContextKey,
+  initialState: nativeHold.continuationState,
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(verifiedAfterNativeHold.rows[0].currentMemoryReady, true);
+assert.equal(verifiedAfterNativeHold.rows[0].historyScoreView.current.lowerPotential,
+  verifiedAfterNativeHold.rows[0].historyScoreView.current.upperPotential);
+assert.deepEqual(
+  verifiedAfterNativeHold.continuationState.currentNativeHoldIntervalEnds,
+  [time(3)],
+  'only a provenance-matched hold through the preceding expected hour may attest a 3h interval',
+);
+const resumedAttestedInterval = buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: verifiedAfterNativeHold.continuationState,
+});
+assert.equal(resumedAttestedInterval.initialStateAccepted, true,
+  'native cadence interval attestation must survive exact checkpoint continuation');
+
+const unobservedRegionalJump = buildIntegratedRavScoreStateSeries([{
+  ...regionalCurrentSample,
+  time: time(3),
+}], {
+  samplingContextKey,
+  initialState: regionalMigrated.continuationState,
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(unobservedRegionalJump.rows[0].currentMemoryReady, false);
+assert.equal(unobservedRegionalJump.rows[0].currentMemoryStatus, 'WINDOW_HAS_TIME_GAP');
+assert.deepEqual(unobservedRegionalJump.continuationState.currentNativeHoldIntervalEnds, [],
+  'matching endpoint provenance alone must not attest absent hold coverage');
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...verifiedAfterNativeHold.continuationState,
+    currentNativeHoldIntervalEnds: [],
+  },
+}), /signed current evidence/,
+'removing a persisted native-hold interval proof must fail closed');
 
 const continuedFromNativeHold = buildIntegratedRavScoreStateSeries([missingCurrentAt(3)], {
   samplingContextKey,
@@ -499,6 +864,20 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: { ...migrated.continuationState, modelBundleSha256: 'wrong' },
 }), /incompatible model metadata/);
+assert.throws(() => buildIntegratedRavScoreStateSeries([], {
+  samplingContextKey,
+  initialState: {
+    ...migrated.continuationState,
+    historyBounds: {
+      ...migrated.continuationState.historyBounds,
+      current: {
+        ...migrated.continuationState.historyBounds.current,
+        upperPotential: migrated.continuationState.historyBounds.current.upperPotential + 1,
+      },
+    },
+  },
+}), /current bounds contradict signed evidence/,
+'schema-6 continuation must reject a plausible but unbound current upper bound');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: { ...migrated.continuationState, modelContractSha256: 'wrong' },
@@ -626,6 +1005,13 @@ const bridgedFortyNineRollback = reconstructCandidateGRollbackState({
   currentMemoryCoverageHours: bridgedFortyNineMemory.coverageHours,
   currentEvidence: bridgedFortyNineMemory.evidence,
   supplyPotential: bridgedFortyNineMemory.supplyPotential,
+  historyBounds: {
+    ...migrated.continuationState.historyBounds,
+    current: {
+      lowerPotential: bridgedFortyNineMemory.supplyPotential,
+      upperPotential: bridgedFortyNineMemory.supplyPotential,
+    },
+  },
 }, { candidateGStateKey });
 assert.deepEqual(bridgedFortyNineRollback.transportEvidence, bridgedFortyNineMemory.evidence,
   'a real bridge plus 48 in-window rows remains exactly rollback-compatible');
@@ -728,4 +1114,4 @@ for (const forbidden of [
   assert.equal(compactText.includes(forbidden), false, `compact state contains ${forbidden}`);
 }
 
-console.log('Integreret RavScore schema-5 state, Candidate G-migration og rollback: bestået.');
+console.log('Integreret RavScore schema-6 state, Candidate G/schema-5-migration og rollback: bestået.');

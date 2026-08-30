@@ -1,12 +1,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
 import {
   RAVSCORE_BEST_TIME_POLICY_ID,
   RAVSCORE_COMPONENT_SCHEMA_ID,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_EXPLANATION_SCHEMA_ID,
   RAVSCORE_HUNTABILITY_POLICY,
+  RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -17,6 +19,7 @@ import {
   RAVSCORE_PROFILE_ID,
   RAVSCORE_RANKING_POLICY_ID,
   RAVSCORE_STATE_SCHEMA_VERSION,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_VARIANT_ID,
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   RAVSCORE_WEIGHTS,
@@ -31,13 +34,15 @@ import {
   RAVSCORE_MODEL_CONTRACT_SHA256 as CANDIDATE_G_MODEL_CONTRACT_SHA256,
 } from './rollback-assets/ravscore-model-contract.js';
 
-const root=process.cwd();
-const read=rel=>fs.readFile(path.join(root,rel),'utf8');
-const exists=async rel=>{try{await fs.access(path.join(root,rel));return true}catch{return false}};
-const pkg=JSON.parse(await read('package.json'));
-const version=pkg.version;
 const errors=[];
 const ok=(cond,msg)=>{if(!cond)errors.push(msg)};
+const root=process.cwd();
+const {readText:read,readJson}=createRequiredFileReader(root,errors);
+const exists=async rel=>{try{await fs.access(path.join(root,rel));return true}catch{return false}};
+const pkg=await readJson('package.json',{scripts:{}});
+const packageScripts=pkg&&typeof pkg.scripts==='object'&&pkg.scripts!==null?pkg.scripts:{};
+const version=typeof pkg.version==='string'?pkg.version:'';
+ok(Boolean(version),'package.json mangler en gyldig releaseversion');
 
 const publicLearningTest=spawnSync(process.execPath,['scripts/test-public-learning-module-4.0.268.mjs'],{cwd:root,stdio:'inherit'});
 ok(publicLearningTest.status===0,'Det offentlige læringsmodul eller sproggaten fejlede');
@@ -68,6 +73,7 @@ for(const rel of [
   'scripts/test-private-production-runtime-bundle.mjs',
   'scripts/test-private-production-runtime-workflow.mjs',
   'scripts/test-pages-artifact-privacy.mjs',
+  'scripts/test-production-workflow-outcome.mjs',
   'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
   'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
 ]){
@@ -77,17 +83,18 @@ for(const rel of [
 
 const exactVersionFiles=['version.json','data/kystdata.json','data/zones.geojson','docs/handbook/content.json'];
 for(const rel of exactVersionFiles){
-  const doc=JSON.parse(await read(rel));
+  const doc=await readJson(rel,{});
   const value=rel.includes('handbook')?doc.handbookVersion:doc.version;
   ok(value===version,`${rel}: forventede ${version}, fandt ${value}`);
 }
 for(const rel of ['index.html','admin.html','service-worker.js','app.js','js/ui/admin-dashboard.js','HANDBOOK-RAVRADAR.md','docs/rdks/MASTER_LOG.md',`CHANGELOG-${version}.md`]){
   const text=await read(rel); ok(text.includes(version),`${rel} mangler releaseversion ${version}`);
 }
-const handbook=JSON.parse(await read('docs/handbook/content.json'));
-ok(Array.isArray(handbook.sections)&&handbook.sections.length>=51,'Håndbogen skal indeholde mindst 51 kapitler');
+const handbook=await readJson('docs/handbook/content.json',{sections:[]});
+const handbookSections=Array.isArray(handbook.sections)?handbook.sections:[];
+ok(handbookSections.length>=51,'Håndbogen skal indeholde mindst 51 kapitler');
 for(const id of ['rav-egenskaber','tilstedevaerelse','boelger','stroem','vind','vandstand','langskyst','undertow','sortering','vegetation','kystmorfologi','stormforloeb','aflejring','jagtbarhed','score-implementering','procesindikator','retninger','regler','eksperimentdesign','stationer','admin-sikkerhed','release','domaene','ekspertmatrix','scenarier','kilder','fluidmekanik','dimensionsloese-tal','boelgespektrum','strandtilstande','kildelager-model','organisk-opskael','regional-oceanografi','datamaaling-usikkerhed','hypoteseregister','valideringsdesign','feltprotokol','fejlscenarier','kodematrix','kildekritik-detaljer','bibliografi','ekspertarbejdsgang','ordliste','flere-transportveje']){
-  ok(handbook.sections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
+  ok(handbookSections.some(s=>s.id===id),`Håndbogen mangler obligatorisk afsnit ${id}`);
 }
 
 const handbookText=await read('HANDBOOK-RAVRADAR.md');
@@ -99,7 +106,7 @@ for(const marker of ['0,03 m/s','0,15 m/s','48 timers','20 % søgeforhold','Chub
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
 ok(handbookText.includes(RAVSCORE_MODEL_ID),'Håndbogen mangler den aktive integrerede RavScore-modelidentitet');
-ok(handbookTextLower.includes('schema 5')||handbookTextLower.includes('stateversion 5.0.0'),'Håndbogen mangler den integrerede state-/migrationskontrakt');
+ok(handbookTextLower.includes('schema 6')||handbookTextLower.includes('stateversion 6.0.0'),'Håndbogen mangler den integrerede state-/migrationskontrakt');
 const scoreEngine=await read('js/core/score-engine.js');
 for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Den historiske sammenligningsmotors forventede auditkonstant mangler: ${marker}`);
@@ -121,11 +128,11 @@ ok(integratedPublicModel.includes('outflowWholeScoreGateApplied: false'),
 ok(integratedStatePipeline.includes('CANDIDATE_G_STATE_SCHEMA_VERSION')
   && integratedStatePipeline.includes('migrationApplied')
   && integratedStatePipeline.includes('rollbackCandidateGMobilisationPotential'),
-'Schema-5-pipelinen mangler bundet Candidate G-migration og rollbackspor');
+'Schema-6-pipelinen mangler bundet Candidate G-migration og rollbackspor');
 ok(RAVSCORE_MODEL_ID==='RRS-COASTAL-PROCESS-INTEGRATED-1.1.0','Den aktive integrerede RavScore mangler sit faste model-id');
-ok(RAVSCORE_STATE_SCHEMA_VERSION==='5.0.0','Den aktive integrerede RavScore skal bruge state schema 5');
+ok(RAVSCORE_STATE_SCHEMA_VERSION==='6.0.0','Den aktive integrerede RavScore skal bruge state schema 6');
 ok(RAVSCORE_VARIANT_ID==='COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2','Den integrerede RavScore-variant er ikke låst');
-ok(RAVSCORE_PROFILE_ID==='cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4','Den integrerede RavScore-profil er ikke låst');
+ok(RAVSCORE_PROFILE_ID==='cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5','Den integrerede RavScore-profil er ikke låst');
 ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_BUNDLE_SHA256),'Den integrerede RavScore mangler et gyldigt modelbundle-hash');
 ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_CONTRACT_SHA256)
   && RAVSCORE_MODEL_CONTRACT_SHA256!==RAVSCORE_MODEL_BUNDLE_SHA256,
@@ -172,8 +179,21 @@ ok(RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor===0.85
   && RAVSCORE_LAST_MILE_POLICY.physicalDeliveryResolved===false
   && RAVSCORE_LAST_MILE_POLICY.coherenceScoreEffect==='NONE_UNCERTAINTY_AND_EXPLANATION_ONLY'
   && RAVSCORE_LAST_MILE_POLICY.missingDirectionPolicy
-    ==='ACTIVE_WAVE_FAIL_CLOSED_EXACT_CALM_NEUTRAL',
+    ==='ACTIVE_SCORE_HOUR_FAIL_CLOSED_HISTORICAL_DIRECTION_ENCLOSED_EXACT_CALM_NEUTRAL',
 'Det uopløste sidste-nærkystled skal være begrænset til 0,85–1, fail-closed og må ikke opfinde et numerisk fysisk interval');
+ok(RAVSCORE_SCORE_QUALITY.FULL_HISTORY==='FULL_HISTORY'
+  && RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE==='HISTORY_INCOMPLETE'
+  && RAVSCORE_SCORE_QUALITY.UNAVAILABLE==='UNAVAILABLE'
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.shownIncompleteScore==='LOWER_BOUND'
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.activeCurrentWindowHours===48
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionHours===168
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionScoreEffect==='NONE'
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.directInputMissingPolicy
+    ==='UNAVAILABLE_NO_INTERPOLATION_CARRY_OR_LOAN'
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.FULL_HISTORY===true
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.HISTORY_INCOMPLETE===false
+  && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.calibrationEligibleByQuality.UNAVAILABLE===false,
+'Den integrerede RavScore mangler den låste, konservative historikhulskontrakt');
 ok(RAVSCORE_HUNTABILITY_POLICY.waterLevelScoreEffect===0
   && RAVSCORE_HUNTABILITY_POLICY.wadersFinalScoreCap===true
   && RAVSCORE_HUNTABILITY_POLICY.beachFinalScoreCap===false
@@ -214,6 +234,8 @@ const sql=await read('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql');
 ok(/select\s+oid\s*,\s*conname\s+from\s+pg_constraint/i.test(sql),'Supabase SQL mangler oid-rettelsen');
 ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookVersion\": \"${version}\"`),'Supabase-installationsscriptets håndbog er forældet');
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
+const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
+const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -228,13 +250,22 @@ ok(pythonAdminSync.includes('is_integrated_selection')
   && pythonAdminSync.includes('preserve-newer-local-integrated-release'),
 'Central adminhydrering mangler den integrerede cutover-/runtimekontrakt');
 ok(sync.includes('assertIntegratedRavScoreSelection')
-  && sync.includes('ravScoreProfileWriteAction')
-  && sync.includes('withExpectedAdminVersion')
-  && sync.includes('version=eq.${action.expectedVersion}')
-  && sync.includes('action.expectedVersion+1')
-  && sync.includes('Central RavScore compare-and-swap blev afvist eller ændret samtidigt'),
-'Central RavScore-persistens mangler valideret versionsbundet CAS-cutover');
-const ravScoreProfileSelection=JSON.parse(await read('data/admin/ravscore-profile-selection.json'));
+  && sync.includes('payload=central')
+  && sync.includes('Central RavScore-profil verificeret read-only; skrivning ejes af operationel atomisk CAS')
+  && operationalActivation.includes('writeCentralCas')
+  && operationalActivation.includes('ravradar_ravscore_operational_cas')
+  && operationalActivation.includes('p_expected_operational_version')
+  && operationalActivation.includes('p_expected_profile_version')
+  && operationalActivation.includes('p_operational_payload')
+  && operationalActivation.includes('p_profile_payload')
+  && operationalActivation.includes('Atomic RavScore operation/profile compare-and-swap lost a concurrent update')
+  && operationalCasMigration.includes('where document_key=\'ravscore-operational-model-activation\'')
+  && operationalCasMigration.includes('where document_key=\'ravscore-profile-selection\'')
+  && operationalCasMigration.includes('version=p_expected_operational_version')
+  && operationalCasMigration.includes('version=p_expected_profile_version')
+  && operationalCasMigration.includes('for update;'),
+'Central RavScore-persistens mangler den validerede atomiske operation/profil-CAS-cutover');
+const ravScoreProfileSelection=await readJson('data/admin/ravscore-profile-selection.json',{});
 try{
   assertIntegratedRavScoreSelection(ravScoreProfileSelection,'Release RavScore profile');
 }catch(error){
@@ -259,7 +290,7 @@ ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versions
 for(const workflowVersion of workflowUserAgentVersions){
   ok(workflowVersion===version,`Produktionsworkflowets User-Agent viser ${workflowVersion}, men releaseversionen er ${version}`);
 }
-const integratedTestChain=pkg.scripts['test:ravscore-integrated']??'';
+const integratedTestChain=packageScripts['test:ravscore-integrated']??'';
 for(const marker of [
   'test:ravscore-integrated-core',
   'test:ravscore-integrated-generator',
@@ -271,7 +302,7 @@ for(const marker of [
 ]){
   ok(integratedTestChain.includes(marker),`Den samlede integrerede RavScore-testkæde mangler ${marker}`);
 }
-const integratedCoreChain=pkg.scripts['test:ravscore-integrated-core']??'';
+const integratedCoreChain=packageScripts['test:ravscore-integrated-core']??'';
 for(const marker of [
   'test-ravscore-wave-approach-state.mjs',
   'test-ravscore-last-mile-integrated-state.mjs',
@@ -285,7 +316,7 @@ for(const [scriptName,required] of [
   ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
   ['validate:source',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
 ]){
-  const chain=pkg.scripts[scriptName]??'';
+  const chain=packageScripts[scriptName]??'';
   for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
   for(const forbidden of [
     'test:candidate-g-public-recovery',
@@ -304,10 +335,10 @@ for(const retiredScriptName of [
   'test:ravscore-candidate-g-state-pipeline',
   'test:ravscore-national-shadow-contract',
 ]){
-  ok(!Object.hasOwn(pkg.scripts,retiredScriptName),
+  ok(!Object.hasOwn(packageScripts,retiredScriptName),
   `Den pensionerede Candidate G/public-hydration-kontrakt må ikke være et aktivt package-script: ${retiredScriptName}`);
 }
-ok((pkg.scripts['hydrate:legacy-candidate-g-bootstrap']??'').includes('--legacy-candidate-g-bootstrap'),
+ok((packageScripts['hydrate:legacy-candidate-g-bootstrap']??'').includes('--legacy-candidate-g-bootstrap'),
 'Den offentlige hydration skal kun være tilgængelig som eksplicit Candidate G-engangsbootstrap');
 for(const [scriptName,markers] of [
   ['test:protected-ravscore-checkpoint',['test-protected-ravscore-continuation-checkpoint.mjs']],
@@ -316,15 +347,15 @@ for(const [scriptName,markers] of [
   ['test:legacy-bootstrap-hydration',['test-hydrated-atomic-dataset-4.0.67.mjs','test-hydrate-deployed-weather-fail-closed-4.0.272.mjs']],
   ['test:production-runtime-privacy',['test:private-production-runtime','test:pages-artifact-privacy']],
 ]){
-  const chain=pkg.scripts[scriptName]??'';
+  const chain=packageScripts[scriptName]??'';
   for(const marker of markers)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
 }
-const rollbackOracleChain=pkg.scripts['test:ravscore-rollback-oracle']??'';
+const rollbackOracleChain=packageScripts['test:ravscore-rollback-oracle']??'';
 ok(rollbackOracleChain.includes('test-ravscore-candidate-g.mjs')
   && rollbackOracleChain.includes('test-ravscore-candidate-g-state-pipeline.mjs')
   && rollbackOracleChain.includes('test:candidate-g-operational-rollback'),
 'Candidate G skal bevares som eksplicit testet rollback-orakel');
-const operationalRollbackChain=pkg.scripts['test:candidate-g-operational-rollback']??'';
+const operationalRollbackChain=packageScripts['test:candidate-g-operational-rollback']??'';
 for(const marker of [
   'build-candidate-g-rollback-bundle.mjs --check',
   'test-candidate-g-rollback-bundle.mjs',
@@ -340,28 +371,32 @@ for(const marker of [
 for(const forbidden of ['central-runtime','profile-switch','public-shadow','public-recovery']){
   ok(!rollbackOracleChain.includes(forbidden),`Rollback-oraklet må ikke genaktivere Candidate G ${forbidden}`);
 }
-ok(!(pkg.scripts['test:workflow-action-contracts']??'').includes('test-ravscore-active-shadow-workflow'),
+ok(!(packageScripts['test:workflow-action-contracts']??'').includes('test-ravscore-active-shadow-workflow'),
 'Workflowkontrakten må ikke bevare Candidate G som aktiv shadowmodel');
-const workflowActionChain=pkg.scripts['test:workflow-action-contracts']??'';
+const workflowActionChain=packageScripts['test:workflow-action-contracts']??'';
 ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
-  && workflowActionChain.includes('test:candidate-g-gap-retirement'),
-'Workflowkontrakten skal teste både den fælles dispatchmatrix og den permanente DEC-0109-pensionering');
+  && workflowActionChain.includes('test:candidate-g-gap-retirement')
+  && workflowActionChain.includes('test:production-workflow-outcome')
+  && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
+'Workflowkontrakten skal teste dispatchmatrix, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
+ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
+'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
   'test:candidate-g-gap-workflow',
   'test:candidate-g-gap-contract',
 ]){
-  ok(pkg.scripts[retiredScript]===undefined,`Det pensionerede script ${retiredScript} må ikke kunne køres`);
+  ok(packageScripts[retiredScript]===undefined,`Det pensionerede script ${retiredScript} må ikke kunne køres`);
 }
-ok((pkg.scripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
+ok((packageScripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
 'DEC-0109 skal være beskyttet af den negative pensionsgate');
-ok((pkg.scripts['validate:source']??'').includes('test:workflow-action-contracts'),
+ok((packageScripts['validate:source']??'').includes('test:workflow-action-contracts'),
 'Kildegaten skal nå DEC-0109-pensionsgaten gennem workflowkontrakten');
-const tripEvidenceChain=pkg.scripts['test:trip-evidence-contract']??'';
+const tripEvidenceChain=packageScripts['test:trip-evidence-contract']??'';
 ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')
   && tripEvidenceChain.includes('test-candidate-g-trip-quality-storage-4.0.311.mjs'),
 'Turgrundlaget skal direkte teste både schema-3-modelbinding og trip-quality-lagringskontrakten');
-const hybridTripChain=pkg.scripts['test:hybrid-trip-storage']??'';
+const hybridTripChain=packageScripts['test:hybrid-trip-storage']??'';
 for(const marker of [
   'test-hybrid-trip-storage-4.0.287.mjs',
   'test-trip-storage-migration-projection-4.0.311.mjs',
@@ -369,11 +404,13 @@ for(const marker of [
 ]){
   ok(hybridTripChain.includes(marker),`Hybrid turlagring mangler direkte D1-/migrationsbevis: ${marker}`);
 }
-ok((pkg.scripts['test:ravscore-integrated-public']??'').includes('test:ravscore-public-browser-closure'),
+ok((packageScripts['test:ravscore-integrated-public']??'').includes('test:ravscore-public-browser-closure'),
 'Den integrerede public-kæde mangler browserclosure-kontrakten');
-ok((pkg.scripts['test:ravscore-integrated-profile']??'').includes('test:integrated-cutover-readiness'),
-'Den integrerede profilkæde mangler cutover-readiness-kontrakten');
-ok(!(pkg.scripts['test:coastal-geometry-v2']??'').includes('test-ravscore-active-shadow-workflow'),
+const integratedProfileChain=packageScripts['test:ravscore-integrated-profile']??'';
+ok(integratedProfileChain.includes('test-integrated-cutover-install-contract.mjs')
+  && integratedProfileChain.includes('test:integrated-cutover-readiness'),
+'Den integrerede profilkæde mangler SQL-/RPC-paritet eller cutover-readiness-kontrakten');
+ok(!(packageScripts['test:coastal-geometry-v2']??'').includes('test-ravscore-active-shadow-workflow'),
 'Geometritesten må ikke genaktivere Candidate G-shadowjobbet');
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
@@ -386,8 +423,25 @@ const trackedRuntimePrivacy=await read('scripts/audit-tracked-runtime-privacy.mj
 const pagesArtifactPrivacy=await read('scripts/audit-pages-artifact-privacy.mjs');
 const legacyHydration=await read('scripts/hydrate-deployed-weather.py');
 const productionWatchdog=await read('scripts/check-production-watchdog.mjs');
+const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs');
 const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-current-shadow.yml');
-ok(targetRegistry.includes('if candidate > requested_hour:'),'DMI-timeopløseren kan ikke bevise, at fremtidige modeltimer afvises');
+for(const marker of [
+  'hours = matrix_hours(reference)',
+  'canonical_row_time(row.get("time") or key) != expected_time',
+  'complete_native_source_for_hour(source, "current", entity_id, entity, expected_time)',
+  '"rangeEndAt": utc_iso(hours[-1])',
+  '"requiredPairsSha256": required_pairs_sha256(required_pairs)',
+]){
+  ok(targetRegistry.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler native-timebindingen: ${marker}`);
+}
+const targetRegistryTestChain=packageScripts['test:copernicus-target-registry']??'';
+for(const marker of [
+  'test-copernicus-target-registry-4.0.244.py',
+  'test-copernicus-range-runner-v2.py',
+  'test-copernicus-range-checker-v2.py',
+]){
+  ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
+}
 for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
   ok(workflow.includes(marker),`Produktionsworkflowet mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
@@ -395,9 +449,10 @@ for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 1
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
 }
 for(const marker of [
-  "status: 'ravscore-schema5-compact-continuation'",
+  "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",
   'expectedPartCount: 673',
-  "cacheNamespace: 'ravscore-continuation-schema5-v3'",
+  "cacheNamespace: 'ravscore-continuation-schema6-v2'",
+  "candidateGRollbackCompanionStatus: 'candidate-g-rollback-ready-companion'",
   'compactDerivedStateOnly: true',
   'weatherIncluded: false',
   'scoresIncluded: false',
@@ -405,11 +460,14 @@ for(const marker of [
   'coordinatesIncluded: false',
   'privateDataIncluded: false',
   'stateSha256',
+  'generationSha256',
+  'candidateGRollbackCompanion',
+  'assertCandidateGRollbackContinuation',
   "initialStateSource !== 'INTEGRATED_CONTINUATION'",
   'checkpointMs > targetMs',
   'checkpointMs <= deployedMs',
 ]){
-  ok(continuationCheckpoint.includes(marker),`Schema-5 RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
+  ok(continuationCheckpoint.includes(marker),`Schema-4 RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
 }
 for(const marker of [
   "'ravscore-continuation-checkpoint'",
@@ -439,7 +497,7 @@ for(const marker of [
   "documentKey: 'ravscore-private-production-runtime-pointer'",
   "bucketId: 'ravradar-private-production-runtime'",
   'maximumRawPayloadBytes:',
-  'maximumArchiveBytes:',
+  'maximumArchiveBytes: 50 * 1024 * 1024',
   'uploadImmutable',
   'compare-and-swap',
   'previous: existing?.payload.current ?? null',
@@ -461,28 +519,37 @@ for(const marker of ['--legacy-candidate-g-bootstrap','generic-public-private-ru
 for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale']){
   ok(productionWatchdog.includes(marker),`Produktions-watchdoget mangler fail-safe tilstanden: ${marker}`);
 }
-for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','--maximum-silence-minutes 45']){
+for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','MAXIMUM_SILENCE_MINUTES:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"']){
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
 }
+const unsafePublicRecoveryUse=/\bfallbackRuntime\b|\brecoveryFallbackActive\b|(?:manifest|data)\.recoveryFallback\b|function\s+recoveryFallbackUrl\b|active-last-verified|last-verified-public/.test(publicDataService);
 ok(publicDataService.includes('sameRavScoreModelBinding')
-  && !/fallbackRuntime|recoveryFallback/.test(publicDataService),
+  && publicDataService.includes("'recoveryFallback' in manifest")
+  && publicDataService.includes("'emergencyFallback' in manifest")
+  && !unsafePublicRecoveryUse,
 'Offentlig dataindlæsning skal være atomisk schema-4 og må ikke omdirigeres til en public recoveryruntime');
 ok(!/recoveryFallbackActive|recoveryFallback\?/.test(publicApp),
 'Den offentlige app må ikke have en skjult Candidate G-/recoveryfallbackgren');
-ok(publicI18n.includes('Ældre prognoser vises ikke')
-  && publicI18n.includes('Ältere Prognosen werden nicht angezeigt')
-  && publicI18n.includes('Older forecasts are not shown'),
-'Den offentlige brugerflade mangler DA/DE/EN fail-closed-tekst for en uverificeret atomisk datapakke');
+ok(publicApp.includes("t('data.couldNotLoad')")
+  && publicI18n.includes('Aktuelle data kunne ikke indlæses. Gamle prognoser vises ikke.')
+  && publicI18n.includes('Aktuelle Daten konnten nicht geladen werden. Alte Prognosen werden nicht angezeigt.')
+  && publicI18n.includes('Current data could not be loaded. Old forecasts are not shown.')
+  && publicI18n.includes('Den aktuelle atomiske prognosepakke kunne ikke verificeres. Ældre prognosedage vises ikke.')
+  && publicI18n.includes('Das aktuelle atomische Prognosepaket konnte nicht verifiziert werden. Ältere Prognosetage werden nicht angezeigt.')
+  && publicI18n.includes('The current atomic forecast bundle could not be verified. Older forecast days are not shown.'),
+'Den offentlige brugerflade mangler DA/DE/EN fail-closed-tekst for en uverificeret atomisk datapakke eller startup');
 const workflowPositions={
+  preflightCache:workflow.indexOf('name: Restore dataminimized weather preflight metadata'),
+  publicPreflightManifest:workflow.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
+  preflight:workflow.indexOf('name: Decide whether weather needs updating before private runtime download'),
   privateRuntimeExpected:workflow.indexOf('name: Build current private-runtime restore expectation'),
   privateRuntimeRestore:workflow.indexOf('name: Restore newest compatible private runtime from protected storage'),
   privateRuntimeVerify:workflow.indexOf('name: Verify and restore the private production runtime bundle'),
   privateRuntimeInstall:workflow.indexOf('name: Install only the allowlisted restored private runtime files'),
-  checkpointRestore:workflow.indexOf('name: Restore the latest compact schema-5 RavScore checkpoint'),
-  protectedCheckpointRestore:workflow.indexOf('name: Restore protected compact RavScore checkpoint when cache is absent'),
+  checkpointRestore:workflow.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
+  protectedCheckpointRestore:workflow.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
   legacyBootstrapGate:workflow.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
-  legacyBootstrapImport:workflow.indexOf('name: Import exact public Candidate G runtime only for first cutover'),
-  preflight:workflow.indexOf('name: Decide whether weather needs updating'),
+  legacyBootstrapImport:workflow.indexOf('name: Import exact public Candidate G runtime only for first integrated bootstrap'),
   resolvedTarget:workflow.indexOf('name: Bind production to resolved DMI current hour'),
   weather:workflow.indexOf('name: Update central weather cache'),
   runtime:workflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
@@ -490,9 +557,11 @@ const workflowPositions={
   validate:workflow.indexOf('name: Validate full project after fresh weather and current provenance'),
   releaseGate:workflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:workflow.indexOf('name: Validate updated weather cache'),
-  checkpointBuild:workflow.indexOf('name: Build compact schema-5 RavScore continuation checkpoint after final gates'),
-  checkpointSave:workflow.indexOf('name: Save compact schema-5 RavScore continuation checkpoint after final gates'),
-  protectedCheckpointPublish:workflow.indexOf('name: Publish compact RavScore checkpoint to protected admin storage'),
+  checkpointBuild:workflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
+  checkpointSave:workflow.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
+  protectedCheckpointPublish:workflow.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
+  preflightStateBuild:workflow.indexOf('name: Build dataminimized weather preflight state after final gates'),
+  preflightStateSave:workflow.indexOf('name: Save dataminimized weather preflight state'),
   privateRuntimeSpec:workflow.indexOf('name: Build private production runtime bundle specification'),
   privateRuntimeCreate:workflow.indexOf('name: Create the next private production runtime bundle atomically'),
   privateRuntimeSave:workflow.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
@@ -505,10 +574,11 @@ for(const [step,position] of Object.entries(workflowPositions)){
   ok(position>=0,`Produktionsworkflowet mangler integreret RavScore-trin: ${step}`);
 }
 const workflowOrder=[
+  'preflightCache','publicPreflightManifest','preflight','checkpointRestore','protectedCheckpointRestore',
   'privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall',
-  'checkpointRestore','protectedCheckpointRestore','legacyBootstrapGate','legacyBootstrapImport','preflight',
+  'legacyBootstrapGate','legacyBootstrapImport',
   'resolvedTarget','weather','runtime','runtimeAudit','validate','releaseGate','validateData',
-  'checkpointBuild','checkpointSave','protectedCheckpointPublish',
+  'checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
   'privateRuntimeSpec','privateRuntimeCreate','privateRuntimeSave','privateRuntimeAnonAudit','artifact','pagesPrivacyAudit','pagesUpload',
 ];
 for(let index=1;index<workflowOrder.length;index+=1){
@@ -516,7 +586,27 @@ for(let index=1;index<workflowOrder.length;index+=1){
   const after=workflowOrder[index];
   ok(workflowPositions[before]<workflowPositions[after],`Produktionsworkflowets rækkefølge er ugyldig: ${before} skal ligge før ${after}`);
 }
-const privateRuntimeRestoreSection=workflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.checkpointRestore);
+const lightweightPreflightSection=workflow.slice(workflowPositions.preflightCache,workflowPositions.checkpointRestore);
+for(const marker of [
+  'uses: actions/cache/restore@v6',
+  'path: .cache/weather-preflight-state',
+  'weather-preflight-state-v1-${{ runner.os }}-',
+  'name: Fetch only the deployed public manifest for weather preflight',
+  '--max-filesize 131072',
+  'node scripts/private-production-runtime-workflow.mjs materialize-preflight',
+  '--state "$state"',
+  '--public-manifest "$RAVRADAR_PREFLIGHT_WORK/public-manifest.json"',
+  '--output-root "$input_root"',
+  'cp scripts/check-weather-update.py "$input_root/scripts/check-weather-update.py"',
+  '(cd "$input_root" && python scripts/check-weather-update.py)',
+  'reason=verified-light-preflight-unavailable',
+]){
+  ok(lightweightPreflightSection.includes(marker),`Tidlig dataminimeret vejrpreflight mangler ${marker}`);
+}
+ok(!lightweightPreflightSection.includes('protected-private-production-runtime.mjs')
+  && !lightweightPreflightSection.includes('/tmp/ravradar-private-production-runtime/bundle'),
+'Den tidlige vejrpreflight må ikke hente eller inspicere det fulde private runtimebundle');
+const privateRuntimeRestoreSection=workflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.legacyBootstrapGate);
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs expected',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -535,6 +625,13 @@ for(const marker of [
 ]){
   ok(privateRuntimeRestoreSection.includes(marker),`Private produktionsruntime-restore mangler ${marker}`);
 }
+for(const step of ['privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall']){
+  const start=workflowPositions[step];
+  const end=workflow.indexOf('\n      - name:',start+1);
+  const block=workflow.slice(start,end<0?workflow.length:end);
+  ok(block.includes("if: steps.preflight.outputs.should_run == 'true'"),
+    `${step} må ikke køre før den lette preflight har krævet en reel build`);
+}
 for(const marker of [
   'RAVRADAR_PRIVATE_RUNTIME_ROOT: /tmp/ravradar-private-production-runtime',
   'RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle',
@@ -547,26 +644,27 @@ ok(!privateRuntimeRestoreSection.includes('path: .cache/private-production-runti
 ok(!workflow.includes('private-production-runtime-v1-')
   && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(workflow),
 'Det fulde private runtimebundle må ikke lagres i GitHub Actions cache');
-const checkpointRestoreSection=workflow.slice(workflowPositions.checkpointRestore,workflowPositions.legacyBootstrapGate);
+const checkpointRestoreSection=workflow.slice(workflowPositions.checkpointRestore,workflowPositions.privateRuntimeExpected);
 for(const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/ravscore-continuation-checkpoint',
-  'ravscore-continuation-schema5-v3-',
-  "if: steps.private-runtime-state.outputs.available != 'true'",
-  "if: steps.private-runtime-state.outputs.available != 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
+  'ravscore-continuation-schema6-v2-',
+  "if: steps.preflight.outputs.should_run == 'true'",
+  "if: steps.preflight.outputs.should_run == 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--restore',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]){
-  ok(checkpointRestoreSection.includes(marker),`Protected schema-5 RavScore-restoren mangler ${marker}`);
+  ok(checkpointRestoreSection.includes(marker),`Protected schema-6 RavScore-restoren mangler ${marker}`);
 }
 ok(!checkpointRestoreSection.includes('node scripts/ravscore-continuation-checkpoint.mjs')
   && !checkpointRestoreSection.includes('--target data/live/conditions.json'),
-'Schema-5 checkpoint-restoren må ikke mutere conditions direkte');
-const legacyBootstrapSection=workflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.preflight);
+'Schema-4 checkpoint-restoren må ikke mutere conditions direkte');
+const legacyBootstrapSection=workflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.resolvedTarget);
 for(const marker of [
+  "if: steps.preflight.outputs.should_run == 'true'",
   'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
   'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
   "if: steps.legacy-bootstrap.outputs.required == 'true'",
@@ -575,9 +673,10 @@ for(const marker of [
 ]){
   ok(legacyBootstrapSection.includes(marker),`Candidate G-engangsbootstrap mangler ${marker}`);
 }
-ok((workflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===1
+ok((workflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
+  && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
   && !workflow.includes('name: Hydrate latest deployed weather state'),
-'Generisk offentlig hydration skal være pensioneret; kun Candidate G-engangsbootstrap må findes');
+'Generisk offentlig hydration skal være pensioneret; kun Candidate G-engangsbootstrap og den isolerede attesterede legacy-kilde må findes');
 const runtimeAuditSection=workflow.slice(workflowPositions.runtimeAudit,workflowPositions.validate);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
@@ -594,16 +693,30 @@ for(const marker of [
   '--save',
   '--source data/live/conditions.json',
   'uses: actions/cache/save@v6',
-  'ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}',
+  'ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}',
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--publish',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]){
-  ok(checkpointSaveSection.includes(marker),`Schema-5 RavScore-checkpointbevaringen mangler ${marker}`);
+  ok(checkpointSaveSection.includes(marker),`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
 }
 ok(!checkpointSaveSection.includes('continue-on-error'),'Protected checkpoint-publicering må ikke skjule fejl');
+const preflightStateSaveSection=workflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
+for(const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
+  'node scripts/private-production-runtime-workflow.mjs create-preflight',
+  '--repository-root "$GITHUB_WORKSPACE"',
+  '--output .cache/weather-preflight-state/state.json',
+  'uses: actions/cache/save@v6',
+  'path: .cache/weather-preflight-state',
+  'weather-preflight-state-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}',
+]){
+  ok(preflightStateSaveSection.includes(marker),`Dataminimeret vejrpreflight-bevaring mangler ${marker}`);
+}
+ok(!preflightStateSaveSection.includes('continue-on-error'),
+'Dataminimeret vejrpreflight-state skal bygges og gemmes fail-closed efter slutgates');
 const privateRuntimeSaveSection=workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.artifact);
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs create-spec',
@@ -673,6 +786,39 @@ for(const marker of [
   ok(pagesPrivacyAuditSection.includes(marker),`Pages-privacygaten mangler ${marker}`);
 }
 ok(!pagesPrivacyAuditSection.includes('continue-on-error'),'Pages-privacygaten skal være fail-closed før upload');
+for(const marker of [
+  "'NOOP'",
+  "'DEFERRED'",
+  "'BUILT'",
+  "'DEPLOYED'",
+  "'FAILED'",
+  "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v1'",
+  'privatePayloadIncluded: false',
+  "return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED')",
+  "return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED')",
+]){
+  ok(productionWorkflowOutcome.includes(marker),`Produktionsslutstatuskontrakten mangler ${marker}`);
+}
+const deploymentTerminal=workflow.indexOf('name: Seal exact verified deployment terminal');
+const outcomeJob=workflow.indexOf('\n  production-outcome:');
+ok(workflow.indexOf('name: Deploy to GitHub Pages')<workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')
+  && workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')<deploymentTerminal
+  && deploymentTerminal<outcomeJob,
+'DEPLOYED må først forsegles efter Pages og offentlig exact model/210/673-verifikation');
+const outcomeSection=workflow.slice(outcomeJob);
+for(const marker of [
+  'if: always()',
+  'node scripts/production-workflow-outcome.mjs',
+  'name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}',
+  'path: .workflow-outcome/production-outcome.json',
+  "if: always() && steps.classify.outputs.status == 'FAILED'",
+  'exit 1',
+]){
+  ok(outcomeSection.includes(marker),`Workflowets terminalstatus mangler ${marker}`);
+}
+for(const forbidden of ['secrets.','SUPABASE_','data/live/','currentUMps','currentVMps','waterPoint','landPoint','coordinates']){
+  ok(!outcomeSection.includes(forbidden),`Det payloadfri terminalstatusjob må ikke indeholde ${forbidden}`);
+}
 ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
 for(const retiredGpsRuntime of ['js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js']){
   ok(workflow.includes(`--exclude '${retiredGpsRuntime}'`),`Pages-workflow skal udelukke pensioneret GPS-runtime: ${retiredGpsRuntime}`);
@@ -705,7 +851,7 @@ const moduleClosureTest=await read('scripts/test-pages-module-closure-4.0.68.mjs
 ok(moduleClosureTest.includes('Pages-artifact mangler browsermodul')&&moduleClosureTest.includes('handbook-review-store.js'),'Release mangler Pages-modullukningstest');
 ok(workflow.includes('SUPABASE_URL')&&workflow.includes('SUPABASE_SERVICE_ROLE_KEY'),'Workflow mangler Supabase secrets');
 ok(!workflow.includes('sb_secret_'),'En konkret sb_secret_-værdi må aldrig stå i workflowet');
-const manifest=JSON.parse(await read('manifest.webmanifest'));
+const manifest=await readJson('manifest.webmanifest',{});
 ok(String(manifest.start_url||'').startsWith('.'),'Manifest start_url skal være relativ for domæneskift');
 ok(!await exists('CNAME'),'CNAME må først aktiveres, når DNS og Supabase redirects er klar');
 const decision=await read('docs/rdks/10_DECISIONS/DEC-0013-RELEASE-GOVERNANCE.md');
@@ -717,8 +863,8 @@ for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
-const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema5Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
+const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema6Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,productionWorkflowOutcome:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
 await fs.mkdir('release',{recursive:true});
 await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
-await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-5 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
 console.log(`Release gate bestået for RavRadar ${version}.`);

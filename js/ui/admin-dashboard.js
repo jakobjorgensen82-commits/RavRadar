@@ -1,31 +1,31 @@
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.314';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.314';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.314';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.314';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.314';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.314';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.314';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.314';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.314';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.314';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.314';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.314';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.314';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.314';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.314';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.314';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.314';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.317';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.317';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.317';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.317';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.317';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.317';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.317';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.317';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.317';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.317';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.317';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.317';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.317';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.317';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.317';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.317';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.317';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.314';
+} from './admin-active-ravscore.js?v=4.0.317';
 import {
  loadConditions,
  loadDataManifest,
  loadZones,
-} from '../services/data-service.js?v=4.0.314';
+} from '../services/data-service.js?v=4.0.317';
 
-const VERSION='4.0.314';
+const VERSION='4.0.317';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -178,9 +178,15 @@ function scoreAvailabilityCard(){
  const summary=state.conditions?.coastalParts?.scoreAvailability;
  if(!summary)return `<article class="admin-card status-warning"><h2>Zonernes RavScore-status</h2><div class="metric status-warning">AFVENTER DATA</div><p class="muted">Status bliver vist, når den seneste verificerede kørsel for ${esc(active.value.labelDa)} er hentet.</p></article>`;
  const unavailable=summary.unavailableZones||[];
+ const historyIncomplete=summary.historyIncompleteZones||[];
+ const hasHistoryIncomplete=Number(summary.historyIncompleteModeCount)>0;
  const modeLabel=mode=>mode==='waders'?'I vandet':mode==='beach'?'På stranden':mode;
- const list=unavailable.length?`<details open><summary>Se de ${esc(unavailable.length)} utilgængelige zoner</summary><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Zone</th><th>Søgemåde</th><th>Hvorfor?</th></tr></thead><tbody>${unavailable.map(zone=>`<tr><td>${esc(zone.zoneName||zone.zoneId)}</td><td>${esc((zone.modes||[]).map(modeLabel).join(' og ')||'Begge')}</td><td>${esc((zone.reasons||[]).join(' '))}</td></tr>`).join('')}</tbody></table></div></details>`:`<p>Alle zoner har den nødvendige sammenhængende state og evidens for ${esc(active.value.labelDa)}.</p>`;
- return `<article class="admin-card ${summary.allZonesActive?'status-good':'status-warning'}"><h2>Zonernes RavScore-status</h2><div class="metric ${summary.allZonesActive?'status-good':'status-warning'}">${summary.allZonesActive?'ALLE AKTIVE':`${esc(summary.activeZoneCount)}/${esc(summary.totalZoneCount)} AKTIVE`}</div><p class="muted">Aktiv model: ${esc(active.value.labelDa)} · ${esc(active.value.binding.modelId)}. En utilgængelig zone skjules midlertidigt fra kortets score og toplisterne; øvrige zoner fortsætter kun med samme modelbundle.</p>${list}</article>`;
+ const unavailableList=unavailable.length?`<details open><summary>Se de ${esc(unavailable.length)} utilgængelige zoner</summary><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Zone</th><th>Søgemåde</th><th>Hvorfor?</th></tr></thead><tbody>${unavailable.map(zone=>`<tr><td>${esc(zone.zoneName||zone.zoneId)}</td><td>${esc((zone.modes||[]).map(modeLabel).join(' og ')||'Begge')}</td><td>${esc((zone.reasons||[]).join(' '))}</td></tr>`).join('')}</tbody></table></div></details>`:'';
+ const historyList=hasHistoryIncomplete?`<section class="display-context warning history-quality-warning" role="status"><h3>Midlertidigt ufuldstændig historik</h3><p>Der mangler historiske vejrdata. RavScore vises som et forsigtigt minimum, mens aktuel- og femdøgnsprognosen fortsat beregnes for timer med komplette direkte vejrinput. Berørte scorer er ikke kalibreringsberettigede, og meldingen forsvinder automatisk ved fuld historik.</p><details><summary>Se de ${esc(historyIncomplete.length)} berørte zoner</summary><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Zone</th><th>Søgemåde</th><th>Historik</th><th>Årsagskoder</th></tr></thead><tbody>${historyIncomplete.map(zone=>`<tr><td>${esc(zone.zoneName||zone.zoneId)}</td><td>${esc((zone.modes||[]).map(modeLabel).join(' og ')||'Begge')}</td><td>${esc(zone.historyCoverageHours)} timer</td><td>${esc((zone.historyReasonCodes||[]).join(', '))}</td></tr>`).join('')}</tbody></table></div></details></section>`:'';
+ const healthy=summary.allZonesActive&&!hasHistoryIncomplete;
+ const metric=!summary.allZonesActive?`${esc(summary.activeZoneCount)}/${esc(summary.totalZoneCount)} AKTIVE`:hasHistoryIncomplete?'SCORER AKTIVE · HISTORIK UFULDSTÆNDIG':'ALLE AKTIVE · FULD HISTORIK';
+ const normalText=healthy?`<p>Alle zoner har den nødvendige sammenhængende state og evidens for ${esc(active.value.labelDa)}.</p>`:'';
+ return `<article class="admin-card ${healthy?'status-good':'status-warning'}"><h2>Zonernes RavScore-status</h2><div class="metric ${healthy?'status-good':'status-warning'}">${metric}</div><p class="muted">Aktiv model: ${esc(active.value.labelDa)} · ${esc(active.value.binding.modelId)}. Direkte inputmangel gør kun den berørte time utilgængelig; ufuldstændig historik bevarer numeriske scorer med samme modelbundle.</p>${historyList}${unavailableList}${normalText}</article>`;
 }
 
 function renderDashboard(){const h=state.health;const zc=Object.keys(state.conditions.zones||{}).length;const obs=JSON.parse(localStorage.getItem('ravradar-observations-v2')||'[]');const conn=state.connection||{};const storage=state.storageHealth||{};const docs=storage.documents||{};const active=activePublicRavScoreState();const scoreMotorCard=active.ok?`<article class="admin-card"><h2>Scoremotor</h2><div class="metric">20/50/30</div><p class="muted">${esc(active.value.statusDa)} Faglige ændringer gennemgår kode, tests og versionsstyring.</p></article>`:activeModelUnavailableCard(active,{title:'Scoremotor'});const activeDocuments=['water-level-station-routing','direction-reviews','coastline-overrides'];const docRows=activeDocuments.map(key=>{const x=docs[key]||{};return `<tr><td>${esc(key)}</td><td>${x.ok?(x.exists?'✓ Centralt':'○ Ikke oprettet endnu'):'✕ Fejl'}</td><td>${x.updatedAt?esc(new Date(x.updatedAt).toLocaleString('da-DK')):'—'}</td><td>${x.version??'—'}</td></tr>`}).join('');content.innerHTML=`<div class="admin-grid">

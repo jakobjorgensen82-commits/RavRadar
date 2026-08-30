@@ -4,9 +4,11 @@
 
 ## Hvorfor piloten findes
 
-`DK-B05-11` er fortsat det ene reelle bølgegab i den aktive DMI-kæde. DMI `wam_dw` har ikke et accepteret vådt punkt inden for den gældende afstand, og den eksisterende fallback lukker heller ikke gabet. Den korrekte offentlige adfærd er derfor fortsat `missing`, indtil en komplet kildekontrakt er bevist og særskilt besluttet.
+`DK-B05-11` er fortsat det ene dokumenterede parent-zone-bølgegab i den aktive DMI-kæde. DMI `wam_dw` har ikke et accepteret vådt parent-punkt inden for den gældende afstand, og den eksisterende fallback lukker heller ikke gabet. Sanitiseret forecast `rr-20260830104132-210` viser 118/118 parent-wavefelter som `missing`, men de tre aktive part-id'er findes, har `marineCoverage=full`, og Candidate G-current er tilgængelig i begge modes. Den integrerede model producerer fra 673 part-level-serier; en frisk integreret 118-timersproduktion skal derfor først bevise, om de tre dele faktisk har et bølgegab.
 
 Piloten undersøger, om en af to officielle Copernicus Marine-produkter alene kan dække alle de aktuelt centralt hydrerede kystdele under `DK-B05-11`. Den må ikke kombinere de to produkter for at skjule et hul, søge videre efter en fjernere våd celle eller aktivere en kilde automatisk.
+
+Ejeren har derudover autoriseret én betinget sidste-udvejshypotese: Kun hvis den friske integrerede part-level-kontrol viser et reelt hul, og piloten/dokumenteret officiel-kildeundersøgelse derefter viser korrekt direkte bølgeevidens umulig, må netop `DK-B05-11` senere vurderes for konservativ nabozoneinterpolation. Autorisationen er ikke en aktiveringsbeslutning. Denne feasibility hverken analyserer eller implementerer proxyen.
 
 ## Officielle kandidater og semantik
 
@@ -52,4 +54,4 @@ Det må ikke indeholde del-id'er, navne, koordinater, gridceller, targettid, bul
 
 Et grønt workflow betyder kun, at forespørgslerne blev udført og det datasikre artifact blev valideret. `candidateAccepted=true` for et produkt er nødvendig, men ikke tilstrækkelig, for en ny produktionskilde.
 
-En senere kildeaktivering kræver fortsat en særskilt RDKS-beslutning, en komplet producent-/forbrugerkæde, cache/recovery/proveniens, kapacitetsvurdering, rollback, exact-head CI og frisk produktionsverifikation. Indtil da forbliver DMI-first-adfærden og Feggesund `missing` uændret. Ingen ny ekstern datahentning er en releasegate for den integrerede model i denne feasibility-leverance.
+En senere kildeaktivering kræver fortsat en særskilt RDKS-beslutning, en komplet producent-/forbrugerkæde, cache/recovery/proveniens, kapacitetsvurdering, rollback, exact-head CI og frisk produktionsverifikation. Det samme gælder en eventuel sidste-udvejsproxy, som desuden skal være afgrænset til `DK-B05-11`, føre sin egen synlige kilde-/usikkerhedsstatus, aldrig skabe historik eller låne strøm og aldrig flytte geometri, punkter eller kystnormal. Indtil da forbliver DMI-first-adfærden og Feggesund `missing` uændret. Ingen ny ekstern datahentning eller proxy er en releasegate for den integrerede model i denne feasibility-leverance.

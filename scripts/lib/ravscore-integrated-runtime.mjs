@@ -11,6 +11,101 @@ import { candidateGStateKey } from './coastal-point-staging-contract.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
+const SCORE_QUALITIES = new Set(['FULL_HISTORY', 'HISTORY_INCOMPLETE', 'UNAVAILABLE']);
+const FULL_SCORE_SEMANTICS = new Set([
+  'EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE',
+]);
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower', 'upper', 'modelUncertaintyPoints', 'rawLower', 'rawUpper',
+]);
+
+function compactScoreBounds(result = {}) {
+  if (result.available !== true) {
+    if (result.scoreBounds !== null) {
+      throw new Error('Unavailable integrated RavScore must carry null scoreBounds');
+    }
+    return null;
+  }
+  const bounds = result.scoreBounds;
+  if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())
+      !== JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || !SCORE_BOUND_FIELDS.every(field => finite(bounds[field]))
+    || bounds.lower < 0 || bounds.upper > 100 || bounds.lower > bounds.upper
+    || bounds.rawLower < 0 || bounds.rawUpper > 100 || bounds.rawLower > bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints - (bounds.upper - bounds.lower)) > 1e-9
+    || result.score !== bounds.lower) {
+    throw new Error('Integrated RavScore scoreBounds are invalid');
+  }
+  if (result.scoreQuality === 'FULL_HISTORY'
+    && (bounds.lower !== bounds.upper || bounds.rawLower !== bounds.rawUpper)) {
+    throw new Error('FULL_HISTORY integrated RavScore bounds must be collapsed');
+  }
+  return Object.fromEntries(SCORE_BOUND_FIELDS.map(field => [field, Number(bounds[field])]));
+}
+
+function compactScoreQuality(result = {}) {
+  const scoreQuality = SCORE_QUALITIES.has(result.scoreQuality)
+    ? result.scoreQuality
+    : null;
+  const calibrationEligible = typeof result.calibrationEligible === 'boolean'
+    ? result.calibrationEligible
+    : null;
+  const historyCoverageHours = finite(result.historyCoverageHours)
+    ? Number(result.historyCoverageHours)
+    : finite(result?.history?.coverageHours)
+      ? Number(result.history.coverageHours)
+      : null;
+  const historyReasonCodes = Array.isArray(result.historyReasonCodes)
+    ? result.historyReasonCodes
+    : Array.isArray(result?.history?.reasonCodes)
+      ? result.history.reasonCodes
+      : [];
+  const compactReasonCodes = [...new Set(historyReasonCodes
+    .filter(code => typeof code === 'string' && /^[A-Z][A-Z0-9_]{0,127}$/.test(code)))];
+  const coverageValid = scoreQuality === 'UNAVAILABLE'
+    ? historyCoverageHours === null
+    : finite(historyCoverageHours)
+      && historyCoverageHours >= 0
+      && historyCoverageHours <= 48;
+  if (!scoreQuality
+    || calibrationEligible === null
+    || !coverageValid
+    || compactReasonCodes.length !== historyReasonCodes.length
+    || typeof result.conservativeTailResetApplied !== 'boolean') {
+    throw new Error('Integrated RavScore quality contract is invalid');
+  }
+  if (scoreQuality === 'FULL_HISTORY'
+    && (calibrationEligible !== true
+      || historyCoverageHours !== 48
+      || compactReasonCodes.length !== 0
+      || !FULL_SCORE_SEMANTICS.has(result.scoreSemantics)
+      || result.conservativeTailResetApplied
+        !== (result.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'))) {
+    throw new Error('Integrated FULL_HISTORY semantics are invalid');
+  }
+  if (scoreQuality === 'HISTORY_INCOMPLETE'
+    && (calibrationEligible !== false
+      || compactReasonCodes.length === 0
+      || result.scoreSemantics !== 'CONSERVATIVE_ENCLOSING_LOWER_BOUND')) {
+    throw new Error('Integrated HISTORY_INCOMPLETE semantics are invalid');
+  }
+  if (scoreQuality === 'UNAVAILABLE'
+    && (calibrationEligible !== false
+      || result.scoreSemantics !== null
+      || result.conservativeTailResetApplied !== false
+      || compactReasonCodes.length !== 0)) {
+    throw new Error('Integrated UNAVAILABLE semantics are invalid');
+  }
+  return {
+    scoreQuality,
+    calibrationEligible,
+    scoreSemantics: result.scoreSemantics,
+    conservativeTailResetApplied: result.conservativeTailResetApplied,
+    historyCoverageHours,
+    historyReasonCodes: compactReasonCodes,
+  };
+}
 
 const CURRENT_PROVENANCE_FIELDS = Object.freeze([
   'status',
@@ -59,6 +154,8 @@ export function compactIntegratedRavScoreMode(result) {
     modelContractSha256: modelBinding.modelContractSha256,
     modelBundleSha256: modelBinding.modelBundleSha256,
     modelBinding,
+    ...compactScoreQuality(result),
+    scoreBounds: compactScoreBounds(result),
   };
   if (!base.available) return {
     ...base,

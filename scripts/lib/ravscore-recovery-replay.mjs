@@ -330,23 +330,6 @@ export function ravScoreCandidateMigrationWaveBootstrapTargetAt(
   return Date.parse(next) < Date.parse(target) ? next : target;
 }
 
-function exactReplayTimes(stateTime, targetTime) {
-  const rows = [];
-  for (let cursor = Date.parse(nextExactHourAfter(stateTime)); cursor < Date.parse(targetTime); cursor += HOUR_MS) {
-    rows.push(new Date(cursor).toISOString());
-  }
-  return rows;
-}
-
-function exactColdStartReplayTimes(targetTime) {
-  const targetMs = Date.parse(targetTime);
-  const startMs = targetMs - RAVSCORE_COLD_START_REPLAY_HOURS * HOUR_MS;
-  return Array.from(
-    { length: RAVSCORE_COLD_START_REPLAY_HOURS },
-    (_, index) => new Date(startMs + index * HOUR_MS).toISOString(),
-  );
-}
-
 export function ravScoreRecoveryReplayStartAt(initialState, targetReferenceAt) {
   const target = canonicalHour(targetReferenceAt);
   if (!initialState) {
@@ -517,11 +500,20 @@ export function selectRavScoreInitialState({
   pointStateInjections = {},
   existingPart = null,
   checkpointStates = {},
+  targetReferenceAt = null,
 } = {}) {
   if (!part?.partId) throw new Error('RavScore initial-state selection requires a coastal part');
   const samplingContextKey = ravScoreSamplingContextKey(part);
   const expectedCandidateGStateKey = candidateGStateKey(part);
   const rejectedSources = [];
+  const expiredSources = [];
+  const selectionTargetMs = targetReferenceAt === null
+    ? null
+    : Date.parse(canonicalHour(targetReferenceAt));
+  const integratedContinuationExpired = state => selectionTargetMs !== null
+    && selectionTargetMs >= Date.parse(state.time)
+    && (selectionTargetMs - Date.parse(state.time)) / HOUR_MS
+      > RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS;
   const pointState = pointStateInjections?.[part.partId] ?? null;
   if (pointState) {
     if (pointState.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
@@ -539,7 +531,7 @@ export function selectRavScoreInitialState({
       requireReady: true,
       label: 'RavScore exact point-activation state',
     });
-    return { state: pointState, source: 'POINT_ACTIVATION', rejectedSources };
+    return { state: pointState, source: 'POINT_ACTIVATION', rejectedSources, expiredSources };
   }
   const existingIntegrated = existingPart?.ravScoreModel?.currentState ?? null;
   if (existingIntegrated) {
@@ -548,7 +540,16 @@ export function selectRavScoreInitialState({
         samplingContextKey,
         label: 'Existing integrated RavScore continuation',
       });
-      return { state: existingIntegrated, source: 'EXISTING_INTEGRATED', rejectedSources };
+      if (integratedContinuationExpired(existingIntegrated)) {
+        expiredSources.push('EXISTING_INTEGRATED_EXPIRED');
+      } else {
+        return {
+          state: existingIntegrated,
+          source: 'EXISTING_INTEGRATED',
+          rejectedSources,
+          expiredSources,
+        };
+      }
     } catch {
       rejectedSources.push('EXISTING_INTEGRATED_INVALID');
     }
@@ -560,7 +561,16 @@ export function selectRavScoreInitialState({
         samplingContextKey,
         label: 'Protected integrated RavScore checkpoint',
       });
-      return { state: checkpointState, source: 'INTEGRATED_CHECKPOINT', rejectedSources };
+      if (integratedContinuationExpired(checkpointState)) {
+        expiredSources.push('INTEGRATED_CHECKPOINT_EXPIRED');
+      } else {
+        return {
+          state: checkpointState,
+          source: 'INTEGRATED_CHECKPOINT',
+          rejectedSources,
+          expiredSources,
+        };
+      }
     } catch {
       rejectedSources.push('INTEGRATED_CHECKPOINT_INVALID');
     }
@@ -573,7 +583,12 @@ export function selectRavScoreInitialState({
         expectedCandidateGStateKey,
       );
       if (!validation) throw new Error('Candidate G migration validation did not accept the source');
-      return { state: legacyState, source: 'CANDIDATE_G_MIGRATION', rejectedSources };
+      return {
+        state: legacyState,
+        source: 'CANDIDATE_G_MIGRATION',
+        rejectedSources,
+        expiredSources,
+      };
     } catch {
       rejectedSources.push('CANDIDATE_G_MIGRATION_INVALID');
     }
@@ -584,7 +599,7 @@ export function selectRavScoreInitialState({
       'RavScore initial-state sources are present but none validates',
     );
   }
-  return { state: null, source: 'COLD_START', rejectedSources };
+  return { state: null, source: 'COLD_START', rejectedSources, expiredSources };
 }
 
 /**
@@ -745,10 +760,12 @@ export function buildRavScoreRecoveryReplay({
         migrationWaveByTime.set(time, targetWave);
       }
       if (needsReplay) {
-        const targetRow = union.get(time) ?? {};
-        addComponent(targetRow, 'current', current);
-        addComponent(targetRow, 'wave', wave);
-        union.set(time, targetRow);
+        if (current || wave) {
+          const targetRow = union.get(time) ?? {};
+          addComponent(targetRow, 'current', current);
+          addComponent(targetRow, 'wave', wave);
+          union.set(time, targetRow);
+        }
       }
     }
   }
@@ -780,10 +797,9 @@ export function buildRavScoreRecoveryReplay({
       candidateGCurrentBootstrap.currentNativeHoldAuthorization !== null;
     latestVerifiedCurrentAt = Date.parse(candidateGCurrentBootstrap.currentReferenceAt);
   }
-  const expectedTimes = coldStart
-    ? exactColdStartReplayTimes(target)
-    : exactReplayTimes(stateTime, target);
-  const firstReplayTime = expectedTimes[0] ?? target;
+  const replayTimes = [...union.keys()]
+    .sort((left, right) => Date.parse(left) - Date.parse(right));
+  const firstReplayTime = replayTimes[0] ?? target;
   const boundaryReference = verifiedNativeCadenceBoundaryReference(
     nativeCadenceReferenceSample,
     { firstReplayTime, nativeCadenceHoldHours },
@@ -792,14 +808,8 @@ export function buildRavScoreRecoveryReplay({
     latestVerifiedCurrentAt = Date.parse(boundaryReference.time);
     nativeHoldAuthorized = true;
   }
-  const replayRows = expectedTimes.map(time => {
+  const replayRows = replayTimes.map(time => {
     const row = union.get(time);
-    if (!row?.wave) {
-      failClosed(
-        'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-        'RavScore recovery replay lacks a complete verified hourly bridge',
-      );
-    }
     if (row.current) {
       latestVerifiedCurrentAt = Date.parse(time);
       nativeHoldAuthorized =
@@ -811,12 +821,6 @@ export function buildRavScoreRecoveryReplay({
       && nativeHoldAuthorized
       && Number.isFinite(latestVerifiedCurrentAt)
       && (Date.parse(time) - latestVerifiedCurrentAt) / HOUR_MS <= Number(nativeCadenceHoldHours);
-    if (!row.current && !nativeHold) {
-      failClosed(
-        'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-        'RavScore recovery replay lacks a complete verified hourly bridge',
-      );
-    }
     return {
       time,
       ...(row.current?.row ?? {
@@ -825,19 +829,45 @@ export function buildRavScoreRecoveryReplay({
         currentCoastNormalSpeedMps: null,
         currentProvenance: {
           status: 'unverified',
-          reason: 'native-cadence-hold-without-invented-current',
+          reason: nativeHold
+            ? 'native-cadence-hold-without-invented-current'
+            : 'bounded-unknown-history-interval',
         },
       }),
-      ...row.wave.row,
+      ...(row.wave?.row ?? {
+        waveHeightM: null,
+        wavePeriodS: null,
+        waveDirectionDeg: null,
+      }),
     };
   });
+  const completeCausalPositionCount = coldStart
+    ? replayTimes.filter(time => {
+      const row = union.get(time);
+      return Boolean(row?.current && row?.wave);
+    }).length
+    : null;
+  const boundedUnknownPositionCount = coldStart
+    ? RAVSCORE_COLD_START_REPLAY_HOURS - completeCausalPositionCount
+    : null;
+  const coldStartHistoryLineage = coldStart ? {
+    recoveryId: RAVSCORE_RECOVERY_POLICY.id,
+    expectedCausalPositionCount: RAVSCORE_COLD_START_REPLAY_HOURS,
+    completeCausalPositionCount,
+    boundedUnknownPositionCount,
+    historyTransition: boundedUnknownPositionCount > 0
+      ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+      : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
+    targetReferenceAt: target,
+  } : null;
 
   return {
     hourly: [...replayRows, ...canonicalPublicRows],
     scoreStartAt: target,
     replayedHourCount: replayRows.length,
     sourceRecordCount: acceptedSourceRecordCount,
-    coldStartBootstrapApplied: coldStart,
+    coldStartBootstrapApplied: coldStart && boundedUnknownPositionCount === 0,
+    coldStartHistoryLineage,
     candidateGCurrentBootstrap,
     candidateGWaveApproachBootstrap,
   };

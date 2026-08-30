@@ -10,22 +10,76 @@ const deepFreeze = value => {
 };
 
 export const RAVSCORE_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
-export const RAVSCORE_STATE_SCHEMA_VERSION = '5.0.0';
+export const RAVSCORE_STATE_SCHEMA_VERSION = '6.0.0';
+export const RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION = '5.0.0';
 export const RAVSCORE_VARIANT_ID =
   'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2';
 export const RAVSCORE_PROFILE_ID =
-  'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4';
+  'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5';
 export const RAVSCORE_COMPONENT_SCHEMA_ID =
-  'ravscore-components-huntability-delivery-mobilisation-v4';
-export const RAVSCORE_EXPLANATION_SCHEMA_ID = 'ravscore-explanation-integrated-v4';
-export const RAVSCORE_RANKING_POLICY_ID = 'direction-broad-19-v1';
-export const RAVSCORE_BEST_TIME_POLICY_ID = 'score-water-tie-earliest-v2';
+  'ravscore-components-huntability-delivery-mobilisation-bounds-v5';
+export const RAVSCORE_EXPLANATION_SCHEMA_ID = 'ravscore-explanation-integrated-bounds-v5';
+export const RAVSCORE_RANKING_POLICY_ID = 'direction-broad-19-history-tie-v2';
+export const RAVSCORE_BEST_TIME_POLICY_ID = 'score-history-water-tie-earliest-v3';
 export const RAVSCORE_PRESENTATION_POLICY_ID = 'score-bands-35-55-75-exceptional90-v1';
 export const RAVSCORE_MIGRATION_ID =
-  'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4';
-export const RAVSCORE_ROLLBACK_ID = 'integrated-schema5-to-candidate-g-schema2-v2';
-export const RAVSCORE_COLD_REPLAY_ID = 'verified-private-48h-current-wave-direction-cold-replay-v2';
+  'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5';
+export const RAVSCORE_STATE_V5_MIGRATION_ID =
+  'integrated-schema5-ready-point-to-schema6-history-bounds-v1';
+export const RAVSCORE_ROLLBACK_ID = 'integrated-schema6-to-candidate-g-schema2-v3';
+export const RAVSCORE_COLD_REPLAY_ID = 'bounded-private-48h-history-cold-replay-v3';
 export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
+
+// Exact identifiers of the never-public schema-5 local release candidate.
+// They permit one deterministic, fail-closed migration to schema 6. They are
+// not an alternative public model binding.
+export const RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256 =
+  '0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da';
+export const RAVSCORE_STATE_V5_MODEL_BUNDLE_SHA256 =
+  '27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd';
+
+export const RAVSCORE_SCORE_QUALITY = deepFreeze({
+  FULL_HISTORY: 'FULL_HISTORY',
+  HISTORY_INCOMPLETE: 'HISTORY_INCOMPLETE',
+  UNAVAILABLE: 'UNAVAILABLE',
+});
+
+export const RAVSCORE_HISTORY_UNCERTAINTY_POLICY = deepFreeze({
+  id: 'conservative-enclosing-history-bounds-current48-wave12d-lastmile40-v1',
+  fullHistoryScoreSemantics: 'EXACT_POINT_OR_CONSERVATIVE_TAIL_RESET',
+  fullHistoryExactScoreSemantics: 'EXACT_POINT_SCORE',
+  fullHistoryTailResetScoreSemantics: 'CONSERVATIVE_TAIL_RESET_POINT_SCORE',
+  incompleteHistoryScoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+  shownIncompleteScore: 'LOWER_BOUND',
+  currentWindowHours: 48,
+  activeCurrentWindowHours: 48,
+  researchRetentionHours: 168,
+  researchRetentionScoreEffect: 'NONE',
+  mobilisationUncertaintyTruncationHours: 288,
+  mobilisationMaximumRawScoreEffectAtTruncation: 0.46875,
+  mobilisationTailClosurePolicy:
+    'COLLAPSE_SCORING_TRACK_TO_LOWER_BOUND_KEEP_PHYSICAL_AND_ROLLBACK_POINT_STATE',
+  lastMileUncertaintyTruncationHours: 40,
+  lastMileMaximumOmittedMomentShare: 1 / 1024,
+  lastMileTailClosurePolicy:
+    'COLLAPSE_SCORING_TRACK_TO_MINIMUM_FACTOR_KEEP_PHYSICAL_POINT_STATE',
+  tailResetCalibrationPolicy:
+    'ELIGIBLE_AFTER_ACTIVE_BOUNDS_COLLAPSE_UNDER_FIXED_CONSERVATIVE_MODEL_POLICY',
+  calibrationEligibleByQuality: {
+    FULL_HISTORY: true,
+    HISTORY_INCOMPLETE: false,
+    UNAVAILABLE: false,
+  },
+  unknownCurrentInterval: {
+    lowerStrength: -1,
+    upperStrength: 1,
+  },
+  unknownWaveEnergyTargets: {
+    lower: 0,
+    upper: 100,
+  },
+  directInputMissingPolicy: 'UNAVAILABLE_NO_INTERPOLATION_CARRY_OR_LOAN',
+});
 
 // Eligibility is an operational property of the currently activated model,
 // not part of the eleven-field model binding. The integrated model may collect
@@ -54,8 +108,10 @@ export const RAVSCORE_PRESENTATION_POLICY = deepFreeze({
 export const RAVSCORE_BEST_TIME_POLICY = deepFreeze({
   id: RAVSCORE_BEST_TIME_POLICY_ID,
   primaryOrder: 'HIGHEST_RAVSCORE',
-  wadersTieBreak: 'LOWER_WATER_LEVEL_THEN_NON_RISING_TREND_THEN_EARLIEST',
-  beachTieBreak: 'EARLIEST',
+  sharedTieBreak: 'FULL_HISTORY_THEN_MODE_SPECIFIC_RULES',
+  wadersTieBreak:
+    'FULL_HISTORY_THEN_LOWER_WATER_LEVEL_THEN_NON_RISING_TREND_THEN_EARLIEST',
+  beachTieBreak: 'FULL_HISTORY_THEN_EARLIEST',
   currentDayPastToleranceMinutes: 30,
   waterLevelScoreEffect: 0,
 });
@@ -68,6 +124,7 @@ export const RAVSCORE_CURRENT_SUPPLY_POLICY = deepFreeze({
   outboundPointsPerEffectiveHour: 8,
   fullWeightHours: 24,
   windowHours: 48,
+  expectedEvidenceIntervalHours: 1,
   maximumGapHours: 3,
   boundaryPotential: 0,
   maximumWindowEvidencePoints: 49,
@@ -77,7 +134,7 @@ export const RAVSCORE_CURRENT_SUPPLY_POLICY = deepFreeze({
   maximumRetainedEvidencePoints: 49,
   ageKernel: 'FULL_24H_THEN_RAISED_COSINE_TO_48H',
   evidenceSemantics: 'SIGNED_DERIVED_COAST_NORMAL_STRENGTH_ONLY',
-  missingPolicy: 'FAIL_CLOSED',
+  missingPolicy: 'ENCLOSE_UNKNOWN_HISTORY_DIRECT_SCORE_HOUR_FAIL_CLOSED',
   nativeHoldPolicy: 'EXPLICIT_HOLD_WITHOUT_MOVEMENT',
   boundaryPolicy: 'ZERO_WITH_ONE_REAL_PRE_BOUNDARY_CADENCE_BRIDGE',
   readyStatuses: ['READY', 'READY_NATIVE_HOLD'],
@@ -94,7 +151,7 @@ export const RAVSCORE_WAVE_MOBILISATION_POLICY = deepFreeze({
   maximumContinuousIntervalHours: 1,
   maximumFreshGapHours: 3,
   maximumBuildCreditAfterMissingOrGapHours: 1,
-  missingInputPolicy: 'UNAVAILABLE_HOLD_DERIVED_STATE_WITHOUT_BUILD',
+  missingInputPolicy: 'ENCLOSE_UNKNOWN_HISTORY_DIRECT_SCORE_HOUR_FAIL_CLOSED',
   coldStartPolicy: 'UNAVAILABLE_NO_INVENTED_DURATION',
   longGapPolicy: 'FIRST_VERIFIED_SAMPLE_COLD_RESTARTS_AT_ZERO_AND_REMAINS_UNAVAILABLE',
   rollbackPolicy: 'SEPARATE_CANDIDATE_G_BUILD4_DECAY48_TRACK_NOT_USED_BY_NEW_SCORE',
@@ -115,7 +172,10 @@ export const RAVSCORE_RECOVERY_POLICY = deepFreeze({
   candidateMigrationCurrentEvidenceSource:
     'VERIFIED_CANDIDATE_G_SIGNED_EVIDENCE_REWEIGHT',
   source: 'VERIFIED_PRIVATE_PROVENANCE_REPLAY',
-  missingHistoryPolicy: 'FAIL_CLOSED_WITHOUT_PUBLIC_WARMUP',
+  unknownHistoryTransition: 'UNKNOWN_HISTORY_INTERVAL',
+  completeHistoryTransition: 'VERIFIED_CAUSAL_HISTORY_WINDOW',
+  missingHistoryPolicy:
+    'CONSERVATIVE_ENCLOSING_SCORE_WHEN_DIRECT_SCORE_HOUR_INPUTS_ARE_VALID',
 });
 
 export const RAVSCORE_LAST_MILE_POLICY = deepFreeze({
@@ -138,7 +198,8 @@ export const RAVSCORE_LAST_MILE_POLICY = deepFreeze({
   waveCanCreateSupply: false,
   waveCanIncreaseSupply: false,
   outerGridWaveContextScoreEffect: 'BOUNDED_DIRECTIONAL_ATTENUATION_OF_EXISTING_SUPPLY',
-  missingDirectionPolicy: 'ACTIVE_WAVE_FAIL_CLOSED_EXACT_CALM_NEUTRAL',
+  missingDirectionPolicy:
+    'ACTIVE_SCORE_HOUR_FAIL_CLOSED_HISTORICAL_DIRECTION_ENCLOSED_EXACT_CALM_NEUTRAL',
   coherenceScoreEffect: 'NONE_UNCERTAINTY_AND_EXPLANATION_ONLY',
   waterLevelTransportScoreEffect: 'NONE_CONTEXT_AND_BEST_TIME_TIE_ONLY',
   structuralUncertaintyAlways: true,
@@ -194,6 +255,7 @@ export const RAVSCORE_MODEL_CONTRACT = deepFreeze({
   bestTime: RAVSCORE_BEST_TIME_POLICY,
   currentSupply: RAVSCORE_CURRENT_SUPPLY_POLICY,
   recovery: RAVSCORE_RECOVERY_POLICY,
+  historyUncertainty: RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
   waveMobilisation: RAVSCORE_WAVE_MOBILISATION_POLICY,
   lastMile: RAVSCORE_LAST_MILE_POLICY,
   huntability: RAVSCORE_HUNTABILITY_POLICY,

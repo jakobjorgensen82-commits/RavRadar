@@ -217,7 +217,7 @@ def main() -> int:
     parser.add_argument(
         "--legacy-candidate-g-bootstrap",
         action="store_true",
-        help="Allow the one-time 4.0.308 Candidate G cutover import.",
+        help="Allow the one-time 4.0.316 Candidate G cutover import.",
     )
     parser.add_argument(
         "--root",

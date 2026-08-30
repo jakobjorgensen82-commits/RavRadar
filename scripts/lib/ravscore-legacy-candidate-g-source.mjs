@@ -1,10 +1,13 @@
 import crypto from 'node:crypto';
 
-export const LEGACY_CANDIDATE_G_RELEASE_VERSION = '4.0.308';
+export const LEGACY_CANDIDATE_G_RELEASE_VERSION = '4.0.316';
 export const LEGACY_CANDIDATE_G_SOURCE_HEAD =
-  'a93082548c4cc1ddbe9c75ce303d334530a534c4';
+  '49dd4cb454656bdf629e5df760176705e38d2cb0';
 export const LEGACY_CANDIDATE_G_SOURCE_TREE =
-  'c1a970e4eead13a5b8e978cb1dc19c80e4066b46';
+  '975c3e9432cea7780564ffd56766bc1f0a0a9763';
+export const LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256 =
+  'a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606';
+export const LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT = 53;
 export const LEGACY_CANDIDATE_G_MODEL_ID =
   'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
 export const LEGACY_CANDIDATE_G_STATE_SCHEMA_VERSION = '2.0.0';
@@ -13,7 +16,7 @@ export const LEGACY_CANDIDATE_G_VARIANT_ID =
 export const LEGACY_CANDIDATE_G_PROFILE_ID =
   'current-0.03-0.15-in10-out8-exhaust13-window48-boundary0-wave-build4-decay48';
 export const LEGACY_CANDIDATE_G_PROFILE_SWITCH =
-  'RAVSCORE-PROFILE-SWITCH-4.0.308';
+  'RAVSCORE-PROFILE-SWITCH-4.0.316';
 export const LEGACY_CANDIDATE_G_SOURCE_SCHEMA =
   'ravscore-legacy-candidate-g-public-source-v1';
 export const LEGACY_CANDIDATE_G_MANIFEST_SCHEMA = 2;
@@ -114,7 +117,7 @@ export function legacyCandidateGSourceIdentity() {
 }
 
 // The controller always serializes the common 11-field binding shape. This
-// bootstrap binding is derived from the exact production-verified 4.0.308
+// bootstrap binding is derived from the exact production-verified 4.0.316
 // source attestation; it is deliberately distinct from the regenerated
 // Candidate G rollback implementation bundle and is never trip-admitted.
 export function legacyCandidateGControllerBinding() {
@@ -162,7 +165,7 @@ export function assertLegacyCandidateGCentralProfile(value,
   if (!exactKeys(value, LEGACY_CENTRAL_PROFILE_FIELDS)
     || !exactKeys(value?.evidence, LEGACY_CENTRAL_EVIDENCE_FIELDS)
     || JSON.stringify(canonical(value)) !== JSON.stringify(canonical(expected))) {
-    throw new Error(`${label} is not the exact production-verified 4.0.308 central profile`);
+    throw new Error(`${label} is not the exact production-verified 4.0.316 central profile`);
   }
   return value;
 }
@@ -172,7 +175,7 @@ export function assertLegacyCandidateGSourceIdentity(value,
   const expected = legacyCandidateGSourceIdentity();
   if (!exactKeys(value, SOURCE_IDENTITY_FIELDS)
     || JSON.stringify(canonical(value)) !== JSON.stringify(canonical(expected))) {
-    throw new Error(`${label} is not the exact production-verified 4.0.308 source`);
+    throw new Error(`${label} is not the exact production-verified 4.0.316 source`);
   }
   return value;
 }

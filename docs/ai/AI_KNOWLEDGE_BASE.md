@@ -1,10 +1,12 @@
 # AI Knowledge Base – RavRadar
 
-## Aktuelt DEC-0110-modelarbejde – ikke udgivet
+## Aktuelt DEC-0110/0112-modelarbejde – state 6 er ikke udgivet
 
-- Offentlig 4.0.310 bruger fortsat Candidate G. DEC-0110-releasekandidaten er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `5.0.0` med v4's signerede Candidate G-current-reweight og bounded 40-timers private WAM-migrationsbro, afgrænset kausal energivægtet wave-approach, særskilt ægte 48-timers privat cold start, same-model atomisk nøddrift højst 72 timer og `VERIFIED_ONLY` som eneste kalibreringsegnede trust.
+- Offentlig 4.0.316 bruger fortsat Candidate G. Den lokale efterfølger er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` med bounds-v5, direkte input→`UNAVAILABLE`, historikmissing→konservativ `HISTORY_INCOMPLETE`, 48 h aktiv currenthistorik, 168 h score-neutral researchretention og 288/40 h conservative tail closure. Den aktive binding er `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e` over 43 filer. Candidate G migreres via v5, schema 5 er kun den aldrig-offentlige eksakte 5→6-kilde, og rollback er v3 med separat READY companion samt forseglet 54-filers binding `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207`.
 - Ejeren opgav den fiktive morgenhulsrekonstruktion før descriptor, apply, mutation eller publicering. DEC-0109 bevares kun historisk; bestil ikke ny incident-inspect/apply og overfør aldrig interpolation til den integrerede model.
-- Kandidaten er pending exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Den må ikke kaldes offentlig eller empirisk mere fundpræcis endnu. Den separate 4.0.316-status nedenfor er autoritativ for den aktuelle offentlige P0 og ændrer ikke Candidate G-formlen.
+- Kandidaten er pending exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Den må ikke kaldes offentlig eller empirisk mere fundpræcis. Offentlig `rr-20260830091913-210` var frisk 210/673, men Candidate G gav 0 aktive/210 `UNAVAILABLE` på grund af utilstrækkelig currenthistorik; det er regressionsevidens, ikke state-6-bevis.
+- State-løs recovery bruger `bounded-private-48h-history-cold-replay-v3` med eksakte expected/complete/unknown-counts og transition. 48/48 dokumenterer et fuldt currentvindue, men er stadig `HISTORY_INCOMPLETE` indtil 288-timers wave-tail closure. Checkpointschema 4/cache-v2 med atomisk READY companion er implementeret. Under manuel Candidate G-rollback må kun eksakt `READY`/`memoryReady` Candidate G projicere sin egen mode-score som exact full-history med collapsed bounds/coverage 48; `calibrationEligible=false` består. Trip-bounds-persistens er lukket lokalt gennem klient/DTO/Edge/SQL. Den fulde lokale proportionale matrix er grøn, inklusive rollback-orakel gennem bundle/runtime/stage/trip/assistant/Pages, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog samt RDKS/security/model/release/module-version/bundle/binding/mode/ranking.
+- Feggesund-parenten er 118/118 wave-missing i sanitiseret `rr-20260830104132-210`, men tre aktive dele findes med `marineCoverage=full`, og Candidate G-current er tilgængelig i begge modes. Fordi state 6 producerer part-level, skal frisk integrated 3 × 118 først afgøre, om der er et reelt hul. Kun derefter og kun ved dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` vurderes særskilt. Ingen proxy er implementeret.
 
 ## 4.0.316 – fraværende fallback er ikke det samme som ugyldig primary
 
@@ -12,7 +14,7 @@
 - En fallback er en valgfri reserve for en frisk measured-only primary. Ingen kandidat inden for 72 timer og prognosehorisonten skal give eksplicit fravær, ikke blokere current+fem døgn.
 - Gammel/udløbet fallback må aldrig vises eller blive hængende i manifest/public files. Malformed fallback eller uventet primary accounting/audit er fortsat fejl og må ikke forveksles med forventet fravær.
 - `HISTORY_INCOMPLETE`, public fallback og direct-input-availability er tre separate akser. Den kommende model scorer current+fem døgn ved gyldige direkte input med tydelig DA/DE/EN-advarsel og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
-- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er kandidat, indtil fuld post-merge produktion og offentlig kontrol findes.
+- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er den produktionsverificerede offentlige baseline; den friske offentlige regression `rr-20260830091913-210` beviser 210/673 med 0 aktive zoner og 210 `UNAVAILABLE` under utilstrækkelig sammenhængende currenthistorik, ikke state-6-adfærd.
 
 ## Historisk 4.0.315 – en grøn no-op er ikke frisk produktion
 
@@ -89,7 +91,9 @@ PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247
 
 GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.
 
-## Aktuel modelstatus 2026-08-30 – offentlig Candidate G, 4.0.315 integreret releasekandidat
+## Historisk, aldrig offentlig modelstatus – state-5/4.0.315-releasekandidaten
+
+Dette afsnit bevares kun som revisionsspor for state 5, som aldrig blev offentlig. Den aktive state-6-sandhed står øverst; de gamle v4-, schema-5-, exact-48- og rollback-v2-identiteter nedenfor må kun bruges som historisk regressions- og eksakt migrationskilde.
 
 Den senest produktionsverificerede offentlige baseline er 4.0.310 med Candidate G som eneste offentlige model. Den lokalt implementerede efterfølger under DEC-0110 er én samlet 4.0.315-releasekandidat: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponent `ravscore-components-huntability-delivery-mobilisation-v4` og forklaring `ravscore-explanation-integrated-v4`. Slutdigests fastlåses først på den afsluttede head; exact-head, merge, frisk produktion og offentlig kontrol mangler, så lokal dokumentation eller test er ikke produktionsbevis.
 

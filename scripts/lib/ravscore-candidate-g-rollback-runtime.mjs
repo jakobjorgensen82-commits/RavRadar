@@ -30,6 +30,7 @@ import {
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
   RAVSCORE_WEIGHTS,
+  assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../rollback-assets/ravscore-model-contract.js';
 
@@ -154,9 +155,14 @@ const canonicalTime = value => typeof value === 'string'
   && Number.isFinite(Date.parse(value))
   && new Date(value).toISOString() === value;
 
-export function assertCandidateGRollbackContinuation(state, part,
-  label = 'Candidate G rollback continuation') {
-  const expectedStateKey = candidateGStateKey(part);
+export function assertCandidateGRollbackContinuationForStateKey(
+  state,
+  expectedStateKey,
+  label = 'Candidate G rollback continuation',
+) {
+  if (typeof expectedStateKey !== 'string' || !/^sha256:[0-9a-f]{64}$/.test(expectedStateKey)) {
+    throw new Error(`${label} has an invalid expected state key`);
+  }
   if (!exactKeys(state, CANDIDATE_G_CONTINUATION_FIELDS)
     || state.schemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
     || state.modelId !== CANDIDATE_G_STATE_MODEL_ID
@@ -203,6 +209,15 @@ export function assertCandidateGRollbackContinuation(state, part,
     throw new Error(`${label} is not accepted by the sealed Candidate G oracle`);
   }
   return true;
+}
+
+export function assertCandidateGRollbackContinuation(state, part,
+  label = 'Candidate G rollback continuation') {
+  return assertCandidateGRollbackContinuationForStateKey(
+    state,
+    candidateGStateKey(part),
+    label,
+  );
 }
 
 function candidateInitialState({
@@ -376,15 +391,34 @@ function buildSourceBoundCandidateGStateSeries(samples, {
 function compactCandidateGMode(result) {
   const binding = ravScoreModelBinding();
   if (!result?.available || !finite(result.score)) {
+    const reason = typeof result?.reason === 'string'
+      && /^[A-Z][A-Z0-9_]{0,127}$/.test(result.reason)
+      ? result.reason
+      : 'CANDIDATE_G_NOT_AVAILABLE';
     return {
       available: false,
       score: null,
+      scoreBounds: null,
+      scoreQuality: 'UNAVAILABLE',
+      calibrationEligible: false,
+      scoreSemantics: null,
+      conservativeTailResetApplied: false,
+      historyCoverageHours: null,
+      historyReasonCodes: [],
       modelId: RAVSCORE_MODEL_ID,
       modelVersion: RAVSCORE_MODEL_ID,
       modelContractSha256: binding.modelContractSha256,
       modelBundleSha256: binding.modelBundleSha256,
       modelBinding: binding,
-      reason: result?.reason ?? 'CANDIDATE_G_NOT_AVAILABLE',
+      reason,
+      level: 'unavailable',
+      label: 'RavScore midlertidigt utilgængelig',
+      unavailability: {
+        available: false,
+        code: reason,
+        messageDa: 'Candidate G-datagrundlaget er ikke i eksakt READY-tilstand.',
+      },
+      reasons: ['Candidate G-datagrundlaget er ikke i eksakt READY-tilstand.'],
     };
   }
   if (result.modelVersion !== CANDIDATE_G_STATE_MODEL_ID) {
@@ -410,6 +444,49 @@ function compactCandidateGMode(result) {
       result.scoreCalculation?.outflowExhaustionGateApplied === true,
     outflowExhaustionExplanationDa:
       result.scoreCalculation?.outflowExhaustionExplanationDa ?? null,
+  };
+}
+
+/**
+ * Named, fail-closed quality projection for the sealed manual Candidate G
+ * rollback. This is not an integrated-model fallback and never infers missing
+ * history: an actual available Candidate G score plus its exact READY 48-hour
+ * continuation are both required.
+ */
+export function projectReadyCandidateGRollbackScoreQuality(result, state) {
+  assertCandidateGRollbackBinding();
+  assertRavScoreModelBinding(result?.modelBinding,
+    'Candidate G rollback score-quality binding');
+  const diagnostics = result?.explanation?.transportDiagnostics;
+  if (result?.available !== true
+    || !inRange(result.score, 0, 100)
+    || result.scoreProfileId !== RAVSCORE_MODEL_ID
+    || state?.transportMemoryReady !== true
+    || state?.transportMemoryStatus !== 'READY'
+    || state?.transportMemoryWindowHours !== 48
+    || state?.transportMemoryCoverageHours !== 48
+    || diagnostics?.transportMemoryReady !== true
+    || diagnostics?.transportMemoryStatus !== 'READY'
+    || diagnostics?.transportMemoryWindowHours !== 48
+    || diagnostics?.transportMemoryCoverageHours !== 48) {
+    throw new Error('Candidate G rollback score quality requires exact READY 48-hour state');
+  }
+  const score = result.score;
+  return {
+    ...result,
+    scoreBounds: {
+      lower: score,
+      upper: score,
+      modelUncertaintyPoints: 0,
+      rawLower: score,
+      rawUpper: score,
+    },
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: false,
+    scoreSemantics: 'EXACT_POINT_SCORE',
+    conservativeTailResetApplied: false,
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
   };
 }
 
@@ -598,10 +675,10 @@ export function buildCandidateGRollbackPartScoreSeries({
         },
       ));
       const projected = compact.available
-        ? {
+        ? projectReadyCandidateGRollbackScoreQuality({
           ...projectCandidateGForPublic(compact, { mode, profile, context: publicContext }),
           modelBinding: ravScoreModelBinding(),
-        }
+        }, derivedState)
         : compact;
       return [mode, { compact, projected }];
     }));

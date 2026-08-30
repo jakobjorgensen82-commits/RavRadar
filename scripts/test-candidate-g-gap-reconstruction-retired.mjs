@@ -92,7 +92,7 @@ assert.equal(fs.existsSync('supabase/migrations/20260829_candidate_g_reconstruct
 // retirement of the abandoned incident.
 assert.match(workflow, /ravscore_candidate_g_rollback_mode/);
 assert.match(workflow, /Resolve the one-time Candidate G bootstrap gate/);
-assert.match(decision, /Historisk, afgrænset sikkerhedsprotokol/);
-assert.match(decision, /må ikke eksekveres/);
+assert.match(decision, /Historisk, tilbagetrukket uden anvendelse og erstattet af DEC-0111/);
+assert.match(decision, /må ikke eksekveres/i);
 
 console.log('Candidate G gap reconstruction retirement: no production entrypoint; historical read/quality compatibility preserved.');

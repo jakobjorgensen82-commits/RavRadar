@@ -12,6 +12,7 @@ import {
 import {
   CURRENT_SUPPLY_MEMORY_POLICY,
   buildCurrentSupplyMemory,
+  buildCurrentSupplyScoreBounds,
   deriveCurrentSupplyEvidence,
 } from './ravscore-current-supply-memory.js';
 import {
@@ -22,7 +23,10 @@ import {
 import {
   buildRavScoreWaveApproachStateSeries,
 } from './ravscore-wave-approach-state.js';
-import { classifyWavePhysicalTuple } from './ravscore-mobilisation-memory.js';
+import {
+  classifyWavePhysicalTuple,
+  waveMobilisationEnergy,
+} from './ravscore-mobilisation-memory.js';
 import { canonicalRavScoreTime } from './ravscore-time.js';
 import {
   RAVSCORE_BEST_TIME_POLICY_ID,
@@ -33,12 +37,18 @@ import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION,
   RAVSCORE_PROFILE_ID,
   RAVSCORE_PRESENTATION_POLICY_ID,
   RAVSCORE_RANKING_POLICY_ID,
   RAVSCORE_ROLLBACK_ID,
   RAVSCORE_RECOVERY_POLICY,
+  RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_LAST_MILE_POLICY,
+  RAVSCORE_STATE_V5_MIGRATION_ID,
+  RAVSCORE_STATE_V5_MODEL_BUNDLE_SHA256,
+  RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
 } from './ravscore-model-contract.js';
@@ -107,6 +117,7 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'currentMemoryCoverageHours',
   'currentEvidence',
   'currentNativeHoldAuthorization',
+  'currentNativeHoldIntervalEnds',
   'supplyPotential',
   'waveStateSchemaVersion',
   'wavePolicyId',
@@ -119,7 +130,47 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
   'waveApproachState',
+  'historyBounds',
   'lineage',
+]);
+const INTEGRATED_V5_CONTINUATION_KEYS = Object.freeze(
+  INTEGRATED_CONTINUATION_KEYS.filter(key => ![
+    'currentNativeHoldIntervalEnds',
+    'historyBounds',
+  ].includes(key)),
+);
+const HISTORY_BOUNDS_KEYS = Object.freeze([
+  'schemaVersion',
+  'current',
+  'waveMobilisation',
+  'lastMile',
+]);
+const CURRENT_HISTORY_BOUND_KEYS = Object.freeze([
+  'lowerPotential',
+  'upperPotential',
+]);
+const WAVE_HISTORY_BOUND_KEYS = Object.freeze([
+  'lowerPotential',
+  'upperPotential',
+  'lastUnknownAt',
+  'conservativeResetAt',
+]);
+const LAST_MILE_HISTORY_BOUND_KEYS = Object.freeze([
+  'minimumFactorTrack',
+  'maximumFactorTrack',
+  'lastUnknownAt',
+  'conservativeResetAt',
+]);
+const LAST_MILE_FACTOR_TRACK_KEYS = Object.freeze([
+  'activityMoment',
+  'normalMoment',
+]);
+const CURRENT_HISTORY_DEGRADABLE_STATUSES = new Set([
+  'READY',
+  'READY_NATIVE_HOLD',
+  'WINDOW_INCOMPLETE',
+  'WINDOW_HAS_MISSING_EVIDENCE',
+  'WINDOW_HAS_TIME_GAP',
 ]);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const canonicalTime = value => canonicalRavScoreTime(value);
@@ -145,6 +196,548 @@ function hasExactKeys(value, keys) {
   const expected = [...keys].sort();
   return actual.length === expected.length
     && actual.every((key, index) => key === expected[index]);
+}
+
+const HISTORY_BOUNDS_SCHEMA_VERSION = '1.0.0';
+const INTEGRATED_V5_PROFILE_ID =
+  'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4';
+const INTEGRATED_V5_COMPONENT_SCHEMA_ID =
+  'ravscore-components-huntability-delivery-mobilisation-v4';
+const INTEGRATED_V5_EXPLANATION_SCHEMA_ID = 'ravscore-explanation-integrated-v4';
+const INTEGRATED_V5_RANKING_POLICY_ID = 'direction-broad-19-v1';
+const INTEGRATED_V5_BEST_TIME_POLICY_ID = 'score-water-tie-earliest-v2';
+const INTEGRATED_V5_MIGRATION_ID =
+  'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4';
+
+function boundedPotential(value, label, { nullable = false } = {}) {
+  if (nullable && value === null) return null;
+  if (!finite(value) || value < 0 || value > 100) {
+    throw new Error(`${label} must be between zero and one hundred`);
+  }
+  return Number(value);
+}
+
+function boundedMomentTrack(value, label) {
+  if (!hasExactKeys(value, LAST_MILE_FACTOR_TRACK_KEYS)
+    || !finite(value.activityMoment)
+    || value.activityMoment < 0 || value.activityMoment > 1
+    || !finite(value.normalMoment)
+    || Math.abs(value.normalMoment) > value.activityMoment + EPSILON) {
+    throw new Error(`${label} is invalid`);
+  }
+  return {
+    activityMoment: Number(value.activityMoment),
+    normalMoment: Number(value.normalMoment),
+  };
+}
+
+function optionalHistoricalTime(value, stateTime, label) {
+  if (value === null) return null;
+  const time = canonicalTime(value);
+  if (!time || time !== value || Date.parse(time) > Date.parse(stateTime)) {
+    throw new Error(`${label} is invalid`);
+  }
+  return time;
+}
+
+function historyUncertaintyOpen(lastUnknownAt, conservativeResetAt) {
+  return lastUnknownAt !== null && conservativeResetAt === null;
+}
+
+function historyBoundsAreFullHistory(historyBounds) {
+  const current = historyBounds?.current;
+  const wave = historyBounds?.waveMobilisation;
+  const lastMile = historyBounds?.lastMile;
+  return current?.lowerPotential !== null
+    && current?.upperPotential !== null
+    && close(current?.lowerPotential, current?.upperPotential)
+    && wave
+    && !historyUncertaintyOpen(wave.lastUnknownAt, wave.conservativeResetAt)
+    && close(wave.lowerPotential, wave.upperPotential)
+    && lastMile
+    && !historyUncertaintyOpen(lastMile.lastUnknownAt, lastMile.conservativeResetAt)
+    && close(
+      lastMile.minimumFactorTrack?.activityMoment,
+      lastMile.maximumFactorTrack?.activityMoment,
+    )
+    && close(
+      lastMile.minimumFactorTrack?.normalMoment,
+      lastMile.maximumFactorTrack?.normalMoment,
+    );
+}
+
+function assertCanonicalTailMarkers({
+  lastUnknownAt,
+  conservativeResetAt,
+  stateTime,
+  truncationHours,
+  label,
+}) {
+  if (conservativeResetAt !== null) {
+    if (lastUnknownAt === null
+      || Date.parse(conservativeResetAt) < Date.parse(lastUnknownAt)
+      || (Date.parse(conservativeResetAt) - Date.parse(lastUnknownAt)) / HOUR_MS
+        + EPSILON < truncationHours) {
+      throw new Error(label + ' conservativeResetAt is not bound to an expired unknown tail');
+    }
+    return;
+  }
+  if (lastUnknownAt !== null
+    && (Date.parse(stateTime) - Date.parse(lastUnknownAt)) / HOUR_MS
+      + EPSILON >= truncationHours) {
+    throw new Error(label + ' is missing its required conservativeResetAt marker');
+  }
+}
+
+function canonicalHistoryBounds(value, stateTime) {
+  if (!hasExactKeys(value, HISTORY_BOUNDS_KEYS)
+    || value.schemaVersion !== HISTORY_BOUNDS_SCHEMA_VERSION
+    || !hasExactKeys(value.current, CURRENT_HISTORY_BOUND_KEYS)
+    || !hasExactKeys(value.waveMobilisation, WAVE_HISTORY_BOUND_KEYS)
+    || !hasExactKeys(value.lastMile, LAST_MILE_HISTORY_BOUND_KEYS)) {
+    throw new Error('Integrated RavScore history bounds have an incompatible schema');
+  }
+  const currentLower = boundedPotential(
+    value.current.lowerPotential,
+    'Current lower history bound',
+    { nullable: true },
+  );
+  const currentUpper = boundedPotential(
+    value.current.upperPotential,
+    'Current upper history bound',
+    { nullable: true },
+  );
+  if ((currentLower === null) !== (currentUpper === null)
+    || (currentLower !== null && currentLower > currentUpper + EPSILON)) {
+    throw new Error('Integrated current history bounds are inconsistent');
+  }
+  const waveLower = boundedPotential(
+    value.waveMobilisation.lowerPotential,
+    'Wave mobilisation lower history bound',
+  );
+  const waveUpper = boundedPotential(
+    value.waveMobilisation.upperPotential,
+    'Wave mobilisation upper history bound',
+  );
+  if (waveLower > waveUpper + EPSILON) {
+    throw new Error('Integrated wave mobilisation history bounds are inverted');
+  }
+  const canonical = {
+    schemaVersion: HISTORY_BOUNDS_SCHEMA_VERSION,
+    current: {
+      lowerPotential: currentLower,
+      upperPotential: currentUpper,
+    },
+    waveMobilisation: {
+      lowerPotential: waveLower,
+      upperPotential: waveUpper,
+      lastUnknownAt: optionalHistoricalTime(
+        value.waveMobilisation.lastUnknownAt,
+        stateTime,
+        'Wave mobilisation lastUnknownAt',
+      ),
+      conservativeResetAt: optionalHistoricalTime(
+        value.waveMobilisation.conservativeResetAt,
+        stateTime,
+        'Wave mobilisation conservativeResetAt',
+      ),
+    },
+    lastMile: {
+      minimumFactorTrack: boundedMomentTrack(
+        value.lastMile.minimumFactorTrack,
+        'Last-mile minimum-factor track',
+      ),
+      maximumFactorTrack: boundedMomentTrack(
+        value.lastMile.maximumFactorTrack,
+        'Last-mile maximum-factor track',
+      ),
+      lastUnknownAt: optionalHistoricalTime(
+        value.lastMile.lastUnknownAt,
+        stateTime,
+        'Last-mile lastUnknownAt',
+      ),
+      conservativeResetAt: optionalHistoricalTime(
+        value.lastMile.conservativeResetAt,
+        stateTime,
+        'Last-mile conservativeResetAt',
+      ),
+    },
+  };
+  assertCanonicalTailMarkers({
+    ...canonical.waveMobilisation,
+    stateTime,
+    truncationHours:
+      RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationUncertaintyTruncationHours,
+    label: 'Wave mobilisation history',
+  });
+  assertCanonicalTailMarkers({
+    ...canonical.lastMile,
+    stateTime,
+    truncationHours:
+      RAVSCORE_HISTORY_UNCERTAINTY_POLICY.lastMileUncertaintyTruncationHours,
+    label: 'Last-mile history',
+  });
+  return canonical;
+}
+
+function lastMileFactorFromTrack(track) {
+  const activity = track.activityMoment;
+  const penalty = Math.max(0, Math.min(
+    activity,
+    (activity - track.normalMoment)
+      / (1 - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment),
+  ));
+  return Math.max(
+    RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor,
+    Math.min(
+      RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor,
+      1 - RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare * penalty,
+    ),
+  );
+}
+
+function collapsedHistoryBoundsFromPointState(state) {
+  const waveApproach = state.waveApproachState;
+  if (state.currentMemoryReady !== true
+    || !CURRENT_SUPPLY_MEMORY_POLICY.readyStatuses.includes(state.currentMemoryStatus)
+    || !finite(state.supplyPotential)
+    || state.waveMemoryReady !== true
+    || !RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(state.waveMemoryStatus)
+    || !finite(state.mobilisationPotential)
+    || !waveApproach
+    || waveApproach.readiness !== true
+    || !RAVSCORE_LAST_MILE_POLICY.readyStatuses.includes(waveApproach.status)
+    || !finite(waveApproach.waveActivityMoment)
+    || !finite(waveApproach.waveNormalMoment)) {
+    throw new Error('Schema-5 history-bound migration requires one READY point state');
+  }
+  return canonicalHistoryBounds({
+    schemaVersion: HISTORY_BOUNDS_SCHEMA_VERSION,
+    current: {
+      lowerPotential: state.supplyPotential,
+      upperPotential: state.supplyPotential,
+    },
+    waveMobilisation: {
+      lowerPotential: state.mobilisationPotential,
+      upperPotential: state.mobilisationPotential,
+      lastUnknownAt: null,
+      conservativeResetAt: null,
+    },
+    lastMile: {
+      minimumFactorTrack: {
+        activityMoment: waveApproach.waveActivityMoment,
+        normalMoment: waveApproach.waveNormalMoment,
+      },
+      maximumFactorTrack: {
+        activityMoment: waveApproach.waveActivityMoment,
+        normalMoment: waveApproach.waveNormalMoment,
+      },
+      lastUnknownAt: null,
+      conservativeResetAt: null,
+    },
+  }, state.time);
+}
+
+function schema5IntegratedState(value) {
+  return value?.schemaVersion === RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION
+    && value.modelId === RAVSCORE_MODEL_ID
+    && value.variantId === RAVSCORE_VARIANT_ID
+    && value.profileId === INTEGRATED_V5_PROFILE_ID
+    && value.componentSchemaId === INTEGRATED_V5_COMPONENT_SCHEMA_ID
+    && value.explanationSchemaId === INTEGRATED_V5_EXPLANATION_SCHEMA_ID
+    && value.rankingPolicyId === INTEGRATED_V5_RANKING_POLICY_ID
+    && value.bestTimePolicyId === INTEGRATED_V5_BEST_TIME_POLICY_ID
+    && value.presentationPolicyId === RAVSCORE_PRESENTATION_POLICY_ID
+    && value.modelContractSha256 === RAVSCORE_STATE_V5_MODEL_CONTRACT_SHA256
+    && value.modelBundleSha256 === RAVSCORE_STATE_V5_MODEL_BUNDLE_SHA256
+    && hasExactKeys(value, INTEGRATED_V5_CONTINUATION_KEYS);
+}
+
+function migrateIntegratedStateV5(value) {
+  if (!schema5IntegratedState(value)) return null;
+  const lineage = value.lineage?.migrationId === INTEGRATED_V5_MIGRATION_ID
+    ? { ...value.lineage, migrationId: RAVSCORE_MIGRATION_ID }
+    : value.lineage;
+  return {
+    ...value,
+    schemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
+    profileId: RAVSCORE_PROFILE_ID,
+    componentSchemaId: RAVSCORE_COMPONENT_SCHEMA_ID,
+    explanationSchemaId: RAVSCORE_EXPLANATION_SCHEMA_ID,
+    rankingPolicyId: RAVSCORE_RANKING_POLICY_ID,
+    bestTimePolicyId: RAVSCORE_BEST_TIME_POLICY_ID,
+    modelContractSha256: RAVSCORE_MODEL_CONTRACT_SHA256,
+    modelBundleSha256: RAVSCORE_MODEL_BUNDLE_SHA256,
+    currentNativeHoldIntervalEnds: [],
+    historyBounds: collapsedHistoryBoundsFromPointState(value),
+    lineage,
+  };
+}
+
+function waveTransitionBound(from, target, durationHours) {
+  if (!(durationHours > 0) || Math.abs(from - target) <= EPSILON) return from;
+  const halfLifeHours = target > from
+    ? RAVSCORE_WAVE_MOBILISATION_POLICY.buildHalfLifeHours
+    : RAVSCORE_WAVE_MOBILISATION_POLICY.decayHalfLifeHours;
+  const fraction = 1 - 2 ** (-durationHours / halfLifeHours);
+  return Math.max(0, Math.min(100, from + (target - from) * fraction));
+}
+
+function unknownWaveTransition(bounds, durationHours) {
+  return {
+    lowerPotential: waveTransitionBound(bounds.lowerPotential, 0, durationHours),
+    upperPotential: waveTransitionBound(bounds.upperPotential, 100, durationHours),
+  };
+}
+
+function knownWaveTransition(bounds, target, durationHours) {
+  const lower = waveTransitionBound(bounds.lowerPotential, target, durationHours);
+  const upper = waveTransitionBound(bounds.upperPotential, target, durationHours);
+  return {
+    lowerPotential: Math.min(lower, upper),
+    upperPotential: Math.max(lower, upper),
+  };
+}
+
+function advanceWaveHistoryBounds(previous, row, sample) {
+  let bounds = {
+    lowerPotential: previous.lowerPotential,
+    upperPotential: previous.upperPotential,
+  };
+  let lastUnknownAt = previous.lastUnknownAt;
+  let conservativeResetAt = previous.conservativeResetAt;
+  const elapsedHours = Math.max(0, Number(row.elapsedHours) || 0);
+  const creditedHours = Math.max(0, Number(row.creditedDurationHours) || 0);
+  const energy = waveMobilisationEnergy({
+    waveHeightM: sample.waveHeightM,
+    wavePeriodS: sample.wavePeriodS,
+  });
+  if (!energy.available) {
+    bounds = unknownWaveTransition(bounds, elapsedHours);
+    lastUnknownAt = row.time;
+    conservativeResetAt = null;
+  } else {
+    const migrationBinding = String(row.transition ?? '')
+      .startsWith('MIGRATED_FROM_CANDIDATE_G');
+    const unknownHours = migrationBinding
+      ? 0
+      : Math.max(0, elapsedHours - creditedHours);
+    if (unknownHours > EPSILON) {
+      bounds = unknownWaveTransition(bounds, unknownHours);
+      lastUnknownAt = row.time;
+      conservativeResetAt = null;
+    }
+    bounds = knownWaveTransition(bounds, energy.energyScore, creditedHours);
+  }
+  // Before the first declared tail reset the ordinary point track is one
+  // member of the enclosing interval. After a reset, scoring intentionally
+  // continues on its separate conservative lower trajectory; the diagnostic
+  // point and Candidate-G rollback tracks remain untouched and must not widen
+  // the reset scoring state again.
+  if (conservativeResetAt === null) {
+    bounds.lowerPotential = Math.min(bounds.lowerPotential, row.mobilisationPotential);
+    bounds.upperPotential = Math.max(bounds.upperPotential, row.mobilisationPotential);
+  }
+  const unknownAgeHours = lastUnknownAt === null
+    ? Number.POSITIVE_INFINITY
+    : (Date.parse(row.time) - Date.parse(lastUnknownAt)) / HOUR_MS;
+  if (historyUncertaintyOpen(lastUnknownAt, conservativeResetAt)
+    && unknownAgeHours
+      >= RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationUncertaintyTruncationHours) {
+    bounds = {
+      lowerPotential: bounds.lowerPotential,
+      upperPotential: bounds.lowerPotential,
+    };
+    conservativeResetAt = row.time;
+  }
+  return {
+    ...bounds,
+    lastUnknownAt,
+    conservativeResetAt,
+  };
+}
+
+function advanceLastMileTrack(track, weight, normalAlignment, durationHours) {
+  if (!(durationHours > 0)) return { ...track };
+  const retained = 2 ** (
+    -durationHours / RAVSCORE_LAST_MILE_POLICY.directionalHalfLifeHours
+  );
+  const incoming = 1 - retained;
+  return {
+    activityMoment: retained * track.activityMoment + incoming * weight,
+    normalMoment: retained * track.normalMoment
+      + incoming * weight * normalAlignment,
+  };
+}
+
+function advanceUnknownLastMile(bounds, durationHours) {
+  return {
+    minimumFactorTrack: advanceLastMileTrack(
+      bounds.minimumFactorTrack,
+      1,
+      -1,
+      durationHours,
+    ),
+    maximumFactorTrack: advanceLastMileTrack(
+      bounds.maximumFactorTrack,
+      0,
+      0,
+      durationHours,
+    ),
+  };
+}
+
+function lastMileEvidence(sample, onshoreDirectionDeg) {
+  const energy = waveMobilisationEnergy({
+    waveHeightM: sample.waveHeightM,
+    wavePeriodS: sample.wavePeriodS,
+  });
+  if (!energy.available) return { kind: 'UNKNOWN_PHYSICS' };
+  const weight = Math.max(0, Math.min(1, energy.energyScore / 100));
+  if (energy.exactCalm) return { kind: 'KNOWN', weight: 0, normalAlignment: 0 };
+  if (!finite(sample.waveDirectionDeg)
+    || sample.waveDirectionDeg < 0 || sample.waveDirectionDeg >= 360) {
+    return { kind: 'UNKNOWN_DIRECTION', weight };
+  }
+  const towardDirection = (Number(sample.waveDirectionDeg) + 180) % 360;
+  return {
+    kind: 'KNOWN',
+    weight,
+    normalAlignment: Math.cos(
+      (towardDirection - onshoreDirectionDeg) * Math.PI / 180,
+    ),
+  };
+}
+
+function advanceLastMileHistoryBounds(previous, row, sample, onshoreDirectionDeg) {
+  let bounds = {
+    minimumFactorTrack: { ...previous.minimumFactorTrack },
+    maximumFactorTrack: { ...previous.maximumFactorTrack },
+  };
+  let lastUnknownAt = previous.lastUnknownAt;
+  let conservativeResetAt = previous.conservativeResetAt;
+  const elapsedHours = Math.max(0, Number(row.elapsedHours) || 0);
+  const creditedHours = Math.max(0, Number(row.creditedDurationHours) || 0);
+  const evidence = lastMileEvidence(sample, onshoreDirectionDeg);
+  if (evidence.kind === 'UNKNOWN_PHYSICS') {
+    bounds = advanceUnknownLastMile(bounds, elapsedHours);
+    lastUnknownAt = row.time;
+    conservativeResetAt = null;
+  } else {
+    // The point-state builder cannot credit a row without direction. Bounds
+    // can still use its known Hs/T energy over the same causally creditable
+    // duration, with opposing -1/+1 normal tracks. A long or cold gap remains
+    // wholly unknown; the first row therefore receives no invented duration.
+    const directionalHours = evidence.kind === 'UNKNOWN_DIRECTION'
+      ? finite(row.gapHours)
+        && row.gapHours <= RAVSCORE_LAST_MILE_POLICY.maximumFreshGapHours + EPSILON
+        ? elapsedHours <= RAVSCORE_LAST_MILE_POLICY.maximumContinuousIntervalHours + EPSILON
+          ? elapsedHours
+          : Math.min(
+            RAVSCORE_LAST_MILE_POLICY.maximumRecoveryCreditHours,
+            Math.max(0, row.gapHours),
+          )
+        : 0
+      : creditedHours;
+    const unknownHours = Math.max(0, elapsedHours - directionalHours);
+    if (unknownHours > EPSILON) {
+      bounds = advanceUnknownLastMile(bounds, unknownHours);
+      lastUnknownAt = row.time;
+      conservativeResetAt = null;
+    }
+    if (evidence.kind === 'UNKNOWN_DIRECTION') {
+      bounds = {
+        minimumFactorTrack: advanceLastMileTrack(
+          bounds.minimumFactorTrack,
+          evidence.weight,
+          -1,
+          directionalHours,
+        ),
+        maximumFactorTrack: advanceLastMileTrack(
+          bounds.maximumFactorTrack,
+          evidence.weight,
+          1,
+          directionalHours,
+        ),
+      };
+      lastUnknownAt = row.time;
+      conservativeResetAt = null;
+    } else {
+      bounds = {
+        minimumFactorTrack: advanceLastMileTrack(
+          bounds.minimumFactorTrack,
+          evidence.weight,
+          evidence.normalAlignment,
+          creditedHours,
+        ),
+        maximumFactorTrack: advanceLastMileTrack(
+          bounds.maximumFactorTrack,
+          evidence.weight,
+          evidence.normalAlignment,
+          creditedHours,
+        ),
+      };
+    }
+  }
+  const unknownAgeHours = lastUnknownAt === null
+    ? Number.POSITIVE_INFINITY
+    : (Date.parse(row.time) - Date.parse(lastUnknownAt)) / HOUR_MS;
+  if (historyUncertaintyOpen(lastUnknownAt, conservativeResetAt)
+    && unknownAgeHours
+      >= RAVSCORE_HISTORY_UNCERTAINTY_POLICY.lastMileUncertaintyTruncationHours) {
+    bounds = {
+      minimumFactorTrack: { ...bounds.minimumFactorTrack },
+      maximumFactorTrack: { ...bounds.minimumFactorTrack },
+    };
+    conservativeResetAt = row.time;
+  }
+  return {
+    ...bounds,
+    lastUnknownAt,
+    conservativeResetAt,
+  };
+}
+
+function buildHistoryScoreView(current, wave, lastMile) {
+  const reasonCodes = new Set(current.reasonCodes ?? []);
+  const factorLower = lastMileFactorFromTrack(lastMile.minimumFactorTrack);
+  const factorUpper = lastMileFactorFromTrack(lastMile.maximumFactorTrack);
+  if (historyUncertaintyOpen(wave.lastUnknownAt, wave.conservativeResetAt)) {
+    reasonCodes.add('WAVE_MOBILISATION_HISTORY_INCOMPLETE');
+  }
+  if (historyUncertaintyOpen(lastMile.lastUnknownAt, lastMile.conservativeResetAt)) {
+    reasonCodes.add('LAST_MILE_HISTORY_INCOMPLETE');
+  }
+  const available = current.available === true;
+  const quality = !available
+    ? RAVSCORE_SCORE_QUALITY.UNAVAILABLE
+    : current.quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY
+      && !historyUncertaintyOpen(wave.lastUnknownAt, wave.conservativeResetAt)
+      && !historyUncertaintyOpen(lastMile.lastUnknownAt, lastMile.conservativeResetAt)
+      ? RAVSCORE_SCORE_QUALITY.FULL_HISTORY
+      : RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE;
+  return {
+    available,
+    quality,
+    calibrationEligible: quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+    coverageHours: current.coverageHours,
+    requiredHours: current.windowHours,
+    reasonCodes: [...reasonCodes],
+    conservativeTailResetApplied: wave.conservativeResetAt !== null
+      || lastMile.conservativeResetAt !== null,
+    current: {
+      lowerPotential: current.lowerPotential,
+      upperPotential: current.upperPotential,
+    },
+    waveMobilisation: {
+      lowerPotential: wave.lowerPotential,
+      upperPotential: wave.upperPotential,
+    },
+    lastMile: {
+      lowerFactor: factorLower,
+      upperFactor: factorUpper,
+    },
+  };
 }
 
 function canonicalNativeHoldAuthorization(value) {
@@ -256,29 +849,59 @@ function canonicalLineage(value, stateTime) {
         value.waveApproachMaximumScoreErrorBeforeRounding,
     };
   }
-  const coldReplayKeys = ['recoveryId', 'replayedHourCount', 'source', 'targetReferenceAt'];
+  const coldReplayKeys = [
+    'boundedUnknownPositionCount',
+    'completeCausalPositionCount',
+    'expectedCausalPositionCount',
+    'historyTransition',
+    'recoveryId',
+    'source',
+    'targetReferenceAt',
+  ];
   const targetReferenceAt = canonicalTime(value.targetReferenceAt);
+  const expected = RAVSCORE_RECOVERY_POLICY.coldReplayHours;
+  const complete = Number(value.completeCausalPositionCount);
+  const unknown = Number(value.boundedUnknownPositionCount);
+  const expectedTransition = unknown > 0
+    ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+    : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition;
   if (!hasExactKeys(value, coldReplayKeys)
     || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID
     || value.source !== RAVSCORE_RECOVERY_POLICY.source
-    || value.replayedHourCount !== RAVSCORE_RECOVERY_POLICY.coldReplayHours
+    || value.expectedCausalPositionCount !== expected
+    || !Number.isInteger(complete)
+    || !Number.isInteger(unknown)
+    || complete < 0
+    || unknown < 0
+    || complete + unknown !== expected
+    || value.historyTransition !== expectedTransition
     || !targetReferenceAt
     || (stateTime && Date.parse(targetReferenceAt) > Date.parse(stateTime))) {
     throw new Error('Integrated RavScore cold-replay lineage is incompatible');
   }
   return {
+    boundedUnknownPositionCount: unknown,
+    completeCausalPositionCount: complete,
+    expectedCausalPositionCount: expected,
+    historyTransition: expectedTransition,
     recoveryId: RAVSCORE_COLD_REPLAY_ID,
     source: RAVSCORE_RECOVERY_POLICY.source,
-    replayedHourCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
     targetReferenceAt,
   };
 }
 
 function verifiedColdReplayBootstrap(value, ordered) {
   if (value === null || value === undefined) return null;
-  if (!hasExactKeys(value, ['recoveryId', 'replayedHourCount', 'targetReferenceAt'])
-    || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID
-    || value.replayedHourCount !== RAVSCORE_RECOVERY_POLICY.coldReplayHours) {
+  const keys = [
+    'boundedUnknownPositionCount',
+    'completeCausalPositionCount',
+    'expectedCausalPositionCount',
+    'historyTransition',
+    'recoveryId',
+    'targetReferenceAt',
+  ];
+  if (!hasExactKeys(value, keys)
+    || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID) {
     throw new Error('Integrated RavScore cold-replay bootstrap proof is invalid');
   }
   const targetReferenceAt = canonicalTime(value.targetReferenceAt);
@@ -287,20 +910,48 @@ function verifiedColdReplayBootstrap(value, ordered) {
   }
   const targetMs = Date.parse(targetReferenceAt);
   const replayHours = RAVSCORE_RECOVERY_POLICY.coldReplayHours;
-  const expected = Array.from({ length: replayHours }, (_, index) =>
+  const expectedTimes = Array.from({ length: replayHours }, (_, index) =>
     new Date(targetMs - (replayHours - index) * HOUR_MS).toISOString());
-  const beforeTarget = ordered
-    .filter(row => Date.parse(row.time) < targetMs)
-    .map(row => row.time);
-  if (beforeTarget.length !== replayHours
-    || beforeTarget.some((time, index) => time !== expected[index])
+  const expectedTimeSet = new Set(expectedTimes);
+  const beforeTarget = ordered.filter(row => Date.parse(row.time) < targetMs);
+  if (beforeTarget.some(row => !expectedTimeSet.has(row.time))
     || !ordered.some(row => row.time === targetReferenceAt)) {
-    throw new Error('Integrated RavScore cold replay is not an exact verified 48-hour bridge');
+    throw new Error('Integrated RavScore cold replay is outside its causal 48-hour window');
+  }
+  const rowsByTime = new Map(beforeTarget.map(row => [row.time, row]));
+  const completeCausalPositionCount = expectedTimes.reduce((count, time) => {
+    const row = rowsByTime.get(time);
+    if (!row) return count;
+    const currentComplete = row.currentVerified === true
+      && finite(currentCoastNormalSpeed(row));
+    const wave = classifyWavePhysicalTuple({
+      waveHeightM: row.waveHeightM,
+      wavePeriodS: row.wavePeriodS,
+    });
+    const waveComplete = wave.available === true
+      && (wave.exactCalm === true
+        || (finite(row.waveDirectionDeg)
+          && row.waveDirectionDeg >= 0
+          && row.waveDirectionDeg < 360));
+    return count + (currentComplete && waveComplete ? 1 : 0);
+  }, 0);
+  const boundedUnknownPositionCount = replayHours - completeCausalPositionCount;
+  const historyTransition = boundedUnknownPositionCount > 0
+    ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+    : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition;
+  if (value.expectedCausalPositionCount !== replayHours
+    || value.completeCausalPositionCount !== completeCausalPositionCount
+    || value.boundedUnknownPositionCount !== boundedUnknownPositionCount
+    || value.historyTransition !== historyTransition) {
+    throw new Error('Integrated RavScore cold-replay causal-position proof is invalid');
   }
   return {
+    boundedUnknownPositionCount,
+    completeCausalPositionCount,
+    expectedCausalPositionCount: replayHours,
+    historyTransition,
     recoveryId: RAVSCORE_COLD_REPLAY_ID,
     source: RAVSCORE_RECOVERY_POLICY.source,
-    replayedHourCount: replayHours,
     targetReferenceAt,
   };
 }
@@ -382,6 +1033,7 @@ export function validateCandidateGMigrationSource(
     throw new Error('Candidate G migration metadata contradicts its signed evidence oracle');
   }
   return {
+    canonicalState: initialState,
     time,
     currentReferenceAt,
     transportEvidence: evidence.map(item => ({ ...item })),
@@ -523,6 +1175,12 @@ function waveApproachContinuationFromIntegratedState(state) {
 }
 
 function validateIntegratedState(initialState, samplingContextKey, firstSampleTime) {
+  const claimedSchema5 = initialState?.schemaVersion === RAVSCORE_PREVIOUS_STATE_SCHEMA_VERSION;
+  const migratedSchema5 = migrateIntegratedStateV5(initialState);
+  if (claimedSchema5 && migratedSchema5 === null) {
+    throw new Error('Integrated schema-5 state is not eligible for deterministic migration');
+  }
+  if (migratedSchema5 !== null) initialState = migratedSchema5;
   if (initialState.schemaVersion !== RAVSCORE_STATE_SCHEMA_VERSION
     || initialState.modelId !== RAVSCORE_MODEL_ID
     || initialState.variantId !== RAVSCORE_VARIANT_ID
@@ -587,6 +1245,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
   const rebuilt = buildCurrentSupplyMemory(evidence, {
     referenceTime: time,
     nativeHold,
+    nativeHoldIntervalEnds: initialState.currentNativeHoldIntervalEnds,
   });
   const rebuiltPotentialMatches = rebuilt.supplyPotential === null
     ? initialState.supplyPotential === null
@@ -599,8 +1258,30 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     || initialState.currentMemoryWindowHours !== rebuilt.windowHours
     || !close(initialState.currentMemoryCoverageHours, rebuilt.coverageHours)
     || !rebuiltPotentialMatches
-    || JSON.stringify(initialState.currentEvidence) !== JSON.stringify(evidence)) {
+    || JSON.stringify(initialState.currentEvidence) !== JSON.stringify(evidence)
+    || JSON.stringify(initialState.currentNativeHoldIntervalEnds)
+      !== JSON.stringify(rebuilt.nativeHoldIntervalEnds)) {
     throw new Error('Integrated RavScore state contradicts its signed current evidence');
+  }
+  const historyBounds = canonicalHistoryBounds(initialState.historyBounds, time);
+  const currentScoreBounds = buildCurrentSupplyScoreBounds(evidence, {
+    referenceTime: time,
+    nativeHold,
+    nativeHoldIntervalEnds: rebuilt.nativeHoldIntervalEnds,
+  });
+  const expectedCurrentLower = currentScoreBounds.available
+    ? currentScoreBounds.lowerPotential
+    : null;
+  const expectedCurrentUpper = currentScoreBounds.available
+    ? currentScoreBounds.upperPotential
+    : null;
+  if ((expectedCurrentLower === null
+      ? historyBounds.current.lowerPotential !== null
+      : !close(expectedCurrentLower, historyBounds.current.lowerPotential))
+    || (expectedCurrentUpper === null
+      ? historyBounds.current.upperPotential !== null
+      : !close(expectedCurrentUpper, historyBounds.current.upperPotential))) {
+    throw new Error('Integrated RavScore current bounds contradict signed evidence');
   }
   const waveState = waveContinuationFromIntegratedState({
     ...initialState,
@@ -618,6 +1299,71 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     || waveApproachValidation.continuationState?.time !== time) {
     throw new Error('Integrated RavScore wave-approach state is not bound to parent time');
   }
+  const waveConservativeReset =
+    historyBounds.waveMobilisation.conservativeResetAt !== null;
+  if (!waveConservativeReset
+    && (historyBounds.waveMobilisation.lowerPotential
+        > initialState.mobilisationPotential + EPSILON
+      || historyBounds.waveMobilisation.upperPotential
+        < initialState.mobilisationPotential - EPSILON)) {
+    throw new Error('Integrated RavScore wave point lies outside its history bounds');
+  }
+  const pointLastMileTrack = {
+    activityMoment: waveApproachState.waveActivityMoment,
+    normalMoment: waveApproachState.waveNormalMoment,
+  };
+  const pointLastMileFactor = lastMileFactorFromTrack(pointLastMileTrack);
+  const lowerLastMileFactor = lastMileFactorFromTrack(
+    historyBounds.lastMile.minimumFactorTrack,
+  );
+  const upperLastMileFactor = lastMileFactorFromTrack(
+    historyBounds.lastMile.maximumFactorTrack,
+  );
+  const lastMileConservativeReset = historyBounds.lastMile.conservativeResetAt !== null;
+  if (lowerLastMileFactor > upperLastMileFactor + EPSILON
+    || (!lastMileConservativeReset
+      && (pointLastMileFactor < lowerLastMileFactor - EPSILON
+        || pointLastMileFactor > upperLastMileFactor + EPSILON))) {
+    throw new Error('Integrated RavScore last-mile point lies outside its history bounds');
+  }
+  if (!historyUncertaintyOpen(
+    historyBounds.waveMobilisation.lastUnknownAt,
+    historyBounds.waveMobilisation.conservativeResetAt,
+  )
+    && (!close(
+      historyBounds.waveMobilisation.lowerPotential,
+      historyBounds.waveMobilisation.upperPotential,
+    )
+      || (!waveConservativeReset
+        && !close(
+          historyBounds.waveMobilisation.lowerPotential,
+          initialState.mobilisationPotential,
+        )))) {
+    throw new Error('Integrated RavScore exact wave history must have collapsed bounds');
+  }
+  if (!historyUncertaintyOpen(
+    historyBounds.lastMile.lastUnknownAt,
+    historyBounds.lastMile.conservativeResetAt,
+  )
+    && (!close(
+      historyBounds.lastMile.minimumFactorTrack.activityMoment,
+      historyBounds.lastMile.maximumFactorTrack.activityMoment,
+    )
+      || !close(
+        historyBounds.lastMile.minimumFactorTrack.normalMoment,
+        historyBounds.lastMile.maximumFactorTrack.normalMoment,
+      )
+      || (!lastMileConservativeReset
+        && (!close(
+          historyBounds.lastMile.minimumFactorTrack.activityMoment,
+          pointLastMileTrack.activityMoment,
+        )
+          || !close(
+            historyBounds.lastMile.minimumFactorTrack.normalMoment,
+            pointLastMileTrack.normalMoment,
+          ))))) {
+    throw new Error('Integrated RavScore exact last-mile history must have collapsed tracks');
+  }
   const lineage = canonicalLineage(initialState.lineage, time);
   const lineageTime = lineage?.migratedAt ?? lineage?.targetReferenceAt ?? null;
   const initialLineageTime = initialState.lineage?.migratedAt
@@ -631,9 +1377,13 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     currentReferenceAt,
     currentEvidence: evidence,
     currentNativeHoldAuthorization,
+    currentNativeHoldIntervalEnds: rebuilt.nativeHoldIntervalEnds,
     waveState,
     waveApproachState,
+    historyBounds,
+    stateV5MigrationApplied: migratedSchema5 !== null,
     lineage,
+    canonicalState: initialState,
   };
 }
 
@@ -647,7 +1397,14 @@ function candidateGContext(initialState) {
     || initialState?.modelId === CANDIDATE_G_STATE_MODEL_ID;
 }
 
-function compactIntegratedState({ samplingContextKey, current, wave, waveApproach, lineage }) {
+function compactIntegratedState({
+  samplingContextKey,
+  current,
+  wave,
+  waveApproach,
+  historyBounds,
+  lineage,
+}) {
   return {
     schemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
     modelId: RAVSCORE_MODEL_ID,
@@ -669,6 +1426,7 @@ function compactIntegratedState({ samplingContextKey, current, wave, waveApproac
     currentMemoryCoverageHours: current.coverageHours,
     currentEvidence: current.evidence.map(item => ({ ...item })),
     currentNativeHoldAuthorization: current.currentNativeHoldAuthorization,
+    currentNativeHoldIntervalEnds: [...current.nativeHoldIntervalEnds],
     supplyPotential: current.memoryReady ? current.supplyPotential : null,
     waveStateSchemaVersion: RAVSCORE_WAVE_MOBILISATION_STATE_SCHEMA_VERSION,
     wavePolicyId: RAVSCORE_WAVE_MOBILISATION_POLICY.id,
@@ -683,15 +1441,20 @@ function compactIntegratedState({ samplingContextKey, current, wave, waveApproac
     rollbackCandidateGMobilisationPotential:
       wave.rollbackCandidateGMobilisationPotential,
     waveApproachState: { ...waveApproach.continuationState },
+    historyBounds: canonicalHistoryBounds(
+      historyBounds,
+      current.requestedReferenceTime,
+    ),
     lineage,
   };
 }
 
 /**
- * Builds the integrated schema-5 state from existing hourly rows. It accepts
- * either the same model's compact continuation or one exact Candidate G
- * schema-2 state. All raw weather remains in the caller and never enters the
- * compact continuation.
+ * Builds the integrated schema-6 state from existing hourly rows. It accepts
+ * the same model's compact continuation, one exact READY schema-5 point state
+ * for deterministic bounds migration, or one exact Candidate G schema-2
+ * state. All raw weather remains in the caller and never enters the compact
+ * continuation.
  */
 export function buildIntegratedRavScoreStateSeries(
   samples = [],
@@ -739,13 +1502,17 @@ export function buildIntegratedRavScoreStateSeries(
   let initialStateSource = 'COLD_START';
   let currentEvidence = [];
   let currentNativeHoldAuthorization = null;
+  let currentNativeHoldIntervalEnds = [];
+  let currentNativeHoldCoveredThroughAt = null;
   let initialWaveState = null;
   let initialWaveApproachState = null;
+  let initialHistoryBounds = null;
   let waveMigrationSeed = null;
   let lineage = null;
   let initialCausalTime = null;
   let initialCurrentReferenceAt = null;
   let coldReplayTargetAt = null;
+  let stateV5MigrationApplied = false;
 
   if (initialState !== null && initialState !== undefined && coldReplayBootstrap !== null) {
     throw new Error('Integrated RavScore cannot combine continuation and cold replay');
@@ -758,7 +1525,9 @@ export function buildIntegratedRavScoreStateSeries(
   if (initialState === null || initialState === undefined) {
     const coldReplay = verifiedColdReplayBootstrap(coldReplayBootstrap, ordered);
     if (coldReplay) {
-      initialStateSource = 'VERIFIED_PRIVATE_48H_COLD_REPLAY';
+      initialStateSource = coldReplay.boundedUnknownPositionCount === 0
+        ? 'VERIFIED_PRIVATE_48H_COLD_REPLAY'
+        : 'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY';
       lineage = coldReplay;
       coldReplayTargetAt = coldReplay.targetReferenceAt;
     }
@@ -776,8 +1545,18 @@ export function buildIntegratedRavScoreStateSeries(
       initialStateSource = 'INTEGRATED_CONTINUATION';
       currentEvidence = continued.currentEvidence.map(item => ({ ...item }));
       currentNativeHoldAuthorization = continued.currentNativeHoldAuthorization;
+      currentNativeHoldIntervalEnds = [...continued.currentNativeHoldIntervalEnds];
+      currentNativeHoldCoveredThroughAt = currentNativeHoldAuthorization === null
+        ? null
+        : continued.time;
       initialWaveState = continued.waveState;
       initialWaveApproachState = continued.waveApproachState;
+      initialHistoryBounds = continued.historyBounds;
+      stateV5MigrationApplied = continued.stateV5MigrationApplied;
+      if (stateV5MigrationApplied) {
+        initialStateSource = 'INTEGRATED_SCHEMA5_READY_POINT_MIGRATION';
+        initialState = continued.canonicalState;
+      }
       lineage = continued.lineage;
     } else {
       const migrated = validateCandidateGMigrationSource(
@@ -802,6 +1581,7 @@ export function buildIntegratedRavScoreStateSeries(
       currentEvidence = currentBootstrap.currentEvidence.map(item => ({ ...item }));
       currentNativeHoldAuthorization =
         currentBootstrap.currentNativeHoldAuthorization;
+      currentNativeHoldIntervalEnds = [];
       if (!firstSampleTime) {
         throw new Error('Candidate G migration requires an exact target sample');
       }
@@ -834,6 +1614,31 @@ export function buildIntegratedRavScoreStateSeries(
         waveApproachMaximumScoreErrorBeforeRounding:
           RAVSCORE_RECOVERY_POLICY
             .candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
+      };
+      initialHistoryBounds = {
+        schemaVersion: HISTORY_BOUNDS_SCHEMA_VERSION,
+        current: {
+          lowerPotential: null,
+          upperPotential: null,
+        },
+        waveMobilisation: {
+          lowerPotential: migrated.mobilisationPotential,
+          upperPotential: migrated.mobilisationPotential,
+          lastUnknownAt: null,
+          conservativeResetAt: null,
+        },
+        lastMile: {
+          minimumFactorTrack: {
+            activityMoment: initialWaveApproachState.waveActivityMoment,
+            normalMoment: initialWaveApproachState.waveNormalMoment,
+          },
+          maximumFactorTrack: {
+            activityMoment: initialWaveApproachState.waveActivityMoment,
+            normalMoment: initialWaveApproachState.waveNormalMoment,
+          },
+          lastUnknownAt: null,
+          conservativeResetAt: null,
+        },
       };
     }
   }
@@ -882,6 +1687,7 @@ export function buildIntegratedRavScoreStateSeries(
     } else {
       throw new Error('Integrated RavScore native cadence reference predates persisted evidence');
     }
+    currentNativeHoldCoveredThroughAt = referenceEvidence.time;
   }
   if (migrationApplied
     && initialCurrentReferenceAt !== initialCausalTime
@@ -906,6 +1712,8 @@ export function buildIntegratedRavScoreStateSeries(
     const lastVerified = [...currentEvidence]
       .reverse()
       .find(item => finite(item?.strength)) ?? null;
+    const priorNativeHoldAuthorization = currentNativeHoldAuthorization;
+    const priorNativeHoldCoveredThroughAt = currentNativeHoldCoveredThroughAt;
     const ageHours = lastVerified
       ? (Date.parse(sample.time) - Date.parse(lastVerified.time)) / HOUR_MS
       : Number.POSITIVE_INFINITY;
@@ -943,20 +1751,74 @@ export function buildIntegratedRavScoreStateSeries(
       && currentNativeHoldAuthorization !== null
       && ageHours > 0
       && ageHours <= Number(nativeCadenceHoldHours) + EPSILON;
+    const nativeCadenceIntervalAttested = !sameTimeHold
+      && verifiedEvidence
+      && lastVerified !== null
+      && ageHours > CURRENT_SUPPLY_MEMORY_POLICY.expectedEvidenceIntervalHours + EPSILON
+      && ageHours <= CURRENT_SUPPLY_MEMORY_POLICY.maximumGapHours + EPSILON
+      && sameNativeHoldAuthorization(
+        priorNativeHoldAuthorization,
+        sampleNativeHoldAuthorization,
+      )
+      && priorNativeHoldAuthorization !== null
+      && priorNativeHoldCoveredThroughAt !== null
+      && Date.parse(priorNativeHoldCoveredThroughAt)
+        >= Date.parse(sample.time)
+          - CURRENT_SUPPLY_MEMORY_POLICY.expectedEvidenceIntervalHours * HOUR_MS
+          - EPSILON;
     if (!sameTimeHold && !nativeHold && evidence) {
+      if (nativeCadenceIntervalAttested) {
+        currentNativeHoldIntervalEnds.push(sample.time);
+      }
       currentEvidence.push(evidence);
       currentNativeHoldAuthorization = verifiedEvidence
         ? sampleNativeHoldAuthorization
         : null;
+      currentNativeHoldCoveredThroughAt = verifiedEvidence
+        && sampleNativeHoldAuthorization !== null
+        ? sample.time
+        : null;
+    } else if (nativeHold) {
+      currentNativeHoldCoveredThroughAt = sample.time;
+    } else if (sameTimeHold
+      && verifiedEvidence
+      && currentNativeHoldAuthorization !== null) {
+      currentNativeHoldCoveredThroughAt = sample.time;
     }
     const memory = buildCurrentSupplyMemory(currentEvidence, {
       referenceTime: sample.time,
       nativeHold,
+      nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
     });
     if (memory.evidence.length) currentEvidence = memory.evidence.map(item => ({ ...item }));
+    currentNativeHoldIntervalEnds = [...memory.nativeHoldIntervalEnds];
+    const directInputAvailable = verifiedEvidence || nativeHold;
+    const scoreBounds = directInputAvailable
+      && CURRENT_HISTORY_DEGRADABLE_STATUSES.has(memory.status)
+      ? buildCurrentSupplyScoreBounds(currentEvidence, {
+        referenceTime: sample.time,
+        nativeHold,
+        nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
+      })
+      : {
+        available: false,
+        quality: RAVSCORE_SCORE_QUALITY.UNAVAILABLE,
+        reason: directInputAvailable
+          ? 'CURRENT_HISTORY_STATE_INVALID'
+          : 'CURRENT_DIRECT_INPUT_MISSING',
+        windowHours: CURRENT_SUPPLY_MEMORY_POLICY.windowHours,
+        coverageHours: 0,
+        lowerPotential: null,
+        upperPotential: null,
+        reasonCodes: [directInputAvailable
+          ? 'CURRENT_HISTORY_STATE_INVALID'
+          : 'CURRENT_DIRECT_INPUT_MISSING'],
+      };
     return {
       ...memory,
+      scoreBounds,
       currentNativeHoldAuthorization,
+      nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
       transition: sameTimeHold ? 'SAME_TIME_HOLD'
         : nativeHold ? 'NATIVE_CADENCE_HOLD'
         : sample.currentVerified === true ? 'VERIFIED_REPLAY'
@@ -985,6 +1847,41 @@ export function buildIntegratedRavScoreStateSeries(
     throw new Error('Integrated RavScore current, wave and last-mile state rows diverged');
   }
 
+  let carriedHistoryBounds = initialHistoryBounds;
+  if (carriedHistoryBounds === null && ordered.length) {
+    carriedHistoryBounds = {
+      schemaVersion: HISTORY_BOUNDS_SCHEMA_VERSION,
+      current: {
+        lowerPotential: null,
+        upperPotential: null,
+      },
+      // Without a valid prior derived state, the historical mobilisation can
+      // be anywhere in its physical 0..100 index range. The first verified
+      // row anchors time but receives no invented duration.
+      waveMobilisation: {
+        lowerPotential: 0,
+        upperPotential: 100,
+        lastUnknownAt: ordered[0].time,
+        conservativeResetAt: null,
+      },
+      // The extreme last-mile tracks encode the strongest possible retained
+      // offshore activity versus no retained activity. They contain no raw
+      // height, period or direction.
+      lastMile: {
+        minimumFactorTrack: {
+          activityMoment: 1,
+          normalMoment: -1,
+        },
+        maximumFactorTrack: {
+          activityMoment: 0,
+          normalMoment: 0,
+        },
+        lastUnknownAt: ordered[0].time,
+        conservativeResetAt: null,
+      },
+    };
+  }
+
   const rows = currentRows.map((current, index) => {
     const wave = waveSeries.rows[index];
     const waveApproach = waveApproachSeries.rows[index];
@@ -992,16 +1889,47 @@ export function buildIntegratedRavScoreStateSeries(
       || waveApproach.time !== current.requestedReferenceTime) {
       throw new Error('Integrated RavScore current, wave and last-mile times diverged');
     }
+    const waveHistoryBounds = advanceWaveHistoryBounds(
+      carriedHistoryBounds.waveMobilisation,
+      wave,
+      ordered[index],
+    );
+    const lastMileHistoryBounds = advanceLastMileHistoryBounds(
+      carriedHistoryBounds.lastMile,
+      waveApproach,
+      ordered[index],
+      onshoreDirectionDeg,
+    );
+    const historyBounds = {
+      schemaVersion: HISTORY_BOUNDS_SCHEMA_VERSION,
+      current: {
+        lowerPotential: current.scoreBounds.available
+          ? current.scoreBounds.lowerPotential
+          : null,
+        upperPotential: current.scoreBounds.available
+          ? current.scoreBounds.upperPotential
+          : null,
+      },
+      waveMobilisation: waveHistoryBounds,
+      lastMile: lastMileHistoryBounds,
+    };
+    const historyScoreView = buildHistoryScoreView(
+      current.scoreBounds,
+      waveHistoryBounds,
+      lastMileHistoryBounds,
+    );
     const continuationState = compactIntegratedState({
       samplingContextKey,
       current,
       wave,
       waveApproach,
+      historyBounds,
       lineage: coldReplayTargetAt !== null
         && Date.parse(current.requestedReferenceTime) < Date.parse(coldReplayTargetAt)
         ? null
         : lineage,
     });
+    carriedHistoryBounds = historyBounds;
     return {
       time: current.requestedReferenceTime,
       currentReferenceAt: current.referenceTime,
@@ -1011,6 +1939,7 @@ export function buildIntegratedRavScoreStateSeries(
       currentMemoryCoverageHours: current.coverageHours,
       currentTransition: current.transition,
       currentVerified: current.currentVerified,
+      currentDirectInputAvailable: current.scoreBounds.available === true,
       currentReferenceProvenance: current.currentNativeHoldAuthorization === null
         ? null
         : {
@@ -1021,8 +1950,15 @@ export function buildIntegratedRavScoreStateSeries(
         && current.transition !== 'NATIVE_CADENCE_HOLD'
         ? currentCoastNormalSpeed(ordered[index])
         : null,
-      supplyPotential: current.memoryReady ? current.supplyPotential : null,
+      supplyPotential: current.scoreBounds.available
+        ? current.scoreBounds.lowerPotential
+        : null,
+      supplyPotentialUpper: current.scoreBounds.available
+        ? current.scoreBounds.upperPotential
+        : null,
       mobilisationPotential: wave.mobilisationPotential,
+      mobilisationPotentialLower: waveHistoryBounds.lowerPotential,
+      mobilisationPotentialUpper: waveHistoryBounds.upperPotential,
       waveLastVerifiedAt: wave.waveReferenceAt,
       waveMemoryReady: wave.readiness,
       waveMemoryStatus: wave.status,
@@ -1041,7 +1977,11 @@ export function buildIntegratedRavScoreStateSeries(
       lastMileCoherence: waveApproach.coherence,
       lastMileApproach: waveApproach.approach,
       lastMileFactor: waveApproach.factor,
+      lastMileFactorLower: historyScoreView.lastMile.lowerFactor,
+      lastMileFactorUpper: historyScoreView.lastMile.upperFactor,
+      historyScoreView,
       migrationApplied,
+      stateV5MigrationApplied,
       continuationState,
     };
   });
@@ -1057,6 +1997,8 @@ export function buildIntegratedRavScoreStateSeries(
     initialStateAccepted,
     migrationApplied,
     migrationId: migrationApplied ? RAVSCORE_MIGRATION_ID : null,
+    stateV5MigrationApplied,
+    stateV5MigrationId: stateV5MigrationApplied ? RAVSCORE_STATE_V5_MIGRATION_ID : null,
     initialStateSource,
     rows,
     continuationState: rows.at(-1)?.continuationState
@@ -1079,6 +2021,9 @@ export function reconstructCandidateGRollbackState(
   if (integratedState.currentMemoryReady !== true
     || integratedState.waveMemoryReady !== true) {
     throw new Error('Candidate G rollback requires a READY integrated state');
+  }
+  if (!historyBoundsAreFullHistory(validated.historyBounds)) {
+    throw new Error('Candidate G rollback reconstruction requires FULL_HISTORY integrated state');
   }
   const rebuilt = buildBoundedCurrentTransportMemory(integratedState.currentEvidence, {
     ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,

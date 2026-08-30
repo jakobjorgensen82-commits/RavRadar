@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
+import { buildCandidateGDerivedStateSeries } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -21,6 +22,12 @@ import {
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
   saveRavScoreContinuationCheckpoint,
 } from './ravscore-continuation-checkpoint.mjs';
+import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import { CANDIDATE_G_OPERATIONAL_ROLLBACK_ID } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import {
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 
 const PART_COUNT = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount;
 const START = Date.parse('2026-08-01T00:00:00.000Z');
@@ -45,21 +52,79 @@ const partIds = Array.from(
   { length: PART_COUNT },
   (_, index) => `part-${String(index + 1).padStart(3, '0')}`,
 );
-const sourceDocumentAt = (hour, datasetId = `rr-protected-schema5-${hour}`) => ({
-  datasetId,
-  productionReferenceAt: atHour(hour),
-  coastalParts: {
-    parts: Object.fromEntries(partIds.map(partId => [partId, {
-      ravScoreModel: {
-        currentState: {
-          ...clone(stateSeries.rows[hour].continuationState),
-          samplingContextKey: contextFor(partId),
-        },
-      },
-    }])),
-  },
+const partFor = partId => ({
+  partId,
+  zoneId: 'fixture-zone',
+  landPoint: [10, 56],
+  waterPoint: [10.01, 56.01],
+  onshoreDirectionDeg: 90,
 });
-const sourceDocument = sourceDocumentAt(49, 'rr-protected-schema5-synthetic');
+const candidateTemplateByHour = new Map();
+const candidateStateFor = (partId, hour, currentSpeedMps = 0.12) => {
+  const templateKey = `${hour}:${currentSpeedMps}`;
+  let template = candidateTemplateByHour.get(templateKey);
+  if (!template) {
+    const rows = Array.from({ length: 49 }, (_, index) => ({
+      time: atHour(hour - 48 + index),
+      currentSpeedMps,
+      currentAlignment: 0.75,
+      currentVerified: true,
+      waveHeightM: 1.2,
+      wavePeriodS: 6,
+    }));
+    template = buildCandidateGDerivedStateSeries(rows, {
+      stateKey: candidateGStateKey(partFor('candidate-template')),
+    }).continuationState;
+    candidateTemplateByHour.set(templateKey, template);
+  }
+  return { ...clone(template), stateKey: candidateGStateKey(partFor(partId)) };
+};
+const sourceDocumentAt = (
+  hour,
+  datasetId = `rr-protected-schema6-${hour}`,
+  { candidateCurrentSpeedMps = 0.12 } = {},
+) => {
+  const parts = Object.fromEntries(partIds.map(partId => [partId, {
+    ...partFor(partId),
+    ravScoreModel: {
+      currentState: {
+        ...clone(stateSeries.rows[hour].continuationState),
+        samplingContextKey: contextFor(partId),
+      },
+    },
+  }]));
+  return {
+    datasetId,
+    productionReferenceAt: atHour(hour),
+    coastalParts: { parts },
+    ravScoreCandidateGRollback: {
+      schemaVersion: '1.0.0',
+      kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+      privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+      sourceModelBinding: ravScoreModelBinding(),
+      rollbackModelBinding: candidateGRollbackModelBinding(),
+      rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+      automaticActivationAllowed: false,
+      publicDuringNormalOperation: false,
+      runtime: {
+        modelBinding: candidateGRollbackModelBinding(),
+        expectedPartCount: PART_COUNT,
+        scoredPartCount: PART_COUNT,
+        scoreProfile: {
+          modelCoverageReady: true,
+          modelMemoryReady: true,
+          modelMigrationReady: true,
+        },
+        parts: Object.fromEntries(partIds.map(partId => [partId, {
+          ravScoreModel: {
+            currentState: candidateStateFor(partId, hour, candidateCurrentSpeedMps),
+          },
+        }])),
+      },
+    },
+  };
+};
+const sourceDocument = sourceDocumentAt(49, 'rr-protected-schema6-synthetic');
 
 function memoryRequester(initialRow = null) {
   let row = initialRow ? clone(initialRow) : null;
@@ -117,6 +182,34 @@ try {
     checkpointPath: localCheckpointPath,
   });
   const checkpoint = JSON.parse(await fs.readFile(localCheckpointPath, 'utf8'));
+
+  const companionConflictSourcePath = path.join(tempRoot, 'companion-conflict-source.json');
+  const companionConflictCheckpointPath = path.join(
+    tempRoot,
+    'companion-conflict-checkpoint.json',
+  );
+  await fs.writeFile(
+    companionConflictSourcePath,
+    `${JSON.stringify(sourceDocumentAt(
+      49,
+      'rr-protected-schema6-synthetic',
+      { candidateCurrentSpeedMps: 0.18 },
+    ))}\n`,
+  );
+  await saveRavScoreContinuationCheckpoint({
+    sourcePath: companionConflictSourcePath,
+    checkpointPath: companionConflictCheckpointPath,
+  });
+  const companionConflictCheckpoint = JSON.parse(
+    await fs.readFile(companionConflictCheckpointPath, 'utf8'),
+  );
+  assert.equal(companionConflictCheckpoint.productionReferenceAt, checkpoint.productionReferenceAt);
+  assert.equal(companionConflictCheckpoint.stateSha256, checkpoint.stateSha256);
+  assert.notEqual(
+    companionConflictCheckpoint.candidateGRollbackCompanion.stateSha256,
+    checkpoint.candidateGRollbackCompanion.stateSha256,
+  );
+  assert.notEqual(companionConflictCheckpoint.generationSha256, checkpoint.generationSha256);
 
   assert.deepEqual(PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST, [
     PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
@@ -227,6 +320,26 @@ try {
   assert.equal(alreadyCurrent.reason, 'protected-checkpoint-already-current');
   assert.equal(alreadyCurrent.centralVersion, 2);
 
+  const companionConflictPublishMemory = memoryRequester(rowFor(companionConflictCheckpoint));
+  await assert.rejects(
+    publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: localCheckpointPath,
+      targetReference: atHour(50),
+      request: companionConflictPublishMemory.request,
+      temporaryRoot: tempRoot,
+    }),
+    /conflict at the same reference time/,
+  );
+  assert.equal(
+    companionConflictPublishMemory.calls.length,
+    1,
+    'companion-divergent publish must fail before any protected mutation',
+  );
+  assert.deepEqual(
+    companionConflictPublishMemory.row().payload,
+    companionConflictCheckpoint,
+  );
+
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: localCheckpointPath,
@@ -306,8 +419,32 @@ try {
   assert.equal(equivalent.reason, 'protected-checkpoint-equivalent');
   assert.equal(equivalent.targetUnchanged, true);
 
-  const sameTimeConflict = clone(checkpoint);
-  sameTimeConflict.datasetId = 'rr-protected-schema5-conflict';
+  const companionConflictBefore = await fs.readFile(restoredCheckpointPath, 'utf8');
+  await assert.rejects(
+    restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: restoredCheckpointPath,
+      targetReference: atHour(50),
+      request: memoryRequester(rowFor(companionConflictCheckpoint)).request,
+    }),
+    /conflict at the same reference time/,
+  );
+  assert.equal(
+    await fs.readFile(restoredCheckpointPath, 'utf8'),
+    companionConflictBefore,
+    'companion-divergent restore must preserve the local checkpoint byte-for-byte',
+  );
+
+  const conflictSourcePath = path.join(tempRoot, 'conflict-source.json');
+  const conflictCheckpointPath = path.join(tempRoot, 'conflict-checkpoint.json');
+  await fs.writeFile(
+    conflictSourcePath,
+    `${JSON.stringify(sourceDocumentAt(49, 'rr-protected-schema6-conflict'))}\n`,
+  );
+  await saveRavScoreContinuationCheckpoint({
+    sourcePath: conflictSourcePath,
+    checkpointPath: conflictCheckpointPath,
+  });
+  const sameTimeConflict = JSON.parse(await fs.readFile(conflictCheckpointPath, 'utf8'));
   const equivalentBefore = await fs.readFile(restoredCheckpointPath, 'utf8');
   await assert.rejects(
     restoreProtectedRavScoreContinuationCheckpoint({
@@ -425,13 +562,41 @@ try {
     match: /future relative to the bound target/,
   });
 
-  await assertRemoteRejectsWithoutMutation({
-    row: rowFor(checkpoint),
+  const expiredCompanionPath = path.join(
+    tempRoot,
+    'expired-companion',
+    '.cache',
+    'ravscore-continuation-checkpoint',
+    'checkpoint.json',
+  );
+  const expiredCompanionRestore = await restoreProtectedRavScoreContinuationCheckpoint({
+    checkpointPath: expiredCompanionPath,
     targetReference: atHour(
       50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
     ),
-    match: /older than the 72-hour continuation limit/,
+    request: memoryRequester(rowFor(checkpoint)).request,
   });
+  assert.equal(expiredCompanionRestore.restored, true);
+  assert.equal(expiredCompanionRestore.continuationAvailable, false);
+  assert.equal(
+    JSON.parse(await fs.readFile(expiredCompanionPath, 'utf8'))
+      .candidateGRollbackCompanion.status,
+    'candidate-g-rollback-ready-companion',
+  );
+  const expiredPublishMemory = memoryRequester();
+  await assert.rejects(
+    publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: localCheckpointPath,
+      targetReference: atHour(
+        50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
+      ),
+      request: expiredPublishMemory.request,
+      temporaryRoot: tempRoot,
+    }),
+    /Expired schema-6 continuation checkpoints cannot be published/,
+  );
+  assert.equal(expiredPublishMemory.row(), null,
+    'companion-only expiry is restorable but must never be republished as fresh state');
 
   const maximumAgePath = path.join(
     tempRoot,
@@ -529,7 +694,7 @@ try {
     'failed pre-publication validation must never mutate the valid local checkpoint',
   );
 
-  console.log('Protected schema-5 RavScore checkpoint backup/restore contract passes.');
+  console.log('Protected schema-6 RavScore checkpoint backup/restore contract passes.');
 } finally {
   await fs.rm(tempRoot, { recursive: true, force: true });
 }

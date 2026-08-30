@@ -34,7 +34,11 @@ export const PROTECTED_PRIVATE_RUNTIME_POLICY = Object.freeze({
   bucketId: 'ravradar-private-production-runtime',
   mimeType: 'application/gzip',
   maximumRawPayloadBytes: 768 * 1024 * 1024,
-  maximumArchiveBytes: 384 * 1024 * 1024,
+  // Supabase Free projects accept at most one 50 MiB Storage object. Keep the
+  // complete archive only while it fits that real object boundary; larger
+  // generations fail closed before upload rather than relying on a bucket
+  // configuration value that the project plan cannot honour.
+  maximumArchiveBytes: 50 * 1024 * 1024,
   maximumEnvelopeBytes: 1_040 * 1024 * 1024,
   maximumFileCount: 33,
 });
@@ -511,10 +515,6 @@ export async function publishProtectedPrivateProductionRuntime({
     sourceHead,
     policy,
   });
-  await storage.ensurePrivateBucket();
-  await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
-  await verifyStoredObject(storage, built.descriptor);
-
   const existing = await readPointerRow(request, { allowMissing: true, policy });
   if (existing) {
     const centralMs = Date.parse(existing.payload.current.productionReferenceAt);
@@ -526,6 +526,9 @@ export async function publishProtectedPrivateProductionRuntime({
       if (!same(existing.payload.current, built.descriptor)) {
         throw new Error('Private runtime publication conflicts at the same production reference');
       }
+      await storage.ensurePrivateBucket();
+      await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
+      await verifyStoredObject(storage, built.descriptor);
       return {
         published: false,
         reason: 'protected-private-runtime-already-current',
@@ -538,6 +541,13 @@ export async function publishProtectedPrivateProductionRuntime({
       };
     }
   }
+
+  await storage.ensurePrivateBucket();
+  await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
+  // One byte-exact readback is required before the pointer can expose the
+  // immutable object. The later pointer CAS/readback proves metadata; a second
+  // full object download would add egress without strengthening that proof.
+  await verifyStoredObject(storage, built.descriptor);
 
   const pointer = {
     schemaVersion: policy.schemaVersion,
@@ -583,7 +593,6 @@ export async function publishProtectedPrivateProductionRuntime({
   if (readback.version !== expectedVersion || !same(readback.payload, pointer)) {
     throw new Error('Private runtime pointer readback does not match the publication');
   }
-  await verifyStoredObject(storage, readback.payload.current);
 
   const retired = existing?.payload.previous ?? null;
   if (retired
@@ -626,11 +635,15 @@ function assertRestoreTime(descriptor, expected, now, policy) {
   );
   const current = canonicalTime(now, 'Private runtime restore time');
   if (Date.parse(descriptor.productionReferenceAt) > Date.parse(target)
-    || Date.parse(descriptor.productionReferenceAt) < Date.parse(minimumReference)
-    || Date.parse(descriptor.generatedAt) < Date.parse(minimumGenerated)
     || Date.parse(descriptor.generatedAt)
       > Date.parse(current) + PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.maximumFutureSkewMs) {
     throw new Error('Protected private runtime generation is outside restore bounds');
+  }
+  if (Date.parse(descriptor.productionReferenceAt) < Date.parse(minimumReference)
+    || Date.parse(descriptor.generatedAt) < Date.parse(minimumGenerated)) {
+    const error = new Error('Protected private runtime generation has expired');
+    error.code = 'PROTECTED_PRIVATE_RUNTIME_EXPIRED';
+    throw error;
   }
   if (descriptor.objectBytes > policy.maximumArchiveBytes) {
     throw new Error('Protected private runtime object exceeds restore bounds');
@@ -672,8 +685,9 @@ export async function restoreProtectedPrivateProductionRuntime({
     .filter((descriptor, index, all) => all.findIndex(
       candidate => candidate.objectSha256 === descriptor.objectSha256,
     ) === index);
-  const candidates = [];
   const temporaryDirectories = [];
+  const rejections = [];
+  let selected = null;
   try {
     for (let index = 0; index < descriptors.length; index += 1) {
       const descriptor = descriptors[index];
@@ -684,7 +698,6 @@ export async function restoreProtectedPrivateProductionRuntime({
       temporaryDirectories.push(candidate);
       try {
         const archive = await verifyStoredObject(storage, descriptor);
-        assertRestoreTime(descriptor, expected, now, policy);
         await extractArchive({
           archive,
           descriptor,
@@ -701,37 +714,49 @@ export async function restoreProtectedPrivateProductionRuntime({
           now,
         });
         assertDescriptorMatchesBundle(descriptor, verified);
-        candidates.push({ descriptor, candidate, verified });
-      } catch {
+        // Expiry is non-blocking only after the archived generation has
+        // passed the same full manifest, contract, inventory and byte-hash
+        // validation as a generation that could actually be restored.
+        assertRestoreTime(descriptor, expected, now, policy);
+        selected = { descriptor, candidate, verified };
+        // Pointer validation already proves current >= previous and rejects
+        // conflicting equal-time generations. Normal restore therefore reads
+        // current once; previous is downloaded only for genuine rollback.
+        break;
+      } catch (error) {
+        rejections.push(error);
         await fs.rm(candidate, { recursive: true, force: true }).catch(() => {});
       }
     }
-    if (candidates.length === 0) {
+    if (!selected) {
+      if (rejections.length === descriptors.length
+        && rejections.every(error => error?.code === 'PROTECTED_PRIVATE_RUNTIME_EXPIRED')) {
+        return {
+          restored: false,
+          reason: 'protected-private-runtime-expired',
+          targetUnchanged: true,
+          privatePayloadLogged: false,
+        };
+      }
       throw new Error('No compatible protected private runtime generation is available');
     }
-    candidates.sort((left, right) =>
-      Date.parse(right.descriptor.productionReferenceAt)
-        - Date.parse(left.descriptor.productionReferenceAt));
-    if (candidates.length > 1
-      && candidates[0].descriptor.productionReferenceAt
-        === candidates[1].descriptor.productionReferenceAt
-      && candidates[0].descriptor.objectSha256 !== candidates[1].descriptor.objectSha256) {
-      throw new Error('Protected private runtime generations conflict at the same reference');
-    }
-    const selected = candidates[0];
     await fs.rename(selected.candidate, finalBundle);
     const selectedIndex = temporaryDirectories.indexOf(selected.candidate);
     if (selectedIndex >= 0) temporaryDirectories.splice(selectedIndex, 1);
+    const rollbackSelected = selected.descriptor.objectSha256
+      !== row.payload.current.objectSha256;
     return {
       restored: true,
-      reason: selected.descriptor.objectSha256 === row.payload.current.objectSha256
-        ? 'protected-private-runtime-current-restored'
-        : 'protected-private-runtime-rollback-restored',
+      reason: rollbackSelected
+        ? 'protected-private-runtime-rollback-restored'
+        : 'protected-private-runtime-current-restored',
       centralVersion: row.version,
       productionReferenceAt: selected.descriptor.productionReferenceAt,
       bundleContentSha256: selected.descriptor.bundleContentSha256,
       objectSha256: selected.descriptor.objectSha256,
-      rollbackSelected: selected.descriptor.objectSha256 !== row.payload.current.objectSha256,
+      rollbackSelected,
+      currentGenerationRejected: rollbackSelected,
+      rejectedGenerationCount: rejections.length,
       privatePayloadLogged: false,
     };
   } finally {
@@ -967,6 +992,8 @@ async function main() {
     published: result.published,
     rollbackAvailable: result.rollbackAvailable,
     rollbackSelected: result.rollbackSelected,
+    currentGenerationRejected: result.currentGenerationRejected,
+    rejectedGenerationCount: result.rejectedGenerationCount,
     anonymousReadDenied: result.anonymousReadDenied,
     privatePayloadLogged: false,
   }));

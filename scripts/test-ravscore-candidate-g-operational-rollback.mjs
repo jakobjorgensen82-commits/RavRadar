@@ -164,7 +164,17 @@ for (const mode of ['beach', 'waders']) {
   const actual = warm.scores[0].candidateG.publicModes[mode];
   assert.equal(actual.available, true);
   assert.deepEqual(actual.modelBinding, ravScoreModelBinding());
+  assert.equal(actual.scoreQuality, 'FULL_HISTORY');
+  assert.equal(actual.historyCoverageHours, 48);
+  assert.equal(actual.scoreBounds.lower, actual.score);
+  assert.equal(actual.scoreBounds.upper, actual.score);
+  assert.equal(actual.scoreBounds.modelUncertaintyPoints, 0);
 }
+const warmReadyState = warm.candidateGState.rows[0];
+assert.equal(warmReadyState.transportMemoryReady, true);
+assert.equal(warmReadyState.transportMemoryStatus, 'READY');
+assert.equal(warmReadyState.transportMemoryWindowHours, 48);
+assert.equal(warmReadyState.transportMemoryCoverageHours, 48);
 assert.equal(warm.scores[0].candidateG.rollbackId,
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID);
 
@@ -241,6 +251,8 @@ const missingWeather = offset => ({
 });
 const transition = (run, index = -1) =>
   run.scores.at(index).candidateG.publicContext.currentTransition;
+const stateTransition = (run, index = -1) =>
+  run.candidateGState.rows.at(index).currentTransition;
 
 // Candidate G historically received 0.01 m/s and whole-degree projections.
 // Exact integrated values stay exact in the integrated branch, but are not a
@@ -378,6 +390,14 @@ const regionalThenMissing = buildCandidateGRollbackPartScoreSeries({
 });
 assert.equal(transition(regionalThenMissing), 'NATIVE_CADENCE_HOLD');
 
+assert.throws(() => buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [verifiedWeather(1, dmiProvenance), missingWeather(2)],
+  legacyCandidateGMigrationState: legacyState,
+  nativeCadenceHoldHours: 3,
+}), /exact READY 48-hour state/,
+'an UNVERIFIED_PAUSE state must never be projected as an exact rollback score');
 for (const [label, provenance] of [
   ['DMI exact', dmiProvenance],
   ['Copernicus exact', copernicusProvenance],
@@ -388,8 +408,11 @@ for (const [label, provenance] of [
     hourly: [verifiedWeather(1, provenance), missingWeather(2)],
     legacyCandidateGMigrationState: legacyState,
     nativeCadenceHoldHours: 3,
+    scoreStartAt: time(3),
   });
-  assert.equal(transition(exactThenMissing), 'UNVERIFIED_PAUSE',
+  assert.equal(exactThenMissing.scores.length, 0,
+    `${label} source-authorization fixture must remain state-only`);
+  assert.equal(stateTransition(exactThenMissing), 'UNVERIFIED_PAUSE',
     `${label} must never authorize a regional native-cadence hold`);
 }
 
@@ -403,8 +426,9 @@ const sourceSwitch = buildCandidateGRollbackPartScoreSeries({
   ],
   legacyCandidateGMigrationState: legacyState,
   nativeCadenceHoldHours: 3,
+  scoreStartAt: time(4),
 });
-assert.equal(transition(sourceSwitch), 'UNVERIFIED_PAUSE',
+assert.equal(stateTransition(sourceSwitch), 'UNVERIFIED_PAUSE',
   'an exact local source must revoke a prior regional hold authorization');
 const regionalLabelWithoutVector = buildCandidateGRollbackPartScoreSeries({
   part,
@@ -415,8 +439,9 @@ const regionalLabelWithoutVector = buildCandidateGRollbackPartScoreSeries({
   ],
   legacyCandidateGMigrationState: legacyState,
   nativeCadenceHoldHours: 3,
+  scoreStartAt: time(3),
 });
-assert.equal(transition(regionalLabelWithoutVector), 'UNVERIFIED_PAUSE',
+assert.equal(stateTransition(regionalLabelWithoutVector), 'UNVERIFIED_PAUSE',
   'a regional provenance label without a finite speed/direction pair is not verified evidence');
 
 const regionalSeed = buildCandidateGRollbackPartScoreSeries({
@@ -448,8 +473,9 @@ const warmWithoutSourceAuthorization = buildCandidateGRollbackPartScoreSeries({
   hourly: [missingWeather(2)],
   previousCandidateGContinuation: regionalSeed.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
+  scoreStartAt: time(3),
 });
-assert.equal(transition(warmWithoutSourceAuthorization), 'UNVERIFIED_PAUSE',
+assert.equal(stateTransition(warmWithoutSourceAuthorization), 'UNVERIFIED_PAUSE',
   'schema-2 state alone cannot prove a regional hold across a production run');
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
@@ -497,8 +523,9 @@ const ambiguousHold = buildCandidateGRollbackPartScoreSeries({
     ...warmRegionalReference,
     time: time(0),
   },
+  scoreStartAt: time(2),
 });
-assert.equal(transition(ambiguousHold), 'UNVERIFIED_PAUSE',
+assert.equal(stateTransition(ambiguousHold), 'UNVERIFIED_PAUSE',
   'ambiguous legacy null evidence must not be retrospectively rewritten as a cadence hold');
 assert.equal(ambiguousHold.candidateGState.continuationState.transportEvidence
   .some(item => item.strength === null), true);

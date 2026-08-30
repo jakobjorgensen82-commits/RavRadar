@@ -5,14 +5,16 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.314';
+} from '../core/ravscore-model-contract.js?v=4.0.317';
 import {
   CALIBRATION_NUMERIC_RANGES,
+  CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
   CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED,
   CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_NON_CALIBRATION_QUALITY_FLAGS,
+  assertCalibrationScoreQualityContract,
   assertNoSensitiveTripData,
   assertTripDataQualityFlags,
   assertTripObservationNestedPrivacy,
@@ -21,13 +23,15 @@ import {
   isExactCalibrationModelBinding,
   sameCalibrationModelBinding,
   tripEvidenceIntegrityIssues,
-} from './calibration-eligibility.js?v=4.0.314';
+} from './calibration-eligibility.js?v=4.0.317';
 
 export const LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION = 2;
 export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED;
 export const PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY;
+export const HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG =
+  CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE;
 export const UNATTESTED_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED;
 export const TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY =
@@ -111,7 +115,7 @@ export function assertTripForecastQualityBinding({
     throw new Error('Prognosen mangler eksplicit kalibreringsstatus.');
   }
   if (flags.length > 0 && forecastCalibrationEligible !== false) {
-    throw new Error('Nød-, rekonstrueret eller uattesteret RavScore skal være udelukket fra kalibrering.');
+    throw new Error('Nød-, historikufuldstændig, rekonstrueret eller uattesteret RavScore skal være udelukket fra kalibrering.');
   }
   if (flags.length === 0 && RAVSCORE_CALIBRATION_ELIGIBLE === true
     && forecastCalibrationEligible === false) {
@@ -225,10 +229,29 @@ export function createCalibrationFeatureSnapshot(input = {}) {
     throw new Error('Modelversionen og RavScore-modelbindingen i turgrundlaget er forskellige.');
   }
   for (const key of Object.keys(CALIBRATION_NUMERIC_RANGES)) snapshot[key] = rangedNumber(input[key], key);
-  for (const key of ['totalScore', 'huntabilityScore', 'transportScore', 'mobilisationScore']) {
+  for (const key of [
+    'totalScore','scoreBoundLower','scoreBoundUpper','scoreBoundModelUncertaintyPoints',
+    'scoreBoundRawLower','scoreBoundRawUpper','historyCoverageHours',
+    'huntabilityScore','transportScore','mobilisationScore',
+  ]) {
     if (snapshot[key] == null) throw new Error(`${key} mangler.`);
   }
+  snapshot.scoreQuality=requiredId(input.scoreQuality,'Scorekvalitet');
+  snapshot.scoreSemantics=requiredId(input.scoreSemantics,'Scoresemantik');
+  if(typeof input.scoreCalibrationEligible!=='boolean'
+    ||typeof input.conservativeTailResetApplied!=='boolean'){
+    throw new Error('Scorekvaliteten mangler eksplicit kalibrerings- eller tail-reset-status.');
+  }
+  snapshot.scoreCalibrationEligible=input.scoreCalibrationEligible;
+  snapshot.conservativeTailResetApplied=input.conservativeTailResetApplied;
+  if(!Array.isArray(input.historyReasonCodes)
+    ||input.historyReasonCodes.length>12){
+    throw new Error('Historikårsagskoder mangler eller er ugyldige.');
+  }
+  snapshot.historyReasonCodes=Object.freeze(input.historyReasonCodes
+    .map(value=>requiredId(value,'Historikårsagskode')));
   snapshot.reasonCodes = Object.freeze((input.reasonCodes || []).map(value => requiredId(value, 'Årsagskode')).slice(0, 12));
+  assertCalibrationScoreQualityContract(snapshot);
   assertTripEvidencePrivacy(snapshot);
   return Object.freeze(snapshot);
 }

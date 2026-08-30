@@ -1,8 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.314';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.317';
 import {
+  RAVSCORE_CALIBRATION_ELIGIBLE,
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.314';
+} from '../core/ravscore-model-contract.js?v=4.0.317';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -17,20 +19,26 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.314';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.317';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.314';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.317';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.314';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.317';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.314';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.317';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
 const MANIFEST_URL = './data/live/manifest.json';
 const SHA256_PATTERN = /^[a-f0-9]{64}$/i;
+const SCORE_QUALITIES = Object.freeze(['FULL_HISTORY', 'HISTORY_INCOMPLETE', 'UNAVAILABLE']);
+const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
+const HISTORY_COVERAGE_HOURS = RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours;
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
+]);
 const memory = new Map();
 
 async function sha256Text(text) {
@@ -331,6 +339,158 @@ function exactPublicHorizonTimes(manifest) {
     new Date(referenceMs + index * 3_600_000).toISOString());
 }
 
+function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !SCORE_QUALITIES.includes(value.scoreQuality)
+    || typeof value.calibrationEligible !== 'boolean') {
+    throw new Error(label + ' mangler en gyldig maskinlæsbar scorekvalitet.');
+  }
+  if (ranked && value.scoreQuality === 'UNAVAILABLE') {
+    throw new Error(label + ' kan ikke rangere en utilgængelig score.');
+  }
+  if (!ranked) {
+    if (value.available !== true && value.available !== false) {
+      throw new Error(label + ' mangler en eksplicit availability-status.');
+    }
+    if (value.available === true && value.scoreQuality === 'UNAVAILABLE') {
+      throw new Error(label + ' markerer en tilgængelig score som utilgængelig.');
+    }
+    if (value.available === false && value.scoreQuality !== 'UNAVAILABLE') {
+      throw new Error(label + ' mangler UNAVAILABLE-kvalitet.');
+    }
+  }
+  if (value.scoreQuality === 'FULL_HISTORY') {
+    if (value.calibrationEligible !== RAVSCORE_CALIBRATION_ELIGIBLE) {
+      throw new Error(label + ' har en forkert kalibreringsstatus for den aktive model.');
+    }
+  } else if (value.calibrationEligible !== false) {
+    throw new Error(label + ' må ikke være kalibreringsberettiget.');
+  }
+  if (!Array.isArray(value.historyReasonCodes)
+    || value.historyReasonCodes.some(code => typeof code !== 'string'
+      || !HISTORY_REASON_CODE_PATTERN.test(code))
+    || new Set(value.historyReasonCodes).size !== value.historyReasonCodes.length) {
+    throw new Error(label + ' har ugyldige historikårsagskoder.');
+  }
+  if (value.scoreQuality === 'UNAVAILABLE') {
+    if (ranked
+      || value.historyCoverageHours !== null
+      || value.historyReasonCodes.length !== 0
+      || value.scoreSemantics !== null
+      || value.conservativeTailResetApplied !== false
+      || value.scoreBounds !== null) {
+      throw new Error(label + ' må ikke kopiere historik eller scoresemantik uden en score.');
+    }
+    return true;
+  }
+  if (!Number.isFinite(value.historyCoverageHours)
+    || value.historyCoverageHours < 0
+    || value.historyCoverageHours > HISTORY_COVERAGE_HOURS) {
+    throw new Error(label + ' mangler et gyldigt antal dækkede historiktimer.');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE' && value.historyReasonCodes.length === 0) {
+    throw new Error(label + ' forklarer ikke den ufuldstændige historik.');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && RAVSCORE_CALIBRATION_ELIGIBLE !== true) {
+    throw new Error(label + ' må ikke bruge den integrerede historikintervaltilstand i rollbackmodellen.');
+  }
+  if (value.scoreQuality === 'FULL_HISTORY'
+    && (value.historyCoverageHours !== HISTORY_COVERAGE_HOURS
+      || value.historyReasonCodes.length !== 0)) {
+    throw new Error(label + ' har ikke et eksakt komplet historikvindue.');
+  }
+  if (value.scoreQuality === 'FULL_HISTORY'
+    && (!['EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+      .includes(value.scoreSemantics)
+      || typeof value.conservativeTailResetApplied !== 'boolean'
+      || value.conservativeTailResetApplied
+        !== (value.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'))) {
+    throw new Error(label + ' har ugyldig point-score-semantik.');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && (value.scoreSemantics !== 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+      || typeof value.conservativeTailResetApplied !== 'boolean')) {
+    throw new Error(label + ' har ugyldig konservativ intervalsemantik.');
+  }
+  const bounds=value.scoreBounds;
+  if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())!==JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || !SCORE_BOUND_FIELDS.every(field=>Number.isFinite(bounds[field]))
+    || bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    || bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints-(bounds.upper-bounds.lower))>1e-9
+    || value.score!==bounds.lower) {
+    throw new Error(label + ' har et ugyldigt RavScore-interval.');
+  }
+  if(value.scoreQuality==='FULL_HISTORY'
+    &&(bounds.lower!==bounds.upper||bounds.rawLower!==bounds.rawUpper)) {
+    throw new Error(label + ' har et ikke-sammenfaldende FULL_HISTORY-interval.');
+  }
+  if (!ranked) {
+    if (typeof value.winningPartUncertain !== 'boolean'
+      || !Number.isSafeInteger(value.possibleWinningPartCount)
+      || value.possibleWinningPartCount < 1
+      || !Array.isArray(value.possibleWinningParts)
+      || value.possibleWinningParts.length !== value.possibleWinningPartCount) {
+      throw new Error(label + ' har en ugyldig mulig-vinder-kontrakt.');
+    }
+    const ids=[];
+    for (const part of value.possibleWinningParts) {
+      const partBounds=part?.scoreBounds;
+      if (!part || typeof part !== 'object' || Array.isArray(part)
+        || JSON.stringify(Object.keys(part).sort())
+          !== JSON.stringify(['name','partId','score','scoreBounds'].sort())
+        || typeof part.partId !== 'string' || !part.partId
+        || typeof part.name !== 'string' || !part.name
+        || !Number.isFinite(part.score)
+        || !partBounds || typeof partBounds !== 'object' || Array.isArray(partBounds)
+        || JSON.stringify(Object.keys(partBounds).sort())
+          !== JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+        || !SCORE_BOUND_FIELDS.every(field=>Number.isFinite(partBounds[field]))
+        || part.score !== partBounds.lower
+        || partBounds.lower < 0 || partBounds.upper > 100
+        || partBounds.lower > partBounds.upper
+        || partBounds.rawLower < 0 || partBounds.rawUpper > 100
+        || partBounds.rawLower > partBounds.rawUpper
+        || Math.abs(partBounds.modelUncertaintyPoints
+          - (partBounds.upper-partBounds.lower)) > 1e-9
+        || partBounds.upper < value.score) {
+        throw new Error(label + ' har en ugyldig mulig-vinder-række.');
+      }
+      ids.push(part.partId);
+    }
+    if(new Set(ids).size!==ids.length
+      || JSON.stringify(ids)!==JSON.stringify([...ids].sort())
+      || !value.possibleWinningParts.some(part=>part.partId===value.winningPartId
+        && part.score===value.score)
+      || value.winningPartUncertain !== (value.scoreQuality==='HISTORY_INCOMPLETE'
+        && ids.some(partId=>partId!==value.winningPartId))) {
+      throw new Error(label + ' har en inkonsistent mulig-vinder-rækkefølge.');
+    }
+  }
+  return true;
+}
+
+function assertScoreAvailabilityQuality(value, label) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || typeof value.allCurrentScoresFullHistory !== 'boolean') {
+    throw new Error(label + ' mangler sin historikkvalitetssummering.');
+  }
+  for (const field of ['fullHistoryModeCount', 'historyIncompleteModeCount', 'historyIncompleteZoneCount']) {
+    if (!Number.isSafeInteger(value[field]) || value[field] < 0) {
+      throw new Error(label + ' har en ugyldig historikkvalitetstælling.');
+    }
+  }
+  if (value.allCurrentScoresFullHistory !== (value.unavailableZoneCount === 0
+      && value.historyIncompleteModeCount === 0)
+    || !Array.isArray(value.historyIncompleteZones)
+    || value.historyIncompleteZones.length !== value.historyIncompleteZoneCount) {
+    throw new Error(label + ' har en inkonsistent historikkvalitetssummering.');
+  }
+  return true;
+}
+
 function assertExactPublicRows(rows, expectedTimes, label, validateRow = null) {
   if (!Array.isArray(rows) || rows.length !== expectedTimes.length) {
     throw new Error(`${label} dækker ikke den eksakte RavScore-prognosehorisont.`);
@@ -353,6 +513,39 @@ function assertStartupCoverage(document, manifest) {
     || document?.coastalParts?.scoreAvailability?.allZonesActive !== true
     || weatherZoneIds.some(zoneId => !Object.hasOwn(document.coastalParts.zones, zoneId))) {
     throw new Error('Startpakken er ikke den komplette manifestbundne 210/673-pakke.');
+  }
+  assertScoreAvailabilityQuality(
+    document.coastalParts.scoreAvailability,
+    'Startpakkens scoretilgængelighed',
+  );
+  for (const zoneId of scoreZoneIds) {
+    const rows = document.coastalParts.zones[zoneId]?.hourly;
+    if (!Array.isArray(rows) || rows.length !== 1) {
+      throw new Error('Startpakkens scorezone mangler sin aktuelle scoretime.');
+    }
+    for (const mode of ['waders', 'beach']) {
+      const score = rows[0]?.[mode];
+      if (score?.available !== true
+        || typeof score.score !== 'number'
+        || !Number.isFinite(score.score)) {
+        throw new Error('Startpakkens aktuelle score er ikke numerisk tilgængelig.');
+      }
+      assertPublicScoreQuality(score, 'Startpakkens aktuelle score');
+    }
+  }
+  for (const mode of ['waders', 'beach']) {
+    const days = document?.nationalForecast?.modes?.[mode];
+    if (!Array.isArray(days)) {
+      throw new Error('Startpakkens nationale femdøgnsvisning mangler.');
+    }
+    for (const day of days) {
+      for (const row of day?.rows ?? []) {
+        if (typeof row?.score !== 'number' || !Number.isFinite(row.score)) {
+          throw new Error('Startpakkens nationale rangliste indeholder en ikke-numerisk score.');
+        }
+        assertPublicScoreQuality(row, 'Startpakkens nationale ranglistescore', { ranked: true });
+      }
+    }
   }
   assertNestedModelBindings(document, manifest.ravScoreModelBinding, 'Startpakken');
   return true;
@@ -378,6 +571,10 @@ function assertDetailedCoverage(document, manifest) {
     || weatherZoneIds.some(zoneId => !Object.hasOwn(scoreZones, zoneId))) {
     throw new Error('Detaljepakken er ikke den komplette manifestbundne 210/673-pakke.');
   }
+  assertScoreAvailabilityQuality(
+    coastalParts.scoreAvailability,
+    'Detaljepakkens scoretilgængelighed',
+  );
   let expectedPartCount = 0;
   let scoredPartCount = 0;
   for (const zoneId of weatherZoneIds) {
@@ -397,6 +594,7 @@ function assertDetailedCoverage(document, manifest) {
     assertExactPublicRows(scoreZone.hourly, expectedTimes,
       `Detaljepakkens scorezone ${zoneId}`, row => {
         for (const mode of ['waders', 'beach']) {
+          assertPublicScoreQuality(row[mode], 'Detaljepakkens timebaserede score');
           if (row[mode]?.available !== true
             || typeof row[mode].score !== 'number'
             || !Number.isFinite(row[mode].score)
@@ -444,8 +642,30 @@ function projectEmergencyConditions(startup, details, availability, manifest) {
       current: {
         time: selectedReferenceAt,
         weather: null,
-        waders: { available: false, score: null, emergencyUnavailable: true },
-        beach: { available: false, score: null, emergencyUnavailable: true },
+        waders: {
+          available: false,
+          score: null,
+          scoreQuality: 'UNAVAILABLE',
+          scoreBounds: null,
+          calibrationEligible: false,
+          scoreSemantics: null,
+          conservativeTailResetApplied: false,
+          historyCoverageHours: null,
+          historyReasonCodes: [],
+          emergencyUnavailable: true,
+        },
+        beach: {
+          available: false,
+          score: null,
+          scoreQuality: 'UNAVAILABLE',
+          scoreBounds: null,
+          calibrationEligible: false,
+          scoreSemantics: null,
+          conservativeTailResetApplied: false,
+          historyCoverageHours: null,
+          historyReasonCodes: [],
+          emergencyUnavailable: true,
+        },
       },
     }];
   }));
@@ -649,7 +869,8 @@ export async function reevaluatePublicConditions({
       label: 'Den indlæste startpakke',
     });
     assertPublicVerifiedEvidenceTrust(conditions, 'Den indlæste startpakke');
-    assertStartupCoverage(conditions, manifest);
+    if (conditions.detailsAvailable === true) assertDetailedCoverage(conditions, manifest);
+    else assertStartupCoverage(conditions, manifest);
     const availability = selectPublicRuntimeAvailability(manifest, {
       now,
       modelBinding: ravScoreModelBinding(),

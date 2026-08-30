@@ -4,11 +4,13 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
   assertRavScoreModelBinding,
@@ -23,13 +25,25 @@ import {
 import {
   ravScoreContinuationImplementationSha256,
 } from './lib/ravscore-continuation-implementation-contract.mjs';
+import {
+  CANDIDATE_G_CONTINUATION_FIELDS,
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+  assertCandidateGRollbackContinuation,
+  assertCandidateGRollbackContinuationForStateKey,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
+import {
+  assertRavScoreModelBinding as assertCandidateGRollbackModelBinding,
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 
 export const RAVSCORE_CONTINUATION_CHECKPOINT_POLICY = Object.freeze({
-  schemaVersion: 2,
-  status: 'ravscore-schema5-compact-continuation',
+  schemaVersion: 4,
+  status: 'ravscore-schema6-with-candidate-g-rollback-companion',
+  candidateGRollbackCompanionSchemaVersion: 1,
+  candidateGRollbackCompanionStatus: 'candidate-g-rollback-ready-companion',
   expectedPartCount: 673,
   maximumAgeHours: 72,
-  cacheNamespace: 'ravscore-continuation-schema5-v3',
+  cacheNamespace: 'ravscore-continuation-schema6-v2',
 });
 
 const CHECKPOINT_KEYS = Object.freeze([
@@ -39,6 +53,21 @@ const CHECKPOINT_KEYS = Object.freeze([
   'productionReferenceAt',
   'modelBinding',
   'continuationStateContractSha256',
+  'generationSha256',
+  'partCount',
+  'stateSha256',
+  'states',
+  'candidateGRollbackCompanion',
+  'privacy',
+]);
+const CANDIDATE_G_ROLLBACK_COMPANION_KEYS = Object.freeze([
+  'schemaVersion',
+  'status',
+  'datasetId',
+  'productionReferenceAt',
+  'generationSha256',
+  'modelBinding',
+  'rollbackId',
   'partCount',
   'stateSha256',
   'states',
@@ -73,7 +102,9 @@ const STATE_KEYS = Object.freeze([
   'currentMemoryCoverageHours',
   'currentEvidence',
   'currentNativeHoldAuthorization',
+  'currentNativeHoldIntervalEnds',
   'supplyPotential',
+  'historyBounds',
   'waveStateSchemaVersion',
   'wavePolicyId',
   'waveLastVerifiedAt',
@@ -94,11 +125,24 @@ const NATIVE_HOLD_AUTHORIZATION_KEYS = Object.freeze([
   'collection',
   'distanceKm',
 ]);
-const LINEAGE_KEYS = Object.freeze([
+const MIGRATION_LINEAGE_KEYS = Object.freeze([
+  'currentEvidenceSource',
   'migrationId',
   'sourceModelId',
   'sourceStateSchemaVersion',
   'migratedAt',
+  'waveApproachBootstrapHours',
+  'waveApproachMaximumOmittedMomentShare',
+  'waveApproachMaximumScoreErrorBeforeRounding',
+]);
+const COLD_REPLAY_LINEAGE_KEYS = Object.freeze([
+  'boundedUnknownPositionCount',
+  'completeCausalPositionCount',
+  'expectedCausalPositionCount',
+  'historyTransition',
+  'recoveryId',
+  'source',
+  'targetReferenceAt',
 ]);
 
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
@@ -169,17 +213,69 @@ function assertExactKeys(value, expected, label) {
 
 function compactLineage(value, partId) {
   if (value === null) return null;
-  assertExactKeys(value, LINEAGE_KEYS, `RavScore lineage for ${partId}`);
-  if (value.migrationId !== RAVSCORE_MIGRATION_ID
-    || value.sourceModelId !== CANDIDATE_G_STATE_MODEL_ID
-    || value.sourceStateSchemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION) {
+  if (!isPlainObject(value)) {
+    throw new Error(`RavScore lineage for ${partId} must be an object`);
+  }
+  const keys = Object.keys(value).sort(compareText);
+  const migrationKeys = [...MIGRATION_LINEAGE_KEYS].sort(compareText);
+  const coldReplayKeys = [...COLD_REPLAY_LINEAGE_KEYS].sort(compareText);
+  if (JSON.stringify(keys) === JSON.stringify(migrationKeys)) {
+    if (value.migrationId !== RAVSCORE_MIGRATION_ID
+      || value.sourceModelId !== CANDIDATE_G_STATE_MODEL_ID
+      || value.sourceStateSchemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
+      || value.currentEvidenceSource
+        !== RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource
+      || value.waveApproachBootstrapHours
+        !== RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours
+      || !close(
+        value.waveApproachMaximumOmittedMomentShare,
+        RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachMaximumOmittedMomentShare,
+      )
+      || !close(
+        value.waveApproachMaximumScoreErrorBeforeRounding,
+        RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
+      )) {
+      throw new Error(`RavScore lineage for ${partId} is incompatible`);
+    }
+    return {
+      currentEvidenceSource: value.currentEvidenceSource,
+      migrationId: value.migrationId,
+      sourceModelId: value.sourceModelId,
+      sourceStateSchemaVersion: value.sourceStateSchemaVersion,
+      migratedAt: canonicalTime(value.migratedAt, `RavScore migration time for ${partId}`),
+      waveApproachBootstrapHours: value.waveApproachBootstrapHours,
+      waveApproachMaximumOmittedMomentShare:
+        value.waveApproachMaximumOmittedMomentShare,
+      waveApproachMaximumScoreErrorBeforeRounding:
+        value.waveApproachMaximumScoreErrorBeforeRounding,
+    };
+  }
+  if (JSON.stringify(keys) !== JSON.stringify(coldReplayKeys)
+    || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID
+    || value.source !== RAVSCORE_RECOVERY_POLICY.source
+    || value.expectedCausalPositionCount !== RAVSCORE_RECOVERY_POLICY.coldReplayHours
+    || !Number.isInteger(value.completeCausalPositionCount)
+    || !Number.isInteger(value.boundedUnknownPositionCount)
+    || value.completeCausalPositionCount < 0
+    || value.boundedUnknownPositionCount < 0
+    || value.completeCausalPositionCount + value.boundedUnknownPositionCount
+      !== RAVSCORE_RECOVERY_POLICY.coldReplayHours
+    || value.historyTransition !== (value.boundedUnknownPositionCount > 0
+      ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+      : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition)) {
     throw new Error(`RavScore lineage for ${partId} is incompatible`);
   }
   return {
-    migrationId: value.migrationId,
-    sourceModelId: value.sourceModelId,
-    sourceStateSchemaVersion: value.sourceStateSchemaVersion,
-    migratedAt: canonicalTime(value.migratedAt, `RavScore migration time for ${partId}`),
+    boundedUnknownPositionCount: value.boundedUnknownPositionCount,
+    completeCausalPositionCount: value.completeCausalPositionCount,
+    expectedCausalPositionCount: value.expectedCausalPositionCount,
+    historyTransition: value.historyTransition,
+    recoveryId: value.recoveryId,
+    source: value.source,
+    targetReferenceAt: canonicalTime(
+      value.targetReferenceAt,
+      `RavScore cold-replay target for ${partId}`,
+    ),
   };
 }
 
@@ -234,6 +330,12 @@ function compactState(state, partId) {
     }
     currentNativeHoldAuthorization = { ...authorization };
   }
+  if (!Array.isArray(state.currentNativeHoldIntervalEnds)) {
+    throw new Error(`RavScore native-hold intervals for ${partId} are invalid`);
+  }
+  const currentNativeHoldIntervalEnds = state.currentNativeHoldIntervalEnds.map(
+    value => canonicalTime(value, `RavScore native-hold interval for ${partId}`),
+  );
   const time = canonicalTime(state.time, `RavScore state time for ${partId}`);
   const currentReferenceAt = canonicalTime(
     state.currentReferenceAt,
@@ -246,8 +348,9 @@ function compactState(state, partId) {
     ? null
     : canonicalTime(state.waveMigrationSeedAt, `RavScore wave migration seed time for ${partId}`);
   const lineage = compactLineage(state.lineage, partId);
-  if (lineage !== null && Date.parse(lineage.migratedAt) > Date.parse(time)) {
-    throw new Error(`RavScore migration time for ${partId} is after its state`);
+  const lineageTime = lineage?.migratedAt ?? lineage?.targetReferenceAt ?? null;
+  if (lineageTime !== null && Date.parse(lineageTime) > Date.parse(time)) {
+    throw new Error(`RavScore lineage time for ${partId} is after its state`);
   }
 
   const compact = {
@@ -271,7 +374,9 @@ function compactState(state, partId) {
     currentMemoryCoverageHours: state.currentMemoryCoverageHours,
     currentEvidence,
     currentNativeHoldAuthorization,
+    currentNativeHoldIntervalEnds,
     supplyPotential: state.supplyPotential,
+    historyBounds: structuredClone(state.historyBounds),
     waveStateSchemaVersion: state.waveStateSchemaVersion,
     wavePolicyId: state.wavePolicyId,
     waveLastVerifiedAt,
@@ -291,6 +396,7 @@ function compactState(state, partId) {
     referenceTime: time,
     nativeHold: state.currentMemoryStatus === 'READY_NATIVE_HOLD'
       && currentNativeHoldAuthorization !== null,
+    nativeHoldIntervalEnds: currentNativeHoldIntervalEnds,
   });
   const currentPotentialMatches = replayedCurrent.supplyPotential === null
     ? compact.supplyPotential === null
@@ -307,7 +413,7 @@ function compactState(state, partId) {
   }
 
   // Reuse the model's own replay/state validator. Empty samples mean that this
-  // can only continue exact schema 5; it cannot invoke the schema-2 migration.
+  // can only continue exact schema 6; it cannot invoke either migration path.
   const validation = buildIntegratedRavScoreStateSeries([], {
     samplingContextKey: compact.samplingContextKey,
     initialState: compact,
@@ -315,7 +421,7 @@ function compactState(state, partId) {
   if (!validation.initialStateAccepted
     || validation.migrationApplied
     || validation.initialStateSource !== 'INTEGRATED_CONTINUATION') {
-    throw new Error(`RavScore state for ${partId} is not an exact schema-5 continuation`);
+    throw new Error(`RavScore state for ${partId} is not an exact schema-6 continuation`);
   }
   return compact;
 }
@@ -325,6 +431,74 @@ function modelBinding(value, label) {
   assertExactKeys(value, Object.keys(expected), label);
   assertRavScoreModelBinding(value, label);
   return { ...expected };
+}
+
+function candidateModelBinding(value, label) {
+  const expected = candidateGRollbackModelBinding();
+  assertExactKeys(value, Object.keys(expected), label);
+  assertCandidateGRollbackModelBinding(value, label);
+  return { ...expected };
+}
+
+function compactCandidateGRollbackState(state, partId, {
+  part = null,
+  productionReferenceAt = null,
+} = {}) {
+  assertExactKeys(
+    state,
+    CANDIDATE_G_CONTINUATION_FIELDS,
+    `Candidate G rollback companion state for ${partId}`,
+  );
+  if (part) {
+    assertCandidateGRollbackContinuation(
+      state,
+      part,
+      `Candidate G rollback companion state for ${partId}`,
+    );
+  } else {
+    assertCandidateGRollbackContinuationForStateKey(
+      state,
+      state.stateKey,
+      `Candidate G rollback companion state for ${partId}`,
+    );
+  }
+  if (state.transportMemoryReady !== true
+    || state.transportMemoryStatus !== 'READY'
+    || state.transportMemoryWindowHours !== 48
+    || state.transportMemoryCoverageHours !== 48) {
+    throw new Error(`Candidate G rollback companion state for ${partId} is not exact READY`);
+  }
+  if (productionReferenceAt !== null
+    && (state.time !== productionReferenceAt
+      || state.transportReferenceAt !== productionReferenceAt)) {
+    throw new Error(`Candidate G rollback companion state for ${partId} does not match its target`);
+  }
+  return structuredClone(state);
+}
+
+function checkpointGenerationSha256({
+  datasetId,
+  productionReferenceAt,
+  modelBinding: integratedBinding,
+  candidateBinding,
+  continuationStateContractSha256,
+  partCount,
+  stateSha256,
+  candidateStateSha256,
+}) {
+  return sha256({
+    schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
+    status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
+    datasetId,
+    productionReferenceAt,
+    modelBinding: integratedBinding,
+    candidateModelBinding: candidateBinding,
+    continuationStateContractSha256,
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    partCount,
+    stateSha256,
+    candidateStateSha256,
+  });
 }
 
 function rowsFromParts(document, expectedPartCount) {
@@ -338,7 +512,7 @@ function rowsFromParts(document, expectedPartCount) {
       if (!partId || !isPlainObject(part)) throw new Error('RavScore checkpoint has an invalid part');
       const state = part?.ravScoreModel?.currentState;
       if (!state) {
-        throw new Error(`RavScore checkpoint source has no schema-5 state for ${partId}`);
+        throw new Error(`RavScore checkpoint source has no schema-6 state for ${partId}`);
       }
       return [partId, compactState(state, partId)];
     });
@@ -350,6 +524,54 @@ function rowsFromParts(document, expectedPartCount) {
     throw new Error('RavScore checkpoint contains duplicate sampling contexts');
   }
   return rows;
+}
+
+function candidateRowsFromSource(document, integratedRows, productionReferenceAt) {
+  const descriptor = document?.ravScoreCandidateGRollback;
+  if (!isPlainObject(descriptor)
+    || descriptor.schemaVersion !== '1.0.0'
+    || descriptor.kind !== 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME'
+    || descriptor.privacyClass !== 'PRIVATE_PRODUCTION_RUNTIME'
+    || descriptor.rollbackId !== CANDIDATE_G_OPERATIONAL_ROLLBACK_ID
+    || descriptor.automaticActivationAllowed !== false
+    || descriptor.publicDuringNormalOperation !== false) {
+    throw new Error('RavScore checkpoint source lacks its exact private Candidate G rollback runtime');
+  }
+  modelBinding(
+    descriptor.sourceModelBinding,
+    'Candidate G rollback source-model binding',
+  );
+  candidateModelBinding(
+    descriptor.rollbackModelBinding,
+    'Candidate G rollback companion model binding',
+  );
+  const runtime = descriptor.runtime;
+  if (!isPlainObject(runtime)
+    || !isPlainObject(runtime.parts)
+    || runtime.expectedPartCount !== integratedRows.length
+    || runtime.scoredPartCount !== integratedRows.length
+    || runtime.scoreProfile?.modelCoverageReady !== true
+    || runtime.scoreProfile?.modelMemoryReady !== true
+    || runtime.scoreProfile?.modelMigrationReady !== true) {
+    throw new Error('Candidate G rollback runtime is not complete and READY');
+  }
+  candidateModelBinding(runtime.modelBinding, 'Candidate G rollback runtime model binding');
+  const sourceParts = document?.coastalParts?.parts;
+  const expectedPartIds = integratedRows.map(([partId]) => partId);
+  const actualPartIds = Object.keys(runtime.parts).sort(compareText);
+  if (JSON.stringify(actualPartIds) !== JSON.stringify(expectedPartIds)) {
+    throw new Error('Candidate G rollback runtime and schema-6 checkpoint have different parts');
+  }
+  return expectedPartIds.map(partId => {
+    const state = runtime.parts[partId]?.ravScoreModel?.currentState;
+    if (!state) {
+      throw new Error(`Candidate G rollback runtime has no companion state for ${partId}`);
+    }
+    return [partId, compactCandidateGRollbackState(state, partId, {
+      part: sourceParts[partId],
+      productionReferenceAt,
+    })];
+  });
 }
 
 function validatePrivacy(value) {
@@ -424,27 +646,58 @@ export async function saveRavScoreContinuationCheckpoint({
   );
   const rows = rowsFromParts(source, expectedPartCount);
   validateRowsAgainstReference(rows, productionReferenceAt, 'RavScore checkpoint source');
+  const candidateRows = candidateRowsFromSource(source, rows, productionReferenceAt);
   const continuationStateContractSha256 = await ravScoreContinuationImplementationSha256({
     ...(repositoryRoot === undefined ? {} : { repositoryRoot }),
   });
+  const integratedBinding = { ...ravScoreModelBinding() };
+  const candidateBinding = { ...candidateGRollbackModelBinding() };
+  const stateSha256 = sha256(rows);
+  const candidateStateSha256 = sha256(candidateRows);
+  const generationSha256 = checkpointGenerationSha256({
+    datasetId: source.datasetId,
+    productionReferenceAt,
+    modelBinding: integratedBinding,
+    candidateBinding,
+    continuationStateContractSha256,
+    partCount: rows.length,
+    stateSha256,
+    candidateStateSha256,
+  });
+  const privacy = {
+    compactDerivedStateOnly: true,
+    weatherIncluded: false,
+    scoresIncluded: false,
+    rawVectorsIncluded: false,
+    coordinatesIncluded: false,
+    privateDataIncluded: false,
+  };
   const checkpoint = {
     schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
     status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
     datasetId: source.datasetId,
     productionReferenceAt,
-    modelBinding: { ...ravScoreModelBinding() },
+    modelBinding: integratedBinding,
     continuationStateContractSha256,
+    generationSha256,
     partCount: rows.length,
-    stateSha256: sha256(rows),
+    stateSha256,
     states: Object.fromEntries(rows),
-    privacy: {
-      compactDerivedStateOnly: true,
-      weatherIncluded: false,
-      scoresIncluded: false,
-      rawVectorsIncluded: false,
-      coordinatesIncluded: false,
-      privateDataIncluded: false,
+    candidateGRollbackCompanion: {
+      schemaVersion:
+        RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.candidateGRollbackCompanionSchemaVersion,
+      status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.candidateGRollbackCompanionStatus,
+      datasetId: source.datasetId,
+      productionReferenceAt,
+      generationSha256,
+      modelBinding: candidateBinding,
+      rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+      partCount: candidateRows.length,
+      stateSha256: candidateStateSha256,
+      states: Object.fromEntries(candidateRows),
+      privacy: { ...privacy },
     },
+    privacy,
   };
   await atomicWrite(checkpointPath, `${JSON.stringify(checkpoint)}\n`);
   return {
@@ -452,11 +705,59 @@ export async function saveRavScoreContinuationCheckpoint({
     datasetId: checkpoint.datasetId,
     productionReferenceAt,
     partCount: rows.length,
+    candidateGRollbackPartCount: candidateRows.length,
+    generationSha256,
+    candidateGRollbackStateSha256: candidateStateSha256,
     modelId: RAVSCORE_MODEL_ID,
     stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
     modelContractSha256: RAVSCORE_MODEL_CONTRACT_SHA256,
     modelBundleSha256: RAVSCORE_MODEL_BUNDLE_SHA256,
     continuationStateContractSha256,
+  };
+}
+
+function validateCandidateGRollbackCompanion(
+  companion,
+  { datasetId, productionReferenceAt, generationSha256, expectedPartCount },
+) {
+  assertExactKeys(
+    companion,
+    CANDIDATE_G_ROLLBACK_COMPANION_KEYS,
+    'Candidate G rollback companion descriptor',
+  );
+  if (companion.schemaVersion
+      !== RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.candidateGRollbackCompanionSchemaVersion
+    || companion.status
+      !== RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.candidateGRollbackCompanionStatus
+    || companion.datasetId !== datasetId
+    || companion.productionReferenceAt !== productionReferenceAt
+    || companion.generationSha256 !== generationSha256
+    || companion.rollbackId !== CANDIDATE_G_OPERATIONAL_ROLLBACK_ID
+    || companion.partCount !== expectedPartCount
+    || !/^[0-9a-f]{64}$/.test(companion.stateSha256)) {
+    throw new Error('Candidate G rollback companion descriptor is incompatible');
+  }
+  const binding = candidateModelBinding(
+    companion.modelBinding,
+    'Candidate G rollback companion model binding',
+  );
+  const privacy = validatePrivacy(companion.privacy);
+  if (!isPlainObject(companion.states)) {
+    throw new Error('Candidate G rollback companion states are invalid');
+  }
+  const rows = Object.entries(companion.states)
+    .sort(([left], [right]) => compareText(left, right))
+    .map(([partId, state]) => [partId, compactCandidateGRollbackState(state, partId, {
+      productionReferenceAt,
+    })]);
+  if (rows.length !== expectedPartCount || sha256(rows) !== companion.stateSha256) {
+    throw new Error('Candidate G rollback companion state integrity is invalid');
+  }
+  return {
+    binding,
+    privacy,
+    rows,
+    stateSha256: companion.stateSha256,
   };
 }
 
@@ -467,6 +768,7 @@ function validateCheckpoint(checkpoint, expectedPartCount, expectedImplementatio
     || !safeDatasetId(checkpoint.datasetId)
     || checkpoint.partCount !== expectedPartCount
     || !/^[0-9a-f]{64}$/.test(checkpoint.stateSha256)
+    || !/^[0-9a-f]{64}$/.test(checkpoint.generationSha256)
     || !/^[0-9a-f]{64}$/.test(checkpoint.continuationStateContractSha256)) {
     throw new Error('RavScore checkpoint descriptor is invalid');
   }
@@ -491,11 +793,40 @@ function validateCheckpoint(checkpoint, expectedPartCount, expectedImplementatio
     throw new Error('RavScore checkpoint contains duplicate sampling contexts');
   }
   validateRowsAgainstReference(rows, productionReferenceAt, 'RavScore checkpoint');
+  const companion = validateCandidateGRollbackCompanion(
+    checkpoint.candidateGRollbackCompanion,
+    {
+      datasetId: checkpoint.datasetId,
+      productionReferenceAt,
+      generationSha256: checkpoint.generationSha256,
+      expectedPartCount,
+    },
+  );
+  const integratedPartIds = rows.map(([partId]) => partId);
+  const candidatePartIds = companion.rows.map(([partId]) => partId);
+  if (JSON.stringify(integratedPartIds) !== JSON.stringify(candidatePartIds)) {
+    throw new Error('RavScore checkpoint and Candidate G companion have different parts');
+  }
+  const expectedGenerationSha256 = checkpointGenerationSha256({
+    datasetId: checkpoint.datasetId,
+    productionReferenceAt,
+    modelBinding: binding,
+    candidateBinding: companion.binding,
+    continuationStateContractSha256: checkpoint.continuationStateContractSha256,
+    partCount: rows.length,
+    stateSha256: checkpoint.stateSha256,
+    candidateStateSha256: companion.stateSha256,
+  });
+  if (checkpoint.generationSha256 !== expectedGenerationSha256) {
+    throw new Error('RavScore checkpoint and Candidate G companion generation is invalid');
+  }
   return {
     productionReferenceAt,
     binding,
     privacy,
     rows,
+    companion,
+    generationSha256: checkpoint.generationSha256,
     continuationStateContractSha256: checkpoint.continuationStateContractSha256,
   };
 }
@@ -517,12 +848,13 @@ function validateCheckpointForTarget(validatedCheckpoint, targetReference) {
     throw new Error('RavScore checkpoint is from the future relative to the bound target');
   }
   const ageHours = (targetMs - checkpointMs) / 3_600_000;
-  if (ageHours > RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours) {
-    throw new Error(
-      `RavScore checkpoint is older than the ${RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours}-hour continuation limit`,
-    );
-  }
-  return { requestedReferenceAt, targetMs, ageHours };
+  return {
+    requestedReferenceAt,
+    targetMs,
+    ageHours,
+    continuationAvailable:
+      ageHours <= RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
+  };
 }
 
 export async function loadRavScoreContinuationCheckpointForTarget({
@@ -542,8 +874,9 @@ export async function loadRavScoreContinuationCheckpointForTarget({
   }
 
   // A present cache is authoritative evidence. Corruption, incompatible model
-  // metadata, future state or excessive age must stop the build; none may be
-  // silently reinterpreted as a cold start.
+  // metadata or future state must stop the build. A structurally valid expired
+  // continuation remains validated evidence for its rollback companion, but
+  // contributes no schema-6 state and is explicitly absent for bounded cold start.
   const expectedImplementationSha256 = await ravScoreContinuationImplementationSha256({
     ...(repositoryRoot === undefined ? {} : { repositoryRoot }),
   });
@@ -555,6 +888,10 @@ export async function loadRavScoreContinuationCheckpointForTarget({
   const target = validateCheckpointForTarget(validatedCheckpoint, targetReference);
   return {
     loaded: true,
+    reason: target.continuationAvailable
+      ? 'checkpoint-ready'
+      : 'checkpoint-continuation-expired-companion-ready',
+    continuationAvailable: target.continuationAvailable,
     sourceDatasetId: checkpoint.datasetId,
     checkpointAt: validatedCheckpoint.productionReferenceAt,
     targetReferenceAt: target.requestedReferenceAt,
@@ -566,7 +903,13 @@ export async function loadRavScoreContinuationCheckpointForTarget({
     modelBundleSha256: validatedCheckpoint.binding.modelBundleSha256,
     continuationStateContractSha256:
       validatedCheckpoint.continuationStateContractSha256,
-    states: Object.fromEntries(validatedCheckpoint.rows),
+    generationSha256: validatedCheckpoint.generationSha256,
+    states: target.continuationAvailable
+      ? Object.fromEntries(validatedCheckpoint.rows)
+      : {},
+    candidateGRollbackModelBinding: validatedCheckpoint.companion.binding,
+    candidateGRollbackStateSha256: validatedCheckpoint.companion.stateSha256,
+    candidateGRollbackStates: Object.fromEntries(validatedCheckpoint.companion.rows),
     copiedWeather: false,
     copiedScores: false,
     copiedRawVectors: false,
@@ -604,6 +947,19 @@ export async function restoreRavScoreContinuationCheckpoint({
   );
   const targetValidation = validateCheckpointForTarget(validatedCheckpoint, targetReference);
   const requestedReferenceAt = targetValidation.requestedReferenceAt;
+  if (!targetValidation.continuationAvailable) {
+    return {
+      restored: false,
+      reason: 'checkpoint-continuation-expired-companion-ready',
+      targetUnchanged: true,
+      checkpointAt: validatedCheckpoint.productionReferenceAt,
+      targetReferenceAt: requestedReferenceAt,
+      ageHours: targetValidation.ageHours,
+      candidateGRollbackPartCount: validatedCheckpoint.companion.rows.length,
+      candidateGRollbackStateSha256: validatedCheckpoint.companion.stateSha256,
+      generationSha256: validatedCheckpoint.generationSha256,
+    };
+  }
   const target = await readJson(targetPath);
   const deployedReferenceAt = canonicalTime(
     target.productionReferenceAt,
@@ -639,7 +995,7 @@ export async function restoreRavScoreContinuationCheckpoint({
     const targetContainer = targetParts[partId]?.ravScoreModel;
     const targetState = targetContainer?.currentState;
     if (!isPlainObject(targetContainer) || !targetState) {
-      throw new Error(`Hydrated RavScore target has no schema-5 continuation for ${partId}`);
+      throw new Error(`Hydrated RavScore target has no schema-6 continuation for ${partId}`);
     }
     const compactTargetState = compactState(targetState, partId);
     if (checkpointState.samplingContextKey !== compactTargetState.samplingContextKey) {
@@ -686,6 +1042,10 @@ export async function restoreRavScoreContinuationCheckpoint({
     modelBundleSha256: validatedCheckpoint.binding.modelBundleSha256,
     continuationStateContractSha256:
       validatedCheckpoint.continuationStateContractSha256,
+    generationSha256: validatedCheckpoint.generationSha256,
+    candidateGRollbackPartCount: validatedCheckpoint.companion.rows.length,
+    candidateGRollbackModelBinding: validatedCheckpoint.companion.binding,
+    candidateGRollbackStateSha256: validatedCheckpoint.companion.stateSha256,
     copiedWeather: false,
     copiedScores: false,
     copiedRawVectors: false,

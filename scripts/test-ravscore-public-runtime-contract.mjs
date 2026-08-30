@@ -61,15 +61,32 @@ const scoreProfile = resolvePublicRavScoreProfile({
   modelMigrationReady: true,
 });
 
-function publicMode(score, mode, time = generatedAt) {
+function publicMode(score, mode, time = generatedAt, winningPartId = 'part-fixture', winningPartName = 'Fixture part') {
+  const scoreBounds = {
+    lower:score, upper:score, modelUncertaintyPoints:0, rawLower:score, rawUpper:score,
+  };
   return {
     available: true,
+    scoreQuality: 'FULL_HISTORY',
+    calibrationEligible: true,
+    scoreSemantics: 'EXACT_POINT_SCORE',
+    conservativeTailResetApplied: false,
+    scoreBounds,
+    historyCoverageHours: 48,
+    historyReasonCodes: [],
     status: 'only-part',
     score,
     baseScore: score,
     level: 'fair',
     label: 'Middel',
     scoreProfileId: RAVSCORE_MODEL_ID,
+    winningPartId,
+    winningPartName,
+    winningPartUncertain: false,
+    possibleWinningPartCount: 1,
+    possibleWinningParts: [{
+      partId:winningPartId, name:winningPartName, score, scoreBounds:{...scoreBounds},
+    }],
     modelBinding: binding,
     components: { huntability: score - 1, transport: score + 1, release: score },
     componentReasons: { huntability: ['h'], transport: ['t'], release: ['m'] },
@@ -143,11 +160,12 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
     partIndex += 1;
     const partId = `part-${partIndex}`;
     partIds.push(partId);
-    const waders = publicMode(55 + (partIndex % 10), 'waders');
-    const beach = publicMode(60 + (partIndex % 10), 'beach');
+    const partName = `Part ${partIndex}`;
+    const waders = publicMode(55 + (partIndex % 10), 'waders', generatedAt, partId, partName);
+    const beach = publicMode(60 + (partIndex % 10), 'beach', generatedAt, partId, partName);
     parts[partId] = {
       zoneId,
-      name: `Part ${partIndex}`,
+      name: partName,
       marineCoverage: 'full',
       waterPoint: [10, 56],
       landPoint: [10.01, 56.01],
@@ -163,7 +181,8 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
   }
   const winner = partIds[0];
   const coverage = (mode, time, hourIndex) => ({
-    ...publicMode((mode === 'waders' ? 60 : 65) + (hourIndex % 10), mode, time),
+    ...publicMode((mode === 'waders' ? 60 : 65) + (hourIndex % 10), mode, time,
+      winner, parts[winner].name),
     winningPartId: winner,
     winningPartName: parts[winner].name,
     scoreSpread: 9,
@@ -197,14 +216,19 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
 assert.equal(partIndex, 673);
 
 const scoreAvailability = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   policy: 'integrated-model-local-fail-closed',
   allZonesActive: true,
   activeZoneCount: 210,
   unavailableZoneCount: 0,
   totalZoneCount: 210,
+  allCurrentScoresFullHistory: true,
+  fullHistoryModeCount: 420,
+  historyIncompleteModeCount: 0,
+  historyIncompleteZoneCount: 0,
   evaluatedAt: generatedAt,
   unavailableZones: [],
+  historyIncompleteZones: [],
 };
 const full = {
   datasetId: 'integrated-public-contract-test',
@@ -236,6 +260,58 @@ assert.throws(() => buildPublicConditions({
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
+assert.equal(startup.coastalParts.zones['zone-0'].hourly[0].waders.scoreQuality, 'FULL_HISTORY');
+assert.equal(startup.coastalParts.zones['zone-0'].hourly[0].waders.calibrationEligible, true);
+assert.deepEqual(startup.coastalParts.zones['zone-0'].hourly[0].waders.historyReasonCodes, []);
+assert.equal(startup.nationalForecast.modes.waders[0].rows[0].scoreQuality, 'FULL_HISTORY');
+
+const historyIncompleteFull = structuredClone(full);
+historyIncompleteFull.coastalParts.scoreProfile = resolvePublicRavScoreProfile({
+  modelCoverageReady: true,
+  modelMemoryReady: false,
+  modelMigrationReady: true,
+});
+for (const row of historyIncompleteFull.coastalParts.zones['zone-0'].hourly) {
+  for (const mode of ['waders', 'beach']) {
+    Object.assign(row[mode], {
+      scoreQuality: 'HISTORY_INCOMPLETE',
+      calibrationEligible: false,
+      scoreSemantics: 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+      conservativeTailResetApplied: false,
+      scoreBounds: {
+        lower:row[mode].score, upper:row[mode].score + 10,
+        modelUncertaintyPoints:10, rawLower:row[mode].score, rawUpper:row[mode].score + 10,
+      },
+      historyCoverageHours: 24,
+      historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    });
+    row[mode].possibleWinningParts[0].scoreBounds = { ...row[mode].scoreBounds };
+  }
+}
+Object.assign(historyIncompleteFull.coastalParts.scoreAvailability, {
+  allCurrentScoresFullHistory: false,
+  fullHistoryModeCount: 418,
+  historyIncompleteModeCount: 2,
+  historyIncompleteZoneCount: 1,
+  historyIncompleteZones: [{
+    zoneId: 'zone-0',
+    zoneName: 'Zone 0',
+    modes: ['waders', 'beach'],
+    historyCoverageHours: 24,
+    historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+  }],
+});
+const historyIncompleteStartup = buildPublicConditions(historyIncompleteFull);
+const historyIncompleteDetails = buildPublicConditionDetails(historyIncompleteFull);
+assert.equal(historyIncompleteStartup.coastalParts.zones['zone-0'].hourly[0].waders.score, 60);
+assert.equal(historyIncompleteStartup.coastalParts.zones['zone-0'].hourly[0].waders.scoreQuality,
+  'HISTORY_INCOMPLETE');
+assert.equal(historyIncompleteDetails.coastalParts.zones['zone-0'].hourly.length,
+  RAVSCORE_PUBLIC_FORECAST_HOURS,
+  'HISTORY_INCOMPLETE must retain the exact current plus five-day score horizon');
+assert.ok(historyIncompleteDetails.coastalParts.zones['zone-0'].hourly.every(row =>
+  row.waders.available === true && Number.isFinite(row.waders.score)),
+'every forecast hour with direct input must remain numerically available');
 const startupText = compactJson(startup);
 const detailsText = compactJson(details);
 const zoneRegistryText = compactJson({
@@ -244,6 +320,48 @@ const zoneRegistryText = compactJson({
     type: 'Feature', properties: { id, zoneStatus: 'active' }, geometry: null,
   })),
 });
+const directMissingFull = structuredClone(full);
+Object.assign(directMissingFull.coastalParts.zones['zone-0'].hourly[0].waders, {
+  available: false,
+  status: 'unavailable',
+  score: null,
+  scoreQuality: 'UNAVAILABLE',
+  calibrationEligible: false,
+  scoreSemantics: null,
+  conservativeTailResetApplied: false,
+  scoreBounds: null,
+  historyCoverageHours: null,
+  historyReasonCodes: [],
+  reasons: ['Et direkte input mangler.'],
+});
+Object.assign(directMissingFull.coastalParts.scoreAvailability, {
+  allZonesActive: false,
+  activeZoneCount: 209,
+  unavailableZoneCount: 1,
+  allCurrentScoresFullHistory: false,
+  fullHistoryModeCount: 419,
+  historyIncompleteModeCount: 0,
+  historyIncompleteZoneCount: 0,
+  unavailableZones: [{
+    zoneId: 'zone-0', zoneName: 'Zone 0', modes: ['waders'], reasons: ['DIRECT_INPUT_MISSING'],
+  }],
+  historyIncompleteZones: [],
+});
+const directMissingStartup = buildPublicConditions(directMissingFull);
+const directMissingDetails = buildPublicConditionDetails(directMissingFull);
+assert.equal(directMissingStartup.coastalParts.scoreAvailability.allCurrentScoresFullHistory, false);
+assert.equal(directMissingStartup.coastalParts.scoreAvailability.historyIncompleteModeCount, 0);
+assert.equal(directMissingStartup.coastalParts.zones['zone-0'].hourly[0].waders.scoreQuality,
+  'UNAVAILABLE',
+  'direct input absence must remain distinct from HISTORY_INCOMPLETE');
+assert.throws(() => buildPublicManifest(
+  directMissingFull,
+  compactJson(directMissingStartup),
+  compactJson(directMissingDetails),
+  '{}\n',
+  zoneRegistryText,
+), /lacks waders|complete 210\/673 package/,
+'a direct input gap must still fail the exact public release horizon');
 const manifest = buildPublicManifest(full, startupText, detailsText, '{}\n', zoneRegistryText);
 
 for (const invalidTrust of [
@@ -455,6 +573,13 @@ const unavailableWithoutBinding = structuredClone(full);
 unavailableWithoutBinding.coastalParts.zones['zone-0'].hourly[0].waders = {
   available: false,
   score: null,
+  scoreQuality: 'UNAVAILABLE',
+  calibrationEligible: false,
+  scoreSemantics: null,
+  conservativeTailResetApplied: false,
+  scoreBounds: null,
+  historyCoverageHours: null,
+  historyReasonCodes: [],
   status: 'unavailable',
   reasons: ['missing'],
 };

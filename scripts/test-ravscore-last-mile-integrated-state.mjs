@@ -3,6 +3,7 @@ import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrat
 import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
 
@@ -26,14 +27,17 @@ const built = buildIntegratedRavScoreStateSeries(rows, {
   onshoreDirectionDeg,
   coldReplayBootstrap: {
     recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: 48,
+    expectedCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+    completeCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+    boundedUnknownPositionCount: 0,
+    historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
     targetReferenceAt: time(0),
   },
 });
 const target = built.rows.at(-1);
 assert.equal(built.modelId, RAVSCORE_MODEL_ID);
 assert.equal(built.schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
-assert.equal(RAVSCORE_STATE_SCHEMA_VERSION, '5.0.0');
+assert.equal(RAVSCORE_STATE_SCHEMA_VERSION, '6.0.0');
 assert.equal(target.currentMemoryReady, true);
 assert.equal(target.waveMemoryReady, true);
 assert.equal(target.lastMileMemoryReady, true);
@@ -41,7 +45,22 @@ assert.ok(target.lastMileFactor >= 0.85 && target.lastMileFactor < 0.851);
 assert.ok(target.lastMileNormalAlignment < -0.999999);
 assert.equal(/waveDirectionDeg|onshoreDirectionDeg|raw/i.test(
   JSON.stringify(target.continuationState),
-), false, 'schema-5 continuation must contain only compact derived directional moments');
+), false, 'schema-6 continuation must contain only compact derived directional moments');
+assert.equal(
+  target.continuationState.historyBounds.lastMile.lastUnknownAt,
+  time(-48),
+  'cold replay must retain the causal origin of its unknown pre-window tail',
+);
+assert.equal(
+  target.continuationState.historyBounds.lastMile.conservativeResetAt,
+  time(-8),
+  'the 40-hour last-mile tail reset must be bound to its exact closure time',
+);
+assert.deepEqual(
+  target.continuationState.historyBounds.lastMile.minimumFactorTrack,
+  target.continuationState.historyBounds.lastMile.maximumFactorTrack,
+  'the last-mile tracks may collapse after 40 hours while the 288-hour wave tail stays incomplete',
+);
 
 const continued = buildIntegratedRavScoreStateSeries([{
   ...rows.at(-1),
@@ -68,7 +87,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([{
     waveApproachState: null,
   },
 }), /wave-approach state is not bound to parent time/,
-'schema-5 continuation must never silently cold-start a missing nested wave-approach state');
+'schema-6 continuation must never silently cold-start a missing nested wave-approach state');
 
 assert.throws(() => buildIntegratedRavScoreStateSeries([{
   ...rows.at(-1),
@@ -111,7 +130,7 @@ for (const momentKey of [
         },
       },
     }), /internally inconsistent/,
-    `schema-5 ${momentKey} must reject strings, booleans and arrays`);
+    `schema-6 ${momentKey} must reject strings, booleans and arrays`);
   }
 }
 
@@ -133,7 +152,7 @@ for (const statusTamper of [
       },
     },
   }), /internally inconsistent/,
-  'schema-5 must reject a READY directional state relabelled as non-ready');
+  'schema-6 must reject a READY directional state relabelled as non-ready');
 }
 
 const missingDirection = buildIntegratedRavScoreStateSeries([{
@@ -178,6 +197,6 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([{
   onshoreDirectionDeg,
   initialState: retiredNeutralSchema4,
 }), /cannot be continued or migrated|incompatible model metadata/,
-'retired neutral schema-4 state must never be accepted as schema-5 continuation');
+'retired neutral schema-4 state must never be accepted as schema-6 continuation');
 
-console.log('RavScore integrated schema-5 last-mile state scenarios passed.');
+console.log('RavScore integrated schema-6 last-mile state scenarios passed.');

@@ -35,9 +35,9 @@ const MODEL_BINDING_FIELDS = Object.freeze([
   'presentationPolicyId', 'modelContractSha256', 'modelBundleSha256',
 ]);
 export const TRIP_BINDING_POLICY_ID =
-  'ravradar-trip-v3-exact-integrated-candidate-g-emergency-v2';
+  'ravradar-trip-v3-exact-integrated-candidate-g-history-emergency-v3';
 export const TRIP_ACTIVE_ADMISSION_POLICY_ID =
-  'ravradar-trip-v3-exact-operational-active-reasons-v2';
+  'ravradar-trip-v3-exact-operational-active-reasons-v3';
 const ASSISTANT_FUNCTION = 'ravradar-assistant';
 const PUBLIC_ORIGIN = 'https://ravradar.dk';
 

@@ -15,6 +15,15 @@ const parts={};
 const runtimeZones={};
 const modelBinding=ravScoreModelBinding();
 const scoreProfile=resolvePublicRavScoreProfile({modelCoverageReady:true,modelMemoryReady:true,modelMigrationReady:true});
+const fullHistoryQuality=score=>({
+  scoreQuality:'FULL_HISTORY',
+  calibrationEligible:true,
+  scoreSemantics:'EXACT_POINT_SCORE',
+  conservativeTailResetApplied:false,
+  scoreBounds:{lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score},
+  historyCoverageHours:48,
+  historyReasonCodes:[],
+});
 let nextPart=0;
 
 const weather=(zoneIndex,dayIndex,modeIndex)=>({
@@ -87,8 +96,11 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
       const winningPartId=ids[(dayIndex+modeIndex)%ids.length];
       const localWeather=weather(zoneIndex,dayIndex,modeIndex);
       const score=60+dayIndex+modeIndex;
+      const quality=fullHistoryQuality(score);
       row[mode]={
-        available:true,modelBinding,status:'only-part',score,winningPartId,winningPartName:parts[winningPartId].name,
+        available:true,modelBinding,...quality,status:'only-part',score,winningPartId,winningPartName:parts[winningPartId].name,
+        winningPartUncertain:false,possibleWinningPartCount:1,
+        possibleWinningParts:[{partId:winningPartId,name:parts[winningPartId].name,score,scoreBounds:{...quality.scoreBounds}}],
         scoreSpread:9,comparisonPartCount:count,
         components:{huntability:score-2,transport:score+1,release:score-1},
         componentReasons:{huntability:[`jagt-${zoneId}-${dayIndex}-${mode}`],transport:[`transport-${zoneId}-${dayIndex}-${mode}`],release:[`mobilisering-${zoneId}-${dayIndex}-${mode}`]},
@@ -98,7 +110,7 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
       };
       if(dayIndex===0){
         const current=parts[winningPartId].current||{time,weather:localWeather};
-        current[mode]={available:true,modelBinding,score,components:row[mode].components,componentReasons:row[mode].componentReasons,explanation:row[mode].explanation};
+        current[mode]={available:true,modelBinding,...fullHistoryQuality(score),score,components:row[mode].components,componentReasons:row[mode].componentReasons,explanation:row[mode].explanation};
         parts[winningPartId].current=current;
       }
     }
@@ -109,7 +121,8 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
 }
 
 assert.equal(nextPart,partCount,'Den landsdækkende regression skal dække præcis 673 lokale kystdele.');
-const full={datasetId:'local-display-consistency',generatedAt,productionReferenceAt:generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:1,enabled:true,generatedAt,modelBinding,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreProfile,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
+const scoreAvailability={schemaVersion:2,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,allCurrentScoresFullHistory:true,fullHistoryModeCount:zoneCount*2,historyIncompleteModeCount:0,historyIncompleteZoneCount:0,evaluatedAt:generatedAt,unavailableZones:[],historyIncompleteZones:[]};
+const full={datasetId:'local-display-consistency',generatedAt,productionReferenceAt:generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:2,enabled:true,generatedAt,modelBinding,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreProfile,scoreAvailability,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
 const merged=mergeConditionDetails({...buildPublicConditions(full),available:true},buildPublicConditionDetails(full));
 let checkedTabs=0;
 for(const [zoneId,zone] of Object.entries(merged.coastalParts.zones)){

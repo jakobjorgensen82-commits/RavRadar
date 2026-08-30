@@ -485,6 +485,128 @@ begin
 end;
 $$;
 
++-- Validate the immutable public score-quality snapshot independently of the
+-- transport/storage client. This is deliberately model-bound: the integrated
+-- model can store a bounded HISTORY_INCOMPLETE score, while the sealed
+-- Candidate G rollback may store only an exact, READY 48-hour point score and
+-- remains calibration-ineligible because it is the retired rollback model.
+create or replace function public.ravradar_trip_v3_score_quality_allowed(
+  p_model_version text,
+  p_calibration_features jsonb
+)
+returns boolean
+language plpgsql
+immutable
+strict
+set search_path = pg_catalog, public
+as $$
+declare
+  quality text;
+  semantics text;
+  score_calibration_eligible boolean;
+  tail_reset boolean;
+  total_score numeric;
+  lower_bound numeric;
+  upper_bound numeric;
+  uncertainty_points numeric;
+  raw_lower numeric;
+  raw_upper numeric;
+  coverage_hours numeric;
+  history_reason jsonb;
+  history_reason_code text;
+  seen_history_reasons text[] := array[]::text[];
+begin
+  if jsonb_typeof(p_calibration_features) <> 'object'
+    or jsonb_typeof(p_calibration_features -> 'scoreQuality') <> 'string'
+    or jsonb_typeof(p_calibration_features -> 'scoreSemantics') <> 'string'
+    or jsonb_typeof(p_calibration_features -> 'scoreCalibrationEligible') <> 'boolean'
+    or jsonb_typeof(p_calibration_features -> 'conservativeTailResetApplied') <> 'boolean'
+    or jsonb_typeof(p_calibration_features -> 'scoreBoundLower') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'scoreBoundUpper') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'scoreBoundModelUncertaintyPoints') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'scoreBoundRawLower') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'scoreBoundRawUpper') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'historyCoverageHours') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'totalScore') <> 'number'
+    or jsonb_typeof(p_calibration_features -> 'historyReasonCodes') <> 'array'
+    or jsonb_array_length(p_calibration_features -> 'historyReasonCodes') > 12
+  then return false;
+  end if;
+
+  quality := p_calibration_features ->> 'scoreQuality';
+  semantics := p_calibration_features ->> 'scoreSemantics';
+  score_calibration_eligible := (p_calibration_features ->> 'scoreCalibrationEligible')::boolean;
+  tail_reset := (p_calibration_features ->> 'conservativeTailResetApplied')::boolean;
+  total_score := (p_calibration_features ->> 'totalScore')::numeric;
+  lower_bound := (p_calibration_features ->> 'scoreBoundLower')::numeric;
+  upper_bound := (p_calibration_features ->> 'scoreBoundUpper')::numeric;
+  uncertainty_points := (p_calibration_features ->> 'scoreBoundModelUncertaintyPoints')::numeric;
+  raw_lower := (p_calibration_features ->> 'scoreBoundRawLower')::numeric;
+  raw_upper := (p_calibration_features ->> 'scoreBoundRawUpper')::numeric;
+  coverage_hours := (p_calibration_features ->> 'historyCoverageHours')::numeric;
+
+  if total_score <> lower_bound
+    or lower_bound not between 0 and 100
+    or upper_bound not between 0 and 100
+    or lower_bound > upper_bound
+    or uncertainty_points not between 0 and 100
+    or uncertainty_points <> upper_bound - lower_bound
+    or raw_lower not between 0 and 100
+    or raw_upper not between 0 and 100
+    or raw_lower > raw_upper
+    or coverage_hours not between 0 and 48
+  then return false;
+  end if;
+
+  for history_reason in
+    select value from jsonb_array_elements(p_calibration_features -> 'historyReasonCodes')
+  loop
+    if jsonb_typeof(history_reason) <> 'string' then return false; end if;
+    history_reason_code := history_reason #>> '{}';
+    if history_reason_code !~ '^[A-Z][A-Z0-9_]{0,127}$'
+      or history_reason_code = any(seen_history_reasons)
+    then return false;
+    end if;
+    seen_history_reasons := array_append(seen_history_reasons, history_reason_code);
+  end loop;
+
+  if quality = 'FULL_HISTORY' then
+    if coverage_hours <> 48
+      or cardinality(seen_history_reasons) <> 0
+      or lower_bound <> upper_bound
+      or raw_lower <> raw_upper
+      or semantics not in ('EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE')
+      or tail_reset <> (semantics = 'CONSERVATIVE_TAIL_RESET_POINT_SCORE')
+    then return false;
+    end if;
+    if p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0' then
+      return score_calibration_eligible = true;
+    end if;
+    if p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3' then
+      return score_calibration_eligible = false
+        and semantics = 'EXACT_POINT_SCORE'
+        and tail_reset = false;
+    end if;
+    return false;
+  end if;
+
+  return quality = 'HISTORY_INCOMPLETE'
+    and p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0'
+    and score_calibration_eligible = false
+    and semantics = 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+    and cardinality(seen_history_reasons) > 0;
+exception when others then
+  return false;
+end;
+$$;
+
+revoke all on function public.ravradar_trip_v3_score_quality_allowed(
+  text, jsonb
+) from public, anon, authenticated;
+grant execute on function public.ravradar_trip_v3_score_quality_allowed(
+  text, jsonb
+) to service_role;
+
 create or replace function public.ravradar_trip_v3_binding_allowed(
   p_model_version text,
   p_calibration_features jsonb,
@@ -502,21 +624,21 @@ as $$
   select case
     -- RAVSCORE_INTEGRATED_BINDING_BEGIN
     when p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0'
-      and p_calibration_features ->> 'modelStateVersion' = '5.0.0'
+      and p_calibration_features ->> 'modelStateVersion' = '6.0.0'
       and p_calibration_features ->> 'modelVariantId' = 'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2'
-      and p_calibration_features ->> 'modelProfileId' = 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4'
-      and p_calibration_features ->> 'modelComponentSchemaId' = 'ravscore-components-huntability-delivery-mobilisation-v4'
-      and p_calibration_features ->> 'modelExplanationSchemaId' = 'ravscore-explanation-integrated-v4'
-      and p_calibration_features ->> 'modelRankingPolicyId' = 'direction-broad-19-v1'
-      and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
+      and p_calibration_features ->> 'modelProfileId' = 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5'
+      and p_calibration_features ->> 'modelComponentSchemaId' = 'ravscore-components-huntability-delivery-mobilisation-bounds-v5'
+      and p_calibration_features ->> 'modelExplanationSchemaId' = 'ravscore-explanation-integrated-bounds-v5'
+      and p_calibration_features ->> 'modelRankingPolicyId' = 'direction-broad-19-history-tie-v2'
+      and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
-      and p_calibration_features ->> 'modelContractSha256' = '0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da'
-      and p_calibration_features ->> 'modelBundleSha256' = '27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd'
+      and p_calibration_features ->> 'modelContractSha256' = '778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7'
+      and p_calibration_features ->> 'modelBundleSha256' = '101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then case
       when jsonb_path_query_array(
         coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
-        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-history-incomplete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
       ) = '[]'::jsonb
       then p_calibration_eligible = (
         p_actual_zone_id = p_forecast_zone_id
@@ -524,9 +646,11 @@ as $$
       )
       when jsonb_path_query_array(
         coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
-        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-history-incomplete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
       ) in (
         '["public-emergency-last-complete"]'::jsonb,
+        '["ravscore-history-incomplete"]'::jsonb,
+        '["public-emergency-last-complete","ravscore-history-incomplete"]'::jsonb,
         '["ravscore-reconstructed-derived-evidence"]'::jsonb,
         '["public-emergency-last-complete","ravscore-reconstructed-derived-evidence"]'::jsonb,
         '["ravscore-evidence-trust-unattested"]'::jsonb
@@ -543,12 +667,12 @@ as $$
       and p_calibration_features ->> 'modelRankingPolicyId' = 'direction-broad-19-v1'
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
-      and p_calibration_features ->> 'modelContractSha256' = '37cdcc9e369e82c405ab05e0a2923ccceebf8938706af74073264bf541bf95cc'
-      and p_calibration_features ->> 'modelBundleSha256' = '6662f203de8929eefb9796008850d4b03d55eea39bee6ec9efa8cfa33d34d1bf'
+      and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
+      and p_calibration_features ->> 'modelBundleSha256' = 'fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then p_calibration_eligible = false and jsonb_path_query_array(
       coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
-      '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+      '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-history-incomplete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
     ) in (
       '[]'::jsonb,
       '["public-emergency-last-complete"]'::jsonb,
@@ -585,6 +709,8 @@ alter table public.observations
     and data_quality_flags in (
       '[]'::jsonb,
       '["public-emergency-last-complete"]'::jsonb,
+      '["ravscore-history-incomplete"]'::jsonb,
+      '["public-emergency-last-complete","ravscore-history-incomplete"]'::jsonb,
       '["ravscore-reconstructed-derived-evidence"]'::jsonb,
       '["public-emergency-last-complete","ravscore-reconstructed-derived-evidence"]'::jsonb,
       '["ravscore-evidence-trust-unattested"]'::jsonb,
@@ -643,7 +769,11 @@ alter table public.observations
         'modelVersion','appVersion','modelStateVersion','modelVariantId','modelProfileId',
         'modelComponentSchemaId','modelExplanationSchemaId','modelRankingPolicyId',
         'modelBestTimePolicyId','modelPresentationPolicyId','modelContractSha256','modelBundleSha256',
-        'totalScore','huntabilityScore','transportScore','mobilisationScore',
+        'totalScore','scoreBoundLower','scoreBoundUpper','scoreBoundModelUncertaintyPoints',
+        'scoreBoundRawLower','scoreBoundRawUpper','historyCoverageHours',
+        'scoreQuality','scoreSemantics','scoreCalibrationEligible',
+        'conservativeTailResetApplied','historyReasonCodes',
+        'huntabilityScore','transportScore','mobilisationScore',
         'windSpeedMs','windDirectionDeg','waveHeightM','wavePeriodS','waveDirectionDeg',
         'currentSpeedMs','currentDirectionDeg','waterLevelM','waterLevelTrendM3h',
         'maxWaveHeight24hM','hoursSinceEnergyPeak','sustainedOnshoreHours','reasonCodes'
@@ -652,7 +782,11 @@ alter table public.observations
         'modelVersion','appVersion','modelStateVersion','modelVariantId','modelProfileId',
         'modelComponentSchemaId','modelExplanationSchemaId','modelRankingPolicyId',
         'modelBestTimePolicyId','modelPresentationPolicyId','modelContractSha256','modelBundleSha256',
-        'totalScore','huntabilityScore','transportScore','mobilisationScore',
+        'totalScore','scoreBoundLower','scoreBoundUpper','scoreBoundModelUncertaintyPoints',
+        'scoreBoundRawLower','scoreBoundRawUpper','historyCoverageHours',
+        'scoreQuality','scoreSemantics','scoreCalibrationEligible',
+        'conservativeTailResetApplied','historyReasonCodes',
+        'huntabilityScore','transportScore','mobilisationScore',
         'windSpeedMs','windDirectionDeg','waveHeightM','wavePeriodS','waveDirectionDeg',
         'currentSpeedMs','currentDirectionDeg','waterLevelM','waterLevelTrendM3h',
         'maxWaveHeight24hM','hoursSinceEnergyPeak','sustainedOnshoreHours','reasonCodes'
@@ -682,6 +816,14 @@ alter table public.observations
       and jsonb_typeof(calibration_features -> 'modelBundleSha256') = 'string'
       and calibration_features ->> 'modelBundleSha256' ~ '^[a-f0-9]{64}$'
       and jsonb_typeof(calibration_features -> 'totalScore') = 'number'
+      and public.ravradar_trip_v3_score_quality_allowed(
+        model_version,
+        calibration_features
+      )
+      and (
+        (calibration_features ->> 'scoreQuality' = 'HISTORY_INCOMPLETE')
+        = (data_quality_flags ? 'ravscore-history-incomplete')
+      )
       and jsonb_typeof(calibration_features -> 'huntabilityScore') = 'number'
       and jsonb_typeof(calibration_features -> 'transportScore') = 'number'
       and jsonb_typeof(calibration_features -> 'mobilisationScore') = 'number'
@@ -718,7 +860,7 @@ alter table public.observations
       and jsonb_array_length(calibration_features -> 'reasonCodes') <= 12
       and jsonb_path_query_array(
         calibration_features -> 'reasonCodes',
-        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-history-incomplete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
       ) = data_quality_flags
       and model_version = calibration_features ->> 'modelVersion'
       and rav_score::numeric = (calibration_features ->> 'totalScore')::numeric
@@ -763,7 +905,7 @@ create unique index if not exists observations_trip_id_complete_uidx
 comment on column public.observations.schema_version is
   '1 = historisk observation, 2 = historisk komplet Candidate G-tur, 3 = komplet tur til den integrerede model.';
 comment on column public.observations.calibration_eligible is
-  'True only for complete immutable schema-3 trips bound to the exact current integrated RavScore bundle and matching the forecast location. Exact Candidate G rollback trips are retained with false; unknown bindings and schema 1/2 are excluded.';
+  'True only for FULL_HISTORY immutable schema-3 trips bound to the exact current integrated RavScore bundle and matching the forecast location. HISTORY_INCOMPLETE and public-emergency trips remain storable with false. Exact Candidate G rollback trips are retained with false; unknown bindings and schema 1/2 are excluded.';
 
 create or replace function public.ravradar_trip_v3_active_binding_admitted(
   p_model_id text,
@@ -1095,11 +1237,11 @@ begin
     'tripSchemaVersion', 3,
     'appliedMigrationVersions', applied_migration_versions,
     'tripBindingPolicy', pg_catalog.jsonb_build_object(
-      'id', 'ravradar-trip-v3-exact-integrated-candidate-g-emergency-v2',
+      'id', 'ravradar-trip-v3-exact-integrated-candidate-g-history-emergency-v3',
       'definition', trip_binding_policy_definition
     ),
     'tripActiveAdmissionPolicy', pg_catalog.jsonb_build_object(
-      'id', 'ravradar-trip-v3-exact-operational-active-reasons-v2',
+      'id', 'ravradar-trip-v3-exact-operational-active-reasons-v3',
       'definition', trip_active_admission_definition,
       'triggerFunctionDefinition', trip_active_trigger_function_definition,
       'triggerDefinition', trip_active_trigger_definition

@@ -2807,7 +2807,7 @@ def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget
     if PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH is not None:
         # The one-time migration bridge may begin before the normal rolling
         # cache window. Preserve exactly that bounded start until the new
-        # schema-5 checkpoint has been produced; later runs return to normal
+        # schema-6 checkpoint has been produced; later runs return to normal
         # retention automatically because the bootstrap env is absent.
         cutoff = min(cutoff, PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH)
     horizon = time.time() + (HOURS + 6) * 3600

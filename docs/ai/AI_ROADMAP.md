@@ -1,15 +1,14 @@
 # AI Roadmap – RavRadar 4.0.316+
 
-## P0 nu – publicér frisk primary uden gyldig ældre fallback
+## Offentlig baseline – 4.0.316 Candidate G
 
 1. [x] Bestå PR #233 exact-head `33299676128`, merge `63d789a4` og bevis i run `33299747300`, at D1-gaten frigives og build starter.
 2. [x] Afgræns rødt stop til fallbackstaging uden kandidat inden for 72 timer/prognosehorisont; intet artifact/Pages blev publiceret.
 3. [x] Bind DEC-0112 og 4.0.316-kontrakten: optional fallback, aldrig gammel/udløbet public fallback og streng primary accounting/audit.
 4. [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
 5. [x] Registrér workflowmonolit, grøn-no-op og version/docs/string-testkobling som modelarkitekturroadmap uden P0-scopeudvidelse.
-6. [ ] Bestå målrettede docs/RDKS/security/handbook/version/releasegates og exact-head sourcegate.
-7. [ ] Merge, kør frisk fuld produktion og verificér artifact/Pages samt offentlig 210/673/current/fem døgn.
-8. [ ] Fortsæt derefter DEC-0102-producent-/forbrugermatrix og arkitekturreduktion.
+6. [x] Observer frisk offentlig `rr-20260830091913-210` med 210/673; Candidate G gav 0 aktive/210 `UNAVAILABLE` på grund af utilstrækkelig sammenhængende historik. Det er regressionsevidens, ikke state-6-bevis.
+7. [x] Fortsæt DEC-0102/DEC-0112-producent-/forbrugermatrix og arkitekturreduktion i den samlede modelleverance.
 
 ## Historisk P0 – pensionér stale interlock og gendan friske prognoser
 
@@ -24,17 +23,19 @@
 ## Model-P0 – færdiggør og verificér den samlede DEC-0110-model
 
 1. [x] Bevar Candidate G som eneste offentlige model under arbejdet og integrér den seneste grønne 4.0.314-kilde uden at overskrive watchdog-, trip-, privacy-, recovery-, geometri- eller punktkontrakter.
-2. [x] Lås `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0` og alle variant-/profil-/komponent-/forklarings-/migration-/rollbackfelter fra modelkontrakten.
+2. [x] Lås `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0` og alle variant-/profil-/komponent-/forklarings-/migration-/rollbackfelter fra modelkontrakten; schema 5 er kun den aldrig-offentlige eksakte 5→6-migrationskilde.
 3. [x] Implementér den kausale energivægtede bølgeapproach med fire timers halveringstid og en ældre hale, én `FROM`→`TOWARD`-rotation, højst 15 % dæmpning af supply, højst 7,5 rå totalscorepoint før slutafrunding og dermed op til 8 viste point. Aktiv direction-missing fejler lukket; kun `waveHeightM=0` er neutral exact calm, og positiv højde med nulperiode er `INVALID`/fail-closed.
 4. [x] Bevar `physicalDeliveryResolved=false` og fysisk interval `null`; brug DDM 50 m alene som statisk kontekst og Rainville 2026 alene som buoyant-object-analogi; flyt ingen kystnormal, geometri eller land-/vandpunkter.
-5. [x] Implementér v4's signed-evidence Candidate G-reweight, aggregate 673/common-target-gate og bounded 40-timers private WAM-bootstrap med coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation samt `1/1024`/`0.01171875`-grænser; bevar Candidate G fail-closed ved manglende state/target/run og dan ingen syntetisk/offentlig historik. Bevar særskilt ægte cold start fra præcis 48 private verificerede timepositioner plus reel target, rollback uden dobbelt credit og same-model atomisk nøddrift højst 72 timer uden cross-model fallback/interpolation.
+5. [x] Implementér v5's signed-evidence Candidate G→schema6-reweight, aggregate 673/common-target-gate og bounded 40-timers private WAM-bootstrap med coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation samt `1/1024`/`0.01171875`-grænser; bevar Candidate G fail-closed ved manglende state/target/run og dan ingen syntetisk/offentlig historik. State-løs recovery bruger `bounded-private-48h-history-cold-replay-v3` over de faktisk tilgængelige 0–48 positioner og er også ved 48/48 `HISTORY_INCOMPLETE`, indtil 288-timers closure; rollback får ingen dobbelt credit, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
 6. [x] Lås trustgrænserne: kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag.
-7. [x] Luk den komplette producent-/forbrugermatrix, inklusive 210/673, payloads/hashes, ranglister, bedste tid, detaljer/femdøgn, strand/waders, DA/DE/EN, lokal/Edge-assistent, ture/observationer, admin/ekspert, håndbøger, profil, scheduler, audits og releasegates.
+7. [x] Luk den komplette lokale producent-/forbrugermatrix, inklusive 210/673-kontrakter, payloads/hashes, ranglister, bedste tid, detaljer/femdøgn, strand/waders, DA/DE/EN, lokal/Edge-assistent, ture/observationer, admin/ekspert, håndbøger, profil, scheduler, audits og releasegates. Full rollback-orakel, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog og de øvrige proportionale blokke er grønne. PR exact-head, frisk produktion og offentlig verifikation står fortsat i udgivelsespunkt 14.
 8. [x] Opgiv den fiktive udførelse af morgenhullets rekonstruktion før descriptor/apply/mutation/publicering; bevar DEC-0109 alene som historisk afgrænset sikkerhedskontrakt.
-9. [ ] Luk alle dokumentationsflader og målrettede model/state/wave-approach/migration/trust/emergency-tests uden at opfinde runbeviser.
-10. [ ] Gennemfør uafhængig helheds-, model-, runtime/privacy-, forbruger- og operationel rollback-revision; ret fund og gentag proportionalt.
-11. [ ] Hent seneste grønne `origin/main` ved slutcheckpointet, regenerér endelige hashes/version 4.0.315, bevis kun versionsfelt i geodata og kør fuld source-/RDKS-/releasegate.
-12. [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Først derefter må 4.0.315 eller model 1.1 kaldes offentlig/produktionsverificeret.
+9. [ ] Færdiggør exact-head-/produktionsbevis for DEC-0112's numerisk konservative `HISTORY_INCOMPLETE`: kernens lower/upper gennem 20/50/30, 48 aktive currenttimer, 288 timers bølgemobiliseringshale, 40 timers last-mile-hale, 168 timers researchretention uden scoreeffekt og direct-input-`UNAVAILABLE` er implementeret lokalt. Trip-/observationspersistens af lower/upper/span/coverage/reasons er lokalt lukket. Checkpointschema 4/cache-v2 med den parrede READY Candidate G-companion er implementeret. Samlet tværgående regression i PR/produktion og offentlig verifikation udestår.
+10. [ ] Bevis Feggesund i frisk integrated 3 × 118 part-level-produktion. Parent-zone `rr-20260830104132-210` er wave-missing, men de tre dele findes og har `marineCoverage=full`; en proxy kan være unødvendig. Kun ved et reelt part-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` gå til særskilt beslutning. Ingen proxy er implementeret.
+11. [ ] Luk alle dokumentationsflader og målrettede model/state/history-bounds/wave-approach/migration/trust/emergency-tests uden at opfinde runbeviser.
+12. [ ] Gennemfør uafhængig helheds-, model-, runtime/privacy-, forbruger- og operationel rollback-revision; ret fund og gentag proportionalt.
+13. [ ] Hent seneste grønne `origin/main` ved slutcheckpointet, fastlås releaseversion, bevis kun versionsfelt i geodata og kør fuld source-/RDKS-/releasegate. De endelige aktive og Candidate G-rollback-hashes er allerede regenereret og dokumenteret.
+14. [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Først derefter må state 6 eller model 1.1 kaldes offentlig/produktionsverificeret.
 
 ## Historisk P0 – opgivet engangsrekonstruktion under DEC-0109
 
@@ -114,7 +115,8 @@ Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 - [x] Integrér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at miste 4.0.307-ejerpakken.
 - [x] Implementér observationsatomisk backend-/Edge-/Pages-cutover og manuel Candidate G central-/Pages-rollback med fail-closed `PENDING`, eksakt 210/673-gate, schedulerforbud, privat rollbackprojektion, ingen Candidate G-assistent-Edge, integreret Edge-`409` + lokale DA/DE/EN-svar og Candidate G-bundet schema-3-lagring uden kalibrering. Efter dry-run genverificeres `HEAD == origin/main == GITHUB_SHA` umiddelbart før første eksterne backendskrivning; post-write bruger samme snapshot.
 - [x] Luk dual-hash-fundet med separat `modelContractSha256`/`modelBundleSha256` gennem hele 11-feltsbindingen og negative mismatchprøver.
-- [ ] Luk de resterende red-team-fund og regenerér først derefter slutdigests på afsluttet head.
+- [x] Regenerér og fastlås slutbindingerne: aktiv `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e` over 43 filer og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer.
+- [x] Luk rollback-oraklets public-stage-fixture og de øvrige proportionale red-team-/regressionsgates; den fulde lokale matrix er grøn.
 - [ ] Gentag helhedsrevision, målrettede regressioner og fuld score-, DMI-, state-, privacy-, RDKS- og releasevalidering på afsluttet kandidat.
 - [ ] Hent og integrér seneste grønne `origin/main` ved sidste checkpoint og luk gennem én samlet PR, exact-head, frisk produktion/deploy og offentlig 210/673 mobil-/desktopkontrol.
 

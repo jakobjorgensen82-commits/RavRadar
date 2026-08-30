@@ -391,7 +391,60 @@ const AVAILABILITY_TEXT = Object.freeze({
   WINDOW_HAS_TIME_GAP: 'Der er et hul i det sammenhængende strømforløb.',
   LATEST_SAMPLE_MISSING: 'Den seneste native modelstrømprøve mangler.',
   MISSING_INPUT: 'Den nødvendige bølgehøjde eller periode mangler for denne time.',
+  DIRECT_SCORE_INPUT_MISSING: 'Et direkte, tidsbundet vejrinput mangler for denne scoretime.',
+  INVALID_SCORE_QUALITY_CONTRACT: 'RavScore-resultatet mangler en gyldig historikkvalitetskontrakt.',
 });
+
+function exactScoreQualityContract(modelResult) {
+  const quality = modelResult?.scoreQuality;
+  const coverage = modelResult?.historyCoverageHours;
+  const reasonCodes = modelResult?.historyReasonCodes;
+  if (!finite(coverage)
+    || coverage < 0
+    || coverage > RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+    || !Array.isArray(reasonCodes)
+    || reasonCodes.some(code => typeof code !== 'string'
+      || !/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
+    || new Set(reasonCodes).size !== reasonCodes.length) return false;
+  if (quality === 'FULL_HISTORY') {
+    return modelResult.calibrationEligible === true
+      && coverage === RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+      && reasonCodes.length === 0
+      && ['EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+        .includes(modelResult.scoreSemantics)
+      && typeof modelResult.conservativeTailResetApplied === 'boolean'
+      && modelResult.conservativeTailResetApplied
+        === (modelResult.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+  }
+  if (quality === 'HISTORY_INCOMPLETE') {
+    return modelResult.calibrationEligible === false
+      && reasonCodes.length > 0
+      && modelResult.scoreSemantics === 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+      && typeof modelResult.conservativeTailResetApplied === 'boolean';
+  }
+  return false;
+}
+
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower', 'upper', 'modelUncertaintyPoints', 'rawLower', 'rawUpper',
+]);
+
+function exactScoreBoundsContract(modelResult) {
+  if (modelResult?.available !== true) return modelResult?.scoreBounds === null;
+  const bounds = modelResult?.scoreBounds;
+  if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())
+      !== JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || !SCORE_BOUND_FIELDS.every(field => finite(bounds[field]))
+    || bounds.lower < 0 || bounds.upper > 100 || bounds.lower > bounds.upper
+    || bounds.rawLower < 0 || bounds.rawUpper > 100 || bounds.rawLower > bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints - (bounds.upper - bounds.lower)) > 1e-9
+    || modelResult.score !== bounds.lower) return false;
+  if (modelResult.scoreQuality === 'FULL_HISTORY') {
+    return bounds.lower === bounds.upper && bounds.rawLower === bounds.rawUpper;
+  }
+  return modelResult.scoreQuality === 'HISTORY_INCOMPLETE';
+}
 
 export function integratedLocalAvailability(modelResult, modelState) {
   const currentStatus = modelState?.currentMemoryStatus ?? 'MODEL_STATE_MISSING';
@@ -401,16 +454,22 @@ export function integratedLocalAvailability(modelResult, modelState) {
     && modelResult?.modelId === RAVSCORE_MODEL_ID
     && modelResult?.modelContractSha256 === RAVSCORE_MODEL_CONTRACT_SHA256
     && modelResult?.modelBundleSha256 === RAVSCORE_MODEL_BUNDLE_SHA256;
-  if (modelState?.currentMemoryReady === true
-    && RAVSCORE_CURRENT_SUPPLY_POLICY.readyStatuses.includes(currentStatus)
-    && modelState?.waveMemoryReady === true
-    && RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(waveStatus)
-    && modelReady) {
-    return Object.freeze({ available: true, code: 'READY', messageDa: null });
+  if (modelReady
+    && exactScoreQualityContract(modelResult)
+    && exactScoreBoundsContract(modelResult)) {
+    return Object.freeze({
+      available: true,
+      code: modelResult.scoreQuality,
+      messageDa: null,
+    });
   }
-  const code = modelState?.currentMemoryReady !== true ? currentStatus
-    : modelState?.waveMemoryReady !== true ? waveStatus
-      : 'INTEGRATED_SCORE_MISSING';
+  const code = modelReady
+    ? 'INVALID_SCORE_QUALITY_CONTRACT'
+    : typeof modelResult?.reason === 'string' && modelResult.reason
+      ? modelResult.reason
+      : modelState?.currentMemoryReady !== true ? currentStatus
+        : modelState?.waveMemoryReady !== true ? waveStatus
+          : 'DIRECT_SCORE_INPUT_MISSING';
   return Object.freeze({
     available: false,
     code,
@@ -468,6 +527,13 @@ export function projectIntegratedRavScoreForPublic(modelResult, { mode, profile,
   return {
     available: true,
     score,
+    scoreBounds: { ...modelResult.scoreBounds },
+    scoreQuality: modelResult.scoreQuality,
+    calibrationEligible: modelResult.calibrationEligible,
+    scoreSemantics: modelResult.scoreSemantics,
+    conservativeTailResetApplied: modelResult.conservativeTailResetApplied,
+    historyCoverageHours: modelResult.historyCoverageHours,
+    historyReasonCodes: [...modelResult.historyReasonCodes],
     baseScore: score,
     level: presentation.level,
     label: presentation.label,
@@ -518,7 +584,7 @@ export function projectIntegratedRavScoreForPublic(modelResult, { mode, profile,
         lastMilePhysicalDeliveryResolved:
           modelResult.diagnostics?.lastMile?.physicalDeliveryResolved === false ? false : null,
         currentReferenceAt: modelResult.diagnostics?.currentReferenceAt ?? null,
-        currentMemoryReady: true,
+        currentMemoryReady: context.currentMemoryReady === true,
         currentMemoryStatus: modelResult.diagnostics?.currentMemoryStatus ?? null,
         currentMemoryCoverageHours: context.currentMemoryCoverageHours ?? null,
         currentMemoryWindowHours: context.currentMemoryWindowHours ?? null,
@@ -560,6 +626,16 @@ export function selectPublicRavScoreResult({ profile, modelResult, modelState, m
   if (!availability.available) return {
     available: false,
     score: null,
+    scoreBounds: null,
+    scoreQuality: 'UNAVAILABLE',
+    calibrationEligible: false,
+    scoreSemantics: null,
+    conservativeTailResetApplied: false,
+    // UNAVAILABLE is not a zero-hour history statement. The direct score
+    // contract failed, so no potentially forged or stale history metadata may
+    // be projected into the public result.
+    historyCoverageHours: null,
+    historyReasonCodes: [],
     level: 'unavailable',
     label: 'RavScore midlertidigt utilgængelig',
     unavailability: availability,

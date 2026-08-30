@@ -8,8 +8,11 @@ import {
   PRIVATE_RUNTIME_FILES,
   buildPrivateRuntimeCreateSpec,
   buildPrivateRuntimeExpectation,
+  buildPrivateRuntimePreflightState,
   installRestoredPrivateRuntime,
+  materializePrivateRuntimePreflight,
   privateRuntimeContractHashes,
+  validatePrivateRuntimePreflightState,
 } from './private-production-runtime-workflow.mjs';
 
 const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-private-workflow-'));
@@ -38,11 +41,36 @@ try {
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(repository, descriptor.relativePath);
     await fs.mkdir(path.dirname(destination), { recursive: true });
-    const value = descriptor.id === 'full-conditions'
-      ? `${JSON.stringify(conditions)}\n`
-      : `synthetic-${descriptor.id}\n`;
+    let value = `synthetic-${descriptor.id}\n`;
+    if (descriptor.id === 'full-conditions') value = `${JSON.stringify(conditions)}\n`;
+    if (descriptor.id === 'dmi-bulk-cache') value = `${JSON.stringify({
+      schemaVersion: 2,
+      refreshStatus: 'complete',
+      runs: {
+        dkss_idw: { referenceTime: '2026-08-29T06:00:00.000Z' },
+        wam_dw: { referenceTime: '2026-08-29T06:00:00.000Z' },
+      },
+    })}\n`;
+    if (descriptor.id === 'runtime-diagnostics') value = `${JSON.stringify({
+      acquisition: {
+        prioritizedMissingOrExpiringZones: 0,
+        bulkModelDownloads: { refreshStatus: 'complete' },
+      },
+      dataQuality: { forecast: { completeDmiZones: 210 } },
+      health: { dmi: { totalZones: 210 } },
+      duplicateTimes: { zones: 0 },
+    })}\n`;
     await fs.writeFile(destination, value);
   }
+  await fs.mkdir(path.join(repository, 'data', 'diagnostics'), { recursive: true });
+  await fs.writeFile(
+    path.join(repository, 'data', 'diagnostics', 'dmi-ocean-diagnostics.json'),
+    `${JSON.stringify({
+      schemaVersion: 1,
+      generatedAt: conditions.generatedAt,
+      refreshStatus: 'complete',
+    })}\n`,
+  );
 
   const hashes = await privateRuntimeContractHashes({ repositoryRoot: repository });
   assert.deepEqual(Object.keys(hashes).sort(), [
@@ -81,6 +109,113 @@ try {
   assert.equal(expected.targetReferenceAt, '2026-08-29T11:00:00.000Z');
   assert.equal(expected.minimumReferenceAt, '2026-08-26T11:00:00.000Z');
   assert.deepEqual(expected.contractHashes, hashes);
+
+  const preflightState = await buildPrivateRuntimePreflightState({
+    repositoryRoot: repository,
+  });
+  assert.match(preflightState.stateSha256, /^[0-9a-f]{64}$/);
+  assert.deepEqual(preflightState.dmiRuns, {
+    dkss_idw: '2026-08-29T06:00:00.000Z',
+    wam_dw: '2026-08-29T06:00:00.000Z',
+  });
+  assert.equal(preflightState.completeDmiZones, 210);
+  assert.equal(preflightState.totalZones, 210);
+  assert.equal(JSON.stringify(preflightState).includes('coordinates'), false);
+  assert.equal(JSON.stringify(preflightState).includes('currentUMps'), false);
+
+  const publicManifest = {
+    schemaVersion: 4,
+    complete: true,
+    datasetId: conditions.datasetId,
+    generatedAt: conditions.generatedAt,
+    productionReferenceAt: conditions.productionReferenceAt,
+    zoneCount: 210,
+    coastalPartCount: 673,
+    ravScoreModelBinding: ravScoreModelBinding(),
+  };
+  await validatePrivateRuntimePreflightState(preflightState, {
+    repositoryRoot: repository,
+    publicManifest,
+  });
+  await assert.rejects(
+    validatePrivateRuntimePreflightState(preflightState, {
+      repositoryRoot: repository,
+      publicManifest: { ...publicManifest, datasetId: 'rr-not-deployed' },
+    }),
+    /does not attest/,
+  );
+  await assert.rejects(
+    validatePrivateRuntimePreflightState({ ...preflightState, duplicateZones: 1 }, {
+      repositoryRoot: repository,
+      publicManifest,
+    }),
+    /state is invalid/,
+  );
+  await assert.rejects(
+    validatePrivateRuntimePreflightState({
+      ...preflightState,
+      coordinates: [[9.5, 56.2]],
+    }, {
+      repositoryRoot: repository,
+      publicManifest,
+    }),
+    /incompatible field set/,
+  );
+
+  const preflightCache = path.join(repository, '.cache', 'weather-preflight-state');
+  const preflightWork = path.join(repository, '.cache', 'weather-preflight-work');
+  await fs.mkdir(preflightCache, { recursive: true });
+  await fs.writeFile(path.join(preflightCache, 'state.json'), `${JSON.stringify(preflightState)}\n`);
+  await fs.writeFile(path.join(preflightCache, 'public-manifest.json'), `${JSON.stringify(publicManifest)}\n`);
+  const materialized = await materializePrivateRuntimePreflight({
+    repositoryRoot: repository,
+    statePath: path.join(preflightCache, 'state.json'),
+    publicManifestPath: path.join(preflightCache, 'public-manifest.json'),
+    outputRoot: preflightWork,
+  });
+  assert.deepEqual(materialized, {
+    materialized: true,
+    fileCount: 4,
+    datasetId: conditions.datasetId,
+    privatePayloadIncluded: false,
+    rawVectorsIncluded: false,
+    coordinatesIncluded: false,
+  });
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(path.join(preflightWork, 'data/live/conditions.json'), 'utf8')),
+    {
+      datasetId: conditions.datasetId,
+      generatedAt: conditions.generatedAt,
+      productionReferenceAt: conditions.productionReferenceAt,
+    },
+  );
+  const materializedRelativePaths = [
+    'data/live/conditions.json',
+    'data/live/dmi-bulk-cache.json',
+    'data/diagnostics/dmi-ocean-diagnostics.json',
+    'data/live/ravradar-runtime-diagnostics.json',
+  ].sort();
+  const materializedDocuments = [];
+  for (const relativePath of materializedRelativePaths) {
+    materializedDocuments.push(JSON.parse(await fs.readFile(
+      path.join(preflightWork, ...relativePath.split('/')),
+      'utf8',
+    )));
+  }
+  const materializedText = JSON.stringify(materializedDocuments);
+  for (const forbidden of [
+    'coordinates',
+    'waterPoint',
+    'landPoint',
+    'currentUMps',
+    'currentVMps',
+    'coastalParts',
+  ]) {
+    assert.equal(materializedText.includes(forbidden), false,
+      `materialized preflight must omit ${forbidden}`);
+  }
+  assert.equal(materializedText.includes('"zones":{'), false,
+    'materialized preflight must omit full zone payloads');
 
   for (const descriptor of PRIVATE_RUNTIME_FILES) {
     const destination = path.join(restored, descriptor.relativePath);

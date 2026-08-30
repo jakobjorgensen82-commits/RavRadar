@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  canonicalPrivateRuntimeJson,
 } from './private-production-runtime-bundle.mjs';
 import {
   assertRavScoreModelBinding,
@@ -34,6 +35,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'js/core/ravscore-model-contract.js',
     'scripts/update-dmi-bulk.py',
     'scripts/update-weather.mjs',
+    'scripts/check-weather-update.py',
     'scripts/build-copernicus-target-registry.py',
     'scripts/run-copernicus-current-pilot.py',
     'scripts/check-copernicus-current-range.py',
@@ -67,6 +69,47 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
   ]),
 });
 
+export const PRIVATE_RUNTIME_PREFLIGHT_POLICY = Object.freeze({
+  schemaVersion: '1.0.0',
+  kind: 'RAVRADAR_PRIVATE_RUNTIME_PREFLIGHT_STATE',
+  privacyClass: 'DATAMINIMIZED_PRIVATE_RUNTIME_PREFLIGHT',
+  maximumStateBytes: 64 * 1024,
+  expectedZoneCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount,
+  expectedPartCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount,
+});
+
+const PREFLIGHT_COLLECTIONS = Object.freeze([
+  'dkss_idw',
+  'dkss_nsbs',
+  'dkss_lf',
+  'harmonie_dini_sf',
+  'wam_dw',
+  'wam_nsb',
+]);
+const PREFLIGHT_STATE_KEYS = Object.freeze([
+  'schemaVersion',
+  'kind',
+  'privacyClass',
+  'datasetId',
+  'productionReferenceAt',
+  'generatedAt',
+  'modelBinding',
+  'contractHashes',
+  'dmiRuns',
+  'dmiBulkRefreshStatus',
+  'oceanDiagnosticsGeneratedAt',
+  'oceanDiagnosticsStatus',
+  'completeDmiZones',
+  'totalZones',
+  'prioritizedMissingOrExpiringZones',
+  'bulkRefreshStatus',
+  'duplicateZones',
+  'stateSha256',
+]);
+const SAFE_DATASET_ID = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+const SAFE_STATUS = /^[A-Za-z0-9._:-]{0,80}$/;
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
 const isPlainObject = value => value !== null
@@ -85,6 +128,52 @@ const inside = (parent, child) => {
     && !relative.startsWith(`..${path.sep}`)
     && !path.isAbsolute(relative);
 };
+
+function exactKeys(value, expected, label) {
+  if (!isPlainObject(value)
+    || JSON.stringify(Object.keys(value).sort(compareText))
+      !== JSON.stringify([...expected].sort(compareText))) {
+    throw new Error(`${label} has an incompatible field set`);
+  }
+}
+
+function exactCanonicalTime(value, label) {
+  const normalized = canonicalTime(value, label);
+  if (normalized !== value) throw new Error(`${label} is not canonical UTC`);
+  return normalized;
+}
+
+function boundedInteger(value, maximum, label) {
+  if (!Number.isSafeInteger(value) || value < 0 || value > maximum) {
+    throw new Error(`${label} is outside its aggregate bound`);
+  }
+  return value;
+}
+
+function safeStatus(value, label) {
+  const text = String(value ?? '');
+  if (!SAFE_STATUS.test(text)) throw new Error(`${label} is not a safe status token`);
+  return text;
+}
+
+async function readJsonFile(root, relativePath, label, maximumBytes = 256 * 1024 * 1024) {
+  const absolute = path.resolve(root, relativePath);
+  if (!inside(root, absolute)) throw new Error(`${label} path escapes repository`);
+  const stat = await fs.lstat(absolute).catch(() => null);
+  if (!stat?.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > maximumBytes) {
+    throw new Error(`${label} is unavailable or exceeds its read bound`);
+  }
+  try {
+    return JSON.parse(await fs.readFile(absolute, 'utf8'));
+  } catch {
+    throw new Error(`${label} cannot be parsed`);
+  }
+}
+
+function preflightStateDigest(state) {
+  const { stateSha256: _ignored, ...unsigned } = state;
+  return sha256(canonicalPrivateRuntimeJson(unsigned));
+}
 
 async function atomicWriteJson(file, value) {
   await fs.mkdir(path.dirname(file), { recursive: true });
@@ -205,6 +294,251 @@ export async function buildPrivateRuntimeExpectation({
     minimumReferenceAt: minimum,
     minimumGeneratedAt: minimum,
     now: currentTime,
+  };
+}
+
+export async function buildPrivateRuntimePreflightState({
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+} = {}) {
+  const root = path.resolve(repositoryRoot);
+  const [conditions, bulk, oceanDiagnostics, runtime, contractHashes] = await Promise.all([
+    readJsonFile(root, 'data/live/conditions.json', 'Private runtime preflight conditions'),
+    readJsonFile(root, 'data/live/dmi-bulk-cache.json', 'Private runtime preflight DMI bulk cache'),
+    readJsonFile(root, 'data/diagnostics/dmi-ocean-diagnostics.json', 'Private runtime preflight ocean diagnostics', 4 * 1024 * 1024),
+    readJsonFile(root, 'data/live/ravradar-runtime-diagnostics.json', 'Private runtime preflight diagnostics'),
+    privateRuntimeContractHashes({ repositoryRoot: root }),
+  ]);
+  const metadata = assertConditionsMetadata(conditions);
+  const dmiRuns = {};
+  for (const collection of PREFLIGHT_COLLECTIONS) {
+    const referenceTime = bulk?.runs?.[collection]?.referenceTime;
+    if (referenceTime !== undefined && referenceTime !== null) {
+      dmiRuns[collection] = canonicalTime(
+        referenceTime,
+        `Private runtime preflight ${collection} reference`,
+      );
+    }
+  }
+  const acquisition = runtime?.acquisition ?? {};
+  const bulkDownloads = acquisition?.bulkModelDownloads ?? {};
+  const forecast = runtime?.dataQuality?.forecast ?? {};
+  const healthDmi = runtime?.health?.dmi ?? {};
+  const unsigned = {
+    schemaVersion: PRIVATE_RUNTIME_PREFLIGHT_POLICY.schemaVersion,
+    kind: PRIVATE_RUNTIME_PREFLIGHT_POLICY.kind,
+    privacyClass: PRIVATE_RUNTIME_PREFLIGHT_POLICY.privacyClass,
+    datasetId: metadata.datasetId,
+    productionReferenceAt: metadata.productionReferenceAt,
+    generatedAt: metadata.generatedAt,
+    modelBinding: ravScoreModelBinding(),
+    contractHashes,
+    dmiRuns,
+    dmiBulkRefreshStatus: safeStatus(bulk?.refreshStatus, 'Private runtime DMI bulk status'),
+    oceanDiagnosticsGeneratedAt: exactCanonicalTime(
+      oceanDiagnostics?.generatedAt,
+      'Private runtime ocean diagnostics generation',
+    ),
+    oceanDiagnosticsStatus: safeStatus(
+      oceanDiagnostics?.refreshStatus,
+      'Private runtime ocean diagnostics status',
+    ),
+    completeDmiZones: boundedInteger(
+      forecast?.completeDmiZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime complete DMI zone count',
+    ),
+    totalZones: boundedInteger(
+      healthDmi?.totalZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime total zone count',
+    ),
+    prioritizedMissingOrExpiringZones: boundedInteger(
+      acquisition?.prioritizedMissingOrExpiringZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime missing-or-expiring zone count',
+    ),
+    bulkRefreshStatus: safeStatus(
+      bulkDownloads?.refreshStatus,
+      'Private runtime bulk-download status',
+    ),
+    duplicateZones: boundedInteger(
+      runtime?.duplicateTimes?.zones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime duplicate-zone count',
+    ),
+  };
+  if (unsigned.totalZones !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount) {
+    throw new Error('Private runtime preflight does not cover every active zone');
+  }
+  const state = { ...unsigned, stateSha256: sha256(canonicalPrivateRuntimeJson(unsigned)) };
+  if (Buffer.byteLength(canonicalPrivateRuntimeJson(state))
+    > PRIVATE_RUNTIME_PREFLIGHT_POLICY.maximumStateBytes) {
+    throw new Error('Private runtime preflight state exceeds its dataminimized bound');
+  }
+  return state;
+}
+
+export async function validatePrivateRuntimePreflightState(state, {
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  publicManifest,
+} = {}) {
+  exactKeys(state, PREFLIGHT_STATE_KEYS, 'Private runtime preflight state');
+  if (Buffer.byteLength(canonicalPrivateRuntimeJson(state))
+      > PRIVATE_RUNTIME_PREFLIGHT_POLICY.maximumStateBytes
+    || state.schemaVersion !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.schemaVersion
+    || state.kind !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.kind
+    || state.privacyClass !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.privacyClass
+    || !SAFE_DATASET_ID.test(String(state.datasetId ?? ''))
+    || !SHA256_PATTERN.test(String(state.stateSha256 ?? ''))
+    || preflightStateDigest(state) !== state.stateSha256) {
+    throw new Error('Private runtime preflight state is invalid');
+  }
+  const productionReferenceAt = exactCanonicalTime(
+    state.productionReferenceAt,
+    'Private runtime preflight production reference',
+  );
+  const generatedAt = exactCanonicalTime(
+    state.generatedAt,
+    'Private runtime preflight generation',
+  );
+  assertRavScoreModelBinding(state.modelBinding, 'Private runtime preflight model binding');
+  if (canonicalPrivateRuntimeJson(state.modelBinding)
+      !== canonicalPrivateRuntimeJson(ravScoreModelBinding())) {
+    throw new Error('Private runtime preflight belongs to another model');
+  }
+  const expectedHashes = await privateRuntimeContractHashes({ repositoryRoot });
+  if (canonicalPrivateRuntimeJson(state.contractHashes)
+      !== canonicalPrivateRuntimeJson(expectedHashes)) {
+    throw new Error('Private runtime preflight contract hashes are stale');
+  }
+  if (!isPlainObject(state.dmiRuns)
+    || Object.keys(state.dmiRuns).some(key => !PREFLIGHT_COLLECTIONS.includes(key))) {
+    throw new Error('Private runtime preflight DMI run inventory is invalid');
+  }
+  const dmiRuns = {};
+  for (const [collection, referenceTime] of Object.entries(state.dmiRuns)) {
+    dmiRuns[collection] = exactCanonicalTime(
+      referenceTime,
+      `Private runtime preflight ${collection} reference`,
+    );
+  }
+  const normalized = {
+    ...state,
+    productionReferenceAt,
+    generatedAt,
+    dmiRuns,
+    dmiBulkRefreshStatus: safeStatus(
+      state.dmiBulkRefreshStatus,
+      'Private runtime preflight DMI bulk status',
+    ),
+    oceanDiagnosticsGeneratedAt: exactCanonicalTime(
+      state.oceanDiagnosticsGeneratedAt,
+      'Private runtime preflight ocean diagnostics generation',
+    ),
+    oceanDiagnosticsStatus: safeStatus(
+      state.oceanDiagnosticsStatus,
+      'Private runtime preflight ocean diagnostics status',
+    ),
+    completeDmiZones: boundedInteger(
+      state.completeDmiZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime preflight complete DMI zone count',
+    ),
+    totalZones: boundedInteger(
+      state.totalZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime preflight total zone count',
+    ),
+    prioritizedMissingOrExpiringZones: boundedInteger(
+      state.prioritizedMissingOrExpiringZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime preflight missing-or-expiring zone count',
+    ),
+    bulkRefreshStatus: safeStatus(
+      state.bulkRefreshStatus,
+      'Private runtime preflight bulk-download status',
+    ),
+    duplicateZones: boundedInteger(
+      state.duplicateZones,
+      PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount,
+      'Private runtime preflight duplicate-zone count',
+    ),
+  };
+  if (normalized.totalZones !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount) {
+    throw new Error('Private runtime preflight does not cover every active zone');
+  }
+  if (!isPlainObject(publicManifest)
+    || publicManifest.schemaVersion !== 4
+    || publicManifest.complete !== true
+    || publicManifest.datasetId !== normalized.datasetId
+    || publicManifest.generatedAt !== normalized.generatedAt
+    || publicManifest.productionReferenceAt !== normalized.productionReferenceAt
+    || publicManifest.zoneCount !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedZoneCount
+    || publicManifest.coastalPartCount !== PRIVATE_RUNTIME_PREFLIGHT_POLICY.expectedPartCount
+    || canonicalPrivateRuntimeJson(publicManifest.ravScoreModelBinding)
+      !== canonicalPrivateRuntimeJson(normalized.modelBinding)) {
+    throw new Error('Public manifest does not attest the cached private-runtime preflight state');
+  }
+  return normalized;
+}
+
+export async function materializePrivateRuntimePreflight({
+  statePath,
+  publicManifestPath,
+  outputRoot,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+} = {}) {
+  const repository = path.resolve(repositoryRoot);
+  const output = path.resolve(outputRoot);
+  if (!inside(repository, output)) throw new Error('Private runtime preflight output escapes repository');
+  const [state, publicManifest] = await Promise.all([
+    readJsonFile(repository, path.relative(repository, path.resolve(statePath)), 'Private runtime preflight state', PRIVATE_RUNTIME_PREFLIGHT_POLICY.maximumStateBytes),
+    readJsonFile(repository, path.relative(repository, path.resolve(publicManifestPath)), 'Public preflight manifest', PRIVATE_RUNTIME_PREFLIGHT_POLICY.maximumStateBytes),
+  ]);
+  const verified = await validatePrivateRuntimePreflightState(state, {
+    repositoryRoot: repository,
+    publicManifest,
+  });
+  const files = new Map([
+    ['data/live/conditions.json', {
+      datasetId: verified.datasetId,
+      generatedAt: verified.generatedAt,
+      productionReferenceAt: verified.productionReferenceAt,
+    }],
+    ['data/live/dmi-bulk-cache.json', {
+      schemaVersion: 2,
+      refreshStatus: verified.dmiBulkRefreshStatus,
+      runs: Object.fromEntries(Object.entries(verified.dmiRuns)
+        .map(([collection, referenceTime]) => [collection, { referenceTime }])),
+    }],
+    ['data/diagnostics/dmi-ocean-diagnostics.json', {
+      schemaVersion: 1,
+      generatedAt: verified.oceanDiagnosticsGeneratedAt,
+      refreshStatus: verified.oceanDiagnosticsStatus,
+    }],
+    ['data/live/ravradar-runtime-diagnostics.json', {
+      schemaVersion: 1,
+      acquisition: {
+        prioritizedMissingOrExpiringZones: verified.prioritizedMissingOrExpiringZones,
+        bulkModelDownloads: { refreshStatus: verified.bulkRefreshStatus, diagnostics: {} },
+      },
+      dataQuality: { forecast: { completeDmiZones: verified.completeDmiZones } },
+      health: { dmi: { totalZones: verified.totalZones } },
+      duplicateTimes: { zones: verified.duplicateZones },
+    }],
+  ]);
+  for (const [relativePath, document] of files) {
+    const target = path.resolve(output, relativePath);
+    if (!inside(output, target)) throw new Error('Private runtime preflight file escapes output root');
+    await atomicWriteJson(target, document);
+  }
+  return {
+    materialized: true,
+    fileCount: files.size,
+    datasetId: verified.datasetId,
+    privatePayloadIncluded: false,
+    rawVectorsIncluded: false,
+    coordinatesIncluded: false,
   };
 }
 
@@ -359,6 +693,23 @@ async function main() {
     });
     await atomicWriteJson(output, expected);
     console.log(JSON.stringify({ status: 'expectation-ready' }));
+  } else if (mode === 'create-preflight') {
+    const output = argument(argv, '--output');
+    const state = await buildPrivateRuntimePreflightState({ repositoryRoot });
+    await atomicWriteJson(output, state);
+    console.log(JSON.stringify({
+      status: 'preflight-state-ready',
+      datasetId: state.datasetId,
+      privatePayloadIncluded: false,
+    }));
+  } else if (mode === 'materialize-preflight') {
+    const result = await materializePrivateRuntimePreflight({
+      repositoryRoot,
+      statePath: argument(argv, '--state'),
+      publicManifestPath: argument(argv, '--public-manifest'),
+      outputRoot: argument(argv, '--output-root'),
+    });
+    console.log(JSON.stringify(result));
   } else if (mode === 'install') {
     const result = await installRestoredPrivateRuntime({
       repositoryRoot,
@@ -366,7 +717,7 @@ async function main() {
     });
     console.log(JSON.stringify(result));
   } else {
-    throw new Error('Use create-spec, expected or install');
+    throw new Error('Use create-spec, expected, create-preflight, materialize-preflight or install');
   }
 }
 

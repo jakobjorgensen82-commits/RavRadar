@@ -170,7 +170,7 @@ const forbiddenRawVectorKeys = [];
 const visit = (value, path = '$') => {
   if (!value || typeof value !== 'object') return;
   for (const [key, child] of Object.entries(value)) {
-    if (/^(current)?[uv](mps)?$/i.test(key) || /raw.*[uv]|[uv].*raw/i.test(key)) {
+    if (/^(?:(?:current|raw)?[uv](?:mps)?)$/i.test(key)) {
       forbiddenRawVectorKeys.push(`${path}.${key}`);
     }
     visit(child, `${path}.${key}`);
@@ -362,10 +362,18 @@ assert.doesNotMatch(updater, /function verifiedIntegratedPartHourly|function ver
   'current verification semantics must not remain mutable inline outside the model bundle');
 assert.match(updater, /loadRavScoreContinuationCheckpointForTarget/,
   'a fresh private build must be able to continue schema-4 memory without hydrating full public conditions');
-assert.match(updater, /ravScoreCheckpoint\.loaded \? ravScoreCheckpoint\.states : \{\}/,
-  'the compact checkpoint must be injected only after complete validation');
+assert.match(
+  updater,
+  /ravScoreCheckpoint\.loaded && ravScoreCheckpoint\.continuationAvailable\s*\? ravScoreCheckpoint\.states\s*:\s*\{\}/,
+  'only a complete, unexpired schema-6 continuation may be injected as model state',
+);
 assert.match(updater, /selectRavScoreProductionInitialState\(\{/,
   'the generator must use the shared exact-point > existing > checkpoint > legacy priority contract');
+assert.match(
+  updater,
+  /selectRavScoreProductionInitialState\(\{[\s\S]{0,240}targetReferenceAt:\s*generatedAt/,
+  'initial-state priority must distinguish expired same-model state against the exact production target',
+);
 assert.match(updater, /buildRavScoreProductionPartSeries\(\{/,
   'the generator must replay already fetched verified bridge rows before the target');
 assert.match(productionPartPipeline, /scoreStartAt:\s*recovery\.scoreStartAt/,

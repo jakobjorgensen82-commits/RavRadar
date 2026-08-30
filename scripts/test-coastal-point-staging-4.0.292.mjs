@@ -20,6 +20,7 @@ import {
   candidateGStateKey,
   coastalPointStageIdentity,
   promotedDirectionDocument,
+  selectCoastalPointCandidateGRollbackContinuation,
   stagedEntries,
 } from './lib/coastal-point-staging-contract.mjs';
 
@@ -86,8 +87,8 @@ try {
   const mature = buildCandidateGDerivedStateSeries(historical, { stateKey }).continuationState;
   assert.equal(mature.transportMemoryReady, true);
 
-  const modelRun = '2026-08-28T12:00:00.000Z';
   const stageId = `STAGED::${revision}::${original.partId}`;
+  const modelRun = new Date(Date.parse(reference) - 48 * 3_600_000).toISOString();
   const componentKinds = {
     wind: 'atmospheric-wind-vector',
     windTail: 'marine-wind-tail-vector',
@@ -116,10 +117,10 @@ try {
     modelRun,
     nativeValidTime: time,
     leadTimeHours: (Date.parse(time) - Date.parse(modelRun)) / 3_600_000,
-    entityId: `STAGED::${original.partId}`,
+    entityId: stageId,
     parentZoneId: zoneId,
-    entityType: 'coastal-part-stage',
-    samplingContext: 'coastal-part-water-point',
+    entityType: 'private-stage',
+    samplingContext: 'private-stage-water-point',
     samplingPoint: [...candidate.waterPoint],
     gridPoint: [...candidate.waterPoint],
     gridDefinitionSha256: 'a'.repeat(64),
@@ -144,8 +145,10 @@ try {
       vectorSemanticsVersion: 3,
     } : {}),
   });
-  const rows = Object.fromEntries(Array.from({ length: 41 }, (_, index) => {
-    const time = new Date(Date.parse(reference) + index * 3 * 3_600_000).toISOString();
+  const rows = Object.fromEntries(Array.from({ length: 57 }, (_, index) => {
+    const time = new Date(
+      Date.parse(reference) + (index * 3 - 48) * 3_600_000,
+    ).toISOString();
     return [time, {
       time,
       'wind-u-10m': 2,
@@ -172,7 +175,7 @@ try {
     generatedAt: reference,
     timeStrideHours: 3,
     currentVectorSemanticsVersion: 3,
-    currentVectorSelection: 'test-shared-grid',
+    currentVectorSelection: 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer',
     currentPreferredDistanceKm: 3,
     currentMaxDistanceKm: 5,
     candidates: {
@@ -242,6 +245,139 @@ try {
   assert.equal(continuedStageState.migrationApplied, false, 'Candidate G-state må kun migreres én gang');
   assert.deepEqual(continuedStageState.continuationState.currentEvidence, migratedEvidence,
     'Samme produktionstime må ikke dobbeltkreditere migreret strømstate');
+
+  const coldStatePath = await write('cold/state.json', {
+    schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+    ravScoreModelBinding: ravScoreModelBinding(),
+    stages: {},
+  });
+  const coldStatus = await updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath,
+    privateStatePath: coldStatePath,
+    privateStatusPath: path.join(root, 'cold/private-status.json'),
+    publicStatusPath: path.join(root, 'cold/public-status.json'),
+  });
+  assert.equal(coldStatus.entries[0].status, 'ready-for-activation',
+    'Et cold start skal genbruge den verificerede private cache og blive target-ready straks');
+  const coldStageState = (await read('cold/state.json')).stages[stageId];
+  assert.equal(coldStageState.initialStateSource, 'VERIFIED_PRIVATE_48H_COLD_REPLAY');
+  assert.equal(coldStageState.continuationState.time, reference);
+  assert.equal(coldStageState.candidateGRollbackContinuationState.time, reference);
+  assert.equal(coldStageState.candidateGRollbackContinuationState.transportMemoryReady, true);
+
+  const schemaTwoStatePath = await write('schema-two/state.json', {
+    schemaVersion: 2,
+    ravScoreModelBinding: ravScoreModelBinding(),
+    stages: {
+      [stageId]: {
+        revision,
+        partId: original.partId,
+        samplingContextKey: identity.samplingContextKey,
+        ravScoreModelBinding: ravScoreModelBinding(),
+        continuationState: null,
+        pendingCandidateGMigrationState: mature,
+      },
+    },
+  });
+  const schemaTwoStatus = await updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath,
+    privateStatePath: schemaTwoStatePath,
+    privateStatusPath: path.join(root, 'schema-two/private-status.json'),
+    publicStatusPath: path.join(root, 'schema-two/public-status.json'),
+  });
+  assert.equal(schemaTwoStatus.entries[0].status, 'ready-for-activation');
+  assert.equal((await read('schema-two/state.json')).schemaVersion, POINT_STAGE_SCHEMA_VERSION,
+    'Transitional schema-2 Candidate G-pending state skal migreres til et komplet dual-state-par');
+  const orphanIntegratedStatePath = await write('orphan-integrated/state.json', {
+    schemaVersion: 2,
+    ravScoreModelBinding: ravScoreModelBinding(),
+    stages: {
+      [stageId]: {
+        revision,
+        partId: original.partId,
+        samplingContextKey: identity.samplingContextKey,
+        ravScoreModelBinding: ravScoreModelBinding(),
+        continuationState: migratedStageState.continuationState,
+      },
+    },
+  });
+  await assert.rejects(updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath,
+    privateStatePath: orphanIntegratedStatePath,
+    privateStatusPath: path.join(root, 'orphan-integrated/private-status.json'),
+    publicStatusPath: path.join(root, 'orphan-integrated/public-status.json'),
+  }), /mangler atomisk Candidate G companion/,
+  'En integrated-only transitional state må aldrig aktiveres uden rollback-companion');
+
+  const expiredTarget = new Date(
+    Date.parse(reference) + 73 * 3_600_000,
+  ).toISOString();
+  const expiredStatePath = await write('expired/state.json', {
+    schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+    ravScoreModelBinding: ravScoreModelBinding(),
+    stages: { [stageId]: continuedStageState },
+  });
+  await updateStaging({
+    now: expiredTarget,
+    productionReference: expiredTarget,
+    privateDmiPath,
+    privateStatePath: expiredStatePath,
+    privateStatusPath: path.join(root, 'expired/private-status.json'),
+    publicStatusPath: path.join(root, 'expired/public-status.json'),
+  });
+  const expiredRebuilt = (await read('expired/state.json')).stages[stageId];
+  assert.equal(expiredRebuilt.initialStateSource, 'VERIFIED_PRIVATE_48H_COLD_REPLAY');
+  assert.equal(expiredRebuilt.continuationState.time, expiredTarget);
+  assert.equal(expiredRebuilt.candidateGRollbackContinuationState.time, expiredTarget);
+  assert.notEqual(expiredRebuilt.candidateGInitialStateSource, 'CANDIDATE_G_CONTINUATION',
+    'En >72h gammel dual-state må ikke genaktiveres som continuation');
+
+  const mixedWaveDmi = structuredClone(privateDmi);
+  const mixedWaveTime = new Date(Date.parse(reference) - 21 * 3_600_000).toISOString();
+  const mixedWaveRun = new Date(Date.parse(mixedWaveTime) - 6 * 3_600_000).toISOString();
+  mixedWaveDmi.zones[stageId].hourly[mixedWaveTime].sources.wave.modelRun = mixedWaveRun;
+  mixedWaveDmi.zones[stageId].hourly[mixedWaveTime].sources.wave.leadTimeHours = 6;
+  mixedWaveDmi.zones[stageId].hourly[mixedWaveTime].sources.wave.acquiredAt = mixedWaveRun;
+  const mixedWaveDmiPath = await write('mixed-wave/dmi.json', mixedWaveDmi);
+  const mixedWaveStatePath = await write('mixed-wave/state.json', {
+    schemaVersion: 1,
+    stages: { [stageId]: { stateKey, continuationState: mature } },
+  });
+  const mixedWaveStatus = await updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath: mixedWaveDmiPath,
+    privateStatePath: mixedWaveStatePath,
+    privateStatusPath: path.join(root, 'mixed-wave/private-status.json'),
+    publicStatusPath: path.join(root, 'mixed-wave/public-status.json'),
+  });
+  assert.equal(mixedWaveStatus.entries[0].status, 'collecting');
+  assert.ok(mixedWaveStatus.entries[0].reasonCodes
+    .includes('INTEGRATED_MIGRATION_WAVE_BOOTSTRAP_INCOMPLETE'),
+  'Mixed WAM provenance skal afvente en komplet bro uden at opfinde retning');
+  const mixedWaveStageState = (await read('mixed-wave/state.json')).stages[stageId];
+  assert.equal(mixedWaveStageState.continuationState, null);
+  assert.equal(mixedWaveStageState.candidateGRollbackContinuationState.time, reference,
+    'Candidate G companion må fortsat avanceres fra verificerede mål-data');
+
+  const tamperedPrivateDmi = structuredClone(privateDmi);
+  tamperedPrivateDmi.zones[stageId].hourly[reference].sources.current.entityId = 'STAGED::wrong';
+  const tamperedPrivateDmiPath = await write('tampered-private/dmi.json', tamperedPrivateDmi);
+  await assert.rejects(updateStaging({
+    now: reference,
+    productionReference: reference,
+    privateDmiPath: tamperedPrivateDmiPath,
+    privateStatePath: path.join(root, 'tampered-private/state.json'),
+    privateStatusPath: path.join(root, 'tampered-private/private-status.json'),
+    publicStatusPath: path.join(root, 'tampered-private/public-status.json'),
+  }), /privat DMI-proveniens er ugyldig/,
+  'Manipuleret private-stage-identitet skal stoppe hårdt før state-skrivning');
 
   const reviewsPath = await write('activation/reviews.json', requested);
   const activePartsPath = await write('activation/active-parts.json', activeParts);
@@ -323,7 +459,7 @@ try {
     syncMetaPath,
     injectionPath,
     pendingPath,
-  }), /mangler eksakt integreret modeltilstand/,
+  }), /mangler eksakt dual-state modeltilstand/,
   'READY uden wave-readiness skal stoppe aktivering');
   await write('private/status.json', canonicalStatusDocument);
 
@@ -346,30 +482,89 @@ try {
   assert.equal(Number.isFinite(activatedDmi.hourly[reference]['wind-dir-10m']), true);
   assert.equal(Number.isFinite(activatedDmi.hourly[reference]['wind-tail-speed-10m']), true);
   assert.equal(Number.isFinite(activatedDmi.hourly[reference]['wind-tail-dir-10m']), true);
+  assert.equal(activatedDmi.entityId, `PART::${original.partId}`);
+  assert.equal(activatedDmi.parentZoneId, zoneId);
+  assert.equal(activatedDmi.entityType, 'coastal-part');
+  assert.equal(activatedDmi.samplingContext, 'coastal-part-water-point');
+  for (const hour of Object.values(activatedDmi.hourly)) {
+    for (const source of Object.values(hour.sources ?? {})) {
+      if (source?.provider !== 'dmi') continue;
+      assert.equal(source.entityId, `PART::${original.partId}`);
+      assert.equal(source.parentZoneId, zoneId);
+      assert.equal(source.entityType, 'coastal-part');
+      assert.equal(source.samplingContext, 'coastal-part-water-point');
+    }
+  }
   const injection = await read('activation/injection.json');
-  const injectedStates = assertCoastalPointActivationStateInjection(injection);
+  const injectedPairs = assertCoastalPointActivationStateInjection(injection);
+  const injectedPair = injectedPairs[original.partId];
+  const injectedState = injectedPair.integratedState;
+  const injectedCandidateG = injectedPair.candidateGState;
   assert.equal(injection.schemaVersion, POINT_STAGE_SCHEMA_VERSION);
   assert.deepEqual(injection.ravScoreModelBinding, ravScoreModelBinding());
-  assert.equal(injectedStates[original.partId].schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
-  assert.equal(injectedStates[original.partId].modelId, RAVSCORE_MODEL_ID);
-  assert.equal(injectedStates[original.partId].modelContractSha256, RAVSCORE_MODEL_CONTRACT_SHA256);
-  assert.equal(injectedStates[original.partId].modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
-  assert.equal(injectedStates[original.partId].samplingContextKey, identity.samplingContextKey);
-  assert.equal(injectedStates[original.partId].currentMemoryReady, true);
-  assert.equal(injectedStates[original.partId].waveMemoryReady, true);
-  assert.equal(Object.hasOwn(injectedStates[original.partId], 'stateKey'), false);
+  assert.equal(injectedState.schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
+  assert.equal(injectedState.modelId, RAVSCORE_MODEL_ID);
+  assert.equal(injectedState.modelContractSha256, RAVSCORE_MODEL_CONTRACT_SHA256);
+  assert.equal(injectedState.modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
+  assert.equal(injectedState.samplingContextKey, identity.samplingContextKey);
+  assert.equal(injectedState.currentMemoryReady, true);
+  assert.equal(injectedState.waveMemoryReady, true);
+  assert.equal(Object.hasOwn(injectedState, 'stateKey'), false);
+  assert.equal(injectedCandidateG.stateKey, stateKey);
+  assert.equal(injectedCandidateG.transportMemoryReady, true);
+  assert.equal(injectedPair.targetReferenceAt, reference);
+  assert.equal(injectedState.time, injectedCandidateG.time);
   const wrongInjectionBundle = structuredClone(injection);
   wrongInjectionBundle.ravScoreModelBinding.modelBundleSha256 = 'wrong-model-bundle';
   assert.throws(() => assertCoastalPointActivationStateInjection(wrongInjectionBundle), /incompatible modelBundleSha256/,
     'En activation-injektion fra et andet modelbundle skal afvises');
   const rawVectorInjection = structuredClone(injection);
-  rawVectorInjection.states[original.partId].currentEvidence[0].currentUMps = 0.12;
+  rawVectorInjection.statePairs[original.partId].integratedState.currentEvidence[0].currentUMps = 0.12;
   assert.throws(() => assertCoastalPointActivationStateInjection(rawVectorInjection), /forbidden field|canonical field-allowlist/,
     'Ekstra rå U/V-felter skal afvises rekursivt');
   const coordinateInjection = structuredClone(injection);
-  coordinateInjection.states[original.partId].samplingPoint = candidate.waterPoint;
+  coordinateInjection.statePairs[original.partId].integratedState.samplingPoint = candidate.waterPoint;
   assert.throws(() => assertCoastalPointActivationStateInjection(coordinateInjection), /forbidden field|canonical field-allowlist/,
     'Koordinater skal afvises rekursivt i activation-state');
+  const integratedTamper = structuredClone(injection);
+  integratedTamper.statePairs[original.partId].integratedState.supplyPotential += 0.01;
+  assert.throws(() => assertCoastalPointActivationStateInjection(integratedTamper), /dual-state-hashbinding|contradicts its signed current evidence/,
+    'Integrated state-tamper skal bryde den atomiske hashbinding');
+  const candidateTamper = structuredClone(injection);
+  candidateTamper.statePairs[original.partId].candidateGState.transportPotential += 0.01;
+  assert.throws(() => assertCoastalPointActivationStateInjection(candidateTamper), /dual-state-hashbinding|Candidate G-oraklet/,
+    'Candidate G companion-tamper skal bryde den atomiske hashbinding');
+  const crossPart = structuredClone(injection);
+  crossPart.statePairs[`other-${original.partId}`] = crossPart.statePairs[original.partId];
+  delete crossPart.statePairs[original.partId];
+  assert.throws(() => assertCoastalPointActivationStateInjection(crossPart), /dual-state-hashbinding/,
+    'En state-pair må ikke flyttes til en anden kystdel');
+  const crossTarget = structuredClone(injection);
+  crossTarget.statePairs[original.partId].targetReferenceAt = new Date(
+    Date.parse(reference) + 3_600_000,
+  ).toISOString();
+  assert.throws(() => assertCoastalPointActivationStateInjection(crossTarget), /forskellig targettid/,
+    'En state-pair må ikke flyttes til en anden targettime');
+  const selectedCompanion = selectCoastalPointCandidateGRollbackContinuation({
+    partId: original.partId,
+    part: candidate,
+    initialSelection: { source: 'POINT_ACTIVATION', state: injectedState },
+    pointActivationStatePairs: injectedPairs,
+    privateCandidateGContinuation: mature,
+    checkpointCandidateGContinuation: mature,
+    targetReferenceAt: reference,
+  });
+  assert.equal(selectedCompanion.source, 'POINT_ACTIVATION_COMPANION');
+  assert.deepEqual(selectedCompanion.state, injectedCandidateG,
+    'Kun den punktbundne companion må vinde over gamle private/checkpoint states');
+  assert.throws(() => selectCoastalPointCandidateGRollbackContinuation({
+    partId: original.partId,
+    part: candidate,
+    initialSelection: { source: 'POINT_ACTIVATION', state: injectedState },
+    pointActivationStatePairs: injectedPairs,
+    targetReferenceAt: new Date(Date.parse(reference) + 3_600_000).toISOString(),
+  }), /exact atomic Candidate G companion/,
+  'En old-point companion fra en anden targettime skal afvises');
   const injectionText = await fs.readFile(injectionPath, 'utf8');
   assert.doesNotMatch(injectionText, /"(?:waterPoint|landPoint|samplingPoint|gridPoint|currentUMps|currentVMps|current-u|current-v)"/,
     'Activation-state må ikke indeholde koordinater eller rå strømkomponenter');
@@ -403,7 +598,7 @@ try {
 
   const updater = await fs.readFile('scripts/update-weather.mjs', 'utf8');
   assert.match(updater, /assertCoastalPointActivationStateInjection\(document\)/,
-    'update-weather skal forbruge den validerede schema-4-injektion direkte');
+    'update-weather skal forbruge den validerede schema-3 dual-state-injektion direkte');
   assert.doesNotMatch(updater, /document\?\.schemaVersion === 1 && document\?\.states/,
     'update-weather må ikke fortsætte med legacy schema-1-injektionslæser');
 

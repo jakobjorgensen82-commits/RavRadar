@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  buildCandidateGDerivedStateSeries,
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
@@ -24,6 +25,13 @@ import {
 import { auditIntegratedRavScorePublicRuntime } from './audit-ravscore-integrated-public-runtime.mjs';
 import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
+import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import {
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
+import {
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 import {
   buildPublicConditionDetails,
   buildPublicConditions,
@@ -65,16 +73,17 @@ const weather = Object.freeze({
   },
 });
 
-const baseSeries = buildIntegratedRavScoreStateSeries(
-  Array.from({ length: 50 }, (_, index) => ({
-    time: time(index - 49),
+const baseSamples = Array.from({ length: 290 }, (_, index) => ({
+    time: time(index - 289),
     currentSpeedMps: weather.currentSpeedMps,
     currentAlignment: 1,
     currentVerified: true,
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
     waveDirectionDeg: weather.waveDirectionDeg,
-  })),
+  }));
+const baseSeries = buildIntegratedRavScoreStateSeries(
+  baseSamples,
   {
     samplingContextKey: `sha256:${'0'.repeat(64)}`,
     onshoreDirectionDeg: 90,
@@ -83,20 +92,51 @@ const baseSeries = buildIntegratedRavScoreStateSeries(
 const baseRow = baseSeries.rows.at(-1);
 assert.equal(baseRow.currentMemoryReady, true);
 assert.equal(baseRow.waveMemoryReady, true);
+const exactColdReplayProof = Object.freeze({
+  recoveryId: RAVSCORE_COLD_REPLAY_ID,
+  expectedCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+  completeCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+  boundedUnknownPositionCount: 0,
+  historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
+  targetReferenceAt: REFERENCE_AT,
+});
+const coldBaseSeries = buildIntegratedRavScoreStateSeries(
+  baseSamples.slice(-49),
+  {
+    samplingContextKey: `sha256:${'0'.repeat(64)}`,
+    onshoreDirectionDeg: 90,
+    coldReplayBootstrap: exactColdReplayProof,
+  },
+);
+const coldBaseRow = coldBaseSeries.rows.at(-1);
+assert.equal(coldBaseRow.historyScoreView.quality, 'HISTORY_INCOMPLETE',
+  'exact 48-hour cold replay must remain bounded until the wave tail closes');
+const candidateStateTemplate = buildCandidateGDerivedStateSeries(
+  baseSamples.slice(-49),
+  { stateKey: `sha256:${'1'.repeat(64)}` },
+).continuationState;
+assert.equal(candidateStateTemplate.transportMemoryReady, true);
+const historyIncompleteBaseSeries = buildIntegratedRavScoreStateSeries(
+  baseSamples.map(sample => sample.time === time(-1)
+    ? { ...sample, waveDirectionDeg:null }
+    : sample),
+  {
+    samplingContextKey: `sha256:${'0'.repeat(64)}`,
+    onshoreDirectionDeg: 90,
+  },
+);
+const historyIncompleteBaseRow = historyIncompleteBaseSeries.rows.at(-1);
+assert.equal(historyIncompleteBaseRow.currentDirectInputAvailable, true);
+assert.equal(historyIncompleteBaseRow.historyScoreView.quality, 'HISTORY_INCOMPLETE');
+assert.ok(historyIncompleteBaseRow.historyScoreView.reasonCodes
+  .includes('LAST_MILE_HISTORY_INCOMPLETE'));
 
-function readyState(part, transition) {
+function readyState(part, transition, series = baseSeries) {
   const state = {
-    ...structuredClone(baseSeries.continuationState),
+    ...structuredClone(series.continuationState),
     samplingContextKey: ravScoreSamplingContextKey(part),
   };
-  state.lineage = transition === 'cold'
-    ? {
-      recoveryId: RAVSCORE_COLD_REPLAY_ID,
-      source: RAVSCORE_RECOVERY_POLICY.source,
-      replayedHourCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
-      targetReferenceAt: REFERENCE_AT,
-    }
-    : {
+  if (transition !== 'cold') state.lineage = {
       currentEvidenceSource:
         RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
       migrationId: RAVSCORE_MIGRATION_ID,
@@ -115,13 +155,21 @@ function readyState(part, transition) {
   return state;
 }
 
-function scoreState(state) {
+function candidateStateFor(part) {
+  return {
+    ...structuredClone(candidateStateTemplate),
+    stateKey: candidateGStateKey(part),
+  };
+}
+
+function scoreState(state, row = baseRow) {
   const lastMile = waveApproachDeliveryContext(state.waveApproachState);
   return {
     ...state,
+    historyScoreView: structuredClone(row.historyScoreView),
     currentVerified: true,
-    currentTransition: baseRow.currentTransition,
-    currentCoastNormalSpeedMps: baseRow.currentCoastNormalSpeedMps,
+    currentTransition: row.currentTransition,
+    currentCoastNormalSpeedMps: row.currentCoastNormalSpeedMps,
     lastMileWaveReferenceAt: state.waveApproachState.waveReferenceAt,
     lastMileMemoryReady: state.waveApproachState.readiness,
     lastMileMemoryStatus: state.waveApproachState.status,
@@ -137,16 +185,20 @@ function scoreState(state) {
   };
 }
 
-function partRuntime(part, transition) {
-  const state = readyState(part, transition);
-  const evaluationState = scoreState(state);
+function partRuntime(part, transition, {
+  series = baseSeries,
+  row = baseRow,
+  scoreProfile = profile,
+} = {}) {
+  const state = readyState(part, transition, series);
+  const evaluationState = scoreState(state, row);
   const publicContext = {
     windSpeedMps: weather.windSpeedMps,
     waveHeightM: weather.waveHeightM,
     currentSpeedMps: weather.currentSpeedMps,
     currentAlignment: 1,
     currentVerified: true,
-    currentTransition: baseRow.currentTransition,
+    currentTransition: row.currentTransition,
     currentReferenceAt: state.currentReferenceAt,
     currentMemoryReady: state.currentMemoryReady,
     currentMemoryStatus: state.currentMemoryStatus,
@@ -155,11 +207,11 @@ function partRuntime(part, transition) {
     waveLastVerifiedAt: state.waveLastVerifiedAt,
     waveMemoryReady: state.waveMemoryReady,
     waveMemoryStatus: state.waveMemoryStatus,
-    waveTransition: baseRow.waveTransition,
+    waveTransition: row.waveTransition,
     lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt,
     lastMileMemoryReady: evaluationState.lastMileMemoryReady,
     lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
-    lastMileTransition: baseRow.lastMileTransition,
+    lastMileTransition: row.lastMileTransition,
   };
   const modes = Object.fromEntries(['waders', 'beach'].map(mode => [
     mode,
@@ -172,7 +224,7 @@ function partRuntime(part, transition) {
   const publicModes = Object.fromEntries(['waders', 'beach'].map(mode => [
     mode,
     selectPublicRavScoreResult({
-      profile,
+      profile: scoreProfile,
       modelResult: modes[mode],
       modelState: {
         currentMemoryReady: state.currentMemoryReady,
@@ -198,7 +250,7 @@ function partRuntime(part, transition) {
       publicScoreChanged: true,
       referenceAt: REFERENCE_AT,
       currentReferenceAt: state.currentReferenceAt,
-      currentTransition: baseRow.currentTransition,
+      currentTransition: row.currentTransition,
       currentMemoryReady: state.currentMemoryReady,
       currentMemoryStatus: state.currentMemoryStatus,
       currentMemoryCoverageHours: state.currentMemoryCoverageHours,
@@ -213,7 +265,9 @@ function partRuntime(part, transition) {
       migrationId: null,
       initialStateAccepted: transition === 'continuation',
       initialStateSource: transition === 'cold'
-        ? 'VERIFIED_PRIVATE_48H_COLD_REPLAY'
+        ? state.lineage.boundedUnknownPositionCount === 0
+          ? 'VERIFIED_PRIVATE_48H_COLD_REPLAY'
+          : 'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY'
         : 'INTEGRATED_CONTINUATION',
       currentState: state,
       modes,
@@ -223,12 +277,31 @@ function partRuntime(part, transition) {
 
 function zoneMode(runtime, mode, partIds, partMap) {
   const selected = runtime.publicModes[mode];
+  const sortedPartIds = [...partIds].sort();
+  const winningPartId = sortedPartIds[0];
+  const possibleWinningParts = sortedPartIds.map(partId => ({
+    partId,
+    name: partMap[partId].name,
+    score: selected.score,
+    scoreBounds: structuredClone(selected.scoreBounds),
+  }));
   return {
     available: true,
     status: 'whole-zone',
     score: selected.score,
-    winningPartId: partIds[0],
-    winningPartName: partMap[partIds[0]].name,
+    scoreQuality: selected.scoreQuality,
+    calibrationEligible: selected.calibrationEligible,
+    scoreSemantics: selected.scoreSemantics,
+    conservativeTailResetApplied: selected.conservativeTailResetApplied,
+    scoreBounds: structuredClone(selected.scoreBounds),
+    historyCoverageHours: selected.historyCoverageHours,
+    historyReasonCodes: structuredClone(selected.historyReasonCodes),
+    winningPartId,
+    winningPartName: partMap[winningPartId].name,
+    winningPartUncertain: selected.scoreQuality === 'HISTORY_INCOMPLETE'
+      && possibleWinningParts.length > 1,
+    possibleWinningPartCount: possibleWinningParts.length,
+    possibleWinningParts,
     scoreSpread: 0,
     comparisonPartCount: partIds.length,
     components: structuredClone(selected.components),
@@ -239,8 +312,22 @@ function zoneMode(runtime, mode, partIds, partMap) {
   };
 }
 
-function syntheticFull({ zoneCount, partCounts, transition = 'continuation' }) {
+function syntheticFull({
+  zoneCount,
+  partCounts,
+  transition = 'continuation',
+  historyIncomplete = false,
+}) {
   assert.equal(partCounts.length, zoneCount);
+  const runtimeSeries = historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
+  const selectedSeries = transition === 'cold' ? coldBaseSeries : runtimeSeries;
+  const runtimeRow = transition === 'cold' ? coldBaseRow
+    : historyIncomplete ? historyIncompleteBaseRow : baseRow;
+  const scoreProfile = resolvePublicRavScoreProfile({
+    modelCoverageReady: true,
+    modelMemoryReady: !historyIncomplete && transition !== 'cold',
+    modelMigrationReady: true,
+  });
   const zones = {};
   const coastalZones = {};
   const parts = {};
@@ -272,7 +359,11 @@ function syntheticFull({ zoneCount, partCounts, transition = 'continuation' }) {
           },
         },
       };
-      const runtime = partRuntime(part, transition);
+      const runtime = partRuntime(part, transition, {
+        series:selectedSeries,
+        row:runtimeRow,
+        scoreProfile,
+      });
       firstRuntime ??= runtime;
       partIds.push(partId);
       parts[partId] = {
@@ -339,11 +430,59 @@ function syntheticFull({ zoneCount, partCounts, transition = 'continuation' }) {
       },
     };
   }
+  const historyIncompleteZones = Object.entries(coastalZones).flatMap(([zoneId, zone]) => {
+    const current = zone.hourly[0];
+    const modes = ['waders', 'beach'].filter(mode =>
+      current[mode].scoreQuality === 'HISTORY_INCOMPLETE');
+    if (!modes.length) return [];
+    return [{
+      zoneId,
+      zoneName: `Synthetic zone ${zoneId.split('-').at(-1)}`,
+      modes,
+      historyCoverageHours: Math.min(...modes.map(mode =>
+        current[mode].historyCoverageHours)),
+      historyReasonCodes: [...new Set(modes.flatMap(mode =>
+        current[mode].historyReasonCodes))].sort(),
+    }];
+  });
+  const historyIncompleteModeCount = historyIncompleteZones
+    .reduce((sum, zone) => sum + zone.modes.length, 0);
+  const rollbackBinding = candidateGRollbackModelBinding();
+  const candidateRollbackParts = Object.fromEntries(Object.entries(parts)
+    .map(([partId, part]) => [partId, {
+      ravScoreModel: {
+        currentState: candidateStateFor({ ...part, partId }),
+      },
+    }]));
   return {
     datasetId: `synthetic-integrated-${zoneCount}-${partNumber}`,
     generatedAt: REFERENCE_AT,
     productionReferenceAt: REFERENCE_AT,
     zones,
+    ravScoreCandidateGRollback: {
+      schemaVersion: '1.0.0',
+      kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+      privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+      sourceModelBinding: binding,
+      rollbackModelBinding: rollbackBinding,
+      rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+      automaticActivationAllowed: false,
+      publicDuringNormalOperation: false,
+      runtime: {
+        schemaVersion: 1,
+        enabled: true,
+        generatedAt: REFERENCE_AT,
+        modelBinding: rollbackBinding,
+        expectedPartCount: partNumber,
+        scoredPartCount: partNumber,
+        scoreProfile: {
+          modelCoverageReady: true,
+          modelMemoryReady: true,
+          modelMigrationReady: true,
+        },
+        parts: candidateRollbackParts,
+      },
+    },
     coastalParts: {
       schemaVersion: 1,
       enabled: true,
@@ -352,16 +491,21 @@ function syntheticFull({ zoneCount, partCounts, transition = 'continuation' }) {
       generatedAt: REFERENCE_AT,
       modelBinding: binding,
       evidenceTrust: ravScoreVerifiedEvidenceTrust(),
-      scoreProfile: profile,
+      scoreProfile,
       scoreAvailability: {
-        schemaVersion: 1,
+        schemaVersion: 2,
         policy: 'integrated-model-local-fail-closed',
         allZonesActive: true,
+        allCurrentScoresFullHistory: historyIncompleteModeCount === 0,
         activeZoneCount: zoneCount,
         unavailableZoneCount: 0,
         totalZoneCount: zoneCount,
+        fullHistoryModeCount: zoneCount * 2 - historyIncompleteModeCount,
+        historyIncompleteModeCount,
+        historyIncompleteZoneCount: historyIncompleteZones.length,
         evaluatedAt: REFERENCE_AT,
         unavailableZones: [],
+        historyIncompleteZones,
       },
       expectedPartCount: partNumber,
       scoredPartCount: partNumber,
@@ -513,6 +657,56 @@ for (const result of [
 const smallPackage = publicPackage(small);
 assert.equal(audit(small, smallPackage, 1, 1).status, 'passed');
 
+const historyIncompleteSmall = syntheticFull({
+  zoneCount: 1,
+  partCounts: [1],
+  historyIncomplete: true,
+});
+const historyIncompleteCurrent = historyIncompleteSmall.coastalParts
+  .zones['synthetic-zone-1'].hourly[0];
+for (const mode of ['waders', 'beach']) {
+  assert.equal(historyIncompleteCurrent[mode].available, true);
+  assert.equal(historyIncompleteCurrent[mode].scoreQuality, 'HISTORY_INCOMPLETE');
+  assert.equal(historyIncompleteCurrent[mode].calibrationEligible, false);
+  assert.equal(historyIncompleteCurrent[mode].historyCoverageHours, 48,
+    'wave/last-mile history can be incomplete even with a complete current window');
+  assert.ok(historyIncompleteCurrent[mode].historyReasonCodes
+    .includes('LAST_MILE_HISTORY_INCOMPLETE'));
+}
+assert.equal(historyIncompleteSmall.coastalParts.scoreProfile.modelMemoryReady, false);
+assert.equal(historyIncompleteSmall.coastalParts.scoreAvailability.historyIncompleteModeCount, 2);
+const historyIncompletePackage = publicPackage(historyIncompleteSmall);
+const historyIncompleteReport = audit(
+  historyIncompleteSmall,
+  historyIncompletePackage,
+  1,
+  1,
+);
+assert.deepEqual(historyIncompleteReport.errors, [],
+  'canonical wave/last-mile HISTORY_INCOMPLETE must pass without weakening rollback');
+assert.equal(historyIncompleteReport.rollback.readyPartCount, 1);
+
+const mismatchedHistorySummary = structuredClone(historyIncompleteSmall);
+mismatchedHistorySummary.coastalParts.scoreAvailability.historyIncompleteModeCount = 1;
+assert.ok(audit(
+  mismatchedHistorySummary,
+  historyIncompletePackage,
+  1,
+  1,
+).errors.includes('PUBLIC_CURRENT_HISTORY_QUALITY_INVALID'),
+'a declared history summary must match every reconstructed current mode');
+
+const falseFullHistoryProfile = structuredClone(historyIncompleteSmall);
+falseFullHistoryProfile.coastalParts.scoreProfile.modelMemoryReady = true;
+falseFullHistoryProfile.coastalParts.scoreProfile.advisories = [];
+assert.ok(audit(
+  falseFullHistoryProfile,
+  historyIncompletePackage,
+  1,
+  1,
+).errors.includes('PUBLIC_PROFILE_NOT_READY'),
+'modelMemoryReady=true must not hide a non-empty HISTORY_INCOMPLETE summary');
+
 for (const [label, mutate] of [
   ['numeric-string score', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.score = '68'; }],
   ['numeric-string spread', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.scoreSpread = '0'; }],
@@ -526,10 +720,13 @@ for (const [label, mutate] of [
   ['boolean weather', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.weather.waveHeightM = false; }],
   ['array weather', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.weather.wavePeriodS = [8]; }],
   ['object weather', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.weather.currentSpeedMps = { value:0.1 }; }],
+  ['short full-history coverage', full => { full.coastalParts.zones['synthetic-zone-1'].hourly[0].waders.historyCoverageHours = 47; }],
 ]) {
   const poisonedProducerInput = structuredClone(small);
   mutate(poisonedProducerInput);
-  assert.throws(() => publicPackage(poisonedProducerInput), /strict|finite number|safe integer|in range/,
+  assert.throws(
+    () => publicPackage(poisonedProducerInput),
+    /strict|finite number|safe integer|in range|complete history window/,
     `public producer must reject ${label} before artifact creation`);
 }
 for (const malformed of ['1', true, [1]]) {
@@ -642,7 +839,7 @@ assert.equal(coldReplayReport.continuation.continuedStateCount, 0);
 
 const incompleteColdReplay = structuredClone(coldReplay);
 incompleteColdReplay.coastalParts.parts['synthetic-part-1']
-  .ravScoreModel.currentState.lineage.replayedHourCount = 47;
+  .ravScoreModel.currentState.lineage.completeCausalPositionCount = 47;
 const incompleteColdReplayReport = audit(
   incompleteColdReplay,
   coldReplayPackage,
@@ -665,6 +862,13 @@ for (const [index, row] of fiveIsolatedReadyHours.coastalParts
       status: 'unavailable',
       available: false,
       score: null,
+      scoreBounds: null,
+      scoreQuality: 'UNAVAILABLE',
+      calibrationEligible: false,
+      scoreSemantics: null,
+      conservativeTailResetApplied: false,
+      historyCoverageHours: null,
+      historyReasonCodes: [],
       reasons: ['Syntetisk manglende sammenhængende strømbevis.'],
       unavailability: {
         available: false,
@@ -778,8 +982,10 @@ for (const [label, mutate] of [
     `${label} must fail the explicit schema-5 lineage gate`);
   assert.ok(invalidLineageReport.errors.includes('STATE_REPLAY_FAILED'),
     `${label} must fail state replay`);
-  assert.ok(invalidLineageReport.errors.includes('ROLLBACK_RECONSTRUCTION_FAILED'),
-    `${label} must fail Candidate G rollback reconstruction`);
+  assert.equal(invalidLineageReport.rollback.readyPartCount, 1,
+    `${label} must not damage the independent Candidate G companion`);
+  assert.ok(!invalidLineageReport.errors.includes('ROLLBACK_STATE_CONTRACT_MISMATCH'),
+    `${label} must not relabel an independent Candidate G companion`);
 }
 
 const wrongContext = structuredClone(small);
@@ -832,10 +1038,49 @@ rollbackLimitModel.waveMemoryStatus = rollbackLimitState.waveMemoryStatus;
 const rollbackLimitReport = audit(rollbackLimit, smallPackage, 1, 1);
 assert.ok(rollbackLimitReport.errors.includes('STATE_REPLAY_FAILED'),
   'A stale or forged 50-point continuation must now fail the schema-5 replay gate too.');
-assert.ok(rollbackLimitReport.errors.includes('ROLLBACK_EVIDENCE_LIMIT_EXCEEDED'),
-  'The audit must retain its explicit rollback error for a 50-point payload.');
-assert.equal(rollbackLimitReport.rollback.readyPartCount, 0);
-assert.equal(rollbackLimitReport.rollback.evidenceLimitExceededPartCount, 1);
+assert.ok(!rollbackLimitReport.errors.includes('ROLLBACK_EVIDENCE_LIMIT_EXCEEDED'),
+  'Schema-6 evidence must not be reused as Candidate G rollback evidence.');
+assert.equal(rollbackLimitReport.rollback.readyPartCount, 1);
+assert.equal(rollbackLimitReport.rollback.evidenceLimitExceededPartCount, 0);
+
+const companionRollbackLimit = structuredClone(small);
+companionRollbackLimit.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState.transportEvidence = fiftyPointEvidence;
+const companionRollbackLimitReport = audit(
+  companionRollbackLimit,
+  smallPackage,
+  1,
+  1,
+);
+assert.ok(companionRollbackLimitReport.errors.includes('ROLLBACK_EVIDENCE_LIMIT_EXCEEDED'));
+assert.ok(companionRollbackLimitReport.errors.includes('ROLLBACK_STATE_CONTRACT_MISMATCH'));
+assert.equal(companionRollbackLimitReport.rollback.readyPartCount, 0);
+assert.equal(companionRollbackLimitReport.rollback.evidenceLimitExceededPartCount, 1);
+
+const missingCompanion = structuredClone(small);
+delete missingCompanion.ravScoreCandidateGRollback;
+const missingCompanionReport = audit(missingCompanion, smallPackage, 1, 1);
+assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_DESCRIPTOR_INVALID'));
+assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH'));
+
+const incompleteCompanion = structuredClone(small);
+delete incompleteCompanion.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1'];
+incompleteCompanion.ravScoreCandidateGRollback.runtime.scoredPartCount = 0;
+const incompleteCompanionReport = audit(incompleteCompanion, smallPackage, 1, 1);
+assert.ok(incompleteCompanionReport.errors.includes('ROLLBACK_COMPANION_RUNTIME_NOT_READY'));
+assert.ok(incompleteCompanionReport.errors.includes('ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH'));
+
+const tamperedCompanion = structuredClone(small);
+tamperedCompanion.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState.transportPotential += 1;
+const tamperedCompanionReport = audit(tamperedCompanion, smallPackage, 1, 1);
+assert.ok(tamperedCompanionReport.errors.includes('ROLLBACK_ORACLE_MISMATCH'));
+assert.equal(tamperedCompanionReport.rollback.readyPartCount, 0);
+
+const crossBindingCompanion = structuredClone(small);
+crossBindingCompanion.ravScoreCandidateGRollback.rollbackModelBinding.modelId = binding.modelId;
+assert.ok(audit(crossBindingCompanion, smallPackage, 1, 1).errors
+  .includes('ROLLBACK_COMPANION_BINDING_MISMATCH'));
 
 const scoreMismatch = structuredClone(small);
 scoreMismatch.coastalParts.parts['synthetic-part-1']

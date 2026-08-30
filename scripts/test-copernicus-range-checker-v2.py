@@ -147,6 +147,31 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as r
     assert rebound.returncode == 0 and "lacks a complete" in rebound.stdout, rebound.stdout + rebound.stderr
     write(folder / "registry.json", original_registry)
 
+    # A coherent new DMI-gap matrix for the same reference, DMI bytes and
+    # targets is a different generation. The old COMPLETE seal must not
+    # suppress acquisition merely because its reference hour still matches.
+    additional_required = {
+        "partId": "p1",
+        "validTime": (valid_time - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }
+    changed_required = sorted(
+        [*required, additional_required],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    changed_matrix_registry = {
+        **original_registry,
+        "requiredPairs": changed_required,
+        "requiredPairsSha256": required_pairs_sha256(changed_required),
+        "requiredPairCount": 2,
+        "dmiVerifiedPairCount": 164,
+    }
+    write(folder / "registry.json", changed_matrix_registry)
+    changed_matrix = run_current(folder)
+    assert changed_matrix.returncode == 0 and "lacks a complete" in changed_matrix.stdout, (
+        changed_matrix.stdout + changed_matrix.stderr
+    )
+    write(folder / "registry.json", original_registry)
+
     (folder / "cache.json").unlink()
     optional_absent = run(folder)
     assert optional_absent.returncode == 0 and "absent" in optional_absent.stdout

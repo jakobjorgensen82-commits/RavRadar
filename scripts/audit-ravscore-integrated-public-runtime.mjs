@@ -4,18 +4,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
-  CANDIDATE_G_STATE_PROFILE_ID,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
-  CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
-import {
-  buildIntegratedRavScoreStateSeries,
-  reconstructCandidateGRollbackState,
-} from '../js/core/ravscore-integrated-state-pipeline.js';
+import { buildIntegratedRavScoreStateSeries }
+  from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_COLD_REPLAY_ID,
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
+  RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -23,7 +21,7 @@ import {
   RAVSCORE_PROFILE_ID,
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   RAVSCORE_RECOVERY_POLICY,
-  RAVSCORE_ROLLBACK_ID,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
   RAVSCORE_WEIGHTS,
@@ -31,10 +29,6 @@ import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
-import {
-  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
-  buildBoundedCurrentTransportMemory,
-} from '../js/core/ravscore-regime-memory.js';
 import {
   CANDIDATE_G_ROLLBACK_MODEL_ID,
   RAVSCORE_MEMORY_REFERENCE_SCOPE,
@@ -51,8 +45,16 @@ import {
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
-import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
+import {
+  CANDIDATE_G_CONTINUATION_FIELDS,
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+  assertCandidateGRollbackContinuation,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
+import {
+  assertRavScoreModelBinding as assertCandidateGRollbackModelBinding,
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import {
   assertPublicRuntimePrivacy,
@@ -75,7 +77,11 @@ const EXPECTED_PARTS = 673;
 const MODES = Object.freeze(['waders', 'beach']);
 const HOUR_MS = 3_600_000;
 const SHA256_KEY_PATTERN = /^sha256:[a-f0-9]{64}$/;
+const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
 const EPSILON = 1e-6;
+const scoreQualityRank = value => value === RAVSCORE_SCORE_QUALITY.FULL_HISTORY ? 0
+  : value === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE ? 1
+    : 2;
 
 const INTEGRATED_STATE_FIELDS = Object.freeze([
   'schemaVersion',
@@ -98,7 +104,9 @@ const INTEGRATED_STATE_FIELDS = Object.freeze([
   'currentMemoryCoverageHours',
   'currentEvidence',
   'currentNativeHoldAuthorization',
+  'currentNativeHoldIntervalEnds',
   'supplyPotential',
+  'historyBounds',
   'waveStateSchemaVersion',
   'wavePolicyId',
   'waveLastVerifiedAt',
@@ -143,6 +151,13 @@ const INTEGRATED_PART_MODEL_FIELDS = Object.freeze([
 const INTEGRATED_READY_MODE_FIELDS = Object.freeze([
   'available',
   'score',
+  'scoreQuality',
+  'calibrationEligible',
+  'scoreSemantics',
+  'conservativeTailResetApplied',
+  'scoreBounds',
+  'historyCoverageHours',
+  'historyReasonCodes',
   'modelVersion',
   'modelId',
   'modelContractSha256',
@@ -153,25 +168,6 @@ const INTEGRATED_READY_MODE_FIELDS = Object.freeze([
   'diagnostics',
   'explanation',
   'confidence',
-]);
-
-const CANDIDATE_G_ROLLBACK_STATE_FIELDS = Object.freeze([
-  'schemaVersion',
-  'modelId',
-  'variantId',
-  'profileId',
-  'stateKey',
-  'time',
-  'transportReferenceAt',
-  'transportPotential',
-  'outboundEpisodeEffectiveHours',
-  'transportMemoryReady',
-  'transportMemoryStatus',
-  'transportMemoryWindowHours',
-  'transportMemoryCoverageHours',
-  'transportEvidence',
-  'mobilisationPotential',
-  'rollbackId',
 ]);
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -196,10 +192,180 @@ const exactRegionalHoldAuthorization = value => sameKeys(value, [
   && value.distanceKm >= 0
   && value.distanceKm <= 15;
 
-function integratedEvaluationState(state, model, weather) {
+function exactHistoryReasonCodes(value, { required = false } = {}) {
+  return Array.isArray(value)
+    && (!required || value.length > 0)
+    && value.every(code => typeof code === 'string'
+      && HISTORY_REASON_CODE_PATTERN.test(code))
+    && new Set(value).size === value.length;
+}
+
+function exactPublicScoreQuality(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || !exactHistoryReasonCodes(value.historyReasonCodes)) return false;
+  if (value.available === false) {
+    return value.score === null
+      && value.scoreQuality === RAVSCORE_SCORE_QUALITY.UNAVAILABLE
+      && value.calibrationEligible === false
+      && value.scoreSemantics === null
+      && value.conservativeTailResetApplied === false
+      && value.scoreBounds === null
+      && value.historyCoverageHours === null
+      && value.historyReasonCodes.length === 0;
+  }
+  const bounds=value.scoreBounds;
+  if (value.available !== true || !finite(value.score)
+    || !finite(value.historyCoverageHours)
+    || value.historyCoverageHours < 0
+    || value.historyCoverageHours > RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+    || !sameKeys(bounds,['lower','upper','modelUncertaintyPoints','rawLower','rawUpper'])
+    || !['lower','upper','modelUncertaintyPoints','rawLower','rawUpper']
+      .every(field=>finite(bounds[field]))
+    || bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    || bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    || !close(bounds.modelUncertaintyPoints,bounds.upper-bounds.lower)
+    || value.score!==bounds.lower
+    || typeof value.conservativeTailResetApplied!=='boolean') return false;
+  if (value.scoreQuality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY) {
+    return value.calibrationEligible === true
+      && value.historyCoverageHours === RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+      && value.historyReasonCodes.length === 0
+      && bounds.lower===bounds.upper&&bounds.rawLower===bounds.rawUpper
+      && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+        .includes(value.scoreSemantics)
+      && value.conservativeTailResetApplied
+        ===(value.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+  }
+  return value.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+    && value.calibrationEligible === false
+    && value.scoreSemantics==='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+    && exactHistoryReasonCodes(value.historyReasonCodes, { required:true });
+}
+
+function exactHistoryIncompleteZoneSummary(value) {
+  return sameKeys(value, [
+    'zoneId', 'zoneName', 'modes', 'historyCoverageHours', 'historyReasonCodes',
+  ])
+    && typeof value.zoneId === 'string'
+    && value.zoneId.length > 0
+    && typeof value.zoneName === 'string'
+    && value.zoneName.length > 0
+    && Array.isArray(value.modes)
+    && value.modes.length > 0
+    && value.modes.every(mode => MODES.includes(mode))
+    && new Set(value.modes).size === value.modes.length
+    && finite(value.historyCoverageHours)
+    && value.historyCoverageHours >= 0
+    && value.historyCoverageHours <= RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+    && exactHistoryReasonCodes(value.historyReasonCodes, { required:true });
+}
+
+function lastMileFactorFromTrack(track) {
+  const activity = track.activityMoment;
+  const penalty = Math.max(0, Math.min(
+    activity,
+    (activity - track.normalMoment)
+      / (1 - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment),
+  ));
+  return Math.max(
+    RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor,
+    Math.min(
+      RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor,
+      1 - RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare * penalty,
+    ),
+  );
+}
+
+function historyScoreViewFromContinuation(state, persisted) {
+  const bounds = state?.historyBounds;
+  const current = bounds?.current;
+  const wave = bounds?.waveMobilisation;
+  const lastMile = bounds?.lastMile;
+  if (![current?.lowerPotential, current?.upperPotential,
+    wave?.lowerPotential, wave?.upperPotential,
+    lastMile?.minimumFactorTrack?.activityMoment,
+    lastMile?.minimumFactorTrack?.normalMoment,
+    lastMile?.maximumFactorTrack?.activityMoment,
+    lastMile?.maximumFactorTrack?.normalMoment].every(finite)) {
+    throw new Error('Schema-6 continuation lacks finite history bounds');
+  }
+  const waveOpen = wave.lastUnknownAt !== null && wave.conservativeResetAt === null;
+  const lastMileOpen = lastMile.lastUnknownAt !== null
+    && lastMile.conservativeResetAt === null;
+  const currentReasonCodes = (persisted?.historyReasonCodes ?? [])
+    .filter(code => [
+      'CURRENT_HISTORY_MISSING_EVIDENCE',
+      'CURRENT_HISTORY_BOUNDARY_UNCOVERED',
+      'CURRENT_HISTORY_TIME_GAP',
+      'CURRENT_HISTORY_TAIL_UNCOVERED',
+    ].includes(code));
+  const currentIncomplete = !RAVSCORE_CURRENT_SUPPLY_POLICY.readyStatuses
+    .includes(state.currentMemoryStatus)
+    || state.currentMemoryCoverageHours < RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
+    || Math.abs(current.upperPotential - current.lowerPotential) > EPSILON;
+  const expectedTailReasonCodes = [
+    ...(waveOpen ? ['WAVE_MOBILISATION_HISTORY_INCOMPLETE'] : []),
+    ...(lastMileOpen ? ['LAST_MILE_HISTORY_INCOMPLETE'] : []),
+  ];
+  const expectedReasonCodes = [...currentReasonCodes, ...expectedTailReasonCodes];
+  const incomplete = currentIncomplete || waveOpen || lastMileOpen;
+  const quality = incomplete
+    ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+    : RAVSCORE_SCORE_QUALITY.FULL_HISTORY;
+  const conservativeTailResetApplied = wave.conservativeResetAt !== null
+    || lastMile.conservativeResetAt !== null;
+  const persistedUnavailable = persisted?.scoreQuality
+    === RAVSCORE_SCORE_QUALITY.UNAVAILABLE;
+  if (persistedUnavailable && (persisted?.available !== false
+    || persisted?.score !== null
+    || persisted?.scoreBounds !== null
+    || persisted?.scoreSemantics !== null
+    || persisted?.calibrationEligible !== false
+    || persisted?.historyCoverageHours !== null
+    || !Array.isArray(persisted?.historyReasonCodes)
+    || persisted.historyReasonCodes.length !== 0
+    || persisted?.conservativeTailResetApplied !== false)) {
+    throw new Error('Persisted UNAVAILABLE history envelope is not clean');
+  }
+  if (!persistedUnavailable && (persisted?.scoreQuality !== quality
+    || persisted?.calibrationEligible !== !incomplete
+    || persisted?.historyCoverageHours !== state.currentMemoryCoverageHours
+    || persisted?.conservativeTailResetApplied !== conservativeTailResetApplied
+    || sameCanonical(
+      [...(persisted?.historyReasonCodes ?? [])].sort(),
+      [...expectedReasonCodes].sort(),
+    ) !== true
+    || (currentIncomplete !== (currentReasonCodes.length > 0)))) {
+    throw new Error('Persisted history quality is not derivable from schema-6 continuation');
+  }
+  return {
+    available: true,
+    quality,
+    calibrationEligible: !incomplete,
+    coverageHours: state.currentMemoryCoverageHours,
+    requiredHours: RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours,
+    reasonCodes: expectedReasonCodes,
+    conservativeTailResetApplied,
+    current: {
+      lowerPotential: current.lowerPotential,
+      upperPotential: current.upperPotential,
+    },
+    waveMobilisation: {
+      lowerPotential: wave.lowerPotential,
+      upperPotential: wave.upperPotential,
+    },
+    lastMile: {
+      lowerFactor: lastMileFactorFromTrack(lastMile.minimumFactorTrack),
+      upperFactor: lastMileFactorFromTrack(lastMile.maximumFactorTrack),
+    },
+  };
+}
+
+function integratedEvaluationState(state, model, weather, persisted) {
   const lastMile = waveApproachDeliveryContext(state?.waveApproachState);
   return {
     ...state,
+    historyScoreView: historyScoreViewFromContinuation(state, persisted),
     currentVerified: weather?.currentProvenance?.status === 'verified',
     currentTransition: model?.currentTransition ?? null,
     lastMileWaveReferenceAt: state?.waveApproachState?.waveReferenceAt ?? null,
@@ -252,7 +418,7 @@ function assertCanonicalBinding(binding) {
 function publicModeFormulaIsConsistent(mode, value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   if (value.available !== true) {
-    return value.available === false
+    return exactPublicScoreQuality(value)
       && value.score === null
       && typeof value?.unavailability?.code === 'string'
       && Array.isArray(value.reasons)
@@ -261,7 +427,8 @@ function publicModeFormulaIsConsistent(mode, value) {
   const explanation = value.explanation;
   const components = value.components;
   const contributions = explanation?.contributions;
-  if (!finite(value.score) || value.score < 0 || value.score > 100
+  if (!exactPublicScoreQuality(value)
+    || !finite(value.score) || value.score < 0 || value.score > 100
     || (value.scoreProfileId !== undefined && value.scoreProfileId !== RAVSCORE_MODEL_ID)
     || !assertCanonicalBinding(value.modelBinding ?? explanation)
     || !assertCanonicalBinding(explanation)
@@ -556,13 +723,69 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   'INTEGRATED_ACTIVATION_POLICY_MISMATCH');
   collector.add(profile?.memoryReferenceScope === RAVSCORE_MEMORY_REFERENCE_SCOPE,
     'MEMORY_REFERENCE_SCOPE_MISMATCH');
-  collector.add(profile?.modelCoverageReady === true
-    && profile?.modelMemoryReady === true
-    && profile?.modelMigrationReady === true,
-  'PUBLIC_PROFILE_NOT_READY');
+  const profileCoverageAndMigrationReady = profile?.modelCoverageReady === true
+    && profile?.modelMigrationReady === true;
+
+  // Candidate G is a separate, private rollback companion. It must be
+  // complete and independently bound; schema 6 is never a reconstruction
+  // source for Candidate G rollback readiness.
+  const rollbackDescriptor = full?.ravScoreCandidateGRollback;
+  const rollbackRuntime = rollbackDescriptor?.runtime;
+  const rollbackRuntimeParts = rollbackRuntime?.parts
+    && typeof rollbackRuntime.parts === 'object'
+    && !Array.isArray(rollbackRuntime.parts)
+    ? rollbackRuntime.parts : {};
+  const integratedPartIds = parts.map(([partId]) => partId).sort();
+  const rollbackPartIds = Object.keys(rollbackRuntimeParts).sort();
+  const rollbackDescriptorShapeValid = sameKeys(rollbackDescriptor, [
+    'schemaVersion',
+    'kind',
+    'privacyClass',
+    'sourceModelBinding',
+    'rollbackModelBinding',
+    'rollbackId',
+    'automaticActivationAllowed',
+    'publicDuringNormalOperation',
+    'runtime',
+  ])
+    && rollbackDescriptor.schemaVersion === '1.0.0'
+    && rollbackDescriptor.kind === 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME'
+    && rollbackDescriptor.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+    && rollbackDescriptor.rollbackId === CANDIDATE_G_OPERATIONAL_ROLLBACK_ID
+    && rollbackDescriptor.automaticActivationAllowed === false
+    && rollbackDescriptor.publicDuringNormalOperation === false;
+  collector.add(rollbackDescriptorShapeValid,
+    'ROLLBACK_COMPANION_DESCRIPTOR_INVALID');
+  let rollbackBindingsValid = false;
+  try {
+    assertRavScoreModelBinding(rollbackDescriptor?.sourceModelBinding);
+    assertCandidateGRollbackModelBinding(rollbackDescriptor?.rollbackModelBinding);
+    assertCandidateGRollbackModelBinding(rollbackRuntime?.modelBinding);
+    rollbackBindingsValid = sameCanonical(
+      rollbackDescriptor.rollbackModelBinding,
+      candidateGRollbackModelBinding(),
+    );
+  } catch {
+    rollbackBindingsValid = false;
+  }
+  collector.add(rollbackBindingsValid, 'ROLLBACK_COMPANION_BINDING_MISMATCH');
+  const rollbackRuntimeReady = rollbackRuntime?.schemaVersion === 1
+    && rollbackRuntime?.enabled === true
+    && rollbackRuntime?.generatedAt === full?.productionReferenceAt
+    && safeNonNegativeInteger(rollbackRuntime?.expectedPartCount)
+    && rollbackRuntime.expectedPartCount === expectedPartCount
+    && safeNonNegativeInteger(rollbackRuntime?.scoredPartCount)
+    && rollbackRuntime.scoredPartCount === expectedPartCount
+    && rollbackRuntime?.scoreProfile?.modelCoverageReady === true
+    && rollbackRuntime?.scoreProfile?.modelMemoryReady === true
+    && rollbackRuntime?.scoreProfile?.modelMigrationReady === true;
+  collector.add(rollbackRuntimeReady, 'ROLLBACK_COMPANION_RUNTIME_NOT_READY');
+  collector.add(sameCanonical(rollbackPartIds, integratedPartIds),
+    'ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH');
 
   const availability = coastal?.scoreAvailability;
-  collector.add(availability?.policy === 'integrated-model-local-fail-closed'
+  const availabilityBaseReady = availability?.schemaVersion === 2
+    && availability?.policy === 'integrated-model-local-fail-closed'
     && availability?.allZonesActive === true
     && safeNonNegativeInteger(availability?.activeZoneCount)
     && availability.activeZoneCount === expectedZoneCount
@@ -571,8 +794,18 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     && safeNonNegativeInteger(availability?.totalZoneCount)
     && availability.totalZoneCount === expectedZoneCount
     && Array.isArray(availability?.unavailableZones)
-    && availability.unavailableZones.length === 0,
-  'PUBLIC_CURRENT_AVAILABILITY_INCOMPLETE');
+    && availability.unavailableZones.length === 0;
+  collector.add(availabilityBaseReady, 'PUBLIC_CURRENT_AVAILABILITY_INCOMPLETE');
+  const declaredHistoryIncompleteZones = Array.isArray(availability?.historyIncompleteZones)
+    ? availability.historyIncompleteZones : [];
+  const availabilityQualityShapeReady = typeof availability?.allCurrentScoresFullHistory === 'boolean'
+    && safeNonNegativeInteger(availability?.fullHistoryModeCount)
+    && safeNonNegativeInteger(availability?.historyIncompleteModeCount)
+    && safeNonNegativeInteger(availability?.historyIncompleteZoneCount)
+    && availability.historyIncompleteZoneCount === declaredHistoryIncompleteZones.length
+    && declaredHistoryIncompleteZones.every(exactHistoryIncompleteZoneSummary)
+    && new Set(declaredHistoryIncompleteZones.map(zone => zone.zoneId)).size
+      === declaredHistoryIncompleteZones.length;
 
   const partCountByZone = new Map();
   for (const [, part] of parts) {
@@ -580,6 +813,9 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   }
   let zoneModeCount = 0;
   let unavailableZoneModeCount = 0;
+  let currentFullHistoryModeCount = 0;
+  let currentHistoryIncompleteModeCount = 0;
+  const expectedHistoryIncompleteZones = [];
   const currentRowsByZone = new Map();
   const publicReferenceMs = Date.parse(full?.productionReferenceAt ?? '');
   for (const [zoneId, zone] of zones) {
@@ -624,9 +860,69 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     collector.add(MODES.every(mode => current?.[mode]?.available === true
       && finite(current?.[mode]?.score)),
     'ZONE_CURRENT_MODE_UNAVAILABLE');
+    const historyIncompleteModes = [];
+    const historyCoverageHours = [];
+    const historyReasonCodes = new Set();
+    for (const mode of MODES) {
+      const result = current?.[mode];
+      if (result?.available !== true || !finite(result.score)) continue;
+      if (result.scoreQuality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY) {
+        currentFullHistoryModeCount += 1;
+      } else if (result.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE) {
+        currentHistoryIncompleteModeCount += 1;
+        historyIncompleteModes.push(mode);
+        historyCoverageHours.push(result.historyCoverageHours);
+        for (const code of result.historyReasonCodes ?? []) historyReasonCodes.add(code);
+      }
+    }
+    if (historyIncompleteModes.length > 0) {
+      expectedHistoryIncompleteZones.push({
+        zoneId,
+        modes: historyIncompleteModes,
+        historyCoverageHours: Math.min(...historyCoverageHours),
+        historyReasonCodes: [...historyReasonCodes].sort(),
+      });
+    }
   }
   collector.add(unavailableZoneModeCount === 0,
     'PUBLIC_FORECAST_CONTAINS_UNAVAILABLE_ZONE_MODES');
+  const normalizedDeclaredHistoryIncompleteZones = declaredHistoryIncompleteZones
+    .map(zone => ({
+      zoneId: zone.zoneId,
+      modes: Array.isArray(zone.modes) ? [...zone.modes].sort() : [],
+      historyCoverageHours: zone.historyCoverageHours,
+      historyReasonCodes: Array.isArray(zone.historyReasonCodes)
+        ? [...zone.historyReasonCodes].sort() : [],
+    }))
+    .sort((left, right) => left.zoneId.localeCompare(right.zoneId));
+  const normalizedExpectedHistoryIncompleteZones = expectedHistoryIncompleteZones
+    .map(zone => ({ ...zone, modes:[...zone.modes].sort() }))
+    .sort((left, right) => left.zoneId.localeCompare(right.zoneId));
+  const currentHistoryQualitySummaryReady = availabilityBaseReady
+    && availabilityQualityShapeReady
+    && availability.fullHistoryModeCount === currentFullHistoryModeCount
+    && availability.historyIncompleteModeCount === currentHistoryIncompleteModeCount
+    && availability.historyIncompleteZoneCount === expectedHistoryIncompleteZones.length
+    && availability.allCurrentScoresFullHistory
+      === (currentHistoryIncompleteModeCount === 0)
+    && currentFullHistoryModeCount + currentHistoryIncompleteModeCount
+      === expectedZoneCount * MODES.length
+    && sameCanonical(
+      normalizedDeclaredHistoryIncompleteZones,
+      normalizedExpectedHistoryIncompleteZones,
+    );
+  collector.add(currentHistoryQualitySummaryReady,
+    'PUBLIC_CURRENT_HISTORY_QUALITY_INVALID');
+  const fullHistoryProfileReady = profile?.modelMemoryReady === true
+    && currentHistoryQualitySummaryReady
+    && currentHistoryIncompleteModeCount === 0;
+  const historyIncompleteProfileReady = profile?.modelMemoryReady === false
+    && currentHistoryQualitySummaryReady
+    && currentHistoryIncompleteModeCount > 0
+    && expectedHistoryIncompleteZones.length > 0;
+  collector.add(profileCoverageAndMigrationReady
+    && (fullHistoryProfileReady || historyIncompleteProfileReady),
+  'PUBLIC_PROFILE_NOT_READY');
 
   let reconstructedModeCount = 0;
   let stateReplayCount = 0;
@@ -645,6 +941,11 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     const zone = coastal?.zones?.[part?.zoneId];
     const model = part?.ravScoreModel;
     const state = model?.currentState;
+    const persistedModesHaveExactQuality = MODES.every(mode =>
+      exactPublicScoreQuality(model?.modes?.[mode]));
+    const persistedHistoryIncomplete = persistedModesHaveExactQuality
+      && MODES.some(mode =>
+        model?.modes?.[mode]?.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
     collector.add(Boolean(zone), 'PART_ZONE_MISSING');
     collector.add(part?.current?.time === zone?.currentReferenceAt,
       'PART_ZONE_REFERENCE_MISMATCH');
@@ -665,13 +966,13 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && model?.referenceAt === state?.time
       && model?.currentReferenceAt === state?.currentReferenceAt,
     'PART_STATE_REFERENCE_MISMATCH');
-    collector.add(model?.currentMemoryReady === true
+    collector.add((model?.currentMemoryReady === true || persistedHistoryIncomplete)
       && model?.currentMemoryReady === state?.currentMemoryReady
       && model?.currentMemoryStatus === state?.currentMemoryStatus
       && model?.currentMemoryCoverageHours === state?.currentMemoryCoverageHours
       && model?.currentMemoryWindowHours === state?.currentMemoryWindowHours,
     'PART_CURRENT_STATE_METADATA_MISMATCH');
-    collector.add(model?.waveMemoryReady === true
+    collector.add((model?.waveMemoryReady === true || persistedHistoryIncomplete)
       && model?.waveMemoryReady === state?.waveMemoryReady
       && model?.waveMemoryStatus === state?.waveMemoryStatus
       && model?.waveLastVerifiedAt === state?.waveLastVerifiedAt,
@@ -682,8 +983,9 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         state,
         model,
         part?.current?.weather ?? {},
+        model?.modes?.waders,
       );
-      collector.add(model?.lastMileMemoryReady === true
+      collector.add((model?.lastMileMemoryReady === true || persistedHistoryIncomplete)
         && model?.lastMileMemoryReady === state?.waveApproachState?.readiness
         && model?.lastMileMemoryStatus === state?.waveApproachState?.status
         && model?.lastMileWaveReferenceAt === state?.waveApproachState?.waveReferenceAt,
@@ -699,7 +1001,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && model?.migrationApplied !== true;
     const coldReplayTransition = model?.initialStateAccepted === false
       && model?.migrationApplied === false
-      && model?.initialStateSource === 'VERIFIED_PRIVATE_48H_COLD_REPLAY';
+      && [
+        'VERIFIED_PRIVATE_48H_COLD_REPLAY',
+        'BOUNDED_PRIVATE_PARTIAL_HISTORY_COLD_REPLAY',
+      ].includes(model?.initialStateSource);
     collector.add([migratedTransition, continuedTransition, coldReplayTransition]
       .filter(Boolean).length === 1, 'PART_STATE_TRANSITION_AMBIGUOUS');
     if (migratedTransition) {
@@ -739,13 +1044,14 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     }
     collector.add(state?.samplingContextKey === expectedSamplingContextKey,
       'STATE_SAMPLING_CONTEXT_MISMATCH');
-    collector.add(state?.currentMemoryReady === true
+    collector.add((state?.currentMemoryReady === true || persistedHistoryIncomplete)
       && finite(state?.supplyPotential)
       && state.supplyPotential >= 0
       && state.supplyPotential <= 100,
     'STATE_CURRENT_MEMORY_NOT_READY');
-    collector.add(state?.waveMemoryReady === true
-      && RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(state?.waveMemoryStatus)
+    collector.add((state?.waveMemoryReady === true || persistedHistoryIncomplete)
+      && (RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(state?.waveMemoryStatus)
+        || persistedHistoryIncomplete)
       && finite(state?.mobilisationPotential)
       && state.mobilisationPotential >= 0
       && state.mobilisationPotential <= 100,
@@ -780,20 +1086,33 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && validTime(state.lineage.migratedAt)
       && Date.parse(state.lineage.migratedAt) <= Date.parse(state.time);
     const coldReplayLineage = sameKeys(state?.lineage, [
+      'boundedUnknownPositionCount',
+      'completeCausalPositionCount',
+      'expectedCausalPositionCount',
+      'historyTransition',
       'recoveryId',
       'source',
-      'replayedHourCount',
       'targetReferenceAt',
     ])
       && state.lineage.recoveryId === RAVSCORE_COLD_REPLAY_ID
       && state.lineage.source === RAVSCORE_RECOVERY_POLICY.source
-      && state.lineage.replayedHourCount === RAVSCORE_RECOVERY_POLICY.coldReplayHours
+      && state.lineage.expectedCausalPositionCount
+        === RAVSCORE_RECOVERY_POLICY.coldReplayHours
+      && safeNonNegativeInteger(state.lineage.completeCausalPositionCount)
+      && safeNonNegativeInteger(state.lineage.boundedUnknownPositionCount)
+      && state.lineage.completeCausalPositionCount
+        + state.lineage.boundedUnknownPositionCount
+          === RAVSCORE_RECOVERY_POLICY.coldReplayHours
+      && state.lineage.historyTransition
+        === (state.lineage.boundedUnknownPositionCount > 0
+          ? RAVSCORE_RECOVERY_POLICY.unknownHistoryTransition
+          : RAVSCORE_RECOVERY_POLICY.completeHistoryTransition)
       && validTime(state.lineage.targetReferenceAt)
       && Date.parse(state.lineage.targetReferenceAt) <= Date.parse(state.time);
     collector.add(migrationLineage !== coldReplayLineage,
       'STATE_LINEAGE_MISSING_OR_AMBIGUOUS');
     if (migrationLineage) lineageSources.add('CANDIDATE_G_MIGRATION');
-    if (coldReplayLineage) lineageSources.add('VERIFIED_PRIVATE_48H_COLD_REPLAY');
+    if (coldReplayLineage) lineageSources.add(model?.initialStateSource);
     if (migratedTransition) {
       collector.add(migrationLineage, 'STATE_MIGRATION_LINEAGE_MISSING');
     }
@@ -806,9 +1125,10 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && state.currentEvidence.every((item, index, rows) =>
         sameKeys(item, ['time', 'strength'])
           && validTime(item.time)
-          && finite(item.strength)
-          && item.strength >= -1
-          && item.strength <= 1
+          && (item.strength === null
+            || (finite(item.strength)
+              && item.strength >= -1
+              && item.strength <= 1))
           && (index === 0 || Date.parse(item.time) > Date.parse(rows[index - 1].time))),
     'STATE_CURRENT_EVIDENCE_NOT_COMPACT');
     collector.add(state?.currentMemoryStatus === 'READY_NATIVE_HOLD'
@@ -830,65 +1150,40 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       collector.fail('STATE_REPLAY_FAILED');
     }
 
-    const legacyEvidenceCompatible = Array.isArray(state?.currentEvidence)
-      && state.currentEvidence.length >= 1
-      && state.currentEvidence.length <= 49;
-    collector.add(legacyEvidenceCompatible, 'ROLLBACK_EVIDENCE_LIMIT_EXCEEDED');
-    if (!legacyEvidenceCompatible) {
+    const rollbackState = rollbackRuntimeParts?.[partId]?.ravScoreModel?.currentState;
+    const rollbackEvidenceCompatible = Array.isArray(rollbackState?.transportEvidence)
+      && rollbackState.transportEvidence.length >= 1
+      && rollbackState.transportEvidence.length <= 49;
+    collector.add(rollbackEvidenceCompatible, 'ROLLBACK_EVIDENCE_LIMIT_EXCEEDED');
+    if (!rollbackEvidenceCompatible) {
       rollbackEvidenceLimitExceededPartCount += 1;
-    } else {
+    }
+    const rollbackShapeValid = rollbackEvidenceCompatible
+      && sameKeys(rollbackState, CANDIDATE_G_CONTINUATION_FIELDS)
+      && rollbackState?.transportMemoryReady === true
+      && rollbackState?.transportMemoryStatus === 'READY'
+      && rollbackState?.transportMemoryWindowHours === 48
+      && close(rollbackState?.transportMemoryCoverageHours, 48)
+      && rollbackState?.time === full?.productionReferenceAt
+      && rollbackState?.transportReferenceAt === full?.productionReferenceAt
+      && !containsForbiddenStateMaterial(rollbackState);
+    collector.add(rollbackShapeValid, 'ROLLBACK_STATE_CONTRACT_MISMATCH');
+    if (!rollbackShapeValid) rollbackStateContractMismatchPartCount += 1;
+    let rollbackOracleMatches = false;
+    if (rollbackShapeValid) {
       try {
-        const legacyStateKey = candidateGStateKey({ ...part, partId });
-        const rollback = reconstructCandidateGRollbackState(state, {
-          candidateGStateKey: legacyStateKey,
-        });
-        const rollbackShapeValid = sameKeys(rollback, CANDIDATE_G_ROLLBACK_STATE_FIELDS)
-          && rollback?.schemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION
-          && rollback?.modelId === CANDIDATE_G_STATE_MODEL_ID
-          && rollback?.variantId === CANDIDATE_G_STATE_VARIANT_ID
-          && rollback?.profileId === CANDIDATE_G_STATE_PROFILE_ID
-          && rollback?.stateKey === legacyStateKey
-          && rollback?.rollbackId === RAVSCORE_ROLLBACK_ID
-          && rollback?.transportMemoryReady === true
-          && rollback?.transportMemoryStatus === 'READY'
-          && rollback?.transportMemoryWindowHours === 48
-          && close(rollback?.transportMemoryCoverageHours, 48)
-          && finite(rollback?.transportPotential)
-          && rollback.transportPotential >= 0
-          && rollback.transportPotential <= 100
-          && finite(rollback?.outboundEpisodeEffectiveHours)
-          && rollback.outboundEpisodeEffectiveHours >= 0
-          && finite(rollback?.mobilisationPotential)
-          && rollback.mobilisationPotential >= 0
-          && rollback.mobilisationPotential <= 100
-          && Array.isArray(rollback?.transportEvidence)
-          && rollback.transportEvidence.length >= 1
-          && rollback.transportEvidence.length <= 49
-          && sameCanonical(rollback.transportEvidence, state.currentEvidence);
-        collector.add(rollbackShapeValid, 'ROLLBACK_STATE_CONTRACT_MISMATCH');
-        if (!rollbackShapeValid) rollbackStateContractMismatchPartCount += 1;
-        const oracle = buildBoundedCurrentTransportMemory(rollback?.transportEvidence ?? [], {
-          ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
-          referenceTime: rollback?.transportReferenceAt,
-          restartAfterVerifiedTimeGap: true,
-        });
-        const oracleMatches = oracle?.memoryReady === true
-          && oracle?.status === 'READY'
-          && oracle?.result
-          && close(oracle.result.transportPotential, rollback.transportPotential)
-          && close(
-            oracle.result.outboundEpisodeEffectiveHours,
-            rollback.outboundEpisodeEffectiveHours,
-          )
-          && sameCanonical(oracle.evidence, rollback.transportEvidence);
-        collector.add(oracleMatches, 'ROLLBACK_ORACLE_MISMATCH');
-        if (!oracleMatches) rollbackOracleMismatchPartCount += 1;
-        if (rollbackShapeValid && oracleMatches) rollbackReadyPartCount += 1;
+        rollbackOracleMatches = assertCandidateGRollbackContinuation(
+          rollbackState,
+          { ...part, partId },
+          `Public-runtime Candidate G rollback companion ${partId}`,
+        );
       } catch {
-        rollbackReconstructionFailurePartCount += 1;
-        collector.fail('ROLLBACK_RECONSTRUCTION_FAILED');
+        rollbackOracleMatches = false;
       }
     }
+    collector.add(rollbackOracleMatches, 'ROLLBACK_ORACLE_MISMATCH');
+    if (!rollbackOracleMatches) rollbackOracleMismatchPartCount += 1;
+    if (rollbackShapeValid && rollbackOracleMatches) rollbackReadyPartCount += 1;
 
     collector.add(sameKeys(model?.modes, MODES), 'PART_MODE_SET_MISMATCH');
     const weather = part?.current?.weather ?? {};
@@ -916,7 +1211,18 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         publicModeConsistent = false;
       }
       collector.add(publicModeConsistent, 'PUBLIC_PART_MODE_CONTRACT_INVALID');
-      collector.add(part?.current?.[mode]?.score === persisted?.score,
+      collector.add(part?.current?.[mode]?.score === persisted?.score
+        && part?.current?.[mode]?.scoreQuality === persisted?.scoreQuality
+        && part?.current?.[mode]?.calibrationEligible === persisted?.calibrationEligible
+        && part?.current?.[mode]?.scoreSemantics === persisted?.scoreSemantics
+        && part?.current?.[mode]?.conservativeTailResetApplied
+          === persisted?.conservativeTailResetApplied
+        && sameCanonical(part?.current?.[mode]?.scoreBounds,persisted?.scoreBounds)
+        && part?.current?.[mode]?.historyCoverageHours === persisted?.historyCoverageHours
+        && sameCanonical(
+          part?.current?.[mode]?.historyReasonCodes,
+          persisted?.historyReasonCodes,
+        ),
         'PUBLIC_PART_MODE_SCORE_MISMATCH');
     }
 
@@ -934,25 +1240,96 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   for (const [zoneId, current] of currentRowsByZone) {
     const zoneParts = parts.filter(([, part]) => part?.zoneId === zoneId);
     for (const mode of MODES) {
-      const scores = zoneParts.map(([, part]) => part?.current?.[mode]?.score).filter(finite);
+      const available = zoneParts.map(([partId, part]) => ({
+        partId,
+        name: part?.name,
+        detail: part?.current?.[mode],
+      })).filter(row => row.detail?.available === true
+        && finite(row.detail.score)
+        && exactPublicScoreQuality(row.detail));
+      available.sort((left, right) => right.detail.score - left.detail.score
+        || scoreQualityRank(left.detail.scoreQuality)
+          - scoreQualityRank(right.detail.scoreQuality)
+        || left.partId.localeCompare(right.partId));
+      const expectedWinner = available[0] ?? null;
+      const scores = available.map(row => row.detail.score);
       const maximum = scores.length ? Math.max(...scores) : null;
+      const minimum = scores.length ? Math.min(...scores) : null;
       const winnerId = current?.[mode]?.winningPartId;
       const winner = coastal?.parts?.[winnerId];
-      collector.add(Boolean(winner)
+      collector.add(available.length === zoneParts.length
+        && Boolean(winner)
+        && winnerId === expectedWinner?.partId
         && winner?.zoneId === zoneId
-        && current?.[mode]?.score === maximum
-        && winner?.current?.[mode]?.score === maximum
+        && current?.[mode]?.score === expectedWinner?.detail?.scoreBounds?.lower
+        && winner?.current?.[mode]?.score === expectedWinner?.detail?.score
         && current?.[mode]?.winningPartName === winner?.name
         && safeNonNegativeInteger(current?.[mode]?.comparisonPartCount)
         && current[mode].comparisonPartCount === zoneParts.length,
       'ZONE_CURRENT_WINNER_RECONSTRUCTION_MISMATCH');
-      const minimum = scores.length ? Math.min(...scores) : null;
       const nearCount = scores.filter(score => maximum - score <= 7).length;
       const expectedStatus = maximum - minimum <= 7 ? 'whole-zone'
         : nearCount === 1 ? 'only-part' : 'several-parts';
       collector.add(current?.[mode]?.scoreSpread === maximum - minimum
         && current?.[mode]?.status === expectedStatus,
       'ZONE_CURRENT_COVERAGE_CLASSIFICATION_MISMATCH');
+      if (!available.length) {
+        collector.fail('ZONE_CURRENT_QUALITY_RECONSTRUCTION_MISMATCH');
+        continue;
+      }
+      const lower = Math.max(...available.map(row => row.detail.scoreBounds.lower));
+      const upper = Math.max(...available.map(row => row.detail.scoreBounds.upper));
+      const rawLower = Math.max(...available.map(row => row.detail.scoreBounds.rawLower));
+      const rawUpper = Math.max(...available.map(row => row.detail.scoreBounds.rawUpper));
+      const historyIncomplete = available.some(row =>
+        row.detail.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+      const conservativeTailResetApplied = available.some(row =>
+        row.detail.conservativeTailResetApplied === true);
+      const expectedBounds = {
+        lower,
+        upper,
+        modelUncertaintyPoints: upper - lower,
+        rawLower,
+        rawUpper,
+      };
+      const expectedReasonCodes = [...new Set(available.flatMap(row =>
+        row.detail.scoreQuality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+          ? row.detail.historyReasonCodes : []))].sort();
+      const expectedPossibleWinningParts = available
+        .filter(row => row.detail.scoreBounds.upper >= lower)
+        .sort((left, right) => left.partId.localeCompare(right.partId))
+        .map(row => ({
+          partId: row.partId,
+          name: row.name,
+          score: row.detail.score,
+          scoreBounds: { ...row.detail.scoreBounds },
+        }));
+      const expectedWinningPartUncertain = historyIncomplete
+        && expectedPossibleWinningParts.some(part =>
+          part.partId !== expectedWinner.partId);
+      collector.add(current?.[mode]?.score === lower
+        && sameCanonical(current?.[mode]?.scoreBounds, expectedBounds)
+        && current?.[mode]?.scoreQuality === (historyIncomplete
+          ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+          : RAVSCORE_SCORE_QUALITY.FULL_HISTORY)
+        && current?.[mode]?.calibrationEligible === !historyIncomplete
+        && current?.[mode]?.scoreSemantics === (historyIncomplete
+          ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+          : conservativeTailResetApplied
+            ? 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'
+            : 'EXACT_POINT_SCORE')
+        && current?.[mode]?.conservativeTailResetApplied
+          === conservativeTailResetApplied
+        && current?.[mode]?.historyCoverageHours === Math.min(...available
+          .map(row => row.detail.historyCoverageHours))
+        && sameCanonical(current?.[mode]?.historyReasonCodes, expectedReasonCodes)
+        && current?.[mode]?.winningPartUncertain === expectedWinningPartUncertain
+        && current?.[mode]?.possibleWinningPartCount
+          === expectedPossibleWinningParts.length
+        && sameCanonical(
+          current?.[mode]?.possibleWinningParts,
+          expectedPossibleWinningParts,
+        ), 'ZONE_CURRENT_QUALITY_RECONSTRUCTION_MISMATCH');
     }
   }
 
@@ -999,11 +1376,18 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       uniqueSamplingContextCount: stateKeys.size,
     },
     rollback: {
+      companionPresent: rollbackDescriptor !== null
+        && rollbackDescriptor !== undefined,
+      descriptorValid: rollbackDescriptorShapeValid && rollbackBindingsValid,
+      generationReferenceBound: rollbackRuntime?.generatedAt
+        === full?.productionReferenceAt,
+      runtimePartCount: rollbackPartIds.length,
       readyPartCount: rollbackReadyPartCount,
       evidenceLimitExceededPartCount: rollbackEvidenceLimitExceededPartCount,
       reconstructionFailurePartCount: rollbackReconstructionFailurePartCount,
       stateContractMismatchPartCount: rollbackStateContractMismatchPartCount,
       oracleMismatchPartCount: rollbackOracleMismatchPartCount,
+      reconstructedFromIntegratedState: false,
     },
     payload: {
       startupBytes: payload.startupBytes,

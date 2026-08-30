@@ -1,4 +1,6 @@
 export const CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION = 3;
+const CANDIDATE_G_ROLLBACK_MODEL_ID =
+  'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
 
 export const CALIBRATION_BINDING_FEATURE_FIELDS = Object.freeze({
   modelId: 'modelVersion',
@@ -16,6 +18,12 @@ export const CALIBRATION_BINDING_FEATURE_FIELDS = Object.freeze({
 
 export const CALIBRATION_NUMERIC_RANGES = Object.freeze({
   totalScore: [0, 100],
+  scoreBoundLower: [0, 100],
+  scoreBoundUpper: [0, 100],
+  scoreBoundModelUncertaintyPoints: [0, 100],
+  scoreBoundRawLower: [0, 100],
+  scoreBoundRawUpper: [0, 100],
+  historyCoverageHours: [0, 48],
   huntabilityScore: [0, 100],
   transportScore: [0, 100],
   mobilisationScore: [0, 100],
@@ -38,15 +46,23 @@ export const CALIBRATION_FEATURE_FIELD_NAMES = Object.freeze([
   'appVersion',
   ...Object.values(CALIBRATION_BINDING_FEATURE_FIELDS).filter(value => value !== 'modelVersion'),
   ...Object.keys(CALIBRATION_NUMERIC_RANGES),
+  'scoreQuality',
+  'scoreSemantics',
+  'scoreCalibrationEligible',
+  'conservativeTailResetApplied',
+  'historyReasonCodes',
   'reasonCodes',
 ]);
 export const CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY = 'public-emergency-last-complete';
+export const CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE =
+  'ravscore-history-incomplete';
 export const CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED =
   'ravscore-reconstructed-derived-evidence';
 export const CALIBRATION_INELIGIBLE_REASON_UNATTESTED =
   'ravscore-evidence-trust-unattested';
 export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
+  CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
   CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED,
 ]);
@@ -87,6 +103,13 @@ export const TRIP_LOG_DTO_FIELD_NAMES = Object.freeze([
   'calibration_eligible',
   'calibration_binding_status',
   'forecast_snapshot_id',
+  'score_quality',
+  'score_semantics',
+  'score_bounds',
+  'score_calibration_eligible',
+  'conservative_tail_reset_applied',
+  'history_coverage_hours',
+  'history_reason_codes',
 ]);
 
 export const TRIP_STORAGE_INPUT_FIELD_NAMES = Object.freeze([
@@ -112,7 +135,7 @@ const SEARCH_MODES = new Set(['waders', 'beach']);
 const RESULTS = new Set(['none', 'small', 'medium', 'good']);
 const POSITIVE_RESULTS = new Set(['small', 'medium', 'good']);
 const DATA_QUALITY_FLAGS = new Set(TRIP_DATA_QUALITY_FLAG_NAMES);
-const TRIP_DATA_QUALITY_FLAG_COMBINATIONS = new Set([
+const LEGACY_TRIP_DATA_QUALITY_FLAG_COMBINATIONS = new Set([
   '[]',
   JSON.stringify([CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY]),
   JSON.stringify([CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED]),
@@ -123,8 +146,22 @@ const TRIP_DATA_QUALITY_FLAG_COMBINATIONS = new Set([
   JSON.stringify([CALIBRATION_INELIGIBLE_REASON_UNATTESTED]),
   JSON.stringify(['account-manual', 'historical-snapshot-unavailable', 'not-calibration-eligible']),
 ]);
+const TRIP_DATA_QUALITY_FLAG_COMBINATIONS = new Set([
+  ...LEGACY_TRIP_DATA_QUALITY_FLAG_COMBINATIONS,
+  JSON.stringify([CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE]),
+  JSON.stringify([
+    CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
+    CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
+  ]),
+]);
 const SCORE_FIELDS = Object.freeze([
   'totalScore',
+  'scoreBoundLower',
+  'scoreBoundUpper',
+  'scoreBoundModelUncertaintyPoints',
+  'scoreBoundRawLower',
+  'scoreBoundRawUpper',
+  'historyCoverageHours',
   'huntabilityScore',
   'transportScore',
   'mobilisationScore',
@@ -250,16 +287,66 @@ function currentFeatureIssues(features) {
     || features.reasonCodes.some(value => !validId(value))) {
     issues.push('CALIBRATION_REASON_CODES_INVALID');
   }
+  if (!['FULL_HISTORY','HISTORY_INCOMPLETE'].includes(features.scoreQuality)
+    || typeof features.scoreCalibrationEligible !== 'boolean'
+    || typeof features.conservativeTailResetApplied !== 'boolean'
+    || !Array.isArray(features.historyReasonCodes)
+    || features.historyReasonCodes.length > 12
+    || features.historyReasonCodes.some(code=>typeof code!=='string'
+      || !/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
+    || new Set(features.historyReasonCodes).size!==features.historyReasonCodes.length) {
+    issues.push('SCORE_QUALITY_FEATURES_INVALID');
+  } else if (features.totalScore!==features.scoreBoundLower
+    || features.scoreBoundLower>features.scoreBoundUpper
+    || features.scoreBoundRawLower>features.scoreBoundRawUpper
+    || Math.abs(features.scoreBoundModelUncertaintyPoints
+      -(features.scoreBoundUpper-features.scoreBoundLower))>1e-9) {
+    issues.push('SCORE_BOUNDS_FEATURES_INVALID');
+  } else if (features.scoreQuality==='FULL_HISTORY') {
+    const candidateGRollback=features.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID;
+    if(features.scoreCalibrationEligible!==!candidateGRollback
+      ||features.historyCoverageHours!==48
+      ||features.historyReasonCodes.length!==0
+      ||features.scoreBoundLower!==features.scoreBoundUpper
+      ||features.scoreBoundRawLower!==features.scoreBoundRawUpper
+      ||!['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+        .includes(features.scoreSemantics)
+      ||features.conservativeTailResetApplied
+        !==(features.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')
+      ||(candidateGRollback&&(features.scoreSemantics!=='EXACT_POINT_SCORE'
+        ||features.conservativeTailResetApplied!==false))
+      ||features.reasonCodes?.includes(CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE)) {
+      issues.push('SCORE_QUALITY_FEATURES_INVALID');
+    }
+  } else if(features.scoreCalibrationEligible!==false
+    ||features.scoreSemantics!=='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+    ||features.historyReasonCodes.length===0
+    ||!features.reasonCodes?.includes(CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE)) {
+    issues.push('SCORE_QUALITY_FEATURES_INVALID');
+  }
   return [...new Set(issues)];
 }
 
-export function assertTripDataQualityFlags(value) {
+export function assertCalibrationScoreQualityContract(features) {
+  const issues=currentFeatureIssues(features)
+    .filter(code=>['SCORE_QUALITY_FEATURES_INVALID','SCORE_BOUNDS_FEATURES_INVALID']
+      .includes(code));
+  if(issues.length)throw new Error(issues.join(','));
+  return true;
+}
+
+export function assertTripDataQualityFlags(value, {
+  schemaVersion = CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
+} = {}) {
   if (value === null || value === undefined) return true;
+  const combinations = Number(schemaVersion) === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION
+    ? TRIP_DATA_QUALITY_FLAG_COMBINATIONS
+    : LEGACY_TRIP_DATA_QUALITY_FLAG_COMBINATIONS;
   if (!Array.isArray(value)
     || value.length > TRIP_DATA_QUALITY_FLAG_NAMES.length
     || new Set(value).size !== value.length
     || value.some(flag => typeof flag !== 'string' || !DATA_QUALITY_FLAGS.has(flag))
-    || !TRIP_DATA_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(value))) {
+    || !combinations.has(JSON.stringify(value))) {
     throw new Error('TRIP_DATA_QUALITY_FLAGS_INVALID');
   }
   return true;
@@ -324,7 +411,7 @@ export function assertTripObservationNestedPrivacy(row) {
   }
   if (row.gps !== null && row.gps !== undefined) throw new Error('PRECISE_LOCATION_NOT_ALLOWED');
   assertNoSensitiveTripData(row, { allowRootOwnerFields: true });
-  assertTripDataQualityFlags(rowValue(row, 'data_quality_flags', 'dataQualityFlags'));
+  assertTripDataQualityFlags(rowValue(row, 'data_quality_flags', 'dataQualityFlags'), { schemaVersion });
   const weatherSnapshot = rowValue(row, 'weather_snapshot', 'weatherSnapshot');
   const features = rowValue(row, 'calibration_features', 'calibrationFeatures');
   if (schemaVersion === CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION) {
@@ -472,6 +559,7 @@ export function expectedCalibrationEligibility(row, expectedBinding) {
   const features = rowValue(row, 'calibration_features', 'calibrationFeatures');
   if (Array.isArray(features?.reasonCodes)
     && features.reasonCodes.some(reason => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(reason))) return false;
+  if(features?.scoreQuality!=='FULL_HISTORY'||features?.scoreCalibrationEligible!==true)return false;
   const actualZone = rowValue(row, 'actual_zone_id', 'zoneId');
   const actualPart = rowValue(row, 'actual_coastal_part_id', 'coastalPartId');
   const forecastZone = rowValue(row, 'forecast_zone_id', 'forecastZoneId');
@@ -568,6 +656,14 @@ export function projectTripLogDto(row, expectedBinding) {
     && (row?.grams === null || (strictFinite(row?.grams) && row.grams >= 0 && row.grams <= 10000))
     ? row.grams
     : null;
+  const features=isRecord(row?.calibration_features)?row.calibration_features:{};
+  const scoreBounds=currentFeatureIssues(features).length===0?Object.freeze({
+    lower:features.scoreBoundLower,
+    upper:features.scoreBoundUpper,
+    modelUncertaintyPoints:features.scoreBoundModelUncertaintyPoints,
+    rawLower:features.scoreBoundRawLower,
+    rawUpper:features.scoreBoundRawUpper,
+  }):null;
   return Object.freeze({
     client_observation_id: typeof row?.client_observation_id === 'string' ? row.client_observation_id : null,
     trip_id: typeof row?.trip_id === 'string' ? row.trip_id : null,
@@ -589,6 +685,14 @@ export function projectTripLogDto(row, expectedBinding) {
     calibration_eligible: status === 'current-eligible',
     calibration_binding_status: status,
     forecast_snapshot_id: validId(row?.forecast_snapshot_id) ? row.forecast_snapshot_id : null,
+    score_quality:scoreBounds?features.scoreQuality:null,
+    score_semantics:scoreBounds?features.scoreSemantics:null,
+    score_bounds:scoreBounds,
+    score_calibration_eligible:scoreBounds?features.scoreCalibrationEligible:false,
+    conservative_tail_reset_applied:scoreBounds
+      ?features.conservativeTailResetApplied:false,
+    history_coverage_hours:scoreBounds?features.historyCoverageHours:null,
+    history_reason_codes:scoreBounds?Object.freeze([...features.historyReasonCodes]):Object.freeze([]),
   });
 }
 

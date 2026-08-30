@@ -1,7 +1,7 @@
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from './ravscore-model-contract.js?v=4.0.308';
+} from './ravscore-model-contract.js?v=4.0.317';
 
 const INTEGRATED_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
 const CANDIDATE_G_MODEL_ID = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
@@ -12,8 +12,10 @@ const TEXT = Object.freeze({
     summary: ({ score, transport, mobilisation, huntability }) =>
       `RavScore ${score} samler relativt transportbevis ${transport}/100, mobiliseringsmulighed ${mobilisation}/100 og søgeforhold ${huntability}/100.`,
     memory: ({ coverage, window }) =>
-      `Transportbeviset bygger på ${coverage} af ${window} timers sammenhængende, verificeret strømhistorik.`,
-    memoryStatus: 'Den sammenhængende strømhistorik er medregnet; den offentlige visning har ikke et sikkert timeantal for denne række.',
+      `Scoren har ${coverage} verificerede historiktimer inden for modellens ${window}-timers strømvindue. Ved et historikhul er tallet dækningsomfang, ikke bevis på et ubrudt forløb.`,
+    memoryStatus: 'Den offentlige visning har ikke et sikkert timeantal for historikdækningen i denne række.',
+    historyIncomplete: ({ lower, upper }) => `Scoren ${lower} er et forsigtigt minimum; det konservative modelinterval er ${lower}–${upper}.`,
+    tailReset: 'En ældre konservativ bølge- eller last-mile-hale er nulstillet til sin forsigtige punktværdi efter den dokumenterede tidsgrænse; den fysiske tilstand er ikke opdigtet eller overskrevet.',
     grid: 'Strømmen er ikke en direkte måling af lokal bundnær strøm. Den bruges som relativt bevis for transport mod kystzonen. En vedvarende fralandskomponent er derfor negativ tilførselsevidens og kan føre noget mobilt materiale ud, men beviser ikke, at alt lokalt rav har forladt kystzonen. Gridstrømmen er heller ikke en måling af bølgeorbitaler, surfzonens undertow, feeder- eller langskyststrøm eller ripstrømme.',
     lastMile: 'En kausal energivægtet W/N/T-EWMA for bølgeretning med fire timers halveringstid bevarer ældre timer med aftagende vægt. Den kan kun dæmpe eksisterende transportbevis med højst 15 %; bølger kan aldrig skabe eller øge tilførsel. Det sidste stykke over revler, gennem render og brydningszone er fortsat fysisk uopløst, og retningssammenhæng bruges kun til usikkerhed og forklaring.',
     fallingOutbound: 'Modellen beregner vandstanden lavere tre timer frem; det er ikke i sig selv ebbe eller en tidevandsfase og bestemmer ikke strømretningen. Her falder vandet samtidig med verificeret søværts gridstrøm, som kan føre noget mobilt rav ud. Lavere vand kan også blotlægge allerede afleveret eller fastholdt rav bag en revle, så et afgrænset område er lettere at afsøge. Det beviser ikke, at vandstandsfaldet fysisk har koncentreret ravet. Konteksten giver 0 scorepoint.',
@@ -30,8 +32,10 @@ const TEXT = Object.freeze({
     summary: ({ score, transport, mobilisation, huntability }) =>
       `Der BernsteinScore ${score} kombiniert relative Transportevidenz ${transport}/100, Mobilisierungsmöglichkeit ${mobilisation}/100 und Suchbedingungen ${huntability}/100.`,
     memory: ({ coverage, window }) =>
-      `Die Transportevidenz beruht auf ${coverage} von ${window} Stunden zusammenhängender, verifizierter Strömungshistorie.`,
-    memoryStatus: 'Die zusammenhängende Strömungshistorie ist berücksichtigt; für diese Zeile liegt in der öffentlichen Anzeige keine sichere Stundenzahl vor.',
+      `Der Score hat ${coverage} verifizierte Verlaufsstunden innerhalb des ${window}-Stunden-Strömungsfensters. Bei einer Verlaufslücke beschreibt dies den Deckungsumfang, nicht einen lückenlosen Verlauf.`,
+    memoryStatus: 'Für diese Zeile zeigt die öffentliche Ansicht keine sichere Stundenzahl der Verlaufsdeckung.',
+    historyIncomplete: ({ lower, upper }) => `Der Score ${lower} ist ein vorsichtiger Mindestwert; das konservative Modellintervall beträgt ${lower}–${upper}.`,
+    tailReset: 'Ein älterer konservativer Wellen- oder Last-Mile-Nachlauf wurde nach der dokumentierten Zeitgrenze auf seinen vorsichtigen Punktwert zurückgesetzt; der physikalische Zustand wurde weder erfunden noch überschrieben.',
     grid: 'Die Strömung ist keine direkte Messung der lokalen bodennahen Strömung. Sie dient als relative Evidenz für Transport zur Küstenzone. Eine anhaltende seewärtige Komponente ist daher negative Zuflussevidenz und kann einen Teil mobilen Materials seewärts bewegen, beweist aber nicht, dass der gesamte lokale Bernstein die Küstenzone verlassen hat. Die Gitterströmung ist auch keine Messung von Wellenorbitalen, dem Undertow der Brandungszone, Zubringer-, Küstenlängs- oder Rippströmungen.',
     lastMile: 'Ein kausaler energiegewichteter W/N/T-EWMA der Wellenrichtung mit einer Halbwertszeit von vier Stunden berücksichtigt ältere Stunden weiter mit abnehmendem Gewicht. Er kann vorhandene Transportevidenz nur um höchstens 15 % dämpfen; Wellen können Zufluss niemals erzeugen oder erhöhen. Der letzte Weg über Sandbänke, Rinnen und Brandungszone bleibt physikalisch unaufgelöst; Richtungskohärenz beeinflusst nur Unsicherheit und Erklärung.',
     fallingOutbound: 'Das Modell berechnet für drei Stunden später einen niedrigeren Wasserstand; dies ist für sich genommen weder Ebbe noch eine Gezeitenphase und bestimmt nicht die Strömungsrichtung. Hier fällt das Wasser gleichzeitig mit verifizierter seewärtiger Gitterströmung, die einen Teil mobilen Bernsteins seewärts bewegen kann. Niedrigeres Wasser kann bereits angelieferten oder hinter einer Sandbank zurückgehaltenen Bernstein freilegen und so ein begrenztes Gebiet leichter absuchbar machen. Das beweist keine physische Konzentration durch den Wasserstandsfall. Der Kontext gibt 0 Scorepunkte.',
@@ -48,8 +52,10 @@ const TEXT = Object.freeze({
     summary: ({ score, transport, mobilisation, huntability }) =>
       `AmberScore ${score} combines relative transport evidence ${transport}/100, mobilisation opportunity ${mobilisation}/100, and search conditions ${huntability}/100.`,
     memory: ({ coverage, window }) =>
-      `The transport evidence uses ${coverage} of ${window} hours of coherent, verified current history.`,
-    memoryStatus: 'The coherent current history is included; the public display has no safe hour count for this row.',
+      `The score has ${coverage} verified history hours within the model's ${window}-hour current window. During a history gap this is coverage, not proof of an unbroken sequence.`,
+    memoryStatus: 'The public display has no safe history-coverage hour count for this row.',
+    historyIncomplete: ({ lower, upper }) => `The score ${lower} is a conservative minimum; the conservative model interval is ${lower}–${upper}.`,
+    tailReset: 'An older conservative wave or last-mile tail was reset to its cautious point value after the documented time limit; the physical state was neither invented nor overwritten.',
     grid: 'The current is not a direct measurement of local near-bed current. It is used as relative evidence of transport towards the coastal zone. A sustained offshore component is therefore negative supply evidence and can move some mobile material seaward, but does not prove that all local amber has left the coastal zone. The grid current is also not a measurement of wave orbitals, surf-zone undertow, feeder or longshore current, or rip currents.',
     lastMile: 'A causal energy-weighted wave-direction W/N/T EWMA with a four-hour half-life retains older hours in a decaying tail. It can only attenuate existing transport evidence by at most 15%; waves can never create or increase supply. The final route across bars, through channels, and across the breaking zone remains physically unresolved; directional coherence affects uncertainty and explanation only.',
     fallingOutbound: 'The model calculates a lower water level three hours ahead; this is not by itself ebb or a tidal phase and does not determine current direction. Here, falling water coincides with verified seaward model-grid current, which can move some mobile amber seaward. Lower water may also expose amber already delivered or retained behind a bar, making a bounded area easier to search. This does not prove that the water-level fall physically concentrated the amber. The context awards 0 score points.',
@@ -120,6 +126,8 @@ const rounded = value => Math.round(Number(value));
 const LAST_MILE_STATUSES = new Set([
   'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
   'LAST_MILE_BOUNDED_WAVE_APPROACH_CALM_NEUTRAL',
+  'LAST_MILE_HISTORY_INCOMPLETE_ENCLOSING_BOUND',
+  'LAST_MILE_CONSERVATIVE_TAIL_RESET_POINT',
 ]);
 const MODEL_BINDING = ravScoreModelBinding();
 const hasActiveBinding = result => {
@@ -142,6 +150,42 @@ const displayDistance = (value, language) => new Intl.NumberFormat(
   language === 'da' ? 'da-DK' : language === 'de' ? 'de-DE' : 'en-GB',
   { maximumFractionDigits: 1 },
 ).format(value);
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower', 'upper', 'modelUncertaintyPoints', 'rawLower', 'rawUpper',
+]);
+
+function exactPublicScoreQuality(result, {
+  fullCalibrationEligible = true,
+  historyIncompleteAllowed = true,
+  tailResetAllowed = true,
+} = {}) {
+  const bounds=result?.scoreBounds;
+  const coverage=result?.historyCoverageHours;
+  const reasons=result?.historyReasonCodes;
+  if (!bounds || typeof bounds!=='object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())
+      !== JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || SCORE_BOUND_FIELDS.some(field=>!finite(bounds[field]))
+    || bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    || bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints-(bounds.upper-bounds.lower))>1e-9
+    || result.score!==bounds.lower
+    || !finite(coverage)||coverage<0||coverage>48
+    || !Array.isArray(reasons)
+    || reasons.some(code=>typeof code!=='string'||!/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
+    || new Set(reasons).size!==reasons.length
+    || typeof result.conservativeTailResetApplied!=='boolean')return false;
+  if(result.scoreQuality==='FULL_HISTORY')return result.calibrationEligible===fullCalibrationEligible
+    &&coverage===48&&reasons.length===0
+    &&bounds.lower===bounds.upper&&bounds.rawLower===bounds.rawUpper
+    &&(result.scoreSemantics==='EXACT_POINT_SCORE'
+      ||(tailResetAllowed&&result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE'))
+    &&result.conservativeTailResetApplied
+      ===(result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+  return historyIncompleteAllowed&&result.scoreQuality==='HISTORY_INCOMPLETE'
+    &&result.calibrationEligible===false&&reasons.length>0
+    &&result.scoreSemantics==='CONSERVATIVE_ENCLOSING_LOWER_BOUND';
+}
 
 function gridSourceParagraph(result, language) {
   const provenance = result?.localWeather?.currentProvenance;
@@ -209,6 +253,7 @@ export function presentIntegratedRavScoreExplanation(result, { language = 'da' }
     || !finite(result?.components?.huntability)
     || !finite(result?.components?.transport)
     || !finite(result?.components?.release)
+    || !exactPublicScoreQuality(result)
     || transport?.engine !== 'INTEGRATED_COASTAL_PROCESS'
     || transport?.lastMileScoreEffect !== 'BOUNDED_SUPPLY_ATTENUATION_ONLY'
     || !LAST_MILE_STATUSES.has(transport?.lastMileStatus)
@@ -218,7 +263,7 @@ export function presentIntegratedRavScoreExplanation(result, { language = 'da' }
     || transport?.lastMilePhysicalDeliveryResolved !== false
     || transport?.lastMileStructuralUncertainty !== true
     || transport?.resolvedSurfZoneIncluded !== false
-    || transport?.currentMemoryReady !== true
+    || typeof transport?.currentMemoryReady !== 'boolean'
     || !finite(mobilisation?.mobilisationPotential)) {
     return Object.freeze({ available: false, reason: 'INTEGRATED_EXPLANATION_NOT_READY' });
   }
@@ -231,12 +276,11 @@ export function presentIntegratedRavScoreExplanation(result, { language = 'da' }
     transport: rounded(result.components.transport),
     mobilisation: rounded(result.components.release),
   });
-  const coverageKnown = finite(transport.currentMemoryCoverageHours)
-    && finite(transport.currentMemoryWindowHours);
+  const coverageKnown = finite(result.historyCoverageHours);
   const memory = coverageKnown
     ? text.memory({
-      coverage: displayHours(transport.currentMemoryCoverageHours, selectedLanguage),
-      window: displayHours(transport.currentMemoryWindowHours, selectedLanguage),
+      coverage: displayHours(result.historyCoverageHours, selectedLanguage),
+      window: displayHours(48, selectedLanguage),
     })
     : text.memoryStatus;
   const waterText = waterParagraph(text, water);
@@ -245,6 +289,12 @@ export function presentIntegratedRavScoreExplanation(result, { language = 'da' }
   if (!gridSource) return Object.freeze({ available: false, reason: 'CURRENT_PROVENANCE_CONTEXT_INVALID' });
   const sections = Object.freeze({
     memory,
+    ...(result.scoreQuality === 'HISTORY_INCOMPLETE' ? {
+      scoreQuality: text.historyIncomplete({
+        lower: displayHours(result.scoreBounds.lower, selectedLanguage),
+        upper: displayHours(result.scoreBounds.upper, selectedLanguage),
+      }),
+    } : result.conservativeTailResetApplied ? { scoreQuality:text.tailReset } : {}),
     gridCurrent: `${gridSource} ${text.grid}`,
     lastMile: text.lastMile,
     waterLevel: waterText,
@@ -293,6 +343,11 @@ function presentCandidateGRavScoreExplanation(result, { language = 'da' } = {}) 
     || !finite(result?.components?.huntability)
     || !finite(result?.components?.transport)
     || !finite(result?.components?.release)
+    || !exactPublicScoreQuality(result, {
+      fullCalibrationEligible:false,
+      historyIncompleteAllowed:false,
+      tailResetAllowed:false,
+    })
     || transport?.engine !== 'CANDIDATE_G'
     || transport?.transportMemoryReady !== true
     || transport?.transportMemoryStatus !== 'READY'

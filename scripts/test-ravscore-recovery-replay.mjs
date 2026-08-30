@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { buildDmiForecastHourly } from './lib/dmi-forecast-store.mjs';
+import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import { reconstructCandidateGRollbackState } from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
   buildBoundedCurrentTransportMemory,
@@ -535,11 +536,18 @@ const incomplete = [{ source: 'source-only', record: record([weather(1), weather
 const snapshot = JSON.stringify(incomplete);
 const stateSnapshot = JSON.stringify(initialState);
 for (let attempt = 0; attempt < 2; attempt += 1) {
-  assert.throws(
-    () => replayForAge(4, incomplete),
-    error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-    'repeated failed runs must continue to fail without advancing state',
-  );
+  const partialRecovery = replayForAge(4, incomplete);
+  assert.equal(partialRecovery.replayedHourCount, 2);
+  const partialBuild = buildIntegratedPartScoreSeries({
+    part,
+    zone,
+    hourly: partialRecovery.hourly,
+    initialState,
+    scoreStartAt: partialRecovery.scoreStartAt,
+  });
+  assert.equal(partialBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+    'HISTORY_INCOMPLETE',
+    'a real gap must retain a conservative score without inventing the absent row');
   assert.equal(JSON.stringify(incomplete), snapshot);
   assert.equal(JSON.stringify(initialState), stateSnapshot);
 }
@@ -577,16 +585,17 @@ const nativeRows = [
   withoutCurrent(weather(2)),
   weather(3),
 ];
-assert.throws(() => buildRavScoreRecoveryReplay({
+const dmiGapRecovery = buildRavScoreRecoveryReplay({
   part,
   initialState,
   targetReferenceAt: time(4),
   sourceRecords: [{ source: 'dmi-must-not-authorize-hold', record: record(nativeRows) }],
   publicHourly: publicRows(4),
   nativeCadenceHoldHours: 3,
-}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-'DMI→missing must fail; cadence permission is bound only to the approved regional source');
-assert.throws(() => buildRavScoreRecoveryReplay({
+});
+assert.equal(dmiGapRecovery.hourly[1].currentSpeedMps, null,
+  'DMI→missing must remain an explicit unknown component, never a native hold');
+const copernicusGapRecovery = buildRavScoreRecoveryReplay({
   part,
   initialState,
   targetReferenceAt: time(4),
@@ -600,9 +609,11 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   }],
   publicHourly: publicRows(4),
   nativeCadenceHoldHours: 3,
-}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-'Copernicus→missing must fail even when a regional part has a three-hour cadence policy');
-assert.throws(() => buildRavScoreRecoveryReplay({
+});
+assert.equal(copernicusGapRecovery.hourly[1].currentProvenance.reason,
+  'bounded-unknown-history-interval',
+  'Copernicus→missing must be bounded unknown, not silently held');
+const revokedHoldRecovery = buildRavScoreRecoveryReplay({
   part,
   initialState,
   targetReferenceAt: time(4),
@@ -616,8 +627,10 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   }],
   publicHourly: publicRows(4),
   nativeCadenceHoldHours: 3,
-}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-'regional→DMI→missing must fail because the intervening DMI sample revokes regional hold authority');
+});
+assert.equal(revokedHoldRecovery.hourly[2].currentProvenance.reason,
+  'bounded-unknown-history-interval',
+  'regional→DMI→missing must revoke native hold and preserve an unknown interval');
 
 const regionalRows = [
   regionalWeather(1),
@@ -663,9 +676,17 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   nativeCadenceHoldHours: 3,
 }), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED');
 
-const candidateState = reconstructCandidateGRollbackState(initialState, {
-  candidateGStateKey: candidateGStateKey(part),
-});
+const candidateState = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => ({
+    time: time(index - 48),
+    currentSpeedMps: 0.09,
+    currentAlignment: 1,
+    currentVerified: true,
+    waveHeightM: 1.2,
+    wavePeriodS: 7,
+  })),
+  { stateKey: candidateGStateKey(part) },
+).continuationState;
 assert.equal(
   ravScoreCandidateMigrationWaveBootstrapTargetAt(candidateState, time(4)),
   time(1),
@@ -1063,6 +1084,32 @@ assert.equal(selectRavScoreInitialState({
   existingPart: null,
   checkpointStates: {},
 }).source, 'COLD_START', 'bounded cold bootstrap is reserved for genuinely absent state');
+const expiredIntegratedSelection = selectRavScoreInitialState({
+  part,
+  existingPart: { ravScoreModel: { currentState: initialState } },
+  checkpointStates: {},
+  targetReferenceAt: time(73),
+});
+assert.equal(expiredIntegratedSelection.source, 'COLD_START');
+assert.deepEqual(expiredIntegratedSelection.rejectedSources, []);
+assert.deepEqual(
+  expiredIntegratedSelection.expiredSources,
+  ['EXISTING_INTEGRATED_EXPIRED'],
+  'a valid same-model continuation outside 72 hours is absence, not corruption',
+);
+const freshDirectAfterExpiredState = buildRavScoreRecoveryReplay({
+  part,
+  initialState: expiredIntegratedSelection.state,
+  targetReferenceAt: time(73),
+  sourceRecords: [],
+  publicHourly: [73, 74, 75].map(hour => weather(hour, { modelRun:time(20) })),
+});
+assert.equal(expiredIntegratedSelection.state, null);
+assert.equal(
+  freshDirectAfterExpiredState.coldStartHistoryLineage.completeCausalPositionCount,
+  0,
+);
+assert.equal(freshDirectAfterExpiredState.scoreStartAt, time(73));
 assert.throws(() => selectRavScoreInitialState({
   part,
   pointStateInjections: {
@@ -1074,6 +1121,119 @@ assert.throws(() => selectRavScoreInitialState({
   existingPart,
   checkpointStates,
 }), error => error?.code === 'RAVSCORE_POINT_ACTIVATION_CONTEXT_MISMATCH');
+
+const coldReplayFixture = ({ historyRows, targetRow = weather(4) }) => {
+  const recovery = buildRavScoreRecoveryReplay({
+    part,
+    initialState: null,
+    targetReferenceAt: time(4),
+    sourceRecords: historyRows.length
+      ? [{ source: 'verified-private-partial-history', record: record(historyRows) }]
+      : [],
+    publicHourly: [targetRow, weather(5), weather(6)],
+  });
+  const built = buildIntegratedPartScoreSeries({
+    part,
+    zone,
+    hourly: recovery.hourly,
+    initialState: null,
+    scoreStartAt: recovery.scoreStartAt,
+    coldReplayBootstrap: recovery.coldStartHistoryLineage,
+  });
+  return { recovery, built };
+};
+
+for (const completeHours of [0, 5, 47, 48]) {
+  const historyRows = Array.from(
+    { length: completeHours },
+    (_, index) => weather(4 - completeHours + index),
+  );
+  const { recovery, built } = coldReplayFixture({ historyRows });
+  assert.equal(recovery.replayedHourCount, completeHours);
+  assert.equal(recovery.coldStartHistoryLineage.expectedCausalPositionCount, 48);
+  assert.equal(recovery.coldStartHistoryLineage.completeCausalPositionCount, completeHours);
+  assert.equal(recovery.coldStartHistoryLineage.boundedUnknownPositionCount,
+    48 - completeHours);
+  assert.equal(
+    recovery.coldStartHistoryLineage.completeCausalPositionCount
+      + recovery.coldStartHistoryLineage.boundedUnknownPositionCount,
+    48,
+  );
+  assert.equal(built.scores[0].ravScoreModel.modes.waders.available, true);
+  assert.equal(built.scores[0].ravScoreModel.modes.waders.scoreQuality,
+    'HISTORY_INCOMPLETE',
+    `${completeHours} verified cold hours must score conservatively as HISTORY_INCOMPLETE`);
+}
+
+const gappedCold = coldReplayFixture({
+  historyRows: [-44, -43, -21, -2, 3].map(weather),
+});
+assert.equal(gappedCold.recovery.replayedHourCount, 5);
+assert.equal(gappedCold.recovery.coldStartHistoryLineage.completeCausalPositionCount, 5);
+assert.equal(gappedCold.recovery.coldStartHistoryLineage.historyTransition,
+  'UNKNOWN_HISTORY_INTERVAL');
+assert.deepEqual(gappedCold.recovery.hourly.slice(0, 5).map(row => row.time),
+  [-44, -43, -21, -2, 3].map(time),
+  'gapped cold replay must retain only the five real rows');
+
+const currentOnly = {
+  ...weather(-2),
+  waveHeightM: null,
+  wavePeriodS: null,
+  waveDirectionDeg: null,
+};
+const waveOnly = withoutCurrent(weather(-1));
+const componentPartialCold = coldReplayFixture({ historyRows: [currentOnly, waveOnly] });
+assert.equal(componentPartialCold.recovery.replayedHourCount, 2);
+assert.equal(componentPartialCold.recovery.coldStartHistoryLineage.completeCausalPositionCount, 0);
+assert.equal(componentPartialCold.recovery.coldStartHistoryLineage.boundedUnknownPositionCount, 48);
+assert.equal(componentPartialCold.recovery.hourly[0].waveHeightM, null);
+assert.equal(componentPartialCold.recovery.hourly[1].currentSpeedMps, null);
+assert.equal(componentPartialCold.built.scores[0].ravScoreModel.modes.beach.scoreQuality,
+  'HISTORY_INCOMPLETE');
+
+const missingCurrentTarget = coldReplayFixture({
+  historyRows: [],
+  targetRow: withoutCurrent(weather(4)),
+});
+assert.equal(missingCurrentTarget.built.scores[0].ravScoreModel.modes.waders.scoreQuality,
+  'UNAVAILABLE');
+const missingWaveTarget = coldReplayFixture({
+  historyRows: [],
+  targetRow: {
+    ...weather(4),
+    waveHeightM: null,
+    wavePeriodS: null,
+    waveDirectionDeg: null,
+  },
+});
+assert.equal(missingWaveTarget.built.scores[0].ravScoreModel.modes.waders.scoreQuality,
+  'UNAVAILABLE');
+const missingHuntabilityTarget = coldReplayFixture({
+  historyRows: [],
+  targetRow: { ...weather(4), windSpeedMps: null },
+});
+assert.equal(missingHuntabilityTarget.built.scores[0].ravScoreModel.modes.beach.scoreQuality,
+  'UNAVAILABLE');
+const missingWaveDirectionTarget = coldReplayFixture({
+  historyRows: [],
+  targetRow: { ...weather(4), waveDirectionDeg: null },
+});
+assert.equal(missingWaveDirectionTarget.built.scores[0].ravScoreModel.modes.beach.scoreQuality,
+  'UNAVAILABLE');
+const targetState = componentPartialCold.built.ravScoreState.rows
+  .find(row => row.time === time(4));
+const tamperedHistoryState = structuredClone(targetState);
+tamperedHistoryState.historyScoreView.coverageHours = null;
+const tamperedHistoryResult = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone,
+  weather: weather(4),
+}, { state: tamperedHistoryState });
+assert.equal(tamperedHistoryResult.scoreQuality, 'UNAVAILABLE');
+assert.equal(tamperedHistoryResult.historyCoverageHours, null);
+assert.equal(tamperedHistoryResult.conservativeTailResetApplied, false,
+  'invalid incomplete-history coverage must fail closed as clean UNAVAILABLE');
 
 const coldStart = buildRavScoreRecoveryReplay({
   part,
@@ -1092,6 +1252,14 @@ const coldStart = buildRavScoreRecoveryReplay({
 });
 assert.equal(coldStart.coldStartBootstrapApplied, true);
 assert.equal(coldStart.replayedHourCount, 48);
+assert.deepEqual(coldStart.coldStartHistoryLineage, {
+  recoveryId: RAVSCORE_COLD_REPLAY_ID,
+  expectedCausalPositionCount: 48,
+  completeCausalPositionCount: 48,
+  boundedUnknownPositionCount: 0,
+  historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
+  targetReferenceAt: time(4),
+});
 assert.deepEqual(coldStart.hourly.slice(-3).map(row => row.time), [time(4), time(5), time(6)],
   'cold start must use verified private cache, not pre-target public rows, as history');
 assert.equal(coldStart.hourly[0].time, time(-44));
@@ -1101,11 +1269,7 @@ const coldStartBuild = buildIntegratedPartScoreSeries({
   hourly: coldStart.hourly,
   initialState: null,
   scoreStartAt: coldStart.scoreStartAt,
-  coldReplayBootstrap: {
-    recoveryId: RAVSCORE_COLD_REPLAY_ID,
-    replayedHourCount: coldStart.replayedHourCount,
-    targetReferenceAt: coldStart.scoreStartAt,
-  },
+  coldReplayBootstrap: coldStart.coldStartHistoryLineage,
 });
 assert.equal(coldStartBuild.scores[0].time, time(4));
 assert.equal(coldStartBuild.scores[0].ravScoreModel.currentMemoryReady, true,
@@ -1117,6 +1281,26 @@ assert.equal(
   'VERIFIED_PRIVATE_48H_COLD_REPLAY',
   'a real cold bootstrap must remain distinguishable from migration and continuation',
 );
+assert.equal(coldStartBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+  'HISTORY_INCOMPLETE',
+  'even exact 48-hour cold replay must remain incomplete until the 288-hour wave tail closes');
+assert.throws(() => reconstructCandidateGRollbackState(
+  coldStartBuild.ravScoreState.continuationState,
+  { candidateGStateKey: candidateGStateKey(part) },
+), /requires FULL_HISTORY integrated state/,
+'Candidate G rollback reconstruction must reject an otherwise READY cold state with open history');
+const candidateCompanionAt = referenceHour => buildCandidateGDerivedStateSeries(
+  Array.from({ length: 49 }, (_, index) => ({
+    time: time(referenceHour - 48 + index),
+    currentSpeedMps: 0.09,
+    currentAlignment: 1,
+    currentVerified: true,
+    waveHeightM: 1.2,
+    wavePeriodS: 7,
+  })),
+  { stateKey: candidateGStateKey(part) },
+).continuationState;
+const coldRollbackCompanion = candidateCompanionAt(-45);
 const coldProduction = buildRavScoreProductionPartSeries({
   part,
   zone,
@@ -1127,6 +1311,7 @@ const coldProduction = buildRavScoreProductionPartSeries({
     record: record(Array.from({ length: 48 }, (_, index) => weather(index - 44))),
   }],
   publicHourly: [weather(4), weather(5), weather(6)],
+  previousCandidateGContinuation: coldRollbackCompanion,
 });
 assert.equal(coldProduction.recovery.coldStartBootstrapApplied, true);
 assert.equal(coldProduction.recovery.replayedHourCount, 48);
@@ -1147,12 +1332,12 @@ assert.equal(
 assert.deepEqual(
   coldProduction.scores.map(row => row.time),
   coldProduction.candidateGRollbackScores.map(row => row.time),
-  'genuine no-state/no-Candidate cold start must retain an exact private rollback on public times',
+  'state-less integrated replay and the separate Candidate G companion must cover the same public times',
 );
 assert.equal(
   coldProduction.candidateGState.initialStateSource,
-  'VERIFIED_PRIVATE_48H_COLD_REPLAY',
-  'the private rollback seed must not be mislabeled as legacy or a previous run',
+  'PREVIOUS_PRIVATE_ROLLBACK',
+  'rollback must identify the separate protected companion as its source',
 );
 assert.equal(coldProduction.scores[0].ravScoreModel.currentMemoryReady, true);
 assert.equal(coldProduction.scores[0].ravScoreModel.waveMemoryReady, true);
@@ -1161,49 +1346,14 @@ assert.equal(coldProduction.candidateGState.initialStateAccepted, true);
 assert.equal(coldProduction.candidateGState.initialStateResetReason, null);
 assert.equal(
   coldProduction.candidateGState.rows[0].currentTransition,
-  'SAME_TIME_HOLD',
-  'the real target row must seal, not double-apply, the reconstructed current state',
-);
-
-const directColdInputs = coldProduction.recovery.hourly
-  .filter(row => Date.parse(row.time) <= Date.parse(time(4)))
-  .map(row => ({
-    time: row.time,
-    currentSpeedMps: row.currentSpeedMps,
-    currentAlignment: Math.cos(
-      (row.currentDirectionDeg - part.onshoreDirectionDeg) * Math.PI / 180,
-    ),
-    currentVerified: row.currentProvenance?.status === 'verified',
-    waveHeightM: row.waveHeightM,
-    wavePeriodS: row.wavePeriodS,
-  }));
-assert.equal(directColdInputs.length, 49);
-const directColdCandidate = buildCandidateGDerivedStateSeries(directColdInputs, {
-  stateKey: candidateGStateKey(part),
-});
-const integratedTargetState = coldProduction.ravScoreState.rows
-  .find(row => row.time === time(4))?.continuationState;
-const {
-  rollbackId: _directColdRollbackId,
-  ...reconstructedColdCandidate
-} = reconstructCandidateGRollbackState(integratedTargetState, {
-  candidateGStateKey: candidateGStateKey(part),
-});
-assert.equal(
-  JSON.stringify(reconstructedColdCandidate),
-  JSON.stringify(directColdCandidate.continuationState),
-  'integrated target reconstruction must be byte-identical to direct Candidate G replay',
-);
-assert.equal(
-  JSON.stringify(coldProduction.candidateGState.rows[0].continuationState),
-  JSON.stringify(reconstructedColdCandidate),
-  'same-time target replay must not double-apply current or wave mobilisation',
+  'INBOUND_BUILDUP',
+  'the separate Candidate G companion must causally replay real rows without schema-6 reconstruction',
 );
 const directTargetRollback = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [coldProduction.recovery.hourly[48]],
-  previousCandidateGContinuation: directColdCandidate.continuationState,
+  hourly: coldProduction.recovery.hourly,
+  previousCandidateGContinuation: coldRollbackCompanion,
   scoreStartAt: time(4),
 });
 assert.equal(
@@ -1222,6 +1372,7 @@ const coldProductionWithOlderOutOfScopeRow = buildRavScoreProductionPartSeries({
     record: record(Array.from({ length: 49 }, (_, index) => weather(index - 45))),
   }],
   publicHourly: [weather(4), weather(5), weather(6)],
+  previousCandidateGContinuation: coldRollbackCompanion,
 });
 assert.equal(
   JSON.stringify(coldProductionWithOlderOutOfScopeRow),
@@ -1239,6 +1390,7 @@ const coldFirstPublicHour = buildRavScoreProductionPartSeries({
     record: record(Array.from({ length: 48 }, (_, index) => weather(index - 44))),
   }],
   publicHourly: [weather(4)],
+  previousCandidateGContinuation: coldRollbackCompanion,
 });
 const warmAfterCold = buildRavScoreProductionPartSeries({
   part,
@@ -1319,11 +1471,7 @@ for (const nativePhase of [0, 1, 2]) {
     nativeCadenceHoldHours: 3,
     nativeCadenceReferenceSample: boundaryReference,
     scoreStartAt: phaseRecovery.scoreStartAt,
-    coldReplayBootstrap: {
-      recoveryId: RAVSCORE_COLD_REPLAY_ID,
-      replayedHourCount: phaseRecovery.replayedHourCount,
-      targetReferenceAt: phaseRecovery.scoreStartAt,
-    },
+    coldReplayBootstrap: phaseRecovery.coldStartHistoryLineage,
   });
   assert.equal(phaseBuild.scores[0].time, time(nativeTargetHour));
   assert.equal(phaseBuild.scores[0].ravScoreModel.currentMemoryReady, true,
@@ -1346,15 +1494,17 @@ assert.throws(() => buildRavScoreRecoveryReplay({
   },
 }), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_NATIVE_REFERENCE_INVALID',
 'a coercible pre-boundary native reference must fail closed');
-assert.throws(() => buildRavScoreRecoveryReplay({
+const zeroHistoryRecovery = buildRavScoreRecoveryReplay({
   part,
   initialState: null,
   targetReferenceAt: time(4),
   sourceRecords: [],
   publicHourly: publicRows(4),
-}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-'cold start without already-fetched verified history must fail closed rather than warm up publicly');
-assert.throws(() => buildRavScoreProductionPartSeries({
+});
+assert.equal(zeroHistoryRecovery.coldStartHistoryLineage.completeCausalPositionCount, 0);
+assert.equal(zeroHistoryRecovery.coldStartHistoryLineage.historyTransition,
+  'UNKNOWN_HISTORY_INTERVAL');
+const partialColdProduction = buildRavScoreProductionPartSeries({
   part,
   zone,
   initialSelection: { state: null, source: 'COLD_START', rejectedSources: [] },
@@ -1364,8 +1514,12 @@ assert.throws(() => buildRavScoreProductionPartSeries({
     record: record(Array.from({ length: 47 }, (_, index) => weather(index - 43))),
   }],
   publicHourly: publicRows(4),
-}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING',
-'production cold start must fail before scoring when any exact private bridge hour is absent');
+  previousCandidateGContinuation: coldRollbackCompanion,
+});
+assert.equal(partialColdProduction.recovery.replayedHourCount, 47);
+assert.equal(partialColdProduction.scores[0].ravScoreModel.modes.waders.scoreQuality,
+  'HISTORY_INCOMPLETE',
+  'production cold start must retain scores when one private history position is absent');
 assert.throws(() => buildRavScoreRecoveryReplay({
   part,
   initialState: null,

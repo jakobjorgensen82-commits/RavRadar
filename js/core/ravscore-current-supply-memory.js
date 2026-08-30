@@ -30,6 +30,7 @@ function resolvePolicy(overrides = {}) {
     'outboundPointsPerEffectiveHour',
     'fullWeightHours',
     'windowHours',
+    'expectedEvidenceIntervalHours',
     'maximumGapHours',
     'maximumWindowEvidencePoints',
     'maximumRetainedEvidencePoints',
@@ -39,6 +40,7 @@ function resolvePolicy(overrides = {}) {
     || positiveFields.some(field => !finiteNumber(policy[field]) || policy[field] <= 0)
     || policy.fullStrengthNormalSpeedMps <= policy.deadbandNormalSpeedMps
     || policy.fullWeightHours >= policy.windowHours
+    || policy.expectedEvidenceIntervalHours > policy.maximumGapHours
     || policy.boundaryPotential !== 0
     || !Number.isInteger(policy.maximumWindowEvidencePoints)
     || !Number.isInteger(policy.maximumRetainedEvidencePoints)
@@ -46,6 +48,46 @@ function resolvePolicy(overrides = {}) {
     throw new Error('Invalid current-supply memory policy');
   }
   return policy;
+}
+
+function normalizeNativeHoldIntervalEnds(value, evidence, policy) {
+  if (!Array.isArray(value)) return { valid: false, intervalEnds: [] };
+  const canonical = value.map(canonicalTime);
+  if (canonical.some((time, index) => !time || time !== value[index])) {
+    return { valid: false, intervalEnds: [] };
+  }
+  const intervalEnds = [...new Set(canonical)]
+    .sort((left, right) => Date.parse(left) - Date.parse(right));
+  if (intervalEnds.length !== value.length
+    || intervalEnds.some((time, index) => time !== value[index])) {
+    return { valid: false, intervalEnds: [] };
+  }
+  const byTime = new Map(evidence.map((item, index) => [item.time, index]));
+  for (const time of intervalEnds) {
+    const index = byTime.get(time);
+    const previous = Number.isInteger(index) && index > 0 ? evidence[index - 1] : null;
+    const item = Number.isInteger(index) ? evidence[index] : null;
+    const gapHours = previous && item
+      ? (Date.parse(item.time) - Date.parse(previous.time)) / HOURS_TO_MILLISECONDS
+      : Number.NaN;
+    if (!finiteNumber(previous?.strength)
+      || !finiteNumber(item?.strength)
+      || !(gapHours > policy.expectedEvidenceIntervalHours + NUMBER_EPSILON)
+      || gapHours > policy.maximumGapHours + NUMBER_EPSILON) {
+      return { valid: false, intervalEnds: [] };
+    }
+  }
+  return { valid: true, intervalEnds };
+}
+
+function retainedNativeHoldIntervalEnds(intervalEnds, evidence) {
+  const retainedIndexByTime = new Map(
+    evidence.map((item, index) => [item.time, index]),
+  );
+  return intervalEnds.filter(time => {
+    const index = retainedIndexByTime.get(time);
+    return Number.isInteger(index) && index > 0;
+  });
 }
 
 function ageHours(value) {
@@ -183,7 +225,11 @@ function normalizeEvidence(evidence) {
  */
 export function replayCurrentSupplyEvidence(
   evidence,
-  { referenceTime, ...policyOverrides } = {},
+  {
+    referenceTime,
+    nativeHoldIntervalEnds = [],
+    ...policyOverrides
+  } = {},
 ) {
   const policy = resolvePolicy(policyOverrides);
   const reference = canonicalTime(referenceTime);
@@ -192,12 +238,38 @@ export function replayCurrentSupplyEvidence(
   if (!normalized.valid || normalized.evidence.some(item => item.strength === null)) {
     throw new Error('Current-supply replay requires valid verified signed evidence');
   }
+  const nativeIntervals = normalizeNativeHoldIntervalEnds(
+    nativeHoldIntervalEnds,
+    normalized.evidence,
+    policy,
+  );
+  if (!nativeIntervals.valid) {
+    throw new Error('Current-supply native-hold interval proof is invalid');
+  }
+  const nativeIntervalEndSet = new Set(nativeIntervals.intervalEnds);
   const referenceMs = Date.parse(reference);
   if (normalized.evidence.some(item => Date.parse(item.time) > referenceMs)) {
     throw new Error('Current-supply replay cannot use future evidence');
   }
   const boundaryMs = referenceMs - policy.windowHours * HOURS_TO_MILLISECONDS;
   const boundaryTime = new Date(boundaryMs).toISOString();
+  for (let index = 0; index < normalized.evidence.length; index += 1) {
+    const item = normalized.evidence[index];
+    const endMs = Date.parse(item.time);
+    if (endMs <= boundaryMs) continue;
+    const previous = index > 0 ? normalized.evidence[index - 1] : null;
+    const previousMs = Date.parse(previous?.time ?? '');
+    const clippedStartMs = Math.max(
+      boundaryMs,
+      Number.isFinite(previousMs) ? previousMs : boundaryMs,
+    );
+    const unknownEndMs =
+      endMs - policy.expectedEvidenceIntervalHours * HOURS_TO_MILLISECONDS;
+    if (unknownEndMs > clippedStartMs + TIME_EPSILON_MILLISECONDS
+      && !nativeIntervalEndSet.has(item.time)) {
+      throw new Error('Current-supply replay cannot cross an unattested evidence gap');
+    }
+  }
   let supplyPotential = policy.boundaryPotential;
   let previousEndMs = boundaryMs;
   const rows = [];
@@ -239,12 +311,299 @@ export function replayCurrentSupplyEvidence(
   };
 }
 
+function applyBoundedSupplyRate(value, rate, weightedDurationHours) {
+  return clamp(value + rate * weightedDurationHours, 0, 100);
+}
+
+/**
+ * Builds an enclosing score-time view over the unchanged 48-hour current
+ * kernel. Verified intervals use the ordinary signed +10/-8 transition. An
+ * interval whose evidence is missing or discontinuous is not filled: its
+ * lower track receives the strongest allowed outbound rate and its upper
+ * track the strongest allowed inbound rate. Both tracks start at the same
+ * fixed zero boundary as the point model.
+ *
+ * This is deliberately a score view, not continuation state. It retains no
+ * raw current values and never turns a missing score-hour current into an
+ * available result. A bounded, explicitly authorised native-cadence hold may
+ * use its real earlier native reference without inventing an interval.
+ */
+export function buildCurrentSupplyScoreBounds(
+  evidence,
+  {
+    referenceTime,
+    nativeHold = false,
+    nativeHoldIntervalEnds = [],
+    ...policyOverrides
+  } = {},
+) {
+  const policy = resolvePolicy(policyOverrides);
+  const requestedReference = canonicalTime(referenceTime);
+  if (!requestedReference) {
+    throw new Error('Current-supply score bounds require a valid referenceTime');
+  }
+  if (typeof nativeHold !== 'boolean') {
+    throw new Error('nativeHold must be an explicit boolean');
+  }
+  const requestedReferenceMs = Date.parse(requestedReference);
+  const normalized = normalizeEvidence(evidence);
+  const baseUnavailable = (reason, fields = {}) => ({
+    available: false,
+    quality: 'UNAVAILABLE',
+    reason,
+    referenceTime: requestedReference,
+    requestedReferenceTime: requestedReference,
+    windowHours: policy.windowHours,
+    coverageHours: 0,
+    unknownHours: policy.windowHours,
+    lowerPotential: null,
+    upperPotential: null,
+    modelUncertaintyPotentialPoints: null,
+    reasonCodes: [reason],
+    intervals: [],
+    ...fields,
+  });
+  if (!normalized.valid) return baseUnavailable('CURRENT_EVIDENCE_INVALID');
+  const nativeIntervals = normalizeNativeHoldIntervalEnds(
+    nativeHoldIntervalEnds,
+    normalized.evidence,
+    policy,
+  );
+  if (!nativeIntervals.valid) {
+    throw new Error('Current-supply native-hold interval proof is invalid');
+  }
+  const nativeIntervalEndSet = new Set(nativeIntervals.intervalEnds);
+  if (normalized.evidence.some(item => Date.parse(item.time) > requestedReferenceMs)) {
+    return baseUnavailable('CURRENT_EVIDENCE_AFTER_REFERENCE');
+  }
+  const latest = normalized.evidence.at(-1) ?? null;
+  if (!latest || !finiteNumber(latest.strength)) {
+    return baseUnavailable('CURRENT_DIRECT_INPUT_MISSING');
+  }
+  const latestMs = Date.parse(latest.time);
+  const latestAgeHours = (requestedReferenceMs - latestMs) / HOURS_TO_MILLISECONDS;
+  if (latestAgeHours > NUMBER_EPSILON
+    && (nativeHold !== true
+      || latestAgeHours > policy.maximumGapHours + NUMBER_EPSILON)) {
+    return baseUnavailable('CURRENT_DIRECT_INPUT_MISSING', {
+      latestEvidenceAgeHours: latestAgeHours,
+    });
+  }
+
+  // The authorised native hold evaluates the exact native reference. It adds
+  // neither movement nor kernel ageing between that reference and score time.
+  const reference = latestAgeHours > NUMBER_EPSILON ? latest.time : requestedReference;
+  const referenceMs = Date.parse(reference);
+  const boundaryMs = referenceMs - policy.windowHours * HOURS_TO_MILLISECONDS;
+  const boundaryTime = new Date(boundaryMs).toISOString();
+  const causal = normalized.evidence
+    .filter(item => Date.parse(item.time) <= referenceMs);
+  const beforeOrAtBoundary = causal
+    .filter(item => Date.parse(item.time) <= boundaryMs)
+    .at(-1) ?? null;
+  const inWindow = causal
+    .filter(item => Date.parse(item.time) > boundaryMs);
+
+  let lowerPotential = policy.boundaryPotential;
+  let upperPotential = policy.boundaryPotential;
+  let coverageHours = 0;
+  let unknownHours = 0;
+  let previous = beforeOrAtBoundary;
+  let cursorMs = boundaryMs;
+  const reasonCodes = new Set();
+  const intervals = [];
+
+  const applyInterval = ({
+    intervalStart,
+    intervalEnd,
+    strength,
+    verified,
+    reasonCode = null,
+    nativeHoldAttested = false,
+  }) => {
+    const durationHours = (
+      Date.parse(intervalEnd) - Date.parse(intervalStart)
+    ) / HOURS_TO_MILLISECONDS;
+    if (!(durationHours > NUMBER_EPSILON)) return;
+    const weightedDurationHours = currentSupplyWeightedDuration({
+      intervalStart,
+      intervalEnd,
+      referenceTime: reference,
+    }, policyOverrides);
+    const lowerBefore = lowerPotential;
+    const upperBefore = upperPotential;
+    if (verified) {
+      const rate = currentSupplyRate(strength, policyOverrides);
+      lowerPotential = applyBoundedSupplyRate(lowerPotential, rate, weightedDurationHours);
+      upperPotential = applyBoundedSupplyRate(upperPotential, rate, weightedDurationHours);
+      coverageHours += durationHours;
+    } else {
+      lowerPotential = applyBoundedSupplyRate(
+        lowerPotential,
+        -policy.outboundPointsPerEffectiveHour,
+        weightedDurationHours,
+      );
+      upperPotential = applyBoundedSupplyRate(
+        upperPotential,
+        policy.inboundPointsPerEffectiveHour,
+        weightedDurationHours,
+      );
+      unknownHours += durationHours;
+      if (reasonCode) reasonCodes.add(reasonCode);
+    }
+    intervals.push({
+      intervalStart,
+      intervalEnd,
+      evidenceStatus: verified ? 'VERIFIED' : 'UNKNOWN',
+      strength: verified ? strength : null,
+      durationHours,
+      weightedDurationHours,
+      nativeHoldAttested,
+      lowerPotentialBefore: lowerBefore,
+      upperPotentialBefore: upperBefore,
+      lowerPotential,
+      upperPotential,
+    });
+  };
+
+  for (const item of inWindow) {
+    const endMs = Date.parse(item.time);
+    if (endMs <= cursorMs) {
+      previous = item;
+      continue;
+    }
+    const intervalStart = new Date(cursorMs).toISOString();
+    const intervalEnd = item.time;
+    const durationHours = (endMs - cursorMs) / HOURS_TO_MILLISECONDS;
+    const evidenceGapHours = previous === null
+      ? Number.POSITIVE_INFINITY
+      : (endMs - Date.parse(previous.time)) / HOURS_TO_MILLISECONDS;
+    const nativeHoldAttested = nativeIntervalEndSet.has(item.time);
+    const verified = finiteNumber(item.strength)
+      && previous !== null
+      && evidenceGapHours > 0
+      && (evidenceGapHours <= policy.expectedEvidenceIntervalHours + NUMBER_EPSILON
+        || nativeHoldAttested);
+    if (verified) {
+      applyInterval({
+        intervalStart,
+        intervalEnd,
+        strength: item.strength,
+        verified: true,
+        nativeHoldAttested,
+      });
+    } else if (finiteNumber(item.strength) && previous !== null) {
+      // The newer hourly sample describes at most its own expected final
+      // interval. Missing expected positions before it remain unknown; the
+      // newer value is never borrowed backwards across that hole.
+      const verifiedStartMs = Math.max(
+        cursorMs,
+        endMs - policy.expectedEvidenceIntervalHours * HOURS_TO_MILLISECONDS,
+      );
+      const verifiedStart = new Date(verifiedStartMs).toISOString();
+      applyInterval({
+        intervalStart,
+        intervalEnd: verifiedStart,
+        strength: null,
+        verified: false,
+        reasonCode: 'CURRENT_HISTORY_TIME_GAP',
+      });
+      applyInterval({
+        intervalStart: verifiedStart,
+        intervalEnd,
+        strength: item.strength,
+        verified: true,
+      });
+    } else {
+      let reasonCode;
+      if (item.strength === null) {
+        reasonCode = 'CURRENT_HISTORY_MISSING_EVIDENCE';
+      } else if (previous === null) {
+        reasonCode = 'CURRENT_HISTORY_BOUNDARY_UNCOVERED';
+      } else {
+        reasonCode = 'CURRENT_HISTORY_TIME_GAP';
+      }
+      applyInterval({
+        intervalStart,
+        intervalEnd,
+        strength: null,
+        verified: false,
+        reasonCode,
+      });
+    }
+    cursorMs = endMs;
+    previous = item;
+  }
+
+  // With direct input present, an uncovered tail should only be reachable for
+  // malformed ordering. Keep it explicit and enclosing rather than silently
+  // carrying the last strength to the score time.
+  if (cursorMs < referenceMs) {
+    const intervalStart = new Date(cursorMs).toISOString();
+    const intervalEnd = reference;
+    const durationHours = (referenceMs - cursorMs) / HOURS_TO_MILLISECONDS;
+    const weightedDurationHours = currentSupplyWeightedDuration({
+      intervalStart,
+      intervalEnd,
+      referenceTime: reference,
+    }, policyOverrides);
+    const lowerBefore = lowerPotential;
+    const upperBefore = upperPotential;
+    lowerPotential = applyBoundedSupplyRate(
+      lowerPotential,
+      -policy.outboundPointsPerEffectiveHour,
+      weightedDurationHours,
+    );
+    upperPotential = applyBoundedSupplyRate(
+      upperPotential,
+      policy.inboundPointsPerEffectiveHour,
+      weightedDurationHours,
+    );
+    unknownHours += durationHours;
+    reasonCodes.add('CURRENT_HISTORY_TAIL_UNCOVERED');
+    intervals.push({
+      intervalStart,
+      intervalEnd,
+      evidenceStatus: 'UNKNOWN',
+      strength: null,
+      durationHours,
+      weightedDurationHours,
+      lowerPotentialBefore: lowerBefore,
+      upperPotentialBefore: upperBefore,
+      lowerPotential,
+      upperPotential,
+    });
+  }
+
+  const fullHistory = unknownHours <= NUMBER_EPSILON
+    && Math.abs(coverageHours - policy.windowHours) <= NUMBER_EPSILON;
+  return {
+    available: true,
+    quality: fullHistory ? 'FULL_HISTORY' : 'HISTORY_INCOMPLETE',
+    reason: null,
+    referenceTime: reference,
+    requestedReferenceTime: requestedReference,
+    boundaryTime,
+    windowHours: policy.windowHours,
+    coverageHours,
+    unknownHours,
+    latestEvidenceAgeHours: latestAgeHours,
+    nativeHoldHours: latestAgeHours > NUMBER_EPSILON ? latestAgeHours : 0,
+    lowerPotential,
+    upperPotential,
+    modelUncertaintyPotentialPoints: upperPotential - lowerPotential,
+    reasonCodes: [...reasonCodes],
+    intervals,
+  };
+}
+
 function unavailableResult({
   status,
   reference,
   requestedReference = reference,
   boundaryTime,
   evidence = [],
+  nativeHoldIntervalEnds = [],
   maximumObservedGapHours = null,
   latestEvidenceAgeHours = null,
   coverageHours = 0,
@@ -262,6 +621,7 @@ function unavailableResult({
     latestEvidenceAgeHours,
     nativeHoldHours: null,
     evidence,
+    nativeHoldIntervalEnds,
     supplyPotential: null,
     rows: [],
   };
@@ -275,7 +635,12 @@ function unavailableResult({
  */
 export function buildCurrentSupplyMemory(
   evidence,
-  { referenceTime, nativeHold = false, ...policyOverrides } = {},
+  {
+    referenceTime,
+    nativeHold = false,
+    nativeHoldIntervalEnds = [],
+    ...policyOverrides
+  } = {},
 ) {
   const policy = resolvePolicy(policyOverrides);
   const requestedReference = canonicalTime(referenceTime);
@@ -296,6 +661,14 @@ export function buildCurrentSupplyMemory(
     ...fields,
   });
   if (!normalized.valid) return earlyFail({ status: 'INVALID_EVIDENCE' });
+  const nativeIntervals = normalizeNativeHoldIntervalEnds(
+    nativeHoldIntervalEnds,
+    normalized.evidence,
+    policy,
+  );
+  if (!nativeIntervals.valid) {
+    return earlyFail({ status: 'INVALID_NATIVE_HOLD_INTERVALS' });
+  }
   if (normalized.evidence.some(item => Date.parse(item.time) > requestedReferenceMs)) {
     return earlyFail({ status: 'EVIDENCE_AFTER_REFERENCE' });
   }
@@ -350,6 +723,11 @@ export function buildCurrentSupplyMemory(
     : boundaryBridge
       ? [boundaryBridge, ...windowEvidence]
       : windowEvidence;
+  const retainedIntervalEnds = retainedNativeHoldIntervalEnds(
+    nativeIntervals.intervalEnds,
+    retainedEvidence,
+  );
+  const retainedIntervalEndSet = new Set(retainedIntervalEnds);
 
   // The legacy rollback state can represent at most 49 signed evidence rows.
   // The bridge is a real continuity proof but contributes no transport
@@ -361,34 +739,62 @@ export function buildCurrentSupplyMemory(
     || retainedEvidence.length > policy.maximumRetainedEvidencePoints) {
     return fail({ status: 'EVIDENCE_LIMIT_EXCEEDED' });
   }
-  if (!first) return fail({ status: 'WINDOW_INCOMPLETE', evidence: retainedEvidence });
+  if (!first) return fail({
+    status: 'WINDOW_INCOMPLETE',
+    evidence: retainedEvidence,
+    nativeHoldIntervalEnds: retainedIntervalEnds,
+  });
   if (retainedEvidence.some(item => item.strength === null)) {
-    return fail({ status: 'WINDOW_HAS_MISSING_EVIDENCE', evidence: retainedEvidence });
+    return fail({
+      status: 'WINDOW_HAS_MISSING_EVIDENCE',
+      evidence: retainedEvidence,
+      nativeHoldIntervalEnds: retainedIntervalEnds,
+    });
   }
 
   const bridgeMs = Date.parse(boundaryBridge?.time ?? '');
   const bridgeGapHours = Number.isFinite(bridgeMs)
     ? (firstMs - bridgeMs) / HOURS_TO_MILLISECONDS
     : Number.POSITIVE_INFINITY;
+  const boundaryUnknownHours = startsAtBoundary
+    ? 0
+    : Math.max(
+      0,
+      (firstMs - policy.expectedEvidenceIntervalHours * HOURS_TO_MILLISECONDS - boundaryMs)
+        / HOURS_TO_MILLISECONDS,
+    );
   const boundaryCovered = startsAtBoundary
     || (Number.isFinite(bridgeMs)
       && bridgeMs < boundaryMs
       && bridgeGapHours > 0
-      && bridgeGapHours <= policy.maximumGapHours + NUMBER_EPSILON);
+      && bridgeGapHours <= policy.maximumGapHours + NUMBER_EPSILON
+      && (boundaryUnknownHours <= NUMBER_EPSILON
+        || retainedIntervalEndSet.has(first.time)));
   if (!boundaryCovered) {
-    return fail({ status: 'WINDOW_INCOMPLETE', evidence: retainedEvidence });
+    return fail({
+      status: 'WINDOW_INCOMPLETE',
+      evidence: retainedEvidence,
+      nativeHoldIntervalEnds: retainedIntervalEnds,
+    });
   }
 
   let maximumObservedGapHours = startsAtBoundary ? 0 : bridgeGapHours;
+  let hasUnattestedGap = false;
   for (let index = 1; index < windowEvidence.length; index += 1) {
     const gapHours = (Date.parse(windowEvidence[index].time)
       - Date.parse(windowEvidence[index - 1].time)) / HOURS_TO_MILLISECONDS;
     maximumObservedGapHours = Math.max(maximumObservedGapHours, gapHours);
+    if (gapHours > policy.expectedEvidenceIntervalHours + NUMBER_EPSILON
+      && !retainedIntervalEndSet.has(windowEvidence[index].time)) {
+      hasUnattestedGap = true;
+    }
   }
-  if (maximumObservedGapHours > policy.maximumGapHours + NUMBER_EPSILON) {
+  if (maximumObservedGapHours > policy.maximumGapHours + NUMBER_EPSILON
+    || hasUnattestedGap) {
     return fail({
       status: 'WINDOW_HAS_TIME_GAP',
       evidence: retainedEvidence,
+      nativeHoldIntervalEnds: retainedIntervalEnds,
       maximumObservedGapHours,
     });
   }
@@ -399,6 +805,7 @@ export function buildCurrentSupplyMemory(
     return fail({
       status: 'LATEST_SAMPLE_MISSING',
       evidence: retainedEvidence,
+      nativeHoldIntervalEnds: retainedIntervalEnds,
       maximumObservedGapHours,
     });
   }
@@ -406,6 +813,7 @@ export function buildCurrentSupplyMemory(
 
   const replay = replayCurrentSupplyEvidence(retainedEvidence, {
     referenceTime: reference,
+    nativeHoldIntervalEnds: retainedIntervalEnds,
     ...policyOverrides,
   });
   return {
@@ -420,6 +828,7 @@ export function buildCurrentSupplyMemory(
     latestEvidenceAgeHours: requestedEvidenceAgeHours,
     nativeHoldHours: usesNativeHold ? requestedEvidenceAgeHours : 0,
     evidence: retainedEvidence,
+    nativeHoldIntervalEnds: retainedIntervalEnds,
     supplyPotential: replay.supplyPotential,
     rows: replay.rows,
   };

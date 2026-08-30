@@ -1,9 +1,11 @@
 import {
   RAVSCORE_COMPONENT_SCHEMA_ID,
   RAVSCORE_EXPLANATION_SCHEMA_ID,
+  RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_MODEL_ID,
   RAVSCORE_MODEL_CONTRACT,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_WEIGHTS,
   ravScoreModelBinding,
 } from './ravscore-model-contract.js';
@@ -22,6 +24,26 @@ const direction = value => finite(value) && value >= 0 && value < 360
 const clamp = (value, minimum = 0, maximum = 100) =>
   Math.max(minimum, Math.min(maximum, Number(value)));
 const rounded = (value, digits = 6) => Number(Number(value).toFixed(digits));
+const hasExactKeys = (value, keys) => value !== null
+  && typeof value === 'object'
+  && !Array.isArray(value)
+  && Object.getPrototypeOf(value) === Object.prototype
+  && Object.keys(value).sort().join('|') === [...keys].sort().join('|');
+
+const HISTORY_SCORE_VIEW_KEYS = Object.freeze([
+  'available',
+  'quality',
+  'calibrationEligible',
+  'coverageHours',
+  'requiredHours',
+  'reasonCodes',
+  'conservativeTailResetApplied',
+  'current',
+  'waveMobilisation',
+  'lastMile',
+]);
+const POTENTIAL_BOUND_KEYS = Object.freeze(['lowerPotential', 'upperPotential']);
+const FACTOR_BOUND_KEYS = Object.freeze(['lowerFactor', 'upperFactor']);
 
 function angularDifference(left, right) {
   const difference = Math.abs((((left - right) % 360) + 360) % 360);
@@ -232,11 +254,131 @@ export function evaluateIntegratedLastMile({
   };
 }
 
+function canonicalHistoryScoreView(state = {}) {
+  const supplied = state?.historyScoreView;
+  if (supplied === null || supplied === undefined) {
+    const exactLastMileFactor = number(state?.lastMileFactor);
+    if (state?.currentMemoryReady !== true
+      || !RAVSCORE_MODEL_CONTRACT.currentSupply.readyStatuses
+        .includes(state?.currentMemoryStatus)
+      || potential(state?.supplyPotential) === null
+      || state?.waveMemoryReady !== true
+      || !RAVSCORE_MODEL_CONTRACT.waveMobilisation.readyStatuses
+        .includes(state?.waveMemoryStatus)
+      || potential(state?.mobilisationPotential) === null
+      || state?.lastMileMemoryReady !== true
+      || !RAVSCORE_LAST_MILE_POLICY.readyStatuses
+        .includes(state?.lastMileMemoryStatus)
+      || exactLastMileFactor === null
+      || exactLastMileFactor < RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor
+      || exactLastMileFactor > RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor) {
+      return null;
+    }
+    return {
+      available: true,
+      quality: RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+      calibrationEligible: true,
+      coverageHours: RAVSCORE_MODEL_CONTRACT.currentSupply.windowHours,
+      requiredHours: RAVSCORE_MODEL_CONTRACT.currentSupply.windowHours,
+      reasonCodes: [],
+      conservativeTailResetApplied: false,
+      current: {
+        lowerPotential: state.supplyPotential,
+        upperPotential: state.supplyPotential,
+      },
+      waveMobilisation: {
+        lowerPotential: state.mobilisationPotential,
+        upperPotential: state.mobilisationPotential,
+      },
+      lastMile: {
+        lowerFactor: exactLastMileFactor,
+        upperFactor: exactLastMileFactor,
+      },
+    };
+  }
+  if (!hasExactKeys(supplied, HISTORY_SCORE_VIEW_KEYS)
+    || !hasExactKeys(supplied.current, POTENTIAL_BOUND_KEYS)
+    || !hasExactKeys(supplied.waveMobilisation, POTENTIAL_BOUND_KEYS)
+    || !hasExactKeys(supplied.lastMile, FACTOR_BOUND_KEYS)) {
+    return null;
+  }
+  const quality = supplied?.quality;
+  const currentLower = potential(supplied?.current?.lowerPotential);
+  const currentUpper = potential(supplied?.current?.upperPotential);
+  const waveLower = potential(supplied?.waveMobilisation?.lowerPotential);
+  const waveUpper = potential(supplied?.waveMobilisation?.upperPotential);
+  const factorLower = number(supplied?.lastMile?.lowerFactor);
+  const factorUpper = number(supplied?.lastMile?.upperFactor);
+  const coverageHours = number(supplied?.coverageHours);
+  const requiredHours = number(supplied?.requiredHours);
+  const reasonCodes = Array.isArray(supplied?.reasonCodes)
+    && supplied.reasonCodes.every(value => typeof value === 'string' && value)
+    ? [...new Set(supplied.reasonCodes)]
+    : null;
+  const conservativeTailResetApplied = supplied?.conservativeTailResetApplied;
+  const availableQuality = quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY
+    || quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE;
+  const collapsed = currentLower !== null && currentUpper !== null
+    && waveLower !== null && waveUpper !== null
+    && factorLower !== null && factorUpper !== null
+    && Math.abs(currentUpper - currentLower) <= 1e-9
+    && Math.abs(waveUpper - waveLower) <= 1e-9
+    && Math.abs(factorUpper - factorLower) <= 1e-9;
+  if (supplied?.available !== true
+    || !availableQuality
+    || supplied.calibrationEligible !== (quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY)
+    || currentLower === null || currentUpper === null || currentLower > currentUpper
+    || waveLower === null || waveUpper === null || waveLower > waveUpper
+    || factorLower === null || factorUpper === null || factorLower > factorUpper
+    || factorLower < RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor
+    || factorUpper > RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor
+    || coverageHours === null || coverageHours < 0
+    || requiredHours !== RAVSCORE_MODEL_CONTRACT.currentSupply.windowHours
+    || coverageHours > requiredHours
+    || reasonCodes === null
+    || typeof conservativeTailResetApplied !== 'boolean'
+    || (quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY
+      && (!collapsed || reasonCodes.length))
+    || (quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+      && reasonCodes.length === 0)) {
+    return null;
+  }
+  return {
+    available: true,
+    quality,
+    calibrationEligible: supplied.calibrationEligible,
+    coverageHours,
+    requiredHours,
+    reasonCodes,
+    conservativeTailResetApplied,
+    current: {
+      lowerPotential: currentLower,
+      upperPotential: currentUpper,
+    },
+    waveMobilisation: {
+      lowerPotential: waveLower,
+      upperPotential: waveUpper,
+    },
+    lastMile: {
+      lowerFactor: factorLower,
+      upperFactor: factorUpper,
+    },
+  };
+}
+
 function unavailable(reason, state = {}) {
   return {
     available: false,
     score: null,
     reason,
+    scoreQuality: RAVSCORE_SCORE_QUALITY.UNAVAILABLE,
+    calibrationEligible: false,
+    scoreSemantics: null,
+    scoreBounds: null,
+    historyCoverageHours: null,
+    historyReasonCodes: [],
+    conservativeTailResetApplied: false,
+    history: null,
     modelVersion: RAVSCORE_MODEL_ID,
     modelBinding: ravScoreModelBinding(),
     readiness: {
@@ -252,18 +394,33 @@ export function evaluateRavScoreIntegrated(
   { state = null } = {},
 ) {
   if (!['beach', 'waders'].includes(mode)) throw new Error(`Unknown hunting mode: ${mode}`);
-  if (state?.currentMemoryReady !== true
-    || !RAVSCORE_MODEL_CONTRACT.currentSupply.readyStatuses
-      .includes(state?.currentMemoryStatus)
-    || potential(state?.supplyPotential) === null) {
-    return unavailable('CURRENT_SUPPLY_STATE_NOT_READY', state);
+  if (state?.currentDirectInputAvailable === false) {
+    return unavailable('CURRENT_DIRECT_INPUT_NOT_READY', state);
   }
-  if (state?.waveMemoryReady !== true
-    || !RAVSCORE_MODEL_CONTRACT.waveMobilisation.readyStatuses
-      .includes(state?.waveMemoryStatus)
-    || potential(state?.mobilisationPotential) === null) {
-    return unavailable('WAVE_MOBILISATION_STATE_NOT_READY', state);
+  const historyScoreView = canonicalHistoryScoreView(state);
+  if (historyScoreView === null) {
+    if (state?.historyScoreView === undefined
+      && (state?.currentMemoryReady !== true
+        || !RAVSCORE_MODEL_CONTRACT.currentSupply.readyStatuses
+          .includes(state?.currentMemoryStatus)
+        || potential(state?.supplyPotential) === null)) {
+      return unavailable('CURRENT_SUPPLY_STATE_NOT_READY', state);
+    }
+    if (state?.historyScoreView === undefined
+      && (state?.waveMemoryReady !== true
+        || !RAVSCORE_MODEL_CONTRACT.waveMobilisation.readyStatuses
+          .includes(state?.waveMemoryStatus)
+        || potential(state?.mobilisationPotential) === null)) {
+      return unavailable('WAVE_MOBILISATION_STATE_NOT_READY', state);
+    }
+    return unavailable('HISTORY_SCORE_VIEW_INVALID', state);
   }
+  const directCurrentAvailable = state?.currentDirectInputAvailable === true
+    || (state?.currentDirectInputAvailable === undefined
+      && state?.currentMemoryReady === true
+      && RAVSCORE_MODEL_CONTRACT.currentSupply.readyStatuses
+        .includes(state?.currentMemoryStatus));
+  if (!directCurrentAvailable) return unavailable('CURRENT_DIRECT_INPUT_NOT_READY', state);
 
   const huntability = evaluateIntegratedHuntability(mode, weather);
   if (!huntability.available || !finite(huntability.value)) {
@@ -286,32 +443,81 @@ export function evaluateRavScoreIntegrated(
     return unavailable('LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING', state);
   }
 
-  const lastMile = evaluateIntegratedLastMile({
-    supplyPotential: state.supplyPotential,
-    lastMileState: state,
-  });
-  if (!lastMile.available || !finite(lastMile.transport)) {
+  const lowerDelivery = historyScoreView.current.lowerPotential
+    * historyScoreView.lastMile.lowerFactor;
+  const upperDelivery = historyScoreView.current.upperPotential
+    * historyScoreView.lastMile.upperFactor;
+  const pointLastMile = historyScoreView.quality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY
+    && historyScoreView.conservativeTailResetApplied !== true
+    ? evaluateIntegratedLastMile({
+      supplyPotential: historyScoreView.current.lowerPotential,
+      lastMileState: state,
+    })
+    : null;
+  if (pointLastMile !== null
+    && (!pointLastMile.available
+      || !finite(pointLastMile.transport)
+      || Math.abs(pointLastMile.factor - historyScoreView.lastMile.lowerFactor) > 1e-9)) {
     return unavailable('LAST_MILE_TRANSPORT_NOT_READY', state);
   }
+  const lastMile = pointLastMile ?? {
+    available: true,
+    status: historyScoreView.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+      ? 'LAST_MILE_HISTORY_INCOMPLETE_ENCLOSING_BOUND'
+      : 'LAST_MILE_CONSERVATIVE_TAIL_RESET_POINT',
+    transportPotential: historyScoreView.current.lowerPotential,
+    factor: historyScoreView.lastMile.lowerFactor,
+    transport: lowerDelivery,
+    deliveryPotential: lowerDelivery,
+    factorBounds: {
+      lower: historyScoreView.lastMile.lowerFactor,
+      upper: historyScoreView.lastMile.upperFactor,
+    },
+    deliveryBounds: {
+      lower: lowerDelivery,
+      upper: upperDelivery,
+    },
+    scoreEffect: RAVSCORE_LAST_MILE_POLICY.scoreEffect,
+    physicalDeliveryResolved: false,
+    plausibleTransportRange: null,
+    structuralUncertainty: true,
+    missing: ['historical-wave-approach'],
+  };
 
   const components = {
     huntability: clamp(huntability.value),
-    transport: clamp(lastMile.transport),
-    mobilisation: clamp(state.mobilisationPotential),
+    transport: clamp(lowerDelivery),
+    mobilisation: clamp(historyScoreView.waveMobilisation.lowerPotential),
+  };
+  const upperComponents = {
+    huntability: components.huntability,
+    transport: clamp(upperDelivery),
+    mobilisation: clamp(historyScoreView.waveMobilisation.upperPotential),
   };
   const weightedContributions = {
     huntability: components.huntability * RAVSCORE_WEIGHTS.huntability,
     transport: components.transport * RAVSCORE_WEIGHTS.transport,
     mobilisation: components.mobilisation * RAVSCORE_WEIGHTS.mobilisation,
   };
+  const upperWeightedContributions = {
+    huntability: upperComponents.huntability * RAVSCORE_WEIGHTS.huntability,
+    transport: upperComponents.transport * RAVSCORE_WEIGHTS.transport,
+    mobilisation: upperComponents.mobilisation * RAVSCORE_WEIGHTS.mobilisation,
+  };
   const rawScore = Object.values(weightedContributions).reduce((sum, value) => sum + value, 0);
+  const upperRawScore = Object.values(upperWeightedContributions)
+    .reduce((sum, value) => sum + value, 0);
   const roundedScore = Math.round(clamp(rawScore));
+  const upperRoundedScore = Math.round(clamp(upperRawScore));
   const wadersHuntabilityMaximum = mode === 'waders'
     ? Math.round(clamp(components.huntability))
     : null;
   const finalScore = wadersHuntabilityMaximum === null
     ? roundedScore
     : Math.min(roundedScore, wadersHuntabilityMaximum);
+  const upperFinalScore = wadersHuntabilityMaximum === null
+    ? upperRoundedScore
+    : Math.min(upperRoundedScore, wadersHuntabilityMaximum);
   const wadersLimitApplied = wadersHuntabilityMaximum !== null && finalScore < roundedScore;
   const currentSpeedMps = nonNegative(weather?.currentSpeedMps);
   const currentDirectionDeg = direction(weather?.currentDirectionDeg);
@@ -333,6 +539,12 @@ export function evaluateRavScoreIntegrated(
     'NOT_CALIBRATED_TO_REPRESENTATIVE_FINDS',
   ];
   limitations.push('LAST_MILE_STRUCTURAL_UNCERTAINTY');
+  if (historyScoreView.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE) {
+    limitations.push('HISTORICAL_WEATHER_INPUT_INCOMPLETE');
+  }
+  if (historyScoreView.conservativeTailResetApplied === true) {
+    limitations.push('CONSERVATIVE_HISTORY_TAIL_RESET_APPLIED');
+  }
   if (finite(lastMile.coherence) && lastMile.coherence < 0.5) {
     limitations.push('LAST_MILE_DIRECTIONAL_COHERENCE_LOW');
   }
@@ -343,28 +555,66 @@ export function evaluateRavScoreIntegrated(
     weightedContributions: Object.fromEntries(
       Object.entries(weightedContributions).map(([key, value]) => [key, rounded(value)]),
     ),
+    upperWeightedContributions: Object.fromEntries(
+      Object.entries(upperWeightedContributions)
+        .map(([key, value]) => [key, rounded(value)]),
+    ),
     rawScore: rounded(rawScore),
+    upperRawScore: rounded(upperRawScore),
     roundedScore,
+    upperRoundedScore,
     roundingDelta: rounded(roundedScore - rawScore),
     wadersHuntabilityMaximum,
     wadersHuntabilityLimitApplied: wadersLimitApplied,
     finalScore,
+    upperFinalScore,
+  };
+
+  const scoreSemantics = historyScoreView.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+    ? RAVSCORE_HISTORY_UNCERTAINTY_POLICY.incompleteHistoryScoreSemantics
+    : historyScoreView.conservativeTailResetApplied === true
+      ? RAVSCORE_HISTORY_UNCERTAINTY_POLICY.fullHistoryTailResetScoreSemantics
+      : RAVSCORE_HISTORY_UNCERTAINTY_POLICY.fullHistoryExactScoreSemantics;
+  const scoreBounds = {
+    lower: finalScore,
+    upper: upperFinalScore,
+    modelUncertaintyPoints: upperFinalScore - finalScore,
+    rawLower: rounded(rawScore),
+    rawUpper: rounded(upperRawScore),
+  };
+  const history = {
+    quality: historyScoreView.quality,
+    coverageHours: historyScoreView.coverageHours,
+    requiredHours: historyScoreView.requiredHours,
+    reasonCodes: historyScoreView.reasonCodes,
+    conservativeTailResetApplied: historyScoreView.conservativeTailResetApplied,
   };
 
   return {
     available: true,
     score: finalScore,
+    scoreQuality: historyScoreView.quality,
+    calibrationEligible: historyScoreView.calibrationEligible,
+    scoreSemantics,
+    scoreBounds,
+    historyCoverageHours: history.coverageHours,
+    historyReasonCodes: history.reasonCodes,
+    conservativeTailResetApplied: history.conservativeTailResetApplied,
+    history,
     modelVersion: RAVSCORE_MODEL_ID,
     modelBinding: ravScoreModelBinding(),
     components,
     scoreCalculation,
     diagnostics: {
-      supplyPotential: state.supplyPotential,
+      supplyPotential: historyScoreView.current.lowerPotential,
+      supplyPotentialUpper: historyScoreView.current.upperPotential,
       currentReferenceAt: state.currentReferenceAt ?? null,
       currentMemoryStatus: state.currentMemoryStatus ?? null,
       waveLastVerifiedAt: state.waveLastVerifiedAt ?? null,
       waveMemoryStatus: state.waveMemoryStatus ?? null,
+      mobilisationPotentialUpper: historyScoreView.waveMobilisation.upperPotential,
       lastMile,
+      history,
       huntability,
       waterLevelContext,
     },
@@ -396,6 +646,11 @@ export function evaluateRavScoreIntegrated(
         },
       },
       scoreCalculation,
+      scoreQuality: historyScoreView.quality,
+      scoreSemantics,
+      scoreBounds,
+      calibrationEligible: historyScoreView.calibrationEligible,
+      conservativeTailResetApplied: historyScoreView.conservativeTailResetApplied,
       currentSemantics: 'VERIFIED_MODEL_GRID_CURRENT_NOT_SURF_ZONE_UNDERTOW_OR_RIP_CURRENT',
       lastMileSemantics: lastMile.status,
       waterLevelContext,
@@ -404,9 +659,13 @@ export function evaluateRavScoreIntegrated(
       findProbability: false,
     },
     confidence: {
-      dataStatus: finite(lastMile.coherence) && lastMile.coherence < 0.5
-        ? 'READY_WITH_STRUCTURAL_AND_DIRECTIONAL_COHERENCE_UNCERTAINTY'
-        : 'READY_WITH_STRUCTURAL_LAST_MILE_UNCERTAINTY',
+      dataStatus: historyScoreView.quality === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
+        ? 'HISTORY_INCOMPLETE_WITH_CONSERVATIVE_ENCLOSING_BOUND'
+        : historyScoreView.conservativeTailResetApplied === true
+          ? 'READY_WITH_CONSERVATIVE_TAIL_RESET_AND_STRUCTURAL_LAST_MILE_UNCERTAINTY'
+        : finite(lastMile.coherence) && lastMile.coherence < 0.5
+          ? 'READY_WITH_STRUCTURAL_AND_DIRECTIONAL_COHERENCE_UNCERTAINTY'
+          : 'READY_WITH_STRUCTURAL_LAST_MILE_UNCERTAINTY',
       modelMaturity: RAVSCORE_MODEL_CONTRACT.uncertainty.modelMaturity,
       modelConfidence: 'low',
       limitations,

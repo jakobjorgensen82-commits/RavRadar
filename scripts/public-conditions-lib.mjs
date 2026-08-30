@@ -9,6 +9,8 @@ import {
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
+  RAVSCORE_CALIBRATION_ELIGIBLE,
+  RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -45,7 +47,10 @@ const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'ai
 const HISTORY_FIELDS = ['maxWave24hM','hoursSinceHighEnergy'];
 const STARTUP_SCORE_FIELDS = [
   'available','status','score','winningPartId','winningPartName','scoreSpread','comparisonPartCount',
-  'validPartCount','expectedPartCount'
+  'validPartCount','expectedPartCount','scoreQuality','calibrationEligible',
+  'scoreSemantics','conservativeTailResetApplied',
+  'historyCoverageHours','historyReasonCodes','scoreBounds',
+  'winningPartUncertain','possibleWinningPartCount','possibleWinningParts'
 ];
 const SCORE_FIELDS = [...STARTUP_SCORE_FIELDS, 'baseScore', 'level', 'label', 'scoreProfileId'];
 const PART_FIELDS = ['id','zoneId','name','marineCoverage','waterPoint','landPoint','onshoreDirectionDeg','onshoreDirectionSource'];
@@ -54,6 +59,88 @@ const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const safeCount = value => Number.isSafeInteger(value) && value >= 0;
 const scoreNumber = value => finite(value) && value >= 0 && value <= 100;
+const SCORE_QUALITIES = Object.freeze(['FULL_HISTORY', 'HISTORY_INCOMPLETE', 'UNAVAILABLE']);
+const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
+const HISTORY_COVERAGE_HOURS = RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours;
+const SCORE_BOUND_FIELDS = Object.freeze([
+  'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
+]);
+
+function assertPublicScoreBounds(value) {
+  if (value.available === false) {
+    if (value.scoreBounds !== null) {
+      throw new Error('Public unavailable RavScore must carry null scoreBounds');
+    }
+    return true;
+  }
+  const bounds=value.scoreBounds;
+  if (!bounds || typeof bounds !== 'object' || Array.isArray(bounds)
+    || JSON.stringify(Object.keys(bounds).sort())!==JSON.stringify([...SCORE_BOUND_FIELDS].sort())
+    || !SCORE_BOUND_FIELDS.every(field=>finite(bounds[field]))
+    || bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    || bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    || Math.abs(bounds.modelUncertaintyPoints-(bounds.upper-bounds.lower))>1e-9
+    || value.score!==bounds.lower) {
+    throw new Error('Public RavScore scoreBounds are invalid');
+  }
+  if(value.scoreQuality==='FULL_HISTORY'
+    &&(bounds.lower!==bounds.upper||bounds.rawLower!==bounds.rawUpper)) {
+    throw new Error('Public FULL_HISTORY RavScore scoreBounds must be collapsed');
+  }
+  return true;
+}
+
+function projectPossibleWinningParts(value) {
+  if (value.available === false) return [];
+  const zoneAggregateFields = [
+    'winningPartId',
+    'winningPartUncertain',
+    'possibleWinningPartCount',
+    'possibleWinningParts',
+  ];
+  if (zoneAggregateFields.every(field => value?.[field] === undefined)) return null;
+  if (typeof value.winningPartUncertain !== 'boolean'
+    || !safeCount(value.possibleWinningPartCount)
+    || value.possibleWinningPartCount < 1
+    || !Array.isArray(value.possibleWinningParts)
+    || value.possibleWinningParts.length !== value.possibleWinningPartCount) {
+    throw new Error('Public RavScore possible-winner contract is invalid');
+  }
+  const rows = value.possibleWinningParts.map(part => {
+    if (!part || typeof part !== 'object' || Array.isArray(part)
+      || JSON.stringify(Object.keys(part).sort())
+        !== JSON.stringify(['name','partId','score','scoreBounds'].sort())
+      || typeof part.partId !== 'string' || !part.partId
+      || typeof part.name !== 'string' || !part.name
+      || !scoreNumber(part.score)) {
+      throw new Error('Public RavScore possible-winner row is invalid');
+    }
+    assertPublicScoreBounds({
+      available: true,
+      score: part.score,
+      scoreQuality: 'HISTORY_INCOMPLETE',
+      scoreBounds: part.scoreBounds,
+    });
+    if (part.scoreBounds.upper < value.score) {
+      throw new Error('Public RavScore possible winner cannot reach the zone lower bound');
+    }
+    return { ...part, scoreBounds: { ...part.scoreBounds } };
+  });
+  const ids = rows.map(part => part.partId);
+  if (new Set(ids).size !== ids.length
+    || JSON.stringify(ids) !== JSON.stringify([...ids].sort())
+    || !ids.includes(value.winningPartId)
+    || !rows.some(part => part.partId === value.winningPartId
+      && part.score === value.score)) {
+    throw new Error('Public RavScore possible winners are not deterministic or lack the lower-bound winner');
+  }
+  const expectedUncertain = value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && rows.some(part => part.partId !== value.winningPartId);
+  if (value.winningPartUncertain !== expectedUncertain) {
+    throw new Error('Public RavScore winning-part uncertainty flag is inconsistent');
+  }
+  return rows;
+}
 const WEATHER_NUMBER_RULES = Object.freeze({
   windSpeedMps: [0, Number.POSITIVE_INFINITY],
   windDirectionDeg: [0, 360],
@@ -315,12 +402,118 @@ function compactCoverageParts(parts) {
     if (!scoreNumber(part?.score)) {
       throw new Error('Public coastal-part comparison score must be a strict number from 0 to 100');
     }
-    return pick(part, ['partId','name','score']);
+    const base = pick(part, ['partId','name','score']);
+    const qualityFields = [
+      'scoreQuality','scoreBounds','historyCoverageHours','historyReasonCodes',
+    ];
+    const declaredQualityFieldCount = qualityFields
+      .filter(field => part?.[field] !== undefined).length;
+    // Candidate G rollback rows retain their existing compact shape. Integrated
+    // state-6 rows must carry the complete per-part history-quality projection.
+    if (declaredQualityFieldCount === 0) return base;
+    if (declaredQualityFieldCount !== qualityFields.length
+      || !['FULL_HISTORY','HISTORY_INCOMPLETE'].includes(part.scoreQuality)
+      || !finite(part.historyCoverageHours)
+      || part.historyCoverageHours < 0
+      || part.historyCoverageHours > HISTORY_COVERAGE_HOURS
+      || !Array.isArray(part.historyReasonCodes)
+      || part.historyReasonCodes.some(code => typeof code !== 'string'
+        || !HISTORY_REASON_CODE_PATTERN.test(code))
+      || new Set(part.historyReasonCodes).size !== part.historyReasonCodes.length
+      || (part.scoreQuality === 'FULL_HISTORY'
+        && (part.historyCoverageHours !== HISTORY_COVERAGE_HOURS
+          || part.historyReasonCodes.length !== 0))
+      || (part.scoreQuality === 'HISTORY_INCOMPLETE'
+        && part.historyReasonCodes.length === 0)) {
+      throw new Error('Public coastal-part comparison history quality is invalid');
+    }
+    assertPublicScoreBounds({
+      available: true,
+      score: part.score,
+      scoreQuality: part.scoreQuality,
+      scoreBounds: part.scoreBounds,
+    });
+    return {
+      ...base,
+      scoreQuality: part.scoreQuality,
+      scoreBounds: { ...part.scoreBounds },
+      historyCoverageHours: part.historyCoverageHours,
+      historyReasonCodes: [...part.historyReasonCodes],
+    };
   });
 }
 
 function projectUnavailableParts(parts) {
   return (parts || []).map(part => pick(part, ['partId','name','code','reason']));
+}
+
+function assertPublicScoreQuality(value) {
+  if (!SCORE_QUALITIES.includes(value?.scoreQuality)) {
+    throw new Error('Public RavScore scoreQuality must be an explicit supported value');
+  }
+  if (typeof value.calibrationEligible !== 'boolean') {
+    throw new Error('Public RavScore calibrationEligible must be an exact boolean');
+  }
+  if (value.scoreQuality === 'FULL_HISTORY') {
+    if (value.available !== true
+      || value.calibrationEligible !== RAVSCORE_CALIBRATION_ELIGIBLE) {
+      throw new Error('Public FULL_HISTORY RavScore has invalid active-model calibration eligibility');
+    }
+  } else if (value.calibrationEligible !== false) {
+    throw new Error('Public non-full-history RavScore must be calibration ineligible');
+  }
+  if (value.available === true && value.scoreQuality === 'UNAVAILABLE') {
+    throw new Error('Public available RavScore cannot have UNAVAILABLE quality');
+  }
+  if (value.available === false && value.scoreQuality !== 'UNAVAILABLE') {
+    throw new Error('Public unavailable RavScore must have UNAVAILABLE quality');
+  }
+  if (!Array.isArray(value.historyReasonCodes)
+    || value.historyReasonCodes.some(code => typeof code !== 'string'
+      || !HISTORY_REASON_CODE_PATTERN.test(code))
+    || new Set(value.historyReasonCodes).size !== value.historyReasonCodes.length) {
+    throw new Error('Public RavScore historyReasonCodes must be unique safe machine-readable codes');
+  }
+  if (value.scoreQuality === 'UNAVAILABLE') {
+    if (value.historyCoverageHours !== null
+      || value.historyReasonCodes.length !== 0
+      || value.scoreSemantics !== null
+      || value.conservativeTailResetApplied !== false) {
+      throw new Error('Public UNAVAILABLE RavScore must not claim history or score semantics');
+    }
+  } else if (!finite(value.historyCoverageHours)
+    || value.historyCoverageHours < 0
+    || value.historyCoverageHours > HISTORY_COVERAGE_HOURS) {
+    throw new Error('Public available RavScore historyCoverageHours must be a strict finite number inside the model window');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE' && value.historyReasonCodes.length === 0) {
+    throw new Error('Public HISTORY_INCOMPLETE RavScore must explain the missing history');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && RAVSCORE_CALIBRATION_ELIGIBLE !== true) {
+    throw new Error('Public retired rollback model cannot claim integrated history bounds');
+  }
+  if (value.scoreQuality === 'FULL_HISTORY'
+    && (value.historyCoverageHours !== HISTORY_COVERAGE_HOURS
+      || value.historyReasonCodes.length !== 0)) {
+    throw new Error('Public FULL_HISTORY RavScore must carry the complete history window without reason codes');
+  }
+  if (value.scoreQuality === 'FULL_HISTORY'
+    && (!['EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+      .includes(value.scoreSemantics)
+      || typeof value.conservativeTailResetApplied !== 'boolean'
+      || value.conservativeTailResetApplied
+        !== (value.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'))) {
+    throw new Error('Public FULL_HISTORY RavScore has invalid point-score semantics');
+  }
+  if (value.scoreQuality === 'HISTORY_INCOMPLETE'
+    && (value.scoreSemantics !== 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+      || typeof value.conservativeTailResetApplied !== 'boolean')) {
+    throw new Error('Public HISTORY_INCOMPLETE RavScore has invalid enclosing-bound semantics');
+  }
+  assertPublicScoreBounds(value);
+  projectPossibleWinningParts(value);
+  return true;
 }
 
 function projectPublicScore(value, binding, { startup = false } = {}) {
@@ -334,6 +527,7 @@ function projectPublicScore(value, binding, { startup = false } = {}) {
   if (value.available === false && value.score !== null) {
     throw new Error('Public unavailable RavScore must carry score null');
   }
+  assertPublicScoreQuality(value);
   if (value.baseScore !== undefined && value.baseScore !== null && !scoreNumber(value.baseScore)) {
     throw new Error('Public RavScore base score must be a strict number from 0 to 100');
   }
@@ -356,6 +550,11 @@ function projectPublicScore(value, binding, { startup = false } = {}) {
     modelBinding: binding,
     components: projectComponents(value.components, { required: value.available === true }),
   };
+  if (value.available === true) {
+    score.scoreBounds = { ...value.scoreBounds };
+    const possibleWinningParts = projectPossibleWinningParts(value);
+    if (possibleWinningParts !== null) score.possibleWinningParts = possibleWinningParts;
+  }
   const weather = projectWeather(value.weather);
   if (weather) score.weather = weather;
   if (Array.isArray(value.parts)) score.parts = compactCoverageParts(value.parts);
@@ -449,15 +648,53 @@ function projectScoreAvailability(value) {
       throw new Error(`Public score availability ${field} must be a strict non-negative safe integer`);
     }
   }
+  if (typeof value.allCurrentScoresFullHistory !== 'boolean') {
+    throw new Error('Public score availability allCurrentScoresFullHistory must be an exact boolean');
+  }
+  for (const field of ['fullHistoryModeCount', 'historyIncompleteModeCount', 'historyIncompleteZoneCount']) {
+    if (!safeCount(value[field])) {
+      throw new Error('Public score availability quality count must be a strict non-negative safe integer');
+    }
+  }
+  if (value.allCurrentScoresFullHistory !== (value.unavailableZoneCount === 0
+      && value.historyIncompleteModeCount === 0)
+    || value.historyIncompleteZoneCount > value.totalZoneCount) {
+    throw new Error('Public score availability history-quality counts are inconsistent');
+  }
+  const historyIncompleteZones = Array.isArray(value.historyIncompleteZones)
+    ? value.historyIncompleteZones.map(zone => {
+      if (!finite(zone?.historyCoverageHours)
+        || zone.historyCoverageHours < 0
+        || zone.historyCoverageHours > HISTORY_COVERAGE_HOURS) {
+        throw new Error('Public score availability history coverage must remain inside the model window');
+      }
+      const historyReasonCodes = strings(zone.historyReasonCodes);
+      if (!historyReasonCodes.length
+        || historyReasonCodes.length !== zone.historyReasonCodes.length
+        || historyReasonCodes.some(code => !HISTORY_REASON_CODE_PATTERN.test(code))) {
+        throw new Error('Public score availability history reason codes are invalid');
+      }
+      return {
+        ...pick(zone, ['zoneId','zoneName','historyCoverageHours']),
+        modes: strings(zone.modes),
+        historyReasonCodes: [...new Set(historyReasonCodes)],
+      };
+    }) : [];
+  if (historyIncompleteZones.length !== value.historyIncompleteZoneCount) {
+    throw new Error('Public score availability history-incomplete zone count is inconsistent');
+  }
   return {
     ...pick(value, [
-      'schemaVersion','policy','allZonesActive','activeZoneCount','unavailableZoneCount','totalZoneCount','evaluatedAt'
+      'schemaVersion','policy','allZonesActive','activeZoneCount','unavailableZoneCount','totalZoneCount',
+      'allCurrentScoresFullHistory','fullHistoryModeCount','historyIncompleteModeCount',
+      'historyIncompleteZoneCount','evaluatedAt'
     ]),
     unavailableZones: Array.isArray(value.unavailableZones) ? value.unavailableZones.map(zone => ({
       ...pick(zone, ['zoneId','zoneName']),
       modes: strings(zone.modes),
       reasons: strings(zone.reasons),
     })) : [],
+    historyIncompleteZones,
   };
 }
 
@@ -603,12 +840,20 @@ export function buildPublicNationalForecast(full) {
           || !finite(row?.rankingDisplayScore)) {
           throw new Error('Public national ranking contains a non-numeric score');
         }
+        assertPublicScoreQuality(row.result);
         return {
           zoneId: row.zoneId,
           time: row.time,
           score: row.result.score,
+          scoreBounds: { ...row.result.scoreBounds },
           rankingScore: row.rankingScore,
           rankingDisplayScore: row.rankingDisplayScore,
+          scoreQuality: row.result.scoreQuality,
+          calibrationEligible: row.result.calibrationEligible,
+          scoreSemantics: row.result.scoreSemantics,
+          conservativeTailResetApplied: row.result.conservativeTailResetApplied,
+          historyCoverageHours: row.result.historyCoverageHours,
+          historyReasonCodes: [...row.result.historyReasonCodes],
         };
       }),
     };
@@ -799,6 +1044,7 @@ export function assertCompletePublicRavScoreHorizon(full) {
         if (result?.available !== true || !scoreNumber(result.score)) {
           throw new Error(`Public score zone ${zoneId} lacks ${mode} at ${row.time}`);
         }
+        assertPublicScoreQuality(result);
         const declared = result.modelBinding
           ?? (result.explanation && typeof result.explanation === 'object'
             ? pick(result.explanation, Object.keys(binding)) : null);

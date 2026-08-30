@@ -5,14 +5,29 @@ import os from 'node:os';
 import path from 'node:path';
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
+  RAVSCORE_COLD_REPLAY_ID,
+  RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import {
+  buildCandidateGDerivedStateSeries,
+  CANDIDATE_G_STATE_MODEL_ID,
+  CANDIDATE_G_STATE_SCHEMA_VERSION,
+} from '../js/core/ravscore-candidate-g-state-pipeline.js';
+import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import {
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+} from './lib/ravscore-candidate-g-rollback-runtime.mjs';
+import {
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 import {
   loadRavScoreContinuationCheckpointForTarget,
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
@@ -53,31 +68,92 @@ assert.equal(targetStateTemplate.currentMemoryReady, true);
 assert.equal(targetStateTemplate.waveMemoryReady, true);
 
 const partIds = Array.from({ length: PART_COUNT }, (_, index) => `part-${String(index + 1).padStart(3, '0')}`);
+const partFor = partId => ({
+  partId,
+  zoneId: 'fixture-zone',
+  landPoint: [10, 56],
+  waterPoint: [10.01, 56.01],
+  onshoreDirectionDeg: 90,
+});
 const stateFor = (template, partId) => ({
   ...clone(template),
   samplingContextKey: contextFor(partId),
 });
+const candidateTemplateByReference = new Map();
+const candidateStateFor = (partId, productionReferenceAt) => {
+  let template = candidateTemplateByReference.get(productionReferenceAt);
+  if (!template) {
+    const referenceMs = Date.parse(productionReferenceAt);
+    const rows = Array.from({ length: 49 }, (_, index) => ({
+      time: new Date(referenceMs - (48 - index) * 3_600_000).toISOString(),
+      currentSpeedMps: 0.12,
+      currentAlignment: 0.75,
+      currentVerified: true,
+      waveHeightM: 1.2,
+      wavePeriodS: 6,
+    }));
+    template = buildCandidateGDerivedStateSeries(rows, {
+      stateKey: candidateGStateKey(partFor('candidate-template')),
+    }).continuationState;
+    candidateTemplateByReference.set(productionReferenceAt, template);
+  }
+  return {
+    ...clone(template),
+    stateKey: candidateGStateKey(partFor(partId)),
+  };
+};
 const partsFor = (template, { reverse = false } = {}) => Object.fromEntries(
   [...partIds]
     .sort((left, right) => reverse ? right.localeCompare(left) : left.localeCompare(right))
     .map(partId => [partId, {
+      ...partFor(partId),
       label: `safe-${partId}`,
       ravScoreModel: {
         currentState: stateFor(template, partId),
       },
     }]),
 );
+const candidateRollbackDescriptorFor = (parts, productionReferenceAt) => ({
+  schemaVersion: '1.0.0',
+  kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
+  privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+  sourceModelBinding: ravScoreModelBinding(),
+  rollbackModelBinding: candidateGRollbackModelBinding(),
+  rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+  automaticActivationAllowed: false,
+  publicDuringNormalOperation: false,
+  runtime: {
+    modelBinding: candidateGRollbackModelBinding(),
+    expectedPartCount: Object.keys(parts).length,
+    scoredPartCount: Object.keys(parts).length,
+    scoreProfile: {
+      modelCoverageReady: true,
+      modelMemoryReady: true,
+      modelMigrationReady: true,
+    },
+    parts: Object.fromEntries(Object.keys(parts).map(partId => [partId, {
+      ravScoreModel: {
+        currentState: candidateStateFor(partId, productionReferenceAt),
+      },
+    }])),
+  },
+});
 const documentFor = ({
   datasetId,
   productionReferenceAt,
   template,
   reverse = false,
-} = {}) => ({
-  datasetId,
-  productionReferenceAt,
-  harmlessSentinel: { preserved: true },
-  coastalParts: { parts: partsFor(template, { reverse }) },
-});
+} = {}) => {
+  const parts = partsFor(template, { reverse });
+  return {
+    datasetId,
+    productionReferenceAt,
+    harmlessSentinel: { preserved: true },
+    coastalParts: { parts },
+    ravScoreCandidateGRollback:
+      candidateRollbackDescriptorFor(parts, productionReferenceAt),
+  };
+};
 
 function assertNoPrivateCheckpointFields(value) {
   const forbidden = new Set([
@@ -110,12 +186,13 @@ function assertNoPrivateCheckpointFields(value) {
   visit(value);
 }
 
-const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-schema5-checkpoint-'));
+const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-schema6-checkpoint-'));
 const sourcePath = path.join(tempRoot, 'source.json');
 const alternateSourcePath = path.join(tempRoot, 'source-alternate.json');
 const targetPath = path.join(tempRoot, 'target.json');
 const checkpointPath = path.join(tempRoot, 'checkpoint.json');
 const alternateCheckpointPath = path.join(tempRoot, 'checkpoint-alternate.json');
+const lineageCheckpointPath = path.join(tempRoot, 'checkpoint-lineage.json');
 const missingCheckpointPath = path.join(tempRoot, 'missing', 'checkpoint.json');
 
 async function assertRestoreRejectsWithoutMutation({
@@ -136,7 +213,7 @@ async function assertRestoreRejectsWithoutMutation({
 
 try {
   const source = documentFor({
-    datasetId: 'rr-schema5-checkpoint-source',
+    datasetId: 'rr-schema6-checkpoint-source',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
     reverse: true,
@@ -145,22 +222,23 @@ try {
   const continuationStateContractSha256 =
     await ravScoreContinuationImplementationSha256();
   const saved = await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
-  assert.deepEqual(saved, {
-    saved: true,
-    datasetId: source.datasetId,
-    productionReferenceAt: atHour(49),
-    partCount: PART_COUNT,
-    modelId: RAVSCORE_MODEL_ID,
-    stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
-    modelContractSha256: RAVSCORE_MODEL_CONTRACT_SHA256,
-    modelBundleSha256: RAVSCORE_MODEL_BUNDLE_SHA256,
-    continuationStateContractSha256,
-  });
+  assert.equal(saved.saved, true);
+  assert.equal(saved.datasetId, source.datasetId);
+  assert.equal(saved.productionReferenceAt, atHour(49));
+  assert.equal(saved.partCount, PART_COUNT);
+  assert.equal(saved.candidateGRollbackPartCount, PART_COUNT);
+  assert.equal(saved.modelId, RAVSCORE_MODEL_ID);
+  assert.equal(saved.stateSchemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
+  assert.equal(saved.modelContractSha256, RAVSCORE_MODEL_CONTRACT_SHA256);
+  assert.equal(saved.modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
+  assert.equal(saved.continuationStateContractSha256, continuationStateContractSha256);
+  assert.match(saved.generationSha256, /^[0-9a-f]{64}$/);
+  assert.match(saved.candidateGRollbackStateSha256, /^[0-9a-f]{64}$/);
 
   const checkpointText = await fs.readFile(checkpointPath, 'utf8');
   const checkpoint = JSON.parse(checkpointText);
-  assert.equal(checkpoint.schemaVersion, 2);
-  assert.equal(checkpoint.status, 'ravscore-schema5-compact-continuation');
+  assert.equal(checkpoint.schemaVersion, 4);
+  assert.equal(checkpoint.status, 'ravscore-schema6-with-candidate-g-rollback-companion');
   assert.equal(
     checkpoint.continuationStateContractSha256,
     continuationStateContractSha256,
@@ -168,6 +246,13 @@ try {
   assert.deepEqual(checkpoint.modelBinding, ravScoreModelBinding());
   assert.equal(checkpoint.partCount, PART_COUNT);
   assert.deepEqual(Object.keys(checkpoint.states), [...partIds].sort());
+  assert.equal(checkpoint.candidateGRollbackCompanion.generationSha256,
+    checkpoint.generationSha256);
+  assert.equal(checkpoint.candidateGRollbackCompanion.partCount, PART_COUNT);
+  assert.deepEqual(checkpoint.candidateGRollbackCompanion.modelBinding,
+    candidateGRollbackModelBinding());
+  assert.deepEqual(Object.keys(checkpoint.candidateGRollbackCompanion.states),
+    [...partIds].sort());
   assert.equal(checkpoint.privacy.compactDerivedStateOnly, true);
   assert.equal(checkpoint.privacy.weatherIncluded, false);
   assert.equal(checkpoint.privacy.scoresIncluded, false);
@@ -190,11 +275,105 @@ try {
     assert.equal(state.samplingContextKey, contextFor(partId));
   }
 
+  const lineagePartId = 'lineage-part';
+  const lineageDocument = lineage => {
+    const lineagePart = {
+      ...partFor(lineagePartId),
+      ravScoreModel: {
+        currentState: {
+          ...stateFor(checkpointStateTemplate, lineagePartId),
+          lineage,
+        },
+      },
+    };
+    const parts = { [lineagePartId]: lineagePart };
+    return {
+      datasetId: 'rr-schema6-lineage',
+      productionReferenceAt: atHour(49),
+      coastalParts: { parts },
+      ravScoreCandidateGRollback: candidateRollbackDescriptorFor(parts, atHour(49)),
+    };
+  };
+  const migrationLineage = {
+    currentEvidenceSource: RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
+    migrationId: RAVSCORE_MIGRATION_ID,
+    sourceModelId: CANDIDATE_G_STATE_MODEL_ID,
+    sourceStateSchemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
+    migratedAt: atHour(48),
+    waveApproachBootstrapHours:
+      RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+    waveApproachMaximumOmittedMomentShare:
+      RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachMaximumOmittedMomentShare,
+    waveApproachMaximumScoreErrorBeforeRounding:
+      RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
+  };
+  await writeJson(sourcePath, lineageDocument(migrationLineage));
+  await saveRavScoreContinuationCheckpoint({
+    sourcePath,
+    checkpointPath: lineageCheckpointPath,
+    expectedPartCount: 1,
+  });
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(lineageCheckpointPath, 'utf8')).states[lineagePartId].lineage,
+    migrationLineage,
+    'the complete Candidate-G migration lineage must survive checkpointing exactly',
+  );
+
+  const coldReplayLineage = {
+    boundedUnknownPositionCount: 0,
+    completeCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+    expectedCausalPositionCount: RAVSCORE_RECOVERY_POLICY.coldReplayHours,
+    historyTransition: RAVSCORE_RECOVERY_POLICY.completeHistoryTransition,
+    recoveryId: RAVSCORE_COLD_REPLAY_ID,
+    source: RAVSCORE_RECOVERY_POLICY.source,
+    targetReferenceAt: atHour(48),
+  };
+  await writeJson(sourcePath, lineageDocument(coldReplayLineage));
+  await saveRavScoreContinuationCheckpoint({
+    sourcePath,
+    checkpointPath: lineageCheckpointPath,
+    expectedPartCount: 1,
+  });
+  assert.deepEqual(
+    JSON.parse(await fs.readFile(lineageCheckpointPath, 'utf8')).states[lineagePartId].lineage,
+    coldReplayLineage,
+    'the verified cold-replay lineage must survive checkpointing exactly',
+  );
+
+  await writeJson(sourcePath, lineageDocument({
+    ...migrationLineage,
+    unexpectedPrivateField: 'reject',
+  }));
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({
+      sourcePath,
+      checkpointPath: lineageCheckpointPath,
+      expectedPartCount: 1,
+    }),
+    /lineage.*incompatible/,
+    'unknown lineage fields must fail closed',
+  );
+  await writeJson(sourcePath, lineageDocument({
+    ...coldReplayLineage,
+    targetReferenceAt: atHour(50),
+  }));
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({
+      sourcePath,
+      checkpointPath: lineageCheckpointPath,
+      expectedPartCount: 1,
+    }),
+    /lineage time.*after its state/,
+    'future cold-replay lineage must fail closed',
+  );
+
   const loaded = await loadRavScoreContinuationCheckpointForTarget({
     checkpointPath,
     targetReference: atHour(50),
   });
   assert.equal(loaded.loaded, true);
+  assert.equal(loaded.reason, 'checkpoint-ready');
+  assert.equal(loaded.continuationAvailable, true);
   assert.equal(loaded.checkpointAt, atHour(49));
   assert.equal(loaded.targetReferenceAt, atHour(50));
   assert.equal(loaded.ageHours, 1);
@@ -204,6 +383,19 @@ try {
     continuationStateContractSha256,
   );
   assert.deepEqual(loaded.states, checkpoint.states);
+  assert.deepEqual(
+    loaded.candidateGRollbackStates,
+    checkpoint.candidateGRollbackCompanion.states,
+  );
+  assert.equal(
+    Object.values(loaded.candidateGRollbackStates).every(state =>
+      state.transportMemoryReady === true
+      && state.transportMemoryStatus === 'READY'
+      && state.transportMemoryCoverageHours === 48),
+    true,
+    'checkpoint-only recovery must carry 673 exact READY Candidate G states',
+  );
+  assert.equal(loaded.generationSha256, checkpoint.generationSha256);
   assert.equal(loaded.copiedWeather, false);
   assert.equal(loaded.copiedScores, false);
   assert.equal(loaded.copiedRawVectors, false);
@@ -224,12 +416,21 @@ try {
     true,
     'the exact maximum continuation age remains admissible',
   );
-  await assert.rejects(
-    loadRavScoreContinuationCheckpointForTarget({
-      checkpointPath,
-      targetReference: atHour(50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours),
-    }),
-    /older than the 72-hour continuation limit/,
+  const expiredContinuation = await loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath,
+    targetReference: atHour(50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours),
+  });
+  assert.equal(expiredContinuation.loaded, true);
+  assert.equal(expiredContinuation.continuationAvailable, false);
+  assert.equal(
+    expiredContinuation.reason,
+    'checkpoint-continuation-expired-companion-ready',
+  );
+  assert.deepEqual(expiredContinuation.states, {});
+  assert.equal(
+    Object.keys(expiredContinuation.candidateGRollbackStates).length,
+    PART_COUNT,
+    'an expired schema-6 continuation must retain its separately verified rollback companion',
   );
 
   // Source insertion order cannot alter either the sorted rows or their hash.
@@ -247,7 +448,7 @@ try {
   assert.equal(
     await fs.readFile(alternateCheckpointPath, 'utf8'),
     checkpointText,
-    'sorted schema-5 checkpoints must be byte-deterministic',
+    'sorted schema-6 checkpoints must be byte-deterministic',
   );
 
   // Model metadata alone cannot make changed continuation code compatible.
@@ -276,7 +477,7 @@ try {
   }
 
   const target = documentFor({
-    datasetId: 'rr-schema5-deployed',
+    datasetId: 'rr-schema6-deployed',
     productionReferenceAt: atHour(48),
     template: targetStateTemplate,
   });
@@ -310,7 +511,7 @@ try {
     );
   }
 
-  // First rollout has no schema-5 cache. It must be a pure no-op so the score
+  // First rollout has no schema-6 cache. It must be a pure no-op so the score
   // pipeline, and only the score pipeline, can migrate the hydrated schema 2.
   const firstRolloutTarget = clone(target);
   for (const part of Object.values(firstRolloutTarget.coastalParts.parts)) {
@@ -331,7 +532,7 @@ try {
 
   // A valid but non-newer cache is also byte-preserving.
   const alreadyDeployed = documentFor({
-    datasetId: 'rr-schema5-already-deployed',
+    datasetId: 'rr-schema6-already-deployed',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -371,6 +572,50 @@ try {
     message: /incompatible componentSchemaId/,
   });
 
+  const companion672 = clone(checkpoint);
+  delete companion672.candidateGRollbackCompanion.states[partIds[0]];
+  await assertRestoreRejectsWithoutMutation({
+    target,
+    checkpoint: companion672,
+    message: /companion state integrity/,
+  });
+
+  const companionTamper = clone(checkpoint);
+  companionTamper.candidateGRollbackCompanion.states[partIds[0]].transportPotential += 1;
+  await assertRestoreRejectsWithoutMutation({
+    target,
+    checkpoint: companionTamper,
+    message: /Candidate G rollback companion|integrity/,
+  });
+
+  const companionPrivateField = clone(checkpoint);
+  companionPrivateField.candidateGRollbackCompanion.states[partIds[0]].currentUMps = 0.1;
+  await assertRestoreRejectsWithoutMutation({
+    target,
+    checkpoint: companionPrivateField,
+    message: /field set/,
+  });
+
+  const nextGenerationSource = documentFor({
+    datasetId: 'rr-schema6-next-generation',
+    productionReferenceAt: atHour(50),
+    template: advancedStateTemplate,
+  });
+  await writeJson(alternateSourcePath, nextGenerationSource);
+  await saveRavScoreContinuationCheckpoint({
+    sourcePath: alternateSourcePath,
+    checkpointPath: alternateCheckpointPath,
+  });
+  const nextGeneration = JSON.parse(await fs.readFile(alternateCheckpointPath, 'utf8'));
+  const crossGeneration = clone(checkpoint);
+  crossGeneration.candidateGRollbackCompanion =
+    nextGeneration.candidateGRollbackCompanion;
+  await assertRestoreRejectsWithoutMutation({
+    target,
+    checkpoint: crossGeneration,
+    message: /companion descriptor is incompatible|generation is invalid/,
+  });
+
   const wrongContextTarget = clone(target);
   wrongContextTarget.coastalParts.parts[partIds[0]].ravScoreModel.currentState.samplingContextKey =
     contextFor('different-sampling-context');
@@ -388,19 +633,19 @@ try {
   await assertRestoreRejectsWithoutMutation({
     target: candidateGOnlyTarget,
     checkpoint,
-    message: /no schema-5 continuation/,
+    message: /no schema-6 continuation/,
   });
 
   // The checkpoint is globally newer, but one part would regress its state.
   const regressionSource = documentFor({
-    datasetId: 'rr-schema5-regression-source',
+    datasetId: 'rr-schema6-regression-source',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
   await writeJson(sourcePath, regressionSource);
   await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
   const advancedTarget = documentFor({
-    datasetId: 'rr-schema5-advanced-target',
+    datasetId: 'rr-schema6-advanced-target',
     productionReferenceAt: atHour(48),
     template: targetStateTemplate,
   });
@@ -420,7 +665,7 @@ try {
 
   // A descriptor or any contained state after the final bound target is fatal.
   const futureSource = documentFor({
-    datasetId: 'rr-schema5-future-source',
+    datasetId: 'rr-schema6-future-source',
     productionReferenceAt: atHour(52),
     template: futureStateTemplate,
   });
@@ -434,7 +679,7 @@ try {
   });
 
   const futureStateSource = documentFor({
-    datasetId: 'rr-schema5-state-after-source',
+    datasetId: 'rr-schema6-state-after-source',
     productionReferenceAt: atHour(48),
     template: checkpointStateTemplate,
   });
@@ -445,7 +690,7 @@ try {
   );
 
   const mixedStateSource = documentFor({
-    datasetId: 'rr-schema5-mixed-state-times',
+    datasetId: 'rr-schema6-mixed-state-times',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -459,7 +704,7 @@ try {
   );
 
   const incompleteSource = documentFor({
-    datasetId: 'rr-schema5-incomplete',
+    datasetId: 'rr-schema6-incomplete',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -470,7 +715,21 @@ try {
     /requires 673 parts/,
   );
 
-  console.log('Schema-5 RavScore continuation checkpoint contract passes.');
+  const incompleteCompanionSource = documentFor({
+    datasetId: 'rr-schema6-incomplete-companion',
+    productionReferenceAt: atHour(49),
+    template: checkpointStateTemplate,
+  });
+  delete incompleteCompanionSource.ravScoreCandidateGRollback.runtime.parts[partIds[0]];
+  incompleteCompanionSource.ravScoreCandidateGRollback.runtime.scoredPartCount -= 1;
+  await writeJson(sourcePath, incompleteCompanionSource);
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath }),
+    /runtime is not complete and READY|different parts/,
+    'a 672-part rollback companion must fail before checkpoint publication',
+  );
+
+  console.log('Schema-6 RavScore continuation checkpoint contract passes.');
 } finally {
   await fs.rm(tempRoot, { recursive: true, force: true });
 }

@@ -32,6 +32,8 @@ for (const file of [
   'js/core/local-zone-score.js',
   'js/core/best-time-selector.js',
   'scripts/public-conditions-lib.mjs',
+  'scripts/lib/coastal-point-stage-dmi-adapter.mjs',
+  'scripts/lib/coastal-point-staging-contract.mjs',
   'scripts/lib/ravscore-production-adapters.mjs',
   'scripts/lib/ravscore-production-part-pipeline.mjs',
 ]) {

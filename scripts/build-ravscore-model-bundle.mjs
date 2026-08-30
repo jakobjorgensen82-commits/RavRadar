@@ -19,6 +19,8 @@ export const RAVSCORE_MODEL_BUNDLE_ENTRYPOINTS = Object.freeze([
   'js/core/ravscore-integrated.js',
   'js/core/ravscore-public-model.js',
   'js/core/ravscore-public-runtime-contract.js',
+  'scripts/lib/coastal-point-stage-dmi-adapter.mjs',
+  'scripts/lib/coastal-point-staging-contract.mjs',
   'scripts/lib/ravscore-candidate-g-rollback-runtime.mjs',
   'scripts/lib/ravscore-integrated-runtime.mjs',
   'scripts/lib/ravscore-production-adapters.mjs',

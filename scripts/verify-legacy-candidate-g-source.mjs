@@ -7,8 +7,11 @@ import { execFile as execFileCallback } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import {
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256,
+  LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT,
   LEGACY_CANDIDATE_G_MODEL_ID,
   LEGACY_CANDIDATE_G_SOURCE_HEAD,
+  LEGACY_CANDIDATE_G_SOURCE_TREE,
   LEGACY_CANDIDATE_G_STATE_SCHEMA_VERSION,
   assertLegacyCandidateGManifest,
   legacyCandidateGSourceIdentity,
@@ -31,19 +34,14 @@ export const LEGACY_IMPLEMENTATION_ENTRYPOINTS = Object.freeze([
   'js/core/ravscore-candidate-g.js',
   'js/core/ravscore-candidate-g-state-pipeline.js',
 ]);
-// These modules were intentionally excluded from the a930 public Pages
+// These modules were intentionally excluded from the 49dd public Pages
 // package. They are not silently skipped because of a missing fetch; their
 // exclusion is the exact historical packaging contract.
 const LEGACY_PUBLIC_MODULE_EXCLUSIONS = Object.freeze(new Set([
   'js/ui/handbook.js',
   'js/ui/admin-app.js',
   'js/core/rule-engine.js',
-  'js/core/score-engine.js',
-  'js/core/adaptive-model.js',
-  'js/core/prediction-engine.js',
   'js/services/rule-service.js',
-  'js/services/trip-service.js',
-  'js/services/trip-evidence-legacy-bridge.js',
 ]));
 const ATTESTATION_FIELDS = Object.freeze([
   'schemaVersion', 'legacySourceIdentity', 'datasetId', 'productionReferenceAt',
@@ -153,6 +151,16 @@ async function gitBytes(root, relative) {
   return Buffer.from(stdout);
 }
 
+async function assertPinnedSourceTree(root) {
+  const { stdout } = await execFile('git', [
+    '-C', root,
+    'rev-parse', `${LEGACY_CANDIDATE_G_SOURCE_HEAD}^{tree}`,
+  ], { encoding: 'utf8', maxBuffer: 1024 * 1024 });
+  if (String(stdout).trim() !== LEGACY_CANDIDATE_G_SOURCE_TREE) {
+    throw new Error('Legacy Candidate G pinned source head and tree differ');
+  }
+}
+
 async function resolveBaselineImport(root, importer, specifier) {
   const clean = specifier.split(/[?#]/, 1)[0];
   const base = path.posix.normalize(path.posix.join(path.posix.dirname(importer), clean));
@@ -170,10 +178,11 @@ async function resolveBaselineImport(root, importer, specifier) {
       // Try the next deterministic ESM resolution candidate.
     }
   }
-  throw new Error(`Legacy public implementation import is missing at a930: ${importer} -> ${clean}`);
+  throw new Error(`Legacy public implementation import is missing at 49dd: ${importer} -> ${clean}`);
 }
 
 export async function baselineImplementationSources({ root = ROOT } = {}) {
+  await assertPinnedSourceTree(root);
   const pending = [...LEGACY_IMPLEMENTATION_ENTRYPOINTS];
   const sources = new Map();
   while (pending.length) {
@@ -189,20 +198,38 @@ export async function baselineImplementationSources({ root = ROOT } = {}) {
       }
     }
   }
-  return [...sources.entries()]
+  const baseline = [...sources.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([relative, bytes]) => Object.freeze({ relative, bytes }));
-}
-
-export async function legacyCandidateGImplementationClosureSha256({ root = ROOT } = {}) {
-  const baseline = await baselineImplementationSources({ root });
-  return sha256(Object.freeze({
+  if (baseline.length !== LEGACY_CANDIDATE_G_IMPLEMENTATION_FILE_COUNT) {
+    throw new Error(`Legacy Candidate G pinned implementation file count differs: ${baseline.length}`);
+  }
+  const closureSha256 = sha256(Object.freeze({
     sourceHead: LEGACY_CANDIDATE_G_SOURCE_HEAD,
     files: Object.freeze(baseline.map(({ relative, bytes }) => Object.freeze({
       file: relative,
       sha256: sha256(bytes),
     }))),
   }));
+  if (closureSha256 !== LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256) {
+    throw new Error(`Legacy Candidate G pinned implementation closure differs: ${closureSha256}`);
+  }
+  return baseline;
+}
+
+export async function legacyCandidateGImplementationClosureSha256({ root = ROOT } = {}) {
+  const baseline = await baselineImplementationSources({ root });
+  const closureSha256 = sha256(Object.freeze({
+    sourceHead: LEGACY_CANDIDATE_G_SOURCE_HEAD,
+    files: Object.freeze(baseline.map(({ relative, bytes }) => Object.freeze({
+      file: relative,
+      sha256: sha256(bytes),
+    }))),
+  }));
+  if (closureSha256 !== LEGACY_CANDIDATE_G_IMPLEMENTATION_CLOSURE_SHA256) {
+    throw new Error('Legacy Candidate G implementation closure is not the pinned public source');
+  }
+  return closureSha256;
 }
 
 async function fetchBytes(fetchImpl, url, label) {
@@ -269,7 +296,7 @@ export async function verifyLegacyCandidateGSource({
     const deployed = await fetchBytes(fetchImpl,
       withCacheBuster(baseUrl, relative, sourceHead), relative);
     if (!deployed.equals(expectedBytes)) {
-      throw new Error(`Legacy Candidate G public implementation drifted from 4.0.308: ${relative}`);
+      throw new Error(`Legacy Candidate G public implementation drifted from 4.0.316: ${relative}`);
     }
     closure.push(Object.freeze({ file: relative, sha256: sha256(expectedBytes) }));
   }

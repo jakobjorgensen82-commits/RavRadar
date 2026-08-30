@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import {
+  buildCandidateGDerivedStateSeries,
   CANDIDATE_G_STATE_MODEL_ID,
   CANDIDATE_G_STATE_PROFILE_ID,
   CANDIDATE_G_STATE_SCHEMA_VERSION,
@@ -16,7 +17,7 @@ import {
 } from '../../js/core/ravscore-model-contract.js';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
-export const POINT_STAGE_SCHEMA_VERSION = 2;
+export const POINT_STAGE_SCHEMA_VERSION = 3;
 export const POINT_STAGE_READY = 'ready-for-activation';
 export const POINT_STAGE_ACTIVE_STATUSES = new Set(['awaiting-validation', 'activation-requested']);
 
@@ -59,6 +60,7 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'currentMemoryCoverageHours',
   'currentEvidence',
   'currentNativeHoldAuthorization',
+  'currentNativeHoldIntervalEnds',
   'supplyPotential',
   'waveStateSchemaVersion',
   'wavePolicyId',
@@ -71,20 +73,63 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
   'waveApproachState',
+  'historyBounds',
   'lineage',
 ]);
+const HISTORY_BOUNDS_KEYS = Object.freeze([
+  'schemaVersion',
+  'current',
+  'waveMobilisation',
+  'lastMile',
+]);
+const CURRENT_HISTORY_BOUND_KEYS = Object.freeze([
+  'lowerPotential',
+  'upperPotential',
+]);
+const WAVE_HISTORY_BOUND_KEYS = Object.freeze([
+  'lowerPotential',
+  'upperPotential',
+  'lastUnknownAt',
+  'conservativeResetAt',
+]);
+const LAST_MILE_HISTORY_BOUND_KEYS = Object.freeze([
+  'minimumFactorTrack',
+  'maximumFactorTrack',
+  'lastUnknownAt',
+  'conservativeResetAt',
+]);
+const LAST_MILE_FACTOR_TRACK_KEYS = Object.freeze([
+  'activityMoment',
+  'normalMoment',
+]);
 const MIGRATION_LINEAGE_KEYS = Object.freeze([
+  'currentEvidenceSource',
   'migrationId',
   'sourceModelId',
   'sourceStateSchemaVersion',
   'migratedAt',
+  'waveApproachBootstrapHours',
+  'waveApproachMaximumOmittedMomentShare',
+  'waveApproachMaximumScoreErrorBeforeRounding',
 ]);
 const COLD_REPLAY_LINEAGE_KEYS = Object.freeze([
+  'boundedUnknownPositionCount',
+  'completeCausalPositionCount',
+  'expectedCausalPositionCount',
+  'historyTransition',
   'recoveryId',
   'source',
-  'replayedHourCount',
   'targetReferenceAt',
 ]);
+const ACTIVATION_STATE_PAIR_KEYS = Object.freeze([
+  'targetReferenceAt',
+  'integratedStateSha256',
+  'candidateGStateSha256',
+  'pairSha256',
+  'integratedState',
+  'candidateGState',
+]);
+const SHA256 = /^sha256:[a-f0-9]{64}$/;
 
 const norm = value => ((Number(value) % 360) + 360) % 360;
 const finitePoint = point => Array.isArray(point)
@@ -151,6 +196,20 @@ function assertExactKeys(value, keys, label) {
   }
 }
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value).sort().map(key => (
+      `${JSON.stringify(key)}:${canonicalJson(value[key])}`
+    )).join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+function sha256(value) {
+  return `sha256:${crypto.createHash('sha256').update(canonicalJson(value)).digest('hex')}`;
+}
+
 export function assertCoastalPointStageModelBinding(binding, label = 'Coastal-point RavScore binding') {
   assertRavScoreModelBinding(binding, label);
   assertExactKeys(binding, Object.keys(ravScoreModelBinding()), label);
@@ -182,6 +241,9 @@ export function assertIntegratedCoastalPointContinuation(
       `${label}.currentNativeHoldAuthorization`,
     );
   }
+  if (!Array.isArray(state.currentNativeHoldIntervalEnds)) {
+    throw new Error(`${label} mangler native-hold intervalattestation`);
+  }
   if (state.lineage !== null) {
     const lineageKeys = Object.keys(state.lineage ?? {}).sort().join('|');
     const migrationKeys = [...MIGRATION_LINEAGE_KEYS].sort().join('|');
@@ -190,13 +252,39 @@ export function assertIntegratedCoastalPointContinuation(
       throw new Error(`${label}.lineage har ikke en canonical field-allowlist`);
     }
   }
+  assertExactKeys(state.historyBounds, HISTORY_BOUNDS_KEYS, `${label}.historyBounds`);
+  assertExactKeys(
+    state.historyBounds.current,
+    CURRENT_HISTORY_BOUND_KEYS,
+    `${label}.historyBounds.current`,
+  );
+  assertExactKeys(
+    state.historyBounds.waveMobilisation,
+    WAVE_HISTORY_BOUND_KEYS,
+    `${label}.historyBounds.waveMobilisation`,
+  );
+  assertExactKeys(
+    state.historyBounds.lastMile,
+    LAST_MILE_HISTORY_BOUND_KEYS,
+    `${label}.historyBounds.lastMile`,
+  );
+  assertExactKeys(
+    state.historyBounds.lastMile.minimumFactorTrack,
+    LAST_MILE_FACTOR_TRACK_KEYS,
+    `${label}.historyBounds.lastMile.minimumFactorTrack`,
+  );
+  assertExactKeys(
+    state.historyBounds.lastMile.maximumFactorTrack,
+    LAST_MILE_FACTOR_TRACK_KEYS,
+    `${label}.historyBounds.lastMile.maximumFactorTrack`,
+  );
   assertNoPrivateStateFields(state, label);
   const validated = buildIntegratedRavScoreStateSeries([], {
     samplingContextKey,
     initialState: state,
   });
   if (validated.initialStateAccepted !== true || validated.initialStateSource !== 'INTEGRATED_CONTINUATION') {
-    throw new Error(`${label} er ikke en canonical schema-5 continuation`);
+    throw new Error(`${label} er ikke en canonical schema-6 continuation`);
   }
   if (requireReady) {
     if (state?.currentMemoryReady !== true
@@ -246,19 +334,96 @@ export function assertCandidateGCoastalPointMigrationInput(
   return state;
 }
 
+export function assertCandidateGCoastalPointRollbackContinuation(
+  state,
+  expectedStateKey = state?.stateKey,
+  {
+    requireReady = false,
+    label = 'Candidate G coastal-point rollback continuation',
+  } = {},
+) {
+  assertExactKeys(state, CANDIDATE_G_CONTINUATION_KEYS, label);
+  if (!SHA256.test(expectedStateKey ?? '')) {
+    throw new Error(`${label} mangler canonical stateKey`);
+  }
+  assertCandidateGCoastalPointMigrationInput(state, expectedStateKey, label);
+  const replay = buildCandidateGDerivedStateSeries([], {
+    stateKey: expectedStateKey,
+    initialState: state,
+  });
+  if (replay.initialStateAccepted !== true
+    || replay.initialStateResetReason !== null
+    || replay.continuationState !== state) {
+    throw new Error(`${label} accepteres ikke af Candidate G-oraklet`);
+  }
+  if (requireReady && (state.transportMemoryReady !== true
+    || state.transportMemoryStatus !== 'READY'
+    || Number(state.transportMemoryWindowHours) !== 48
+    || Number(state.transportMemoryCoverageHours) < 48)) {
+    throw new Error(`${label} mangler eksakt READY48-state`);
+  }
+  return state;
+}
+
+export function buildCoastalPointActivationStatePair({
+  partId,
+  samplingContextKey,
+  expectedCandidateGStateKey,
+  integratedState,
+  candidateGState,
+} = {}) {
+  if (typeof partId !== 'string' || !partId) {
+    throw new Error('Coastal-point activation-state pair mangler part-id');
+  }
+  assertIntegratedCoastalPointContinuation(integratedState, {
+    samplingContextKey,
+    requireReady: true,
+    label: `${partId} activation integrated state`,
+  });
+  assertCandidateGCoastalPointRollbackContinuation(
+    candidateGState,
+    expectedCandidateGStateKey,
+    { requireReady: true, label: `${partId} activation Candidate G companion` },
+  );
+  if (integratedState.time !== candidateGState.time
+    || !Number.isFinite(Date.parse(integratedState.time))
+    || new Date(integratedState.time).toISOString() !== integratedState.time) {
+    throw new Error(`${partId} activation-state pair har forskellig targettid`);
+  }
+  const targetReferenceAt = integratedState.time;
+  const integratedStateSha256 = sha256(integratedState);
+  const candidateGStateSha256 = sha256(candidateGState);
+  const pairSha256 = sha256({
+    schemaVersion: 'coastal-point-activation-dual-state-v1',
+    partId,
+    targetReferenceAt,
+    integratedStateSha256,
+    candidateGStateSha256,
+  });
+  return {
+    targetReferenceAt,
+    integratedStateSha256,
+    candidateGStateSha256,
+    pairSha256,
+    integratedState: structuredClone(integratedState),
+    candidateGState: structuredClone(candidateGState),
+  };
+}
+
 export function assertCoastalPointActivationStateInjection(
   document,
   label = 'Coastal-point activation-state injection',
 ) {
   if (!document || typeof document !== 'object' || Array.isArray(document)
     || document.schemaVersion !== POINT_STAGE_SCHEMA_VERSION
-    || !document.states || typeof document.states !== 'object' || Array.isArray(document.states)
-    || Object.keys(document.states).length < 1) {
+    || !document.statePairs || typeof document.statePairs !== 'object'
+    || Array.isArray(document.statePairs)
+    || Object.keys(document.statePairs).length < 1) {
     throw new Error(`${label} har inkompatibelt schema`);
   }
   assertExactKeys(
     document,
-    ['schemaVersion', 'ravScoreModelBinding', 'preparedAt', 'states'],
+    ['schemaVersion', 'ravScoreModelBinding', 'preparedAt', 'statePairs'],
     label,
   );
   if (!Number.isFinite(Date.parse(document.preparedAt))) {
@@ -266,18 +431,102 @@ export function assertCoastalPointActivationStateInjection(
   }
   assertCoastalPointStageModelBinding(document.ravScoreModelBinding, `${label} model binding`);
   assertNoPrivateStateFields(document, label);
-  for (const [partId, state] of Object.entries(document.states)) {
+  for (const [partId, pair] of Object.entries(document.statePairs)) {
     if (typeof partId !== 'string' || !partId) throw new Error(`${label} indeholder ugyldigt part-id`);
-    if (!/^sha256:[a-f0-9]{64}$/.test(state?.samplingContextKey ?? '')) {
+    assertExactKeys(pair, ACTIVATION_STATE_PAIR_KEYS, `${label} ${partId} pair`);
+    if (!SHA256.test(pair?.integratedState?.samplingContextKey ?? '')) {
       throw new Error(`${label} ${partId} har ugyldig sampling-context-hash`);
     }
-    assertIntegratedCoastalPointContinuation(state, {
-      samplingContextKey: state?.samplingContextKey,
+    assertIntegratedCoastalPointContinuation(pair.integratedState, {
+      samplingContextKey: pair.integratedState.samplingContextKey,
       requireReady: true,
-      label: `${label} ${partId}`,
+      label: `${label} ${partId} integrated state`,
     });
+    assertCandidateGCoastalPointRollbackContinuation(
+      pair.candidateGState,
+      pair.candidateGState?.stateKey,
+      { requireReady: true, label: `${label} ${partId} Candidate G companion` },
+    );
+    if (!Number.isFinite(Date.parse(pair.targetReferenceAt))
+      || new Date(pair.targetReferenceAt).toISOString() !== pair.targetReferenceAt
+      || pair.integratedState.time !== pair.targetReferenceAt
+      || pair.candidateGState.time !== pair.targetReferenceAt) {
+      throw new Error(`${label} ${partId} har forskellig targettid`);
+    }
+    const expectedIntegratedHash = sha256(pair.integratedState);
+    const expectedCandidateHash = sha256(pair.candidateGState);
+    const expectedPairHash = sha256({
+      schemaVersion: 'coastal-point-activation-dual-state-v1',
+      partId,
+      targetReferenceAt: pair.targetReferenceAt,
+      integratedStateSha256: expectedIntegratedHash,
+      candidateGStateSha256: expectedCandidateHash,
+    });
+    if (pair.integratedStateSha256 !== expectedIntegratedHash
+      || pair.candidateGStateSha256 !== expectedCandidateHash
+      || pair.pairSha256 !== expectedPairHash) {
+      throw new Error(`${label} ${partId} har ugyldig dual-state-hashbinding`);
+    }
   }
-  return document.states;
+  return document.statePairs;
+}
+
+export function selectCoastalPointCandidateGRollbackContinuation({
+  partId,
+  part = null,
+  initialSelection,
+  pointActivationStatePairs = {},
+  privateCandidateGContinuation = null,
+  checkpointCandidateGContinuation = null,
+  targetReferenceAt = null,
+} = {}) {
+  if (initialSelection?.source === 'POINT_ACTIVATION') {
+    const pair = pointActivationStatePairs?.[partId] ?? null;
+    const target = typeof targetReferenceAt === 'string'
+      && Number.isFinite(Date.parse(targetReferenceAt))
+      ? new Date(targetReferenceAt).toISOString()
+      : null;
+    if (!pair
+      || part?.partId !== partId
+      || pair.integratedStateSha256 !== sha256(initialSelection.state)
+      || pair.candidateGStateSha256 !== sha256(pair.candidateGState)
+      || pair.pairSha256 !== sha256({
+        schemaVersion: 'coastal-point-activation-dual-state-v1',
+        partId,
+        targetReferenceAt: pair.targetReferenceAt,
+        integratedStateSha256: pair.integratedStateSha256,
+        candidateGStateSha256: pair.candidateGStateSha256,
+      })
+      || pair.integratedState.time !== initialSelection.state?.time
+      || pair.candidateGState.time !== pair.integratedState.time
+      || pair.targetReferenceAt !== target) {
+      throw new Error('Point activation lacks its exact atomic Candidate G companion');
+    }
+    assertCandidateGCoastalPointRollbackContinuation(
+      pair.candidateGState,
+      candidateGStateKey(part),
+      { requireReady: true, label: `${partId} point-activation Candidate G companion` },
+    );
+    return {
+      state: structuredClone(pair.candidateGState),
+      source: 'POINT_ACTIVATION_COMPANION',
+    };
+  }
+  const rollbackCandidates = [
+    ['PRIVATE_RUNTIME', privateCandidateGContinuation],
+    ['CHECKPOINT_COMPANION', checkpointCandidateGContinuation],
+  ].filter(([, state]) => state !== null && state !== undefined);
+  rollbackCandidates.sort((left, right) =>
+    Date.parse(right[1]?.time ?? '') - Date.parse(left[1]?.time ?? ''));
+  if (rollbackCandidates.length > 1
+    && rollbackCandidates[0][1]?.time === rollbackCandidates[1][1]?.time
+    && canonicalJson(rollbackCandidates[0][1]) !== canonicalJson(rollbackCandidates[1][1])) {
+    throw new Error('Candidate G rollback continuations conflict at the same generation time');
+  }
+  return {
+    state: rollbackCandidates[0]?.[1] ?? null,
+    source: rollbackCandidates[0]?.[0] ?? null,
+  };
 }
 
 export function activeOverrides(review = {}) {

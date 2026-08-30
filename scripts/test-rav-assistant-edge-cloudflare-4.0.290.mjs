@@ -97,17 +97,36 @@ for (const question of [
   'How dangerous is a rip current?',
 ]) assert.equal(routeAssistantQuestion(question), 'provider', question);
 
+const exactBounds = score => ({
+  lower:score, upper:score, modelUncertaintyPoints:0, rawLower:score, rawUpper:score,
+});
+const fullScoreResult = Object.freeze({
+  available:true, score:68, level:'good', scoreQuality:'FULL_HISTORY',
+  calibrationEligible:true, scoreSemantics:'EXACT_POINT_SCORE',
+  conservativeTailResetApplied:false, scoreBounds:exactBounds(68),
+  historyCoverageHours:48, historyReasonCodes:[],
+});
+const unavailableScoreResult = Object.freeze({
+  available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
+  calibrationEligible:false, scoreSemantics:null,
+  conservativeTailResetApplied:false, scoreBounds:null,
+  historyCoverageHours:null, historyReasonCodes:[],
+});
+
 const safeContext = publicAssistantContext({
   mode: 'beach',
   modelBinding: RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
   zone: { id: 'zone-1', name: 'Test Coast', coastType: 'strand', coordinates: [1, 2], secret: 'no' },
-  result: { available: true, score: 68, level: 'good', internalDiagnostics: { token: 'no' } },
+  result: { ...fullScoreResult, internalDiagnostics:{ token:'no' } },
   weather: { time: '2026-08-27T12:00:00Z', currentSpeedMps: 0.2, rawVector: { u: 1, v: 2 }, provider: 'internal' },
   account: { email: 'no@example.com' },
 }, 'en');
 assert.deepEqual(Object.keys(safeContext).sort(), ['locale', 'mode', 'modelBinding', 'result', 'weather', 'zone']);
 assert.deepEqual(safeContext.modelBinding, RAV_ASSISTANT_RAVSCORE_MODEL_BINDING);
 assert.equal(safeContext.result.available, true);
+assert.deepEqual(safeContext.result, {
+  ...fullScoreResult,
+});
 assert.equal(JSON.stringify(safeContext).includes('coordinates'), false);
 assert.equal(JSON.stringify(safeContext).includes('token'), false);
 assert.equal(JSON.stringify(safeContext).includes('email'), false);
@@ -117,9 +136,9 @@ for (const missingScore of [null, '', '   ', '68', false, true, undefined, [], {
   assert.deepEqual(
     publicAssistantContext({
       modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-      result:{ available:true, score:missingScore, level:'poor' },
+      result:{ ...fullScoreResult, score:missingScore, scoreBounds:exactBounds(68) },
     }, 'en').result,
-    { available:false, score:null, level:null },
+    unavailableScoreResult,
     `Edge-konteksten må ikke omdanne ${String(missingScore)} til score 0`,
   );
 }
@@ -130,7 +149,7 @@ for (const field of [
   for (const malformed of ['7.2', true, [7.2], { value:7.2 }]) {
     const projected = publicAssistantContext({
       modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-      result:{ available:true, score:68, level:'good' },
+      result:fullScoreResult,
       weather:{ [field]:malformed },
     }, 'en');
     assert.equal(projected.weather[field], null,
@@ -140,24 +159,56 @@ for (const field of [
 assert.deepEqual(
   publicAssistantContext({
     modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
-    result:{ available:false, score:68, level:'good' },
+    result:{
+      available:false, score:68, level:'good', scoreQuality:'UNAVAILABLE',
+      calibrationEligible:false, scoreSemantics:null,
+      conservativeTailResetApplied:false, scoreBounds:null, historyCoverageHours:null,
+      historyReasonCodes:[],
+    },
   }, 'en').result,
-  { available:false, score:null, level:null },
+  {
+    available:false, score:null, level:null, scoreQuality:'UNAVAILABLE',
+    calibrationEligible:false, scoreSemantics:null,
+    conservativeTailResetApplied:false, scoreBounds:null, historyCoverageHours:null,
+    historyReasonCodes:[],
+  },
   'Edge-konteksten kræver available === true før en score må deles',
 );
 assert.deepEqual(
   publicAssistantContext({
-    modelBinding:{ ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, modelBundleSha256:'0'.repeat(64) },
-    result:{ available:true, score:68, level:'good' },
+    modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
+    result:{
+      available:true, score:57, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
+      calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+      conservativeTailResetApplied:false,
+      scoreBounds:{lower:57,upper:76,modelUncertaintyPoints:19,rawLower:56.5,rawUpper:76.2},
+      historyCoverageHours:11,
+      historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+    },
   }, 'en').result,
-  { available:false, score:null, level:null },
+  {
+    available:true, score:57, level:'fair', scoreQuality:'HISTORY_INCOMPLETE',
+    calibrationEligible:false, scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    conservativeTailResetApplied:false,
+    scoreBounds:{lower:57,upper:76,modelUncertaintyPoints:19,rawLower:56.5,rawUpper:76.2},
+    historyCoverageHours:11,
+    historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+  },
+  'Edge-konteksten skal bevare den numeriske historikufuldstændige score og kvalitetsmærkning',
+);
+assert.deepEqual(
+  publicAssistantContext({
+    modelBinding:{ ...RAV_ASSISTANT_RAVSCORE_MODEL_BINDING, modelBundleSha256:'0'.repeat(64) },
+    result:fullScoreResult,
+  }, 'en').result,
+  unavailableScoreResult,
   'Edge skal neutralisere scorekontekst med mismatched modelbinding.',
 );
 
 const prompt = JSON.parse(assistantPrompt('Can waves move amber?', safeContext, 'en'));
 assert.equal(prompt.requestedLocale, 'en');
 assert.equal(prompt.question, 'Can waves move amber?');
-assert.equal(prompt.publicFacts.length, 37);
+assert.equal(prompt.publicFacts.length, 38);
 const uvFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'identification.uv-clue-not-proof');
 assert.match(uvFact?.text || '', /395 nanometres/);
 assert.doesNotMatch(uvFact?.text || '', /365 nanometres/);

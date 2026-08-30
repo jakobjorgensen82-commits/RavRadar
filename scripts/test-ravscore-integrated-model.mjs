@@ -6,6 +6,7 @@ import {
   RAVSCORE_MODEL_CONTRACT,
   RAVSCORE_MODEL_ID,
   RAVSCORE_LAST_MILE_POLICY,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_WEIGHTS,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
@@ -253,6 +254,181 @@ assert.ok(readyZeroCurrentSupplyMaximum.score < fairMinimum,
   'ready-zero-current opportunity may be poor/weak but never fair/good');
 assert.ok(readyZeroCurrentSupplyMaximum.explanation.limitations
   .includes('LOCAL_AMBER_INVENTORY_UNOBSERVED'));
+assert.equal(readyZeroCurrentSupplyMaximum.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY);
+assert.equal(readyZeroCurrentSupplyMaximum.calibrationEligible, true);
+assert.equal(readyZeroCurrentSupplyMaximum.scoreSemantics, 'EXACT_POINT_SCORE');
+assert.deepEqual(readyZeroCurrentSupplyMaximum.scoreBounds, {
+  lower: 50,
+  upper: 50,
+  modelUncertaintyPoints: 0,
+  rawLower: 50,
+  rawUpper: 50,
+});
+assert.equal(readyZeroCurrentSupplyMaximum.historyCoverageHours, 48);
+assert.deepEqual(readyZeroCurrentSupplyMaximum.historyReasonCodes, []);
+
+const degradedState = {
+  ...baseState,
+  currentMemoryReady: false,
+  currentMemoryStatus: 'WINDOW_HAS_MISSING_EVIDENCE',
+  currentDirectInputAvailable: true,
+  waveMemoryReady: false,
+  waveMemoryStatus: 'MISSING_INPUT',
+  historyScoreView: {
+    available: true,
+    quality: RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE,
+    calibrationEligible: false,
+    coverageHours: 31,
+    requiredHours: 48,
+    reasonCodes: [
+      'CURRENT_HISTORY_MISSING_EVIDENCE',
+      'WAVE_MOBILISATION_HISTORY_INCOMPLETE',
+      'LAST_MILE_HISTORY_INCOMPLETE',
+    ],
+    conservativeTailResetApplied: false,
+    current: {
+      lowerPotential: 20,
+      upperPotential: 80,
+    },
+    waveMobilisation: {
+      lowerPotential: 30,
+      upperPotential: 90,
+    },
+    lastMile: {
+      lowerFactor: 0.85,
+      upperFactor: 1,
+    },
+  },
+};
+const degradedWeather = {
+  windSpeedMps: 3,
+  waveHeightM: 0.25,
+  wavePeriodS: 4,
+  waveDirectionDeg: 90,
+};
+const degraded = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: degradedState });
+assert.equal(degraded.available, true,
+  'incomplete history must not block a score when all direct score-hour inputs are valid');
+assert.equal(degraded.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+assert.equal(degraded.calibrationEligible, false);
+assert.equal(degraded.scoreSemantics, 'CONSERVATIVE_ENCLOSING_LOWER_BOUND');
+assert.equal(degraded.score, degraded.scoreBounds.lower,
+  'the shown degraded score must be the conservative lower bound');
+assert.ok(degraded.scoreBounds.lower <= degraded.scoreBounds.upper);
+assert.equal(degraded.scoreBounds.modelUncertaintyPoints,
+  degraded.scoreBounds.upper - degraded.scoreBounds.lower);
+assert.equal(degraded.components.transport, 17);
+assert.equal(degraded.diagnostics.supplyPotential, 20);
+assert.equal(degraded.diagnostics.supplyPotentialUpper, 80);
+assert.equal(degraded.historyCoverageHours, 31);
+assert.deepEqual(degraded.historyReasonCodes, degradedState.historyScoreView.reasonCodes);
+const expectedLowerRaw = 0.2 * degraded.components.huntability + 0.5 * 17 + 0.3 * 30;
+const expectedUpperRaw = 0.2 * degraded.components.huntability + 0.5 * 80 + 0.3 * 90;
+assert.ok(Math.abs(degraded.scoreBounds.rawLower - expectedLowerRaw) <= 1e-6);
+assert.ok(Math.abs(degraded.scoreBounds.rawUpper - expectedUpperRaw) <= 1e-6);
+assert.equal(degraded.explanation.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+
+const conservativeTailReset = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: {
+  ...degradedState,
+  historyScoreView: {
+    ...degradedState.historyScoreView,
+    quality: RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+    calibrationEligible: true,
+    coverageHours: 48,
+    reasonCodes: [],
+    conservativeTailResetApplied: true,
+    current: { lowerPotential: 20, upperPotential: 20 },
+    waveMobilisation: { lowerPotential: 30, upperPotential: 30 },
+    lastMile: { lowerFactor: 0.85, upperFactor: 0.85 },
+  },
+} });
+assert.equal(conservativeTailReset.available, true);
+assert.equal(conservativeTailReset.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY);
+assert.equal(conservativeTailReset.calibrationEligible, true);
+assert.equal(conservativeTailReset.scoreSemantics, 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+assert.equal(conservativeTailReset.conservativeTailResetApplied, true);
+assert.equal(conservativeTailReset.scoreBounds.lower, conservativeTailReset.scoreBounds.upper);
+assert.equal(
+  conservativeTailReset.diagnostics.lastMile.status,
+  'LAST_MILE_CONSERVATIVE_TAIL_RESET_POINT',
+);
+
+const degradedDirectCurrentMissing = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: { ...degradedState, currentDirectInputAvailable: false } });
+assert.equal(degradedDirectCurrentMissing.available, false);
+assert.equal(degradedDirectCurrentMissing.reason, 'CURRENT_DIRECT_INPUT_NOT_READY');
+assert.equal(degradedDirectCurrentMissing.score, null);
+assert.equal(degradedDirectCurrentMissing.scoreQuality, RAVSCORE_SCORE_QUALITY.UNAVAILABLE);
+assert.equal(degradedDirectCurrentMissing.calibrationEligible, false);
+const explicitMissingCannotMasqueradeAsHold = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: {
+  ...degradedState,
+  currentDirectInputAvailable: false,
+  currentTransition: 'NATIVE_CADENCE_HOLD',
+} });
+assert.equal(explicitMissingCannotMasqueradeAsHold.available, false);
+assert.equal(explicitMissingCannotMasqueradeAsHold.reason, 'CURRENT_DIRECT_INPUT_NOT_READY');
+
+const incompleteWithoutReason = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: {
+  ...degradedState,
+  historyScoreView: {
+    ...degradedState.historyScoreView,
+    reasonCodes: [],
+  },
+} });
+assert.equal(incompleteWithoutReason.available, false);
+assert.equal(incompleteWithoutReason.reason, 'HISTORY_SCORE_VIEW_INVALID');
+const extendedHistoryView = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: {
+  ...degradedState,
+  historyScoreView: {
+    ...degradedState.historyScoreView,
+    unexpected: true,
+  },
+} });
+assert.equal(extendedHistoryView.available, false);
+assert.equal(extendedHistoryView.reason, 'HISTORY_SCORE_VIEW_INVALID');
+
+const degradedDirectionMissing = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { ...degradedWeather, waveDirectionDeg: null },
+}, { state: degradedState });
+assert.equal(degradedDirectionMissing.available, false);
+assert.equal(degradedDirectionMissing.reason, 'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING');
+assert.equal(degradedDirectionMissing.score, null);
+
+const degradedWaders = evaluateRavScoreIntegrated({
+  mode: 'waders',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: degradedWeather,
+}, { state: degradedState });
+assert.equal(degradedWaders.available, true);
+assert.ok(degradedWaders.scoreBounds.lower <= degradedWaders.scoreBounds.upper);
+assert.ok(degradedWaders.scoreBounds.upper
+  <= degradedWaders.scoreCalculation.wadersHuntabilityMaximum,
+'waders safety cap must be applied monotonically to both degraded bounds');
 
 const missingCurrentSupplyState = evaluateRavScoreIntegrated({
   mode: 'beach',

@@ -1,6 +1,13 @@
-import { RAVSCORE_BEST_TIME_POLICY } from './ravscore-model-contract.js?v=4.0.306';
+import { RAVSCORE_BEST_TIME_POLICY } from './ravscore-model-contract.js?v=4.0.317';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
+const scoreQualityRank = value => value === 'FULL_HISTORY' ? 0
+  : value === 'HISTORY_INCOMPLETE' ? 1
+    : 2;
+const candidateScore = candidate => candidate?.result?.available === false
+  || candidate?.result?.scoreQuality === 'UNAVAILABLE'
+  ? null
+  : finite(candidate?.result?.score) ? candidate.result.score : null;
 
 const timeMilliseconds = value => {
   const parsed = Date.parse(String(value ?? ''));
@@ -22,6 +29,7 @@ function wadersWaterTie(candidate) {
 export const RAVSCORE_BEST_TIME_SELECTION_REASONS = Object.freeze({
   ONLY_AVAILABLE: 'ONLY_AVAILABLE_RAVSCORE',
   HIGHEST_SCORE: 'HIGHEST_RAVSCORE',
+  FULL_HISTORY: 'EQUAL_RAVSCORE_FULL_HISTORY',
   WADERS_KNOWN_WATER: 'WADERS_EQUAL_RAVSCORE_KNOWN_WATER_LEVEL',
   WADERS_LOWER_WATER: 'WADERS_EQUAL_RAVSCORE_LOWER_WATER_LEVEL',
   WADERS_NON_RISING_TREND: 'WADERS_EQUAL_RAVSCORE_NON_RISING_FORWARD_3H_WATER_CHANGE',
@@ -35,8 +43,8 @@ export function ravScoreBestTimeSelectionReason(sortedCandidates, mode = 'beach'
   if (!Array.isArray(sortedCandidates) || !sortedCandidates.length) return null;
   const selected = sortedCandidates[0];
   const compared = sortedCandidates[1] ?? null;
-  const selectedScore = finite(selected?.result?.score) ? selected.result.score : null;
-  const comparedScore = finite(compared?.result?.score) ? compared.result.score : null;
+  const selectedScore = candidateScore(selected);
+  const comparedScore = candidateScore(compared);
   if (!compared) return Object.freeze({
     code: RAVSCORE_BEST_TIME_SELECTION_REASONS.ONLY_AVAILABLE,
     selectedScore,
@@ -48,6 +56,16 @@ export function ravScoreBestTimeSelectionReason(sortedCandidates, mode = 'beach'
     selectedScore,
     comparedScore,
     semantics: 'RAVSCORE_PRIORITY_NOT_A_FIND_OR_SAFETY_GUARANTEE',
+  });
+  const selectedQualityRank = scoreQualityRank(selected?.result?.scoreQuality);
+  const comparedQualityRank = scoreQualityRank(compared?.result?.scoreQuality);
+  if (selectedQualityRank !== comparedQualityRank) return Object.freeze({
+    code: RAVSCORE_BEST_TIME_SELECTION_REASONS.FULL_HISTORY,
+    selectedScore,
+    comparedScore,
+    selectedScoreQuality: selected.result.scoreQuality,
+    comparedScoreQuality: compared.result.scoreQuality,
+    semantics: 'FULL_HISTORY_ONLY_BREAKS_AN_EXACT_NUMERIC_RAVSCORE_TIE',
   });
   if (mode === 'waders') {
     const selectedWater = wadersWaterTie(selected);
@@ -89,6 +107,7 @@ export function bestTimeSelectionReasonI18nKey(reason) {
   const code = reason?.code;
   if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.ONLY_AVAILABLE) return 'score.bestTimeReason.onlyAvailable';
   if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.HIGHEST_SCORE) return 'score.bestTimeReason.highestScore';
+  if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.FULL_HISTORY) return 'score.bestTimeReason.fullHistory';
   if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.WADERS_KNOWN_WATER) return 'score.bestTimeReason.knownWater';
   if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.WADERS_LOWER_WATER) return 'score.bestTimeReason.lowerWater';
   if (code === RAVSCORE_BEST_TIME_SELECTION_REASONS.WADERS_NON_RISING_TREND) return 'score.bestTimeReason.nonRisingTrend';
@@ -96,11 +115,14 @@ export function bestTimeSelectionReasonI18nKey(reason) {
 }
 
 export function compareRavScoreBestTimeCandidates(left, right, mode = 'beach') {
-  const leftScore = finite(left?.result?.score) ? left.result.score : null;
-  const rightScore = finite(right?.result?.score) ? right.result.score : null;
+  const leftScore = candidateScore(left);
+  const rightScore = candidateScore(right);
   if ((leftScore === null) !== (rightScore === null)) return leftScore === null ? 1 : -1;
   const scoreDelta = leftScore === null ? 0 : rightScore - leftScore;
   if (scoreDelta !== 0) return scoreDelta;
+  const qualityDelta = scoreQualityRank(left?.result?.scoreQuality)
+    - scoreQualityRank(right?.result?.scoreQuality);
+  if (qualityDelta !== 0) return qualityDelta;
   if (mode === 'waders') {
     const leftWater = wadersWaterTie(left);
     const rightWater = wadersWaterTie(right);

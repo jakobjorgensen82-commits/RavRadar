@@ -2,7 +2,7 @@ import {
   RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS as MODEL_BINDING_FIELDS,
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.308';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.317';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/;
@@ -15,6 +15,7 @@ const ACTIVE_MODEL_MODES = Object.freeze({
     availabilityPolicy: 'integrated-model-local-fail-closed',
     observationCalibrationEligible: true,
     completeReadinessRequired: true,
+    historyIncompleteAllowed: true,
     rollbackTarget: 'required-distinct',
     statusDa: 'Den integrerede kystprocesmodel er den ene offentlige model.',
   }),
@@ -25,6 +26,7 @@ const ACTIVE_MODEL_MODES = Object.freeze({
     availabilityPolicy: 'candidate-g-local-fail-closed',
     observationCalibrationEligible: false,
     completeReadinessRequired: true,
+    historyIncompleteAllowed: false,
     rollbackTarget: 'none',
     statusDa: 'Candidate G er den ene offentlige model under en verificeret manuel driftsrollback.',
   }),
@@ -100,6 +102,31 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
 
   const mode = ACTIVE_MODEL_MODES[profile.activationState];
   if (!mode) throw new Error('Den offentlige RavScore-model har en ukendt aktiveringstilstand.');
+  const availability = conditions?.coastalParts?.scoreAvailability;
+  const manifestAvailability = manifest?.ravScoreAvailability;
+  if (!isRecord(availability) || availability.policy !== mode.availabilityPolicy
+    || !isRecord(manifestAvailability)
+    || manifestAvailability.policy !== mode.availabilityPolicy) {
+    throw new Error('Scoretilgængelighed og aktiv RavScore-profil bruger ikke samme policy.');
+  }
+  const historyIncompleteZones = Array.isArray(availability.historyIncompleteZones)
+    ? availability.historyIncompleteZones : [];
+  const historyIncompleteReady = mode.historyIncompleteAllowed === true
+    && availability.allZonesActive === true
+    && Number.isSafeInteger(availability.historyIncompleteModeCount)
+    && availability.historyIncompleteModeCount > 0
+    && Number.isSafeInteger(availability.historyIncompleteZoneCount)
+    && availability.historyIncompleteZoneCount === historyIncompleteZones.length
+    && historyIncompleteZones.every(zone => Number.isFinite(zone?.historyCoverageHours)
+      && zone.historyCoverageHours >= 0
+      && zone.historyCoverageHours <= 48
+      && Array.isArray(zone.historyReasonCodes)
+      && zone.historyReasonCodes.length > 0
+      && zone.historyReasonCodes.every(code => typeof code === 'string'
+        && /^[A-Z][A-Z0-9_]{0,127}$/.test(code)))
+    && manifestAvailability.historyIncompleteModeCount === availability.historyIncompleteModeCount
+    && manifestAvailability.historyIncompleteZoneCount === availability.historyIncompleteZoneCount
+    && manifestAvailability.allCurrentScoresFullHistory === false;
   const rollbackTargetValid = mode.rollbackTarget === 'none'
     ? profile.rollbackModelId === null
     : typeof profile.rollbackModelId === 'string'
@@ -109,27 +136,26 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     .every(field => typeof profile[field] === 'boolean');
   const readinessValid = readinessFieldsValid && (mode.completeReadinessRequired !== true
     || (profile.modelCoverageReady === true
-      && profile.modelMemoryReady === true
-      && profile.modelMigrationReady === true));
+      && profile.modelMigrationReady === true
+      && (profile.modelMemoryReady === true || historyIncompleteReady)));
+  const historyQualityMatchesProfile = mode.historyIncompleteAllowed !== true
+    || (profile.modelMemoryReady === true
+      ? availability.allCurrentScoresFullHistory === true
+        && availability.historyIncompleteModeCount === 0
+      : historyIncompleteReady);
   if (typeof profile.schemaVersion !== 'string'
     || !SAFE_ID_PATTERN.test(profile.schemaVersion)
     || profile.switchVersion !== mode.switchVersion
     || profile.memoryReferenceScope !== 'CURRENT_COMMON_ZONE_REFERENCE'
     || !rollbackTargetValid
     || !readinessValid
+    || !historyQualityMatchesProfile
     || profile.publicAvailabilityPolicy !== mode.availabilityPolicy
     || profile.runtimeFallbackModelId !== null
     || profile.crossModelRuntimeFallbackAllowed !== false
     || profile.automaticActivationAllowed !== false) {
     throw new Error('Den offentlige RavScore-profil tillader en ukendt eller blandet driftsvej.');
   }
-  const availability = conditions?.coastalParts?.scoreAvailability;
-  if (!isRecord(availability) || availability.policy !== mode.availabilityPolicy
-    || !isRecord(manifest?.ravScoreAvailability)
-    || manifest.ravScoreAvailability.policy !== mode.availabilityPolicy) {
-    throw new Error('Scoretilgængelighed og aktiv RavScore-profil bruger ikke samme policy.');
-  }
-
   const binding = frozenCopy(runtimeBinding);
   const scoreProfile = Object.freeze({
     schemaVersion: profile.schemaVersion,
@@ -152,6 +178,13 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     publicShadow: false,
     crossModelFallback: false,
   });
+  const historyQuality = Object.freeze({
+    allCurrentScoresFullHistory: availability.allCurrentScoresFullHistory === true,
+    fullHistoryModeCount: availability.fullHistoryModeCount ?? null,
+    historyIncompleteModeCount: availability.historyIncompleteModeCount ?? null,
+    historyIncompleteZoneCount: availability.historyIncompleteZoneCount ?? null,
+    calibrationEligible: availability.allCurrentScoresFullHistory === true,
+  });
 
   return Object.freeze({
     kind: mode.kind,
@@ -161,6 +194,7 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     binding,
     scoreProfile,
     diagnosticScoreProfile,
+    historyQuality,
   });
 }
 

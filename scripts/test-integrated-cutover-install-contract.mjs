@@ -39,7 +39,20 @@ const operationalMigration = await fs.readFile(
   'supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql',
   'utf8',
 );
+for (const [label, source] of Object.entries({
+  migration: operationalMigration,
+  schema: documents.schema,
+  installer: documents.installer,
+})) {
+  assert.match(source,
+    /revoke all on function public\.ravradar_ravscore_operational_cas\(\s*bigint\s*,\s*bigint\s*,\s*jsonb\s*,\s*jsonb\s*\)\s*from public, anon, authenticated;/i,
+    `${label} exposes the operational CAS outside service_role`);
+  assert.match(source,
+    /grant execute on function public\.ravradar_ravscore_operational_cas\(\s*bigint\s*,\s*bigint\s*,\s*jsonb\s*,\s*jsonb\s*\)\s*to service_role;/i,
+    `${label} does not grant the operational CAS to service_role`);
+}
 for (const [functionName, migrationSource] of [
+  ['public.ravradar_trip_v3_score_quality_allowed', documents.migration],
   ['public.ravradar_trip_v3_binding_allowed', documents.migration],
   ['public.ravradar_trip_v3_active_binding_admitted', documents.migration],
   ['public.ravradar_observation_require_active_v3_binding', documents.migration],
@@ -86,6 +99,12 @@ assert.equal(tripConstraintContract(documents.installer, 'security installer'),
   'schema-3 constraints drifted in security installer');
 
 for (const [label, source] of Object.entries(documents)) {
+  assert.match(source,
+    /revoke all on function public\.ravradar_trip_v3_score_quality_allowed\(\s*text, jsonb\s*\) from public, anon, authenticated;/i,
+    `${label} exposes the immutable score-quality validator outside service_role`);
+  assert.match(source,
+    /grant execute on function public\.ravradar_trip_v3_score_quality_allowed\(\s*text, jsonb\s*\) to service_role;/i,
+    `${label} does not grant the immutable score-quality validator to service_role`);
   assert.match(source,
     /revoke all on function public\.ravradar_trip_v3_active_binding_admitted\([\s\S]*?from public, anon, authenticated;/i,
     `${label} exposes active schema-3 admission outside service_role`);

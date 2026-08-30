@@ -1,20 +1,23 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.314";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.314";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.314";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.314";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.314";
-import { ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.314";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.314";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.314";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.314";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.314";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.317";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.317";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.317";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.317";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.317";
+import {
+  RAVSCORE_CALIBRATION_ELIGIBLE,
+  ravScoreModelBinding,
+} from "../core/ravscore-model-contract.js?v=4.0.317";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.317";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.317";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.317";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.317";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '03e021cf28393c6f38493233b5e94fe1a231d9d14ff4fa31d86861f5862540a7';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '6c35d63a21cd8a04f3bb2013fecf642af62f3cb6be6e7cb0b3b8a1b7860e205a';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -64,6 +67,110 @@ const QUICK_KEYS = Object.freeze([
 
 function finite(value) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+const ASSISTANT_HISTORY_HOURS = 48;
+const ASSISTANT_HISTORY_REASON_CODE = /^[A-Z][A-Z0-9_]{0,79}$/;
+const ASSISTANT_SCORE_BOUND_FIELDS = Object.freeze([
+  'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
+]);
+
+function publicScoreBounds(result, available) {
+  if (!available) return result?.scoreBounds === null ? null : undefined;
+  const bounds=result?.scoreBounds;
+  if (!bounds||typeof bounds!=='object'||Array.isArray(bounds)
+    ||JSON.stringify(Object.keys(bounds).sort())
+      !==JSON.stringify([...ASSISTANT_SCORE_BOUND_FIELDS].sort())
+    ||ASSISTANT_SCORE_BOUND_FIELDS.some(field=>finite(bounds[field])===null)
+    ||bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    ||bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    ||Math.abs(bounds.modelUncertaintyPoints-(bounds.upper-bounds.lower))>1e-9
+    ||result.score!==bounds.lower)return undefined;
+  if(result.scoreQuality==='FULL_HISTORY'
+    &&(bounds.lower!==bounds.upper||bounds.rawLower!==bounds.rawUpper))return undefined;
+  return {...bounds};
+}
+
+function publicScoreQuality(result, available) {
+  const coverage = finite(result?.historyCoverageHours);
+  const reasonCodes = Array.isArray(result?.historyReasonCodes)
+    && result.historyReasonCodes.length <= 12
+    && result.historyReasonCodes.every(code => typeof code === 'string'
+      && ASSISTANT_HISTORY_REASON_CODE.test(code))
+    && new Set(result.historyReasonCodes).size === result.historyReasonCodes.length
+    ? [...result.historyReasonCodes]
+    : null;
+  const scoreBounds=publicScoreBounds(result,available);
+  if(scoreBounds===undefined)return {
+    scoreQuality:'UNAVAILABLE',calibrationEligible:false,scoreSemantics:null,
+    conservativeTailResetApplied:false,scoreBounds:null,
+    historyCoverageHours:null,historyReasonCodes:[],
+  };
+  if (available
+    && result.scoreQuality === 'FULL_HISTORY'
+    && result.calibrationEligible === RAVSCORE_CALIBRATION_ELIGIBLE
+    && coverage === ASSISTANT_HISTORY_HOURS
+    && reasonCodes?.length === 0
+    && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+      .includes(result.scoreSemantics)
+    && typeof result.conservativeTailResetApplied==='boolean'
+    && result.conservativeTailResetApplied
+      ===(result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')) {
+    return {
+      scoreQuality:'FULL_HISTORY',
+      calibrationEligible:RAVSCORE_CALIBRATION_ELIGIBLE,
+      scoreSemantics:result.scoreSemantics,
+      conservativeTailResetApplied:result.conservativeTailResetApplied,
+      scoreBounds,historyCoverageHours:coverage, historyReasonCodes:[],
+    };
+  }
+  if (available
+    && result.scoreQuality === 'HISTORY_INCOMPLETE'
+    && RAVSCORE_CALIBRATION_ELIGIBLE === true
+    && result.calibrationEligible === false
+    && coverage !== null
+    && coverage >= 0
+    && coverage <= ASSISTANT_HISTORY_HOURS
+    && reasonCodes?.length > 0
+    && result.scoreSemantics==='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+    && typeof result.conservativeTailResetApplied==='boolean') {
+    return {
+      scoreQuality:'HISTORY_INCOMPLETE', calibrationEligible:false,
+      scoreSemantics:result.scoreSemantics,
+      conservativeTailResetApplied:result.conservativeTailResetApplied,
+      scoreBounds,historyCoverageHours:coverage, historyReasonCodes:reasonCodes,
+    };
+  }
+  if (!available
+    && result.scoreQuality === 'UNAVAILABLE'
+    && result.calibrationEligible === false
+    && result.historyCoverageHours === null
+    && reasonCodes?.length === 0
+    && result.scoreSemantics===null
+    && result.conservativeTailResetApplied===false) {
+    return {
+      scoreQuality:'UNAVAILABLE', calibrationEligible:false,
+      scoreSemantics:null,conservativeTailResetApplied:false,scoreBounds:null,
+      historyCoverageHours:null, historyReasonCodes:[],
+    };
+  }
+  return {
+    scoreQuality:'UNAVAILABLE', calibrationEligible:false,
+    scoreSemantics:null,conservativeTailResetApplied:false,scoreBounds:null,
+    historyCoverageHours:null, historyReasonCodes:[],
+  };
+}
+
+function scoreRangeNotice(result, language) {
+  const bounds=result?.scoreBounds;
+  if(result?.scoreQuality!=='HISTORY_INCOMPLETE'
+    ||finite(bounds?.lower)===null||finite(bounds?.upper)===null
+    ||finite(bounds?.modelUncertaintyPoints)===null)return '';
+  return `${t('score.historyIncomplete.short',{},language)}: ${t('score.historyIncomplete.range',{
+    lower:formatNumber(bounds.lower,{maximumFractionDigits:1},language),
+    upper:formatNumber(bounds.upper,{maximumFractionDigits:1},language),
+    span:formatNumber(bounds.modelUncertaintyPoints,{maximumFractionDigits:1},language),
+  },language)}.`;
 }
 
 function tomorrowQuestion(question) {
@@ -134,10 +241,13 @@ function scoreAnswer(context, language) {
   const presentation = presentIntegratedRavScoreExplanation(result, { language });
   if (!presentation.available) return t('assistant.local.noZoneForecast', {}, language);
   const process = `\n\n${presentation.summary}\n${presentation.facts.map(item => `• ${item}`).join('\n')}`;
+  const qualityNotice=scoreRangeNotice(result,language);
+  const localityNotice=result.winningPartUncertain===true
+    ? t('assistant.local.winnerUncertain',{},language):'';
   const metric = (value, digits) => finite(value) === null
     ? t('common.missing', {}, language)
     : formatNumber(value, { maximumFractionDigits:digits }, language);
-  return `${t('assistant.local.scoreHeading', { score:result.score, zone:context.zone?.name || t('common.unknown', {}, language) }, language)}\n\n${componentLines.join('\n') || `• ${t('assistant.local.scoreGeneric', {}, language)}`}${process}\n\n${t('assistant.local.currentWeather', {
+  return `${t('assistant.local.scoreHeading', { score:result.score, zone:context.zone?.name || t('common.unknown', {}, language) }, language)}${qualityNotice?`\n${qualityNotice}`:''}${localityNotice?`\n${localityNotice}`:''}\n\n${componentLines.join('\n') || `• ${t('assistant.local.scoreGeneric', {}, language)}`}${process}\n\n${t('assistant.local.currentWeather', {
     wind:metric(weather.windSpeedMps, 1),
     waves:metric(weather.waveHeightM, 1),
     current:metric(weather.currentSpeedMps, 2),
@@ -150,9 +260,11 @@ function bestPlace(context, question, language, now) {
   const rows = allScored(context, tomorrow ? 1 : 0, now).slice(0, 5);
   if (!rows.length) return t('assistant.local.noRanking', {}, language);
   const day = t(tomorrow ? 'assistant.local.tomorrow' : 'assistant.local.today', {}, language);
+  const qualityNotice=rows.some(item=>item.result.scoreQuality==='HISTORY_INCOMPLETE')
+    ? `\n\n${t('assistant.local.historyRankingCaveat',{},language)}`:'';
   return `${t('assistant.local.bestPlaces', { day }, language)}\n\n${rows.map((item, index) => t('assistant.local.rankLine', {
     rank:index + 1, zone:item.zone.name, score:item.rankingDisplayScore ?? item.result.score, time:clock(item.hour.time, language)
-  }, language)).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}`;
+  }, language)+(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}`;
 }
 
 function bestTime(context, question, language, now) {
@@ -166,7 +278,8 @@ function bestTime(context, question, language, now) {
   const reason = best.selectionReason
     ? t(bestTimeSelectionReasonI18nKey(best.selectionReason), {}, language)
     : t('score.bestTimeBody', { future:'' }, language);
-  return `${t('assistant.local.bestTime', { day, zone:context.zone.name, time:clock(best.hour.time, language), score:best.result.score }, language)}\n\n${reason}\n\n${t('assistant.local.nextTimes', { times:alternatives }, language)}`;
+  const qualityNotice=scoreRangeNotice(best.result,language);
+  return `${t('assistant.local.bestTime', { day, zone:context.zone.name, time:clock(best.hour.time, language), score:best.result.score }, language)}${qualityNotice?`\n${qualityNotice}`:''}\n\n${reason}\n\n${t('assistant.local.nextTimes', { times:alternatives }, language)}`;
 }
 
 function equipmentAnswer(context, language) {
@@ -233,11 +346,13 @@ export function publicAssistantContext(value = {}, language = getLanguage()) {
     ACTIVE_RAVSCORE_MODEL_BINDING,
   );
   const numericScore = finite(result.score);
-  const scoreAvailable = modelBindingMatches
+  const basicScoreAvailable = modelBindingMatches
     && result.available === true
     && numericScore !== null
     && numericScore >= 0
     && numericScore <= 100;
+  const scoreQuality = publicScoreQuality(result, basicScoreAvailable);
+  const scoreAvailable = basicScoreAvailable && scoreQuality.scoreQuality !== 'UNAVAILABLE';
   return {
     locale:normaliseLanguage(language),
     mode:context.mode === 'beach' ? 'beach' : 'waders',
@@ -247,6 +362,7 @@ export function publicAssistantContext(value = {}, language = getLanguage()) {
       available:scoreAvailable,
       score:scoreAvailable ? numericScore : null,
       level:scoreAvailable ? shortText(result.level, 40) : null,
+      ...(scoreAvailable ? scoreQuality : publicScoreQuality(result, false)),
     },
     weather:{
       time:shortText(weather.time, 40), provider:shortText(weather.provider, 60),

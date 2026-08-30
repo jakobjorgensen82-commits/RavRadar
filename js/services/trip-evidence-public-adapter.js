@@ -2,23 +2,24 @@ import {
   createCalibrationFeatureSnapshot,
   createForecastSnapshotReference,
   createTripStartRecord,
+  HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
-} from './trip-evidence-contract.js?v=4.0.314';
+} from './trip-evidence-contract.js?v=4.0.317';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.314';
+} from '../core/ravscore-model-contract.js?v=4.0.317';
 import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
   assertPublicRuntimeAvailability,
   canonicalPublicRuntimeJson,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.314';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.317';
 import {
   assertRavScoreEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.314';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.317';
 
 const TRUST_FIELDS = Object.freeze([
   'schemaVersion', 'status', 'incidentId', 'decisionId', 'method', 'evidenceClassification',
@@ -155,8 +156,17 @@ export function createTripStartFromPublicState({
     manifest?.ravScoreEvidenceTrust,
     conditionsEvidenceTrust(conditions, coastalPart),
   );
+  const scoreQuality = modeState?.scoreQuality;
+  const historyIncomplete = scoreQuality === 'HISTORY_INCOMPLETE';
+  if (!['FULL_HISTORY', 'HISTORY_INCOMPLETE'].includes(scoreQuality)) {
+    throw new Error('Den valgte kystdels score mangler en gyldig historikkvalitet.');
+  }
+  if (historyIncomplete && reconstructed) {
+    throw new Error('Historikufuldstændig og rekonstrueret score må ikke bindes som samme turgrundlag.');
+  }
   const dataQualityFlags = [
     ...(publicEmergency ? [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG] : []),
+    ...(historyIncomplete ? [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG] : []),
     ...(reconstructed ? [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG] : []),
   ];
 
@@ -172,6 +182,17 @@ export function createTripStartFromPublicState({
     modelVersion,
     modelBinding: runtimeBinding,
     totalScore: modeState.score,
+    scoreBoundLower: modeState.scoreBounds?.lower,
+    scoreBoundUpper: modeState.scoreBounds?.upper,
+    scoreBoundModelUncertaintyPoints: modeState.scoreBounds?.modelUncertaintyPoints,
+    scoreBoundRawLower: modeState.scoreBounds?.rawLower,
+    scoreBoundRawUpper: modeState.scoreBounds?.rawUpper,
+    scoreQuality: modeState.scoreQuality,
+    scoreSemantics: modeState.scoreSemantics,
+    scoreCalibrationEligible: modeState.calibrationEligible,
+    conservativeTailResetApplied: modeState.conservativeTailResetApplied,
+    historyCoverageHours: modeState.historyCoverageHours,
+    historyReasonCodes: modeState.historyReasonCodes,
     huntabilityScore: modeState.components.huntability,
     transportScore: modeState.components.transport,
     mobilisationScore: modeState.components.release,

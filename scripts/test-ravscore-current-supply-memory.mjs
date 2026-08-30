@@ -3,11 +3,13 @@ import assert from 'node:assert/strict';
 import {
   CURRENT_SUPPLY_MEMORY_POLICY,
   buildCurrentSupplyMemory,
+  buildCurrentSupplyScoreBounds,
   currentSupplyAgePrimitive,
   currentSupplyAgeWeight,
   currentSupplyStrength,
   currentSupplyWeightedDuration,
   deriveCurrentSupplyEvidence,
+  replayCurrentSupplyEvidence,
 } from '../js/core/ravscore-current-supply-memory.js';
 import { canonicalRavScoreTime } from '../js/core/ravscore-time.js';
 
@@ -29,6 +31,7 @@ function regularEvidence(stepHours, strengthForEnd = () => 0) {
 }
 
 assert.equal(CURRENT_SUPPLY_MEMORY_POLICY.maximumRetainedEvidencePoints, 49);
+assert.equal(CURRENT_SUPPLY_MEMORY_POLICY.expectedEvidenceIntervalHours, 1);
 assert.equal(CURRENT_SUPPLY_MEMORY_POLICY.inboundPointsPerEffectiveHour, 10);
 assert.equal(CURRENT_SUPPLY_MEMORY_POLICY.outboundPointsPerEffectiveHour, 8);
 assert.equal(currentSupplyStrength(0.03), 0);
@@ -101,14 +104,36 @@ close(currentSupplyWeightedDuration({
 const oneHour = buildCurrentSupplyMemory(regularEvidence(1, () => 0.1), {
   referenceTime: REFERENCE_TIME,
 });
-const threeHour = buildCurrentSupplyMemory(regularEvidence(3, () => 0.1), {
+const threeHourEvidence = regularEvidence(3, () => 0.1);
+const unattestedThreeHour = buildCurrentSupplyMemory(threeHourEvidence, {
   referenceTime: REFERENCE_TIME,
 });
+const threeHourIntervalEnds = threeHourEvidence.slice(1).map(item => item.time);
+const threeHour = buildCurrentSupplyMemory(threeHourEvidence, {
+  referenceTime: REFERENCE_TIME,
+  nativeHoldIntervalEnds: threeHourIntervalEnds,
+});
 assert.equal(oneHour.memoryReady, true);
+assert.equal(unattestedThreeHour.memoryReady, false);
+assert.equal(unattestedThreeHour.status, 'WINDOW_HAS_TIME_GAP');
 assert.equal(threeHour.memoryReady, true);
+assert.deepEqual(threeHour.nativeHoldIntervalEnds, threeHourIntervalEnds);
 close(oneHour.supplyPotential, 36);
 close(threeHour.supplyPotential, 36);
 close(oneHour.supplyPotential, threeHour.supplyPotential);
+const unattestedThreeHourBounds = buildCurrentSupplyScoreBounds(threeHourEvidence, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(unattestedThreeHourBounds.quality, 'HISTORY_INCOMPLETE');
+assert.equal(unattestedThreeHourBounds.coverageHours, 16);
+assert.equal(unattestedThreeHourBounds.unknownHours, 32);
+const attestedThreeHourBounds = buildCurrentSupplyScoreBounds(threeHourEvidence, {
+  referenceTime: REFERENCE_TIME,
+  nativeHoldIntervalEnds: threeHourIntervalEnds,
+});
+assert.equal(attestedThreeHourBounds.quality, 'FULL_HISTORY');
+close(attestedThreeHourBounds.lowerPotential, threeHour.supplyPotential);
+close(attestedThreeHourBounds.upperPotential, threeHour.supplyPotential);
 
 const exactBoundary = regularEvidence(1, () => 0.1);
 const bridgedBoundary = [
@@ -185,11 +210,11 @@ const withoutObservedWindowPoint = buildCurrentSupplyMemory(
   lossSensitiveFifty.filter((_, index) => index !== 25),
   { referenceTime: REFERENCE_TIME },
 );
-assert.equal(withoutObservedWindowPoint.memoryReady, true);
+assert.equal(withoutObservedWindowPoint.memoryReady, false);
+assert.equal(withoutObservedWindowPoint.status, 'WINDOW_HAS_TIME_GAP');
 assert.equal(withoutObservedWindowPoint.evidence.length, 49);
-assert.ok(Math.abs(withoutObservedWindowPoint.supplyPotential
-  - exactFiftyPointDiagnostic.supplyPotential) > 1e-6,
-'dropping an observed in-window row can change the exact 48-hour integral');
+assert.equal(withoutObservedWindowPoint.supplyPotential, null,
+  'dropping an observed in-window row must not borrow the next value backwards');
 
 const outThenIn = buildCurrentSupplyMemory(regularEvidence(1, hour => {
   if (hour >= 37 && hour <= 42) return -1;
@@ -231,6 +256,23 @@ const missingResult = buildCurrentSupplyMemory(withMissing, {
 assert.equal(missingResult.memoryReady, false);
 assert.equal(missingResult.status, 'WINDOW_HAS_MISSING_EVIDENCE');
 assert.equal(missingResult.supplyPotential, null);
+const missingBounds = buildCurrentSupplyScoreBounds(withMissing, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(missingBounds.available, true);
+assert.equal(missingBounds.quality, 'HISTORY_INCOMPLETE');
+assert.equal(missingBounds.coverageHours, 47);
+assert.equal(missingBounds.unknownHours, 1);
+assert.deepEqual(missingBounds.reasonCodes, ['CURRENT_HISTORY_MISSING_EVIDENCE']);
+const missingAsOutbound = buildCurrentSupplyMemory(withMissing.map(item => (
+  item.strength === null ? { ...item, strength: -1 } : item
+)), { referenceTime: REFERENCE_TIME });
+const missingAsInbound = buildCurrentSupplyMemory(withMissing.map(item => (
+  item.strength === null ? { ...item, strength: 1 } : item
+)), { referenceTime: REFERENCE_TIME });
+close(missingBounds.lowerPotential, missingAsOutbound.supplyPotential);
+close(missingBounds.upperPotential, missingAsInbound.supplyPotential);
+assert.ok(missingBounds.lowerPotential <= missingBounds.upperPotential);
 
 const withGap = regularEvidence(1, () => 0.1)
   .filter((_, index) => ![20, 21, 22].includes(index));
@@ -240,6 +282,85 @@ const gapResult = buildCurrentSupplyMemory(withGap, {
 assert.equal(gapResult.memoryReady, false);
 assert.equal(gapResult.status, 'WINDOW_HAS_TIME_GAP');
 assert.equal(gapResult.supplyPotential, null);
+const gapBounds = buildCurrentSupplyScoreBounds(withGap, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(gapBounds.available, true);
+assert.equal(gapBounds.quality, 'HISTORY_INCOMPLETE');
+assert.equal(gapBounds.coverageHours, 45);
+assert.equal(gapBounds.unknownHours, 3);
+assert.deepEqual(gapBounds.reasonCodes, ['CURRENT_HISTORY_TIME_GAP']);
+
+const reducedGapEvidence = regularEvidence(1, hour => {
+  if (hour >= 34 && hour <= 38) return 1;
+  if (hour === 40) return -1;
+  if (hour === 41) return 1;
+  return 0;
+});
+const reducedSparseEvidence = reducedGapEvidence
+  .filter(item => item.time !== atElapsedHour(40));
+const reducedSparseMemory = buildCurrentSupplyMemory(reducedSparseEvidence, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.throws(() => replayCurrentSupplyEvidence(reducedSparseEvidence, {
+  referenceTime: REFERENCE_TIME,
+}), /unattested evidence gap/,
+'the low-level replay primitive must not bypass the explicit gap proof');
+const reducedSparseBounds = buildCurrentSupplyScoreBounds(reducedSparseEvidence, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(reducedSparseMemory.memoryReady, false,
+  'one absent expected hour must make the exact current point state unavailable');
+assert.equal(reducedSparseMemory.status, 'WINDOW_HAS_TIME_GAP');
+assert.equal(reducedSparseBounds.quality, 'HISTORY_INCOMPLETE');
+assert.equal(reducedSparseBounds.coverageHours, 47);
+assert.equal(reducedSparseBounds.unknownHours, 1);
+close(reducedSparseBounds.lowerPotential, 52);
+close(reducedSparseBounds.upperPotential, 70);
+for (let index = 0; index <= 40; index += 1) {
+  const hiddenStrength = -1 + index / 20;
+  const completion = reducedGapEvidence.map(item => (
+    item.time === atElapsedHour(40) ? { ...item, strength: hiddenStrength } : item
+  ));
+  const completeMemory = buildCurrentSupplyMemory(completion, {
+    referenceTime: REFERENCE_TIME,
+  });
+  const completeBounds = buildCurrentSupplyScoreBounds(completion, {
+    referenceTime: REFERENCE_TIME,
+  });
+  assert.equal(completeMemory.memoryReady, true);
+  assert.equal(completeBounds.quality, 'FULL_HISTORY');
+  close(completeBounds.lowerPotential, completeMemory.supplyPotential);
+  close(completeBounds.upperPotential, completeMemory.supplyPotential);
+  assert.ok(
+    completeMemory.supplyPotential >= reducedSparseBounds.lowerPotential - 1e-10
+      && completeMemory.supplyPotential <= reducedSparseBounds.upperPotential + 1e-10,
+    `hidden strength ${hiddenStrength} escaped the incomplete current bounds`,
+  );
+  assert.ok(
+    completeBounds.lowerPotential >= reducedSparseBounds.lowerPotential - 1e-10
+      && completeBounds.upperPotential <= reducedSparseBounds.upperPotential + 1e-10,
+    `completion ${hiddenStrength} did not nest inside the incomplete bounds`,
+  );
+}
+
+const fullBounds = buildCurrentSupplyScoreBounds(oneHour.evidence, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(fullBounds.available, true);
+assert.equal(fullBounds.quality, 'FULL_HISTORY');
+assert.equal(fullBounds.coverageHours, 48);
+assert.deepEqual(fullBounds.reasonCodes, []);
+close(fullBounds.lowerPotential, oneHour.supplyPotential);
+close(fullBounds.upperPotential, oneHour.supplyPotential);
+
+const missingDirectBounds = buildCurrentSupplyScoreBounds([
+  ...withMissing.slice(0, -1),
+  { ...withMissing.at(-1), strength: null },
+], { referenceTime: REFERENCE_TIME });
+assert.equal(missingDirectBounds.available, false);
+assert.equal(missingDirectBounds.quality, 'UNAVAILABLE');
+assert.equal(missingDirectBounds.reason, 'CURRENT_DIRECT_INPUT_MISSING');
 
 const holdEvidence = Array.from({ length: 49 }, (_, index) => ({
   time: atElapsedHour(index - 2),
@@ -268,6 +389,25 @@ const holdAtNativeReference = buildCurrentSupplyMemory(holdEvidence, {
 assert.equal(holdAtNativeReference.memoryReady, true);
 assert.equal(documentedHold.supplyPotential, holdAtNativeReference.supplyPotential);
 assert.deepEqual(documentedHold.rows, holdAtNativeReference.rows);
+const heldBounds = buildCurrentSupplyScoreBounds(holdEvidence, {
+  referenceTime: REFERENCE_TIME,
+  nativeHold: true,
+});
+const nativeReferenceBounds = buildCurrentSupplyScoreBounds(holdEvidence, {
+  referenceTime: atElapsedHour(46),
+});
+assert.equal(heldBounds.available, true);
+assert.equal(heldBounds.referenceTime, atElapsedHour(46));
+assert.equal(heldBounds.nativeHoldHours, 2);
+assert.deepEqual(heldBounds, {
+  ...nativeReferenceBounds,
+  requestedReferenceTime: REFERENCE_TIME,
+  latestEvidenceAgeHours: 2,
+  nativeHoldHours: 2,
+});
+assert.equal(buildCurrentSupplyScoreBounds(holdEvidence, {
+  referenceTime: REFERENCE_TIME,
+}).available, false, 'an undocumented native hold must never make direct input available');
 
 const tooLongHoldEvidence = Array.from({ length: 49 }, (_, index) => ({
   time: atElapsedHour(index - 4),
@@ -288,5 +428,13 @@ const repeatedRun = buildCurrentSupplyMemory(firstRun.evidence, {
   referenceTime: REFERENCE_TIME,
 });
 assert.deepEqual(repeatedRun, firstRun);
+const fullComplexBounds = buildCurrentSupplyScoreBounds(firstRun.evidence, {
+  referenceTime: REFERENCE_TIME,
+});
+assert.equal(fullComplexBounds.quality, 'FULL_HISTORY');
+assert.equal(fullComplexBounds.lowerPotential, firstRun.supplyPotential,
+  'collapsed full-history lower bound must preserve the existing kernel bit-for-bit');
+assert.equal(fullComplexBounds.upperPotential, firstRun.supplyPotential,
+  'collapsed full-history upper bound must preserve the existing kernel bit-for-bit');
 
 console.log('RavScore current-supply memory tests passed.');

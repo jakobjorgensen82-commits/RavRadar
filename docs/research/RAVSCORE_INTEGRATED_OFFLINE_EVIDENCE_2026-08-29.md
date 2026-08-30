@@ -2,30 +2,54 @@
 
 ## Status og afgrænsning
 
-Dette spor tester den integrerede RavScore mod Candidate G og mod relevante parameteralternativer før offentlig cutover. Auditkoden er `scripts/audit-ravscore-integrated-offline-evidence.mjs`.
+Dette spor tester den integrerede RavScore mod Candidate G og mod relevante parameteralternativer før offentlig cutover. Auditkoden er `scripts/audit-ravscore-integrated-offline-evidence.mjs`. Candidate G er fortsat eneste offentlige model; den produktionsverificerede offentlige baseline er 4.0.316.
 
-Den gennemførte syntetiske audit var direkte bundet til:
+Candidate G-oraklets eksakte kilde er den produktionsverificerede 4.0.316-head `49dd4cb454656bdf629e5df760176705e38d2cb0`, tree `975c3e9432cea7780564ffd56766bc1f0a0a9763` og central switch `RAVSCORE-PROFILE-SWITCH-4.0.316`. Source contract `2f888a16190e9e43e44536536029f1b0021a1b850195524aa2312664ca74810b` og den kanoniske 53-filers source closure `a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606` verificeres mod en eksakt pinned fetch i PR, build og deploy. Lukningen er lokal releasekandidatevidens; exact-head-, produktions- og offentlig state-6-verifikation udestår.
+
+Den aktive state-6-kandidat er bundet til:
 
 - model-id `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`,
-- stateversion `5.0.0`,
+- stateversion `6.0.0`,
 - variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`,
-- profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`,
-- komponentskema `ravscore-components-huntability-delivery-mobilisation-v4`,
-- forklaringsskema `ravscore-explanation-integrated-v4`,
-- `modelContractSha256`, som binder parameterkontrakten; endelig værdi afventer regeneration på afsluttet head,
-- `modelBundleSha256`, som binder 34+ kanonisk normaliserede transitive implementeringsfiler; endelig værdi afventer samme regeneration.
+- profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`,
+- komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5`,
+- forklaringsskema `ravscore-explanation-integrated-bounds-v5`,
+- rangering `direction-broad-19-history-tie-v2`,
+- bedste tidspunkt `score-history-water-tie-earliest-v3`,
+- `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, som binder parameterkontrakten,
+- `modelBundleSha256=101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e`, som binder præcis 43 kanonisk normaliserede transitive implementeringsfiler.
 
-Den tidligere pre-split-selvtest afsluttede de nedenstående scenarieantal, men dens ene hash dækkede kun kontrakt-JSON og må ikke bruges som endelig bundlebinding. Auditsporet skal regenereres på afsluttet head og levere begge slut-hashes:
+Den tidligere pre-split-selvtest og de numeriske scenarier længere nede blev kørt mod den historiske state-5-releasekandidat, som aldrig blev offentlig. Dens kontrakthash var `0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da`, og dens bundlehash var `27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd`. Resultaterne er analytisk genbrug og regressionsevidens, ikke state-6-slutbevis. State-6-bundlebindingen er slutregenereret, og den fulde lokale proportionale audit-/testmatrix er grøn:
 
 ```text
 OK: PASSED_SYNTHETIC_OFFLINE_CONTRACT_AND_SENSITIVITY_AUDIT;
 24 paired chronological comparisons/48 individual model evaluations;
 24 frozen-component pairs;
 model RRS-COASTAL-PROCESS-INTEGRATED-1.1.0;
-final modelContractSha256/modelBundleSha256 pending regenerated audit
+modelContractSha256 778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7;
+modelBundleSha256 101e3cb937dbb606e3e431872c593f6a11978e83973c86f54e3931c9d36e0e8e;
+43 transitive files; local proportional matrix passed
 ```
 
 Resultatet er et syntetisk kontrakt-, regressions- og følsomhedsbevis. Det er ikke fundkalibrering, måler ikke fundpræcision og dokumenterer ikke, at modellen empirisk finder rav bedre. Auditsporet læser eller lagrer ikke private produktionspayloads, koordinater, geometri eller rå U/V.
+
+### Aktiv state-6-evidenskontrakt
+
+State 6 skal ud over de historiske scenarier bevise følgende:
+
+- obligatorisk direkte inputmissing giver `UNAVAILABLE`, `score=null` og `scoreBounds=null`; ingen interpolation, carry eller nabolån må skabe en score,
+- ufuldstændig historik med gyldige direkte input giver `HISTORY_INCOMPLETE`, hvor vist `score` er `scoreBounds.lower`, `upper >= lower`, faste reason-id'er/coverage følger resultatet og `calibrationEligible=false`,
+- det aktive currentvindue er 48 timer; op til 168 timers forskningsretention ændrer ikke score eller readiness,
+- bølgemobiliseringens ukendte hale lukkes først efter 288 timer, mens last-mile-approachens usikkerhedshale og migrationsreplay afgrænses ved 40 timer med højst `1/1024` udeladt momentandel,
+- ved 288 timers bølgemobiliserings-closure nulstilles scoringens wave-mobilisation-track konservativt til lower-bound-sporet; ved 40 timers last-mile-closure vælges minimum-factor-sporet. Den separate fysiske/rollback-point-state bevares,
+- `conservativeResetAt` gør closure synlig. Senere historikhuller åbner nye bounds fra dette konservative scoringsspor,
+- `FULL_HISTORY` kan derfor have semantikken `EXACT_POINT_SCORE` eller `CONSERVATIVE_TAIL_RESET_POINT_SCORE`. Begge har kollapsede bounds og kan være kalibreringsegnede, men sidstnævnte er en fast konservativ modelpolitik — ikke fysisk eksakt state,
+- state-løs recovery skal bevise `bounded-private-48h-history-cold-replay-v3` med `expectedCausalPositionCount=48`, faktisk complete/unknown-count og `historyTransition`; 48/48 giver `VERIFIED_CAUSAL_HISTORY_WINDOW`, kortere/gappede forløb `UNKNOWN_HISTORY_INTERVAL`, men alle er `HISTORY_INCOMPLETE` indtil 288-timers closure,
+- manuel Candidate G-rollback må kun projicere en eksakt `READY`/`memoryReady` Candidate G-ejet mode-score som `FULL_HISTORY` + `EXACT_POINT_SCORE` med collapsed bounds/coverage 48; non-READY/mismatch skal afvises, og `calibrationEligible=false` skal bestå,
+- numerisk score sorteres altid først; `FULL_HISTORY` vinder kun ved eksakt scorelighed, før de eksisterende retnings-/vand-/tidsregler,
+- schema-5 accepteres kun gennem `integrated-schema5-ready-point-to-schema6-history-bounds-v1` fra den eksakte historiske, aldrig offentlige releasekandidat; aktiv state/cache/checkpoint er schema 6.
+
+Det offentlige datasæt `rr-20260830091913-210` var frisk og komplet som 210/673, men Candidate G havde 0 aktive zoner og 210 `unavailable`, fordi 673/673 dele manglede tilstrækkelig sammenhængende strømhistorik. Det er reel regressionsevidens for den gamle kontrakts prognoseudfald. Det er ikke bevis for state 6, fordi datasættet fortsat kørte Candidate G.
 
 To P1-type-/proveniensfund indgår nu som negative regressionskrav. Et verificeret DMI- eller Copernicus-U/V-par skal selv danne den kanoniske fart til 0,01 m/s og toward-retning; modstridende cached fart/retning må ikke påvirke score, og afrundet 360° bliver 0°. Desuden skal numeriske strenge, booleans, arrays og objekter afvises gennem model, state, migration, recovery, privat runtime og offentlig projektion. Disse er integritetsbeviser, ikke fysisk fundvalidering, og slutpakken genkøres efter bundle-regeneration.
 
@@ -33,7 +57,7 @@ To P1-type-/proveniensfund indgår nu som negative regressionskrav. Et verificer
 
 Auditten skelner nu eksplicit mellem to forskellige slags syntetisk evidens:
 
-1. **Parret kronologisk state-replay:** Candidate G's schema-2-pipeline og den integrerede schema-5-pipeline køres over de samme syntetiske timeobservationer med identiske tidsstempler. Denne del tester faktisk kronologi, 48-timershukommelse, migration og continuation. De historiske 24 parrede checkpoints nedenfor tilhører den tidligere neutral-last-mile-audit og må ikke alene kaldes bevis for 1.1.0; 1.1.0 kræver den særskilte wave-approach-regression og en afsluttende regeneration.
+1. **Historisk parret kronologisk state-replay:** Candidate G's schema-2-pipeline og den aldrig offentlige integrerede schema-5-releasekandidat blev kørt over de samme syntetiske timeobservationer med identiske tidsstempler. Denne del tester faktisk kronologi, 48-timershukommelse, migration og continuation og genbruges som regression, men er ikke state-6-slutbevis.
 2. **Frosne komponent-kontrafaktiske sammenligninger:** 12 scenarier × strand/waders giver 24 par, men her indsprøjtes på forhånd fastlagte syntetiske transport- og mobiliseringspotentialer. De er nyttige til isoleret score- og vægtanalyse, men er **ikke** et kronologisk state-replay og tælles ikke som sådan.
 
 Kun den første del dokumenterer old-vs-new-adfærd gennem begge statepipelines. Ingen del bruger fund eller nul-fund.
@@ -42,9 +66,9 @@ Den automatiske audit omfatter:
 
 - et parret state-replay med 24 checkpoints/48 individuelle modelevalueringer,
 - præcis 47-/48-timersgrænse for strømvinduet,
-- Candidate G schema 2 → integreret schema 5 v4-migration med genvægtning af forseglet, signeret kystnormal currentevidens og en afgrænset privat 40-timers wave-approach-bootstrap,
+- historisk Candidate G schema 2 → aldrig offentlig integreret schema 5 v4-migration med genvægtning af forseglet, signeret kystnormal currentevidens og en afgrænset privat 40-timers wave-approach-bootstrap; state 6 bruger v5-migrationen og den særskilte eksakte 5→6-ready-migration,
 - ét samlet run og et delt run med byte-identisk continuation-state,
-- eksakt Candidate G-mobiliseringsoracle mod schema-5-feltet `rollbackCandidateGMobilisationPotential` på hver behandlet replayrække,
+- eksakt Candidate G-mobiliseringsoracle mod den historiske schema-5-releasekandidats felt `rollbackCandidateGMobilisationPotential` på hver behandlet replayrække,
 - 1-, 3- og 4-timers verificerede gap,
 - eksplicit missing og efterfølgende recovery,
 - strømstyrker ved `±0,030`, lige over deadband ved `±0,031` og fuld styrke ved `±0,150 m/s`,
@@ -65,7 +89,7 @@ Den automatiske audit omfatter:
 
 Det generelle parrede kronologireplay starter med 49 ægte syntetiske timepunkter over præcis 48 timer. Candidate G og den integrerede model modtager samme strømstyrke, verificeringsstatus, bølgehøjde, bølgeperiode, bølgeretning, vind og tidsstempel ved hvert parret checkpoint. Det er et datasikkert state-/score-replay, ikke migrationskilden i produktion.
 
-Den særskilte v4-migrationstest validerer i stedet Candidate G's forseglet signerede, allerede afledte kystnormale currentstyrke og genvægter den gennem den integrerede currentkerne. Rå U/V læses eller kopieres ikke, og testen påstår ikke lighed med en genberegning fra rå strømvektorer. Wave-approach bygges af præcis 40 private præ-target-positioner. Den udeladte EWMA-hale er højst `1/1024`, og den konservative rå-scorefejl er højst `0.01171875` før afrunding. Acquisitionkontrakten kræver ét coherent WAM-run pr. anvendt collection, same-cell native provenance og tillader kun et WAM-gap mellem native endepunkter højst fire timer fra hinanden inden for samme run, collection, gitter og celle. Aggregate-gaten kræver 673 gyldige schema-2-states og ét fælles kanonisk target; ellers forbliver Candidate G offentlig. Der dannes ingen syntetisk eller offentlig migrationshistorik.
+Den historiske v4-migrationstest validerer i stedet Candidate G's forseglet signerede, allerede afledte kystnormale currentstyrke og genvægter den gennem den aldrig offentlige schema-5-releasekandidats currentkerne. Rå U/V læses eller kopieres ikke, og testen påstår ikke lighed med en genberegning fra rå strømvektorer. Wave-approach bygges af præcis 40 private præ-target-positioner. Den udeladte EWMA-hale er højst `1/1024`, og den konservative rå-scorefejl er højst `0.01171875` før afrunding. Acquisitionkontrakten kræver ét coherent WAM-run pr. anvendt collection, same-cell native provenance og tillader kun et WAM-gap mellem native endepunkter højst fire timer fra hinanden inden for samme run, collection, gitter og celle. Aggregate-gaten kræver 673 gyldige schema-2-states og ét fælles kanonisk target; ellers forbliver Candidate G offentlig. Der dannes ingen syntetisk eller offentlig migrationshistorik. Den aktive state-6-migration er v5 og skal genbevise de samme privacy-/proveniensinvariants.
 
 Ved 47 timers dækning var begge strømstates ikke klar. Ved 48 timer var begge klar med potentiale 100. Den gamle evaluator kan teknisk returnere et tal fra en ikke-klar Candidate G-state, men auditten tæller det ikke som en pipelinebundet offentlig score; readiness er en separat nødvendig gate.
 
@@ -79,9 +103,9 @@ Ved 47 timers dækning var begge strømstates ikke klar. Ved 48 timer var begge 
 | 1 time efter pålandsvending | 10 | 10 | 43 | 48 | Begge strømstates reagerer kausalt |
 | 4 timer efter pålandsvending | 40 | 40 | 62 | 63 | Fortsat identiske strømstates |
 | 1 timers verificeret gap | 100 | 100 | 88 | 88 | Begge klar |
-| 3 timers verificeret gap | 100 | 100 | 90 | 88 | Begge strømstates klar; schema 5 viser `RECOVERED_SHORT_GAP` og krediterer højst én bølgetime |
-| 4 timers verificeret gap | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 5: `WINDOW_HAS_TIME_GAP` og `RESTARTED_AFTER_GAP` |
-| Missing strøm og bølge | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 5 viser `MISSING_INPUT`; ingen skjult build |
+| 3 timers verificeret gap | 100 | 100 | 90 | 88 | Historisk schema-5-releasekandidat: `RECOVERED_SHORT_GAP` og højst én bølgetime |
+| 4 timers verificeret gap | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Historisk schema-5-releasekandidat: `WINDOW_HAS_TIME_GAP` og `RESTARTED_AFTER_GAP`; state 6 skal i stedet skelne historikgap fra direkte inputmissing |
+| Missing strøm og bølge | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Historisk schema-5-releasekandidat: `MISSING_INPUT`; state 6 bevarer `UNAVAILABLE` for direkte missing |
 | Første gyldige time efter missing | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Bølgen er `RECOVERED_SHORT_GAP`; strømmen forbliver lukket, mens missing ligger i vinduet |
 
 Ved `0,030 m/s` var styrken nul på begge sider af kystnormalen. Ved `0,031 m/s` begyndte en lille kontinuert effekt, og ved `0,150 m/s` var styrken fuld. Candidate G og den integrerede strømstate gav samme potentiale i alle seks grænsecheckpoints.
@@ -90,7 +114,7 @@ Det ubrudte 18-timers vending/reversal-forløb blev desuden delt efter otte samp
 
 ### Mobiliseringsoracle for rollback
 
-Den integrerede schema-5-state fører en særskilt, score-neutral rollbackværdi. Auditgaten kræver med eksakt numerisk lighed — ikke afrundet lighed eller tolerance — at hver Candidate G-rækkes `mobilisationPotential` svarer til schema-5-rækkens `rollbackCandidateGMobilisationPotential`.
+Den historiske, aldrig offentlige schema-5-state fører en særskilt, score-neutral rollbackværdi. Auditgaten kræver med eksakt numerisk lighed — ikke afrundet lighed eller tolerance — at hver Candidate G-rækkes `mobilisationPotential` svarer til schema-5-rækkens `rollbackCandidateGMobilisationPotential`. State 6 bevarer samme rollbackoracle under den nye v3-rollbackkontrakt.
 
 Gaten kontrollerede 96 producerede rækkesammenligninger. Tallet omfatter både one-shot- og split-run-gennemløb og derfor bevidste gentagelser af det samme syntetiske forløb. Dækningen omfatter specifikt:
 
@@ -98,16 +122,16 @@ Gaten kontrollerede 96 producerede rækkesammenligninger. Tallet omfatter både 
 - alle efterfølgende timer frem til og over 48-timersgrænsen,
 - placeholder-missing og den første gyldige time efter missing,
 - 4-timers langt gap uden indskudte placeholdertimer,
-- schema-2 → schema-5-migrationen,
+- den historiske schema-2 → aldrig offentlig schema-5-migration,
 - begge segmenter af split-run og den afsluttende continuation-state.
 
-Som negativ kontrol blev den første migrerede schema-5-rækkes rollbackpotentiale ændret syntetisk med `0,001`. Den samme rollbackgate afviste mutationen. Kontrollen ændrer kun et lokalt syntetisk auditobjekt og aldrig produktionsstate.
+Som negativ kontrol blev den første migrerede række i den historiske schema-5-releasekandidat ændret syntetisk med `0,001`. Den samme rollbackgate afviste mutationen. Kontrollen ændrer kun et lokalt syntetisk auditobjekt og aldrig produktionsstate.
 
 ### Operationel rollback er en særskilt releasegate
 
-Det numeriske rollbackoracle er ikke i sig selv tilladelse til at skifte offentlig model. Den varme Candidate G-projektion ligger kun i den beskyttede fulde runtime som `ravScoreCandidateGRollback`. Et manuelt skift kræver controlleren `ravscore-operational-model-activation` med schema `ravscore-operational-model-activation-v3`. `CANDIDATE_G_ROLLBACK` skriver `CANDIDATE_G_PENDING` med kilde-/målmanifesthash og bevarer den integrerede centrale profil under Candidate G-Pages-deploy; først efter eksakt offentlig implementation+210/673 sætter én RPC samtidigt `CANDIDATE_G_ACTIVE` og central Candidate G-profil. Manuel `INTEGRATED_RETURN` bruger `INTEGRATED_PENDING` efter samme source/target/reconcile. Retry completer ved targethash, aborterer/rekonsoliderer ved sourcehash og forbliver fail-closed ved en tredje hash. Scheduler må kun `CANDIDATE_G_REFRESH` på allerede aktiv Candidate G. Der deployes ingen særskilt Candidate G-assistent-Edge; den integrerede Edge svarer `409`, klienten bruger deterministiske lokale DA/DE/EN-svar, og schema-3-ture lagres Candidate G-bundet med `calibration_eligible=false`.
+Det numeriske rollbackoracle er ikke i sig selv tilladelse til at skifte offentlig model. Den varme Candidate G-projektion ligger kun i den beskyttede fulde runtime som `ravScoreCandidateGRollback`. Et manuelt skift kræver controlleren `ravscore-operational-model-activation` med schema `ravscore-operational-model-activation-v3`. `CANDIDATE_G_ROLLBACK` skriver `CANDIDATE_G_PENDING` med kilde-/målmanifesthash og bevarer den integrerede centrale profil under Candidate G-Pages-deploy; først efter eksakt offentlig implementation+210/673 sætter én RPC samtidigt `CANDIDATE_G_ACTIVE` og central Candidate G-profil. Manuel `INTEGRATED_RETURN` bruger `INTEGRATED_PENDING` efter samme source/target/reconcile. Retry completer ved targethash, aborterer/rekonsoliderer ved sourcehash og forbliver fail-closed ved en tredje hash. Scheduler må kun `CANDIDATE_G_REFRESH` på allerede aktiv Candidate G. Kun den eksakte `READY`/`memoryReady` Candidate G-runtime må i denne manuelle tilstand projicere sin egen mode-score som exact full-history med collapsed bounds, coverage 48 og tomme reasons; non-READY/mismatch afvises, og `calibration_eligible=false` består. Der deployes ingen særskilt Candidate G-assistent-Edge; den integrerede Edge svarer `409`, og klienten bruger deterministiske lokale DA/DE/EN-svar.
 
-Candidate G-rollbackbundlen har sin egen parameterkontrakt-SHA og transitive implementeringsbundle-SHA. Slutværdierne afventer regeneration på den afsluttede head. Lokal kontrakt- og fault-injection-evidens må ikke kaldes exact-head-, central-, deploy- eller offentlig produktionsverifikation.
+Candidate G-rollbackbundlen har sin egen `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og transitive 54-filers `modelBundleSha256=fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207`. Same-reference protected-checkpointtests beviser lokalt, at både `generationSha256` og hele den validerede `candidateGRollbackCompanion` sammenlignes før mutation, og at divergens stopper fail-closed med bevaret eksisterende state. Lokal kontrakt- og fault-injection-evidens må ikke kaldes exact-head-, central-, deploy- eller offentlig produktionsverifikation.
 
 Af de 24 kronologiske par havde 20 en pipelinebundet score fra begge modeller. Fire par var bevidst utilgængelige ved 47-timers warmup, 4-timers gap, missing og den efterfølgende strøm-recovery, hvor det manglende punkt stadig lå i 48-timersvinduet. For de 20 sammenlignelige par var den syntetiske middelændring `+5,150`, minimum `−2` og maksimum `+42`. Disse tal beskriver kun de valgte syntetiske checkpoints.
 
@@ -254,8 +278,8 @@ Den målrettede 1.1.0-regression skal og kan uden private data bevise:
 - kun `waveHeightM=0` er eksakt roligt og neutralt; `wavePeriodS` er stadig finit/ikke-negativ, og positiv højde med nulperiode er `INVALID`/fail-closed,
 - aktiv energi uden retning fejler lukket,
 - normal-, tangent- og aktivitetsmomenter er kausale over fire timer,
-- one-shot og split-run giver byte-identisk schema-5 continuation,
-- Candidate G-migrationen validerer og genvægter eksakt forseglet signeret kystnormal evidens uden rå U/V, bruger præcis 40 private præ-target-positioner til wave-approach, afgrænser udeladt hale til `1/1024` og konservativ rå-scorefejl til `0.01171875`, kræver 673/common-target og coherent same-cell WAM-proveniens og bruger den virkelige targetrække én gang; ægte state-løs cold start er fortsat den særskilte 48-timersbro.
+  - one-shot og split-run gav byte-identisk continuation i den historiske, aldrig offentlige schema-5-releasekandidat og skal genbevises for schema 6,
+- Candidate G-migrationen validerer og genvægter eksakt forseglet signeret kystnormal evidens uden rå U/V, bruger præcis 40 private præ-target-positioner til wave-approach, afgrænser udeladt hale til `1/1024` og konservativ rå-scorefejl til `0.01171875`, kræver 673/common-target og coherent same-cell WAM-proveniens og bruger den virkelige targetrække én gang; ægte state-løs cold start er den særskilte `bounded-private-48h-history-cold-replay-v3` og bliver ikke full efter 48 timer.
 
 `physicalDeliveryResolved` forbliver falsk, strukturel usikkerhed er altid sand, og et numerisk fysisk interval er `null`. 0–15 % er en bounded modelprior, ikke en fysisk rav-landingsandel. Rainville et al. 2026 (`10.1029/2025JC022422`) støtter alene, at brydende bølger kan give flydende objekter landværts surfingtransport; det er en buoyant-object-analogi, ikke ravkalibrering. Aagaard et al. 2002 (`10.1016/S0025-3227(02)00193-7`), Jalón-Rojas et al. 2025 (`10.5194/gmd-18-319-2025`) og Lofty et al. 2023 (`10.1016/j.watres.2023.120329`) viser fortsat, hvorfor lokal morfologi og partikelstate ikke er løst af prioren.
 
@@ -299,9 +323,9 @@ Auditten understøtter følgende kontraktmæssige forbedringer:
 - Vandstand forklares uden scorepoint eller dobbelttælling.
 - Native cadencehold tilføjer hverken bevægelse eller kunstig historik.
 - Candidate G’s godkendte strand-/waders-jagtbarhed er bevaret præcist.
-- Schema-5's særskilte rollbackmobilisering reproducerer Candidate G-oraklet eksakt i hele det kronologiske spor og i split-run.
+- Den historiske, aldrig offentlige schema-5-releasekandidats særskilte rollbackmobilisering reproducerede Candidate G-oraklet eksakt i hele det kronologiske spor og i split-run; state-6-v3-rollbacken skal bevare dette oracle.
 - Det tidligere `5,25 %`-design er fanget og forkastet før cutover.
-- Genuine cold start bruger eksakt 48 private, verificerede pre-target-timer og derefter den virkelige targetrække; Candidate G-rollback beregnes for samme tid uden dobbelt credit.
+- Genuine cold start bruger 0–48 private, verificerede pre-target-timer og derefter den virkelige targetrække og er fortsat `HISTORY_INCOMPLETE`, også ved 48 timer, fordi wave-mobilisationshalen først lukkes konservativt efter 288 timers kausal recovery. `FULL_HISTORY` kommer fra denne closure eller en attestert migration/continuation; Candidate G-rollback beregnes for samme tid uden dobbelt credit.
 - Samme-model emergency accepterer kun én atomisk, komplet og hashverificeret 210/673-pakke, højst 72 timer og aldrig efter `validUntil`; cross-model/reconstructed/tampered state afvises, og ture bliver ikke-kalibreringsegnede.
 - DEC-0109-apply blev opgivet før mutation/publicering. Den afgrænsede reconstructed-kontrakt bevares kun som negativ trust-/privacy-/rollbackregression.
 

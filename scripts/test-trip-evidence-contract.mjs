@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
+  HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
   UNATTESTED_RAVSCORE_QUALITY_FLAG,
@@ -105,6 +106,17 @@ const calibrationFeatures = createCalibrationFeatureSnapshot({
   modelBinding: publicBinding,
   appVersion: '4.0.242',
   totalScore: 63,
+  scoreBoundLower:63,
+  scoreBoundUpper:63,
+  scoreBoundModelUncertaintyPoints:0,
+  scoreBoundRawLower:63,
+  scoreBoundRawUpper:63,
+  scoreQuality:'FULL_HISTORY',
+  scoreSemantics:'EXACT_POINT_SCORE',
+  scoreCalibrationEligible:true,
+  conservativeTailResetApplied:false,
+  historyCoverageHours:48,
+  historyReasonCodes:[],
   huntabilityScore: 74,
   transportScore: 61,
   mobilisationScore: 58,
@@ -459,6 +471,13 @@ const freshCoastalPart = {
     time: '2026-08-21T03:00:00.000Z',
     waders: {
       score: 63,
+      scoreQuality: 'FULL_HISTORY',
+      scoreBounds:{lower:63,upper:63,modelUncertaintyPoints:0,rawLower:63,rawUpper:63},
+      scoreSemantics:'EXACT_POINT_SCORE',
+      calibrationEligible:true,
+      conservativeTailResetApplied:false,
+      historyCoverageHours:48,
+      historyReasonCodes:[],
       components: { huntability: 74, transport: 61, release: 58 },
       modelBinding: publicBinding,
     },
@@ -482,6 +501,39 @@ assert.equal(publicStart.calibrationFeatures.waterLevelM, 0.22);
 assert.equal(publicStart.calibrationFeatures.waterLevelTrendM3h, -0.08);
 assert.equal(publicStart.calibrationFeatures.mobilisationScore, 58);
 assert.equal(publicStart.forecastSnapshot.validAt, '2026-08-21T03:00:00.000Z');
+const historyIncompleteStart = createTripStartFromPublicState({
+  ...publicStartInput,
+  tripId: '56565656-5656-4565-8565-565656565656',
+  coastalPart: {
+    ...freshCoastalPart,
+    current: {
+      ...freshCoastalPart.current,
+      waders: {
+        ...freshCoastalPart.current.waders,
+        scoreQuality: 'HISTORY_INCOMPLETE',
+        scoreBounds:{lower:63,upper:77,modelUncertaintyPoints:14,rawLower:63,rawUpper:77},
+        scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+        calibrationEligible:false,
+        conservativeTailResetApplied:false,
+        historyCoverageHours:19,
+        historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+      },
+    },
+  },
+});
+assert.deepEqual(historyIncompleteStart.dataQualityFlags, [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG]);
+assert.equal(historyIncompleteStart.forecastCalibrationEligible, false);
+assert.ok(historyIncompleteStart.calibrationFeatures.reasonCodes.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG));
+assert.equal(historyIncompleteStart.calibrationFeatures.scoreQuality,'HISTORY_INCOMPLETE');
+assert.equal(historyIncompleteStart.calibrationFeatures.scoreSemantics,
+  'CONSERVATIVE_ENCLOSING_LOWER_BOUND');
+assert.deepEqual({
+  lower:historyIncompleteStart.calibrationFeatures.scoreBoundLower,
+  upper:historyIncompleteStart.calibrationFeatures.scoreBoundUpper,
+  span:historyIncompleteStart.calibrationFeatures.scoreBoundModelUncertaintyPoints,
+},{lower:63,upper:77,span:14});
+assert.deepEqual(historyIncompleteStart.calibrationFeatures.historyReasonCodes,
+  ['CURRENT_HISTORY_INCOMPLETE']);
 assert.throws(() => createTripStartFromPublicState({
   ...publicStartInput,
   zoneId: 'zone-99',
@@ -786,17 +838,44 @@ assert.equal(toObservationTripColumns(noFind).result, 'none');
 for (const dataQualityFlags of [
   [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG],
   [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG],
+  [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG],
+  [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG],
   [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, RECONSTRUCTED_RAVSCORE_QUALITY_FLAG],
   [UNATTESTED_RAVSCORE_QUALITY_FLAG]
 ]) {
+  const historyIncomplete=dataQualityFlags.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG);
+  const qualityFeatures=historyIncomplete?{
+    ...calibrationFeatures,
+    scoreQuality:'HISTORY_INCOMPLETE',
+    scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    scoreCalibrationEligible:false,
+    scoreBoundUpper:77,
+    scoreBoundModelUncertaintyPoints:14,
+    scoreBoundRawUpper:77,
+    historyCoverageHours:19,
+    historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+  }:calibrationFeatures;
   const nonCalibration = buildTripEvidence({
     ...input,
     forecastCalibrationEligible: false,
     dataQualityFlags,
-    calibrationFeatures: { ...calibrationFeatures, reasonCodes: [...calibrationFeatures.reasonCodes, ...dataQualityFlags] }
+    calibrationFeatures: { ...qualityFeatures, reasonCodes: [...qualityFeatures.reasonCodes, ...dataQualityFlags] }
   });
   assert.equal(nonCalibration.calibrationEligible, false);
   assert.deepEqual(toObservationTripColumns(nonCalibration).data_quality_flags, dataQualityFlags);
+}
+for(const mutate of [
+  features=>{delete features.scoreSemantics;},
+  features=>{features.scoreBoundUpper=62;},
+  features=>{features.scoreBoundModelUncertaintyPoints=1;},
+  features=>{features.historyCoverageHours=47;},
+  features=>{features.conservativeTailResetApplied=true;},
+]){
+  const forged=structuredClone(calibrationFeatures);
+  mutate(forged);
+  assert.throws(()=>buildTripEvidence({...input,calibrationFeatures:forged}),
+    /score|Score|mangler|ugyldig|SCORE_/,
+    'manglende eller forfalskede immutable scorequality-felter skal afvises');
 }
 assert.throws(() => buildTripEvidence({
   ...input,

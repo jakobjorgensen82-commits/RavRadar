@@ -93,7 +93,41 @@ const tiedRows = [
 ].sort(compareNationalRankingRows);
 assert.equal(tiedRows[0].zone.id, 'smal-fuld-stoette', 'Støttevurderingen skal fortsat afgøre den reelle områdescore.');
 
-const completeComponents = score => ({ huntability: score, transport: score, release: score });
+const completeComponents = score => ({
+  huntability: score,
+  transport: score,
+  release: score,
+});
+const fullHistory = score => ({
+  scoreQuality: 'FULL_HISTORY', calibrationEligible: true,
+  scoreSemantics: 'EXACT_POINT_SCORE', conservativeTailResetApplied: false,
+  scoreBounds: {
+    lower: score, upper: score, modelUncertaintyPoints: 0,
+    rawLower: score, rawUpper: score,
+  },
+  historyCoverageHours: 48, historyReasonCodes: [],
+});
+const completeModeScore = (score, partId, name) => {
+  const history = fullHistory(score);
+  return {
+    ...history,
+    available: true,
+    status: 'whole-zone',
+    score,
+    components: completeComponents(score),
+    comparisonPartCount: 1,
+    winningPartId: partId,
+    winningPartName: name,
+    winningPartUncertain: false,
+    possibleWinningPartCount: 1,
+    possibleWinningParts: [{
+      partId,
+      name,
+      score,
+      scoreBounds: { ...history.scoreBounds },
+    }],
+  };
+};
 const modeSpecificCoastalParts = {
   enabled: true,
   generatedAt: '2026-08-25T09:00:00.000Z',
@@ -108,13 +142,13 @@ const modeSpecificCoastalParts = {
       hourly: [
         {
           time: '2026-08-25T09:00:00.000Z',
-          waders: { status: 'whole-zone', score: 90, components: completeComponents(90), comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
-          beach: { status: 'whole-zone', score: 30, components: completeComponents(30), comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          waders: completeModeScore(90, 'zone-a-part', 'A'),
+          beach: completeModeScore(30, 'zone-a-part', 'A'),
         },
         {
           time: '2026-08-25T10:00:00.000Z',
-          waders: { status: 'whole-zone', score: 85, components: completeComponents(85), comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
-          beach: { status: 'whole-zone', score: 35, components: completeComponents(35), comparisonPartCount: 1, winningPartId: 'zone-a-part', winningPartName: 'A' },
+          waders: completeModeScore(85, 'zone-a-part', 'A'),
+          beach: completeModeScore(35, 'zone-a-part', 'A'),
         },
       ],
     },
@@ -124,13 +158,13 @@ const modeSpecificCoastalParts = {
       hourly: [
         {
           time: '2026-08-25T09:00:00.000Z',
-          waders: { status: 'whole-zone', score: 40, components: completeComponents(40), comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
-          beach: { status: 'whole-zone', score: 80, components: completeComponents(80), comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          waders: completeModeScore(40, 'zone-b-part', 'B'),
+          beach: completeModeScore(80, 'zone-b-part', 'B'),
         },
         {
           time: '2026-08-25T10:00:00.000Z',
-          waders: { status: 'whole-zone', score: 45, components: completeComponents(45), comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
-          beach: { status: 'whole-zone', score: 75, components: completeComponents(75), comparisonPartCount: 1, winningPartId: 'zone-b-part', winningPartName: 'B' },
+          waders: completeModeScore(45, 'zone-b-part', 'B'),
+          beach: completeModeScore(75, 'zone-b-part', 'B'),
         },
       ],
     },

@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
+  RAVSCORE_HISTORY_UNCERTAINTY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
@@ -13,6 +14,7 @@ import {
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
   RAVSCORE_RECOVERY_POLICY,
+  RAVSCORE_SCORE_QUALITY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   RAVSCORE_WEIGHTS,
@@ -24,6 +26,7 @@ import {
 } from './build-ravscore-model-bundle.mjs';
 import {
   buildCurrentSupplyMemory,
+  buildCurrentSupplyScoreBounds,
   currentSupplyAgePrimitive,
   currentSupplyStrength,
   replayCurrentSupplyEvidence,
@@ -912,8 +915,6 @@ function lastMileSensitivityAudit() {
   const scoreRows = [];
   for (const mode of ['beach', 'waders']) {
     for (const item of approachCases) {
-      const missingEnergy = item.id === 'MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN';
-      const invalidEnergy = item.id === 'INVALID_POSITIVE_HEIGHT_ZERO_PERIOD';
       const result = evaluateRavScoreIntegrated({
         mode,
         zone: { onshoreDirectionDeg: 90 },
@@ -924,15 +925,12 @@ function lastMileSensitivityAudit() {
         },
       }, {
         state: readyState(100, 75, {
-          lastMileState: missingEnergy || invalidEnergy
-            ? {
-              lastMileMemoryReady: false,
-              lastMileMemoryStatus: 'MISSING_INPUT',
-              lastMileEvidenceStatus: invalidEnergy
-                ? 'WAVE_PHYSICS_INVALID'
-                : 'WAVE_PHYSICS_MISSING',
-            }
-            : lastMileStateForWaveDirection(item.waveDirectionDeg),
+          // Keep the historical point state valid so each negative case reaches
+          // the intended direct score-hour weather gate. Invalid historical
+          // state is covered independently above.
+          lastMileState: lastMileStateForWaveDirection(
+            Number.isFinite(item.waveDirectionDeg) ? item.waveDirectionDeg : 270,
+          ),
         }),
       });
       const expectedAvailable = ['KNOWN_ONSHORE', 'KNOWN_CROSS', 'KNOWN_OFFSHORE']
@@ -1151,13 +1149,18 @@ function evaluateChronologicalPair({
       mobilisationPotential: round(integratedRow.mobilisationPotential),
       rollbackCandidateGMobilisationPotential: round(rollbackMobilisationPotential),
       evaluatorAvailable: integrated.available === true,
-      pipelineBoundScoreAvailable: integratedPipelineReady && integrated.available === true,
+      pipelineBoundScoreAvailable: integrated.available === true,
       score: integrated.available === true ? integrated.score : null,
       reason: integrated.available === true ? null : integrated.reason,
+      scoreQuality: integrated.scoreQuality,
+      calibrationEligible: integrated.calibrationEligible,
+      scoreBounds: integrated.scoreBounds,
+      historyCoverageHours: integrated.historyCoverageHours,
+      historyReasonCodes: integrated.historyReasonCodes,
     },
     rollbackMobilisationExactParity:
       candidateRow.mobilisationPotential === rollbackMobilisationPotential,
-    scoreDelta: candidatePipelineReady && integratedPipelineReady
+    scoreDelta: candidatePipelineReady
       && candidate.available === true && integrated.available === true
       ? integrated.score - candidate.score
       : null,
@@ -1404,10 +1407,31 @@ function chronologicalPairedReplayAudit() {
   const gap3 = pairs.find(item => item.checkpointId === 'gap-3h');
   const gap4 = pairs.find(item => item.checkpointId === 'gap-4h');
   assert.equal(gap1.integrated.pipelineReady, true);
-  assert.equal(gap3.integrated.pipelineReady, true);
+  assert.equal(gap1.integrated.currentStatus, 'READY');
+  // The current kernel expects explicit hourly evidence. An unattested three-hour
+  // jump therefore contains two unknown hours: it may still expose a bounded
+  // HISTORY_INCOMPLETE score, but it must not claim a ready point state merely
+  // because the independent wave state can recover the short gap.
+  assert.equal(gap3.integrated.pipelineReady, false);
+  assert.equal(gap3.integrated.currentStatus, 'WINDOW_HAS_TIME_GAP');
+  assert.equal(gap3.integrated.waveStatus, 'RECOVERED_SHORT_GAP');
+  assert.equal(gap3.integrated.evaluatorAvailable, true);
+  assert.equal(gap3.integrated.calibrationEligible, false);
+  assert.equal(gap3.integrated.historyCoverageHours, 46);
+  assert.ok(gap3.integrated.historyReasonCodes.includes('CURRENT_HISTORY_TIME_GAP'));
+  assert.ok(gap3.integrated.scoreBounds.lower < gap3.integrated.scoreBounds.upper);
   assert.equal(gap4.integrated.pipelineReady, false);
   assert.equal(gap4.integrated.currentStatus, 'WINDOW_HAS_TIME_GAP');
   assert.equal(gap4.integrated.waveStatus, 'COLD_START');
+  // A 48-hour cold start proves the current kernel, but it cannot invent the
+  // older pre-start wave-memory tail. It must therefore score conservatively
+  // until that bounded uncertainty has decayed out.
+  assert.equal(gap1.integrated.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+  assert.equal(gap3.integrated.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+  assert.equal(gap4.integrated.evaluatorAvailable, true);
+  assert.equal(gap4.integrated.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+  assert.equal(gap4.integrated.calibrationEligible, false);
+  assert.ok(gap4.integrated.scoreBounds.lower <= gap4.integrated.scoreBounds.upper);
 
   const missingSamples = [
     chronologicalSample(1, {
@@ -1441,8 +1465,16 @@ function chronologicalPairedReplayAudit() {
     .integrated.pipelineReady, false);
   assert.equal(pairs.find(item => item.checkpointId === 'missing-input')
     .integrated.waveStatus, 'MISSING_INPUT');
+  assert.equal(pairs.find(item => item.checkpointId === 'missing-input')
+    .integrated.evaluatorAvailable, false);
+  assert.equal(pairs.find(item => item.checkpointId === 'missing-input')
+    .integrated.scoreQuality, RAVSCORE_SCORE_QUALITY.UNAVAILABLE);
   assert.equal(pairs.find(item => item.checkpointId === 'one-hour-recovery')
     .integrated.waveStatus, 'RECOVERED_SHORT_GAP');
+  assert.equal(pairs.find(item => item.checkpointId === 'one-hour-recovery')
+    .integrated.evaluatorAvailable, true);
+  assert.equal(pairs.find(item => item.checkpointId === 'one-hour-recovery')
+    .integrated.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
 
   const boundarySamples = [
     chronologicalSample(1, { normalCurrentMps: 0.03 }),
@@ -1500,7 +1532,7 @@ function chronologicalPairedReplayAudit() {
     pairedComparisonCount: pairs.length,
     individualModelEvaluationCount: pairs.length * 2,
     identicalSyntheticInputTimelineForBothModels: true,
-    candidateGSchema2ToIntegratedSchema4MigrationExercised: true,
+    candidateGSchema2ToIntegratedSchema6MigrationExercised: true,
     splitRunByteEquivalentToOneShot: true,
     rollbackCandidateGMobilisationExactParity: true,
     rollbackMobilisationParityRowCheckCount: [
@@ -1532,6 +1564,408 @@ function chronologicalPairedReplayAudit() {
       maximum: Math.max(...comparable.map(item => item.scoreDelta)),
     },
     rows: pairs,
+  };
+}
+
+function evaluateIntegratedHistoryRow(sample, row, mode) {
+  const evaluated = evaluateRavScoreIntegrated(
+    chronologicalContext(sample, mode),
+    { state: row },
+  );
+  return {
+    available: evaluated.available === true,
+    score: evaluated.available === true ? evaluated.score : null,
+    reason: evaluated.available === true ? null : evaluated.reason,
+    scoreQuality: evaluated.scoreQuality,
+    scoreSemantics: evaluated.scoreSemantics,
+    conservativeTailResetApplied: evaluated.conservativeTailResetApplied,
+    calibrationEligible: evaluated.calibrationEligible,
+    scoreBounds: evaluated.scoreBounds,
+    historyCoverageHours: evaluated.historyCoverageHours,
+    historyReasonCodes: evaluated.historyReasonCodes,
+  };
+}
+
+function assertIncompleteEnclosesFull(full, incomplete, label) {
+  assert.equal(full.available, true, `${label}: full-history score must be available`);
+  assert.equal(full.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+    `${label}: comparison oracle must have full history`);
+  assert.equal(full.calibrationEligible, true,
+    `${label}: full-history oracle must be calibration-eligible`);
+  assert.equal(incomplete.available, true,
+    `${label}: historical gap must retain a numeric score`);
+  assert.equal(incomplete.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE,
+    `${label}: historical gap must be explicit`);
+  assert.equal(incomplete.calibrationEligible, false,
+    `${label}: bounded historical score must be excluded from calibration`);
+  assert.equal(incomplete.scoreSemantics, 'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    `${label}: bounded historical score must identify its conservative semantics`);
+  assert.equal(incomplete.score, incomplete.scoreBounds.lower,
+    `${label}: public score must be the conservative lower bound`);
+  assert.ok(incomplete.scoreBounds.lower <= full.score,
+    `${label}: lower bound must not exceed the hidden complete-history score`);
+  assert.ok(incomplete.scoreBounds.upper >= full.score,
+    `${label}: upper bound must enclose the hidden complete-history score`);
+  assert.ok(incomplete.scoreBounds.lower <= incomplete.scoreBounds.upper,
+    `${label}: score bounds must be ordered`);
+}
+
+function historyIncompleteAudit() {
+  // A 12-day exact synthetic warm-up removes the deliberately bounded unknown
+  // pre-start wave tail. This is an offline oracle only; production never
+  // fabricates such history and may instead expose HISTORY_INCOMPLETE.
+  const warmupSamples = Array.from({
+    length: RAVSCORE_HISTORY_UNCERTAINTY_POLICY
+      .mobilisationUncertaintyTruncationHours + 1,
+  }, (_, index) => chronologicalSample(
+    index - RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationUncertaintyTruncationHours,
+    {
+      normalCurrentMps: index % 18 < 12 ? 0.12 : -0.06,
+      waveHeightM: index % 24 < 12 ? 1.4 : 0.65,
+      wavePeriodS: index % 24 < 12 ? 8 : 6,
+      waveDirectionDeg: index % 36 < 24 ? 270 : 225,
+    },
+  ));
+  const warmup = buildIntegratedRavScoreStateSeries(warmupSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+  });
+  const warmupTarget = evaluateIntegratedHistoryRow(
+    warmupSamples.at(-1),
+    warmup.rows.at(-1),
+    'beach',
+  );
+  assert.equal(warmupTarget.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY);
+  assert.equal(warmupTarget.scoreBounds.lower, warmupTarget.scoreBounds.upper);
+  assert.equal(warmupTarget.conservativeTailResetApplied, true,
+    'a causally truncated cold-start tail must remain identified after its bounds close');
+
+  const completeSamples = Array.from({ length: 49 }, (_, index) =>
+    chronologicalSample(index + 1, {
+      normalCurrentMps: index % 10 < 7 ? 0.11 : -0.07,
+      waveHeightM: index % 16 < 8 ? 1.5 : 0.75,
+      wavePeriodS: index % 16 < 8 ? 8 : 6,
+      waveDirectionDeg: index % 20 < 14 ? 270 : 225,
+    }));
+  const complete = buildIntegratedRavScoreStateSeries(completeSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: warmup.continuationState,
+  });
+
+  const currentGapSamples = completeSamples.map((sample, index) =>
+    index === 24
+      ? { ...sample, currentSpeedMps: null, currentAlignment: null, currentVerified: false }
+      : { ...sample });
+  const currentGap = buildIntegratedRavScoreStateSeries(currentGapSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: warmup.continuationState,
+  });
+
+  const targetSample = completeSamples.at(-1);
+  const currentGapModes = {};
+  for (const mode of ['beach', 'waders']) {
+    const full = evaluateIntegratedHistoryRow(targetSample, complete.rows.at(-1), mode);
+    const incomplete = evaluateIntegratedHistoryRow(
+      targetSample,
+      currentGap.rows.at(-1),
+      mode,
+    );
+    assertIncompleteEnclosesFull(full, incomplete, `historical current gap/${mode}`);
+    assert.ok(incomplete.historyReasonCodes.includes('CURRENT_HISTORY_MISSING_EVIDENCE'));
+    currentGapModes[mode] = { full, incomplete };
+  }
+  assert.equal(currentGapModes.beach.incomplete.historyCoverageHours, 47,
+    'one explicitly missing current hour must remain visible even when saturation collapses its score bounds');
+  assert.equal(currentGapModes.beach.incomplete.conservativeTailResetApplied, true,
+    'an independent current gap must preserve an already closed conservative wave-tail reset');
+
+  const boundedPatternDefinitions = [
+    {
+      id: 'multiple-current-components-missing',
+      mutate: (sample, index) => [4, 17, 31].includes(index)
+        ? {
+            ...sample,
+            currentSpeedMps: null,
+            currentAlignment: null,
+            currentVerified: false,
+          }
+        : sample,
+    },
+    {
+      id: 'multiple-wave-energy-components-missing',
+      mutate: (sample, index) => [7, 18, 37].includes(index)
+        ? {
+            ...sample,
+            waveHeightM: null,
+            wavePeriodS: null,
+            waveDirectionDeg: null,
+          }
+        : sample,
+    },
+    {
+      id: 'wave-direction-only-missing',
+      mutate: (sample, index) => [5, 16, 28, 40].includes(index)
+        ? { ...sample, waveDirectionDeg: null }
+        : sample,
+    },
+    {
+      id: 'whole-hour-positions-absent',
+      mutate: (sample, index) => [9, 10, 22, 35].includes(index) ? null : sample,
+    },
+    {
+      id: 'mixed-component-and-position-gaps',
+      mutate: (sample, index) => {
+        if ([12, 13].includes(index)) return null;
+        if ([3, 26].includes(index)) {
+          return {
+            ...sample,
+            currentSpeedMps: null,
+            currentAlignment: null,
+            currentVerified: false,
+          };
+        }
+        if ([19, 38].includes(index)) {
+          return {
+            ...sample,
+            waveHeightM: null,
+            wavePeriodS: null,
+            waveDirectionDeg: null,
+          };
+        }
+        return sample;
+      },
+    },
+  ];
+  const boundedPatternResults = [];
+  for (const definition of boundedPatternDefinitions) {
+    const samples = completeSamples
+      .map((sample, index) => definition.mutate({ ...sample }, index))
+      .filter(Boolean);
+    assert.equal(samples.at(-1).time, targetSample.time,
+      definition.id + ': direct target row must remain present');
+    const replay = buildIntegratedRavScoreStateSeries(samples, {
+      samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+      onshoreDirectionDeg: 90,
+      initialState: warmup.continuationState,
+    });
+    const modes = {};
+    for (const mode of ['beach', 'waders']) {
+      const full = evaluateIntegratedHistoryRow(targetSample, complete.rows.at(-1), mode);
+      const incomplete = evaluateIntegratedHistoryRow(
+        targetSample,
+        replay.rows.at(-1),
+        mode,
+      );
+      assertIncompleteEnclosesFull(full, incomplete, definition.id + '/' + mode);
+      modes[mode] = { full, incomplete };
+    }
+    boundedPatternResults.push({
+      id: definition.id,
+      replayedPositionCount: samples.length,
+      omittedPositionCount: completeSamples.length - samples.length,
+      modes,
+    });
+  }
+
+  const currentRecoverySamples = Array.from({ length: 26 }, (_, index) =>
+    chronologicalSample(index + 50, {
+      normalCurrentMps: 0.11,
+      waveHeightM: 0.9,
+      wavePeriodS: 7,
+      waveDirectionDeg: 270,
+    }));
+  const currentRecovery = buildIntegratedRavScoreStateSeries(currentRecoverySamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: currentGap.continuationState,
+  });
+  const currentRecovered = evaluateIntegratedHistoryRow(
+    currentRecoverySamples.at(-1),
+    currentRecovery.rows.at(-1),
+    'beach',
+  );
+  assert.equal(currentRecovered.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+    'current history warning must clear after the unknown interval leaves 48 hours');
+  assert.equal(currentRecovered.scoreSemantics, 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+  assert.equal(currentRecovered.conservativeTailResetApplied, true,
+    'closing a current-history gap must not erase the independent conservative wave-tail track');
+  assert.deepEqual(currentRecovered.historyReasonCodes, []);
+  assert.equal(currentRecovered.scoreBounds.lower, currentRecovered.scoreBounds.upper);
+
+  const directMissingSample = chronologicalSample(50, {
+    normalCurrentMps: null,
+    currentVerified: false,
+    waveHeightM: 0.9,
+    wavePeriodS: 7,
+    waveDirectionDeg: 270,
+  });
+  const directMissing = buildIntegratedRavScoreStateSeries([directMissingSample], {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: complete.continuationState,
+  });
+  const directMissingEvaluation = evaluateIntegratedHistoryRow(
+    directMissingSample,
+    directMissing.rows[0],
+    'beach',
+  );
+  assert.equal(directMissingEvaluation.available, false);
+  assert.equal(directMissingEvaluation.scoreQuality, RAVSCORE_SCORE_QUALITY.UNAVAILABLE);
+  assert.equal(directMissingEvaluation.score, null);
+  const directRecoverySample = chronologicalSample(51, {
+    normalCurrentMps: 0.11,
+    waveHeightM: 0.9,
+    wavePeriodS: 7,
+    waveDirectionDeg: 270,
+  });
+  const directRecovery = buildIntegratedRavScoreStateSeries([directRecoverySample], {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: directMissing.continuationState,
+  });
+  const directRecoveredEvaluation = evaluateIntegratedHistoryRow(
+    directRecoverySample,
+    directRecovery.rows[0],
+    'beach',
+  );
+  assert.equal(directRecoveredEvaluation.available, true);
+  assert.equal(
+    directRecoveredEvaluation.scoreQuality,
+    RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE,
+  );
+
+  const waveGapSamples = completeSamples.map((sample, index) =>
+    index === 24
+      ? {
+          ...sample,
+          waveHeightM: null,
+          wavePeriodS: null,
+          waveDirectionDeg: null,
+        }
+      : { ...sample });
+  const waveGap = buildIntegratedRavScoreStateSeries(waveGapSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: warmup.continuationState,
+  });
+  const waveGapModes = {};
+  for (const mode of ['beach', 'waders']) {
+    const full = evaluateIntegratedHistoryRow(targetSample, complete.rows.at(-1), mode);
+    const incomplete = evaluateIntegratedHistoryRow(targetSample, waveGap.rows.at(-1), mode);
+    assertIncompleteEnclosesFull(full, incomplete, `historical wave gap/${mode}`);
+    assert.ok(incomplete.historyReasonCodes.includes(
+      'WAVE_MOBILISATION_HISTORY_INCOMPLETE',
+    ));
+    assert.ok(incomplete.historyReasonCodes.includes('LAST_MILE_HISTORY_INCOMPLETE'));
+    waveGapModes[mode] = { full, incomplete };
+  }
+  assert.equal(waveGapModes.beach.incomplete.conservativeTailResetApplied, false,
+    'a new wave gap must reopen, not retain, the previous wave-tail closure marker');
+
+  const lastMileTailSamples = Array.from({ length: 16 }, (_, index) =>
+    chronologicalSample(index + 50, {
+      normalCurrentMps: 0.11,
+      waveHeightM: 0.9,
+      wavePeriodS: 7,
+      waveDirectionDeg: 270,
+    }));
+  const lastMileTail = buildIntegratedRavScoreStateSeries(lastMileTailSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: waveGap.continuationState,
+  });
+  const afterLastMileTail = evaluateIntegratedHistoryRow(
+    lastMileTailSamples.at(-1),
+    lastMileTail.rows.at(-1),
+    'beach',
+  );
+  assert.equal(afterLastMileTail.scoreQuality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+  assert.ok(afterLastMileTail.historyReasonCodes.includes(
+    'WAVE_MOBILISATION_HISTORY_INCOMPLETE',
+  ));
+  assert.equal(afterLastMileTail.historyReasonCodes.includes(
+    'LAST_MILE_HISTORY_INCOMPLETE',
+  ), false, 'the bounded last-mile tail must close after 40 verified hours');
+
+  const waveTailSamples = Array.from({
+    length: RAVSCORE_HISTORY_UNCERTAINTY_POLICY
+      .mobilisationUncertaintyTruncationHours - 40,
+  }, (_, index) => chronologicalSample(index + 66, {
+    normalCurrentMps: 0.11,
+    waveHeightM: 0.9,
+    wavePeriodS: 7,
+    waveDirectionDeg: 270,
+  }));
+  const waveTail = buildIntegratedRavScoreStateSeries(waveTailSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: lastMileTail.continuationState,
+  });
+  const fullTailSamples = [...lastMileTailSamples, ...waveTailSamples];
+  const fullTail = buildIntegratedRavScoreStateSeries(fullTailSamples, {
+    samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
+    initialState: complete.continuationState,
+  });
+  const tailResetModes = {};
+  for (const mode of ['beach', 'waders']) {
+    const exact = evaluateIntegratedHistoryRow(
+      fullTailSamples.at(-1),
+      fullTail.rows.at(-1),
+      mode,
+    );
+    const reset = evaluateIntegratedHistoryRow(
+      waveTailSamples.at(-1),
+      waveTail.rows.at(-1),
+      mode,
+    );
+    assert.equal(exact.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+      `wave-tail exact oracle/${mode}: full history must be available`);
+    assert.equal(exact.scoreSemantics, 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+    assert.equal(exact.conservativeTailResetApplied, true,
+      `wave-tail comparison oracle/${mode}: inherited cold-start tail provenance must persist`);
+    assert.deepEqual(exact.historyReasonCodes, []);
+    assert.equal(reset.scoreQuality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY,
+      `wave-tail reset/${mode}: warning must clear at the declared truncation`);
+    assert.equal(reset.scoreSemantics, 'CONSERVATIVE_TAIL_RESET_POINT_SCORE');
+    assert.equal(reset.conservativeTailResetApplied, true);
+    assert.equal(reset.scoreBounds.lower, reset.scoreBounds.upper);
+    assert.ok(reset.score <= exact.score,
+      `wave-tail reset/${mode}: conservative closure must not exceed the hidden exact oracle`);
+    tailResetModes[mode] = { exact, reset };
+  }
+
+  return {
+    syntheticWarmupHours:
+      RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationUncertaintyTruncationHours,
+    currentGap: {
+      gapHour: 25,
+      evaluatedHour: 49,
+      modes: currentGapModes,
+      warningClearedAtHour: 75,
+      recovered: currentRecovered,
+    },
+    deterministicBoundedPatterns: boundedPatternResults,
+    directScoreHourMissing: {
+      missingHour: 50,
+      missing: directMissingEvaluation,
+      nextVerifiedHour: 51,
+      recovered: directRecoveredEvaluation,
+    },
+    waveGap: {
+      gapHour: 25,
+      evaluatedHour: 49,
+      modes: waveGapModes,
+      lastMileTailClosedAtHour: 65,
+      afterLastMileTail,
+      waveTailClosedAtHour: waveTailSamples.length
+        ? (Date.parse(waveTailSamples.at(-1).time) - BASE_TIME_MS) / HOUR_MS
+        : null,
+      recovered: tailResetModes.beach.reset,
+      tailResetModes,
+    },
   };
 }
 
@@ -1583,6 +2017,23 @@ function availabilityAndCadenceAudit() {
   const missing = buildCurrentSupplyMemory(withMissing, { referenceTime: isoAtHour(0) });
   const withLargeGap = completeEvidence.filter((item, index) => index < 20 || index > 24);
   const gap = buildCurrentSupplyMemory(withLargeGap, { referenceTime: isoAtHour(0) });
+  const reducedGapEvidence = completeEvidence.map((item, index) => ({
+    ...item,
+    strength: index >= 34 && index <= 38 ? 1
+      : index === 40 ? -1
+        : index === 41 ? 1
+          : 0,
+  }));
+  const sparseReducedGapEvidence = reducedGapEvidence
+    .filter(item => item.time !== isoAtHour(-8));
+  const sparseReducedGapBounds = buildCurrentSupplyScoreBounds(
+    sparseReducedGapEvidence,
+    { referenceTime: isoAtHour(0) },
+  );
+  const sparseReducedGapMemory = buildCurrentSupplyMemory(
+    sparseReducedGapEvidence,
+    { referenceTime: isoAtHour(0) },
+  );
   assert.equal(ready.status, 'READY');
   assert.equal(nativeHold.status, 'READY_NATIVE_HOLD');
   assert.equal(nativeHold.supplyPotential, ready.supplyPotential,
@@ -1590,6 +2041,59 @@ function availabilityAndCadenceAudit() {
   assert.equal(tooLongHold.status, 'LATEST_SAMPLE_GAP');
   assert.equal(missing.status, 'WINDOW_HAS_MISSING_EVIDENCE');
   assert.equal(gap.status, 'WINDOW_HAS_TIME_GAP');
+  assert.equal(sparseReducedGapMemory.status, 'WINDOW_HAS_TIME_GAP');
+  assert.equal(sparseReducedGapBounds.quality, RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE);
+  assert.equal(sparseReducedGapBounds.coverageHours, 47);
+  assert.equal(sparseReducedGapBounds.unknownHours, 1);
+  const scenario = SCENARIOS[0];
+  const scoreEnclosureByMode = {};
+  for (const mode of ['beach', 'waders']) {
+    const scoreAtSupply = supplyPotential => evaluateRavScoreIntegrated({
+      mode,
+      zone: { onshoreDirectionDeg: 90 },
+      weather: weatherFor(scenario),
+    }, {
+      state: readyState(supplyPotential, scenario.mobilisation, {
+        waveDirectionDeg: scenario.waveFrom,
+      }),
+    }).score;
+    const endpointScores = [
+      scoreAtSupply(sparseReducedGapBounds.lowerPotential),
+      scoreAtSupply(sparseReducedGapBounds.upperPotential),
+    ];
+    const scoreLower = Math.min(...endpointScores);
+    const scoreUpper = Math.max(...endpointScores);
+    let completionCount = 0;
+    for (let index = 0; index <= 40; index += 1) {
+      const hiddenStrength = -1 + index / 20;
+      const completionEvidence = reducedGapEvidence.map(item => (
+        item.time === isoAtHour(-8) ? { ...item, strength: hiddenStrength } : item
+      ));
+      const completionMemory = buildCurrentSupplyMemory(completionEvidence, {
+        referenceTime: isoAtHour(0),
+      });
+      const completionBounds = buildCurrentSupplyScoreBounds(completionEvidence, {
+        referenceTime: isoAtHour(0),
+      });
+      assert.equal(completionMemory.memoryReady, true);
+      assert.equal(completionBounds.quality, RAVSCORE_SCORE_QUALITY.FULL_HISTORY);
+      assert.ok(
+        completionMemory.supplyPotential >= sparseReducedGapBounds.lowerPotential - 1e-9
+          && completionMemory.supplyPotential <= sparseReducedGapBounds.upperPotential + 1e-9,
+        `offline current completion ${hiddenStrength} escaped its incomplete bounds`,
+      );
+      assert.ok(
+        completionBounds.lowerPotential >= sparseReducedGapBounds.lowerPotential - 1e-9
+          && completionBounds.upperPotential <= sparseReducedGapBounds.upperPotential + 1e-9,
+        `offline completion ${hiddenStrength} was not nested in its parent bounds`,
+      );
+      const completionScore = scoreAtSupply(completionMemory.supplyPotential);
+      assert.ok(completionScore >= scoreLower && completionScore <= scoreUpper,
+        `offline ${mode} score completion ${hiddenStrength} escaped rounded score bounds`);
+      completionCount += 1;
+    }
+    scoreEnclosureByMode[mode] = { scoreLower, scoreUpper, completionCount };
+  }
 
   const wave = buildRavScoreWaveMobilisationStateSeries([
     { time: isoAtHour(0), waveHeightM: 1, wavePeriodS: 7 },
@@ -1613,7 +2117,6 @@ function availabilityAndCadenceAudit() {
   assert.ok(wave.rows[4].creditedDurationHours
     <= RAVSCORE_WAVE_MOBILISATION_POLICY.maximumBuildCreditAfterMissingOrGapHours);
 
-  const scenario = SCENARIOS[0];
   const missingCurrent = evaluateRavScoreIntegrated({
     mode: 'beach',
     zone: { onshoreDirectionDeg: 90 },
@@ -1641,6 +2144,13 @@ function availabilityAndCadenceAudit() {
       tooLongHoldStatus: tooLongHold.status,
       missingStatus: missing.status,
       largeGapStatus: gap.status,
+      reducedGapEnclosure: {
+        coverageHours: sparseReducedGapBounds.coverageHours,
+        unknownHours: sparseReducedGapBounds.unknownHours,
+        lowerPotential: round(sparseReducedGapBounds.lowerPotential),
+        upperPotential: round(sparseReducedGapBounds.upperPotential),
+        scoreEnclosureByMode,
+      },
     },
     wave: wave.rows.map(item => ({
       hour: (Date.parse(item.time) - BASE_TIME_MS) / HOUR_MS,
@@ -1697,6 +2207,30 @@ async function runAudit() {
   assert.equal(RAVSCORE_CURRENT_SUPPLY_POLICY.outboundPointsPerEffectiveHour, 8);
   assert.equal(RAVSCORE_CURRENT_SUPPLY_POLICY.fullWeightHours, 24);
   assert.equal(RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours, 48);
+  assert.equal(RAVSCORE_HISTORY_UNCERTAINTY_POLICY.activeCurrentWindowHours, 48);
+  assert.equal(RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionHours, 168);
+  assert.equal(RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionScoreEffect, 'NONE');
+  assert.equal(
+    RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationUncertaintyTruncationHours,
+    288,
+  );
+  assert.equal(
+    RAVSCORE_HISTORY_UNCERTAINTY_POLICY.mobilisationTailClosurePolicy,
+    'COLLAPSE_SCORING_TRACK_TO_LOWER_BOUND_KEEP_PHYSICAL_AND_ROLLBACK_POINT_STATE',
+  );
+  assert.equal(RAVSCORE_HISTORY_UNCERTAINTY_POLICY.lastMileUncertaintyTruncationHours, 40);
+  assert.equal(
+    RAVSCORE_HISTORY_UNCERTAINTY_POLICY.lastMileTailClosurePolicy,
+    'COLLAPSE_SCORING_TRACK_TO_MINIMUM_FACTOR_KEEP_PHYSICAL_POINT_STATE',
+  );
+  assert.equal(
+    RAVSCORE_HISTORY_UNCERTAINTY_POLICY.tailResetCalibrationPolicy,
+    'ELIGIBLE_AFTER_ACTIVE_BOUNDS_COLLAPSE_UNDER_FIXED_CONSERVATIVE_MODEL_POLICY',
+  );
+  assert.equal(
+    RAVSCORE_HISTORY_UNCERTAINTY_POLICY.directInputMissingPolicy,
+    'UNAVAILABLE_NO_INTERPOLATION_CARRY_OR_LOAN',
+  );
   assert.equal(RAVSCORE_WAVE_MOBILISATION_POLICY.buildHalfLifeHours, 4);
   assert.equal(RAVSCORE_WAVE_MOBILISATION_POLICY.decayHalfLifeHours, 48);
   assert.equal(RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare, 0.15);
@@ -1716,6 +2250,7 @@ async function runAudit() {
   const scenarioComparison = scenarioComparisonAudit();
   const inventoryCouplingAblation = inventoryCouplingAblationAudit(scenarioComparison);
   const chronologicalPairedReplay = chronologicalPairedReplayAudit();
+  const historyIncomplete = historyIncompleteAudit();
   const currentSensitivity = currentSensitivityAudit();
   const waveSensitivity = waveSensitivityAudit();
   const lastMileSensitivity = lastMileSensitivityAudit();
@@ -1724,7 +2259,7 @@ async function runAudit() {
   const huntability = huntabilityAudit();
 
   const report = {
-    schemaVersion: '1.0.0',
+    schemaVersion: '2.0.0',
     status: 'PASSED_SYNTHETIC_OFFLINE_CONTRACT_AND_SENSITIVITY_AUDIT',
     modelBinding: ravScoreModelBinding(),
     dynamicContractCheck: {
@@ -1739,6 +2274,7 @@ async function runAudit() {
     scenarioComparison,
     inventoryCouplingAblation,
     chronologicalPairedReplay,
+    historyIncomplete,
     currentSensitivity,
     waveSensitivity,
     lastMileSensitivity,
@@ -1759,12 +2295,20 @@ async function runAudit() {
         'MISSING_WAVE_ENERGY_FAILS_CLOSED',
         'FALLING_WATER_CAN_BE_EXPLAINED_WITHOUT DOUBLE_COUNTING_SCORE',
         'NATIVE_CADENCE_HOLD_ADDS_NO_MOVEMENT_OR_KERNEL_AGEING',
+        'HISTORICAL_GAPS_RETAIN_NUMERIC_LOWER_BOUND_SCORES_AND_FIVE_DAY_FORECASTS',
+        'HISTORY_INCOMPLETE_SCORES_ENCLOSE_THE_MATCHED_FULL_HISTORY_TRAJECTORY',
+        'EXPIRED_UNKNOWN_TAILS_COLLAPSE_TO_A_SEPARATE_CONSERVATIVE_SCORING_TRACK_WITHOUT_AN_UPWARD_SWITCH_TO_THE_DIAGNOSTIC_POINT_STATE',
+        'CONSERVATIVE_TAIL_RESET_SCORES_DO_NOT_EXCEED_MATCHED_EXACT_HISTORY_ORACLES_FOR_BEACH_OR_WADERS',
+        'DIRECT_SCORE_HOUR_INPUTS_REMAIN_FAIL_CLOSED_WITHOUT_INTERPOLATION_OR_CARRY',
+        'HISTORY_WARNING_CLEARS_AUTOMATICALLY_AFTER_DECLARED_UNCERTAINTY_WINDOWS',
+        'SEVEN_DAY_RESEARCH_RETENTION_HAS_NO_SCORE_EFFECT',
         'BEACH_AND_WADERS_HUNTABILITY_IS_PRESERVED',
       ],
       testedContractViolationsDetected: [],
       caughtAndResolvedRegressionFindings: [
         'THE_OLD_5_25_PERCENT_DELIVERY_PRIOR_WAS_REPLACED_BY_A_0_15_ATTENUATION_ONLY_PRIOR',
         'MISSING_OR_INVALID_WAVE_ENERGY_FAILS_CLOSED_INSTEAD_OF_BECOMING_CALM_EVIDENCE',
+        'UNATTESTED_ONE_HOUR_CURRENT_GAP_NO_LONGER_BORROWS_THE_NEXT_MEASUREMENT_BACKWARDS',
       ],
       behaviouralRisksAndUnresolvedQuestions: [
         'NONZERO_SCORE_AT_READY_ZERO_CURRENT_SUPPLY_IS_A_CONDITIONAL_OPPORTUNITY_INDEX_NOT_LOCAL_STOCK_EVIDENCE',

@@ -322,4 +322,3 @@ export function assertPublicRuntimeAvailability(value, manifest, options = {}) {
   }
   return true;
 }
-
