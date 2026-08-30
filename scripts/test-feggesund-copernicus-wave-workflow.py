@@ -20,6 +20,8 @@ assert "if: ${{ startsWith(inputs.year, 'feggesund:') }}" in text
 assert "mode:" not in text
 assert "target_hour:" not in text
 assert 'TARGET_HOUR="${PILOT_SELECTOR#feggesund:}"' in text
+assert "feggesund:*) ;;" in text
+assert "fegggesund" not in text
 assert "scripts/test-feggesund-copernicus-wave-pilot.py" in text
 assert "scripts/pilot-feggesund-copernicus-wave.py" in text
 assert "--target-hour \"$TARGET_HOUR\"" in text

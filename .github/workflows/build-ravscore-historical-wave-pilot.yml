@@ -145,7 +145,7 @@ jobs:
             .cache/ravscore-historical-candidate-f-comparison.json
             .cache/ravscore-historical-candidate-f-comparison.txt
 
-  fegggesund-wave-feasibility:
+  feggesund-wave-feasibility:
     if: ${{ startsWith(inputs.year, 'feggesund:') }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -179,7 +179,7 @@ jobs:
           PILOT_SELECTOR: ${{ inputs.year }}
         run: |
           case "$PILOT_SELECTOR" in
-            fegggesund:*) ;;
+            feggesund:*) ;;
             *) exit 1 ;;
           esac
           TARGET_HOUR="${PILOT_SELECTOR#feggesund:}"
@@ -268,7 +268,7 @@ jobs:
         if: always() && steps.privacy.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
-          name: fegggesund-copernicus-wave-feasibility-${{ github.run_number }}
+          name: feggesund-copernicus-wave-feasibility-${{ github.run_number }}
           if-no-files-found: error
           retention-days: 7
           path: |
