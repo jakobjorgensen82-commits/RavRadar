@@ -1,4 +1,5 @@
 import {
+  LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_EVIDENCE_SCHEMA_VERSION,
   completeTripEvidence,
   createTripStartRecord,
@@ -31,7 +32,8 @@ export function loadActiveTripEvidence(storage = null) {
   const target = resolveStorage(storage);
   const active = readJson(target, ACTIVE_KEY, null);
   if (active == null) return null;
-  if (active.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) {
+  if (![LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION, TRIP_EVIDENCE_SCHEMA_VERSION]
+    .includes(active.schemaVersion)) {
     throw new Error('Den aktive tur bruger en ukendt dataversion.');
   }
   const migrated = migrateLegacyUnattestedTripStart(active);

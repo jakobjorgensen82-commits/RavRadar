@@ -14,7 +14,10 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+try:
+    import numpy as np
+except ModuleNotFoundError:  # Credential-free cache checks use only stdlib paths.
+    np = None
 
 from .copernicus_target_identity import target_fingerprint as geometry_fingerprint
 
@@ -150,7 +153,7 @@ def verified_live_record_projection(entry: Any) -> bool:
 
 def utc_iso(value: Any) -> str:
     """Return a stable UTC timestamp for datetime/numpy/xarray values."""
-    if isinstance(value, np.datetime64):
+    if np is not None and isinstance(value, np.datetime64):
         text = np.datetime_as_string(value, unit="s")
         return f"{text}Z" if not text.endswith("Z") else text
     if isinstance(value, datetime):
@@ -228,6 +231,8 @@ def nearest_shared_uv(
     No interpolation, component merge, cross-cell merge or cross-layer merge is
     permitted.  The function expects one selected forecast time.
     """
+    if np is None:
+        raise RuntimeError("Copernicus numerical selection requires numpy")
     required = {"uo", "vo", "longitude", "latitude", "depth", "time"}
     missing = sorted(name for name in required if name not in dataset)
     if missing:
@@ -318,6 +323,8 @@ def nearest_shared_uv_times(
     present exactly; nearest-time selection, temporal interpolation and holding
     a vector across hours are forbidden.
     """
+    if np is None:
+        raise RuntimeError("Copernicus numerical selection requires numpy")
     raw_times = np.asarray(dataset["time"].values).reshape(-1) if "time" in dataset else np.asarray([])
     by_time: dict[str, int] = {}
     for index, raw_time in enumerate(raw_times):
@@ -512,7 +519,13 @@ def required_pairs_sha256(pairs: list[dict[str, Any]]) -> str:
 
 def validate_target_registry(document: Any) -> dict[str, Any]:
     registry = _require_exact_fields(document, TARGET_REGISTRY_FIELDS, "Copernicus range target registry")
-    if registry.get("schemaVersion") != 2 or registry.get("kind") != TARGET_REGISTRY_KIND:
+    schema_version = registry.get("schemaVersion")
+    if (
+        isinstance(schema_version, bool)
+        or not isinstance(schema_version, int)
+        or schema_version != 2
+        or registry.get("kind") != TARGET_REGISTRY_KIND
+    ):
         raise ValueError("Copernicus range target registry schema is invalid")
     if registry.get("matrixContractId") != MATRIX_CONTRACT_ID:
         raise ValueError("Copernicus range target registry matrix contract is invalid")
@@ -801,7 +814,11 @@ def _validate_collection(
     start, end = range_bounds(reference)
     if collection["rangeStartAt"] != utc_iso(start) or collection["rangeEndAt"] != utc_iso(end):
         raise ValueError("Copernicus coverage collection range is not exact -48..+117")
-    if collection["coldBridgeHours"] != COLD_BRIDGE_HOURS or collection["publicHourCount"] != PUBLIC_HOUR_COUNT:
+    horizon = (collection["coldBridgeHours"], collection["publicHourCount"])
+    if (
+        any(isinstance(value, bool) or not isinstance(value, int) for value in horizon)
+        or horizon != (COLD_BRIDGE_HOURS, PUBLIC_HOUR_COUNT)
+    ):
         raise ValueError("Copernicus coverage collection horizon is invalid")
     for field in ("targetRegistrySha256", "dmiCurrentInputSha256", "requiredPairsSha256", "recordRefsSha256"):
         if not valid_sha256(collection[field]):
@@ -872,8 +889,13 @@ def validate_shadow(
     require_collection: bool = False,
 ) -> dict[str, Any]:
     cache = _require_exact_fields(document, TOP_LEVEL_FIELDS, "Copernicus range cache")
+    integer_contract = (
+        cache["schemaVersion"], cache["retentionHours"],
+        cache["coldBridgeHours"], cache["publicHourCount"],
+    )
     if (
-        cache["schemaVersion"] != CACHE_SCHEMA_VERSION
+        any(isinstance(value, bool) or not isinstance(value, int) for value in integer_contract)
+        or cache["schemaVersion"] != CACHE_SCHEMA_VERSION
         or cache["kind"] != CACHE_KIND
         or cache["retentionHours"] != RETENTION_HOURS
         or cache["coldBridgeHours"] != COLD_BRIDGE_HOURS
@@ -950,6 +972,57 @@ def empty_shadow(updated_at: datetime) -> dict[str, Any]:
     }
 
 
+def validate_legacy_shadow_for_migration(document: Any) -> dict[str, Any]:
+    """Validate only the persisted schema-1 envelope used by the one-way bridge.
+
+    Schema 1 is never a range seal.  This validator merely establishes that an
+    old private cache is safe to inspect and that its rows/collections have the
+    container types the migration expects.  Individual rows are revalidated
+    against the stricter schema-2 source and target contracts below.
+    """
+    if not isinstance(document, dict):
+        raise ValueError("Legacy Copernicus cache is not an object")
+    schema_version = document.get("schemaVersion")
+    if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != 1:
+        raise ValueError("Legacy Copernicus cache schema is invalid")
+    retention_hours = document.get("retentionHours")
+    if (
+        isinstance(retention_hours, bool)
+        or not isinstance(retention_hours, int)
+        or retention_hours != RETENTION_HOURS
+    ):
+        raise ValueError("Legacy Copernicus cache retention is invalid")
+    if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
+        raise ValueError("Legacy Copernicus cache runtime metadata is unsafe")
+    if document.get("credentialsIncluded") not in (None, False):
+        raise ValueError("Legacy Copernicus cache credential metadata is unsafe")
+    if not isinstance(document.get("records"), list):
+        raise ValueError("Legacy Copernicus cache records are malformed")
+    if not isinstance(document.get("collections", []), list):
+        raise ValueError("Legacy Copernicus cache collections are malformed")
+    return document
+
+
+def _strict_legacy_record(raw: Any) -> dict[str, Any]:
+    if not isinstance(raw, dict):
+        raise ValueError("Legacy Copernicus record is not an object")
+    for field in ("partId", "parentZoneId", "source", "productId", "datasetId", "datasetVersion", "layerQuality"):
+        if not isinstance(raw.get(field), str) or not raw[field]:
+            raise ValueError(f"Legacy Copernicus record has invalid {field}")
+    if not _finite_pair(raw.get("samplingPoint")) or not _finite_pair(raw.get("gridPoint")):
+        raise ValueError("Legacy Copernicus record has invalid sampling or grid point")
+    for field in ("distanceKm", "verticalLayerM", "uMps", "vMps"):
+        value = raw.get(field)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            raise ValueError(f"Legacy Copernicus record has invalid {field}")
+    shared_layers = raw.get("sharedLayerCount")
+    if isinstance(shared_layers, bool) or not isinstance(shared_layers, int) or shared_layers < 1:
+        raise ValueError("Legacy Copernicus record has invalid shared-layer count")
+    if raw.get("componentPair") != COMPONENT_PAIR or raw.get("interpolation") is not False:
+        raise ValueError("Legacy Copernicus record violates same-time/cell/layer semantics")
+    return raw
+
+
 def _migrate_schema1_history(
     legacy: dict[str, Any],
     production_reference_at: datetime,
@@ -961,19 +1034,31 @@ def _migrate_schema1_history(
     digest is therefore explicitly bound to a legacy-only request contract and
     can never satisfy a current/future pair.
     """
+    legacy = validate_legacy_shadow_for_migration(legacy)
     migrated = empty_shadow(production_reference_at)
     lower = production_reference_at - timedelta(hours=RETENTION_HOURS)
+    migrated_acquisitions: dict[str, dict[str, Any]] = {}
+    migrated_records: dict[str, dict[str, Any]] = {}
     for raw in legacy.get("records") or []:
         try:
+            raw = _strict_legacy_record(raw)
             valid_time = _hour(raw.get("validTime"), "legacy record time")
-            captured_at = _parse_shadow_time(raw.get("capturedAt"))
+            # Schema 1 did not always persist per-row capture time.  Its
+            # cache-level updatedAt is the only persisted acquisition clock in
+            # that format.  The legacy-only request contract below makes this
+            # provenance limitation explicit and forbids current/future use.
+            captured_at = _parse_shadow_time(raw.get("capturedAt") or legacy.get("updatedAt"))
             source = str(raw.get("source") or "")
             target = targets.get(str(raw.get("partId") or "")) if targets is not None else {
                 "partId": str(raw.get("partId") or ""),
                 "parentZoneId": str(raw.get("parentZoneId") or ""),
                 "waterPoint": raw.get("samplingPoint"),
             }
-            if not (lower <= valid_time < production_reference_at) or target is None:
+            if (
+                not (lower <= valid_time < production_reference_at)
+                or captured_at > production_reference_at + timedelta(hours=FUTURE_ACQUISITION_FRESHNESS_HOURS)
+                or target is None
+            ):
                 continue
             contract = COPERNICUS_SOURCE_CONTRACTS[source]
             if tuple(raw.get(key) for key in ("productId", "datasetId", "datasetVersion")) != contract:
@@ -997,10 +1082,13 @@ def _migrate_schema1_history(
             _validate_record(record, {acquisition["acquisitionId"]: _validate_acquisition(acquisition)}, targets)
         except (KeyError, TypeError, ValueError):
             continue
-        migrated["acquisitions"].append(acquisition)
-        migrated["records"].append(record)
-    migrated["acquisitions"].sort(key=lambda row: row["acquisitionId"])
-    migrated["records"].sort(key=lambda row: (row["validTime"], row["partId"], row["recordId"]))
+        migrated_acquisitions[acquisition["acquisitionId"]] = acquisition
+        migrated_records[record["recordId"]] = record
+    migrated["acquisitions"] = [migrated_acquisitions[key] for key in sorted(migrated_acquisitions)]
+    migrated["records"] = sorted(
+        migrated_records.values(),
+        key=lambda row: (row["validTime"], row["partId"], row["recordId"]),
+    )
     validate_shadow(migrated, targets)
     return migrated
 
@@ -1014,10 +1102,17 @@ def load_shadow(
     if not path.exists():
         return empty_shadow(reference)
     document = json.loads(path.read_text(encoding="utf-8"))
-    if int(document.get("schemaVersion") or 0) == 1:
+    if (
+        isinstance(document.get("schemaVersion"), int)
+        and not isinstance(document.get("schemaVersion"), bool)
+        and document.get("schemaVersion") == 1
+    ):
         if production_reference_at is None:
             raise RuntimeError("Schema-1 Copernicus cache needs a locked production reference for safe history migration")
-        return _migrate_schema1_history(document, reference, target_identities)
+        try:
+            return _migrate_schema1_history(document, reference, target_identities)
+        except (TypeError, ValueError) as error:
+            raise RuntimeError(f"Invalid legacy Copernicus cache: {error}") from None
     try:
         return validate_shadow(document, target_identities)
     except (TypeError, ValueError) as error:

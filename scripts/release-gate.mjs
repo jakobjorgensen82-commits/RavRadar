@@ -99,7 +99,7 @@ for(const marker of ['0,03 m/s','0,15 m/s','48 timers','20 % søgeforhold','Chub
   ok(handbookTextLower.includes(marker.toLowerCase()),`Håndbogen mangler obligatorisk sporbarhedsmarkør: ${marker}`);
 }
 ok(handbookText.includes(RAVSCORE_MODEL_ID),'Håndbogen mangler den aktive integrerede RavScore-modelidentitet');
-ok(handbookTextLower.includes('schema 4')||handbookTextLower.includes('stateversion 4.0.0'),'Håndbogen mangler den integrerede state-/migrationskontrakt');
+ok(handbookTextLower.includes('schema 5')||handbookTextLower.includes('stateversion 5.0.0'),'Håndbogen mangler den integrerede state-/migrationskontrakt');
 const scoreEngine=await read('js/core/score-engine.js');
 for(const marker of ['huntability: 0.25','transport: 0.40','release: 0.35','current >= .15 && current <= .65','max: 28','max: 42','hours >= 3 && hours <= 18','nearshore-remobilisation','dominantPathway']){
   ok(scoreEngine.includes(marker),`Den historiske sammenligningsmotors forventede auditkonstant mangler: ${marker}`);
@@ -121,11 +121,11 @@ ok(integratedPublicModel.includes('outflowWholeScoreGateApplied: false'),
 ok(integratedStatePipeline.includes('CANDIDATE_G_STATE_SCHEMA_VERSION')
   && integratedStatePipeline.includes('migrationApplied')
   && integratedStatePipeline.includes('rollbackCandidateGMobilisationPotential'),
-'Schema-4-pipelinen mangler bundet Candidate G-migration og rollbackspor');
-ok(RAVSCORE_MODEL_ID==='RRS-COASTAL-PROCESS-INTEGRATED-1.0.0','Den aktive integrerede RavScore mangler sit faste model-id');
-ok(RAVSCORE_STATE_SCHEMA_VERSION==='4.0.0','Den aktive integrerede RavScore skal bruge state schema 4');
-ok(RAVSCORE_VARIANT_ID==='COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1','Den integrerede RavScore-variant er ikke låst');
-ok(RAVSCORE_PROFILE_ID==='cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3','Den integrerede RavScore-profil er ikke låst');
+'Schema-5-pipelinen mangler bundet Candidate G-migration og rollbackspor');
+ok(RAVSCORE_MODEL_ID==='RRS-COASTAL-PROCESS-INTEGRATED-1.1.0','Den aktive integrerede RavScore mangler sit faste model-id');
+ok(RAVSCORE_STATE_SCHEMA_VERSION==='5.0.0','Den aktive integrerede RavScore skal bruge state schema 5');
+ok(RAVSCORE_VARIANT_ID==='COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2','Den integrerede RavScore-variant er ikke låst');
+ok(RAVSCORE_PROFILE_ID==='cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4','Den integrerede RavScore-profil er ikke låst');
 ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_BUNDLE_SHA256),'Den integrerede RavScore mangler et gyldigt modelbundle-hash');
 ok(/^[0-9a-f]{64}$/.test(RAVSCORE_MODEL_CONTRACT_SHA256)
   && RAVSCORE_MODEL_CONTRACT_SHA256!==RAVSCORE_MODEL_BUNDLE_SHA256,
@@ -159,19 +159,28 @@ ok(RAVSCORE_WAVE_MOBILISATION_POLICY.buildHalfLifeHours===4
   && RAVSCORE_WAVE_MOBILISATION_POLICY.decayHalfLifeHours===48
   && RAVSCORE_WAVE_MOBILISATION_POLICY.maximumBuildCreditAfterMissingOrGapHours===1,
 'Den integrerede RavScore mangler den låste 4/48-timers mobiliseringskontrakt');
-ok(RAVSCORE_LAST_MILE_POLICY.deliveryFactor===1
-  && RAVSCORE_LAST_MILE_POLICY.scoreEffect==='NONE'
+ok(RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor===0.85
+  && RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor===1
+  && RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare===0.15
+  && RAVSCORE_LAST_MILE_POLICY.deliveryEquation
+    ==='DELIVERY_EQUALS_SUPPLY_TIMES_ONE_MINUS_0_15_TIMES_W_TIMES_ONE_MINUS_APPROACH'
+  && RAVSCORE_LAST_MILE_POLICY.scoreEffect==='BOUNDED_SUPPLY_ATTENUATION_ONLY'
   && RAVSCORE_LAST_MILE_POLICY.waveCanCreateSupply===false
+  && RAVSCORE_LAST_MILE_POLICY.waveCanIncreaseSupply===false
   && RAVSCORE_LAST_MILE_POLICY.structuralUncertaintyAlways===true
   && RAVSCORE_LAST_MILE_POLICY.numericPhysicalUncertaintyIntervalProvided===false
-  && RAVSCORE_LAST_MILE_POLICY.missingDirectionPolicy==='SCORE_NEUTRAL_DIRECTION_UNCERTAINTY',
-'Det uopløste sidste-nærkystled skal være score-neutralt og må ikke opfinde et numerisk fysisk interval');
+  && RAVSCORE_LAST_MILE_POLICY.physicalDeliveryResolved===false
+  && RAVSCORE_LAST_MILE_POLICY.coherenceScoreEffect==='NONE_UNCERTAINTY_AND_EXPLANATION_ONLY'
+  && RAVSCORE_LAST_MILE_POLICY.missingDirectionPolicy
+    ==='ACTIVE_WAVE_FAIL_CLOSED_EXACT_CALM_NEUTRAL',
+'Det uopløste sidste-nærkystled skal være begrænset til 0,85–1, fail-closed og må ikke opfinde et numerisk fysisk interval');
 ok(RAVSCORE_HUNTABILITY_POLICY.waterLevelScoreEffect===0
   && RAVSCORE_HUNTABILITY_POLICY.wadersFinalScoreCap===true
   && RAVSCORE_HUNTABILITY_POLICY.beachFinalScoreCap===false
   && RAVSCORE_HUNTABILITY_POLICY.requiredPhysicalInputs.windSpeedMps==='FINITE_NON_NEGATIVE_SCALAR'
   && RAVSCORE_HUNTABILITY_POLICY.requiredPhysicalInputs.waveHeightM==='FINITE_NON_NEGATIVE_SCALAR'
-  && RAVSCORE_WAVE_MOBILISATION_POLICY.requiredPhysicalInputs.wavePeriodS==='FINITE_NON_NEGATIVE_SCALAR',
+  && RAVSCORE_WAVE_MOBILISATION_POLICY.requiredPhysicalInputs.wavePeriodS
+    ==='FINITE_NON_NEGATIVE_SCALAR_AND_POSITIVE_WHEN_WAVE_HEIGHT_IS_POSITIVE',
 'Den integrerede jagtbarheds-/vandstandskontrakt er ændret');
 ok(RAVSCORE_MODEL_CONTRACT.componentSchemaId===RAVSCORE_COMPONENT_SCHEMA_ID
   && RAVSCORE_MODEL_CONTRACT.explanationSchemaId===RAVSCORE_EXPLANATION_SCHEMA_ID
@@ -191,8 +200,8 @@ ok(await exists('docs/rdks/10_DECISIONS/DEC-0016-HANDBOOK-REFERENCE-WORK.md'),'R
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0017-MULTIPLE-AMBER-PATHWAYS.md'),'RDKS mangler DEC-0017 om flere ravveje');
 ok(await exists('docs/rdks/10_DECISIONS/DEC-0018-ADMIN-PERSISTENCE-AND-AREA-INTEGRITY.md'),'RDKS mangler DEC-0018 om områdeintegritet og Supabase-persistens');
 const decisionFiles=await fs.readdir(path.join(root,'docs/rdks/10_DECISIONS'));
-ok(decisionFiles.includes('DEC-0108-RAVSCORE-INTEGRATED-COASTAL-PROCESS-MODEL.md'),
-'RDKS mangler den eksakte DEC-0108 om den integrerede RavScore-release');
+ok(decisionFiles.includes('DEC-0110-RAVSCORE-INTEGRATED-COASTAL-PROCESS-MODEL.md'),
+'RDKS mangler den eksakte DEC-0110 om den integrerede RavScore-release');
 
 const areaModel=await read('js/core/geographic-areas.js');
 for(const marker of ['Nordjyske østkyst','auditGeographicAreas','matchingZoneIds'])ok(areaModel.includes(marker),`Områdemodellen mangler ${marker}`);
@@ -258,13 +267,23 @@ for(const marker of [
   'test:ravscore-integrated-profile',
   'test:ravscore-continuation-checkpoint',
   'test:protected-ravscore-checkpoint',
+  'test:ravscore-model-binding',
 ]){
   ok(integratedTestChain.includes(marker),`Den samlede integrerede RavScore-testkæde mangler ${marker}`);
 }
+const integratedCoreChain=pkg.scripts['test:ravscore-integrated-core']??'';
+for(const marker of [
+  'test-ravscore-wave-approach-state.mjs',
+  'test-ravscore-last-mile-integrated-state.mjs',
+  'test-ravscore-last-mile-candidate-migration.mjs',
+]){
+  ok(integratedCoreChain.split(marker).length-1===1,
+  `Den integrerede core-kæde skal køre ${marker} præcis én gang`);
+}
 for(const [scriptName,required] of [
   ['test:score',['test:ravscore-integrated','test:ravscore-rollback-oracle']],
-  ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy']],
-  ['validate:source',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','release:gate']],
+  ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
+  ['validate:source',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
 ]){
   const chain=pkg.scripts[scriptName]??'';
   for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
@@ -323,6 +342,37 @@ for(const forbidden of ['central-runtime','profile-switch','public-shadow','publ
 }
 ok(!(pkg.scripts['test:workflow-action-contracts']??'').includes('test-ravscore-active-shadow-workflow'),
 'Workflowkontrakten må ikke bevare Candidate G som aktiv shadowmodel');
+const workflowActionChain=pkg.scripts['test:workflow-action-contracts']??'';
+ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
+  && workflowActionChain.includes('test:candidate-g-gap-retirement'),
+'Workflowkontrakten skal teste både den fælles dispatchmatrix og den permanente DEC-0109-pensionering');
+for(const retiredScript of [
+  'test:candidate-g-gap-reconstruction',
+  'test:candidate-g-gap-workflow',
+  'test:candidate-g-gap-contract',
+]){
+  ok(pkg.scripts[retiredScript]===undefined,`Det pensionerede script ${retiredScript} må ikke kunne køres`);
+}
+ok((pkg.scripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
+'DEC-0109 skal være beskyttet af den negative pensionsgate');
+ok((pkg.scripts['validate:source']??'').includes('test:workflow-action-contracts'),
+'Kildegaten skal nå DEC-0109-pensionsgaten gennem workflowkontrakten');
+const tripEvidenceChain=pkg.scripts['test:trip-evidence-contract']??'';
+ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')
+  && tripEvidenceChain.includes('test-candidate-g-trip-quality-storage-4.0.311.mjs'),
+'Turgrundlaget skal direkte teste både schema-3-modelbinding og trip-quality-lagringskontrakten');
+const hybridTripChain=pkg.scripts['test:hybrid-trip-storage']??'';
+for(const marker of [
+  'test-hybrid-trip-storage-4.0.287.mjs',
+  'test-trip-storage-migration-projection-4.0.311.mjs',
+  'test-trip-storage-legacy-classification-4.0.311.mjs',
+]){
+  ok(hybridTripChain.includes(marker),`Hybrid turlagring mangler direkte D1-/migrationsbevis: ${marker}`);
+}
+ok((pkg.scripts['test:ravscore-integrated-public']??'').includes('test:ravscore-public-browser-closure'),
+'Den integrerede public-kæde mangler browserclosure-kontrakten');
+ok((pkg.scripts['test:ravscore-integrated-profile']??'').includes('test:integrated-cutover-readiness'),
+'Den integrerede profilkæde mangler cutover-readiness-kontrakten');
 ok(!(pkg.scripts['test:coastal-geometry-v2']??'').includes('test-ravscore-active-shadow-workflow'),
 'Geometritesten må ikke genaktivere Candidate G-shadowjobbet');
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
@@ -345,9 +395,9 @@ for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 1
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
 }
 for(const marker of [
-  "status: 'ravscore-schema4-compact-continuation'",
+  "status: 'ravscore-schema5-compact-continuation'",
   'expectedPartCount: 673',
-  "cacheNamespace: 'ravscore-continuation-schema4-v2'",
+  "cacheNamespace: 'ravscore-continuation-schema5-v3'",
   'compactDerivedStateOnly: true',
   'weatherIncluded: false',
   'scoresIncluded: false',
@@ -359,7 +409,7 @@ for(const marker of [
   'checkpointMs > targetMs',
   'checkpointMs <= deployedMs',
 ]){
-  ok(continuationCheckpoint.includes(marker),`Schema-4 RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
+  ok(continuationCheckpoint.includes(marker),`Schema-5 RavScore-checkpointet mangler integritets-/privatlivskontrakten: ${marker}`);
 }
 for(const marker of [
   "'ravscore-continuation-checkpoint'",
@@ -428,7 +478,7 @@ const workflowPositions={
   privateRuntimeRestore:workflow.indexOf('name: Restore newest compatible private runtime from protected storage'),
   privateRuntimeVerify:workflow.indexOf('name: Verify and restore the private production runtime bundle'),
   privateRuntimeInstall:workflow.indexOf('name: Install only the allowlisted restored private runtime files'),
-  checkpointRestore:workflow.indexOf('name: Restore the latest compact schema-4 RavScore checkpoint'),
+  checkpointRestore:workflow.indexOf('name: Restore the latest compact schema-5 RavScore checkpoint'),
   protectedCheckpointRestore:workflow.indexOf('name: Restore protected compact RavScore checkpoint when cache is absent'),
   legacyBootstrapGate:workflow.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
   legacyBootstrapImport:workflow.indexOf('name: Import exact public Candidate G runtime only for first cutover'),
@@ -440,8 +490,8 @@ const workflowPositions={
   validate:workflow.indexOf('name: Validate full project after fresh weather and current provenance'),
   releaseGate:workflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:workflow.indexOf('name: Validate updated weather cache'),
-  checkpointBuild:workflow.indexOf('name: Build compact schema-4 RavScore continuation checkpoint after final gates'),
-  checkpointSave:workflow.indexOf('name: Save compact schema-4 RavScore continuation checkpoint after final gates'),
+  checkpointBuild:workflow.indexOf('name: Build compact schema-5 RavScore continuation checkpoint after final gates'),
+  checkpointSave:workflow.indexOf('name: Save compact schema-5 RavScore continuation checkpoint after final gates'),
   protectedCheckpointPublish:workflow.indexOf('name: Publish compact RavScore checkpoint to protected admin storage'),
   privateRuntimeSpec:workflow.indexOf('name: Build private production runtime bundle specification'),
   privateRuntimeCreate:workflow.indexOf('name: Create the next private production runtime bundle atomically'),
@@ -501,7 +551,7 @@ const checkpointRestoreSection=workflow.slice(workflowPositions.checkpointRestor
 for(const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/ravscore-continuation-checkpoint',
-  'ravscore-continuation-schema4-v2-',
+  'ravscore-continuation-schema5-v3-',
   "if: steps.private-runtime-state.outputs.available != 'true'",
   "if: steps.private-runtime-state.outputs.available != 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''",
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
@@ -510,11 +560,11 @@ for(const marker of [
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]){
-  ok(checkpointRestoreSection.includes(marker),`Protected schema-4 RavScore-restoren mangler ${marker}`);
+  ok(checkpointRestoreSection.includes(marker),`Protected schema-5 RavScore-restoren mangler ${marker}`);
 }
 ok(!checkpointRestoreSection.includes('node scripts/ravscore-continuation-checkpoint.mjs')
   && !checkpointRestoreSection.includes('--target data/live/conditions.json'),
-'Schema-4 checkpoint-restoren må ikke mutere conditions direkte');
+'Schema-5 checkpoint-restoren må ikke mutere conditions direkte');
 const legacyBootstrapSection=workflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.preflight);
 for(const marker of [
   'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
@@ -544,14 +594,14 @@ for(const marker of [
   '--save',
   '--source data/live/conditions.json',
   'uses: actions/cache/save@v6',
-  'ravscore-continuation-schema4-v2-${{ github.run_id }}-${{ github.run_attempt }}',
+  'ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}',
   'node scripts/protected-ravscore-continuation-checkpoint.mjs',
   '--publish',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
   'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
 ]){
-  ok(checkpointSaveSection.includes(marker),`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
+  ok(checkpointSaveSection.includes(marker),`Schema-5 RavScore-checkpointbevaringen mangler ${marker}`);
 }
 ok(!checkpointSaveSection.includes('continue-on-error'),'Protected checkpoint-publicering må ikke skjule fejl');
 const privateRuntimeSaveSection=workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.artifact);
@@ -600,7 +650,7 @@ for(const protectedPath of ['handbook.html','documentation.html','data/diagnosti
 }
 const pagesArtifactSection=workflow.slice(workflowPositions.artifact,workflowPositions.pagesPrivacyAudit);
 const expectedPagesLiveFiles=['coastal-parts-v2.json','manifest.json','public-condition-details.json','public-conditions.json'];
-const installedPagesLiveFiles=[...pagesArtifactSection.matchAll(/install -m 0644 data\/live\/([^\s]+) _site\/data\/live\/([^\s]+)/g)]
+const installedPagesLiveFiles=[...pagesArtifactSection.matchAll(/install -m 0644 "\$pages_source\/data\/live\/([^"\s]+)" "\$pages_destination\/data\/live\/([^"\s]+)"/g)]
   .map(match=>{
     ok(match[1]===match[2],`Pages-installationen må ikke omdøbe ${match[1]} til ${match[2]}`);
     return match[1];
@@ -608,10 +658,10 @@ const installedPagesLiveFiles=[...pagesArtifactSection.matchAll(/install -m 0644
   .sort();
 ok(JSON.stringify(installedPagesLiveFiles)===JSON.stringify(expectedPagesLiveFiles),
 `Pages-artifactets live-allowliste skal være præcis fire filer: ${installedPagesLiveFiles.join(', ')||'(ingen)'}`);
-const pagesLiveWriteLines=pagesArtifactSection.split('\n').map(line=>line.trim()).filter(line=>line.includes('_site/data/live'));
+const pagesLiveWriteLines=pagesArtifactSection.split('\n').map(line=>line.trim()).filter(line=>line.includes('$pages_destination/data/live'));
 ok(pagesLiveWriteLines.length===5
-  && pagesLiveWriteLines[0]==='mkdir -p _site/data/live'
-  && pagesLiveWriteLines.slice(1).every(line=>line.startsWith('install -m 0644 data/live/')),
+  && pagesLiveWriteLines[0]==='mkdir -p "$pages_destination/data/live"'
+  && pagesLiveWriteLines.slice(1).every(line=>line.startsWith('install -m 0644 "$pages_source/data/live/')),
 'Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer');
 const pagesPrivacyAuditSection=workflow.slice(workflowPositions.pagesPrivacyAudit,workflowPositions.pagesUpload);
 for(const marker of [
@@ -667,8 +717,8 @@ for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
-const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema4Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
+const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema5Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
 await fs.mkdir('release',{recursive:true});
 await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
-await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-4 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-5 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
 console.log(`Release gate bestået for RavRadar ${version}.`);

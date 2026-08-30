@@ -75,6 +75,71 @@ assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forbli
 assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
 
+// RavScore's private DMI boundary must not turn JSON-coercible values into
+// physical evidence. Every non-number below would otherwise become finite via
+// Number(value), including false -> 0 and [0.2] -> 0.2.
+{
+  const malformed = buildDmiForecastHourly({
+    wind: [{
+      step: generatedAt,
+      'wind-speed-10m': '8',
+      'wind-dir-10m': true,
+      provenance: native('wind', 'harmonie_dini_sf', generatedAt),
+    }],
+    waves: [{
+      step: generatedAt,
+      'significant-wave-height': [1.2],
+      'mean-wave-dir': '280',
+      'dominant-wave-period': false,
+      provenance: native('wave', 'wam_dw', generatedAt),
+    }],
+    ocean: [{
+      step: generatedAt,
+      'sea-mean-deviation': '0.1',
+      'current-u': [0.1],
+      'current-v': true,
+      'water-temperature': '15',
+      provenance: {
+        ...native('current', 'dkss_idw', generatedAt),
+        ...native('waterLevel', 'dkss_idw', generatedAt),
+        ...native('waterTemperature', 'dkss_idw', generatedAt),
+      },
+    }],
+    observedWaterLevel: { valueCm: '25' },
+    generatedAt,
+    hours: 1,
+  });
+  const [hour] = malformed.hourly;
+  assert.equal(hour.windSpeedMps, null);
+  assert.equal(hour.windDirectionDeg, null);
+  assert.equal(hour.waveHeightM, null);
+  assert.equal(hour.waveDirectionDeg, null);
+  assert.equal(hour.wavePeriodS, null);
+  assert.equal(hour.currentUMps, null);
+  assert.equal(hour.currentVMps, null);
+  assert.equal(hour.waterLevelCm, null);
+  assert.equal(hour.waterTemperatureC, null);
+  assert.equal(hour.sources.wind.provider, 'missing');
+  assert.equal(hour.sources.wave.provider, 'missing');
+  assert.equal(hour.sources.current.provider, 'missing');
+  assert.equal(hour.sources.waterLevel.provider, 'missing');
+  assert.equal(malformed.observationDifferenceCm, null);
+}
+
+{
+  const exact = native('current', 'dkss_idw', generatedAt).current;
+  assert.equal(
+    verifiedDmiNativeSource({ ...exact, samplingPoint: ['10', 56] }, 'current', generatedAt),
+    null,
+    'koordinatstrenge må ikke matche et scorebærende samplingpunkt',
+  );
+  assert.equal(
+    verifiedDmiNativeSource({ ...exact, samplingPoint: [10, 56, 0] }, 'current', generatedAt),
+    null,
+    'samplingpunktets identitet er et eksakt koordinatpar',
+  );
+}
+
 
 const sparseWind = [
   { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180, provenance: native('wind', 'harmonie_dini_sf', generatedAt) },
@@ -329,6 +394,25 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   });
   assert.equal(noDirectionProof.hourly[1].waveDirectionDeg, null, 'retning uden same-cell optional-field-bevis skal bortfalde');
   assert.ok(noDirectionProof.hourly[1].waveHeightM > 1, 'højde/periode-tuplet forbliver anvendeligt uden retning');
+
+  const antipodalLater = new Date(Date.parse(generatedAt) + 2 * 3600000).toISOString();
+  const antipodal = buildDmiForecastHourly({
+    waves: [
+      waveRow(generatedAt, {}, { 'mean-wave-dir': 0 }),
+      waveRow(antipodalLater, {}, { 'mean-wave-dir': 180 }),
+    ],
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(
+    antipodal.hourly[1].waveDirectionDeg,
+    null,
+    'det antipodale 0/180-graders midpoint har ingen defineret cirkulær middelretning',
+  );
+  assert.ok(
+    antipodal.hourly[1].waveHeightM > 1 && antipodal.hourly[1].wavePeriodS > 5,
+    'udefineret middelretning må ikke fjerne den verificerede mobiliseringstuple',
+  );
 
   const brokenTuple = buildDmiForecastHourly({
     waves: [waveRow(generatedAt), waveRow(later, { fieldSet: ['significant-wave-height'] })],

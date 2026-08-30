@@ -24,7 +24,7 @@ function profileFor(binding, kind) {
   return {
     schemaVersion: candidate ? 'candidate-g-state-v2' : 'integrated-state-v4',
     switchVersion: candidate
-      ? 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0108-V1'
+      ? 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0110-V2'
       : 'RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0',
     requestedProfileId: binding.modelId,
     activeProfileId: binding.modelId,
@@ -229,6 +229,13 @@ mutateBothProfiles(incompleteCandidateRuntime,
   profile => { profile.modelMemoryReady = false; });
 assert.throws(() => resolveAdminActivePublicRavScore(incompleteCandidateRuntime),
   /ukendt eller blandet driftsvej/);
+
+const incompleteIntegratedRuntime = clone(integratedRuntime);
+mutateBothProfiles(incompleteIntegratedRuntime,
+  profile => { profile.modelMigrationReady = false; });
+assert.throws(() => resolveAdminActivePublicRavScore(incompleteIntegratedRuntime),
+  /ukendt eller blandet driftsvej/,
+  'Admin må ikke legitimere en integreret aktiv profil før alle cutover-readinessflags er sande.');
 
 assert.throws(() => resolveAdminActivePublicRavScore({
   manifest: null,

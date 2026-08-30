@@ -51,20 +51,23 @@ Cloudflare-kontoen skal forblive Workers Free / $0 uden prepaid overflow. Kun `C
 
 ## Integreret RavScore-model, state og continuation
 
-- `js/core/ravscore-model-contract.js` – kanonisk model-, state-, variant-, profil-, komponent- og forklaringskontrakt samt krav om separat parameterkontrakt- og transitiv bundlehash for `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0` / state `4.0.0`.
-- `js/core/ravscore-integrated.js` – samlet 20/50/30-beregning, strukturel score-neutral sidste led, adskilt datakomplethed/modelusikkerhed og forklaringer uden empirisk fundpåstand.
+- `js/core/ravscore-model-contract.js` – kanonisk kontrakt for `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` / state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponent `ravscore-components-huntability-delivery-mobilisation-v4`, forklaring `ravscore-explanation-integrated-v4` samt separat parameterkontrakt- og transitiv bundlehash.
+- `js/core/ravscore-integrated.js` – samlet 20/50/30-beregning, hvor de 50 % ejes af `delivery=supply×factor` præcis én gang, adskilt datakomplethed/modelusikkerhed og forklaringer uden empirisk fundpåstand.
 - `js/core/ravscore-current-supply-memory.js` – +10/-8, 0,03→0,15 m/s, 24 timers fuld vægt og cosinusfade til 0 ved 48 timer med højst tre timers gap og 49 afledte evidenspunkter.
 - `js/core/ravscore-wave-mobilisation-state.js` – relativ `Hs² × T`, fire timers build, 48 timers decay, missing-/restart-/migrationkontrakt og højst én times recovery-credit.
+- `js/core/ravscore-wave-approach-state.js` – kausal energivægtet `W/N/T`-EWMA med fire timers halveringstid og en ældre hale; DMI `FROM` roteres én gang +180° til `TOWARD` mod uændret kystnormal; `factor=clamp(1-0.15×W×(1-approach),0.85,1)`. Aktiv direction-missing fejler lukket. Kun `waveHeightM=0` er eksakt calm og neutral; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket. Bølger kan aldrig skabe eller øge supply.
+- `js/core/ravscore-evidence-trust-contract.js` – fælles `VERIFIED_ONLY`/reconstructed/emergency-grænse. Kun verified er kalibreringsegnet; rekonstrueret/emergency og ture er ikke i sig selv kalibreringsgrundlag.
 - `js/core/ravscore-huntability.js`, `best-time-policy.js` og `score-presentation.js` – jagtform, score-neutral vandstandstie-break og ensartet offentlig præsentation.
-- `js/core/ravscore-integrated-state-pipeline.js` – fortsætter kun kompatibel model-/profil-/kystkontekst og producerer state 4 uden kunstig historik.
-- `scripts/lib/ravscore-profile-transition.mjs`, `scripts/lib/ravscore-candidate-g-rollback-runtime.mjs` og `scripts/prepare-candidate-g-operational-rollback.mjs` – præcis engangs Candidate G schema-2→integreret schema-4-migration, deterministisk rollback-orakel og forseglet manuel Candidate G-plan. Ingen af dem kører to offentlige modeller samtidig.
+- `js/core/ravscore-integrated-state-pipeline.js` – fortsætter kun kompatibel model-/profil-/kystkontekst og producerer state 5 uden kunstig historik.
+- `scripts/lib/ravscore-recovery-replay.mjs`, `scripts/resolve-candidate-g-wave-bootstrap-target.mjs` og `scripts/lib/dmi_wave_history_bootstrap.py` – migration `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`: én ren targetfunktion, aggregate-only 673/common-target-gate, signed coast-normal current-reweight uden rå U/V og 40 private WAM-præ-target-positioner fra coherent run pr. collection med same-cell provenance. Højst fire timers same-run/same-cell-interpolation er WAM-specifik; tail-/rå-scoregrænserne er `1/1024` og `0.01171875`. Fejl bevarer Candidate G offentlig.
+- `scripts/lib/ravscore-profile-transition.mjs`, `scripts/lib/ravscore-candidate-g-rollback-runtime.mjs` og `scripts/prepare-candidate-g-operational-rollback.mjs` – rollback `integrated-schema5-to-candidate-g-schema2-v2` og forseglet manuel Candidate G-plan. Ægte cold start kræver særskilt eksakt 48 private verificerede timepositioner plus reel target; rollback bruger samme targettid uden dobbelt recovery-credit. Ingen af dem kører to offentlige modeller samtidig.
 - `scripts/private-production-runtime-bundle.mjs` og `private-production-runtime-workflow.mjs` – atomisk privat otte-fils bundle med mål-, model-, hash-, sti- og integritetsbinding; den forseglede Copernicus-range-cache og varme Candidate G-projektion ligger kun her, og fuld runtime er aldrig et Pages-input.
-- `scripts/ravscore-continuation-checkpoint.mjs` og `protected-ravscore-continuation-checkpoint.mjs` – kompakt schema-4-state i privat Actions-cache eller det beskyttede operationelle `admin_documents`-dokument. Højst 72 timer; fremtidige checkpointopdateringer versionskopieres ikke, men eksisterende `admin_document_versions` bevares uden destruktiv oprydning; fatal ved mismatch/fremtid/tidsregression.
+- `scripts/ravscore-continuation-checkpoint.mjs` og `protected-ravscore-continuation-checkpoint.mjs` – kompakt state-5 i privat Actions-cache eller det beskyttede operationelle `admin_documents`-dokument. Kun samme-model atomisk nøddrift i højst 72 timer eller kortere forecastudløb; ingen cross-model fallback eller interpolation. Fremtidige checkpointopdateringer versionskopieres ikke, men eksisterende `admin_document_versions` bevares uden destruktiv oprydning; fatal ved mismatch/fremtid/tidsregression.
 - `scripts/audit-ravscore-integrated-public-runtime.mjs`, `audit-pages-artifact-privacy.mjs` og `.github/workflows/update-and-deploy.yml` – auditerer de faktisk genererede fire livefiler, 210/673, model-/hashbinding og fravær af private bundlefingeraftryk før deploy.
 - `scripts/ravscore-operational-activation.mjs` – beskyttet v3-controller med fire statusser og overgangstyper. Alle skift observerer source Pages, skriver `PENDING` med bevaret central source-profil, deployer/verificerer target og atomiserer derefter `ACTIVE` + central target-profil. Crash/retry reconcilerer source/requested/third manifest fail-closed. Første cutover er push-only; rollback/return manual-only; scheduler må kun refreshe allerede `CANDIDATE_G_ACTIVE`. Assistentens Edge skiftes ikke til en Candidate-version.
 - `.github/workflows/deploy-trip-storage.yml` – læser migrationshistorik og dry-run skrivefrit, genhenter derefter `origin/main` og kræver `HEAD == origin/main == GITHUB_SHA` umiddelbart før første eksterne backendskrivning. Hele post-write-rækken fortsætter fra samme checkout og isolerede migrationssnapshot.
 
-Candidate G forbliver eneste offentlige model indtil den atomiske DEC-0108-cutover. Mens integreret er aktiv, er Candidate G kun privat migration-/offline-/rollback-orakel. Kun controllerens manuelle hel-rollback kan igen gøre Candidate G til den ene offentlige scoremodel; den gamle offentlige Candidate G-recovery/shadow er ikke en automatisk sidevej. Der deployes ingen særskilt Candidate G-assistent-Edge: den integrerede Edge svarer `409`, klienten bruger deterministiske lokale DA/DE/EN-svar, og schema-3-ture lagres Candidate G-bundet med `calibration_eligible=false`. Ingen continuation må kopiere rå U/V, koordinater, geometri, punkter eller private payloads. Checkpointmigrationen bevarer eksisterende `admin_document_versions` og udfører ingen destruktiv cleanup. Se DEC-0108.
+Candidate G forbliver eneste offentlige model indtil den atomiske DEC-0110-cutover. Mens integreret er aktiv, er Candidate G kun privat migration-/offline-/rollback-orakel. Kun controllerens manuelle hel-rollback kan igen gøre Candidate G til den ene offentlige scoremodel; den gamle offentlige Candidate G-recovery/shadow er ikke en automatisk sidevej. Der deployes ingen særskilt Candidate G-assistent-Edge: den integrerede Edge svarer `409`, klienten bruger deterministiske lokale DA/DE/EN-svar, og Candidate G-ture lagres med `calibration_eligible=false`. Ingen continuation må kopiere rå U/V, koordinater, geometri, punkter eller private payloads. DDM 50 m er alene statisk forskningskontekst og flytter ingen eksisterende kystnormal/geometri/punkter. Checkpointmigrationen bevarer eksisterende `admin_document_versions` og udfører ingen destruktiv cleanup. Se DEC-0110.
 
 ## Sikkerhedsgrænser og offentlige Edge-funktioner
 
@@ -88,7 +91,7 @@ Den offentlige fjernassistent router fast afvisning og deterministiske, aktivt m
 - De øvrige workflowfiler er registrerede private, manuelle QA-/recoveryjobs uden Pages-deploy. `scripts/test-workflow-validation-order-4.0.108.mjs` er det bindende aktive inventar. `pages-build-deployment` er GitHubs egen Pages-mekanisme, ikke en repositoryfil.
 - `scripts/sync-admin-config.py` – henter central admin-konfiguration.
 - `scripts/apply-central-zone-reviews.py` – anvender godkendte zone-/geometriændringer.
-- `scripts/hydrate-deployed-weather.py` – kun den eksakte `--legacy-candidate-g-bootstrap` ved første DEC-0108-cutover; generisk hydrering fra deployet offentlig weather state er pensioneret.
+- `scripts/hydrate-deployed-weather.py` – kun den eksakte `--legacy-candidate-g-bootstrap` ved første DEC-0110-cutover; generisk hydrering fra deployet offentlig weather state er pensioneret.
 - `scripts/update-dmi-bulk.py` – DMI STAC/GRIB bulk, scheduler, sampling, vektorkandidater og autoritativ native komponentproveniens (`collection`, `modelRun`, `nativeValidTime`).
 - `scripts/update-water-source-registry.mjs` – DMI-vandstandskilderegister.
 - `scripts/lib/dmi-forecast-store.mjs` – UTC-timebygning, komponentvis interpolation inden for samme model-run samt lead time/prognosealder.
@@ -100,8 +103,9 @@ Den offentlige fjernassistent router fast afvisning og deterministiske, aktivt m
 
 ## Core browserlogik
 - `js/core/ravscore-public-model.js` og `ravscore-public-runtime-contract.js` – browserens kanoniske model-/state-/manifestbinding og fail-closed validering.
-- `js/core/ravscore-integrated.js`, `ravscore-current-supply-memory.js`, `ravscore-wave-mobilisation-state.js` og `ravscore-huntability.js` – autoritativ integreret RavScore og state.
-- `js/core/score-engine.js` og `coastal-process-model.js` – historisk kode/reference; må ikke eje den aktive offentlige DEC-0108-score.
+- `js/core/ravscore-integrated.js`, `ravscore-current-supply-memory.js`, `ravscore-wave-mobilisation-state.js`, `ravscore-wave-approach-state.js` og `ravscore-huntability.js` – autoritativ integreret RavScore og dens fysiske deltilstande.
+- `js/core/ravscore-integrated-state-pipeline.js` og `ravscore-evidence-trust-contract.js` – state 5, migration/rollback, missing samt VERIFIED_ONLY/reconstructed/emergency-grænser.
+- `js/core/score-engine.js` og `coastal-process-model.js` – historisk kode/reference; må ikke eje den aktive DEC-0110-score.
 - `js/core/direction-anchors.js` – lokale retningsankre.
 - `js/core/water-station-routing.js` – vandstandsrouting.
 - `js/core/current-direction-audit.js` – strømretning/audit.
@@ -114,13 +118,13 @@ Den offentlige fjernassistent router fast afvisning og deterministiske, aktivt m
 - `js/services/handbook-review-store.js` – ekspert/håndbogsreviews.
 - `js/services/persistence-test-service.js` – persistenskontroller.
 - `js/services/site-function-test-service.js` – sitetest.
-- `js/services/data-service.js` – læser kun hashbundne schema-4-primærfiler; ingen offentlig recovery-/shadowmodel eller blandet datasæthydrering.
+- `js/services/data-service.js` – vælger én hashbundet schema-4-firefilspakke atomisk: frisk primary eller en komplet VERIFIED_ONLY-nødpakke fra præcis samme modelbinding. Ingen privat recovery, cross-model-shadow eller blandet datasæthydrering.
 - `js/ui/admin-app.js`, `admin-dashboard.js`, `admin-coastline-editor.js` – synlige adminarbejdsgange.
 
 ## Historisk state
 - `scripts/lib/current-transport-history.mjs` – pipelinehistorik og transportregimer.
 - `scripts/test-current-transport-history-4.0.115.mjs` og state-reference-tests – beskytter skyggetilstanden.
-- Candidate G-regime-, state- og recoveryfiler bevares som migrations-/rollback- og regressionsreference, men er ikke aktiv offentlig DEC-0108-runtime.
+- Candidate G-regime-, state- og recoveryfiler bevares som migrations-/rollback- og regressionsreference, men er ikke den aktive DEC-0110-releasekandidats offentlige runtime.
 
 ## Kritiske regressionstests
 - `scripts/test-dmi-vector-grid-integrity-4.0.116.py` – U/V-grid- og lagintegritet.

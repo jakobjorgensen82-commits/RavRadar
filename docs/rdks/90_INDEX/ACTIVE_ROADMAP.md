@@ -1,6 +1,17 @@
 # RavRadar - aktivt roadmap
 
-## P0 4.0.314 – luk den policybundne cadencegate
+## P0 4.0.315 – samlet integreret RavScore-releasekandidat
+
+- [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
+- [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
+- [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, kausal energivægtet bølgeapproach med fire timers halveringstid og en ældre hale samt afgrænset `delivery=supply×factor` uden wave-created supply.
+- [x] Bevar fysisk usikkerhed ærligt: `physicalDeliveryResolved=false`, fysisk interval `null`, ingen empirisk fundpræcisionspåstand, vandstand score-neutral og DDM 50 m kun som statisk kontekst.
+- [x] Bind v4-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`/`0.01171875`-grænser; fejl bevarer Candidate G offentlig uden syntetisk/offentlig historik. Bevar særskilt ægte cold start på præcis 48 private verificerede timepositioner plus reel target, same-time rollback uden dobbelt credit og same-model atomisk nøddrift højst 72 timer uden cross-model fallback/interpolation.
+- [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
+- [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
+- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige model på desktop og mobil. Indtil da er 4.0.310/Candidate G fortsat produktionssandhed.
+
+## Historisk P0 4.0.314 – opgivet rekonstruktionsspor
 
 - [x] PR #231 exact-head `33279317463`/`99171645787`, merge `d539fc9d` og no-op push `33279411885`.
 - [x] Exact-main D1 `33279463545`/`99172031927` helt grøn.
@@ -9,8 +20,8 @@
 - [x] Bevar sparse 1/2/3h measured continuity på 1h-dele uden at udfylde interne slots; kræv eksakt 3h på de otte policydele.
 - [x] Målrettet 210/673 cadence-/CAS-regression og workflowinterlock grøn.
 - [x] Kør fuld lokal `validate:source` én gang, målrettede RDKS-/håndbogs-/security-/releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
-- [ ] Exact-head → merge/no-op → nyt D1 → ny read-only inspect.
-- [ ] Kun efter grøn descriptor: CAS-apply → frisk produktion/fulde gates → offentlig 210/673 desktop/mobil.
+- [x] Ejerbeslutning 2026-08-30: afslut sporet uden ny exact-head/D1/inspect og uden descriptor eller apply.
+- [x] Ingen rekonstruktion, datamutation, artifact eller offentliggørelse blev udført; den afgrænsede kontrakt bevares kun som historisk sikkerheds- og tillidsevidens i DEC-0109.
 
 ## Historisk P0 4.0.314 – før-primary-gaten
 
@@ -36,9 +47,8 @@
 - [x] Bevis separat målt nødvisning versus ærlig før-primary, fjern kun blanket-READY-kravet, og bevar source/replay/bracket/CAS/slut-READY.
 - [x] Test 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer positivt og ældre hul/replaytampering/schema 2.1/ukendt status negativt i begge parentmiljøer.
 - [x] Luk alle lokale dokumentations-, workflow-, privacy-, release- og geodatagates, hele `validate:source` og tre uafhængige slutreviews uden resterende blocker.
-- [ ] Same-version-hotfix exact-head/merge/no-op, nyt exact-main D1 og ny read-only inspect.
-- [ ] Ved grøn descriptor: CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
-- [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
+- [x] Ejerbeslutning 2026-08-30 erstattede den resterende hotfix/D1/inspect/apply-kæde med et stop uden descriptor, mutation eller offentliggørelse.
+- [x] Modelsporet fortsætter særskilt som 4.0.315-releasekandidaten under DEC-0110; ingen fiktiv historik bruges som genvej til modelstate.
 
 ## Historisk P0 lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet sikkert
 
@@ -60,7 +70,7 @@
 - [ ] Efter den akutte genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
 - [ ] Erstat migrationsrunnerens mutable offset-pagination med stabil keyset-/snapshotpagination; bevar indtil da obligatorisk idempotent slutreconciliation og retry som reparationsvej.
 
-Historisk resultat: 4.0.312 blev exact-head-valideret og merged, men backend `33266229687` fejlede migrationssynken og blev ikke readiness- eller produktionsverificeret. Offentlig sandhed forblev 4.0.310 og den eksisterende målte nødvisning. Den operative fortsættelse står kun i 4.0.313-afsnittet ovenfor. Se DEC-0109 og DEC-0102-addendum.
+Historisk resultat: 4.0.312 blev exact-head-valideret og merged, men backend `33266229687` fejlede migrationssynken og blev ikke readiness- eller produktionsverificeret. Offentlig sandhed forblev 4.0.310 og den eksisterende målte nødvisning. Rekonstruktionssporet blev senere opgivet uden descriptor/apply/mutation/offentliggørelse; modelarbejdet fortsætter alene i 4.0.315-afsnittet ovenfor. Se DEC-0109, DEC-0110 og DEC-0102-addendum.
 
 ## Produktions- og driftsverificeret P0 4.0.310 – ekstern overtagelse efter ét manglende interval
 

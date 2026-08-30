@@ -194,6 +194,17 @@ export async function baselineImplementationSources({ root = ROOT } = {}) {
     .map(([relative, bytes]) => Object.freeze({ relative, bytes }));
 }
 
+export async function legacyCandidateGImplementationClosureSha256({ root = ROOT } = {}) {
+  const baseline = await baselineImplementationSources({ root });
+  return sha256(Object.freeze({
+    sourceHead: LEGACY_CANDIDATE_G_SOURCE_HEAD,
+    files: Object.freeze(baseline.map(({ relative, bytes }) => Object.freeze({
+      file: relative,
+      sha256: sha256(bytes),
+    }))),
+  }));
+}
+
 async function fetchBytes(fetchImpl, url, label) {
   const response = await fetchImpl(url, {
     cache: 'no-store',
@@ -266,6 +277,11 @@ export async function verifyLegacyCandidateGSource({
     sourceHead: LEGACY_CANDIDATE_G_SOURCE_HEAD,
     files: Object.freeze(closure),
   }));
+  const locallySealedImplementationClosureSha256 =
+    await legacyCandidateGImplementationClosureSha256({ root });
+  if (implementationClosureSha256 !== locallySealedImplementationClosureSha256) {
+    throw new Error('Legacy Candidate G verified and locally sealed closures diverge');
+  }
   const verification = Object.freeze({
     schemaVersion: LEGACY_CANDIDATE_G_VERIFICATION_SCHEMA,
     status: 'passed',

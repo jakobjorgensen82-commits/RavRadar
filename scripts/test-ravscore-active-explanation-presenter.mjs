@@ -11,12 +11,13 @@ const integrated = {
   score:64,
   components:{ huntability:70, transport:60, release:62 },
   modelBinding:integratedBinding(),
-  localWeather:{ currentProvenance:{ sourceClass:'local-model-grid', distanceKm:3.2 } },
+  localWeather:{ currentProvenance:{ status:'verified', sourceClass:'local-model-grid', distanceKm:3.2 } },
   explanation:{
     transportDiagnostics:{
       engine:'INTEGRATED_COASTAL_PROCESS',
-      lastMileScoreEffect:'NONE',
-      lastMileStatus:'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
+      lastMileScoreEffect:'BOUNDED_SUPPLY_ATTENUATION_ONLY',
+      lastMileStatus:'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+      lastMileDeliveryFactor:0.91,
       lastMilePhysicalDeliveryResolved:false,
       lastMileStructuralUncertainty:true,
       resolvedSurfZoneIncluded:false,
@@ -43,9 +44,24 @@ assert.match(integratedDa.sections.gridCurrent, /verificeret modelgridpunkt.*3,2
 assert.match(integratedDa.sections.gridCurrent, /ikke en direkte måling af lokal bundnær strøm/);
 assert.doesNotMatch(integratedDa.sections.gridCurrent, /er lokal bundnær modelstrøm/,
   'model-grid current must never be identified as measured near-bed current');
+assert.match(integratedDa.sections.lastMile, /kausal energivægtet W\/N\/T-EWMA/);
+assert.match(integratedDa.sections.lastMile, /fire timers halveringstid/);
+assert.match(integratedDa.sections.lastMile, /ældre timer med aftagende vægt/);
+assert.match(integratedDa.sections.lastMile, /højst 15 %/);
+assert.match(integratedDa.sections.lastMile, /kan aldrig skabe eller øge tilførsel/);
+assert.match(integratedDa.sections.lastMile, /fysisk uopløst/);
+assert.doesNotMatch(integratedDa.sections.lastMile, /firetimers energivægtet bølgeretning/,
+  'Fire timer må ikke fremstilles som et fast vindue.');
+const integratedDe = presentIntegrated(integrated, { language:'de' });
+assert.match(integratedDe.sections.lastMile, /kausaler energiegewichteter W\/N\/T-EWMA/);
+assert.match(integratedDe.sections.lastMile, /Halbwertszeit von vier Stunden/);
+assert.match(integratedDe.sections.lastMile, /ältere Stunden.*abnehmendem Gewicht/);
 const integratedEn = presentIntegrated(integrated, { language:'en' });
 assert.match(integratedEn.sections.gridCurrent, /verified model grid point.*3\.2 km from RavRadar’s water point/);
 assert.doesNotMatch(integratedEn.sections.gridCurrent, /is local near-bed model-grid current/);
+assert.match(integratedEn.sections.lastMile, /causal energy-weighted wave-direction W\/N\/T EWMA/);
+assert.match(integratedEn.sections.lastMile, /four-hour half-life/);
+assert.match(integratedEn.sections.lastMile, /older hours in a decaying tail/);
 for (const [language, pattern] of [
   ['da', /ejer-godkendt regionalt DMI-proxygridpunkt 12,4 km.*ikke et lokalt gridpunkt/],
   ['de', /freigegebenen regionalen DMI-Proxy-Gitterpunkt.*12,4 km.*kein lokaler Gitterpunkt/],
@@ -53,6 +69,7 @@ for (const [language, pattern] of [
 ]) {
   const proxy = structuredClone(integrated);
   proxy.localWeather.currentProvenance = {
+    status:'verified',
     sourceClass:'owner-approved-regional-proxy',
     distanceKm:12.4,
   };
@@ -60,6 +77,7 @@ for (const [language, pattern] of [
 }
 const proxyWithoutDistance = structuredClone(integrated);
 proxyWithoutDistance.localWeather.currentProvenance = {
+  status:'verified',
   sourceClass:'owner-approved-regional-proxy',
 };
 assert.deepEqual(presentIntegrated(proxyWithoutDistance, { language:'da' }), {
@@ -95,7 +113,10 @@ try {
     score:58,
     components:{ huntability:68, transport:51, release:63 },
     modelBinding:candidateContract.ravScoreModelBinding(),
-    localWeather:{ waterLevelTrendCm3h:-4 },
+    localWeather:{
+      waterLevelTrendCm3h:-4,
+      currentProvenance:{ status:'verified', sourceClass:'local-model-grid', distanceKm:3.2 },
+    },
     explanation:{
       modelId:candidateContract.RAVSCORE_MODEL_ID,
       transportDiagnostics:{

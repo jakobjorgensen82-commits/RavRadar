@@ -17,7 +17,7 @@ import re
 import sys
 import tempfile
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
@@ -49,6 +49,7 @@ from lib.dmi_native_provenance import (
     complete_native_source_for_hour,
     component_collection_allowed,
     sampling_identity,
+    wave_distance_allowed,
 )
 from lib.coastal_point_staging import (
     load_private_document as load_coastal_point_stage,
@@ -56,6 +57,21 @@ from lib.coastal_point_staging import (
     save_private_document as save_coastal_point_stage,
     stage_asset_complete,
     staged_targets as build_coastal_point_stage_targets,
+)
+from lib.dmi_wave_history_bootstrap import (
+    COLD_START_MODE as WAVE_BOOTSTRAP_COLD_START_MODE,
+    EXPECTED_COASTAL_PART_COUNT as WAVE_BOOTSTRAP_EXPECTED_PART_COUNT,
+    MIGRATION_MODE as WAVE_BOOTSTRAP_MIGRATION_MODE,
+    WAM_COLLECTIONS as WAVE_BOOTSTRAP_COLLECTIONS,
+    WaveBootstrapError,
+    format_utc_hour as format_wave_bootstrap_hour,
+    load_coastal_part_registry as load_wave_bootstrap_registry,
+    parse_utc_hour as parse_wave_bootstrap_hour,
+    policy_for_mode as wave_bootstrap_policy_for_mode,
+    policy_utc_hours as wave_bootstrap_policy_utc_hours,
+    select_stac_wave_history_assets,
+    validate_wave_history_cache,
+    validate_wave_operational_handoff_cache,
 )
 
 import requests
@@ -102,6 +118,7 @@ REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90"
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
 COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
+WAM_MAX_FORECAST_LEAD_HOURS = 132
 MARINE_FOUNDATION_BALANCE_RATIO = 0.95
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
 COMPLETE_HORIZON_HOURS = max(24, int(os.getenv("DMI_BULK_COMPLETE_HORIZON_HOURS", "96")))
@@ -114,6 +131,7 @@ FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECO
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
 GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 GRID_BATCH_WARMED: set[tuple[Any, ...]] = set()
+PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH: float | None = None
 
 STAC_SESSION = requests.Session()
 DOWNLOAD_SESSION = requests.Session()
@@ -152,8 +170,11 @@ TARGETS = {
 REQUIRED_TARGETS = {
     "marine": {"sea-mean-deviation", "current-u", "current-v"},
     "wind": {"wind-u-10m", "wind-v-10m"},
-    # Height and period drive mobilisation. Direction remains useful context but
-    # is not allowed to block the score tuple when it is absent or on another cell.
+    # Height and period remain the independently usable mobilisation/Candidate G
+    # rollback tuple. The integrated model additionally requires same-cell direction
+    # in its last-mile state and fails closed when this optional provenance field is
+    # absent; keeping the base tuple preserves an operational rollback without
+    # pretending that missing direction is neutral.
     "wave": {"significant-wave-height", "dominant-wave-period"},
 }
 
@@ -227,13 +248,34 @@ def epoch(value: Any) -> float:
     return datetime.fromisoformat(parsed.replace("Z", "+00:00")).timestamp() if parsed else 0.0
 
 
+def safe_error_message(error: Any, maximum: int = 500) -> str:
+    """Redact credentials and URL queries before any diagnostic sink."""
+    text = str(error).replace("\r", " ").replace("\n", " ")
+    if API_KEY:
+        text = text.replace(API_KEY, "[redacted]")
+    text = re.sub(r"(?i)(api[-_]?key|token|signature|sig)=([^\s&]+)", r"\1=[redacted]", text)
+    text = re.sub(r"(https?://[^\s?]+)\?[^\s]+", r"\1?[redacted]", text)
+    return text[:maximum] or type(error).__name__
+
+
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     query = dict(params or {})
     if API_KEY and url.startswith(STAC_ROOT):
         query.setdefault("api-key", API_KEY)
-    response = STAC_SESSION.get(url, params=query, timeout=REQUEST_TIMEOUT)
-    response.raise_for_status()
-    return response.json()
+    try:
+        response = STAC_SESSION.get(url, params=query, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+    except requests.RequestException as exc:
+        status = getattr(getattr(exc, "response", None), "status_code", None)
+        suffix = f" (HTTP {status})" if isinstance(status, int) else ""
+        raise RuntimeError(f"DMI metadata request failed{suffix}") from None
+    try:
+        document = response.json()
+    except (ValueError, requests.RequestException):
+        raise RuntimeError("DMI metadata response is not valid JSON") from None
+    if not isinstance(document, dict):
+        raise RuntimeError("DMI metadata response is not a JSON object")
+    return document
 
 
 def item_run(item: dict[str, Any]) -> str | None:
@@ -399,7 +441,14 @@ def select_forecast_run(
     }
 
 
-def list_latest_assets(collection: str, preferred_run: str | None = None) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
+def list_latest_assets(
+    collection: str,
+    preferred_run: str | None = None,
+    *,
+    minimum_valid_time: str | None = None,
+    required_valid_times: set[str] | None = None,
+    required_horizon_end_time: str | None = None,
+) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
     data = request_json(f"{STAC_ROOT}/collections/{collection}/items",
                         {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
     items = data.get("features") or []
@@ -417,7 +466,12 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
             stats["itemsWithoutGrib"] += 1
             continue
         href, size, _description = asset
-        if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + (HOURS + 6) * 3600:
+        maximum_lead_hours = (
+            WAM_MAX_FORECAST_LEAD_HOURS
+            if collection in WAVE_BOOTSTRAP_COLLECTIONS
+            else HOURS + 6
+        )
+        if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + maximum_lead_hours * 3600:
             continue
         item_id = str(item.get("id") or "").strip()
         if not item_id:
@@ -437,15 +491,55 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
             stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
     if not runs:
         return None, [], stats
+    required = {
+        iso(value) for value in (required_valid_times or set())
+        if iso(value)
+    }
+    selection_runs = runs
+    required_horizon_end = iso(required_horizon_end_time)
+    if required or required_horizon_end:
+        first_required_epoch = (
+            min(epoch(value) for value in required)
+            if required
+            else epoch(minimum_valid_time)
+        )
+        selection_runs = {
+            candidate_run: rows
+            for candidate_run, rows in runs.items()
+            if epoch(candidate_run) <= first_required_epoch
+            and required <= {iso(row.get("valid")) for row in rows}
+            and (
+                required_horizon_end is None
+                or max(epoch(row.get("valid")) for row in rows)
+                    >= epoch(required_horizon_end)
+            )
+        }
+        stats["requiredExactValidTimeCount"] = len(required)
+        stats["runsCoveringRequiredExactTimes"] = len(selection_runs)
+        stats["requiredHorizonEndCovered"] = bool(selection_runs) if required_horizon_end else None
+        if not selection_runs:
+            stats["missingRequiredExactTimes"] = True
+            return None, [], stats
     retention_horizon_hours = (
         HARMONIE_RUN_RETENTION_HOURS if collection == "harmonie_dini_sf" else COMPLETE_HORIZON_HOURS
     )
     run, run_selection = select_forecast_run(
-        runs,
-        preferred_run,
+        selection_runs,
+        preferred_run if preferred_run in selection_runs else None,
         retention_horizon_hours=retention_horizon_hours,
     )
-    latest_run = str(run_selection["latestRun"])
+    eligible_latest_run = str(run_selection["latestRun"])
+    latest_run = max(runs, key=epoch)
+    latest_future_horizon = max(
+        (epoch(row["valid"]) - time.time()) / 3600
+        for row in runs[latest_run]
+    )
+    run_selection.update({
+        "eligibleLatestRun": eligible_latest_run,
+        "latestRun": latest_run,
+        "latestRunFutureHorizonHours": round(latest_future_horizon, 1),
+        "incompleteLatestRunDeferred": run != latest_run,
+    })
     cadence_hours = observed_run_cadence_hours(runs)
     publication_lag_hours = observed_publication_lag_hours(runs)
     latest_run_age_hours = max(0.0, (time.time() - epoch(latest_run)) / 3600.0)
@@ -477,12 +571,16 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
         return None, [], stats
     stats.update(run_selection)
     unique: dict[str, dict[str, Any]] = {}
-    minimum_valid_epoch = time.time() - 3600
+    minimum_valid_epoch = (
+        epoch(minimum_valid_time)
+        if minimum_valid_time is not None
+        else time.time() - 3600
+    )
     for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
         if epoch(row["valid"]) < minimum_valid_epoch:
             stats["expiredForecastStepsSkipped"] = int(stats.get("expiredForecastStepsSkipped") or 0) + 1
             continue
-        if not stride_selected(row["valid"], run):
+        if row["valid"] not in required and not stride_selected(row["valid"], run):
             continue
         if row["valid"] in unique:
             stats["duplicateValidTimes"] += 1
@@ -498,6 +596,89 @@ def list_latest_assets(collection: str, preferred_run: str | None = None) -> tup
     rows = sorted(unique.values(), key=lambda r: epoch(r["valid"]))
     stats["selectedForecastSteps"] = min(len(rows), MAX_ASSETS_PER_COLLECTION)
     return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
+
+
+def private_wave_bootstrap_configuration() -> dict[str, Any] | None:
+    mode = str(os.getenv("DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE", "none")).strip()
+    if mode in {"", "none"}:
+        return None
+    if mode not in {WAVE_BOOTSTRAP_MIGRATION_MODE, WAVE_BOOTSTRAP_COLD_START_MODE}:
+        raise WaveBootstrapError("INVALID_MODE")
+    target_hour = format_wave_bootstrap_hour(parse_wave_bootstrap_hour(
+        os.getenv("DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR")
+    ))
+    production_target = format_wave_bootstrap_hour(parse_wave_bootstrap_hour(
+        os.getenv("RAVRADAR_PRODUCTION_TARGET_HOUR", target_hour)
+    ))
+    if parse_wave_bootstrap_hour(production_target) < parse_wave_bootstrap_hour(target_hour):
+        raise WaveBootstrapError("INVALID_TIME")
+    policy = wave_bootstrap_policy_for_mode(mode)
+    required_hours = wave_bootstrap_policy_utc_hours(target_hour, policy)
+    operational_exact_hours: list[str] = []
+    cursor = parse_wave_bootstrap_hour(target_hour)
+    production_end = parse_wave_bootstrap_hour(production_target)
+    while cursor <= production_end:
+        operational_exact_hours.append(format_wave_bootstrap_hour(cursor))
+        cursor += timedelta(hours=1)
+    if len(operational_exact_hours) > 4:
+        raise WaveBootstrapError("INVALID_TIME")
+    return {
+        "mode": mode,
+        "policy": policy,
+        "targetHour": target_hour,
+        "productionTargetHour": production_target,
+        "requiredHours": required_hours,
+        "operationalExactHours": tuple(operational_exact_hours),
+    }
+
+
+def list_private_wave_bootstrap_assets(
+    collection: str,
+    configuration: dict[str, Any],
+) -> tuple[Any, tuple[Any, ...]]:
+    """Select one bounded, strict WAM history without logging item identities.
+
+    Candidate migration discovers the newest coherent run over precisely its
+    40-hour pre-target state window, then requeries only that same bounded
+    window.  The operational handoff and public forecast deliberately belong
+    to a separately selected current WAM run.  A genuine cold start keeps the
+    helper's exact 48h+target selection, including its exact-hour multi-run
+    fallback; its target is subsequently replaced by the operational run.
+    """
+    if collection not in WAVE_BOOTSTRAP_COLLECTIONS:
+        raise WaveBootstrapError("INVALID_COLLECTION")
+    policy = configuration["policy"]
+    required_hours = configuration["requiredHours"]
+    discovery_start = format_wave_bootstrap_hour(
+        parse_wave_bootstrap_hour(required_hours[0])
+        - timedelta(hours=policy.maximum_interpolation_hours)
+    )
+    discovery = request_json(
+        f"{STAC_ROOT}/collections/{collection}/items",
+        {
+            "limit": policy.maximum_stac_items,
+            "bbox": "7,54,16,58",
+            "datetime": f"{discovery_start}/{required_hours[-1]}",
+            "sortorder": "datetime,DESC",
+        },
+    )
+    plan = select_stac_wave_history_assets(
+        discovery,
+        collection=collection,
+        target_hour=configuration["targetHour"],
+        policy=policy,
+    )
+    if configuration["mode"] != WAVE_BOOTSTRAP_MIGRATION_MODE:
+        return plan, plan.assets
+
+    selected_runs = {asset.model_run for asset in plan.assets}
+    if plan.selection_mode != "single-coherent-run" or len(selected_runs) != 1:
+        raise WaveBootstrapError("COHERENT_RUN_REQUIRED")
+    # The bounded discovery already pins every selected endpoint to that one
+    # explicit run.  Returning the selected native endpoints preserves the
+    # contract's <=4h same-run interpolation instead of falsely demanding a
+    # native asset at every one of the 40 logical state hours.
+    return plan, plan.assets
 
 
 
@@ -678,8 +859,18 @@ def download_asset(
     item_updated_at: str | None = None,
 ) -> tuple[pathlib.Path, bool]:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
+    if expected_size is not None and (
+        isinstance(expected_size, bool)
+        or not isinstance(expected_size, int)
+        or expected_size <= 0
+    ):
+        raise RuntimeError("DMI bulk asset has an invalid declared size")
     path = cached_asset_path(href)
-    if path.exists() and path.stat().st_size > 0:
+    cached_size = path.stat().st_size if path.exists() else 0
+    if (
+        cached_size > 0
+        and (expected_size is None or cached_size == expected_size)
+    ):
         capture = (
             raw_cache_source_capture(path, collection, model_run, valid_time)
             if collection and model_run and valid_time else None
@@ -703,21 +894,43 @@ def download_asset(
             return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
         raise RuntimeError("DMI bulk download budget would be exceeded")
-    with DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
-        response.raise_for_status()
-        content_length = int(response.headers.get("content-length", "0") or 0)
-        if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
-            raise RuntimeError("DMI bulk download budget exceeded before next asset")
-        with tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False) as tmp:
-            tmp_path = pathlib.Path(tmp.name)
-            for chunk in response.iter_content(1024 * 1024):
-                if not chunk:
-                    continue
-                budget["bytes"] += len(chunk)
-                if budget["bytes"] > MAX_DOWNLOAD_BYTES:
+    try:
+        with DOWNLOAD_SESSION.get(href, stream=True, timeout=REQUEST_TIMEOUT) as response:
+            response.raise_for_status()
+            try:
+                content_length = int(response.headers.get("content-length", "0") or 0)
+            except (TypeError, ValueError):
+                raise RuntimeError("DMI bulk asset has an invalid Content-Length") from None
+            if content_length < 0:
+                raise RuntimeError("DMI bulk asset has an invalid Content-Length")
+            if expected_size is not None and content_length and content_length != expected_size:
+                raise RuntimeError("DMI bulk asset length conflicts with STAC metadata")
+            if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
+                raise RuntimeError("DMI bulk download budget exceeded before next asset")
+            tmp_path: pathlib.Path | None = None
+            try:
+                with tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False) as tmp:
+                    tmp_path = pathlib.Path(tmp.name)
+                    for chunk in response.iter_content(1024 * 1024):
+                        if not chunk:
+                            continue
+                        budget["bytes"] += len(chunk)
+                        if budget["bytes"] > MAX_DOWNLOAD_BYTES:
+                            raise RuntimeError("DMI bulk download budget exceeded during asset download")
+                        tmp.write(chunk)
+                actual_size = tmp_path.stat().st_size
+                if (
+                    actual_size <= 0
+                    or (content_length and actual_size != content_length)
+                    or (expected_size is not None and actual_size != expected_size)
+                ):
+                    raise RuntimeError("DMI bulk asset download is incomplete")
+            except Exception:
+                if tmp_path is not None:
                     tmp_path.unlink(missing_ok=True)
-                    raise RuntimeError("DMI bulk download budget exceeded during asset download")
-                tmp.write(chunk)
+                raise
+    except requests.RequestException:
+        raise RuntimeError("DMI bulk asset request failed") from None
     tmp_path.replace(path)
     acquired_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     register_raw_cache_asset(
@@ -1681,9 +1894,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     break
             finally:
                 codes_release(gid)
-    # Wave height and period are one score-bearing physical tuple. Finalise only
-    # after all GRIB messages have been inspected, and retain direction only when
-    # its field resolves to that same exact grid definition/cell.
+    # Wave height and period are the shared mobilisation/rollback tuple. Finalise
+    # only after all GRIB messages have been inspected, and retain direction only
+    # when it resolves to that same exact grid definition/cell. The integrated
+    # last-mile state requires that retained field and otherwise fails closed.
     for (component, zone_id), candidates_by_parameter in scalar_tuple_candidates.items():
         if component != "wave":
             continue
@@ -1698,8 +1912,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         height = selected["significant-wave-height"]
         period = selected["dominant-wave-period"]
         distance = max(float(height["distanceKm"]), float(period["distanceKm"]))
-        if distance > MAX_GRID_DISTANCE_KM.get(zone.get("coastType") or "east", 32.0):
-            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "VALID_POINT_TOO_FAR"
+        if not wave_distance_allowed(collection, distance):
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "WAM_DISTANCE_OUT_OF_BOUNDS"
             continue
         destination = private_stage_output if zone.get("privateStage") else output
         if destination is None:
@@ -1768,6 +1982,314 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             diagnostics.get("currentFieldShadowSamplesWritten") or 0
         ) + written
     return found, touched, interrupted, messages_seen, zone_lookups
+
+
+def private_wave_bootstrap_hour_complete(
+    result: dict[str, Any],
+    zone: dict[str, Any],
+    collection: str,
+    asset: Any,
+) -> bool:
+    zone_id = str(zone.get("id") or "")
+    point = (result.get("zones") or {}).get(zone_id) or {}
+    hour = (point.get("hourly") or {}).get(asset.valid_time) or {}
+    height = hour.get("significant-wave-height")
+    period = hour.get("dominant-wave-period")
+    direction = hour.get("mean-wave-dir")
+    if not (
+        isinstance(height, (int, float)) and not isinstance(height, bool)
+        and math.isfinite(float(height))
+        and isinstance(period, (int, float)) and not isinstance(period, bool)
+        and math.isfinite(float(period))
+        and float(height) >= 0
+        and float(period) >= 0
+        and not (float(height) > 0 and float(period) <= 0)
+    ):
+        return False
+    direction_present = (
+        isinstance(direction, (int, float))
+        and not isinstance(direction, bool)
+        and math.isfinite(float(direction))
+    )
+    if float(height) > 0 and not direction_present:
+        return False
+    if direction_present and not (0 <= float(direction) < 360):
+        return False
+    source = (hour.get("sources") or {}).get("wave") or {}
+    if (
+        source.get("collection") != collection
+        or iso(source.get("modelRun")) != asset.model_run
+        or iso(source.get("nativeValidTime")) != asset.valid_time
+        or source.get("itemId") != asset.item_id
+        or source.get("assetIdentitySha256") != asset.asset_identity_sha256
+        or source.get("optionalFieldSet")
+            != (["mean-wave-dir"] if direction_present else [])
+    ):
+        return False
+    return complete_native_source_for_hour(
+        source,
+        "wave",
+        zone_id,
+        point,
+        asset.valid_time,
+    )
+
+
+def execute_private_wave_history_bootstrap(
+    result: dict[str, Any],
+    zones: list[dict[str, Any]],
+    budget: dict[str, int],
+    fresh_zone_ids: set[str],
+    configuration: dict[str, Any],
+    *,
+    registry: Any | None = None,
+) -> dict[str, set[str]]:
+    """Acquire and checkpoint the one bounded private WAM bridge.
+
+    Only the existing immutable PART sampling points are used.  No geometry or
+    point is derived here, and all progress/diagnostics are aggregate-only.
+    """
+    parts = [
+        zone for zone in zones
+        if zone.get("coastalPart")
+        and not zone.get("waterSource")
+        and not zone.get("researchCurrent")
+        and not zone.get("privateStage")
+    ]
+    part_ids = [str(zone.get("id") or "") for zone in parts]
+    if (
+        len(parts) != WAVE_BOOTSTRAP_EXPECTED_PART_COUNT
+        or len(set(part_ids)) != WAVE_BOOTSTRAP_EXPECTED_PART_COUNT
+        or any(not part_id.startswith("PART::") for part_id in part_ids)
+    ):
+        raise RuntimeError("private WAM bootstrap part registry is incomplete")
+    locked: dict[str, set[str]] = {}
+    aggregate = {
+        "schemaVersion": "dmi-wave-history-bootstrap-v1",
+        "mode": configuration["mode"],
+        "targetHour": configuration["targetHour"],
+        "productionTargetHour": configuration["productionTargetHour"],
+        "partCount": len(parts),
+        "status": "running",
+        "collections": {},
+    }
+    result.setdefault("diagnostics", {})["privateWaveHistoryBootstrap"] = aggregate
+    if configuration["mode"] == WAVE_BOOTSTRAP_COLD_START_MODE:
+        if registry is None:
+            raise RuntimeError("private WAM cold bootstrap registry is missing")
+        try:
+            cached_summary = validate_wave_history_cache(
+                result,
+                registry,
+                target_hour=configuration["targetHour"],
+                policy=configuration["policy"],
+            )
+        except WaveBootstrapError as exc:
+            if exc.code != "MISSING_HOUR":
+                raise
+            aggregate["cacheFirst"] = {
+                "status": "incomplete",
+                "failureCode": exc.code,
+            }
+        else:
+            expected_exact = (
+                registry.part_count * len(configuration["requiredHours"])
+            )
+            if (
+                cached_summary.exact_tuple_count == expected_exact
+                and cached_summary.interpolated_tuple_count == 0
+                and cached_summary.wam_collection_count
+                    == len(WAVE_BOOTSTRAP_COLLECTIONS)
+            ):
+                locked_hours = {
+                    valid_time
+                    for valid_time in configuration["requiredHours"]
+                    if epoch(valid_time) < epoch(configuration["targetHour"])
+                }
+                for collection in sorted(
+                    WAVE_BOOTSTRAP_COLLECTIONS,
+                    key=COLLECTION_ORDER.index,
+                ):
+                    relevant = relevant_zones(collection, parts)
+                    if not relevant:
+                        raise RuntimeError(
+                            "private WAM bootstrap lacks one required collection"
+                        )
+                    locked[collection] = set(locked_hours)
+                    aggregate["collections"][collection] = {
+                        "selectionMode": "complete-private-cache",
+                        "historyHourCount": configuration["policy"].history_hours,
+                        "requiredHourCount": len(configuration["requiredHours"]),
+                        "selectedAssetCount": 0,
+                        "runCount": None,
+                        "partCount": len(relevant),
+                        "processedAssetCount": 0,
+                        "reusedCompleteAssetCount": (
+                            len(relevant) * len(configuration["requiredHours"])
+                        ),
+                    }
+                aggregate["cacheFirst"] = {
+                    **cached_summary.sanitized_attestation(),
+                    "selectionMode": "complete-private-cache",
+                }
+                aggregate["status"] = "history-complete"
+                aggregate["lockedHourCount"] = sum(
+                    len(hours) for hours in locked.values()
+                )
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                return locked
+            aggregate["cacheFirst"] = {
+                "status": "incomplete",
+                "failureCode": "EXACT_NATIVE_CACHE_REQUIRED",
+            }
+    for collection in sorted(WAVE_BOOTSTRAP_COLLECTIONS, key=COLLECTION_ORDER.index):
+        relevant = relevant_zones(collection, parts)
+        if not relevant:
+            continue
+        if should_stop_work():
+            raise RuntimeError("private WAM bootstrap runtime budget reached before STAC selection")
+        plan, assets = list_private_wave_bootstrap_assets(collection, configuration)
+        plan_attestation = plan.sanitized_attestation()
+        collection_summary = {
+            "selectionMode": plan_attestation["selectionMode"],
+            "historyHourCount": plan_attestation["historyHourCount"],
+            "requiredHourCount": plan_attestation["requiredHourCount"],
+            "selectedAssetCount": len(assets),
+            "runCount": plan_attestation["runCount"],
+            "selectionSha256": plan_attestation["selectionSha256"],
+            "partCount": len(relevant),
+            "processedAssetCount": 0,
+            "reusedCompleteAssetCount": 0,
+        }
+        aggregate["collections"][collection] = collection_summary
+        locked[collection] = set()
+        expected_locked_hours = {
+            asset.valid_time for asset in assets
+            if epoch(asset.valid_time) < epoch(configuration["targetHour"])
+        }
+        for asset_number, asset in enumerate(assets, start=1):
+            if should_stop_work():
+                raise RuntimeError("private WAM bootstrap runtime budget reached")
+            already_complete = all(
+                private_wave_bootstrap_hour_complete(result, zone, collection, asset)
+                for zone in relevant
+            )
+            if already_complete:
+                collection_summary["reusedCompleteAssetCount"] += 1
+                if asset.valid_time in expected_locked_hours:
+                    locked[collection].add(asset.valid_time)
+                continue
+            path, reused = download_asset(
+                asset.href,
+                asset.size_bytes,
+                budget,
+                collection=collection,
+                model_run=asset.model_run,
+                valid_time=asset.valid_time,
+                item_id=asset.item_id,
+                item_created_at=asset.item_created_at,
+                item_updated_at=asset.item_updated_at,
+            )
+            if reused:
+                result["diagnostics"]["reusedAssets"] = int(
+                    result["diagnostics"].get("reusedAssets") or 0
+                ) + 1
+            progress(
+                f"{collection}: privat WAM-bootstrap {asset_number}/{len(assets)} "
+                f"({'genbrugt' if reused else 'downloadet'})"
+            )
+            found, touched, interrupted, messages_seen, zone_lookups = process_grib(
+                path,
+                collection,
+                asset.model_run,
+                asset.valid_time,
+                relevant,
+                result,
+                result["diagnostics"],
+            )
+            result["diagnostics"]["messagesSeen"] = int(
+                result["diagnostics"].get("messagesSeen") or 0
+            ) + messages_seen
+            result["diagnostics"]["zoneLookups"] = int(
+                result["diagnostics"].get("zoneLookups") or 0
+            ) + zone_lookups
+            if interrupted or not {"significant-wave-height", "dominant-wave-period"} <= found:
+                raise RuntimeError("private WAM bootstrap GRIB tuple is incomplete")
+            if not all(
+                private_wave_bootstrap_hour_complete(result, zone, collection, asset)
+                for zone in relevant
+            ):
+                raise RuntimeError("private WAM bootstrap does not cover every immutable coastal part")
+            fresh_zone_ids.update(touched)
+            collection_summary["processedAssetCount"] += 1
+            if asset.valid_time in expected_locked_hours:
+                locked[collection].add(asset.valid_time)
+            if asset_number % 4 == 0:
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+        if locked[collection] != expected_locked_hours:
+            raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
+    if set(locked) != set(WAVE_BOOTSTRAP_COLLECTIONS):
+        raise RuntimeError("private WAM bootstrap lacks one required collection")
+    aggregate["status"] = "history-complete"
+    aggregate["lockedHourCount"] = sum(len(hours) for hours in locked.values())
+    write_checkpoint(result, fresh_zone_ids, budget, "partial")
+    return locked
+
+
+def clear_operational_wave_window(
+    result: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    start_hour: str,
+) -> int:
+    """Clear only the future wave component owned by one WAM collection.
+
+    The immutable zone/PART registry and every sampling coordinate stay
+    untouched.  Removing the old component before processing makes the
+    operational run transactional: an interrupted refresh leaves an explicit
+    gap that the cutover gate rejects instead of a mixed-run interpolation.
+    """
+    start_epoch = epoch(start_hour)
+    cleared = 0
+    public_targets = [
+        zone for zone in zones
+        if not zone.get("waterSource")
+        and not zone.get("researchCurrent")
+        and not zone.get("privateStage")
+    ]
+    for zone in relevant_zones(collection, public_targets):
+        point = (result.get("zones") or {}).get(str(zone.get("id") or ""))
+        if not isinstance(point, dict):
+            continue
+        for valid_time, hour in (point.get("hourly") or {}).items():
+            if epoch(valid_time) < start_epoch or not isinstance(hour, dict):
+                continue
+            source = (hour.get("sources") or {}).get("wave")
+            had_wave = any(
+                key in hour
+                for key in (
+                    "significant-wave-height",
+                    "dominant-wave-period",
+                    "mean-wave-dir",
+                )
+            ) or isinstance(source, dict)
+            for key in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            ):
+                hour.pop(key, None)
+            (hour.get("sources") or {}).pop("wave", None)
+            if had_wave:
+                cleared += 1
+        for key in (
+            "significant-wave-height",
+            "dominant-wave-period",
+            "mean-wave-dir",
+        ):
+            (point.get("gridPoints") or {}).pop(key, None)
+            (point.get("collections") or {}).pop(key, None)
+    return cleared
 
 def wind_from_uv(hour: dict[str, Any]) -> None:
     u, v = hour.get("wind-u-10m"), hour.get("wind-v-10m")
@@ -2282,6 +2804,12 @@ def sanitize_component_provenance(zone_id: str, zone: dict[str, Any]) -> list[st
 
 def clean_and_summarize(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int]) -> None:
     cutoff = time.time() - PRIVATE_REPLAY_RETENTION_HOURS * 3600
+    if PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH is not None:
+        # The one-time migration bridge may begin before the normal rolling
+        # cache window. Preserve exactly that bounded start until the new
+        # schema-5 checkpoint has been produced; later runs return to normal
+        # retention automatically because the bootstrap env is absent.
+        cutoff = min(cutoff, PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH)
     horizon = time.time() + (HOURS + 6) * 3600
     invalidated_vectors = {}
     invalidated_component_provenance = {}
@@ -2687,7 +3215,7 @@ def replay_current_field_shadow_from_cache(
                         0, int(budget.get("bytes") or 0) - before_bytes
                     )
             except Exception as exc:
-                summary["errors"].append({"collection": collection, "message": str(exc)[:500]})
+                summary["errors"].append({"collection": collection, "message": safe_error_message(exc)})
         if not model_run or not resolved:
             continue
         summary["attempted"] = True
@@ -2759,7 +3287,7 @@ def write_github_outputs(status: str, fresh_collections: int = 0, partial_collec
             handle.write(f"zone_count={zone_count}\n")
             handle.write(f"downloaded_bytes={downloaded_bytes}\n")
             if error:
-                safe_error = str(error).replace("\r", " ").replace("\n", " ")[:500]
+                safe_error = safe_error_message(error)
                 handle.write(f"error={safe_error}\n")
 
 
@@ -2782,7 +3310,7 @@ def write_step_summary(result: dict[str, Any], scheduled: list[str], diag: dict[
             if diag.get("errors"):
                 handle.write("- Bemærkninger: " + "; ".join(f"{e.get('collection')}: {e.get('message')}" for e in diag["errors"]) + "\n")
     except Exception as exc:
-        print(f"Kunne ikke skrive GitHub-stepoversigt: {exc}", file=sys.stderr, flush=True)
+        print(f"Kunne ikke skrive GitHub-stepoversigt: {safe_error_message(exc)}", file=sys.stderr, flush=True)
 
 def write_failure_summary(error: Exception) -> None:
     summary_path = os.getenv("GITHUB_STEP_SUMMARY")
@@ -2790,10 +3318,17 @@ def write_failure_summary(error: Exception) -> None:
         with open(summary_path, "a", encoding="utf-8") as handle:
             handle.write("## DMI bulk refresh\n\n")
             handle.write("- Status: **failed**\n")
-            handle.write(f"- Opstartsfejl: `{str(error)[:500]}`\n")
+            handle.write(f"- Opstartsfejl: `{safe_error_message(error)}`\n")
 
 
 def main() -> int:
+    global PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH
+    wave_bootstrap_configuration = private_wave_bootstrap_configuration()
+    if wave_bootstrap_configuration is not None:
+        PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH = (
+            epoch(wave_bootstrap_configuration["requiredHours"][0])
+            - wave_bootstrap_configuration["policy"].maximum_interpolation_hours * 3600
+        )
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
     current_zone_registry_signature = sampling_registry_signature()
@@ -2842,7 +3377,8 @@ def main() -> int:
         and previous_refresh_status not in {"failed", "partial"}
     )
     if (
-        not FORCE_REFRESH
+        wave_bootstrap_configuration is None
+        and not FORCE_REFRESH
         and previous_generated
         and previous.get("zones")
         and time.time() - previous_generated < REFRESH_MINUTES * 60
@@ -2966,7 +3502,7 @@ def main() -> int:
                 nearest = min(zone_points, key=lambda z: (z["lon"]-lon)**2 + (z["lat"]-lat)**2) if zone_points else None
                 zones.append({"id": f"SOURCE::{source_key}", "lon": lon, "lat": lat, "coastType": (nearest or {}).get("coastType", "east"), "waterSource": True})
         except Exception as exc:
-            print(f"Advarsel: vandstandskilder kunne ikke føjes til bulk-grid: {exc}", file=sys.stderr)
+            print(f"Advarsel: vandstandskilder kunne ikke føjes til bulk-grid: {safe_error_message(exc)}", file=sys.stderr)
 
     removed_sampling_mismatches = prune_previous_sampling_mismatches(previous, zones)
     generated = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
@@ -3033,6 +3569,17 @@ def main() -> int:
         if not zone.get("waterSource") and not zone.get("researchCurrent") and not zone.get("privateStage")
     ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
+    if wave_bootstrap_configuration is not None:
+        # The first integrated cutover has one bounded exception to ordinary
+        # deficit scheduling: both WAM collections must establish the same-run
+        # operational bridge before unrelated productive collections can use
+        # the two normal processing slots.
+        wam_first = sorted(WAVE_BOOTSTRAP_COLLECTIONS, key=COLLECTION_ORDER.index)
+        scheduled = wam_first + [
+            collection for collection in scheduled
+            if collection not in WAVE_BOOTSTRAP_COLLECTIONS
+        ]
+        schedule_coverage["privateWaveBootstrapWamFirst"] = True
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
@@ -3052,7 +3599,7 @@ def main() -> int:
             except Exception as exc:
                 result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
                     "collection": collection,
-                    "message": str(exc)[:500],
+                    "message": safe_error_message(exc),
                 })
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
@@ -3061,6 +3608,16 @@ def main() -> int:
     fresh_zone_ids: set[str] = set()
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
+    bootstrap_locked_hours: dict[str, set[str]] = {}
+    if wave_bootstrap_configuration is not None:
+        bootstrap_locked_hours = execute_private_wave_history_bootstrap(
+            result,
+            zones,
+            budget,
+            fresh_zone_ids,
+            wave_bootstrap_configuration,
+            registry=load_wave_bootstrap_registry(part_doc),
+        )
 
     for collection in scheduled:
         if productive_collections >= COLLECTIONS_PER_RUN:
@@ -3077,16 +3634,50 @@ def main() -> int:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             if collection in prefetched_marine:
                 run, assets, stac_stats = prefetched_marine[collection]
+            elif (
+                wave_bootstrap_configuration is not None
+                and collection in WAVE_BOOTSTRAP_COLLECTIONS
+            ):
+                run, assets, stac_stats = list_latest_assets(
+                    collection,
+                    previous_run.get("referenceTime"),
+                    minimum_valid_time=wave_bootstrap_configuration["targetHour"],
+                    required_valid_times=set(
+                        wave_bootstrap_configuration["operationalExactHours"]
+                    ),
+                    required_horizon_end_time=format_wave_bootstrap_hour(
+                        parse_wave_bootstrap_hour(
+                            wave_bootstrap_configuration["productionTargetHour"]
+                        ) + timedelta(hours=HOURS - 1)
+                    ),
+                )
             else:
                 run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
+            bootstrap_operational_wam = (
+                wave_bootstrap_configuration is not None
+                and collection in WAVE_BOOTSTRAP_COLLECTIONS
+            )
+            if bootstrap_operational_wam:
+                cleared = clear_operational_wave_window(
+                    result,
+                    zones,
+                    collection,
+                    wave_bootstrap_configuration["targetHour"],
+                )
+                result["diagnostics"]["operationalWaveRowsCleared"] = int(
+                    result["diagnostics"].get("operationalWaveRowsCleared") or 0
+                ) + cleared
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
             processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
-            same_processing = previous_run.get("processingSignature") == processing_signature
+            same_processing = (
+                not bootstrap_operational_wam
+                and previous_run.get("processingSignature") == processing_signature
+            )
             same_run = previous_run.get("referenceTime") == run
             previous_steps = dict(previous_run.get("processedSteps") or {}) if same_processing and same_run else {}
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
@@ -3110,6 +3701,13 @@ def main() -> int:
                     recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             for asset_number, asset in enumerate(assets, start=1):
+                if asset["valid"] in bootstrap_locked_hours.get(collection, set()):
+                    run_info["assetsSkippedPreviouslyProcessed"] += 1
+                    result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
+                    result["diagnostics"]["bootstrapLockedStepsSkipped"] = int(
+                        result["diagnostics"].get("bootstrapLockedStepsSkipped") or 0
+                    ) + 1
+                    continue
                 if asset["valid"] in previously_processed:
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
@@ -3167,7 +3765,7 @@ def main() -> int:
                     )
                 except RuntimeError as exc:
                     if "budget" in str(exc).lower():
-                        budget_stop = str(exc)
+                        budget_stop = safe_error_message(exc)
                         break
                     raise
                 if reused:
@@ -3281,7 +3879,7 @@ def main() -> int:
                 state["lastBudgetInterruptedAt"] = generated
                 result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
         except Exception as exc:
-            message = str(exc)
+            message = safe_error_message(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1
             parser_blocked = "no required RavRadar parameters" in message
             parser_exception = isinstance(exc, (KeyError, TypeError, IndexError, AttributeError))
@@ -3346,6 +3944,33 @@ def main() -> int:
         prune_coastal_point_stage_hours(coastal_point_stage, generated)
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     clean_and_summarize(result, fresh_zone_ids, budget)
+    bootstrap_operational_complete = False
+    if wave_bootstrap_configuration is not None:
+        bootstrap_diagnostics = result["diagnostics"].get(
+            "privateWaveHistoryBootstrap"
+        ) or {}
+        try:
+            registry = load_wave_bootstrap_registry(part_doc)
+            operational = validate_wave_operational_handoff_cache(
+                result,
+                registry,
+                bootstrap_target_hour=wave_bootstrap_configuration["targetHour"],
+                production_target_hour=wave_bootstrap_configuration["productionTargetHour"],
+                forecast_hour_count=HOURS,
+            )
+            bootstrap_diagnostics["operationalHandoff"] = (
+                operational.sanitized_attestation()
+            )
+            bootstrap_diagnostics["status"] = "complete"
+            bootstrap_operational_complete = True
+        except WaveBootstrapError as exc:
+            bootstrap_diagnostics["status"] = "failed"
+            bootstrap_diagnostics["failureCode"] = exc.code
+            result["diagnostics"]["errors"].append({
+                "collection": "private-wave-bootstrap",
+                "message": safe_error_message(exc),
+                "failureClass": "cutover-gate",
+            })
     result["diagnostics"]["currentCoverageOwnerAudit"] = write_current_coverage_owner_audit(
         current_shadow,
         part_doc,
@@ -3355,9 +3980,13 @@ def main() -> int:
     )
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
-    if fresh_successes or fresh_partials:
+    bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete
+    if fresh_successes or fresh_partials or bootstrap_complete:
         result["sourceUpdatedAt"] = generated
-    result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or result["diagnostics"]["zeroProgressCollections"] else "failed")
+    if wave_bootstrap_configuration is not None and not bootstrap_complete:
+        result["refreshStatus"] = "failed"
+    else:
+        result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or bootstrap_complete or result["diagnostics"]["zeroProgressCollections"] else "failed")
 
     write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     prune_stats = prune_raw_cache()
@@ -3372,15 +4001,17 @@ def main() -> int:
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
-    return 0 if fresh_successes or fresh_partials else 2
+    if wave_bootstrap_configuration is not None and not bootstrap_complete:
+        return 2
+    return 0 if fresh_successes or fresh_partials or bootstrap_complete else 2
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as exc:
-        print(f"DMI bulk downloader failed safely: {exc}", file=sys.stderr, flush=True)
-        write_github_outputs("failed", error=str(exc))
+        print(f"DMI bulk downloader failed safely: {safe_error_message(exc)}", file=sys.stderr, flush=True)
+        write_github_outputs("failed", error=safe_error_message(exc))
         write_failure_summary(exc)
         raise SystemExit(2)
 

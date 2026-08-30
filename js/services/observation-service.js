@@ -1,6 +1,18 @@
 import { PUBLIC_CONFIG } from '../../config.js?v=4.0.314';
 import { authorizedFetch, currentSession, requireFreshSession } from './auth-service.js?v=4.0.314';
-import { assertObservationTripQualityBinding, assertTripEvidencePrivacy, migrateLegacyUnattestedObservationColumns } from './trip-evidence-contract.js?v=4.0.314';
+import {
+  TRIP_EVIDENCE_SCHEMA_VERSION,
+  assertObservationTripQualityBinding,
+  assertTripEvidencePrivacy,
+  migrateLegacyUnattestedObservationColumns
+} from './trip-evidence-contract.js?v=4.0.314';
+import {
+  assertTripObservationNestedPrivacy,
+  expectedCalibrationEligibility,
+  projectTripStoragePayload,
+  tripEvidenceIntegrityIssues
+} from './calibration-eligibility.js?v=4.0.314';
+import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.314';
 import { ACCOUNT_TRIP_REPORT_SOURCE, HISTORICAL_SNAPSHOT_UNAVAILABLE } from './account-trip-report-contract.js?v=4.0.314';
 const enabled=Boolean(PUBLIC_CONFIG.supabaseUrl&&PUBLIC_CONFIG.supabasePublishableKey);
 const LOCAL_KEY='ravradar-observations-v2';
@@ -65,7 +77,7 @@ export async function getOwnTripObservations({ limit = 100 } = {}) {
 }
 function upsertLocal(row){const safe=migrateLegacyTripObservationRow(row),rows=getLocalObservations();const i=rows.findIndex(x=>x.id===safe.id);if(i>=0)rows[i]=safe;else rows.push(safe);write(LOCAL_KEY,rows);}
 function enqueue(row){const safe=migrateLegacyTripObservationRow(row),rows=readMigratedRows(OUTBOX_KEY);if(!rows.some(x=>x.id===safe.id))rows.push(safe);write(OUTBOX_KEY,rows);}
-export function remoteObservationPayload(row){const normalized=migrateLegacyTripObservationRow(structuredClone(row||{}));const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=normalized;const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);return {...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};}
+export function remoteObservationPayload(row){const normalized=migrateLegacyTripObservationRow(structuredClone(row||{}));const {id:clientObservationId,gps:localGps,route,track,position,coordinates,latitude,longitude,location,sync_status,sync_error,synced_at,...remote}=normalized;const publicZoneId=remote.actual_zone_id||(typeof remote.zone_id==='string'?remote.zone_id:null);const payload={...remote,zone_id:Number.isSafeInteger(remote.zone_id)?remote.zone_id:null,actual_zone_id:publicZoneId,client_observation_id:clientObservationId,gps:null};return Number(payload.schema_version??1)===TRIP_EVIDENCE_SCHEMA_VERSION?projectTripStoragePayload(payload):payload;}
 async function postRemote(row){
   const url=`${PUBLIC_CONFIG.supabaseUrl}/functions/v1/submit-observation`;
   const payload=remoteObservationPayload(row);
@@ -86,8 +98,12 @@ export async function submitObservation({zone,huntMode,result,grams=null,scoreRe
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
 export async function submitTripEvidenceObservation(columns){
-  if(columns?.schema_version!==2)throw new Error('Turen har et ugyldigt format og kan ikke gemmes.');
+  columns=structuredClone(columns||{});
+  if(columns?.schema_version!==TRIP_EVIDENCE_SCHEMA_VERSION)throw new Error('Turen har et ugyldigt format og kan ikke gemmes.');
   assertObservationTripQualityBinding(columns);
+  const integrityIssues=tripEvidenceIntegrityIssues(columns);
+  if(integrityIssues.length)throw new Error(`Turen er inkonsistent og kan ikke gemmes (${integrityIssues.join(', ')}).`);
+  if(columns.calibration_eligible!==expectedCalibrationEligibility(columns,ravScoreModelBinding()))throw new Error('Turens kalibreringsstatus er inkonsistent.');
   assertTripEvidencePrivacy(columns);
   const existing=getLocalObservations().find(row=>row.trip_id===columns.trip_id);
   let session=currentSession();
@@ -107,19 +123,19 @@ export async function submitTripEvidenceObservation(columns){
     user_id:session?.user?.id||null,
     trip_id:columns.trip_id,
     gps:null,
-    rav_score:features.totalScore??null,
+    rav_score:columns.rav_score,
     score_level:null,
     ai_probability:null,
     ai_confidence:null,
-    model_version:features.modelVersion??null,
-    weather_snapshot:{schemaVersion:4,capturedAt:columns.forecast_captured_at,forecastSnapshotId:columns.forecast_snapshot_id,forecastIssuedAt:columns.forecast_issued_at,forecastValidAt:columns.forecast_valid_at,calibrationFeatures:features},
-    wind_speed_mps:features.windSpeedMs??null,
-    wind_direction_deg:features.windDirectionDeg??null,
-    wave_height_m:features.waveHeightM??null,
-    wave_period_s:features.wavePeriodS??null,
-    water_level_cm:features.waterLevelM==null?null:features.waterLevelM*100,
-    current_speed_mps:features.currentSpeedMs??null,
-    current_direction_deg:features.currentDirectionDeg??null,
+    model_version:columns.model_version,
+    weather_snapshot:columns.weather_snapshot,
+    wind_speed_mps:columns.wind_speed_mps,
+    wind_direction_deg:columns.wind_direction_deg,
+    wave_height_m:columns.wave_height_m,
+    wave_period_s:columns.wave_period_s,
+    water_level_cm:columns.water_level_cm,
+    current_speed_mps:columns.current_speed_mps,
+    current_direction_deg:columns.current_direction_deg,
     water_temperature_c:null,
     schema_version:columns.schema_version,
     trip_started_at:columns.trip_started_at,
@@ -140,11 +156,13 @@ export async function submitTripEvidenceObservation(columns){
     data_quality_flags:columns.data_quality_flags,
     sync_status:enabled?'pending':'local'
   };
-  assertTripEvidencePrivacy(row);
+  const rowIssues=tripEvidenceIntegrityIssues(row);if(rowIssues.length)throw new Error(`Turen kunne ikke bindes sikkert til lagringen (${rowIssues.join(', ')}).`);
+  assertTripObservationNestedPrivacy(row);
   upsertLocal(row);if(!enabled)return {stored:'local',row};enqueue(row);const status=await syncPendingObservations();const stored=status.pending?'pending':'remote';return {stored,row,status};
 }
 
 export async function submitAccountTripReportObservation(columns){
+  columns=structuredClone(columns||{});
   if(columns?.schema_version!==1||!columns?.data_quality_flags?.includes(ACCOUNT_TRIP_REPORT_SOURCE))throw new Error('Efterregistreringen har et ugyldigt format og kan ikke gemmes.');
   if(columns.calibration_eligible!==false)throw new Error('Efterregistreringen mangler de nødvendige historiske oplysninger og kan ikke gemmes som en almindelig RavRadar-tur.');
   assertTripEvidencePrivacy(columns);
@@ -181,7 +199,25 @@ export async function submitAccountTripReportObservation(columns){
     current_speed_mps:null,
     current_direction_deg:null,
     water_temperature_c:null,
-    ...columns,
+    schema_version:columns.schema_version,
+    trip_started_at:columns.trip_started_at,
+    trip_ended_at:columns.trip_ended_at,
+    forecast_target_at:columns.forecast_target_at,
+    search_minutes:columns.search_minutes,
+    search_coverage:columns.search_coverage,
+    report_accuracy:columns.report_accuracy,
+    actual_zone_id:columns.actual_zone_id,
+    actual_coastal_part_id:columns.actual_coastal_part_id,
+    forecast_zone_id:columns.forecast_zone_id,
+    forecast_coastal_part_id:columns.forecast_coastal_part_id,
+    calibration_eligible:columns.calibration_eligible,
+    found:columns.found,
+    forecast_snapshot_id:columns.forecast_snapshot_id,
+    forecast_issued_at:columns.forecast_issued_at,
+    forecast_valid_at:columns.forecast_valid_at,
+    forecast_captured_at:columns.forecast_captured_at,
+    calibration_features:columns.calibration_features,
+    data_quality_flags:[...columns.data_quality_flags],
     sync_status:enabled?'pending':'local'
   };
   assertTripEvidencePrivacy(row);

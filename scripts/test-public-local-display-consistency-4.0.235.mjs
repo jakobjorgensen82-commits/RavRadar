@@ -5,6 +5,7 @@ import { buildPublicConditions, buildPublicConditionDetails } from './public-con
 import { mergeConditionDetails } from '../js/services/data-service.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 
 const generatedAt='2026-08-19T12:00:00.000Z';
 const zoneCount=210;
@@ -44,8 +45,11 @@ const explanation=(time,score)=>({
     currentMemoryStatus:'READY',
     currentMemoryCoverageHours:48,
     currentMemoryWindowHours:48,
-    lastMileStatus:'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
-    lastMileScoreEffect:'NONE',
+    lastMileStatus:'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+    lastMileScoreEffect:'BOUNDED_SUPPLY_ATTENUATION_ONLY',
+    lastMileDeliveryFactor:.92,
+    lastMileWaveActivity:.8,
+    lastMileApproach:1/3,
     lastMileStructuralUncertainty:true,
     lastMilePhysicalDeliveryResolved:false,
     resolvedSurfZoneIncluded:false,
@@ -105,7 +109,7 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
 }
 
 assert.equal(nextPart,partCount,'Den landsdækkende regression skal dække præcis 673 lokale kystdele.');
-const full={datasetId:'local-display-consistency',generatedAt,productionReferenceAt:generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:1,enabled:true,generatedAt,modelBinding,scoreProfile,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
+const full={datasetId:'local-display-consistency',generatedAt,productionReferenceAt:generatedAt,zones:runtimeZones,coastalParts:{schemaVersion:1,enabled:true,generatedAt,modelBinding,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreProfile,expectedPartCount:partCount,scoredPartCount:partCount,parts,zones}};
 const merged=mergeConditionDetails({...buildPublicConditions(full),available:true},buildPublicConditionDetails(full));
 let checkedTabs=0;
 for(const [zoneId,zone] of Object.entries(merged.coastalParts.zones)){

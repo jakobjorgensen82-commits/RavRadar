@@ -132,8 +132,12 @@ function debugPanel(zone, result, condition) {
     && hasNumber(d.currentMemoryWindowHours)
     ? `${Math.round(Number(d.currentMemoryCoverageHours))}/${Math.round(Number(d.currentMemoryWindowHours))} h · ${d.currentMemoryStatus || t('common.missing')}`
     : d.currentMemoryStatus || t('common.missing');
-  const lastMileEffect = d.lastMileScoreEffect === 'NONE'
-    ? t('score.debug.noScoreEffect')
+  const lastMileFactor = Number(d.lastMileDeliveryFactor);
+  const lastMileEffect = d.lastMileScoreEffect === 'BOUNDED_SUPPLY_ATTENUATION_ONLY'
+    && Number.isFinite(lastMileFactor)
+    && lastMileFactor >= 0.85
+    && lastMileFactor <= 1
+    ? `×${localizedNumber(lastMileFactor, { minimumFractionDigits:2, maximumFractionDigits:2 })}`
     : t('common.missing');
   const structuralUncertainty = d.lastMileStructuralUncertainty === true
     ? t('common.yes')

@@ -129,32 +129,53 @@ for (const mode of ['beach', 'waders']) {
 
 const activeOffshore = evaluateIntegratedLastMile({
   supplyPotential: 100,
-  weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 270 },
-  onshoreDirectionDeg: 270,
+  lastMileState: {
+    lastMileMemoryReady: true,
+    lastMileMemoryStatus: 'READY',
+    lastMileEvidenceStatus: 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+    lastMileWaveActivity: 1,
+    lastMileNormalAlignment: -1,
+    lastMileTangentAlignment: 0,
+    lastMileCoherence: 1,
+    lastMileApproach: 0,
+    lastMileFactor: 0.85,
+  },
 });
-assert.equal(activeOffshore.alignment, -1);
-assert.equal(activeOffshore.factor, 1);
-assert.equal(activeOffshore.transport, 100);
-assert.equal(activeOffshore.scoreEffect, 'NONE');
+assert.equal(activeOffshore.normalAlignment, -1);
+assert.equal(activeOffshore.factor, 0.85);
+assert.equal(activeOffshore.transport, 85);
+assert.equal(activeOffshore.scoreEffect, 'BOUNDED_SUPPLY_ATTENUATION_ONLY');
 assert.equal(activeOffshore.structuralUncertainty, true);
 assert.equal(activeOffshore.physicalDeliveryResolved, false);
 assert.equal(activeOffshore.plausibleTransportRange, null);
-assert.equal(activeOffshore.status, 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL');
+assert.equal(activeOffshore.status, 'LAST_MILE_BOUNDED_WAVE_APPROACH_READY');
 assert.equal(RAVSCORE_LAST_MILE_POLICY.numericPhysicalUncertaintyIntervalProvided, false);
 const noSupply = evaluateIntegratedLastMile({
   supplyPotential: 0,
-  weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 90 },
-  onshoreDirectionDeg: 270,
+  lastMileState: {
+    lastMileMemoryReady: true,
+    lastMileMemoryStatus: 'READY',
+    lastMileEvidenceStatus: 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+    lastMileWaveActivity: 1,
+    lastMileNormalAlignment: 1,
+    lastMileTangentAlignment: 0,
+    lastMileCoherence: 1,
+    lastMileApproach: 1,
+    lastMileFactor: 1,
+  },
 });
 assert.equal(noSupply.transport, 0, 'waves may not create supply');
 const unknownDirection = evaluateIntegratedLastMile({
   supplyPotential: 80,
-  weather: { waveHeightM: 2, wavePeriodS: 8 },
-  onshoreDirectionDeg: 270,
+  lastMileState: {
+    lastMileMemoryReady: false,
+    lastMileMemoryStatus: 'MISSING_INPUT',
+    lastMileEvidenceStatus: 'ACTIVE_WAVE_DIRECTION_MISSING',
+  },
 });
-assert.equal(unknownDirection.status, 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN');
-assert.equal(unknownDirection.factor, 1);
-assert.equal(unknownDirection.transport, 80);
+assert.equal(unknownDirection.status, 'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING');
+assert.equal(unknownDirection.factor, null);
+assert.equal(unknownDirection.transport, null);
 assert.equal(unknownDirection.plausibleTransportRange, null);
 assert.deepEqual(unknownDirection.missing, ['wave-direction']);
 
@@ -167,8 +188,13 @@ for (const [label, value] of [
 ]) {
   const invalidSupply = evaluateIntegratedLastMile({
     supplyPotential: value,
-    weather: { waveHeightM: 0.3, wavePeriodS: 4 },
-    onshoreDirectionDeg: 270,
+    lastMileState: {
+      lastMileMemoryReady: true,
+      lastMileMemoryStatus: 'READY',
+      lastMileWaveActivity: 0,
+      lastMileApproach: 1,
+      lastMileFactor: 1,
+    },
   });
   assert.equal(invalidSupply.available, false, `${label} supply state must fail closed`);
   assert.equal(invalidSupply.transport, null);
@@ -185,6 +211,15 @@ const baseState = {
   waveMemoryStatus: 'READY',
   waveLastVerifiedAt: '2026-08-29T09:00:00.000Z',
   mobilisationPotential: 90,
+  lastMileMemoryReady: true,
+  lastMileMemoryStatus: 'READY',
+  lastMileEvidenceStatus: 'EXACT_CALM_DIRECTION_NEUTRAL',
+  lastMileWaveActivity: 0,
+  lastMileNormalAlignment: null,
+  lastMileTangentAlignment: null,
+  lastMileCoherence: null,
+  lastMileApproach: 1,
+  lastMileFactor: 1,
 };
 
 const readyZeroCurrentSupplyMaximum = evaluateRavScoreIntegrated({
@@ -277,7 +312,7 @@ assert.ok(result.score > 0,
   'ready zero recent current-supply is not proof of no conditional local amber opportunity');
 assert.equal(result.diagnostics.waterLevelContext.scoreEffectPoints, 0);
 assert.equal(result.diagnostics.waterLevelContext.phase, 'FALLING');
-assert.equal(result.diagnostics.waterLevelContext.currentRelation, 'ALONG_OR_WEAK');
+assert.equal(result.diagnostics.waterLevelContext.currentRelation, 'OUTBOUND');
 assert.equal(result.diagnostics.waterLevelContext.currentRelationDeadbandMps, 0.03);
 assert.equal(result.diagnostics.waterLevelContext.trendSemantics,
   'FORWARD_3H_MODEL_CHANGE_NOT_TIDAL_PHASE');
@@ -412,6 +447,16 @@ assert.equal(negativePeriod.available, false,
   'negative period must not be converted to calm-wave evidence by the full evaluator');
 assert.equal(negativePeriod.score, null);
 
+const positiveHeightZeroPeriod = evaluateRavScoreIntegrated({
+  mode: 'beach',
+  zone: { onshoreDirectionDeg: 270 },
+  weather: { windSpeedMps: 3, waveHeightM: 0.4, wavePeriodS: 0 },
+}, { state: baseState });
+assert.equal(positiveHeightZeroPeriod.available, false,
+  'positive wave height with zero period is invalid, not exact calm');
+assert.equal(positiveHeightZeroPeriod.reason, 'WAVE_PHYSICAL_INPUT_NOT_READY');
+assert.equal(positiveHeightZeroPeriod.score, null);
+
 const numericStringWave = evaluateRavScoreIntegrated({
   mode: 'beach',
   zone: { onshoreDirectionDeg: 270 },
@@ -426,12 +471,9 @@ const unknownWaveDirection = evaluateRavScoreIntegrated({
   zone: { onshoreDirectionDeg: 270 },
   weather: { windSpeedMps: 3, waveHeightM: 0.4, wavePeriodS: 5 },
 }, { state: baseState });
-assert.equal(unknownWaveDirection.available, true);
-assert.equal(
-  unknownWaveDirection.confidence.dataStatus,
-  'READY_WITH_STRUCTURAL_AND_DIRECTION_UNCERTAINTY',
-);
-assert.equal(unknownWaveDirection.components.transport, baseState.supplyPotential,
-  'missing outer-wave direction is score-neutral because the local surf-zone path is unresolved');
+assert.equal(unknownWaveDirection.available, false);
+assert.equal(unknownWaveDirection.reason, 'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING');
+assert.equal(unknownWaveDirection.score, null,
+  'active missing direction must fail closed and may not reuse a neutral factor');
 
 console.log('Integreret RavScore-kontrakt, jagtbarhed, sidste nærkystled og score: bestået.');

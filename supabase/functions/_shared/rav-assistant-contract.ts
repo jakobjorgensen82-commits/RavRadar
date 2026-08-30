@@ -2,17 +2,17 @@ export const RAV_ASSISTANT_MODEL = "@cf/openai/gpt-oss-20b";
 export const RAV_ASSISTANT_RESPONSE_SCHEMA = "rav-assistant-response-v1";
 export const RAV_ASSISTANT_LOCALES = Object.freeze(["da", "de", "en"]);
 export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
-  modelId: "RRS-COASTAL-PROCESS-INTEGRATED-1.0.0",
-  stateSchemaVersion: "4.0.0",
-  variantId: "COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1",
-  profileId: "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3",
-  componentSchemaId: "ravscore-components-huntability-transport-mobilisation-v3",
-  explanationSchemaId: "ravscore-explanation-integrated-v3",
+  modelId: "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+  stateSchemaVersion: "5.0.0",
+  variantId: "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+  profileId: "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4",
+  componentSchemaId: "ravscore-components-huntability-delivery-mobilisation-v4",
+  explanationSchemaId: "ravscore-explanation-integrated-v4",
   rankingPolicyId: "direction-broad-19-v1",
   bestTimePolicyId: "score-water-tie-earliest-v2",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
-  modelContractSha256: "a6272796cdb21ed10a3d308dc97efebf3bafc77715ac59521ac7b3522173ce76",
-  modelBundleSha256: "2949091d782684c713fa5852fb490d712bb6bb257f8a5f86429e2c5d87545717",
+  modelContractSha256: "0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da",
+  modelBundleSha256: "27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -20,7 +20,7 @@ export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1
 // public knowledge document by the Edge contract test and sent with every
 // assistant response so Pages can reject a split model/knowledge deployment.
 export const RAV_ASSISTANT_KNOWLEDGE_SHA256 =
-  "39b0d33bd347418716cfccb7b20d711775bf520634c498d30c0b11c2cf24a5d2";
+  "03e021cf28393c6f38493233b5e94fe1a231d9d14ff4fa31d86861f5862540a7";
 export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId: "x-ravradar-model-id",
   modelStateVersion: "x-ravradar-model-state-version",
@@ -32,7 +32,7 @@ export const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
 
 export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "score.integrated-only", text: "The integrated coastal-process RavScore is RavRadar's only public score model. Candidate G is retained only as a historical rollback oracle; it is neither a public model, a shadow model nor a runtime fallback." },
-  { id: "score.weights-20-50-30", text: "The integrated RavScore combines 20 percent huntability, 50 percent relative model-grid-current evidence towards the coastal zone and 30 percent wave energy and mobilisation opportunity." },
+  { id: "score.weights-20-50-30", text: "The integrated RavScore combines 20 percent huntability, 50 percent delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation and 30 percent wave energy and mobilisation opportunity." },
   { id: "score.local-missing", text: "If the integrated model lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from another model, zone, coastal part or hour." },
   { id: "score.no-find-guarantee", text: "RavScore describes relative model evidence and search conditions. It is an index, not a percentage chance or a claim of find precision, because RavRadar does not have representative find and no-find evidence." },
   { id: "amber.origin-and-secondary-stores", text: "Amber is fossilised resin from ancient trees and is many millions of years old. A Danish beach find may have been moved and redeposited repeatedly through geological layers, glacial material, the seabed and older beach stores; a particular piece cannot be dated reliably from appearance alone." },
@@ -44,15 +44,15 @@ export const RAV_ASSISTANT_FACTS = Object.freeze([
   { id: "transport.current-led", text: "Verified model-grid current is RavScore's main relative transport-evidence signal. A coastward component supports evidence towards the coastal zone; alongshore flow remains relevant physical context but does not resolve local amber delivery. Outflow is negative supply evidence, not proof that all local amber has left." },
   { id: "wind.indirect-not-bottom-current", text: "Wind acts mainly indirectly by building waves, affecting surface layers and water level, and moving light wash. Wind direction alone does not reliably show the direction of bottom-bound amber, and no wind direction is universally best because coast orientation and the preceding sequence matter." },
   { id: "waves.height-not-enough", text: "Wave height alone is not enough to describe mobilisation. Wave period, duration, water depth and seabed also matter; long waves reach deeper than short waves of the same height, and a brief peak is not equivalent to hours of developed sea." },
-  { id: "transport.grid-not-surf-zone", text: "RavRadar uses verified model-grid current linked to each coastal part as relative evidence of transport towards the coastal zone. The public explanation identifies an owner-approved regional proxy and its distance when one is used; such a proxy is not a local grid point. RavRadar is not a resolved surf-zone model of undertow, feeder or longshore currents, or rip currents, and cannot determine the exact final path across bars and channels. That unresolved last mile is structurally uncertain and score-neutral; outer-grid wave direction is shown only as context." },
+  { id: "transport.grid-not-surf-zone", text: "Verified model-grid current linked to each coastal part is relative evidence of transport towards the coastal zone. An owner-approved regional proxy and its distance are disclosed when used; it is not a local grid point. RavRadar does not resolve surf-zone undertow, feeder or longshore currents, rip currents, or the exact path across bars and channels. A causal energy-weighted W/N/T EWMA has a four-hour half-life and a decaying older tail; it can only attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding, although the displayed integer can move by 8 points. The factor is not a physical landing fraction and does not remove structural last-mile uncertainty." },
   { id: "mobilisation.wave-memory", text: "RavScore's mobilisation component is a relative wave-energy prior based on wave height squared times wave period. Its four-hour build and 48-hour half-life are tested working priors; RavRadar does not observe local amber inventory or actual movement, and these are neither universal natural limits nor find-calibrated rules." },
-  { id: "water-level.context", text: "Falling water can accompany some seaward movement, but it can also expose or concentrate material behind bars and along edges, making a smaller area easier to search. Without local bathymetry this context gives no RavScore points and is not proof that amber arrived or that all amber left." },
+  { id: "water-level.context", text: "Falling water can accompany some seaward movement. Lower water can also expose material already delivered or retained behind bars and along edges, making a smaller area easier to search; this does not prove that the fall concentrated it. Without local bathymetry this context gives no RavScore points and is not proof that amber arrived or that all amber left." },
   { id: "coast.sorting-and-traps", text: "Bars, channels, gaps, groynes, piers, coastal bends, beach slope, swash and backwash can slow, redirect, retain or release light material very locally. Transitions, ends and both sides of a structure are possible traps, never guarantees that amber is present." },
   { id: "field-signs.clues-not-proof", text: "Fresh wet seaweed, wood, seeds, coal, shells, dark bands and new wash lines are clues that the sea has sorted light material. Hunters should follow the fraction and inspect edges and pockets, but seaweed or any other single field sign is not proof of amber." },
   { id: "identification.uv-clue-not-proof", text: "Low weight for size and a resin-like surface are useful first clues. Long-wave ultraviolet light around 395 nanometres often makes Baltic amber fluoresce clearly, but other materials can also fluoresce, so UV is not final proof." },
   { id: "identification.avoid-destructive-tests", text: "Hot needles, fire and other destructive home tests should be avoided. Valuable or uncertain finds should be assessed by a specialist." },
   { id: "technique.follow-the-fraction", text: "A systematic search follows the sequence read, choose, follow and compare: read the wash, choose the most promising sorted fraction, follow it along the coast and compare it with neighbouring stretches, changing the search line when the material changes." },
-  { id: "sequence.release-transport-deposition", text: "An amber-hunting event may involve release, transport, nearshore delivery, deposition and retention. RavScore uses wave energy as mobilisation opportunity and verified model-grid current as relative evidence towards the coastal zone, but does not resolve the final path across bars and channels. Strong outflow can carry some material away, while falling water may also expose or concentrate what remains, so one model-current value never tells the whole story." },
+  { id: "sequence.release-transport-deposition", text: "An amber-hunting event may involve release, transport, nearshore delivery, deposition and retention. RavScore uses wave energy as mobilisation opportunity, verified model-grid current as relative supply evidence and a bounded wave-approach attenuation before the delivery component, but does not resolve the final path across bars and channels. Strong outflow can carry some material away, while lower water may expose material already delivered or retained behind a bar; this does not show that the fall concentrated it, and one model-current value never tells the whole story." },
   { id: "amber.resin-maturation", text: "Amber is not ordinary tree sap and resin does not become amber merely by drying. Resin must harden, be buried and undergo slow chemical maturation, including polymerisation and cross-linking over geological time." },
   { id: "amber.baltic-age-range", text: "The principal Baltic succinite horizon is late Eocene, around 36 to 35 million years old; loose Baltic amber without secure layer provenance is appropriately described with a broader roughly 37.7 to 34 million year range and cannot be dated from appearance alone." },
   { id: "amber.botanical-origin-uncertain", text: "Baltic amber came from conifer resin, but the exact resin-producing tree remains scientifically debated. A leading FTIR and fossil-based hypothesis is not a final identification." },
@@ -77,9 +77,9 @@ export const RAV_ASSISTANT_REFUSALS = Object.freeze({
 });
 
 export const RAV_ASSISTANT_WEIGHT_ANSWERS = Object.freeze({
-  da: "RavRadars integrerede kystprocesmodel er den eneste offentlige scoremodel. RavScore vægter 20 % jagtbarhed, 50 % relativt gridstrømsbaseret modelbevis mod kystzonen og 30 % bølgeenergi og mobiliseringsmulighed.",
-  de: "RavRadars integriertes Küstenprozessmodell ist das einzige öffentliche Score-Modell. Der RavScore gewichtet 20 % Suchbarkeit, 50 % relative gitterströmungsbasierte Modellevidenz zur Küstenzone und 30 % Wellenenergie und Mobilisierungsmöglichkeit.",
-  en: "RavRadar’s integrated coastal-process model is the only public score model. RavScore weights 20% huntability, 50% relative model-grid-current evidence towards the coastal zone, and 30% wave energy and mobilisation opportunity.",
+  da: "RavRadars integrerede kystprocesmodel er den eneste offentlige scoremodel. RavScore vægter 20 % jagtbarhed, 50 % leveringspotentiale fra verificeret gridstrømsbevis med begrænset dæmpning fra bølgernes tilgangsretning og 30 % bølgeenergi og mobiliseringsmulighed.",
+  de: "RavRadars integriertes Küstenprozessmodell ist das einzige öffentliche Score-Modell. Der RavScore gewichtet 20 % Suchbarkeit, 50 % Lieferpotenzial aus verifizierter Gitterströmungsevidenz mit begrenzter Dämpfung durch die Wellenanlaufrichtung und 30 % Wellenenergie und Mobilisierungsmöglichkeit.",
+  en: "RavRadar’s integrated coastal-process model is the only public score model. RavScore weights 20% huntability, 50% delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation, and 30% wave energy and mobilisation opportunity.",
 });
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim|credential|hack/i;

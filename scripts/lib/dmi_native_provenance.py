@@ -19,6 +19,14 @@ CURRENT_VECTOR_SELECTION = (
 )
 CURRENT_PREFERRED_DISTANCE_KM = 3.0
 CURRENT_MAX_DISTANCE_KM = 5.0
+# DMI documents an approximately 1 km WAM-DW grid and approximately 5 km
+# WAM-NSB grid. These hard bounds allow a bounded coastal wet-cell mask margin
+# without permitting the generic 24-40 km marine search radii to become
+# last-mile wave provenance.
+WAM_MAX_DISTANCE_KM = {
+    "wam_dw": 2.0,
+    "wam_nsb": 8.0,
+}
 
 MARINE_COLLECTIONS = frozenset({"dkss_idw", "dkss_nsbs", "dkss_lf"})
 COLLECTION_FAMILY = {
@@ -122,6 +130,17 @@ def haversine_point_km(first: Any, second: Any) -> float | None:
 
 def component_collection_allowed(component: str, collection: str) -> bool:
     return collection in COMPONENT_COLLECTIONS.get(component, ())
+
+
+def wave_distance_allowed(collection: Any, distance_km: Any) -> bool:
+    maximum = WAM_MAX_DISTANCE_KM.get(str(collection or ""))
+    return bool(
+        maximum is not None
+        and isinstance(distance_km, (int, float))
+        and not isinstance(distance_km, bool)
+        and math.isfinite(float(distance_km))
+        and 0 <= float(distance_km) <= maximum
+    )
 
 
 def sampling_identity(zone: dict[str, Any]) -> dict[str, Any] | None:
@@ -247,6 +266,8 @@ def complete_native_source_for_hour(
             source.get("vectorSelection") == "nearest-shared-grid-cell-no-spatial-interpolation"
             and source.get("vectorSemanticsVersion") == 1
         )
+    if component == "wave":
+        return wave_distance_allowed(collection, distance)
     return True
 
 

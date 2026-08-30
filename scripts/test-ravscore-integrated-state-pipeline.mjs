@@ -15,7 +15,7 @@ import {
   currentSupplyStrength,
 } from '../js/core/ravscore-current-supply-memory.js';
 import {
-  buildIntegratedRavScoreStateSeries,
+  buildIntegratedRavScoreStateSeries as buildIntegratedRavScoreStateSeriesRaw,
   reconstructCandidateGRollbackState,
 } from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -23,6 +23,7 @@ import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_ROLLBACK_ID,
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
@@ -32,6 +33,12 @@ import {
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 
 const HOUR_MS = 3_600_000;
+const IMMUTABLE_ONSHORE_DIRECTION_DEG = 90;
+const buildIntegratedRavScoreStateSeries = (samples = [], options = {}) =>
+  buildIntegratedRavScoreStateSeriesRaw(samples, {
+    onshoreDirectionDeg: IMMUTABLE_ONSHORE_DIRECTION_DEG,
+    ...options,
+  });
 const referenceMs = Date.parse('2026-08-29T12:00:00.000Z');
 const time = offsetHours => new Date(referenceMs + offsetHours * HOUR_MS).toISOString();
 const candidateGStateKey = 'sha256:legacy-candidate-g-test-context';
@@ -75,19 +82,42 @@ const currentSample = {
   currentVerified: true,
   waveHeightM: 1,
   wavePeriodS: 6,
+  waveDirectionDeg: 270,
 };
-const privateExactCurrentEvidence = Array.from({ length: 49 }, (_, index) => ({
-  time: time(index - 48),
-  strength: currentSupplyStrength(index === 48 ? 0.09 : 0.0349),
-}));
+for (const malformedTime of ['2026-02-30T12:00:00Z', '2026-08-29T24:00:00Z']) {
+  assert.throws(() => buildIntegratedRavScoreStateSeries([{
+    ...currentSample,
+    time: malformedTime,
+  }], { samplingContextKey }), /invalid time/,
+  `${malformedTime} must not be normalized into another integrated state hour`);
+}
+const privateExactCurrentEvidence =
+  legacyState.transportEvidence.map(item => ({ ...item }));
 const candidateGCurrentBootstrap = {
   migrationId: RAVSCORE_MIGRATION_ID,
-  source: 'VERIFIED_PRIVATE_RAW_UV_REBUILD',
+  source: RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
   samplingContextKey,
   sourceStateTime: legacyState.time,
   currentReferenceAt: legacyState.transportReferenceAt,
   currentEvidence: privateExactCurrentEvidence,
   currentNativeHoldAuthorization: null,
+};
+const candidateGWaveApproachBootstrap = {
+  migrationId: RAVSCORE_MIGRATION_ID,
+  source: 'VERIFIED_PRIVATE_DMI_WAVE_DIRECTION_REPLAY',
+  samplingContextKey,
+  sourceStateTime: legacyState.time,
+  targetReferenceAt: currentSample.time,
+  rows: Array.from({
+    length: RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+  }, (_, index) => ({
+    time: time(
+      index - RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+    ),
+    waveHeightM: currentSample.waveHeightM,
+    wavePeriodS: currentSample.wavePeriodS,
+    waveDirectionDeg: currentSample.waveDirectionDeg,
+  })),
 };
 
 const coldReplaySamples = Array.from({ length: 49 }, (_, index) => ({
@@ -198,6 +228,25 @@ assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples.slice(1
   },
 }), /exact verified 48-hour bridge/,
 '47 cached hours must not be labelled as a verified 48-hour cold replay');
+const nonPlainColdReplayProof = Object.assign(Object.create({ inherited: true }), {
+  recoveryId: RAVSCORE_COLD_REPLAY_ID,
+  replayedHourCount: 48,
+  targetReferenceAt: time(0),
+});
+assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples, {
+  samplingContextKey,
+  coldReplayBootstrap: nonPlainColdReplayProof,
+}), /bootstrap proof is invalid/,
+'cold-replay proof must be one exact plain object, not a prototype-bearing lookalike');
+assert.throws(() => buildIntegratedRavScoreStateSeries(coldReplaySamples, {
+  samplingContextKey,
+  coldReplayBootstrap: {
+    recoveryId: RAVSCORE_COLD_REPLAY_ID,
+    replayedHourCount: 48,
+    targetReferenceAt: time(0).replace('.000Z', 'Z'),
+  },
+}), /target is invalid/,
+'cold-replay target proof must use the exact canonical UTC representation');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: legacyState,
@@ -214,6 +263,7 @@ const migrated = buildIntegratedRavScoreStateSeries([currentSample], {
   initialState: legacyState,
   expectedCandidateGStateKey: candidateGStateKey,
   candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 });
 assert.equal(migrated.schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
 assert.equal(migrated.modelId, RAVSCORE_MODEL_ID);
@@ -225,9 +275,7 @@ assert.equal(migrated.rows[0].mobilisationPotential, 64);
 assert.ok(Number.isFinite(migrated.rows[0].supplyPotential));
 assert.equal(migrated.continuationState.currentEvidence.length, 49);
 assert.deepEqual(migrated.continuationState.currentEvidence, privateExactCurrentEvidence,
-  'migration v2 must rebuild integrated current from exact private evidence');
-assert.notDeepEqual(migrated.continuationState.currentEvidence, legacyState.transportEvidence,
-  'Candidate G quantized transport evidence is metadata-oracle input, not integrated current input');
+  'migration must reweight the sealed Candidate G signed evidence through the new kernel');
 assert.equal(migrated.migrationId, RAVSCORE_MIGRATION_ID);
 assert.equal(migrated.rows[0].waveTransition, 'MIGRATED_FROM_CANDIDATE_G',
   'Candidate G mobilisation must seed the first verified integrated wave transition');
@@ -254,6 +302,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([{
   initialState: legacyState,
   expectedCandidateGStateKey: candidateGStateKey,
   candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 }), /Same-time current evidence conflicts/,
 'same-time source revisions may not score new current against migrated old evidence');
 
@@ -298,6 +347,7 @@ const uninterrupted = buildIntegratedRavScoreStateSeries([
   initialState: legacyState,
   expectedCandidateGStateKey: candidateGStateKey,
   candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 });
 assert.deepEqual(continued.continuationState, uninterrupted.continuationState);
 
@@ -347,8 +397,9 @@ const regionalMigrated = buildIntegratedRavScoreStateSeries([regionalCurrentSamp
   expectedCandidateGStateKey: candidateGStateKey,
   candidateGCurrentBootstrap: {
     ...candidateGCurrentBootstrap,
-    currentNativeHoldAuthorization: regionalAuthorization,
+    currentNativeHoldAuthorization: null,
   },
+  candidateGWaveApproachBootstrap,
 });
 const nativeHold = buildIntegratedRavScoreStateSeries([missingCurrentAt(2)], {
   samplingContextKey,
@@ -418,6 +469,22 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([{
   },
 }), /lineage/);
 
+const nonPlainLineage = Object.assign(
+  Object.create({ inherited: 'not-a-state-contract' }),
+  migrated.continuationState.lineage,
+);
+assert.throws(() => buildIntegratedRavScoreStateSeries([{
+  ...currentSample,
+  time: time(3),
+}], {
+  samplingContextKey,
+  initialState: {
+    ...migrated.continuationState,
+    lineage: nonPlainLineage,
+  },
+}), /lineage/,
+'migration lineage must use the same exact plain-object boundary as the parent state');
+
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: legacyState,
@@ -443,7 +510,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
     supplyPotential: String(migrated.continuationState.supplyPotential),
   },
 }), /inconsistent|contradicts/,
-'numeric-string schema-4 potential must not be repaired into a valid continuation');
+'numeric-string schema-5 potential must not be repaired into a valid continuation');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: {
@@ -453,7 +520,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
     )),
   },
 }), /invalid signed current evidence/,
-'numeric-string signed evidence must invalidate schema-4 continuation');
+'numeric-string signed evidence must invalidate schema-5 continuation');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: {
@@ -482,20 +549,21 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: legacyState,
   expectedCandidateGStateKey: candidateGStateKey,
-}), /exact-current migration bootstrap is incompatible/,
-'valid Candidate metadata cannot migrate current without the private exact-current v2 bootstrap');
+}), /signed-evidence migration bootstrap is incompatible/,
+'valid Candidate metadata cannot migrate without the exact sealed-evidence bootstrap');
 assert.equal(buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: { ...legacyState, rollbackId: RAVSCORE_ROLLBACK_ID },
   expectedCandidateGStateKey: candidateGStateKey,
   candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 }).migrationApplied, true,
 'an exact model-produced rollback state must remain a valid round-trip migration source');
 assert.throws(() => buildIntegratedRavScoreStateSeries([currentSample], {
   samplingContextKey,
   initialState: { ...migrated.continuationState, unexpected: true },
 }), /non-canonical field set/,
-'schema-4 continuation must reject unbound extra fields');
+'schema-5 continuation must reject unbound extra fields');
 for (const key of [
   'componentSchemaId',
   'explanationSchemaId',
@@ -596,7 +664,7 @@ assert.throws(() => reconstructCandidateGRollbackState({
   currentEvidence: diagnosticFiftyPointMemory.evidence,
   supplyPotential: diagnosticFiftyPointMemory.supplyPotential,
 }, { candidateGStateKey }), /lacks compact current evidence/,
-'en indsprøjtet 50-punkts state skal afvises allerede af schema-4-kontrakten');
+'en indsprøjtet 50-punkts state skal afvises allerede af schema-5-kontrakten');
 
 const fiftyPointProduced = buildIntegratedRavScoreStateSeries(
   fiftyPointEvidence.map(item => ({
@@ -612,7 +680,7 @@ const fiftyPointProduced = buildIntegratedRavScoreStateSeries(
 assert.equal(fiftyPointProduced.rows.at(-1).currentMemoryReady, false);
 assert.equal(fiftyPointProduced.rows.at(-1).currentMemoryStatus, 'EVIDENCE_LIMIT_EXCEEDED');
 assert.equal(fiftyPointProduced.rows.at(-1).supplyPotential, null,
-  'schema-4-producenten må ikke approksimere et rollback-inkompatibelt integral');
+  'schema-5-producenten må ikke approksimere et rollback-inkompatibelt integral');
 
 assert.throws(() => buildIntegratedRavScoreStateSeries([{
   ...currentSample,
@@ -641,7 +709,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([], {
       numericStringSamples.continuationState.currentMemoryCoverageHours + 1,
   },
 }), /contradicts its signed current evidence/,
-'unavailable schema-4 current metadata must be rebuilt, not trusted');
+'unavailable schema-5 current metadata must be rebuilt, not trusted');
 assert.throws(() => buildIntegratedRavScoreStateSeries([], {
   samplingContextKey,
   initialState: {
@@ -649,7 +717,7 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([], {
     time: '2026-08-29T12:00:00',
   },
 }), /invalid causal time/,
-'persisted schema-4 times without an explicit timezone must fail closed');
+'persisted schema-5 times without an explicit timezone must fail closed');
 
 const compactText = JSON.stringify(migrated.continuationState).toLowerCase();
 for (const forbidden of [
@@ -660,4 +728,4 @@ for (const forbidden of [
   assert.equal(compactText.includes(forbidden), false, `compact state contains ${forbidden}`);
 }
 
-console.log('Integreret RavScore schema-4 state, Candidate G-migration og rollback: bestået.');
+console.log('Integreret RavScore schema-5 state, Candidate G-migration og rollback: bestået.');

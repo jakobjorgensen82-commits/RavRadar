@@ -2,20 +2,20 @@
   "schemaVersion": "rav-assistant-public-knowledge-v1",
   "releaseVersion": "4.0.293",
   "ravScoreModelBinding": {
-    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.0.0",
-    "stateSchemaVersion": "4.0.0",
-    "variantId": "COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1",
-    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3",
-    "componentSchemaId": "ravscore-components-huntability-transport-mobilisation-v3",
-    "explanationSchemaId": "ravscore-explanation-integrated-v3",
+    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+    "stateSchemaVersion": "5.0.0",
+    "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4",
+    "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-v4",
+    "explanationSchemaId": "ravscore-explanation-integrated-v4",
     "rankingPolicyId": "direction-broad-19-v1",
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
-    "modelContractSha256": "a6272796cdb21ed10a3d308dc97efebf3bafc77715ac59521ac7b3522173ce76",
-    "modelBundleSha256": "2949091d782684c713fa5852fb490d712bb6bb257f8a5f86429e2c5d87545717"
+    "modelContractSha256": "0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da",
+    "modelBundleSha256": "27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd"
   },
   "scoreModel": {
-    "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.0.0",
+    "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "publicOnly": true,
     "weights": {
       "huntability": 20,
@@ -67,7 +67,7 @@
     },
     {
       "id": "score.weights-20-50-30",
-      "text": "The integrated RavScore combines 20 percent huntability, 50 percent relative model-grid-current evidence towards the coastal zone and 30 percent wave energy and mobilisation opportunity."
+      "text": "The integrated RavScore combines 20 percent huntability, 50 percent delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation and 30 percent wave energy and mobilisation opportunity."
     },
     {
       "id": "score.local-missing",
@@ -115,7 +115,7 @@
     },
     {
       "id": "transport.grid-not-surf-zone",
-      "text": "RavRadar uses verified model-grid current linked to each coastal part as relative evidence of transport towards the coastal zone. The public explanation identifies an owner-approved regional proxy and its distance when one is used; such a proxy is not a local grid point. RavRadar is not a resolved surf-zone model of undertow, feeder or longshore currents, or rip currents, and cannot determine the exact final path across bars and channels. That unresolved last mile is structurally uncertain and score-neutral; outer-grid wave direction is shown only as context."
+      "text": "Verified model-grid current linked to each coastal part is relative evidence of transport towards the coastal zone. An owner-approved regional proxy and its distance are disclosed when used; it is not a local grid point. RavRadar does not resolve surf-zone undertow, feeder or longshore currents, rip currents, or the exact path across bars and channels. A causal energy-weighted W/N/T EWMA has a four-hour half-life and a decaying older tail; it can only attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding, although the displayed integer can move by 8 points. The factor is not a physical landing fraction and does not remove structural last-mile uncertainty."
     },
     {
       "id": "mobilisation.wave-memory",
@@ -147,7 +147,7 @@
     },
     {
       "id": "sequence.release-transport-deposition",
-      "text": "An amber-hunting event may involve release, transport, nearshore delivery, deposition and retention. RavScore uses wave energy as mobilisation opportunity and verified model-grid current as relative evidence towards the coastal zone, but does not resolve the final path across bars and channels. Strong outflow can carry some material away, while lower water may expose material already delivered or retained behind a bar; this does not show that the fall concentrated it, and one model-current value never tells the whole story."
+      "text": "An amber-hunting event may involve release, transport, nearshore delivery, deposition and retention. RavScore uses wave energy as mobilisation opportunity, verified model-grid current as relative supply evidence and a bounded wave-approach attenuation before the delivery component, but does not resolve the final path across bars and channels. Strong outflow can carry some material away, while lower water may expose material already delivered or retained behind a bar; this does not show that the fall concentrated it, and one model-current value never tells the whole story."
     },
     {
       "id": "amber.resin-maturation",

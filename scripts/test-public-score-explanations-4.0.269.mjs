@@ -22,6 +22,15 @@ const state = {
   waveMemoryStatus: 'READY',
   waveLastVerifiedAt: '2026-08-29T18:00:00.000Z',
   mobilisationPotential: 73,
+  lastMileMemoryReady: true,
+  lastMileMemoryStatus: 'READY',
+  lastMileEvidenceStatus: 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+  lastMileWaveActivity: 0.6,
+  lastMileNormalAlignment: 1,
+  lastMileTangentAlignment: 0,
+  lastMileCoherence: 1,
+  lastMileApproach: 1,
+  lastMileFactor: 1,
 };
 const weather = {
   windSpeedMps: 4.7,
@@ -59,7 +68,8 @@ assert.ok(projected.componentReasons.huntability.some(reason => reason.includes(
 assert.ok(projected.componentReasons.huntability.some(reason => reason.includes('0,4 m')));
 assert.ok(projected.componentReasons.transport.some(reason => reason.includes('0,18 m/s') && reason.includes('ind mod kystdelen')));
 assert.ok(projected.componentReasons.transport.some(reason => reason.includes('transportbevis mod kystzonen')));
-assert.ok(projected.componentReasons.transport.some(reason => reason.includes('ikke opløst') && reason.includes('ændrer derfor ikke scoren')));
+assert.ok(projected.componentReasons.transport.some(reason => reason.includes('ganget én gang') && reason.includes('1,00')));
+assert.ok(projected.componentReasons.transport.some(reason => reason.includes('fysisk uopløst')));
 assert.ok(projected.componentReasons.release.some(reason => reason.includes('0,4 m')));
 assert.ok(projected.componentReasons.release.some(reason => reason.includes('mobiliseringspotentiale') && reason.includes('aftage gradvist')));
 assert.ok(projected.componentReasons.release.some(reason => reason.includes('modelbevis for mobiliseringsmulighed')));
@@ -69,14 +79,40 @@ assert.equal(projected.explanation.transportDiagnostics.currentDirectionClass, '
 assert.ok(Math.abs(projected.explanation.transportDiagnostics.currentDirectionDifferenceDeg - 40.5358) < 0.01);
 assert.equal(projected.explanation.transportDiagnostics.supplyPotential, 100);
 assert.equal(projected.explanation.transportDiagnostics.transportPotential, 100);
-assert.equal(projected.explanation.transportDiagnostics.lastMileScoreEffect, 'NONE');
+assert.equal(projected.explanation.transportDiagnostics.lastMileScoreEffect, 'BOUNDED_SUPPLY_ATTENUATION_ONLY');
+assert.equal(projected.explanation.transportDiagnostics.lastMileDeliveryFactor, 1);
 assert.equal(projected.explanation.transportDiagnostics.lastMilePhysicalDeliveryResolved, false);
+const missingPhysicalResolution = {
+  ...integrated,
+  diagnostics: {
+    ...integrated.diagnostics,
+    lastMile: { ...integrated.diagnostics.lastMile },
+  },
+};
+delete missingPhysicalResolution.diagnostics.lastMile.physicalDeliveryResolved;
+const projectedMissingPhysicalResolution = projectIntegratedRavScoreForPublic(
+  missingPhysicalResolution,
+  {
+    mode: 'waders',
+    profile,
+    context: {
+      ...weather,
+      currentVerified: true,
+      currentTransition: 'INBOUND_BUILDUP',
+      currentMemoryCoverageHours: 48,
+      currentMemoryWindowHours: 48,
+      waveTransition: 'DECAY',
+    },
+  },
+);
+assert.equal(projectedMissingPhysicalResolution.explanation.transportDiagnostics.lastMilePhysicalDeliveryResolved, null,
+  'manglende producentudsagn må ikke omskrives til et gyldigt fysisk-uopløst false');
 assert.equal(projected.explanation.transportDiagnostics.currentMemoryStatus, 'READY');
 assert.equal(projected.explanation.transportDiagnostics.currentMemoryCoverageHours, 48);
 assert.equal(projected.explanation.transportDiagnostics.windDirectlyIncluded, false);
 assert.equal(projected.explanation.scoreIsFindProbability, false);
 assert.match(projected.explanation.scoreMeaning, /Modelleret indeks/);
-assert.ok(projected.reasons.some(reason => /Vandet er på vej ned/.test(reason) && /ingen RavScore-point/.test(reason)));
+assert.ok(projected.reasons.some(reason => /Vandstanden er beregnet lavere/.test(reason) && /ingen RavScore-point/.test(reason)));
 
 const held = projectIntegratedRavScoreForPublic(integrated, {
   mode: 'beach',
@@ -111,6 +147,9 @@ assert.ok((ui.match(/integratedExplanationPanel\(/g) || []).length >= 3,
   'Samme integrerede presenter skal eje nu- og femdøgnsforklaringen.');
 assert.ok(!ui.includes('transportEvent'), 'Den offentlige UI må ikke bruge Candidate G transportEvent.');
 assert.ok(ui.includes("t('score.mobilisationDefinition')"));
+assert.ok(ui.includes("d.lastMileScoreEffect === 'BOUNDED_SUPPLY_ATTENUATION_ONLY'"));
+assert.ok(ui.includes('d.lastMileDeliveryFactor'));
+assert.ok(!ui.includes("d.lastMileScoreEffect === 'NONE'"));
 assert.ok(index.includes('<section id="infoPanel" class="info-panel" aria-live="polite" hidden></section>'));
 assert.ok(!index.includes('Vælg et område på kortet'));
 assert.ok(!app.includes('Vælg et område på kortet'));

@@ -1,9 +1,9 @@
 import { RAVSCORE_CURRENT_SUPPLY_POLICY } from './ravscore-model-contract.js';
+import { canonicalRavScoreTime } from './ravscore-time.js';
 
 const HOURS_TO_MILLISECONDS = 3_600_000;
 const TIME_EPSILON_MILLISECONDS = 1;
 const NUMBER_EPSILON = 1e-12;
-const EXPLICIT_TIME_ZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
 
 export const CURRENT_SUPPLY_MEMORY_POLICY = RAVSCORE_CURRENT_SUPPLY_POLICY;
 
@@ -12,13 +12,7 @@ function clamp(value, minimum, maximum) {
 }
 
 function canonicalTime(value) {
-  if (typeof value !== 'string' || !EXPLICIT_TIME_ZONE.test(value)) {
-    return null;
-  }
-  const milliseconds = new Date(value).getTime();
-  return Number.isFinite(milliseconds)
-    ? new Date(milliseconds).toISOString()
-    : null;
+  return canonicalRavScoreTime(value);
 }
 
 function finiteNumber(value) {

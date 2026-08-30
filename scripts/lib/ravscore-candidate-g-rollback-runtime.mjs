@@ -26,14 +26,14 @@ import {
   RAVSCORE_PRESENTATION_POLICY_ID,
   RAVSCORE_PROFILE_ID,
   RAVSCORE_RANKING_POLICY_ID,
+  RAVSCORE_ROLLBACK_ID,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
   RAVSCORE_WEIGHTS,
   ravScoreModelBinding,
 } from '../rollback-assets/ravscore-model-contract.js';
 
-export const CANDIDATE_G_OPERATIONAL_ROLLBACK_ID =
-  'integrated-schema4-to-candidate-g-schema2-v1';
+export const CANDIDATE_G_OPERATIONAL_ROLLBACK_ID = RAVSCORE_ROLLBACK_ID;
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const plain = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -436,7 +436,7 @@ export function candidateGRollbackScoreProfile({
 } = {}) {
   return Object.freeze({
     schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
-    switchVersion: 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0108-V1',
+    switchVersion: 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0110-V2',
     requestedProfileId: RAVSCORE_MODEL_ID,
     activeProfileId: RAVSCORE_MODEL_ID,
     stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,

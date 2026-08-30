@@ -71,9 +71,9 @@ def candidate_g_rollback_selection(version):
         "crossModelRuntimeFallbackAllowed": False,
         "migrationRequiredAtFirstCutover": False,
         "status": "owner-approved-candidate-g-rollback-only-local-fail-closed",
-        "activationAuthority": "DEC-0108-manual-candidate-g-rollback",
+        "activationAuthority": "DEC-0110-manual-candidate-g-rollback",
         "evidence": {
-            "decisionId": "DEC-0108",
+            "decisionId": "DEC-0110",
             "exactHeadValidationRequired": True,
             "freshProductionValidationRequired": True,
         },

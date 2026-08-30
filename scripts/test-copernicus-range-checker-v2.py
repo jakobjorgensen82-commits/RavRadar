@@ -26,6 +26,7 @@ from lib.copernicus_target_identity import target_fingerprint
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKER = ROOT / "scripts/check-copernicus-current-range.py"
+CURRENT_CHECKER = ROOT / "scripts/check-copernicus-current-hour.py"
 REFERENCE = datetime(2026, 8, 29, 8, tzinfo=timezone.utc)
 TARGET = {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [9.0, 57.0]}
 
@@ -34,9 +35,14 @@ def write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def run(folder: Path, *, require_complete: bool = False) -> subprocess.CompletedProcess[str]:
+def run(
+    folder: Path,
+    *,
+    require_complete: bool = False,
+    stdlib_only: bool = False,
+) -> subprocess.CompletedProcess[str]:
     command = [
-        sys.executable, "-B", str(CHECKER),
+        sys.executable, *(["-S"] if stdlib_only else []), "-B", str(CHECKER),
         "--shadow", str(folder / "cache.json"),
         "--registry", str(folder / "registry.json"),
         "--dmi", str(folder / "dmi.json"),
@@ -46,6 +52,15 @@ def run(folder: Path, *, require_complete: bool = False) -> subprocess.Completed
     if require_complete:
         command.append("--require-complete")
     return subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
+
+
+def run_current(folder: Path, *, stdlib_only: bool = False) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([
+        sys.executable, *(["-S"] if stdlib_only else []), "-B", str(CURRENT_CHECKER),
+        "--shadow", str(folder / "cache.json"),
+        "--targets", str(folder / "registry.json"),
+        "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
+    ], cwd=ROOT, capture_output=True, text=True, check=False)
 
 
 with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as raw_folder:
@@ -116,12 +131,38 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as r
     )
     good = run(folder)
     assert good.returncode == 0 and "COMPLETE" in good.stdout, good.stdout + good.stderr
+    stdlib_good = run(folder, stdlib_only=True)
+    assert stdlib_good.returncode == 0 and "COMPLETE" in stdlib_good.stdout, stdlib_good.stdout + stdlib_good.stderr
+    current = run_current(folder)
+    assert current.returncode == 0 and "already contains" in current.stdout, current.stdout + current.stderr
+    stdlib_current = run_current(folder, stdlib_only=True)
+    assert stdlib_current.returncode == 0 and "already contains" in stdlib_current.stdout, stdlib_current.stdout + stdlib_current.stderr
+
+    # Current-hour duplicate suppression must bind the full schema-2 seal, not
+    # merely observe a row at the same hour.
+    original_registry = json.loads((folder / "registry.json").read_text(encoding="utf-8"))
+    changed_registry = {**original_registry, "dmiCurrentInputSha256": canonical_sha256({"other": "dmi"})}
+    write(folder / "registry.json", changed_registry)
+    rebound = run_current(folder)
+    assert rebound.returncode == 0 and "lacks a complete" in rebound.stdout, rebound.stdout + rebound.stderr
+    write(folder / "registry.json", original_registry)
 
     (folder / "cache.json").unlink()
     optional_absent = run(folder)
     assert optional_absent.returncode == 0 and "absent" in optional_absent.stdout
     required_absent = run(folder, require_complete=True)
     assert required_absent.returncode != 0 and "required but absent" in required_absent.stdout
+    write(folder / "cache.json", {
+        "schemaVersion": 1, "retentionHours": 168,
+        "scoreImpact": False, "publicRuntime": False,
+        "updatedAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "collections": [], "records": [],
+    })
+    legacy = run(folder)
+    assert legacy.returncode == 0 and "complete acquisition is required" in legacy.stdout
+    legacy_required = run(folder, require_complete=True)
+    assert legacy_required.returncode != 0 and "required but absent" in legacy_required.stdout
+    (folder / "cache.json").unlink()
     atomic_write_shadow(
         folder / "cache.json", acquisitions=acquisitions, records=records, collection=collection,
         updated_at=acquisition_at, target_identities={"p1": TARGET},

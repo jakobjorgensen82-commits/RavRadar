@@ -13,6 +13,7 @@ import {
   loadActiveTripEvidence
 } from '../js/services/trip-evidence-store.js';
 import { createTripEvidenceController } from '../js/services/trip-evidence-controller.js';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 
 class MemoryStorage {
   constructor() { this.values = new Map(); }
@@ -87,6 +88,7 @@ assert.throws(() => buildAccountTripReport({
 }, { now: Date.parse('2026-08-23T08:00:00.000Z') }), /0 og 10000/);
 
 const store = new MemoryStorage();
+const activeModelBinding = ravScoreModelBinding();
 const startInput = {
   tripId: '99999999-9999-4999-8999-999999999999',
   startedAt: '2026-08-23T06:00:00.000Z',
@@ -102,12 +104,17 @@ const startInput = {
   forecastCalibrationEligible: true,
   dataQualityFlags: [],
   calibrationFeatures: {
-    modelVersion: 'ravscore-test', appVersion: '4.0.311',
-    modelStateVersion: 'test-state', modelVariantId: 'test-variant', modelProfileId: 'test-profile',
-    modelComponentSchemaId: 'test-components', modelExplanationSchemaId: 'test-explanations',
-    modelRankingPolicyId: 'test-ranking', modelBestTimePolicyId: 'test-best-time',
-    modelPresentationPolicyId: 'test-presentation', modelContractSha256: '0'.repeat(64),
-    modelBundleSha256: '1'.repeat(64),
+    modelVersion: activeModelBinding.modelId, appVersion: '4.0.315',
+    modelStateVersion: activeModelBinding.stateSchemaVersion,
+    modelVariantId: activeModelBinding.variantId,
+    modelProfileId: activeModelBinding.profileId,
+    modelComponentSchemaId: activeModelBinding.componentSchemaId,
+    modelExplanationSchemaId: activeModelBinding.explanationSchemaId,
+    modelRankingPolicyId: activeModelBinding.rankingPolicyId,
+    modelBestTimePolicyId: activeModelBinding.bestTimePolicyId,
+    modelPresentationPolicyId: activeModelBinding.presentationPolicyId,
+    modelContractSha256: activeModelBinding.modelContractSha256,
+    modelBundleSha256: activeModelBinding.modelBundleSha256,
     totalScore: 50, huntabilityScore: 50, transportScore: 50, mobilisationScore: 50,
     reasonCodes: []
   }

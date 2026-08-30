@@ -4,6 +4,7 @@ import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-s
 import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.314";
 import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.314";
 import { ravScoreModelBinding } from "../core/ravscore-model-contract.js?v=4.0.314";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.314";
 import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.314";
 import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.314";
 import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.314";
@@ -13,7 +14,7 @@ import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from 
 const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
 const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
 const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
-const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '39b0d33bd347418716cfccb7b20d711775bf520634c498d30c0b11c2cf24a5d2';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '03e021cf28393c6f38493233b5e94fe1a231d9d14ff4fa31d86861f5862540a7';
 const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
   modelId:'x-ravradar-model-id',
   modelStateVersion:'x-ravradar-model-state-version',
@@ -227,8 +228,13 @@ export function publicAssistantContext(value = {}, language = getLanguage()) {
   const zone = context.zone && typeof context.zone === 'object' && !Array.isArray(context.zone) ? context.zone : {};
   const result = context.result && typeof context.result === 'object' && !Array.isArray(context.result) ? context.result : {};
   const weather = context.weather && typeof context.weather === 'object' && !Array.isArray(context.weather) ? context.weather : {};
+  const modelBindingMatches = sameRavScoreModelBinding(
+    context.modelBinding,
+    ACTIVE_RAVSCORE_MODEL_BINDING,
+  );
   const numericScore = finite(result.score);
-  const scoreAvailable = result.available === true
+  const scoreAvailable = modelBindingMatches
+    && result.available === true
     && numericScore !== null
     && numericScore >= 0
     && numericScore <= 100;

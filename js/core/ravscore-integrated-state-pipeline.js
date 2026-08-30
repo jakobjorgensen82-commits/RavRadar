@@ -20,6 +20,11 @@ import {
   buildRavScoreWaveMobilisationStateSeries,
 } from './ravscore-wave-mobilisation-state.js';
 import {
+  buildRavScoreWaveApproachStateSeries,
+} from './ravscore-wave-approach-state.js';
+import { classifyWavePhysicalTuple } from './ravscore-mobilisation-memory.js';
+import { canonicalRavScoreTime } from './ravscore-time.js';
+import {
   RAVSCORE_BEST_TIME_POLICY_ID,
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_COMPONENT_SCHEMA_ID,
@@ -33,6 +38,7 @@ import {
   RAVSCORE_RANKING_POLICY_ID,
   RAVSCORE_ROLLBACK_ID,
   RAVSCORE_RECOVERY_POLICY,
+  RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_VARIANT_ID,
 } from './ravscore-model-contract.js';
@@ -40,7 +46,6 @@ import {
 const HOUR_MS = 3_600_000;
 const EPSILON = 1e-9;
 const CANDIDATE_G_MAX_CONTINUATION_EVIDENCE_POINTS = 49;
-const EXPLICIT_TIME_ZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
 const CANDIDATE_G_CURRENT_BOOTSTRAP_KEYS = Object.freeze([
   'migrationId',
   'source',
@@ -49,6 +54,14 @@ const CANDIDATE_G_CURRENT_BOOTSTRAP_KEYS = Object.freeze([
   'currentReferenceAt',
   'currentEvidence',
   'currentNativeHoldAuthorization',
+]);
+const CANDIDATE_G_WAVE_APPROACH_BOOTSTRAP_KEYS = Object.freeze([
+  'migrationId',
+  'source',
+  'samplingContextKey',
+  'sourceStateTime',
+  'targetReferenceAt',
+  'rows',
 ]);
 const NATIVE_HOLD_AUTHORIZATION_KEYS = Object.freeze([
   'sourceClass',
@@ -105,13 +118,11 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'waveMigrationSeedAwaitingReference',
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
+  'waveApproachState',
   'lineage',
 ]);
 const finite = value => typeof value === 'number' && Number.isFinite(value);
-const validTime = value => typeof value === 'string'
-  && EXPLICIT_TIME_ZONE.test(value)
-  && Number.isFinite(Date.parse(value));
-const canonicalTime = value => validTime(value) ? new Date(value).toISOString() : null;
+const canonicalTime = value => canonicalRavScoreTime(value);
 const close = (left, right) => finite(left) && finite(right)
   && Math.abs(Number(left) - Number(right)) <= EPSILON;
 
@@ -199,15 +210,33 @@ function canonicalLineage(value, stateTime) {
     throw new Error('Integrated RavScore migration lineage is invalid');
   }
   const migrationKeys = [
+    'currentEvidenceSource',
     'migratedAt',
     'migrationId',
     'sourceModelId',
     'sourceStateSchemaVersion',
+    'waveApproachBootstrapHours',
+    'waveApproachMaximumOmittedMomentShare',
+    'waveApproachMaximumScoreErrorBeforeRounding',
   ];
-  if (Object.keys(value).sort().join('|') === migrationKeys.sort().join('|')) {
+  if (hasExactKeys(value, migrationKeys)) {
     if (value.migrationId !== RAVSCORE_MIGRATION_ID
       || value.sourceModelId !== CANDIDATE_G_STATE_MODEL_ID
-      || value.sourceStateSchemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION) {
+      || value.sourceStateSchemaVersion !== CANDIDATE_G_STATE_SCHEMA_VERSION
+      || value.currentEvidenceSource
+        !== RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource
+      || value.waveApproachBootstrapHours
+        !== RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours
+      || !close(
+        value.waveApproachMaximumOmittedMomentShare,
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumOmittedMomentShare,
+      )
+      || !close(
+        value.waveApproachMaximumScoreErrorBeforeRounding,
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
+      )) {
       throw new Error('Integrated RavScore migration lineage is incompatible');
     }
     const migratedAt = canonicalTime(value.migratedAt);
@@ -215,15 +244,21 @@ function canonicalLineage(value, stateTime) {
       throw new Error('Integrated RavScore migration lineage has an invalid causal time');
     }
     return {
+      currentEvidenceSource: value.currentEvidenceSource,
       migrationId: RAVSCORE_MIGRATION_ID,
       sourceModelId: CANDIDATE_G_STATE_MODEL_ID,
       sourceStateSchemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
       migratedAt,
+      waveApproachBootstrapHours: value.waveApproachBootstrapHours,
+      waveApproachMaximumOmittedMomentShare:
+        value.waveApproachMaximumOmittedMomentShare,
+      waveApproachMaximumScoreErrorBeforeRounding:
+        value.waveApproachMaximumScoreErrorBeforeRounding,
     };
   }
   const coldReplayKeys = ['recoveryId', 'replayedHourCount', 'source', 'targetReferenceAt'];
   const targetReferenceAt = canonicalTime(value.targetReferenceAt);
-  if (Object.keys(value).sort().join('|') !== coldReplayKeys.sort().join('|')
+  if (!hasExactKeys(value, coldReplayKeys)
     || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID
     || value.source !== RAVSCORE_RECOVERY_POLICY.source
     || value.replayedHourCount !== RAVSCORE_RECOVERY_POLICY.coldReplayHours
@@ -241,15 +276,13 @@ function canonicalLineage(value, stateTime) {
 
 function verifiedColdReplayBootstrap(value, ordered) {
   if (value === null || value === undefined) return null;
-  if (!value || typeof value !== 'object' || Array.isArray(value)
-    || Object.keys(value).sort().join('|')
-      !== ['recoveryId', 'replayedHourCount', 'targetReferenceAt'].sort().join('|')
+  if (!hasExactKeys(value, ['recoveryId', 'replayedHourCount', 'targetReferenceAt'])
     || value.recoveryId !== RAVSCORE_COLD_REPLAY_ID
     || value.replayedHourCount !== RAVSCORE_RECOVERY_POLICY.coldReplayHours) {
     throw new Error('Integrated RavScore cold-replay bootstrap proof is invalid');
   }
   const targetReferenceAt = canonicalTime(value.targetReferenceAt);
-  if (!targetReferenceAt) {
+  if (!targetReferenceAt || value.targetReferenceAt !== targetReferenceAt) {
     throw new Error('Integrated RavScore cold-replay target is invalid');
   }
   const targetMs = Date.parse(targetReferenceAt);
@@ -351,6 +384,7 @@ export function validateCandidateGMigrationSource(
   return {
     time,
     currentReferenceAt,
+    transportEvidence: evidence.map(item => ({ ...item })),
     mobilisationPotential: Number(initialState.mobilisationPotential),
   };
 }
@@ -361,13 +395,14 @@ function validateCandidateGCurrentBootstrap(
 ) {
   if (!hasExactKeys(value, CANDIDATE_G_CURRENT_BOOTSTRAP_KEYS)
     || value.migrationId !== RAVSCORE_MIGRATION_ID
-    || value.source !== 'VERIFIED_PRIVATE_RAW_UV_REBUILD'
+    || value.source
+      !== RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource
     || value.samplingContextKey !== samplingContextKey
     || canonicalTime(value.sourceStateTime) !== migrated.time
     || value.sourceStateTime !== migrated.time
     || canonicalTime(value.currentReferenceAt) !== migrated.currentReferenceAt
     || value.currentReferenceAt !== migrated.currentReferenceAt) {
-    throw new Error('Candidate G exact-current migration bootstrap is incompatible');
+    throw new Error('Candidate G signed-evidence migration bootstrap is incompatible');
   }
   const evidence = canonicalEvidence(value.currentEvidence, {
     maximum: CURRENT_SUPPLY_MEMORY_POLICY.maximumRetainedEvidencePoints,
@@ -375,17 +410,12 @@ function validateCandidateGCurrentBootstrap(
   });
   if (!evidence
     || JSON.stringify(value.currentEvidence) !== JSON.stringify(evidence)
+    || JSON.stringify(evidence) !== JSON.stringify(migrated.transportEvidence)
     || evidence.at(-1)?.time !== migrated.currentReferenceAt) {
-    throw new Error('Candidate G exact-current migration bootstrap is not canonical');
+    throw new Error('Candidate G signed-evidence migration bootstrap is not canonical');
   }
-  const currentNativeHoldAuthorization = canonicalNativeHoldAuthorization(
-    value.currentNativeHoldAuthorization,
-  );
-  if (!sameNativeHoldAuthorization(
-    value.currentNativeHoldAuthorization ?? null,
-    currentNativeHoldAuthorization,
-  )) {
-    throw new Error('Candidate G exact-current migration hold proof is not canonical');
+  if (value.currentNativeHoldAuthorization !== null) {
+    throw new Error('Candidate G signed evidence cannot authorize a native current hold');
   }
   const rebuilt = buildCurrentSupplyMemory(evidence, {
     referenceTime: migrated.currentReferenceAt,
@@ -397,12 +427,79 @@ function validateCandidateGCurrentBootstrap(
     || rebuilt.requestedReferenceTime !== migrated.currentReferenceAt
     || rebuilt.coverageHours !== CURRENT_SUPPLY_MEMORY_POLICY.windowHours
     || JSON.stringify(rebuilt.evidence) !== JSON.stringify(evidence)) {
-    throw new Error('Candidate G exact-current migration bootstrap is incomplete');
+    throw new Error('Candidate G signed-evidence reweight is incomplete');
   }
   return {
     currentEvidence: evidence,
-    currentNativeHoldAuthorization,
+    currentNativeHoldAuthorization: null,
   };
+}
+
+function validateCandidateGWaveApproachBootstrap(
+  value,
+  { samplingContextKey, migrated, targetReferenceAt, onshoreDirectionDeg },
+) {
+  const replayHours =
+    RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours;
+  const omittedMomentShare = 2 ** (
+    -replayHours / RAVSCORE_LAST_MILE_POLICY.directionalHalfLifeHours
+  );
+  if (!close(
+    omittedMomentShare,
+    RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachMaximumOmittedMomentShare,
+  )) {
+    throw new Error('Candidate G wave-approach tail bound contradicts the model policy');
+  }
+  if (!hasExactKeys(value, CANDIDATE_G_WAVE_APPROACH_BOOTSTRAP_KEYS)
+    || value.migrationId !== RAVSCORE_MIGRATION_ID
+    || value.source !== 'VERIFIED_PRIVATE_DMI_WAVE_DIRECTION_REPLAY'
+    || value.samplingContextKey !== samplingContextKey
+    || value.sourceStateTime !== migrated.time
+    || canonicalTime(value.sourceStateTime) !== migrated.time
+    || value.targetReferenceAt !== targetReferenceAt
+    || canonicalTime(value.targetReferenceAt) !== targetReferenceAt
+    || !Array.isArray(value.rows)
+    || value.rows.length !== replayHours) {
+    throw new Error('Candidate G bounded wave-approach migration bootstrap is incompatible');
+  }
+  const targetMs = Date.parse(targetReferenceAt);
+  const expectedTimes = Array.from(
+    { length: replayHours },
+    (_, index) => new Date(
+      targetMs - (replayHours - index) * HOUR_MS,
+    ).toISOString(),
+  );
+  const rows = value.rows.map((row, index) => {
+    const physicalWave = classifyWavePhysicalTuple({
+      waveHeightM: row?.waveHeightM,
+      wavePeriodS: row?.wavePeriodS,
+    });
+    if (!hasExactKeys(row, ['time', 'waveHeightM', 'wavePeriodS', 'waveDirectionDeg'])
+      || canonicalTime(row.time) !== expectedTimes[index]
+      || row.time !== expectedTimes[index]
+      || !physicalWave.available
+      || (physicalWave.active && row.waveDirectionDeg === null)
+      || (row.waveDirectionDeg !== null
+        && (!finite(row.waveDirectionDeg)
+          || row.waveDirectionDeg < 0 || row.waveDirectionDeg >= 360))) {
+      throw new Error('Candidate G wave-approach bootstrap is not a canonical bounded bridge');
+    }
+    return {
+      time: row.time,
+      waveHeightM: Number(row.waveHeightM),
+      wavePeriodS: Number(row.wavePeriodS),
+      waveDirectionDeg: row.waveDirectionDeg === null ? null : Number(row.waveDirectionDeg),
+    };
+  });
+  const rebuilt = buildRavScoreWaveApproachStateSeries(rows, {
+    onshoreDirectionDeg,
+  });
+  if (rebuilt.rows.length !== replayHours
+    || rebuilt.rows.at(-1)?.readiness !== true
+    || rebuilt.continuationState?.time !== expectedTimes.at(-1)) {
+    throw new Error('Candidate G bounded wave-approach bootstrap did not build a READY state');
+  }
+  return rebuilt.continuationState;
 }
 
 function waveContinuationFromIntegratedState(state) {
@@ -419,6 +516,10 @@ function waveContinuationFromIntegratedState(state) {
     status: state.waveMemoryStatus,
     migrationSeedAwaitingReference: state.waveMigrationSeedAwaitingReference,
   };
+}
+
+function waveApproachContinuationFromIntegratedState(state) {
+  return state.waveApproachState;
 }
 
 function validateIntegratedState(initialState, samplingContextKey, firstSampleTime) {
@@ -507,6 +608,16 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
   });
   // The wave builder owns validation of its compact substate.
   buildRavScoreWaveMobilisationStateSeries([], { initialState: waveState });
+  const waveApproachState = waveApproachContinuationFromIntegratedState(initialState);
+  // The directional builder owns validation of compact W/N/T state. The
+  // immutable onshore geometry is already bound by samplingContextKey.
+  const waveApproachValidation = buildRavScoreWaveApproachStateSeries([], {
+    initialState: waveApproachState,
+  });
+  if (waveApproachState === null
+    || waveApproachValidation.continuationState?.time !== time) {
+    throw new Error('Integrated RavScore wave-approach state is not bound to parent time');
+  }
   const lineage = canonicalLineage(initialState.lineage, time);
   const lineageTime = lineage?.migratedAt ?? lineage?.targetReferenceAt ?? null;
   const initialLineageTime = initialState.lineage?.migratedAt
@@ -521,6 +632,7 @@ function validateIntegratedState(initialState, samplingContextKey, firstSampleTi
     currentEvidence: evidence,
     currentNativeHoldAuthorization,
     waveState,
+    waveApproachState,
     lineage,
   };
 }
@@ -535,7 +647,7 @@ function candidateGContext(initialState) {
     || initialState?.modelId === CANDIDATE_G_STATE_MODEL_ID;
 }
 
-function compactIntegratedState({ samplingContextKey, current, wave, lineage }) {
+function compactIntegratedState({ samplingContextKey, current, wave, waveApproach, lineage }) {
   return {
     schemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
     modelId: RAVSCORE_MODEL_ID,
@@ -570,12 +682,13 @@ function compactIntegratedState({ samplingContextKey, current, wave, lineage }) 
     mobilisationPotential: wave.mobilisationPotential,
     rollbackCandidateGMobilisationPotential:
       wave.rollbackCandidateGMobilisationPotential,
+    waveApproachState: { ...waveApproach.continuationState },
     lineage,
   };
 }
 
 /**
- * Builds the integrated schema-4 state from existing hourly rows. It accepts
+ * Builds the integrated schema-5 state from existing hourly rows. It accepts
  * either the same model's compact continuation or one exact Candidate G
  * schema-2 state. All raw weather remains in the caller and never enters the
  * compact continuation.
@@ -584,9 +697,11 @@ export function buildIntegratedRavScoreStateSeries(
   samples = [],
   {
     samplingContextKey,
+    onshoreDirectionDeg,
     initialState = null,
     expectedCandidateGStateKey = null,
     candidateGCurrentBootstrap = null,
+    candidateGWaveApproachBootstrap = null,
     nativeCadenceHoldHours = 0,
     nativeCadenceReferenceSample = null,
     coldReplayBootstrap = null,
@@ -594,6 +709,12 @@ export function buildIntegratedRavScoreStateSeries(
 ) {
   if (typeof samplingContextKey !== 'string' || !samplingContextKey) {
     throw new Error('Integrated RavScore state requires a samplingContextKey');
+  }
+  if ((!finite(onshoreDirectionDeg)
+    || onshoreDirectionDeg < 0 || onshoreDirectionDeg >= 360)
+    && ((Array.isArray(samples) && samples.length > 0)
+      || candidateGWaveApproachBootstrap !== null)) {
+    throw new Error('Integrated RavScore state requires the immutable onshore direction');
   }
   if (!(finite(nativeCadenceHoldHours)
     && Number(nativeCadenceHoldHours) >= 0
@@ -619,16 +740,19 @@ export function buildIntegratedRavScoreStateSeries(
   let currentEvidence = [];
   let currentNativeHoldAuthorization = null;
   let initialWaveState = null;
+  let initialWaveApproachState = null;
   let waveMigrationSeed = null;
   let lineage = null;
   let initialCausalTime = null;
+  let initialCurrentReferenceAt = null;
   let coldReplayTargetAt = null;
 
   if (initialState !== null && initialState !== undefined && coldReplayBootstrap !== null) {
     throw new Error('Integrated RavScore cannot combine continuation and cold replay');
   }
   if ((initialState === null || initialState === undefined)
-    && candidateGCurrentBootstrap !== null) {
+    && (candidateGCurrentBootstrap !== null
+      || candidateGWaveApproachBootstrap !== null)) {
     throw new Error('Integrated RavScore cannot use a migration bootstrap without Candidate G state');
   }
   if (initialState === null || initialState === undefined) {
@@ -647,11 +771,13 @@ export function buildIntegratedRavScoreStateSeries(
     const continued = validateIntegratedState(initialState, samplingContextKey, firstSampleTime);
     if (continued) {
       initialCausalTime = continued.time;
+      initialCurrentReferenceAt = continued.currentReferenceAt;
       initialStateAccepted = true;
       initialStateSource = 'INTEGRATED_CONTINUATION';
       currentEvidence = continued.currentEvidence.map(item => ({ ...item }));
       currentNativeHoldAuthorization = continued.currentNativeHoldAuthorization;
       initialWaveState = continued.waveState;
+      initialWaveApproachState = continued.waveApproachState;
       lineage = continued.lineage;
     } else {
       const migrated = validateCandidateGMigrationSource(
@@ -667,6 +793,7 @@ export function buildIntegratedRavScoreStateSeries(
       }
       migrationApplied = true;
       initialCausalTime = migrated.time;
+      initialCurrentReferenceAt = migrated.currentReferenceAt;
       initialStateSource = 'CANDIDATE_G_SCHEMA2_MIGRATION';
       const currentBootstrap = validateCandidateGCurrentBootstrap(
         candidateGCurrentBootstrap,
@@ -675,16 +802,38 @@ export function buildIntegratedRavScoreStateSeries(
       currentEvidence = currentBootstrap.currentEvidence.map(item => ({ ...item }));
       currentNativeHoldAuthorization =
         currentBootstrap.currentNativeHoldAuthorization;
+      if (!firstSampleTime) {
+        throw new Error('Candidate G migration requires an exact target sample');
+      }
+      initialWaveApproachState = validateCandidateGWaveApproachBootstrap(
+        candidateGWaveApproachBootstrap,
+        {
+          samplingContextKey,
+          migrated,
+          targetReferenceAt: firstSampleTime,
+          onshoreDirectionDeg,
+        },
+      );
       waveMigrationSeed = {
         time: migrated.time,
         mobilisationPotential: migrated.mobilisationPotential,
         rollbackCandidateGMobilisationPotential: migrated.mobilisationPotential,
       };
       lineage = {
+        currentEvidenceSource:
+          RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
         migrationId: RAVSCORE_MIGRATION_ID,
         sourceModelId: CANDIDATE_G_STATE_MODEL_ID,
         sourceStateSchemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
         migratedAt: migrated.time,
+        waveApproachBootstrapHours:
+          RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+        waveApproachMaximumOmittedMomentShare:
+          RAVSCORE_RECOVERY_POLICY
+            .candidateMigrationWaveApproachMaximumOmittedMomentShare,
+        waveApproachMaximumScoreErrorBeforeRounding:
+          RAVSCORE_RECOVERY_POLICY
+            .candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
       };
     }
   }
@@ -708,17 +857,36 @@ export function buildIntegratedRavScoreStateSeries(
     if (boundaryAuthorization === null) {
       throw new Error('Integrated RavScore native cadence reference lacks exact regional proof');
     }
-    const lastEvidenceMs = Date.parse(currentEvidence.at(-1)?.time ?? '');
-    if (!Number.isFinite(lastEvidenceMs) || Date.parse(referenceEvidence.time) > lastEvidenceMs) {
+    const lastEvidence = currentEvidence.at(-1) ?? null;
+    const lastEvidenceMs = Date.parse(lastEvidence?.time ?? '');
+    const referenceEvidenceMs = Date.parse(referenceEvidence.time);
+    if (!Number.isFinite(lastEvidenceMs) || referenceEvidenceMs > lastEvidenceMs) {
       currentEvidence.push(referenceEvidence);
       currentNativeHoldAuthorization = boundaryAuthorization;
-    } else if (referenceEvidence.time === currentEvidence.at(-1)?.time
-      && !sameNativeHoldAuthorization(
+    } else if (referenceEvidenceMs === lastEvidenceMs) {
+      if (!finite(lastEvidence?.strength)
+        || !close(lastEvidence.strength, referenceEvidence.strength)) {
+        throw new Error('Integrated RavScore native cadence reference conflicts with persisted evidence');
+      }
+      if (currentNativeHoldAuthorization === null) {
+        // Candidate G stores the exact signed evidence but not the independent
+        // regional cadence authorization.  Bind a real same-time boundary
+        // proof without appending or re-crediting that evidence.
+        currentNativeHoldAuthorization = boundaryAuthorization;
+      } else if (!sameNativeHoldAuthorization(
         currentNativeHoldAuthorization,
         boundaryAuthorization,
       )) {
-      throw new Error('Integrated RavScore native cadence reference conflicts with persisted proof');
+        throw new Error('Integrated RavScore native cadence reference conflicts with persisted proof');
+      }
+    } else {
+      throw new Error('Integrated RavScore native cadence reference predates persisted evidence');
     }
+  }
+  if (migrationApplied
+    && initialCurrentReferenceAt !== initialCausalTime
+    && currentNativeHoldAuthorization === null) {
+    throw new Error('Lagged Candidate G current migration requires exact regional boundary proof');
   }
 
   const currentRows = ordered.map(sample => {
@@ -755,6 +923,13 @@ export function buildIntegratedRavScoreStateSeries(
         throw new Error('Same-time current evidence conflicts with persisted supply state');
       }
       if (verifiedEvidence
+        && currentNativeHoldAuthorization === null
+        && sampleNativeHoldAuthorization !== null) {
+        // Candidate G stores the signed strength but no regional hold proof.
+        // A real, verified same-time target may add that bounded authorization
+        // without changing or re-crediting the persisted current evidence.
+        currentNativeHoldAuthorization = sampleNativeHoldAuthorization;
+      } else if (verifiedEvidence
         && !sameNativeHoldAuthorization(
           sampleNativeHoldAuthorization,
           currentNativeHoldAuthorization,
@@ -762,13 +937,12 @@ export function buildIntegratedRavScoreStateSeries(
         throw new Error('Same-time current provenance conflicts with persisted hold proof');
       }
     }
-    const sameTimeHold = samePersistedStateTime || evidenceAlreadyAtTime;
-    const nativeHold = (sameTimeHold && ageHours > 0)
-      || (!verifiedEvidence
+    const sameTimeHold = evidenceAlreadyAtTime;
+    const nativeHold = !verifiedEvidence
       && Number(nativeCadenceHoldHours) > 0
       && currentNativeHoldAuthorization !== null
       && ageHours > 0
-      && ageHours <= Number(nativeCadenceHoldHours) + EPSILON);
+      && ageHours <= Number(nativeCadenceHoldHours) + EPSILON;
     if (!sameTimeHold && !nativeHold && evidence) {
       currentEvidence.push(evidence);
       currentNativeHoldAuthorization = verifiedEvidence
@@ -798,19 +972,31 @@ export function buildIntegratedRavScoreStateSeries(
     getWaveHeight: sample => sample.waveHeightM,
     getWavePeriod: sample => sample.wavePeriodS,
   });
-  if (waveSeries.rows.length !== currentRows.length) {
-    throw new Error('Integrated RavScore current and wave state rows diverged');
+  const waveApproachSeries = buildRavScoreWaveApproachStateSeries(ordered, {
+    initialState: initialWaveApproachState,
+    onshoreDirectionDeg,
+    getTime: sample => sample.time,
+    getWaveHeight: sample => sample.waveHeightM,
+    getWavePeriod: sample => sample.wavePeriodS,
+    getWaveDirection: sample => sample.waveDirectionDeg,
+  });
+  if (waveSeries.rows.length !== currentRows.length
+    || waveApproachSeries.rows.length !== currentRows.length) {
+    throw new Error('Integrated RavScore current, wave and last-mile state rows diverged');
   }
 
   const rows = currentRows.map((current, index) => {
     const wave = waveSeries.rows[index];
-    if (wave.time !== current.requestedReferenceTime) {
-      throw new Error('Integrated RavScore current and wave times diverged');
+    const waveApproach = waveApproachSeries.rows[index];
+    if (wave.time !== current.requestedReferenceTime
+      || waveApproach.time !== current.requestedReferenceTime) {
+      throw new Error('Integrated RavScore current, wave and last-mile times diverged');
     }
     const continuationState = compactIntegratedState({
       samplingContextKey,
       current,
       wave,
+      waveApproach,
       lineage: coldReplayTargetAt !== null
         && Date.parse(current.requestedReferenceTime) < Date.parse(coldReplayTargetAt)
         ? null
@@ -844,6 +1030,17 @@ export function buildIntegratedRavScoreStateSeries(
       waveEnergyProxy: wave.waveEnergyProxy,
       waveEnergyScore: wave.waveEnergyScore,
       waveCreditedDurationHours: wave.creditedDurationHours,
+      lastMileWaveReferenceAt: waveApproach.waveReferenceAt,
+      lastMileMemoryReady: waveApproach.readiness,
+      lastMileMemoryStatus: waveApproach.status,
+      lastMileTransition: waveApproach.transition,
+      lastMileEvidenceStatus: waveApproach.evidenceStatus,
+      lastMileWaveActivity: waveApproach.activity,
+      lastMileNormalAlignment: waveApproach.normalAlignment,
+      lastMileTangentAlignment: waveApproach.tangentAlignment,
+      lastMileCoherence: waveApproach.coherence,
+      lastMileApproach: waveApproach.approach,
+      lastMileFactor: waveApproach.factor,
       migrationApplied,
       continuationState,
     };

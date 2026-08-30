@@ -111,8 +111,8 @@ export function isCandidateGOnlySelection(payload) {
     && payload?.crossModelRuntimeFallbackAllowed === false
     && payload?.migrationRequiredAtFirstCutover === false
     && payload?.status === 'owner-approved-candidate-g-rollback-only-local-fail-closed'
-    && payload?.activationAuthority === 'DEC-0108-manual-candidate-g-rollback'
-    && evidence.decisionId === 'DEC-0108'
+    && payload?.activationAuthority === 'DEC-0110-manual-candidate-g-rollback'
+    && evidence.decisionId === 'DEC-0110'
     && evidence.exactHeadValidationRequired === true
     && evidence.freshProductionValidationRequired === true
   );

@@ -8,6 +8,7 @@ import {
 import { buildIntegratedRavScoreStateSeries } from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
+  RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_ROLLBACK_ID,
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   assertRavScoreModelBinding,
@@ -69,6 +70,7 @@ const INTEGRATED_CONTINUATION_KEYS = Object.freeze([
   'waveMigrationSeedAwaitingReference',
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
+  'waveApproachState',
   'lineage',
 ]);
 const MIGRATION_LINEAGE_KEYS = Object.freeze([
@@ -194,7 +196,7 @@ export function assertIntegratedCoastalPointContinuation(
     initialState: state,
   });
   if (validated.initialStateAccepted !== true || validated.initialStateSource !== 'INTEGRATED_CONTINUATION') {
-    throw new Error(`${label} er ikke en canonical schema-4 continuation`);
+    throw new Error(`${label} er ikke en canonical schema-5 continuation`);
   }
   if (requireReady) {
     if (state?.currentMemoryReady !== true
@@ -204,6 +206,11 @@ export function assertIntegratedCoastalPointContinuation(
     if (state?.waveMemoryReady !== true
       || !RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses.includes(state?.waveMemoryStatus)) {
       throw new Error(`${label} mangler READY wave-memory`);
+    }
+    if (state?.waveApproachState?.readiness !== true
+      || !RAVSCORE_LAST_MILE_POLICY.readyStatuses
+        .includes(state?.waveApproachState?.status)) {
+      throw new Error(`${label} mangler READY wave-approach-memory`);
     }
   }
   return state;

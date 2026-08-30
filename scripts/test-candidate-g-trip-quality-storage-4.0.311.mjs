@@ -141,8 +141,8 @@ const mainFetchCount = (workflow.match(/git fetch --no-tags --prune origin \+ref
 const localHeadCheckCount = (workflow.match(/test "\$\(git rev-parse HEAD\^\{commit\}\)" = "\$EXPECTED_HEAD_SHA"/g) || []).length;
 const remoteHeadCheckCount = (workflow.match(/test "\$\(git rev-parse origin\/main\^\{commit\}\)" = "\$EXPECTED_HEAD_SHA"/g) || []).length;
 assert.ok(mainFetchCount >= 16, `Expected repeated exact-main CAS gates, got ${mainFetchCount}`);
-assert.equal(localHeadCheckCount, mainFetchCount);
-assert.equal(remoteHeadCheckCount, mainFetchCount);
+assert.ok(localHeadCheckCount >= mainFetchCount, 'Hver fetch-gate og den indledende checkout skal kontrollere lokal head.');
+assert.equal(remoteHeadCheckCount, localHeadCheckCount, 'Lokal og remote exact-head skal altid kontrolleres som et par.');
 for (const gate of [
   'Reconfirm current origin/main before the Candidate G database contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',
@@ -162,7 +162,7 @@ for (const gate of [
   'Reconfirm exact main before failure D1 secret and Edge deployment',
   'Reconfirm exact main immediately before failure roll-forward reconciliation',
 ]) assert.ok(workflow.includes(gate), `Missing exact-main gate: ${gate}`);
-assert.match(workflow, /apply-candidate-g-trip-quality-migration\.mjs\n/);
+assert.match(workflow, /apply-candidate-g-trip-quality-migration\.mjs\r?\n/);
 assert.match(workflow, /apply-candidate-g-trip-quality-migration\.mjs --verify-only/);
 assert.ok(workflow.indexOf('Validate exact source head before external writes')
   < workflow.indexOf('Reconfirm current origin/main before the Candidate G database contract'));

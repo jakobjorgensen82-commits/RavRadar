@@ -2,6 +2,7 @@ import { buildPublicConditions, buildPublicConditionDetails, compactJson, buildP
 import { mergeConditionDetails } from '../js/services/data-service.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 
 const generatedAt='2026-08-15T10:00:00.000Z';
 const modelBinding=ravScoreModelBinding();
@@ -12,7 +13,7 @@ rows[1]={time:rows[1].time,waders:{available:false,score:null,modelBinding,statu
 const selectedReferenceAt=rows[1].time;
 const part=id=>({zoneId:'z1',name:id,waterPoint:[10,56],landPoint:[10.01,56],onshoreDirectionDeg:90,current:{time:selectedReferenceAt,weather:{windSpeedMps:4},waders:{available:true,modelBinding,score:62,components:{huntability:60,transport:62,release:64},componentReasons:{},explanation:null},beach:{available:true,modelBinding,score:52,components:{huntability:50,transport:52,release:54},componentReasons:{},explanation:null}}});
 const scoreAvailability={schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:false,activeZoneCount:0,unavailableZoneCount:1,totalZoneCount:1,unavailableZones:[{zoneId:'z1',zoneName:'Testzone',modes:['waders','beach'],reasons:['Den integrerede RavScore mangler komplette data.']}]};
-const full={datasetId:'progressive-test',generatedAt,productionReferenceAt:generatedAt,zones:{z1:{provider:'dmi',current:{time:generatedAt,windSpeedMps:4},history:{maxWave24hM:1.3,hoursSinceHighEnergy:6,maxWind24hMps:8},forecast:{provider:'dmi',generatedAt,validUntil:rows.at(-1).time,hourly:rows.map(row=>({time:row.time,windSpeedMps:4}))}}},coastalParts:{schemaVersion:2,enabled:true,generatedAt,modelBinding,scoreProfile,scoreAvailability,expectedPartCount:3,scoredPartCount:3,privateDiagnostic:'må aldrig publiceres',parts:{p1:part('p1'),p2:part('p2'),p3:part('p3')},zones:{z1:{expectedPartCount:3,scoredPartCount:3,hourly:rows}}}};
+const full={datasetId:'progressive-test',generatedAt,productionReferenceAt:generatedAt,zones:{z1:{provider:'dmi',current:{time:generatedAt,windSpeedMps:4},history:{maxWave24hM:1.3,hoursSinceHighEnergy:6,maxWind24hMps:8},forecast:{provider:'dmi',generatedAt,validUntil:rows.at(-1).time,hourly:rows.map(row=>({time:row.time,windSpeedMps:4}))}}},coastalParts:{schemaVersion:2,enabled:true,generatedAt,modelBinding,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreProfile,scoreAvailability,expectedPartCount:3,scoredPartCount:3,privateDiagnostic:'må aldrig publiceres',parts:{p1:part('p1'),p2:part('p2'),p3:part('p3')},zones:{z1:{expectedPartCount:3,scoredPartCount:3,hourly:rows}}}};
 
 const startup=buildPublicConditions(full);
 const details=buildPublicConditionDetails(full);

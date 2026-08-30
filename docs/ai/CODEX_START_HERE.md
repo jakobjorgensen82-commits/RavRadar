@@ -2,15 +2,14 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Aktuelt P0-checkpoint 2026-08-30 – cadencepolicy lokalt afgrænset
+## Aktuelt P0-checkpoint 2026-08-30 – 4.0.315 integreret RavScore-releasekandidat
 
-- Offentlig produktionssandhed er stadig 4.0.310-nøddrift; morgenhullet er ikke lukket.
-- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var korrekt no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
-- Read-only inspect `33279639424`/`99172534863` stoppede før descriptor/apply/build/Pages og viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`. Ingen data eller cache blev ændret.
-- Lokal same-version-rettelse bruger den eksisterende regionale proxy-policy som identitetsautoritet for præcis otte `dkss_lf`-3h-dele; resten er 1h. Descriptoren binder kun en koordinatfri projektionshash, som apply genvaliderer.
-- 1h-dele accepterer eksakte målte 1/2/3h-afstande under Candidate G's eksisterende ≤3h continuity, men de manglende interne slots udfyldes aldrig. De otte 3h-dele kræver fortsat eksakt 3h på begge kanter og er de eneste med lovlig singleton-`AFTER`.
-- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Næste rækkefølge: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → eventuelt CAS-apply/frisk produktion/offentlig 210/673.
-- Hent aldrig fuld inspectjoblog eller source-/descriptor-/rollbackartifacts. Brug kun allowlistet checkannotation. Ingen vejrdata, rå vektorer, koordinater, geometri eller punkter ændres. Brug Sol/Ultra.
+- Offentlig produktionssandhed er 4.0.310 med Candidate G som eneste offentlige model. `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `5.0.0` er lokal releasekandidat under DEC-0110 og mangler exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol.
+- Kandidaten bruger afgrænset kausal energivægtet wave-approach med fire timers halveringstid og en ældre hale, én DMI `FROM`→`TOWARD`-rotation og én 0,85–1-dæmpning af eksisterende supply. Fysisk levering er uopløst; DDM er kun statisk kontekst, Rainville 2026 kun buoyant-object-analogi, og ingen geometri eller punkter flyttes.
+- Candidate G-cutover bruger `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`: signeret afledt kystnormal currentevidens genvægtes uden rå U/V; alle 673 schema-2-states skal give ét fælles target; wave-approach bruger 40 private præ-target-positioner fra coherent WAM-run pr. collection med same-cell provenance og kun højst fire timers same-run/same-cell-interpolation. Grænserne er `1/1024` udeladt EWMA-hale og `0.01171875` rå scorepoint før afrunding. Fejl bevarer Candidate G offentlig; ingen syntetisk/offentlig historik.
+- Ægte cold start kræver særskilt præcis 48 sammenhængende private verificerede timepositioner plus reel target. Candidate G-rollback bruger samme target uden dobbelt credit. Nøddrift er kun same-model og atomisk i højst 72 timer; WAM-bootstrapinterpolation gælder ikke nøddrift, og cross-model fallback er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet.
+- Ejeren opgav den fiktive morgenhulsrekonstruktion før descriptor/apply/mutation/publicering. DEC-0109 er kun historisk incident-/trustkontrakt. Kør ikke ny incident-inspect eller apply; de følgende 4.0.311–4.0.314-afsnit er revisionsspor.
+- Fortsæt Sol/Ultra gennem dokumentationslukning, målrettede tests, uafhængig helhedsrevision, integration af seneste grønne `origin/main`, slutdigests/version, fulde gates, egen PR/merge, frisk produktion og offentlig browserkontrol. Læs eller vis aldrig private payloads, rå U/V eller koordinater.
 
 ## Historisk P0-checkpoint 2026-08-30 – før-primary-gate lokalt afgrænset
 

@@ -9,22 +9,22 @@ const deepFreeze = value => {
   return Object.freeze(value);
 };
 
-export const RAVSCORE_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0';
-export const RAVSCORE_STATE_SCHEMA_VERSION = '4.0.0';
+export const RAVSCORE_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
+export const RAVSCORE_STATE_SCHEMA_VERSION = '5.0.0';
 export const RAVSCORE_VARIANT_ID =
-  'COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1';
+  'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2';
 export const RAVSCORE_PROFILE_ID =
-  'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3';
+  'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4';
 export const RAVSCORE_COMPONENT_SCHEMA_ID =
-  'ravscore-components-huntability-transport-mobilisation-v3';
-export const RAVSCORE_EXPLANATION_SCHEMA_ID = 'ravscore-explanation-integrated-v3';
+  'ravscore-components-huntability-delivery-mobilisation-v4';
+export const RAVSCORE_EXPLANATION_SCHEMA_ID = 'ravscore-explanation-integrated-v4';
 export const RAVSCORE_RANKING_POLICY_ID = 'direction-broad-19-v1';
 export const RAVSCORE_BEST_TIME_POLICY_ID = 'score-water-tie-earliest-v2';
 export const RAVSCORE_PRESENTATION_POLICY_ID = 'score-bands-35-55-75-exceptional90-v1';
 export const RAVSCORE_MIGRATION_ID =
-  'candidate-g-schema2-wave-seed-plus-private-exact-current-rebuild-to-integrated-schema4-v2';
-export const RAVSCORE_ROLLBACK_ID = 'integrated-schema4-to-candidate-g-schema2-v1';
-export const RAVSCORE_COLD_REPLAY_ID = 'verified-private-48h-cold-replay-v1';
+  'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4';
+export const RAVSCORE_ROLLBACK_ID = 'integrated-schema5-to-candidate-g-schema2-v2';
+export const RAVSCORE_COLD_REPLAY_ID = 'verified-private-48h-current-wave-direction-cold-replay-v2';
 export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
 
 // Eligibility is an operational property of the currently activated model,
@@ -102,28 +102,52 @@ export const RAVSCORE_WAVE_MOBILISATION_POLICY = deepFreeze({
   unavailableStatuses: ['MISSING_INPUT', 'COLD_START'],
   requiredPhysicalInputs: {
     waveHeightM: 'FINITE_NON_NEGATIVE_SCALAR',
-    wavePeriodS: 'FINITE_NON_NEGATIVE_SCALAR',
+    wavePeriodS: 'FINITE_NON_NEGATIVE_SCALAR_AND_POSITIVE_WHEN_WAVE_HEIGHT_IS_POSITIVE',
   },
 });
 
 export const RAVSCORE_RECOVERY_POLICY = deepFreeze({
   id: RAVSCORE_COLD_REPLAY_ID,
   coldReplayHours: 48,
+  candidateMigrationWaveApproachReplayHours: 40,
+  candidateMigrationWaveApproachMaximumOmittedMomentShare: 1 / 1024,
+  candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding: 0.01171875,
+  candidateMigrationCurrentEvidenceSource:
+    'VERIFIED_CANDIDATE_G_SIGNED_EVIDENCE_REWEIGHT',
   source: 'VERIFIED_PRIVATE_PROVENANCE_REPLAY',
   missingHistoryPolicy: 'FAIL_CLOSED_WITHOUT_PUBLIC_WARMUP',
 });
 
 export const RAVSCORE_LAST_MILE_POLICY = deepFreeze({
-  id: 'last-mile-score-neutral-structural-uncertainty-v2',
-  deliveryFactor: 1,
-  scoreEffect: 'NONE',
+  id: 'last-mile-wave-approach-ewma4-attenuation15-v1',
+  stateSchemaVersion: '1.0.0',
+  directionSemantics: 'DMI_WAVE_FROM_ROTATED_180_TO_TOWARD_IMMUTABLE_ONSHORE_NORMAL',
+  energyWeight: 'EXISTING_WAVE_ENERGY_SCORE_DIVIDED_BY_100',
+  directionalHalfLifeHours: 4,
+  maximumContinuousIntervalHours: 1,
+  maximumFreshGapHours: 3,
+  maximumRecoveryCreditHours: 1,
+  approachNeutralNormalAlignment: -0.25,
+  approachNeutralCalibrationStatus:
+    'TRANSPARENT_CONSERVATIVE_PRIOR_NOT_CALIBRATED_TO_REPRESENTATIVE_FINDS',
+  maximumAttenuationShare: 0.15,
+  minimumDeliveryFactor: 0.85,
+  maximumDeliveryFactor: 1,
+  deliveryEquation: 'DELIVERY_EQUALS_SUPPLY_TIMES_ONE_MINUS_0_15_TIMES_W_TIMES_ONE_MINUS_APPROACH',
+  scoreEffect: 'BOUNDED_SUPPLY_ATTENUATION_ONLY',
   waveCanCreateSupply: false,
-  outerGridWaveContextScoreEffect: 'NONE',
-  missingDirectionPolicy: 'SCORE_NEUTRAL_DIRECTION_UNCERTAINTY',
+  waveCanIncreaseSupply: false,
+  outerGridWaveContextScoreEffect: 'BOUNDED_DIRECTIONAL_ATTENUATION_OF_EXISTING_SUPPLY',
+  missingDirectionPolicy: 'ACTIVE_WAVE_FAIL_CLOSED_EXACT_CALM_NEUTRAL',
+  coherenceScoreEffect: 'NONE_UNCERTAINTY_AND_EXPLANATION_ONLY',
+  waterLevelTransportScoreEffect: 'NONE_CONTEXT_AND_BEST_TIME_TIE_ONLY',
   structuralUncertaintyAlways: true,
   numericPhysicalUncertaintyIntervalProvided: false,
-  localBathymetryRequiredForNumericEffect: true,
-  resolvedSurfZoneRequiredForNumericEffect: true,
+  physicalDeliveryResolved: false,
+  localBathymetryIncluded: false,
+  resolvedSurfZoneIncluded: false,
+  readyStatuses: ['READY', 'RECOVERED_SHORT_GAP'],
+  unavailableStatuses: ['MISSING_INPUT', 'COLD_START'],
 });
 
 export const RAVSCORE_HUNTABILITY_POLICY = deepFreeze({
@@ -178,7 +202,7 @@ export const RAVSCORE_MODEL_CONTRACT = deepFreeze({
     localBathymetryIncluded: false,
     resolvedSurfZoneIncluded: false,
     localAmberInventoryObserved: false,
-    lastMileScoreEffect: 'NONE',
+    lastMileScoreEffect: 'BOUNDED_SUPPLY_ATTENUATION_ONLY',
     structuralLastMileUncertaintyAlways: true,
   },
 });

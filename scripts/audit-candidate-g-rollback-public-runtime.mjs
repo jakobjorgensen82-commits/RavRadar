@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_ROLLBACK_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
@@ -127,7 +128,7 @@ function assertSealedStageInput(candidateFull, plan, {
     || !['dry-run', 'execute'].includes(plan.mode)
     || plan.schemaVersion !== '1.0.0'
     || plan.kind !== 'RAVSCORE_CANDIDATE_G_OPERATIONAL_ROLLBACK_PLAN'
-    || plan.rollbackId !== 'integrated-schema4-to-candidate-g-schema2-v1'
+    || plan.rollbackId !== RAVSCORE_ROLLBACK_ID
     || plan.automaticActivationAllowed !== false
     || plan.schedulerActivationAllowed !== false
     || plan.calibrationEligible !== false
@@ -235,7 +236,7 @@ function assertRuntimeEnvelope(document, {
 
 function assertScoreProfile(profile, expectedBinding, label) {
   assertExactPublicRavScoreProfile(profile, expectedBinding, label);
-  if (profile.switchVersion !== 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0108-V1'
+  if (profile.switchVersion !== 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0110-V2'
     || profile.rollbackModelId !== null
     || profile.runtimeFallbackModelId !== null
     || profile.crossModelRuntimeFallbackAllowed !== false

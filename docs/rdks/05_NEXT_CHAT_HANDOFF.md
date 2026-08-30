@@ -1,13 +1,13 @@
 # RavRadar – overlevering til næste chat
 
-## Aktuelt P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
+## Aktuelt P0 – 2026-08-30 samlet DEC-0110-modelrelease
 
-- Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
-- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
-- Read-only inspect `33279639424`/`99172534863` stoppede uden descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`; ingen mutation skete.
-- Lokal rettelse bruger `data/current-regional-proxy-policy.json` som identitetsautoritet for præcis otte native-3h-dele. Den hashbinder kun en koordinatfri projektion; 1h-dele accepterer eksakte målte 1/2/3h-afstande uden intern interpolation, mens 3h-dele fortsat kræver eksakt 3h.
-- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Fortsæt Sol/Ultra: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → kun ved succes CAS-apply/frisk produktion/offentlig 210/673 desktop/mobil.
-- Hent aldrig fuld joblog eller source-/descriptor-/rollbackartifact. Brug kun allowlistet annotation. Rør ikke vejr, rå vektorer, koordinater, geometri, punkter eller private payloads.
+- Offentlig sandhed er produktionsverificeret 4.0.310/Candidate G. Den lokale 4.0.315-releasekandidat er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`; exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol udestår.
+- Last mile bruger en kausal energivægtet bølgeapproach med fire timers halveringstid og en ældre hale, én `FROM`→`TOWARD`-rotation og én 0,85–1-faktor på eksisterende supply. Fysisk levering er fortsat uopløst; DDM er ikke scoreinput, Rainville 2026 er ikke ravkalibrering, og geometri/punkter flyttes ikke.
+- V4-migrationen genvægter signeret afledt Candidate G-currentevidens uden rå U/V. Den kræver præcis 673 gyldige schema-2-states, ét fælles target og 40 private WAM-præ-target-positioner fra coherent run pr. collection med same-cell provenance; kun højst fire timers same-run/same-cell-interpolation er tilladt. Tail-/rå-scoregrænserne er `1/1024` og `0.01171875`. Fejl bevarer Candidate G offentlig; ingen syntetisk/offentlig historik.
+- Ægte cold start kræver særskilt præcis 48 sammenhængende private verificerede timepositioner plus reel target. Candidate G-rollback bruger samme target uden dobbelt credit. Kun komplet atomisk same-model-nøddrift højst 72 timer er tilladt; WAM-bootstrapinterpolation gælder ikke nøddrift, og cross-model fallback er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet.
+- Ejeren opgav morgenhullets fiktive rekonstruktion før descriptor/apply/mutation/publicering. DEC-0109 er historisk sikkerheds-/trustkontrakt; bestil ikke ny incident-inspect eller apply.
+- Fortsæt Sol/Ultra: luk docs og målrettede tests → uafhængig helheds-/runtime-/forbruger-/rollbackrevision → integrér seneste grønne `origin/main` → regenerér hashes/version → fulde gates → exact-head PR/merge → frisk produktion/deploy → offentlig browserkontrol. Rør ikke private payloads, rå U/V, koordinater, geometri eller land-/vandpunkter.
 
 ## Historisk P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor
 

@@ -1,25 +1,21 @@
-# AI Roadmap – RavRadar 4.0.314+
+# AI Roadmap – RavRadar 4.0.315+
 
-## P0 nu – få 4.0.314 sikkert gennem diagnostikhotfix og rekonstruktion
+## P0 nu – færdiggør og verificér den samlede DEC-0110-model
 
-1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
-2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
-3. [x] Tillad singleton-afteranker kun for uafhængigt bevist native 3-timerskadence; bevar state-, bracket-, source- og CAS-beviserne.
-4. [x] Lås exact-D1 til 4.0.314, inspect til D1 og normal produktion til exact-head apply+Pages; bevis 4.0.315 ulåst.
-5. [x] Bestå PR #227-diffens målrettede og uafhængige recovery-/workflow-/privacytests samt fulde lokale source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
-6. [x] Bestå PR #227/exact-head `33272564543`, merge `d1369d88` og no-op push `33272676071`.
-7. [x] Klassificér produktion `33271863449` som stale test-/sourcegate-stop før release/Pages; ret assertionen og bind testen ind i `test:workflow-action-contracts`.
-8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
-9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
-10. [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
-11. [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
-12. [x] Bestå exact-main 4.0.314 `[d1]` `33275218540`/`99160622956` inklusive begge syncs, slutreconciliation og slutattestation.
-13. [x] Stop read-only inspect `33275438494`/`99161265720` fail-closed i planforseglingen før descriptorupload, mutation, build og Pages.
-14. [ ] Exact-head-valider og merge den allowlistede GitHub-fejlannotation og den særskilte minimale succesannotation; kør ny exact-main D1 på den nye final-SHA.
-15. [ ] Kør ny inspect, aflæs kun den sanitiserede domænekode, ret årsagen evidensbaseret og gennemfør CAS-apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-16. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+1. [x] Bevar Candidate G som eneste offentlige model under arbejdet og integrér den seneste grønne 4.0.314-kilde uden at overskrive watchdog-, trip-, privacy-, recovery-, geometri- eller punktkontrakter.
+2. [x] Lås `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0` og alle variant-/profil-/komponent-/forklarings-/migration-/rollbackfelter fra modelkontrakten.
+3. [x] Implementér den kausale energivægtede bølgeapproach med fire timers halveringstid og en ældre hale, én `FROM`→`TOWARD`-rotation, højst 15 % dæmpning af supply, højst 7,5 rå totalscorepoint før slutafrunding og dermed op til 8 viste point. Aktiv direction-missing fejler lukket; kun `waveHeightM=0` er neutral exact calm, og positiv højde med nulperiode er `INVALID`/fail-closed.
+4. [x] Bevar `physicalDeliveryResolved=false` og fysisk interval `null`; brug DDM 50 m alene som statisk kontekst og Rainville 2026 alene som buoyant-object-analogi; flyt ingen kystnormal, geometri eller land-/vandpunkter.
+5. [x] Implementér v4's signed-evidence Candidate G-reweight, aggregate 673/common-target-gate og bounded 40-timers private WAM-bootstrap med coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation samt `1/1024`/`0.01171875`-grænser; bevar Candidate G fail-closed ved manglende state/target/run og dan ingen syntetisk/offentlig historik. Bevar særskilt ægte cold start fra præcis 48 private verificerede timepositioner plus reel target, rollback uden dobbelt credit og same-model atomisk nøddrift højst 72 timer uden cross-model fallback/interpolation.
+6. [x] Lås trustgrænserne: kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag.
+7. [x] Luk den komplette producent-/forbrugermatrix, inklusive 210/673, payloads/hashes, ranglister, bedste tid, detaljer/femdøgn, strand/waders, DA/DE/EN, lokal/Edge-assistent, ture/observationer, admin/ekspert, håndbøger, profil, scheduler, audits og releasegates.
+8. [x] Opgiv den fiktive udførelse af morgenhullets rekonstruktion før descriptor/apply/mutation/publicering; bevar DEC-0109 alene som historisk afgrænset sikkerhedskontrakt.
+9. [ ] Luk alle dokumentationsflader og målrettede model/state/wave-approach/migration/trust/emergency-tests uden at opfinde runbeviser.
+10. [ ] Gennemfør uafhængig helheds-, model-, runtime/privacy-, forbruger- og operationel rollback-revision; ret fund og gentag proportionalt.
+11. [ ] Hent seneste grønne `origin/main` ved slutcheckpointet, regenerér endelige hashes/version 4.0.315, bevis kun versionsfelt i geodata og kør fuld source-/RDKS-/releasegate.
+12. [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Først derefter må 4.0.315 eller model 1.1 kaldes offentlig/produktionsverificeret.
 
-## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
+## Historisk P0 – opgivet engangsrekonstruktion under DEC-0109
 
 1. [x] Luk 4.0.311-kilden gennem PR #224 exact-head CI `33263734108` og merge `7c168b00af535415117c968a8c021a493b083137`.
 2. [x] Bekræft at push-run `33263858078` var en korrekt no-op uden artifact/Pages, og at backend `33263892151` stoppede før D1/Edge/Worker/sync/weather/artifact/Pages efter atomisk SQL HTTP 201.
@@ -28,11 +24,11 @@
 5. [x] Luk fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol for 4.0.312. Bevar trip protocol/header 4.0.311.
 6. [x] Luk PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
 7. [x] Kør backend fra eksakt 4.0.312-main; den bestod verifier/D1/Edge/Worker, men fejlede migrationssynken i `33266229687`. Klassificér den som ikke-readiness og overfør replayrettelsen til 4.0.313.
-8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde; overfør den uændrede CAS-/produktions-/public-gate til det aktuelle 4.0.314-afsnit ovenfor.
+8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde. Senere read-only forsøg stoppede fortsat før descriptor; ejeren opgav derefter hele udførelsen før apply, mutation, artifact eller offentliggørelse.
 9. [x] Bevar privat rollback og kausal cleanup; offentlig sandhed forblev korrekt 4.0.310.
 10. [x] Overfør integrationen af nyeste grønne `main`, 72-timers atomisk measured-only emergency og den låste globale koefficientlæring til det aktuelle DEC-0102-modeltrin ovenfor.
 
-Interpolation er ikke en roadmapfeature eller generel fallback; den er en enkelt ejerautoriseret incidentoperation. Sol/Ultra bevares gennem slutvalidering.
+Interpolation er ikke en roadmapfeature eller generel fallback. Den tidligere ejerautoriserede engangsoperation blev opgivet før descriptor/apply/mutation/offentliggørelse; kun DEC-0109's afgrænsede historiske incident-/trustkontrakt bevares. Sol/Ultra bevares gennem slutvalidering.
 
 ## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
 
@@ -114,7 +110,7 @@ Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er besk
 
 ## Historisk roadmaparkiv
 
-De versionsmærkede punkter nedenfor bevarer status ved deres daværende checkpoints. Ord som **aktiv**, **nu**, **næste** og åbne afkrydsningsfelter dér er historik og må ikke tilsidesætte den aktuelle 4.0.308-/DEC-0108-plan ovenfor eller nyere `CURRENT_TRUTH`, `IMPLEMENTATION_STATUS` og `KNOWN-ISSUES`.
+De versionsmærkede punkter nedenfor bevarer status ved deres daværende checkpoints. Ord som **aktiv**, **nu**, **næste** og åbne afkrydsningsfelter dér er historik og må ikke tilsidesætte den aktuelle 4.0.315-/DEC-0110-releasekandidat ovenfor eller nyere `CURRENT_TRUTH`, `IMPLEMENTATION_STATUS` og `KNOWN-ISSUES`.
 
 ## Produktionsverificeret 4.0.294 – naturlige oprindelsesformuleringer
 

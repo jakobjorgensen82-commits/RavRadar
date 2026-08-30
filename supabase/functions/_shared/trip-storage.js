@@ -8,12 +8,26 @@ const DIRECT_IDENTITY_KEYS = new Set([
 // as lat, lng, geoCoordinates and gpsTrack cannot carry precise position.
 const PRIVATE_LOCATION_KEY_PATTERN = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track|location)/i;
 const CALIBRATION_FEATURE_KEYS = new Set([
-  'modelVersion', 'appVersion', 'totalScore', 'huntabilityScore', 'transportScore',
+  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
+  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
+  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
+  'modelBundleSha256', 'totalScore', 'huntabilityScore', 'transportScore',
   'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
   'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
   'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
   'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
 ]);
+const CALIBRATION_REQUIRED_TEXT_KEYS = Object.freeze([
+  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
+  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
+  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
+  'modelBundleSha256',
+]);
+const CALIBRATION_REQUIRED_SCORE_KEYS = Object.freeze([
+  'totalScore', 'huntabilityScore', 'transportScore', 'mobilisationScore',
+]);
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const WEATHER_SNAPSHOT_KEYS = new Set([
   'schemaVersion', 'capturedAt', 'sourceGeneratedAt', 'forecastTime', 'provider',
   'current', 'score', 'prediction', 'matchedRuleIds', 'forecastSnapshotId',
@@ -140,6 +154,12 @@ function assertBoundedTextOrNull(value, maximum, errorCode) {
 function assertAllowedRecord(value, allowedKeys, errorCode) {
   if (!isRecord(value)) throw new Error(errorCode);
   if (Object.keys(value).some(key => !allowedKeys.has(key))) throw new Error(errorCode);
+}
+
+function assertExactRecord(value, allowedKeys, errorCode) {
+  assertAllowedRecord(value, allowedKeys, errorCode);
+  if (Object.keys(value).length !== allowedKeys.size
+    || [...allowedKeys].some(key => !Object.hasOwn(value, key))) throw new Error(errorCode);
 }
 
 function assignProjected(output, key, value) {
@@ -308,7 +328,7 @@ function projectStoredLegacyReplayPayload(payload) {
 
 export function assertStoredExternalTripContract(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  if (Number(payload.schema_version ?? 1) !== 2) return true;
+  if (![2, 3].includes(Number(payload.schema_version ?? 1))) return true;
   assertNoDirectIdentity(payload);
   assertNoPrivateLocation(payload);
   if (Object.keys(payload).some(key => !STORED_EXTERNAL_TRIP_FIELD_NAMES.has(key))) {
@@ -318,9 +338,13 @@ export function assertStoredExternalTripContract(payload) {
   return true;
 }
 
-function assertCalibrationFeatureContract(value) {
-  if (value === null || value === undefined) return;
-  assertAllowedRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
+function assertCalibrationFeatureContract(value, exact = false) {
+  if (value === null || value === undefined) {
+    if (exact) throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
+    return;
+  }
+  if (exact) assertExactRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
+  else assertAllowedRecord(value, CALIBRATION_FEATURE_KEYS, 'TRIP_CALIBRATION_FEATURES_INVALID');
   for (const [key, nested] of Object.entries(value)) {
     if (key === 'reasonCodes') {
       if (!Array.isArray(nested) || nested.length > 12
@@ -331,6 +355,18 @@ function assertCalibrationFeatureContract(value) {
       assertBoundedNumberOrNull(nested, CALIBRATION_FEATURE_RANGES[key], 'TRIP_CALIBRATION_FEATURES_INVALID');
     } else assertBoundedTextOrNull(nested, 128, 'TRIP_CALIBRATION_FEATURES_INVALID');
   }
+  if (exact && (CALIBRATION_REQUIRED_TEXT_KEYS.some(key => (
+    typeof value[key] !== 'string' || !ID_PATTERN.test(value[key])
+  ))
+    || !SHA256_PATTERN.test(value.modelContractSha256)
+    || !SHA256_PATTERN.test(value.modelBundleSha256)
+    || CALIBRATION_REQUIRED_SCORE_KEYS.some(key => (
+      typeof value[key] !== 'number' || !Number.isFinite(value[key])
+    ))
+    || !Number.isInteger(value.totalScore)
+    || value.reasonCodes.some(code => !ID_PATTERN.test(code)))) {
+    throw new Error('TRIP_CALIBRATION_FEATURES_INVALID');
+  }
 }
 
 function assertFlatSnapshotRecord(value, allowedKeys) {
@@ -340,9 +376,17 @@ function assertFlatSnapshotRecord(value, allowedKeys) {
   }
 }
 
-function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false) {
-  if (value === null || value === undefined) return;
-  assertAllowedRecord(value, WEATHER_SNAPSHOT_KEYS, 'TRIP_WEATHER_SNAPSHOT_INVALID');
+function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false, exactCurrent = false) {
+  if (value === null || value === undefined) {
+    if (exactCurrent) throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
+    return;
+  }
+  if (exactCurrent) {
+    assertExactRecord(value, new Set([
+      'schemaVersion', 'capturedAt', 'forecastSnapshotId', 'forecastIssuedAt',
+      'forecastValidAt', 'calibrationFeatures',
+    ]), 'TRIP_WEATHER_SNAPSHOT_INVALID');
+  } else assertAllowedRecord(value, WEATHER_SNAPSHOT_KEYS, 'TRIP_WEATHER_SNAPSHOT_INVALID');
   for (const [key, nested] of Object.entries(value)) {
     if (key === 'current') {
       assertFlatSnapshotRecord(nested, WEATHER_CURRENT_KEYS);
@@ -364,7 +408,7 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false) {
       assertBoundedNumberOrNull(nested.confidence, [0, 1], 'TRIP_WEATHER_SNAPSHOT_INVALID');
       assertBoundedTextOrNull(nested.modelVersion, 128, 'TRIP_WEATHER_SNAPSHOT_INVALID');
     }
-    else if (key === 'calibrationFeatures') assertCalibrationFeatureContract(nested);
+    else if (key === 'calibrationFeatures') assertCalibrationFeatureContract(nested, exactCurrent);
     else if (key === 'matchedRuleIds') {
       if (!Array.isArray(nested) || nested.length > 40
         || nested.some(item => typeof item !== 'string' || item.length > 120)) {
@@ -381,8 +425,24 @@ function assertWeatherSnapshotContract(value, allowLegacySchemaTwo = false) {
 
 export function assertExternalTripNestedContract(payload) {
   if (!isRecord(payload)) throw new Error('TRIP_PAYLOAD_REQUIRED');
-  assertCalibrationFeatureContract(payload.calibration_features);
-  assertWeatherSnapshotContract(payload.weather_snapshot, Number(payload.schema_version ?? 1) === 1);
+  const schemaVersion = Number(payload.schema_version ?? 1);
+  assertCalibrationFeatureContract(payload.calibration_features, schemaVersion === 3);
+  assertWeatherSnapshotContract(payload.weather_snapshot, schemaVersion === 1, schemaVersion === 3);
+  if (schemaVersion === 3) {
+    const snapshot = payload.weather_snapshot;
+    if (snapshot.schemaVersion !== 4
+      || typeof snapshot.forecastSnapshotId !== 'string'
+      || snapshot.forecastSnapshotId !== payload.forecast_snapshot_id
+      || !['capturedAt', 'forecastIssuedAt', 'forecastValidAt'].every(key => (
+        typeof snapshot[key] === 'string' && Number.isFinite(Date.parse(snapshot[key]))
+      ))
+      || snapshot.capturedAt !== payload.forecast_captured_at
+      || snapshot.forecastIssuedAt !== payload.forecast_issued_at
+      || snapshot.forecastValidAt !== payload.forecast_valid_at
+      || canonicalJson(snapshot.calibrationFeatures) !== canonicalJson(payload.calibration_features)) {
+      throw new Error('TRIP_WEATHER_SNAPSHOT_INVALID');
+    }
+  }
   return true;
 }
 
@@ -421,7 +481,7 @@ export function normalizeExternalTripQualityBinding(payload) {
 }
 
 export function assertExternalTripQualityBinding(payload) {
-  if (!isRecord(payload) || Number(payload.schema_version) !== 2) return;
+  if (!isRecord(payload) || ![2, 3].includes(Number(payload.schema_version))) return;
   const flags = payload.data_quality_flags;
   if (!Array.isArray(flags)
     || !TRIP_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(flags))) {
@@ -436,8 +496,12 @@ export function assertExternalTripQualityBinding(payload) {
   }
   const sameForecastContext = payload.actual_zone_id === payload.forecast_zone_id
     && payload.actual_coastal_part_id === payload.forecast_coastal_part_id;
-  const expectedEligibility = sameForecastContext && flags.length === 0;
-  if (payload.calibration_eligible !== expectedEligibility) {
+  const schemaVersion = Number(payload.schema_version);
+  const eligibilityValid = schemaVersion === 3
+    ? typeof payload.calibration_eligible === 'boolean'
+      && (flags.length === 0 || payload.calibration_eligible === false)
+    : payload.calibration_eligible === (sameForecastContext && flags.length === 0);
+  if (!eligibilityValid) {
     throw new Error('TRIP_CALIBRATION_ELIGIBILITY_INVALID');
   }
 }
@@ -518,7 +582,11 @@ export function externalTripPayload(payload) {
     ? structuredClone(payload)
     : JSON.parse(JSON.stringify(payload));
   const source = projectLegacyExternalTripPayload(cloned);
-  const clone = normalizeExternalTripQualityBinding(source);
+  const normalized = normalizeExternalTripQualityBinding(source);
+  const schemaVersion = Number(normalized.schema_version ?? 1);
+  const clone = schemaVersion === 3
+    ? { ...normalized, calibration_eligible: false, gps: null }
+    : normalized;
   const external = {};
   for (const key of TRIP_INPUT_FIELD_NAMES) {
     if (key === 'user_id' || key === 'anonymous_id' || key === 'gps') continue;
@@ -526,8 +594,8 @@ export function externalTripPayload(payload) {
     if (value === null || value === undefined) continue;
     external[key] = value;
   }
-  external.schema_version = Number(clone.schema_version ?? 1);
-  if (![1, 2].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
+  external.schema_version = schemaVersion;
+  if (![1, 2, 3].includes(external.schema_version)) throw new Error('TRIP_SCHEMA_VERSION_INVALID');
   assertNoDirectIdentity(external);
   assertNoPrivateLocation(external);
   assertExternalTripNestedContract(external);

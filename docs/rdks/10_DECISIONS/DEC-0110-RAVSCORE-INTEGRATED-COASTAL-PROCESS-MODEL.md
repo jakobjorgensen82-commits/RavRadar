@@ -1,6 +1,6 @@
-# DEC-0108 — RavScore Integrated Coastal Process Model
+# DEC-0110 — RavScore Integrated Coastal Process Model
 
-- **Status:** Aktiv beslutning under implementering og slutvalidering; endnu ikke offentliggjort som produktionsmodel
+- **Status:** Aktiv releasekandidat til planlagt appversion 4.0.315; exact-head, merge, frisk produktion og offentlig desktop-/mobilverifikation mangler endnu
 - **Dato:** 2026-08-29
 - **Ejer:** RavRadar
 - **Erstatter ved sikker cutover:** Candidate G som offentlig RavScore-model
@@ -15,7 +15,7 @@ Den integrerede score bevarer vægtningen 20/50/30:
 ```text
 rawScore =
   0,20 × huntability
-  + 0,50 × transportPotential
+  + 0,50 × deliveryPotential
   + 0,30 × mobilisationPotential
 ```
 
@@ -23,15 +23,18 @@ Formlen er et additivt evidensindeks, ikke en ravmassebalance. `mobilisationPote
 
 Den obligatoriske syntetiske lagerkoblingsablation sammenligner aktiv additivitet med fuld kobling `M × T/100`, kvadratrodskobling `M × sqrt(T/100)`, en eksplicit 50 %-lagerprior `M × (0,5 + 0,5 × T/100)` og minimumsbottleneck `min(M,T)`. Ingen variant er fundkalibreret. Fuld-, kvadratrods- og minimumskoblingen gør strømtilførslen til proxy eller øvre grænse for alt uobserveret mobiliserbart lager; 50 %-varianten opfinder en konkret lagerandel. Aktiv additivitet bevares derfor som den mindst ekstra lagerstrukturerende af de afprøvede skalarregler. Den er ikke antagelsesfri: separabilitet, kompensation og 20/50/30 er fortsat transparente, ukalibrerede indekspriorer. Beslutningen må ikke bruges til at påstå lager, ravmasse, fundchance eller empirisk optimalitet.
 
-`transportPotential` er den verificerede aktuelle strømtilstand. Den sidste nærkystlevering er fortsat fysisk uafklaret med de data RavRadar faktisk har. Derfor er den aktive leveringskontrakt bevidst score-neutral:
+`transportPotential` er den verificerede aktuelle strømtilstand. Den sidste nærkystlevering er fortsat fysisk uafklaret med de data RavRadar faktisk har. Modellen bruger derfor en begrænset, ensrettet bølgeretningsprior, som kun kan dæmpe allerede eksisterende tilførsel:
 
 ```text
-delivery = transportPotential × 1
+W = kausal energivægtet EWMA af bølgeaktivitet med fire timers halveringstid og en ældre hale
+approach = clamp((normalAlignment - (-0,25)) / (1 - (-0,25)), 0, 1)
+factor = clamp(1 - 0,15 × W × (1 - approach), 0,85, 1)
+delivery = transportPotential × factor
 ```
 
-Faktoren `1` er ikke et fysisk estimat af, hvor stor en andel der når stranden. Den betyder alene, at modellen ikke må foregive en lokalt opløst surfzone-, revle-, rip-, undertow- eller batymetrieffekt, som datagrundlaget ikke kan bære. Strømretning og bølgeenergi kan forklares som kystkontekst, men giver ingen selvstændig last-mile-scoreeffekt.
+Faktoren er ikke et fysisk estimat af, hvor stor en andel der når stranden. DMI WAM-retning er en **FROM**-retning og roteres præcis én gang `+180°` til bevægelsesretning, før den projiceres mod den eksisterende, uændrede kystnormal. `W`, normalmoment og tangentmoment udglattes kausalt over fire timer. Prioren `-0,25` er en transparent, konservativ og ikke fundkalibreret neutralgrænse. Faktoren ligger altid mellem `0,85` og `1`, kan aldrig skabe eller øge tilførsel og anvendes præcis én gang i 50 %-komponenten. Maksimal påvirkning af den rå totalscore før slutafrunding er derfor `0,50 × 15 = 7,5` point. Den viste heltalsscore kan på grund af slutafrunding ændres 8 point.
 
-Den tidligere arbejdshypotese om højst `5,25 %` retningsbestemt leveringskorrektion er forkastet som aktiv modelkontrakt. Den må kun optræde som en tydeligt mærket, kontrafaktisk offline-ablation. Den er hverken et målt fysisk interval, et usikkerhedsinterval eller en tilladt produktionsparameter.
+Den tidligere arbejdshypotese om en fast `5,25 %`-korrektion er forkastet. Den aktive 0–15 %-dæmpning afhænger af den faktiske kausale, energivægtede bølgeaktivitet og retning med fire timers halveringstid og en ældre hale, men er fortsat en begrænset fysisk prior — ikke et målt ravinterval eller en empirisk landingsandel. `physicalDeliveryResolved=false`, et numerisk fysisk usikkerhedsinterval er `null`, og modellen må ikke kaldes empirisk mere fundpræcis.
 
 ## Autoritative kontrakt-id'er og runtimebinding
 
@@ -39,17 +42,17 @@ Følgende værdier skal hentes fra kodekontrakten og må ikke kopieres ind i par
 
 | Binding | Aktiv værdi |
 |---|---|
-| Model-id | `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0` |
-| Stateversion | `4.0.0` |
-| Variant-id | `COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1` |
-| Profil-id | `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3` |
-| Komponentskema | `ravscore-components-huntability-transport-mobilisation-v3` |
-| Forklaringsskema | `ravscore-explanation-integrated-v3` |
+| Model-id | `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` |
+| Stateversion | `5.0.0` |
+| Variant-id | `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2` |
+| Profil-id | `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4` |
+| Komponentskema | `ravscore-components-huntability-delivery-mobilisation-v4` |
+| Forklaringsskema | `ravscore-explanation-integrated-v4` |
 | Rangering | `direction-broad-19-v1` |
 | Bedste tidspunkt | `score-water-tie-earliest-v2` |
 | Præsentation | `score-bands-35-55-75-exceptional90-v1` |
-| Migration | `candidate-g-schema2-to-integrated-schema4-v1` |
-| Rollback | `integrated-schema4-to-candidate-g-schema2-v1` |
+| Migration | `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4` |
+| Rollback | `integrated-schema5-to-candidate-g-schema2-v2` |
 | Parameterkontrakt | `modelContractSha256`; endelig værdi regenereres på afsluttet head |
 | Transitiv implementeringsbundle | `modelBundleSha256`; endelig værdi regenereres på afsluttet head over 34+ kanonisk normaliserede transitive implementeringsfiler |
 
@@ -117,41 +120,49 @@ RavRadar har ikke lokal batymetri eller en bølgeopløst surfzonemodel. Retentio
 - Vandstandstrend må ikke omsættes til en ekstra “hele vandsøjlen”-strøm eller interpoleres med den verificerede modelgridstrøm. [DMI beskriver DKSS](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-storm-surge-model-dkss) som en tredimensional HBM-cirkulationsmodel med atmosfærisk forcing og tidevands-sealevel ved åbne rande, der selv leverer current-U/V. [Copernicus Baltic NEMO](https://data.marine.copernicus.eu/product/BALTICSEA_ANALYSISFORECAST_PHY_003_006/description) leverer tilsvarende fysiske hastighedsfelter, herunder særskilte øjeblikkelige og detidede produkter. Modelstrømmen er et samlet modeludfald, ikke et bevis for hver lokal proces; en ekstra regel afledt af vandstand kan korrelere med eller dobbeltregne det eksisterende signal og opløser stadig ikke surfzonens fortegn.
 - Tekster skal skelne mellem mulig nettostrøm i vandsøjlen, blotlægning, retention og uopløst lokal surfzoneadfærd.
 
-## Last mile: aktiv begrænsning
+## Last mile: begrænset bølge-approach med bevaret strukturel usikkerhed
 
-Den aktive policy er `last-mile-score-neutral-structural-uncertainty-v2`:
+Den aktive policy er `last-mile-wave-approach-ewma4-attenuation15-v1`:
 
-- `deliveryFactor = 1`,
-- scoreeffekt `NONE`,
-- ydre bølgeretning er forklarende kontekst uden scoreeffekt,
-- manglende retning er score-neutral og markeres som usikkerhed,
-- `physicalDeliveryResolved = false`,
-- strukturel usikkerhed er altid sand,
-- numerisk fysisk usikkerhedsinterval er `null`.
+- DMI WAMs middelbølgeretning fortolkes som **FROM** og roteres præcis én gang `+180°` til bølgernes bevægelsesretning.
+- Retningen projiceres mod RavRadars eksisterende `onshoreDirectionDeg`. Kystnormal, geometri og land-/vandpunkter flyttes ikke.
+- Den eksisterende bølgeenergikurve leverer aktivitetsvægten `W` på 0–1. Aktivitet samt energi-vægtede normal- og tangentmomenter udglattes kausalt med fire timers halveringstid.
+- Retningskoherens påvirker kun forklaring og usikkerhed; den giver ingen ekstra point.
+- `approach=0` ved eller under den transparente, konservative neutralprior `normalAlignment=-0,25` og vokser lineært til 1 ved fuldt landværts alignment.
+- `factor=clamp(1-0,15×W×(1-approach),0,85,1)` og `deliveryPotential=transportPotential×factor` anvendes præcis én gang.
+- Faktoren kan kun dæmpe eksisterende transportpotentiale. Bølger kan aldrig skabe tilførsel, øge tilførsel eller give last-mile-kredit ved `transportPotential=0`.
+- Maksimal ændring i den rå totalscore før slutafrunding er 7,5 point, fordi faktoren højst kan fjerne 15 % af den rå 50-point-leveringskomponent. Den viste heltalsscore kan derfor ændres 8 point.
+- Kun `waveHeightM=0` er eksakt roligt bølgefelt og neutralt; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket. Manglende retning under aktiv bølgeenergi fejler ligeledes lukket; den er ikke længere en score-neutral missinggenvej.
+- `physicalDeliveryResolved=false`, strukturel usikkerhed er altid sand, og et numerisk fysisk usikkerhedsinterval er fortsat `null`.
 
-Den strukturelle usikkerhed kan først erstattes af en numerisk virkning efter en særskilt ejerbeslutning, hvis RavRadar får et tilstrækkeligt lokalt datagrundlag for batymetri og en opløst surfzoneproces. En sådan fremtidig ændring vil være en ny modelbeslutning, ikke en tuning af denne kontrakt.
+Prioren forbedrer den kausale brug af et allerede hentet, retningsbestemt bølgefelt, men den opløser ikke danske revler, ripkanaler, undertow eller ravets partikelstate. Den må derfor ikke beskrives som en fysisk landingsandel eller som empirisk fundkalibreret. En ravspecifik numerisk leveringsmodel kræver fortsat lokal morfologi, bølgeopløst cirkulation og repræsentativ felt-/fundvalidering.
 
-Tre ekstra primærkilder styrker denne afgrænsning uden at levere en dansk ravfaktor. [Aagaard, Black og Greenwood (2002), DOI 10.1016/S0025-3227(02)00193-7](https://doi.org/10.1016/S0025-3227(02)00193-7) viser, at nettotransport over revler kan være land- eller søværts alt efter blandt andet undertow, bølgeskævhed, orbitalhastighed, relativ dybde og bundhældning. [Jalón-Rojas m.fl. (2025), DOI 10.5194/gmd-18-319-2025](https://doi.org/10.5194/gmd-18-319-2025) viser i en bølgeopløst 2DV-partikelmodel, at partiklens vertikale position og densitet afgør eksponeringen for landværts Stokes-drift og søværts undertow. [Lofty m.fl. (2023), DOI 10.1016/j.watres.2023.120329](https://doi.org/10.1016/j.watres.2023.120329) målte rav omkring 1 041 kg/m³ i deres 5 mm-prøver og brugte rav som lavdensitets naturlig partikel i bedload-/saltationsforsøg. Lofty-studiet er et åbent-kanal-laboratorieforsøg, ikke en dansk surfzonevalidering. Samlet viser kilderne, hvorfor gridstrøm, vandstand eller bølger alene ikke kan bestemme sidste-mile-fortegnet uden lokal morfologi, bølgeopløsning og partikelstate.
+Primærkilderne afgrænser prioren uden at levere en dansk ravfaktor. [DMI WAM](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-wave-model-wam) leverer timevis bølgehøjde, periode og middelretning, men har ikke bølge-strøm-kobling; [parameterlisten](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-wave-model-wam-edr-api-parameter-list) er autoriteten for retningsfeltet. [Aagaard, Black og Greenwood (2002), DOI 10.1016/S0025-3227(02)00193-7](https://doi.org/10.1016/S0025-3227(02)00193-7) viser, at nettotransport over revler kan være land- eller søværts alt efter blandt andet undertow, bølgeskævhed, orbitalhastighed, relativ dybde og bundhældning. [Jalón-Rojas m.fl. (2025), DOI 10.5194/gmd-18-319-2025](https://doi.org/10.5194/gmd-18-319-2025) viser i en bølgeopløst 2DV-partikelmodel, at partiklens vertikale position og densitet afgør eksponeringen for landværts Stokes-drift og søværts undertow. [Rainville m.fl. (2026), DOI 10.1029/2025JC022422](https://agupubs.onlinelibrary.wiley.com/doi/10.1029/2025JC022422) observerede, at brydende bølger kan give flydende objekter en særskilt landværts surfingtransport; det er en buoyant-object-analogi, ikke en kalibrering af rav eller en universel strandingsandel. [Lofty m.fl. (2023), DOI 10.1016/j.watres.2023.120329](https://doi.org/10.1016/j.watres.2023.120329) målte rav omkring 1 041 kg/m³ i deres 5 mm-prøver og brugte rav som lavdensitets naturlig partikel i bedload-/saltationsforsøg. Lofty-studiet er et åbent-kanal-laboratorieforsøg, ikke en dansk surfzonevalidering. Samlet viser kilderne, hvorfor gridstrøm, vandstand eller bølger alene ikke kan bestemme sidste-mile-fortegnet uden lokal morfologi, bølgeopløsning og partikelstate.
+
+[Danmarks Dybdemodel](https://gst.dk/ansvarsomraader/soekort-og-marine-data/soeopmaaling-og-dybdedata/danmarks-dybdemodel) har en 50 m middel-dybdegrid med kilde-/årslag og kan være nyttig som senere statisk morfologikontekst. Den indeholder delvist interpolerede celler, en generaliseret kystlinje og hverken dynamiske revler, aktuelle ripkanaler eller en bølgeopløst surfzone. Den aktiveres derfor ikke som scoreinput i 4.0.315-kandidaten. Eksisterende hav-/landpunkter og deres kystnormaler er uændrede; et dybdedatasæt må aldrig bruges som anledning til at flytte dem i dette modelspor.
 
 ## Missing-, recovery- og migrationskontrakt
 
 - Obligatoriske input fejler lukket. Ugyldige tal, bølger eller evidenskæder må ikke blive til normal score.
-- Den integrerede model kan migrere eksisterende Candidate G schema-2-state via `candidate-g-schema2-to-integrated-schema4-v1`; den må ikke opfinde historik.
+- Den integrerede model kan kun migrere eksisterende Candidate G schema-2-state gennem `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`. Den dybt validerede, signerede og allerede afledte kystnormale Candidate G-evidens genvægtes i den integrerede currentkernel. Migrationen læser eller kopierer ikke rå U/V og påstår ikke numerisk eller byte-identisk lighed med en frisk rå-current-genberegning.
+- Wave-approach-state findes ikke i schema 2 og genopbygges fra 40 private præ-target-timer. De 40 timer afgrænser den firetimers EWMA-hale til højst `1/1024`; den konservative maksimale rå RavScore-fejl fra den udeladte hale er højst `0,01171875` point før slutafrunding. Dette er en deterministisk trunkeringsgrænse, ikke en empirisk præcisionspåstand.
+- Alle præcis 673 Candidate G-states skal validere mod det uændrede kystdelsregister og give ét fælles kanonisk bootstrap-target. DMI-acquisition skal for hver anvendt WAM-collection finde ét `single-coherent-run`, og hver højde-/periode-/retningsrække skal have komplet same-cell native provenance. Kontrolleret tidsinterpolation er kun tilladt mellem native endepunkter højst fire timer fra hinanden inden for samme run, collection, griddefinition og celle; cross-run-, cross-cell- og tvetydig retningsinterpolation fejler lukket. Hvis state-targets er blandede, eller et sammenhængende run ikke kan skaffes og valideres, sker intet modelskift, og Candidate G forbliver den offentlige model.
+- Migrationens historiske 40-timers bootstrap-run er adskilt fra det operationelle WAM-handoff. [DMI's STAC-dokumentation](https://www.dmi.dk/friedata/dokumentation/forecast-data-stac-api) angiver `modelRun`-filter, kun de seneste 48 timers modelruns, WAM-horisont til `+132 h` og kontrol af download mod `Content-Length`; [availability-oversigten](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-availability) angiver typisk komplet WAM NSB omkring `+2:45` og WAM DW omkring `+3:00`, mens [WAM-produktbeskrivelsen](https://www.dmi.dk/friedata/dokumentation/data/forecast-data-wave-model-wam) fastlægger fire runs i døgnet, 5½ døgn og timeopløsning. Produktionskoden bruger derfor `+132 h` som lead-cap og kræver pr. collection et særskilt kausalt operationelt run med den eksakte 1–4-timers lagbro og faktisk dækning af `productionTarget..productionTarget+117 h`. De typiske publiceringstider er planlægningskontekst, ikke en lempelse af provenance- eller dækningsgaten. Mangler runnet, lagbroen, bytekontrollen eller horisonten, sker intet cutover, og Candidate G forbliver offentlig.
 - Recovery vælger eksklusivt i denne prioritet: eksakt point-aktivering, gyldig integreret continuation fra den private runtime, gyldigt integreret checkpoint og derefter dybt valideret Candidate G schema-2-state. En tilstedeværende, men ugyldig point-aktivering stopper straks. En ugyldig ordinær kilde må ikke skygge for en gyldig kilde med lavere prioritet; hvis ingen tilstedeværende kilde validerer, fejler recovery lukket.
 - Første cutover må importere Candidate G-state præcis én gang og kun, hvis hverken gyldig point-aktivering, gyldig integreret privat continuation eller gyldigt integreret checkpoint findes. Kun når ingen statekilde er til stede, må den afgrænsede private 48-timers koldstartsbro anvendes.
-- Rollback bruger `integrated-schema4-to-candidate-g-schema2-v1` og den bevarede rollback-state; rollback må ikke blandes ind i den offentlige integrerede score.
+- Rollback bruger `integrated-schema5-to-candidate-g-schema2-v2` og den bevarede rollback-state; rollback må ikke blandes ind i den offentlige integrerede score.
 - Den varme Candidate G-projektion findes kun som `ravScoreCandidateGRollback` i den beskyttede fulde runtimebundle. Den må aldrig kopieres til repository, Pages, en offentlig shadowmodel eller en automatisk fallback.
-- Kompakt continuation-state er schema 4 og kan gendannes fra et privat Actions-cache-checkpoint eller det beskyttede `admin_documents`-dokument `ravscore-continuation-checkpoint`.
+- Kompakt continuation-state er schema 5 og kan gendannes fra et privat Actions-cache-checkpoint eller det beskyttede `admin_documents`-dokument `ravscore-continuation-checkpoint`.
 - Et eksisterende, men ugyldigt, fremtidigt eller for gammelt checkpoint skal fejle lukket; det må ikke maskeres som en kold start.
 - Checkpointet er højst 72 timer gammelt, er bundet til nøjagtig model/state/hash og indeholder kun kompakt afledt fortsættelsesstate — ikke rå vejrdata, scorer, koordinater eller rå U/V.
 
-Dermed kan modellen starte på allerede indsamlet og valideret privat vejrhistorik. En state-løs kystdel genafspiller før sin første offentlige targettime præcis de 48 verificerede private kildetimer fra target−48 h til target−1 h med strøm og bølger. Rækker før target er hverken offentlige eller syntetisk historik. Komplet kildehistorik gør state `READY` ved den første offentlige targettime; manglende eller ugyldige kilder stopper build/release med `RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING`. Modellen må ikke kræve flere dages ny offentlig cacheopbygning efter release.
+Dermed kan modellen starte på allerede indsamlet og valideret privat vejrhistorik. En ægte state-løs kystdel bruger fortsat cold-start-kontrakten: præcis 48 sammenhængende private timepositioner fra target−48 h til target−1 h med verificeret strøm, bølgehøjde, periode og bølgeretning og derefter den virkelige targettime. WAM-timepositioner må kun dannes ved de samme kontrollerede same-run/same-cell-proveniensregler ovenfor; “præcis 48” betyder en komplet timeakse, ikke tilladelse til offentlig, syntetisk eller uattesteret udfyldning. Rækker før target er hverken offentlige eller syntetisk historik. Komplet kildehistorik gør schema-5-state `READY` ved den første offentlige targettime. Candidate G-rollback beregnes for samme targettid fra sin egen kompatible state og den samme virkelige targetrække; target må ikke krediteres to gange. Manglende eller ugyldige kilder stopper build/release med `RAVSCORE_RECOVERY_REPLAY_BRIDGE_MISSING`. Modellen må ikke kræve flere dages ny offentlig cacheopbygning efter release.
 
 ## Privat og offentlig runtime
 
 Fuld produktionsruntime forbliver privat. Den private bundlekontrakt omfatter nøjagtigt otte godkendte driftsfiler: fulde conditions, DMI forecast-/bulkcaches, den forseglede Copernicus-current-range-cache, pilot history, weather health, runtime diagnostics og DMI-vandstandsstationer. Copernicus-cachen bevarer privat acquisition-/coverageproveniens og allerede indsamlet bridgehistorik; den er aldrig et Pages-input. Den fulde runtime kan desuden bære den varme, afledte Candidate G-rollbackprojektion under det eksakte felt `ravScoreCandidateGRollback`; projektionen er del af den beskyttede bundle og aldrig en ekstra offentlig livefil. Bundle og checkpoint kontrolleres med modelbindinger, canonical hashes, path-/symlink-værn og atomisk installation. Den komprimerede fulde bundle lagres uden for repository og Pages i den ikke-offentlige Supabase Storage-bucket `ravradar-private-production-runtime`; det beskyttede dokument `ravscore-private-production-runtime-pointer` peger kun på den aktuelle og den foregående kontrollerede generation. Kun service-role-workflowet må læse/skrive, og anonym adgang skal bevises afvist.
 
-Pages får kun den offentlige schema-4-manifestprojektion og disse fire livefiler:
+Pages får kun den offentlige manifest-schema-4-projektion og disse fire livefiler; manifestets schema 4 er en offentlig payloadkontrakt og må ikke forveksles med den integrerede continuation-state 5.0.0:
 
 - `data/live/manifest.json`,
 - `data/live/public-conditions.json`,
@@ -159,6 +170,14 @@ Pages får kun den offentlige schema-4-manifestprojektion og disse fire livefile
 - `data/live/coastal-parts-v2.json`.
 
 Offentlig runtime må ikke kunne hente fulde conditions, private caches, pilot history, checkpoint eller rå U/V. Manifestet binder dataset, reference, model, filhashes, body-hashes og byteantal. Den rekursive privacy-audit er en releasegate.
+
+## Samme-model nøddrift og tillidsgrænse
+
+Den integrerede model har en atomisk nødtilstand inden for **samme** 11-felts modelbinding. Hvis en ny primary ikke er komplet, kan browseren bruge den seneste komplette, hashverificerede 210/673-pakke og vælge den virkelige time på pakkens eksisterende 118-timers akse. Pakken må højst være 72 timer gammel og må aldrig bruges efter sin egen kortere forecastudløbsgrænse. Ved udløb lukker runtime fail-closed.
+
+Nøddrift er ikke en anden offentlig model, interpolation eller scoregenberegning. Startup, detaljer, kystdele og manifest vælges samlet; krydsmodel-, cross-state-, ukendt, rekonstrueret, tampered eller ufuldstændig state afvises. DA/DE/EN viser en tydelig aktualitetsadvarsel, og frisk komplet primary overtager automatisk.
+
+`VERIFIED_ONLY` er den eneste normale målte trustklasse, som kan være kalibreringsegnet. `RECONSTRUCTED_DERIVED_NOT_MEASURED`, `public-emergency-last-complete`, ældre uattesteret trust og enhver ukendt/tampered status er altid `calibration_eligible=false`; de kan bevares som brugerhistorik, men ikke indgå i koefficientlæring eller som hårdt observeret udtransportbevis. Den ejerautoriserede engangsrekonstruktion i DEC-0109 blev senere opgivet før apply og offentliggørelse. Dens snævre incident-, provenance-, rollback-, cleanup- og regressionkontrakt bevares som historisk sikkerhedsgrænse, men den må ikke eksekveres, generaliseres eller blive fallback for DEC-0110.
 
 ## En offentlig model
 
@@ -194,7 +213,7 @@ Alle fire overgangstyper bruger samme tofasemønster:
 
 Ved crash/retry gælder manifestbaseret reconciliation: offentlig målhash medfører fuld genverifikation og CAS-complete; offentlig kildehash medfører CAS-abort/rekonsolidering til kildens `ACTIVE`-status med bevaret kildeprofil; enhver tredje hash efterlader `PENDING` og stopper normal drift fail-closed. Central profil kan derfor aldrig stå på målmodellen, mens kildens Pages-manifest fortsat er kanonisk.
 
-Candidate G-rollbacken bruger `transitionKind=CANDIDATE_G_ROLLBACK` og rollback-id `integrated-schema4-to-candidate-g-schema2-v1`; den er manual-only. En senere tilbagevenden bruger `transitionKind=INTEGRATED_RETURN`, går via `INTEGRATED_PENDING` og er også manual-only. Den første integrerede aktivering bruger `INITIAL_INTEGRATED_CUTOVER` og er push-only. Scheduleren må hverken førstegangsaktivere, rulle tilbage eller returnere; den må kun udføre `CANDIDATE_G_REFRESH` for en allerede `CANDIDATE_G_ACTIVE` drift med samme eksakte Candidate G-binding. Enhver `PENDING`-status stopper normale deploys.
+Candidate G-rollbacken bruger `transitionKind=CANDIDATE_G_ROLLBACK` og rollback-id `integrated-schema5-to-candidate-g-schema2-v2`; den er manual-only. En senere tilbagevenden bruger `transitionKind=INTEGRATED_RETURN`, går via `INTEGRATED_PENDING` og er også manual-only. Den første integrerede aktivering bruger `INITIAL_INTEGRATED_CUTOVER` og er push-only. Scheduleren må hverken førstegangsaktivere, rulle tilbage eller returnere; den må kun udføre `CANDIDATE_G_REFRESH` for en allerede `CANDIDATE_G_ACTIVE` drift med samme eksakte Candidate G-binding. Enhver `PENDING`-status stopper normale deploys.
 
 Candidate G-ture og -observationer under en operativ rollback mærkes `calibrationEligible=false`, så de ikke blandes ind i kalibrering af den integrerede model. Konto-DTO'en bærer kun den privacy-sikre eksakte `model_binding`. Klienten udleder visningsstatus på ny mod det aktive kanoniske Pages-overlay og stoler ikke på en ældre serverlabel: under Candidate G-rollback vises eksakt Candidate G som `current-ineligible`, mens integrerede ture er historiske. Den oprindelige turbinding omskrives aldrig.
 

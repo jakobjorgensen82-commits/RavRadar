@@ -3,17 +3,17 @@
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
   "releaseVersion": "4.0.293",
   "ravScoreModelBinding": {
-    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.0.0",
-    "stateSchemaVersion": "4.0.0",
-    "variantId": "COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1",
-    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3",
-    "componentSchemaId": "ravscore-components-huntability-transport-mobilisation-v3",
-    "explanationSchemaId": "ravscore-explanation-integrated-v3",
+    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+    "stateSchemaVersion": "5.0.0",
+    "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4",
+    "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-v4",
+    "explanationSchemaId": "ravscore-explanation-integrated-v4",
     "rankingPolicyId": "direction-broad-19-v1",
     "bestTimePolicyId": "score-water-tie-earliest-v2",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
-    "modelContractSha256": "a6272796cdb21ed10a3d308dc97efebf3bafc77715ac59521ac7b3522173ce76",
-    "modelBundleSha256": "2949091d782684c713fa5852fb490d712bb6bb257f8a5f86429e2c5d87545717"
+    "modelContractSha256": "0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da",
+    "modelBundleSha256": "27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd"
   },
   "cases": [
     {

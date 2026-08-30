@@ -10,11 +10,13 @@ import {
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
 } from '../js/core/ravscore-regime-memory.js';
 import { ravScoreModelBinding as integratedModelBinding } from '../js/core/ravscore-model-contract.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY,
   prepareCandidateGOperationalRollback as prepareCandidateGOperationalRollbackRaw,
 } from './prepare-candidate-g-operational-rollback.mjs';
 import {
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   candidateGRollbackScoreProfile,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import {
@@ -113,7 +115,7 @@ function nationalRuntime() {
         },
         ravScoreModel: {
           ...candidateBinding,
-          rollbackId: 'integrated-schema4-to-candidate-g-schema2-v1',
+          rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
           currentState: state(`sha256:rollback-state-${partIndex}`),
         },
       };
@@ -137,6 +139,7 @@ function nationalRuntime() {
       datasetVersion: '4.0.308',
       sourceRunId: 'synthetic-rollback-test',
       modelBinding: candidateBinding,
+      evidenceTrust: ravScoreVerifiedEvidenceTrust(),
       generatedAt: reference,
       marginPoints: 7,
       expectedPartCount: 673,
@@ -180,7 +183,7 @@ function fullRuntime() {
       privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
       sourceModelBinding: integratedModelBinding(),
       rollbackModelBinding: candidateBinding,
-      rollbackId: 'integrated-schema4-to-candidate-g-schema2-v1',
+      rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
       automaticActivationAllowed: false,
       publicDuringNormalOperation: false,
       runtime,

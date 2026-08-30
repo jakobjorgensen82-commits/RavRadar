@@ -158,8 +158,10 @@ assert fresh_run=='2026-01-01T06:00:00Z' and len(fresh_assets)==1, fresh_diag
 assert fresh_assets[0]['id']=='item-c' and fresh_assets[0]['itemCreatedAt']=='2026-01-01T07:00:00Z'
 module.time.time=real_time
 
-# Exact part identity and one shared grid definition/cell are mandatory. The
-# wave direction is deliberately absent from the required score tuple.
+# Exact part identity and one shared grid definition/cell are mandatory. Height
+# and period remain the mobilisation/Candidate G rollback tuple. Integrated
+# scoring separately requires same-cell direction and fails closed when the
+# optional provenance field is absent.
 cell='a'*64
 other='b'*64
 def candidate(definition,lat,lon,distance,value):

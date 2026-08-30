@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "updatedForRelease": "4.0.60",
+  "updatedForRelease": "4.0.315",
   "statements": [
     {
       "id": "KB-001",
@@ -32,10 +32,10 @@
     },
     {
       "id": "KB-005",
-      "statement": "Statiske kystegenskaber som rev, lavt vand og vegetation er kun kontekst i den aktive model og giver ingen score. Den lokale levering, aflejring og retention gennem nærkyst- og surfzonen er uopløst og score-neutral.",
+      "statement": "Statiske kystegenskaber som rev, lavt vand og vegetation er kun kontekst i releasekandidaten og giver ingen score. Den fysiske levering, aflejring og retention gennem nærkyst- og surfzonen er fortsat uopløst. Modellen bruger alene en kausal energivægtet WAM-approach med fire timers halveringstid og en ældre hale til en afgrænset envejsdæmpning på 0–15 % af eksisterende supply; leddet kan aldrig skabe eller øge supply og er ikke en fysisk landingsandel.",
       "knowledgeClass": "known-model-limitation",
       "confidence": "stor",
-      "source": "js/core/ravscore-model-contract.js; js/core/ravscore-integrated.js"
+      "source": "js/core/ravscore-model-contract.js; js/core/ravscore-wave-approach-state.js; js/core/ravscore-integrated.js"
     },
     {
       "id": "KB-006",

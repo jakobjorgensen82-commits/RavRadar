@@ -9,7 +9,6 @@ import {
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
-  RAVSCORE_PUBLIC_FORECAST_HOURS,
   RAVSCORE_STATE_SCHEMA_VERSION,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -17,6 +16,7 @@ import {
 import {
   RAVSCORE_PUBLIC_DETAILS_KIND,
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
+  RAVSCORE_PUBLIC_FORECAST_HOURS,
   RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION,
   RAVSCORE_PUBLIC_STARTUP_KIND,
   RAVSCORE_PUBLIC_ZONE_COUNT,
@@ -29,6 +29,10 @@ import {
 import {
   assertExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
+import {
+  assertRavScoreVerifiedEvidenceTrust,
+  ravScoreVerifiedEvidenceTrust,
+} from '../js/core/ravscore-evidence-trust-contract.js';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -94,6 +98,15 @@ function publicModelBinding(full) {
     throw new Error('coastal-parts score profile is not the integrated public RavScore model');
   }
   return canonical;
+}
+
+function publicEvidenceTrust(full) {
+  const source = full?.coastalParts;
+  if (!source) return ravScoreVerifiedEvidenceTrust();
+  return assertRavScoreVerifiedEvidenceTrust(
+    source.evidenceTrust,
+    'coastal-parts RavScore evidence trust',
+  );
 }
 
 function projectModelBinding(value) {
@@ -201,7 +214,12 @@ function projectTransportDiagnostics(value) {
     currentDirectionDifferenceDeg: [0, 180],
     supplyPotential: [0, 100],
     transportPotential: [0, 100],
-    lastMileDirectionDifferenceDeg: [0, 180],
+    lastMileDeliveryFactor: [0.85, 1],
+    lastMileWaveActivity: [0, 1],
+    lastMileApproach: [0, 1],
+    lastMileNormalAlignment: [-1, 1],
+    lastMileTangentAlignment: [-1, 1],
+    lastMileDirectionalCoherence: [0, 1],
     currentMemoryCoverageHours: [0, Number.POSITIVE_INFINITY],
     currentMemoryWindowHours: [0, Number.POSITIVE_INFINITY],
   }, 'Public transport diagnostics');
@@ -215,7 +233,9 @@ function projectTransportDiagnostics(value) {
     'engine','measurementStatus','currentVerified','currentTransition','currentAlignment',
     'currentDirectionDifferenceDeg','currentDirectionClass','supplyPotential','transportPotential',
     'lastMileStatus','lastMileScoreEffect','lastMileStructuralUncertainty',
-    'lastMileDirectionDifferenceDeg','lastMilePhysicalDeliveryResolved',
+    'lastMileDeliveryFactor','lastMileWaveActivity','lastMileApproach',
+    'lastMileNormalAlignment','lastMileTangentAlignment',
+    'lastMileDirectionalCoherence','lastMilePhysicalDeliveryResolved',
     'currentReferenceAt','currentMemoryReady','currentMemoryStatus',
     'currentMemoryCoverageHours','currentMemoryWindowHours',
     'windDirectlyIncluded','outflowWholeScoreGateApplied','resolvedSurfZoneIncluded'
@@ -382,8 +402,12 @@ function projectFlowPoints(value) {
   };
 }
 
-function projectPart(value, id, binding, { startup = false } = {}) {
-  const base = { ...pick(value, PART_FIELDS), id: value?.id ?? id };
+function projectPart(value, id, binding, { startup = false, evidenceTrust } = {}) {
+  const base = {
+    ...pick(value, PART_FIELDS),
+    id: value?.id ?? id,
+    ravScoreEvidenceTrust: evidenceTrust,
+  };
   const flowPoints = projectFlowPoints(value?.flowPoints);
   if (flowPoints) base.flowPoints = flowPoints;
   if (!startup && value?.current && typeof value.current === 'object') {
@@ -461,6 +485,7 @@ export function buildStartupCoastalParts(full) {
   const source = full?.coastalParts;
   if (!source) return null;
   const binding = publicModelBinding(full);
+  const evidenceTrust = publicEvidenceTrust(full);
   const scoreProfile = projectScoreProfile(source.scoreProfile, binding);
   const scoreAvailability = projectScoreAvailability(source.scoreAvailability);
   const zones = {};
@@ -478,7 +503,10 @@ export function buildStartupCoastalParts(full) {
   }
   const parts = Object.fromEntries([...winnerIds]
     .filter(id => source.parts?.[id])
-    .map(id => [id, projectPart(source.parts[id], id, binding, { startup: true })]));
+    .map(id => [id, projectPart(source.parts[id], id, binding, {
+      startup: true,
+      evidenceTrust,
+    })]));
   return {
     schemaVersion: source.schemaVersion,
     enabled: source.enabled === true,
@@ -488,6 +516,7 @@ export function buildStartupCoastalParts(full) {
     productionReferenceAt: full?.productionReferenceAt || source.productionReferenceAt || null,
     marginPoints: source.marginPoints || 7,
     modelBinding: binding,
+    evidenceTrust,
     scoreProfile,
     scoreAvailability,
     expectedPartCount: requiredCount(source.expectedPartCount, 'Public root expectedPartCount'),
@@ -501,6 +530,7 @@ function buildDetailedCoastalParts(full) {
   const source = full?.coastalParts;
   if (!source) return null;
   const binding = publicModelBinding(full);
+  const evidenceTrust = publicEvidenceTrust(full);
   const zones = Object.fromEntries(Object.entries(source.zones || {}).map(([zoneId, zone]) => {
     const current = currentLocalRow(zone, source, full);
     return [zoneId, {
@@ -511,7 +541,7 @@ function buildDetailedCoastalParts(full) {
     }];
   }));
   const parts = Object.fromEntries(Object.entries(source.parts || {})
-    .map(([id, part]) => [id, projectPart(part, id, binding)]));
+    .map(([id, part]) => [id, projectPart(part, id, binding, { evidenceTrust })]));
   return {
     schemaVersion: source.schemaVersion,
     enabled: source.enabled === true,
@@ -521,6 +551,7 @@ function buildDetailedCoastalParts(full) {
     productionReferenceAt: full?.productionReferenceAt || source.productionReferenceAt || null,
     marginPoints: source.marginPoints || 7,
     modelBinding: binding,
+    evidenceTrust,
     scoreProfile: projectScoreProfile(source.scoreProfile, binding),
     scoreAvailability: projectScoreAvailability(source.scoreAvailability),
     expectedPartCount: requiredCount(source.expectedPartCount, 'Public root expectedPartCount'),
@@ -603,6 +634,7 @@ function bindDocument(body, kind, binding) {
 
 export function buildPublicConditions(full) {
   const binding = publicModelBinding(full);
+  const evidenceTrust = publicEvidenceTrust(full);
   const zones = {};
   for (const [zoneId, zone] of Object.entries(full?.zones || {})) {
     const forecast = zone?.forecast || {};
@@ -628,6 +660,7 @@ export function buildPublicConditions(full) {
     generatedAt: full?.generatedAt || null,
     productionReferenceAt: full?.productionReferenceAt || null,
     source: 'RavRadar public runtime projection',
+    ravScoreEvidenceTrust: evidenceTrust,
     nationalForecast: buildPublicNationalForecast(full),
     zones,
     coastalParts: buildStartupCoastalParts(full),
@@ -639,6 +672,7 @@ export function buildPublicConditions(full) {
 
 export function buildPublicConditionDetails(full) {
   const binding = publicModelBinding(full);
+  const evidenceTrust = publicEvidenceTrust(full);
   const zones = Object.fromEntries(Object.entries(full?.zones || {}).map(([zoneId, zone]) => {
     const forecast = zone?.forecast || {};
     return [zoneId, { forecast: {
@@ -654,6 +688,7 @@ export function buildPublicConditionDetails(full) {
     datasetId: full?.datasetId || null,
     generatedAt: full?.generatedAt || null,
     productionReferenceAt: full?.productionReferenceAt || null,
+    ravScoreEvidenceTrust: evidenceTrust,
     zones,
     coastalParts: buildDetailedCoastalParts(full),
   };
@@ -792,6 +827,7 @@ export function buildPublicManifest(full, publicText, detailsText, coastalPartsT
   const detailsDocument = JSON.parse(detailsText);
   const zoneRegistryDocument = JSON.parse(zoneRegistryText);
   const binding = publicModelBinding(full);
+  const evidenceTrust = publicEvidenceTrust(full);
   const scoreHorizon = assertCompletePublicRavScoreHorizon(full);
   assertPublicRuntimeEnvelope(publicDocument, {
     kind: RAVSCORE_PUBLIC_STARTUP_KIND,
@@ -860,6 +896,7 @@ export function buildPublicManifest(full, publicText, detailsText, coastalPartsT
     zoneRegistryFeatureCount: registeredZoneIds.length,
     zoneRegistryActiveCount: activeZoneIds.length,
     ravScoreModelBinding: binding,
+    ravScoreEvidenceTrust: evidenceTrust,
     ravScoreProfile: projectScoreProfile(full?.coastalParts?.scoreProfile, binding),
     ravScoreAvailability: projectScoreAvailability(full?.coastalParts?.scoreAvailability),
     publicConditionsSha256,

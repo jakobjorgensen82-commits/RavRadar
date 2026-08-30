@@ -1,12 +1,12 @@
 # Candidate G — analytisk genbrugsklassifikation
 
-- **Dato:** 2026-08-29
-- **Status:** Implementeret klassifikation for den integrerede kandidat; offentlig cutover er ikke gennemført
+- **Dato:** 2026-08-30
+- **Status:** Implementeret klassifikation for den samlede 4.0.315-releasekandidat; exact-head, merge, frisk produktion og offentlig cutover er ikke gennemført
 - **Offentlig model under arbejdet:** Candidate G
 - **Autoritativ ny kontrakt:** `js/core/ravscore-model-contract.js`
 - **Geodata/private data:** Ikke læst eller ændret i analysen
 
-Den klassificerede målkontrakt er model `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0`, state `4.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3`, komponentskema `ravscore-components-huntability-transport-mobilisation-v3` og forklaringsskema `ravscore-explanation-integrated-v3`. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder 34+ kanonisk normaliserede transitive implementeringsfiler; endelige værdier afventer regeneration på afsluttet head.
+Den klassificerede målkontrakt er model `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponentskema `ravscore-components-huntability-delivery-mobilisation-v4` og forklaringsskema `ravscore-explanation-integrated-v4`. Migrationen er `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`, og rollback er `integrated-schema5-to-candidate-g-schema2-v2`. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder den kanonisk normaliserede transitive implementeringslukning; endelige værdier afventer regeneration på afsluttet head.
 
 ## Formål og metode
 
@@ -59,15 +59,15 @@ Hvert aktivt Candidate G-led er vurderet som **BEVAR**, **FORBEDR**, **ERSTAT**,
 
 | Candidate G-led | Klassifikation | Begrundelse og konsekvens |
 |---|---|---|
-| Mild fysisk bottleneck `0,85–1,00` | **FJERN** | Tilføjer en uobserveret, numerisk fysisk virkning oven på 20/50/30. Den har ikke lokalt datagrundlag. |
-| `delivery = transportPotential × factor` efterfulgt af 65/35-blend | **ERSTAT** | Blandingen dobbelttæller transportpotentialet. Aktiv kontrakt bruger `delivery = transportPotential × 1`; delivery er dermed kun en score-neutral strukturel plads i årsagskæden. |
-| `5,25 %` som aktiv maksimal leveringskorrektion | **FJERN** | Tallet har ikke grundlag som fysisk faktor eller interval. Det bevares kun som tydeligt mærket kontrafaktisk offline-ablation sammen med 0 % og 10 %. |
+| Mild fysisk bottleneck `0,85–1,00` | **FORBEDR** | Intervallet genbruges kun som en ensrettet, afgrænset teknisk bølgeapproach-proxy: `factor=clamp(1-0.15×W×(1-approach),0.85,1)`. Den må kun dæmpe allerede eksisterende tilførsel og er ikke et fysisk leveringsinterval. |
+| `delivery = transportPotential × factor` efterfulgt af 65/35-blend | **ERSTAT** | Blandingen dobbelttalte transportpotentialet. Aktiv kontrakt bruger `delivery=transportPotential×factor` præcis én gang og lader delivery-leddet eje de 50 %. |
+| `5,25 %` som aktiv maksimal leveringskorrektion | **ERSTAT** | Den gamle 65/35-afledte 5,25 %-effekt fjernes. Den aktive kontrakt kan dæmpe delivery-leddet højst 15 %, svarende til højst 7,5 rå RavScore-point før slutafrunding; den viste heltalsscore kan derfor ændres 8 point; det er en begrænset modelprior og ikke fundkalibrering. |
 | `5,25 %` som midpoint eller fysisk usikkerhedsinterval | **FJERN** | Der findes intet numerisk fysisk last-mile-interval i aktiv output; værdien er `null`. |
 | Eventtiming fra Phase D som leveringsbevis | **FJERN** | Produktionshistorikken gjorde feltet til praktisk konstant fallback og ikke et observeret timingbevis. |
-| Ydre bølgeretning som numerisk last-mile-faktor | **FJERN** | Uden lokal batymetri og opløst surfzone kan fortegn og størrelse ikke forsvares. Retning er forklarende kontekst med scoreeffekt `NONE`. |
-| Manglende bølgeretning som optimistisk/pessimistisk faktor | **FJERN** | Missing retning er score-neutral og markeres som usikkerhed. Den må ikke erstattes af et numerisk midpoint. |
+| Ydre bølgeretning som numerisk last-mile-faktor | **FORBEDR** | Den officielle DMI-WAM-retning er `FROM` og roteres præcis én gang +180° til `TOWARD` mod den uændrede eksisterende kystnormal. En kausal energivægtet EWMA med fire timers halveringstid og en ældre hale danner `W`, `N` og `T`; `normalAlignment` er det energivægtede normalmoment divideret med aktivitet, og `approach=clamp((normalAlignment+0,25)/1,25,0,1)`. Proxyen repræsenterer kun offshore bølgeapproach og må ikke kaldes lokal undertow, rip-, feeder- eller langskyststrøm. |
+| Manglende bølgeretning som optimistisk/pessimistisk faktor | **FJERN** | Aktiv, energibærende retningsmissing fejler lukket; den erstattes ikke af midpoint. Kun `waveHeightM=0` er neutral exact calm, og `wavePeriodS` skal stadig være finit/ikke-negativ. Positiv højde med nulperiode er `INVALID`/fail-closed og må ikke blive calm-evidens. |
 | Lokal surfzone-, revle-, rip-, feeder-, langskyst- eller undertoweffekt | **UTILSTRÆKKELIG EVIDENS** | Processerne er relevante, men RavRadar mangler de lokale data, der skulle adskille og kvantificere dem. `physicalDeliveryResolved` forbliver falsk. |
-| Strukturel last-mile-usikkerhed | **FORBEDR** | Uvisheden gøres til en permanent, eksplicit forklarings- og confidenceegenskab i stedet for at skjules i en lille faktor. |
+| Strukturel last-mile-usikkerhed | **FORBEDR** | Den afgrænsede bølgeapproach-proxy ændrer ikke erkendelsesgrænsen: `physicalDeliveryResolved=false`, fysisk interval er `null`, og uvisheden forbliver en eksplicit forklarings- og confidenceegenskab. |
 | Ukendt lokalt eller sekundært ravlager som numerisk state | **UTILSTRÆKKELIG EVIDENS** | Lageret kan eksistere, men observeres ikke. Modellen må hverken sætte det til nul eller opfinde lagerpoint. |
 
 ## Vandstand, revler og fysisk fortolkning
@@ -79,6 +79,7 @@ Hvert aktivt Candidate G-led er vurderet som **BEVAR**, **FORBEDR**, **ERSTAT**,
 | Vandstand som synlig kontekst | **FORBEDR** | Forklaringen skal skelne mellem vandsøjlens nettobevægelse, blotlægning, retention og uopløst surfzoneadfærd. |
 | Waders’ vandstands-tie-break | **BEVAR** | Ved scorelighed vælges lavere vandstand, derefter ikke-stigende trend og tidligste tidspunkt. Direkte scoreeffekt forbliver 0. |
 | Statisk rev-, shallow-, bund- eller vegetationbonus | **FJERN** | RavRadar har ikke lokal procesopløsning til et generelt pointbidrag. Geodata ændres ikke i modelsporet. |
+| DDM's officielle 50 m-dybdegrid | **UTILSTRÆKKELIG EVIDENS** | Kan bruges som statisk forsknings- og forklaringskontekst, men opløser ikke dynamiske revler, ripkanaler eller surfzoneprocesser og er derfor bevidst ikke scoreinput. Ingen kystnormal, geometri eller land-/vandpunkter flyttes. |
 
 ## Jagtbarhed og præsentation
 
@@ -97,13 +98,14 @@ Hvert aktivt Candidate G-led er vurderet som **BEVAR**, **FORBEDR**, **ERSTAT**,
 | Candidate G-led | Klassifikation | Begrundelse og konsekvens |
 |---|---|---|
 | DMI/Copernicus-proveniens og tidsbinding | **BEVAR** | Samme tid, kilde og dokumenteret fallback skal følge state, score, payload og forklaring. |
-| Candidate G schema 2 som første cutovergrundlag | **FORBEDR** | Kun kompatibel afledt state/evidens migreres gennem `candidate-g-schema2-to-integrated-schema4-v1`. Historik opfindes ikke, og gamle scorer kopieres ikke. |
+| Candidate G schema 2 som første cutovergrundlag | **FORBEDR** | `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4` validerer og genvægter kun signeret, allerede afledt kystnormal currentevidens uden rå U/V eller rå-genberegningspåstand. Præcis 673 states skal dele target; 40 private WAM-præ-target-positioner kræver coherent run pr. collection og same-cell provenance med højst fire timers same-run-interpolation. Tail-/rå-scoregrænser er `1/1024` og `0.01171875`. Ved manglende bevis forbliver Candidate G offentlig; historik og gamle scorer opfindes ikke. |
 | Ubegrænset genimport af Candidate G | **FJERN** | Import er en præcis first-cutover-mekanisme og må kun ske, når hverken gyldigt integreret bundle eller checkpoint findes. |
-| Candidate G som offline oracle og eksplicit rollback | **FORBEDR** | `integrated-schema4-to-candidate-g-schema2-v1` holder rollback deterministisk uden at blande Candidate G ind i ny score. Den varme projektion ligger kun privat som `ravScoreCandidateGRollback`. Operationel aktivering kræver manuel controller-CAS gennem `CANDIDATE_G_PENDING`, Candidate G-Pages-build og offentlig eksakt 210/673-verifikation. Scheduler kan ikke initiere; der deployes ingen Candidate G-assistent-Edge, lokale DA/DE/EN-svar tager over efter Edge-`409`, og schema-3-ture er Candidate G-bundne og ikke kalibreringsegnede. |
-| Samme-model fuld runtimegendannelse | **FORBEDR** | Gendannelse sker via en privat, hashbundet bundle med eksakt filallowlist, modelbinding, path-/symlinkværn og atomisk installation. |
-| Kompakt continuation-checkpoint | **ERSTAT** | Schema-4-checkpointet indeholder kun minimal afledt state, er bundet til model/hash, forventer 673 kystdele og er højst 72 timer gammelt. Ugyldigt tilstedeværende checkpoint fejler lukket. |
+| Candidate G som offline oracle og eksplicit rollback | **FORBEDR** | `integrated-schema5-to-candidate-g-schema2-v2` holder rollback deterministisk uden at blande Candidate G ind i ny score. Den varme projektion ligger kun privat som `ravScoreCandidateGRollback` og beregnes fra samme targettid uden dobbelt recovery-credit. Operationel aktivering kræver manuel controller-CAS gennem `CANDIDATE_G_PENDING`, Candidate G-Pages-build og offentlig eksakt 210/673-verifikation. Scheduler kan ikke initiere; der deployes ingen Candidate G-assistent-Edge, lokale DA/DE/EN-svar tager over efter Edge-`409`, og Candidate G-bundne ture er ikke kalibreringsegnede. |
+| Samme-model fuld runtimegendannelse | **FORBEDR** | Gendannelse sker via en privat, hashbundet bundle med eksakt filallowlist, modelbinding, path-/symlinkværn og atomisk installation. Den samme integrerede model kan fortsættes atomisk i højst 72 timer; cross-model fallback og interpolation er forbudt. |
+| Kompakt continuation-checkpoint | **ERSTAT** | Schema-5-checkpointet indeholder kun minimal afledt state, er bundet til den fulde model/hash-binding, forventer 673 kystdele og er højst 72 timer gammelt. Ugyldigt tilstedeværende checkpoint fejler lukket. |
 | Offentlig cache som kilde til fuld historik | **FJERN** | Fulde conditions, DMI-caches, pilot history og checkpoint forbliver private. Modellen kan være køreklar via privat bundle/checkpoint uden ny offentlig historikopbygning. |
 | Model- og datakvalitet i ét confidence-label | **ERSTAT** | Datakomplethed og strukturel modelusikkerhed adskilles. Komplet input gør ikke last-mile-modellen moden eller fundkalibreret. |
+| Evidens uden eksplicit trustklasse | **ERSTAT** | `VERIFIED_ONLY` er den eneste kalibreringsegnede klasse. Rekonstrueret og emergency kan kun bruges inden for deres afgrænsede driftskontrakter og er ikke kalibreringsegnede; ture er heller ikke i sig selv kalibreringsgrundlag. Den planlagte fiktive udførelse af morgenhullet blev opgivet, men den historiske afgrænsede incidentkontrakt bevares som sikkerhedsreference. |
 
 ## Offentlig payload, privacy og produktintegration
 
@@ -126,9 +128,9 @@ En multiplikativ kerne er matematisk attraktiv, men gør `transport = 0` til `sc
 
 En procentuel respons undgår nul, men ændrer ejerens deklarerede pointsatser til en ny ikke-lineær regel uden evidens. Den aktive implementering bevarer point pr. effektiv time og forbedrer i stedet alderskernel og evidensintegritet.
 
-### Numerisk last-mile-faktor
+### Ubegrænset eller fysisk fortolket last-mile-faktor
 
-En lille faktor kan se konservativ ud, men dens størrelse og fortegn kræver lokal batymetri, en opløst surfzonemodel og ravets lokale partikelstate. Aagaard, Black & Greenwood 2002 (DOI `10.1016/S0025-3227(02)00193-7`) viser både land- og søværts revletransport afhængigt af undertow, bølgeskævhed, dybde og hældning. Jalón-Rojas m.fl. 2025 (DOI `10.5194/gmd-18-319-2025`) viser, at vertikal position/densitet ændrer Stokes-/undertoweksponering, mens Lofty m.fl. 2023 (DOI `10.1016/j.watres.2023.120329`) bruger rav som lavdensitets bedload/saltation frem for en fri overfladetracer. Det er mekanistisk støtte, ikke dansk ravkalibrering. Det gælder også den tidligere `5,25 %`-hypotese. Den korrekte aktive repræsentation er score-neutral faktor 1 samt eksplicit strukturel usikkerhed.
+En direkte fysisk landingsandel kan ikke forsvares uden lokal batymetri, en bølgeopløst surfzonemodel og ravets lokale partikelstate. Den aktive model bruger derfor kun DMI-WAM's officielle offshore bølgeretning i en afgrænset kausal energivægtet approach-proxy med fire timers halveringstid og en ældre hale, som aldrig kan øge supply og højst kan dæmpe den rå totalscore 7,5 point før slutafrunding; den viste heltalsscore kan derfor ændres 8 point. DDM's officielle 50 m-grid er statisk kontekst og ikke en erstatning for dynamiske revler eller surfzoneprocesser. Rainville m.fl. 2026 understøtter alene, at bølgeapproach kan have relevans for flydende objekters kystnære bevægelse; studiet er en buoyant-object-analogi og hverken ravkalibrering eller dokumentation for fysisk leveringsandel. Derfor forbliver `physicalDeliveryResolved=false`, og fysisk interval er `null`.
 
 ### Vandstandspoint
 
@@ -136,6 +138,6 @@ Små niveau- eller trendpoint blev afvist, fordi absolutte niveauer ikke er univ
 
 ## Konklusion
 
-Den integrerede model er en ny hel kontrakt, men ikke en blind genopbygning. Den bevarer 20/50/30, strømgrænser, +10/−8, 4/48-mobilisering, jagtbarhed, provenance, dæknings- og præsentationskontrakter. Den forbedrer state, evidence, missing, migration, recovery og payloadbinding. Den fjerner helscore-nulgaten, dobbelttælling, skjulte Phase-D-gates, offentlig adaptiv model og uunderbyggede vandstands-/last-mile-point.
+Den integrerede model er en ny hel kontrakt, men ikke en blind genopbygning. Den bevarer 20/50/30, strømgrænser, +10/−8, 4/48-mobilisering, jagtbarhed, provenance, dæknings- og præsentationskontrakter. Den forbedrer state, evidence, missing, migration, recovery, payloadbinding og sidste-miles bølgeapproach. Den fjerner helscore-nulgaten, dobbelttælling, skjulte Phase-D-gates, offentlig adaptiv model og uunderbyggede vandstandspoint.
 
-Den vigtigste faglige korrektion er, at sidste nærkystlevering ikke længere skjules i `5,25 %` eller et opdigtet interval. Den er aktivt score-neutral med faktor 1 og permanent strukturel usikkerhed, indtil et nyt lokalt datagrundlag kan begrunde andet.
+Den vigtigste faglige korrektion er, at sidste nærkystlevering hverken skjules i `5,25 %` eller fremstilles som løst. Den bruger én ensrettet, højst 15 % dæmpende bølgeapproach-faktor på supply og bevarer permanent strukturel usikkerhed, indtil et lokalt datagrundlag kan begrunde en fysisk leveringsmodel. Der må ikke påstås empirisk højere fundpræcision uden et repræsentativt fund-/nulgrundlag.

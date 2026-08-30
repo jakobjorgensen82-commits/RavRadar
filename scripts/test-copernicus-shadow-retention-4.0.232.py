@@ -247,10 +247,12 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-cache-") as r
     # Schema 1 can contribute only genuinely captured historical evidence; its
     # current/reference row can never be promoted into a COMPLETE range seal.
     legacy_path = folder / "legacy.json"
-    legacy_history = {**raw_record(REFERENCE - timedelta(hours=1)), "capturedAt": (REFERENCE - timedelta(hours=2)).isoformat().replace("+00:00", "Z")}
-    legacy_current = {**raw_record(REFERENCE), "capturedAt": REFERENCE.isoformat().replace("+00:00", "Z")}
+    legacy_history = raw_record(REFERENCE - timedelta(hours=1))
+    legacy_current = raw_record(REFERENCE)
     legacy_path.write_text(json.dumps({
-        "schemaVersion": 1, "scoreImpact": False, "publicRuntime": False,
+        "schemaVersion": 1, "retentionHours": 168,
+        "scoreImpact": False, "publicRuntime": False,
+        "updatedAt": (REFERENCE + timedelta(minutes=5)).isoformat().replace("+00:00", "Z"),
         "collections": [], "records": [legacy_history, legacy_current],
     }), encoding="utf-8")
     migrated = load_shadow(legacy_path, REFERENCE, TARGETS)

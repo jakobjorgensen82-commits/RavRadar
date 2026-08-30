@@ -476,6 +476,32 @@ const maintenance = operationalIntegratedMaintenanceTransition({
 });
 assert.equal(maintenance.document.publicManifestSha256, sha256(integratedH2));
 assert.equal(maintenance.document.sourceDeploymentId, 'pages-integrated-h2');
+const resolvedMaintainedIntegrated = resolveOperationalRavScoreModel({
+  version: 5,
+  payload: maintenance.document,
+}, { profileRow: integratedProfileRow });
+assert.equal(resolvedMaintainedIntegrated.activeImplementationClosureSha256,
+  defaultImplementationClosureSha256);
+assert.equal(resolvedMaintainedIntegrated.deploymentId, 'pages-integrated-h2');
+
+const postAbortMaintenance = operationalIntegratedMaintenanceTransition({
+  currentRow: { version: 3, payload: rollbackAbort.document },
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 3,
+  sourceHead,
+  publicManifest: integratedH2,
+  publicAudit: integratedAudit(),
+  publicVerification: integratedH2Verification,
+  readiness,
+  deploymentId: 'pages-integrated-after-abort',
+});
+assert.equal(postAbortMaintenance.document.transitionKind,
+  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRollback,
+  'maintenance after an aborted rollback must preserve its four-state transition history');
+assert.deepEqual(postAbortMaintenance.document.requestedModelBinding, candidateModelBinding());
+assert.equal(postAbortMaintenance.document.sourcePublicManifestSha256, sha256(integratedH2));
+assert.equal(postAbortMaintenance.document.sourceDeploymentId, 'pages-integrated-after-abort');
+assert.equal(postAbortMaintenance.document.failureCode, rollbackAbort.document.failureCode);
 
 // Maintenance is identity-neutral. A runner on main B may not smuggle a real
 // model-binding A -> B transition through the ordinary weather reseal path.
@@ -650,6 +676,20 @@ assert.equal(initialPlan.transitionKind,
 assert.deepEqual(initialPlan.sourceModelBinding, legacyCandidateGControllerBinding());
 assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: null,
+  currentProfileRow: legacyProfileRow,
+  sourceHead,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  readiness,
+  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: 'schedule',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+}), /Initial integrated cutover requires the exact main push/,
+'the scheduler must never initiate the first integrated cutover');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  currentRow: null,
   currentProfileRow: { ...legacyProfileRow, payload: { ...legacyProfile, sourceVersion: '4.0.307' } },
   sourceHead,
   publicManifest: integratedH1,
@@ -675,6 +715,7 @@ const initialBegin = operationalIntegratedReturnTransition({
   sourceVerification: legacyVerification,
   sourceDeploymentId: 'pages-legacy-4308',
   deploymentId: 'run-initial-integrated',
+  now: '2026-08-29T13:04:00.000Z',
 });
 const initialPendingRow = Object.freeze({ version: 1, payload: initialBegin.document });
 assert.equal(initialBegin.document.status, RAVSCORE_OPERATIONAL_STATUSES.integratedPending);
@@ -702,9 +743,12 @@ assert.equal(initialAbort.document.status, RAVSCORE_OPERATIONAL_STATUSES.candida
 assert.deepEqual(initialAbort.document.sourceModelBinding, legacyCandidateGControllerBinding());
 assert.deepEqual(initialAbort.document.requestedModelBinding, integratedModelBinding());
 assert.deepEqual(initialAbort.document.activeModelBinding, legacyCandidateGControllerBinding());
-assert.equal(resolveOperationalRavScoreModel(legacyActiveRow, {
+const resolvedLegacyActive = resolveOperationalRavScoreModel(legacyActiveRow, {
   profileRow: legacyProfileRow,
-}).initialCutoverRequired, true);
+});
+assert.equal(resolvedLegacyActive.initialCutoverRequired, true);
+assert.equal(Object.hasOwn(resolvedLegacyActive, 'normalizationRequired'), false,
+  'the removed normalization protocol must not survive as a resolver output');
 assert.doesNotThrow(() => prepareIntegratedOperationalReturn({
   currentRow: legacyActiveRow,
   currentProfileRow: legacyProfileRow,
@@ -831,6 +875,15 @@ assert.deepEqual(Object.values(RAVSCORE_OPERATIONAL_TRANSITION_KINDS).sort(), [
   'CANDIDATE_G_REFRESH', 'CANDIDATE_G_ROLLBACK',
   'INITIAL_INTEGRATED_CUTOVER', 'INTEGRATED_RETURN',
 ].sort());
+assert.throws(() => assertOperationalActivationDocument({
+  ...maintenance.document,
+  transitionKind: 'INTEGRATED_REFRESH',
+}), /Operational RavScore activation document is invalid/);
+assert.throws(() => assertOperationalActivationDocument({
+  ...maintenance.document,
+  transitionKind:RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh,
+}), /Integrated maintenance document lacks one exact active public identity/,
+'et identity-neutralt integreret reseal må ikke ommærkes som Candidate G scheduler-refresh');
 
 const serialized = JSON.stringify([
   rollbackBegin.document,

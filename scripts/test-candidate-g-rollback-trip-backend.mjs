@@ -16,6 +16,7 @@ import {
 } from '../supabase/functions/_shared/trip-storage.js';
 import {
   activeRavScoreTripAdmissionBody,
+  storeObservation,
 } from '../supabase/functions/_shared/trip-store.ts';
 import { ravScoreModelBinding as candidateModelBinding } from './rollback-assets/ravscore-model-contract.js';
 
@@ -25,6 +26,16 @@ const stagedRoot = path.join(temporaryRoot, 'candidate-pages');
 const candidateBinding = candidateModelBinding();
 const datasetId = 'rr-20260829120000-candidate-trip';
 const startedAt = '2026-08-29T12:00:00.000Z';
+const verifiedEvidenceTrust = Object.freeze({
+  schemaVersion: 1,
+  status: 'VERIFIED_ONLY',
+  incidentId: null,
+  calibrationEligible: true,
+  hardObservedOuttransportEligible: true,
+  affectedPartCount: 0,
+  syntheticSampleCount: 0,
+  activeUntil: null,
+});
 
 try {
   await fs.mkdir(stagedRoot, { recursive: true });
@@ -70,6 +81,7 @@ try {
     zoneCount: 210,
     coastalPartCount: 673,
     ravScoreModelBinding: candidateBinding,
+    ravScoreEvidenceTrust: verifiedEvidenceTrust,
     publicConditionsSha256: 'a'.repeat(64),
     publicConditionsBytes: 1,
     publicConditionDetailsSha256: 'b'.repeat(64),
@@ -99,7 +111,11 @@ try {
       productionReferenceAt: '2026-08-29T11:00:00.000Z',
       generatedAt: '2026-08-29T11:05:00.000Z',
       ravScoreRuntime: { modelBinding: candidateBinding },
-      coastalParts: { modelBinding: candidateBinding },
+      ravScoreEvidenceTrust: verifiedEvidenceTrust,
+      coastalParts: {
+        modelBinding: candidateBinding,
+        evidenceTrust: verifiedEvidenceTrust,
+      },
       publicRuntimeAvailability: stagedPublicRuntime.selectPublicRuntimeAvailability(
         candidateManifest,
         { now: Date.parse(startedAt), modelBinding: candidateBinding },
@@ -123,6 +139,7 @@ try {
     },
     coastalPart: {
       zoneId: 'zone-rollback',
+      ravScoreEvidenceTrust: verifiedEvidenceTrust,
       current: {
         time: '2026-08-29T12:00:00.000Z',
         waders: {
@@ -167,7 +184,6 @@ try {
     user_id: null,
     client_observation_id: '33333333-3333-4333-8333-333333333333',
     gps: null,
-    data_quality_flags: ['not-calibration-eligible'],
   };
   assert.deepEqual(tripEvidenceIntegrityIssues(payload), []);
   assert.equal(expectedCalibrationEligibility(payload, integratedModelBinding()), false,
@@ -255,6 +271,18 @@ try {
   assert.equal('anonymous_id' in external, false);
   assert.equal('user_id' in external, false);
   assert.equal('gps' in external, false);
+  const missingFeaturePayload = structuredClone(payload);
+  delete missingFeaturePayload.calibration_features.modelBundleSha256;
+  assert.throws(() => externalTripPayload(missingFeaturePayload), /TRIP_CALIBRATION_FEATURES_INVALID/,
+    'Schema-3 Edge projection must reject a missing calibration key');
+  const extraFeaturePayload = structuredClone(payload);
+  extraFeaturePayload.calibration_features.unexpected = true;
+  assert.throws(() => externalTripPayload(extraFeaturePayload), /TRIP_CALIBRATION_FEATURES_INVALID/,
+    'Schema-3 Edge projection must reject an extra calibration key');
+  const nestedMissingFeaturePayload = structuredClone(payload);
+  delete nestedMissingFeaturePayload.weather_snapshot.calibrationFeatures.modelContractSha256;
+  assert.throws(() => externalTripPayload(nestedMissingFeaturePayload), /TRIP_CALIBRATION_FEATURES_INVALID/,
+    'Schema-3 nested snapshot must reject a missing binding key');
   const integratedBinding = integratedModelBinding();
   const integratedFeatures = {
     ...payload.calibration_features,
@@ -326,13 +354,65 @@ try {
   assert.doesNotMatch(JSON.stringify(admissionBody),
     /(?:anonymous_id|user_id|gps|latitude|longitude|currentUMps|currentVMps|weather_snapshot)/i);
 
+  const originalDeno = globalThis.Deno;
+  const originalFetch = globalThis.fetch;
+  const admissionRequests = [];
+  const tripStoreEnvironment = {
+    TRIP_STORAGE_MODE: 'supabase',
+    SUPABASE_URL: 'https://trip-admission-test.supabase.co',
+    SUPABASE_SERVICE_ROLE_KEY: 'synthetic-service-role-key',
+  };
+  globalThis.Deno = { env: { get: name => tripStoreEnvironment[name] ?? null } };
+  try {
+    globalThis.fetch = async (input, init = {}) => {
+      admissionRequests.push({ url: String(input), init });
+      return new Response('false', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    };
+    await assert.rejects(
+      storeObservation(payload, null),
+      error => error?.status === 409 && error?.code === 'RAVSCORE_MODEL_NOT_ACTIVE',
+      'A non-active exact binding must remain retryable and must not reach storage',
+    );
+    assert.equal(admissionRequests.length, 1);
+    assert.match(admissionRequests[0].url, /\/rpc\/ravradar_trip_v3_active_binding_admitted$/);
+    assert.doesNotMatch(String(admissionRequests[0].init.body),
+      /(?:anonymous_id|user_id|gps|latitude|longitude|currentUMps|currentVMps|weather_snapshot)/i);
+
+    admissionRequests.length = 0;
+    globalThis.fetch = async (input, init = {}) => {
+      admissionRequests.push({ url: String(input), init });
+      if (String(input).includes('/rpc/')) {
+        return new Response('true', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response('RAVSCORE_MODEL_NOT_ACTIVE', { status: 409 });
+    };
+    await assert.rejects(
+      storeObservation(payload, null),
+      error => error?.status === 409 && error?.code === 'RAVSCORE_MODEL_NOT_ACTIVE',
+      'The database trigger race sentinel must map to the same bounded retryable 409',
+    );
+    assert.equal(admissionRequests.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+    if (originalDeno === undefined) delete globalThis.Deno;
+    else globalThis.Deno = originalDeno;
+  }
+
+  const emergencyReason = 'public-emergency-last-complete';
   const emergencyFeatures = {
     ...integratedFeatures,
-    reasonCodes: ['PUBLIC_EMERGENCY_LAST_COMPLETE'],
+    reasonCodes: [emergencyReason],
   };
   const integratedEmergencyPayload = {
     ...integratedEligiblePayload,
     calibration_eligible: false,
+    data_quality_flags: [emergencyReason],
     calibration_features: emergencyFeatures,
     weather_snapshot: {
       ...integratedEligiblePayload.weather_snapshot,
@@ -352,19 +432,19 @@ try {
   'Integrated emergency evidence must never be calibration eligible');
   const emergencyAdmissionBody = activeRavScoreTripAdmissionBody(integratedEmergencyPayload);
   assert.deepEqual(emergencyAdmissionBody.p_reason_codes,
-    ['PUBLIC_EMERGENCY_LAST_COMPLETE'],
+    [emergencyReason],
     'Edge admission must pass the exact bounded reason array to the SQL gate');
   const forgedEmergencyPayload = {
     ...forgedPayload,
     calibration_features: {
       ...forgedPayload.calibration_features,
-      reasonCodes: ['PUBLIC_EMERGENCY_LAST_COMPLETE'],
+      reasonCodes: [emergencyReason],
     },
     weather_snapshot: {
       ...forgedPayload.weather_snapshot,
       calibrationFeatures: {
         ...forgedPayload.weather_snapshot.calibrationFeatures,
-        reasonCodes: ['PUBLIC_EMERGENCY_LAST_COMPLETE'],
+        reasonCodes: [emergencyReason],
       },
     },
   };
@@ -394,7 +474,7 @@ try {
     /tripEvidenceIntegrityIssues\(payload\)\.length[\s\S]{0,400}!submittedCalibrationEligibilityMatches/,
     'Supabase submit must validate schema-3 integrity before eligibility');
   assert.match(tripStoreSource,
-    /await assertActiveRavScoreTripBinding\(payload\)[\s\S]{0,180}tripStorageMode\(\)/,
+    /const safePayload = projectLegacyExternalTripPayload\(payload\);[\s\S]{0,120}await assertActiveRavScoreTripBinding\(safePayload\)[\s\S]{0,180}activeTripStorageMode\(\)/,
     'Every Supabase and D1 schema-3 write must pass the active-model admission gate');
   assert.match(tripStoreSource,
     /ravradar_trip_v3_active_binding_admitted[\s\S]*admitted !== true[\s\S]*GatewayError\(409, RAVSCORE_MODEL_NOT_ACTIVE\)/,
@@ -411,11 +491,29 @@ try {
     'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
     'modelBundleSha256',
   ]) assert.ok(migrationSql.includes(`'${key}'`), `SQL lacks Candidate-compatible ${key}`);
+  for (const value of Object.values(integratedBinding)) {
+    assert.ok(migrationSql.includes(`'${value}'`), `SQL lacks current integrated binding value ${value}`);
+  }
+  const operationalKeysMatch = migrationSql.match(/operational \?& array\[([\s\S]*?)\]\s*and operational - array\[/);
+  assert.ok(operationalKeysMatch, 'SQL lacks the exact operational required-key gate');
+  const operationalKeys = [...operationalKeysMatch[1].matchAll(/'([^']+)'/g)].map(match => match[1]);
+  assert.equal(operationalKeys.length, 30, 'Operational activation v4 must contain exactly 30 keys');
+  assert.equal(new Set(operationalKeys).size, 30, 'Operational activation v4 keys must be unique');
+  assert.ok(operationalKeys.includes('sourceImplementationClosureSha256'));
+  assert.ok(operationalKeys.includes('requestedImplementationClosureSha256'));
+  assert.match(migrationSql, /operational ->> 'schemaVersion' = 'ravscore-operational-model-activation-v4'/);
+  assert.match(migrationSql, /operational - array\[[\s\S]*?\] = '\{\}'::jsonb/,
+    'Unknown operational keys must fail closed');
+  assert.match(migrationSql, /sourceImplementationClosureSha256' ~ '\^\[a-f0-9\]\{64\}\$'/);
+  assert.match(migrationSql, /requestedImplementationClosureSha256' ~ '\^\[a-f0-9\]\{64\}\$'/);
   assert.match(migrationSql,
-    /RAVSCORE_INTEGRATED_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1\.0\.0'[\s\S]*RAVSCORE_INTEGRATED_BINDING_END[\s\S]*p_calibration_eligible = \([\s\S]*p_actual_zone_id = p_forecast_zone_id/,
+    /normalized ~ '\(lat\(itude\)\?\|lon\(gitude\)\?\|lng\|gps\|coord\|position\|route\|track\|location\)'/,
+    'SQL nested privacy must reject the same location aliases as browser and Edge');
+  assert.match(migrationSql,
+    /RAVSCORE_INTEGRATED_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1\.1\.0'[\s\S]*RAVSCORE_INTEGRATED_BINDING_END[\s\S]*p_calibration_eligible = \([\s\S]*p_actual_zone_id = p_forecast_zone_id/,
     'SQL must allow exact integrated trips and derive their eligibility from location parity');
   assert.match(migrationSql,
-    /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,240}reasonCodes' = '\["PUBLIC_EMERGENCY_LAST_COMPLETE"\]'::jsonb[\s\S]{0,120}p_calibration_eligible = false/,
+    /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,800}public-emergency-last-complete[\s\S]{0,800}p_calibration_eligible = false/,
     'SQL must allow only the exact integrated emergency reason as an ineligible same-model override');
   assert.match(migrationSql,
     /ravradar_trip_v3_active_binding_admitted\([\s\S]{0,900}p_reason_codes jsonb[\s\S]{0,5000}'reasonCodes', p_reason_codes/,

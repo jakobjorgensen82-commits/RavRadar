@@ -157,8 +157,8 @@ def is_candidate_g_rollback_selection(payload):
         and payload.get("migrationRequiredAtFirstCutover") is False
         and payload.get("status")
         == "owner-approved-candidate-g-rollback-only-local-fail-closed"
-        and payload.get("activationAuthority") == "DEC-0108-manual-candidate-g-rollback"
-        and evidence.get("decisionId") == "DEC-0108"
+        and payload.get("activationAuthority") == "DEC-0110-manual-candidate-g-rollback"
+        and evidence.get("decisionId") == "DEC-0110"
         and evidence.get("exactHeadValidationRequired") is True
         and evidence.get("freshProductionValidationRequired") is True
     )
@@ -196,7 +196,7 @@ def is_integrated_selection(payload, expected=None):
             "owner-approved-integrated-model-only-"
         )
         and bool(str(payload.get("activationAuthority") or "").strip())
-        and evidence.get("decisionId") == expected_evidence.get("decisionId") == "DEC-0108"
+        and evidence.get("decisionId") == expected_evidence.get("decisionId") == "DEC-0110"
         and evidence.get("exactHeadValidationRequired") is True
         and evidence.get("freshProductionValidationRequired") is True
     )

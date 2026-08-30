@@ -102,6 +102,7 @@ export function buildIntegratedPartScoreSeries({
   hourly = [],
   initialState = null,
   candidateGCurrentBootstrap = null,
+  candidateGWaveApproachBootstrap = null,
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
   coldReplayBootstrap = null,
@@ -125,11 +126,14 @@ export function buildIntegratedPartScoreSeries({
     currentProvenance: weather.currentProvenance ?? null,
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
+    waveDirectionDeg: weather.waveDirectionDeg,
   })), {
     samplingContextKey,
+    onshoreDirectionDeg: part.onshoreDirectionDeg,
     initialState,
     expectedCandidateGStateKey,
     candidateGCurrentBootstrap,
+    candidateGWaveApproachBootstrap,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample,
     coldReplayBootstrap,
@@ -145,9 +149,11 @@ export function buildIntegratedPartScoreSeries({
     if (Date.parse(weather.time) < scoreStartMs) return [];
     const modelState = stateByTime.get(weather.time) ?? null;
     if (!modelState) return [];
-    const effectiveCurrentProvenance = modelState.currentReferenceProvenance
-      ?? weather.currentProvenance
-      ?? null;
+    const effectiveCurrentProvenance = compactCurrentProvenance(
+      modelState.currentReferenceProvenance
+        ?? weather.currentProvenance
+        ?? null,
+    );
     const publicContext = {
       windSpeedMps: weather.windSpeedMps,
       waveHeightM: weather.waveHeightM,
@@ -168,6 +174,10 @@ export function buildIntegratedPartScoreSeries({
       waveMemoryReady: modelState.waveMemoryReady,
       waveMemoryStatus: modelState.waveMemoryStatus,
       waveTransition: modelState.waveTransition,
+      lastMileWaveReferenceAt: modelState.lastMileWaveReferenceAt,
+      lastMileMemoryReady: modelState.lastMileMemoryReady,
+      lastMileMemoryStatus: modelState.lastMileMemoryStatus,
+      lastMileTransition: modelState.lastMileTransition,
     };
     const modes = Object.fromEntries(['waders', 'beach'].map(mode => [
       mode,
@@ -194,6 +204,9 @@ export function buildIntegratedPartScoreSeries({
         waveLastVerifiedAt: modelState.waveLastVerifiedAt,
         waveMemoryReady: modelState.waveMemoryReady,
         waveMemoryStatus: modelState.waveMemoryStatus,
+        lastMileWaveReferenceAt: modelState.lastMileWaveReferenceAt,
+        lastMileMemoryReady: modelState.lastMileMemoryReady,
+        lastMileMemoryStatus: modelState.lastMileMemoryStatus,
         migrationApplied: modelState.migrationApplied,
         publicContext,
         modes,

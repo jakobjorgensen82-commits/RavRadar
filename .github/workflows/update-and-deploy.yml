@@ -46,47 +46,6 @@ on:
         required: false
         default: ""
         type: string
-      ravscore_active_shadow:
-        description: "Kør privat A-G-/rollbackaudit på de aktive 210/673-punkter (ingen produktion/deploy)"
-        required: false
-        default: false
-        type: boolean
-      candidate_g_gap_reconstruction_mode:
-        description: "Engangsrekonstruktion RRGAP-2026-08-29: none, inspect, apply, rollback eller cleanup"
-        required: true
-        default: none
-        type: choice
-        options:
-          - none
-          - inspect
-          - apply
-          - rollback
-          - cleanup
-      candidate_g_gap_inspection_run_id:
-        description: "Eksakt run-id fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
-        required: false
-        default: ""
-        type: string
-      candidate_g_gap_inspection_artifact_id:
-        description: "Eksakt artifact-id fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
-        required: false
-        default: ""
-        type: string
-      candidate_g_gap_descriptor_sha256:
-        description: "Eksakt SHA-256 fra den forseglede inspect-kørsel (kun apply/rollback/cleanup)"
-        required: false
-        default: ""
-        type: string
-      candidate_g_gap_apply_run_id:
-        description: "Eksakt succesfuldt apply-run med privat rollbackcheckpoint (kun rollback)"
-        required: false
-        default: ""
-        type: string
-      candidate_g_gap_rollback_artifact_id:
-        description: "Eksakt privat rollback-artifact fra apply-run (kun rollback)"
-        required: false
-        default: ""
-        type: string
   push:
     branches: [main]
     paths-ignore:
@@ -108,11 +67,11 @@ permissions:
 # dannes først efter frisk DMI, så normal produktion aldrig kræver landsdækkende
 # Copernicus-data som forhåndsbetingelse. Der må højst være én tung kørsel.
 concurrency:
-  group: ${{ github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode != 'none' && 'ravradar-weather-production' || github.event_name == 'workflow_dispatch' && inputs.ravscore_active_shadow == true && 'ravradar-active-ravscore-shadow' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
-  # Recovery and normal weather share one production group. An incoming push,
-  # schedule or force run must never cancel a descriptor-bound apply between
-  # its local mutation, rollback artifact, full gates and Pages deployment.
-  # Queued normal runs re-check freshness and become cheap no-ops as needed.
+  group: ${{ github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national' || github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot' || 'ravradar-weather-production' }}
+  # RavScore transitions and normal weather share one production group. An
+  # incoming push, schedule or force run must never cancel an atomic model
+  # transition between preparation, full gates and Pages deployment. Queued
+  # normal runs re-check freshness and become cheap no-ops as needed.
   cancel-in-progress: false
 
 jobs:
@@ -121,10 +80,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
+      - name: Checkout manual dispatch contract
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v7
+      - name: Set up Node for manual dispatch contract
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
       - name: Reject ambiguous or insufficiently authorized dispatch
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
+          FORCE: ${{ inputs.force }}
           GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
@@ -132,26 +100,39 @@ jobs:
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
+          set -euo pipefail
+          node scripts/validate-ravscore-dispatch.mjs
+          case "$ROLLBACK_MODE" in none|dry-run|execute) ;; *) echo "Unsupported Candidate G rollback mode." >&2; exit 1 ;; esac
           geometry=false
           if [ "$GEOMETRY_PILOT" = "true" ] || [ "$GEOMETRY_NATIONAL" = "true" ]; then geometry=true; fi
-          if [ "$GEOMETRY_PILOT" = "true" ] && [ "$GEOMETRY_NATIONAL" = "true" ]; then
-            echo "Only one geometry workflow may be dispatched at a time."
+          operation_count=0
+          if [ "$FORCE" = "true" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$GEOMETRY_PILOT" = "true" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$GEOMETRY_NATIONAL" = "true" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$ROLLBACK_MODE" != "none" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$RETURN_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$operation_count" -gt 1 ]; then
+            echo "Exactly one force, geometry, rollback or return operation may be dispatched." >&2
             exit 1
           fi
-          if [ "$ROLLBACK_MODE" != "none" ] && { [ "$geometry" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; }; then
-            echo "Candidate G rollback cannot be combined with geometry or integrated return."
-            exit 1
-          fi
-          if [ "$RETURN_REQUESTED" = "true" ] && [ "$geometry" = "true" ]; then
-            echo "Integrated return cannot be combined with geometry."
+          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "RavScore transitions are allowed only on main." >&2
             exit 1
           fi
           if [ "$ROLLBACK_MODE" = "execute" ] && [ "$ROLLBACK_CONFIRMATION" != "EXECUTE-CANDIDATE-G-ROLLBACK" ]; then
             echo "Candidate G execute confirmation is not exact."
             exit 1
           fi
+          if [ "$ROLLBACK_MODE" != "execute" ] && [ -n "$ROLLBACK_CONFIRMATION" ]; then
+            echo "Candidate G execute confirmation is accepted only by execute mode." >&2
+            exit 1
+          fi
           if [ "$RETURN_REQUESTED" = "true" ] && [ "$RETURN_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-RETURN" ]; then
             echo "Integrated return confirmation is not exact."
+            exit 1
+          fi
+          if [ "$RETURN_REQUESTED" != "true" ] && [ -n "$RETURN_CONFIRMATION" ]; then
+            echo "Integrated return confirmation is accepted only by an integrated return." >&2
             exit 1
           fi
 
@@ -163,6 +144,7 @@ jobs:
     timeout-minutes: 8
     permissions:
       contents: read
+      actions: read
     env:
       RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-reconcile
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -183,6 +165,7 @@ jobs:
       - name: Read durable operation and reconcile from public identity
         shell: bash
         env:
+          GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
@@ -196,41 +179,116 @@ jobs:
           fi
           pending_head="$(jq -r '.sourceHead' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
+          attempt_id="$(jq -r '.deploymentId' "$RAVRADAR_OPERATIONAL_WORK/current.json")"
+          if [[ ! "$attempt_id" =~ ^pages-([0-9]+)-([0-9]+)$ ]]; then
+            echo "Pending RavScore transition lacks a recoverable Pages attempt id." >&2
+            exit 1
+          fi
+          attempt_run_id="${BASH_REMATCH[1]}"
+          attempt_number="${BASH_REMATCH[2]}"
           curl --fail --silent --show-error --location --retry 3 \
             --header 'Cache-Control: no-cache' \
-            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-            --output "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json"
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/public-manifest-1.json"
+          observed_at_1="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          sleep 2
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/public-manifest-2.json"
+          observed_at_2="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest-1.json" \
+            --arg observationNonce "reconcile-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --arg observedAt "$observed_at_1" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_WORK/observation-1.json"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest-2.json" \
+            --arg observationNonce "reconcile-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --arg observedAt "$observed_at_2" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_WORK/observation-2.json"
+          jq -s '.' \
+            "$RAVRADAR_OPERATIONAL_WORK/observation-1.json" \
+            "$RAVRADAR_OPERATIONAL_WORK/observation-2.json" \
+            > "$RAVRADAR_OPERATIONAL_WORK/observations.json"
+          cp "$RAVRADAR_OPERATIONAL_WORK/public-manifest-2.json" \
+            "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json"
           node scripts/ravscore-operational-activation.mjs classify-pending \
             --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
             --output "$RAVRADAR_OPERATIONAL_WORK/classification.json"
           classification="$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/classification.json")"
           model="$(jq -r '.model' "$RAVRADAR_OPERATIONAL_WORK/classification.json")"
           if [ "$classification" = "complete" ]; then
+            gh run download "$attempt_run_id" \
+              --name "ravscore-operational-handoff-$attempt_run_id-$attempt_number" \
+              --dir "$RAVRADAR_OPERATIONAL_WORK/handoff"
             node scripts/verify-ravscore-operational-pages-deployment.mjs \
               --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
               --source-head "$pending_head" \
               --model "$model" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
+              --binding "$RAVRADAR_OPERATIONAL_WORK/handoff/target-binding.json" \
+              --contract "$RAVRADAR_OPERATIONAL_WORK/handoff/target-contract.js" \
+              --bundle "$RAVRADAR_OPERATIONAL_WORK/handoff/target-bundle.generated.js" \
+              --public-closure "$RAVRADAR_OPERATIONAL_WORK/handoff/target-public-closure.json" \
+              --observation-nonce "reconcile-target-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
               --output "$RAVRADAR_OPERATIONAL_WORK/verification.json"
+          elif [ "$classification" = "wait" ]; then
+            gh run download "$attempt_run_id" \
+              --name "ravscore-operational-recovery-$attempt_run_id-$attempt_number" \
+              --dir "$RAVRADAR_OPERATIONAL_WORK/recovery"
+            run_status="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$attempt_run_id/attempts/$attempt_number" --jq '.status')"
+            deploy_step_conclusion="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$attempt_run_id/attempts/$attempt_number/jobs?per_page=100" \
+              --jq '[.jobs[].steps[]? | select(.name == "Deploy to GitHub Pages")][0].conclusion // ""')"
+            if [ "$run_status" != "completed" ] || [ "$deploy_step_conclusion" != "skipped" ]; then
+              echo "Source remains public, but the original Pages attempt is not proven unstarted; PENDING remains fail-closed." >&2
+              exit 1
+            fi
+            jq --arg checkedAt "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" \
+              '{schemaVersion:"ravscore-operational-pages-attempt-terminal-v1",transitionSourceHead:.sourceHead,requestedPublicManifestSha256:.requestedPublicManifestSha256,attemptId:.deploymentId,status:"FAILED_BEFORE_PAGES_ACCEPTANCE",pagesRequestAccepted:false,observedSourcePublicManifestSha256:.sourcePublicManifestSha256,checkedAt:$checkedAt,evidenceSource:"github-actions-pages-terminal-readback",privatePayloadRead:false}' \
+              "$RAVRADAR_OPERATIONAL_WORK/current.json" \
+              > "$RAVRADAR_OPERATIONAL_WORK/terminal-evidence.json"
+          else
+            echo "Public RavScore identity is neither the sealed source nor target; refusing reconciliation." >&2
+            exit 1
           fi
           git fetch --no-tags origin main
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
           if [ "$classification" = "complete" ]; then
+            completion_args=()
+            if [ "$model" = "integrated" ]; then
+              completion_args=(
+                --readiness "$RAVRADAR_OPERATIONAL_WORK/handoff/integrated-readiness.json"
+                --audit "$RAVRADAR_OPERATIONAL_WORK/handoff/public-audit.json"
+              )
+            fi
             node scripts/ravscore-operational-activation.mjs reconcile \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
+              --observations "$RAVRADAR_OPERATIONAL_WORK/observations.json" \
               --verification "$RAVRADAR_OPERATIONAL_WORK/verification.json" \
-              --deployment-id "pages-reconciled-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+              "${completion_args[@]}" \
+              --deployment-id "$attempt_id" \
               --output "$RAVRADAR_OPERATIONAL_WORK/reconciled.json"
           else
+            source_args=()
+            if [ "$model" = "legacy-candidate-g" ]; then
+              source_args=(
+                --source-attestation "$RAVRADAR_OPERATIONAL_WORK/recovery/legacy-source-attestation.json"
+              )
+            fi
             node scripts/ravscore-operational-activation.mjs reconcile \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_WORK/public-manifest.json" \
+              --observations "$RAVRADAR_OPERATIONAL_WORK/observations.json" \
+              --verification "$RAVRADAR_OPERATIONAL_WORK/recovery/source-verification.json" \
+              "${source_args[@]}" \
+              --terminal-evidence "$RAVRADAR_OPERATIONAL_WORK/terminal-evidence.json" \
               --failure-code "PENDING_SOURCE_RECONCILED" \
               --output "$RAVRADAR_OPERATIONAL_WORK/reconciled.json"
           fi
           case "$(jq -r '.status' "$RAVRADAR_OPERATIONAL_WORK/reconciled.json")" in
-            LEGACY_CANDIDATE_G_NORMALIZATION_PENDING|CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
+            CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
           esac
 
   current-hour-readiness:
@@ -256,51 +314,8 @@ jobs:
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
-      - name: Validate one-time Candidate G reconstruction dispatch contract
-        if: github.event_name == 'workflow_dispatch'
-        shell: bash
-        env:
-          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
-          FORCE: ${{ inputs.force }}
-          GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
-          GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
-          RAVSCORE_SHADOW: ${{ inputs.ravscore_active_shadow }}
-          INSPECTION_RUN_ID: ${{ inputs.candidate_g_gap_inspection_run_id }}
-          INSPECTION_ARTIFACT_ID: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
-          DESCRIPTOR_SHA256: ${{ inputs.candidate_g_gap_descriptor_sha256 }}
-          APPLY_RUN_ID: ${{ inputs.candidate_g_gap_apply_run_id }}
-          ROLLBACK_ARTIFACT_ID: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
-        run: |
-          set -euo pipefail
-          case "$RECONSTRUCTION_MODE" in
-            none|inspect|apply|rollback|cleanup) ;;
-            *) echo "Unsupported reconstruction mode." >&2; exit 1 ;;
-          esac
-          if [ "$RECONSTRUCTION_MODE" != "none" ]; then
-            test "$GITHUB_REF" = "refs/heads/main" || { echo "Reconstruction is allowed only on main." >&2; exit 1; }
-            if [ "$FORCE" != "false" ] || [ "$GEOMETRY_PILOT" != "false" ] || [ "$GEOMETRY_NATIONAL" != "false" ] || [ "$RAVSCORE_SHADOW" != "false" ]; then
-              echo "Reconstruction cannot be combined with force, geometry or shadow modes." >&2
-              exit 1
-            fi
-          fi
-          if [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
-            [[ "$INSPECTION_RUN_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric inspection run-id is required." >&2; exit 1; }
-            [[ "$INSPECTION_ARTIFACT_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric inspection artifact-id is required." >&2; exit 1; }
-            [[ "$DESCRIPTOR_SHA256" =~ ^[a-f0-9]{64}$ ]] || { echo "A lowercase SHA-256 descriptor seal is required." >&2; exit 1; }
-          elif [ -n "$INSPECTION_RUN_ID" ] || [ -n "$INSPECTION_ARTIFACT_ID" ] || [ -n "$DESCRIPTOR_SHA256" ]; then
-            echo "Inspection bindings are accepted only by apply, rollback or cleanup." >&2
-            exit 1
-          fi
-          if [ "$RECONSTRUCTION_MODE" = "rollback" ]; then
-            [[ "$APPLY_RUN_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric successful apply run-id is required." >&2; exit 1; }
-            [[ "$ROLLBACK_ARTIFACT_ID" =~ ^[1-9][0-9]{8,}$ ]] || { echo "A numeric private rollback artifact-id is required." >&2; exit 1; }
-          elif [ -n "$APPLY_RUN_ID" ] || [ -n "$ROLLBACK_ARTIFACT_ID" ]; then
-            echo "Apply-run rollback bindings are accepted only by rollback." >&2
-            exit 1
-          fi
-
       - name: Restore private Copernicus current cache for timed gate
-        if: github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
@@ -309,7 +324,7 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Inspect timed UTC hour without exposing raw vectors
-        if: github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)
+        if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         id: cache-state
         run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
 
@@ -317,7 +332,7 @@ jobs:
         id: readiness
         shell: bash
         env:
-          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true) }}
+          CHECK_CURRENT_HOUR: ${{ github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.force != true && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true) }}
           CURRENT_HOUR_PRESENT: ${{ steps.cache-state.outputs.current_hour_present }}
         run: |
           echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -356,7 +371,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EXPECTED_HEAD_SHA: ${{ github.sha }}
-          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPECTED_TRIP_STORAGE_MODE: d1
           CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
@@ -369,12 +383,12 @@ jobs:
             exit 0
           fi
           requires_exact_d1=false
-          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$release_version" = "4.0.313" ] || [ "$release_version" = "4.0.314" ] || [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ] || [ "$RECONSTRUCTION_MODE" = "cleanup" ]; then
+          if [ "$release_version" = "4.0.311" ] || [ "$release_version" = "4.0.312" ] || [ "$release_version" = "4.0.313" ] || [ "$release_version" = "4.0.314" ]; then
             requires_exact_d1=true
           fi
           if [ "$requires_exact_d1" != "true" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
-            echo "The one-time Candidate G exact-D1 release interlock is not required for version $release_version."
+            echo "The historical 4.0.311-4.0.314 exact-D1 release interlock is not required for version $release_version."
             exit 0
           fi
           if ! runs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/workflows/deploy-trip-storage.yml/runs?branch=main&status=completed&event=workflow_dispatch&per_page=100")"; then
@@ -397,208 +411,14 @@ jobs:
             echo "::notice title=Pages production deferred::The live Worker/registry contract could not be attested; this run remains a green no-op."
             exit 0
           fi
-          if [ "$release_version" = "4.0.314" ] && { [ -z "$RECONSTRUCTION_MODE" ] || [ "$RECONSTRUCTION_MODE" = "none" ]; }; then
-            if ! recovery_runs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/workflows/update-and-deploy.yml/runs?branch=main&status=completed&event=workflow_dispatch&per_page=100")"; then
-              echo "::notice title=Pages production deferred::Could not verify the exact-head reconstruction release; this run remains a green no-op."
-              exit 0
-            fi
-            if ! recovery_run_ids_json="$(jq -ce --arg sha "$EXPECTED_HEAD_SHA" '
-              if ((.workflow_runs | type) != "array")
-                or ((all(.workflow_runs[];
-                  (type == "object")
-                  and ((.id | type) == "number")
-                  and ((.head_sha | type) == "string")
-                  and ((.head_branch | type) == "string")
-                  and ((.conclusion | type) == "string")
-                  and ((.event | type) == "string")
-                )) | not)
-              then error("invalid workflow-runs response")
-              else [.workflow_runs[]
-                | select(.head_sha == $sha and .head_branch == "main" and .conclusion == "success" and .event == "workflow_dispatch")
-                | .id]
-              end
-            ' <<< "$recovery_runs_json")"; then
-              echo "::notice title=Pages production deferred::The reconstruction release response could not be validated; this run remains a green no-op."
-              exit 0
-            fi
-            apply_release_proven=false
-            recovery_metadata_valid=true
-            while IFS= read -r recovery_run_id; do
-              if ! [[ "$recovery_run_id" =~ ^[1-9][0-9]{8,}$ ]]; then
-                recovery_metadata_valid=false
-                break
-              fi
-              if ! recovery_jobs_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/runs/${recovery_run_id}/jobs?per_page=100")"; then
-                recovery_metadata_valid=false
-                break
-              fi
-              if ! recovery_jobs_array="$(jq -ce '
-                if ((.jobs | type) != "array")
-                  or ((all(.jobs[];
-                    (type == "object")
-                    and ((.name | type) == "string")
-                    and ((.conclusion | type) == "string")
-                    and (((.steps == null) or ((.steps | type) == "array")))
-                    and (all(.steps[]?;
-                      (type == "object")
-                      and ((.name | type) == "string")
-                      and ((.conclusion | type) == "string")
-                    ))
-                  )) | not)
-                then error("invalid jobs response")
-                else .jobs
-                end
-              ' <<< "$recovery_jobs_json")"; then
-                recovery_metadata_valid=false
-                break
-              fi
-              if jq -e '
-                ([.[].steps[]? | select(.name == "Apply the descriptor-bound one-time Candidate G reconstruction" and .conclusion == "success")] | length) == 1
-                and ([.[] | select(.name == "Deploy prepared Pages artifact" and .conclusion == "success")] | length) == 1
-              ' <<< "$recovery_jobs_array" >/dev/null; then
-                apply_release_proven=true
-                break
-              fi
-            done < <(jq -r '.[] | tostring' <<< "$recovery_run_ids_json")
-            if [ "$recovery_metadata_valid" != "true" ]; then
-              echo "::notice title=Pages production deferred::The reconstruction release jobs could not be validated; this run remains a green no-op."
-              exit 0
-            fi
-            if [ "$apply_release_proven" != "true" ]; then
-              echo "::notice title=Pages production deferred::Apply and deploy the sealed one-time reconstruction on this exact main head before normal 4.0.314 production."
-              exit 0
-            fi
-            echo "The exact 4.0.314 reconstruction apply and Pages release have been attested."
-          fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "The exact source head and the live Edge/Worker backend have the required D1 contract."
 
-  inspect-candidate-g-one-time-gap:
-    name: Inspect and seal the one-time Candidate G gap reconstruction
-    needs: [current-hour-readiness, trip-storage-readiness]
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'inspect' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      actions: read
-    outputs:
-      descriptor_sha256: ${{ steps.inspect.outputs.descriptor_sha256 }}
-      descriptor_artifact_id: ${{ steps.upload-descriptor.outputs.artifact-id }}
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Require checked-out HEAD to equal current origin/main
-        shell: bash
-        env:
-          EXPECTED_HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
-          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
-          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
-
-      - name: Set up Python for deployed-state hydration
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node.js for sealed reconstruction inspection
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-
-      - name: Hydrate the exact current public Candidate G target
-        run: python scripts/hydrate-deployed-weather.py
-        env:
-          RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
-          RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.314 one-time-gap-inspect (${{ github.server_url }}/${{ github.repository }})"
-
-      - name: Download exact bound pre-gap support artifact
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: 9707010150
-          run-id: 33225493339
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/source-before
-
-      - name: Download exact post-gap support artifact
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: 9709446092
-          run-id: 33233545688
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/source-after
-
-      - name: Extract only the bound source bundles
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
-          test -s .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
-          mkdir -p \
-            .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live \
-            .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata \
-            .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live \
-            .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata
-          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
-            project/data/live/conditions.json \
-            > .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
-            run-metadata/github-run.txt \
-            > .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
-            project/data/live/conditions.json \
-            > .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
-            run-metadata/github-run.txt \
-            > .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          test -s .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          test -s .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          test -s .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          test -s .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          test "$(find .cache/candidate-g-gap-reconstruction/extracted-before -type f | wc -l)" -eq 2
-          test "$(find .cache/candidate-g-gap-reconstruction/extracted-after -type f | wc -l)" -eq 2
-
-      - name: Inspect, verify and seal the one-time reconstruction plan
-        id: inspect
-        run: >-
-          node scripts/one-time-candidate-g-gap-reconstruction.mjs
-          --inspect
-          --before .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          --after .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          --target data/live/conditions.json
-          --cadence-policy data/current-regional-proxy-policy.json
-          --descriptor .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
-          --before-attestation .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          --after-attestation .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          --before-bundle .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
-          --after-bundle .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
-          --github-output "$GITHUB_OUTPUT"
-
-      - name: Refuse any non-descriptor inspection output
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
-          test "$(find .cache/candidate-g-gap-reconstruction -maxdepth 1 -type f | wc -l)" -eq 1
-
-      - name: Upload only the sanitized sealed inspection descriptor
-        id: upload-descriptor
-        uses: actions/upload-artifact@v7
-        with:
-          name: candidate-g-gap-reconstruction-inspection-${{ github.run_id }}
-          path: .cache/candidate-g-gap-reconstruction/sealed-descriptor.json
-          include-hidden-files: true
-          retention-days: 14
-          if-no-files-found: error
-
   build-and-prepare:
     needs: [current-hour-readiness, trip-storage-readiness]
-    if: (github.event_name != 'workflow_dispatch' || (inputs.candidate_g_gap_reconstruction_mode != 'inspect' && inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true && inputs.ravscore_active_shadow != true)) && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
+    if: (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)) && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 90
     permissions:
       contents: read
       actions: read
@@ -619,9 +439,10 @@ jobs:
       operational_action: ${{ steps.operational-action.outputs.action }}
       operational_model: ${{ steps.operational-model.outputs.model }}
       central_version: ${{ steps.operational-model.outputs.central_version }}
-      normalization_required: ${{ steps.operational-model.outputs.normalization_required }}
       initial_cutover_required: ${{ steps.operational-model.outputs.initial_cutover_required }}
       deployment_model: ${{ steps.deployment-decision.outputs.deployment_model }}
+      integrated_implementation_closure_sha256: ${{ steps.integrated-implementation.outputs.closure_sha256 }}
+      active_deployment_id: ${{ steps.operational-model.outputs.active_deployment_id }}
 
     steps:
       - uses: actions/checkout@v7
@@ -651,8 +472,9 @@ jobs:
           echo "model=$(jq -r '.model' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "status=$(jq -r '.status' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "central_version=$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
-          echo "normalization_required=$(jq -r '.normalizationRequired' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "initial_cutover_required=$(jq -r '.initialCutoverRequired' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+          echo "active_implementation_closure_sha256=$(jq -r '.activeImplementationClosureSha256 // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+          echo "active_deployment_id=$(jq -r '.deploymentId // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -662,7 +484,6 @@ jobs:
         shell: bash
         env:
           ACTIVE_MODEL: ${{ steps.operational-model.outputs.model }}
-          NORMALIZATION_REQUIRED: ${{ steps.operational-model.outputs.normalization_required }}
           INITIAL_CUTOVER_REQUIRED: ${{ steps.operational-model.outputs.initial_cutover_required }}
           ROLLBACK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_mode || 'none' }}
           ROLLBACK_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_confirmation || '' }}
@@ -713,11 +534,11 @@ jobs:
               fi
               ;;
             legacy-candidate-g)
-              test "$NORMALIZATION_REQUIRED" = "true"
+              test "$INITIAL_CUTOVER_REQUIRED" = "true"
               test "$GITHUB_EVENT_NAME" = "push"
               test "$ROLLBACK_MODE" = "none"
               test "$RETURN_REQUESTED" != "true"
-              action="candidate-normalization"
+              action="integrated-cutover"
               ;;
             *) echo "Unknown operational RavScore model; refusing production."; exit 1 ;;
           esac
@@ -790,15 +611,15 @@ jobs:
           --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           --repository-root "$GITHUB_WORKSPACE"
 
-      - name: Restore the latest compact schema-4 RavScore checkpoint
+      - name: Restore the latest compact schema-5 RavScore checkpoint
         if: steps.private-runtime-state.outputs.available != 'true'
         id: ravscore-checkpoint-cache
         uses: actions/cache/restore@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema4-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ravscore-continuation-schema4-v2-
+            ravscore-continuation-schema5-v3-
 
       - name: Restore protected compact RavScore checkpoint when cache is absent
         if: steps.private-runtime-state.outputs.available != 'true' && steps.ravscore-checkpoint-cache.outputs.cache-matched-key == ''
@@ -832,235 +653,17 @@ jobs:
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
           WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
 
-      - name: Set up Node.js for one-time reconstruction mutation
-        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-
-      - name: Verify exact sealed inspection artifact identity
-        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RECONSTRUCTION_MODE: ${{ inputs.candidate_g_gap_reconstruction_mode }}
-          INSPECTION_RUN_ID: ${{ inputs.candidate_g_gap_inspection_run_id }}
-          INSPECTION_ARTIFACT_ID: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
-          EXPECTED_HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          artifact_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${INSPECTION_ARTIFACT_ID}")"
-          test "$(jq -r '.id | tostring' <<< "$artifact_json")" = "$INSPECTION_ARTIFACT_ID"
-          test "$(jq -r '.name' <<< "$artifact_json")" = "candidate-g-gap-reconstruction-inspection-${INSPECTION_RUN_ID}"
-          test "$(jq -r '.expired | tostring' <<< "$artifact_json")" = "false"
-          test "$(jq -r '.workflow_run.id | tostring' <<< "$artifact_json")" = "$INSPECTION_RUN_ID"
-          test "$(jq -r '.workflow_run.head_branch' <<< "$artifact_json")" = "main"
-          inspection_head_sha="$(jq -r '.workflow_run.head_sha' <<< "$artifact_json")"
-          [[ "$inspection_head_sha" =~ ^[a-f0-9]{40}$ ]]
-          if [ "$RECONSTRUCTION_MODE" = "apply" ] || [ "$RECONSTRUCTION_MODE" = "rollback" ]; then
-            test "$inspection_head_sha" = "$EXPECTED_HEAD_SHA"
-          fi
-
-      - name: Download the exact sealed reconstruction descriptor
-        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ inputs.candidate_g_gap_inspection_artifact_id }}
-          run-id: ${{ inputs.candidate_g_gap_inspection_run_id }}
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/inspection
-
-      - name: Verify the downloaded inspection artifact is descriptor-only
-        if: github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
-          test "$(find .cache/candidate-g-gap-reconstruction/inspection -type f | wc -l)" -eq 1
-
-      - name: Verify exact successful apply rollback artifact identity
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          APPLY_RUN_ID: ${{ inputs.candidate_g_gap_apply_run_id }}
-          ROLLBACK_ARTIFACT_ID: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
-          EXPECTED_HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          artifact_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${ROLLBACK_ARTIFACT_ID}")"
-          test "$(jq -r '.id | tostring' <<< "$artifact_json")" = "$ROLLBACK_ARTIFACT_ID"
-          test "$(jq -r '.name' <<< "$artifact_json")" = "candidate-g-gap-reconstruction-rollback-${APPLY_RUN_ID}"
-          test "$(jq -r '.expired | tostring' <<< "$artifact_json")" = "false"
-          test "$(jq -r '.workflow_run.id | tostring' <<< "$artifact_json")" = "$APPLY_RUN_ID"
-          test "$(jq -r '.workflow_run.head_branch' <<< "$artifact_json")" = "main"
-          test "$(jq -r '.workflow_run.head_sha' <<< "$artifact_json")" = "$EXPECTED_HEAD_SHA"
-          run_json="$(gh api --method GET "/repos/${GITHUB_REPOSITORY}/actions/runs/${APPLY_RUN_ID}")"
-          test "$(jq -r '.head_branch' <<< "$run_json")" = "main"
-          test "$(jq -r '.head_sha' <<< "$run_json")" = "$EXPECTED_HEAD_SHA"
-          test "$(jq -r '.event' <<< "$run_json")" = "workflow_dispatch"
-          test "$(jq -r '.status' <<< "$run_json")" = "completed"
-          test "$(jq -r '.conclusion' <<< "$run_json")" = "success"
-
-      - name: Download the exact private apply rollback checkpoint
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: ${{ inputs.candidate_g_gap_rollback_artifact_id }}
-          run-id: ${{ inputs.candidate_g_gap_apply_run_id }}
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/rollback-operation
-
-      - name: Verify the downloaded rollback artifact is checkpoint-only
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/rollback-operation/compact-rollback.json
-          test "$(find .cache/candidate-g-gap-reconstruction/rollback-operation -type f | wc -l)" -eq 1
-
-      - name: Reconfirm current origin/main immediately before reconstruction mutation
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode != 'none'
-        shell: bash
-        env:
-          EXPECTED_HEAD_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
-          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
-          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
-
-      - name: Download exact bound pre-gap support artifact for apply
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: 9707010150
-          run-id: 33225493339
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/source-before
-
-      - name: Download exact post-gap support artifact for apply
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        uses: actions/download-artifact@v8
-        with:
-          artifact-ids: 9709446092
-          run-id: 33233545688
-          github-token: ${{ github.token }}
-          path: .cache/candidate-g-gap-reconstruction/source-after
-
-      - name: Extract only the bound source bundles for apply
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
-          test -s .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
-          mkdir -p \
-            .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live \
-            .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata \
-            .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live \
-            .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata
-          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
-            project/data/live/conditions.json \
-            > .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          unzip -p .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip \
-            run-metadata/github-run.txt \
-            > .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
-            project/data/live/conditions.json \
-            > .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          unzip -p .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip \
-            run-metadata/github-run.txt \
-            > .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          test -s .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          test -s .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          test -s .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          test -s .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          test "$(find .cache/candidate-g-gap-reconstruction/extracted-before -type f | wc -l)" -eq 2
-          test "$(find .cache/candidate-g-gap-reconstruction/extracted-after -type f | wc -l)" -eq 2
-
-      - name: Capture the exact pre-apply target for isolated rollback proof
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p .cache/candidate-g-gap-reconstruction/transaction-proof
-          cp data/live/conditions.json .cache/candidate-g-gap-reconstruction/transaction-proof/pre-apply-conditions.json
-
-      - name: Apply the descriptor-bound one-time Candidate G reconstruction
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
+      - name: Resolve one aggregate Candidate G wave-bootstrap target
+        if: steps.legacy-bootstrap.outputs.required == 'true'
+        id: ravscore-wave-bootstrap-target
         run: >-
-          node scripts/one-time-candidate-g-gap-reconstruction.mjs
-          --apply
-          --before .cache/candidate-g-gap-reconstruction/extracted-before/project/data/live/conditions.json
-          --after .cache/candidate-g-gap-reconstruction/extracted-after/project/data/live/conditions.json
-          --target data/live/conditions.json
-          --cadence-policy data/current-regional-proxy-policy.json
-          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
-          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
-          --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
-          --before-attestation .cache/candidate-g-gap-reconstruction/extracted-before/run-metadata/github-run.txt
-          --after-attestation .cache/candidate-g-gap-reconstruction/extracted-after/run-metadata/github-run.txt
-          --before-bundle .cache/candidate-g-gap-reconstruction/source-before/RavRadar-support-3675.zip
-          --after-bundle .cache/candidate-g-gap-reconstruction/source-after/RavRadar-support-3676.zip
+          node scripts/resolve-candidate-g-wave-bootstrap-target.mjs
+          --conditions data/live/conditions.json
+          --registry data/live/coastal-parts-v2.json
+          --production-target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
-      - name: Refuse a missing or non-isolated rollback checkpoint
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -s .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
-          test "$(find .cache/candidate-g-gap-reconstruction/rollback -maxdepth 1 -type f | wc -l)" -eq 1
-
-      - name: Prove apply then direct rollback is exact on an isolated copy
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        shell: bash
-        run: |
-          set -euo pipefail
-          applied_target_sha256="$(sha256sum data/live/conditions.json | cut -d ' ' -f1)"
-          cp data/live/conditions.json .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json
-          node scripts/one-time-candidate-g-gap-reconstruction.mjs \
-            --rollback \
-            --target .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json \
-            --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json \
-            --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}" \
-            --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
-          cmp --silent \
-            .cache/candidate-g-gap-reconstruction/transaction-proof/pre-apply-conditions.json \
-            .cache/candidate-g-gap-reconstruction/transaction-proof/isolated-applied-conditions.json
-          test "$(sha256sum data/live/conditions.json | cut -d ' ' -f1)" = "$applied_target_sha256"
-
-      - name: Upload compact private rollback before continuing production
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'apply'
-        uses: actions/upload-artifact@v7
-        with:
-          name: candidate-g-gap-reconstruction-rollback-${{ github.run_id }}
-          path: .cache/candidate-g-gap-reconstruction/rollback/compact-rollback.json
-          include-hidden-files: true
-          retention-days: 14
-          if-no-files-found: error
-
-      - name: Roll back exact post-apply state or causally clean the deployed descendant
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'rollback'
-        run: >-
-          node scripts/one-time-candidate-g-gap-reconstruction.mjs
-          --rollback-dispatch
-          --target data/live/conditions.json
-          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
-          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
-          --rollback-checkpoint .cache/candidate-g-gap-reconstruction/rollback-operation/compact-rollback.json
-
-      - name: Causally remove only the descriptor-bound reconstructed evidence
-        if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'cleanup'
-        run: >-
-          node scripts/one-time-candidate-g-gap-reconstruction.mjs
-          --cleanup
-          --target data/live/conditions.json
-          --descriptor .cache/candidate-g-gap-reconstruction/inspection/sealed-descriptor.json
-          --descriptor-sha256 "${{ inputs.candidate_g_gap_descriptor_sha256 }}"
-
-      - name: Import exact legacy Candidate G into an isolated normalization root
-        if: steps.operational-action.outputs.action == 'candidate-normalization'
+      - name: Import exact legacy Candidate G into an isolated first-cutover source root
+        if: steps.operational-action.outputs.action == 'integrated-cutover'
         shell: bash
         run: |
           rm -rf "$RAVRADAR_LEGACY_SOURCE_ROOT"
@@ -1075,7 +678,8 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.308 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Seal privacy-safe local attestation of the legacy Candidate G source
-        if: steps.operational-action.outputs.action == 'candidate-normalization'
+        id: legacy-source
+        if: steps.operational-action.outputs.action == 'integrated-cutover'
         shell: bash
         run: |
           mkdir -p "$RAVRADAR_OPERATIONAL_WORK"
@@ -1086,6 +690,9 @@ jobs:
             --conditions "$RAVRADAR_LEGACY_SOURCE_ROOT/data/live/conditions.json" \
             --output "$RAVRADAR_OPERATIONAL_WORK/legacy-source-attestation.json"
           test "$(jq -r '.privatePayloadLogged' "$RAVRADAR_OPERATIONAL_WORK/legacy-source-attestation.json")" = "false"
+          implementation_closure_sha256="$(node --input-type=module -e "import { legacyCandidateGImplementationClosureSha256 } from './scripts/verify-legacy-candidate-g-source.mjs'; process.stdout.write(await legacyCandidateGImplementationClosureSha256());")"
+          test "${#implementation_closure_sha256}" = "64"
+          echo "implementation_closure_sha256=$implementation_closure_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Preserve deployed DMI zone cache as safe fallback
         shell: bash
@@ -1098,7 +705,7 @@ jobs:
           fi
 
       - name: Test Supabase persistence roundtrip
-        if: github.event_name == 'push' || inputs.force == true || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup'))
+        if: github.event_name == 'push' || inputs.force == true
         run: node scripts/test-supabase-persistence.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1108,7 +715,7 @@ jobs:
         id: preflight
         run: python scripts/check-weather-update.py
         env:
-          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' || (github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')) }}
+          RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
           WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
@@ -1217,23 +824,25 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         id: dmi-bulk
         continue-on-error: true
-        timeout-minutes: 18
+        timeout-minutes: 55
         run: python -u scripts/update-dmi-bulk.py
         env:
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 2048
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
-          DMI_BULK_MAX_RUNTIME_SECONDS: 900
-          DMI_BULK_FINALIZE_RESERVE_SECONDS: 120
+          DMI_BULK_MAX_RUNTIME_SECONDS: ${{ steps.legacy-bootstrap.outputs.required == 'true' && '3000' || '900' }}
+          DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ steps.legacy-bootstrap.outputs.required == 'true' && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
           DMI_BULK_COLLECTIONS_PER_RUN: 2
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_REFRESH_MINUTES: 60
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
-          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed }}
+          DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || steps.legacy-bootstrap.outputs.required == 'true' }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
+          DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}
+          DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}
           COASTAL_POINT_STAGE_PATH: .cache/coastal-point-staging/dmi.json
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
@@ -1273,6 +882,19 @@ jobs:
         with:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require complete private WAM history before first integrated cutover
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.legacy-bootstrap.outputs.required == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        shell: bash
+        run: |
+          test "${{ steps.dmi-bulk.outcome }}" = "success"
+          python -B scripts/validate_dmi_wave_history_bootstrap.py \
+            --mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}" \
+            --target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}" \
+            --production-target-hour "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
+            --forecast-hour-count 118 \
+            --cache data/live/dmi-bulk-cache.json \
+            --registry data/live/coastal-parts-v2.json
 
       - name: Report DMI bulk result
         if: steps.preflight.outputs.should_run == 'true' && always()
@@ -1381,17 +1003,6 @@ jobs:
           WEATHER_USER_AGENT: "RavRadar/4.0.314 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
-      - name: Refuse reconstruction deploy without a successful fresh weather rebuild
-        if: steps.preflight.outputs.should_run == 'true' && github.event_name == 'workflow_dispatch' && (inputs.candidate_g_gap_reconstruction_mode == 'apply' || inputs.candidate_g_gap_reconstruction_mode == 'rollback' || inputs.candidate_g_gap_reconstruction_mode == 'cleanup')
-        shell: bash
-        env:
-          WEATHER_OUTCOME: ${{ steps.weather.outcome }}
-        run: |
-          if [ "$WEATHER_OUTCOME" != "success" ]; then
-            echo "The one-time reconstruction requires a successful fresh weather rebuild; hydrated fallback deployment is forbidden."
-            exit 1
-          fi
-
       - name: Refuse a point activation without a successful exact-point weather rebuild
         if: steps.preflight.outputs.should_run == 'true'
         shell: bash
@@ -1430,9 +1041,27 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         run: npm run release:gate
 
+      - name: Seal exact integrated public implementation closure
+        if: steps.preflight.outputs.should_run == 'true'
+        id: integrated-implementation
+        shell: bash
+        run: |
+          mkdir -p "$RAVRADAR_OPERATIONAL_WORK"
+          node scripts/seal-ravscore-public-browser-closure.mjs \
+            --root . \
+            --output "$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json" \
+            --model integrated \
+            --identity-output "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+          closure_sha256="$(jq -r '.implementationClosureSha256' "$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json")"
+          test "${#closure_sha256}" = "64"
+          echo "closure_sha256=$closure_sha256" >> "$GITHUB_OUTPUT"
+
       - name: Require exact integrated backend and Edge readiness before integrated Pages
-        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-normalization')
-        run: node scripts/integrated-cutover-readiness.mjs check
+        if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated' || steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs check
+          --public-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          --output "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1462,13 +1091,13 @@ jobs:
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Atomically promote the validated point candidate in central admin storage
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: python scripts/promote-coastal-point-activation.py
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Build compact schema-4 RavScore continuation checkpoint after final gates
+      - name: Build compact schema-5 RavScore continuation checkpoint after final gates
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
@@ -1476,12 +1105,12 @@ jobs:
           --source data/live/conditions.json
           --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
 
-      - name: Save compact schema-4 RavScore continuation checkpoint after final gates
+      - name: Save compact schema-5 RavScore continuation checkpoint after final gates
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
-          key: ravscore-continuation-schema4-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ravscore-continuation-schema5-v3-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reconfirm current main before protected RavScore write
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
@@ -1560,12 +1189,39 @@ jobs:
         run: |
           rm -rf "$RAVRADAR_CANDIDATE_STAGE"
           mkdir -p "$RAVRADAR_OPERATIONAL_WORK" "$RAVRADAR_CANDIDATE_STAGE"
+          rsync -a ./ "$RAVRADAR_CANDIDATE_STAGE/" \
+            --exclude '.git/' \
+            --exclude '_site/' \
+            --exclude '_support/' \
+            --exclude '.cache/' \
+            --exclude 'node_modules/' \
+            --exclude '.geometry-v2-work/'
+          install -m 0644 scripts/rollback-assets/ravscore-model-contract.js \
+            "$RAVRADAR_CANDIDATE_STAGE/js/core/ravscore-model-contract.js"
+          install -m 0644 scripts/rollback-assets/ravscore-model-bundle.generated.js \
+            "$RAVRADAR_CANDIDATE_STAGE/js/core/ravscore-model-bundle.generated.js"
+          (cd "$RAVRADAR_CANDIDATE_STAGE" && node scripts/seal-ravscore-public-browser-closure.mjs \
+            --root . \
+            --output "$RAVRADAR_OPERATIONAL_WORK/candidate-public-closure.json" \
+            --model candidate-g \
+            --identity-output "$RAVRADAR_OPERATIONAL_WORK/candidate-implementation-identity.json")
           dataset_id="$(jq -r '.datasetId' data/live/conditions.json)"
           bundle_sha="$(jq -r '.bundleContentSha256' "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json")"
+          requested_closure_sha256="$(jq -r '.implementationClosureSha256' "$RAVRADAR_OPERATIONAL_WORK/candidate-implementation-identity.json")"
+          source_closure_sha256="${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
+          source_model="integrated"
           rollback_mode="dry-run"
-          if [ "${{ steps.operational-action.outputs.action }}" = "candidate-execute" ]; then
+          action="${{ steps.operational-action.outputs.action }}"
+          if [ "$action" = "candidate-execute" ]; then
             rollback_mode="execute"
+          elif [ "$action" = "candidate-maintenance" ]; then
+            source_model="candidate-g"
           fi
+          if [ -z "$source_closure_sha256" ] && [ "$source_model" = "integrated" ]; then
+            source_closure_sha256="${{ steps.integrated-implementation.outputs.closure_sha256 }}"
+          fi
+          test "${#source_closure_sha256}" = "64"
+          test "${#requested_closure_sha256}" = "64"
           node scripts/prepare-candidate-g-operational-rollback.mjs \
             --input data/live/conditions.json \
             --output "$RAVRADAR_OPERATIONAL_WORK/candidate-full.json" \
@@ -1574,14 +1230,10 @@ jobs:
             --expected-dataset-id "$dataset_id" \
             --source-head "$GITHUB_SHA" \
             --private-bundle-sha256 "$bundle_sha" \
+            --source-model "$source_model" \
+            --source-implementation-closure-sha256 "$source_closure_sha256" \
+            --requested-implementation-closure-sha256 "$requested_closure_sha256" \
             --central-expected-version "${{ steps.operational-model.outputs.central_version }}"
-          rsync -a ./ "$RAVRADAR_CANDIDATE_STAGE/" \
-            --exclude '.git/' \
-            --exclude '_site/' \
-            --exclude '_support/' \
-            --exclude '.cache/' \
-            --exclude 'node_modules/' \
-            --exclude '.geometry-v2-work/'
           node scripts/install-candidate-g-rollback-stage.mjs \
             --stage-root "$RAVRADAR_CANDIDATE_STAGE" \
             --repository-root "$GITHUB_WORKSPACE" \
@@ -1598,11 +1250,19 @@ jobs:
 
       - name: Seal integrated return or initial cutover plan after backend and public gates
         if: steps.preflight.outputs.should_run == 'true' && (steps.operational-action.outputs.action == 'integrated-return' || steps.operational-action.outputs.action == 'integrated-cutover')
-        run: >-
-          node scripts/ravscore-operational-activation.mjs prepare-integrated-return
-          --manifest data/live/manifest.json
-          --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
-          --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
+        shell: bash
+        run: |
+          source_closure_sha256="${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}"
+          if [ "${{ steps.operational-action.outputs.action }}" = "integrated-cutover" ]; then
+            source_closure_sha256="${{ steps.legacy-source.outputs.implementation_closure_sha256 }}"
+          fi
+          test "${#source_closure_sha256}" = "64"
+          node scripts/ravscore-operational-activation.mjs prepare-integrated-return \
+            --manifest data/live/manifest.json \
+            --audit .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
+            --source-implementation-closure-sha256 "$source_closure_sha256" \
+            --requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}" \
+            --output "$RAVRADAR_OPERATIONAL_WORK/plan.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -1755,23 +1415,12 @@ jobs:
             pages_source="$RAVRADAR_CANDIDATE_STAGE"
           fi
           build_pages_site "$pages_source" _site
-          if [ "${{ steps.operational-action.outputs.action }}" = "candidate-normalization" ]; then
-            build_pages_site "$GITHUB_WORKSPACE" _site-integrated
-          fi
 
       - name: Audit the complete Pages artifact for private runtime material
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           node scripts/audit-pages-artifact-privacy.mjs
           --site _site
-          --private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"
-          --require-private-manifest
-
-      - name: Audit the integrated follow-up artifact for source normalization
-        if: steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'candidate-normalization'
-        run: >-
-          node scripts/audit-pages-artifact-privacy.mjs
-          --site _site-integrated
           --private-manifest "$RAVRADAR_PRIVATE_RUNTIME_BUNDLE/manifest.json"
           --require-private-manifest
 
@@ -1787,19 +1436,32 @@ jobs:
           fi
           if [[ "${{ steps.operational-action.outputs.action }}" == candidate-* ]]; then
             cp "$RAVRADAR_OPERATIONAL_WORK/public-audit.json" "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+            target_root="$RAVRADAR_CANDIDATE_STAGE"
+            target_closure="$RAVRADAR_OPERATIONAL_WORK/candidate-public-closure.json"
+            target_identity="$RAVRADAR_OPERATIONAL_WORK/candidate-implementation-identity.json"
           else
             cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
               "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+            target_root="$GITHUB_WORKSPACE"
+            target_closure="$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json"
+            target_identity="$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
           fi
-          if [ "${{ steps.operational-action.outputs.action }}" = "candidate-normalization" ]; then
+          cp "$target_root/js/core/ravscore-model-contract.js" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+          cp "$target_root/js/core/ravscore-model-bundle.generated.js" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+          cp "$target_closure" "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+          jq '.modelBinding' "$target_identity" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          if [ -f "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" ]; then
+            cp "$RAVRADAR_OPERATIONAL_WORK/integrated-readiness.json" \
+              "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
+          fi
+          if [ "${{ steps.operational-action.outputs.action }}" = "integrated-cutover" ]; then
             cp "$RAVRADAR_OPERATIONAL_WORK/legacy-source-manifest.json" \
               "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-manifest.json"
             cp "$RAVRADAR_OPERATIONAL_WORK/legacy-source-attestation.json" \
               "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
-            cp _site-integrated/data/live/manifest.json \
-              "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-manifest.json"
-            cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json \
-              "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-public-audit.json"
           fi
           jq -n \
             --arg action "${{ steps.operational-action.outputs.action }}" \
@@ -1825,7 +1487,7 @@ jobs:
             exit 0
           fi
           deployment_model="integrated"
-          if [ "$action" = "candidate-execute" ] || [ "$action" = "candidate-maintenance" ] || [ "$action" = "candidate-normalization" ]; then
+          if [ "$action" = "candidate-execute" ] || [ "$action" = "candidate-maintenance" ]; then
             deployment_model="candidate-g"
           fi
           echo "should_deploy=true" >> "$GITHUB_OUTPUT"
@@ -1850,18 +1512,10 @@ jobs:
         with:
           path: _site
 
-      - name: Upload sealed integrated artifact after Candidate source normalization
-        if: steps.deployment-decision.outputs.should_deploy == 'true' && steps.operational-action.outputs.action == 'candidate-normalization'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          name: ravscore-integrated-after-normalization
-          path: _site-integrated
-
-
   geometry-v2-national:
     name: Acquire private national GeoDanmark geometry-v2 source
     needs: current-hour-readiness
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true && inputs.ravscore_active_shadow != true
+    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_national == true && inputs.geometry_v2_pilot != true
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -2162,45 +1816,10 @@ jobs:
           if-no-files-found: error
           include-hidden-files: true
 
-  ravscore-active-shadow:
-    name: Audit fallback-compatible 210/673 Candidate G public shadow
-    needs: current-hour-readiness
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.ravscore_active_shadow == true && inputs.geometry_v2_national != true && inputs.geometry_v2_pilot != true
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Set up Node.js for Candidate G public shadow audit
-        uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-
-      - name: Download read-only fallback-compatible 210/673 runtime
-        run: |
-          mkdir -p .cache .geometry-v2-work
-          curl --fail --location --retry 3 --retry-all-errors --max-time 120 \
-            --output .cache/active-public-condition-details.json \
-            https://jakobjorgensen82-commits.github.io/RavRadar/data/live/public-condition-details.json
-
-      - name: Audit centrally derived Candidate G state and score
-        run: node scripts/audit-ravscore-candidate-g-public-shadow.mjs
-
-      - name: Upload dataminimized Candidate G public shadow audit
-        uses: actions/upload-artifact@v7
-        with:
-          name: ravradar-active-ravscore-shadow-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .geometry-v2-work/candidate-g-public-shadow-audit.json
-          retention-days: 14
-          if-no-files-found: error
-          include-hidden-files: true
-
   geometry-v2-pilot:
     name: Run GeoDanmark geometry-v2 pilot
     needs: current-hour-readiness
-    if: github.event_name == 'workflow_dispatch' && inputs.candidate_g_gap_reconstruction_mode == 'none' && inputs.geometry_v2_pilot == true && inputs.ravscore_active_shadow != true
+    if: github.event_name == 'workflow_dispatch' && inputs.geometry_v2_pilot == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -2324,11 +1943,12 @@ jobs:
     timeout-minutes: 25
     permissions:
       contents: read
+      actions: read
       pages: write
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.integrated-normalization-deployment.outputs.page_url || steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
     env:
       RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -2364,7 +1984,7 @@ jobs:
           test "$GITHUB_SHA" = "$current_main"
 
       - name: Observe and seal the currently public source manifest
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover' || needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
+        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance' || needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
           curl --fail --silent --show-error --location --retry 3 \
@@ -2372,7 +1992,7 @@ jobs:
             "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-source=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
           expected_schema="4"
-          if [ "${{ needs.build-and-prepare.outputs.operational_action }}" = "candidate-normalization" ]; then
+          if [ "${{ needs.build-and-prepare.outputs.operational_action }}" = "integrated-cutover" ]; then
             expected_schema="2"
           fi
           test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "$expected_schema"
@@ -2381,14 +2001,30 @@ jobs:
           printf 'public-source-%s\n' "${source_digest:0:24}" \
             > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
 
+      - name: Restore the exact sealed active source implementation
+        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance' || needs.build-and-prepare.outputs.operational_action == 'integrated-return'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTIVE_DEPLOYMENT_ID: ${{ needs.build-and-prepare.outputs.active_deployment_id }}
+        run: |
+          if [[ ! "$ACTIVE_DEPLOYMENT_ID" =~ ^pages-([0-9]+)-([0-9]+)$ ]]; then
+            echo "Active RavScore source lacks a recoverable sealed deployment id." >&2
+            exit 1
+          fi
+          gh run download "${BASH_REMATCH[1]}" \
+            --name "ravscore-operational-handoff-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}" \
+            --dir "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal"
+
       - name: Verify the complete currently public source model before begin CAS
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover' || needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
+        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance' || needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
           case "${{ needs.build-and-prepare.outputs.operational_action }}" in
             candidate-execute) source_model="integrated" ;;
-            integrated-return|integrated-cutover) source_model="candidate-g" ;;
-            candidate-normalization)
+            candidate-maintenance) source_model="candidate-g" ;;
+            integrated-return) source_model="candidate-g" ;;
+            integrated-cutover)
               node scripts/verify-legacy-candidate-g-source.mjs verify \
                 --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
                 --source-head "$GITHUB_SHA" \
@@ -2404,24 +2040,21 @@ jobs:
             --source-head "$GITHUB_SHA" \
             --model "$source_model" \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+            --binding "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-binding.json" \
+            --contract "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-contract.js" \
+            --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-bundle.generated.js" \
+            --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-public-closure.json" \
+            --observation-nonce "source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
 
-      - name: Begin atomic legacy Candidate G source normalization
-        id: normalization-begin
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        run: >-
-          node scripts/ravscore-operational-activation.mjs normalization-begin
-          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
-          --expected-version "${{ needs.build-and-prepare.outputs.central_version }}"
-          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
-          --source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
-          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
-          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
-          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
-          --output "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-begin.json"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Upload privacy-safe source evidence before any activation CAS
+        if: needs.build-and-prepare.outputs.operational_action == 'candidate-execute' || needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance' || needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-operational-recovery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Begin manual Candidate G rollback with exact central CAS
         id: candidate-begin
@@ -2434,6 +2067,24 @@ jobs:
           --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
           --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Begin scheduled Candidate G refresh with exact central CAS
+        id: candidate-refresh-begin
+        if: needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs refresh-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ needs.build-and-prepare.outputs.central_version }}"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -2444,6 +2095,13 @@ jobs:
         if: needs.build-and-prepare.outputs.operational_action == 'integrated-return' || needs.build-and-prepare.outputs.operational_action == 'integrated-cutover'
         shell: bash
         run: |
+          source_attestation=()
+          if [ "${{ needs.build-and-prepare.outputs.operational_action }}" = "integrated-cutover" ]; then
+            source_attestation=(
+              --source-attestation
+              "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
+            )
+          fi
           node scripts/ravscore-operational-activation.mjs return-begin \
             --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
             --expected-version "${{ needs.build-and-prepare.outputs.central_version }}" \
@@ -2451,7 +2109,9 @@ jobs:
             --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
             --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
             --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json" \
+            "${source_attestation[@]}" \
             --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -2479,123 +2139,21 @@ jobs:
 
       - name: Deploy to GitHub Pages
         id: deployment
-        if: needs.build-and-prepare.outputs.operational_action != 'candidate-normalization'
         uses: actions/deploy-pages@v5
-
-      - name: Deploy the sealed Candidate G normalization artifact
-        id: normalization-deployment
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        uses: actions/deploy-pages@v5
-
-      - name: Verify and atomically complete Candidate G source normalization
-        id: normalization-complete
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        shell: bash
-        run: |
-          node scripts/verify-ravscore-operational-pages-deployment.mjs \
-            --base-url "${{ steps.normalization-deployment.outputs.page_url }}" \
-            --source-head "$GITHUB_SHA" \
-            --model "candidate-g" \
-            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
-            --output "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-verification.json"
-          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          test "$GITHUB_SHA" = "$current_main"
-          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-begin.json")"
-          node scripts/ravscore-operational-activation.mjs normalization-complete \
-            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
-            --expected-version "$pending_version" \
-            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
-            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-verification.json" \
-            --deployment-id "pages-normalized-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-            --output "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-complete.json"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-
-      - name: Seal integrated first-cutover plan after normalized Candidate activation
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        run: >-
-          node scripts/ravscore-operational-activation.mjs prepare-integrated-return
-          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-manifest.json"
-          --audit "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-public-audit.json"
-          --output "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-plan.json"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-
-      - name: Begin integrated first cutover from the exact normalized Candidate source
-        id: integrated-normalization-begin
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        shell: bash
-        run: |
-          normalized_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-complete.json")"
-          node scripts/ravscore-operational-activation.mjs return-begin \
-            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-plan.json" \
-            --expected-version "$normalized_version" \
-            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-manifest.json" \
-            --audit "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-public-audit.json" \
-            --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
-            --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/normalization-verification.json" \
-            --source-deployment-id "pages-normalized-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-            --output "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-begin.json"
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
-
-      - name: Reconfirm exact main before integrated post-normalization deployment
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          test "$GITHUB_SHA" = "$current_main"
-
-      - name: Deploy integrated artifact after source normalization
-        id: integrated-normalization-deployment
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        uses: actions/deploy-pages@v5
-        with:
-          artifact_name: ravscore-integrated-after-normalization
-
-      - name: Verify and atomically complete integrated first cutover
-        if: needs.build-and-prepare.outputs.operational_action == 'candidate-normalization'
-        shell: bash
-        run: |
-          node scripts/verify-ravscore-operational-pages-deployment.mjs \
-            --base-url "${{ steps.integrated-normalization-deployment.outputs.page_url }}" \
-            --source-head "$GITHUB_SHA" \
-            --model "integrated" \
-            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-manifest.json" \
-            --output "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-verification.json"
-          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
-          test "$GITHUB_SHA" = "$current_main"
-          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-begin.json")"
-          node scripts/ravscore-operational-activation.mjs return-complete \
-            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-plan.json" \
-            --expected-version "$pending_version" \
-            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-manifest.json" \
-            --audit "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-public-audit.json" \
-            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-verification.json" \
-            --deployment-id "pages-integrated-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Verify deployed exact model, implementation and 210/673 artifact
         id: public-verification
-        if: needs.build-and-prepare.outputs.operational_action != 'candidate-normalization'
         run: >-
           node scripts/verify-ravscore-operational-pages-deployment.mjs
           --base-url "${{ steps.deployment.outputs.page_url }}"
           --source-head "$GITHUB_SHA"
           --model "${{ needs.build-and-prepare.outputs.deployment_model }}"
           --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --binding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          --contract "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+          --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+          --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+          --observation-nonce "target-${{ github.run_id }}-${{ github.run_attempt }}"
           --output "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
 
       - name: Reconfirm exact main before activation completion
@@ -2623,13 +2181,15 @@ jobs:
 
       - name: Refresh already active Candidate G central evidence after public verification
         if: needs.build-and-prepare.outputs.operational_action == 'candidate-maintenance'
-        run: >-
-          node scripts/ravscore-operational-activation.mjs refresh-complete
-          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
-          --expected-version "${{ needs.build-and-prepare.outputs.central_version }}"
-          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
-          --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
-          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs refresh-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -2651,22 +2211,56 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
 
+      - name: Reseal ordinary integrated production without changing model identity
+        if: needs.build-and-prepare.outputs.operational_action == 'integrated'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs integrated-maintenance
+          --expected-version "${{ needs.build-and-prepare.outputs.central_version }}"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+          --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
+          --requested-implementation-closure-sha256 "${{ needs.build-and-prepare.outputs.integrated_implementation_closure_sha256 }}"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
       - name: Reconcile an ambiguous failed transition from observed public identity
-        if: failure() && (steps.candidate-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-normalization-begin.outcome == 'success' || (steps.normalization-begin.outcome == 'success' && steps.normalization-complete.outcome != 'success'))
+        if: failure() && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success')
         shell: bash
         run: |
           set -euo pipefail
           begin_file="$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
-          if [ "${{ steps.integrated-normalization-begin.outcome }}" = "success" ]; then
-            begin_file="$RAVRADAR_OPERATIONAL_HANDOFF/integrated-begin.json"
-          elif [ "${{ steps.normalization-begin.outcome }}" = "success" ] && [ "${{ steps.normalization-complete.outcome }}" != "success" ]; then
-            begin_file="$RAVRADAR_OPERATIONAL_HANDOFF/normalization-begin.json"
-          fi
           pending_version="$(jq -r '.centralVersion' "$begin_file")"
+          attempt_id="$(jq -r '.deploymentId' "$begin_file")"
           curl --fail --silent --show-error --location --retry 3 \
             --header 'Cache-Control: no-cache' \
-            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-failure-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
-            --output "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json"
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-failure-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-1.json"
+          observed_at_1="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          sleep 2
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-failure-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json"
+          observed_at_2="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-1.json" \
+            --arg observationNonce "failure-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --arg observedAt "$observed_at_1" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-1.json"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json" \
+            --arg observationNonce "failure-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --arg observedAt "$observed_at_2" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-2.json"
+          jq -s '.' \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-1.json" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-2.json" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json"
+          cp "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json"
           node scripts/ravscore-operational-activation.mjs classify-pending \
             --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
             --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-classification.json"
@@ -2678,22 +2272,63 @@ jobs:
               --source-head "$GITHUB_SHA" \
               --model "$model" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+              --binding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json" \
+              --contract "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js" \
+              --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js" \
+              --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json" \
+              --observation-nonce "failure-target-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
               --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-verification.json"
+          elif [ "$classification" = "wait" ]; then
+            if [ "${{ steps.deployment.outcome }}" != "skipped" ]; then
+              echo "Source remains public after a Pages attempt that may have started; PENDING remains fail-closed." >&2
+              exit 1
+            fi
+            jq --arg checkedAt "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" \
+              '{schemaVersion:"ravscore-operational-pages-attempt-terminal-v1",transitionSourceHead:.sourceHead,requestedPublicManifestSha256:.requestedPublicManifestSha256,attemptId:.deploymentId,status:"FAILED_BEFORE_PAGES_ACCEPTANCE",pagesRequestAccepted:false,observedSourcePublicManifestSha256:.sourcePublicManifestSha256,checkedAt:$checkedAt,evidenceSource:"github-actions-pages-terminal-readback",privatePayloadRead:false}' \
+              "$begin_file" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/terminal-evidence.json"
+          else
+            echo "Failed transition exposed neither its sealed source nor target; refusing reconciliation." >&2
+            exit 1
           fi
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           test "$GITHUB_SHA" = "$current_main"
           if [ "$classification" = "complete" ]; then
+            completion_args=()
+            if [ "$model" = "integrated" ]; then
+              completion_args=(
+                --readiness "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
+                --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+              )
+            fi
             node scripts/ravscore-operational-activation.mjs reconcile \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+              --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
               --verification "$RAVRADAR_OPERATIONAL_HANDOFF/failure-verification.json" \
-              --deployment-id "pages-reconciled-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+              "${completion_args[@]}" \
+              --deployment-id "$attempt_id" \
+              --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json"
           else
+            source_args=()
+            if [ "$model" = "legacy-candidate-g" ]; then
+              source_args=(
+                --source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
+              )
+            fi
             node scripts/ravscore-operational-activation.mjs reconcile \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
-              --failure-code "FAILED_RUN_SOURCE_RECONCILED"
+              --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
+              --verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json" \
+              "${source_args[@]}" \
+              --terminal-evidence "$RAVRADAR_OPERATIONAL_HANDOFF/terminal-evidence.json" \
+              --failure-code "FAILED_RUN_SOURCE_RECONCILED" \
+              --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json"
           fi
+          case "$(jq -r '.status' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json")" in
+            CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
+          esac
         env:
           GH_TOKEN: ${{ github.token }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

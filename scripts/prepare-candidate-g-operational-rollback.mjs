@@ -15,6 +15,9 @@ import {
   buildCandidateGDerivedStateSeries,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
+  assertRavScoreVerifiedEvidenceTrust,
+} from '../js/core/ravscore-evidence-trust-contract.js';
+import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   assertCandidateGRollbackBinding,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
@@ -213,6 +216,10 @@ function validateRollbackEnvelope(full, {
   }
   assertCandidateBinding(envelope.rollbackModelBinding, 'Candidate G rollback binding');
   const runtime = envelope.runtime;
+  assertRavScoreVerifiedEvidenceTrust(
+    runtime?.evidenceTrust,
+    'Candidate G rollback evidence trust',
+  );
   if (!isPlainObject(runtime)
     || !same(runtime.modelBinding, candidateModelBinding())
     || runtime.enabled !== true

@@ -85,7 +85,7 @@ function validateContract(knowledge, suite) {
   assert.equal(knowledge.releaseVersion, suite.releaseVersion);
   validateAssistantModelBindings(knowledge, suite);
   assert.deepEqual(knowledge.scoreModel.weights, { huntability: 20, transport: 50, mobilisation: 30 });
-  assert.equal(knowledge.scoreModel.id, 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0');
+  assert.equal(knowledge.scoreModel.id, 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0');
   assert.equal(knowledge.scoreModel.publicOnly, true);
   assert.deepEqual(new Set(knowledge.locales), LOCALES);
 

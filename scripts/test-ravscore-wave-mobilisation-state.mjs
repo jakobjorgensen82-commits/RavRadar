@@ -36,6 +36,13 @@ assert.throws(() => buildRavScoreWaveMobilisationStateSeries([{
   time: '2026-08-29T00:00:00',
 }]), /explicit timezone/,
 'timezone-free wave samples must fail closed');
+for (const malformedTime of ['2026-02-30T00:00:00Z', '2026-08-29T24:00:00Z']) {
+  assert.throws(() => buildRavScoreWaveMobilisationStateSeries([{
+    ...sample(0),
+    time: malformedTime,
+  }]), /valid time/,
+  `${malformedTime} must not be moved into another mobilisation hour`);
+}
 
 const cold = buildRavScoreWaveMobilisationStateSeries([sample(0)]);
 assert.equal(cold.rows[0].readiness, false);
@@ -45,6 +52,13 @@ assert.equal(cold.rows[0].mobilisationPotential, 0,
   'a cold first sample must not invent one elapsed hour');
 assert.ok(cold.rows[0].rollbackCandidateGMobilisationPotential > 0,
   'the physically separate rollback track must retain Candidate G first-hour semantics');
+assert.throws(() => buildRavScoreWaveMobilisationStateSeries([], {
+  initialState: {
+    ...cold.continuationState,
+    mobilisationPotential: 100,
+  },
+}), /readiness and status are inconsistent/,
+'COLD_START may not retain invented mobilisation before any elapsed evidence');
 
 const continuous = buildRavScoreWaveMobilisationStateSeries([
   sample(0),
@@ -152,10 +166,18 @@ assert.equal(
 assert.equal(immediateMissing.rows[0].mobilisationPotential, 20);
 assert.equal(immediateMissing.rows[0].creditedDurationHours, 0);
 assert.equal(immediateMissing.rows[0].waveReferenceAt, hour(0));
+assert.throws(() => buildRavScoreWaveMobilisationStateSeries([], {
+  initialState: {
+    ...immediateMissing.continuationState,
+    waveReferenceAt: immediateMissing.continuationState.time,
+  },
+}), /readiness and status are inconsistent/,
+'MISSING_INPUT may not claim a verified reference at its own missing hour');
 
 for (const [label, overrides] of [
   ['negative wave height', { waveHeightM: -0.01, wavePeriodS: 4 }],
   ['negative wave period', { waveHeightM: 0.4, wavePeriodS: -0.01 }],
+  ['positive wave height with zero period', { waveHeightM: 0.4, wavePeriodS: 0 }],
   ['boolean wave height', { waveHeightM: false, wavePeriodS: 4 }],
   ['array wave period', { waveHeightM: 0.4, wavePeriodS: [] }],
   ['blank wave period', { waveHeightM: 0.4, wavePeriodS: '   ' }],
@@ -313,6 +335,15 @@ const longMissingAfterMigrationSeed = buildRavScoreWaveMobilisationStateSeries([
 });
 assert.equal(longMissingAfterMigrationSeed.continuationState.migrationSeedAt, hour(0),
   'the original migration time must survive missing rows');
+assert.throws(() => buildRavScoreWaveMobilisationStateSeries([
+  sample(48, { waveHeightM: 0, wavePeriodS: 3 }),
+], {
+  initialState: {
+    ...longMissingAfterMigrationSeed.continuationState,
+    migrationSeedAt: null,
+  },
+}), /readiness and status are inconsistent/,
+'a pending migration continuation may not erase seed age and bypass long-gap cold restart');
 const calmAfterLongMigrationGap = buildRavScoreWaveMobilisationStateSeries([
   sample(48, { waveHeightM: 0, wavePeriodS: 3 }),
 ], { initialState: longMissingAfterMigrationSeed.continuationState });
@@ -359,6 +390,18 @@ assert.throws(() => buildRavScoreWaveMobilisationStateSeries([sample(0)], {
   initialState: migrated.continuationState,
   candidateGMigrationSeed: { mobilisationPotential: 50 },
 }), /either initialState or candidateGMigrationSeed/);
+assert.throws(() => buildRavScoreWaveMobilisationStateSeries([], {
+  initialState: { ...continuous.continuationState, unexpected: true },
+}), /incompatible exact schema/,
+'compact wave continuation must reject unbound extra fields');
+assert.throws(() => buildRavScoreWaveMobilisationStateSeries([], {
+  initialState: {
+    ...continuous.continuationState,
+    time: continuous.continuationState.time.replace('.000Z', 'Z'),
+    waveReferenceAt: continuous.continuationState.waveReferenceAt.replace('.000Z', 'Z'),
+  },
+}), /times are not canonical/,
+'equivalent but non-canonical wave continuation times must fail closed');
 assert.throws(() => buildRavScoreWaveMobilisationStateSeries([sample(1)], {
   initialState: {
     ...migrated.continuationState,

@@ -48,6 +48,11 @@ assert.equal(
   crypto.createHash('sha256').update(JSON.stringify(knowledge.facts)).digest('hex'),
   'Edge knowledge-hash skal binde den eksakte offentlige faktarække.',
 );
+assert.match(
+  client,
+  new RegExp(RAV_ASSISTANT_KNOWLEDGE_SHA256),
+  'Pages-klienten skal kræve samme eksakte faktahash som Edge og den offentlige vidensfil.',
+);
 assert.equal(sameAssistantRavScoreModelBinding(RAV_ASSISTANT_RAVSCORE_MODEL_BINDING), true);
 assert.equal(sameAssistantRavScoreModelBinding(undefined), false,
   'Den gamle 4.0.308-request uden binding skal afvises før integrerede fakta kan bruges.');
@@ -156,6 +161,21 @@ assert.equal(prompt.publicFacts.length, 37);
 const uvFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'identification.uv-clue-not-proof');
 assert.match(uvFact?.text || '', /395 nanometres/);
 assert.doesNotMatch(uvFact?.text || '', /365 nanometres/);
+const lastMileFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'transport.grid-not-surf-zone');
+assert.match(lastMileFact?.text || '', /causal energy-weighted W\/N\/T EWMA/);
+assert.match(lastMileFact?.text || '', /four-hour half-life/);
+assert.match(lastMileFact?.text || '', /decaying older tail/);
+assert.match(lastMileFact?.text || '', /up to 15 percent/);
+assert.match(lastMileFact?.text || '', /never create or increase supply/);
+assert.match(lastMileFact?.text || '', /at most 7\.5 raw RavScore points before final rounding/);
+assert.match(lastMileFact?.text || '', /displayed integer can move by 8 points/);
+assert.match(lastMileFact?.text || '', /does not remove structural last-mile uncertainty/);
+assert.doesNotMatch(lastMileFact?.text || '', /four-hour wave-approach prior/,
+  'Fire timer er halveringstid med ældre hale, ikke et fast wave-approach-vindue.');
+assert.doesNotMatch(lastMileFact?.text || '', /score-neutral/,
+  'Schema-5-assistenten må ikke gentage den pensionerede neutrale sidste-mile-kontrakt.');
+assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /50% delivery potential/);
+assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /bounded wave-approach attenuation/);
 assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);
 assert.match(assistantSystemInstruction(), /Can you guarantee a find/);
 assert.match(assistantSystemInstruction(), /safety\.not-a-safety-rating/);

@@ -8,11 +8,12 @@ import {
   sha256Text,
 } from './public-conditions-lib.mjs';
 import {
-  RAVSCORE_PUBLIC_FORECAST_HOURS,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 import {
+  RAVSCORE_PUBLIC_FORECAST_HOURS,
   canonicalPublicRuntimeJson,
   publicRuntimeDocumentBody,
   ravScorePublicHorizonValidUntil,
@@ -30,6 +31,20 @@ const generatedAt = '2026-08-29T00:00:00.000Z';
 const validUntil = ravScorePublicHorizonValidUntil(generatedAt);
 const freshNow = Date.parse(generatedAt) + 30 * 60_000;
 const emergencyNow = Date.parse(generatedAt) + 9 * 3_600_000 + 20 * 60_000;
+const reconstructedTrust = Object.freeze({
+  schemaVersion: 1,
+  status: 'ACTIVE_RECONSTRUCTED_DERIVED_EVIDENCE',
+  incidentId: 'RRGAP-2026-08-29-CANDIDATE-G-01',
+  decisionId: 'DEC-0109',
+  method: 'LINEAR_INTERPOLATION_OF_DERIVED_SIGNED_TRANSPORT_STRENGTH',
+  evidenceClassification: 'RECONSTRUCTED_DERIVED_NOT_MEASURED',
+  calibrationEligible: false,
+  hardObservedOuttransportEligible: false,
+  descriptorSha256: 'a'.repeat(64),
+  affectedPartCount: 673,
+  syntheticSampleCount: 673,
+  activeUntil: '2026-08-31T09:00:00.000Z',
+});
 const horizonTimes = Array.from({ length: RAVSCORE_PUBLIC_FORECAST_HOURS }, (_, index) =>
   new Date(Date.parse(generatedAt) + index * 3_600_000).toISOString());
 const zoneIds = Array.from({ length: 210 }, (_, index) => `zone-${index + 1}`);
@@ -155,6 +170,7 @@ function full(datasetId, scoreValue) {
       schemaVersion: 2,
       enabled: true,
       modelBinding: binding,
+      evidenceTrust: ravScoreVerifiedEvidenceTrust(),
       scoreProfile,
       scoreAvailability: {
         schemaVersion: 1,
@@ -266,12 +282,15 @@ for (const mutate of [
   manifest => { manifest.ravScoreProfile.bestTimePolicyId = 'forged-best-time'; },
   manifest => { delete manifest.zoneRegistrySha256; },
   manifest => { manifest.zoneRegistryBytes = 0; },
+  manifest => { delete manifest.ravScoreEvidenceTrust; },
+  manifest => { manifest.ravScoreEvidenceTrust = structuredClone(reconstructedTrust); },
+  manifest => { manifest.ravScoreEvidenceTrust.unexpected = true; },
 ]) {
   const invalidManifest = structuredClone(primary.manifest);
   mutate(invalidManifest);
   await assert.rejects(
     () => service.loadZones({ manifest: invalidManifest }),
-    /manifest|filhash|byteantal|ufuldstændig|runtime|scoreprofil|profile/i,
+    /manifest|filhash|byteantal|ufuldstændig|runtime|scoreprofil|profile|evidens|trust|VERIFIED_ONLY/i,
   );
 }
 
@@ -283,6 +302,15 @@ for (const [label, mutate] of [
   }],
   ['forged payload profile', startup => {
     startup.coastalParts.scoreProfile.bestTimePolicyId = 'forged-best-time';
+  }],
+  ['reconstructed root trust', startup => {
+    startup.ravScoreEvidenceTrust = structuredClone(reconstructedTrust);
+  }],
+  ['reconstructed nested trust', startup => {
+    startup.coastalParts.evidenceTrust = structuredClone(reconstructedTrust);
+  }],
+  ['missing part trust', startup => {
+    delete startup.coastalParts.parts['part-1'].ravScoreEvidenceTrust;
   }],
 ]) {
   service.clearDataMemoryCache();
@@ -478,7 +506,7 @@ const emergencyStart = createTripStartFromPublicState({
   modelVersion: binding.modelId, modelBinding: binding,
 });
 assert.deepEqual(emergencyStart.calibrationFeatures.reasonCodes,
-  ['PUBLIC_EMERGENCY_LAST_COMPLETE']);
+  ['public-emergency-last-complete']);
 const emergencyEvidence = completeTripEvidence(emergencyStart, {
   endedAt: new Date(emergencyNow + 31 * 60_000).toISOString(),
   zoneId: 'zone-1', coastalPartId: 'part-1', searchCoverage: 'normal', found: false,
@@ -524,6 +552,29 @@ const detailsHashFailed = await service.loadConditions({ manifest: primary.manif
 assert.equal(detailsHashFailed.available, false,
   'One invalid details file must make the whole emergency package unavailable.');
 documents.set(primaryUrl(primary.manifest, true), primary.detailsText);
+
+service.clearDataMemoryCache();
+const reconstructedDetails = structuredClone(primary.details);
+reconstructedDetails.ravScoreEvidenceTrust = structuredClone(reconstructedTrust);
+reconstructedDetails.ravScoreRuntime.payloadBodySha256 = sha256Text(
+  canonicalPublicRuntimeJson(publicRuntimeDocumentBody(reconstructedDetails)),
+);
+const reconstructedDetailsText = compactJson(reconstructedDetails);
+const reconstructedDetailsManifest = structuredClone(primary.manifest);
+reconstructedDetailsManifest.publicConditionDetailsSha256 = sha256Text(reconstructedDetailsText);
+reconstructedDetailsManifest.publicConditionDetailsBytes = Buffer.byteLength(reconstructedDetailsText);
+Object.assign(reconstructedDetailsManifest.ravScoreRuntime.details, {
+  payloadBodySha256: reconstructedDetails.ravScoreRuntime.payloadBodySha256,
+  fileSha256: reconstructedDetailsManifest.publicConditionDetailsSha256,
+  bytes: reconstructedDetailsManifest.publicConditionDetailsBytes,
+});
+documents.set(primaryUrl(reconstructedDetailsManifest, true), reconstructedDetailsText);
+const reconstructedEmergency = await service.loadConditions({
+  manifest: reconstructedDetailsManifest,
+  now: emergencyNow,
+});
+assert.equal(reconstructedEmergency.available, false,
+  'a consistently rehashed reconstructed details package must never enter integrated emergency mode');
 
 // File bytes are checked, not merely named by a hash-bearing URL.
 service.clearDataMemoryCache();
@@ -612,6 +663,10 @@ assert.equal(
 const mixedDetails = structuredClone(firstDetails);
 mixedDetails.ravScoreRuntime.modelBinding.modelId = 'RRS-CANDIDATE-G';
 assert.throws(() => service.mergeConditionDetails(first, mixedDetails), /modelId|model\s*bundle/i);
+const trustMixedDetails = structuredClone(firstDetails);
+trustMixedDetails.ravScoreEvidenceTrust = structuredClone(reconstructedTrust);
+assert.throws(() => service.mergeConditionDetails(first, trustMixedDetails), /VERIFIED_ONLY/i,
+  'progressive merging must independently reject reconstructed trust');
 
 assert.ok(requests.some(request => request.cache === 'force-cache'));
 

@@ -105,8 +105,7 @@ export function classifyWaterLevelContext(weather = {}, currentContext = {}) {
 
 export function evaluateIntegratedLastMile({
   supplyPotential,
-  weather = {},
-  onshoreDirectionDeg = null,
+  lastMileState = {},
 } = {}) {
   const supply = potential(supplyPotential);
   if (supply === null) return {
@@ -116,11 +115,13 @@ export function evaluateIntegratedLastMile({
     factor: null,
     transport: null,
   };
-  const waveHeightM = nonNegative(weather?.waveHeightM);
-  const wavePeriodS = nonNegative(weather?.wavePeriodS);
-  if (waveHeightM === null || wavePeriodS === null) return {
+  if (lastMileState?.lastMileMemoryReady !== true
+    || !RAVSCORE_LAST_MILE_POLICY.readyStatuses
+      .includes(lastMileState?.lastMileMemoryStatus)) return {
     available: false,
-    status: 'LAST_MILE_WAVE_CONTEXT_NOT_READY',
+    status: lastMileState?.lastMileEvidenceStatus === 'ACTIVE_WAVE_DIRECTION_MISSING'
+      ? 'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING'
+      : 'LAST_MILE_WAVE_APPROACH_STATE_NOT_READY',
     transportPotential: supply,
     factor: null,
     transport: null,
@@ -128,39 +129,106 @@ export function evaluateIntegratedLastMile({
     physicalDeliveryResolved: false,
     plausibleTransportRange: null,
     structuralUncertainty: true,
-    missing: [
-      ...(waveHeightM === null ? ['wave-height'] : []),
-      ...(wavePeriodS === null ? ['wave-period'] : []),
-    ],
+    missing: lastMileState?.lastMileEvidenceStatus === 'ACTIVE_WAVE_DIRECTION_MISSING'
+      ? ['wave-direction']
+      : ['wave-approach-state'],
   };
-  const energy = waveMobilisationEnergy({ waveHeightM, wavePeriodS });
-  const directionFrom = direction(weather?.waveDirectionDeg);
-  const onshore = direction(onshoreDirectionDeg);
-  const directionKnown = directionFrom !== null && onshore !== null;
-  const waveToward = directionKnown ? (directionFrom + 180) % 360 : null;
-  const differenceDeg = directionKnown ? angularDifference(waveToward, onshore) : null;
-  const alignment = differenceDeg === null
+  const activity = number(lastMileState.lastMileWaveActivity);
+  const normalAlignment = number(lastMileState.lastMileNormalAlignment);
+  const tangentAlignment = number(lastMileState.lastMileTangentAlignment);
+  const coherence = number(lastMileState.lastMileCoherence);
+  const approach = number(lastMileState.lastMileApproach);
+  const factor = number(lastMileState.lastMileFactor);
+  const evidenceStatus = lastMileState.lastMileEvidenceStatus;
+  const exactCalmEvidence = evidenceStatus === 'EXACT_CALM_DIRECTION_NEUTRAL';
+  const directionalEvidence = evidenceStatus === 'DIRECTIONAL_WAVE_EVIDENCE_READY';
+  const zeroActivity = activity === 0;
+  const calm = zeroActivity && exactCalmEvidence;
+  const expectedApproach = zeroActivity
+    ? 1
+    : normalAlignment === null
+      ? null
+      : clamp(
+        (normalAlignment
+          - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment)
+          / (1 - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment),
+      );
+  const directionalMagnitude = normalAlignment === null || tangentAlignment === null
     ? null
-    : Math.cos(differenceDeg * Math.PI / 180);
-  return {
-    available: true,
-    status: directionKnown
-      ? 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL'
-      : 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN',
+    : Math.hypot(normalAlignment, tangentAlignment);
+  const expectedCoherence = directionalMagnitude === null
+    ? null
+    : clamp(directionalMagnitude);
+  const directionalStateValid = zeroActivity
+    ? normalAlignment === null
+      && tangentAlignment === null
+      && coherence === null
+      && approach === 1
+    : normalAlignment !== null
+      && normalAlignment >= -1 && normalAlignment <= 1
+      && tangentAlignment !== null
+      && tangentAlignment >= -1 && tangentAlignment <= 1
+      && directionalMagnitude <= 1 + 1e-9
+      && coherence !== null
+      && coherence >= 0 && coherence <= 1
+      && expectedCoherence !== null
+      && Math.abs(coherence - expectedCoherence) <= 1e-9
+      && expectedApproach !== null
+      && approach !== null
+      && Math.abs(approach - expectedApproach) <= 1e-9;
+  const expectedFactor = activity === null || expectedApproach === null
+    ? null
+    : clamp(
+      1 - RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare
+        * activity * (1 - expectedApproach),
+      RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor,
+      RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor,
+    );
+  if (activity === null || activity < 0 || activity > 1
+    || (!exactCalmEvidence && !directionalEvidence)
+    || approach === null || approach < 0 || approach > 1
+    || !directionalStateValid
+    || factor === null
+    || factor < RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor
+    || factor > RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor
+    || expectedFactor === null || Math.abs(factor - expectedFactor) > 1e-9) return {
+    available: false,
+    status: 'LAST_MILE_WAVE_APPROACH_STATE_INVALID',
     transportPotential: supply,
-    factor: RAVSCORE_LAST_MILE_POLICY.deliveryFactor,
-    transport: supply,
+    factor: null,
+    transport: null,
     scoreEffect: RAVSCORE_LAST_MILE_POLICY.scoreEffect,
     physicalDeliveryResolved: false,
-    waveEnergyScore: energy.energyScore,
-    alignment,
-    directionDifferenceDeg: differenceDeg,
     plausibleTransportRange: null,
     structuralUncertainty: true,
-    missing: [
-      ...(directionFrom === null ? ['wave-direction'] : []),
-      ...(onshore === null ? ['onshore-direction'] : []),
-    ],
+    missing: ['wave-approach-state'],
+  };
+  const delivery = supply * factor;
+  return {
+    available: true,
+    status: calm
+      ? 'LAST_MILE_BOUNDED_WAVE_APPROACH_CALM_NEUTRAL'
+      : 'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+    transportPotential: supply,
+    factor,
+    transport: delivery,
+    deliveryPotential: delivery,
+    scoreEffect: RAVSCORE_LAST_MILE_POLICY.scoreEffect,
+    physicalDeliveryResolved: false,
+    activity,
+    approach,
+    normalAlignment,
+    tangentAlignment,
+    coherence,
+    directionConventions: Object.freeze({
+      waveDirectionDeg: 'FROM',
+      towardConversionDegrees: 180,
+      onshoreDirectionDeg: 'IMMUTABLE_COAST_NORMAL_TOWARD_LAND',
+      appliedRotationCount: 1,
+    }),
+    plausibleTransportRange: null,
+    structuralUncertainty: true,
+    missing: [],
   };
 }
 
@@ -174,6 +242,7 @@ function unavailable(reason, state = {}) {
     readiness: {
       current: state?.currentMemoryStatus ?? null,
       wave: state?.waveMemoryStatus ?? null,
+      lastMile: state?.lastMileMemoryStatus ?? null,
     },
   };
 }
@@ -200,10 +269,26 @@ export function evaluateRavScoreIntegrated(
   if (!huntability.available || !finite(huntability.value)) {
     return unavailable(huntability.reason ?? 'HUNTABILITY_NOT_READY', state);
   }
+  const currentWaveHeight = nonNegative(weather?.waveHeightM);
+  const currentWavePeriod = nonNegative(weather?.wavePeriodS);
+  if (currentWaveHeight === null || currentWavePeriod === null) {
+    return unavailable('WAVE_PHYSICAL_INPUT_NOT_READY', state);
+  }
+  const currentWaveEnergy = waveMobilisationEnergy({
+    waveHeightM: currentWaveHeight,
+    wavePeriodS: currentWavePeriod,
+  });
+  if (!currentWaveEnergy.available) {
+    return unavailable('WAVE_PHYSICAL_INPUT_NOT_READY', state);
+  }
+  if (currentWaveEnergy.active
+    && direction(weather?.waveDirectionDeg) === null) {
+    return unavailable('LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING', state);
+  }
+
   const lastMile = evaluateIntegratedLastMile({
     supplyPotential: state.supplyPotential,
-    weather,
-    onshoreDirectionDeg: zone?.onshoreDirectionDeg,
+    lastMileState: state,
   });
   if (!lastMile.available || !finite(lastMile.transport)) {
     return unavailable('LAST_MILE_TRANSPORT_NOT_READY', state);
@@ -248,8 +333,8 @@ export function evaluateRavScoreIntegrated(
     'NOT_CALIBRATED_TO_REPRESENTATIVE_FINDS',
   ];
   limitations.push('LAST_MILE_STRUCTURAL_UNCERTAINTY');
-  if (lastMile.status === 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN') {
-    limitations.push('LAST_MILE_DIRECTION_UNKNOWN');
+  if (finite(lastMile.coherence) && lastMile.coherence < 0.5) {
+    limitations.push('LAST_MILE_DIRECTIONAL_COHERENCE_LOW');
   }
 
   const scoreCalculation = {
@@ -301,7 +386,7 @@ export function evaluateRavScoreIntegrated(
           value: rounded(components.transport),
           weight: RAVSCORE_WEIGHTS.transport,
           weightedContribution: scoreCalculation.weightedContributions.transport,
-          meaning: 'RECENT_VERIFIED_GRID_CURRENT_SUPPLY_EVIDENCE_LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
+          meaning: 'RECENT_VERIFIED_GRID_CURRENT_SUPPLY_TIMES_BOUNDED_WAVE_APPROACH_FACTOR',
         },
         mobilisation: {
           value: rounded(components.mobilisation),
@@ -319,9 +404,8 @@ export function evaluateRavScoreIntegrated(
       findProbability: false,
     },
     confidence: {
-      dataStatus: lastMile.missing.includes('wave-direction')
-        || lastMile.missing.includes('onshore-direction')
-        ? 'READY_WITH_STRUCTURAL_AND_DIRECTION_UNCERTAINTY'
+      dataStatus: finite(lastMile.coherence) && lastMile.coherence < 0.5
+        ? 'READY_WITH_STRUCTURAL_AND_DIRECTIONAL_COHERENCE_UNCERTAINTY'
         : 'READY_WITH_STRUCTURAL_LAST_MILE_UNCERTAINTY',
       modelMaturity: RAVSCORE_MODEL_CONTRACT.uncertainty.modelMaturity,
       modelConfidence: 'low',

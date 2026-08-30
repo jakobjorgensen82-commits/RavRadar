@@ -4,6 +4,14 @@ import {
   classifyWaterLevelContext,
   evaluateRavScoreIntegrated,
 } from '../js/core/ravscore-integrated.js';
+import {
+  RAVSCORE_BEST_TIME_POLICY,
+  RAVSCORE_LAST_MILE_POLICY,
+} from '../js/core/ravscore-model-contract.js';
+
+assert.equal(RAVSCORE_LAST_MILE_POLICY.waterLevelTransportScoreEffect,
+  'NONE_CONTEXT_AND_BEST_TIME_TIE_ONLY');
+assert.equal(RAVSCORE_BEST_TIME_POLICY.waterLevelScoreEffect, 0);
 
 const baseState = Object.freeze({
   currentMemoryReady: true,
@@ -16,6 +24,15 @@ const baseState = Object.freeze({
   waveMemoryStatus: 'READY',
   waveLastVerifiedAt: '2026-08-29T09:00:00.000Z',
   mobilisationPotential: 100,
+  lastMileMemoryReady: true,
+  lastMileMemoryStatus: 'READY',
+  lastMileEvidenceStatus: 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+  lastMileWaveActivity: 1,
+  lastMileNormalAlignment: 1,
+  lastMileTangentAlignment: 0,
+  lastMileCoherence: 1,
+  lastMileApproach: 1,
+  lastMileFactor: 1,
 });
 
 function evaluateFalling({ currentDirectionDeg, state = baseState } = {}) {

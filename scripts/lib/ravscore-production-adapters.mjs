@@ -13,6 +13,13 @@ import { verifiedLivePilotSource } from './live-current-pilot.mjs';
 
 export const RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION = 3;
 export const RAVSCORE_LOCAL_MARGIN_POINTS = 7;
+// DMI's documented WAM grids are approximately 1 km (DW) and 5 km (NSB).
+// Keep a bounded coastal wet-cell margin without admitting the generic
+// 24-40 km marine search radii as last-mile wave provenance.
+export const RAVSCORE_WAM_MAX_DISTANCE_KM = Object.freeze({
+  wam_dw: 2,
+  wam_nsb: 8,
+});
 const HOUR_MS = 3_600_000;
 const MAXIMUM_DMI_BRACKET_HOURS = 4;
 const MAXIMUM_DMI_EDGE_MINUTES = 95;
@@ -119,7 +126,11 @@ export function verifiedDmiForecastComponentSource(
   expectedIdentity,
 ) {
   if (!exactDmiIdentity(source, expectedIdentity)) return null;
-  return verifiedDmiForecastSource(source, component, rowTime, expectedIdentity);
+  const verified = verifiedDmiForecastSource(source, component, rowTime, expectedIdentity);
+  if (!verified || (component === 'wave' && !verifiedWamDistance(verified, expectedIdentity))) {
+    return null;
+  }
+  return verified;
 }
 
 /**
@@ -133,7 +144,11 @@ export function verifiedDmiNativeComponentSource(
   expectedIdentity,
 ) {
   if (!exactDmiIdentity(source, expectedIdentity)) return null;
-  return verifiedDmiNativeSource(source, component, rowTime);
+  const verified = verifiedDmiNativeSource(source, component, rowTime);
+  if (!verified || (component === 'wave' && !verifiedWamDistance(verified, expectedIdentity))) {
+    return null;
+  }
+  return verified;
 }
 
 function samePoint(first, second, tolerance = 1e-7) {
@@ -153,7 +168,19 @@ function haversineKm(first, second) {
   const dLon = radians(lon2 - lon1);
   const term = Math.sin(dLat / 2) ** 2
     + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 6371 * 2 * Math.atan2(Math.sqrt(term), Math.sqrt(Math.max(0, 1 - term)));
+  return 6371.0088 * 2 * Math.atan2(Math.sqrt(term), Math.sqrt(Math.max(0, 1 - term)));
+}
+
+function verifiedWamDistance(source, expectedIdentity) {
+  const maximum = RAVSCORE_WAM_MAX_DISTANCE_KM[source?.collection];
+  const declared = finite(source?.distanceKm);
+  const physical = haversineKm(expectedIdentity?.samplingPoint, source?.gridPoint);
+  return Number.isFinite(maximum)
+    && declared !== null
+    && declared >= 0
+    && declared <= maximum
+    && Number.isFinite(physical)
+    && physical <= maximum;
 }
 
 /**
@@ -256,13 +283,23 @@ function sanitizeWave(hour, expectedIdentity) {
   const direction = hour?.waveDirectionDeg === null || hour?.waveDirectionDeg === undefined
     ? null
     : finite(hour.waveDirectionDeg);
+  const directionValueValid = direction === null
+    || (direction >= 0 && direction < 360);
+  const directionAttested = Array.isArray(source?.optionalFieldSet)
+    && source.optionalFieldSet.length === 1
+    && source.optionalFieldSet[0] === 'mean-wave-dir';
   const valid = source && height !== null && height >= 0
     && period !== null && period >= 0
-    && (direction === null || (direction >= 0 && direction <= 360));
+    && directionValueValid;
   return valid ? {
     waveHeightM: height,
     wavePeriodS: period,
-    waveDirectionDeg: direction === null ? null : normalizeDegrees(direction),
+    // Height/period remain usable for mobilisation and Candidate G rollback,
+    // but the integrated last-mile state receives a direction only when the
+    // canonical source verifier proves `mean-wave-dir` on every native step.
+    waveDirectionDeg: direction !== null && directionAttested
+      ? normalizeDegrees(direction)
+      : null,
     waveProvenance: { ...source, status: 'verified' },
   } : {
     waveHeightM: null,
@@ -558,6 +595,9 @@ export function buildIntegratedPartPublicProjection({
     waveLastVerifiedAt: score.ravScoreModel.waveLastVerifiedAt,
     waveMemoryReady: score.ravScoreModel.waveMemoryReady,
     waveMemoryStatus: score.ravScoreModel.waveMemoryStatus,
+    lastMileWaveReferenceAt: score.ravScoreModel.lastMileWaveReferenceAt,
+    lastMileMemoryReady: score.ravScoreModel.lastMileMemoryReady,
+    lastMileMemoryStatus: score.ravScoreModel.lastMileMemoryStatus,
     migrationApplied: row.ravScoreState?.migrationApplied === true,
     migrationId: row.ravScoreState?.migrationId ?? null,
     initialStateAccepted: row.ravScoreState?.initialStateAccepted ?? null,

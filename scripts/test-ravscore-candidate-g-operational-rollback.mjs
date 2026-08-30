@@ -13,6 +13,7 @@ import {
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import {
   CANDIDATE_G_CONTINUATION_FIELDS,
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   assertCandidateGRollbackBinding,
   assertCandidateGRollbackContinuation,
   buildCandidateGRollbackPartScoreSeries,
@@ -165,7 +166,7 @@ for (const mode of ['beach', 'waders']) {
   assert.deepEqual(actual.modelBinding, ravScoreModelBinding());
 }
 assert.equal(warm.scores[0].candidateG.rollbackId,
-  'integrated-schema4-to-candidate-g-schema2-v1');
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID);
 
 const serialized = JSON.stringify(warm);
 assert.equal(serialized.includes('987.123'), false);

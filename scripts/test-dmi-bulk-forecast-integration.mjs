@@ -32,6 +32,14 @@ assert.match(bulk, /34: "wind-tail-v-10m"/,
   'DKSS GRIB parameter 34 skal materialiseres som en separat vindhale');
 assert.match(source, /buildDmiForecastHourly\(\{ wind, windTail, waves, ocean/,
   'bulk-konverteringen skal sende HARMONIE og DKSS som adskilte vindserier');
+assert.match(bulkConverter, /const waveHeight = ravScoreNumber\(row\['significant-wave-height'\]\);[\s\S]*?const wavePeriod = ravScoreNumber\(row\['dominant-wave-period'\]\);[\s\S]*?if \(!waveSource \|\| waveHeight === null \|\| wavePeriod === null\) return null;/,
+  'bulk-konverteringen skal bevare den verificerede Hs+periode-mobiliseringstuple uden at kræve retning');
+assert.match(bulkConverter, /const waveDirectionAttested = waveSource\.optionalFieldSet\.length === 1[\s\S]*?waveSource\.optionalFieldSet\[0\] === 'mean-wave-dir';[\s\S]*?const waveDirection = waveDirectionAttested[\s\S]*?ravScoreNumber\(row\['mean-wave-dir'\]\)[\s\S]*?: null;/,
+  'bølgeretningen må kun følge med, når samme verificerede bølgekilde attesterer det valgfrie felt');
+assert.doesNotMatch(bulkConverter, /\['significant-wave-height','mean-wave-dir','dominant-wave-period'\][\s\S]{0,120}?\.every/,
+  'manglende valgfri bølgeretning må ikke længere slette Hs+periode');
+assert.match(bulkConverter, /const waveAvailable = waves\.some\(item => ravScoreNumber\(item\['significant-wave-height'\]\) !== null[\s\S]*?ravScoreNumber\(item\['dominant-wave-period'\]\) !== null\);/,
+  'wave completeness skal måle den obligatoriske mobiliseringstuple, ikke det valgfrie retningsfelt');
 assert.match(bulkConverter, /provenance:\s*\{[\s\S]*?current:\s*rowCurrentValid \? provenance\(row\)\.current : null,[\s\S]*?waterLevel:\s*waterLevelSource/,
   'bulk-konverteringen skal føre komponentproveniens videre til interpolation');
 assert.match(productionAdapter, /export function verifiedBulkCurrent/,

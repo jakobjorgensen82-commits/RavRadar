@@ -9,6 +9,7 @@ import {
   currentSupplyWeightedDuration,
   deriveCurrentSupplyEvidence,
 } from '../js/core/ravscore-current-supply-memory.js';
+import { canonicalRavScoreTime } from '../js/core/ravscore-time.js';
 
 const HOUR_MS = 3_600_000;
 const REFERENCE_MS = Date.parse('2026-08-29T12:00:00.000Z');
@@ -59,6 +60,25 @@ assert.equal(deriveCurrentSupplyEvidence({
   coastNormalSpeedMps: 0.09,
   verified: true,
 }), null, 'timezone-free current evidence must fail closed');
+for (const malformedTime of [
+  '2026-02-30T12:00:00Z',
+  '2026-08-29T24:00:00Z',
+  '2026-08-29T12:00Z',
+  '2026-08-29 12:00:00Z',
+]) {
+  assert.equal(canonicalRavScoreTime(malformedTime), null,
+    `${malformedTime} must not be normalized into a different evidence instant`);
+  assert.equal(deriveCurrentSupplyEvidence({
+    time: malformedTime,
+    coastNormalSpeedMps: 0.09,
+    verified: true,
+  }), null, `${malformedTime} current evidence must fail closed`);
+}
+assert.equal(
+  canonicalRavScoreTime('2028-02-29T13:00:00+01:00'),
+  '2028-02-29T12:00:00.000Z',
+  'a valid leap-day instant with an explicit offset must remain supported',
+);
 assert.throws(() => buildCurrentSupplyMemory(regularEvidence(1), {
   referenceTime: '2026-08-29T12:00:00',
 }), /valid referenceTime/,

@@ -11,6 +11,7 @@ from typing import Any
 from lib.copernicus_current import (
     file_sha256,
     load_targets,
+    validate_legacy_shadow_for_migration,
     validate_shadow,
     validate_target_registry,
 )
@@ -65,7 +66,16 @@ def inspect(
     if target_fingerprint(targets) != registry["targetRegistrySha256"]:
         raise RuntimeError("Central target registry no longer matches the sealed gap matrix")
     target_identities = {row["partId"]: row for row in targets}
-    cache = validate_shadow(json.loads(shadow_path.read_text(encoding="utf-8")), target_identities, require_collection=True)
+    document = json.loads(shadow_path.read_text(encoding="utf-8"))
+    if document.get("schemaVersion") == 1 and not isinstance(document.get("schemaVersion"), bool):
+        validate_legacy_shadow_for_migration(document)
+        return {
+            "cachePresent": True,
+            "completeRangePresent": False,
+            "productionReferenceAt": reference,
+            "requiredPairCount": registry["requiredPairCount"],
+        }
+    cache = validate_shadow(document, target_identities, require_collection=True)
     matches = [row for row in cache["collections"] if row["productionReferenceAt"] == reference and row["status"] == "COMPLETE"]
     if len(matches) != 1:
         raise RuntimeError("Private Copernicus cache does not contain exactly one COMPLETE seal for the locked reference")
@@ -116,7 +126,7 @@ def main() -> int:
             f"{state['acquisitionCount']} acquisitions."
         )
     else:
-        print("Private Copernicus range cache is absent; a complete acquisition is required")
+        print("Private Copernicus range cache is absent, legacy or unsealed; a complete acquisition is required")
     return 0
 
 

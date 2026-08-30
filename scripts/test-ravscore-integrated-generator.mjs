@@ -7,7 +7,9 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
+  RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-model-contract.js';
 import {
@@ -20,6 +22,7 @@ import {
   CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
 } from '../js/core/ravscore-regime-memory.js';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
+import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import {
   buildIntegratedPartScoreSeries,
   compactIntegratedRavScoreMode,
@@ -89,12 +92,48 @@ const weather = {
     samplingPoint: [8, 55],
   },
 };
+const migrationSamplingContextKey = ravScoreSamplingContextKey(part);
+const exactCurrentEvidence =
+  legacyState.transportEvidence.map(item => ({ ...item }));
+const candidateGCurrentBootstrap = {
+  migrationId: RAVSCORE_MIGRATION_ID,
+  source: RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
+  samplingContextKey: migrationSamplingContextKey,
+  sourceStateTime: time(0),
+  currentReferenceAt: time(0),
+  currentEvidence: exactCurrentEvidence,
+  currentNativeHoldAuthorization: null,
+};
+const candidateGWaveApproachBootstrap = {
+  migrationId: RAVSCORE_MIGRATION_ID,
+  source: 'VERIFIED_PRIVATE_DMI_WAVE_DIRECTION_REPLAY',
+  samplingContextKey: migrationSamplingContextKey,
+  sourceStateTime: time(0),
+  targetReferenceAt: time(0),
+  rows: Array.from(
+    {
+      length:
+        RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+    },
+    (_, index) => ({
+      time: time(
+        index
+          - RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+      ),
+      waveHeightM: weather.waveHeightM,
+      wavePeriodS: weather.wavePeriodS,
+      waveDirectionDeg: weather.waveDirectionDeg,
+    }),
+  ),
+};
 
 const migrated = buildIntegratedPartScoreSeries({
   part,
   zone,
   hourly: [weather],
   initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 });
 assert.equal(migrated.ravScoreState.schemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
 assert.equal(migrated.ravScoreState.modelId, RAVSCORE_MODEL_ID);
@@ -112,6 +151,8 @@ const missingWind = buildIntegratedPartScoreSeries({
   zone,
   hourly: [{ ...weather, windSpeedMps: null }],
   initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
 });
 for (const mode of ['beach', 'waders']) {
   const unavailable = missingWind.scores[0].ravScoreModel.modes[mode];
@@ -142,6 +183,92 @@ assert.equal(JSON.stringify(migrated).includes('987.123'), false);
 assert.equal(JSON.stringify(migrated).includes('-654.321'), false);
 assert.equal(Object.hasOwn(migrated.scores[0].weather.currentProvenance, 'gridPoint'), false);
 assert.equal(Object.hasOwn(migrated.scores[0].weather.currentProvenance, 'samplingPoint'), false);
+assert.deepEqual(
+  Object.keys(migrated.scores[0].ravScoreModel.publicContext.currentReferenceProvenance).sort(),
+  ['provider', 'status'],
+  'direct current provenance must be the same explicit allowlist projection in publicContext',
+);
+
+const rawRegionalReferenceProvenance = {
+  status: 'verified',
+  sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy',
+  collection: 'dkss_lf',
+  distanceKm: 5,
+  uMps: 111.222,
+  vMps: -333.444,
+  gridPoint: [8.02, 55.02],
+  samplingPoint: [8, 55],
+  rawPayload: 'must-not-cross-runtime-boundary',
+};
+const regionalSeed = buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: Array.from({ length: 49 }, (_, index) => ({
+    ...weather,
+    time: time(index - 48),
+    currentProvenance: { ...rawRegionalReferenceProvenance },
+  })),
+  initialState: null,
+});
+const regionalHold = buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: [{
+    ...weather,
+    time: time(1),
+    currentSpeedMps: null,
+    currentDirectionDeg: null,
+    currentUMps: null,
+    currentVMps: null,
+    currentProvenance: null,
+  }],
+  initialState: regionalSeed.ravScoreState.continuationState,
+  nativeCadenceHoldHours: 3,
+  nativeCadenceReferenceSample: {
+    time: time(0),
+    currentSpeedMps: weather.currentSpeedMps,
+    currentCoastNormalSpeedMps: weather.currentSpeedMps,
+    currentVerified: true,
+    currentProvenance: { ...rawRegionalReferenceProvenance },
+  },
+});
+assert.equal(regionalHold.ravScoreState.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+const expectedRegionalReferenceKeys = [
+  'collection',
+  'distanceKm',
+  'source',
+  'sourceClass',
+  'status',
+];
+assert.deepEqual(
+  Object.keys(
+    regionalHold.scores[0].ravScoreModel.publicContext.currentReferenceProvenance,
+  ).sort(),
+  expectedRegionalReferenceKeys,
+  'native-hold reference provenance must expose only the compact authorization allowlist',
+);
+assert.deepEqual(
+  Object.keys(regionalHold.scores[0].weather.currentProvenance).sort(),
+  expectedRegionalReferenceKeys,
+  'native-hold weather projection must use the same compact reference provenance',
+);
+for (const forbiddenField of [
+  'uMps',
+  'vMps',
+  'gridPoint',
+  'samplingPoint',
+  'rawPayload',
+]) {
+  assert.equal(
+    Object.hasOwn(
+      regionalHold.scores[0].ravScoreModel.publicContext.currentReferenceProvenance,
+      forbiddenField,
+    ),
+    false,
+    `native-hold publicContext must not expose ${forbiddenField}`,
+  );
+}
 
 const readiness = integratedRavScoreReferenceReadiness([{
   zoneId: zone.id,

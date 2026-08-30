@@ -5,6 +5,7 @@ import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
 } from '../../js/core/ravscore-model-contract.js';
 import {
@@ -13,8 +14,8 @@ import {
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
   buildCurrentSupplyMemory,
-  currentSupplyStrength,
 } from '../../js/core/ravscore-current-supply-memory.js';
+import { classifyWavePhysicalTuple } from '../../js/core/ravscore-mobilisation-memory.js';
 import {
   assertIntegratedCoastalPointContinuation,
   candidateGStateKey,
@@ -62,6 +63,7 @@ const WAVE_PROVENANCE_KEYS = Object.freeze([
   'leadTimeHours',
   'temporalResolution',
   'nativeValidTimes',
+  'optionalFieldSet',
   'fallback',
 ]);
 
@@ -249,27 +251,42 @@ function currentComponent(row, part) {
 }
 
 function waveComponent(row, part) {
-  if (!finite(row?.waveHeightM)
-    || !finite(row?.wavePeriodS)
-    || Number(row.waveHeightM) < 0
-    || Number(row.wavePeriodS) < 0) return null;
+  const physicalWave = classifyWavePhysicalTuple({
+    waveHeightM: row?.waveHeightM,
+    wavePeriodS: row?.wavePeriodS,
+  });
+  if (!physicalWave.available) return null;
+  const waveDirectionDeg = finite(row?.waveDirectionDeg)
+    && Number(row.waveDirectionDeg) >= 0
+    && Number(row.waveDirectionDeg) < 360
+    ? Number(row.waveDirectionDeg)
+    : null;
   const provenance = row?.sources?.wave;
-  if (!verifiedDmiForecastComponentSource(
+  const verifiedProvenance = verifiedDmiForecastComponentSource(
     provenance,
     row.time,
     'wave',
     dmiExpectedIdentityForPart(part),
-  )) return null;
+  );
+  if (!verifiedProvenance) return null;
+  const directionAttested = Array.isArray(verifiedProvenance.optionalFieldSet)
+    && verifiedProvenance.optionalFieldSet.length === 1
+    && verifiedProvenance.optionalFieldSet[0] === 'mean-wave-dir';
+  if (waveDirectionDeg === null) {
+    if (physicalWave.active || verifiedProvenance.optionalFieldSet.length !== 0) return null;
+  } else if (!directionAttested) return null;
   const projectedProvenance = provenanceProjection(provenance, WAVE_PROVENANCE_KEYS);
   return {
     signature: digest({
       waveHeightM: Number(row.waveHeightM),
       wavePeriodS: Number(row.wavePeriodS),
+      waveDirectionDeg,
       provenance: projectedProvenance,
     }),
     row: {
       waveHeightM: Number(row.waveHeightM),
       wavePeriodS: Number(row.wavePeriodS),
+      waveDirectionDeg,
     },
   };
 }
@@ -292,6 +309,25 @@ function nextExactHourAfter(value) {
   date.setUTCMinutes(0, 0, 0);
   if (Date.parse(date.toISOString()) <= Date.parse(time)) date.setUTCHours(date.getUTCHours() + 1);
   return date.toISOString();
+}
+
+/**
+ * Canonical WAM target for a validated Candidate G -> integrated migration.
+ *
+ * The bridge ends immediately before Candidate G's first replay hour, unless
+ * the production target is already that hour. Keeping this pure and exported
+ * lets pre-acquisition validation and the replay consume one target contract.
+ */
+export function ravScoreCandidateMigrationWaveBootstrapTargetAt(
+  candidateState,
+  targetReferenceAt,
+) {
+  if (!candidateState || typeof candidateState !== 'object' || Array.isArray(candidateState)) {
+    throw new Error('RavScore Candidate G wave-bootstrap state is invalid');
+  }
+  const target = canonicalHour(targetReferenceAt);
+  const next = nextExactHourAfter(candidateState.time);
+  return Date.parse(next) < Date.parse(target) ? next : target;
 }
 
 function exactReplayTimes(stateTime, targetTime) {
@@ -324,26 +360,23 @@ export function ravScoreRecoveryReplayStartAt(initialState, targetReferenceAt) {
 
 /**
  * Earliest private source hour needed by recovery. Candidate G migration has
- * a separate exact-current rebuild window ending at transportReferenceAt; the
- * additional maximum-gap margin permits one real pre-boundary cadence bridge.
+ * a separate bounded wave-approach bootstrap. The validated Candidate G signed
+ * current evidence is reweighted directly and needs no raw-current lookback.
  */
 export function ravScoreRecoverySourceStartAt(initialState, targetReferenceAt) {
   const replayStartAt = ravScoreRecoveryReplayStartAt(initialState, targetReferenceAt);
-  if (!initialState?.transportReferenceAt) return replayStartAt;
-  let currentReferenceAt;
-  try {
-    currentReferenceAt = canonicalHour(initialState.transportReferenceAt);
-  } catch {
-    return replayStartAt;
-  }
-  const bootstrapStartAt = new Date(
-    Date.parse(currentReferenceAt)
-      - (RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-        + RAVSCORE_CURRENT_SUPPLY_POLICY.maximumGapHours) * HOUR_MS,
-  ).toISOString();
-  return Date.parse(bootstrapStartAt) < Date.parse(replayStartAt)
-    ? bootstrapStartAt
+  const directionBootstrapTarget = initialState?.transportReferenceAt
+    ? ravScoreCandidateMigrationWaveBootstrapTargetAt(initialState, targetReferenceAt)
+    : canonicalHour(targetReferenceAt);
+  const directionBootstrapStartAt = initialState?.transportReferenceAt
+    ? new Date(
+      Date.parse(directionBootstrapTarget)
+        - RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachReplayHours * HOUR_MS,
+    ).toISOString()
     : replayStartAt;
+  return [directionBootstrapStartAt, replayStartAt]
+    .sort((left, right) => Date.parse(left) - Date.parse(right))[0];
 }
 
 function verifiedNativeCadenceBoundaryReference(
@@ -407,28 +440,16 @@ function verifiedNativeCadenceBoundaryReference(
 function buildCandidateGCurrentMigrationBootstrap({
   part,
   candidateMigration,
-  currentByTime,
 }) {
   if (!candidateMigration) return null;
   const referenceAt = candidateMigration.currentReferenceAt;
-  const referenceMs = Date.parse(referenceAt);
-  const earliestMs = referenceMs
-    - (RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-      + RAVSCORE_CURRENT_SUPPLY_POLICY.maximumGapHours) * HOUR_MS;
-  const ordered = [...currentByTime.entries()]
-    .filter(([time]) => {
-      const timeMs = Date.parse(time);
-      return timeMs >= earliestMs && timeMs <= referenceMs;
-    })
-    .sort(([left], [right]) => Date.parse(left) - Date.parse(right));
-  const evidence = ordered.map(([time, value]) => ({
-    time,
-    strength: currentSupplyStrength(value.row.currentCoastNormalSpeedMps),
-  }));
-  if (evidence.some(item => !finite(item.strength))) {
+  const evidence = candidateMigration.transportEvidence
+    ?.map(item => ({ ...item })) ?? null;
+  if (!Array.isArray(evidence)
+    || evidence.some(item => !finite(item.strength))) {
     failClosed(
       'RAVSCORE_CANDIDATE_G_MIGRATION_CURRENT_INVALID',
-      'Candidate G migration exact-current rebuild contains invalid signed evidence',
+      'Candidate G migration lacks canonical verified signed current evidence',
     );
   }
   const rebuilt = buildCurrentSupplyMemory(evidence, {
@@ -441,27 +462,53 @@ function buildCandidateGCurrentMigrationBootstrap({
     || rebuilt.evidence.at(-1)?.time !== referenceAt) {
     failClosed(
       'RAVSCORE_CANDIDATE_G_MIGRATION_CURRENT_INCOMPLETE',
-      'Candidate G migration lacks a complete exact private current rebuild',
+      'Candidate G signed current evidence cannot be reweighted by the integrated kernel',
     );
   }
-  const referenceProvenance = currentByTime.get(referenceAt)?.row?.currentProvenance ?? null;
-  const currentNativeHoldAuthorization =
-    referenceProvenance?.sourceClass === 'owner-approved-regional-proxy'
-      ? {
-        sourceClass: referenceProvenance.sourceClass,
-        source: referenceProvenance.source,
-        collection: referenceProvenance.collection,
-        distanceKm: referenceProvenance.distanceKm,
-      }
-      : null;
   return {
     migrationId: RAVSCORE_MIGRATION_ID,
-    source: 'VERIFIED_PRIVATE_RAW_UV_REBUILD',
+    source: RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
     samplingContextKey: ravScoreSamplingContextKey(part),
     sourceStateTime: candidateMigration.time,
     currentReferenceAt: referenceAt,
     currentEvidence: rebuilt.evidence.map(item => ({ ...item })),
-    currentNativeHoldAuthorization,
+    currentNativeHoldAuthorization: null,
+  };
+}
+
+function buildCandidateGWaveApproachMigrationBootstrap({
+  part,
+  candidateMigration,
+  targetReferenceAt,
+  waveByTime,
+}) {
+  if (!candidateMigration) return null;
+  const replayHours =
+    RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours;
+  const targetMs = Date.parse(targetReferenceAt);
+  const expectedTimes = Array.from(
+    { length: replayHours },
+    (_, index) => new Date(
+      targetMs - (replayHours - index) * HOUR_MS,
+    ).toISOString(),
+  );
+  const rows = expectedTimes.map(time => {
+    const component = waveByTime.get(time)?.wave;
+    if (!component) {
+      failClosed(
+        'RAVSCORE_CANDIDATE_G_MIGRATION_WAVE_DIRECTION_INCOMPLETE',
+        'Candidate G migration lacks its bounded verified wave-direction bridge',
+      );
+    }
+    return { time, ...component.row };
+  });
+  return {
+    migrationId: RAVSCORE_MIGRATION_ID,
+    source: 'VERIFIED_PRIVATE_DMI_WAVE_DIRECTION_REPLAY',
+    samplingContextKey: ravScoreSamplingContextKey(part),
+    sourceStateTime: candidateMigration.time,
+    targetReferenceAt,
+    rows,
   };
 }
 
@@ -633,14 +680,17 @@ export function buildRavScoreRecoveryReplay({
   }
 
   const union = new Map();
-  const migrationCurrentByTime = new Map();
-  const migrationCurrentStartMs = candidateMigration
-    ? Date.parse(candidateMigration.currentReferenceAt)
-      - (RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
-        + RAVSCORE_CURRENT_SUPPLY_POLICY.maximumGapHours) * HOUR_MS
+  const migrationWaveByTime = new Map();
+  const candidateWaveBootstrapTarget = candidateMigration
+    ? ravScoreCandidateMigrationWaveBootstrapTargetAt(candidateMigration, target)
+    : null;
+  const migrationWaveStartMs = candidateMigration
+    ? Date.parse(candidateWaveBootstrapTarget)
+      - RAVSCORE_RECOVERY_POLICY
+        .candidateMigrationWaveApproachReplayHours * HOUR_MS
     : Number.POSITIVE_INFINITY;
-  const migrationCurrentEndMs = candidateMigration
-    ? Date.parse(candidateMigration.currentReferenceAt)
+  const migrationWaveEndMs = candidateMigration
+    ? Date.parse(candidateWaveBootstrapTarget) - HOUR_MS
     : Number.NEGATIVE_INFINITY;
   let acceptedSourceRecordCount = 0;
   for (const source of sourceRecords) {
@@ -659,39 +709,43 @@ export function buildRavScoreRecoveryReplay({
       const needsReplay = Number.isFinite(parsed)
         && afterReplayBoundary
         && parsed < targetMs;
-      const needsMigrationCurrent = Number.isFinite(parsed)
-        && parsed >= migrationCurrentStartMs
-        && parsed <= migrationCurrentEndMs;
-      if (!needsReplay && !needsMigrationCurrent) continue;
+      const needsMigrationWave = Number.isFinite(parsed)
+        && parsed >= migrationWaveStartMs
+        && parsed <= migrationWaveEndMs;
+      if (!needsReplay && !needsMigrationWave) continue;
       const time = canonicalHour(row.time);
-      const current = currentComponent(row, part);
+      const current = needsReplay ? currentComponent(row, part) : null;
       const hasCurrentPayload = [
         row?.currentSpeedMps,
         row?.currentDirectionDeg,
         row?.currentUMps,
         row?.currentVMps,
       ].some(finite);
-      if (hasCurrentPayload && !current) {
+      if (needsReplay && hasCurrentPayload && !current) {
         failClosed(
           'RAVSCORE_RECOVERY_REPLAY_CURRENT_UNVERIFIED',
           'RavScore recovery replay contains current without exact verified provenance',
         );
       }
-      if (needsMigrationCurrent) {
-        const targetCurrent = migrationCurrentByTime.get(time) ?? {};
-        addComponent(targetCurrent, 'current', current);
-        migrationCurrentByTime.set(time, targetCurrent);
+      const wave = needsReplay || needsMigrationWave ? waveComponent(row, part) : null;
+      const hasWavePayload = [
+        row?.waveHeightM,
+        row?.wavePeriodS,
+        row?.waveDirectionDeg,
+      ].some(finite);
+      if ((needsReplay || needsMigrationWave) && hasWavePayload && !wave) {
+        failClosed(
+          'RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED',
+          'RavScore recovery replay contains waves without exact verified provenance or direction',
+        );
+      }
+      if (needsMigrationWave) {
+        const targetWave = migrationWaveByTime.get(time) ?? {};
+        addComponent(targetWave, 'wave', wave);
+        migrationWaveByTime.set(time, targetWave);
       }
       if (needsReplay) {
         const targetRow = union.get(time) ?? {};
-        const wave = waveComponent(row, part);
-        const hasWavePayload = [row?.waveHeightM, row?.wavePeriodS].some(finite);
-        if (hasWavePayload && !wave) {
-          failClosed(
-            'RAVSCORE_RECOVERY_REPLAY_WAVE_UNVERIFIED',
-            'RavScore recovery replay contains waves without exact verified provenance',
-          );
-        }
         addComponent(targetRow, 'current', current);
         addComponent(targetRow, 'wave', wave);
         union.set(time, targetRow);
@@ -701,10 +755,14 @@ export function buildRavScoreRecoveryReplay({
   const candidateGCurrentBootstrap = buildCandidateGCurrentMigrationBootstrap({
     part,
     candidateMigration,
-    currentByTime: new Map([...migrationCurrentByTime]
-      .filter(([, value]) => value.current)
-      .map(([time, value]) => [time, value.current])),
   });
+  const candidateGWaveApproachBootstrap =
+    buildCandidateGWaveApproachMigrationBootstrap({
+      part,
+      candidateMigration,
+      targetReferenceAt: candidateWaveBootstrapTarget,
+      waveByTime: migrationWaveByTime,
+    });
 
   let latestVerifiedCurrentAt = (() => {
     if (coldStart) return Number.NEGATIVE_INFINITY;
@@ -781,5 +839,6 @@ export function buildRavScoreRecoveryReplay({
     sourceRecordCount: acceptedSourceRecordCount,
     coldStartBootstrapApplied: coldStart,
     candidateGCurrentBootstrap,
+    candidateGWaveApproachBootstrap,
   };
 }

@@ -51,7 +51,7 @@ const MODEL_MODES = Object.freeze({
     bundlePath: 'scripts/rollback-assets/ravscore-model-bundle.generated.js',
     profile: Object.freeze({
       schemaVersion: '2.0.0',
-      switchVersion: 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0108-V1',
+      switchVersion: 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0110-V2',
       rollbackModelId: null,
       activationState: 'manual-candidate-g-only-local-fail-closed',
       publicAvailabilityPolicy: 'candidate-g-local-fail-closed',

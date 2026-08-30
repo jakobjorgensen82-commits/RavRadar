@@ -754,9 +754,9 @@ function assertSealedCentralProfile(profile, binding) {
   assert.equal(profile.crossModelRuntimeFallbackAllowed, false);
   assert.equal(profile.migrationRequiredAtFirstCutover, true);
   assert.equal(profile.status, 'owner-approved-integrated-model-only-local-fail-closed');
-  assert.equal(profile.activationAuthority, 'DEC-0108-integrated-ravscore-release-decision');
+  assert.equal(profile.activationAuthority, 'DEC-0110-integrated-ravscore-release-decision');
   assert.deepEqual(profile.evidence, {
-    decisionId: 'DEC-0108',
+    decisionId: 'DEC-0110',
     exactHeadValidationRequired: true,
     freshProductionValidationRequired: true,
   });
@@ -982,6 +982,8 @@ async function runCli() {
     return;
   }
   if (command === 'publish') {
+    assert.equal(process.env.RAVRADAR_REQUIRE_INTEGRATED_BINDING, 'true',
+      'protected readiness publish requires explicit integrated-binding attestation intent');
     const publicImplementationClosureSha256 =
       argumentValue('--public-implementation-closure-sha256');
     const payload = await publishIntegratedCutoverReadiness({
@@ -1004,6 +1006,8 @@ async function runCli() {
       serviceRoleKey,
       publishableKey,
     });
+    const output = optionalArgumentValue('--output');
+    if (output) await fs.writeFile(output, `${JSON.stringify(payload)}\n`, { mode: 0o600 });
     console.log(`Protected integrated cutover readiness is exact and read-only verified for ${payload.sourceHead}.`);
     return;
   }

@@ -3,6 +3,7 @@ import {
   RAVSCORE_COMPONENT_SCHEMA_ID,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_EXPLANATION_SCHEMA_ID,
+  RAVSCORE_LAST_MILE_POLICY,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_ID,
@@ -48,7 +49,7 @@ export const PUBLIC_RAVSCORE_PROFILE_SELECTION = Object.freeze({
 });
 
 export const PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE = Object.freeze({
-  decisionId: 'DEC-0108',
+  decisionId: 'DEC-0110',
   exactHeadValidationRequired: true,
   freshProductionValidationRequired: true,
 });
@@ -124,7 +125,10 @@ export function integratedRavScoreReferenceReadiness(partRows = [], referenceTim
         .includes(score.ravScoreModel.currentMemoryStatus)
       && score.ravScoreModel.waveMemoryReady === true
       && RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses
-        .includes(score.ravScoreModel.waveMemoryStatus));
+        .includes(score.ravScoreModel.waveMemoryStatus)
+      && score.ravScoreModel.lastMileMemoryReady === true
+      && RAVSCORE_LAST_MILE_POLICY.readyStatuses
+        .includes(score.ravScoreModel.lastMileMemoryStatus));
   const migrationReady = selectedEntries.every(({ row }) =>
     row?.ravScoreState?.initialStateAccepted === true
       || row?.ravScoreState?.migrationApplied === true);
@@ -212,7 +216,7 @@ export function resolvePublicRavScoreProfile({
   if (selection?.publicAvailabilityPolicy !== 'integrated-model-local-fail-closed') invalid.push('INVALID_PUBLIC_AVAILABILITY_POLICY');
   if (selection?.crossModelRuntimeFallbackAllowed !== false) invalid.push('CROSS_MODEL_RUNTIME_FALLBACK_FORBIDDEN');
   if (selection?.migrationRequiredAtFirstCutover !== true) invalid.push('FIRST_CUTOVER_MIGRATION_NOT_REQUIRED');
-  if (evidence?.decisionId !== 'DEC-0108') invalid.push('MODEL_DECISION_MISSING');
+  if (evidence?.decisionId !== 'DEC-0110') invalid.push('MODEL_DECISION_MISSING');
   if (evidence?.exactHeadValidationRequired !== true) invalid.push('EXACT_HEAD_GATE_NOT_REQUIRED');
   if (evidence?.freshProductionValidationRequired !== true) invalid.push('FRESH_PRODUCTION_GATE_NOT_REQUIRED');
   const documentMetadataPresent = ['sourceVersion', 'status', 'activationAuthority']
@@ -224,7 +228,7 @@ export function resolvePublicRavScoreProfile({
     if (!String(selection?.status ?? '').startsWith('owner-approved-integrated-model-only-')) {
       invalid.push('OWNER_APPROVED_PROFILE_STATUS_MISSING');
     }
-    if (selection?.activationAuthority !== 'DEC-0108-integrated-ravscore-release-decision') {
+    if (selection?.activationAuthority !== 'DEC-0110-integrated-ravscore-release-decision') {
       invalid.push('PROFILE_ACTIVATION_AUTHORITY_MISMATCH');
     }
   }
@@ -357,10 +361,13 @@ function componentReasons(name, value, mode, context = {}) {
     } else {
       reasons.push('Der er ikke dokumenteret nyligt transportbevis mod kystzonen. Det beviser ikke, at alt lokalt rav er væk.');
     }
-    reasons.push('Det sidste stykke gennem nærkyst- og surfzonen er ikke opløst og ændrer derfor ikke scoren. Bølgeretning vises kun som usikkerhedskontekst.');
-    if (context.lastMileStatus === 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN') {
-      reasons.push('Bølgeretningen eller den lokale kystretning mangler desuden; det giver ingen skjult optimistisk eller pessimistisk korrektion.');
-    }
+    const factor = finite(context.lastMileFactor)
+      ? Number(context.lastMileFactor).toFixed(2).replace('.', ',')
+      : null;
+    reasons.push(factor === null
+      ? 'Det eksisterende transportbevis dæmpes højst 15 % af den energivægtede bølgeretning; bølger kan aldrig skabe eller øge tilførsel.'
+      : `Det eksisterende transportbevis er ganget én gang med den afgrænsede bølgeretningsfaktor ${factor}; faktoren kan kun ligge mellem 0,85 og 1,00.`);
+    reasons.push('Det sidste stykke gennem nærkyst- og surfzonen er fortsat fysisk uopløst; retningssammenhæng påvirker kun usikkerhed og forklaring.');
     return reasons;
   }
   const waves = daNumber(context.waveHeightM);
@@ -447,6 +454,7 @@ export function projectIntegratedRavScoreForPublic(modelResult, { mode, profile,
   const diagnosticContext = {
     ...context,
     lastMileStatus: modelResult.diagnostics?.lastMile?.status ?? null,
+    lastMileFactor: modelResult.diagnostics?.lastMile?.factor ?? null,
     waveMemoryStatus: modelResult.diagnostics?.waveMemoryStatus ?? context.waveMemoryStatus,
     waterLevelContext: modelResult.diagnostics?.waterLevelContext ?? null,
   };
@@ -498,10 +506,17 @@ export function projectIntegratedRavScoreForPublic(modelResult, { mode, profile,
         lastMileScoreEffect: modelResult.diagnostics?.lastMile?.scoreEffect ?? null,
         lastMileStructuralUncertainty:
           modelResult.diagnostics?.lastMile?.structuralUncertainty === true,
-        lastMileDirectionDifferenceDeg:
-          modelResult.diagnostics?.lastMile?.directionDifferenceDeg ?? null,
+        lastMileDeliveryFactor: modelResult.diagnostics?.lastMile?.factor ?? null,
+        lastMileWaveActivity: modelResult.diagnostics?.lastMile?.activity ?? null,
+        lastMileApproach: modelResult.diagnostics?.lastMile?.approach ?? null,
+        lastMileNormalAlignment:
+          modelResult.diagnostics?.lastMile?.normalAlignment ?? null,
+        lastMileTangentAlignment:
+          modelResult.diagnostics?.lastMile?.tangentAlignment ?? null,
+        lastMileDirectionalCoherence:
+          modelResult.diagnostics?.lastMile?.coherence ?? null,
         lastMilePhysicalDeliveryResolved:
-          modelResult.diagnostics?.lastMile?.physicalDeliveryResolved === true,
+          modelResult.diagnostics?.lastMile?.physicalDeliveryResolved === false ? false : null,
         currentReferenceAt: modelResult.diagnostics?.currentReferenceAt ?? null,
         currentMemoryReady: true,
         currentMemoryStatus: modelResult.diagnostics?.currentMemoryStatus ?? null,

@@ -12,7 +12,13 @@ from pathlib import Path
 import numpy as np
 import xarray as xr
 
-from lib.copernicus_current import DMI_VERIFIER_CONTRACT_ID, file_sha256, required_pairs_sha256, validate_shadow
+from lib.copernicus_current import (
+    DMI_VERIFIER_CONTRACT_ID,
+    LEGACY_HISTORY_REQUEST_CONTRACT_ID,
+    file_sha256,
+    required_pairs_sha256,
+    validate_shadow,
+)
 from lib.copernicus_target_identity import target_fingerprint
 
 
@@ -27,11 +33,17 @@ def write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def registry(dmi_sha: str) -> dict:
+def registry(dmi_sha: str, *, include_legacy_history: bool = False) -> dict:
     pairs = [
         {"partId": "p1", "validTime": REFERENCE.isoformat().replace("+00:00", "Z")},
         {"partId": "p1", "validTime": FUTURE.isoformat().replace("+00:00", "Z")},
     ]
+    if include_legacy_history:
+        pairs.append({
+            "partId": "p1",
+            "validTime": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        })
+        pairs.sort(key=lambda row: (row["validTime"], row["partId"]))
     return {
         "schemaVersion": 2, "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
         "matrixContractId": "exact-dmi-gap-matrix-minus48-plus117-v1",
@@ -45,12 +57,26 @@ def registry(dmi_sha: str) -> dict:
         "targetRegistrySha256": target_fingerprint([TARGET]),
         "dmiCurrentInputSha256": dmi_sha, "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
         "requiredPairsSha256": required_pairs_sha256(pairs), "requiredPairCount": len(pairs),
-        "dmiVerifiedPairCount": 164, "totalPairCount": 166,
+        "dmiVerifiedPairCount": 166 - len(pairs), "totalPairCount": 166,
         "coordinatesChanged": False,
         "targets": [TARGET], "requiredPairs": pairs,
         "zones": {"z1": [{
             "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
         }]},
+    }
+
+
+def legacy_record(valid_time: datetime) -> dict:
+    return {
+        "partId": "p1", "parentZoneId": "z1", "name": "P1",
+        "samplingPoint": TARGET["waterPoint"], "source": "copernicus-baltic-nemo",
+        "productId": "BALTICSEA_ANALYSISFORECAST_PHY_003_006",
+        "datasetId": "cmems_mod_bal_phy_anfc_PT1H-i", "datasetVersion": "202411",
+        "validTime": valid_time.isoformat().replace("+00:00", "Z"),
+        "gridPoint": TARGET["waterPoint"], "distanceKm": 0.0,
+        "verticalLayerM": 5.0, "layerQuality": "deepest-common-layer", "sharedLayerCount": 1,
+        "uMps": 0.05, "vMps": 0.02,
+        "componentPair": "same-time-cell-layer", "interpolation": False,
     }
 
 
@@ -104,6 +130,52 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert cache["acquisitions"][0]["requestEndAt"] == FUTURE.isoformat().replace("+00:00", "Z")
     report_text = (folder / "cache.json.report.json").read_text(encoding="utf-8").lower()
     assert all(token not in report_text for token in ("samplingpoint", "gridpoint", "umps", "vmps"))
+
+    # The real schema-1 cache had a cache-level updatedAt but no guaranteed
+    # per-row capturedAt.  It may contribute historical rows once, never the
+    # target/future range.  A second identical run must read schema 2 directly
+    # and create neither another migration acquisition nor changed cache bytes.
+    write(folder / "registry.json", registry(
+        file_sha256(folder / "dmi.json"),
+        include_legacy_history=True,
+    ))
+    legacy_path = folder / "legacy-cache.json"
+    write(legacy_path, {
+        "schemaVersion": 1, "retentionHours": 168,
+        "scoreImpact": False, "publicRuntime": False,
+        "updatedAt": (REFERENCE - timedelta(minutes=10)).isoformat().replace("+00:00", "Z"),
+        "collections": [],
+        "records": [
+            legacy_record(REFERENCE - timedelta(hours=1)),
+            legacy_record(REFERENCE),
+        ],
+    })
+    migrated_run = run(folder, "legacy-cache.json")
+    assert migrated_run.returncode == 0, migrated_run.stdout + migrated_run.stderr
+    assert all(token not in (migrated_run.stdout + migrated_run.stderr).lower()
+               for token in ("samplingpoint", "gridpoint", "umps", "vmps"))
+    migrated_cache = validate_shadow(
+        json.loads(legacy_path.read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    migrated_acquisitions = [
+        row for row in migrated_cache["acquisitions"]
+        if row["requestContractId"] == LEGACY_HISTORY_REQUEST_CONTRACT_ID
+    ]
+    assert len(migrated_acquisitions) == 1
+    assert [row["validTime"] for row in migrated_cache["records"]
+            if row["acquisitionId"] == migrated_acquisitions[0]["acquisitionId"]] == [
+                (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+            ]
+    migrated_bytes = legacy_path.read_bytes()
+    migrated_again = run(folder, "legacy-cache.json")
+    assert migrated_again.returncode == 0, migrated_again.stdout + migrated_again.stderr
+    assert legacy_path.read_bytes() == migrated_bytes
+    second_report = json.loads((folder / "legacy-cache.json.report.json").read_text(encoding="utf-8"))
+    assert second_report["newAcquisitionCount"] == 0
+    assert migrated_cache["collections"][0]["requiredPairCount"] == 3
+    write(folder / "registry.json", registry(file_sha256(folder / "dmi.json")))
 
     # A raw subset without every requested native time must fail before any
     # cache replace or COMPLETE seal is created.

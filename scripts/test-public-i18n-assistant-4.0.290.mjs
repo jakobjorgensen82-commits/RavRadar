@@ -110,7 +110,7 @@ globalThis.fetch = async (url, options) => {
       'x-ravradar-model-contract-sha256':binding.modelContractSha256,
       'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
       'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
-      'x-ravradar-assistant-knowledge-sha256':'39b0d33bd347418716cfccb7b20d711775bf520634c498d30c0b11c2cf24a5d2',
+      'x-ravradar-assistant-knowledge-sha256':'03e021cf28393c6f38493233b5e94fe1a231d9d14ff4fa31d86861f5862540a7',
     }),
     json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
   };
@@ -136,6 +136,7 @@ try {
 
 const publicContext = assistant.publicAssistantContext({
   locale:'en', privateNote:'must-not-leak', zone:{id:'west',name:'West coast',secret:'x'},
+  modelBinding: ravScoreModelBinding(),
   result:{available:true,score:73,level:'fair',reasons:['internal wording']},
   weather:{windSpeedMps:4.2,currentSpeedMps:.11,rawVector:{u:1,v:2}},
 }, 'en');
@@ -144,6 +145,13 @@ assert.equal(publicContext.result.score, 73);
 assert.ok(!('reasons' in publicContext.result));
 assert.ok(!('privateNote' in publicContext));
 assert.ok(!('rawVector' in publicContext.weather));
+
+const mixedModelContext = assistant.publicAssistantContext({
+  modelBinding:{ ...ravScoreModelBinding(), modelBundleSha256:'0'.repeat(64) },
+  result:{ available:true, score:73, level:'fair' },
+}, 'en');
+assert.deepEqual(mixedModelContext.result, { available:false, score:null, level:null },
+  'Klienten må ikke sende en score til Edge under en anden dataset-/modelbinding.');
 
 const indexHtml = await fs.readFile(path.join(ROOT, 'index.html'), 'utf8');
 for (const [language, label] of [['da','Dansk'],['de','Deutsch'],['en','English']]) {
@@ -186,12 +194,51 @@ for (const html of [aboutHtml, learnHtml]) {
   for (const language of ['da', 'de', 'en']) assert.match(html, new RegExp(`data-language="${language}"`), `${language} mangler i statisk sprogvælger.`);
   for (const language of ['da', 'de', 'en']) assert.match(html, new RegExp(`language-flag flag-${language}`), `${language} mangler et stabilt flagikon.`);
 }
+const learnLastMileMarkers = {
+  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 % dämpfen', 'nie erzeugen oder erhöhen', 'bleibt unaufgelöst', 'strukturell unsicher'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'remains unresolved', 'structurally uncertain'],
+};
 for (const language of ['de', 'en']) {
   const score = i18n.t('learn.score', {}, language);
-  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '48', 'score-neutral']) assert.ok(score.includes(marker), `${language} mangler den integrerede modelmarkør ${marker} i grundbogen.`);
+  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '48', ...learnLastMileMarkers[language]]) {
+    assert.ok(score.includes(marker), `${language} mangler den integrerede modelmarkør ${marker} i grundbogen.`);
+  }
+  assert.doesNotMatch(score, /score-neutral/i, `${language} genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
   assert.match(i18n.t('learn.knowledge', {}, language), /not.*safe|Sicherheit/i, `${language} mangler grundbogens sikkerhedsgrænse.`);
   assert.equal((i18n.t('learn.knowledge', {}, language).match(/https:\/\//g) || []).length, 7, `${language} skal bevare alle syv faglige kildelinks.`);
   assert.match(i18n.t('about.support', {}, language), /id="mobilepay-qr"/, `${language} skal bevare QR-målet.`);
+}
+for (const marker of [
+  'kausale energivægtede W/N/T-EWMA for bølgeapproach',
+  'fire timers halveringstid',
+  'bevarer ældre timer med aftagende vægt',
+  'kun dæmpe det eksisterende supply med højst 15 %',
+  'aldrig skabe eller øge det',
+  'fysiske vej gennem revler og surfzone er fortsat uopløst',
+]) assert.ok(learnHtml.includes(marker), `Dansk mangler den integrerede last-mile-markør ${marker} i grundbogen.`);
+assert.doesNotMatch(learnHtml, /uopløst og score-neutral/i, 'Dansk genindfører den pensionerede score-neutrale last-mile-kontrakt.');
+assert.doesNotMatch(learnHtml, /seneste fire timers energivægtede bølgeapproach/i,
+  'Dansk må ikke fremstille fire timer som et fast bølgeapproach-vindue.');
+const assistantWaveMarkers = {
+  da:['kausal energivægtet W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt', 'højst 15 %', 'aldrig skabe eller øge', 'fysisk uopløst'],
+  de:['kausaler energiegewichteter W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 %', 'nie erzeugen oder erhöhen', 'physikalisch unaufgelöst'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'physically unresolved'],
+};
+const debugLastMileMarkers = {
+  da:['kausale energivægtede W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt'],
+  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail'],
+};
+for (const language of ['da', 'de', 'en']) {
+  const answer = i18n.t('assistant.local.waves', {}, language);
+  for (const marker of assistantWaveMarkers[language]) {
+    assert.ok(answer.includes(marker), `${language} mangler assistantens afgrænsede last-mile-markør ${marker}.`);
+  }
+  assert.doesNotMatch(answer, /score-neutral/i, `${language} assistant genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
+  const debug = i18n.t('score.debug.lastMileMeaning', {}, language);
+  for (const marker of debugLastMileMarkers[language]) {
+    assert.ok(debug.includes(marker), `${language} debugforklaring mangler EWMA-markøren ${marker}.`);
+  }
 }
 const learnSectionIds = new Set([...learnHtml.matchAll(/<section id="([^"]+)"/g)].map(match => match[1]));
 for (const language of ['de', 'en']) {

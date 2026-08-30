@@ -39,9 +39,11 @@ const samples = Array.from({ length: 53 }, (_, hour) => ({
   currentVerified: true,
   waveHeightM: 1.2,
   wavePeriodS: 6,
+  waveDirectionDeg: 270,
 }));
 const fixtureSeries = buildIntegratedRavScoreStateSeries(samples, {
   samplingContextKey: contextFor('fixture'),
+  onshoreDirectionDeg: 90,
 });
 const targetStateTemplate = fixtureSeries.rows[48].continuationState;
 const checkpointStateTemplate = fixtureSeries.rows[49].continuationState;
@@ -108,7 +110,7 @@ function assertNoPrivateCheckpointFields(value) {
   visit(value);
 }
 
-const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-schema4-checkpoint-'));
+const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-schema5-checkpoint-'));
 const sourcePath = path.join(tempRoot, 'source.json');
 const alternateSourcePath = path.join(tempRoot, 'source-alternate.json');
 const targetPath = path.join(tempRoot, 'target.json');
@@ -134,7 +136,7 @@ async function assertRestoreRejectsWithoutMutation({
 
 try {
   const source = documentFor({
-    datasetId: 'rr-schema4-checkpoint-source',
+    datasetId: 'rr-schema5-checkpoint-source',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
     reverse: true,
@@ -158,7 +160,7 @@ try {
   const checkpointText = await fs.readFile(checkpointPath, 'utf8');
   const checkpoint = JSON.parse(checkpointText);
   assert.equal(checkpoint.schemaVersion, 2);
-  assert.equal(checkpoint.status, 'ravscore-schema4-compact-continuation');
+  assert.equal(checkpoint.status, 'ravscore-schema5-compact-continuation');
   assert.equal(
     checkpoint.continuationStateContractSha256,
     continuationStateContractSha256,
@@ -245,7 +247,7 @@ try {
   assert.equal(
     await fs.readFile(alternateCheckpointPath, 'utf8'),
     checkpointText,
-    'sorted schema-4 checkpoints must be byte-deterministic',
+    'sorted schema-5 checkpoints must be byte-deterministic',
   );
 
   // Model metadata alone cannot make changed continuation code compatible.
@@ -274,7 +276,7 @@ try {
   }
 
   const target = documentFor({
-    datasetId: 'rr-schema4-deployed',
+    datasetId: 'rr-schema5-deployed',
     productionReferenceAt: atHour(48),
     template: targetStateTemplate,
   });
@@ -308,7 +310,7 @@ try {
     );
   }
 
-  // First rollout has no schema-4 cache. It must be a pure no-op so the score
+  // First rollout has no schema-5 cache. It must be a pure no-op so the score
   // pipeline, and only the score pipeline, can migrate the hydrated schema 2.
   const firstRolloutTarget = clone(target);
   for (const part of Object.values(firstRolloutTarget.coastalParts.parts)) {
@@ -329,7 +331,7 @@ try {
 
   // A valid but non-newer cache is also byte-preserving.
   const alreadyDeployed = documentFor({
-    datasetId: 'rr-schema4-already-deployed',
+    datasetId: 'rr-schema5-already-deployed',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -386,19 +388,19 @@ try {
   await assertRestoreRejectsWithoutMutation({
     target: candidateGOnlyTarget,
     checkpoint,
-    message: /no schema-4 continuation/,
+    message: /no schema-5 continuation/,
   });
 
   // The checkpoint is globally newer, but one part would regress its state.
   const regressionSource = documentFor({
-    datasetId: 'rr-schema4-regression-source',
+    datasetId: 'rr-schema5-regression-source',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
   await writeJson(sourcePath, regressionSource);
   await saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath });
   const advancedTarget = documentFor({
-    datasetId: 'rr-schema4-advanced-target',
+    datasetId: 'rr-schema5-advanced-target',
     productionReferenceAt: atHour(48),
     template: targetStateTemplate,
   });
@@ -418,7 +420,7 @@ try {
 
   // A descriptor or any contained state after the final bound target is fatal.
   const futureSource = documentFor({
-    datasetId: 'rr-schema4-future-source',
+    datasetId: 'rr-schema5-future-source',
     productionReferenceAt: atHour(52),
     template: futureStateTemplate,
   });
@@ -432,7 +434,7 @@ try {
   });
 
   const futureStateSource = documentFor({
-    datasetId: 'rr-schema4-state-after-source',
+    datasetId: 'rr-schema5-state-after-source',
     productionReferenceAt: atHour(48),
     template: checkpointStateTemplate,
   });
@@ -443,7 +445,7 @@ try {
   );
 
   const mixedStateSource = documentFor({
-    datasetId: 'rr-schema4-mixed-state-times',
+    datasetId: 'rr-schema5-mixed-state-times',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -457,7 +459,7 @@ try {
   );
 
   const incompleteSource = documentFor({
-    datasetId: 'rr-schema4-incomplete',
+    datasetId: 'rr-schema5-incomplete',
     productionReferenceAt: atHour(49),
     template: checkpointStateTemplate,
   });
@@ -468,7 +470,7 @@ try {
     /requires 673 parts/,
   );
 
-  console.log('Schema-4 RavScore continuation checkpoint contract passes.');
+  console.log('Schema-5 RavScore continuation checkpoint contract passes.');
 } finally {
   await fs.rm(tempRoot, { recursive: true, force: true });
 }

@@ -35,15 +35,17 @@ const samples = Array.from({ length: 51 }, (_, hour) => ({
   currentVerified: true,
   waveHeightM: 1.2,
   wavePeriodS: 6,
+  waveDirectionDeg: 270,
 }));
 const stateSeries = buildIntegratedRavScoreStateSeries(samples, {
   samplingContextKey: contextFor('template'),
+  onshoreDirectionDeg: 90,
 });
 const partIds = Array.from(
   { length: PART_COUNT },
   (_, index) => `part-${String(index + 1).padStart(3, '0')}`,
 );
-const sourceDocumentAt = (hour, datasetId = `rr-protected-schema4-${hour}`) => ({
+const sourceDocumentAt = (hour, datasetId = `rr-protected-schema5-${hour}`) => ({
   datasetId,
   productionReferenceAt: atHour(hour),
   coastalParts: {
@@ -57,7 +59,7 @@ const sourceDocumentAt = (hour, datasetId = `rr-protected-schema4-${hour}`) => (
     }])),
   },
 });
-const sourceDocument = sourceDocumentAt(49, 'rr-protected-schema4-synthetic');
+const sourceDocument = sourceDocumentAt(49, 'rr-protected-schema5-synthetic');
 
 function memoryRequester(initialRow = null) {
   let row = initialRow ? clone(initialRow) : null;
@@ -305,7 +307,7 @@ try {
   assert.equal(equivalent.targetUnchanged, true);
 
   const sameTimeConflict = clone(checkpoint);
-  sameTimeConflict.datasetId = 'rr-protected-schema4-conflict';
+  sameTimeConflict.datasetId = 'rr-protected-schema5-conflict';
   const equivalentBefore = await fs.readFile(restoredCheckpointPath, 'utf8');
   await assert.rejects(
     restoreProtectedRavScoreContinuationCheckpoint({
@@ -527,7 +529,7 @@ try {
     'failed pre-publication validation must never mutate the valid local checkpoint',
   );
 
-  console.log('Protected schema-4 RavScore checkpoint backup/restore contract passes.');
+  console.log('Protected schema-5 RavScore checkpoint backup/restore contract passes.');
 } finally {
   await fs.rm(tempRoot, { recursive: true, force: true });
 }

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -14,6 +14,43 @@ import {
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const read=relative=>readFile(path.join(root,relative),'utf8');
 const htmlFiles=['about.html','admin.html','documentation.html','handbook.html','index.html','kystimport.html','learn.html','supabase-setup.html'];
+
+const isWithin=(base,target)=>{
+  const relative=path.relative(base,target);
+  return relative===''||(!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith(`..${path.sep}`));
+};
+const edgeStaticImport=/\b(?:import|export)\s+(?:[^;"']*?\s+from\s+)?["']([^"']+)["']/g;
+async function collectEdgeImportClosure(entrypoints){
+  const projectRoot=await realpath(root);
+  const pending=entrypoints.map(relative=>path.join(root,relative));
+  const closure=new Set();
+  while(pending.length){
+    const absolute=await realpath(pending.pop());
+    assert.ok(isWithin(projectRoot,absolute),`Edge-import forlader Supabase CLI's project-root source closure: ${absolute}`);
+    const relative=path.relative(projectRoot,absolute).replaceAll('\\','/');
+    if(closure.has(relative))continue;
+    closure.add(relative);
+    const source=await readFile(absolute,'utf8');
+    edgeStaticImport.lastIndex=0;
+    for(const match of source.matchAll(edgeStaticImport)){
+      const specifier=match[1];
+      if(!specifier.startsWith('.'))continue;
+      const imported=await realpath(path.resolve(path.dirname(absolute),specifier));
+      assert.ok(isWithin(projectRoot,imported),`${relative}: lokal Edge-import forlader project root: ${specifier}`);
+      pending.push(imported);
+    }
+  }
+  return closure;
+}
+
+const edgeImportClosure=await collectEdgeImportClosure([
+  'supabase/functions/ravradar-assistant/index.ts',
+  'supabase/functions/submit-observation/index.ts',
+  'supabase/functions/trip-log/index.ts',
+]);
+assert.ok(edgeImportClosure.has('supabase/functions/_shared/public-gateway.ts'));
+assert.ok(edgeImportClosure.has('js/core/ravscore-model-contract.js'),
+  'Supabase CLI-closuretesten skal følge den aktive modelbinding uden for functions-træet men inden for project root.');
 
 for(const file of htmlFiles){
   const html=await read(file);

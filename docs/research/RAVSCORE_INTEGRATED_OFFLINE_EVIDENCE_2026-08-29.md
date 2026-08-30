@@ -6,12 +6,12 @@ Dette spor tester den integrerede RavScore mod Candidate G og mod relevante para
 
 Den gennemførte syntetiske audit var direkte bundet til:
 
-- model-id `RRS-COASTAL-PROCESS-INTEGRATED-1.0.0`,
-- stateversion `4.0.0`,
-- variant `COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1`,
-- profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3`,
-- komponentskema `ravscore-components-huntability-transport-mobilisation-v3`,
-- forklaringsskema `ravscore-explanation-integrated-v3`,
+- model-id `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`,
+- stateversion `5.0.0`,
+- variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`,
+- profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`,
+- komponentskema `ravscore-components-huntability-delivery-mobilisation-v4`,
+- forklaringsskema `ravscore-explanation-integrated-v4`,
 - `modelContractSha256`, som binder parameterkontrakten; endelig værdi afventer regeneration på afsluttet head,
 - `modelBundleSha256`, som binder 34+ kanonisk normaliserede transitive implementeringsfiler; endelig værdi afventer samme regeneration.
 
@@ -21,7 +21,7 @@ Den tidligere pre-split-selvtest afsluttede de nedenstående scenarieantal, men 
 OK: PASSED_SYNTHETIC_OFFLINE_CONTRACT_AND_SENSITIVITY_AUDIT;
 24 paired chronological comparisons/48 individual model evaluations;
 24 frozen-component pairs;
-model RRS-COASTAL-PROCESS-INTEGRATED-1.0.0;
+model RRS-COASTAL-PROCESS-INTEGRATED-1.1.0;
 final modelContractSha256/modelBundleSha256 pending regenerated audit
 ```
 
@@ -33,7 +33,7 @@ To P1-type-/proveniensfund indgår nu som negative regressionskrav. Et verificer
 
 Auditten skelner nu eksplicit mellem to forskellige slags syntetisk evidens:
 
-1. **Parret kronologisk state-replay:** Candidate G's schema-2-pipeline og den integrerede schema-4-pipeline køres over de samme syntetiske timeobservationer med identiske tidsstempler. Denne del omfatter 24 parrede checkpoints, altså 48 individuelle modelevalueringer. Den tester faktisk kronologi, 48-timershukommelse, migration og continuation.
+1. **Parret kronologisk state-replay:** Candidate G's schema-2-pipeline og den integrerede schema-5-pipeline køres over de samme syntetiske timeobservationer med identiske tidsstempler. Denne del tester faktisk kronologi, 48-timershukommelse, migration og continuation. De historiske 24 parrede checkpoints nedenfor tilhører den tidligere neutral-last-mile-audit og må ikke alene kaldes bevis for 1.1.0; 1.1.0 kræver den særskilte wave-approach-regression og en afsluttende regeneration.
 2. **Frosne komponent-kontrafaktiske sammenligninger:** 12 scenarier × strand/waders giver 24 par, men her indsprøjtes på forhånd fastlagte syntetiske transport- og mobiliseringspotentialer. De er nyttige til isoleret score- og vægtanalyse, men er **ikke** et kronologisk state-replay og tælles ikke som sådan.
 
 Kun den første del dokumenterer old-vs-new-adfærd gennem begge statepipelines. Ingen del bruger fund eller nul-fund.
@@ -42,9 +42,9 @@ Den automatiske audit omfatter:
 
 - et parret state-replay med 24 checkpoints/48 individuelle modelevalueringer,
 - præcis 47-/48-timersgrænse for strømvinduet,
-- Candidate G schema 2 → integreret schema 4-migration,
+- Candidate G schema 2 → integreret schema 5 v4-migration med genvægtning af forseglet, signeret kystnormal currentevidens og en afgrænset privat 40-timers wave-approach-bootstrap,
 - ét samlet run og et delt run med byte-identisk continuation-state,
-- eksakt Candidate G-mobiliseringsoracle mod schema-4-feltet `rollbackCandidateGMobilisationPotential` på hver behandlet replayrække,
+- eksakt Candidate G-mobiliseringsoracle mod schema-5-feltet `rollbackCandidateGMobilisationPotential` på hver behandlet replayrække,
 - 1-, 3- og 4-timers verificerede gap,
 - eksplicit missing og efterfølgende recovery,
 - strømstyrker ved `±0,030`, lige over deadband ved `±0,031` og fuld styrke ved `±0,150 m/s`,
@@ -56,14 +56,16 @@ Den automatiske audit omfatter:
 - fire strømkerner, tre styrkegrænsepar og fire ind-/udgående rater,
 - præcis kontrol af 12, 13 og 14 effektive timers stærk fralandsstrøm,
 - bølgeopbygning 3/4/6 timer og aftrapning 24/48/72 timer,
-- aktiv score-neutral last mile samt kontrafaktiske korrektioner på 0 %, 5,25 % og 10 %,
+- aktiv 0–15 % bounded wave-approach med kausal energivægtet `W/N/T`-EWMA, fire timers halveringstid og en ældre hale, samt historiske kontrafaktiske korrektioner tydeligt adskilt,
 - vandstand med nul scoreeffekt,
 - missing, native cadencehold, internt hul og langt gap,
-- positive og nul transportpotentialer samt kendt/manglende retning.
+- positive og nul transportpotentialer, normalalignment `−1/−0,25/0/0,5/1`, `waveHeightM=0` exact calm, positiv højde/nulperiode som `INVALID`/fail-closed og aktiv missing retning.
 
 ## Parret kronologisk replay gennem begge statepipelines
 
-Replayet starter med 49 ægte syntetiske timepunkter over præcis 48 timer. Candidate G og den integrerede model modtager samme strømstyrke, verificeringsstatus, bølgehøjde, bølgeperiode, vind og tidsstempel ved hvert parret checkpoint. Ingen tilstandsværdi kopieres fra den nye model til den gamle eller omvendt, bortset fra den særskilt testede, kontraktbundne engangsmigration fra Candidate G schema 2 til schema 4.
+Det generelle parrede kronologireplay starter med 49 ægte syntetiske timepunkter over præcis 48 timer. Candidate G og den integrerede model modtager samme strømstyrke, verificeringsstatus, bølgehøjde, bølgeperiode, bølgeretning, vind og tidsstempel ved hvert parret checkpoint. Det er et datasikkert state-/score-replay, ikke migrationskilden i produktion.
+
+Den særskilte v4-migrationstest validerer i stedet Candidate G's forseglet signerede, allerede afledte kystnormale currentstyrke og genvægter den gennem den integrerede currentkerne. Rå U/V læses eller kopieres ikke, og testen påstår ikke lighed med en genberegning fra rå strømvektorer. Wave-approach bygges af præcis 40 private præ-target-positioner. Den udeladte EWMA-hale er højst `1/1024`, og den konservative rå-scorefejl er højst `0.01171875` før afrunding. Acquisitionkontrakten kræver ét coherent WAM-run pr. anvendt collection, same-cell native provenance og tillader kun et WAM-gap mellem native endepunkter højst fire timer fra hinanden inden for samme run, collection, gitter og celle. Aggregate-gaten kræver 673 gyldige schema-2-states og ét fælles kanonisk target; ellers forbliver Candidate G offentlig. Der dannes ingen syntetisk eller offentlig migrationshistorik.
 
 Ved 47 timers dækning var begge strømstates ikke klar. Ved 48 timer var begge klar med potentiale 100. Den gamle evaluator kan teknisk returnere et tal fra en ikke-klar Candidate G-state, men auditten tæller det ikke som en pipelinebundet offentlig score; readiness er en separat nødvendig gate.
 
@@ -77,9 +79,9 @@ Ved 47 timers dækning var begge strømstates ikke klar. Ved 48 timer var begge 
 | 1 time efter pålandsvending | 10 | 10 | 43 | 48 | Begge strømstates reagerer kausalt |
 | 4 timer efter pålandsvending | 40 | 40 | 62 | 63 | Fortsat identiske strømstates |
 | 1 timers verificeret gap | 100 | 100 | 88 | 88 | Begge klar |
-| 3 timers verificeret gap | 100 | 100 | 90 | 88 | Begge strømstates klar; schema 4 viser `RECOVERED_SHORT_GAP` og krediterer højst én bølgetime |
-| 4 timers verificeret gap | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 4: `WINDOW_HAS_TIME_GAP` og `RESTARTED_AFTER_GAP` |
-| Missing strøm og bølge | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 4 viser `MISSING_INPUT`; ingen skjult build |
+| 3 timers verificeret gap | 100 | 100 | 90 | 88 | Begge strømstates klar; schema 5 viser `RECOVERED_SHORT_GAP` og krediterer højst én bølgetime |
+| 4 timers verificeret gap | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 5: `WINDOW_HAS_TIME_GAP` og `RESTARTED_AFTER_GAP` |
+| Missing strøm og bølge | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Schema 5 viser `MISSING_INPUT`; ingen skjult build |
 | Første gyldige time efter missing | Ikke klar | `null`, ikke klar | Ikke pipelinebundet | Ikke tilgængelig | Bølgen er `RECOVERED_SHORT_GAP`; strømmen forbliver lukket, mens missing ligger i vinduet |
 
 Ved `0,030 m/s` var styrken nul på begge sider af kystnormalen. Ved `0,031 m/s` begyndte en lille kontinuert effekt, og ved `0,150 m/s` var styrken fuld. Candidate G og den integrerede strømstate gav samme potentiale i alle seks grænsecheckpoints.
@@ -88,7 +90,7 @@ Det ubrudte 18-timers vending/reversal-forløb blev desuden delt efter otte samp
 
 ### Mobiliseringsoracle for rollback
 
-Den integrerede schema-4-state fører en særskilt, score-neutral rollbackværdi. Auditgaten kræver nu med eksakt numerisk lighed — ikke afrundet lighed eller tolerance — at hver Candidate G-rækkes `mobilisationPotential` svarer til schema-4-rækkens `rollbackCandidateGMobilisationPotential`.
+Den integrerede schema-5-state fører en særskilt, score-neutral rollbackværdi. Auditgaten kræver med eksakt numerisk lighed — ikke afrundet lighed eller tolerance — at hver Candidate G-rækkes `mobilisationPotential` svarer til schema-5-rækkens `rollbackCandidateGMobilisationPotential`.
 
 Gaten kontrollerede 96 producerede rækkesammenligninger. Tallet omfatter både one-shot- og split-run-gennemløb og derfor bevidste gentagelser af det samme syntetiske forløb. Dækningen omfatter specifikt:
 
@@ -96,10 +98,10 @@ Gaten kontrollerede 96 producerede rækkesammenligninger. Tallet omfatter både 
 - alle efterfølgende timer frem til og over 48-timersgrænsen,
 - placeholder-missing og den første gyldige time efter missing,
 - 4-timers langt gap uden indskudte placeholdertimer,
-- schema-2 → schema-4-migrationen,
+- schema-2 → schema-5-migrationen,
 - begge segmenter af split-run og den afsluttende continuation-state.
 
-Som negativ kontrol blev den første migrerede schema-4-rækkes rollbackpotentiale ændret syntetisk med `0,001`. Den samme rollbackgate afviste mutationen. Kontrollen ændrer kun et lokalt syntetisk auditobjekt og aldrig produktionsstate.
+Som negativ kontrol blev den første migrerede schema-5-rækkes rollbackpotentiale ændret syntetisk med `0,001`. Den samme rollbackgate afviste mutationen. Kontrollen ændrer kun et lokalt syntetisk auditobjekt og aldrig produktionsstate.
 
 ### Operationel rollback er en særskilt releasegate
 
@@ -147,7 +149,7 @@ Tabellen viser to vigtige egenskaber:
 
 Det store løft på 41 point i gate-scenarierne er derfor tilsigtet kontraktadfærd, men fortsat en ukalibreret ændring — ikke evidens for flere fund.
 
-Retningsinvariansen ved både transport 0 og transport 100 bekræfter, at den aktive last mile er score-neutral. Bølger kan ikke skabe transport fra nul, og kendt fralandsretning reducerer ikke et eksisterende strømtransportpotentiale.
+Dette historiske pre-1.1.0-resultat havde retningsinvarians ved både transport 0 og transport 100. Det er **erstattet** af den aktive bounded wave-approach-kontrakt: bølger kan fortsat ikke skabe transport fra nul, men et aktivt energirigt felt med svag landværts approach kan dæmpe et eksisterende transportpotentiale med højst 15 %. Den gamle invarians må ikke bruges som slutbevis for releasekandidaten.
 
 ## Ablation af kobling til uobserveret lager
 
@@ -230,45 +232,36 @@ Auditten brugte 12 timers ens høj energiproxy efterfulgt af 72 timers ro.
 
 Den aktive 4/48-kontrakt ligger midt i den afprøvede matrix: 65,625 efter opbygning og 46,404, 32,813 og 23,202 efter 24, 48 og 72 timers ro. Det gør den moderat i denne syntetiske matrix, men validerer ikke halveringstiderne mod ravfund.
 
-## Last mile: aktiv kontrakt og forkastet kontrafaktisk faktor
+## Last mile: 1.1.0 bounded wave-approach
 
 Den aktive kontrakt er:
 
 ```text
-delivery = transportPotential × 1
+movementDirection = normalize360(DMI_WAM_FROM + 180°)
+W, N, T = causalEnergyWeightedEwma4h(...)
+approach = clamp((normalAlignment + 0,25) / 1,25, 0, 1)
+factor = clamp(1 - 0,15 × W × (1 - approach), 0,85, 1)
+deliveryPotential = transportPotential × factor
 ```
 
-Den isolerede højenergi-audit gav:
+Den målrettede 1.1.0-regression skal og kan uden private data bevise:
 
-| Retningsgrundlag | Delivery/transport | Vægtet transportbidrag | Strandscore | Waders-score | Status |
-|---|---:|---:|---:|---:|---|
-| Kendt påland | 100 | 50 | 86 | 82 | `LAST_MILE_UNRESOLVED_SCORE_NEUTRAL` |
-| Kendt tværgående | 100 | 50 | 86 | 82 | `LAST_MILE_UNRESOLVED_SCORE_NEUTRAL` |
-| Kendt fraland | 100 | 50 | 86 | 82 | `LAST_MILE_UNRESOLVED_SCORE_NEUTRAL` |
-| Manglende retning | 100 | 50 | 86 | 82 | `LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN` |
+- FROM→TOWARD roteres præcis én gang og måles mod den uændrede eksisterende kystnormal,
+- `factor` er monotont ikke-faldende for normalalignment `−1`, `−0,25`, `0`, `0,5`, `1`,
+- aktiv `factor` ligger altid 0,85–1,
+- delivery kan aldrig overstige tilførsel eller blive positiv ved tilførsel 0,
+- faktorens største mulige rå totalscoreeffekt er 7,5 point før slutafrunding; vist RavScore kan derfor ændres 8 point,
+- kun `waveHeightM=0` er eksakt roligt og neutralt; `wavePeriodS` er stadig finit/ikke-negativ, og positiv højde med nulperiode er `INVALID`/fail-closed,
+- aktiv energi uden retning fejler lukket,
+- normal-, tangent- og aktivitetsmomenter er kausale over fire timer,
+- one-shot og split-run giver byte-identisk schema-5 continuation,
+- Candidate G-migrationen validerer og genvægter eksakt forseglet signeret kystnormal evidens uden rå U/V, bruger præcis 40 private præ-target-positioner til wave-approach, afgrænser udeladt hale til `1/1024` og konservativ rå-scorefejl til `0.01171875`, kræver 673/common-target og coherent same-cell WAM-proveniens og bruger den virkelige targetrække én gang; ægte state-løs cold start er fortsat den særskilte 48-timersbro.
 
-Ved transportpotentiale 80 og manglende retning forblev delivery 80. Et numerisk plausibelt interval blev ikke leveret (`null`). Ved manglende bølgehøjde eller periode var resultatet utilgængeligt med `LAST_MILE_TRANSPORT_NOT_READY`, fordi påkrævede fysiske input i den samlede kæde manglede.
+`physicalDeliveryResolved` forbliver falsk, strukturel usikkerhed er altid sand, og et numerisk fysisk interval er `null`. 0–15 % er en bounded modelprior, ikke en fysisk rav-landingsandel. Rainville et al. 2026 (`10.1029/2025JC022422`) støtter alene, at brydende bølger kan give flydende objekter landværts surfingtransport; det er en buoyant-object-analogi, ikke ravkalibrering. Aagaard et al. 2002 (`10.1016/S0025-3227(02)00193-7`), Jalón-Rojas et al. 2025 (`10.5194/gmd-18-319-2025`) og Lofty et al. 2023 (`10.1016/j.watres.2023.120329`) viser fortsat, hvorfor lokal morfologi og partikelstate ikke er løst af prioren.
 
-Alle gyldige retninger har:
+Den tidligere faste `5,25 %`-idé er forkastet. Historiske 0/5,25/10 %-tabeller må kun bruges som mærkede kontrafaktiske eksempler; de er ikke den aktive algoritme og må ikke blandes sammen med den energivægtede 0–15 %-dæmpning.
 
-- scoreeffekt `NONE`,
-- `physicalDeliveryResolved = false`,
-- strukturel last-mile-usikkerhed,
-- intet numerisk fysisk usikkerhedsinterval.
-
-### Kontrafaktisk ablation
-
-Auditten beholder korrektioner på 0 %, 5,25 % og 10 % for at måle følsomhed, men kun 0 % svarer til aktiv scoreeffekt:
-
-| Antaget korrektion | Størst mulig reduktion af transport 0–100 | Størst mulig rå totalscoreeffekt ved 50 % transportvægt | Status |
-|---:|---:|---:|---|
-| 0 % | 0 | 0 | Aktiv score-neutral kontrakt |
-| 5,25 % | 5,25 | 2,625 | Forkastet kontrafaktisk ablation |
-| 10 % | 10 | 5 | Kontrafaktisk følsomhedsgrænse |
-
-`5,25 %` er ikke et fysisk interval, midpoint, forventningsestimat eller produktionsparameter. Den tidligere numeriske retningsmodel er forkastet, fordi RavRadar ikke har lokal batymetri eller en opløst surfzonemodel til at begrunde fortegn og størrelse.
-
-Auditten løser derfor heller ikke sidste stykke gennem revler og surfzone. Den dokumenterer præcist, at modellen **ikke** foregiver at have løst det. Aagaard et al. 2002 (`10.1016/S0025-3227(02)00193-7`) viser, at konkurrencen mellem undertow, bølgeskævhed, orbitalhastighed og lokal dybde kan give både land- og søværts transport over revler; Jalón-Rojas et al. 2025 (`10.5194/gmd-18-319-2025`) viser partikelpositionens betydning for Stokes-/undertoweksponering; Lofty et al. 2023 (`10.1016/j.watres.2023.120329`) bruger målt rav som lavdensitets bedload/saltation. De er mekanistisk kildekritik, ikke dansk last-mile-kalibrering, og offline-retningsinvariansen er derfor en sikkerhedsbeslutning frem for et fysisk valideringsresultat.
+Geodatastyrelsens 50 m Danmarks Dybdemodel kan senere analyseres som statisk kontekst, men er ikke aktivt scoreinput: delvist interpolerede middel-dybder kan ikke repræsentere dynamiske revler, ripkanaler eller bølgeopløst surfzone. Ingen geometri, hav-/landpunkter eller kystnormaler flyttes.
 
 ## Vandstand, missing og cadence
 
@@ -300,14 +293,17 @@ Auditten understøtter følgende kontraktmæssige forbedringer:
 
 - Candidate G’s helscore-nul ved 13 timer er fjernet, mens transportpotentialet fortsat kan nå 0.
 - Aktuel gridstrøm, bølgemobilisering og last mile er adskilte komponenter.
-- Last mile er score-neutral i alle retninger og skjuler ikke uopløst surfzonefysik i en lille faktor.
-- Bølger kan ikke skabe transport ved potentiale 0.
-- Missing obligatoriske input fejler lukket; retning alene kan mangle score-neutralt og med synlig usikkerhed.
+- Last mile bruger én eksplicit, 0–15 % bounded og kun dæmpende wave-approach-faktor; det uopløste fysiske leveringsled skjules ikke som et målt interval.
+- Bølger kan ikke skabe eller øge transport ved potentiale 0, og faktorens største mulige rå totalscoreeffekt er 7,5 point før slutafrunding; vist RavScore kan derfor ændres 8 point.
+- Missing obligatoriske input fejler lukket; aktiv bølgeenergi uden retning er ikke en score-neutral genvej. Kun `waveHeightM=0` er neutral exact calm; `wavePeriodS` skal stadig være finit/ikke-negativ, og positiv højde med nulperiode er `INVALID`/fail-closed.
 - Vandstand forklares uden scorepoint eller dobbelttælling.
 - Native cadencehold tilføjer hverken bevægelse eller kunstig historik.
 - Candidate G’s godkendte strand-/waders-jagtbarhed er bevaret præcist.
-- Schema-4's særskilte rollbackmobilisering reproducerer Candidate G-oraklet eksakt i hele det kronologiske spor og i split-run.
+- Schema-5's særskilte rollbackmobilisering reproducerer Candidate G-oraklet eksakt i hele det kronologiske spor og i split-run.
 - Det tidligere `5,25 %`-design er fanget og forkastet før cutover.
+- Genuine cold start bruger eksakt 48 private, verificerede pre-target-timer og derefter den virkelige targetrække; Candidate G-rollback beregnes for samme tid uden dobbelt credit.
+- Samme-model emergency accepterer kun én atomisk, komplet og hashverificeret 210/673-pakke, højst 72 timer og aldrig efter `validUntil`; cross-model/reconstructed/tampered state afvises, og ture bliver ikke-kalibreringsegnede.
+- DEC-0109-apply blev opgivet før mutation/publicering. Den afgrænsede reconstructed-kontrakt bevares kun som negativ trust-/privacy-/rollbackregression.
 
 ## Regressionsrisici og uafgjorte områder
 
@@ -319,8 +315,8 @@ Auditten understøtter følgende kontraktmæssige forbedringer:
 - Modellen observerer ikke den lokale ravbeholdning.
 - Auditsporet estimerer ikke, hvor meget rav vedvarende fralandsstrøm faktisk fjerner fra strand-/revlesystemet.
 - Auditsporet afgør ikke, hvornår faldende vand primært blotlægger/retinerer materiale eller ledsager søværts transport.
-- Surfzone, revler, lokal batymetri, undertow, feeder-/langskyststrøm, ripstrømme, aflejring og retention er uopløst.
-- 20/50/30, `0,03–0,15`, `+10/−8` og 4/48 forbliver transparente priors, ikke estimerede optimum.
+- Surfzone, dynamiske revler, lokal tidstro batymetri, undertow, feeder-/langskyststrøm, ripstrømme, aflejring og retention er uopløst. DDMs 50 m middelgrid er derfor ikke scoreinput.
+- 20/50/30, `0,03–0,15`, `+10/−8`, 4/48 og wave-approachens `−0,25`/15 % forbliver transparente priors, ikke estimerede optimum.
 
 Ingen af disse uafgjorte områder må omskrives til et numerisk fysisk last-mile-interval eller en påstand om empirisk højere fundpræcision.
 

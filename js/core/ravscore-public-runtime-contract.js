@@ -3,6 +3,9 @@ import {
   RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS,
   assertExactPublicRavScoreModelBindingShape,
 } from './ravscore-public-profile-contract.js';
+import {
+  assertRavScoreVerifiedEvidenceTrust,
+} from './ravscore-evidence-trust-contract.js';
 
 export const RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION = '1.0.0';
 export const RAVSCORE_PUBLIC_STARTUP_KIND = 'RAVSCORE_PUBLIC_STARTUP';
@@ -36,6 +39,7 @@ export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
 // Four missed 15-minute production opportunities cover the 45-minute watchdog
 // without presenting a multi-hour outage as fresh data.
 export const RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS = 1;
+export const RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_SCHEMA_VERSION =
   'ravscore-public-runtime-availability-v1';
 export const RAVSCORE_PUBLIC_RUNTIME_MODE_FRESH = 'FRESH';
@@ -252,6 +256,10 @@ export function selectPublicRuntimeAvailability(manifest, {
   if (!sameRavScoreModelBinding(manifest.ravScoreModelBinding, modelBinding)) {
     throw new Error('Public RavScore emergency data belongs to another model or state binding');
   }
+  assertRavScoreVerifiedEvidenceTrust(
+    manifest.ravScoreEvidenceTrust,
+    'public manifest RavScore evidence trust',
+  );
   assertPublicRuntimeManifest(manifest.ravScoreRuntime, {
     modelBinding: manifest.ravScoreModelBinding,
     startup: {
@@ -274,6 +282,9 @@ export function selectPublicRuntimeAvailability(manifest, {
     throw new Error('Public RavScore score horizon has expired');
   }
   const ageHours = ageMs / 3_600_000;
+  if (ageHours > RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS) {
+    throw new Error('Public RavScore emergency maximum age has expired');
+  }
   const mode = ageHours <= RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS
     ? RAVSCORE_PUBLIC_RUNTIME_MODE_FRESH
     : RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY;

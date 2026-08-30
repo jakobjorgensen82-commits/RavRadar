@@ -11,6 +11,7 @@ import {
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
   DMI_FORECAST_HOURS,
@@ -42,6 +43,7 @@ import {
 import { resolveProductionReferenceTime } from './lib/production-reference-time.mjs';
 import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
 import {
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   candidateGRollbackReferenceReadiness,
   candidateGRollbackScoreProfile,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
@@ -978,10 +980,29 @@ function bulkZoneToForecastRecord(
     && ravScoreNumber(row['wind-tail-dir-10m']) !== null
     && verifiedDmiNativeComponentSource(provenance(row).windTail, row.time, 'windTail', dmiIdentity))
     .map(row => ({ step: row.time, 'wind-speed-10m': row['wind-tail-speed-10m'], 'wind-dir-10m': row['wind-tail-dir-10m'], provenance: { wind: provenance(row).windTail } }));
-  const waves = rows.filter(row => ['significant-wave-height','mean-wave-dir','dominant-wave-period']
-    .every(key => ravScoreNumber(row[key]) !== null)
-    && verifiedDmiNativeComponentSource(provenance(row).wave, row.time, 'wave', dmiIdentity))
-    .map(row => ({ step: row.time, 'significant-wave-height': row['significant-wave-height'], 'mean-wave-dir': row['mean-wave-dir'], 'dominant-wave-period': row['dominant-wave-period'], provenance: { wave: provenance(row).wave } }));
+  const waves = rows.map(row => {
+    const waveSource = verifiedDmiNativeComponentSource(
+      provenance(row).wave,
+      row.time,
+      'wave',
+      dmiIdentity,
+    );
+    const waveHeight = ravScoreNumber(row['significant-wave-height']);
+    const wavePeriod = ravScoreNumber(row['dominant-wave-period']);
+    if (!waveSource || waveHeight === null || wavePeriod === null) return null;
+    const waveDirectionAttested = waveSource.optionalFieldSet.length === 1
+      && waveSource.optionalFieldSet[0] === 'mean-wave-dir';
+    const waveDirection = waveDirectionAttested
+      ? ravScoreNumber(row['mean-wave-dir'])
+      : null;
+    return {
+      step: row.time,
+      'significant-wave-height': waveHeight,
+      'mean-wave-dir': waveDirection,
+      'dominant-wave-period': wavePeriod,
+      provenance: { wave: waveSource },
+    };
+  }).filter(Boolean);
   const ocean = rows.map(row => {
     const rowCurrent = provenance(row).current;
     const rowCurrentValid = ravScoreNumber(row['current-u']) !== null
@@ -1028,7 +1049,6 @@ function bulkZoneToForecastRecord(
   const windAvailable = wind.some(item => ravScoreNumber(item['wind-speed-10m']) !== null && ravScoreNumber(item['wind-dir-10m']) !== null);
   const windTailAvailable = windTail.some(item => ravScoreNumber(item['wind-speed-10m']) !== null && ravScoreNumber(item['wind-dir-10m']) !== null);
   const waveAvailable = waves.some(item => ravScoreNumber(item['significant-wave-height']) !== null
-    && ravScoreNumber(item['mean-wave-dir']) !== null
     && ravScoreNumber(item['dominant-wave-period']) !== null);
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
   if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
@@ -1326,6 +1346,7 @@ function buildPrivateCandidateGRollbackRuntime({
     datasetVersion: contract.datasetVersion,
     sourceRunId: contract.sourceRunId,
     modelBinding: candidateGRollbackModelBinding(),
+    evidenceTrust: ravScoreVerifiedEvidenceTrust(),
     generatedAt,
     marginPoints: 7,
     expectedPartCount: contract.partCount,
@@ -1643,6 +1664,7 @@ function scoreCoastalPartsRuntime(
   const integratedRuntime = {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     modelBinding: ravScoreModelBinding(),
+    evidenceTrust: ravScoreVerifiedEvidenceTrust(),
     generatedAt, marginPoints: RAVSCORE_LOCAL_MARGIN_POINTS, expectedPartCount: contract.partCount, scoredPartCount: partRows.length,
     scoreProfile,
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
@@ -2845,7 +2867,7 @@ output.ravScoreCandidateGRollback = coastalPartScoreBuild?.candidateGRollbackRun
     privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
     sourceModelBinding: ravScoreModelBinding(),
     rollbackModelBinding: candidateGRollbackModelBinding(),
-    rollbackId: 'integrated-schema4-to-candidate-g-schema2-v1',
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
     automaticActivationAllowed: false,
     publicDuringNormalOperation: false,
     runtime: coastalPartScoreBuild.candidateGRollbackRuntime,

@@ -1,7 +1,10 @@
 export const DMI_FORECAST_HOURS = 120;
 export const DMI_FORECAST_SCHEMA_VERSION = 1;
 
-const finite = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+// Score-bearing DMI values cross a strict numeric trust boundary here. JSON
+// strings, booleans and arrays are not physical observations, even when
+// JavaScript could coerce them into a finite Number.
+const finite = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 export const normalizeDegrees = value => ((value % 360) + 360) % 360;
 export function uvToTowardDirectionDeg(uValue, vValue) {
@@ -83,9 +86,12 @@ function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs 
 
 function samePoint(first, second, tolerance = 1e-7) {
   return Array.isArray(first) && Array.isArray(second)
-    && first.length >= 2 && second.length >= 2
-    && first.slice(0, 2).every((value, index) => Number.isFinite(Number(value))
-      && Math.abs(Number(value) - Number(second[index])) <= tolerance);
+    && first.length === 2 && second.length === 2
+    && first.every((value, index) => typeof value === 'number'
+      && Number.isFinite(value)
+      && typeof second[index] === 'number'
+      && Number.isFinite(second[index])
+      && Math.abs(value - second[index]) <= tolerance);
 }
 
 const COMPONENT_COLLECTIONS = Object.freeze({
@@ -436,6 +442,9 @@ function interpolateDirection(bracket, directionKey, { from = false } = {}) {
   if (!a || !b) return null;
   const u = a.u + (b.u - a.u) * bracket.ratio;
   const v = a.v + (b.v - a.v) * bracket.ratio;
+  // An equally weighted antipodal pair has no defined circular mean. Do not
+  // turn floating-point residue into an arbitrary physical direction.
+  if (Math.hypot(u, v) < 1e-9) return null;
   return vectorToDirection(u, v, { from });
 }
 function interpolateSpeedDirection(bracket, speedKey, directionKey, { from = false } = {}) {

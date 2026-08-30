@@ -6,11 +6,13 @@ import crypto from 'node:crypto';
 import {
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
+  RAVSCORE_MIGRATION_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
   RAVSCORE_MODEL_CONTRACT,
   RAVSCORE_MODEL_ID,
   RAVSCORE_PROFILE_ID,
+  RAVSCORE_RECOVERY_POLICY,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_WAVE_MOBILISATION_POLICY,
   RAVSCORE_WEIGHTS,
@@ -125,7 +127,61 @@ const SCENARIOS = Object.freeze([
   Object.freeze({ id: 'extreme-low-huntability', supply: 100, mobilisation: 100, wind: 15, wave: 4, period: 10, waveFrom: 270, outboundHours: 0 }),
 ]);
 
-function readyState(supplyPotential, mobilisationPotential) {
+function boundedLastMileState({
+  waveActivity = 1,
+  normalAlignment = 1,
+  tangentAlignment = 0,
+} = {}) {
+  const activity = clamp(waveActivity, 0, 1);
+  const approach = activity === 0 ? 1 : clamp(
+    (normalAlignment - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment)
+      / (1 - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment),
+    0,
+    1,
+  );
+  const factor = clamp(
+    1 - RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare
+      * activity * (1 - approach),
+    RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor,
+    RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor,
+  );
+  return {
+    lastMileMemoryReady: true,
+    lastMileMemoryStatus: 'READY',
+    lastMileEvidenceStatus: activity === 0
+      ? 'EXACT_CALM_DIRECTION_NEUTRAL'
+      : 'DIRECTIONAL_WAVE_EVIDENCE_READY',
+    lastMileWaveActivity: activity,
+    lastMileNormalAlignment: activity === 0 ? null : normalAlignment,
+    lastMileTangentAlignment: activity === 0 ? null : tangentAlignment,
+    lastMileCoherence: activity === 0 ? null : 1,
+    lastMileApproach: approach,
+    lastMileFactor: factor,
+  };
+}
+
+function lastMileStateForWaveDirection(waveDirectionDeg, { waveActivity = 1 } = {}) {
+  if (!Number.isFinite(waveDirectionDeg)) {
+    return {
+      lastMileMemoryReady: false,
+      lastMileMemoryStatus: 'MISSING_INPUT',
+      lastMileEvidenceStatus: 'ACTIVE_WAVE_DIRECTION_MISSING',
+    };
+  }
+  const towardDirectionDeg = (waveDirectionDeg + 180) % 360;
+  const signedDifferenceRadians = (towardDirectionDeg - 90) * Math.PI / 180;
+  return boundedLastMileState({
+    waveActivity,
+    normalAlignment: Math.cos(signedDifferenceRadians),
+    tangentAlignment: Math.sin(signedDifferenceRadians),
+  });
+}
+
+function readyState(supplyPotential, mobilisationPotential, {
+  waveDirectionDeg = 270,
+  waveActivity = 1,
+  lastMileState = null,
+} = {}) {
   return {
     currentMemoryReady: true,
     currentMemoryStatus: 'READY',
@@ -135,6 +191,7 @@ function readyState(supplyPotential, mobilisationPotential) {
     waveMemoryStatus: 'READY',
     waveLastVerifiedAt: isoAtHour(0),
     mobilisationPotential,
+    ...(lastMileState ?? lastMileStateForWaveDirection(waveDirectionDeg, { waveActivity })),
   };
 }
 
@@ -186,12 +243,19 @@ function candidateGFor(scenario, mode) {
 }
 
 function integratedFor(scenario, mode, waterLevel = {}) {
+  const waveEnergy = waveMobilisationEnergy({
+    waveHeightM: scenario.wave,
+    wavePeriodS: scenario.period,
+  });
   return evaluateRavScoreIntegrated({
     mode,
     zone: { onshoreDirectionDeg: 90 },
     weather: weatherFor(scenario, waterLevel),
   }, {
-    state: readyState(scenario.supply, scenario.mobilisation),
+    state: readyState(scenario.supply, scenario.mobilisation, {
+      waveDirectionDeg: scenario.waveFrom,
+      waveActivity: waveEnergy.available ? waveEnergy.energyScore / 100 : 0,
+    }),
   });
 }
 
@@ -247,10 +311,15 @@ function scenarioComparisonAudit() {
       row('p0-high-waves-offshore', mode).integratedScore,
       'Wave direction must not create transport when supply potential is zero',
     );
-    assert.equal(
-      row('p100-high-waves-offshore', mode).integratedTransport,
-      row('p100-high-waves-onshore', mode).integratedTransport,
-      'Outer-grid wave direction must be score-neutral without a resolved local surf-zone path',
+    assert.ok(
+      row('p100-high-waves-offshore', mode).integratedTransport
+        < row('p100-high-waves-onshore', mode).integratedTransport,
+      'Offshore approach may only attenuate existing supply',
+    );
+    assert.ok(
+      row('p100-high-waves-onshore', mode).integratedTransport
+        - row('p100-high-waves-offshore', mode).integratedTransport <= 15,
+      'Directional last-mile attenuation may never exceed fifteen transport points',
     );
   }
   assert.equal(row('extreme-low-huntability', 'waders').integratedScore, 0);
@@ -446,7 +515,7 @@ function inventoryCouplingAblationAudit(scenarioComparison) {
   })), [
     {
       variantId: 'ACTIVE-INDEPENDENT-EVIDENCE-DIMENSIONS',
-      syntheticMeanScore: 56.5,
+      syntheticMeanScore: 55.708,
       meanDeltaFromActive: 0,
       maximumAbsoluteDeltaFromActive: 0,
       zeroTransportMinimumScore: 37,
@@ -457,8 +526,8 @@ function inventoryCouplingAblationAudit(scenarioComparison) {
     },
     {
       variantId: 'FULL-CURRENT-SUPPLY-COUPLING',
-      syntheticMeanScore: 43,
-      meanDeltaFromActive: -13.5,
+      syntheticMeanScore: 41.833,
+      meanDeltaFromActive: -13.875,
       maximumAbsoluteDeltaFromActive: 27,
       zeroTransportMinimumScore: 10,
       zeroTransportMaximumScore: 19,
@@ -468,8 +537,8 @@ function inventoryCouplingAblationAudit(scenarioComparison) {
     },
     {
       variantId: 'SQRT-CURRENT-SUPPLY-COUPLING',
-      syntheticMeanScore: 44.5,
-      meanDeltaFromActive: -12,
+      syntheticMeanScore: 43.5,
+      meanDeltaFromActive: -12.208,
       maximumAbsoluteDeltaFromActive: 27,
       zeroTransportMinimumScore: 10,
       zeroTransportMaximumScore: 19,
@@ -479,8 +548,8 @@ function inventoryCouplingAblationAudit(scenarioComparison) {
     },
     {
       variantId: 'HALF-UNOBSERVED-INVENTORY-PRIOR',
-      syntheticMeanScore: 49.75,
-      meanDeltaFromActive: -6.75,
+      syntheticMeanScore: 48.792,
+      meanDeltaFromActive: -6.917,
       maximumAbsoluteDeltaFromActive: 14,
       zeroTransportMinimumScore: 23,
       zeroTransportMaximumScore: 30,
@@ -490,8 +559,8 @@ function inventoryCouplingAblationAudit(scenarioComparison) {
     },
     {
       variantId: 'MINIMUM-TRANSPORT-MOBILISATION-BOTTLENECK',
-      syntheticMeanScore: 44.292,
-      meanDeltaFromActive: -12.208,
+      syntheticMeanScore: 43.208,
+      meanDeltaFromActive: -12.5,
       maximumAbsoluteDeltaFromActive: 27,
       zeroTransportMinimumScore: 10,
       zeroTransportMaximumScore: 19,
@@ -687,19 +756,32 @@ function waveSensitivityAudit() {
 }
 
 function lastMileSensitivityAudit() {
+  const activeMaximumReductionShare = RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare;
+  const testedMaximumReductionShares = [0, 0.075, activeMaximumReductionShare, 0.225];
   const counterfactualRows = [];
-  for (const maximumReductionShare of [0, 0.0525, 0.10]) {
+  for (const maximumReductionShare of testedMaximumReductionShares) {
     for (const supplyPotential of [0, 50, 100]) {
       for (const waveActivity of [0, 1]) {
         for (const alignment of [1, 0, -1]) {
-          const factor = 1 - maximumReductionShare * waveActivity * (1 - alignment) / 2;
+          const approach = clamp(
+            (alignment - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment)
+              / (1 - RAVSCORE_LAST_MILE_POLICY.approachNeutralNormalAlignment),
+            0,
+            1,
+          );
+          const factor = clamp(
+            1 - maximumReductionShare * waveActivity * (1 - approach),
+            1 - maximumReductionShare,
+            1,
+          );
           counterfactualRows.push({
             maximumReductionPercent: maximumReductionShare * 100,
             supplyPotential,
-            waveEnergy: waveActivity === 0 ? 'LOW_INACTIVE' : 'HIGH_ACTIVE',
+            waveEnergy: waveActivity === 0 ? 'EXACT_CALM' : 'HIGH_ACTIVE',
             waveApproach: alignment === 1 ? 'ONSHORE'
               : alignment === 0 ? 'CROSS'
                 : 'OFFSHORE',
+            approach: round(approach, 6),
             factor: round(factor, 6),
             transport: round(supplyPotential * factor),
             transportWeightedContribution: round(
@@ -717,71 +799,92 @@ function lastMileSensitivityAudit() {
     .every(item => item.transport === 0));
   assert.ok(counterfactualRows.filter(item => item.waveApproach === 'ONSHORE')
     .every(item => item.transport === item.supplyPotential));
-  assert.ok(counterfactualRows.filter(item => item.waveEnergy === 'LOW_INACTIVE')
+  assert.ok(counterfactualRows.filter(item => item.waveEnergy === 'EXACT_CALM')
     .every(item => item.transport === item.supplyPotential));
 
   const actualOnshore = evaluateIntegratedLastMile({
     supplyPotential: 100,
-    weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 270 },
-    onshoreDirectionDeg: 90,
+    lastMileState: boundedLastMileState({
+      waveActivity: 1,
+      normalAlignment: 1,
+      tangentAlignment: 0,
+    }),
   });
   const actualCross = evaluateIntegratedLastMile({
     supplyPotential: 100,
-    weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 180 },
-    onshoreDirectionDeg: 90,
+    lastMileState: boundedLastMileState({
+      waveActivity: 1,
+      normalAlignment: 0,
+      tangentAlignment: 1,
+    }),
   });
   const actualOffshore = evaluateIntegratedLastMile({
     supplyPotential: 100,
-    weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg: 90 },
-    onshoreDirectionDeg: 90,
+    lastMileState: boundedLastMileState({
+      waveActivity: 1,
+      normalAlignment: -1,
+      tangentAlignment: 0,
+    }),
   });
   assert.equal(actualOnshore.transport, 100);
-  assert.equal(actualCross.factor, 1);
-  assert.equal(actualCross.transport, 100);
-  assert.equal(actualOffshore.factor, 1);
-  assert.equal(actualOffshore.transport, 100);
+  assert.ok(Math.abs(actualCross.factor - 0.88) < 1e-9);
+  assert.ok(Math.abs(actualCross.transport - 88) < 1e-9);
+  assert.equal(actualOffshore.factor, RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor);
+  assert.equal(actualOffshore.transport, 85);
   for (const actual of [actualOnshore, actualCross, actualOffshore]) {
-    assert.equal(actual.scoreEffect, 'NONE');
+    assert.equal(actual.scoreEffect, 'BOUNDED_SUPPLY_ATTENUATION_ONLY');
     assert.equal(actual.structuralUncertainty, true);
     assert.equal(actual.physicalDeliveryResolved, false);
     assert.equal(actual.plausibleTransportRange, null);
   }
+  assert.equal(
+    (actualOnshore.transport - actualOffshore.transport) * RAVSCORE_WEIGHTS.transport,
+    7.5,
+    'The bounded last-mile mechanism may change the raw 20/50/30 score by at most 7.5 points before integer rounding',
+  );
+
   const actualLowEnergyOffshore = evaluateIntegratedLastMile({
     supplyPotential: 100,
-    weather: { waveHeightM: 0.1, wavePeriodS: 4, waveDirectionDeg: 90 },
-    onshoreDirectionDeg: 90,
+    lastMileState: boundedLastMileState({
+      waveActivity: 0.05,
+      normalAlignment: -1,
+      tangentAlignment: 0,
+    }),
   });
-  assert.equal(actualLowEnergyOffshore.transport, 100);
-  const actualLowEnergyUnknownDirection = evaluateIntegratedLastMile({
+  assert.ok(actualLowEnergyOffshore.transport > 99);
+  assert.ok(actualLowEnergyOffshore.transport < 100);
+  const exactCalmUnknownDirection = evaluateIntegratedLastMile({
     supplyPotential: 100,
-    weather: { waveHeightM: 0.1, wavePeriodS: 4 },
-    onshoreDirectionDeg: 90,
+    lastMileState: boundedLastMileState({ waveActivity: 0 }),
   });
-  assert.equal(actualLowEnergyUnknownDirection.transport, 100);
-  assert.equal(actualLowEnergyUnknownDirection.plausibleTransportRange, null);
-  for (const waveDirectionDeg of [270, 180, 90, null]) {
+  assert.equal(exactCalmUnknownDirection.transport, 100);
+  assert.equal(exactCalmUnknownDirection.factor, 1);
+
+  for (const waveDirectionDeg of [270, 180, 90]) {
     const zeroSupply = evaluateIntegratedLastMile({
       supplyPotential: 0,
-      weather: { waveHeightM: 2, wavePeriodS: 8, waveDirectionDeg },
-      onshoreDirectionDeg: 90,
+      lastMileState: lastMileStateForWaveDirection(waveDirectionDeg),
     });
     assert.equal(zeroSupply.transport, 0, 'Wave direction may not create transport at zero supply');
   }
   const unknownDirection = evaluateIntegratedLastMile({
     supplyPotential: 80,
-    weather: { waveHeightM: 2, wavePeriodS: 8 },
-    onshoreDirectionDeg: 90,
+    lastMileState: lastMileStateForWaveDirection(null),
   });
-  assert.equal(unknownDirection.status, 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN');
-  assert.equal(unknownDirection.transport, 80);
+  assert.equal(unknownDirection.available, false);
+  assert.equal(unknownDirection.status, 'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING');
+  assert.equal(unknownDirection.transport, null);
   assert.equal(unknownDirection.plausibleTransportRange, null);
   const unknownEnergy = evaluateIntegratedLastMile({
     supplyPotential: 80,
-    weather: { waveHeightM: 2, wavePeriodS: null, waveDirectionDeg: 90 },
-    onshoreDirectionDeg: 90,
+    lastMileState: {
+      lastMileMemoryReady: false,
+      lastMileMemoryStatus: 'MISSING_INPUT',
+      lastMileEvidenceStatus: 'WAVE_PHYSICS_MISSING',
+    },
   });
   assert.equal(unknownEnergy.available, false);
-  assert.equal(unknownEnergy.status, 'LAST_MILE_WAVE_CONTEXT_NOT_READY');
+  assert.equal(unknownEnergy.status, 'LAST_MILE_WAVE_APPROACH_STATE_NOT_READY');
   assert.equal(unknownEnergy.transport, null);
   assert.equal(unknownEnergy.plausibleTransportRange, null);
 
@@ -795,11 +898,22 @@ function lastMileSensitivityAudit() {
     { id: 'KNOWN_CROSS', waveDirectionDeg: 180 },
     { id: 'KNOWN_OFFSHORE', waveDirectionDeg: 90 },
     { id: 'MISSING_DIRECTION', waveDirectionDeg: null },
-    { id: 'MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN', waveDirectionDeg: 90, wavePeriodS: null },
+    {
+      id: 'MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN',
+      waveDirectionDeg: 90,
+      wavePeriodS: null,
+    },
+    {
+      id: 'INVALID_POSITIVE_HEIGHT_ZERO_PERIOD',
+      waveDirectionDeg: null,
+      wavePeriodS: 0,
+    },
   ];
   const scoreRows = [];
   for (const mode of ['beach', 'waders']) {
     for (const item of approachCases) {
+      const missingEnergy = item.id === 'MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN';
+      const invalidEnergy = item.id === 'INVALID_POSITIVE_HEIGHT_ZERO_PERIOD';
       const result = evaluateRavScoreIntegrated({
         mode,
         zone: { onshoreDirectionDeg: 90 },
@@ -808,8 +922,21 @@ function lastMileSensitivityAudit() {
           waveDirectionDeg: item.waveDirectionDeg,
           ...(Object.hasOwn(item, 'wavePeriodS') ? { wavePeriodS: item.wavePeriodS } : {}),
         },
-      }, { state: readyState(100, 75) });
-      const expectedAvailable = item.id !== 'MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN';
+      }, {
+        state: readyState(100, 75, {
+          lastMileState: missingEnergy || invalidEnergy
+            ? {
+              lastMileMemoryReady: false,
+              lastMileMemoryStatus: 'MISSING_INPUT',
+              lastMileEvidenceStatus: invalidEnergy
+                ? 'WAVE_PHYSICS_INVALID'
+                : 'WAVE_PHYSICS_MISSING',
+            }
+            : lastMileStateForWaveDirection(item.waveDirectionDeg),
+        }),
+      });
+      const expectedAvailable = ['KNOWN_ONSHORE', 'KNOWN_CROSS', 'KNOWN_OFFSHORE']
+        .includes(item.id);
       assert.equal(result.available, expectedAvailable);
       scoreRows.push({
         mode,
@@ -827,19 +954,51 @@ function lastMileSensitivityAudit() {
   }
   const scoreRow = (id, mode = 'beach') => scoreRows.find(item =>
     item.approachCase === id && item.mode === mode);
-  const directionScoreNeutrality = Object.fromEntries(['KNOWN_ONSHORE', 'KNOWN_CROSS',
-    'KNOWN_OFFSHORE', 'MISSING_DIRECTION'].map(id => [id, {
-      transport: scoreRow(id).transport,
-      transportWeightedContribution: scoreRow(id).transportWeightedContribution,
-      finalScore: scoreRow(id).finalScore,
-    }]));
-  assert.equal(new Set(Object.values(directionScoreNeutrality)
-    .map(item => JSON.stringify(item))).size, 1,
-  'Outer-grid wave direction must remain score-neutral while the surf-zone path is unresolved');
+  const activePolicyMaximumRawWholeScoreEffectAtP100 =
+    activeMaximumReductionShare * 100 * RAVSCORE_WEIGHTS.transport;
+  const activePolicyMaximumDisplayedWholeScoreEffectPoints =
+    Math.ceil(activePolicyMaximumRawWholeScoreEffectAtP100);
+  for (const mode of ['beach', 'waders']) {
+    assert.ok(scoreRow('KNOWN_ONSHORE', mode).transport
+      > scoreRow('KNOWN_CROSS', mode).transport);
+    assert.ok(scoreRow('KNOWN_CROSS', mode).transport
+      > scoreRow('KNOWN_OFFSHORE', mode).transport);
+    assert.ok(scoreRow('KNOWN_ONSHORE', mode).transportWeightedContribution
+      - scoreRow('KNOWN_OFFSHORE', mode).transportWeightedContribution
+      <= activePolicyMaximumRawWholeScoreEffectAtP100);
+    assert.ok(scoreRow('KNOWN_ONSHORE', mode).finalScore
+      - scoreRow('KNOWN_OFFSHORE', mode).finalScore
+      <= activePolicyMaximumDisplayedWholeScoreEffectPoints);
+  }
+  assert.equal(
+    scoreRow('KNOWN_ONSHORE', 'beach').finalScore
+      - scoreRow('KNOWN_OFFSHORE', 'beach').finalScore,
+    8,
+    'Integer rounding can make the displayed score differ by 8 although the raw effect is bounded to 7.5 points',
+  );
+  const directionScoreSensitivity = Object.fromEntries([
+    'KNOWN_ONSHORE',
+    'KNOWN_CROSS',
+    'KNOWN_OFFSHORE',
+  ].map(id => [id, {
+    transport: scoreRow(id).transport,
+    transportWeightedContribution: scoreRow(id).transportWeightedContribution,
+    finalScore: scoreRow(id).finalScore,
+  }]));
+  assert.equal(
+    scoreRow('MISSING_DIRECTION').unavailableReason,
+    'LAST_MILE_ACTIVE_WAVE_DIRECTION_MISSING',
+    'Active waves without direction must fail closed',
+  );
   assert.equal(
     scoreRow('MISSING_ENERGY_OFFSHORE_DIRECTION_KNOWN').unavailableReason,
-    'LAST_MILE_TRANSPORT_NOT_READY',
+    'WAVE_PHYSICAL_INPUT_NOT_READY',
     'Missing wave energy must fail closed instead of receiving a favourable point estimate',
+  );
+  assert.equal(
+    scoreRow('INVALID_POSITIVE_HEIGHT_ZERO_PERIOD').unavailableReason,
+    'WAVE_PHYSICAL_INPUT_NOT_READY',
+    'Positive height with zero period must fail closed instead of becoming exact calm',
   );
 
   return {
@@ -850,26 +1009,34 @@ function lastMileSensitivityAudit() {
       crossTransportAtP100: actualCross.transport,
       offshoreTransportAtP100: actualOffshore.transport,
       lowEnergyOffshoreTransportAtP100: actualLowEnergyOffshore.transport,
-      lowEnergyUnknownDirectionTransportAtP100: actualLowEnergyUnknownDirection.transport,
+      exactCalmUnknownDirectionTransportAtP100: exactCalmUnknownDirection.transport,
       unknownDirectionPointEstimateAtP80: unknownDirection.transport,
       unknownDirectionRangeAtP80: unknownDirection.plausibleTransportRange,
       unknownEnergyPointEstimateAtP80: unknownEnergy.transport,
       unknownEnergyRangeAtP80: unknownEnergy.plausibleTransportRange,
     },
-    directionScoreNeutrality,
+    directionScoreSensitivity,
     counterfactualPolicySensitivity: {
-      testedMaximumReductionPercents: [0, 5.25, 10],
-      maximumRawWholeScoreEffectsAtP100: [0, 2.625, 5],
-      activePolicyMaximumReductionPercent: 0,
-      activePolicySelectedBecauseLocalPhysicalEffectIsUnresolved: true,
+      testedMaximumReductionPercents: testedMaximumReductionShares.map(value => value * 100),
+      maximumRawWholeScoreEffectsAtP100: testedMaximumReductionShares
+        .map(value => value * 100 * RAVSCORE_WEIGHTS.transport),
+      activePolicyMaximumReductionPercent: activeMaximumReductionShare * 100,
+      activePolicyMaximumWholeScoreEffectAtP100:
+        activePolicyMaximumRawWholeScoreEffectAtP100,
+      activePolicyMaximumRawWholeScoreEffectAtP100,
+      activePolicyMaximumDisplayedWholeScoreEffectPoints,
+      displayedEffectRoundingSemantics:
+        'RAW_EFFECT_MAXIMUM_7_5_POINTS_BEFORE_INTEGER_ROUNDING_DISPLAYED_DIFFERENCE_CAN_BE_8',
+      activePolicyIsTransparentUncalibratedPrior: true,
     },
     missingPointEstimateReview: {
-      currentDirectionPolicy: 'SCORE_NEUTRAL_STRUCTURAL_UNCERTAINTY_WITHOUT_NUMERIC_INTERVAL',
+      currentDirectionPolicy: 'ACTIVE_WAVE_DIRECTION_MISSING_FAILS_CLOSED',
+      exactCalmDirectionPolicy: 'DIRECTION_NEUTRAL_FACTOR_ONE',
       currentMissingEnergyPolicy: 'FAIL_CLOSED',
       numericLastMileEffectEmpiricallySupported: false,
       localBathymetryOrResolvedSurfZoneAvailable: false,
-      outerGridDirectionStillAvailableAsExplanatoryContext: true,
-      disposition: 'DELIVERY_EQUALS_TRANSPORT_POTENTIAL_AND_STRUCTURAL_UNCERTAINTY_IS_EXPLICIT',
+      outerGridDirectionUsedAsBoundedSupplyAttenuationOnly: true,
+      disposition: 'DELIVERY_EQUALS_TRANSPORT_POTENTIAL_TIMES_BOUNDED_FACTOR',
     },
   };
 }
@@ -1024,16 +1191,43 @@ function assertRollbackMobilisationParity(candidateRows, integratedRows, label) 
 function runPairedContinuation(samples, {
   candidateInitialState,
   integratedInitialState = candidateInitialState,
+  candidateMigrationWaveRows = null,
   label = 'chronological-track',
 } = {}) {
   const candidate = buildCandidateGDerivedStateSeries(samples, {
     stateKey: CHRONOLOGICAL_CANDIDATE_G_STATE_KEY,
     initialState: candidateInitialState,
   });
+  const candidateMigration = integratedInitialState?.transportEvidence
+    ? {
+        candidateGCurrentBootstrap: {
+          migrationId: RAVSCORE_MIGRATION_ID,
+          source: RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
+          samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+          sourceStateTime: integratedInitialState.time,
+          currentReferenceAt: integratedInitialState.transportReferenceAt,
+          currentEvidence: integratedInitialState.transportEvidence
+            .map(item => ({ ...item })),
+          currentNativeHoldAuthorization: null,
+        },
+        candidateGWaveApproachBootstrap: {
+          migrationId: RAVSCORE_MIGRATION_ID,
+          source: 'VERIFIED_PRIVATE_DMI_WAVE_DIRECTION_REPLAY',
+          samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+          sourceStateTime: integratedInitialState.time,
+          targetReferenceAt: samples[0]?.time,
+          rows: Array.isArray(candidateMigrationWaveRows)
+            ? candidateMigrationWaveRows.map(item => ({ ...item }))
+            : [],
+        },
+      }
+    : {};
   const integrated = buildIntegratedRavScoreStateSeries(samples, {
     samplingContextKey: CHRONOLOGICAL_INTEGRATED_SAMPLING_CONTEXT_KEY,
+    onshoreDirectionDeg: 90,
     initialState: integratedInitialState,
     expectedCandidateGStateKey: CHRONOLOGICAL_CANDIDATE_G_STATE_KEY,
+    ...candidateMigration,
   });
   assert.deepEqual(
     candidate.rows.map(row => row.time),
@@ -1094,8 +1288,17 @@ function chronologicalPairedReplayAudit() {
       wavePeriodS: 6,
     })),
   ];
+  const candidateMigrationWaveRows = history.slice(
+    -RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+  ).map(sample => ({
+    time: sample.time,
+    waveHeightM: sample.waveHeightM,
+    wavePeriodS: sample.wavePeriodS,
+    waveDirectionDeg: sample.waveDirectionDeg,
+  }));
   const reversal = runPairedContinuation(reversalSamples, {
     candidateInitialState: cold.candidate.continuationState,
+    candidateMigrationWaveRows,
     label: 'candidate-g-migration-and-reversal',
   });
   assert.equal(reversal.integrated.migrationApplied, true);
@@ -1155,6 +1358,7 @@ function chronologicalPairedReplayAudit() {
   const splitAt = 8;
   const reversalFirst = runPairedContinuation(reversalSamples.slice(0, splitAt), {
     candidateInitialState: cold.candidate.continuationState,
+    candidateMigrationWaveRows,
     label: 'split-run-first-segment',
   });
   const reversalSecond = runPairedContinuation(reversalSamples.slice(splitAt), {
@@ -1203,7 +1407,7 @@ function chronologicalPairedReplayAudit() {
   assert.equal(gap3.integrated.pipelineReady, true);
   assert.equal(gap4.integrated.pipelineReady, false);
   assert.equal(gap4.integrated.currentStatus, 'WINDOW_HAS_TIME_GAP');
-  assert.equal(gap4.integrated.waveStatus, 'RESTARTED_AFTER_GAP');
+  assert.equal(gap4.integrated.waveStatus, 'COLD_START');
 
   const missingSamples = [
     chronologicalSample(1, {
@@ -1399,8 +1603,9 @@ function availabilityAndCadenceAudit() {
     RAVSCORE_WAVE_MOBILISATION_STATUS.READY,
     RAVSCORE_WAVE_MOBILISATION_STATUS.MISSING_INPUT,
     RAVSCORE_WAVE_MOBILISATION_STATUS.RECOVERED_SHORT_GAP,
-    RAVSCORE_WAVE_MOBILISATION_STATUS.RESTARTED_AFTER_GAP,
+    RAVSCORE_WAVE_MOBILISATION_STATUS.COLD_START,
   ]);
+  assert.equal(wave.rows[4].transition, 'LONG_GAP_COLD_RESTART');
   assert.equal(wave.rows[2].readiness, false);
   assert.equal(wave.rows[2].mobilisationPotential, wave.rows[1].mobilisationPotential);
   assert.ok(wave.rows[3].creditedDurationHours
@@ -1494,8 +1699,15 @@ async function runAudit() {
   assert.equal(RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours, 48);
   assert.equal(RAVSCORE_WAVE_MOBILISATION_POLICY.buildHalfLifeHours, 4);
   assert.equal(RAVSCORE_WAVE_MOBILISATION_POLICY.decayHalfLifeHours, 48);
-  assert.equal(RAVSCORE_LAST_MILE_POLICY.deliveryFactor, 1);
-  assert.equal(RAVSCORE_LAST_MILE_POLICY.scoreEffect, 'NONE');
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.maximumAttenuationShare, 0.15);
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor, 0.85);
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.maximumDeliveryFactor, 1);
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.deliveryEquation,
+    'DELIVERY_EQUALS_SUPPLY_TIMES_ONE_MINUS_0_15_TIMES_W_TIMES_ONE_MINUS_APPROACH');
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.scoreEffect, 'BOUNDED_SUPPLY_ATTENUATION_ONLY');
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.waveCanCreateSupply, false);
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.waveCanIncreaseSupply, false);
+  assert.equal(RAVSCORE_LAST_MILE_POLICY.physicalDeliveryResolved, false);
   assert.equal(RAVSCORE_LAST_MILE_POLICY.structuralUncertaintyAlways, true);
   assert.equal(RAVSCORE_LAST_MILE_POLICY.numericPhysicalUncertaintyIntervalProvided, false);
   assert.equal(RAVSCORE_MODEL_CONTRACT.uncertainty.localBathymetryIncluded, false);
@@ -1536,12 +1748,14 @@ async function runAudit() {
     conclusions: {
       improvementsSupportedByContractEvidence: [
         'THE_UNSUPPORTED_THIRTEEN_HOUR_WHOLE_SCORE_ZERO_GATE_IS_REMOVED',
-        'GRID_CURRENT_SUPPLY_AND_SCORE_NEUTRAL_LAST_MILE_WAVE_CONTEXT_ARE_SEPARATE',
+        'GRID_CURRENT_SUPPLY_AND_BOUNDED_LAST_MILE_WAVE_ATTENUATION_ARE_SEPARATE',
         'WAVES_CANNOT_CREATE_TRANSPORT_WHEN_SUPPLY_POTENTIAL_IS_ZERO',
+        'LAST_MILE_MULTIPLIES_EXISTING_SUPPLY_EXACTLY_ONCE_WITH_A_FACTOR_FROM_0_85_TO_1',
+        'LAST_MILE_WHOLE_SCORE_EFFECT_IS_BOUNDED_TO_7_5_RAW_POINTS_BEFORE_INTEGER_ROUNDING_AND_8_DISPLAYED_POINTS',
         'READY_ZERO_CURRENT_SUPPLY_CANNOT_REACH_THE_FAIR_OR_GOOD_SCORE_BANDS',
         'READY_ZERO_CURRENT_SUPPLY_IS_DISTINCT_FROM_MISSING_CURRENT_EVIDENCE',
-        'UNRESOLVED_LAST_MILE_HAS_NO_NUMERIC_SCORE_EFFECT_OR_PHYSICAL_INTERVAL',
-        'MISSING_DIRECTION_HAS_NO_HIDDEN_OPTIMISTIC_OR_PESSIMISTIC_SCORE_EFFECT',
+        'UNRESOLVED_LAST_MILE_HAS_NO_NUMERIC_PHYSICAL_INTERVAL',
+        'ACTIVE_MISSING_DIRECTION_FAILS_CLOSED_WHILE_EXACT_CALM_IS_NEUTRAL',
         'MISSING_WAVE_ENERGY_FAILS_CLOSED',
         'FALLING_WATER_CAN_BE_EXPLAINED_WITHOUT DOUBLE_COUNTING_SCORE',
         'NATIVE_CADENCE_HOLD_ADDS_NO_MOVEMENT_OR_KERNEL_AGEING',
@@ -1549,7 +1763,7 @@ async function runAudit() {
       ],
       testedContractViolationsDetected: [],
       caughtAndResolvedRegressionFindings: [
-        'THE_UNSUPPORTED_5_25_PERCENT_LAST_MILE_PRIOR_WAS_REMOVED_FROM_THE_ACTIVE_SCORE',
+        'THE_OLD_5_25_PERCENT_DELIVERY_PRIOR_WAS_REPLACED_BY_A_0_15_ATTENUATION_ONLY_PRIOR',
         'MISSING_OR_INVALID_WAVE_ENERGY_FAILS_CLOSED_INSTEAD_OF_BECOMING_CALM_EVIDENCE',
       ],
       behaviouralRisksAndUnresolvedQuestions: [

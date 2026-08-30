@@ -19,12 +19,22 @@ function integratedResult(waterPhase = 'FALLING', currentRelation = 'OUTBOUND') 
     modelBinding,
     level: 'fair',
     components: { huntability: 72, transport: 61, release: 60 },
+    localWeather: {
+      currentProvenance: {
+        status: 'verified',
+        sourceClass: 'local-model-grid',
+        distanceKm: 1.2,
+      },
+    },
     explanation: {
       ...modelBinding,
       transportDiagnostics: {
         engine: 'INTEGRATED_COASTAL_PROCESS',
-        lastMileScoreEffect: 'NONE',
-        lastMileStatus: 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
+        lastMileScoreEffect: 'BOUNDED_SUPPLY_ATTENUATION_ONLY',
+        lastMileStatus: 'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+        lastMileDeliveryFactor: 0.92,
+        lastMileWaveActivity: 0.8,
+        lastMileApproach: 1 / 3,
         lastMilePhysicalDeliveryResolved: false,
         lastMileStructuralUncertainty: true,
         resolvedSurfZoneIncluded: false,
@@ -51,9 +61,9 @@ function integratedResult(waterPhase = 'FALLING', currentRelation = 'OUTBOUND') 
 }
 
 const languageExpectations = {
-  da: [/Faktor 1/, /0 scorepoint/, /undertow/, /feeder- eller langskyststrøm/, /ripstrømme/, /noget mobilt rav ud/, /lokal batymetri/],
-  de: [/Faktor 1/, /0 Scorepunkte/, /Undertow/, /Küstenlängs-/, /Rippströmungen/, /Teil mobilen Bernsteins seewärts/, /lokale Bathymetrie/],
-  en: [/Factor 1/, /0 score points/, /undertow/, /longshore current/, /rip currents/, /some mobile amber seaward/, /local bathymetry/],
+  da: [/kausal energivægtet W\/N\/T-EWMA/, /fire timers halveringstid/, /ældre timer med aftagende vægt/, /højst 15 %/, /aldrig skabe eller øge/, /fysisk uopløst/, /0 scorepoint/, /undertow/, /feeder- eller langskyststrøm/, /ripstrømme/, /noget mobilt rav ud/, /lokal batymetri/],
+  de: [/kausaler energiegewichteter W\/N\/T-EWMA/, /Halbwertszeit von vier Stunden/, /ältere Stunden.*abnehmendem Gewicht/, /höchstens 15 %/, /niemals erzeugen oder erhöhen/, /physikalisch unaufgelöst/, /0 Scorepunkte/, /Undertow/, /Küstenlängs-/, /Rippströmungen/, /Teil mobilen Bernsteins seewärts/, /lokale Bathymetrie/],
+  en: [/causal energy-weighted wave-direction W\/N\/T EWMA/, /four-hour half-life/, /older hours in a decaying tail/, /at most 15%/, /never create or increase/, /physically unresolved/, /0 score points/, /undertow/, /longshore current/, /rip currents/, /some mobile amber seaward/, /local bathymetry/],
 };
 for (const [language, patterns] of Object.entries(languageExpectations)) {
   const presentation = presentIntegratedRavScoreExplanation(integratedResult(), { language });
@@ -62,10 +72,10 @@ for (const [language, patterns] of Object.entries(languageExpectations)) {
   for (const pattern of patterns) assert.match(text, pattern, `${language}: forklaringen mangler ${pattern}`);
   assert.match(presentation.facts[0], language === 'en' ? /47\.5 of 48/ : /47,5 (?:af|von) 48/,
     `${language}: memory coverage må ikke afrundes op til et falsk komplet vindue`);
-  assert.match(text, language === 'da' ? /ikke 100 % levering/i
-    : language === 'de' ? /nicht 100 % Lieferung/i
-      : /not 100% delivery/i,
-  `${language}: score-neutral faktor skal udtrykkeligt afvises som fysisk levering`);
+  assert.match(text, language === 'da' ? /fortsat fysisk uopløst/i
+    : language === 'de' ? /bleibt physikalisch unaufgelöst/i
+      : /remains physically unresolved/i,
+  `${language}: den afgrænsede faktor må ikke fremstilles som opløst fysisk levering`);
 }
 
 for (const phase of ['FALLING', 'RISING', 'STABLE', 'UNKNOWN']) {
@@ -137,6 +147,24 @@ const resolvedLastMile = integratedResult();
 resolvedLastMile.explanation.transportDiagnostics.lastMilePhysicalDeliveryResolved = true;
 assert.equal(presentIntegratedRavScoreExplanation(resolvedLastMile).available, false,
   'presenteren skal fejle lukket ved en opdigtet opløst last mile');
+const missingResolutionClaim = integratedResult();
+delete missingResolutionClaim.explanation.transportDiagnostics.lastMilePhysicalDeliveryResolved;
+assert.equal(presentIntegratedRavScoreExplanation(missingResolutionClaim).available, false,
+  'presenteren skal fejle lukket, hvis producenten ikke udtrykkeligt markerer last mile som fysisk uopløst');
+const missingDeliveryFactor = integratedResult();
+delete missingDeliveryFactor.explanation.transportDiagnostics.lastMileDeliveryFactor;
+assert.equal(presentIntegratedRavScoreExplanation(missingDeliveryFactor).available, false,
+  'presenteren skal fejle lukket uden den anvendte afgrænsede leveringsfaktor');
+for (const factor of [0.849999, 1.000001]) {
+  const invalidDeliveryFactor = integratedResult();
+  invalidDeliveryFactor.explanation.transportDiagnostics.lastMileDeliveryFactor = factor;
+  assert.equal(presentIntegratedRavScoreExplanation(invalidDeliveryFactor).available, false,
+    `presenteren skal afvise leveringsfaktor ${factor} uden for 0,85..1,00`);
+}
+const legacyNeutralLastMile = integratedResult();
+legacyNeutralLastMile.explanation.transportDiagnostics.lastMileScoreEffect = 'NONE';
+assert.equal(presentIntegratedRavScoreExplanation(legacyNeutralLastMile).available, false,
+  'presenteren må ikke acceptere den erstattede score-neutrale last-mile-kontrakt');
 const inventedSurfZone = integratedResult();
 inventedSurfZone.explanation.transportDiagnostics.resolvedSurfZoneIncluded = true;
 assert.equal(presentIntegratedRavScoreExplanation(inventedSurfZone).available, false,
@@ -209,6 +237,19 @@ for (const language of Object.keys(questions)) {
     : language === 'de' ? /seewärts[\s\S]*freileg/
       : /move[\s\S]*seaward[\s\S]*expos/);
 }
+
+const boundAssistantContext = publicAssistantContext({
+  modelBinding:ravScoreModelBinding(),
+  result:{ available:true, score:73, level:'fair' },
+}, 'da');
+assert.deepEqual(boundAssistantContext.result, { available:true, score:73, level:'fair' },
+  'assistenten skal bevare en tilgængelig score med eksakt aktiv dataset-/modelbinding');
+const mixedAssistantContext = publicAssistantContext({
+  modelBinding:{ ...ravScoreModelBinding(), modelBundleSha256:'0'.repeat(64) },
+  result:{ available:true, score:73, level:'fair' },
+}, 'da');
+assert.deepEqual(mixedAssistantContext.result, { available:false, score:null, level:null },
+  'assistenten skal fjerne en score, når dataset- og aktiv modelbinding ikke matcher eksakt');
 
 for (const missingScore of [null, '', '   ', '73', false, true, undefined, [], {}, -1, 101]) {
   const context = publicAssistantContext({ result:{ available:true, score:missingScore, level:'poor' } }, 'da');
@@ -319,7 +360,7 @@ assert.match(edgeSource,
   'Edge-assistenten skal have samme strenge availability- og scoreintervalkontrakt');
 assert.match(edgeSource, /typeof value === "number" && Number\.isFinite\(value\)/,
   'Edge-assistenten må ikke typekonvertere offentlige fysiske tal');
-assert.match(edgeSource, /undertow, feeder or longshore currents, or rip currents/,
+assert.match(edgeSource, /undertow, feeder or longshore currents, rip currents/,
   'Edge-fakta skal bevare skellet mellem gridstrøm og surfzonens strømtyper');
 assert.doesNotMatch(workerSource, /trip-service\.js|trip-evidence-legacy-bridge\.js/,
   'service workeren må ikke cache den pensionerede GPS-runtime');

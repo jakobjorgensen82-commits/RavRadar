@@ -15,10 +15,12 @@ import {
   buildBoundedCurrentTransportMemory,
 } from '../js/core/ravscore-regime-memory.js';
 import { ravScoreModelBinding as integratedModelBinding } from '../js/core/ravscore-model-contract.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import {
   prepareCandidateGOperationalRollback,
 } from './prepare-candidate-g-operational-rollback.mjs';
 import {
+  CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
   candidateGRollbackScoreProfile,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import {
@@ -37,7 +39,7 @@ const HOUR_MS = 3_600_000;
 const reference = '2026-08-29T12:00:00.000Z';
 const referenceMs = Date.parse(reference);
 const at = hours => new Date(referenceMs + hours * HOUR_MS).toISOString();
-const forecastTimes = [0, 24, 48, 72, 96].map(at);
+const forecastTimes = Array.from({ length: 118 }, (_, hourIndex) => at(hourIndex));
 const datasetId = 'rr-20260829120000-210-stage';
 const sourceHead = 'c'.repeat(40);
 const privateBundleContentSha256 = 'd'.repeat(64);
@@ -164,7 +166,7 @@ function buildNationalFixture() {
         },
         ravScoreModel: {
           ...candidateBinding,
-          rollbackId: 'integrated-schema4-to-candidate-g-schema2-v1',
+          rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
           currentState: state(`rollback-state-${partIndex}`),
         },
       };
@@ -227,7 +229,7 @@ function buildNationalFixture() {
         privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
         sourceModelBinding: integratedModelBinding(),
         rollbackModelBinding: candidateBinding,
-        rollbackId: 'integrated-schema4-to-candidate-g-schema2-v1',
+        rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
         automaticActivationAllowed: false,
         publicDuringNormalOperation: false,
         runtime: {
@@ -236,6 +238,7 @@ function buildNationalFixture() {
           datasetVersion: '4.0.308',
           sourceRunId: 'synthetic-rollback-stage-test',
           modelBinding: candidateBinding,
+          evidenceTrust: ravScoreVerifiedEvidenceTrust(),
           generatedAt: reference,
           productionReferenceAt: reference,
           marginPoints: 7,

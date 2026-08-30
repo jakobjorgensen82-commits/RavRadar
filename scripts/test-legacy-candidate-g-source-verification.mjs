@@ -8,6 +8,7 @@ import {
 import {
   attestLegacyCandidateGSource,
   baselineImplementationSources,
+  legacyCandidateGImplementationClosureSha256,
   verifyLegacyCandidateGSource,
 } from './verify-legacy-candidate-g-source.mjs';
 
@@ -140,6 +141,9 @@ assert.equal(verification.status, 'passed');
 assert.equal(verification.privatePayloadRead, false);
 assert.equal(verification.privatePayloadLogged, false);
 assert.match(verification.implementationClosureSha256, /^[a-f0-9]{64}$/);
+assert.equal(verification.implementationClosureSha256,
+  await legacyCandidateGImplementationClosureSha256(),
+  'the first-cutover plan and live legacy verifier must use one exact closure');
 
 const mutatedFiles = new Map(files);
 mutatedFiles.set('js/services/data-service.js', Buffer.concat([

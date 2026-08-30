@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
   RAVSCORE_LOCAL_MARGIN_POINTS,
+  RAVSCORE_WAM_MAX_DISTANCE_KM,
   buildIntegratedPartPublicProjection,
   buildIntegratedZoneHourlyProjection,
   dmiExpectedIdentityForPart,
@@ -10,7 +12,11 @@ import {
   verifiedIntegratedPartHourly,
 } from './lib/ravscore-production-adapters.mjs';
 import { copernicusLiveRecordProjectionSha256 } from './lib/live-current-pilot.mjs';
-import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import {
+  ravScoreModelBinding,
+  RAVSCORE_MODEL_ID,
+  RAVSCORE_STATE_SCHEMA_VERSION,
+} from '../js/core/ravscore-model-contract.js';
 import { buildLocalZoneScore } from '../js/core/local-zone-score.js';
 
 const point = [8, 55];
@@ -29,6 +35,10 @@ const targetIdentityFingerprint = `sha256:${crypto.createHash('sha256')
   .update(targetIdentityPayload).digest('hex')}`;
 const modelRun = '2026-08-29T00:00:00.000Z';
 const sha = value => crypto.createHash('sha256').update(String(value)).digest('hex');
+const pointAtNorthDistanceKm = (origin, distanceKm) => [
+  origin[0],
+  origin[1] + distanceKm / 6371.0088 * 180 / Math.PI,
+];
 const componentContract = {
   wind: {
     collection: 'harmonie_dini_sf',
@@ -106,6 +116,14 @@ const dmiSourceFor = (component, time, overrides = {}) => {
   };
 };
 const currentSourceFor = (time, overrides = {}) => dmiSourceFor('current', time, overrides);
+const waveSourceWithoutDirection = time => {
+  const source = dmiSourceFor('wave', time);
+  return {
+    ...source,
+    optionalFieldSet: [],
+    nativeSteps: source.nativeSteps.map(step => ({ ...step, optionalFieldSet: [] })),
+  };
+};
 const sourceTime = '2026-08-29T12:00:00.000Z';
 const source = currentSourceFor(sourceTime);
 const expectedDmiIdentity = dmiExpectedIdentityForPart(partContext, bulkId);
@@ -404,6 +422,98 @@ assert.deepEqual({
   trend: 6,
 }, 'all score-relevant physical components require exact DMI time proof and water trend is recomputed');
 
+assert.deepEqual(
+  RAVSCORE_WAM_MAX_DISTANCE_KM,
+  { wam_dw: 2, wam_nsb: 8 },
+  'the public adapter must expose the exact collection-specific WAM distance policy',
+);
+const pythonNativePolicy = fs.readFileSync(
+  new URL('./lib/dmi_native_provenance.py', import.meta.url),
+  'utf8',
+);
+for (const [collection, maximum] of Object.entries(RAVSCORE_WAM_MAX_DISTANCE_KM)) {
+  assert.match(
+    pythonNativePolicy,
+    new RegExp('"' + collection + '"\\s*:\\s*' + maximum.toFixed(1)),
+    'Python and JS must bind the same ' + collection + ' WAM distance limit',
+  );
+  const verifyAtDistance = distanceKm => {
+    const gridPoint = pointAtNorthDistanceKm(point, distanceKm);
+    const wave = dmiSourceFor('wave', physicalRows[0].time, {
+      collection,
+      gridPoint,
+      distanceKm,
+    });
+    return verifiedIntegratedPartHourly({
+      hourly: [{
+        ...physicalRows[0],
+        sources: { ...physicalRows[0].sources, wave },
+      }],
+    }, bulkCache, bulkId, partContext)[0];
+  };
+  const accepted = verifyAtDistance(maximum * (1 - 1e-12));
+  assert.deepEqual({
+    height: accepted.waveHeightM,
+    period: accepted.wavePeriodS,
+    direction: accepted.waveDirectionDeg,
+    status: accepted.waveProvenance.status,
+  }, {
+    height: physicalRows[0].waveHeightM,
+    period: physicalRows[0].wavePeriodS,
+    direction: physicalRows[0].waveDirectionDeg,
+    status: 'verified',
+  }, collection + ' must accept complete native wave provenance at its hard boundary');
+
+  const rejectedDistance = verifyAtDistance(maximum + 0.001);
+  assert.deepEqual({
+    height: rejectedDistance.waveHeightM,
+    period: rejectedDistance.wavePeriodS,
+    direction: rejectedDistance.waveDirectionDeg,
+    status: rejectedDistance.waveProvenance.status,
+  }, {
+    height: null,
+    period: null,
+    direction: null,
+    status: 'unverified',
+  }, collection + ' must fail closed immediately above its hard distance boundary');
+}
+
+const unattestedWaveDirection = verifiedIntegratedPartHourly({
+  hourly: [{
+    ...physicalRows[0],
+    sources: {
+      ...physicalRows[0].sources,
+      wave: waveSourceWithoutDirection(physicalRows[0].time),
+    },
+  }],
+}, bulkCache, bulkId, partContext)[0];
+assert.deepEqual({
+  height: unattestedWaveDirection.waveHeightM,
+  period: unattestedWaveDirection.wavePeriodS,
+  direction: unattestedWaveDirection.waveDirectionDeg,
+  optionalFieldSet: unattestedWaveDirection.waveProvenance.optionalFieldSet,
+}, { height: 1.2, period: 6, direction: null, optionalFieldSet: [] },
+'an unattested numeric wave direction must become missing while verified height/period remain usable');
+
+const directionlessExactCalm = verifiedIntegratedPartHourly({
+  hourly: [{
+    ...physicalRows[0],
+    waveHeightM: 0,
+    wavePeriodS: 0,
+    waveDirectionDeg: null,
+    sources: {
+      ...physicalRows[0].sources,
+      wave: waveSourceWithoutDirection(physicalRows[0].time),
+    },
+  }],
+}, bulkCache, bulkId, partContext)[0];
+assert.deepEqual({
+  height: directionlessExactCalm.waveHeightM,
+  period: directionlessExactCalm.wavePeriodS,
+  direction: directionlessExactCalm.waveDirectionDeg,
+}, { height: 0, period: 0, direction: null },
+'directionless exact calm may remain neutral without inventing a direction');
+
 const coerciblePhysical = verifiedIntegratedPartHourly({
   hourly: [{
     ...physicalRows[0],
@@ -608,15 +718,24 @@ const projected = buildIntegratedPartPublicProjection({
     ravScoreModel: {
       ...scoreRow(80).ravScoreModel,
       referenceAt: time,
-      continuationState: { schemaVersion: 4 },
+      lastMileWaveReferenceAt: time,
+      lastMileMemoryReady: true,
+      lastMileMemoryStatus: 'READY',
+      continuationState: { schemaVersion: RAVSCORE_STATE_SCHEMA_VERSION },
     },
   },
-  scoreProfile: { activeProfileId: 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0' },
+  scoreProfile: { activeProfileId: RAVSCORE_MODEL_ID },
   selectedMode,
   flowPoints: [],
 });
 assert.equal(projected.ravScoreModel.scoreImpact, 'active-public');
 assert.equal(projected.ravScoreModel.migrationApplied, true);
+assert.deepEqual({
+  referenceAt: projected.ravScoreModel.lastMileWaveReferenceAt,
+  ready: projected.ravScoreModel.lastMileMemoryReady,
+  status: projected.ravScoreModel.lastMileMemoryStatus,
+}, { referenceAt: time, ready: true, status: 'READY' },
+'the integrated part projection must carry schema-5 last-mile readiness into every public consumer');
 assert.equal(projected.current.ravScoreModel, undefined);
 
 console.log('RavScore-produktionsadapter: strømproof, fail-closed zoner, vinder og 7-punktsmargin består.');

@@ -9,6 +9,7 @@ import {
 import { buildLocalZoneScore } from '../js/core/local-zone-score.js';
 import { addNationalRanking } from '../js/core/zone-ranking.js';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
 
 const productionReferenceAt = '2026-08-28T09:00:00.000Z';
@@ -106,7 +107,8 @@ const full = {
   productionReferenceAt,
   zones,
   coastalParts:{
-    schemaVersion:2, enabled:true, modelBinding, scoreProfile,
+    schemaVersion:2, enabled:true, modelBinding,
+    evidenceTrust:ravScoreVerifiedEvidenceTrust(), scoreProfile,
     scoreAvailability:{schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:zoneCount,unavailableZoneCount:0,totalZoneCount:zoneCount,unavailableZones:[]},
     expectedPartCount:Object.keys(parts).length,
     scoredPartCount:Object.keys(parts).length, parts, zones:coastalZones,
@@ -155,7 +157,8 @@ for (const forbidden of ['componentReasons','explanation','transportDiagnostics'
 }
 for (const winner of Object.values(startup.coastalParts.parts)) {
   assert.deepEqual(Object.keys(winner).sort(), [
-    'flowPoints','id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource','waterPoint','zoneId',
+    'flowPoints','id','landPoint','name','onshoreDirectionDeg','onshoreDirectionSource',
+    'ravScoreEvidenceTrust','waterPoint','zoneId',
   ]);
   assert.deepEqual(Object.keys(winner.flowPoints).sort(), ['current','sources','wind']);
   assert.equal(winner.flowPoints.sources.current, 'dmi-marine-grid');
@@ -184,7 +187,10 @@ assert.deepEqual(startup.ravScoreRuntime.modelBinding, details.ravScoreRuntime.m
 const fullBytes = Buffer.byteLength(compactJson(full));
 const startupBytes = Buffer.byteLength(startupText);
 assert.ok(startupBytes < fullBytes * 0.25, `Den atomiske startpakke er ikke reduceret nok: ${fullBytes} -> ${startupBytes}.`);
-assert.ok(startupBytes < 800_000,
+// VERIFIED_ONLY trust is intentionally repeated on every selectable winner so
+// account/trip evidence cannot inherit an unbound aggregate trust marker. Keep
+// the synthetic national upper bound explicit without removing that binding.
+assert.ok(startupBytes < 900_000,
   `Den fulde 210/673 syntetiske atomiske startpakke er for stor: ${startupBytes}.`);
 
 console.log(`Public schema-4 startup: score-/rankingparitet, fælles modelbinding og ${fullBytes} -> ${startupBytes} byte består.`);

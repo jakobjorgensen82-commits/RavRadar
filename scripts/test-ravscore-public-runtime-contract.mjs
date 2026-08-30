@@ -8,7 +8,6 @@ import {
   sha256Text,
 } from './public-conditions-lib.mjs';
 import {
-  RAVSCORE_PUBLIC_FORECAST_HOURS,
   RAVSCORE_MODEL_ID,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -20,6 +19,8 @@ import {
   buildIntegratedZoneHourlyProjection,
 } from './lib/ravscore-production-adapters.mjs';
 import {
+  RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS,
+  RAVSCORE_PUBLIC_FORECAST_HOURS,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
   assertPublicRuntimeAvailability,
@@ -30,6 +31,9 @@ import {
   sameRavScoreModelBinding,
 } from '../js/core/ravscore-public-runtime-contract.js';
 import {
+  ravScoreVerifiedEvidenceTrust,
+} from '../js/core/ravscore-evidence-trust-contract.js';
+import {
   assertExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
 
@@ -37,6 +41,20 @@ const generatedAt = '2026-08-29T00:00:00.000Z';
 const horizonTimes = Array.from({ length: RAVSCORE_PUBLIC_FORECAST_HOURS }, (_, index) =>
   new Date(Date.parse(generatedAt) + index * 3_600_000).toISOString());
 const binding = ravScoreModelBinding();
+const reconstructedTrust = Object.freeze({
+  schemaVersion: 1,
+  status: 'ACTIVE_RECONSTRUCTED_DERIVED_EVIDENCE',
+  incidentId: 'RRGAP-2026-08-29-CANDIDATE-G-01',
+  decisionId: 'DEC-0109',
+  method: 'LINEAR_INTERPOLATION_OF_DERIVED_SIGNED_TRANSPORT_STRENGTH',
+  evidenceClassification: 'RECONSTRUCTED_DERIVED_NOT_MEASURED',
+  calibrationEligible: false,
+  hardObservedOuttransportEligible: false,
+  descriptorSha256: 'a'.repeat(64),
+  affectedPartCount: 673,
+  syntheticSampleCount: 673,
+  activeUntil: '2026-08-31T09:00:00.000Z',
+});
 const scoreProfile = resolvePublicRavScoreProfile({
   modelCoverageReady: true,
   modelMemoryReady: true,
@@ -72,10 +90,14 @@ function publicMode(score, mode, time = generatedAt) {
         engine: 'INTEGRATED_COASTAL_PROCESS',
         currentDirectionClass: 'INBOUND',
         transportPotential: score,
-        lastMileStatus: 'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
-        lastMileScoreEffect: 'NONE',
+        lastMileStatus: 'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+        lastMileScoreEffect: 'BOUNDED_SUPPLY_ATTENUATION_ONLY',
+        lastMileDeliveryFactor: .92,
+        lastMileWaveActivity: .8,
+        lastMileApproach: 1 / 3,
         lastMileStructuralUncertainty: true,
         lastMilePhysicalDeliveryResolved: false,
+        resolvedSurfZoneIncluded: false,
         gridPoint: [99, 99],
       },
       mobilisationDiagnostics: { mobilisationPotential: score, waveMemoryStatus: 'READY' },
@@ -193,6 +215,7 @@ const full = {
     schemaVersion: 2,
     enabled: true,
     modelBinding: binding,
+    evidenceTrust: ravScoreVerifiedEvidenceTrust(),
     scoreProfile,
     scoreAvailability,
     expectedPartCount: 673,
@@ -201,6 +224,15 @@ const full = {
     zones: coastalZones,
   },
 };
+
+assert.throws(() => buildPublicConditions({
+  ...full,
+  coastalParts: {
+    ...full.coastalParts,
+    evidenceTrust: structuredClone(reconstructedTrust),
+  },
+}), /VERIFIED_ONLY/,
+'the integrated public producer must reject even a structurally sealed reconstructed trust contract');
 
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
@@ -213,6 +245,20 @@ const zoneRegistryText = compactJson({
   })),
 });
 const manifest = buildPublicManifest(full, startupText, detailsText, '{}\n', zoneRegistryText);
+
+for (const invalidTrust of [
+  null,
+  structuredClone(reconstructedTrust),
+  { ...ravScoreVerifiedEvidenceTrust(), unexpected: true },
+]) {
+  const invalidManifestTrust = structuredClone(manifest);
+  invalidManifestTrust.ravScoreEvidenceTrust = invalidTrust;
+  assert.throws(() => selectPublicRuntimeAvailability(invalidManifestTrust, {
+    now: Date.parse(generatedAt) + 3_600_000,
+    modelBinding: binding,
+  }), /VERIFIED_ONLY/,
+  'fresh and emergency selection must independently require exact measured-only trust');
+}
 
 assert.equal(Object.keys(startup.zones).length, 210);
 assert.equal(Object.keys(details.coastalParts.zones).length, 210);
@@ -236,6 +282,17 @@ const emergencyAvailability = selectPublicRuntimeAvailability(manifest, {
 });
 assert.equal(emergencyAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
 assert.equal(emergencyAvailability.selectedReferenceAt, horizonTimes[9]);
+const lastAllowedEmergencyAvailability = selectPublicRuntimeAvailability(manifest, {
+  now: Date.parse(generatedAt) + RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS * 3_600_000,
+  modelBinding: binding,
+});
+assert.equal(lastAllowedEmergencyAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(lastAllowedEmergencyAvailability.selectedReferenceAt, horizonTimes[72]);
+assert.throws(() => selectPublicRuntimeAvailability(manifest, {
+  now: Date.parse(generatedAt)
+    + RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS * 3_600_000 + 1,
+  modelBinding: binding,
+}), /emergency maximum age has expired/);
 assert.throws(() => selectPublicRuntimeAvailability(manifest, {
   now: Date.parse(manifest.validUntil) + 1,
   modelBinding: binding,
@@ -321,7 +378,9 @@ assert.equal(firstPart.current.weather.currentVMps, undefined);
 assert.equal(firstPart.current.weather.currentProvenance.gridPoint, undefined);
 assert.equal(firstPart.current.waders.explanation.privateDiagnostic, undefined);
 assert.equal(firstPart.current.waders.explanation.transportDiagnostics.transportPotential, 56);
-assert.equal(firstPart.current.waders.explanation.transportDiagnostics.lastMileScoreEffect, 'NONE');
+assert.equal(firstPart.current.waders.explanation.transportDiagnostics.lastMileScoreEffect,
+  'BOUNDED_SUPPLY_ATTENUATION_ONLY');
+assert.equal(firstPart.current.waders.explanation.transportDiagnostics.lastMileDeliveryFactor, .92);
 assert.equal(firstPart.current.waders.explanation.transportDiagnostics.lastMileStructuralUncertainty, true);
 assert.equal(firstPart.current.waders.explanation.transportDiagnostics.lastMilePlausibleRange, undefined,
   'The unresolved surf-zone path must not be presented as a numeric physical interval.');

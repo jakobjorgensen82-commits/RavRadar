@@ -6,11 +6,10 @@ import {
 import {
   RAVSCORE_WAVE_MOBILISATION_POLICY as MODEL_WAVE_MOBILISATION_POLICY,
 } from './ravscore-model-contract.js';
+import { canonicalRavScoreTime } from './ravscore-time.js';
 
 const HOUR_MS = 3_600_000;
-const EXPLICIT_TIME_ZONE = /(?:Z|[+-]\d{2}:\d{2})$/i;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
-const physicalWaveValue = value => finite(value) && value >= 0;
 const clamp = (value, minimum = 0, maximum = 100) =>
   Math.max(minimum, Math.min(maximum, Number(value)));
 
@@ -22,7 +21,6 @@ export const RAVSCORE_WAVE_MOBILISATION_STATUS = Object.freeze({
   RECOVERED_SHORT_GAP: 'RECOVERED_SHORT_GAP',
   MISSING_INPUT: 'MISSING_INPUT',
   COLD_START: 'COLD_START',
-  RESTARTED_AFTER_GAP: 'RESTARTED_AFTER_GAP',
 });
 
 export const RAVSCORE_WAVE_MOBILISATION_POLICY = MODEL_WAVE_MOBILISATION_POLICY;
@@ -38,15 +36,40 @@ if (RAVSCORE_WAVE_MOBILISATION_POLICY.energyProfileId
   throw new Error('The integrated model contract diverges from the retained wave-energy prior');
 }
 
-const VALID_STATUSES = new Set(Object.values(RAVSCORE_WAVE_MOBILISATION_STATUS));
+const VALID_STATUSES = new Set([
+  ...RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses,
+  ...RAVSCORE_WAVE_MOBILISATION_POLICY.unavailableStatuses,
+]);
+const STATE_KEYS = Object.freeze([
+  'schemaVersion',
+  'policyId',
+  'time',
+  'waveReferenceAt',
+  'migrationSeedAt',
+  'mobilisationPotential',
+  'rollbackCandidateGMobilisationPotential',
+  'waveEnergyScore',
+  'readiness',
+  'status',
+  'migrationSeedAwaitingReference',
+]);
+
+function exactStateKeys(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  const actual = Object.keys(value).sort();
+  const expected = [...STATE_KEYS].sort();
+  return (prototype === Object.prototype || prototype === null)
+    && actual.length === expected.length
+    && actual.every((key, index) => key === expected[index]);
+}
 
 function isoTime(value, label) {
-  if (typeof value !== 'string' || !EXPLICIT_TIME_ZONE.test(value)) {
+  const canonical = canonicalRavScoreTime(value);
+  if (!canonical) {
     throw new Error(`${label} must contain a valid time with an explicit timezone`);
   }
-  const milliseconds = Date.parse(value);
-  if (!Number.isFinite(milliseconds)) throw new Error(`${label} must contain a valid time`);
-  return new Date(milliseconds).toISOString();
+  return canonical;
 }
 
 function potential(value, label) {
@@ -108,6 +131,9 @@ function continuationState(initialState) {
   if (typeof initialState !== 'object' || Array.isArray(initialState)) {
     throw new Error('initialState must be a compact wave mobilisation state');
   }
+  if (!exactStateKeys(initialState)) {
+    throw new Error('initialState wave mobilisation state has an incompatible exact schema');
+  }
   if (initialState.schemaVersion !== RAVSCORE_WAVE_MOBILISATION_STATE_SCHEMA_VERSION) {
     throw new Error('initialState wave mobilisation schema version is incompatible');
   }
@@ -119,9 +145,13 @@ function continuationState(initialState) {
     ? null
     : isoTime(initialState.waveReferenceAt, 'initialState.waveReferenceAt');
   const migrationSeedAt = initialState.migrationSeedAt === null
-    || initialState.migrationSeedAt === undefined
     ? null
     : isoTime(initialState.migrationSeedAt, 'initialState.migrationSeedAt');
+  if (initialState.time !== time
+    || (waveReferenceAt !== null && initialState.waveReferenceAt !== waveReferenceAt)
+    || (migrationSeedAt !== null && initialState.migrationSeedAt !== migrationSeedAt)) {
+    throw new Error('initialState wave mobilisation times are not canonical');
+  }
   if (waveReferenceAt !== null && Date.parse(waveReferenceAt) > Date.parse(time)) {
     throw new Error('initialState.waveReferenceAt must not be after initialState.time');
   }
@@ -135,13 +165,32 @@ function continuationState(initialState) {
   }
   const readyStatus = RAVSCORE_WAVE_MOBILISATION_POLICY.readyStatuses
     .includes(initialState.status);
+  const coldStart = initialState.status === RAVSCORE_WAVE_MOBILISATION_STATUS.COLD_START;
+  const missingInput = initialState.status
+    === RAVSCORE_WAVE_MOBILISATION_STATUS.MISSING_INPUT;
+  const hasWaveReference = waveReferenceAt !== null;
+  const hasWaveEnergy = initialState.waveEnergyScore !== null;
   if (initialState.readiness !== readyStatus
-    || (initialState.readiness && waveReferenceAt === null)
-    || (initialState.readiness && waveReferenceAt !== time)
-    || (initialState.readiness && initialState.waveEnergyScore === null)
+    || (readyStatus && waveReferenceAt !== time)
+    || (readyStatus && !hasWaveEnergy)
+    || hasWaveReference !== hasWaveEnergy
+    || (coldStart && (waveReferenceAt !== time
+      || initialState.mobilisationPotential
+        !== RAVSCORE_WAVE_MOBILISATION_POLICY.coldInitialPotential
+      || initialState.migrationSeedAwaitingReference))
+    || (missingInput && waveReferenceAt !== null
+      && Date.parse(waveReferenceAt) >= Date.parse(time))
+    || (missingInput && waveReferenceAt === null
+      && !initialState.migrationSeedAwaitingReference
+      && (initialState.mobilisationPotential
+          !== RAVSCORE_WAVE_MOBILISATION_POLICY.coldInitialPotential
+        || initialState.rollbackCandidateGMobilisationPotential
+          !== RAVSCORE_WAVE_MOBILISATION_POLICY.coldInitialPotential))
     || (initialState.migrationSeedAwaitingReference
       && (initialState.readiness
-        || initialState.status !== RAVSCORE_WAVE_MOBILISATION_STATUS.MISSING_INPUT))
+        || initialState.status !== RAVSCORE_WAVE_MOBILISATION_STATUS.MISSING_INPUT
+        || waveReferenceAt !== null
+        || migrationSeedAt === null))
     || (!initialState.migrationSeedAwaitingReference && migrationSeedAt !== null)) {
     throw new Error('initialState wave readiness and status are inconsistent');
   }
@@ -302,14 +351,7 @@ export function buildRavScoreWaveMobilisationStateSeries(
     const timeMs = Date.parse(time);
     const waveHeightM = getWaveHeight(sample);
     const wavePeriodS = getWavePeriod(sample);
-    const energy = physicalWaveValue(waveHeightM) && physicalWaveValue(wavePeriodS)
-      ? waveMobilisationEnergy({ waveHeightM, wavePeriodS })
-      : {
-          available: false,
-          energyProxy: null,
-          energyScore: null,
-          inputStatus: finite(waveHeightM) && finite(wavePeriodS) ? 'INVALID' : 'MISSING',
-        };
+    const energy = waveMobilisationEnergy({ waveHeightM, wavePeriodS });
     const migrationUnbound = previous?.migrationSeedAwaitingReference === true
       && previous?.migrationSeedAt === null;
 

@@ -40,13 +40,21 @@ export const CALIBRATION_FEATURE_FIELD_NAMES = Object.freeze([
   ...Object.keys(CALIBRATION_NUMERIC_RANGES),
   'reasonCodes',
 ]);
-export const CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY = 'PUBLIC_EMERGENCY_LAST_COMPLETE';
+export const CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY = 'public-emergency-last-complete';
+export const CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED =
+  'ravscore-reconstructed-derived-evidence';
+export const CALIBRATION_INELIGIBLE_REASON_UNATTESTED =
+  'ravscore-evidence-trust-unattested';
+export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
+  CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
+  CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
+  CALIBRATION_INELIGIBLE_REASON_UNATTESTED,
+]);
 
 export function isPublicEmergencyCalibrationFeatures(value) {
   return isRecord(value)
     && Array.isArray(value.reasonCodes)
-    && value.reasonCodes.length === 1
-    && value.reasonCodes[0] === CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY;
+    && value.reasonCodes.includes(CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY);
 }
 
 export const CURRENT_WEATHER_SNAPSHOT_FIELD_NAMES = Object.freeze([
@@ -93,6 +101,7 @@ export const TRIP_STORAGE_INPUT_FIELD_NAMES = Object.freeze([
 ]);
 
 export const TRIP_DATA_QUALITY_FLAG_NAMES = Object.freeze([
+  ...TRIP_NON_CALIBRATION_QUALITY_FLAGS,
   'account-manual',
   'historical-snapshot-unavailable',
   'not-calibration-eligible',
@@ -103,6 +112,17 @@ const SEARCH_MODES = new Set(['waders', 'beach']);
 const RESULTS = new Set(['none', 'small', 'medium', 'good']);
 const POSITIVE_RESULTS = new Set(['small', 'medium', 'good']);
 const DATA_QUALITY_FLAGS = new Set(TRIP_DATA_QUALITY_FLAG_NAMES);
+const TRIP_DATA_QUALITY_FLAG_COMBINATIONS = new Set([
+  '[]',
+  JSON.stringify([CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY]),
+  JSON.stringify([CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED]),
+  JSON.stringify([
+    CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
+    CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
+  ]),
+  JSON.stringify([CALIBRATION_INELIGIBLE_REASON_UNATTESTED]),
+  JSON.stringify(['account-manual', 'historical-snapshot-unavailable', 'not-calibration-eligible']),
+]);
 const SCORE_FIELDS = Object.freeze([
   'totalScore',
   'huntabilityScore',
@@ -131,6 +151,10 @@ const ACCOUNT_REPORT_SNAPSHOT_FIELDS = new Set([
 ]);
 const ROOT_OWNER_FIELDS = new Set(['userid', 'anonymousid', 'gps']);
 const SAFE_SENSITIVE_ALIASES = new Set(['modelprofileid']);
+// Keep this pattern byte-identical to the Edge storage boundary. The browser
+// additionally normalizes punctuation and keeps an explicit allowlist for
+// modelProfileId, but neither boundary may miss a nested location alias.
+const PRIVATE_LOCATION_KEY_PATTERN = /(lat(?:itude)?|lon(?:gitude)?|lng|gps|coord|position|route|track|location)/i;
 
 const isRecord = value => Boolean(value)
   && typeof value === 'object'
@@ -149,7 +173,8 @@ function normalizedKey(key) {
 function sensitiveKeyKind(key) {
   const normalized = normalizedKey(key);
   if (SAFE_SENSITIVE_ALIASES.has(normalized)) return null;
-  const location = normalized === 'lat' || normalized === 'lon' || normalized === 'lng'
+  const location = PRIVATE_LOCATION_KEY_PATTERN.test(normalized)
+    || normalized === 'lat' || normalized === 'lon' || normalized === 'lng'
     || normalized.startsWith('lat') || normalized.endsWith('lat')
     || normalized.startsWith('lon') || normalized.endsWith('lon')
     || normalized.startsWith('lng') || normalized.endsWith('lng')
@@ -233,7 +258,8 @@ export function assertTripDataQualityFlags(value) {
   if (!Array.isArray(value)
     || value.length > TRIP_DATA_QUALITY_FLAG_NAMES.length
     || new Set(value).size !== value.length
-    || value.some(flag => typeof flag !== 'string' || !DATA_QUALITY_FLAGS.has(flag))) {
+    || value.some(flag => typeof flag !== 'string' || !DATA_QUALITY_FLAGS.has(flag))
+    || !TRIP_DATA_QUALITY_FLAG_COMBINATIONS.has(JSON.stringify(value))) {
     throw new Error('TRIP_DATA_QUALITY_FLAGS_INVALID');
   }
   return true;
@@ -276,7 +302,9 @@ export function assertNoSensitiveTripData(value, { allowRootOwnerFields = false 
   for (const [key, nested] of entries) {
     const normalized = normalizedKey(key);
     const kind = sensitiveKeyKind(key);
-    if (kind && !(depth === 0 && allowRootOwnerFields && ROOT_OWNER_FIELDS.has(normalized))) {
+    const permittedRootOwnerField = depth === 0 && allowRootOwnerFields && ROOT_OWNER_FIELDS.has(normalized);
+    const permittedNullLocation = kind === 'location' && nested === null;
+    if (kind && !permittedRootOwnerField && !permittedNullLocation) {
       throw new Error(kind === 'location' ? 'PRECISE_LOCATION_NOT_ALLOWED' : 'DIRECT_IDENTITY_NOT_ALLOWED');
     }
     if (key.length > 80 || ['__proto__', 'constructor', 'prototype'].includes(key.toLowerCase())) {
@@ -355,6 +383,7 @@ export function tripEvidenceIntegrityIssues(row) {
   const capturedAt = rowValue(row, 'forecast_captured_at', 'forecastCapturedAt');
   const features = rowValue(row, 'calibration_features', 'calibrationFeatures');
   const weatherSnapshot = rowValue(row, 'weather_snapshot', 'weatherSnapshot');
+  const dataQualityFlags = rowValue(row, 'data_quality_flags', 'dataQualityFlags');
   const binding = calibrationFeatureBinding(features);
 
   if (schemaVersion !== CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION) issues.push('SCHEMA_NOT_CURRENT_TRIP');
@@ -385,6 +414,19 @@ export function tripEvidenceIntegrityIssues(row) {
     }
   }
   issues.push(...currentFeatureIssues(features));
+  try {
+    assertTripDataQualityFlags(dataQualityFlags);
+  } catch {
+    issues.push('DATA_QUALITY_FLAGS_INVALID');
+  }
+  const qualityReasons = Array.isArray(features?.reasonCodes)
+    ? features.reasonCodes.filter(reason => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(reason))
+    : null;
+  if (!Array.isArray(dataQualityFlags)
+    || !Array.isArray(qualityReasons)
+    || !sameValue(dataQualityFlags, qualityReasons)) {
+    issues.push('DATA_QUALITY_REASON_BINDING_INVALID');
+  }
   if (!binding) issues.push('MODEL_BINDING_INCOMPLETE');
   const topModelVersion = rowValue(row, 'model_version', 'modelVersion');
   if (!binding || topModelVersion !== binding.modelId) issues.push('TOP_LEVEL_MODEL_MISMATCH');
@@ -427,9 +469,9 @@ export function tripEvidenceIntegrityIssues(row) {
 
 export function expectedCalibrationEligibility(row, expectedBinding) {
   if (tripEvidenceIntegrityIssues(row).length) return false;
-  if (isPublicEmergencyCalibrationFeatures(
-    rowValue(row, 'calibration_features', 'calibrationFeatures'),
-  )) return false;
+  const features = rowValue(row, 'calibration_features', 'calibrationFeatures');
+  if (Array.isArray(features?.reasonCodes)
+    && features.reasonCodes.some(reason => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(reason))) return false;
   const actualZone = rowValue(row, 'actual_zone_id', 'zoneId');
   const actualPart = rowValue(row, 'actual_coastal_part_id', 'coastalPartId');
   const forecastZone = rowValue(row, 'forecast_zone_id', 'forecastZoneId');
@@ -562,7 +604,8 @@ export function projectTripStoragePayload(row, {
     if (!own(row, key)) continue;
     const value = row[key];
     if (omitNull && (value === null || value === undefined)) continue;
-    if (key === 'data_quality_flags' && Array.isArray(value) && value.length === 0) continue;
+    if (key === 'data_quality_flags' && Array.isArray(value) && value.length === 0
+      && Number(row.schema_version ?? 1) !== CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION) continue;
     output[key] = typeof structuredClone === 'function'
       ? structuredClone(value)
       : JSON.parse(JSON.stringify(value));

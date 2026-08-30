@@ -26,10 +26,10 @@ import {
 
 export const RAVSCORE_CONTINUATION_CHECKPOINT_POLICY = Object.freeze({
   schemaVersion: 2,
-  status: 'ravscore-schema4-compact-continuation',
+  status: 'ravscore-schema5-compact-continuation',
   expectedPartCount: 673,
   maximumAgeHours: 72,
-  cacheNamespace: 'ravscore-continuation-schema4-v2',
+  cacheNamespace: 'ravscore-continuation-schema5-v3',
 });
 
 const CHECKPOINT_KEYS = Object.freeze([
@@ -84,6 +84,7 @@ const STATE_KEYS = Object.freeze([
   'waveMigrationSeedAwaitingReference',
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
+  'waveApproachState',
   'lineage',
 ]);
 const EVIDENCE_KEYS = Object.freeze(['time', 'strength']);
@@ -282,6 +283,7 @@ function compactState(state, partId) {
     mobilisationPotential: state.mobilisationPotential,
     rollbackCandidateGMobilisationPotential:
       state.rollbackCandidateGMobilisationPotential,
+    waveApproachState: { ...state.waveApproachState },
     lineage,
   };
 
@@ -305,7 +307,7 @@ function compactState(state, partId) {
   }
 
   // Reuse the model's own replay/state validator. Empty samples mean that this
-  // can only continue exact schema 4; it cannot invoke the schema-2 migration.
+  // can only continue exact schema 5; it cannot invoke the schema-2 migration.
   const validation = buildIntegratedRavScoreStateSeries([], {
     samplingContextKey: compact.samplingContextKey,
     initialState: compact,
@@ -313,7 +315,7 @@ function compactState(state, partId) {
   if (!validation.initialStateAccepted
     || validation.migrationApplied
     || validation.initialStateSource !== 'INTEGRATED_CONTINUATION') {
-    throw new Error(`RavScore state for ${partId} is not an exact schema-4 continuation`);
+    throw new Error(`RavScore state for ${partId} is not an exact schema-5 continuation`);
   }
   return compact;
 }
@@ -336,7 +338,7 @@ function rowsFromParts(document, expectedPartCount) {
       if (!partId || !isPlainObject(part)) throw new Error('RavScore checkpoint has an invalid part');
       const state = part?.ravScoreModel?.currentState;
       if (!state) {
-        throw new Error(`RavScore checkpoint source has no schema-4 state for ${partId}`);
+        throw new Error(`RavScore checkpoint source has no schema-5 state for ${partId}`);
       }
       return [partId, compactState(state, partId)];
     });
@@ -637,7 +639,7 @@ export async function restoreRavScoreContinuationCheckpoint({
     const targetContainer = targetParts[partId]?.ravScoreModel;
     const targetState = targetContainer?.currentState;
     if (!isPlainObject(targetContainer) || !targetState) {
-      throw new Error(`Hydrated RavScore target has no schema-4 continuation for ${partId}`);
+      throw new Error(`Hydrated RavScore target has no schema-5 continuation for ${partId}`);
     }
     const compactTargetState = compactState(targetState, partId);
     if (checkpointState.samplingContextKey !== compactTargetState.samplingContextKey) {

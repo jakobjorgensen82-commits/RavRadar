@@ -73,7 +73,6 @@ export const RAVSCORE_INTEGRATED_RETURN_POLICY = Object.freeze({
 export const RAVSCORE_OPERATIONAL_TRANSITION_KINDS = Object.freeze({
   candidateRollback: 'CANDIDATE_G_ROLLBACK',
   candidateRefresh: 'CANDIDATE_G_REFRESH',
-  integratedRefresh: 'INTEGRATED_REFRESH',
   integratedReturn: 'INTEGRATED_RETURN',
   initialIntegratedCutover: 'INITIAL_INTEGRATED_CUTOVER',
 });
@@ -228,7 +227,7 @@ function candidateGOperationalProfileForBinding(integratedProfile, binding, {
     crossModelRuntimeFallbackAllowed: false,
     migrationRequiredAtFirstCutover: false,
     status: 'owner-approved-candidate-g-rollback-only-local-fail-closed',
-    activationAuthority: 'DEC-0108-manual-candidate-g-rollback',
+    activationAuthority: 'DEC-0110-manual-candidate-g-rollback',
     evidence: Object.freeze({ ...PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE }),
   });
 }
@@ -308,10 +307,10 @@ function assertProfileRowForSealedBinding(profileRow, binding) {
       ? 'owner-approved-candidate-g-rollback-only-local-fail-closed'
       : 'owner-approved-integrated-model-only-local-fail-closed')
     || profile.activationAuthority !== (candidate
-      ? 'DEC-0108-manual-candidate-g-rollback'
-      : 'DEC-0108-integrated-ravscore-release-decision')
+      ? 'DEC-0110-manual-candidate-g-rollback'
+      : 'DEC-0110-integrated-ravscore-release-decision')
     || (candidate && profile.sourceVersion !== LEGACY_CANDIDATE_G_RELEASE_VERSION)
-    || evidence.decisionId !== 'DEC-0108'
+    || evidence.decisionId !== 'DEC-0110'
     || evidence.exactHeadValidationRequired !== true
     || evidence.freshProductionValidationRequired !== true) {
     throw new Error('Central operational profile differs from the sealed PENDING binding');
@@ -1242,8 +1241,6 @@ export function assertOperationalActivationDocument(document, {
     const sourceKind = classifyBinding(document.sourceModelBinding);
     const initial = document.transitionKind
       === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover;
-    const refresh = document.transitionKind
-      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedRefresh;
     const commonInvalid = document.calibrationEligible !== false
       || document.publicManifestSha256 !== document.sourcePublicManifestSha256
       || document.requestedPublicManifestSha256 === document.sourcePublicManifestSha256
@@ -1251,17 +1248,7 @@ export function assertOperationalActivationDocument(document, {
       || !validTime(document.activatedAt)
       || document.failureCode !== null
       || !exactReturn;
-    if (refresh) {
-      if (sourceKind !== 'integrated'
-        || classifyBinding(document.activeModelBinding) !== 'integrated'
-        || classifyBinding(document.requestedModelBinding) !== 'integrated'
-        || !sameBinding(document.sourceModelBinding, document.activeModelBinding)
-        || !sameBinding(document.activeModelBinding, document.requestedModelBinding)
-        || (!noCandidate && !exactCandidate)
-        || commonInvalid) {
-        throw new Error('Pending integrated refresh must preserve its exact active source');
-      }
-    } else if (!['candidate-g', 'legacy-candidate-g'].includes(sourceKind)
+    if (!['candidate-g', 'legacy-candidate-g'].includes(sourceKind)
       || classifyBinding(document.activeModelBinding) !== sourceKind
       || classifyBinding(document.requestedModelBinding) !== 'integrated'
       || (!initial && document.transitionKind !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn)
@@ -1276,23 +1263,10 @@ export function assertOperationalActivationDocument(document, {
     && classifyBinding(document.activeModelBinding) === 'integrated'
     && sameBinding(document.sourceModelBinding, document.requestedModelBinding)
     && sameBinding(document.requestedModelBinding, document.activeModelBinding)) {
-    const refresh = document.transitionKind
-      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedRefresh;
-    if (refresh) {
-      const completed = document.failureCode === null
-        && document.publicManifestSha256 === document.requestedPublicManifestSha256
-        && SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''));
-      const aborted = SAFE_ID_PATTERN.test(String(document.failureCode ?? ''))
-        && document.publicManifestSha256 === document.sourcePublicManifestSha256
-        && document.deploymentId === document.sourceDeploymentId;
-      if ((!noCandidate && !exactCandidate)
-        || !exactReturn
-        || document.calibrationEligible !== true
-        || !validTime(document.activatedAt)
-        || (!completed && !aborted)) {
-        throw new Error('Integrated refresh lacks an exact completed or source-restored identity');
-      }
-    } else if ((!noCandidate && !exactCandidate)
+    if (![RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+      RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover]
+      .includes(document.transitionKind)
+      || (!noCandidate && !exactCandidate)
       || (!noReturn && !exactReturn)
       || document.calibrationEligible !== true
       || document.publicManifestSha256 !== document.sourcePublicManifestSha256
@@ -1356,9 +1330,9 @@ export function resolveOperationalRavScoreModel(row, {
         centralVersion:0,
         profileVersion:Number(profileRow.version),
         pending:false,
-        normalizationRequired:false,
         initialCutoverRequired:true,
         legacySourceRequired:true,
+        activeImplementationClosureSha256:null,
       });
       if (profileModel === 'candidate-g') return Object.freeze({
         status:RAVSCORE_OPERATIONAL_STATUSES.candidateActive,
@@ -1367,9 +1341,9 @@ export function resolveOperationalRavScoreModel(row, {
         centralVersion:0,
         profileVersion:Number(profileRow.version),
         pending:false,
-        normalizationRequired:false,
         initialCutoverRequired:true,
         legacySourceRequired:false,
+        activeImplementationClosureSha256:null,
       });
     }
     return Object.freeze({
@@ -1379,9 +1353,9 @@ export function resolveOperationalRavScoreModel(row, {
       centralVersion:0,
       profileVersion:Number(profileRow?.version ?? 0),
       pending:false,
-      normalizationRequired:false,
       initialCutoverRequired:false,
       legacySourceRequired:false,
+      activeImplementationClosureSha256:null,
     });
   }
   if (!Number.isSafeInteger(Number(row.version)) || Number(row.version) < 1) {
@@ -1417,6 +1391,25 @@ export function resolveOperationalRavScoreModel(row, {
     && row.payload.deploymentId === row.payload.sourceDeploymentId
     && row.payload.calibrationEligible === false
   );
+  const activeMatchesSource = sameBinding(
+    row.payload.activeModelBinding,
+    row.payload.sourceModelBinding,
+  ) && row.payload.publicManifestSha256 === row.payload.sourcePublicManifestSha256;
+  const activeMatchesRequested = sameBinding(
+    row.payload.activeModelBinding,
+    row.payload.requestedModelBinding,
+  ) && row.payload.publicManifestSha256 === row.payload.requestedPublicManifestSha256;
+  if (!activeMatchesSource && !activeMatchesRequested) {
+    throw new Error('Operational RavScore row cannot resolve the active implementation closure');
+  }
+  if (activeMatchesSource && activeMatchesRequested
+    && row.payload.sourceImplementationClosureSha256
+      !== row.payload.requestedImplementationClosureSha256) {
+    throw new Error('Operational RavScore active identity has conflicting implementation closures');
+  }
+  const activeImplementationClosureSha256 = activeMatchesRequested
+    ? row.payload.requestedImplementationClosureSha256
+    : row.payload.sourceImplementationClosureSha256;
   return Object.freeze({
     status:row.payload.status,
     model:legacyCandidate ? 'legacy-candidate-g' : candidate ? 'candidate-g' : 'integrated',
@@ -1425,7 +1418,6 @@ export function resolveOperationalRavScoreModel(row, {
     profileVersion:Number(profileRow?.version ?? 0),
     pending,
     requestedModel:sealedBindingKind(row.payload.requestedModelBinding),
-    normalizationRequired:false,
     initialCutoverRequired,
     legacySourceRequired: Boolean(legacyCandidate
       && row.payload.transitionKind
@@ -1442,6 +1434,12 @@ export function resolveOperationalRavScoreModel(row, {
     requestedPublicManifestSha256:row.payload.requestedPublicManifestSha256,
     sourceImplementationClosureSha256:row.payload.sourceImplementationClosureSha256,
     requestedImplementationClosureSha256:row.payload.requestedImplementationClosureSha256,
+    activeImplementationClosureSha256,
+    transitionKind:row.payload.transitionKind,
+    publicManifestSha256:row.payload.publicManifestSha256,
+    sourceDeploymentId:row.payload.sourceDeploymentId,
+    deploymentId:row.payload.deploymentId,
+    requestedAt:row.payload.requestedAt,
   });
 }
 
@@ -1845,6 +1843,28 @@ export function operationalIntegratedMaintenanceTransition({
     integratedReadinessSha256: sha256(readiness),
     integratedPublicAuditSha256: sha256(publicAudit),
   };
+  const abortedCandidateRollback = currentRow.payload.transitionKind
+    === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRollback
+    && currentRow.payload.failureCode !== null;
+  if (abortedCandidateRollback) {
+    const document = {
+      ...currentRow.payload,
+      sourceHead,
+      datasetId: publicManifest.datasetId,
+      productionReferenceAt: publicManifest.productionReferenceAt,
+      activeModelBinding: integratedModelBinding(),
+      sourceModelBinding: integratedModelBinding(),
+      publicManifestSha256,
+      sourcePublicManifestSha256: publicManifestSha256,
+      sourceImplementationClosureSha256: publicVerification.implementationClosureSha256,
+      sourceDeploymentId: String(deploymentId),
+      deploymentId: String(deploymentId),
+      calibrationEligible: true,
+      activatedAt: new Date(now).toISOString(),
+    };
+    assertOperationalActivationDocument(document);
+    return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
+  }
   const document = {
     ...currentRow.payload,
     sourceHead,
@@ -2803,6 +2823,13 @@ async function main() {
     centralVersion:written.operational.version,
     profileVersion:written.profile.version,
     candidatePlanSha256:written.operational.payload.candidatePlanSha256,
+    transitionKind:written.operational.payload.transitionKind,
+    sourceHead:written.operational.payload.sourceHead,
+    sourcePublicManifestSha256:written.operational.payload.sourcePublicManifestSha256,
+    requestedPublicManifestSha256:written.operational.payload.requestedPublicManifestSha256,
+    sourceDeploymentId:written.operational.payload.sourceDeploymentId,
+    deploymentId:written.operational.payload.deploymentId,
+    requestedAt:written.operational.payload.requestedAt,
   });
   console.log(`Atomic operational/profile RavScore CAS completed: ${written.operational.payload.status} version ${written.operational.version}; profile version ${written.profile.version}.`);
 }

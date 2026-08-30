@@ -9,6 +9,7 @@ import {
   CANDIDATE_G_STATE_VARIANT_ID,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
+import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
 import {
   buildIntegratedRavScoreStateSeries,
   reconstructCandidateGRollbackState,
@@ -108,6 +109,7 @@ const INTEGRATED_STATE_FIELDS = Object.freeze([
   'waveMigrationSeedAwaitingReference',
   'mobilisationPotential',
   'rollbackCandidateGMobilisationPotential',
+  'waveApproachState',
   'lineage',
 ]);
 
@@ -127,6 +129,9 @@ const INTEGRATED_PART_MODEL_FIELDS = Object.freeze([
   'waveLastVerifiedAt',
   'waveMemoryReady',
   'waveMemoryStatus',
+  'lastMileWaveReferenceAt',
+  'lastMileMemoryReady',
+  'lastMileMemoryStatus',
   'migrationApplied',
   'migrationId',
   'initialStateAccepted',
@@ -190,6 +195,27 @@ const exactRegionalHoldAuthorization = value => sameKeys(value, [
   && finite(value.distanceKm)
   && value.distanceKm >= 0
   && value.distanceKm <= 15;
+
+function integratedEvaluationState(state, model, weather) {
+  const lastMile = waveApproachDeliveryContext(state?.waveApproachState);
+  return {
+    ...state,
+    currentVerified: weather?.currentProvenance?.status === 'verified',
+    currentTransition: model?.currentTransition ?? null,
+    lastMileWaveReferenceAt: state?.waveApproachState?.waveReferenceAt ?? null,
+    lastMileMemoryReady: state?.waveApproachState?.readiness === true,
+    lastMileMemoryStatus: state?.waveApproachState?.status ?? null,
+    lastMileEvidenceStatus: lastMile.available
+      ? 'DIRECTIONAL_WAVE_EVIDENCE_READY'
+      : 'WAVE_APPROACH_STATE_NOT_READY',
+    lastMileWaveActivity: lastMile.activity,
+    lastMileNormalAlignment: lastMile.normalAlignment,
+    lastMileTangentAlignment: lastMile.tangentAlignment,
+    lastMileCoherence: lastMile.coherence,
+    lastMileApproach: lastMile.approach,
+    lastMileFactor: lastMile.factor,
+  };
+}
 
 function createCollector() {
   const counts = new Map();
@@ -650,6 +676,21 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && model?.waveMemoryStatus === state?.waveMemoryStatus
       && model?.waveLastVerifiedAt === state?.waveLastVerifiedAt,
     'PART_WAVE_STATE_METADATA_MISMATCH');
+    let evaluationState = null;
+    try {
+      evaluationState = integratedEvaluationState(
+        state,
+        model,
+        part?.current?.weather ?? {},
+      );
+      collector.add(model?.lastMileMemoryReady === true
+        && model?.lastMileMemoryReady === state?.waveApproachState?.readiness
+        && model?.lastMileMemoryStatus === state?.waveApproachState?.status
+        && model?.lastMileWaveReferenceAt === state?.waveApproachState?.waveReferenceAt,
+      'PART_LAST_MILE_STATE_METADATA_MISMATCH');
+    } catch {
+      collector.fail('PART_LAST_MILE_STATE_METADATA_MISMATCH');
+    }
     collector.add(!containsForbiddenPublicDestinationMaterial(part?.current),
       'PART_CURRENT_CONTAINS_PRIVATE_MATERIAL');
     const migratedTransition = model?.migrationApplied === true
@@ -709,9 +750,35 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       && state.mobilisationPotential >= 0
       && state.mobilisationPotential <= 100,
     'STATE_WAVE_MEMORY_NOT_READY');
-    const migrationLineage = state?.lineage?.migrationId === RAVSCORE_MIGRATION_ID
+    const migrationLineage = sameKeys(state?.lineage, [
+      'currentEvidenceSource',
+      'migratedAt',
+      'migrationId',
+      'sourceModelId',
+      'sourceStateSchemaVersion',
+      'waveApproachBootstrapHours',
+      'waveApproachMaximumOmittedMomentShare',
+      'waveApproachMaximumScoreErrorBeforeRounding',
+    ])
+      && state.lineage.migrationId === RAVSCORE_MIGRATION_ID
       && state?.lineage?.sourceModelId === CANDIDATE_G_STATE_MODEL_ID
-      && state?.lineage?.sourceStateSchemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION;
+      && state?.lineage?.sourceStateSchemaVersion === CANDIDATE_G_STATE_SCHEMA_VERSION
+      && state.lineage.currentEvidenceSource
+        === RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource
+      && state.lineage.waveApproachBootstrapHours
+        === RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours
+      && close(
+        state.lineage.waveApproachMaximumOmittedMomentShare,
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumOmittedMomentShare,
+      )
+      && close(
+        state.lineage.waveApproachMaximumScoreErrorBeforeRounding,
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
+      )
+      && validTime(state.lineage.migratedAt)
+      && Date.parse(state.lineage.migratedAt) <= Date.parse(state.time);
     const coldReplayLineage = sameKeys(state?.lineage, [
       'recoveryId',
       'source',
@@ -836,7 +903,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
           mode,
           weather,
           zone: { onshoreDirectionDeg: part?.onshoreDirectionDeg },
-        }, { state }));
+        }, { state: evaluationState }));
         collector.add(sameCanonical(persisted, expected), 'MODE_RECONSTRUCTION_MISMATCH');
         reconstructedModeCount += 1;
       } catch {

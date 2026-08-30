@@ -6,6 +6,8 @@ import {
 import { evaluateRavScoreIntegrated } from '../js/core/ravscore-integrated.js';
 import { buildCurrentSupplyMemory } from '../js/core/ravscore-current-supply-memory.js';
 import { buildIntegratedRavScoreStateSeries } from '../js/core/ravscore-integrated-state-pipeline.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
+import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-state.js';
 import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_MIGRATION_ID,
@@ -71,8 +73,12 @@ const baseSeries = buildIntegratedRavScoreStateSeries(
     currentVerified: true,
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
+    waveDirectionDeg: weather.waveDirectionDeg,
   })),
-  { samplingContextKey: `sha256:${'0'.repeat(64)}` },
+  {
+    samplingContextKey: `sha256:${'0'.repeat(64)}`,
+    onshoreDirectionDeg: 90,
+  },
 );
 const baseRow = baseSeries.rows.at(-1);
 assert.equal(baseRow.currentMemoryReady, true);
@@ -91,16 +97,49 @@ function readyState(part, transition) {
       targetReferenceAt: REFERENCE_AT,
     }
     : {
+      currentEvidenceSource:
+        RAVSCORE_RECOVERY_POLICY.candidateMigrationCurrentEvidenceSource,
       migrationId: RAVSCORE_MIGRATION_ID,
       sourceModelId: CANDIDATE_G_STATE_MODEL_ID,
       sourceStateSchemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
       migratedAt: time(-48),
+      waveApproachBootstrapHours:
+        RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours,
+      waveApproachMaximumOmittedMomentShare:
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumOmittedMomentShare,
+      waveApproachMaximumScoreErrorBeforeRounding:
+        RAVSCORE_RECOVERY_POLICY
+          .candidateMigrationWaveApproachMaximumScoreErrorBeforeRounding,
     };
   return state;
 }
 
+function scoreState(state) {
+  const lastMile = waveApproachDeliveryContext(state.waveApproachState);
+  return {
+    ...state,
+    currentVerified: true,
+    currentTransition: baseRow.currentTransition,
+    currentCoastNormalSpeedMps: baseRow.currentCoastNormalSpeedMps,
+    lastMileWaveReferenceAt: state.waveApproachState.waveReferenceAt,
+    lastMileMemoryReady: state.waveApproachState.readiness,
+    lastMileMemoryStatus: state.waveApproachState.status,
+    lastMileEvidenceStatus: lastMile.available
+      ? 'DIRECTIONAL_WAVE_EVIDENCE_READY'
+      : 'WAVE_APPROACH_STATE_NOT_READY',
+    lastMileWaveActivity: lastMile.activity,
+    lastMileNormalAlignment: lastMile.normalAlignment,
+    lastMileTangentAlignment: lastMile.tangentAlignment,
+    lastMileCoherence: lastMile.coherence,
+    lastMileApproach: lastMile.approach,
+    lastMileFactor: lastMile.factor,
+  };
+}
+
 function partRuntime(part, transition) {
   const state = readyState(part, transition);
+  const evaluationState = scoreState(state);
   const publicContext = {
     windSpeedMps: weather.windSpeedMps,
     waveHeightM: weather.waveHeightM,
@@ -117,6 +156,10 @@ function partRuntime(part, transition) {
     waveMemoryReady: state.waveMemoryReady,
     waveMemoryStatus: state.waveMemoryStatus,
     waveTransition: baseRow.waveTransition,
+    lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt,
+    lastMileMemoryReady: evaluationState.lastMileMemoryReady,
+    lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
+    lastMileTransition: baseRow.lastMileTransition,
   };
   const modes = Object.fromEntries(['waders', 'beach'].map(mode => [
     mode,
@@ -124,7 +167,7 @@ function partRuntime(part, transition) {
       mode,
       weather,
       zone: { onshoreDirectionDeg: part.onshoreDirectionDeg },
-    }, { state })),
+    }, { state: evaluationState })),
   ]));
   const publicModes = Object.fromEntries(['waders', 'beach'].map(mode => [
     mode,
@@ -136,6 +179,8 @@ function partRuntime(part, transition) {
         currentMemoryStatus: state.currentMemoryStatus,
         waveMemoryReady: state.waveMemoryReady,
         waveMemoryStatus: state.waveMemoryStatus,
+        lastMileMemoryReady: evaluationState.lastMileMemoryReady,
+        lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
       },
       mode,
       context: publicContext,
@@ -161,6 +206,9 @@ function partRuntime(part, transition) {
       waveLastVerifiedAt: state.waveLastVerifiedAt,
       waveMemoryReady: state.waveMemoryReady,
       waveMemoryStatus: state.waveMemoryStatus,
+      lastMileWaveReferenceAt: evaluationState.lastMileWaveReferenceAt,
+      lastMileMemoryReady: evaluationState.lastMileMemoryReady,
+      lastMileMemoryStatus: evaluationState.lastMileMemoryStatus,
       migrationApplied: false,
       migrationId: null,
       initialStateAccepted: transition === 'continuation',
@@ -303,6 +351,7 @@ function syntheticFull({ zoneCount, partCounts, transition = 'continuation' }) {
       sourceRunId: 'synthetic',
       generatedAt: REFERENCE_AT,
       modelBinding: binding,
+      evidenceTrust: ravScoreVerifiedEvidenceTrust(),
       scoreProfile: profile,
       scoreAvailability: {
         schemaVersion: 1,
@@ -332,6 +381,7 @@ function unitAuditManifest(full, startup, startupText, details, detailsText) {
     productionReferenceAt: full.productionReferenceAt,
     zoneCount: Object.keys(full.zones).length,
     coastalPartCount: Object.keys(full.coastalParts.parts).length,
+    ravScoreEvidenceTrust: structuredClone(full.coastalParts.evidenceTrust),
     ravScoreProfile: structuredClone(full.coastalParts.scoreProfile),
     publicConditionsSha256: startupSha256,
     publicConditionsBytes: Buffer.byteLength(startupText),
@@ -710,6 +760,28 @@ assert.ok(audit(incompatibleStatePolicy, smallPackage, 1, 1).errors
 assert.ok(audit(incompatibleStatePolicy, smallPackage, 1, 1).errors
   .includes('STATE_REPLAY_FAILED'));
 
+for (const [label, mutate] of [
+  ['missing current-evidence source', lineage => { delete lineage.currentEvidenceSource; }],
+  ['forged wave bootstrap length', lineage => { lineage.waveApproachBootstrapHours += 1; }],
+  ['forged omitted-tail bound', lineage => {
+    lineage.waveApproachMaximumOmittedMomentShare *= 2;
+  }],
+  ['forged last-mile score-error bound', lineage => {
+    lineage.waveApproachMaximumScoreErrorBeforeRounding *= 2;
+  }],
+]) {
+  const invalidLineage = structuredClone(small);
+  mutate(invalidLineage.coastalParts.parts['synthetic-part-1']
+    .ravScoreModel.currentState.lineage);
+  const invalidLineageReport = audit(invalidLineage, smallPackage, 1, 1);
+  assert.ok(invalidLineageReport.errors.includes('STATE_LINEAGE_MISSING_OR_AMBIGUOUS'),
+    `${label} must fail the explicit schema-5 lineage gate`);
+  assert.ok(invalidLineageReport.errors.includes('STATE_REPLAY_FAILED'),
+    `${label} must fail state replay`);
+  assert.ok(invalidLineageReport.errors.includes('ROLLBACK_RECONSTRUCTION_FAILED'),
+    `${label} must fail Candidate G rollback reconstruction`);
+}
+
 const wrongContext = structuredClone(small);
 wrongContext.coastalParts.parts['synthetic-part-1']
   .ravScoreModel.currentState.samplingContextKey = `sha256:${'f'.repeat(64)}`;
@@ -759,7 +831,7 @@ rollbackLimitModel.waveMemoryReady = rollbackLimitState.waveMemoryReady;
 rollbackLimitModel.waveMemoryStatus = rollbackLimitState.waveMemoryStatus;
 const rollbackLimitReport = audit(rollbackLimit, smallPackage, 1, 1);
 assert.ok(rollbackLimitReport.errors.includes('STATE_REPLAY_FAILED'),
-  'A stale or forged 50-point continuation must now fail the schema-4 replay gate too.');
+  'A stale or forged 50-point continuation must now fail the schema-5 replay gate too.');
 assert.ok(rollbackLimitReport.errors.includes('ROLLBACK_EVIDENCE_LIMIT_EXCEEDED'),
   'The audit must retain its explicit rollback error for a 50-point payload.');
 assert.equal(rollbackLimitReport.rollback.readyPartCount, 0);

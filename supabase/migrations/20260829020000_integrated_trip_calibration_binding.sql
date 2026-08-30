@@ -18,9 +18,7 @@ begin
     loop
       normalized := regexp_replace(lower(entry.key), '[^a-z0-9]', '', 'g');
       if normalized <> 'modelprofileid' and (
-        normalized ~ '(gps|geolocation|latitude|longitude|coordinate|coord|position|route|track|waypoint|polyline)'
-        or normalized in ('lat', 'lon', 'lng')
-        or normalized ~ '(lat|lon|lng)$'
+        normalized ~ '(lat(itude)?|lon(gitude)?|lng|gps|coord|position|route|track|location)'
         or normalized ~ '(email|userid|accountid|accountuser|contact|displayname|fullname|phonenumber|phone|profile|username)'
       ) then
         return true;
@@ -57,25 +55,37 @@ set search_path = pg_catalog, public
 as $$
   select case
     -- RAVSCORE_INTEGRATED_BINDING_BEGIN
-    when p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0'
-      and p_calibration_features ->> 'modelStateVersion' = '4.0.0'
-      and p_calibration_features ->> 'modelVariantId' = 'COASTAL-SUPPLY-MOBILISATION-STRUCTURAL-LAST-MILE-HUNTABILITY-1'
-      and p_calibration_features ->> 'modelProfileId' = 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileneutral-v3'
-      and p_calibration_features ->> 'modelComponentSchemaId' = 'ravscore-components-huntability-transport-mobilisation-v3'
-      and p_calibration_features ->> 'modelExplanationSchemaId' = 'ravscore-explanation-integrated-v3'
+    when p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0'
+      and p_calibration_features ->> 'modelStateVersion' = '5.0.0'
+      and p_calibration_features ->> 'modelVariantId' = 'COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2'
+      and p_calibration_features ->> 'modelProfileId' = 'cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4'
+      and p_calibration_features ->> 'modelComponentSchemaId' = 'ravscore-components-huntability-delivery-mobilisation-v4'
+      and p_calibration_features ->> 'modelExplanationSchemaId' = 'ravscore-explanation-integrated-v4'
       and p_calibration_features ->> 'modelRankingPolicyId' = 'direction-broad-19-v1'
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
-      and p_calibration_features ->> 'modelContractSha256' = 'a6272796cdb21ed10a3d308dc97efebf3bafc77715ac59521ac7b3522173ce76'
-      and p_calibration_features ->> 'modelBundleSha256' = '2949091d782684c713fa5852fb490d712bb6bb257f8a5f86429e2c5d87545717'
+      and p_calibration_features ->> 'modelContractSha256' = '0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da'
+      and p_calibration_features ->> 'modelBundleSha256' = '27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then case
-      when p_calibration_features -> 'reasonCodes' = '["PUBLIC_EMERGENCY_LAST_COMPLETE"]'::jsonb
-      then p_calibration_eligible = false
-      else p_calibration_eligible = (
+      when jsonb_path_query_array(
+        coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+      ) = '[]'::jsonb
+      then p_calibration_eligible = (
         p_actual_zone_id = p_forecast_zone_id
         and p_actual_coastal_part_id = p_forecast_coastal_part_id
       )
+      when jsonb_path_query_array(
+        coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+      ) in (
+        '["public-emergency-last-complete"]'::jsonb,
+        '["ravscore-reconstructed-derived-evidence"]'::jsonb,
+        '["public-emergency-last-complete","ravscore-reconstructed-derived-evidence"]'::jsonb,
+        '["ravscore-evidence-trust-unattested"]'::jsonb
+      ) then p_calibration_eligible = false
+      else false
     end
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_BEGIN
     when p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'
@@ -90,7 +100,16 @@ as $$
       and p_calibration_features ->> 'modelContractSha256' = '37cdcc9e369e82c405ab05e0a2923ccceebf8938706af74073264bf541bf95cc'
       and p_calibration_features ->> 'modelBundleSha256' = '6662f203de8929eefb9796008850d4b03d55eea39bee6ec9efa8cfa33d34d1bf'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
-    then p_calibration_eligible = false
+    then p_calibration_eligible = false and jsonb_path_query_array(
+      coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),
+      '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+    ) in (
+      '[]'::jsonb,
+      '["public-emergency-last-complete"]'::jsonb,
+      '["ravscore-reconstructed-derived-evidence"]'::jsonb,
+      '["public-emergency-last-complete","ravscore-reconstructed-derived-evidence"]'::jsonb,
+      '["ravscore-evidence-trust-unattested"]'::jsonb
+    )
     else false
   end;
 $$;
@@ -187,6 +206,7 @@ begin
       'requestedModelBinding','sourceModelBinding','candidatePlanSha256',
       'candidateFullSha256','privateBundleContentSha256','publicManifestSha256',
       'sourcePublicManifestSha256','requestedPublicManifestSha256',
+      'sourceImplementationClosureSha256','requestedImplementationClosureSha256',
       'sourceDeploymentId','deploymentId','automaticActivationAllowed',
       'schedulerActivationAllowed','calibrationEligible','requestedAt',
       'activatedAt','failureCode','returnPlanSha256','integratedReadinessSha256',
@@ -198,12 +218,15 @@ begin
       'requestedModelBinding','sourceModelBinding','candidatePlanSha256',
       'candidateFullSha256','privateBundleContentSha256','publicManifestSha256',
       'sourcePublicManifestSha256','requestedPublicManifestSha256',
+      'sourceImplementationClosureSha256','requestedImplementationClosureSha256',
       'sourceDeploymentId','deploymentId','automaticActivationAllowed',
       'schedulerActivationAllowed','calibrationEligible','requestedAt',
       'activatedAt','failureCode','returnPlanSha256','integratedReadinessSha256',
       'integratedPublicAuditSha256','integratedManifestSha256'
     ] = '{}'::jsonb
-    and operational ->> 'schemaVersion' = 'ravscore-operational-model-activation-v3'
+    and operational ->> 'schemaVersion' = 'ravscore-operational-model-activation-v4'
+    and operational ->> 'sourceImplementationClosureSha256' ~ '^[a-f0-9]{64}$'
+    and operational ->> 'requestedImplementationClosureSha256' ~ '^[a-f0-9]{64}$'
     and operational -> 'activeModelBinding' = submitted_binding
     and operational ->> 'automaticActivationAllowed' = 'false'
     and operational ->> 'schedulerActivationAllowed' = 'false'
@@ -253,19 +276,19 @@ begin
     and profile ->> 'automaticActivationAllowed' = 'false'
     and profile -> 'runtimeFallbackModelId' = 'null'::jsonb
     and profile ->> 'crossModelRuntimeFallbackAllowed' = 'false'
-    and profile -> 'evidence' ->> 'decisionId' = 'DEC-0108'
+    and profile -> 'evidence' ->> 'decisionId' = 'DEC-0110'
     and profile -> 'evidence' ->> 'exactHeadValidationRequired' = 'true'
     and profile -> 'evidence' ->> 'freshProductionValidationRequired' = 'true'
   ) then return false; end if;
 
   return (
-    p_model_id = 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0'
+    p_model_id = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0'
     and operational ->> 'status' = 'INTEGRATED_ACTIVE'
     and operational ->> 'calibrationEligible' = 'true'
     and profile ->> 'switchVersion' = 'RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0'
     and profile ->> 'publicAvailabilityPolicy' = 'integrated-model-local-fail-closed'
     and profile ->> 'status' like 'owner-approved-integrated-model-only-%'
-    and profile ->> 'activationAuthority' = 'DEC-0108-integrated-ravscore-release-decision'
+    and profile ->> 'activationAuthority' = 'DEC-0110-integrated-ravscore-release-decision'
   ) or (
     p_model_id = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'
     and p_calibration_eligible = false
@@ -274,7 +297,7 @@ begin
     and profile ->> 'switchVersion' = 'RAVSCORE-PROFILE-SWITCH-CANDIDATE-G-ROLLBACK-1.0.0'
     and profile ->> 'publicAvailabilityPolicy' = 'candidate-g-local-fail-closed'
     and profile ->> 'status' = 'owner-approved-candidate-g-rollback-only-local-fail-closed'
-    and profile ->> 'activationAuthority' = 'DEC-0108-manual-candidate-g-rollback'
+    and profile ->> 'activationAuthority' = 'DEC-0110-manual-candidate-g-rollback'
   );
 end;
 $$;
@@ -354,7 +377,14 @@ alter table public.observations
   check (
     jsonb_typeof(data_quality_flags) = 'array'
     and jsonb_array_length(data_quality_flags) <= 3
-    and data_quality_flags <@ '["account-manual","historical-snapshot-unavailable","not-calibration-eligible"]'::jsonb
+    and data_quality_flags in (
+      '[]'::jsonb,
+      '["public-emergency-last-complete"]'::jsonb,
+      '["ravscore-reconstructed-derived-evidence"]'::jsonb,
+      '["public-emergency-last-complete","ravscore-reconstructed-derived-evidence"]'::jsonb,
+      '["ravscore-evidence-trust-unattested"]'::jsonb,
+      '["account-manual","historical-snapshot-unavailable","not-calibration-eligible"]'::jsonb
+    )
   ) not valid;
 
 alter table public.observations
@@ -481,6 +511,10 @@ alter table public.observations
       and (jsonb_typeof(calibration_features -> 'sustainedOnshoreHours') = 'null' or (calibration_features ->> 'sustainedOnshoreHours')::numeric between 0 and 168)
       and jsonb_typeof(calibration_features -> 'reasonCodes') = 'array'
       and jsonb_array_length(calibration_features -> 'reasonCodes') <= 12
+      and jsonb_path_query_array(
+        calibration_features -> 'reasonCodes',
+        '$[*] ? (@ == "public-emergency-last-complete" || @ == "ravscore-reconstructed-derived-evidence" || @ == "ravscore-evidence-trust-unattested")'
+      ) = data_quality_flags
       and model_version = calibration_features ->> 'modelVersion'
       and rav_score::numeric = (calibration_features ->> 'totalScore')::numeric
       and wind_speed_mps is not distinct from nullif(calibration_features ->> 'windSpeedMs', '')::numeric

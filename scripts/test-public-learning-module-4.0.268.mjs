@@ -40,9 +40,26 @@ for (const marker of [
   'Miniordbog'
 ]) assert.ok(learning.includes(marker), `Læringsmodulet mangler: ${marker}`);
 
-for (const marker of ['20 %', '50 %', '30 %', 'Vind under 6 m/s', 'ved 15 m/s', 'seneste 48 timer', 'uopløst og score-neutral', 'De andre komponenter nulstilles ikke']) {
+for (const marker of [
+  '20 %',
+  '50 %',
+  '30 %',
+  'Vind under 6 m/s',
+  'ved 15 m/s',
+  'seneste 48 timer',
+  'kausale energivægtede W/N/T-EWMA for bølgeapproach',
+  'fire timers halveringstid',
+  'bevarer ældre timer med aftagende vægt',
+  'kun dæmpe det eksisterende supply med højst 15 %',
+  'aldrig skabe eller øge det',
+  'fysiske vej gennem revler og surfzone er fortsat uopløst',
+  'De andre komponenter nulstilles ikke',
+]) {
   assert.ok(learning.includes(marker), `Den aktive model forklares ikke korrekt: ${marker}`);
 }
+assert.doesNotMatch(learning, /uopløst og score-neutral/i, 'Den pensionerede score-neutrale last-mile-kontrakt må ikke stå aktivt i læringsmodulet');
+assert.doesNotMatch(learning, /seneste fire timers energivægtede bølgeapproach/i,
+  'Fire timer må ikke fremstilles som et fast bølgeapproach-vindue i læringsmodulet');
 assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må ikke stå i det offentlige læringsmodul');
 assert.match(learning, /Strømmen transporterer/, 'Strøm og bølger skal have forskellige roller');
 assert.match(learning, /Bølgerne mobiliserer/, 'Mobilisering skal forklares i almindeligt dansk');

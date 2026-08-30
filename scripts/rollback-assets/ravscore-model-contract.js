@@ -27,7 +27,7 @@ export const RAVSCORE_RANKING_POLICY_ID = 'direction-broad-19-v1';
 export const RAVSCORE_BEST_TIME_POLICY_ID = 'score-water-tie-earliest-v2';
 export const RAVSCORE_PRESENTATION_POLICY_ID = 'score-bands-35-55-75-exceptional90-v1';
 export const RAVSCORE_MIGRATION_ID = null;
-export const RAVSCORE_ROLLBACK_ID = 'integrated-schema4-to-candidate-g-schema2-v1';
+export const RAVSCORE_ROLLBACK_ID = 'integrated-schema5-to-candidate-g-schema2-v2';
 export const RAVSCORE_CALIBRATION_ELIGIBLE = false;
 
 export const RAVSCORE_WEIGHTS = deepFreeze({

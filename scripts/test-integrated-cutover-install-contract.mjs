@@ -43,6 +43,7 @@ for (const [functionName, migrationSource] of [
   ['public.ravradar_trip_v3_binding_allowed', documents.migration],
   ['public.ravradar_trip_v3_active_binding_admitted', documents.migration],
   ['public.ravradar_observation_require_active_v3_binding', documents.migration],
+  ['public.ravradar_trip_payload_has_sensitive_key', documents.migration],
   ['public.ravradar_ravscore_operational_cas', operationalMigration],
 ]) {
   const canonicalDefinition = normalize(functionDefinition(
@@ -69,6 +70,20 @@ assert.equal(activeTriggerDefinition(documents.schema, 'historical schema'),
 assert.equal(activeTriggerDefinition(documents.installer, 'security installer'),
   activeTriggerDefinition(documents.migration, 'versioned migration'),
   'active schema-3 binding trigger drifted in security installer');
+
+function tripConstraintContract(source, label) {
+  const match = source.match(
+    /alter table public\.observations\s+drop constraint if exists ravradar_observations_schema_version_check,[\s\S]*?comment on column public\.observations\.calibration_eligible is\s+'[^']*';/i,
+  );
+  assert.ok(match, `${label} is missing the complete schema-3 constraint contract`);
+  return normalize(match[0]);
+}
+assert.equal(tripConstraintContract(documents.schema, 'historical schema'),
+  tripConstraintContract(documents.migration, 'versioned migration'),
+  'schema-3 constraints drifted in historical schema');
+assert.equal(tripConstraintContract(documents.installer, 'security installer'),
+  tripConstraintContract(documents.migration, 'versioned migration'),
+  'schema-3 constraints drifted in security installer');
 
 for (const [label, source] of Object.entries(documents)) {
   assert.match(source,
@@ -101,4 +116,4 @@ assert.ok(documents.migration.indexOf("'20260829010000'")
   < documents.migration.indexOf("'20260829020000'"),
 'metadata readback must preserve operational-runtime-before-trip-binding order');
 
-console.log('Integrated cutover RPC is identical in migration, schema and installer and reads metadata only.');
+console.log('Integrated cutover RPC, privacy function and schema-3 constraints are identical in migration, schema and installer.');

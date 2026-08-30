@@ -148,7 +148,7 @@ function profileFor(binding, mode) {
   return {
     schemaVersion: candidate ? '2.0.0' : '3.0.0',
     switchVersion: candidate
-      ? 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0108-V1'
+      ? 'RAVSCORE-OPERATIONAL-ROLLBACK-DEC-0110-V2'
       : 'RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0',
     requestedProfileId: binding.modelId,
     activeProfileId: binding.modelId,

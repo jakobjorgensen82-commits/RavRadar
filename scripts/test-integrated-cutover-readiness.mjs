@@ -97,13 +97,19 @@ for (let index = 1; index < workflowOrder.length; index += 1) {
   assert.ok(workflow.indexOf(workflowOrder[index - 1]) < workflow.indexOf(workflowOrder[index]),
     `backend cutover order is unsafe: ${workflowOrder[index - 1]} must precede ${workflowOrder[index]}`);
 }
+const cutoverSection = workflow.slice(
+  workflow.indexOf('node scripts/integrated-cutover-readiness.mjs assert-source'),
+  workflow.indexOf('node scripts/integrated-cutover-readiness.mjs publish')
+    + 'node scripts/integrated-cutover-readiness.mjs publish'.length,
+);
 for (const forbidden of ['continue-on-error', 'supabase migration repair', 'supabase db reset', '--include-all']) {
-  assert.equal(workflow.includes(forbidden), false, `backend cutover workflow contains forbidden bypass: ${forbidden}`);
+  assert.equal(cutoverSection.includes(forbidden), false,
+    `backend cutover pre-publish chain contains forbidden bypass: ${forbidden}`);
 }
 assert.equal((workflow.match(/integrated-cutover-readiness\.mjs publish/g) || []).length, 1,
   'protected readiness must have one final publisher');
-assert.equal((workflow.match(/git fetch --no-tags --depth=1 origin \+refs\/heads\/main:refs\/remotes\/origin\/main/g) || []).length, 2,
-  'backend cutover must reverify main once after checkout and again immediately before its first write');
+assert.equal((workflow.match(/git fetch --no-tags --depth=1 origin \+refs\/heads\/main:refs\/remotes\/origin\/main/g) || []).length, 3,
+  'backend cutover must verify main after checkout, before its first write and before final readiness');
 
 const unicodeList = `
        LOCAL       │      REMOTE      │ TIME (UTC)

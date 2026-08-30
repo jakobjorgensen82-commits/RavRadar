@@ -3,7 +3,7 @@ import {
   ravScoreModelBinding,
 } from './ravscore-model-contract.js?v=4.0.308';
 
-const INTEGRATED_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.0.0';
+const INTEGRATED_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
 const CANDIDATE_G_MODEL_ID = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
 
 const TEXT = Object.freeze({
@@ -15,7 +15,7 @@ const TEXT = Object.freeze({
       `Transportbeviset bygger på ${coverage} af ${window} timers sammenhængende, verificeret strømhistorik.`,
     memoryStatus: 'Den sammenhængende strømhistorik er medregnet; den offentlige visning har ikke et sikkert timeantal for denne række.',
     grid: 'Strømmen er ikke en direkte måling af lokal bundnær strøm. Den bruges som relativt bevis for transport mod kystzonen. En vedvarende fralandskomponent er derfor negativ tilførselsevidens og kan føre noget mobilt materiale ud, men beviser ikke, at alt lokalt rav har forladt kystzonen. Gridstrømmen er heller ikke en måling af bølgeorbitaler, surfzonens undertow, feeder- eller langskyststrøm eller ripstrømme.',
-    lastMile: 'Det sidste stykke over revler, gennem render og brydningszone er fysisk uopløst. Faktor 1 betyder kun nul ekstra scorepoint – ikke 100 % levering til stranden.',
+    lastMile: 'En kausal energivægtet W/N/T-EWMA for bølgeretning med fire timers halveringstid bevarer ældre timer med aftagende vægt. Den kan kun dæmpe eksisterende transportbevis med højst 15 %; bølger kan aldrig skabe eller øge tilførsel. Det sidste stykke over revler, gennem render og brydningszone er fortsat fysisk uopløst, og retningssammenhæng bruges kun til usikkerhed og forklaring.',
     fallingOutbound: 'Modellen beregner vandstanden lavere tre timer frem; det er ikke i sig selv ebbe eller en tidevandsfase og bestemmer ikke strømretningen. Her falder vandet samtidig med verificeret søværts gridstrøm, som kan føre noget mobilt rav ud. Lavere vand kan også blotlægge allerede afleveret eller fastholdt rav bag en revle, så et afgrænset område er lettere at afsøge. Det beviser ikke, at vandstandsfaldet fysisk har koncentreret ravet. Konteksten giver 0 scorepoint.',
     fallingInbound: 'Modellen beregner vandstanden lavere tre timer frem; det er ikke i sig selv ebbe eller en tidevandsfase og bestemmer ikke strømretningen. Her falder vandet samtidig med verificeret gridstrøm mod kystzonen. Lavere vand kan blotlægge allerede afleveret eller fastholdt rav bag en revle, så et afgrænset område er lettere at afsøge. Det beviser ikke, at vandstandsfaldet fysisk har koncentreret ravet. Konteksten giver 0 scorepoint.',
     fallingAlongOrWeak: 'Modellen beregner vandstanden lavere tre timer frem; det er ikke i sig selv ebbe eller en tidevandsfase og bestemmer ikke strømretningen. Den verificerede kystnormale gridstrøm er samtidig højst ±0,03 m/s og klassificeres derfor som langs/for svag. Lavere vand kan blotlægge allerede afleveret eller fastholdt rav bag en revle, så et afgrænset område er lettere at afsøge. Det beviser ikke fysisk koncentration. Konteksten giver 0 scorepoint.',
@@ -33,7 +33,7 @@ const TEXT = Object.freeze({
       `Die Transportevidenz beruht auf ${coverage} von ${window} Stunden zusammenhängender, verifizierter Strömungshistorie.`,
     memoryStatus: 'Die zusammenhängende Strömungshistorie ist berücksichtigt; für diese Zeile liegt in der öffentlichen Anzeige keine sichere Stundenzahl vor.',
     grid: 'Die Strömung ist keine direkte Messung der lokalen bodennahen Strömung. Sie dient als relative Evidenz für Transport zur Küstenzone. Eine anhaltende seewärtige Komponente ist daher negative Zuflussevidenz und kann einen Teil mobilen Materials seewärts bewegen, beweist aber nicht, dass der gesamte lokale Bernstein die Küstenzone verlassen hat. Die Gitterströmung ist auch keine Messung von Wellenorbitalen, dem Undertow der Brandungszone, Zubringer-, Küstenlängs- oder Rippströmungen.',
-    lastMile: 'Der letzte Weg über Sandbänke, durch Rinnen und Brandungszone ist physikalisch unaufgelöst. Faktor 1 bedeutet nur null zusätzliche Scorepunkte – nicht 100 % Lieferung an den Strand.',
+    lastMile: 'Ein kausaler energiegewichteter W/N/T-EWMA der Wellenrichtung mit einer Halbwertszeit von vier Stunden berücksichtigt ältere Stunden weiter mit abnehmendem Gewicht. Er kann vorhandene Transportevidenz nur um höchstens 15 % dämpfen; Wellen können Zufluss niemals erzeugen oder erhöhen. Der letzte Weg über Sandbänke, Rinnen und Brandungszone bleibt physikalisch unaufgelöst; Richtungskohärenz beeinflusst nur Unsicherheit und Erklärung.',
     fallingOutbound: 'Das Modell berechnet für drei Stunden später einen niedrigeren Wasserstand; dies ist für sich genommen weder Ebbe noch eine Gezeitenphase und bestimmt nicht die Strömungsrichtung. Hier fällt das Wasser gleichzeitig mit verifizierter seewärtiger Gitterströmung, die einen Teil mobilen Bernsteins seewärts bewegen kann. Niedrigeres Wasser kann bereits angelieferten oder hinter einer Sandbank zurückgehaltenen Bernstein freilegen und so ein begrenztes Gebiet leichter absuchbar machen. Das beweist keine physische Konzentration durch den Wasserstandsfall. Der Kontext gibt 0 Scorepunkte.',
     fallingInbound: 'Das Modell berechnet für drei Stunden später einen niedrigeren Wasserstand; dies ist für sich genommen weder Ebbe noch eine Gezeitenphase und bestimmt nicht die Strömungsrichtung. Hier fällt das Wasser gleichzeitig mit verifizierter Gitterströmung zur Küstenzone. Niedrigeres Wasser kann bereits angelieferten oder hinter einer Sandbank zurückgehaltenen Bernstein freilegen und so ein begrenztes Gebiet leichter absuchbar machen. Das beweist keine physische Konzentration durch den Wasserstandsfall. Der Kontext gibt 0 Scorepunkte.',
     fallingAlongOrWeak: 'Das Modell berechnet für drei Stunden später einen niedrigeren Wasserstand; dies ist für sich genommen weder Ebbe noch eine Gezeitenphase und bestimmt nicht die Strömungsrichtung. Die verifizierte küstennormale Gitterströmung liegt gleichzeitig bei höchstens ±0,03 m/s und gilt daher als küstenparallel/zu schwach. Niedrigeres Wasser kann bereits angelieferten oder hinter einer Sandbank zurückgehaltenen Bernstein freilegen und ein begrenztes Gebiet leichter absuchbar machen; dies beweist keine physische Konzentration. Der Kontext gibt 0 Scorepunkte.',
@@ -51,7 +51,7 @@ const TEXT = Object.freeze({
       `The transport evidence uses ${coverage} of ${window} hours of coherent, verified current history.`,
     memoryStatus: 'The coherent current history is included; the public display has no safe hour count for this row.',
     grid: 'The current is not a direct measurement of local near-bed current. It is used as relative evidence of transport towards the coastal zone. A sustained offshore component is therefore negative supply evidence and can move some mobile material seaward, but does not prove that all local amber has left the coastal zone. The grid current is also not a measurement of wave orbitals, surf-zone undertow, feeder or longshore current, or rip currents.',
-    lastMile: 'The final route across bars, through channels, and across the breaking zone is physically unresolved. Factor 1 means zero additional score points only – not 100% delivery to the beach.',
+    lastMile: 'A causal energy-weighted wave-direction W/N/T EWMA with a four-hour half-life retains older hours in a decaying tail. It can only attenuate existing transport evidence by at most 15%; waves can never create or increase supply. The final route across bars, through channels, and across the breaking zone remains physically unresolved; directional coherence affects uncertainty and explanation only.',
     fallingOutbound: 'The model calculates a lower water level three hours ahead; this is not by itself ebb or a tidal phase and does not determine current direction. Here, falling water coincides with verified seaward model-grid current, which can move some mobile amber seaward. Lower water may also expose amber already delivered or retained behind a bar, making a bounded area easier to search. This does not prove that the water-level fall physically concentrated the amber. The context awards 0 score points.',
     fallingInbound: 'The model calculates a lower water level three hours ahead; this is not by itself ebb or a tidal phase and does not determine current direction. Here, falling water coincides with verified model-grid current towards the coastal zone. Lower water may expose amber already delivered or retained behind a bar, making a bounded area easier to search. This does not prove that the water-level fall physically concentrated the amber. The context awards 0 score points.',
     fallingAlongOrWeak: 'The model calculates a lower water level three hours ahead; this is not by itself ebb or a tidal phase and does not determine current direction. The verified coast-normal model-grid current is simultaneously no more than ±0.03 m/s and is therefore classified as alongshore/too weak. Lower water may expose amber already delivered or retained behind a bar and make a bounded area easier to search; this does not prove physical concentration. The context awards 0 score points.',
@@ -118,8 +118,8 @@ const finite = value => typeof value === 'number' && Number.isFinite(value);
 
 const rounded = value => Math.round(Number(value));
 const LAST_MILE_STATUSES = new Set([
-  'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL',
-  'LAST_MILE_UNRESOLVED_SCORE_NEUTRAL_DIRECTION_UNKNOWN',
+  'LAST_MILE_BOUNDED_WAVE_APPROACH_READY',
+  'LAST_MILE_BOUNDED_WAVE_APPROACH_CALM_NEUTRAL',
 ]);
 const MODEL_BINDING = ravScoreModelBinding();
 const hasActiveBinding = result => {
@@ -210,8 +210,11 @@ export function presentIntegratedRavScoreExplanation(result, { language = 'da' }
     || !finite(result?.components?.transport)
     || !finite(result?.components?.release)
     || transport?.engine !== 'INTEGRATED_COASTAL_PROCESS'
-    || transport?.lastMileScoreEffect !== 'NONE'
+    || transport?.lastMileScoreEffect !== 'BOUNDED_SUPPLY_ATTENUATION_ONLY'
     || !LAST_MILE_STATUSES.has(transport?.lastMileStatus)
+    || !finite(transport?.lastMileDeliveryFactor)
+    || transport.lastMileDeliveryFactor < 0.85
+    || transport.lastMileDeliveryFactor > 1
     || transport?.lastMilePhysicalDeliveryResolved !== false
     || transport?.lastMileStructuralUncertainty !== true
     || transport?.resolvedSurfZoneIncluded !== false

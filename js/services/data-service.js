@@ -21,6 +21,9 @@ import {
 import {
   assertExactPublicRavScoreProfile,
 } from '../core/ravscore-public-profile-contract.js?v=4.0.314';
+import {
+  assertRavScoreVerifiedEvidenceTrust,
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.314';
 
 export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.314';
 
@@ -141,6 +144,28 @@ function assertNestedModelBindings(value, expected, path = 'payload') {
   return true;
 }
 
+function assertPublicVerifiedEvidenceTrust(document, label) {
+  const root = assertRavScoreVerifiedEvidenceTrust(
+    document?.ravScoreEvidenceTrust,
+    `${label}.ravScoreEvidenceTrust`,
+  );
+  assertRavScoreVerifiedEvidenceTrust(
+    document?.coastalParts?.evidenceTrust,
+    `${label}.coastalParts.evidenceTrust`,
+  );
+  const parts = document?.coastalParts?.parts;
+  if (!parts || typeof parts !== 'object' || Array.isArray(parts)) {
+    throw new Error(`${label} mangler sin trust-bundne kystdelssamling.`);
+  }
+  for (const [partId, part] of Object.entries(parts)) {
+    assertRavScoreVerifiedEvidenceTrust(
+      part?.ravScoreEvidenceTrust,
+      `${label}.coastalParts.parts.${partId}.ravScoreEvidenceTrust`,
+    );
+  }
+  return root;
+}
+
 function assertManifest(manifest) {
   if (!manifest || typeof manifest !== 'object' || Array.isArray(manifest)) throw new Error('Datamanifestet mangler.');
   if (manifest.schemaVersion !== 4 || manifest.complete !== true || !manifest.datasetId) {
@@ -180,6 +205,10 @@ function assertManifest(manifest) {
     throw new Error('Datamanifestet indeholder en usikker eller ufuldstændig offentlig filkontrakt.');
   }
   assertRavScoreModelBinding(manifest.ravScoreModelBinding, 'manifestets RavScore-modelbinding');
+  assertRavScoreVerifiedEvidenceTrust(
+    manifest.ravScoreEvidenceTrust,
+    'manifestets RavScore-evidenstillid',
+  );
   assertExactPublicRavScoreProfile(manifest.ravScoreProfile,
     manifest.ravScoreModelBinding, 'manifestets RavScore-scoreprofil');
   const runtime = manifest.ravScoreRuntime;
@@ -280,6 +309,7 @@ async function assertLoadedPayload(document, { kind, descriptor, datasetId, prod
     throw new Error(`${label} har en ugyldig intern body-hash.`);
   }
   assertNestedModelBindings(document, modelBinding, label);
+  assertPublicVerifiedEvidenceTrust(document, label);
   const profile = document.coastalParts?.scoreProfile ?? null;
   if (profile) assertExactPublicRavScoreProfile(profile, modelBinding,
     `${label} coastalParts.scoreProfile`);
@@ -392,6 +422,12 @@ function emergencyWeatherCurrent(row) {
 }
 
 function projectEmergencyConditions(startup, details, availability, manifest) {
+  assertRavScoreVerifiedEvidenceTrust(
+    manifest?.ravScoreEvidenceTrust,
+    'Nøddriftsmanifestets RavScore-evidenstillid',
+  );
+  assertPublicVerifiedEvidenceTrust(startup, 'Nøddriftens startpakke');
+  assertPublicVerifiedEvidenceTrust(details, 'Nøddriftens detaljepakke');
   const selectedReferenceAt = availability?.selectedReferenceAt;
   const expectedTimes = exactPublicHorizonTimes(manifest);
   const selectedIndex = expectedTimes.indexOf(selectedReferenceAt);
@@ -586,6 +622,7 @@ export async function loadConditionDetails({ manifest = null, conditions = null 
     modelBinding: manifest.ravScoreModelBinding,
     label: 'Detaljepakken',
   });
+  if (conditions) assertPublicVerifiedEvidenceTrust(conditions, 'Den indlæste startpakke');
   if (!sameRavScoreModelBinding(data.ravScoreRuntime.modelBinding, conditions?.ravScoreRuntime?.modelBinding)) {
     throw new Error('Detaljedata og startdata bruger ikke samme RavScore-modelbundle.');
   }
@@ -611,6 +648,7 @@ export async function reevaluatePublicConditions({
       modelBinding: manifest.ravScoreModelBinding,
       label: 'Den indlæste startpakke',
     });
+    assertPublicVerifiedEvidenceTrust(conditions, 'Den indlæste startpakke');
     assertStartupCoverage(conditions, manifest);
     const availability = selectPublicRuntimeAvailability(manifest, {
       now,
@@ -641,6 +679,8 @@ export async function reevaluatePublicConditions({
 export function mergeConditionDetails(conditions, details) {
   assertPublicRuntimeEnvelope(conditions, { kind: RAVSCORE_PUBLIC_STARTUP_KIND, label: 'Startpakken' });
   assertPublicRuntimeEnvelope(details, { kind: RAVSCORE_PUBLIC_DETAILS_KIND, label: 'Detaljepakken' });
+  assertPublicVerifiedEvidenceTrust(conditions, 'Startpakken');
+  assertPublicVerifiedEvidenceTrust(details, 'Detaljepakken');
   if (conditions.datasetId !== details.datasetId) throw new Error('Vejrdetaljer kan ikke blandes mellem datasæt.');
   if ((conditions.productionReferenceAt ?? null) !== (details.productionReferenceAt ?? null)) {
     throw new Error('Vejrdetaljer og startdata bruger ikke samme produktionstidspunkt.');
