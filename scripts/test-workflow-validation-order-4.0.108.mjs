@@ -493,6 +493,7 @@ for (const marker of [
   '--stage',
   '--github-output "$GITHUB_OUTPUT"',
   'uses: actions/cache/save@v6',
+  "steps.candidate-g-public-fallback-stage.outputs.fallback_available == 'true'",
   "steps.candidate-g-public-fallback-stage.outputs.cache_refreshed == 'true'",
 ]) {
   if (!fallbackStageSection.includes(marker)) throw new Error(`Candidate G-nødgrundlaget mangler ${marker}`);

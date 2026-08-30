@@ -1,6 +1,17 @@
 # Current truth – gældende projektviden
 
-## 4.0.315 – tilbagetrukket rekonstruktionssti pensioneret; målt produktion skal genåbnes
+## 4.0.316 – frisk measured-only primary må ikke kræve en gyldig ældre fallback
+
+- 4.0.315-retirementen bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav D1-/reconstruction-readiness og startede det normale build. Den tidligere grøn-no-op-interlock er derfor ikke længere den aktuelle blocker.
+- Run `33299747300` stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen komplet measured-only fallback både var inden for 72 timer og sin egen kortere prognosehorisont. Der blev ikke publiceret et nyt artifact eller Pages-deploy.
+- 4.0.316 gør fallback valgfri for en frisk measured-only primary. En gyldig fallback må fortsat stages; en gammel, udløbet, ufuldstændig, ukendt, blandet, rekonstrueret eller manipuleret fallback må aldrig vises og skal være fraværende i manifestet samt fjernet fra publicerede fallbackfiler.
+- Fravær af gyldig fallback må ikke blokere aktuelle og femdøgnsdata, når primary består sine egne current-hour-, direkte input/provenance-, 210/673-, accounting-, audit-, validate- og releasegates. Uventede primaryoptællinger eller auditafvigelser stopper fortsat fail-closed.
+- Ingen syntetiske eller interpolerede data skabes. Manglende historik og manglende fallback forbliver manglende.
+- DEC-0112 fastlægger samtidig et senere DEC-0102-modelkrav: `HISTORY_INCOMPLETE` skal fortsat score hele current+femdøgnsfladen, når de direkte input for timen er gyldige, med auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`. Manglende current/future-input er separat `UNAVAILABLE`.
+- Monolitisk workflowkobling, grøn-no-op-semantik og spredt version/docs/string-testkobling er bindende arkitekturroadmap for modelleverancen, ikke del af P0-hotfixen.
+- 4.0.316 er kun lokal hotfixkandidat. Exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol mangler; der er intet livebevis endnu.
+
+## Historisk 4.0.315 – tilbagetrukket rekonstruktionssti pensioneret; build nåede næste fail-closed gate
 
 - 4.0.314's midlertidige reconstruction-readiness krævede et succesfuldt descriptorbundet apply+Pages-bevis på samme SHA, før normal produktion måtte bygge. Da ejeren trak engangsoperationen tilbage før descriptor og apply, var beviset umuligt; normale vejrjobs kunne derfor være grønne, mens build, artifact og Pages blev skipped.
 - Det gav en offentlig P0: primary blev mere end otte timer gammel, og den komplette målte recovery overskred sin absolutte 72-timersgrænse. Den offentlige fail-closed tekst **“Aktuelle data kunne ikke hentes. Gamle data vises ikke.”** var ærlig, men prognoserne var utilgængelige.
@@ -8,7 +19,7 @@
 - DEC-0111 tilbagetrækker DEC-0109 uden anvendelse. 4.0.315 fjerner operationsinput/jobs, aktuator, admin-descriptor og apply+Pages-attestationen. Det eksisterende `trip-storage-readiness`-job bevares kun som historisk exact-D1-gate for 4.0.311–4.0.314; 4.0.315 sætter eksplicit `ready=true` og kan ikke blokeres af det.
 - Normal produktion er igen measured-only og skal fortsat gennem current-hour, friskhed, DMI/Copernicus, 210/673, fuld `validate`, `release:gate`, artifact og Pages. Measured-only checkpoint/continuation/recovery bevares; manglende historik forbliver manglende.
 - Defensive trust-, provenance-, schema- og turkvalitetslæsere bevares fail-closed for kompatibilitet, men kan ikke skabe rekonstrueret state og er ikke en operationel tilladelse.
-- 4.0.315 er endnu kun en lokal hotfixkandidat. Kildegaten skal være grøn på eksakt PR-head, og efter merge skal en frisk normal produktion faktisk køre build, begge fulde gates, artifact og Pages. Grøn topstatus med skipped produktion er ikke et releasebevis.
+- PR #233/exact-head `33299676128` var grøn og merge `63d789a4` blev efterfulgt af run `33299747300`, som faktisk frigav D1-gaten og startede build. Runnet stoppede senere på manglende gyldig public fallback og nåede ikke artifact/Pages; 4.0.315 blev derfor ikke produktionsverificeret.
 
 ## Historisk 4.0.314 – cadenceautoriteten afgrænset lokalt; datahullet forblev åbent
 

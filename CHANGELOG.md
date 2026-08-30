@@ -1,3 +1,14 @@
+## 4.0.316 – frisk primary uden gyldig ældre fallback (2026-08-30)
+
+- PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav 4.0.315-D1-gaten og startede build, men stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og sin prognosehorisont. Intet nyt artifact/Pages blev publiceret.
+- Gør last-verified fallback valgfri for en frisk measured-only primary, som består egne current-hour-, direkte input/provenance-, 210/673-, accounting-, audit-, validate- og releasegates.
+- Gammel, udløbet, ufuldstændig, ukendt, blandet, rekonstrueret eller manipuleret fallback må aldrig vises. Den skal være fraværende i manifestet og fjernes fra publicerede fallbackfiler; forventet fravær må ikke blokere current+fem døgn.
+- Uventet primary accounting/audit og manglende direkte input forbliver fail-closed. Ingen syntetiske eller interpolerede data skabes.
+- DEC-0112/DEC-0102 binder den kommende model til `HISTORY_INCOMPLETE`-score over current+fem døgn ved gyldige direkte input, auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`; direct-input-mangel er separat `UNAVAILABLE`.
+- Workflowmonolit, grøn-no-op/skipped-semantik og spredt version/docs/string-testkobling er bindende modelarkitekturroadmap og udvider ikke P0-hotfixen.
+- 4.0.316 er lokal kandidat uden livepåstand. Exact-head, merge, frisk fuld produktion, artifact/Pages og offentlig 210/673/current/femdøgnskontrol afventer.
+- Candidate G, RavScore, DMI/Copernicus, storage, geometri, zoner og land-/vandpunkter er uændrede af hotfixen.
+
 ## 4.0.315 – pensioneret stale rekonstruktionsinterlock (2026-08-30)
 
 - Lukker en offentlig P0, hvor 4.0.314's tilbagetrukne one-time Candidate G-operation stadig var prerequisite for normal vejrproduktion. Det umulige apply+Pages-bevis gjorde jobs grønne no-ops uden build, artifact eller Pages.

@@ -147,7 +147,8 @@ const hybridTripStorageTest=await read('scripts/test-hybrid-trip-storage-4.0.287
 const gapCheckpoint=JSON.parse(await read('data/admin/candidate-g-gap-checkpoint-recovery.json'));
 ok(candidateGMemory.includes('restartAfterVerifiedTimeGap = false')&&candidateGMemory.includes('VERIFIED_TIME_GAP_SUFFIX_RESTART'),'Candidate G-hukommelsen mangler eksplicit opt-in til verificeret suffixgenstart');
 ok(candidateGStatePipeline.includes('restartAfterVerifiedTimeGap: true')&&candidateGStatePipeline.includes('VERIFIED_TIME_GAP_RECOVERY'),'Candidate G-statepipelinen genstarter ikke sikkert efter et verificeret tidsgab');
-ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('Intet komplet, auditeret Candidate G-datasæt'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller fail-closed audit');
+ok(publicRecovery.includes('maximumAgeHours: 72')&&publicRecovery.includes('FALLBACK_FORECAST_EXPIRED')&&publicRecovery.includes('active-last-verified')&&publicRecovery.includes('unavailable-no-valid-fallback')&&publicRecovery.includes('inactive-no-valid-fallback'),'Candidate G-nødvisningen mangler 72-timers hard cap, prognoseudløb eller sikker frakobling fra frisk measured-only primary');
+ok(workflow.includes("steps.candidate-g-public-fallback-stage.outputs.fallback_available == 'true'"),'Workflowet må ikke gemme en tom eller udløbet Candidate G-fallbackcache');
 ok(publicDataService.includes('recoveryFallbackActive:true')&&publicDataService.includes('maximumAgeHours'),'Offentlig dataindlæsning mangler den bundne Candidate G-nøddrift');
 const retiredGapPaths=[
   'scripts/one-time-candidate-g-gap-reconstruction.mjs',

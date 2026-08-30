@@ -6,6 +6,7 @@ import {
   CANDIDATE_G_RECOVERY_FALLBACK_POLICY,
   publishRecoveryFallback,
   selectNewestRecoveryFallbackCandidate,
+  stageRecoveryFallback,
   upgradeRecoveryFallbackBundle,
   validateLegacyRecoveryFallbackBundle,
   validateRecoveryFallbackBundle,
@@ -210,6 +211,141 @@ await fs.writeFile(manifestPath, `${JSON.stringify({
   datasetId: 'rr-primary-warmup-210',
   generatedAt: '2026-08-27T09:55:50.000Z',
 })}\n`);
+await fs.writeFile(auditPath, `${JSON.stringify({
+  status: 'passed',
+  stateContinuation: { memoryReadyPartCount: 0, warmupPartCount: 673 },
+})}\n`);
+
+const stagedSourcePath = path.join(root, 'staged-source.json');
+await fs.writeFile(stagedSourcePath, '{}\n');
+const stagedAvailable = await stageRecoveryFallback({
+  sourcePath: stagedSourcePath,
+  manifestPath,
+  cacheRoot,
+  nowMs,
+});
+assert.equal(stagedAvailable.status, 'preserved-cache');
+assert.equal(stagedAvailable.fallbackAvailable, true);
+
+function fallbackBundleWithValidUntil({ datasetId, validUntil }) {
+  const fixture = structuredClone(bundle);
+  fixture.descriptor.datasetId = datasetId;
+  fixture.descriptor.validUntil = validUntil;
+  fixture.conditions.datasetId = datasetId;
+  fixture.details.datasetId = datasetId;
+  for (const zone of Object.values(fixture.details.zones)) {
+    zone.forecast.hourly = [{ time: validUntil }];
+  }
+  fixture.descriptor.publicConditionsSha256 = sha256Text(compactJson(fixture.conditions));
+  fixture.descriptor.publicConditionDetailsSha256 = sha256Text(compactJson(fixture.details));
+  return upgradeRecoveryFallbackBundle(fixture);
+}
+
+async function assertExpiredFallbackRetired({ scenario, fixture, evaluationNowMs, expectedExpiryError }) {
+  assert.deepEqual(
+    validateRecoveryFallbackBundle(fixture, { nowMs: evaluationNowMs }).errors,
+    [expectedExpiryError],
+  );
+  const scenarioRoot = path.join(root, scenario);
+  const scenarioCacheRoot = path.join(scenarioRoot, 'cache');
+  const scenarioOutputRoot = path.join(scenarioRoot, 'live');
+  const scenarioManifestPath = path.join(scenarioOutputRoot, 'manifest.json');
+  const scenarioAuditPath = path.join(scenarioRoot, 'audit.json');
+  const scenarioSourcePath = path.join(scenarioOutputRoot, 'conditions.json');
+  await fs.mkdir(scenarioCacheRoot, { recursive: true });
+  await fs.mkdir(scenarioOutputRoot, { recursive: true });
+  await fs.writeFile(
+    path.join(scenarioCacheRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.cacheDescriptorName),
+    `${JSON.stringify(fixture.descriptor)}\n`,
+  );
+  await fs.writeFile(
+    path.join(scenarioCacheRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.cacheConditionsName),
+    compactJson(fixture.conditions),
+  );
+  await fs.writeFile(
+    path.join(scenarioCacheRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.cacheDetailsName),
+    compactJson(fixture.details),
+  );
+  await fs.writeFile(scenarioSourcePath, '{}\n');
+  await fs.writeFile(scenarioManifestPath, `${JSON.stringify({
+    schemaVersion: 2,
+    datasetId: `rr-fresh-primary-${scenario}-210`,
+    generatedAt: new Date(evaluationNowMs).toISOString(),
+    recoveryFallback: { status: 'active-last-verified', datasetId: fixture.descriptor.datasetId },
+  })}\n`);
+  await fs.writeFile(scenarioAuditPath, `${JSON.stringify({
+    status: 'passed',
+    stateContinuation: { memoryReadyPartCount: 0, warmupPartCount: 673 },
+  })}\n`);
+  await fs.writeFile(
+    path.join(scenarioOutputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicConditionsName),
+    '{"stale":true}\n',
+  );
+  await fs.writeFile(
+    path.join(scenarioOutputRoot, CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicDetailsName),
+    '{"stale":true}\n',
+  );
+
+  const staged = await stageRecoveryFallback({
+    sourcePath: scenarioSourcePath,
+    manifestPath: scenarioManifestPath,
+    cacheRoot: scenarioCacheRoot,
+    nowMs: evaluationNowMs,
+  });
+  assert.equal(staged.status, 'unavailable-no-valid-fallback');
+  assert.equal(staged.fallbackAvailable, false);
+  assert.equal(staged.cacheRefreshed, false);
+
+  const published = await publishRecoveryFallback({
+    auditPath: scenarioAuditPath,
+    manifestPath: scenarioManifestPath,
+    cacheRoot: scenarioCacheRoot,
+    outputRoot: scenarioOutputRoot,
+    nowMs: evaluationNowMs,
+  });
+  assert.equal(published.status, 'inactive-no-valid-fallback');
+  assert.equal(JSON.parse(await fs.readFile(scenarioManifestPath, 'utf8')).recoveryFallback, undefined);
+  await assert.rejects(fs.access(path.join(
+    scenarioOutputRoot,
+    CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicConditionsName,
+  )));
+  await assert.rejects(fs.access(path.join(
+    scenarioOutputRoot,
+    CANDIDATE_G_RECOVERY_FALLBACK_POLICY.publicDetailsName,
+  )));
+}
+
+await assertExpiredFallbackRetired({
+  scenario: 'age-expired',
+  fixture: fallbackBundleWithValidUntil({
+    datasetId: 'rr-age-expired-ready-210',
+    validUntil: '2026-09-01T00:00:00.000Z',
+  }),
+  evaluationNowMs: Date.parse(generatedAt) + 73 * 3_600_000,
+  expectedExpiryError: 'FALLBACK_TOO_OLD',
+});
+await assertExpiredFallbackRetired({
+  scenario: 'forecast-expired',
+  fixture: fallbackBundleWithValidUntil({
+    datasetId: 'rr-forecast-expired-ready-210',
+    validUntil: '2026-08-27T09:00:00.000Z',
+  }),
+  evaluationNowMs: nowMs,
+  expectedExpiryError: 'FALLBACK_FORECAST_EXPIRED',
+});
+
+const productionWorkflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
+assert.ok(productionWorkflow.includes("steps.candidate-g-public-fallback-stage.outputs.fallback_available == 'true'"));
+assert.ok(productionWorkflow.includes('node scripts/candidate-g-public-recovery-fallback.mjs'));
+
+await fs.writeFile(auditPath, `${JSON.stringify({
+  status: 'failed',
+  stateContinuation: { memoryReadyPartCount: 0, warmupPartCount: 673 },
+})}\n`);
+await assert.rejects(
+  publishRecoveryFallback({ auditPath, manifestPath, cacheRoot, outputRoot, nowMs }),
+  /må ikke publiceres efter en fejlet audit/,
+);
 await fs.writeFile(auditPath, `${JSON.stringify({
   status: 'passed',
   stateContinuation: { memoryReadyPartCount: 0, warmupPartCount: 673 },

@@ -1,6 +1,14 @@
 # AI Knowledge Base – RavRadar
 
-## 4.0.315 – en grøn no-op er ikke frisk produktion
+## 4.0.316 – fraværende fallback er ikke det samme som ugyldig primary
+
+- PR #233/exact-head `33299676128` og merge `63d789a4` pensionerede den stale D1-interlock. Run `33299747300` startede build og stoppede først ved fallbackstaging; det er rødt årsagsbevis, ikke et deploybevis.
+- En fallback er en valgfri reserve for en frisk measured-only primary. Ingen kandidat inden for 72 timer og prognosehorisonten skal give eksplicit fravær, ikke blokere current+fem døgn.
+- Gammel/udløbet fallback må aldrig vises eller blive hængende i manifest/public files. Malformed fallback eller uventet primary accounting/audit er fortsat fejl og må ikke forveksles med forventet fravær.
+- `HISTORY_INCOMPLETE`, public fallback og direct-input-availability er tre separate akser. Den kommende model scorer current+fem døgn ved gyldige direkte input med tydelig DA/DE/EN-advarsel og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
+- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er kandidat, indtil fuld post-merge produktion og offentlig kontrol findes.
+
+## Historisk 4.0.315 – en grøn no-op er ikke frisk produktion
 
 - En workflowstatus kan være grøn, selv om et readiness-job har sat `ready=false` og alle produktionsjobs er skipped. Verificér derfor altid build, fuld validate, releasegate, artifact og Pages som faktisk kørte trin.
 - Den tilbagetrukne DEC-0109-operation efterlod et umuligt apply+Pages-prerequisite. Det gjorde normale 4.0.314-kørsler grønne no-ops, mens public primary blev >8 timer og measured-only recovery >72 timer.
