@@ -1,23 +1,35 @@
 import assert from 'node:assert/strict';
-import { normalizeAdaptiveModel, modelAdjustment } from '../js/core/adaptive-model.js';
-import { predictAmberChance } from '../js/core/prediction-engine.js';
-import { analyzeObservationRows } from '../js/services/learning-analysis.js';
-const model=normalizeAdaptiveModel({weights:{huntability:.5,transport:.3,release:.2},metricAdjustments:[{id:'x',field:'waterLevelCm',min:20,adjustment:5}]});
-assert.equal(modelAdjustment({model,zone:{id:'z'},weather:{waterLevelCm:25}}).adjustment,5);
-const observations=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-07-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:i<10?'good':'none',weather_snapshot:{},water_level_cm:i<10?35:5,wind_speed_mps:i<10?8:4,wave_height_m:i<10?1.2:.3}));
-const analysis=analyzeObservationRows(observations);
-assert.equal(analysis.status,'coverage-only');assert.equal(analysis.calibrationLocked,true);assert.deepEqual(analysis.suggestions,[]);
-const prediction=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations,model});
-assert.equal(prediction.available,true);assert.ok(prediction.probability>=0&&prediction.probability<=100);assert.ok(prediction.confidence>=35);
-const excluded=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-06-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'good',calibration_eligible:false,weather_snapshot:{historicalSnapshotStatus:'historical-snapshot-unavailable'}}));
-const predictionWithoutUnsafeHistory=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...excluded],model});
-assert.equal(predictionWithoutUnsafeHistory.sampleSize,prediction.sampleSize,'Observationer mærket calibration_eligible=false må ikke påvirke den direkte sandsynlighedsberegning.');
-assert.equal(predictionWithoutUnsafeHistory.probability,prediction.probability);
-const unattestedLegacy=Array.from({length:20},(_,i)=>({zone_id:'z',observed_at:`2026-05-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'good',schema_version:2,calibration_eligible:true,data_quality_flags:[],calibration_features:{appVersion:'4.0.310'}}));
-const predictionWithoutUnattestedLegacy=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...unattestedLegacy],model});
-assert.equal(predictionWithoutUnattestedLegacy.sampleSize,prediction.sampleSize,'Pre-4.0.311 schema-v2-ture uden trustattestation må ikke påvirke sandsynlighedsberegningen.');
-assert.equal(predictionWithoutUnattestedLegacy.probability,prediction.probability);
-const attestedCurrent=Array.from({length:6},(_,i)=>({zone_id:'z',observed_at:`2026-08-${String(i+1).padStart(2,'0')}T12:00:00Z`,result:'none',schema_version:2,calibration_eligible:true,data_quality_flags:[],calibration_features:{appVersion:'4.0.311'}}));
-const predictionWithAttestedCurrent=predictAmberChance({baseScore:70,zone:{id:'z'},weather:{windSpeedMps:7,waveHeightM:1,waterLevelCm:30,currentSpeedMps:.3},observations:[...observations,...attestedCurrent],model});
-assert.equal(predictionWithAttestedCurrent.sampleSize,prediction.sampleSize+attestedCurrent.length);
-console.log('Eksisterende adaptive model og AI Prediction Engine består, mens nye observationsforslag er scorelåst.');
+import fs from 'node:fs/promises';
+
+const [app, observationService, learningAnalysis, serviceWorker, workflow] = await Promise.all([
+  fs.readFile('app.js', 'utf8'),
+  fs.readFile('js/services/observation-service.js', 'utf8'),
+  fs.readFile('js/services/learning-analysis.js', 'utf8'),
+  fs.readFile('service-worker.js', 'utf8'),
+  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
+]);
+
+assert.doesNotMatch(app, /prediction-engine|predictAmberChance|adaptive-model|loadAdaptiveModel|withPrediction|\.prediction\s*=/,
+  'the public app must expose exactly the bound RavScore result, without an adaptive probability layer');
+assert.doesNotMatch(learningAnalysis, /adaptive-model|decisionHistory|applyApprovedSuggestion/,
+  'coverage-only learning analysis must not load a score-changing model');
+assert.doesNotMatch(serviceWorker, /adaptive-model|prediction-engine/,
+  'the retired probability path must not be pre-cached as public runtime');
+for (const file of [
+  'js/core/score-engine.js',
+  'js/core/adaptive-model.js',
+  'js/core/prediction-engine.js',
+]) {
+  assert.match(workflow, new RegExp(`--exclude '${file.replaceAll('/', '\\/')}'`),
+    `${file} must be absent from the public Pages artifact`);
+}
+assert.match(observationService,
+  /ai_probability:null,ai_confidence:null,model_version:observedRavScoreModelVersion\(scoreResult\)/,
+  'legacy-compatible observations must never persist an invented probability or unverified model identity');
+assert.match(observationService,
+  /assertRavScoreModelBinding\(scoreResult\?\.modelBinding,'Observation RavScore model binding'\)/,
+  'legacy-compatible observations may bind the integrated model only after exact 11-field validation');
+assert.doesNotMatch(observationService, /publicPredictionSnapshot|scoreResult\?\.prediction|prediction\?\.probability/,
+  'observation persistence must not revive the retired probability layer');
+
+console.log('Den adaptive fundchance er pensioneret fra offentlig runtime; én RavScore-model ejer score og modelbinding.');

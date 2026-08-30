@@ -3,7 +3,7 @@ import fs from 'node:fs';
 
 const source=fs.readFileSync('scripts/update-dmi-bulk.py','utf8');
 
-assert.match(source,/PARSER_VERSION = 18/,'Behandlingssignaturen skal tvinge en kontrolleret genindlaesning.');
+assert.match(source,/PARSER_VERSION = 19/,'Behandlingssignaturen skal tvinge en kontrolleret proveniensgenindlaesning.');
 assert.match(source,/if old_zone\.get\("marineSelection"\):[\s\S]{0,160}new_zone\.setdefault\("marineSelection"/,'Eksisterende skalar-modelvalg skal overleve cachemerge.');
 assert.match(source,/def restore_marine_selections\(/,'Legacy-cache skal kunne faa skalar-modelvalget tilbage.');
 assert.match(source,/for key in \("wind-tail-u-10m", "sea-mean-deviation", "water-temperature"\)/,'Legacy-gendannelse skal bruge et skalarfelt.');

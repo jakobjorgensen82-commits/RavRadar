@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
+  HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
   UNATTESTED_RAVSCORE_QUALITY_FLAG,
@@ -28,6 +29,15 @@ import { createTripEvidenceController } from '../js/services/trip-evidence-contr
 import { createTripStartFromPublicState } from '../js/services/trip-evidence-public-adapter.js';
 import { buildPublicConditionDetails } from './public-conditions-lib.mjs';
 import { createPublicTripEvidenceRuntime } from '../js/services/trip-evidence-runtime.js';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import {
+  projectTripStoragePayload,
+} from '../js/services/calibration-eligibility.js';
+import {
+  ravScorePublicHorizonValidUntil,
+  selectPublicRuntimeAvailability,
+} from '../js/core/ravscore-public-runtime-contract.js';
 
 class MemoryStorage {
   values = new Map();
@@ -47,10 +57,66 @@ const verifiedOnlyTrust = Object.freeze({
   activeUntil: null
 });
 
+const publicBinding = ravScoreModelBinding();
+const publicProfile = resolvePublicRavScoreProfile({
+  modelCoverageReady: true,
+  modelMemoryReady: true,
+  modelMigrationReady: true,
+});
+function createPublicManifest({
+  datasetId,
+  generatedAt,
+  productionReferenceAt,
+  evidenceTrust = verifiedOnlyTrust,
+}) {
+  return {
+    datasetId,
+    complete: true,
+    generatedAt,
+    productionReferenceAt,
+    validUntil: ravScorePublicHorizonValidUntil(productionReferenceAt),
+    zoneCount: 210,
+    coastalPartCount: 673,
+    ravScoreModelBinding: publicBinding,
+    ravScoreEvidenceTrust: evidenceTrust,
+    publicConditionsSha256: 'a'.repeat(64),
+    publicConditionsBytes: 1,
+    publicConditionDetailsSha256: 'b'.repeat(64),
+    publicConditionDetailsBytes: 1,
+    ravScoreRuntime: {
+      schemaVersion: '1.0.0',
+      modelBinding: publicBinding,
+      startup: {
+        kind: 'RAVSCORE_PUBLIC_STARTUP',
+        payloadBodySha256: 'c'.repeat(64),
+        fileSha256: 'a'.repeat(64),
+        bytes: 1,
+      },
+      details: {
+        kind: 'RAVSCORE_PUBLIC_DETAILS',
+        payloadBodySha256: 'd'.repeat(64),
+        fileSha256: 'b'.repeat(64),
+        bytes: 1,
+      },
+    },
+  };
+}
 const calibrationFeatures = createCalibrationFeatureSnapshot({
-  modelVersion: 'ravscore-4.0.242',
+  modelVersion: publicBinding.modelId,
+  modelBinding: publicBinding,
   appVersion: '4.0.242',
   totalScore: 63,
+  scoreBoundLower:63,
+  scoreBoundUpper:63,
+  scoreBoundModelUncertaintyPoints:0,
+  scoreBoundRawLower:63,
+  scoreBoundRawUpper:63,
+  scoreQuality:'FULL_HISTORY',
+  scoreSemantics:'EXACT_POINT_SCORE',
+  scoreCalibrationEligible:true,
+  conservativeTailResetApplied:false,
+  historyCoverageHours:48,
+  historyReasonCodes:[],
   huntabilityScore: 74,
   transportScore: 61,
   mobilisationScore: 58,
@@ -131,7 +197,7 @@ assert.equal(evidence.calibrationEligible, true);
 assert.equal('route' in evidence, false);
 
 const columns = toObservationTripColumns(evidence);
-assert.equal(columns.schema_version, 2);
+assert.equal(columns.schema_version, TRIP_EVIDENCE_SCHEMA_VERSION);
 assert.equal(columns.result, 'medium');
 assert.equal(columns.actual_zone_id, 'zone-42');
 assert.equal(columns.actual_coastal_part_id, 'zone-42-part-2');
@@ -139,14 +205,17 @@ assert.equal('zone_id' in columns, false);
 assert.equal(columns.forecast_snapshot_id, 'rr-20260821025000-210');
 assert.equal(columns.calibration_features.totalScore, 63);
 assertTripEvidencePrivacy(columns);
-const legacyObservationColumns = structuredClone(columns);
+const projectedCurrentColumns = projectTripStoragePayload(columns, { omitNull: true });
+assert.ok(Object.hasOwn(projectedCurrentColumns, 'data_quality_flags'));
+assert.deepEqual(projectedCurrentColumns.data_quality_flags, []);
+const legacyObservationColumns = { ...structuredClone(columns), schema_version: 2 };
 delete legacyObservationColumns.data_quality_flags;
 const migratedLegacyObservationColumns = migrateLegacyUnattestedObservationColumns(legacyObservationColumns);
 assert.equal(migratedLegacyObservationColumns.calibration_eligible, false);
 assert.deepEqual(migratedLegacyObservationColumns.data_quality_flags, [UNATTESTED_RAVSCORE_QUALITY_FLAG]);
 assert.ok(migratedLegacyObservationColumns.calibration_features.reasonCodes.includes(UNATTESTED_RAVSCORE_QUALITY_FLAG));
 assert.throws(() => migrateLegacyUnattestedObservationColumns({
-  ...columns,
+  ...legacyObservationColumns,
   data_quality_flags: null
 }), /Datakvalitetsflag/);
 
@@ -196,6 +265,7 @@ assert.equal(completed.coastalPartId, 'zone-42-part-3');
 
 const legacyActiveStorage = new MemoryStorage();
 const legacyActive = structuredClone(startRecord);
+legacyActive.schemaVersion = 2;
 delete legacyActive.forecastCalibrationEligible;
 delete legacyActive.dataQualityFlags;
 legacyActiveStorage.setItem(tripEvidenceStorageKeys.active, JSON.stringify(legacyActive));
@@ -216,6 +286,7 @@ assert.deepEqual(completedLegacyActive.dataQualityFlags, [UNATTESTED_RAVSCORE_QU
 
 const legacyPendingStorage = new MemoryStorage();
 const legacyPending = structuredClone(evidence);
+legacyPending.schemaVersion = 2;
 delete legacyPending.dataQualityFlags;
 legacyPendingStorage.setItem(tripEvidenceStorageKeys.pending, JSON.stringify([legacyPending]));
 const [migratedLegacyPending] = listPendingTripEvidence(legacyPendingStorage);
@@ -359,54 +430,112 @@ assert.equal(submitted.status, 'submitted');
 assert.equal(controller.active(), null);
 assert.equal(listPendingTripEvidence(controllerStorage).length, 0);
 
-const publicStart = createTripStartFromPublicState({
+const freshManifest = createPublicManifest({
+  datasetId: 'rr-20260821025000-210',
+  generatedAt: '2026-08-21T02:50:00.000Z',
+  productionReferenceAt: '2026-08-21T02:00:00.000Z',
+});
+const freshConditions = {
+  available: true,
+  datasetId: freshManifest.datasetId,
+  productionReferenceAt: freshManifest.productionReferenceAt,
+  generatedAt: freshManifest.generatedAt,
+  ravScoreEvidenceTrust: verifiedOnlyTrust,
+  ravScoreRuntime: { modelBinding: publicBinding },
+  coastalParts: { modelBinding: publicBinding, evidenceTrust: verifiedOnlyTrust },
+  publicRuntimeAvailability: selectPublicRuntimeAvailability(freshManifest, {
+    now: Date.parse(input.startedAt),
+    modelBinding: publicBinding,
+  }),
+  zones: {
+    'zone-42': {
+      current: {
+        windSpeedMps: 8.4,
+        windDirectionDeg: 275,
+        waveHeightM: 1.4,
+        wavePeriodS: 6.8,
+        waveDirectionDeg: 282,
+        currentSpeedMps: 0.31,
+        currentDirectionDeg: 268,
+        waterLevelCm: 22,
+        waterLevelTrendCm3h: -8,
+      },
+      history: { maxWave24hM: 2.1, hoursSinceHighEnergy: 7 },
+    },
+  },
+};
+const freshCoastalPart = {
+  zoneId: 'zone-42',
+  ravScoreEvidenceTrust: verifiedOnlyTrust,
+  current: {
+    time: '2026-08-21T03:00:00.000Z',
+    waders: {
+      score: 63,
+      scoreQuality: 'FULL_HISTORY',
+      scoreBounds:{lower:63,upper:63,modelUncertaintyPoints:0,rawLower:63,rawUpper:63},
+      scoreSemantics:'EXACT_POINT_SCORE',
+      calibrationEligible:true,
+      conservativeTailResetApplied:false,
+      historyCoverageHours:48,
+      historyReasonCodes:[],
+      components: { huntability: 74, transport: 61, release: 58 },
+      modelBinding: publicBinding,
+    },
+  },
+};
+const publicStartInput = {
   tripId: '55555555-5555-4555-8555-555555555555',
   startedAt: input.startedAt,
   mode: 'waders',
   zoneId: 'zone-42',
   coastalPartId: 'zone-42-part-2',
-  manifest: { datasetId: 'rr-20260821025000-210', ravScoreEvidenceTrust: verifiedOnlyTrust },
-  conditions: {
-    available: true,
-    datasetId: 'rr-20260821025000-210',
-    productionReferenceAt: '2026-08-21T02:00:00.000Z',
-    ravScoreEvidenceTrust: verifiedOnlyTrust,
-    coastalParts: { evidenceTrust: verifiedOnlyTrust },
-    generatedAt: '2026-08-21T02:50:00.000Z',
-    zones: {
-      'zone-42': {
-        current: {
-          windSpeedMps: 8.4,
-          windDirectionDeg: 275,
-          waveHeightM: 1.4,
-          wavePeriodS: 6.8,
-          waveDirectionDeg: 282,
-          currentSpeedMps: 0.31,
-          currentDirectionDeg: 268,
-          waterLevelCm: 22,
-          waterLevelTrendCm3h: -8
-        },
-        history: { maxWave24hM: 2.1, hoursSinceHighEnergy: 7 }
-      }
-    }
-  },
-  coastalPart: {
-    zoneId: 'zone-42',
-    candidateG: { evidenceTrust: verifiedOnlyTrust },
-    current: {
-      time: '2026-08-21T03:00:00.000Z',
-      waders: { score: 63, components: { huntability: 74, transport: 61, release: 58 } }
-    }
-  },
+  manifest: freshManifest,
+  conditions: freshConditions,
+  coastalPart: freshCoastalPart,
   appVersion: '4.0.242',
-  modelVersion: 'ravscore-4.0.242'
-});
+  modelVersion: publicBinding.modelId,
+  modelBinding: publicBinding,
+};
+const publicStart = createTripStartFromPublicState(publicStartInput);
 assert.equal(publicStart.calibrationFeatures.waterLevelM, 0.22);
 assert.equal(publicStart.calibrationFeatures.waterLevelTrendM3h, -0.08);
 assert.equal(publicStart.calibrationFeatures.mobilisationScore, 58);
 assert.equal(publicStart.forecastSnapshot.validAt, '2026-08-21T03:00:00.000Z');
+const historyIncompleteStart = createTripStartFromPublicState({
+  ...publicStartInput,
+  tripId: '56565656-5656-4565-8565-565656565656',
+  coastalPart: {
+    ...freshCoastalPart,
+    current: {
+      ...freshCoastalPart.current,
+      waders: {
+        ...freshCoastalPart.current.waders,
+        scoreQuality: 'HISTORY_INCOMPLETE',
+        scoreBounds:{lower:63,upper:77,modelUncertaintyPoints:14,rawLower:63,rawUpper:77},
+        scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+        calibrationEligible:false,
+        conservativeTailResetApplied:false,
+        historyCoverageHours:19,
+        historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+      },
+    },
+  },
+});
+assert.deepEqual(historyIncompleteStart.dataQualityFlags, [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG]);
+assert.equal(historyIncompleteStart.forecastCalibrationEligible, false);
+assert.ok(historyIncompleteStart.calibrationFeatures.reasonCodes.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG));
+assert.equal(historyIncompleteStart.calibrationFeatures.scoreQuality,'HISTORY_INCOMPLETE');
+assert.equal(historyIncompleteStart.calibrationFeatures.scoreSemantics,
+  'CONSERVATIVE_ENCLOSING_LOWER_BOUND');
+assert.deepEqual({
+  lower:historyIncompleteStart.calibrationFeatures.scoreBoundLower,
+  upper:historyIncompleteStart.calibrationFeatures.scoreBoundUpper,
+  span:historyIncompleteStart.calibrationFeatures.scoreBoundModelUncertaintyPoints,
+},{lower:63,upper:77,span:14});
+assert.deepEqual(historyIncompleteStart.calibrationFeatures.historyReasonCodes,
+  ['CURRENT_HISTORY_INCOMPLETE']);
 assert.throws(() => createTripStartFromPublicState({
-  ...publicStart,
+  ...publicStartInput,
   zoneId: 'zone-99',
   coastalPart: { zoneId: 'zone-42' }
 }), /tilhører ikke den valgte zone/);
@@ -414,79 +543,63 @@ assert.throws(() => createTripStartFromPublicState({
 const runtimeStorage = new MemoryStorage();
 let runtimeNow = input.startedAt;
 const runtimeContext = {
-  mode: 'waders',
-  zoneId: 'zone-42',
-  coastalPartId: 'zone-42-part-2',
-  manifest: { datasetId: 'rr-20260821025000-210', ravScoreEvidenceTrust: verifiedOnlyTrust },
-  conditions: {
-    available: true,
-    datasetId: 'rr-20260821025000-210',
-    productionReferenceAt: '2026-08-21T02:00:00.000Z',
-    ravScoreEvidenceTrust: verifiedOnlyTrust,
-    coastalParts: { evidenceTrust: verifiedOnlyTrust },
-    zones: {
-      'zone-42': {
-        current: {
-          windSpeedMps: 8.4,
-          windDirectionDeg: 275,
-          waveHeightM: 1.4,
-          wavePeriodS: 6.8,
-          waveDirectionDeg: 282,
-          currentSpeedMps: 0.31,
-          currentDirectionDeg: 268,
-          waterLevelCm: 22,
-          waterLevelTrendCm3h: -8
-        },
-        history: { maxWave24hM: 2.1, hoursSinceHighEnergy: 7 }
-      }
-    }
-  },
-  coastalPart: {
-    zoneId: 'zone-42',
-    candidateG: { evidenceTrust: verifiedOnlyTrust },
-    current: {
-      time: '2026-08-21T03:00:00.000Z',
-      waders: { score: 63, components: { huntability: 74, transport: 61, release: 58 } }
-    }
-  },
+  ...publicStartInput,
+  tripId: undefined,
+  startedAt: undefined,
   zones: [{ id: 'zone-42', name: 'Testzone' }],
   coastalParts: [{ id: 'zone-42-part-2', zoneId: 'zone-42', name: 'Testdel' }],
-  appVersion: '4.0.242',
-  modelVersion: 'ravscore-4.0.242'
 };
 const fallbackDatasetId = 'rr-20260821010000-210';
-const fallbackManifestTrustSha = 'f'.repeat(64);
+const fallbackManifest = createPublicManifest({
+  datasetId: fallbackDatasetId,
+  generatedAt: '2026-08-21T01:50:00.000Z',
+  productionReferenceAt: '2026-08-21T01:00:00.000Z',
+});
+const fallbackAvailability = selectPublicRuntimeAvailability(fallbackManifest, {
+  now: Date.parse(input.startedAt),
+  modelBinding: publicBinding,
+});
+const fallbackWeather = {
+  ...freshConditions.zones['zone-42'].current,
+  time: fallbackAvailability.selectedReferenceAt,
+};
 const fallbackContext = {
   ...runtimeContext,
-  manifest: {
-    ...runtimeContext.manifest,
-    recoveryFallback: {
-      schemaVersion: 2,
-      status: 'active-last-verified',
-      datasetId: fallbackDatasetId,
-      generatedAt: '2026-08-21T01:50:00.000Z',
-      publicConditionsSha256: 'e'.repeat(64),
-      publicConditionDetailsSha256: 'd'.repeat(64),
-      ravScoreEvidenceTrust: verifiedOnlyTrust,
-      ravScoreEvidenceTrustSha256: fallbackManifestTrustSha
-    }
-  },
+  manifest: fallbackManifest,
   conditions: {
     ...runtimeContext.conditions,
     datasetId: fallbackDatasetId,
     generatedAt: '2026-08-21T01:50:00.000Z',
-    recoveryFallbackActive: true,
-    recoveryFallback: {
-      status: 'active-last-verified',
-      datasetId: fallbackDatasetId,
-      generatedAt: '2026-08-21T01:50:00.000Z',
-      publicConditionsSha256: 'e'.repeat(64),
-      publicConditionDetailsSha256: 'd'.repeat(64),
-      ravScoreEvidenceTrust: verifiedOnlyTrust,
-      ravScoreEvidenceTrustSha256: fallbackManifestTrustSha
+    productionReferenceAt: '2026-08-21T01:00:00.000Z',
+    detailsAvailable: true,
+    publicRuntimeAvailability: fallbackAvailability,
+    coastalParts: {
+      modelBinding: publicBinding,
+      evidenceTrust: verifiedOnlyTrust,
+      zones: {
+        'zone-42': { currentReferenceAt: fallbackAvailability.selectedReferenceAt },
+      },
     },
-    ravScoreEvidenceTrust: verifiedOnlyTrust
-  }
+    zones: {
+      'zone-42': {
+        ...runtimeContext.conditions.zones['zone-42'],
+        currentReferenceAt: fallbackAvailability.selectedReferenceAt,
+      },
+    },
+    ravScoreEvidenceTrust: verifiedOnlyTrust,
+  },
+  coastalPart: {
+    ...runtimeContext.coastalPart,
+    current: {
+      ...runtimeContext.coastalPart.current,
+      time: fallbackAvailability.selectedReferenceAt,
+      weather: fallbackWeather,
+      waders: {
+        ...runtimeContext.coastalPart.current.waders,
+        weather: fallbackWeather,
+      },
+    },
+  },
 };
 const fallbackStart = createTripStartFromPublicState({
   ...fallbackContext,
@@ -530,6 +643,8 @@ const updaterStyleFull = {
   coastalParts: {
     schemaVersion: 1,
     enabled: true,
+    modelBinding: publicBinding,
+    scoreProfile: publicProfile,
     generatedAt: '2026-08-29T09:00:00.000Z',
     productionReferenceAt: '2026-08-29T09:00:00.000Z',
     expectedPartCount: 1,
@@ -542,8 +657,8 @@ const updaterStyleFull = {
         currentReferenceAt: '2026-08-29T09:00:00.000Z',
         hourly: [{
           time: '2026-08-29T09:00:00.000Z',
-          waders: { available: true, score: 63, winningPartId: 'zone-42-part-2' },
-          beach: { available: true, score: 60, winningPartId: 'zone-42-part-2' },
+          waders: { available: true, score: 63, winningPartId: 'zone-42-part-2', components: { huntability: 74, transport: 61, release: 58 }, modelBinding: publicBinding },
+          beach: { available: true, score: 60, winningPartId: 'zone-42-part-2', components: { huntability: 68, transport: 61, release: 58 }, modelBinding: publicBinding },
         }],
       },
     },
@@ -552,8 +667,8 @@ const updaterStyleFull = {
         zoneId: 'zone-42',
         current: {
           time: '2026-08-29T09:00:00.000Z',
-          waders: { score: 63, components: { huntability: 74, transport: 61, release: 58 } },
-          beach: { score: 60, components: { huntability: 68, transport: 61, release: 58 } },
+          waders: { available: true, score: 63, components: { huntability: 74, transport: 61, release: 58 }, modelBinding: publicBinding },
+          beach: { available: true, score: 60, components: { huntability: 68, transport: 61, release: 58 }, modelBinding: publicBinding },
         },
         candidateG: {
           evidenceTrust: {
@@ -582,37 +697,12 @@ const updaterStyleFull = {
     },
   },
 };
-const projectedDetails = buildPublicConditionDetails(updaterStyleFull);
-const projectedPart = projectedDetails.coastalParts.parts['zone-42-part-2'];
-assert.deepEqual(projectedDetails.coastalParts.evidenceTrust, projectedDetails.ravScoreEvidenceTrust);
-assert.deepEqual(projectedPart.candidateG.evidenceTrust, projectedDetails.ravScoreEvidenceTrust);
-assert.deepEqual(projectedPart.candidateG.modes.waders.evidenceTrust, projectedDetails.ravScoreEvidenceTrust);
-const projectedReconstructedStart = createTripStartFromPublicState({
-  tripId: 'abababab-abab-4bab-8bab-abababababab',
-  startedAt: '2026-08-29T09:05:00.000Z',
-  mode: 'waders',
-  zoneId: 'zone-42',
-  coastalPartId: 'zone-42-part-2',
-  manifest: {
-    datasetId: updaterStyleFull.datasetId,
-    ravScoreEvidenceTrust: projectedDetails.ravScoreEvidenceTrust,
-  },
-  conditions: {
-    available: true,
-    datasetId: updaterStyleFull.datasetId,
-    generatedAt: updaterStyleFull.generatedAt,
-    productionReferenceAt: updaterStyleFull.productionReferenceAt,
-    ravScoreEvidenceTrust: projectedDetails.ravScoreEvidenceTrust,
-    coastalParts: projectedDetails.coastalParts,
-    zones: runtimeContext.conditions.zones,
-  },
-  coastalPart: projectedPart,
-  appVersion: '4.0.311',
-  modelVersion: 'ravscore-candidate-g',
-});
-assert.deepEqual(projectedReconstructedStart.dataQualityFlags, [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]);
-assert.equal(projectedReconstructedStart.forecastCalibrationEligible, false);
-const reconstructedStart = createTripStartFromPublicState({
+assert.throws(
+  () => buildPublicConditionDetails(updaterStyleFull),
+  /exact VERIFIED_ONLY contract/,
+  'abandoned reconstructed Candidate G evidence must never enter a new public projection',
+);
+assert.throws(() => createTripStartFromPublicState({
   ...runtimeContext,
   tripId: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
   startedAt: input.startedAt,
@@ -620,22 +710,23 @@ const reconstructedStart = createTripStartFromPublicState({
   conditions: {
     ...runtimeContext.conditions,
     ravScoreEvidenceTrust: reconstructedTrust,
-    coastalParts: { ...runtimeContext.conditions.coastalParts, evidenceTrust: reconstructedTrust }
+    coastalParts: { ...runtimeContext.conditions.coastalParts, evidenceTrust: reconstructedTrust },
   },
   coastalPart: {
     ...runtimeContext.coastalPart,
-    candidateG: { evidenceTrust: reconstructedTrust }
-  }
-});
-assert.deepEqual(reconstructedStart.dataQualityFlags, [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG]);
-assert.equal(reconstructedStart.forecastCalibrationEligible, false);
+    ravScoreEvidenceTrust: reconstructedTrust,
+  },
+}), /exact VERIFIED_ONLY contract/, 'new trips must reject abandoned reconstructed evidence');
 assert.throws(() => createTripStartFromPublicState({
   ...runtimeContext,
   tripId: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
   startedAt: input.startedAt,
   conditions: {
     ...runtimeContext.conditions,
-    coastalParts: { evidenceTrust: { ...verifiedOnlyTrust, calibrationEligible: false } }
+    coastalParts: {
+      ...runtimeContext.conditions.coastalParts,
+      evidenceTrust: { ...verifiedOnlyTrust, calibrationEligible: false },
+    }
   }
 }), /Start-, detalje- og den valgte kystdels RavScore-evidens matcher ikke/);
 assert.throws(() => createTripStartFromPublicState({
@@ -644,7 +735,9 @@ assert.throws(() => createTripStartFromPublicState({
   startedAt: input.startedAt,
   coastalPart: {
     ...runtimeContext.coastalPart,
-    candidateG: undefined
+    ravScoreEvidenceTrust: undefined,
+    integrated: undefined,
+    candidateG: undefined,
   }
 }), /Start-, detalje- og den valgte kystdels RavScore-evidens matcher ikke/);
 assert.throws(() => createTripStartFromPublicState({
@@ -653,9 +746,7 @@ assert.throws(() => createTripStartFromPublicState({
   startedAt: input.startedAt,
   coastalPart: {
     ...runtimeContext.coastalPart,
-    candidateG: {
-      evidenceTrust: { ...verifiedOnlyTrust, calibrationEligible: false }
-    }
+    ravScoreEvidenceTrust: { ...verifiedOnlyTrust, calibrationEligible: false },
   }
 }), /Start-, detalje- og den valgte kystdels RavScore-evidens matcher ikke/);
 assert.throws(() => createTripStartFromPublicState({
@@ -664,11 +755,22 @@ assert.throws(() => createTripStartFromPublicState({
   startedAt: input.startedAt,
   coastalPart: {
     ...runtimeContext.coastalPart,
-    candidateG: {
-      evidenceTrust: { ...verifiedOnlyTrust, unexpected: true }
-    }
+    ravScoreEvidenceTrust: { ...verifiedOnlyTrust, unexpected: true },
   }
 }), /Start-, detalje- og den valgte kystdels RavScore-evidens matcher ikke/);
+const uniformlyTamperedTrust = { ...verifiedOnlyTrust, unexpected: true };
+assert.throws(() => createTripStartFromPublicState({
+  ...runtimeContext,
+  tripId: '12121212-1212-4212-8212-121212121212',
+  startedAt: input.startedAt,
+  manifest: { ...runtimeContext.manifest, ravScoreEvidenceTrust: uniformlyTamperedTrust },
+  conditions: {
+    ...runtimeContext.conditions,
+    ravScoreEvidenceTrust: uniformlyTamperedTrust,
+    coastalParts: { ...runtimeContext.conditions.coastalParts, evidenceTrust: uniformlyTamperedTrust },
+  },
+  coastalPart: { ...runtimeContext.coastalPart, ravScoreEvidenceTrust: uniformlyTamperedTrust },
+}), /exact VERIFIED_ONLY contract/);
 const fallbackRuntimeStorage = new MemoryStorage();
 const fallbackRuntime = createPublicTripEvidenceRuntime({
   storage: fallbackRuntimeStorage,
@@ -685,14 +787,14 @@ assert.throws(() => createTripStartFromPublicState({
   ...fallbackContext,
   tripId: '99999999-9999-4999-8999-999999999999',
   startedAt: input.startedAt,
-  manifest: {
-    ...fallbackContext.manifest,
-    recoveryFallback: {
-      ...fallbackContext.manifest.recoveryFallback,
-      ravScoreEvidenceTrust: { ...verifiedOnlyTrust, status: 'ACTIVE_RECONSTRUCTED_DERIVED_EVIDENCE' }
-    }
-  }
-}), /matcher ikke|inkonsistent|hashbinding/);
+  conditions: {
+    ...fallbackContext.conditions,
+    publicRuntimeAvailability: {
+      ...fallbackContext.conditions.publicRuntimeAvailability,
+      ageHours: fallbackContext.conditions.publicRuntimeAvailability.ageHours + 1,
+    },
+  },
+}), /availability marker/);
 const runtime = createPublicTripEvidenceRuntime({
   storage: runtimeStorage,
   getContext: () => runtimeContext,
@@ -736,17 +838,44 @@ assert.equal(toObservationTripColumns(noFind).result, 'none');
 for (const dataQualityFlags of [
   [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG],
   [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG],
+  [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG],
+  [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG],
   [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG, RECONSTRUCTED_RAVSCORE_QUALITY_FLAG],
   [UNATTESTED_RAVSCORE_QUALITY_FLAG]
 ]) {
+  const historyIncomplete=dataQualityFlags.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG);
+  const qualityFeatures=historyIncomplete?{
+    ...calibrationFeatures,
+    scoreQuality:'HISTORY_INCOMPLETE',
+    scoreSemantics:'CONSERVATIVE_ENCLOSING_LOWER_BOUND',
+    scoreCalibrationEligible:false,
+    scoreBoundUpper:77,
+    scoreBoundModelUncertaintyPoints:14,
+    scoreBoundRawUpper:77,
+    historyCoverageHours:19,
+    historyReasonCodes:['CURRENT_HISTORY_INCOMPLETE'],
+  }:calibrationFeatures;
   const nonCalibration = buildTripEvidence({
     ...input,
     forecastCalibrationEligible: false,
     dataQualityFlags,
-    calibrationFeatures: { ...calibrationFeatures, reasonCodes: [...calibrationFeatures.reasonCodes, ...dataQualityFlags] }
+    calibrationFeatures: { ...qualityFeatures, reasonCodes: [...qualityFeatures.reasonCodes, ...dataQualityFlags] }
   });
   assert.equal(nonCalibration.calibrationEligible, false);
   assert.deepEqual(toObservationTripColumns(nonCalibration).data_quality_flags, dataQualityFlags);
+}
+for(const mutate of [
+  features=>{delete features.scoreSemantics;},
+  features=>{features.scoreBoundUpper=62;},
+  features=>{features.scoreBoundModelUncertaintyPoints=1;},
+  features=>{features.historyCoverageHours=47;},
+  features=>{features.conservativeTailResetApplied=true;},
+]){
+  const forged=structuredClone(calibrationFeatures);
+  mutate(forged);
+  assert.throws(()=>buildTripEvidence({...input,calibrationFeatures:forged}),
+    /score|Score|mangler|ugyldig|SCORE_/,
+    'manglende eller forfalskede immutable scorequality-felter skal afvises');
 }
 assert.throws(() => buildTripEvidence({
   ...input,
@@ -797,9 +926,9 @@ assert.throws(() => assertTripEvidencePrivacy({ latitude: 0 }), /Præcis positio
 assert.throws(() => assertTripEvidencePrivacy({ route: [] }), /Præcis position/);
 assert.throws(() => assertTripEvidencePrivacy({ nested: { location: {} } }), /Præcis position/);
 assert.doesNotThrow(() => assertTripEvidencePrivacy({ nested: { location: null } }));
-const browserPrivacySource = fs.readFileSync('js/services/trip-evidence-contract.js', 'utf8');
+const browserPrivacySource = fs.readFileSync('js/services/calibration-eligibility.js', 'utf8');
 const edgePrivacySource = fs.readFileSync('supabase/functions/_shared/trip-storage.js', 'utf8');
-const browserLocationPattern = browserPrivacySource.match(/const FORBIDDEN_REMOTE_KEY = (\/[^\r\n]+\/i);/)?.[1];
+const browserLocationPattern = browserPrivacySource.match(/const PRIVATE_LOCATION_KEY_PATTERN = (\/[^\r\n]+\/i);/)?.[1];
 const edgeLocationPattern = edgePrivacySource.match(/const PRIVATE_LOCATION_KEY_PATTERN = (\/[^\r\n]+\/i);/)?.[1];
 assert.ok(browserLocationPattern, 'Browserens private lokationsmønster mangler.');
 assert.equal(browserLocationPattern, edgeLocationPattern, 'Browser og Edge skal afvise præcis samme private lokationsaliaser.');
@@ -832,6 +961,7 @@ const observationServiceSource = fs.readFileSync('js/services/observation-servic
 const submitObservationFunctionSource = fs.readFileSync('supabase/functions/submit-observation/index.ts', 'utf8');
 const tripStoreSource = fs.readFileSync('supabase/functions/_shared/trip-store.ts', 'utf8');
 assert.match(observationServiceSource, /export async function submitTripEvidenceObservation/);
+assert.equal((observationServiceSource.match(/columns=structuredClone\(columns\|\|\{\}\)/g) || []).length, 2);
 assert.match(observationServiceSource, /hunt_mode:columns\.hunt_mode/);
 assert.match(observationServiceSource, /id:existing\?\.id\|\|columns\.trip_id/);
 assert.match(observationServiceSource, /\/functions\/v1\/submit-observation/);
@@ -843,14 +973,14 @@ assert.match(observationServiceSource, /route,track,position,coordinates,latitud
 assert.match(observationServiceSource, /gps:null/);
 
 const appSource = fs.readFileSync('app.js', 'utf8');
-assert.match(appSource, /const TRIP_EVIDENCE_INTEGRATION_V2 = true/);
+assert.match(appSource, /const TRIP_EVIDENCE_INTEGRATION_V3 = true/);
 assert.match(appSource, /createPublicTripEvidenceRuntime/);
 assert.match(appSource, /persist: submitTripEvidenceObservation/);
 assert.match(appSource, /state\.conditions\?\.coastalParts\?\.parts/);
 assert.match(appSource, /manifest:\s*activeManifest/);
 assert.doesNotMatch(appSource, /installTripEvidenceLegacyBridge/);
 assert.doesNotMatch(appSource, /(?:startTrip|stopTrip|resumeTripTracking|pendingTripPrompt)\s*\(/);
-assert.doesNotMatch(appSource.slice(appSource.indexOf('const TRIP_EVIDENCE_INTEGRATION_V2 = true')), /\b(?:geolocation|latitude|longitude|coordinates|route|track)\b/i);
+assert.doesNotMatch(appSource.slice(appSource.indexOf('const TRIP_EVIDENCE_INTEGRATION_V3 = true')), /\b(?:geolocation|latitude|longitude|coordinates|route|track)\b/i);
 
 const legacyBridgeSource = fs.readFileSync('js/services/trip-evidence-legacy-bridge.js', 'utf8');
 assert.match(legacyBridgeSource, /onTripChange\(handle\)/);

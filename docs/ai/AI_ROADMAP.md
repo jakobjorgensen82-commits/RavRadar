@@ -1,15 +1,14 @@
 # AI Roadmap – RavRadar 4.0.316+
 
-## P0 nu – publicér frisk primary uden gyldig ældre fallback
+## Offentlig baseline – 4.0.316 Candidate G
 
 1. [x] Bestå PR #233 exact-head `33299676128`, merge `63d789a4` og bevis i run `33299747300`, at D1-gaten frigives og build starter.
 2. [x] Afgræns rødt stop til fallbackstaging uden kandidat inden for 72 timer/prognosehorisont; intet artifact/Pages blev publiceret.
 3. [x] Bind DEC-0112 og 4.0.316-kontrakten: optional fallback, aldrig gammel/udløbet public fallback og streng primary accounting/audit.
 4. [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
 5. [x] Registrér workflowmonolit, grøn-no-op og version/docs/string-testkobling som modelarkitekturroadmap uden P0-scopeudvidelse.
-6. [ ] Bestå målrettede docs/RDKS/security/handbook/version/releasegates og exact-head sourcegate.
-7. [ ] Merge, kør frisk fuld produktion og verificér artifact/Pages samt offentlig 210/673/current/fem døgn.
-8. [ ] Fortsæt derefter DEC-0102-producent-/forbrugermatrix og arkitekturreduktion.
+6. [x] Observer frisk offentlig `rr-20260830091913-210` med 210/673; Candidate G gav 0 aktive/210 `UNAVAILABLE` på grund af utilstrækkelig sammenhængende historik. Det er regressionsevidens, ikke state-6-bevis.
+7. [x] Fortsæt DEC-0102/DEC-0112-producent-/forbrugermatrix og arkitekturreduktion i den samlede modelleverance.
 
 ## Historisk P0 – pensionér stale interlock og gendan friske prognoser
 
@@ -21,26 +20,24 @@
 6. [ ] Verificér offentligt frisk 210/673 manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser.
 7. [ ] Fortsæt derefter den integrerede model uden at genindføre interpolation.
 
-## Historisk P0 – få 4.0.314 gennem diagnostikhotfix og rekonstruktion
+## Model-P0 – færdiggør og verificér den samlede DEC-0110-model
 
-1. [x] Luk 4.0.313 gennem PR #226/exact-head `33269501339`, merge `ff62ba11`, no-op push `33269584236` og D1-run `33269631305`.
-2. [x] Registrér read-only inspect `33269849748` som afvist før descriptor/apply uden mutation.
-3. [x] Tillad singleton-afteranker kun for uafhængigt bevist native 3-timerskadence; bevar state-, bracket-, source- og CAS-beviserne.
-4. [x] Lås exact-D1 til 4.0.314, inspect til D1 og normal produktion til exact-head apply+Pages; bevis 4.0.315 ulåst.
-5. [x] Bestå PR #227-diffens målrettede og uafhængige recovery-/workflow-/privacytests samt fulde lokale source/RDKS/release/version/geodatagate; luk slutreviewets target-anker- og 1-times-fixturepræcision.
-6. [x] Bestå PR #227/exact-head `33272564543`, merge `d1369d88` og no-op push `33272676071`.
-7. [x] Klassificér produktion `33271863449` som stale test-/sourcegate-stop før release/Pages; ret assertionen og bind testen ind i `test:workflow-action-contracts`.
-8. [x] Bestå fuld lokal hotfixgate inklusive release/RDKS/version og nul geodatadiff.
-9. [x] Bestå to uafhængige hotfixrevisioner uden blocker.
-10. [x] Bestå hotfix PR #228 exact-head `33274411880`/`99158510299`, merge `50369742` og no-op push `33274505196`.
-11. [x] Bestå docs-checkpoint PR #229 exact-head `33275025105`/`99160126852`, merge `9291250c` og no-op push `33275147023`.
-12. [x] Bestå exact-main 4.0.314 `[d1]` `33275218540`/`99160622956` inklusive begge syncs, slutreconciliation og slutattestation.
-13. [x] Stop read-only inspect `33275438494`/`99161265720` fail-closed i planforseglingen før descriptorupload, mutation, build og Pages.
-14. [ ] Exact-head-valider og merge den allowlistede GitHub-fejlannotation og den særskilte minimale succesannotation; kør ny exact-main D1 på den nye final-SHA.
-15. [ ] Kør ny inspect, aflæs kun den sanitiserede domænekode, ret årsagen evidensbaseret og gennemfør CAS-apply, frisk produktion, Pages og offentlig 210/673 desktop/mobil.
-16. [ ] Integrér derefter seneste main i DEC-0102-modellen og færdiggør den retningsbestemte last-mile samt samlede model.
+1. [x] Bevar Candidate G som eneste offentlige model under arbejdet og integrér den seneste grønne 4.0.314-kilde uden at overskrive watchdog-, trip-, privacy-, recovery-, geometri- eller punktkontrakter.
+2. [x] Lås `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0` og alle variant-/profil-/komponent-/forklarings-/migration-/rollbackfelter fra modelkontrakten; schema 5 er kun den aldrig-offentlige eksakte 5→6-migrationskilde.
+3. [x] Implementér den kausale energivægtede bølgeapproach med fire timers halveringstid og en ældre hale, én `FROM`→`TOWARD`-rotation, højst 15 % dæmpning af supply, højst 7,5 rå totalscorepoint før slutafrunding og dermed op til 8 viste point. Aktiv direction-missing fejler lukket; kun `waveHeightM=0` er neutral exact calm, og positiv højde med nulperiode er `INVALID`/fail-closed.
+4. [x] Bevar `physicalDeliveryResolved=false` og fysisk interval `null`; brug DDM 50 m alene som statisk kontekst og Rainville 2026 alene som buoyant-object-analogi; flyt ingen kystnormal, geometri eller land-/vandpunkter.
+5. [x] Implementér v5's signed-evidence Candidate G→schema6-reweight, aggregate 673/common-target-gate og bounded 40-timers private WAM-bootstrap med coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation samt `1/1024`/`0.01171875`-grænser; bevar Candidate G fail-closed ved manglende state/target/run og dan ingen syntetisk/offentlig historik. State-løs recovery bruger `bounded-private-48h-history-cold-replay-v3` over de faktisk tilgængelige 0–48 positioner og er også ved 48/48 `HISTORY_INCOMPLETE`, indtil 288-timers closure; rollback får ingen dobbelt credit, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
+6. [x] Lås trustgrænserne: kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag.
+7. [x] Luk den komplette lokale producent-/forbrugermatrix, inklusive 210/673-kontrakter, payloads/hashes, ranglister, bedste tid, detaljer/femdøgn, strand/waders, DA/DE/EN, lokal/Edge-assistent, ture/observationer, admin/ekspert, håndbøger, profil, scheduler, audits og releasegates. Full rollback-orakel, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog og de øvrige proportionale blokke er grønne. PR exact-head, frisk produktion og offentlig verifikation står fortsat i udgivelsespunkt 14.
+8. [x] Opgiv den fiktive udførelse af morgenhullets rekonstruktion før descriptor/apply/mutation/publicering; bevar DEC-0109 alene som historisk afgrænset sikkerhedskontrakt.
+9. [ ] Færdiggør exact-head-/produktionsbevis for DEC-0112's numerisk konservative `HISTORY_INCOMPLETE`: kernens lower/upper gennem 20/50/30, 48 aktive currenttimer, 288 timers bølgemobiliseringshale, 40 timers last-mile-hale, 168 timers researchretention uden scoreeffekt og direct-input-`UNAVAILABLE` er implementeret lokalt. Trip-/observationspersistens af lower/upper/span/coverage/reasons er lokalt lukket. Checkpointschema 4/cache-v2 med den parrede READY Candidate G-companion er implementeret. Samlet tværgående regression i PR/produktion og offentlig verifikation udestår.
+10. [ ] Bevis Feggesund i frisk integrated 3 × 118 part-level-produktion. Parent-zone `rr-20260830104132-210` er wave-missing, men de tre dele findes og har `marineCoverage=full`; en proxy kan være unødvendig. Kun ved et reelt part-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` gå til særskilt beslutning. Ingen proxy er implementeret.
+11. [ ] Luk alle dokumentationsflader og målrettede model/state/history-bounds/wave-approach/migration/trust/emergency-tests uden at opfinde runbeviser.
+12. [ ] Gennemfør uafhængig helheds-, model-, runtime/privacy-, forbruger- og operationel rollback-revision; ret fund og gentag proportionalt.
+13. [ ] Hent seneste grønne `origin/main` ved slutcheckpointet, fastlås releaseversion, bevis kun versionsfelt i geodata og kør fuld source-/RDKS-/releasegate. De endelige aktive og Candidate G-rollback-hashes er allerede regenereret og dokumenteret.
+14. [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Først derefter må state 6 eller model 1.1 kaldes offentlig/produktionsverificeret.
 
-## Historisk P0 – luk kun det ejerautoriserede morgenhul gennem DEC-0109
+## Historisk P0 – opgivet engangsrekonstruktion under DEC-0109
 
 1. [x] Luk 4.0.311-kilden gennem PR #224 exact-head CI `33263734108` og merge `7c168b00af535415117c968a8c021a493b083137`.
 2. [x] Bekræft at push-run `33263858078` var en korrekt no-op uden artifact/Pages, og at backend `33263892151` stoppede før D1/Edge/Worker/sync/weather/artifact/Pages efter atomisk SQL HTTP 201.
@@ -49,11 +46,11 @@
 5. [x] Luk fuld lokal source-/RDKS-/håndbogs-/versions-/releasegate og særskilt geodatakontrol for 4.0.312. Bevar trip protocol/header 4.0.311.
 6. [x] Luk PR #225/exact-head `33266087776`, merge `a5ece10d` og no-op push `33266184326`.
 7. [x] Kør backend fra eksakt 4.0.312-main; den bestod verifier/D1/Edge/Worker, men fejlede migrationssynken i `33266229687`. Klassificér den som ikke-readiness og overfør replayrettelsen til 4.0.313.
-8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde; overfør den uændrede CAS-/produktions-/public-gate til det aktuelle 4.0.314-afsnit ovenfor.
+8. [x] Udfør ikke inspect/apply på den røde 4.0.312-kæde. Senere read-only forsøg stoppede fortsat før descriptor; ejeren opgav derefter hele udførelsen før apply, mutation, artifact eller offentliggørelse.
 9. [x] Bevar privat rollback og kausal cleanup; offentlig sandhed forblev korrekt 4.0.310.
 10. [x] Overfør integrationen af nyeste grønne `main`, 72-timers atomisk measured-only emergency og den låste globale koefficientlæring til det aktuelle DEC-0102-modeltrin ovenfor.
 
-Interpolation er ikke en roadmapfeature eller fallback. Den tidligere incidentoperation blev tilbagetrukket uden anvendelse og må ikke genåbnes. Sol/Ultra bevares gennem slutvalidering.
+Interpolation er ikke en roadmapfeature eller generel fallback. Den tidligere ejerautoriserede engangsoperation blev opgivet før descriptor/apply/mutation/offentliggørelse; kun DEC-0109's afgrænsede historiske incident-/trustkontrakt bevares. Sol/Ultra bevares gennem slutvalidering.
 
 ## Produktions- og driftsverificeret P0 – 4.0.310 overtagelse efter ét manglende interval
 
@@ -75,13 +72,13 @@ Ingen model-, state-, recovery-, geometri- eller punktændring. Se DEC-0108.
 
 Se DEC-0107.
 
-## Aktivt smårettelsesspor – 4.0.308 offentlig QA-opfølgning
+## Produktionsverificeret smårettelsesspor – 4.0.308 offentlig QA-opfølgning
 
 - [x] Reproducer og ret den naturlige DA/DE/EN-fosforformulering med uændret officielt sikkerhedssvar.
 - [x] Vis alle delstrengsmatches i den bevarede zone-rullemenu ved afslut tur og manuel indberetning.
 - [x] Tilføj målrettede sprog- og fler-match-regressioner.
 - [x] Luk source/RDKS/geodatabevis.
-- [ ] Luk exact-head, produktion og offentlig browserkontrol.
+- [x] Luk PR #220 exact-head `33221847955`, merge `a93082548c4cc1ddbe9c75ce303d334530a534c4`, fuld produktion/deploy `33221916441` og offentlig mobil-/desktopkontrol.
 
 Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0106.
 
@@ -98,36 +95,45 @@ Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0106.
 
 Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 
-## Aktivt smårettelsesspor – 4.0.306
+## Afsluttet smårettelsesspor – 4.0.306
 
 - [x] Implementér ejerens ikke-modelrelaterede UI-, lærings-, oversættelses- og assistentrettelser.
 - [x] Luk målrettede tests, source/RDKS, exact-head, produktion og offentlig kontrol.
 - [x] Dokumentér merge, så DEC-0102-modelworktree kan integrere nyeste `origin/main`.
 
-## P0 ejer-godkendt – én integreret næste RavScore-generation
+## P0 lokal releasekandidat – én integreret næste RavScore-generation
 
-- [ ] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.
-- [ ] Læs hele RDKS-startkæden, aktuelle modelbeslutninger, håndbog, evidensbase og faktisk 4.0.305-kode før ændring.
-- [ ] Klassificér hvert aktivt modelled som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**; genbrug fungerende kode og kontrakter som udgangspunkt.
-- [ ] Udbyg primær evidens om bølgeomformning, orbitalbevægelse, undertow/returstrøm, rip-/langskyststrøm, lette partikler, retention, vandstand og modelusikkerhed.
-- [ ] Design én samlet årsagsmodel for tilførsel, mobilisering, transport, nærkystlevering/aflejring, jagtbarhed og usikkerhed uden dobbelt-tælling.
-- [ ] Implementér kandidaten ende til ende med nyt model-/state-id, migrations-/rollbackvej, missingsemantik og almindelige forklaringer.
-- [ ] Gør kandidaten plug-and-play på seneste RavRadar-`main`: nødvendige adaptere, projektioner, migration og rollback implementeres i modelsporet, så ingen senere RavRadar-ombygning er nødvendig.
-- [ ] Kortlæg og regressionsbevis alle model-forbrugere: DA/DE/EN, lokal/Edge **Spørg RavRadar**, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, workflows, audits og releasegates.
-- [ ] Sammenlign gammel og ny model på invariants, kanoniske/ekstreme/modstridende scenarier, missing, ablation, følsomhed og datasikre historiske/offentlige replays.
-- [ ] Hent og integrér løbende smårettelser fra `origin/main`; før slutrelease skal den eksakte seneste grønne `main` være bevaret.
-- [ ] Kør fuld score-, DMI-, state-, privacy-, RDKS-, release- og browservalidering og luk først gennem én samlet PR, exact-head, produktion og offentlig kontrol.
+- [x] Start fra ren, opdateret `main` i en dedikeret isoleret worktree og opret et varigt autonomt mål.
+- [x] Læs hele RDKS-startkæden, aktuelle modelbeslutninger, håndbog, evidensbase og faktisk produktionsbaseline før ændring.
+- [x] Klassificér hvert aktivt modelled som **BEVAR**, **FORBEDR**, **ERSTAT**, **FJERN** eller **UTILSTRÆKKELIG EVIDENS**; genbrug fungerende kode og kontrakter som udgangspunkt.
+- [x] Udbyg primær evidens om bølgeomformning, orbitalbevægelse, undertow/returstrøm, rip-/langskyststrøm, lette partikler, retention, vandstand og modelusikkerhed.
+- [x] Design én samlet årsagsmodel for tilførsel, mobilisering, transport, nærkystlevering/aflejring, jagtbarhed og usikkerhed uden dobbelt-tælling.
+- [x] Implementér kandidaten ende til ende med nyt model-/state-id, migrations-/rollbackvej, missingsemantik og almindelige forklaringer.
+- [x] Gør kandidaten plug-and-play på seneste RavRadar-`main`: nødvendige adaptere, projektioner, migration og rollback implementeres i modelsporet, så ingen senere RavRadar-ombygning er nødvendig.
+- [x] Kortlæg og regressionsbevis alle model-forbrugere: DA/DE/EN, lokal/Edge **Spørg RavRadar**, ranglister/tid/detaljer, konto/ture/observationer, admin/ekspert, begge håndbøger, startup/detaljer/hashes, central profil, state/cache/recovery, workflows, audits og releasegates.
+- [x] Sammenlign gammel og ny model på invariants, kanoniske/ekstreme/modstridende scenarier, missing, ablation, følsomhed og datasikre replays uden fundpræcisionspåstand.
+- [x] Integrér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at miste 4.0.307-ejerpakken.
+- [x] Implementér observationsatomisk backend-/Edge-/Pages-cutover og manuel Candidate G central-/Pages-rollback med fail-closed `PENDING`, eksakt 210/673-gate, schedulerforbud, privat rollbackprojektion, ingen Candidate G-assistent-Edge, integreret Edge-`409` + lokale DA/DE/EN-svar og Candidate G-bundet schema-3-lagring uden kalibrering. Efter dry-run genverificeres `HEAD == origin/main == GITHUB_SHA` umiddelbart før første eksterne backendskrivning; post-write bruger samme snapshot.
+- [x] Luk dual-hash-fundet med separat `modelContractSha256`/`modelBundleSha256` gennem hele 11-feltsbindingen og negative mismatchprøver.
+- [x] Regenerér og fastlås slutbindingerne: aktiv `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae` over 43 filer og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer.
+- [x] Luk rollback-oraklets public-stage-fixture og de øvrige proportionale red-team-/regressionsgates; den fulde lokale matrix er grøn.
+- [ ] Gentag helhedsrevision, målrettede regressioner og fuld score-, DMI-, state-, privacy-, RDKS- og releasevalidering på afsluttet kandidat.
+- [ ] Hent og integrér seneste grønne `origin/main` ved sidste checkpoint og luk gennem én samlet PR, exact-head, frisk produktion/deploy og offentlig 210/673 mobil-/desktopkontrol.
 
 Ingen offentlig delrelease, ekstra offentlig shadowmodel, kunstig historik, privat payload, geometri- eller land-/vandpunktændring er tilladt. Uden repræsentative fund/nulfund må modellen ikke kaldes empirisk bevist mere fundpræcis. Se DEC-0102.
 
-## Parallelt P1 – mindre rettelser uden modeloverlap
+## Afsluttet parallelt P1 – mindre rettelser uden modeloverlap
 
-- [ ] Modtag ejerens mindre rettelser i en separat isoleret worktree og implementér dem fra seneste grønne `main`.
-- [ ] Hold Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden og alle modelbeslutninger uden for dette spor.
-- [ ] Følg normal målrettet test, RDKS, version, exact-head, merge, produktion og offentlig verifikation for hver reel produktændring.
-- [ ] Dokumentér merges tydeligt, så modelsporet kan integrere dem uden at miste funktioner.
+- [x] Modtag ejerens mindre rettelser i en separat isoleret worktree og implementér dem fra seneste grønne `main`.
+- [x] Hold Candidate G, RavScore, DMI-/strøm-/bølge-/statekæden og alle modelbeslutninger uden for dette spor.
+- [x] Følg normal målrettet test, RDKS, version, exact-head, merge, produktion og offentlig verifikation for hver reel produktændring.
+- [x] Dokumentér og integrér PR #220/4.0.308 i modelsporet uden at miste funktioner.
 
 Rod-worktree, `.recovery-*`, private data, geometri og land-/vandpunkter er beskyttede i begge spor.
+
+## Historisk roadmaparkiv
+
+De versionsmærkede punkter nedenfor bevarer status ved deres daværende checkpoints. Ord som **aktiv**, **nu**, **næste** og åbne afkrydsningsfelter dér er historik og må ikke tilsidesætte den aktuelle 4.0.315-/DEC-0110-releasekandidat ovenfor eller nyere `CURRENT_TRUTH`, `IMPLEMENTATION_STATUS` og `KNOWN-ISSUES`.
 
 ## Produktionsverificeret 4.0.294 – naturlige oprindelsesformuleringer
 

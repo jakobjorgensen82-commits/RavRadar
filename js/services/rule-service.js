@@ -1,4 +1,4 @@
-import { evaluateRules } from '../core/rule-engine.js?v=4.0.316';
+import { evaluateRules } from '../core/rule-engine.js?v=4.0.317';
 
 let cachedRules = null;
 
@@ -14,7 +14,7 @@ export async function loadActiveRules() {
     } catch { return []; }
   }));
   // Denne service er kun bevaret til versionsstyret forskning og historiske
-  // analyser. Den offentlige Candidate G-score anvender ikke disse regler.
+  // analyser. Den offentlige integrerede RavScore anvender ikke disse regler.
   // Centralt gemte administratorregler må hverken publiceres eller påvirke
   // RavScore gennem denne service.
   cachedRules = results.flat().filter(rule => rule.status === 'active');

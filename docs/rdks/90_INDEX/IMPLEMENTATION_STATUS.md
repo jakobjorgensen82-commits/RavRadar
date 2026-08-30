@@ -1,6 +1,33 @@
-# Implementeringsstatus – 4.0.316 optional-fallback-hotfix efter rødt post-merge-build
+# Implementeringsstatus – 4.0.317 lokal RavScore state-6-releasekandidat; Candidate G er fortsat offentlig
 
-## P0 – frisk primary må publiceres uden gyldig ældre fallback
+## P0 – 4.0.317-kandidaten og de resterende udgivelsesgates
+
+- [x] Bind én lokal modelidentitet `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` til state `6.0.0`, bounds-v5-profil/komponent/forklaring, Candidate G→6-migration, eksakt aldrig-offentlig 5→6-migration og schema6→Candidate G-rollback.
+- [x] Fastlås hele 11-feltsbindingen: parameterkontrakt `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og reproducerbar 43-filers implementeringsbundle `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`.
+- [x] Forsegl Candidate G-kildesiden til produktionsverificeret 4.0.316/head `49dd4cb454656bdf629e5df760176705e38d2cb0`/tree `975c3e9432cea7780564ffd56766bc1f0a0a9763`, central switch `RAVSCORE-PROFILE-SWITCH-4.0.316`, source contract `2f888a16190e9e43e44536536029f1b0021a1b850195524aa2312664ca74810b` og 53-filers source closure `a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606`; hent eksakt pinned commit i PR/build/deploy før attestationen.
+- [x] Fastlås Candidate G-helrollbackens separate 54-filers binding: kontraktdigest `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og bundledigest `fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207`.
+- [x] Gør same-reference checkpoint publish/restore observationsatomisk: sammenlign `generationSha256` og hele den validerede `candidateGRollbackCompanion` før første mutation; afvis divergens og bevar lokale bytes.
+- [x] Adskil direct-input-`UNAVAILABLE` fra historikmangel: gyldige direkte input med historikhul giver konservativ `HISTORY_INCOMPLETE` lower/upper gennem 20/50/30; 48-timers current, 288-timers bølgemobiliseringshale, 40-timers last-mile-hale og 168-timers score-neutral researchretention er bundet.
+- [x] Luk native-hold-slutrevisionen uden P1/P2/P3: kun eksakt ejerautoriseret regional native cadence attesterer højst tre timer; almindelige spring over én time bliver unknown bounds, t0→t3 lukker ikke retroaktivt et hul, og normal DMI/Copernicus tilbagekalder hold. Syv målrettede regressioner er grønne.
+- [x] Luk den offentlige secondary-kontrakt: alternative tider og kystdele fører egen kvalitet/bounds/coverage/reasons; `HISTORY_INCOMPLETE` viser kompakt markør og interval, mens `UNAVAILABLE` ikke viser en score. Candidate G-legacyprojektion bevares kompatibelt.
+- [x] Luk dual-state point-staging og rollback: schema 3 parrer eksakt integreret state 6 med eksakt Candidate G-companion via separate hashes og parhash; kun `POINT_ACTIVATION` må vælge companionen. Cross-part/-target/-generation, tamper og privacy-negative tests er grønne.
+- [x] Luk trip-/observationspersistens og den snævre manuelle rollbackprojektion målrettet: lower/upper/span/coverage/reasons går gennem klient, immutable snapshot, DTO, Edge og SQL; kun eksakt READY Candidate G må projicere collapsed exact score, altid med `calibrationEligible=false`.
+- [x] Luk workflow-outcome lokalt med det payloadfri `NOOP`/`DEFERRED`/`BUILT`/`DEPLOYED`/`FAILED`; hver terminal kræver præcis sit tilladte bevisniveau, og `FAILED` holder runnet rødt.
+- [x] Luk spatial-samplingbeslutningen uden nye fetchkrav: aktiv current bruger uændret eksisterende havpunkt/kystnormal; privat 0/5/15-km-flerlagscache forbliver score-neutral offline forskning.
+- [x] Bevis separat, at geodata kun ændrer det autoriserede topversionsfelt 4.0.316→4.0.317; ingen geometri, zoner eller land-/vandpunkter ændres.
+- [x] Færdiggør den fulde lokale proportionale matrix: rollback-orakel gennem bundle/runtime/stage/trip/assistant/Pages, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog samt RDKS/security/model/release/module-version/bundle/binding/mode/ranking er grønne.
+- [x] Bind releasegaten til den faktiske to-dokument-RPC/SQL-CAS-ejer og service-role-rettigheder, native-time DMI-matrix -48..+117, dynamisk 15/45-minutters watchdog, eksplicit fallbackafvisning, faktiske DA/DE/EN-tekster og schema-4 startup-envelope/hash/modelbinding; gør SQL/RPC-installationsparitet obligatorisk i `test:ravscore-integrated-profile`/`validate:source`, og aggregér krævede fil-/JSON-fejl med en isoleret sourcegate-test. Den fulde lokale `release:gate` er grøn efter justeringen; exact-head og produktion er fortsat åbne.
+- [x] Registrér at PR #235's første exact-head `33324239464`/job `99291456658` stoppede i `validate:source` på en stale state-6-feedbackfixture uden merge, produktionsbuild/artifact eller deploy; gennemgå derefter de resterende uafhængige kontrakter og ret de yderligere stale public-fixtures, den aktive adaptive observationsskrivning og bundle-driften samlet uden at omgå gaten.
+- [x] Pensionér adaptiv ny-skrivning, opdatér quality/bounds-/payload-/forklaringsfixtures, regenerér den 43-filers bundle til `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`, synkronisér bindingsforbrugerne og bestå en ny fuld lokal `validate:source` inklusive indlejret `release:gate` i kildekontekst; dette erstatter ikke frisk centralt hydreret produktionsvalidate/releasegate.
+- [x] Push remediationen som `7bc848610794b87f62a6a3763564ca46a0d7528e`; registrér at anden exact-head `33329919843`/job `99306529711` bestod de forudgående model-/runtime-/rollback-/DMI-dele og stoppede fail-closed ved manglende `xarray`, fordi CI ikke installerede de ejede geometry-/Copernicus-requirements. Ingen merge, produktionsbuild/artifact, deploy eller offentlig ændring skete.
+- [x] Luk dependency-pariteten systemisk i PR-, produktions- og turlagerworkflows: installér alle tre ejede requirements-sæt umiddelbart før hver `validate:source` med samme betingelse, hæv PR-timeout 30→45 minutter, lås workflowinventar/rækkefølge/betingelse i regressionen og bestå målrettede workflow-, Copernicus- og modelbundletests.
+- [x] Fetch finalt `origin/main` og bekræft head `49dd4cb454656bdf629e5df760176705e38d2cb0` samt ingen nyere main-delta at integrere før samlet remediationcommit.
+- [ ] Bevis Feggesund på part-level i frisk integreret produktion: alle tre aktive dele × 118 timer. Kun et reelt part-hul og dokumenteret umulig korrekt direkte officiel data kan åbne en særskilt, zonespecifik beslutning; ingen proxy er implementeret.
+- [ ] Commit/push dependency-paritetsrettelsen til PR #235, bestå en ny full sourcegate på dens eksakte opdaterede head, merge sikkert og gennemfør frisk fuld produktion, releasegate, artifact og Pages.
+- [ ] Verificér state 6 offentligt på 210/673, current og fem døgn, begge modes, primære og sekundære scoreflader, warnings, lokal/Edge-assistent, admin/ekspert samt desktop/mobil. Indtil da er offentlig 4.0.316/Candidate G den eneste offentlige model.
+- [ ] Begræns alle påstande til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.
+
+## Afsluttet offentlig baseline – 4.0.316 frisk primary uden gyldig ældre fallback
 
 - [x] Bestå PR #233 exact-head `33299676128` og merge 4.0.315 som `63d789a4`.
 - [x] Bevis i post-merge-run `33299747300`, at den pensionerede D1-/reconstruction-readiness frigives og normal build starter.
@@ -9,9 +36,7 @@
 - [x] Bevar fail-closed primary accounting/audit og forbuddet mod syntetiske data, interpolation, backfill og zonelån.
 - [x] Opret DEC-0112 og bind DEC-0102/aktive krav til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk recovery, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
 - [x] Registrér workflowmonolit, grøn-no-op-semantik og spredt version/docs/string-testkobling som modelarkitektur-roadmap uden at udvide P0-hotfixen.
-- [ ] Bestå målrettede fallback-, RDKS-, håndbogs-, security-, versions- og releasegates samt exact-head sourcegate på 4.0.316.
-- [ ] Merge 4.0.316 og kør frisk normal produktion med fuld validate, releasegate, artifact og Pages faktisk success.
-- [ ] Verificér offentligt 210/673, frisk manifest/startpakke/detaljer samt aktuelle og femdøgnsprognoser. Først da er P0 live lukket.
+- [x] Den offentlige baseline leverer et friskt observeret 4.0.316/Candidate G-datasæt `rr-20260830091913-210` med 210/673. Candidate G gav 0 aktive/210 `UNAVAILABLE` på grund af manglende sammenhængende historik; dette er den regression state 6 skal fjerne uden at opfinde data.
 
 ## Historisk P0 – 4.0.315 pensionerede rekonstruktionsstien og nåede build
 
@@ -33,8 +58,9 @@
 - [x] Tillad kun eksakte 1/2/3-timersafstande på policyklassificerede 1h-dele uden at syntetisere de manglende interne slots; kræv fortsat eksakt 3h på de otte 3h-dele.
 - [x] Bestå målrettet 210/673 cadence-/descriptor-/CAS-test og workflowinterlocktest.
 - [x] Bestå den fulde lokale `validate:source` én gang samt de målrettede RDKS-, håndbogs-, security- og releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
-- [ ] Bestå same-version exact-head/merge/no-op og nyt exact-main D1 på endelig SHA.
-- [ ] Kør ny read-only inspect; kun ved forseglet descriptor fortsættes med CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+- [x] Stop det ejerautoriserede rekonstruktionsspor uden ny exact-head, apply, mutation, artifact eller offentliggørelse; den fiktive udførelse af morgenhullet er opgivet.
+- [x] Bevar DEC-0109 som en historisk, hændelsesafgrænset sikkerhedskontrakt uden at gøre interpolation til en normal fallback- eller modelregel.
+- [x] Pensionér alle aktuelle workflow-inputs og inspect/apply/rollback/cleanup-job samt incidentpolicy, mutator og positive eksekveringstests. Bind en negativ pensionsgate ind i source/release, men bevar historisk read-/quality-klassifikation og den separate Candidate G-helrollback.
 
 ## Historisk P0 – before-primary afgrænset lokalt
 
@@ -47,8 +73,8 @@
 - [x] Gør den positive fixture 673/673 `WINDOW_INCOMPLETE` med 24-timers målte suffixer, og bevis ældre hul, replaytampering, schema 2.1 og ukendt status fail-closed.
 - [x] Bestå hele syntetiske 210/673 inspect/CAS/rollback/cleanup/checkpoint-regressionen både med og uden nedarvet `GITHUB_ACTIONS`.
 - [x] Bestå målrettede workflow-, RDKS-, håndbogs-, security-, release- og geodatagates, hele lokale `validate:source` samt tre uafhængige slutreviews uden resterende blocker.
-- [ ] Bestå same-version-hotfix exact-head/merge/no-op og nyt exact-main D1 på den nye SHA.
-- [ ] Kør ny read-only inspect; hvis descriptoren forsegles, gennemfør eksakt CAS-bundet apply, frisk normal produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
+- [x] Luk den historiske same-version-hotfix som kildebevis uden at kræve en ny incidentrelease; den efterfølgende ejerbeslutning ophæver behovet for ny exact-head/D1 alene til rekonstruktionen.
+- [x] Aflys ny read-only inspect og CAS-apply efter ejerbeslutningen; der blev ikke udført mutation, artifact, Pages eller offentlig incidentverifikation.
 
 ## Historisk P0 – diagnostikhotfix før before-primary-fejlkoden
 
@@ -136,7 +162,42 @@ Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændri
 
 Seneste offentlige snapshot er `rr-20260829095610-210`: 210/673 komplet, primary 0 aktive zoner/673 warmupdele og 5–12/48 sammenhængende timer under komplet recovery. Ingen model-, score-, vejrinput-, state-, recovery-, geometri- eller punktændring og ingen kunstig historik. Se DEC-0107/0108.
 
-## 4.0.308-kandidat – luk naturlig fosforformulering og tvetydig zonesøgning
+## Historisk, aldrig offentlig P0 – 4.0.315/state 5 integreret releasekandidat
+
+Dette afsnit dokumenterer den state-5-kandidat, der aldrig blev udgivet, og som nu alene er eksakt 5→6-migrationskilde. Det aktive state-6-arbejde står øverst i dokumentet; identiteter og exact-48-adfærd nedenfor er historiske regressioner, ikke aktiv kontrakt.
+
+- [x] Start fra og genverificér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at overskrive 4.0.307-ejerpakken.
+- [x] Opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN/UTILSTRÆKKELIG EVIDENS-matricen for hele Candidate G.
+- [x] Design og implementér én samlet årsagsmodel med fælles model-id, stateversion, forklaringer, profil, migration og rollback.
+- [x] Bind model `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponent `ravscore-components-huntability-delivery-mobilisation-v4` og forklaring `ravscore-explanation-integrated-v4` som én kontrakt.
+- [x] Adskil muligt lager/tilførsel, bølgemobilisering, lokal gridstrøm, afgrænset bølgeapproach i sidste nærkystled, jagtbarhed og usikkerhed uden at foregive lokal surfzone- eller batymetripræcision.
+- [x] Bevar 20/50/30, 0,03/0,15 m/s og +10/-8; erstat 13-timers helscore-gaten med 24 timers fuld strømvægt og cosinusfade til nul ved 48 timer; gør 4/48-bølgemobilisering statefuld og fail-closed ved manglende evidens.
+- [x] Luk migrationens lange bølgegap med tidsbundet seed, konservativ restart og positive/negative gaptests; markér løsningen lokalt grøn, men ikke produktionsverificeret.
+- [x] Behandl faldende vandstand tosidet og score-neutralt: mulig udtransport samt blotlægning af allerede afleveret eller fastholdt materiale bag revler indgår som kontekst og tie-break. Det er ikke bevis for koncentration og giver ingen universel retningseffekt.
+- [x] Implementér den kausale energivægtede bølgeapproach med fire timers halveringstid, afledt som `W/N/T` med en ældre hale: DMI `FROM` roteres præcis én gang +180° til `TOWARD` mod den uændrede eksisterende kystnormal; `factor=clamp(1-0.15×W×(1-approach),0.85,1)`; `delivery=supply×factor` én gang; højst 7,5 rå totalscorepoint fjernes før slutafrunding; vist RavScore kan derfor ændres 8 point; bølger kan ikke skabe/øge supply; aktiv direction-missing fejler lukket; kun `waveHeightM=0` er neutral exact calm, og `waveHeightM>0` med `wavePeriodS=0` er `INVALID`/fail-closed.
+- [x] Bevar den faglige grænse: fysisk levering er fortsat uopløst, intervallet er `null`, og modellen må ikke kaldes empirisk mere fundpræcis. Brug DDM 50 m alene som statisk kontekst, fordi dataene ikke opløser dynamiske revler/surfzone; flyt ingen kystnormal, geometri eller land-/vandpunkter. Brug Rainville 2026 kun som buoyant-object-analogi, ikke ravkalibrering.
+- [x] Implementér plug-and-play Candidate G-recovery via `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`: signerede afledte kystnormale currentstyrker genvægtes uden rå U/V eller påstand om rå genberegningslighed; præcis 673 schema-2-states skal give ét fælles target; wave-approach bruger 40 private præ-target-positioner fra coherent WAM-run pr. collection, same-cell native provenance og kun kontrolleret højst fire timers same-run/same-cell-interpolation. Boundaries er `1/1024` udeladt EWMA-hale og `0.01171875` konservativ rå-scorefejl før afrunding. Manglende target/run/state bevarer Candidate G fail-closed. Ægte cold start forbliver eksakt 48 private timepositioner plus reel targetrække, og rollback `integrated-schema5-to-candidate-g-schema2-v2` bruger samme targettid uden dobbelt credit. Ingen syntetisk eller offentlig historik.
+- [x] Implementér fuld 11-felts model-/state-/hashbundet state-5-runtime for hver continuation-state, checkpoint og central profilselection, med fire offentlige schema-4-livefiler, kompakt checkpoint, privat produktionsbundle, beskyttet driftscheckpoint og fail-closed restore. Stop fremtidig versionskopiering for det allowlistede operationelle checkpoint uden at slette eksisterende `admin_document_versions`-historik.
+- [x] Implementér samme-model atomisk nøddrift i højst 72 timer eller kortere forecastudløb, uden cross-model fallback eller interpolation. Kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag.
+- [x] Fjern samtidige offentlige shadow-/fallback-/adaptive modeller; bevar Candidate G's varme projektion kun privat som rollback-orakel og kræv et separat manuelt, fuldt verificeret modelskift, hvis Candidate G igen skal være den ene offentlige model.
+- [x] Implementér de unikke migrations-id'er `20260829010000` → `20260829020000`, samlet protected readiness, eksakt Edge-`409` ved manglende/forkert binding og lokal Candidate G i gammel klient uden servermodelmix. Genverificér `origin/main == GITHUB_SHA` efter dry-run og umiddelbart før første eksterne backendskrivning; fortsæt post-write fra samme validerede snapshot.
+- [x] Harden current-proveniens: afled kanonisk 0,01 m/s-fart og toward-retning fra det eksakte verificerede U/V-par, normalisér 360° til 0° og ignorer modstridende parallelle cachefelter; DMI- og Copernicus-fixtures dækker grænsen.
+- [x] Harden hele den aktive model-/state-/runtime-/recovery-/public-kæde til endelige JSON-tal; numeriske strenge og andre coercible typer afvises som invalid/missing. Slutpakken genkøres efter bundle-regeneration.
+- [x] Implementér operationel v3-controller for første `INTEGRATED_PENDING`-cutover, manuel Candidate G-rollback, manuel integreret return og afgrænset Candidate-refresh. Hvert skift bevarer central source-profil under `PENDING`, verificerer target Pages implementation+210/673 og sætter derefter `ACTIVE` + central target-profil atomisk; crash/retry reconcilerer source/requested/third manifest fail-closed. Candidate rollback deployer ingen Candidate G-assistent-Edge, bruger integreret Edge-`409` + deterministiske lokale DA/DE/EN-svar og lagrer schema-3-ture Candidate G-bundet med `calibration_eligible=false`; den endelige separate binding er `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer.
+- [x] Luk producent-/forbrugermatricen for generator, 210/673, ranking, bedste tid, zonedetalje, femdøgnsvisning, strand/waders, DA/DE/EN, lokal/Edge-assistent, observationer, konto/ture, admin, ekspertflader, håndbøger, profil, workflows, audits og releasegates.
+- [x] Dokumentér scenarier, invariants, ablation, følsomhed og datasikre replays uden at påstå empirisk bedre fundpræcision.
+- [x] Harmoniser aktiv RDKS, Markdown-/webhåndbog og dokumentationstests; marker 4.0.308/Candidate G som offentlig indtil cutover og ældre Candidate G-afsnit som historik.
+- [x] Kør første målrettede model-, bølgeapproach-, state-, migration-, runtime-, workflow-, privacy-, assistent- og 210/673-kontraktpakke.
+- [x] Luk red-team-fundet, så både `modelContractSha256` og `modelBundleSha256` faktisk følger hele 11-feltsruntimebindingen og afvises separat ved mismatch.
+- [x] Regenerér og lås de endelige aktive kontrakt-/bundleværdier samt Candidate G-rollbackens separate 54-filers binding på den lokale afsluttede implementeringskandidat.
+- [ ] Luk uafhængige model-, runtime/privacy-, forbruger- og operationel rollback-red-team-audits og gentag helhedsrevisionen efter rettelser.
+- [ ] Bestå afsluttende målrettede tests, fuld lokal sourcegate/RDKS/geodatabevis og releasegate på versionssat kandidat.
+- [ ] Hent og integrér endnu en gang seneste grønne `origin/main`; genvalider den eksakte afsluttede head.
+- [ ] Bestå egen PR exact-head, sikker merge, frisk fuld produktion/deploy samt offentlig desktop-/mobilkontrol.
+
+Se DEC-0110 og forskningspakken `docs/research/RAVSCORE_INTEGRATED_*_2026-08-29.md`. Offentligheden bruger fortsat Candidate G/4.0.310; 4.0.315 er releasekandidat og mangler exact-head, merge, frisk produktion og offentlig kontrol.
+
+## Produktionsverificeret 4.0.308 – luk naturlig fosforformulering og tvetydig zonesøgning
 
 - [x] Reproducer den offentlige afvisning af “Hvad er hvidt fosfor på stranden?”.
 - [x] Udvid DA/DE/EN-emnematchet til naturlige formuleringer uden at lempe eller omskrive det officielt kildebundne sikkerhedssvar.
@@ -144,7 +205,7 @@ Seneste offentlige snapshot er `rr-20260829095610-210`: 210/673 komplet, primary
 - [x] Filtrér den eksisterende rullemenu til alle delstrengsmatches ved både afslut tur og manuel indberetning; bevar rydning og fuld liste.
 - [x] Tilføj tre naturlige fosforregressioner og fler-match-/ryd-kontrakt.
 - [x] Bestå fuld lokal sourcegate, RDKS, geodatabevis og versionslukning.
-- [ ] Bestå PR exact-head, merge, frisk produktion og offentlig slutkontrol.
+- [x] Bestå PR #220 exact-head `33221847955` på `698f2e15b32aaff711c8b4e1907236b81a4a6327`, merge `a93082548c4cc1ddbe9c75ce303d334530a534c4`, frisk produktion/deploy `33221916441` og offentlig mobil-/desktopkontrol.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0106.
 
@@ -188,23 +249,24 @@ Se DEC-0104.
 
 Ingen model-, vejr-, state-, geometri- eller punktændring. Se DEC-0103.
 
-## Ejer-godkendt og ikke implementeret – integreret næste RavScore-generation
+## Ejer-godkendt arbejdsgrundlag – integreret næste RavScore-generation
 
-- [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars valgte bundnære modelstrøm.
+- [x] Afgræns ekspertspørgsmålet: bølgeorbitaler og halv-bølgelængde er ikke en komplet beskrivelse af undertow, ripstrømme eller RavRadars verificerede modelgridstrøm; gridstrømmen er heller ikke en lokal bundstrømsmåling.
 - [x] Verificér mod aktuel kode, at Candidate G allerede adskiller jagtbarhed, strømstyret transport, bølgeenergimobilisering og afhængig bølgelanding.
 - [x] Lås arbejdsformen: én isoleret, autonom model-worktree, én samlet kandidat, ingen offentlig fragmentudgivelse og ingen ekstra offentlig shadowmodel.
 - [x] Lås genbrugsprincippet: alle aktive led auditeres og fungerende dele bevares, medmindre en dokumenteret analyse begrunder erstatning.
 - [x] Lås det parallelle smårettelsesspor til ikke-modelkode og kræv, at modelsporet integrerer seneste grønne `main` før slutvalidering.
 - [x] Lås plug-and-play som acceptkrav: kandidaten skal selv levere kompatibilitet, adaptere, state-migration og rollback til RavRadars eksisterende system; ingen senere RavRadar-ombygning må stå tilbage.
 - [x] Lås grænserne: ingen private payloads, geometri eller land-/vandpunkter; ingen påstand om empirisk bedre fundrate uden repræsentative funddata.
-- [ ] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN-matricen.
-- [ ] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
-- [ ] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/recovery og releasegates.
-- [ ] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
-- [ ] Model-worktree: gennemfør scenarie-, ablations-, følsomheds-, regressions-, integrations- og fuld releasevalidering mod seneste `main`.
+- [x] Model-worktree: opdatér forskning og udfyld BEVAR/FORBEDR/ERSTAT/FJERN/UTILSTRÆKKELIG EVIDENS-matricen.
+- [x] Model-worktree: design og implementér den samlede årsagsmodel med versionsbundet state, usikkerhed, forklaringer og rollback.
+- [x] Model-worktree: bevis plug-and-play mod eksisterende produktionsgenerator, runtimeprojektioner, UI/admin/assistent, 210/673, cache/checkpoint og releasegates.
+- [x] Model-worktree: færdiggør producent-/forbrugermatricen og bevis DA/DE/EN, lokal/Edge-assistent, konto/ture/observationer, admin/ekspert, begge håndbøger, payloads/hashes, central profil, workflows og audits før release.
+- [x] Model-worktree: gennemfør første scenarie-, ablations-, følsomheds-, regressions- og integrationsvalidering mod 4.0.308-main.
+- [ ] Model-worktree: luk red-team-fund, gentag fuld releasevalidering og integrér seneste grønne `main` ved sidste checkpoint.
 - [ ] Udgiv først efter samlet modelbeslutning, exact-head, frisk produktion og offentlig kontrol.
 
-Se DEC-0102 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig version forbliver 4.0.305.
+Se DEC-0102, DEC-0110 og `docs/research/RAVSCORE_NEXT_GENERATION_WORK_BASIS_2026-08-28.md`. Offentlig model forbliver Candidate G, indtil den samlede kandidat er verificeret.
 
 ## P1 produktionsverificeret – fjern rasterflisegitter uden kortfølger
 

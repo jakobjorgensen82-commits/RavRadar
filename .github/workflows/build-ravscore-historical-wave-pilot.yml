@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       year:
-        description: "Complete year for bounded wave event discovery (1993-current)"
+        description: "Historical year, or feggesund:<exact UTC hour> for the isolated feasibility mode"
         required: true
         default: "2024"
         type: string
@@ -13,11 +13,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: private-ravscore-historical-wave-pilot
+  group: private-ravscore-wave-pilot-${{ startsWith(inputs.year, 'feggesund:') && 'feggesund' || 'historical' }}
   cancel-in-progress: false
 
 jobs:
   build:
+    if: ${{ !startsWith(inputs.year, 'feggesund:') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -143,3 +144,139 @@ jobs:
             .cache/ravscore-historical-wind-features.txt
             .cache/ravscore-historical-candidate-f-comparison.json
             .cache/ravscore-historical-candidate-f-comparison.txt
+
+  feggesund-wave-feasibility:
+    if: ${{ startsWith(inputs.year, 'feggesund:') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out requested research ref
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Install central geometry and Copernicus dependencies
+        run: |
+          python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
+          python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Run credential-free Feggesund fixture contracts
+        run: python scripts/test-feggesund-copernicus-wave-pilot.py
+
+      - name: Require an exact manually selected UTC hour
+        id: target
+        env:
+          PILOT_SELECTOR: ${{ inputs.year }}
+        run: |
+          case "$PILOT_SELECTOR" in
+            feggesund:*) ;;
+            *) exit 1 ;;
+          esac
+          TARGET_HOUR="${PILOT_SELECTOR#feggesund:}"
+          test -n "$TARGET_HOUR"
+          python -c "import sys; from datetime import datetime; v=sys.argv[1]; d=datetime.fromisoformat(v.replace('Z','+00:00')); assert d.tzinfo and d.minute == d.second == d.microsecond == 0" "$TARGET_HOUR"
+          echo "target_hour=$TARGET_HOUR" >> "$GITHUB_OUTPUT"
+
+      - name: Rebuild latest centrally approved sampling points without publishing
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/refine-coastlines-constrained-4.0.48.py
+          python scripts/sync-admin-config.py
+          python scripts/apply-central-zone-reviews.py
+          node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Verify existing private Copernicus credentials
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
+          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
+
+      - name: Test both official products independently at every affected part
+        id: feasibility
+        continue-on-error: true
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+          TARGET_HOUR: ${{ steps.target.outputs.target_hour }}
+        run: >-
+          python scripts/pilot-feggesund-copernicus-wave.py
+          --target-hour "$TARGET_HOUR"
+
+      - name: Revalidate aggregate-only artifact before upload
+        id: privacy
+        if: always()
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: |
+          python - <<'PY'
+          import json, os, pathlib
+          paths = (
+              pathlib.Path('.cache/feggesund-copernicus-wave-feasibility.json'),
+              pathlib.Path('.cache/feggesund-copernicus-wave-feasibility.txt'),
+          )
+          texts = [path.read_text(encoding='utf-8') for path in paths]
+          documents = [json.loads(text) for text in texts]
+          assert documents[0] == documents[1]
+          data = documents[0]
+          assert isinstance(data['pilotExecutionComplete'], bool)
+          assert data['temporaryFilesRemoved'] is True
+          for key in (
+              'scoreImpact', 'publicRuntime', 'productionSourceChanged',
+              'modelContractChanged', 'geometryChanged', 'pointsChanged',
+              'coordinateValuesStored', 'rawWeatherValuesStored',
+              'rawDirectionValuesStored', 'credentialsStored', 'rawNetcdfStored',
+          ):
+              assert data[key] is False
+          assert set(data['products']) == {'nws', 'baltic'}
+          allowed = {'at-most-1-mib', 'at-most-4-mib', 'at-most-8-mib', 'over-cap-or-unavailable'}
+          def inspect(value):
+              if isinstance(value, dict):
+                  for child in value.values(): inspect(child)
+              elif isinstance(value, list):
+                  for child in value: inspect(child)
+              elif isinstance(value, str):
+                  assert value in allowed or (value.startswith('sha256:') and len(value) == 71)
+              else:
+                  assert isinstance(value, (bool, int, float))
+          inspect(data)
+          joined = '\n'.join(texts)
+          for name in ('COPERNICUSMARINE_SERVICE_USERNAME', 'COPERNICUSMARINE_SERVICE_PASSWORD'):
+              secret = os.environ.get(name, '')
+              assert secret and secret not in joined
+          print(json.dumps({
+              'pilotExecutionComplete': data['pilotExecutionComplete'],
+              'acceptedProductCount': sum(int(row['candidateAccepted']) for row in data['products'].values()),
+          }, sort_keys=True))
+          PY
+
+      - name: Upload only aggregate feasibility evidence
+        if: always() && steps.privacy.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: feggesund-copernicus-wave-feasibility-${{ github.run_number }}
+          if-no-files-found: error
+          retention-days: 7
+          path: |
+            .cache/feggesund-copernicus-wave-feasibility.json
+            .cache/feggesund-copernicus-wave-feasibility.txt
+
+      - name: Fail closed on acquisition or privacy failure
+        if: always()
+        run: |
+          test "${{ steps.feasibility.outcome }}" = "success"
+          test "${{ steps.privacy.outcome }}" = "success"

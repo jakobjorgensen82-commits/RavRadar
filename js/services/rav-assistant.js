@@ -1,7 +1,31 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.316";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.316";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.316";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.316";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.317";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.317";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.317";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.317";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.317";
+import {
+  RAVSCORE_CALIBRATION_ELIGIBLE,
+  ravScoreModelBinding,
+} from "../core/ravscore-model-contract.js?v=4.0.317";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.317";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.317";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.317";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.317";
+
+// Compatibility name for existing source-contract tests. The implementation
+// now selects the only adapter matching the artifact's exact active binding.
+const presentIntegratedRavScoreExplanation = presentActiveRavScoreExplanation;
+const ACTIVE_RAVSCORE_MODEL_BINDING = ravScoreModelBinding();
+const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = 'rav-assistant-public-knowledge-v1';
+const RAV_ASSISTANT_KNOWLEDGE_SHA256 = '6c35d63a21cd8a04f3bb2013fecf642af62f3cb6be6e7cb0b3b8a1b7860e205a';
+const RAV_ASSISTANT_BINDING_HEADERS = Object.freeze({
+  modelId:'x-ravradar-model-id',
+  modelStateVersion:'x-ravradar-model-state-version',
+  modelContractSha256:'x-ravradar-model-contract-sha256',
+  modelBundleSha256:'x-ravradar-model-bundle-sha256',
+  knowledgeSchema:'x-ravradar-assistant-knowledge-schema',
+  knowledgeSha256:'x-ravradar-assistant-knowledge-sha256',
+});
 
 const SECURITY_PATTERN = /api.?key|password|passwort|adgangskode|supabase|database|datenbank|sql|source code|kildekode|quellcode|system.?prompt|systeminstruk|admin|token|secret|hemmelig|geheim/i;
 const OUT_OF_SCOPE_PATTERN = /(?<![\p{L}\p{N}_])(?:roulade|biskuitrolle|swiss roll|kage|kuchen|cake|fodbold|fußball|football|opskrift|rezept|recipe|politik|politics|aktie|stock price|matematik|math homework)(?![\p{L}\p{N}_])/iu;
@@ -42,8 +66,111 @@ const QUICK_KEYS = Object.freeze([
 ]);
 
 function finite(value) {
-  const number = Number(value);
-  return Number.isFinite(number) ? number : null;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+const ASSISTANT_HISTORY_HOURS = 48;
+const ASSISTANT_HISTORY_REASON_CODE = /^[A-Z][A-Z0-9_]{0,79}$/;
+const ASSISTANT_SCORE_BOUND_FIELDS = Object.freeze([
+  'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
+]);
+
+function publicScoreBounds(result, available) {
+  if (!available) return result?.scoreBounds === null ? null : undefined;
+  const bounds=result?.scoreBounds;
+  if (!bounds||typeof bounds!=='object'||Array.isArray(bounds)
+    ||JSON.stringify(Object.keys(bounds).sort())
+      !==JSON.stringify([...ASSISTANT_SCORE_BOUND_FIELDS].sort())
+    ||ASSISTANT_SCORE_BOUND_FIELDS.some(field=>finite(bounds[field])===null)
+    ||bounds.lower<0||bounds.upper>100||bounds.lower>bounds.upper
+    ||bounds.rawLower<0||bounds.rawUpper>100||bounds.rawLower>bounds.rawUpper
+    ||Math.abs(bounds.modelUncertaintyPoints-(bounds.upper-bounds.lower))>1e-9
+    ||result.score!==bounds.lower)return undefined;
+  if(result.scoreQuality==='FULL_HISTORY'
+    &&(bounds.lower!==bounds.upper||bounds.rawLower!==bounds.rawUpper))return undefined;
+  return {...bounds};
+}
+
+function publicScoreQuality(result, available) {
+  const coverage = finite(result?.historyCoverageHours);
+  const reasonCodes = Array.isArray(result?.historyReasonCodes)
+    && result.historyReasonCodes.length <= 12
+    && result.historyReasonCodes.every(code => typeof code === 'string'
+      && ASSISTANT_HISTORY_REASON_CODE.test(code))
+    && new Set(result.historyReasonCodes).size === result.historyReasonCodes.length
+    ? [...result.historyReasonCodes]
+    : null;
+  const scoreBounds=publicScoreBounds(result,available);
+  if(scoreBounds===undefined)return {
+    scoreQuality:'UNAVAILABLE',calibrationEligible:false,scoreSemantics:null,
+    conservativeTailResetApplied:false,scoreBounds:null,
+    historyCoverageHours:null,historyReasonCodes:[],
+  };
+  if (available
+    && result.scoreQuality === 'FULL_HISTORY'
+    && result.calibrationEligible === RAVSCORE_CALIBRATION_ELIGIBLE
+    && coverage === ASSISTANT_HISTORY_HOURS
+    && reasonCodes?.length === 0
+    && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
+      .includes(result.scoreSemantics)
+    && typeof result.conservativeTailResetApplied==='boolean'
+    && result.conservativeTailResetApplied
+      ===(result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')) {
+    return {
+      scoreQuality:'FULL_HISTORY',
+      calibrationEligible:RAVSCORE_CALIBRATION_ELIGIBLE,
+      scoreSemantics:result.scoreSemantics,
+      conservativeTailResetApplied:result.conservativeTailResetApplied,
+      scoreBounds,historyCoverageHours:coverage, historyReasonCodes:[],
+    };
+  }
+  if (available
+    && result.scoreQuality === 'HISTORY_INCOMPLETE'
+    && RAVSCORE_CALIBRATION_ELIGIBLE === true
+    && result.calibrationEligible === false
+    && coverage !== null
+    && coverage >= 0
+    && coverage <= ASSISTANT_HISTORY_HOURS
+    && reasonCodes?.length > 0
+    && result.scoreSemantics==='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
+    && typeof result.conservativeTailResetApplied==='boolean') {
+    return {
+      scoreQuality:'HISTORY_INCOMPLETE', calibrationEligible:false,
+      scoreSemantics:result.scoreSemantics,
+      conservativeTailResetApplied:result.conservativeTailResetApplied,
+      scoreBounds,historyCoverageHours:coverage, historyReasonCodes:reasonCodes,
+    };
+  }
+  if (!available
+    && result.scoreQuality === 'UNAVAILABLE'
+    && result.calibrationEligible === false
+    && result.historyCoverageHours === null
+    && reasonCodes?.length === 0
+    && result.scoreSemantics===null
+    && result.conservativeTailResetApplied===false) {
+    return {
+      scoreQuality:'UNAVAILABLE', calibrationEligible:false,
+      scoreSemantics:null,conservativeTailResetApplied:false,scoreBounds:null,
+      historyCoverageHours:null, historyReasonCodes:[],
+    };
+  }
+  return {
+    scoreQuality:'UNAVAILABLE', calibrationEligible:false,
+    scoreSemantics:null,conservativeTailResetApplied:false,scoreBounds:null,
+    historyCoverageHours:null, historyReasonCodes:[],
+  };
+}
+
+function scoreRangeNotice(result, language) {
+  const bounds=result?.scoreBounds;
+  if(result?.scoreQuality!=='HISTORY_INCOMPLETE'
+    ||finite(bounds?.lower)===null||finite(bounds?.upper)===null
+    ||finite(bounds?.modelUncertaintyPoints)===null)return '';
+  return `${t('score.historyIncomplete.short',{},language)}: ${t('score.historyIncomplete.range',{
+    lower:formatNumber(bounds.lower,{maximumFractionDigits:1},language),
+    upper:formatNumber(bounds.upper,{maximumFractionDigits:1},language),
+    span:formatNumber(bounds.modelUncertaintyPoints,{maximumFractionDigits:1},language),
+  },language)}.`;
 }
 
 function tomorrowQuestion(question) {
@@ -75,72 +202,84 @@ export function ravQuestionNeedsConditionDetails(question) {
   return ['best-place', 'best-time', 'score'].includes(classifyRavQuestion(question));
 }
 
-function allScored(context, dayOffset = 0) {
-  const target = new Date();
-  target.setUTCDate(target.getUTCDate() + dayOffset);
-  const date = target.toISOString().slice(0, 10);
+function allScored(context, dayOffset = 0, now = Date.now()) {
+  const date = forecastDateKeyForDayOffset(now, dayOffset);
   const mode = context.mode || 'waders';
   return (context.zones?.features || []).map(feature => {
     const zone = feature.properties;
-    const best = selectLocalBestForDay({ coastalParts:context.conditions?.coastalParts, zoneId:zone.id, mode, date });
-    return best ? { zone, ...best } : null;
-  }).filter(Boolean).sort((left, right) => right.result.score - left.result.score || Date.parse(left.hour.time) - Date.parse(right.hour.time));
+    const best = selectLocalBestForDay({ coastalParts:context.conditions?.coastalParts, zoneId:zone.id, mode, date, now });
+    return best ? addNationalRanking({ zone, ...best }, context.zones?.coastalParts?.zones?.[zone.id] || []) : null;
+  }).filter(Boolean).sort(compareNationalRankingRows);
 }
 
-function selectedScored(context, dayOffset = 0) {
+function selectedScored(context, dayOffset = 0, now = Date.now()) {
   const zone = context.zone;
   if (!zone) return [];
-  const target = new Date();
-  target.setUTCDate(target.getUTCDate() + dayOffset);
-  const date = target.toISOString().slice(0, 10);
+  const date = forecastDateKeyForDayOffset(now, dayOffset);
   const coastalParts = context.conditions?.coastalParts;
-  return (coastalParts?.zones?.[zone.id]?.hourly || [])
-    .filter(row => String(row.time || '').slice(0, 10) === date)
-    .map(row => ({ hour:{ time:row.time }, result:buildLocalZoneScore({ coastalParts, zoneId:zone.id, mode:context.mode || 'waders', time:row.time }) }))
-    .filter(item => item.result?.available)
-    .sort((left, right) => right.result.score - left.result.score || Date.parse(left.hour.time) - Date.parse(right.hour.time));
+  const mode = context.mode || 'waders';
+  const selected = selectLocalBestForDay({ coastalParts, zoneId:zone.id, mode, date, now });
+  return (selected?.candidates || []).map((candidate, index) => ({
+    hour:{ time:candidate.time },
+    result:buildLocalZoneScore({ coastalParts, zoneId:zone.id, mode, time:candidate.time }),
+    selectionReason:index === 0 ? selected.selectionReason ?? null : null,
+  })).filter(item => item.result?.available);
 }
 
 function scoreAnswer(context, language) {
   const result = context.result;
   const weather = context.weather || {};
-  if (!result) return t('assistant.local.noZone', {}, language);
+  if (!context.zone) return t('assistant.local.noZone', {}, language);
+  if (result?.available !== true || finite(result?.score) === null) {
+    return t('assistant.local.noZoneForecast', {}, language);
+  }
   const componentLines = [
     ['score.huntability', result.components?.huntability],
     ['score.transport', result.components?.transport],
-    ['score.mobilisation', result.components?.mobilisation],
+    ['score.mobilisation', result.components?.release],
   ].filter(([, value]) => finite(value) !== null).map(([key, value]) => `• ${t(key, {}, language)}: ${Math.round(Number(value))}/100`);
-  const state = result.explanation?.transportEvent?.stateExplanation;
-  const history = state?.summary
-    ? `\n\n${t('assistant.local.historyHeading', {}, language)} ${language === 'da' ? state.summary : t('assistant.local.historyGeneric', {}, language)}${language === 'da' && Array.isArray(state.facts) && state.facts.length ? `\n${state.facts.slice(0, 3).map(item => `• ${item}`).join('\n')}` : ''}`
-    : '';
-  return `${t('assistant.local.scoreHeading', { score:result.score, zone:context.zone?.name || t('common.unknown', {}, language) }, language)}\n\n${componentLines.join('\n') || `• ${t('assistant.local.scoreGeneric', {}, language)}`}${history}\n\n${t('assistant.local.currentWeather', {
-    wind:formatNumber(weather.windSpeedMps, { maximumFractionDigits:1 }, language),
-    waves:formatNumber(weather.waveHeightM, { maximumFractionDigits:1 }, language),
-    current:formatNumber(weather.currentSpeedMps, { maximumFractionDigits:2 }, language),
-    water:formatNumber(weather.waterLevelCm, { maximumFractionDigits:0 }, language),
+  const presentation = presentIntegratedRavScoreExplanation(result, { language });
+  if (!presentation.available) return t('assistant.local.noZoneForecast', {}, language);
+  const process = `\n\n${presentation.summary}\n${presentation.facts.map(item => `• ${item}`).join('\n')}`;
+  const qualityNotice=scoreRangeNotice(result,language);
+  const localityNotice=result.winningPartUncertain===true
+    ? t('assistant.local.winnerUncertain',{},language):'';
+  const metric = (value, digits) => finite(value) === null
+    ? t('common.missing', {}, language)
+    : formatNumber(value, { maximumFractionDigits:digits }, language);
+  return `${t('assistant.local.scoreHeading', { score:result.score, zone:context.zone?.name || t('common.unknown', {}, language) }, language)}${qualityNotice?`\n${qualityNotice}`:''}${localityNotice?`\n${localityNotice}`:''}\n\n${componentLines.join('\n') || `• ${t('assistant.local.scoreGeneric', {}, language)}`}${process}\n\n${t('assistant.local.currentWeather', {
+    wind:metric(weather.windSpeedMps, 1),
+    waves:metric(weather.waveHeightM, 1),
+    current:metric(weather.currentSpeedMps, 2),
+    water:metric(weather.waterLevelCm, 0),
   }, language)}`;
 }
 
-function bestPlace(context, question, language) {
+function bestPlace(context, question, language, now) {
   const tomorrow = tomorrowQuestion(question);
-  const rows = allScored(context, tomorrow ? 1 : 0).slice(0, 5);
+  const rows = allScored(context, tomorrow ? 1 : 0, now).slice(0, 5);
   if (!rows.length) return t('assistant.local.noRanking', {}, language);
   const day = t(tomorrow ? 'assistant.local.tomorrow' : 'assistant.local.today', {}, language);
+  const qualityNotice=rows.some(item=>item.result.scoreQuality==='HISTORY_INCOMPLETE')
+    ? `\n\n${t('assistant.local.historyRankingCaveat',{},language)}`:'';
   return `${t('assistant.local.bestPlaces', { day }, language)}\n\n${rows.map((item, index) => t('assistant.local.rankLine', {
-    rank:index + 1, zone:item.zone.name, score:item.result.score, time:clock(item.hour.time, language)
-  }, language)).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}`;
+    rank:index + 1, zone:item.zone.name, score:item.rankingDisplayScore ?? item.result.score, time:clock(item.hour.time, language)
+  }, language)+(scoreRangeNotice(item.result,language)?` · ${scoreRangeNotice(item.result,language)}`:'')).join('\n')}\n\n${t('assistant.local.rankingBasis', {}, language)}${qualityNotice}`;
 }
 
-function bestTime(context, question, language) {
+function bestTime(context, question, language, now) {
   if (!context.zone) return t('assistant.local.noZoneTime', {}, language);
   const tomorrow = tomorrowQuestion(question);
-  const rows = selectedScored(context, tomorrow ? 1 : 0).slice(0, 3);
+  const rows = selectedScored(context, tomorrow ? 1 : 0, now).slice(0, 3);
   if (!rows.length) return t('assistant.local.noZoneForecast', {}, language);
   const best = rows[0];
   const day = t(tomorrow ? 'assistant.local.tomorrow' : 'assistant.local.today', {}, language);
   const alternatives = rows.slice(1).map(item => `${clock(item.hour.time, language)} (${item.result.score})`).join(', ') || t('assistant.local.noNextTimes', {}, language);
-  return `${t('assistant.local.bestTime', { day, zone:context.zone.name, time:clock(best.hour.time, language), score:best.result.score }, language)}\n\n${t('assistant.local.nextTimes', { times:alternatives }, language)}`;
+  const reason = best.selectionReason
+    ? t(bestTimeSelectionReasonI18nKey(best.selectionReason), {}, language)
+    : t('score.bestTimeBody', { future:'' }, language);
+  const qualityNotice=scoreRangeNotice(best.result,language);
+  return `${t('assistant.local.bestTime', { day, zone:context.zone.name, time:clock(best.hour.time, language), score:best.result.score }, language)}${qualityNotice?`\n${qualityNotice}`:''}\n\n${reason}\n\n${t('assistant.local.nextTimes', { times:alternatives }, language)}`;
 }
 
 function equipmentAnswer(context, language) {
@@ -151,13 +290,21 @@ function equipmentAnswer(context, language) {
   return t('assistant.local.equipment', {}, language) + extra;
 }
 
-function localAnswer(question, context, language) {
+function localAnswer(question, context, language, now = Date.now()) {
+  const intent = classifyRavQuestion(question);
+  const presentation = presentIntegratedRavScoreExplanation(context?.result, { language });
+  if (presentation.available) {
+    if (intent === 'current') return `${presentation.sections.gridCurrent}\n\n${presentation.sections.lastMile}`;
+    if (intent === 'waves') return `${t('assistant.local.waves', {}, language)}\n\n${presentation.sections.lastMile}`;
+    if (intent === 'water') return `${presentation.sections.waterLevel}\n\n${presentation.sections.lastMile}`;
+    if (intent === 'model') return `${presentation.summary}\n\n${presentation.facts.map(item => `• ${item}`).join('\n')}`;
+    if (intent === 'limitations') return `${presentation.sections.limitations}\n\n${presentation.sections.lastMile}`;
+  }
   const knowledgeAnswer = localRavKnowledgeAnswer(question, language);
   if (knowledgeAnswer) return knowledgeAnswer;
-  const intent = classifyRavQuestion(question);
   if (intent === 'equipment') return equipmentAnswer(context, language);
-  if (intent === 'best-place') return bestPlace(context, question, language);
-  if (intent === 'best-time') return bestTime(context, question, language);
+  if (intent === 'best-place') return bestPlace(context, question, language, now);
+  if (intent === 'best-time') return bestTime(context, question, language, now);
   if (intent === 'score') return scoreAnswer(context, language);
   if (intent === 'safety') return t('assistant.local.safety', {}, language);
   if (intent === 'model') return t('assistant.local.model', {}, language);
@@ -190,15 +337,33 @@ function shortText(value, max = 160) {
 }
 
 export function publicAssistantContext(value = {}, language = getLanguage()) {
-  const context = value && typeof value === 'object' ? value : {};
-  const zone = context.zone && typeof context.zone === 'object' ? context.zone : {};
-  const result = context.result && typeof context.result === 'object' ? context.result : {};
-  const weather = context.weather && typeof context.weather === 'object' ? context.weather : {};
+  const context = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  const zone = context.zone && typeof context.zone === 'object' && !Array.isArray(context.zone) ? context.zone : {};
+  const result = context.result && typeof context.result === 'object' && !Array.isArray(context.result) ? context.result : {};
+  const weather = context.weather && typeof context.weather === 'object' && !Array.isArray(context.weather) ? context.weather : {};
+  const modelBindingMatches = sameRavScoreModelBinding(
+    context.modelBinding,
+    ACTIVE_RAVSCORE_MODEL_BINDING,
+  );
+  const numericScore = finite(result.score);
+  const basicScoreAvailable = modelBindingMatches
+    && result.available === true
+    && numericScore !== null
+    && numericScore >= 0
+    && numericScore <= 100;
+  const scoreQuality = publicScoreQuality(result, basicScoreAvailable);
+  const scoreAvailable = basicScoreAvailable && scoreQuality.scoreQuality !== 'UNAVAILABLE';
   return {
     locale:normaliseLanguage(language),
     mode:context.mode === 'beach' ? 'beach' : 'waders',
+    modelBinding:{ ...ACTIVE_RAVSCORE_MODEL_BINDING },
     zone:{ id:shortText(zone.id, 80), name:shortText(zone.name, 100), coastType:shortText(zone.coastType, 60) },
-    result:{ available:result.available !== false, score:finite(result.score), level:shortText(result.level, 40) },
+    result:{
+      available:scoreAvailable,
+      score:scoreAvailable ? numericScore : null,
+      level:scoreAvailable ? shortText(result.level, 40) : null,
+      ...(scoreAvailable ? scoreQuality : publicScoreQuality(result, false)),
+    },
     weather:{
       time:shortText(weather.time, 40), provider:shortText(weather.provider, 60),
       windSpeedMps:finite(weather.windSpeedMps), windDirectionDeg:finite(weather.windDirectionDeg),
@@ -221,6 +386,13 @@ async function remoteAnswer(question, context, language) {
       signal:controller.signal
     });
     if (!response.ok) return null;
+    const responseBindingMatches = response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelId) === ACTIVE_RAVSCORE_MODEL_BINDING.modelId
+      && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelStateVersion) === ACTIVE_RAVSCORE_MODEL_BINDING.stateSchemaVersion
+      && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelContractSha256) === ACTIVE_RAVSCORE_MODEL_BINDING.modelContractSha256
+      && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.modelBundleSha256) === ACTIVE_RAVSCORE_MODEL_BINDING.modelBundleSha256
+      && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.knowledgeSchema) === RAV_ASSISTANT_KNOWLEDGE_SCHEMA
+      && response.headers.get(RAV_ASSISTANT_BINDING_HEADERS.knowledgeSha256) === RAV_ASSISTANT_KNOWLEDGE_SHA256;
+    if (!responseBindingMatches) return null;
     const answer = (await response.json())?.answer;
     return typeof answer === 'string' && answer.trim() && answer.length <= 900 ? answer.trim() : null;
   } catch {
@@ -236,8 +408,11 @@ export async function askRavRadar(question, context = {}, options = {}) {
   if (!safe) throw new Error(t('assistant.empty', {}, language));
   const route = routeRavQuestion(safe);
   if (route === 'fixed-refusal') return t('assistant.refusal', {}, language);
-  if (route === 'local-deterministic' || options?.localOnly) return localAnswer(safe, context, language);
-  return await remoteAnswer(safe, context, language) || t('assistant.unknown', {}, language);
+  if (route === 'local-deterministic' || options?.localOnly) {
+    return localAnswer(safe, context, language, options?.now ?? Date.now());
+  }
+  return await remoteAnswer(safe, context, language)
+    || localAnswer(safe, context, language, options?.now ?? Date.now());
 }
 
 export function quickQuestions(language = getLanguage()) {

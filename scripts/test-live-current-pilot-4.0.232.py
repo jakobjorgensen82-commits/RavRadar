@@ -1,211 +1,237 @@
 #!/usr/bin/env python3
+"""Regression for COMPLETE Copernicus range-seal projection."""
 from __future__ import annotations
 
+import copy
 import json
-import os
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from lib.copernicus_current import (
+    atomic_write_shadow,
+    canonical_sha256,
+    file_sha256,
+    make_acquisition,
+    make_coverage_collection,
+    make_record,
+    merge_cache_evidence,
+    live_record_projection_payload,
+    select_required_records,
+    verified_live_record_projection,
+)
+from lib.copernicus_target_identity import target_fingerprint
+
+
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-from lib.copernicus_target_identity import target_fingerprint, targets_from_registry  # noqa: E402
+SCRIPT = ROOT / "scripts/build-live-current-pilot.py"
+REFERENCE = datetime(2026, 8, 18, 15, tzinfo=timezone.utc)
+AT = REFERENCE.isoformat().replace("+00:00", "Z")
 
 
 def write(path: Path, value: dict) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
 
 
-def run_builder(folder: Path, at: str = "2026-08-18T15:30:00Z") -> tuple[dict, dict]:
-    output = folder / "history.json"
-    report = folder / "report.json"
-    command = [
-        sys.executable,
-        "-B",
-        str(ROOT / "scripts/build-live-current-pilot.py"),
+def dmi_source(part: dict) -> dict:
+    return {
+        "provider": "dmi", "fallback": False, "collection": "dkss_idw", "collectionFamily": "marine",
+        "component": "current", "componentKind": "ocean-current-vector",
+        "fieldSet": ["current-u", "current-v"], "optionalFieldSet": [],
+        "modelRun": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "nativeValidTime": AT, "leadTimeHours": 1,
+        "entityId": f"PART::{part['partId']}", "parentZoneId": part["sourceZoneId"],
+        "entityType": "coastal-part", "samplingContext": "coastal-part-water-point",
+        "samplingPoint": part["waterPoint"], "gridPoint": part["waterPoint"],
+        "gridDefinitionSha256": "a" * 64, "distanceKm": 0.0,
+        "spatialSemanticsVersion": 1, "spatialSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
+        "itemId": f"item-{part['partId']}", "assetIdentitySha256": "b" * 64, "acquiredAt": AT,
+        "verticalLayer": "depthbelowsea:5", "verticalLayerRankM": 5.0,
+        "vectorSelection": "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer",
+        "vectorSemanticsVersion": 3,
+    }
+
+
+def run_builder(folder: Path) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([
+        sys.executable, "-B", str(SCRIPT),
         "--targets", str(folder / "targets.json"),
         "--dmi", str(folder / "dmi.json"),
         "--copernicus", str(folder / "copernicus.json"),
         "--regional", str(folder / "regional.json"),
         "--policy", str(folder / "policy.json"),
         "--control", str(folder / "control.json"),
-        "--output", str(output),
-        "--report", str(report),
-        "--at", at,
-    ]
-    environment = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
-    completed = subprocess.run(command, cwd=ROOT, env=environment, check=False, capture_output=True, text=True)
-    if completed.returncode:
-        raise AssertionError(f"Builder failed:\n{completed.stdout}\n{completed.stderr}")
-    if "uMps" in completed.stdout or "vMps" in completed.stdout:
-        raise AssertionError("Builder loggede rå vektornøgler")
-    return json.loads(output.read_text("utf-8")), json.loads(report.read_text("utf-8"))
+        "--output", str(folder / "output.json"),
+        "--report", str(folder / "report.json"),
+        "--at", AT,
+    ], cwd=ROOT, capture_output=True, text=True, check=False)
 
 
-with tempfile.TemporaryDirectory(prefix="ravradar-live-current-") as raw_folder:
+with tempfile.TemporaryDirectory(prefix="ravradar-live-current-range-") as raw_folder:
     folder = Path(raw_folder)
     parts = [
-        {"partId": "dmi-part", "sourceZoneId": "Z-DMI", "waterPoint": [10.0, 55.0]},
-        {"partId": "cop-part", "sourceZoneId": "Z-COP", "waterPoint": [10.2, 55.0]},
+        {"partId": f"part-{index}", "sourceZoneId": f"zone-{index}", "name": f"Part {index}", "waterPoint": [9.0 + index * 0.01, 57.0]}
+        for index in range(10)
     ]
-    proxy_parts = []
-    for index in range(8):
-        proxy_parts.append({
-            "partId": f"proxy-{index + 1}",
-            "sourceZoneId": "Z-PROXY",
-            "waterPoint": [11.0 + index * 0.2, 56.0],
+    zones = {part["sourceZoneId"]: [part] for part in parts}
+    write(folder / "targets.json", {"schemaVersion": 2, "partCount": len(parts), "zones": zones})
+    target_rows = [{
+        "partId": part["partId"], "parentZoneId": part["sourceZoneId"], "name": part["name"], "waterPoint": part["waterPoint"],
+    } for part in parts]
+    target_by_id = {row["partId"]: row for row in target_rows}
+
+    dmi_zones = {}
+    for index, part in enumerate(parts):
+        row = {"time": AT, "windSpeed": 4.0}
+        if index != 9:
+            row.update({
+                "current-u": 0.1, "current-v": 0.2,
+                "sources": {"current": dmi_source(part)},
+            })
+        dmi_zones[f"PART::{part['partId']}"] = {
+            "samplingPoint": part["waterPoint"], "hourly": {AT: row},
+        }
+    write(folder / "dmi.json", {"zones": dmi_zones})
+    dmi_sha = file_sha256(folder / "dmi.json")
+
+    cop_target = target_by_id["part-9"]
+    future = REFERENCE + timedelta(hours=117)
+    raw_records = []
+    for valid_time in (REFERENCE, future):
+        raw_records.append({
+            "partId": cop_target["partId"], "parentZoneId": cop_target["parentZoneId"], "name": cop_target["name"],
+            "samplingPoint": cop_target["waterPoint"], "source": "copernicus-baltic-nemo",
+            "productId": "BALTICSEA_ANALYSISFORECAST_PHY_003_006",
+            "datasetId": "cmems_mod_bal_phy_anfc_PT1H-i", "datasetVersion": "202411",
+            "validTime": valid_time.isoformat().replace("+00:00", "Z"),
+            "gridPoint": cop_target["waterPoint"], "distanceKm": 0.0,
+            "verticalLayerM": 5.0, "layerQuality": "deepest-common-layer", "sharedLayerCount": 2,
+            "uMps": 0.12, "vMps": 0.03, "componentPair": "same-time-cell-layer", "interpolation": False,
         })
-    all_parts = parts + proxy_parts
-    zones: dict[str, list[dict]] = {}
-    for part in all_parts:
-        zones.setdefault(part["sourceZoneId"], []).append(part)
-    write(folder / "targets.json", {"schemaVersion": 2, "partCount": len(all_parts), "zones": zones})
-    targets = targets_from_registry(folder / "targets.json")
-    fingerprint = target_fingerprint(targets)
-    copernicus_target_ids = ["cop-part"]
-    copernicus_fingerprint = target_fingerprint([row for row in targets if row["partId"] in copernicus_target_ids])
-    selection = "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer"
-    dmi_source = {
-        "provider": "dmi", "vectorSemanticsVersion": 3, "verticalLayer": "depthbelowsea:7",
-        "vectorSelection": selection, "samplingPoint": [10.0, 55.0], "gridPoint": [10.0, 55.0],
-        "distanceKm": 0,
-    }
-    dmi_zones = {
-        f"PART::{part['partId']}": {
-            "samplingPoint": part["waterPoint"],
-            "hourly": {"2026-08-18T15:00:00Z": {"time": "2026-08-18T15:00:00Z"}},
-        }
-        for part in all_parts
-    }
-    dmi_zones["PART::dmi-part"]["hourly"]["2026-08-18T15:00:00Z"].update({
-        "current-u": 0.1, "current-v": 0.2, "sources": {"current": dmi_source},
-    })
-    write(folder / "dmi.json", {
-        "schemaVersion": 2, "currentVectorSemanticsVersion": 3,
-        "currentVectorSelection": selection, "currentMaxDistanceKm": 5,
-        "zones": dmi_zones,
-    })
-    cop_record = {
-        "partId": "cop-part", "parentZoneId": "Z-COP", "validTime": "2026-08-18T15:00:00Z",
-        "samplingPoint": [10.2, 55.0], "source": "copernicus-baltic-nemo",
-        "productId": "TEST_PRODUCT", "datasetId": "TEST_DATASET", "datasetVersion": "1",
-        "gridPoint": [10.21, 55.0], "distanceKm": 0.64, "verticalLayerM": 12,
-        "layerQuality": "deepest-common-layer", "componentPair": "same-time-cell-layer",
-        "interpolation": False, "uMps": 0.3, "vMps": -0.1,
-    }
-    stale_cop_record = {
-        **cop_record,
-        "validTime": "2026-08-10T15:00:00Z",
-        "uMps": 9.9,
-        "vMps": 9.9,
-    }
-    write(folder / "copernicus.json", {
-        "scoreImpact": False, "publicRuntime": False, "records": [stale_cop_record, cop_record],
-        "collections": [
-            {"validTime": "2026-08-10T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
-            {"validTime": "2026-08-18T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
-        ],
-    })
-    policy_rows = [{"partId": row["partId"], "approvedSamplingPoint": row["waterPoint"]} for row in proxy_parts]
-    write(folder / "policy.json", {"controlledLivePilotAllowed": True, "parts": policy_rows})
-    anchors = {}
-    for index, row in enumerate(proxy_parts):
-        sampling = row["waterPoint"]
-        grid = [sampling[0] + 0.1, sampling[1]]
-        anchors[f"REGIONAL_PROXY::{row['partId']}"] = {
-            "regionalProxyCandidate": True, "requiredCollection": "dkss_lf",
-            "partId": row["partId"], "parentZoneId": row["sourceZoneId"],
-            "targetPoint": sampling, "sourceWaterPoint": sampling,
-            "researchClass": "owner-approved-regional-proxy",
-            "sameConnectedWaterBody": "Limfjorden", "maximumDistanceKm": 15,
-            "samples": [{
-                "collection": "dkss_lf", "modelRun": "2026-08-18T12:00:00Z",
-                "validTime": "2026-08-18T15:00:00Z", "capturedAt": "2026-08-18T15:20:00Z",
-                "gridPoint": grid, "distanceKm": 6.2 + index * 0.1,
-                "layers": {"bottom": {"verticalLayer": "depthbelowsea:5", "verticalLayerRankM": 5, "uMps": -0.2, "vMps": 0.4}},
-            }],
-        }
-    write(folder / "regional.json", {"scoreImpact": False, "publicRuntime": False, "anchors": anchors})
-    live_control = {
+    acquisition_at = REFERENCE + timedelta(minutes=20)
+    acquisition = make_acquisition(
+        source="copernicus-baltic-nemo", acquisition_at=acquisition_at,
+        request_start_at=REFERENCE, request_end_at=future, targets=[cop_target],
+        native_valid_times=[REFERENCE, future], subset_sha256=canonical_sha256({"fixture": "raw-netcdf"}),
+        record_count=2,
+    )
+    records = [make_record(row, acquisition, cop_target) for row in raw_records]
+    acquisitions, retained = merge_cache_evidence(
+        {
+            "schemaVersion": 2, "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_CACHE",
+            "retentionHours": 168, "coldBridgeHours": 48, "publicHourCount": 118,
+            "scoreImpact": False, "publicRuntime": False, "credentialsIncluded": False,
+            "rawVectorsIncluded": True, "updatedAt": AT, "acquisitions": [], "collections": [], "records": [],
+        },
+        [acquisition], records, REFERENCE, target_by_id,
+    )
+    required = [{"partId": "part-9", "validTime": row["validTime"]} for row in records]
+    refs, missing = select_required_records(required, acquisitions, retained, REFERENCE)
+    assert not missing
+    collection = make_coverage_collection(
+        production_reference_at=REFERENCE,
+        target_registry_sha256=target_fingerprint(target_rows),
+        dmi_current_input_sha256=dmi_sha,
+        required_pairs=required,
+        record_refs=refs,
+        sealed_at=acquisition_at,
+    )
+    atomic_write_shadow(
+        folder / "copernicus.json", acquisitions=acquisitions, records=retained,
+        collection=collection, updated_at=acquisition_at, target_identities=target_by_id,
+    )
+    write(folder / "regional.json", {})
+    write(folder / "policy.json", {})
+    write(folder / "control.json", {
         "schemaVersion": 1, "mode": "controlled-live", "credentialsPublic": False,
-        "currentDataPublic": True, "historyPublic": True,
-        "rollbackBehavior": "disable-supplemental-current-score-and-arrows",
+        "currentDataPublic": True, "rollbackBehavior": "missing",
+    })
+
+    completed = run_builder(folder)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    output = json.loads((folder / "output.json").read_text(encoding="utf-8"))
+    report = json.loads((folder / "report.json").read_text(encoding="utf-8"))
+    assert len(output["entries"]) == 2
+    assert set(output["copernicusRangeSeal"]) == {
+        "collectionId", "status", "productionReferenceAt", "rangeStartAt", "rangeEndAt",
+        "coldBridgeHours", "publicHourCount", "targetRegistrySha256", "dmiCurrentInputSha256",
+        "dmiVerifierContractId", "requiredPairsSha256", "requiredPairCount", "selectionPolicyId",
+        "recordRefsSha256", "sealedAt",
     }
-    write(folder / "control.json", live_control)
-
-    history, report = run_builder(folder)
-    assert history["enabled"] is True and history["mode"] == "controlled-live"
-    assert history["credentialsIncluded"] is False and history["historyPublic"] is True
-    assert history["retentionHours"] == 168 and report["retentionHours"] == 168
-    assert len(history["entries"]) == 9
-    assert all("uMps" in row and "vMps" in row for row in history["entries"])
+    assert output["copernicusRangeSeal"]["status"] == "COMPLETE"
+    assert output["entries"][1]["validTime"] == future.isoformat().replace("+00:00", "Z")
+    assert all(row["capturedAt"] == acquisition_at.isoformat().replace("+00:00", "Z") for row in output["entries"])
+    assert all(
+        row["recordId"] and row["acquisitionId"]
+        and row["collectionId"] == output["copernicusRangeSeal"]["collectionId"]
+        and row["productionReferenceAt"] == AT
+        and row["acquisitionStatus"] == "COMPLETE"
+        for row in output["entries"]
+    )
+    assert all(verified_live_record_projection(row) for row in output["entries"])
+    projection_payload = live_record_projection_payload(output["entries"][0])
+    assert projection_payload["samplingPoint"] == ["9.0900000", "57.0000000"]
+    assert projection_payload["distanceKm"] == "0.00000"
+    assert projection_payload["verticalLayerM"] == "5.00000"
+    assert projection_payload["uMps"] == "0.12000" and projection_payload["vMps"] == "0.03000"
+    for field, replacement in (
+        ("uMps", 0.54321),
+        ("gridPoint", [9.9999999, 57.0]),
+        ("collectionId", "sha256:" + "f" * 64),
+    ):
+        tampered_entry = copy.deepcopy(output["entries"][0])
+        tampered_entry[field] = replacement
+        assert not verified_live_record_projection(tampered_entry), f"Projection hash must bind {field}"
+    assert report["coverageReferenceAt"] == AT
     assert report["verifiedPartCount"] == 10 and report["coverageRequirementMet"] is True
-    assert report["exactVerifiedPartCount"] == 10
-    assert report["nativeCadenceHeldPartCount"] == 0
-    assert report["partsBySelectedSource"] == {"dmi-local": 1, "copernicus-local": 1, "dmi-regional-proxy": 8}
-    assert report["coverageReferenceAt"] == "2026-08-18T15:00:00Z"
-    assert report["retainedHistoryPartCount"] == 10
-    assert report["historyPartsBySelectedSource"] == report["partsBySelectedSource"]
-    serialized = json.dumps(history).lower()
-    assert "password" not in serialized and "username" not in serialized and "credential" not in serialized.replace("credentialsincluded", "")
+    assert report["partsBySelectedSource"] == {"dmi-local": 9, "copernicus-local": 1, "dmi-regional-proxy": 0}
 
-    for part in all_parts:
-        dmi_zones[f"PART::{part['partId']}"]["hourly"]["2026-08-18T16:00:00Z"] = {
-            "time": "2026-08-18T16:00:00Z"
-        }
-    dmi_zones["PART::dmi-part"]["hourly"]["2026-08-18T16:00:00Z"].update({
-        "current-u": 0.1, "current-v": 0.2, "sources": {"current": dmi_source},
+    # Controlled-live remains fail-closed even if DMI currently covers every
+    # part: the exact range seal is the proof that the full public horizon was
+    # checked, including the possible empty-gap case.  Rollback deliberately
+    # keeps the projection diagnostic-only and may start without that seal.
+    valid_cache = json.loads((folder / "copernicus.json").read_text(encoding="utf-8"))
+    (folder / "copernicus.json").unlink()
+    missing_seal = run_builder(folder)
+    assert (
+        missing_seal.returncode != 0
+        and "requires an exact COMPLETE Copernicus range seal" in missing_seal.stderr
+    )
+    write(folder / "control.json", {
+        "schemaVersion": 1, "mode": "dmi-only-rollback", "credentialsPublic": False,
+        "currentDataPublic": True, "rollbackBehavior": "missing",
     })
-    write(folder / "dmi.json", {
-        "schemaVersion": 2, "currentVectorSemanticsVersion": 3,
-        "currentVectorSelection": selection, "currentMaxDistanceKm": 5,
-        "zones": dmi_zones,
+    rollback_without_seal = run_builder(folder)
+    assert rollback_without_seal.returncode == 0, rollback_without_seal.stdout + rollback_without_seal.stderr
+    rollback_output = json.loads((folder / "output.json").read_text(encoding="utf-8"))
+    assert rollback_output["enabled"] is False and rollback_output["copernicusRangeSeal"] is None
+    write(folder / "control.json", {
+        "schemaVersion": 1, "mode": "controlled-live", "credentialsPublic": False,
+        "currentDataPublic": True, "rollbackBehavior": "missing",
     })
-    cop_record_16 = {**cop_record, "validTime": "2026-08-18T16:00:00Z"}
-    write(folder / "copernicus.json", {
-        "scoreImpact": False, "publicRuntime": False, "records": [cop_record, cop_record_16],
-        "collections": [
-            {"validTime": "2026-08-18T15:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
-            {"validTime": "2026-08-18T16:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1},
-        ],
-    })
-    _, held_report = run_builder(folder, "2026-08-18T16:30:00Z")
-    assert held_report["verifiedPartCount"] == 10 and held_report["coverageRequirementMet"] is True
-    assert held_report["exactVerifiedPartCount"] == 2
-    assert held_report["nativeCadenceHeldPartCount"] == 8
-    assert held_report["nativeCadenceMaximumAgeHours"] == 1
+    write(folder / "copernicus.json", valid_cache)
 
-    future_only_anchors = json.loads(json.dumps(anchors))
-    for anchor in future_only_anchors.values():
-        anchor["samples"][0]["validTime"] = "2026-08-18T17:00:00Z"
-    write(folder / "regional.json", {"scoreImpact": False, "publicRuntime": False, "anchors": future_only_anchors})
-    _, future_only_report = run_builder(folder, "2026-08-18T16:30:00Z")
-    assert future_only_report["verifiedPartCount"] == 2
-    assert future_only_report["nativeCadenceHeldPartCount"] == 0
-    assert future_only_report["coverageRequirementMet"] is False
-    write(folder / "regional.json", {"scoreImpact": False, "publicRuntime": False, "anchors": anchors})
+    # A partial/incomplete collection is never consumed.
+    broken_link = copy.deepcopy(valid_cache)
+    broken_link["collections"][0]["recordRefs"][0]["recordId"] = broken_link["collections"][0]["recordRefs"][1]["recordId"]
+    write(folder / "copernicus.json", broken_link)
+    link_rejected = run_builder(folder)
+    assert link_rejected.returncode != 0 and "range cache is invalid" in link_rejected.stderr
 
-    live_control["mode"] = "dmi-only-rollback"
-    write(folder / "control.json", live_control)
-    rollback_history, rollback_report = run_builder(folder, "2026-08-18T16:30:00Z")
-    assert rollback_history["enabled"] is False and rollback_history["mode"] == "dmi-only-rollback"
-    assert len(rollback_history["entries"]) == 10
-    assert rollback_report["verifiedPartCount"] == 10
+    incomplete = copy.deepcopy(valid_cache)
+    incomplete["collections"][0]["status"] = "INCOMPLETE"
+    write(folder / "copernicus.json", incomplete)
+    rejected = run_builder(folder)
+    assert rejected.returncode != 0 and "range cache is invalid" in rejected.stderr
 
-    recent_history_record = {**cop_record, "validTime": "2026-08-18T14:00:00Z"}
-    write(folder / "copernicus.json", {
-        "scoreImpact": False, "publicRuntime": False, "records": [recent_history_record],
-        "collections": [{"validTime": "2026-08-18T14:00:00Z", "targetFingerprint": copernicus_fingerprint, "targetPartIds": copernicus_target_ids, "recordCount": 1}],
-    })
-    live_control["mode"] = "controlled-live"
-    write(folder / "control.json", live_control)
-    history_only, history_only_report = run_builder(folder)
-    assert len(history_only["entries"]) == 9, "Historikken skal fortsat bevare den friske, men for gamle post"
-    assert history_only_report["retainedHistoryPartCount"] == 10
-    assert history_only_report["verifiedPartCount"] == 9
-    assert history_only_report["coverageRequirementMet"] is False
-    assert history_only_report["missingPartIds"] == ["cop-part"]
-    assert history_only_report["partsBySelectedSource"] == {"dmi-local": 1, "copernicus-local": 0, "dmi-regional-proxy": 8}
+    # The seal is bound to the exact DMI bytes; a post-seal mutation fails.
+    write(folder / "copernicus.json", valid_cache)
+    changed_dmi = json.loads((folder / "dmi.json").read_text(encoding="utf-8"))
+    changed_dmi["unrelatedButByteChanging"] = True
+    write(folder / "dmi.json", changed_dmi)
+    mismatched = run_builder(folder)
+    assert mismatched.returncode != 0 and "target/DMI input identity" in mismatched.stderr
 
-print("OK: offentlig livehistorik bevarer U/V uden credentials, DMI står først, og rollback slår kun anvendelsen fra.")
+print("OK: live current projection consumes only an exact COMPLETE range seal and accepts sealed +117 evidence.")

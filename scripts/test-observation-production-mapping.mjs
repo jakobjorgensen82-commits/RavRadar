@@ -9,13 +9,19 @@ globalThis.localStorage = {
   get length() { return values.size; }
 };
 globalThis.window = { addEventListener() {} };
+globalThis.fetch = async () => ({ ok: true, json: async () => ({}) });
 
 const {
   getLocalObservations,
   getObservationSyncStatus,
   projectLegacyObservationWeatherSnapshot,
   remoteObservationPayload,
+  submitObservation,
 } = await import('../js/services/observation-service.js?production-mapping-test=1');
+const {
+  RAVSCORE_MODEL_ID,
+  ravScoreModelBinding,
+} = await import('../js/core/ravscore-model-contract.js');
 const clientId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const payload = remoteObservationPayload({
   id: clientId,
@@ -24,8 +30,7 @@ const payload = remoteObservationPayload({
   gps: { latitude: 55, longitude: 8 },
   route: [{ latitude: 55, longitude: 8 }],
   track: [{ latitude: 55, longitude: 8 }],
-  sync_status: 'pending',
-  weather_snapshot: { schemaVersion: 4 }
+  sync_status: 'pending'
 });
 
 assert.equal(payload.client_observation_id, clientId);
@@ -94,5 +99,40 @@ assert.deepEqual(
   strictSchemaTwoSnapshot,
   'Browser migration must not sanitize schema-2 rows past the strict remote validator.',
 );
+
+const maliciousLegacyPrediction = {
+  probability: 0.99,
+  confidence: 0.98,
+  modelVersion: 'retired-adaptive-model',
+};
+const neutralWrite = await submitObservation({
+  zone: { id: 'DK-B01-01', name: 'Testzone', coastType: 'sand' },
+  huntMode: 'beach',
+  result: 'none',
+  scoreResult: {
+    score: 61,
+    level: 'medium',
+    prediction: maliciousLegacyPrediction,
+  },
+  weather: { provider: 'dmi', windSpeedMps: 7 },
+  prediction: maliciousLegacyPrediction,
+});
+assert.equal(neutralWrite.row.ai_probability, null);
+assert.equal(neutralWrite.row.ai_confidence, null);
+assert.equal(neutralWrite.row.model_version, null);
+assert.equal(Object.hasOwn(neutralWrite.row.weather_snapshot, 'prediction'), false);
+
+const boundWrite = await submitObservation({
+  zone: { id: 'DK-B01-01', name: 'Testzone', coastType: 'sand' },
+  huntMode: 'beach',
+  result: 'none',
+  scoreResult: {
+    score: 61,
+    level: 'medium',
+    modelBinding: ravScoreModelBinding(),
+  },
+  weather: { provider: 'dmi', windSpeedMps: 7 },
+});
+assert.equal(boundWrite.row.model_version, RAVSCORE_MODEL_ID);
 
 console.log('Observation production mapping: OK');

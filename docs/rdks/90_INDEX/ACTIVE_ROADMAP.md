@@ -1,5 +1,19 @@
 # RavRadar - aktivt roadmap
 
+## Model-P0 – samlet integreret RavScore under DEC-0110, ikke udgivet
+
+- [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
+- [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
+- [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5-profil/komponent/forklaring, kausal energivægtet bølgeapproach samt afgrænset `delivery=supply×factor` uden wave-created supply.
+- [x] Bevar fysisk usikkerhed ærligt: `physicalDeliveryResolved=false`, fysisk interval `null`, ingen empirisk fundpræcisionspåstand, vandstand score-neutral og DDM 50 m kun som statisk kontekst.
+- [x] Bind v5-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`-grænse. Bevar schema 5 kun som eksakt, aldrig-offentlig 5→6-ready-migrationskilde; aktiv cache/checkpoint/recovery er schema 6, rollback er v3, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
+- [x] Adskil direkte inputmissing som `UNAVAILABLE` fra historikmissing som numerisk konservativ `HISTORY_INCOMPLETE`; bevar 48 h aktiv currenthistorik, 168 h score-neutral researchretention, 288 h wave-tail og 40 h last-mile-closure med eksplicit `conservativeResetAt`.
+- [x] Bind `direction-broad-19-history-tie-v2` og `score-history-water-tie-earliest-v3`: numerisk score først, `FULL_HISTORY` kun ved eksakt tie, derefter eksisterende ranking-/vand-/tidsregler.
+- [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
+- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 bølgetimer. Parent-zone `rr-20260830104132-210` er 118/118 missing, men delene findes og har `marineCoverage=full`, så en proxy kan være unødvendig. Kun ved et reelt part-level-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis denne ene zone gå til særskilt RDKS/adapter/proveniens/usikkerhed/kapacitet/rollback; den er ikke implementeret.
+- [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
+- [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige state-6-model på desktop og mobil. Indtil da er 4.0.316/Candidate G fortsat produktionssandhed, ikke shadowmodel.
+
 ## P0 4.0.316 – publicér frisk primary uden at vise udløbet fallback
 
 - [x] Bestå 4.0.315 PR #233 exact-head `33299676128`, merge `63d789a4` og bevis i run `33299747300`, at D1-gaten frigives og build starter.
@@ -8,9 +22,9 @@
 - [x] Bevar primary accounting/audit fail-closed og nul syntetiske data/interpolation/backfill/zonelån.
 - [x] Bind DEC-0102 til `HISTORY_INCOMPLETE`-score, DA/DE/EN-advarsel, automatisk bortfald, `calibrationEligible=false` og separat direct-input-`UNAVAILABLE`.
 - [x] Placér workflowmonolit, grøn-no-op-semantik og version/docs/string-testkobling i modelarkitekturroadmapet; udvid ikke P0-hotfixen.
-- [ ] Bestå målrettede fallback-/RDKS-/håndbogs-/security-/versions-/releasegates og exact-head sourcegate.
-- [ ] Merge 4.0.316, kør frisk fuld produktion og publicér artifact/Pages.
-- [ ] Verificér offentligt 210/673 samt aktuelle og femdøgnsprognoser; ingen livepåstand før bevis.
+- [x] Bestå målrettede fallback-/RDKS-/håndbogs-/security-/versions-/releasegates og exact-head sourcegate.
+- [x] Merge 4.0.316, kør frisk fuld produktion og publicér artifact/Pages.
+- [x] Verificér offentlig frisk 4.0.316-primary som `rr-20260830091913-210` med 210/673. Candidate G gav 0 aktive zoner/210 `UNAVAILABLE` på grund af utilstrækkelig sammenhængende currenthistorik; dette er regressionsevidens, ikke state-6-bevis.
 
 ## Historisk P0 4.0.315 – pensionér stale interlock og nå normal build
 
@@ -33,8 +47,8 @@
 - [x] Bevar sparse 1/2/3h measured continuity på 1h-dele uden at udfylde interne slots; kræv eksakt 3h på de otte policydele.
 - [x] Målrettet 210/673 cadence-/CAS-regression og workflowinterlock grøn.
 - [x] Kør fuld lokal `validate:source` én gang, målrettede RDKS-/håndbogs-/security-/releasegates og tre uafhængige slutreviews; ret dokumentationsfund og genvalider proportionalt.
-- [ ] Exact-head → merge/no-op → nyt D1 → ny read-only inspect.
-- [ ] Kun efter grøn descriptor: CAS-apply → frisk produktion/fulde gates → offentlig 210/673 desktop/mobil.
+- [x] Ejerbeslutning 2026-08-30: afslut sporet uden ny exact-head/D1/inspect og uden descriptor eller apply.
+- [x] Ingen rekonstruktion, datamutation, artifact eller offentliggørelse blev udført; den afgrænsede kontrakt bevares kun som historisk sikkerheds- og tillidsevidens i DEC-0109.
 
 ## Historisk P0 4.0.314 – før-primary-gaten
 
@@ -60,9 +74,8 @@
 - [x] Bevis separat målt nødvisning versus ærlig før-primary, fjern kun blanket-READY-kravet, og bevar source/replay/bracket/CAS/slut-READY.
 - [x] Test 673 ærlige 24-timers `WINDOW_INCOMPLETE`-før-suffixer positivt og ældre hul/replaytampering/schema 2.1/ukendt status negativt i begge parentmiljøer.
 - [x] Luk alle lokale dokumentations-, workflow-, privacy-, release- og geodatagates, hele `validate:source` og tre uafhængige slutreviews uden resterende blocker.
-- [ ] Same-version-hotfix exact-head/merge/no-op, nyt exact-main D1 og ny read-only inspect.
-- [ ] Ved grøn descriptor: CAS-apply, frisk produktion, fulde gates, Pages og offentlig 210/673 desktop/mobil.
-- [ ] Først derefter integreres nyeste main i DEC-0102-modelsporet og den retningsbestemte last-mile færdigbygges.
+- [x] Ejerbeslutning 2026-08-30 erstattede den resterende hotfix/D1/inspect/apply-kæde med et stop uden descriptor, mutation eller offentliggørelse.
+- [x] Modelsporet fortsætter særskilt som 4.0.315-releasekandidaten under DEC-0110; ingen fiktiv historik bruges som genvej til modelstate.
 
 ## Historisk P0 lokal 4.0.312-roll-forward – 4.0.311 source merged, backend stoppet sikkert
 
@@ -84,7 +97,7 @@
 - [ ] Efter den akutte genopretning: tilføj en payloadfri konto-lokal fresh-bootstrapfase, så eksakte 1–9/10-shard-prefixes kan genoptages efter afbrydelse uden at blive forvekslet med den dokumenterede legacykonto; klassifikationen skal fortsat stoppe tvetydige sæt fail-closed.
 - [ ] Erstat migrationsrunnerens mutable offset-pagination med stabil keyset-/snapshotpagination; bevar indtil da obligatorisk idempotent slutreconciliation og retry som reparationsvej.
 
-Historisk resultat: 4.0.312 blev exact-head-valideret og merged, men backend `33266229687` fejlede migrationssynken og blev ikke readiness- eller produktionsverificeret. Offentlig sandhed forblev 4.0.310 og den eksisterende målte nødvisning. Den operative fortsættelse står kun i 4.0.313-afsnittet ovenfor. Se DEC-0109 og DEC-0102-addendum.
+Historisk resultat: 4.0.312 blev exact-head-valideret og merged, men backend `33266229687` fejlede migrationssynken og blev ikke readiness- eller produktionsverificeret. Offentlig sandhed forblev 4.0.310 og den eksisterende målte nødvisning. Rekonstruktionssporet blev senere opgivet uden descriptor/apply/mutation/offentliggørelse; modelarbejdet fortsætter alene i 4.0.315-afsnittet ovenfor. Se DEC-0109, DEC-0110 og DEC-0102-addendum.
 
 ## Produktions- og driftsverificeret P0 4.0.310 – ekstern overtagelse efter ét manglende interval
 

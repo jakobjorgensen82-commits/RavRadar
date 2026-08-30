@@ -42,7 +42,7 @@ const [app, worker] = await Promise.all([
 ]);
 
 assert.doesNotMatch(app, /const manifestPromise=loadDataManifest\(\)/, 'Den afviste parallelle startgren må ikke være tilbage.');
-assert.match(app, /projectPublicCoastlines\(await loadZones\(\)\)[\s\S]*const manifest=await loadDataManifest\(\)[\s\S]*const conditions=await loadConditions\(\{manifest\}\)/, 'Starten skal igen være prioriteret og sekventiel.');
+assert.match(app, /const manifest=await loadDataManifest\(\)[\s\S]*projectPublicCoastlines\(await loadZones\(\{manifest\}\)\)[\s\S]*const conditions=await loadConditions\(\{manifest\}\)/, 'Starten skal være manifest-først, prioriteret og sekventiel.');
 assert.match(worker, /self\.clients\.claim\(\)/, 'Service workeren skal fortsat kunne overtage den første åbne side uden manuel reload.');
 assert.doesNotMatch(worker, /assets\/about\/(?:jakob-|ravjagt-med-boern-)/, 'Store Om-billeder må ikke hentes under første service-worker-installation.');
 assert.equal(worker.includes('`./data/zones.geojson?v=${APP_VERSION}`'), false, 'Kortfilen må ikke hentes igen under første service-worker-installation.');

@@ -13,6 +13,8 @@ import {
   externalTripPayload,
   isLegacyCompatibleTripReplay,
 } from '../supabase/functions/_shared/trip-storage.js';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { CALIBRATION_FEATURE_FIELD_NAMES } from '../js/services/calibration-eligibility.js';
 
 const expectedPayloadColumns = [
   'zone_id', 'zone_name', 'coast_type', 'observed_at', 'submitted_at', 'hunt_mode', 'result', 'grams',
@@ -27,11 +29,18 @@ const expectedPayloadColumns = [
 assert.deepEqual(SAFE_MIGRATION_PAYLOAD_COLUMNS, expectedPayloadColumns);
 
 const calibrationPaths = [
-  'modelVersion', 'appVersion', 'totalScore', 'huntabilityScore', 'transportScore',
+  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
+  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
+  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
+  'modelBundleSha256', 'totalScore', 'scoreBoundLower', 'scoreBoundUpper',
+  'scoreBoundModelUncertaintyPoints', 'scoreBoundRawLower', 'scoreBoundRawUpper',
+  'historyCoverageHours', 'huntabilityScore', 'transportScore',
   'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
   'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
   'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
-  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
+  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'scoreQuality',
+  'scoreSemantics', 'scoreCalibrationEligible', 'conservativeTailResetApplied',
+  'historyReasonCodes', 'reasonCodes',
 ];
 const weatherPaths = [
   'schemaVersion', 'capturedAt', 'sourceGeneratedAt', 'forecastTime', 'provider',
@@ -47,6 +56,7 @@ const weatherPaths = [
   'matchedRuleIds',
   ...calibrationPaths.map(key => `calibrationFeatures.${key}`),
 ];
+assert.deepEqual(calibrationPaths, CALIBRATION_FEATURE_FIELD_NAMES);
 assert.deepEqual(
   SUPABASE_OBSERVATION_LEAF_PROJECTIONS.map(projection =>
     `${projection.column}:${projection.path.join('.')}`),
@@ -90,6 +100,90 @@ function alias(column, ...path) {
   assert.ok(projection, `Mangler bladprojektion for ${column}.${path.join('.')}`);
   return projection.alias;
 }
+
+const currentBinding = ravScoreModelBinding();
+const schemaThreeFeatures = Object.freeze({
+  modelVersion: currentBinding.modelId,
+  appVersion: '4.0.314',
+  modelStateVersion: currentBinding.stateSchemaVersion,
+  modelVariantId: currentBinding.variantId,
+  modelProfileId: currentBinding.profileId,
+  modelComponentSchemaId: currentBinding.componentSchemaId,
+  modelExplanationSchemaId: currentBinding.explanationSchemaId,
+  modelRankingPolicyId: currentBinding.rankingPolicyId,
+  modelBestTimePolicyId: currentBinding.bestTimePolicyId,
+  modelPresentationPolicyId: currentBinding.presentationPolicyId,
+  modelContractSha256: currentBinding.modelContractSha256,
+  modelBundleSha256: currentBinding.modelBundleSha256,
+  totalScore: 63,
+  scoreBoundLower: 63,
+  scoreBoundUpper: 63,
+  scoreBoundModelUncertaintyPoints: 0,
+  scoreBoundRawLower: 63,
+  scoreBoundRawUpper: 63,
+  historyCoverageHours: 48,
+  huntabilityScore: 70,
+  transportScore: 60,
+  mobilisationScore: 58,
+  windSpeedMs: 8.4,
+  windDirectionDeg: 275,
+  waveHeightM: 1.4,
+  wavePeriodS: 6.8,
+  waveDirectionDeg: 282,
+  currentSpeedMs: 0.31,
+  currentDirectionDeg: 268,
+  waterLevelM: 0.22,
+  waterLevelTrendM3h: -0.08,
+  maxWaveHeight24hM: 2.1,
+  hoursSinceEnergyPeak: 7,
+  sustainedOnshoreHours: null,
+  scoreQuality: 'FULL_HISTORY',
+  scoreSemantics: 'EXACT_POINT_SCORE',
+  scoreCalibrationEligible: true,
+  conservativeTailResetApplied: false,
+  historyReasonCodes: [],
+  reasonCodes: [],
+});
+const schemaThreeSourceRow = {
+  schema_version: 3,
+  calibration_eligible: true,
+  data_quality_flags: [],
+  actual_zone_id: 'zone-42',
+  actual_coastal_part_id: 'zone-42-part-2',
+  forecast_zone_id: 'zone-42',
+  forecast_coastal_part_id: 'zone-42-part-2',
+  forecast_snapshot_id: 'rr-schema-3-projection',
+  forecast_issued_at: '2026-08-30T07:00:00.000Z',
+  forecast_valid_at: '2026-08-30T08:00:00.000Z',
+  forecast_captured_at: '2026-08-30T08:00:00.000Z',
+  ...Object.fromEntries(calibrationPaths.map(key => [
+    alias('calibration_features', key),
+    schemaThreeFeatures[key],
+  ])),
+  [alias('weather_snapshot', 'schemaVersion')]: 4,
+  [alias('weather_snapshot', 'capturedAt')]: '2026-08-30T08:00:00.000Z',
+  [alias('weather_snapshot', 'forecastSnapshotId')]: 'rr-schema-3-projection',
+  [alias('weather_snapshot', 'forecastIssuedAt')]: '2026-08-30T07:00:00.000Z',
+  [alias('weather_snapshot', 'forecastValidAt')]: '2026-08-30T08:00:00.000Z',
+  ...Object.fromEntries(calibrationPaths.map(key => [
+    alias('weather_snapshot', 'calibrationFeatures', key),
+    schemaThreeFeatures[key],
+  ])),
+};
+const projectedSchemaThree = projectSupabaseObservationRow(schemaThreeSourceRow);
+assert.deepEqual(Object.keys(projectedSchemaThree.calibration_features).sort(),
+  [...CALIBRATION_FEATURE_FIELD_NAMES].sort());
+assert.deepEqual(Object.keys(projectedSchemaThree.weather_snapshot).sort(), [
+  'calibrationFeatures', 'capturedAt', 'forecastIssuedAt', 'forecastSnapshotId',
+  'forecastValidAt', 'schemaVersion',
+].sort());
+assert.deepEqual(Object.keys(projectedSchemaThree.weather_snapshot.calibrationFeatures).sort(),
+  [...CALIBRATION_FEATURE_FIELD_NAMES].sort());
+assert.equal(projectedSchemaThree.calibration_features.sustainedOnshoreHours, null);
+assert.equal(projectedSchemaThree.weather_snapshot.calibrationFeatures.sustainedOnshoreHours, null);
+const projectedSchemaThreeD1 = externalTripPayload(projectedSchemaThree);
+assert.equal(projectedSchemaThreeD1.calibration_eligible, false);
+assert.deepEqual(projectedSchemaThreeD1.calibration_features, schemaThreeFeatures);
 
 const sourceRow = {
   id: 41,

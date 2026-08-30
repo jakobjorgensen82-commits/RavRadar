@@ -14,6 +14,7 @@ globalThis.localStorage = {
 const i18n = await import(`../js/i18n.js?v=${releaseVersion}`);
 const assistant = await import('../js/services/rav-assistant.js');
 const tripDialogModule = await import('../js/ui/trip-evidence-dialog.js');
+const { ravScoreModelBinding } = await import('../js/core/ravscore-model-contract.js');
 
 const danishKeys = Object.keys(i18n.MESSAGES.da).sort();
 const intentionallyShared = {
@@ -34,6 +35,12 @@ assert.equal(i18n.getLanguage(), 'da', 'Dansk skal være standard uden et gemt v
 assert.equal(i18n.t('header.trip.start'), 'Start ravtur');
 assert.equal(i18n.t('header.trip.start', {}, 'de'), 'Bernsteintour starten');
 assert.equal(i18n.t('header.trip.start', {}, 'en'), 'Start amber trip');
+assert.match(i18n.t('data.emergency', { time:'29/08 12:00' }, 'da'),
+  /Nøddrift:[\s\S]*29\/08 12:00[\s\S]*uden kalibreringsberettigelse/);
+assert.match(i18n.t('data.emergency', { time:'29.08. 12:00' }, 'de'),
+  /Notbetrieb:[\s\S]*29\.08\. 12:00[\s\S]*ohne Kalibrierungsberechtigung/);
+assert.match(i18n.t('data.emergency', { time:'29 Aug, 12:00' }, 'en'),
+  /Emergency mode:[\s\S]*29 Aug, 12:00[\s\S]*without calibration eligibility/);
 const searchableZones = [
   { id: 'lynaes', name: 'Hundested og Lynæs' },
   { id: 'lyngsaa', name: 'Lyngså' },
@@ -94,7 +101,19 @@ try {
 let remoteRequest = null;
 globalThis.fetch = async (url, options) => {
   remoteRequest = { url:String(url), options, body:JSON.parse(options.body) };
-  return { ok:true, json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }) };
+  const binding = ravScoreModelBinding();
+  return {
+    ok:true,
+    headers:new Headers({
+      'x-ravradar-model-id':binding.modelId,
+      'x-ravradar-model-state-version':binding.stateSchemaVersion,
+      'x-ravradar-model-contract-sha256':binding.modelContractSha256,
+      'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
+      'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
+      'x-ravradar-assistant-knowledge-sha256':'6c35d63a21cd8a04f3bb2013fecf642af62f3cb6be6e7cb0b3b8a1b7860e205a',
+    }),
+    json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
+  };
 };
 try {
   const remoteAnswer = await assistant.askRavRadar('Kan ravets kemiske sammensætning variere mellem forskellige geologiske perioder?', {}, { language:'da' });
@@ -117,7 +136,14 @@ try {
 
 const publicContext = assistant.publicAssistantContext({
   locale:'en', privateNote:'must-not-leak', zone:{id:'west',name:'West coast',secret:'x'},
-  result:{available:true,score:73,level:'fair',reasons:['internal wording']},
+  modelBinding: ravScoreModelBinding(),
+  result:{
+    available:true,score:73,level:'fair',reasons:['internal wording'],
+    scoreQuality:'FULL_HISTORY',calibrationEligible:true,
+    scoreSemantics:'EXACT_POINT_SCORE',conservativeTailResetApplied:false,
+    scoreBounds:{lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73},
+    historyCoverageHours:48,historyReasonCodes:[],
+  },
   weather:{windSpeedMps:4.2,currentSpeedMps:.11,rawVector:{u:1,v:2}},
 }, 'en');
 assert.equal(publicContext.locale, 'en');
@@ -125,6 +151,18 @@ assert.equal(publicContext.result.score, 73);
 assert.ok(!('reasons' in publicContext.result));
 assert.ok(!('privateNote' in publicContext));
 assert.ok(!('rawVector' in publicContext.weather));
+
+const mixedModelContext = assistant.publicAssistantContext({
+  modelBinding:{ ...ravScoreModelBinding(), modelBundleSha256:'0'.repeat(64) },
+  result:{ available:true, score:73, level:'fair' },
+}, 'en');
+assert.deepEqual(mixedModelContext.result, {
+  available:false,score:null,level:null,
+  scoreQuality:'UNAVAILABLE',calibrationEligible:false,scoreSemantics:null,
+  conservativeTailResetApplied:false,scoreBounds:null,
+  historyCoverageHours:null,historyReasonCodes:[],
+},
+  'Klienten må ikke sende en score til Edge under en anden dataset-/modelbinding.');
 
 const indexHtml = await fs.readFile(path.join(ROOT, 'index.html'), 'utf8');
 for (const [language, label] of [['da','Dansk'],['de','Deutsch'],['en','English']]) {
@@ -167,12 +205,51 @@ for (const html of [aboutHtml, learnHtml]) {
   for (const language of ['da', 'de', 'en']) assert.match(html, new RegExp(`data-language="${language}"`), `${language} mangler i statisk sprogvælger.`);
   for (const language of ['da', 'de', 'en']) assert.match(html, new RegExp(`language-flag flag-${language}`), `${language} mangler et stabilt flagikon.`);
 }
+const learnLastMileMarkers = {
+  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 % dämpfen', 'nie erzeugen oder erhöhen', 'bleibt unaufgelöst', 'strukturell unsicher'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'remains unresolved', 'structurally uncertain'],
+};
 for (const language of ['de', 'en']) {
   const score = i18n.t('learn.score', {}, language);
-  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '13']) assert.ok(score.includes(marker), `${language} mangler Candidate G-markøren ${marker} i grundbogen.`);
+  for (const marker of ['20 %', '50 %', '30 %', '6 m/s', '15 m/s', '48', ...learnLastMileMarkers[language]]) {
+    assert.ok(score.includes(marker), `${language} mangler den integrerede modelmarkør ${marker} i grundbogen.`);
+  }
+  assert.doesNotMatch(score, /score-neutral/i, `${language} genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
   assert.match(i18n.t('learn.knowledge', {}, language), /not.*safe|Sicherheit/i, `${language} mangler grundbogens sikkerhedsgrænse.`);
   assert.equal((i18n.t('learn.knowledge', {}, language).match(/https:\/\//g) || []).length, 7, `${language} skal bevare alle syv faglige kildelinks.`);
   assert.match(i18n.t('about.support', {}, language), /id="mobilepay-qr"/, `${language} skal bevare QR-målet.`);
+}
+for (const marker of [
+  'kausale energivægtede W/N/T-EWMA for bølgeapproach',
+  'fire timers halveringstid',
+  'bevarer ældre timer med aftagende vægt',
+  'kun dæmpe det eksisterende supply med højst 15 %',
+  'aldrig skabe eller øge det',
+  'fysiske vej gennem revler og surfzone er fortsat uopløst',
+]) assert.ok(learnHtml.includes(marker), `Dansk mangler den integrerede last-mile-markør ${marker} i grundbogen.`);
+assert.doesNotMatch(learnHtml, /uopløst og score-neutral/i, 'Dansk genindfører den pensionerede score-neutrale last-mile-kontrakt.');
+assert.doesNotMatch(learnHtml, /seneste fire timers energivægtede bølgeapproach/i,
+  'Dansk må ikke fremstille fire timer som et fast bølgeapproach-vindue.');
+const assistantWaveMarkers = {
+  da:['kausal energivægtet W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt', 'højst 15 %', 'aldrig skabe eller øge', 'fysisk uopløst'],
+  de:['kausaler energiegewichteter W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 %', 'nie erzeugen oder erhöhen', 'physikalisch unaufgelöst'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'physically unresolved'],
+};
+const debugLastMileMarkers = {
+  da:['kausale energivægtede W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt'],
+  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht'],
+  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail'],
+};
+for (const language of ['da', 'de', 'en']) {
+  const answer = i18n.t('assistant.local.waves', {}, language);
+  for (const marker of assistantWaveMarkers[language]) {
+    assert.ok(answer.includes(marker), `${language} mangler assistantens afgrænsede last-mile-markør ${marker}.`);
+  }
+  assert.doesNotMatch(answer, /score-neutral/i, `${language} assistant genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
+  const debug = i18n.t('score.debug.lastMileMeaning', {}, language);
+  for (const marker of debugLastMileMarkers[language]) {
+    assert.ok(debug.includes(marker), `${language} debugforklaring mangler EWMA-markøren ${marker}.`);
+  }
 }
 const learnSectionIds = new Set([...learnHtml.matchAll(/<section id="([^"]+)"/g)].map(match => match[1]));
 for (const language of ['de', 'en']) {

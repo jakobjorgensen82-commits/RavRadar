@@ -70,6 +70,21 @@ try {
       assert.ok(answer.length >= 70 && answer.length <= 900, `Katalogsvar uden for kontrakten: ${topic.id}/${locale}`);
     }
   }
+  for (const topicId of ['current-layers', 'straits', 'current-arrow']) {
+    const topic = localKnowledge.LOCAL_RAV_KNOWLEDGE.find(value => value.id === topicId);
+    assert.ok(topic, topicId + ' mangler i den lokale vidensbase.');
+    const answers = Object.values(topic.answers).join('\n');
+    assert.doesNotMatch(
+      answers,
+      /valgte bundnære modelstrøm|bodennahen Modellströmung|selected bottom-near model-current|bottom-near representation/iu,
+      topicId + ' må ikke kalde DMI-gridstrømmen en bundnær måling',
+    );
+    assert.match(
+      answers,
+      /modelgridstrøm|Modellgitterströmung|model-grid current/iu,
+      topicId + ' skal beskrive den verificerede gridstrøm',
+    );
+  }
 } finally {
   globalThis.fetch = originalFetch;
 }

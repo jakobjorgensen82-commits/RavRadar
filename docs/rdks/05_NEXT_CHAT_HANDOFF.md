@@ -1,8 +1,23 @@
 # RavRadar – overlevering til næste chat
 
-> **Historikregel:** Alle efterfølgende sektioner mærket historisk er kun revisionsspor. Kun 4.0.316-afsnittet nedenfor styrer P0-arbejdet; gamle rekonstruktionsordrer må ikke udføres.
+> **Historikregel:** Alle efterfølgende sektioner mærket historisk er kun revisionsspor. 4.0.317-afsnittet nedenfor styrer modelarbejdet; 4.0.316 er den offentlige produktionsbaseline. Gamle rekonstruktionsordrer må ikke udføres.
 
-## Aktuelt P0 – 2026-08-30 optional fallback i 4.0.316
+## Aktuelt modelspor – 2026-08-30 lokal 4.0.317-releasekandidat, ikke udgivet
+
+- Offentlig drift er 4.0.316/Candidate G. Den lokale 4.0.317-kandidat er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`; kontraktdigest `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, bundle `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`, præcis 43 transitive filer. Candidate G-helrollbacken er separat forseglet som `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer.
+- Candidate G-kildebaselinen er eksakt produktionsverificeret 4.0.316 på head `49dd4cb454656bdf629e5df760176705e38d2cb0`, tree `975c3e9432cea7780564ffd56766bc1f0a0a9763` og central switch `RAVSCORE-PROFILE-SWITCH-4.0.316`. Kildekontrakten er `2f888a16190e9e43e44536536029f1b0021a1b850195524aa2312664ca74810b`, og den kanoniske 53-filers kildelukning er `a366b4a64fc3ccc8f1b94f3fed24b3ce03ea23d906396bc8bea183338c5d2606`; PR-, build- og deploykontrol skal hente og verificere den eksakte pinnede kildehead.
+- Same-reference-checkpointkontrollen sammenligner både `generationSha256` og hele den validerede `candidateGRollbackCompanion` før nogen mutation; enhver divergens stopper fail-closed.
+- State 6 viser current+fem døgn som konservativ `HISTORY_INCOMPLETE` ved gyldige direkte input; direct missing er `UNAVAILABLE`. Sekundære tider og alternative dele bærer egen kvalitet/bounds/coverage/reasons; incomplete får markør/interval, unavailable ingen score.
+- Point-staging schema 3 parrer atomisk integreret state 6 med eksakt Candidate G-rollback-companion via separate hashes og parhash. Kun `POINT_ACTIVATION` må vælge companionen; mismatch/tamper/privacy fejler lukket.
+- Native-hold-slutrevisionen fandt ingen P1/P2/P3: kun eksakt ejerautoriseret regional native cadence attesterer højst tre timer; almindelige >1h-spring bliver unknown bounds, t0→t3 lukker ikke retroaktivt hul, og normal DMI/Copernicus tilbagekalder hold. Syv måltests er grønne.
+- Workflow-outcome er eksakt og payloadfrit `NOOP`/`DEFERRED`/`BUILT`/`DEPLOYED`/`FAILED`; ghost proof afvises, og FAILED holder runnet rødt.
+- Den fulde lokale proportionale matrix er grøn, inklusive rollback-orakel gennem bundle/runtime/stage/trip/assistant/Pages, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog samt RDKS/security/model/release/module-version/bundle/binding/mode/ranking.
+- PR #235's første exact-head `33324239464`/job `99291456658` stoppede korrekt i `validate:source` på en stale state-6-feedbackfixture uden merge, produktionsbuild/artifact eller deploy. Den efterfølgende samlede lokale gennemgang fandt yderligere stale public-fixtures, en resterende adaptiv observationsskrivning og bundle-drift. Remediationen er samlet, den aktive 43-filers bundle er `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`, og en ny fuld lokal `validate:source` inklusive kildekontekstens releasegate er grøn; frisk centralt hydreret produktionsvalidate/releasegate udestår.
+- Anden exact-head `33329919843`/job `99306529711` på `7bc848610794b87f62a6a3763564ca46a0d7528e` bestod de forudgående model-/runtime-/rollback-/DMI-dele, men stoppede fail-closed på manglende `xarray`, fordi sourcegate-workflowet ikke installerede de ejede geometry-/Copernicus-requirements. Det var CI-infrastruktur, ikke model/runtime/data; ingen merge, produktionsbuild/artifact, deploy eller offentlig ændring skete. Alle sourcegate-workflows installerer nu de tre ejede requirements-sæt med samme betingelse umiddelbart før gaten, regressionen låser dette, PR-timeout er 45 minutter, og målrettede workflow-/Copernicus-/bundletests er grønne.
+- Resterende gates: dependency-paritetscommit/push → ny PR #235 exact-head → merge → frisk fuld produktion/releasegate/artifact/Pages → Feggesund 3 × 118 → offentlig 210/673/current/fem døgn/desktop/mobil. Candidate G forbliver eneste offentlige model indtil da.
+- Geodata er uændret bortset fra autoriseret topversion 4.0.316→4.0.317; ingen geometri, zoner eller land-/vandpunkter er ændret.
+
+## Afsluttet offentlig P0 – 2026-08-30 optional fallback i 4.0.316
 
 - PR #233/exact-head `33299676128` var grøn og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav 4.0.315-D1-gaten og startede build; retirementen virkede.
 - Runnet stoppede rødt ved **“Stage audited last verified Candidate G public fallback”**, fordi ingen measured-only fallback var inden for både 72 timer og prognosehorisonten. Intet nyt artifact/Pages blev publiceret.
@@ -10,7 +25,7 @@
 - Ingen syntetiske data, interpolation, backfill eller zonelån. DEC-0111-retirementen består.
 - DEC-0112 binder også den senere DEC-0102-model: `HISTORY_INCOMPLETE` scorer current+fem døgn ved gyldige direkte input med auto-forsvindende DA/DE/EN-advarsel ved score/detalje/fem døgn/admin/ekspert og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
 - Arkitekturproblemerne workflowmonolit, grøn-no-op og spredt version/docs/string-testkobling hører til modelleverancens roadmap, ikke denne P0-diff.
-- Næste sikre rækkefølge: målrettede gates → exact-head → merge → frisk normal produktion med fuld validate/releasegate/artifact/Pages → offentlig 210/673/current/femdøgnskontrol. 4.0.316 er ikke live før det bevis.
+- 4.0.316/Candidate G er offentlig som frisk `rr-20260830091913-210` med 210/673. Candidate G gav 0 aktive zoner/210 `UNAVAILABLE` på grund af utilstrækkelig sammenhængende currenthistorik; dette er state-6-regressionsevidens, ikke state-6-releasebevis.
 - Ingen private data, joblogs, geometri, zoner eller land-/vandpunkter må indgå.
 
 ## Historisk P0 – 2026-08-30 stale interlock pensioneret i 4.0.315
@@ -22,14 +37,17 @@
 - Næste sikre rækkefølge er målrettede lokale gates → exact-head sourcegate → merge → frisk normal production med build/validate/releasegate/artifact/Pages faktisk kørt → offentlig 210/673 og prognosekontrol. Grøn topstatus alene er ikke bevis.
 - Ingen private data, joblogs, geometri, zoner eller land-/vandpunkter skal indgå.
 
-## Historisk P0 – 2026-08-30 cadencepolicy lokalt afgrænset efter sikkert inspect-stop
+## Supplerende fagligt modelcheckpoint – DEC-0110/0112 state 6
 
-- Offentlig 4.0.310 er fortsat komplet målt nøddrift; morgenhullet er ikke lukket.
-- PR #231 bestod exact-head `33279317463`/`99171645787`, blev merged som `d539fc9d`, og push `33279411885` var no-op. Exact-main D1 `33279463545`/`99172031927` er helt grøn.
-- Read-only inspect `33279639424`/`99172534863` stoppede uden descriptor/apply/build/Pages ved `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE`; ingen mutation skete.
-- Lokal rettelse bruger `data/current-regional-proxy-policy.json` som identitetsautoritet for præcis otte native-3h-dele. Den hashbinder kun en koordinatfri projektion; 1h-dele accepterer eksakte målte 1/2/3h-afstande uden intern interpolation, mens 3h-dele fortsat kræver eksakt 3h.
-- Målrettet 210/673 cadence-/descriptor-/CAS-/rollback-/cleanup-/checkpointtest og workflowtest er grønne. Fortsæt Sol/Ultra: resterende lokale gates/review → exact-head/merge/no-op → nyt D1 → read-only inspect → kun ved succes CAS-apply/frisk produktion/offentlig 210/673 desktop/mobil.
-- Hent aldrig fuld joblog eller source-/descriptor-/rollbackartifact. Brug kun allowlistet annotation. Rør ikke vejr, rå vektorer, koordinater, geometri, punkter eller private payloads.
+Den afsluttede 4.0.316-blok ovenfor er autoritativ for den offentlige Candidate G-baseline.
+
+- Offentlig sandhed er 4.0.316/Candidate G. Den lokale 4.0.317-kandidat er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5, med den fastlåste 11-feltsbinding dokumenteret ovenfor. Exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol udestår. Schema 5 er kun aldrig-offentlig eksakt migrationskilde.
+- Last mile bruger en kausal energivægtet bølgeapproach med fire timers halveringstid og en ældre hale, én `FROM`→`TOWARD`-rotation og én 0,85–1-faktor på eksisterende supply. Fysisk levering er fortsat uopløst; DDM er ikke scoreinput, Rainville 2026 er ikke ravkalibrering, og geometri/punkter flyttes ikke.
+- V5-migrationen genvægter signeret afledt Candidate G-currentevidens uden rå U/V og kræver 673/common target samt 40 private coherent same-cell WAM-positioner. State 6 skelner direkte inputmissing (`UNAVAILABLE`) fra historikmissing (`HISTORY_INCOMPLETE`) og rangerer altid numerisk score først; `FULL_HISTORY` bryder kun eksakt tie før eksisterende regler.
+- Feggesund/`DK-B05-11`: `rr-20260830104132-210` viser 118/118 parent-wave-missing, men de tre aktive part-id'er findes, har `marineCoverage=full`, og Candidate G-current er tilgængelig i begge modes. Frisk integrated produktion skal først bevise de tre deles 118 timer, fordi modellen producerer fra 673 part-level-serier. Kun ved et reelt part-level-hul og dokumenteret umulig korrekt direkte DMI/egnet officiel data må den ejerautoriserede konservative nabozonehypotese for netop denne ene zone vurderes. Den er ikke implementeret/generel fallback; faktisk direct missing er `UNAVAILABLE`.
+- State-løs cold replay bruger `bounded-private-48h-history-cold-replay-v3`, bærer de versionsbundne count-/transitionfelter og forbliver `HISTORY_INCOMPLETE` ved 0–48 timer; selv 48/48 (`VERIFIED_CAUSAL_HISTORY_WINDOW`) kræver 288 timers tail closure eller attestert migration/continuation før `FULL_HISTORY`, mens kortere/gappede forløb er `UNKNOWN_HISTORY_INTERVAL`. Candidate G-rollback v3 bruger samme target uden dobbelt credit. Checkpoint-only recovery og point-staging parrer schema-6-state atomisk med en READY Candidate G-companion; serializer-, protected-storage-, cross-part/-target/-generation-, tamper- og privacytests er grønne. Under manuel rollback må kun den eksakte `READY`/`memoryReady` Candidate G-runtime projicere sin egen exact full-history mode-score; `calibrationEligible=false` består. Trip-bounds-persistens og secondary-scoresemantik er lukket lokalt. Same-model-nøddrift er højst 72 timer; cross-model fallback er forbudt.
+- DEC-0109/DEC-0111 og morgenhullets aldrig anvendte operation er alene historisk sikkerheds-/trustdokumentation og indgår ikke i 4.0.317-releasegates.
+- Fortsæt Sol/Ultra: luk den konkrete offline-evidence-fixture og dokumentationsgates → exact-head PR/merge → frisk fuld produktion/deploy → Feggesund 3 × 118 → offentlig browserkontrol. Rør ikke private payloads, rå U/V, koordinater, geometri eller land-/vandpunkter.
 
 ## Historisk P0 – 2026-08-29 D1 grøn; inspect stoppet før descriptor
 
