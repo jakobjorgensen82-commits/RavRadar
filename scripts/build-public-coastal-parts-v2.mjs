@@ -14,9 +14,10 @@ const sha=text=>crypto.createHash('sha256').update(text.replace(/\r\n/g,'\n')).d
 const read=async (source,name)=>{const text=await fs.readFile(path.join(source,name),'utf8');return{text,json:JSON.parse(text)}};
 const cleanPoint=point=>[Number(Number(point[0]).toFixed(6)),Number(Number(point[1]).toFixed(6))];
 const norm=value=>((Number(value)%360)+360)%360;
-function bearing(from,to){
+export function canonicalOnshoreBearing(from,to){
   const [lon1,lat1]=from.map(value=>Number(value)*Math.PI/180),[lon2,lat2]=to.map(value=>Number(value)*Math.PI/180);
-  return norm(Math.atan2(Math.sin(lon2-lon1)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1))*180/Math.PI);
+  const direction=norm(Math.atan2(Math.sin(lon2-lon1)*Math.cos(lat2),Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1))*180/Math.PI);
+  return norm(Number(direction.toFixed(1)));
 }
 function simplifyLine(points,tolerance=0.000025){
   const line=points.map(cleanPoint);if(line.length<=2)return line;
@@ -76,7 +77,7 @@ export async function build({source=DEFAULT_SOURCE,output:outputPath=DEFAULT_OUT
     // Runtime-retningen har én sandhed: den geografiske retning fra det blå
     // vandpunkt til det grønne landpunkt. En gammel eller manuelt indtastet
     // gradværdi må aldrig kunne afkoble pil, DMI-retning og RavScore.
-    const onshoreDirectionDeg=Number(bearing(waterPoint,landPoint).toFixed(1));
+    const onshoreDirectionDeg=canonicalOnshoreBearing(waterPoint,landPoint);
     (zones[zoneId]??=[]).push({
       partId:id,
       sourceZoneId,

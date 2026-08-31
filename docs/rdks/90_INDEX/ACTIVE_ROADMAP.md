@@ -1,3 +1,20 @@
+# NYESTE CHECKPOINT – 2026-08-31
+
+- Denne topstatus superseder ældre topresumeer nedenfor.
+- Gennemført siden forrige topstatus:
+  - PR #238 merged som `57f76d716310060e0d629c9f9d3691d386a2dd58`
+  - workflowfixes PR #239/#240 merged videre til `be81005b50294f54367f154c393bb27910e16c6f`
+- Ny blocker:
+  - produktion `33391418061` og `33393684620` stoppede sikkert før DMI/writes/artifact/Pages, fordi én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03` stod som bearing `360`, mens aktiv kontrakt kræver `[0,360)`
+- Aktiv remediation:
+  - PR #241 normaliserer kun afrundet `360` til `0`; ingen geometri-, zone-, land-/vandpunkt- eller kystnormalændring
+  - første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev ikke bevist; bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret
+- Næste mindste sikre rækkefølge:
+  - grøn exact-head for PR #241
+  - merge
+  - frisk 4.0.318-produktion
+  - offentlig desktop-/mobilbrowserverifikation
+- Candidate G er fortsat offentlig, indtil den opdaterede exact-head/merge/prod/browser-kæde er bevist.
 # RavRadar - aktivt roadmap
 
 ## Model-P0 – samlet integreret RavScore under DEC-0110, ikke udgivet
@@ -5,7 +22,7 @@
 - [x] Bevar den friske offentlige Candidate G-base: `33345476979`/`rr-20260831010337-210` var første grønne recoverybevis, og seneste external-watchdog-`workflow_dispatch` `33347230240` publicerede `rr-20260831012407-210` komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples. Candidate G er ærligt 0/210 aktiv på grund af historikmemory. De forudgående runs `33343469247`/`33344823000` var sikre transient-503-stop uden deploy; bounded retry-hotfixen bestod PR #237 exact-head `33352520408`, merge `8c03e25d` og grøn backend-/fuld produktion `33352661061`/`33352634365`.
 - [x] Luk lokalt `ravradar-production-workflow-outcome-v2`, Spørg RavRadar-kvalitetsskeln og DA/DE/EN-plain-language for firetimers energivægtning/højst 15 % dæmpning. Fuld sourcegate, exact-head, produktion og offentlig kontrol er stadig releasegates.
 - [x] Aktivér ét 15-minutters diagnose-/reparationskontroljob for vejrfriskhed uden at oprette en ny scheduler eller dubletvagthund; ingen blind redispatch af et kendt fejlet build.
-- [x] Regenerér 4.0.318-slutbindingerne: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer.
+- [x] Regenerér 4.0.318-slutbindingerne: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
 - [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
 - [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
 - [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5-profil/komponent/forklaring, kausal energivægtet bølgeapproach samt afgrænset `delivery=supply×factor` uden wave-created supply.

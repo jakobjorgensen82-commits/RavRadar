@@ -32,6 +32,7 @@ const write = async (name, value) => {
   return file;
 };
 const read = async name => JSON.parse(await fs.readFile(path.join(root, name), 'utf8'));
+assert.equal(bearing([0, 0], [-0.00001, 1]), 0, 'Staged nordlig retning skal normaliseres fra afrundet 360 til 0 grader');
 
 try {
   const activeParts = JSON.parse(await fs.readFile('data/live/coastal-parts-v2.json', 'utf8'));

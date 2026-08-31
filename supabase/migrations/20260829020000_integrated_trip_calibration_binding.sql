@@ -187,7 +187,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = '778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7'
-      and p_calibration_features ->> 'modelBundleSha256' = '3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6'
+      and p_calibration_features ->> 'modelBundleSha256' = '978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then case
       when jsonb_path_query_array(
@@ -222,7 +222,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
-      and p_calibration_features ->> 'modelBundleSha256' = 'dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4'
+      and p_calibration_features ->> 'modelBundleSha256' = '4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then p_calibration_eligible = false and jsonb_path_query_array(
       coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),

@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-08-31
+
+- Denne topstatus superseder ældre topresumeer nedenfor.
+- PR #238 er merged som `origin/main 57f76d716310060e0d629c9f9d3691d386a2dd58`. Workflowfixes fra PR #239/#240 er merged videre til `origin/main be81005b50294f54367f154c393bb27910e16c6f`.
+- Produktion `33391418061` og `33393684620` stoppede sikkert før DMI, beskyttede writes, artifact og Pages. Den konkrete blocker var én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03` med bearing `360`, selv om den aktive kontrakt kræver `[0,360)`.
+- PR #241 er den smalle remediation: afrundet `360` normaliseres til `0` uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
+- Endelige lokale bundle-hashes er integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og Candidate G-rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Candidate G/4.0.316 er fortsat den eneste offentlige model. Opdateret exact-head, merge, frisk 4.0.318-produktion og offentlig desktop-/mobilbrowserverifikation er stadig åbne gates.
 # Current truth – gældende projektviden
 
 ## 2026-08-31 – frisk Candidate G-base og lokal 4.0.318-slutprotokol
@@ -9,7 +17,7 @@
 - Controller-v4 har præcis 30 felter, fire statusser og seks transitionstyper. Historical actions er planforseglede undtagelser; ordinary maintenance kræver exact current binding. Source-abort kræver NOT_STARTED-bevis. Ambiguous source-visible Pages forsøges exact-target-redeploy/finalizer, aldrig generisk abort.
 - State 6 scorer hele `target..+117 h` som `HISTORY_INCOMPLETE` ved gyldige direkte input; direct missing er `UNAVAILABLE` kun for berørt time. Spørg RavRadar og den offentlige DA/DE/EN-tekst skelner kvaliteterne og forklarer fire timers energivægtet halvering samt højst 15 % dæmpning uden W/N/T/EWMA-jargon. Ingen syntetisk historik, interpolation, carry-forward eller nabozonelån er tilladt.
 - Produktions-outcome er lokalt synkroniseret til `ravradar-production-workflow-outcome-v2` med historical actions og recovery writer/finalizer/gate; exact-head- og produktionsbevis mangler stadig.
-- Den endelige lokale 4.0.318-binding er regenereret og grøn: `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, `modelBundleSha256=3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6`, 43 transitive filer og 8 bindingsforbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`, `modelBundleSha256=dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4`, 55 filer.
+- Den endelige lokale 4.0.318-binding er regenereret og grøn: `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, `modelBundleSha256=978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9`, 43 transitive filer og 8 bindingsforbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`, `modelBundleSha256=4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`, 55 filer.
 - Ét aktivt 15-minutters kontroljob følger vejrproduktion og offentlig friskhed. Det er et diagnose-/reparationsjob, ikke en ekstra scheduler eller dubletvagthund: ved fejl skal det først klassificere run, trin, deploystatus og frisk offentlig sandhed og derefter rette sikkert inden for stående autoritet. Det må aldrig blindt redispatche et kendt fejlet build eller skabe parallelle produktioner.
 
 ## 4.0.318 – lokal first-cutover-hærdning efter sikker 4.0.317-stop; Candidate G er fortsat offentlig

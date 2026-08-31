@@ -10,7 +10,7 @@ Controller-v4 har fortsat præcis 30 felter, fire statusser og seks transitionst
 
 4.0.318's payloadfri produktions-outcome er `ravradar-production-workflow-outcome-v2` og inkluderer historical actions samt recovery writer/finalizer/gate i nested exact-key-resultatet. Kode, releasegate og måltests er lokalt synkroniseret med schemaet; exact-head-, produktions- og offentligt slutbevis er fortsat åbent.
 
-Den regenererede state-6-binding er `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 transitive filer og otte deklarerede forbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 transitive filer. Begge digests skal matche alle producenter, forbrugere, checkpoints, overlays og releasegates.
+Den regenererede state-6-binding er `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 transitive filer og otte deklarerede forbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 transitive filer. Begge digests skal matche alle producenter, forbrugere, checkpoints, overlays og releasegates.
 
 ## Integreret RavScore state 6 og genbrug af allerede hentet vejr (lokal releasekandidat 2026-08-30)
 

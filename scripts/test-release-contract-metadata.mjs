@@ -54,7 +54,7 @@ for (const [label, binding] of Object.entries(expected.modelBindings)) {
 }
 assert.equal(
   expected.modelBindings.candidateGRollback.modelBundleSha256,
-  'dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4',
+  '4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96',
 );
 
 const documentationPaths = [
