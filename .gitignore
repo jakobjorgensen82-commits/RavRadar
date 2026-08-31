@@ -6,6 +6,7 @@ pnpm-lock.yaml
 .cache/ravscore-candidate-g-wind-led-analysis.json
 .cache/ravscore-candidate-g-wind-led-analysis.txt
 .cache/ravscore-continuation-checkpoint/
+.cache/ravscore-legacy-candidate-g-source/
 .cache/private-production-runtime-*.json
 supabase/.temp/
 

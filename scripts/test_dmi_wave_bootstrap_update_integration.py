@@ -272,21 +272,16 @@ class BootstrapAcquisitionTests(unittest.TestCase):
             48 * 3600,
         )
 
-    def test_cold_first_hour_interpolation_endpoint_survives_retention(self) -> None:
+    def test_cold_first_exact_hour_survives_measured_only_retention(self) -> None:
         required = policy_utc_hours(TARGET, COLD_START_POLICY)
         first_required = required[0]
-        before_endpoint = utc_offset(first_required, -1)
         after_endpoint = utc_offset(first_required, 1)
-        too_old = utc_offset(
-            first_required,
-            -COLD_START_POLICY.maximum_interpolation_hours - 1,
-        )
-        run = utc_offset(before_endpoint, -6)
-        items = [official_stac_item(before_endpoint, run, "before")]
-        items.extend(
+        too_old = utc_offset(first_required, -1)
+        run = utc_offset(first_required, -6)
+        items = [
             official_stac_item(hour, run, f"required-{index}")
-            for index, hour in enumerate(required[1:])
-        )
+            for index, hour in enumerate(required)
+        ]
         queries: list[dict] = []
 
         def fake_request(_url: str, query: dict) -> dict:
@@ -307,13 +302,9 @@ class BootstrapAcquisitionTests(unittest.TestCase):
             )
 
         selected = {asset.valid_time for asset in assets}
-        self.assertNotIn(first_required, selected)
-        self.assertIn(before_endpoint, selected)
+        self.assertIn(first_required, selected)
         self.assertIn(after_endpoint, selected)
-        retention_start = utc_offset(
-            first_required,
-            -COLD_START_POLICY.maximum_interpolation_hours,
-        )
+        retention_start = first_required
         self.assertEqual(
             queries[0]["datetime"],
             f"{retention_start}/{required[-1]}",
@@ -326,7 +317,7 @@ class BootstrapAcquisitionTests(unittest.TestCase):
                 "collections": {},
                 "hourly": {
                     too_old: {"time": too_old},
-                    before_endpoint: {"time": before_endpoint},
+                    first_required: {"time": first_required},
                     after_endpoint: {"time": after_endpoint},
                 },
             }},
@@ -345,7 +336,7 @@ class BootstrapAcquisitionTests(unittest.TestCase):
 
         retained = result["zones"]["PART::SYNTHETIC"]["hourly"]
         self.assertNotIn(too_old, retained)
-        self.assertIn(before_endpoint, retained)
+        self.assertIn(first_required, retained)
         self.assertIn(after_endpoint, retained)
 
     def test_operational_run_owns_handoff_and_future_for_candidate_lag_zero_to_three(self) -> None:

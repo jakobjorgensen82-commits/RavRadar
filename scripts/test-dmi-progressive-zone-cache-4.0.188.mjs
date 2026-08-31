@@ -13,7 +13,18 @@ assert.ok(save > update && save < validate, 'DMI-fremdriften skal gemmes før en
 const block = workflow.slice(restore, validate);
 assert.match(block, /path: data\/live\/dmi-bulk-cache\.json/);
 assert.match(block, /dmi-zone-cache-v1-/);
-assert.match(block, /steps\.dmi-bulk\.outcome == 'success'/);
+const nextStep = workflow.indexOf('\n      - name:', save + 1);
+const saveBlock = workflow.slice(save, nextStep);
+assert.match(
+  saveBlock,
+  /steps\.dmi-bulk\.outcome != 'cancelled'.*hashFiles\('data\/live\/dmi-bulk-cache\.json'\) != ''/,
+  'En eksisterende progressiv DMI-zonecache skal gemmes efter både success og en reel producerfejl.',
+);
+assert.doesNotMatch(
+  saveBlock,
+  /steps\.dmi-bulk\.outcome == 'success'/,
+  'Cachefremdrift må ikke gå tabt, blot fordi den fulde WAM-gate endnu ikke er grøn.',
+);
 assert.doesNotMatch(block, /upload-pages-artifact|deploy-pages/);
 assert.match(workflow, /Preserve deployed DMI zone cache as safe fallback/);
 assert.match(workflow, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/deployed-dmi-bulk-cache\.json/);

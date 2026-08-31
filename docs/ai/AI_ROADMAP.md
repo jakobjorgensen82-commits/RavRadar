@@ -1,4 +1,30 @@
-# AI Roadmap – RavRadar 4.0.316+
+# AI Roadmap – RavRadar 4.0.318; offentlig baseline 4.0.316
+
+## Nyeste releasehale 2026-08-31
+
+1. [x] PR #236 gendannede exact Candidate G/4.0.316 på `c58deb78`; exact-head `33342157517`, post-merge `33342219152` og `rr-20260830234144-210` 210/673 er grønne.
+2. [ ] Afslut offentlig visuel mobil-/desktopkontrol af rollbackbasen.
+3. [x] Luk lokal historical Candidate/integrated H0→H1, direct Candidate→integrated og exact-target recovery med målrettede controller/workflow/recoverytests.
+4. [x] Synkronisér outcome lokalt til schema v2 og luk P2-assistent/plain-language-tests; exact-head/offentlig kontrol udestår.
+5. [x] Bevis `33345476979`/`rr-20260831010337-210` som første grønne Candidate G-recovery og seneste external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` som fuldt DMI/validate/releasegate/storage/Pages-grønt 210/673-bevis med `VERIFIED_ONLY`, nul syntetiske samples og ærlig 0/210 aktiv på grund af historikmemory; klassificér `33343469247`/`33344823000` som transient-503-stop uden deploy.
+6. [x] Hold ét 15-minutters kontroljob aktivt som diagnose-/reparationsspor; ingen ekstra scheduler, dubletvagthund eller blind redispatch.
+7. [ ] Bevar den allerede regenererede slutbinding, luk version/docs, kør fuld `validate:source`, exact-head/merge, frisk state-6-produktion, Feggesund 3 × 118 og offentlig 210/673/current/fem døgn/desktop/mobil.
+
+## Aktuel P0 – first-cutover-hærdning og endelig modelrelease
+
+1. [x] Bestå PR #235 exact-head `33332106627`, merge som `a584d1cf`, og klassificér produktion `33333490853` som safe fail før DMI/protected writes/artifact/Pages ved 0 READY/673 canonical warmup.
+2. [x] Opret DEC-0113 og fem normative krav for source-attested cold start, source/active registry-separation, measured Candidate G-rollback, Node/Python UTC-paritet og pre-mutation-stop.
+3. [x] Hydrér og validér exact public source manifest/conditions/register isoleret; materialisér aktivt centralt register separat uden geometri-/punktændring.
+4. [x] Implementér nationalt aggregate modevalg: all-READY/same-context/common-target migration; canonical warmup eller legitim contextændring genuine cold start; invalid/tampered source fail-closed.
+5. [x] Bind `source_validated=true` gennem workflow/statevælger og replay kun faktiske 0–48 verificerede timer som `HISTORY_INCOMPLETE`.
+6. [x] Implementér eksklusiv measured-only Candidate G cold rollback og kræv dens egen 48-timers READY før companion/checkpoint/release.
+7. [x] Normalisér UTC-target uden millisekunder, tilføj direkte Node→Python-paritet og bevar progressiv reel DMI-cache efter ikke-annulleret producentfejl.
+8. [x] Bevar push-only integrated cutover og lad ikke-push drift vedligeholde Candidate G; klassificér `33334709027` og `33335078275` som sikre røde stop uden deploy.
+9. [ ] Afslut samlet review og målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests samt RDKS.
+10. [x] Regenerér endelig modelkontrakt/bundle: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 filer/7 forbrugere og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1` over 54 filer. Versionslukning og geodatabevis ligger fortsat i slutgaten.
+11. [ ] Bestå egen exact-head, sikker merge og frisk fuld produktion med validate/releasegate/protected state/artifact/Pages/activation.
+12. [ ] Bevis Feggesund 3 × 118 og offentlig 210/673/current/fem døgn/begge modes/quality-warnings/assistent/admin/ekspert på desktop og mobil.
+13. [ ] Afslut kun med påstand om teknisk/kontraktmæssig forbedring og fysisk sammenhæng; ingen empirisk bedre fundpræcision uden repræsentative fund/nul-fund.
 
 ## Offentlig baseline – 4.0.316 Candidate G
 
@@ -28,7 +54,7 @@
 4. [x] Bevar `physicalDeliveryResolved=false` og fysisk interval `null`; brug DDM 50 m alene som statisk kontekst og Rainville 2026 alene som buoyant-object-analogi; flyt ingen kystnormal, geometri eller land-/vandpunkter.
 5. [x] Implementér v5's signed-evidence Candidate G→schema6-reweight, aggregate 673/common-target-gate og bounded 40-timers private WAM-bootstrap med coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation samt `1/1024`/`0.01171875`-grænser; bevar Candidate G fail-closed ved manglende state/target/run og dan ingen syntetisk/offentlig historik. State-løs recovery bruger `bounded-private-48h-history-cold-replay-v3` over de faktisk tilgængelige 0–48 positioner og er også ved 48/48 `HISTORY_INCOMPLETE`, indtil 288-timers closure; rollback får ingen dobbelt credit, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
 6. [x] Lås trustgrænserne: kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag.
-7. [x] Luk den komplette lokale producent-/forbrugermatrix, inklusive 210/673-kontrakter, payloads/hashes, ranglister, bedste tid, detaljer/femdøgn, strand/waders, DA/DE/EN, lokal/Edge-assistent, ture/observationer, admin/ekspert, håndbøger, profil, scheduler, audits og releasegates. Full rollback-orakel, active-presenter, legacy source, operationel aktivering, workflow-action-contracts, plain-language-håndbog og de øvrige proportionale blokke er grønne. PR exact-head, frisk produktion og offentlig verifikation står fortsat i udgivelsespunkt 14.
+7. [x] Historisk 4.0.317: luk den daværende producent-/forbrugermatrix. 4.0.318's historical/recovery/outcome/P2-delta genåbner den fulde slutmatrix i det nyeste roadmap ovenfor.
 8. [x] Opgiv den fiktive udførelse af morgenhullets rekonstruktion før descriptor/apply/mutation/publicering; bevar DEC-0109 alene som historisk afgrænset sikkerhedskontrakt.
 9. [ ] Færdiggør exact-head-/produktionsbevis for DEC-0112's numerisk konservative `HISTORY_INCOMPLETE`: kernens lower/upper gennem 20/50/30, 48 aktive currenttimer, 288 timers bølgemobiliseringshale, 40 timers last-mile-hale, 168 timers researchretention uden scoreeffekt og direct-input-`UNAVAILABLE` er implementeret lokalt. Trip-/observationspersistens af lower/upper/span/coverage/reasons er lokalt lukket. Checkpointschema 4/cache-v2 med den parrede READY Candidate G-companion er implementeret. Samlet tværgående regression i PR/produktion og offentlig verifikation udestår.
 10. [ ] Bevis Feggesund i frisk integrated 3 × 118 part-level-produktion. Parent-zone `rr-20260830104132-210` er wave-missing, men de tre dele findes og har `marineCoverage=full`; en proxy kan være unødvendig. Kun ved et reelt part-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` gå til særskilt beslutning. Ingen proxy er implementeret.
@@ -115,8 +141,8 @@ Ingen model-, state-, vejr-, geometri- eller punktændring. Se DEC-0105.
 - [x] Integrér den produktionsverificerede 4.0.308-main `a93082548c4cc1ddbe9c75ce303d334530a534c4` uden at miste 4.0.307-ejerpakken.
 - [x] Implementér observationsatomisk backend-/Edge-/Pages-cutover og manuel Candidate G central-/Pages-rollback med fail-closed `PENDING`, eksakt 210/673-gate, schedulerforbud, privat rollbackprojektion, ingen Candidate G-assistent-Edge, integreret Edge-`409` + lokale DA/DE/EN-svar og Candidate G-bundet schema-3-lagring uden kalibrering. Efter dry-run genverificeres `HEAD == origin/main == GITHUB_SHA` umiddelbart før første eksterne backendskrivning; post-write bruger samme snapshot.
 - [x] Luk dual-hash-fundet med separat `modelContractSha256`/`modelBundleSha256` gennem hele 11-feltsbindingen og negative mismatchprøver.
-- [x] Regenerér og fastlås slutbindingerne: aktiv `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae` over 43 filer og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer.
-- [x] Luk rollback-oraklets public-stage-fixture og de øvrige proportionale red-team-/regressionsgates; den fulde lokale matrix er grøn.
+- [x] Regenerér og fastlås 4.0.318-slutbindingerne: aktiv `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 filer/7 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1` over 54 filer.
+- [x] Historisk 4.0.317: rollback-oraklets public-stage-fixture og daværende proportionale gates var grønne; 4.0.318 skal genkøres samlet.
 - [ ] Gentag helhedsrevision, målrettede regressioner og fuld score-, DMI-, state-, privacy-, RDKS- og releasevalidering på afsluttet kandidat.
 - [ ] Hent og integrér seneste grønne `origin/main` ved sidste checkpoint og luk gennem én samlet PR, exact-head, frisk produktion/deploy og offentlig 210/673 mobil-/desktopkontrol.
 

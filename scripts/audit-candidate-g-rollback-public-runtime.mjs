@@ -34,7 +34,7 @@ import {
 export const CANDIDATE_G_PUBLIC_ROLLBACK_AUDIT_SCHEMA =
   'candidate-g-operational-rollback-public-audit-v1';
 const CANDIDATE_G_ROLLBACK_STAGE_SCHEMA =
-  'candidate-g-operational-rollback-stage-v1';
+  'candidate-g-operational-rollback-stage-v2';
 const CANDIDATE_G_ROLLBACK_STAGE_MARKER =
   '.cache/candidate-g-operational-rollback/stage.json';
 
@@ -42,16 +42,45 @@ const EXPECTED_ZONES = 210;
 const EXPECTED_PARTS = 673;
 const MODES = Object.freeze(['waders', 'beach']);
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
 const FORBIDDEN_PUBLIC_KEY = /^(?:candidateG|ravScoreModel|ravScoreState|currentState|continuationState|stateKey|samplingContextKey|transportEvidence|currentEvidence|waveEvidence|rawPayload|privatePayload|privateDiagnostic|ravScoreOperationalActivation|ravScoreCandidateGRollback)$/i;
 const FORBIDDEN_VECTOR_KEY = /^(?:current)?[uv](?:mps)?$/i;
 const PLAN_FIELDS = Object.freeze([
   'schemaVersion', 'kind', 'mode', 'sourceHead', 'datasetId', 'productionReferenceAt',
   'privateBundleContentSha256', 'sourceImplementationClosureSha256',
   'requestedImplementationClosureSha256', 'centralExpectedVersion', 'sourceModelBinding',
-  'activeModelBinding', 'rollbackId', 'automaticActivationAllowed',
+  'activeModelBinding', 'candidateTargetProfileSha256', 'candidateTargetProfile',
+  'rollbackId', 'automaticActivationAllowed',
   'schedulerActivationAllowed', 'calibrationEligible', 'planSha256',
   'candidateFullSha256', 'privatePayloadLogged',
 ]);
+const MODEL_BINDING_FIELDS = Object.freeze([
+  'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
+  'explanationSchemaId', 'rankingPolicyId', 'bestTimePolicyId',
+  'presentationPolicyId', 'modelContractSha256', 'modelBundleSha256',
+]);
+const CANDIDATE_TARGET_PROFILE_FIELDS = Object.freeze([
+  'schemaVersion', 'sourceVersion', 'switchVersion', 'requestedProfileId',
+  'activeModelId', 'stateSchemaVersion', 'variantId', 'profileId',
+  'componentSchemaId', 'explanationSchemaId', 'rankingPolicyId',
+  'bestTimePolicyId', 'presentationPolicyId', 'modelContractSha256',
+  'modelBundleSha256', 'rollbackModelId', 'runtimeFallbackModelId',
+  'modelActivationEnabled', 'automaticActivationAllowed',
+  'publicAvailabilityPolicy', 'crossModelRuntimeFallbackAllowed',
+  'migrationRequiredAtFirstCutover', 'status', 'activationAuthority', 'evidence',
+]);
+const TARGET_PROFILE_EVIDENCE_FIELDS = Object.freeze([
+  'decisionId', 'exactHeadValidationRequired', 'freshProductionValidationRequired',
+]);
+const STAGE_MARKER_FIELDS = Object.freeze([
+  'schemaVersion', 'kind', 'mode', 'sourceHead', 'datasetId',
+  'productionReferenceAt', 'planSha256', 'candidateFullSha256',
+  'privateBundleContentSha256', 'sourceImplementationClosureSha256',
+  'requestedImplementationClosureSha256', 'candidateTargetProfileSha256',
+  'modelBinding', 'automaticActivationAllowed', 'schedulerActivationAllowed',
+  'publicArtifactReady', 'installed',
+]);
+const INSTALLED_MARKER_FIELDS = Object.freeze(['path', 'sha256', 'privacyClass']);
 
 const canonical = value => Array.isArray(value)
   ? value.map(canonical)
@@ -70,6 +99,49 @@ function exactKeys(value, expected) {
 function assertExactCandidateBinding(value, label) {
   assertRavScoreModelBinding(value, label);
   if (!same(value, binding())) throw new Error(`${label} is not the exact Candidate G bundle`);
+}
+
+function assertSealedSourceBinding(value, targetProfile, mode) {
+  if (!exactKeys(value, MODEL_BINDING_FIELDS)
+    || MODEL_BINDING_FIELDS.slice(0, 9)
+      .some(field => !SAFE_ID_PATTERN.test(String(value?.[field] ?? '')))
+    || !SHA256_PATTERN.test(String(value?.modelContractSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(value?.modelBundleSha256 ?? ''))
+    || ![RAVSCORE_MODEL_ID, targetProfile?.rollbackModelId].includes(value.modelId)
+    || (mode === 'execute' && value.modelId !== targetProfile?.rollbackModelId)) {
+    throw new Error('Candidate G sealed source binding is incompatible');
+  }
+}
+
+function assertSealedCandidateTargetProfile(profile, profileSha256, sourceBinding, mode) {
+  const expectedBinding = binding();
+  const evidence = profile?.evidence;
+  if (!exactKeys(profile, CANDIDATE_TARGET_PROFILE_FIELDS)
+    || !exactKeys(evidence, TARGET_PROFILE_EVIDENCE_FIELDS)
+    || !SHA256_PATTERN.test(String(profileSha256 ?? ''))
+    || canonicalSha256(profile) !== profileSha256
+    || profile.schemaVersion !== '3.0.0'
+    || !/^\d+\.\d+\.\d+$/.test(String(profile.sourceVersion ?? ''))
+    || profile.switchVersion !== 'RAVSCORE-PROFILE-SWITCH-CANDIDATE-G-ROLLBACK-1.0.0'
+    || profile.requestedProfileId !== expectedBinding.modelId
+    || profile.activeModelId !== expectedBinding.modelId
+    || MODEL_BINDING_FIELDS.slice(1).some(field => profile[field] !== expectedBinding[field])
+    || !SAFE_ID_PATTERN.test(String(profile.rollbackModelId ?? ''))
+    || profile.rollbackModelId === expectedBinding.modelId
+    || profile.runtimeFallbackModelId !== null
+    || profile.modelActivationEnabled !== true
+    || profile.automaticActivationAllowed !== false
+    || profile.publicAvailabilityPolicy !== 'candidate-g-local-fail-closed'
+    || profile.crossModelRuntimeFallbackAllowed !== false
+    || profile.migrationRequiredAtFirstCutover !== false
+    || profile.status !== 'owner-approved-candidate-g-rollback-only-local-fail-closed'
+    || profile.activationAuthority !== 'DEC-0110-manual-candidate-g-rollback'
+    || evidence.decisionId !== 'DEC-0110'
+    || evidence.exactHeadValidationRequired !== true
+    || evidence.freshProductionValidationRequired !== true) {
+    throw new Error('Candidate G sealed target central profile is incompatible');
+  }
+  assertSealedSourceBinding(sourceBinding, profile, mode);
 }
 
 export function assertCandidateGRollbackPublicScore(value,
@@ -113,13 +185,14 @@ function assertSealedStageInput(candidateFull, plan, {
     planSha256,
     candidateFullSha256,
     privatePayloadLogged,
+    candidateTargetProfile,
     ...activation
   } = plan;
   if (!SHA256_PATTERN.test(String(planSha256 ?? ''))
     || !SHA256_PATTERN.test(String(candidateFullSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.sourceImplementationClosureSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.requestedImplementationClosureSha256 ?? ''))
-    || canonicalSha256(activation) !== planSha256
+    || canonicalSha256({ ...activation, candidateTargetProfile }) !== planSha256
     || canonicalSha256(candidateFull) !== candidateFullSha256
     || privatePayloadLogged !== false
     || plan.sourceHead !== expectedSourceHead
@@ -131,13 +204,18 @@ function assertSealedStageInput(candidateFull, plan, {
     || plan.rollbackId !== RAVSCORE_ROLLBACK_ID
     || plan.automaticActivationAllowed !== false
     || plan.schedulerActivationAllowed !== false
-    || plan.calibrationEligible !== false
-    || plan.sourceModelBinding?.modelId === RAVSCORE_MODEL_ID) {
+    || plan.calibrationEligible !== false) {
     throw new Error('Candidate G sealed plan semantics or digest is incompatible');
   }
+  assertSealedCandidateTargetProfile(
+    candidateTargetProfile,
+    activation.candidateTargetProfileSha256,
+    activation.sourceModelBinding,
+    activation.mode,
+  );
   assertExactCandidateBinding(plan.activeModelBinding, 'Candidate G sealed active binding');
   const embeddedFields = PLAN_FIELDS.filter(key => ![
-    'candidateFullSha256', 'privatePayloadLogged',
+    'candidateFullSha256', 'privatePayloadLogged', 'candidateTargetProfile',
   ].includes(key));
   if (!candidateFull || candidateFull.ravScoreCandidateGRollback !== undefined
     || candidateFull.datasetId !== plan.datasetId
@@ -293,7 +371,8 @@ export async function auditCandidateGRollbackPublicRuntime({
     throw new Error('Candidate G public rollback must remain calibration-ineligible');
   }
   const expectedBinding = binding();
-  if (!stageMarker || stageMarker.schemaVersion !== CANDIDATE_G_ROLLBACK_STAGE_SCHEMA
+  if (!exactKeys(stageMarker, STAGE_MARKER_FIELDS)
+    || stageMarker.schemaVersion !== CANDIDATE_G_ROLLBACK_STAGE_SCHEMA
     || stageMarker.kind !== 'CANDIDATE_G_OPERATIONAL_ROLLBACK_ISOLATED_STAGE'
     || stageMarker.mode !== plan.mode
     || stageMarker.sourceHead !== plan.sourceHead
@@ -305,6 +384,9 @@ export async function auditCandidateGRollbackPublicRuntime({
       !== plan.sourceImplementationClosureSha256
     || stageMarker.requestedImplementationClosureSha256
       !== plan.requestedImplementationClosureSha256
+    || stageMarker.candidateTargetProfileSha256 !== plan.candidateTargetProfileSha256
+    || !SHA256_PATTERN.test(String(stageMarker.candidateTargetProfileSha256 ?? ''))
+    || stageMarker.productionReferenceAt !== plan.productionReferenceAt
     || stageMarker.automaticActivationAllowed !== false
     || stageMarker.schedulerActivationAllowed !== false
     || stageMarker.publicArtifactReady !== false) {
@@ -312,7 +394,21 @@ export async function auditCandidateGRollbackPublicRuntime({
   }
   assertExactCandidateBinding(stageMarker.modelBinding, 'Candidate G stage marker binding');
 
-  const installedByPath = new Map((stageMarker.installed ?? []).map(item => [item?.path, item]));
+  const expectedInstalled = new Map([
+    ['data/live/conditions.json', 'PRIVATE_STAGE_INPUT'],
+    ['js/core/ravscore-model-contract.js', 'PUBLIC_MODEL_IMPLEMENTATION'],
+    ['js/core/ravscore-model-bundle.generated.js', 'PUBLIC_MODEL_IMPLEMENTATION'],
+  ]);
+  if (!Array.isArray(stageMarker.installed)
+    || stageMarker.installed.length !== expectedInstalled.size
+    || stageMarker.installed.some(item => !exactKeys(item, INSTALLED_MARKER_FIELDS)
+      || !expectedInstalled.has(item.path)
+      || expectedInstalled.get(item.path) !== item.privacyClass
+      || !SHA256_PATTERN.test(String(item.sha256 ?? '')))
+    || new Set(stageMarker.installed.map(item => item.path)).size !== expectedInstalled.size) {
+    throw new Error('Candidate G isolated stage installed-file seal is incompatible');
+  }
+  const installedByPath = new Map(stageMarker.installed.map(item => [item.path, item]));
   const rollbackContractText = await fs.readFile(
     fileURLToPath(new URL('./rollback-assets/ravscore-model-contract.js', import.meta.url)), 'utf8');
   const rollbackBundleText = await fs.readFile(
@@ -452,12 +548,16 @@ export async function auditCandidateGRollbackPublicRuntime({
   assertPublicRuntimePrivacy(startup, 'startup');
   assertPublicRuntimePrivacy(details, 'details');
   assertPublicRuntimePrivacy(manifest, 'manifest');
+  const retiredSourceModelId = plan.sourceModelBinding.modelId === RAVSCORE_MODEL_ID
+    ? null
+    : plan.sourceModelBinding.modelId;
   for (const [label, document] of [
     ['startup', startup],
     ['details', details],
     ['manifest', manifest],
-  ]) scanPublicModelClosure(document, { sourceModelId: plan.sourceModelBinding.modelId, label });
-  if (JSON.stringify([startup, details, manifest]).includes(plan.sourceModelBinding.modelId)) {
+  ]) scanPublicModelClosure(document, { sourceModelId: retiredSourceModelId, label });
+  if (retiredSourceModelId
+    && JSON.stringify([startup, details, manifest]).includes(retiredSourceModelId)) {
     throw new Error('Candidate G public package contains the integrated source model id');
   }
   if (zoneRegistry?.type !== 'FeatureCollection'

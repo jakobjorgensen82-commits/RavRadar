@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import {
   CANDIDATE_G_STATE_MODEL_ID,
@@ -23,6 +24,10 @@ import {
 } from '../js/core/ravscore-regime-memory.js';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
+import {
+  legacyCandidateGStateKey,
+  resolveCandidateGWaveBootstrapTarget,
+} from './resolve-candidate-g-wave-bootstrap-target.mjs';
 import {
   buildIntegratedPartScoreSeries,
   compactIntegratedRavScoreMode,
@@ -347,8 +352,16 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 
 const updater = await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
+const productionWorkflow = await fs.readFile(
+  new URL('../.github/workflows/update-and-deploy.yml', import.meta.url),
+  'utf8',
+);
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),
+  'utf8',
+);
+const operationalActivationSource = await fs.readFile(
+  new URL('./ravscore-operational-activation.mjs', import.meta.url),
   'utf8',
 );
 assert.match(updater, /buildRavScoreProductionPartSeries/);
@@ -403,5 +416,370 @@ assert.doesNotMatch(updater, /evaluateRavScoreCandidateG|buildCandidateGDerivedS
 assert.doesNotMatch(updater, /currentUMps:\s*weather\.currentUMps|currentVMps:\s*weather\.currentVMps/,
   'public-destined part score rows must not copy raw current vectors');
 assert.match(updater, /policy:\s*'integrated-model-local-fail-closed'/);
+
+function workflowStep(name) {
+  const marker = `      - name: ${name}`;
+  const occurrences = productionWorkflow.split(marker).length - 1;
+  assert.equal(occurrences, 1, `workflow step ${name} must occur exactly once`);
+  const start = productionWorkflow.indexOf(marker);
+  const next = productionWorkflow.indexOf('\n      - name: ', start + marker.length);
+  return {
+    start,
+    block: productionWorkflow.slice(start, next === -1 ? undefined : next),
+  };
+}
+
+const operationalActionStep = workflowStep(
+  'Resolve one fail-closed operational model action',
+);
+const candidateCaseStart = operationalActionStep.block.indexOf('            candidate-g)');
+const legacyCaseStart = operationalActionStep.block.indexOf('            legacy-candidate-g)');
+assert.ok(candidateCaseStart >= 0 && legacyCaseStart > candidateCaseStart);
+const pendingCandidateCase = operationalActionStep.block.slice(
+  candidateCaseStart,
+  legacyCaseStart,
+);
+assert.match(
+  pendingCandidateCase,
+  /if \[ "\$INITIAL_CUTOVER_REQUIRED" = "true" \]; then[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*\[\[ "\$CENTRAL_VERSION" =~ \^\[1-9\]\[0-9\]\*\$ \]\][\s\S]*\[\[ "\$ACTIVE_DEPLOYMENT_ID" =~ \^pages\(-recovery\)\?-\[0-9\]\+-\[0-9\]\+\$ \]\][\s\S]*\[\[ "\$ACTIVE_IMPLEMENTATION_CLOSURE_SHA256" =~ \^\[a-f0-9\]\{64\}\$ \]\][\s\S]*if \[ "\$BINDING_CURRENT" = "true" \]; then[\s\S]*action="candidate-maintenance"[\s\S]*else[\s\S]*test "\$BINDING_CURRENT" = "false"[\s\S]*action="candidate-historical-maintenance"/,
+  'Et afventende første cutover skal kun ske på push; bot/schedule skal fortsat kunne vedligeholde den aktive Candidate G uden at aktivere modellen.',
+);
+assert.doesNotMatch(
+  pendingCandidateCase,
+  /test "\$GITHUB_EVENT_NAME" = "push"/,
+  'Afventende cutover må ikke blokere normal Candidate G-vedligeholdelse efter et sikkert cutoverstop.',
+);
+const legacyCaseEnd = operationalActionStep.block.indexOf(
+  '            *) echo "Unknown operational RavScore model; refusing production."',
+  legacyCaseStart,
+);
+assert.ok(legacyCaseEnd > legacyCaseStart);
+const legacyCandidateCase = operationalActionStep.block.slice(
+  legacyCaseStart,
+  legacyCaseEnd,
+);
+assert.match(
+  legacyCandidateCase,
+  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*action="candidate-legacy-maintenance"/,
+  'rowless legacy Candidate G must cut over only on push and use the distinct Candidate maintenance bridge on schedule/manual weather',
+);
+assert.match(
+  operationalActionStep.block,
+  /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
+  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
+);
+
+const legacySourceImportStep = workflowStep(
+  'Import exact legacy Candidate G into an isolated first-cutover source root',
+);
+assert.match(
+  legacySourceImportStep.block,
+  /legacy_source_required == 'true'[\s\S]*action == 'integrated-cutover'[\s\S]*action == 'candidate-legacy-maintenance'/,
+  'schema-2 source hydration must run only for a sealed legacy source in first cutover or the distinct Candidate maintenance bridge',
+);
+const legacyDeployFetchStep = workflowStep(
+  'Fetch exact public Candidate G source commit for first cutover verification',
+);
+assert.match(
+  legacyDeployFetchStep.block,
+  /legacy_source_required == 'true'[\s\S]*operational_action == 'integrated-cutover'[\s\S]*operational_action == 'candidate-legacy-maintenance'/,
+  'deploy-side source verification must fetch the pinned legacy implementation for both first cutover and the bridge',
+);
+const candidatePlanStep = workflowStep(
+  'Seal Candidate G rollback or maintenance plan from the fresh private runtime',
+);
+assert.match(
+  candidatePlanStep.block,
+  /candidate-legacy-maintenance[\s\S]*source_model="legacy-candidate-g"[\s\S]*legacy-source\.outputs\.implementation_closure_sha256/,
+  'legacy Candidate maintenance must seal its exact legacy source model and implementation closure into the Candidate plan',
+);
+const cutoverPlanStep = workflowStep(
+  'Seal integrated return, initial cutover or historical maintenance plan after backend and public gates',
+);
+assert.match(
+  cutoverPlanStep.block,
+  /if \[ "\$\{\{ steps\.operational-model\.outputs\.legacy_source_required \}\}" = "true" \]; then[\s\S]*legacy-source\.outputs\.implementation_closure_sha256/,
+  'the return plan must use legacy implementation closure only for a legacy-attested source',
+);
+const operationalHandoffStep = workflowStep('Seal privacy-safe operational deploy handoff');
+assert.match(
+  operationalHandoffStep.block,
+  /ravscore-operational-deploy-handoff-v2[\s\S]*legacySourceRequired:\(\$legacySourceRequired == "true"\)/,
+  'the privacy-safe handoff must bind the exact source verification mode',
+);
+assert.match(
+  operationalHandoffStep.block,
+  /jq -r '\.legacySourceRequired'[\s\S]*operational-model\.outputs\.legacy_source_required/,
+  'the plan and deploy handoff must agree on legacy source verification before upload',
+);
+const sourceRestoreStep = workflowStep('Restore the exact sealed active source implementation');
+assert.match(
+  sourceRestoreStep.block,
+  /operational_action == 'integrated-cutover' && needs\.build-and-prepare\.outputs\.legacy_source_required != 'true'/,
+  'a modern schema-4 first-cutover source must restore its exact active deployment seal',
+);
+const sourceObserveStep = workflowStep('Observe and seal the currently public source manifest');
+assert.match(
+  sourceObserveStep.block,
+  /operational_action == 'candidate-legacy-maintenance'/,
+  'the bridge must observe and seal its actually public schema-2 source manifest before begin CAS',
+);
+assert.match(
+  sourceObserveStep.block,
+  /legacy_source_required \}\}" = "true"[\s\S]*expected_schema="2"/,
+  'source manifest schema must be selected from the sealed source mode, not the generic cutover action',
+);
+const sourceVerifyStep = workflowStep(
+  'Verify the complete currently public source model before begin CAS',
+);
+assert.match(
+  sourceVerifyStep.block,
+  /integrated-cutover\)[\s\S]*legacy_source_required \}\}" = "true"[\s\S]*verify-legacy-candidate-g-source\.mjs verify[\s\S]*source_model="candidate-g"/,
+  'first cutover must route legacy schema 2 to fixed attestation and modern schema 4 to exact Candidate deployment verification',
+);
+assert.match(
+  sourceVerifyStep.block,
+  /candidate-legacy-maintenance\)[\s\S]*verify-legacy-candidate-g-source\.mjs verify[\s\S]*--attestation[\s\S]*exit 0/,
+  'the legacy Candidate maintenance bridge must verify schema 2 through the fixed source attestation before central CAS',
+);
+assert.doesNotMatch(
+  sourceRestoreStep.block,
+  /candidate-legacy-maintenance/,
+  'rowless legacy maintenance must never pretend that a modern recoverable Pages source seal already exists',
+);
+const legacyRefreshBeginStep = workflowStep(
+  'Begin legacy-to-current Candidate G refresh with exact central CAS',
+);
+const legacyRefreshCompleteStep = workflowStep(
+  'Complete legacy-to-current Candidate G refresh only after public verification',
+);
+const pagesDeployStep = workflowStep('Deploy to GitHub Pages');
+assert.ok(
+  legacyRefreshBeginStep.start < pagesDeployStep.start
+    && pagesDeployStep.start < legacyRefreshCompleteStep.start,
+  'legacy Candidate maintenance must remain a two-phase begin → verified Pages → complete transition',
+);
+assert.match(
+  legacyRefreshBeginStep.block,
+  /legacy-refresh-begin[\s\S]*--source-attestation[\s\S]*--source-verification[\s\S]*--deployment-id/,
+  'legacy refresh begin must bind source attestation, source verification and exact Pages attempt',
+);
+assert.match(
+  legacyRefreshCompleteStep.block,
+  /legacy-refresh-complete[\s\S]*--verification[\s\S]*--deployment-id/,
+  'legacy refresh complete must be unreachable until the public target verification exists',
+);
+const failureReconcileStep = workflowStep(
+  'Reconcile an ambiguous failed transition from observed public identity',
+);
+assert.match(
+  failureReconcileStep.block,
+  /candidate-legacy-refresh-begin\.outcome == 'success'/,
+  'an ambiguous legacy Candidate deployment must enter the same public-identity reconciliation gate',
+);
+const sourceEvidenceUploadStep = workflowStep(
+  'Upload privacy-safe source evidence before any activation CAS',
+);
+assert.match(
+  sourceEvidenceUploadStep.block,
+  /operational_action == 'candidate-legacy-maintenance'/,
+  'the bridge must persist privacy-safe legacy source evidence for cross-run reconciliation',
+);
+const deploymentDecisionStep = workflowStep(
+  'Decide whether this sealed artifact may deploy',
+);
+assert.match(
+  deploymentDecisionStep.block,
+  /candidate-legacy-maintenance[\s\S]*deployment_model="candidate-g"/,
+  'the bridge may deploy only the sealed current Candidate G target, never integrated RavScore',
+);
+const integratedBeginStep = workflowStep(
+  'Begin integrated return or first cutover with exact central CAS',
+);
+assert.match(
+  integratedBeginStep.block,
+  /legacy_source_required \}\}" = "true"[\s\S]*--source-attestation/,
+  'legacy attestation may only be passed when the sealed source mode requires it',
+);
+assert.match(
+  operationalActivationSource,
+  /if \(plan\.legacySourceRequired\) \{[\s\S]*readJsonOption\(options, 'source-attestation',[\s\S]*Legacy Candidate G source attestation/,
+  'the activation CLI must not require a legacy attestation for a modern schema-4 initial-cutover retry',
+);
+
+const centralApplyStep = workflowStep(
+  'Apply centrally approved zone geometry and deletions',
+);
+const activeRegistryStep = workflowStep(
+  'Materialize the authoritative active coastal-part registry',
+);
+const legacyHydrateStep = workflowStep(
+  'Import exact public Candidate G runtime only for first integrated bootstrap',
+);
+const aggregateResolverStep = workflowStep(
+  'Resolve one aggregate Candidate G wave-bootstrap target',
+);
+const dmiBulkStep = workflowStep('Update DMI bulk model cache');
+assert.ok(
+  dmiBulkStep.block.includes('continue-on-error: true'),
+  'the DMI producer must yield control after a real failure so its progressive cache can be saved before the cutover gate fails closed',
+);
+assert.ok(
+  centralApplyStep.start < activeRegistryStep.start
+    && activeRegistryStep.start < legacyHydrateStep.start
+    && legacyHydrateStep.start < aggregateResolverStep.start
+    && aggregateResolverStep.start < dmiBulkStep.start,
+  'first cutover must apply central truth, materialize its active registry, hydrate and resolve the exact legacy source, then start DMI',
+);
+assert.ok(
+  aggregateResolverStep.block.includes(
+    '--source-registry .cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json',
+  ),
+  'the aggregate resolver must bind Candidate G states to the atomically hydrated source registry',
+);
+assert.ok(
+  aggregateResolverStep.block.includes('--registry data/live/coastal-parts-v2.json'),
+  'the aggregate resolver must separately bind the active central registry',
+);
+
+const updateWeatherStep = workflowStep('Update central weather cache');
+assert.ok(
+  updateWeatherStep.block.includes(
+    "RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}",
+  ),
+  'the resolver mode must enter update-weather unchanged during the first cutover',
+);
+assert.ok(
+  updateWeatherStep.block.includes(
+    "RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}",
+  ),
+  'the resolver source-validation attestation must enter update-weather unchanged during the first cutover',
+);
+assert.match(
+  updater,
+  /candidateGBootstrapMode:\s*RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
+  'update-weather must pass the exact workflow mode into initial-state selection',
+);
+assert.match(
+  updater,
+  /candidateGSourceValidated:\s*RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED/,
+  'update-weather must pass the exact workflow source attestation into initial-state selection',
+);
+
+assert.ok(
+  dmiBulkStep.block.includes(
+    "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}",
+  ),
+  'the WAM producer must receive the aggregate resolver mode without remapping it',
+);
+assert.ok(
+  dmiBulkStep.block.includes(
+    'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}',
+  ),
+  'the WAM producer must receive the aggregate resolver target hour',
+);
+const wamGateStep = workflowStep(
+  'Require complete private WAM history before first integrated cutover',
+);
+assert.ok(
+  wamGateStep.block.includes(
+    '--mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}"',
+  ),
+  'the WAM completion gate must validate the same resolver mode as the producer',
+);
+assert.ok(
+  wamGateStep.block.includes(
+    '--target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}"',
+  ),
+  'the WAM completion gate must validate the same resolver target as the producer',
+);
+
+const progressiveDmiSaveStep = workflowStep(
+  'Save progressive private DMI zone cache',
+);
+assert.ok(
+  dmiBulkStep.start < progressiveDmiSaveStep.start
+    && progressiveDmiSaveStep.start < wamGateStep.start,
+  'the progressive cache must be saved after DMI work and before the fail-closed WAM completion gate',
+);
+assert.ok(
+  progressiveDmiSaveStep.block.includes(
+    "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''",
+  ),
+  'a real partial DMI cache must be saved after a failed producer so the next run can continue',
+);
+assert.doesNotMatch(
+  progressiveDmiSaveStep.block,
+  /success\(\)|dmi-bulk\.outcome\s*(?:==|!=)\s*'failure'|dmi-bulk\.outcome\s*==\s*'success'/,
+  'progressive DMI cache persistence must not be restricted to a fully successful producer',
+);
+
+const parserRegistryParts = Array.from({ length: 673 }, (_, index) => ({
+  partId: `PARSER-PART-${String(index).padStart(3, '0')}`,
+  waterPoint: [8, 55],
+  onshoreDirectionDeg: index % 360,
+}));
+const parserRegistryZones = Object.fromEntries(
+  Array.from({ length: 210 }, (_, index) => [
+    `PARSER-ZONE-${String(index).padStart(3, '0')}`,
+    [],
+  ]),
+);
+const parserRegistryZoneIds = Object.keys(parserRegistryZones);
+parserRegistryParts.forEach((part, index) => {
+  parserRegistryZones[parserRegistryZoneIds[index % parserRegistryZoneIds.length]].push(part);
+});
+const parserRegistry = {
+  schemaVersion: 2,
+  enabled: true,
+  partCount: 673,
+  zoneCount: 210,
+  zones: parserRegistryZones,
+};
+const parserConditions = {
+  coastalParts: {
+    parts: Object.fromEntries(parserRegistryParts.map(parserPart => [
+      parserPart.partId,
+      {
+        candidateG: {
+          currentState: {
+            ...structuredClone(legacyState),
+            stateKey: legacyCandidateGStateKey(parserPart),
+          },
+        },
+      },
+    ])),
+  },
+};
+const parserResolverResult = resolveCandidateGWaveBootstrapTarget({
+  conditions: parserConditions,
+  sourceRegistry: parserRegistry,
+  registry: parserRegistry,
+  productionTargetAt: time(0),
+});
+const python = process.env.RAVRADAR_PYTHON || process.env.PYTHON || 'python';
+const parserProbe = spawnSync(python, [
+  '-c',
+  [
+    'import sys',
+    "sys.path.insert(0, 'scripts')",
+    'from lib.dmi_wave_history_bootstrap import format_utc_hour, parse_utc_hour',
+    'print(format_utc_hour(parse_utc_hour(sys.argv[1])))',
+  ].join('; '),
+  parserResolverResult.target_hour,
+], {
+  cwd: process.cwd(),
+  encoding: 'utf8',
+});
+assert.equal(
+  parserProbe.status,
+  0,
+  parserProbe.stderr || parserProbe.error?.message || 'Python UTC-hour parser failed',
+);
+assert.equal(
+  parserProbe.stdout.trim(),
+  parserResolverResult.target_hour,
+  'the exact Node resolver target_hour must round-trip through the production Python parse_utc_hour contract',
+);
 
 console.log('Integreret RavScore-produktionsadapter, schema-2 migration og U\/V-minimering: bestået.');

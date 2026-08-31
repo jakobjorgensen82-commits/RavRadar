@@ -51,24 +51,30 @@ assert.match(integratedDa.sections.gridCurrent, /verificeret modelgridpunkt.*3,2
 assert.match(integratedDa.sections.gridCurrent, /ikke en direkte måling af lokal bundnær strøm/);
 assert.doesNotMatch(integratedDa.sections.gridCurrent, /er lokal bundnær modelstrøm/,
   'model-grid current must never be identified as measured near-bed current');
-assert.match(integratedDa.sections.lastMile, /kausal energivægtet W\/N\/T-EWMA/);
+assert.match(integratedDa.sections.lastMile, /kausalt, energivægtet gennemsnit af bølgernes retning/);
+assert.match(integratedDa.sections.lastMile, /kun den aktuelle og de tidligere timer.*aldrig fremtidige timer/);
 assert.match(integratedDa.sections.lastMile, /fire timers halveringstid/);
-assert.match(integratedDa.sections.lastMile, /ældre timer med aftagende vægt/);
+assert.match(integratedDa.sections.lastMile, /ældre timer tæller gradvist mindre/);
 assert.match(integratedDa.sections.lastMile, /højst 15 %/);
 assert.match(integratedDa.sections.lastMile, /kan aldrig skabe eller øge tilførsel/);
 assert.match(integratedDa.sections.lastMile, /fysisk uopløst/);
+assert.doesNotMatch(integratedDa.sections.lastMile, /W\/N\/T|EWMA/i);
 assert.doesNotMatch(integratedDa.sections.lastMile, /firetimers energivægtet bølgeretning/,
   'Fire timer må ikke fremstilles som et fast vindue.');
 const integratedDe = presentIntegrated(integrated, { language:'de' });
-assert.match(integratedDe.sections.lastMile, /kausaler energiegewichteter W\/N\/T-EWMA/);
+assert.match(integratedDe.sections.lastMile, /kausalen, energiegewichteten Durchschnitt der Wellenrichtung/);
+assert.match(integratedDe.sections.lastMile, /Nur die aktuelle Stunde und frühere Stunden.*niemals zukünftige Stunden/);
 assert.match(integratedDe.sections.lastMile, /Halbwertszeit von vier Stunden/);
-assert.match(integratedDe.sections.lastMile, /ältere Stunden.*abnehmendem Gewicht/);
+assert.match(integratedDe.sections.lastMile, /ältere Stunden schrittweise weniger zählen/);
+assert.doesNotMatch(integratedDe.sections.lastMile, /W\/N\/T|EWMA/i);
 const integratedEn = presentIntegrated(integrated, { language:'en' });
 assert.match(integratedEn.sections.gridCurrent, /verified model grid point.*3\.2 km from RavRadar’s water point/);
 assert.doesNotMatch(integratedEn.sections.gridCurrent, /is local near-bed model-grid current/);
-assert.match(integratedEn.sections.lastMile, /causal energy-weighted wave-direction W\/N\/T EWMA/);
+assert.match(integratedEn.sections.lastMile, /causal, energy-weighted average of wave direction/);
+assert.match(integratedEn.sections.lastMile, /only the current and earlier hours.*never future hours/);
 assert.match(integratedEn.sections.lastMile, /four-hour half-life/);
-assert.match(integratedEn.sections.lastMile, /older hours in a decaying tail/);
+assert.match(integratedEn.sections.lastMile, /older hours gradually count less/);
+assert.doesNotMatch(integratedEn.sections.lastMile, /W\/N\/T|EWMA/i);
 for (const [language, pattern] of [
   ['da', /ejer-godkendt regionalt DMI-proxygridpunkt 12,4 km.*ikke et lokalt gridpunkt/],
   ['de', /freigegebenen regionalen DMI-Proxy-Gitterpunkt.*12,4 km.*kein lokaler Gitterpunkt/],

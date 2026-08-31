@@ -4,6 +4,7 @@ import {
 import { buildIntegratedPartScoreSeries } from './ravscore-integrated-runtime.mjs';
 import {
   buildRavScoreRecoveryReplay,
+  RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
   ravScoreRecoveryReplayStartAt,
   selectRavScoreInitialState,
 } from './ravscore-recovery-replay.mjs';
@@ -28,6 +29,7 @@ export function buildRavScoreProductionPartSeries({
   initialSelection,
   previousCandidateGContinuation = null,
   legacyCandidateGMigrationState = null,
+  candidateGRollbackMeasuredColdStart = false,
   targetReferenceAt,
   recoverySources = [],
   publicHourly = [],
@@ -47,9 +49,15 @@ export function buildRavScoreProductionPartSeries({
     previousCandidateGContinuation,
     legacyCandidateGMigrationState,
   ].filter(value => value !== null && value !== undefined).length;
-  if (candidateContinuationCount !== 1) {
+  const measuredColdStartAttested = initialSelection.source === 'COLD_START'
+    && initialSelection.candidateGSourceDisposition
+      === RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION;
+  if (typeof candidateGRollbackMeasuredColdStart !== 'boolean'
+    || candidateGRollbackMeasuredColdStart !== measuredColdStartAttested
+    || (candidateGRollbackMeasuredColdStart && candidateContinuationCount !== 0)
+    || (!candidateGRollbackMeasuredColdStart && candidateContinuationCount !== 1)) {
     throw new Error(
-      'RavScore production requires exactly one separate Candidate G rollback continuation',
+      'RavScore production requires one exclusive Candidate G rollback initialization path',
     );
   }
   if (resolveNativeCadenceReferenceSample !== null
@@ -106,6 +114,7 @@ export function buildRavScoreProductionPartSeries({
     hourly: recovery.hourly,
     previousCandidateGContinuation,
     legacyCandidateGMigrationState,
+    measuredColdStart: candidateGRollbackMeasuredColdStart,
     nativeCadenceHoldHours,
     nativeCadenceReferenceSample: resolvedCandidateGNativeCadenceReferenceSample,
     scoreStartAt: recovery.scoreStartAt,

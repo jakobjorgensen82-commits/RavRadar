@@ -31,6 +31,13 @@ import {
 export const RAVSCORE_RECOVERY_REPLAY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_COLD_START_REPLAY_HOURS =
   RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours;
+export const RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES = Object.freeze({
+  automatic: 'auto',
+  candidateGMigration: 'candidate-g-migration',
+  genuineColdStart: 'genuine-cold-start',
+});
+export const RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION =
+  'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY';
 const DMI_CURRENT_VECTOR_SELECTION = 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer';
 
 const HOUR_MS = 3_600_000;
@@ -501,8 +508,18 @@ export function selectRavScoreInitialState({
   existingPart = null,
   checkpointStates = {},
   targetReferenceAt = null,
+  candidateGBootstrapMode = RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.automatic,
+  candidateGSourceValidated = false,
 } = {}) {
   if (!part?.partId) throw new Error('RavScore initial-state selection requires a coastal part');
+  if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
+    .includes(candidateGBootstrapMode)
+    || typeof candidateGSourceValidated !== 'boolean') {
+    failClosed(
+      'RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_INVALID',
+      'RavScore first-cutover bootstrap selection is invalid',
+    );
+  }
   const samplingContextKey = ravScoreSamplingContextKey(part);
   const expectedCandidateGStateKey = candidateGStateKey(part);
   const rejectedSources = [];
@@ -576,6 +593,21 @@ export function selectRavScoreInitialState({
     }
   }
   const legacyState = existingPart?.candidateG?.currentState ?? null;
+  if (candidateGBootstrapMode === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart) {
+    if (candidateGSourceValidated !== true || !legacyState || rejectedSources.length) {
+      failClosed(
+        'RAVSCORE_FIRST_CUTOVER_COLD_START_UNATTESTED',
+        'RavScore cold start requires one fully validated aggregate Candidate G source',
+      );
+    }
+    return {
+      state: null,
+      source: 'COLD_START',
+      rejectedSources,
+      expiredSources,
+      candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+    };
+  }
   if (legacyState) {
     try {
       const validation = validateCandidateGMigrationSource(
@@ -592,6 +624,11 @@ export function selectRavScoreInitialState({
     } catch {
       rejectedSources.push('CANDIDATE_G_MIGRATION_INVALID');
     }
+  }
+  if (candidateGBootstrapMode
+    === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.candidateGMigration
+    && !legacyState) {
+    rejectedSources.push('CANDIDATE_G_MIGRATION_MISSING');
   }
   if (rejectedSources.length) {
     failClosed(

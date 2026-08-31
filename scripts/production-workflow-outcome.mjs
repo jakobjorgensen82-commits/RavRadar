@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export const PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v1';
+export const PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2';
 export const PRODUCTION_WORKFLOW_OUTCOME_STATUSES = Object.freeze([
   'NOOP',
   'DEFERRED',
@@ -14,6 +14,9 @@ export const PRODUCTION_WORKFLOW_OUTCOME_STATUSES = Object.freeze([
 const JOB_KEYS = Object.freeze([
   'validateDispatch',
   'reconcileOperationalPending',
+  'recoverOperationalPagesTarget',
+  'finalizeOperationalPagesRecovery',
+  'operationalRecoveryGate',
   'currentHourReadiness',
   'tripStorageReadiness',
   'buildAndPrepare',
@@ -23,6 +26,7 @@ const JOB_KEYS = Object.freeze([
 ]);
 
 const PROOF_KEYS = Object.freeze([
+  'recoveryAction',
   'currentReady',
   'tripStorageReady',
   'preflightShouldRun',
@@ -45,6 +49,12 @@ const PROOF_KEYS = Object.freeze([
 const JOB_RESULTS = new Set(['success', 'failure', 'cancelled', 'skipped']);
 const STEP_OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped']);
 const EVENTS = new Set(['push', 'schedule', 'workflow_dispatch']);
+const RECOVERY_ACTIONS = new Set([
+  'NONE',
+  'SAFE_SOURCE_ABORT',
+  'TARGET_RECONCILE',
+  'EXACT_TARGET_REDEPLOY',
+]);
 const OPERATIONAL_ACTIONS = new Set([
   'integrated',
   'integrated-cutover',
@@ -52,6 +62,9 @@ const OPERATIONAL_ACTIONS = new Set([
   'candidate-dry-run',
   'candidate-execute',
   'candidate-maintenance',
+  'candidate-historical-maintenance',
+  'candidate-legacy-maintenance',
+  'integrated-historical-maintenance',
 ]);
 
 function normalizeJobResult(value, errors, key) {
@@ -85,6 +98,14 @@ function normalizeAction(value, errors) {
   return null;
 }
 
+function normalizeRecoveryAction(value, errors) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return null;
+  if (RECOVERY_ACTIONS.has(normalized)) return normalized;
+  errors.push('INVALID_RECOVERY_ACTION');
+  return null;
+}
+
 function normalizeMetadata(input, errors) {
   const sourceHead = String(input.sourceHead ?? '').trim().toLowerCase();
   const runId = String(input.runId ?? '').trim();
@@ -113,6 +134,7 @@ function normalizeEvidence(input) {
     normalizeJobResult(input.jobs?.[key], errors, key),
   ]));
   const proof = {
+    recoveryAction: normalizeRecoveryAction(input.proof?.recoveryAction, errors),
     currentReady: normalizeBoolean(input.proof?.currentReady, errors, 'currentReady'),
     tripStorageReady: normalizeBoolean(input.proof?.tripStorageReady, errors, 'tripStorageReady'),
     preflightShouldRun: normalizeBoolean(input.proof?.preflightShouldRun, errors, 'preflightShouldRun'),
@@ -155,6 +177,41 @@ function noUnexpectedProduction(evidence) {
       .every((key) => proof[key] !== 'success');
 }
 
+function recoveryContract(evidence) {
+  const { jobs, operation, proof } = evidence;
+  const geometryOperation = operation === 'GEOMETRY_V2_PILOT'
+    || operation === 'GEOMETRY_V2_NATIONAL';
+  if (geometryOperation) {
+    return {
+      valid: proof.recoveryAction == null
+        && jobs.reconcileOperationalPending === 'skipped'
+        && jobs.recoverOperationalPagesTarget === 'skipped'
+        && jobs.finalizeOperationalPagesRecovery === 'skipped'
+        && jobs.operationalRecoveryGate === 'success',
+      exactTargetRedeployed: false,
+    };
+  }
+  if (jobs.reconcileOperationalPending !== 'success'
+    || jobs.operationalRecoveryGate !== 'success') {
+    return { valid: false, exactTargetRedeployed: false };
+  }
+  if (['NONE', 'SAFE_SOURCE_ABORT', 'TARGET_RECONCILE'].includes(proof.recoveryAction)) {
+    return {
+      valid: jobs.recoverOperationalPagesTarget === 'skipped'
+        && jobs.finalizeOperationalPagesRecovery === 'skipped',
+      exactTargetRedeployed: false,
+    };
+  }
+  if (proof.recoveryAction === 'EXACT_TARGET_REDEPLOY') {
+    return {
+      valid: jobs.recoverOperationalPagesTarget === 'success'
+        && jobs.finalizeOperationalPagesRecovery === 'success',
+      exactTargetRedeployed: true,
+    };
+  }
+  return { valid: false, exactTargetRedeployed: false };
+}
+
 function classifyNormalized(evidence) {
   const { errors, jobs, proof, operation } = evidence;
   if (errors.length > 0) return result('FAILED', 'INVALID_OUTCOME_EVIDENCE');
@@ -164,12 +221,14 @@ function classifyNormalized(evidence) {
   if (operation === 'INVALID_MULTIPLE_OPERATIONS') {
     return result('FAILED', 'AMBIGUOUS_OPERATION');
   }
+  const recovery = recoveryContract(evidence);
   if (operation === 'GEOMETRY_V2_PILOT' || operation === 'GEOMETRY_V2_NATIONAL') {
     const selected = operation === 'GEOMETRY_V2_PILOT' ? jobs.geometryV2Pilot : jobs.geometryV2National;
     const unselected = operation === 'GEOMETRY_V2_PILOT' ? jobs.geometryV2National : jobs.geometryV2Pilot;
     if (jobs.validateDispatch === 'success'
       && selected === 'success'
       && unselected === 'skipped'
+      && recovery.valid
       && noUnexpectedProduction(evidence)) {
       return result('NOOP', 'PRIVATE_GEOMETRY_OPERATION_COMPLETED');
     }
@@ -177,12 +236,18 @@ function classifyNormalized(evidence) {
   }
   if (evidence.refIsMain !== true
     || jobs.validateDispatch !== 'success'
-    || jobs.reconcileOperationalPending !== 'success'
+    || jobs.operationalRecoveryGate !== 'success'
     || jobs.currentHourReadiness !== 'success') {
     return result('FAILED', 'PRODUCTION_NOT_EXECUTED');
   }
+  if (!recovery.valid) {
+    return result('FAILED', 'INCONSISTENT_RECOVERY_EVIDENCE');
+  }
   if (proof.currentReady === false) {
     if (jobs.tripStorageReadiness === 'skipped' && noUnexpectedProduction(evidence)) {
+      if (recovery.exactTargetRedeployed) {
+        return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
+      }
       return result('DEFERRED', 'CURRENT_INPUT_DEFERRED');
     }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
@@ -191,7 +256,12 @@ function classifyNormalized(evidence) {
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
   }
   if (proof.tripStorageReady === false) {
-    if (noUnexpectedProduction(evidence)) return result('DEFERRED', 'TRIP_STORAGE_DEFERRED');
+    if (noUnexpectedProduction(evidence)) {
+      if (recovery.exactTargetRedeployed) {
+        return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
+      }
+      return result('DEFERRED', 'TRIP_STORAGE_DEFERRED');
+    }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
   }
   if (proof.tripStorageReady !== true || jobs.buildAndPrepare !== 'success') {
@@ -215,6 +285,9 @@ function classifyNormalized(evidence) {
         proof.deploymentOutcome,
         proof.publicVerificationOutcome,
       ].every((value) => value !== 'success')) {
+      if (recovery.exactTargetRedeployed) {
+        return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
+      }
       return result('NOOP', 'FRESH_WEATHER_NO_UPDATE_REQUIRED');
     }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
@@ -323,6 +396,9 @@ export function validateProductionWorkflowOutcome(report) {
   if (!(report.proof.operationalAction == null || OPERATIONAL_ACTIONS.has(report.proof.operationalAction))) {
     throw new Error('Unexpected operational action');
   }
+  if (!(report.proof.recoveryAction == null || RECOVERY_ACTIONS.has(report.proof.recoveryAction))) {
+    throw new Error('Unexpected recovery action');
+  }
   if (report.reasonCode === 'INVALID_OUTCOME_EVIDENCE') {
     if (report.status !== 'FAILED') throw new Error('Invalid evidence must remain FAILED');
   } else {
@@ -378,6 +454,9 @@ function environmentEvidence(env) {
     jobs: {
       validateDispatch: env.RAVRADAR_OUTCOME_JOB_VALIDATE_DISPATCH,
       reconcileOperationalPending: env.RAVRADAR_OUTCOME_JOB_RECONCILE,
+      recoverOperationalPagesTarget: env.RAVRADAR_OUTCOME_JOB_RECOVERY_WRITER,
+      finalizeOperationalPagesRecovery: env.RAVRADAR_OUTCOME_JOB_RECOVERY_FINALIZER,
+      operationalRecoveryGate: env.RAVRADAR_OUTCOME_JOB_RECOVERY_GATE,
       currentHourReadiness: env.RAVRADAR_OUTCOME_JOB_CURRENT_READINESS,
       tripStorageReadiness: env.RAVRADAR_OUTCOME_JOB_TRIP_READINESS,
       buildAndPrepare: env.RAVRADAR_OUTCOME_JOB_BUILD,
@@ -386,6 +465,7 @@ function environmentEvidence(env) {
       deployPages: env.RAVRADAR_OUTCOME_JOB_DEPLOY,
     },
     proof: {
+      recoveryAction: env.RAVRADAR_OUTCOME_RECOVERY_ACTION,
       currentReady: env.RAVRADAR_OUTCOME_CURRENT_READY,
       tripStorageReady: env.RAVRADAR_OUTCOME_TRIP_READY,
       preflightShouldRun: env.RAVRADAR_OUTCOME_PREFLIGHT_SHOULD_RUN,

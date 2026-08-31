@@ -261,6 +261,7 @@ class StacSelectionTests(unittest.TestCase):
         self.assertNotIn("wam-2026", attestation)
 
     def test_genuine_cold_start_exact_multi_run_seam(self) -> None:
+        self.assertEqual(COLD_START_POLICY.maximum_interpolation_hours, 0)
         required = policy_utc_hours(TARGET, COLD_START_POLICY)
         self.assertEqual(len(required), 49)
         first_run = utc_offset(TARGET, -60)
@@ -283,6 +284,17 @@ class StacSelectionTests(unittest.TestCase):
         self.assertEqual(plan.selection_mode, "exact-hour-multi-run")
         self.assertEqual(len(plan.assets), 49)
         self.assertEqual(len({row.model_run for row in plan.assets}), 2)
+        missing_exact = [item for index, item in enumerate(items) if index != 12]
+        expect_code(
+            self,
+            "NO_COHERENT_RUN",
+            lambda: select_stac_wave_history_assets(
+                stac_document(missing_exact),
+                collection=COLLECTION,
+                target_hour=TARGET,
+                policy=COLD_START_POLICY,
+            ),
+        )
 
     def test_asset_identity_matches_cache_contract_and_ignores_query_rotation(self) -> None:
         policy = replace(MIGRATION_POLICY, history_hours=1)
@@ -479,9 +491,47 @@ class CacheValidationTests(unittest.TestCase):
             self.assertNotIn(str(part.water_point[1]), attestation)
         self.assertNotIn("270.0", attestation)
 
+    def test_genuine_cold_start_cache_requires_all_exact_native_hours(self) -> None:
+        required = policy_utc_hours(TARGET, COLD_START_POLICY)
+        first_run = utc_offset(TARGET, -60)
+        second_run = utc_offset(TARGET, -24)
+        cache = cache_for_registry(
+            self.registry,
+            lambda part: {
+                hour: native_hour(
+                    part,
+                    hour,
+                    first_run if index < 25 else second_run,
+                )
+                for index, hour in enumerate(required)
+            },
+        )
+        summary = validate_wave_history_cache(
+            cache,
+            self.registry,
+            target_hour=TARGET,
+            policy=COLD_START_POLICY,
+        )
+        self.assertEqual(summary.exact_tuple_count, 98)
+        self.assertEqual(summary.interpolated_tuple_count, 0)
+
+        missing_hour = required[12]
+        for part in self.registry.parts:
+            del cache["zones"][part.cache_key]["hourly"][missing_hour]
+        expect_code(
+            self,
+            "INTERPOLATION_GAP",
+            lambda: validate_wave_history_cache(
+                cache,
+                self.registry,
+                target_hour=TARGET,
+                policy=COLD_START_POLICY,
+            ),
+        )
+
     def test_safe_same_run_four_hour_interpolation(self) -> None:
         policy = WaveHistoryPolicy(
-            mode=COLD_START_MODE,
+            mode=MIGRATION_MODE,
             history_hours=4,
             include_target=False,
             require_single_run_per_collection=False,
@@ -512,6 +562,7 @@ class CacheValidationTests(unittest.TestCase):
             include_target=False,
             require_single_run_per_collection=False,
             allow_exact_multi_run=True,
+            maximum_interpolation_hours=0,
         )
         required = policy_utc_hours(TARGET, policy)
         first_run = utc_offset(TARGET, -12)
@@ -539,7 +590,7 @@ class CacheValidationTests(unittest.TestCase):
 
     def test_mixed_run_interpolation_is_rejected(self) -> None:
         policy = WaveHistoryPolicy(
-            mode=COLD_START_MODE,
+            mode=MIGRATION_MODE,
             history_hours=3,
             include_target=False,
             require_single_run_per_collection=False,
@@ -807,7 +858,7 @@ class CacheValidationTests(unittest.TestCase):
 
     def test_calm_to_active_interpolation_does_not_invent_direction(self) -> None:
         policy = WaveHistoryPolicy(
-            mode=COLD_START_MODE,
+            mode=MIGRATION_MODE,
             history_hours=3,
             include_target=False,
             require_single_run_per_collection=False,
@@ -850,7 +901,7 @@ class CacheValidationTests(unittest.TestCase):
 
     def test_directionless_calm_endpoints_interpolate_neutrally(self) -> None:
         policy = WaveHistoryPolicy(
-            mode=COLD_START_MODE,
+            mode=MIGRATION_MODE,
             history_hours=3,
             include_target=False,
             require_single_run_per_collection=False,
@@ -891,7 +942,7 @@ class CacheValidationTests(unittest.TestCase):
 
     def test_gap_and_validation_budget_fail_closed(self) -> None:
         policy = WaveHistoryPolicy(
-            mode=COLD_START_MODE,
+            mode=MIGRATION_MODE,
             history_hours=4,
             include_target=False,
             require_single_run_per_collection=False,

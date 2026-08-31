@@ -72,6 +72,7 @@ import {
   selectRavScoreProductionInitialState,
 } from './lib/ravscore-production-part-pipeline.mjs';
 import {
+  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
   ravScoreRecoverySourceStartAt,
 } from './lib/ravscore-recovery-replay.mjs';
 import {
@@ -130,6 +131,15 @@ const RAVSCORE_PROFILE_CONFIGURATION = publicRavScoreConfigurationFromDocument(
 );
 const PIPELINE_RUN_ID = process.env.GITHUB_RUN_ID ? `${process.env.GITHUB_RUN_ID}-${process.env.GITHUB_RUN_ATTEMPT ?? '1'}` : `local-${Date.now()}`;
 const CURRENT_VECTOR_SEMANTICS_VERSION = RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION;
+const RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE =
+  process.env.RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE
+    ?? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.automatic;
+const RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED =
+  process.env.RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED === 'true';
+if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
+  .includes(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE)) {
+  throw new Error('Unknown RavScore first-cutover bootstrap mode');
+}
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const num = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
@@ -1487,9 +1497,12 @@ function scoreCoastalPartsRuntime(
         existingPart,
         checkpointStates,
         targetReferenceAt: generatedAt,
+        candidateGBootstrapMode: RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE,
+        candidateGSourceValidated: RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED,
       });
       let previousCandidateGContinuation = null;
       let legacyCandidateGMigrationState = null;
+      let candidateGRollbackMeasuredColdStart = false;
       if (initialSelection.source === 'CANDIDATE_G_MIGRATION') {
         if (!publicCandidateGMigrationState
           || JSON.stringify(initialSelection.state)
@@ -1497,6 +1510,12 @@ function scoreCoastalPartsRuntime(
           throw new Error('First integrated cutover lacks its exact public Candidate G source');
         }
         legacyCandidateGMigrationState = publicCandidateGMigrationState;
+      } else if (
+        initialSelection.source === 'COLD_START'
+        && RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE
+          === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart
+      ) {
+        candidateGRollbackMeasuredColdStart = true;
       } else {
         previousCandidateGContinuation = selectCoastalPointCandidateGRollbackContinuation({
           partId: part.partId,
@@ -1623,6 +1642,7 @@ function scoreCoastalPartsRuntime(
         initialSelection,
         previousCandidateGContinuation,
         legacyCandidateGMigrationState,
+        candidateGRollbackMeasuredColdStart,
         targetReferenceAt: generatedAt,
         recoverySources,
         publicHourly: hourly,

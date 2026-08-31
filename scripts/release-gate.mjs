@@ -17,6 +17,7 @@ import {
   RAVSCORE_PRESENTATION_POLICY,
   RAVSCORE_PRESENTATION_POLICY_ID,
   RAVSCORE_PROFILE_ID,
+  RAVSCORE_PUBLIC_FORECAST_HOURS,
   RAVSCORE_RANKING_POLICY_ID,
   RAVSCORE_STATE_SCHEMA_VERSION,
   RAVSCORE_SCORE_QUALITY,
@@ -58,6 +59,7 @@ for(const rel of [
   'scripts/test-candidate-g-rollback-trip-backend.mjs',
   'scripts/test-candidate-g-rollback-assistant-local.mjs',
   'scripts/test-ravscore-operational-pages-deployment.mjs',
+  'scripts/test-ravscore-operational-pages-recovery.mjs',
   'scripts/test-ravscore-active-explanation-presenter.mjs',
   'scripts/test-ravscore-operational-activation.mjs',
   'scripts/sync-ravscore-model-binding.mjs',
@@ -184,6 +186,8 @@ ok(RAVSCORE_LAST_MILE_POLICY.minimumDeliveryFactor===0.85
 ok(RAVSCORE_SCORE_QUALITY.FULL_HISTORY==='FULL_HISTORY'
   && RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE==='HISTORY_INCOMPLETE'
   && RAVSCORE_SCORE_QUALITY.UNAVAILABLE==='UNAVAILABLE'
+  && RAVSCORE_PUBLIC_FORECAST_HOURS===118
+  && RAVSCORE_MODEL_CONTRACT.publicForecastHours===RAVSCORE_PUBLIC_FORECAST_HOURS
   && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.shownIncompleteScore==='LOWER_BOUND'
   && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.activeCurrentWindowHours===48
   && RAVSCORE_HISTORY_UNCERTAINTY_POLICY.researchRetentionHours===168
@@ -235,6 +239,7 @@ ok(/select\s+oid\s*,\s*conname\s+from\s+pg_constraint/i.test(sql),'Supabase SQL 
 ok(sql.includes(`\"handbookVersion\":\"${version}\"`)||sql.includes(`\"handbookVersion\": \"${version}\"`),'Supabase-installationsscriptets håndbog er forældet');
 const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
+const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
@@ -249,6 +254,13 @@ ok(pythonAdminSync.includes('is_integrated_selection')
   && pythonAdminSync.includes('use-central-integrated-runtime-truth')
   && pythonAdminSync.includes('preserve-newer-local-integrated-release'),
 'Central adminhydrering mangler den integrerede cutover-/runtimekontrakt');
+ok(/ACCEPTED_FORECAST_HOURS\s*=\s*RAVSCORE_PUBLIC_FORECAST_HOURS/.test(activeWeatherGenerator)
+  && /normalizeForecastHourly\(merged,\s*\{\s*limit:\s*ACCEPTED_FORECAST_HOURS\s*\}\)/.test(activeWeatherGenerator)
+  && /result\.scoreQuality\s*!==\s*'HISTORY_INCOMPLETE'/.test(activeWeatherGenerator)
+  && /result\.calibrationEligible\s*!==\s*false/.test(activeWeatherGenerator)
+  && /result\.historyReasonCodes\.length\s*===\s*0/.test(activeWeatherGenerator)
+  && /providerLabel:\s*'[^']*5-day forecast'/.test(activeWeatherGenerator),
+'Den aktive 118-timers/5-dages prognose mangler fail-closed HISTORY_INCOMPLETE-validering');
 ok(sync.includes('assertIntegratedRavScoreSelection')
   && sync.includes('payload=central')
   && sync.includes('Central RavScore-profil verificeret read-only; skrivning ejes af operationel atomisk CAS')
@@ -285,10 +297,170 @@ ok(!/calculateRavScore|score-engine\.js/.test(publicAssistant),'Spørg RavRadar 
 ok(!/calculateRavScore|selectBestTimeForDay|bestHourForDay/.test(publicInfoPanel),'Informationspanelet indeholder stadig en vej til den gamle RavScore-motor');
 ok(!/Candidate G|isCandidateG|candidateG/.test(publicInfoPanel),'Informationspanelet må ikke vise Candidate G som den aktive offentlige RavScore');
 const workflow=await read('.github/workflows/update-and-deploy.yml');
+const candidateOperationalPlanBuilder=await read('scripts/prepare-candidate-g-operational-rollback.mjs');
+const workflowContractTest=await read('scripts/test-workflow-validation-order-4.0.108.mjs');
+const operationalPagesRecovery=await read('scripts/ravscore-operational-pages-recovery.mjs');
 const workflowUserAgentVersions=[...workflow.matchAll(/RavRadar\/(\d+\.\d+\.\d+)/g)].map(match=>match[1]);
 ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versionsbåret RavRadar User-Agent');
 for(const workflowVersion of workflowUserAgentVersions){
   ok(workflowVersion===version,`Produktionsworkflowets User-Agent viser ${workflowVersion}, men releaseversionen er ${version}`);
+}
+for(const marker of [
+  'LEGACY_CANDIDATE_G_REFRESH_BEFORE_INITIAL_CUTOVER',
+  'operationalLegacyCandidateRefreshTransition',
+  'legacy-refresh-begin',
+  'legacy-refresh-complete',
+  'legacy-refresh-abort',
+]){
+  ok(operationalActivation.includes(marker),`Den operationelle legacy→current Candidate G-bro mangler ${marker}`);
+}
+for(const marker of [
+  'action="candidate-legacy-maintenance"',
+  'source_model="legacy-candidate-g"',
+  'ravscore-operational-activation.mjs legacy-refresh-begin',
+  'ravscore-operational-activation.mjs legacy-refresh-complete',
+  "steps.candidate-legacy-refresh-begin.outcome == 'success'",
+]){
+  ok(workflow.includes(marker),`Produktionsworkflowets legacy→current Candidate G-bro mangler ${marker}`);
+}
+ok(candidateOperationalPlanBuilder.includes("'legacy-candidate-g'")
+  && candidateOperationalPlanBuilder.includes('Legacy Candidate G'),
+'Candidate G-planbyggeren mangler den forseglede dry-run-only legacy-kildebinding');
+for(const marker of [
+  'assertHistoricalCandidateRefreshPlan',
+  'historical-refresh-begin',
+  'historical-refresh-complete',
+  'historical-refresh-abort',
+  'prepareIntegratedHistoricalMaintenance',
+  'prepare-integrated-historical-maintenance',
+  'integrated-historical-maintenance-begin',
+  'integrated-historical-maintenance-complete',
+  'integrated-historical-maintenance-abort',
+]){
+  ok(operationalActivation.includes(marker),`Den operationelle H0→H1-tofasekontrakt mangler ${marker}`);
+}
+for(const marker of [
+  "'historical-candidate-g'",
+  "argument === '--source-binding'",
+  'sourceModelBinding',
+  'assertSealedSourceModel',
+  'sourceImplementationClosureSha256',
+  'requestedImplementationClosureSha256',
+]){
+  ok(candidateOperationalPlanBuilder.includes(marker),`Den historiske Candidate-plan/source-binding mangler ${marker}`);
+}
+for(const marker of [
+  'is_sealed_candidate_g_selection_for_binding',
+  'is_sealed_integrated_selection_for_binding',
+  'is_exact_active_operational_controller',
+  'claims_historical_integrated_return',
+  'historical_selection_binding',
+  'preserve-local-integrated-for-historical-',
+]){
+  ok(pythonAdminSync.includes(marker),`Central adminhydrering mangler historisk exact-binding: ${marker}`);
+}
+for(const marker of [
+  'action="candidate-historical-maintenance"',
+  'action="integrated-historical-maintenance"',
+  'source_model="historical-candidate-g"',
+  '--source-binding "$RAVRADAR_OPERATIONAL_WORK/source-binding.json"',
+  'prepare_command="prepare-integrated-historical-maintenance"',
+  'ravscore-operational-activation.mjs historical-refresh-begin',
+  'ravscore-operational-activation.mjs historical-refresh-complete',
+  'ravscore-operational-activation.mjs integrated-historical-maintenance-begin',
+  'ravscore-operational-activation.mjs integrated-historical-maintenance-complete',
+  'node scripts/ravscore-operational-activation.mjs classify-pending',
+  'node scripts/ravscore-operational-activation.mjs reconcile',
+  'python scripts/sync-admin-config.py',
+]){
+  ok(workflow.includes(marker),`Produktionsworkflowets historiske H0→H1-routing mangler ${marker}`);
+}
+for(const marker of [
+  'action="candidate-historical-maintenance"',
+  'action="integrated-historical-maintenance"',
+  '--source-binding "$RAVRADAR_OPERATIONAL_WORK/source-binding.json"',
+  'prepare_command="prepare-integrated-historical-maintenance"',
+  "steps.candidate-historical-refresh-begin.outcome == 'success'",
+  "steps.integrated-historical-maintenance-begin.outcome == 'success'",
+]){
+  ok(workflowContractTest.includes(marker),`Den dybe statiske workflowtest mangler historisk kontraktbevis: ${marker}`);
+}
+for(const marker of [
+  'ravscore-operational-pages-recovery-classification-v1',
+  'ravscore-operational-pages-pending-identity-v1',
+  'ravscore-operational-pages-artifact-seal-v1',
+  'ravscore-operational-pages-artifact-evidence-v1',
+  'ravscore-operational-pages-terminal-evidence-v2',
+  'ravscore-operational-pages-public-observation-v1',
+  "SAFE_SOURCE_ABORT: 'SAFE_SOURCE_ABORT'",
+  "EXACT_TARGET_REDEPLOY: 'EXACT_TARGET_REDEPLOY'",
+  "TARGET_RECONCILE: 'TARGET_RECONCILE'",
+  "FAIL_CLOSED: 'FAIL_CLOSED'",
+]){
+  ok(operationalPagesRecovery.includes(marker),`Pages-recoveryhelperen mangler schema/action ${marker}`);
+}
+const operationalRecoveryPositions={
+  reconcile:workflow.indexOf('\n  reconcile-operational-pending:'),
+  writer:workflow.indexOf('\n  recover-operational-pages-target:'),
+  finalizer:workflow.indexOf('\n  finalize-operational-pages-recovery:'),
+  gate:workflow.indexOf('\n  operational-recovery-gate:'),
+  currentHour:workflow.indexOf('\n  current-hour-readiness:'),
+};
+for(const [job,position] of Object.entries(operationalRecoveryPositions)){
+  ok(position>=0,`Pages-recoverykæden mangler job: ${job}`);
+}
+ok(operationalRecoveryPositions.reconcile<operationalRecoveryPositions.writer
+  && operationalRecoveryPositions.writer<operationalRecoveryPositions.finalizer
+  && operationalRecoveryPositions.finalizer<operationalRecoveryPositions.gate
+  && operationalRecoveryPositions.gate<operationalRecoveryPositions.currentHour,
+'Pages-recovery skal være classifier → isoleret writer → finalizer → gate → current-hour');
+const operationalReconcileSection=workflow.slice(operationalRecoveryPositions.reconcile,operationalRecoveryPositions.writer);
+const operationalWriterSection=workflow.slice(operationalRecoveryPositions.writer,operationalRecoveryPositions.finalizer);
+const operationalFinalizerSection=workflow.slice(operationalRecoveryPositions.finalizer,operationalRecoveryPositions.gate);
+const operationalRecoveryGateSection=workflow.slice(operationalRecoveryPositions.gate,operationalRecoveryPositions.currentHour);
+ok(operationalWriterSection.includes("needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'")
+  && operationalWriterSection.includes('pages: write')
+  && operationalWriterSection.includes('id-token: write')
+  && operationalWriterSection.includes('uses: actions/deploy-pages@')
+  && !operationalWriterSection.includes('SUPABASE_SERVICE_ROLE_KEY')
+  && !operationalWriterSection.includes('ravscore-operational-activation.mjs'),
+'Den særskilte exact-target Pages-writer mangler bounded routing/permissions eller har central state-adgang');
+for(const [label,section] of [
+  ['classifier',operationalReconcileSection],
+  ['finalizer',operationalFinalizerSection],
+  ['terminal gate',operationalRecoveryGateSection],
+]){
+  ok(!section.includes('pages: write')&&!section.includes('id-token: write'),
+  `Pages-recovery ${label} må ikke have Pages-skriverettigheder`);
+}
+const rawZipHashPosition=operationalWriterSection.indexOf('downloaded_zip_sha256=');
+const sealedZipProofPosition=operationalWriterSection.indexOf('test "$downloaded_zip_sha256" = "$sealed_artifact_digest_sha256"');
+const zipExtractionPosition=operationalWriterSection.indexOf('unzip -q');
+ok(rawZipHashPosition>=0
+  && rawZipHashPosition<sealedZipProofPosition
+  && sealedZipProofPosition<zipExtractionPosition,
+'Pages-writeren skal verificere den rå originale ZIP mod den forseglede digest før extraction');
+for(const marker of [
+  'ravscore-operational-recovery-handoff-v1',
+  'pages-recovery-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT',
+  '^pages-recovery-([0-9]+)-([0-9]+)$',
+  'ravscore-operational-recovery-handoff-$source_run_id-$source_attempt',
+]){
+  ok(workflow.includes(marker),`Pages-recovery-lineage mangler ${marker}`);
+}
+for(const marker of [
+  "text.indexOf('\\n  reconcile-operational-pending:')",
+  "text.indexOf('\\n  recover-operational-pages-target:')",
+  "text.indexOf('\\n  finalize-operational-pages-recovery:')",
+  "text.indexOf('\\n  operational-recovery-gate:')",
+  'assertMarkersOrdered(operationalWriterSection',
+  'downloaded_zip_sha256=',
+  'EXACT_TARGET_REDEPLOY',
+  'TARGET_RECONCILE',
+  'SAFE_SOURCE_ABORT',
+  '^pages-recovery-([0-9]+)-([0-9]+)$',
+]){
+  ok(workflowContractTest.includes(marker),`Den dybe statiske workflowtest mangler Pages-recoverybevis: ${marker}`);
 }
 const integratedTestChain=packageScripts['test:ravscore-integrated']??'';
 for(const marker of [
@@ -365,6 +537,7 @@ for(const marker of [
   'test-candidate-g-rollback-trip-backend.mjs',
   'test-candidate-g-rollback-assistant-local.mjs',
   'test-ravscore-operational-pages-deployment.mjs',
+  'test-ravscore-operational-pages-recovery.mjs',
   'test-ravscore-active-explanation-presenter.mjs',
   'test-ravscore-operational-activation.mjs',
 ])ok(operationalRollbackChain.includes(marker),`Den operationelle Candidate G-rollbackgate mangler ${marker}`);
@@ -376,9 +549,11 @@ ok(!(packageScripts['test:workflow-action-contracts']??'').includes('test-ravsco
 const workflowActionChain=packageScripts['test:workflow-action-contracts']??'';
 ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test:candidate-g-gap-retirement')
+  && workflowActionChain.includes('test-workflow-validation-order-4.0.108.mjs')
+  && workflowActionChain.includes('test-ravscore-operational-pages-recovery.mjs')
   && workflowActionChain.includes('test:production-workflow-outcome')
   && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
-'Workflowkontrakten skal teste dispatchmatrix, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
+'Workflowkontrakten skal teste dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
 for(const retiredScript of [
@@ -424,6 +599,16 @@ const pagesArtifactPrivacy=await read('scripts/audit-pages-artifact-privacy.mjs'
 const legacyHydration=await read('scripts/hydrate-deployed-weather.py');
 const productionWatchdog=await read('scripts/check-production-watchdog.mjs');
 const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs');
+for(const marker of [
+  "'candidate-legacy-maintenance'",
+  "'candidate-historical-maintenance'",
+  "'integrated-historical-maintenance'",
+  "'SAFE_SOURCE_ABORT'",
+  "'TARGET_RECONCILE'",
+  "'EXACT_TARGET_REDEPLOY'",
+]){
+  ok(productionWorkflowOutcome.includes(marker),`Den maskinlæsbare produktionsslutstatus mangler actionen ${marker}`);
+}
 const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-current-shadow.yml');
 for(const marker of [
   'hours = matrix_hours(reference)',
@@ -792,7 +977,7 @@ for(const marker of [
   "'BUILT'",
   "'DEPLOYED'",
   "'FAILED'",
-  "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v1'",
+  "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2'",
   'privatePayloadIncluded: false',
   "return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED')",
   "return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED')",
@@ -863,8 +1048,8 @@ for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}
-const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema6Continuation:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacyBootstrapOnly:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,productionWorkflowOutcome:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
+const report={version,checkedAt:new Date().toISOString(),status:'passed',checks:{versionConsistency:true,handbook:true,rdks:true,supabase:true,ravScoreIntegratedModel:true,ravScoreSchema6Continuation:true,activeHistoryIncompleteForecast:true,protectedRavScoreCheckpoint:true,privateProductionRuntime:true,legacySourceTransition:true,historicalBindingMaintenance:true,atomicSchema4PublicRuntime:true,pagesArtifactPrivacy:true,operationalPagesRecovery:true,productionWorkflowOutcome:true,protectedPagesArtifact:true,domainReadiness:true,secretsScan:true,packagingPolicy:true}};
 await fs.mkdir('release',{recursive:true});
 await fs.writeFile('release/RELEASE-REPORT.json',JSON.stringify(report,null,2)+'\n');
-await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Kun eksplicit Candidate G-engangsbootstrap: OK\n- Atomisk schema-4 public runtime uden offentlig recoverymodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
+await fs.writeFile('release/RELEASE-REPORT.md',`# Release-rapport ${version}\n\n- Status: **BESTÅET**\n- Kontrolleret: ${report.checkedAt}\n- Versionskonsistens: OK\n- Håndbog og RDKS: OK\n- Supabase- og rettighedskæde: OK\n- Integreret RavScore + schema-6 continuation: OK\n- Aktiv 118-timers/5-dages HISTORY_INCOMPLETE-prognose: OK\n- Protected checkpoint og privat runtimebundle: OK\n- Attesteret legacy-kilde, afgrænset Candidate G-bro og første cutover: OK\n- Historisk Candidate/integrated exact-binding-vedligeholdelse: OK\n- Atomisk schema-4 public runtime uden offentlig shadowmodel: OK\n- Fire-fils Pages-allowliste og privacy-audit: OK\n- Operationel exact-target Pages-recovery med delt writer/finalizer: OK\n- Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK\n- Domæneberedskab: OK\n- Hemmelighedsscanning: OK\n- Pakningspolitik: OK\n\nBemærk: Rapporten dokumenterer lokale kontroller. En faktisk grøn GitHub Actions-kørsel skal stadig verificeres efter push.\n`);
 console.log(`Release gate bestået for RavRadar ${version}.`);

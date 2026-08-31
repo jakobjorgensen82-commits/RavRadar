@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import argparse
+import hashlib
 import os
 import pathlib
 import tempfile
@@ -38,6 +39,12 @@ TEXT_FILES = (
 RETIRED_ZONE_IDS = {"DK-B04-09"}
 LEGACY_CANDIDATE_G_MODEL_ID = "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3"
 LEGACY_CANDIDATE_G_STATE_SCHEMA_VERSION = "2.0.0"
+LEGACY_COASTAL_PARTS_PATH = "./coastal-parts-v2.json"
+LEGACY_SOURCE_REGISTRY_RELATIVE = pathlib.Path(
+    ".cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"
+)
+LEGACY_EXPECTED_ZONE_COUNT = 210
+LEGACY_EXPECTED_PART_COUNT = 673
 LEGACY_REQUIRED_FILES = {
     "data/live/dmi-forecast-cache.json",
     "data/live/dmi-bulk-cache.json",
@@ -207,6 +214,70 @@ def assert_legacy_candidate_g_cutover_source(manifest: Any, conditions: Any) -> 
                 or state.get("modelId") != LEGACY_CANDIDATE_G_MODEL_ID):
             raise RuntimeError("legacy Candidate G runtime lacks complete schema-2 continuation")
 
+
+def legacy_coastal_parts_path(manifest: Any) -> str:
+    """Return the one allowlisted registry path for the legacy public source."""
+    if not isinstance(manifest, dict):
+        raise RuntimeError("legacy Candidate G manifest is invalid")
+    relative = manifest.get("coastalPartsPath", LEGACY_COASTAL_PARTS_PATH)
+    if relative != LEGACY_COASTAL_PARTS_PATH:
+        raise RuntimeError("legacy Candidate G coastal-parts path is invalid")
+    return relative
+
+
+def assert_legacy_candidate_g_source_registry(
+    manifest: Any,
+    conditions: Any,
+    registry: Any,
+    registry_payload: bytes,
+) -> None:
+    """Bind legacy states to their exact public registry without touching active input."""
+    legacy_coastal_parts_path(manifest)
+    if "coastalPartsBytes" in manifest:
+        expected_bytes = manifest.get("coastalPartsBytes")
+        if (isinstance(expected_bytes, bool) or not isinstance(expected_bytes, int)
+                or expected_bytes < 2 or expected_bytes != len(registry_payload)):
+            raise RuntimeError("legacy Candidate G coastal-parts byte binding is invalid")
+    if "coastalPartsSha256" in manifest:
+        expected_sha256 = manifest.get("coastalPartsSha256")
+        actual_sha256 = hashlib.sha256(registry_payload).hexdigest()
+        if (not isinstance(expected_sha256, str)
+                or len(expected_sha256) != 64
+                or expected_sha256.lower() != expected_sha256
+                or expected_sha256 != actual_sha256):
+            raise RuntimeError("legacy Candidate G coastal-parts digest binding is invalid")
+
+    if (not isinstance(registry, dict)
+            or registry.get("schemaVersion") != 2
+            or registry.get("partCount") != LEGACY_EXPECTED_PART_COUNT
+            or registry.get("zoneCount") != LEGACY_EXPECTED_ZONE_COUNT):
+        raise RuntimeError("legacy Candidate G coastal-parts registry metadata is invalid")
+    registry_zones = registry.get("zones")
+    condition_zones = conditions.get("zones") if isinstance(conditions, dict) else None
+    condition_parts = ((conditions.get("coastalParts") or {}).get("parts")
+                       if isinstance(conditions, dict) else None)
+    if (not isinstance(registry_zones, dict)
+            or not isinstance(condition_zones, dict)
+            or not isinstance(condition_parts, dict)
+            or len(registry_zones) != LEGACY_EXPECTED_ZONE_COUNT
+            or set(registry_zones) != set(condition_zones)):
+        raise RuntimeError("legacy Candidate G coastal-parts zone set is invalid")
+
+    registry_part_ids: list[str] = []
+    for rows in registry_zones.values():
+        if not isinstance(rows, list):
+            raise RuntimeError("legacy Candidate G coastal-parts registry rows are invalid")
+        for row in rows:
+            part_id = row.get("partId") if isinstance(row, dict) else None
+            if not isinstance(part_id, str) or not part_id:
+                raise RuntimeError("legacy Candidate G coastal-parts part identity is invalid")
+            registry_part_ids.append(part_id)
+    if (len(registry_part_ids) != LEGACY_EXPECTED_PART_COUNT
+            or len(set(registry_part_ids)) != LEGACY_EXPECTED_PART_COUNT
+            or set(registry_part_ids) != set(condition_parts)):
+        raise RuntimeError("legacy Candidate G coastal-parts part set is invalid")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Hydrate mutable RavRadar state from a deployed site.")
     parser.add_argument(
@@ -246,15 +317,28 @@ def main() -> int:
     errors: list[dict[str, str]] = []
     allowed_zone_ids = active_zone_ids_at_root(root)
 
-    # Manifest and conditions are one atomic publication unit. Never hydrate one
-    # without the other, otherwise a deployed forecast can be paired with a
-    # checked-in manifest from a different run.
+    # Manifest, conditions and their exact legacy coastal-parts registry are one
+    # validated source unit. The registry is written only to the isolated cache
+    # path below; the active data/live registry remains owned by the centrally
+    # hydrated production-input chain.
     try:
         remote_manifest = json.loads(fetch(f"{base_url}/data/live/manifest.json", "application/json").decode("utf-8"))
         remote_conditions = json.loads(fetch(f"{base_url}/data/live/conditions.json", "application/json").decode("utf-8"))
         if not isinstance(remote_manifest, dict) or not isinstance(remote_conditions, dict):
             raise RuntimeError("atomic weather response is not a JSON object")
         assert_legacy_candidate_g_cutover_source(remote_manifest, remote_conditions)
+        coastal_parts_relative = legacy_coastal_parts_path(remote_manifest)
+        remote_registry_payload = fetch(
+            f"{base_url}/data/live/{coastal_parts_relative.removeprefix('./')}",
+            "application/json",
+        )
+        remote_registry = json.loads(remote_registry_payload.decode("utf-8"))
+        assert_legacy_candidate_g_source_registry(
+            remote_manifest,
+            remote_conditions,
+            remote_registry,
+            remote_registry_payload,
+        )
         remote_conditions, removed_zone_ids = sanitize_remote_document(
             "data/live/conditions.json", remote_conditions, allowed_zone_ids
         )
@@ -269,6 +353,10 @@ def main() -> int:
 
         local_manifest_path = root / "data/live/manifest.json"
         local_conditions_path = root / "data/live/conditions.json"
+        source_registry_path = root / LEGACY_SOURCE_REGISTRY_RELATIVE
+        active_registry_path = root / "data/live/coastal-parts-v2.json"
+        if source_registry_path.resolve() == active_registry_path.resolve():
+            raise RuntimeError("legacy Candidate G source registry path is not isolated")
         local_manifest = read_json(local_manifest_path)
         local_conditions = read_json(local_conditions_path)
         local_pair_matches = (
@@ -279,11 +367,29 @@ def main() -> int:
         )
         remote_is_newer = timestamp(remote_conditions) > timestamp(local_conditions)
         if remote_is_newer or not local_pair_matches:
+            atomic_write_bytes(source_registry_path, remote_registry_payload)
             atomic_write_json(local_manifest_path, remote_manifest)
             atomic_write_json(local_conditions_path, remote_conditions)
-            hydrated.extend(ATOMIC_WEATHER_FILES)
+            hydrated.extend((*ATOMIC_WEATHER_FILES, LEGACY_SOURCE_REGISTRY_RELATIVE.as_posix()))
         else:
             preserved.extend(ATOMIC_WEATHER_FILES)
+            same_remote_pair = (
+                local_manifest.get("datasetId") == manifest_dataset
+                and local_conditions.get("datasetId") == conditions_dataset
+            )
+            try:
+                existing_registry_payload = source_registry_path.read_bytes()
+            except FileNotFoundError:
+                existing_registry_payload = None
+            except OSError as exc:
+                raise RuntimeError(
+                    "legacy Candidate G source registry cannot be read safely"
+                ) from exc
+            if same_remote_pair and existing_registry_payload != remote_registry_payload:
+                atomic_write_bytes(source_registry_path, remote_registry_payload)
+                hydrated.append(LEGACY_SOURCE_REGISTRY_RELATIVE.as_posix())
+            elif same_remote_pair:
+                preserved.append(LEGACY_SOURCE_REGISTRY_RELATIVE.as_posix())
     except (urllib.error.URLError, TimeoutError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         errors.append({"file": "atomic-weather-dataset", "message": str(exc)})
         print(json.dumps({

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-local-evals-v1",
-  "releaseVersion": "4.0.317",
+  "releaseVersion": "4.0.318",
   "phrasingCases": [
     {
       "id": "da-origin-formed",
@@ -119,7 +119,7 @@
     {
       "id": "da-missing-data",
       "locale": "da",
-      "question": "Hvad gør RavRadar, hvis en zone mangler data?",
+      "question": "Hvad sker der med RavScore og femdøgnsprognosen, når historikken mangler?",
       "expectedIntent": "missing-data",
       "answerKey": "assistant.local.missingData"
     },
@@ -238,7 +238,7 @@
     {
       "id": "de-missing-data",
       "locale": "de",
-      "question": "Was macht RavRadar, wenn für eine Zone Daten fehlen?",
+      "question": "Was passiert mit RavScore und Fünf-Tage-Prognose, wenn Verlaufsdaten fehlen?",
       "expectedIntent": "missing-data",
       "answerKey": "assistant.local.missingData"
     },
@@ -357,7 +357,7 @@
     {
       "id": "en-missing-data",
       "locale": "en",
-      "question": "What does RavRadar do when a zone is missing data?",
+      "question": "What happens to RavScore and the five-day forecast when history is missing?",
       "expectedIntent": "missing-data",
       "answerKey": "assistant.local.missingData"
     },

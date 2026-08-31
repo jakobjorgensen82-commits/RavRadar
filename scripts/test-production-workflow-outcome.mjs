@@ -21,6 +21,9 @@ const base = () => ({
   jobs: {
     validateDispatch: 'success',
     reconcileOperationalPending: 'success',
+    recoverOperationalPagesTarget: 'skipped',
+    finalizeOperationalPagesRecovery: 'skipped',
+    operationalRecoveryGate: 'success',
     currentHourReadiness: 'success',
     tripStorageReadiness: 'success',
     buildAndPrepare: 'success',
@@ -29,6 +32,7 @@ const base = () => ({
     deployPages: 'success',
   },
   proof: {
+    recoveryAction: 'NONE',
     currentReady: true,
     tripStorageReady: true,
     preflightShouldRun: true,
@@ -61,6 +65,7 @@ function withPatch(input, patch) {
 function noProductionProof(overrides = {}) {
   return {
     ...Object.fromEntries(Object.keys(base().proof).map((key) => [key, null])),
+    recoveryAction: 'NONE',
     ...overrides,
   };
 }
@@ -75,8 +80,101 @@ function expectStatus(input, status, reasonCode) {
   return report;
 }
 
+assert.equal(PRODUCTION_WORKFLOW_OUTCOME_SCHEMA, 'ravradar-production-workflow-outcome-v2');
 assert.deepEqual(PRODUCTION_WORKFLOW_OUTCOME_STATUSES, ['NOOP', 'DEFERRED', 'BUILT', 'DEPLOYED', 'FAILED']);
 expectStatus(base(), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+for (const recoveryAction of ['SAFE_SOURCE_ABORT', 'TARGET_RECONCILE']) {
+  expectStatus(withPatch(base(), {
+    proof: { recoveryAction },
+  }), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+}
+expectStatus(withPatch(base(), {
+  jobs: {
+    recoverOperationalPagesTarget: 'success',
+    finalizeOperationalPagesRecovery: 'success',
+  },
+  proof: { recoveryAction: 'EXACT_TARGET_REDEPLOY' },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+const recoveryOnlyDeployment = withPatch(base(), {
+  jobs: {
+    recoverOperationalPagesTarget: 'success',
+    finalizeOperationalPagesRecovery: 'success',
+    deployPages: 'skipped',
+  },
+  proof: {
+    recoveryAction: 'EXACT_TARGET_REDEPLOY',
+    preflightShouldRun: false,
+    operationalAction: null,
+    shouldDeploy: null,
+    weatherOutcome: null,
+    fullValidationOutcome: null,
+    releaseGateOutcome: null,
+    pagesBuildOutcome: null,
+    pagesPrivacyOutcome: null,
+    handoffUploadOutcome: null,
+    pagesConfigureOutcome: null,
+    pagesUploadOutcome: null,
+    artifactBuilt: null,
+    deploymentOutcome: null,
+    publicVerificationOutcome: null,
+    deployedVerified: null,
+  },
+});
+expectStatus(recoveryOnlyDeployment, 'DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
+expectStatus(withPatch(base(), {
+  jobs: { recoverOperationalPagesTarget: 'success' },
+}), 'FAILED', 'INCONSISTENT_RECOVERY_EVIDENCE');
+expectStatus(withPatch(base(), {
+  proof: { recoveryAction: 'EXACT_TARGET_REDEPLOY' },
+}), 'FAILED', 'INCONSISTENT_RECOVERY_EVIDENCE');
+expectStatus(withPatch(base(), {
+  jobs: {
+    recoverOperationalPagesTarget: 'failure',
+    finalizeOperationalPagesRecovery: 'skipped',
+  },
+  proof: { recoveryAction: 'EXACT_TARGET_REDEPLOY' },
+}), 'FAILED', 'UPSTREAM_JOB_FAILED');
+expectStatus(withPatch(base(), {
+  jobs: { finalizeOperationalPagesRecovery: 'success' },
+  proof: { recoveryAction: 'TARGET_RECONCILE' },
+}), 'FAILED', 'INCONSISTENT_RECOVERY_EVIDENCE');
+expectStatus(withPatch(base(), {
+  proof: { recoveryAction: 'UNKNOWN_RECOVERY' },
+}), 'FAILED', 'INVALID_OUTCOME_EVIDENCE');
+expectStatus(withPatch(base(), {
+  proof: { operationalAction: 'candidate-legacy-maintenance' },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+for (const operationalAction of [
+  'candidate-historical-maintenance',
+  'integrated-historical-maintenance',
+]) {
+  const deployed = expectStatus(withPatch(base(), {
+    proof: { operationalAction },
+  }), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+  assert.equal(deployed.proof.operationalAction, operationalAction);
+  expectStatus(withPatch(base(), {
+    jobs: { deployPages: 'skipped' },
+    proof: {
+      operationalAction,
+      shouldDeploy: false,
+      pagesConfigureOutcome: null,
+      pagesUploadOutcome: null,
+      deploymentOutcome: null,
+      publicVerificationOutcome: null,
+      deployedVerified: null,
+    },
+  }), 'FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
+  expectStatus(withPatch(base(), {
+    proof: {
+      operationalAction,
+      publicVerificationOutcome: null,
+      deployedVerified: false,
+    },
+  }), 'FAILED', 'DEPLOYMENT_NOT_VERIFIED');
+}
+expectStatus(withPatch(base(), {
+  proof: { operationalAction: 'unknown-historical-maintenance' },
+}), 'FAILED', 'INVALID_OUTCOME_EVIDENCE');
 
 expectStatus(withPatch(base(), {
   jobs: { deployPages: 'skipped' },
@@ -181,15 +279,25 @@ expectStatus(withPatch(base(), {
 expectStatus(withPatch(base(), {
   eventName: 'workflow_dispatch',
   geometryV2Pilot: true,
-  jobs: { buildAndPrepare: 'skipped', geometryV2Pilot: 'success', deployPages: 'skipped' },
-  proof: noProductionProof(),
+  jobs: {
+    reconcileOperationalPending: 'skipped',
+    buildAndPrepare: 'skipped',
+    geometryV2Pilot: 'success',
+    deployPages: 'skipped',
+  },
+  proof: noProductionProof({ recoveryAction: null }),
 }), 'NOOP', 'PRIVATE_GEOMETRY_OPERATION_COMPLETED');
 
 expectStatus(withPatch(base(), {
   eventName: 'workflow_dispatch',
   geometryV2Pilot: true,
-  jobs: { buildAndPrepare: 'skipped', geometryV2Pilot: 'failure', deployPages: 'skipped' },
-  proof: noProductionProof(),
+  jobs: {
+    reconcileOperationalPending: 'skipped',
+    buildAndPrepare: 'skipped',
+    geometryV2Pilot: 'failure',
+    deployPages: 'skipped',
+  },
+  proof: noProductionProof({ recoveryAction: null }),
 }), 'FAILED', 'UPSTREAM_JOB_FAILED');
 
 expectStatus(withPatch(base(), {
@@ -210,6 +318,16 @@ assert.throws(() => validateProductionWorkflowOutcome({
   rawPayload: {},
 }), /unexpected field set/);
 const deployedReport = classifyProductionWorkflowOutcome(base());
+assert.throws(() => validateProductionWorkflowOutcome({
+  ...deployedReport,
+  schemaVersion: 'ravradar-production-workflow-outcome-v1',
+}), /Unexpected outcome schema/);
+const missingRecoveryJobReport = structuredClone(deployedReport);
+delete missingRecoveryJobReport.jobResults.operationalRecoveryGate;
+assert.throws(() => validateProductionWorkflowOutcome(missingRecoveryJobReport), /job results has an unexpected field set/);
+const missingRecoveryProofReport = structuredClone(deployedReport);
+delete missingRecoveryProofReport.proof.recoveryAction;
+assert.throws(() => validateProductionWorkflowOutcome(missingRecoveryProofReport), /production proof has an unexpected field set/);
 assert.throws(() => validateProductionWorkflowOutcome({
   ...deployedReport,
   status: 'NOOP',
@@ -242,6 +360,10 @@ const cli = spawnSync(process.execPath, [
     RAVRADAR_OUTCOME_GEOMETRY_NATIONAL: 'false',
     RAVRADAR_OUTCOME_JOB_VALIDATE_DISPATCH: 'success',
     RAVRADAR_OUTCOME_JOB_RECONCILE: 'success',
+    RAVRADAR_OUTCOME_JOB_RECOVERY_WRITER: 'skipped',
+    RAVRADAR_OUTCOME_JOB_RECOVERY_FINALIZER: 'skipped',
+    RAVRADAR_OUTCOME_JOB_RECOVERY_GATE: 'success',
+    RAVRADAR_OUTCOME_RECOVERY_ACTION: 'NONE',
     RAVRADAR_OUTCOME_JOB_CURRENT_READINESS: 'success',
     RAVRADAR_OUTCOME_JOB_TRIP_READINESS: 'success',
     RAVRADAR_OUTCOME_JOB_BUILD: 'success',
@@ -279,6 +401,7 @@ const releaseGate = fs.readFileSync('scripts/release-gate.mjs', 'utf8');
 for (const marker of [
   "'scripts/test-production-workflow-outcome.mjs'",
   "const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs')",
+  "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2'",
   'productionWorkflowOutcome:true',
   'Maskinlæsbar NOOP/DEFERRED/BUILT/DEPLOYED/FAILED-produktionsstatus: OK',
 ]) {

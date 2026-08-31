@@ -27,6 +27,7 @@ import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import {
+  CANDIDATE_G_ROLLBACK_STAGE_SCHEMA,
   CANDIDATE_G_ROLLBACK_STAGE_MARKER,
   installCandidateGRollbackStage,
 } from './install-candidate-g-rollback-stage.mjs';
@@ -374,6 +375,10 @@ try {
     expectedSourceHead: sourceHead,
     expectedDatasetId: datasetId,
   });
+  assert.equal(marker.schemaVersion, CANDIDATE_G_ROLLBACK_STAGE_SCHEMA);
+  assert.equal(marker.candidateTargetProfileSha256,
+    prepared.plan.candidateTargetProfileSha256);
+  assert.match(marker.candidateTargetProfileSha256, /^[0-9a-f]{64}$/);
   assert.equal(marker.publicArtifactReady, false);
   assert.equal(marker.installed.length, 3);
   const activeContract = await fs.readFile(path.join(stageRoot, 'js', 'core',
@@ -409,6 +414,65 @@ try {
   assert.equal(audit.coastalPartCount, 673);
   assert.deepEqual(audit.modelBinding, candidateBinding);
   assert.equal(audit.calibrationEligible, false);
+
+  const sourceVariants = [
+    {
+      label: 'exact current Candidate maintenance',
+      options: { sourceModel: 'candidate-g' },
+    },
+    {
+      label: 'sealed historical Candidate maintenance',
+      options: {
+        sourceModel: 'historical-candidate-g',
+        sourceModelBinding: {
+          ...candidateBinding,
+          modelContractSha256: 'e'.repeat(64),
+          modelBundleSha256: 'f'.repeat(64),
+        },
+      },
+    },
+    {
+      label: 'exact legacy Candidate maintenance',
+      options: { sourceModel: 'legacy-candidate-g', centralExpectedVersion: 0 },
+    },
+  ];
+  for (const variant of sourceVariants) {
+    const variantPrepared = prepareCandidateGOperationalRollback(fixture.full, {
+      expectedDatasetId: datasetId,
+      sourceHead,
+      privateBundleContentSha256,
+      sourceImplementationClosureSha256: 'c'.repeat(64),
+      requestedImplementationClosureSha256: 'd'.repeat(64),
+      centralExpectedVersion: 17,
+      now: at(1),
+      ...variant.options,
+    });
+    await installCandidateGRollbackStage({
+      stageRoot,
+      repositoryRoot,
+      candidateFull: variantPrepared.candidateFull,
+      plan: variantPrepared.plan,
+      expectedSourceHead: sourceHead,
+      expectedDatasetId: datasetId,
+    });
+    await fs.writeFile(planPath, `${JSON.stringify(variantPrepared.plan)}\n`);
+    const variantAudit = await execFileAsync(process.execPath, auditArguments, {
+      cwd: stageRoot,
+      windowsHide: true,
+      maxBuffer: 10 * 1024 * 1024,
+    });
+    assert.match(variantAudit.stdout, /candidate-g-public-rollback-audit-passed/,
+      variant.label);
+  }
+  await installCandidateGRollbackStage({
+    stageRoot,
+    repositoryRoot,
+    candidateFull: prepared.candidateFull,
+    plan: prepared.plan,
+    expectedSourceHead: sourceHead,
+    expectedDatasetId: datasetId,
+  });
+  await fs.writeFile(planPath, `${JSON.stringify(prepared.plan)}\n`);
 
   const startupPath = path.join(stageRoot, 'data', 'live', 'public-conditions.json');
   const manifestPath = path.join(stageRoot, 'data', 'live', 'manifest.json');
@@ -468,14 +532,21 @@ try {
 
   const markerPath = path.join(stageRoot, ...CANDIDATE_G_ROLLBACK_STAGE_MARKER.split('/'));
   const pristineMarker = await fs.readFile(markerPath, 'utf8');
-  const wrongMarker = JSON.parse(pristineMarker);
-  wrongMarker.publicArtifactReady = true;
-  await fs.writeFile(markerPath, `${JSON.stringify(wrongMarker)}\n`);
-  await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
-    cwd: stageRoot,
-    windowsHide: true,
-    maxBuffer: 10 * 1024 * 1024,
-  }), error => /stage marker is incompatible/.test(`${error?.stderr ?? ''}${error?.message ?? ''}`));
+  for (const mutateMarker of [
+    markerDocument => { markerDocument.publicArtifactReady = true; },
+    markerDocument => { markerDocument.candidateTargetProfileSha256 = '0'.repeat(64); },
+    markerDocument => { markerDocument.unsealedField = true; },
+  ]) {
+    const wrongMarker = JSON.parse(pristineMarker);
+    mutateMarker(wrongMarker);
+    await fs.writeFile(markerPath, `${JSON.stringify(wrongMarker)}\n`);
+    await assert.rejects(() => execFileAsync(process.execPath, auditArguments, {
+      cwd: stageRoot,
+      windowsHide: true,
+      maxBuffer: 10 * 1024 * 1024,
+    }), error => /stage marker is incompatible/.test(
+      `${error?.stderr ?? ''}${error?.message ?? ''}`));
+  }
 } finally {
   await fs.rm(temporaryRoot, { recursive: true, force: true });
 }

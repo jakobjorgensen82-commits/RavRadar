@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
 import { spawn } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import os from 'node:os';
@@ -25,8 +26,9 @@ const localConditions = {
 await fs.writeFile(path.join(live, 'manifest.json'), JSON.stringify(localManifest));
 await fs.writeFile(path.join(live, 'conditions.json'), JSON.stringify(localConditions));
 
-const candidateParts = Object.fromEntries(Array.from({ length: 673 }, (_, index) => [
-  `part-${index}`,
+const candidatePartIds = Array.from({ length: 673 }, (_, index) => `part-${index}`);
+const candidateParts = Object.fromEntries(candidatePartIds.map(partId => [
+  partId,
   {
     candidateG: {
       currentState: {
@@ -36,11 +38,48 @@ const candidateParts = Object.fromEntries(Array.from({ length: 673 }, (_, index)
     },
   },
 ]));
+const activeRegistryPath = path.join(live, 'coastal-parts-v2.json');
+const sourceRegistryPath = path.join(
+  root, '.cache', 'ravscore-legacy-candidate-g-source', 'coastal-parts-v2.json',
+);
+const activeRegistrySentinel = '{"active-registry":"must-not-change"}\n';
+await fs.writeFile(activeRegistryPath, activeRegistrySentinel);
+
 let mismatch = true;
 let integratedManifest = false;
+let invalidRegistryPartSet = false;
+let invalidRegistryZoneSet = false;
+let invalidManifestPath = false;
+let invalidManifestHash = false;
+let invalidManifestBytes = false;
+
+function registryDocument() {
+  const registryZoneIds = invalidRegistryZoneSet
+    ? [...zoneIds.slice(0, -1), 'zone-not-in-conditions']
+    : zoneIds;
+  const registryPartIds = [...candidatePartIds];
+  if (invalidRegistryPartSet) registryPartIds[registryPartIds.length - 1] = 'part-not-in-conditions';
+  const zones = Object.fromEntries(registryZoneIds.map(id => [id, []]));
+  registryPartIds.forEach((partId, index) => {
+    zones[registryZoneIds[index % registryZoneIds.length]].push({ partId });
+  });
+  return {
+    schemaVersion: 2,
+    enabled: true,
+    partCount: 673,
+    zoneCount: 210,
+    zones,
+  };
+}
+
+function registryPayload() {
+  return Buffer.from(JSON.stringify(registryDocument()));
+}
+
 const server = http.createServer((request, response) => {
   response.setHeader('Content-Type', 'application/json');
   if (request.url === '/data/live/manifest.json') {
+    const coastalParts = registryPayload();
     response.end(JSON.stringify(integratedManifest ? {
       schemaVersion: 4,
       datasetId: 'remote-integrated',
@@ -51,7 +90,16 @@ const server = http.createServer((request, response) => {
       datasetId: 'remote-new',
       generatedAt: '2026-08-24T13:00:00.000Z',
       fullConditionsPath: './conditions.json',
+      coastalPartsPath: invalidManifestPath ? '../coastal-parts-v2.json' : './coastal-parts-v2.json',
+      coastalPartsSha256: invalidManifestHash
+        ? '0'.repeat(64)
+        : crypto.createHash('sha256').update(coastalParts).digest('hex'),
+      coastalPartsBytes: coastalParts.length + (invalidManifestBytes ? 1 : 0),
     }));
+    return;
+  }
+  if (request.url === '/data/live/coastal-parts-v2.json') {
+    response.end(registryPayload());
     return;
   }
   if (request.url === '/data/live/conditions.json') {
@@ -110,6 +158,8 @@ try {
   assert.match(failed.stdout, /"fatal": true/);
   assert.equal(JSON.parse(await fs.readFile(path.join(live, 'manifest.json'), 'utf8')).datasetId, 'local-safe');
   assert.equal(JSON.parse(await fs.readFile(path.join(live, 'conditions.json'), 'utf8')).datasetId, 'local-safe');
+  await assert.rejects(fs.access(sourceRegistryPath));
+  assert.equal(await fs.readFile(activeRegistryPath, 'utf8'), activeRegistrySentinel);
 
   mismatch = false;
   const succeeded = await hydrate();
@@ -117,6 +167,30 @@ try {
   assert.match(succeeded.stdout, /"fatal": false/);
   assert.equal(JSON.parse(await fs.readFile(path.join(live, 'manifest.json'), 'utf8')).datasetId, 'remote-new');
   assert.equal(JSON.parse(await fs.readFile(path.join(live, 'conditions.json'), 'utf8')).datasetId, 'remote-new');
+  assert.deepEqual(await fs.readFile(sourceRegistryPath), registryPayload());
+  assert.equal(await fs.readFile(activeRegistryPath, 'utf8'), activeRegistrySentinel);
+  assert.ok(JSON.parse(succeeded.stdout).hydrated.includes(
+    '.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json',
+  ));
+
+  const exactSourceRegistry = await fs.readFile(sourceRegistryPath);
+  for (const [name, activate, deactivate] of [
+    ['path', () => { invalidManifestPath = true; }, () => { invalidManifestPath = false; }],
+    ['hash', () => { invalidManifestHash = true; }, () => { invalidManifestHash = false; }],
+    ['bytes', () => { invalidManifestBytes = true; }, () => { invalidManifestBytes = false; }],
+    ['part-set', () => { invalidRegistryPartSet = true; }, () => { invalidRegistryPartSet = false; }],
+    ['zone-set', () => { invalidRegistryZoneSet = true; }, () => { invalidRegistryZoneSet = false; }],
+  ]) {
+    activate();
+    const rejected = await hydrate();
+    deactivate();
+    assert.notEqual(rejected.code, 0, `${name} mismatch must reject the atomic source unit`);
+    assert.match(rejected.stdout, /"fatal": true/);
+    assert.deepEqual(await fs.readFile(sourceRegistryPath), exactSourceRegistry);
+    assert.equal(await fs.readFile(activeRegistryPath, 'utf8'), activeRegistrySentinel);
+    assert.equal(JSON.parse(await fs.readFile(path.join(live, 'manifest.json'), 'utf8')).datasetId, 'remote-new');
+    assert.equal(JSON.parse(await fs.readFile(path.join(live, 'conditions.json'), 'utf8')).datasetId, 'remote-new');
+  }
 
   integratedManifest = true;
   const secondImport = await hydrate();

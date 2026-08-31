@@ -12,7 +12,7 @@ import {
 } from './rollback-assets/ravscore-model-contract.js';
 
 export const CANDIDATE_G_ROLLBACK_STAGE_SCHEMA =
-  'candidate-g-operational-rollback-stage-v1';
+  'candidate-g-operational-rollback-stage-v2';
 export const CANDIDATE_G_ROLLBACK_STAGE_MARKER =
   '.cache/candidate-g-operational-rollback/stage.json';
 
@@ -144,6 +144,7 @@ export async function installCandidateGRollbackStage({
     privateBundleContentSha256: plan.privateBundleContentSha256,
     sourceImplementationClosureSha256: plan.sourceImplementationClosureSha256,
     requestedImplementationClosureSha256: plan.requestedImplementationClosureSha256,
+    candidateTargetProfileSha256: plan.candidateTargetProfileSha256,
     modelBinding: candidateModelBinding(),
     automaticActivationAllowed: false,
     schedulerActivationAllowed: false,

@@ -91,6 +91,7 @@ _SAFE_MESSAGES = {
     "INCONSISTENT_ASSET_PROVENANCE": "Native WAM asset provenance is inconsistent.",
     "MISSING_HOUR": "A required wave-history hour has no safe native proof.",
     "INTERPOLATION_GAP": "A native interpolation gap exceeds the permitted bound.",
+    "INTERPOLATED_COLD_START": "A genuine cold start requires exact native hours.",
     "MIXED_RUN_INTERPOLATION": "Interpolation across WAM runs is forbidden.",
     "MIXED_CELL_INTERPOLATION": "Interpolation across WAM cells is forbidden.",
     "MIXED_CELL_HISTORY": "A coastal part changes WAM cell in the bootstrap window.",
@@ -136,7 +137,7 @@ class WaveHistoryPolicy:
             or not isinstance(self.directional_half_life_hours, int)
             or self.directional_half_life_hours < 1
             or not isinstance(self.maximum_interpolation_hours, int)
-            or self.maximum_interpolation_hours < 1
+            or self.maximum_interpolation_hours < 0
             or self.maximum_interpolation_hours > 4
             or not isinstance(self.maximum_stac_items, int)
             or self.maximum_stac_items < 1
@@ -147,6 +148,8 @@ class WaveHistoryPolicy:
         ):
             raise WaveBootstrapError("INVALID_POLICY")
         if self.require_single_run_per_collection and self.allow_exact_multi_run:
+            raise WaveBootstrapError("INVALID_POLICY")
+        if self.mode == COLD_START_MODE and self.maximum_interpolation_hours != 0:
             raise WaveBootstrapError("INVALID_POLICY")
 
     @property
@@ -176,6 +179,7 @@ COLD_START_POLICY = WaveHistoryPolicy(
     include_target=True,
     require_single_run_per_collection=False,
     allow_exact_multi_run=True,
+    maximum_interpolation_hours=0,
 )
 
 
@@ -1111,6 +1115,8 @@ def validate_wave_history_cache(
         raise WaveBootstrapError("COHERENT_RUN_REQUIRED")
     if not global_runs or any(collection not in WAM_COLLECTIONS for collection in global_runs):
         raise WaveBootstrapError("INVALID_PROVENANCE")
+    if policy.mode == COLD_START_MODE and interpolated_count != 0:
+        raise WaveBootstrapError("INTERPOLATED_COLD_START")
 
     return WaveHistoryValidationSummary(
         policy=policy,

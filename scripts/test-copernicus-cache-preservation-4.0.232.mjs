@@ -53,7 +53,9 @@ assert.match(supportBlock, /--exclude '\.cache\/'/,
   'Support artifact must exclude the restored private Copernicus cache');
 
 const pagesStart = workflow.indexOf('- name: Build lean GitHub Pages artifact');
-const pagesEnd = workflow.indexOf('- name: Configure GitHub Pages');
+const pagesEnd = workflow.indexOf('- name: Configure GitHub Pages', pagesStart);
+assert.ok(pagesStart >= 0 && pagesEnd > pagesStart,
+  'Pages artifact block must precede its GitHub Pages configuration step');
 assert.match(workflow.slice(pagesStart, pagesEnd), /--exclude '\.cache\/'/,
   'Pages artifact must exclude the restored private Copernicus cache');
 

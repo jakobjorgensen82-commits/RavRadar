@@ -1035,6 +1035,45 @@ assert.equal(selectRavScoreInitialState({
 assert.equal(selectRavScoreInitialState({
   part, existingPart: { candidateG: existingPart.candidateG }, checkpointStates: {},
 }).source, 'CANDIDATE_G_MIGRATION');
+const warmupCandidateState = buildCandidateGDerivedStateSeries(
+  Array.from({ length: 6 }, (_, index) => ({
+    time: time(index - 5),
+    currentSpeedMps: 0.09,
+    currentAlignment: 1,
+    currentVerified: true,
+    waveHeightM: 1.2,
+    wavePeriodS: 7,
+  })),
+  { stateKey: candidateGStateKey(part) },
+).continuationState;
+assert.equal(warmupCandidateState.transportMemoryReady, false);
+const attestedColdSelection = selectRavScoreInitialState({
+  part,
+  existingPart: { candidateG: { currentState: warmupCandidateState } },
+  checkpointStates: {},
+  candidateGBootstrapMode: 'genuine-cold-start',
+  candidateGSourceValidated: true,
+});
+assert.equal(attestedColdSelection.source, 'COLD_START');
+assert.equal(attestedColdSelection.state, null);
+assert.equal(
+  attestedColdSelection.candidateGSourceDisposition,
+  'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY',
+);
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: { candidateG: { currentState: warmupCandidateState } },
+  checkpointStates: {},
+  candidateGBootstrapMode: 'genuine-cold-start',
+  candidateGSourceValidated: false,
+}), error => error?.code === 'RAVSCORE_FIRST_CUTOVER_COLD_START_UNATTESTED',
+'an explicit cold start must never mask a Candidate G source that lacks aggregate attestation');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: { candidateG: { currentState: warmupCandidateState } },
+  checkpointStates: {},
+}), error => error?.code === 'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+'canonical warmup remains fail-closed unless the aggregate first-cutover resolver selected cold start');
 const fallbackFromInvalidExisting = selectRavScoreInitialState({
   part,
   existingPart: {
@@ -1313,6 +1352,75 @@ const coldProduction = buildRavScoreProductionPartSeries({
   publicHourly: [weather(4), weather(5), weather(6)],
   previousCandidateGContinuation: coldRollbackCompanion,
 });
+const measuredColdRollbackProduction = buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: null,
+    source: 'COLD_START',
+    rejectedSources: [],
+    candidateGSourceDisposition:
+      'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY',
+  },
+  targetReferenceAt: time(4),
+  recoverySources: [{
+    source: 'existing-verified-private-cache',
+    record: record(Array.from({ length: 48 }, (_, index) => weather(index - 44))),
+  }],
+  publicHourly: [weather(4), weather(5), weather(6)],
+  candidateGRollbackMeasuredColdStart: true,
+});
+assert.equal(
+  measuredColdRollbackProduction.candidateGState.initialStateSource,
+  'VERIFIED_MEASURED_COLD_START',
+);
+assert.equal(
+  measuredColdRollbackProduction.candidateGRollbackScores[0]
+    .candidateG.transportMemoryReady,
+  true,
+  'the separate rollback oracle must become READY only from its own complete measured replay',
+);
+assert.throws(() => buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: { state: null, source: 'COLD_START', rejectedSources: [] },
+  targetReferenceAt: time(4),
+  recoverySources: [],
+  publicHourly: [weather(4)],
+  previousCandidateGContinuation: coldRollbackCompanion,
+  candidateGRollbackMeasuredColdStart: true,
+}), /one exclusive Candidate G rollback initialization path/,
+'measured rollback cold start must never be hybridized with a continuation');
+assert.throws(() => buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: null,
+    source: 'COLD_START',
+    rejectedSources: [],
+  },
+  targetReferenceAt: time(4),
+  recoverySources: [],
+  publicHourly: [weather(4)],
+  candidateGRollbackMeasuredColdStart: true,
+}), /one exclusive Candidate G rollback initialization path/,
+'a measured rollback cold start flag requires the aggregate-attested source disposition');
+assert.throws(() => buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: coldRollbackCompanion,
+    source: 'EXISTING_PART',
+    rejectedSources: [],
+    candidateGSourceDisposition:
+      'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY',
+  },
+  targetReferenceAt: time(4),
+  recoverySources: [],
+  publicHourly: [weather(4)],
+  candidateGRollbackMeasuredColdStart: true,
+}), /one exclusive Candidate G rollback initialization path/,
+'a forged disposition may not turn an existing continuation into measured cold start');
 assert.equal(coldProduction.recovery.coldStartBootstrapApplied, true);
 assert.equal(coldProduction.recovery.replayedHourCount, 48);
 const exactPrivateColdTimes = Array.from(

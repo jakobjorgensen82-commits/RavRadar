@@ -1,6 +1,6 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.317",
+  "releaseVersion": "4.0.318",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",
@@ -12,7 +12,7 @@
     "bestTimePolicyId": "score-history-water-tie-earliest-v3",
     "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
     "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
-    "modelBundleSha256": "74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae"
+    "modelBundleSha256": "093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061"
   },
   "scoreModel": {
     "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -71,11 +71,11 @@
     },
     {
       "id": "score.local-missing",
-      "text": "If the integrated model lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from another model, zone, coastal part or hour."
+      "text": "If a required direct weather input is missing or invalid for the score hour itself, that hour is unavailable and omitted from rankings. This is separate from a gap in earlier history. RavRadar must not interpolate, carry a value forward or borrow a score from another model, zone, coastal part or hour."
     },
     {
       "id": "score.history-incomplete",
-      "text": "When direct inputs for the score hour are complete but historical weather evidence has a gap, RavRadar may publish a conservative lower-bound score with an explicit lower-to-upper model interval. The verified-history hour count describes coverage and does not prove an unbroken sequence. This state is not calibration eligible and clears automatically when the required history is complete."
+      "text": "When the direct weather inputs for the current and forecast score hours are complete but required earlier history has a gap, RavRadar still publishes a conservative lower-bound score with an explicit lower-to-upper model interval across the full current and five-day forecast. A temporary notice is shown and disappears automatically when the required history is complete. The verified-history hour count describes coverage and does not prove an unbroken sequence. This state is not calibration eligible."
     },
     {
       "id": "score.no-find-guarantee",
@@ -119,7 +119,7 @@
     },
     {
       "id": "transport.grid-not-surf-zone",
-      "text": "Verified model-grid current linked to each coastal part is relative evidence of transport towards the coastal zone. An owner-approved regional proxy and its distance are disclosed when used; it is not a local grid point. RavRadar does not resolve surf-zone undertow, feeder or longshore currents, rip currents, or the exact path across bars and channels. A causal energy-weighted W/N/T EWMA has a four-hour half-life and a decaying older tail; it can only attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding, although the displayed integer can move by 8 points. The factor is not a physical landing fraction and does not remove structural last-mile uncertainty."
+      "text": "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point. RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty."
     },
     {
       "id": "mobilisation.wave-memory",

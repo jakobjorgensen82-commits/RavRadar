@@ -23,6 +23,7 @@ import {
 } from './lib/ravscore-profile-transition.mjs';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY,
+  candidateGTargetProfileForOperationalPlan,
 } from './prepare-candidate-g-operational-rollback.mjs';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
@@ -70,12 +71,30 @@ export const RAVSCORE_INTEGRATED_RETURN_POLICY = Object.freeze({
   expectedZoneCount: 210,
   expectedPartCount: 673,
 });
+export const RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY = Object.freeze({
+  schemaVersion: '1.0.0',
+  kind: 'RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_PLAN',
+  mode: 'maintenance',
+  mainRef: 'refs/heads/main',
+  allowedEventNames: Object.freeze(['schedule', 'push', 'workflow_dispatch']),
+});
 export const RAVSCORE_OPERATIONAL_TRANSITION_KINDS = Object.freeze({
   candidateRollback: 'CANDIDATE_G_ROLLBACK',
   candidateRefresh: 'CANDIDATE_G_REFRESH',
+  candidateRefreshBeforeInitialCutover: 'CANDIDATE_G_REFRESH_BEFORE_INITIAL_CUTOVER',
+  legacyCandidateRefreshBeforeInitialCutover:
+    'LEGACY_CANDIDATE_G_REFRESH_BEFORE_INITIAL_CUTOVER',
   integratedReturn: 'INTEGRATED_RETURN',
   initialIntegratedCutover: 'INITIAL_INTEGRATED_CUTOVER',
 });
+
+function isCandidateRefreshTransitionKind(transitionKind) {
+  return [
+    RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh,
+    RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefreshBeforeInitialCutover,
+    RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+  ].includes(transitionKind);
+}
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const HEAD_PATTERN = /^[a-f0-9]{40}$/;
@@ -233,7 +252,8 @@ function candidateGOperationalProfileForBinding(integratedProfile, binding, {
 }
 
 export function candidateGOperationalProfileDocument(integratedProfile) {
-  return candidateGOperationalProfileForBinding(integratedProfile, candidateModelBinding());
+  assertIntegratedRavScoreSelection(integratedProfile, 'Integrated profile template');
+  return candidateGTargetProfileForOperationalPlan();
 }
 
 function operationalProfileModel(profile) {
@@ -393,6 +413,8 @@ const CANDIDATE_PLAN_FIELDS = Object.freeze([
   'centralExpectedVersion',
   'sourceModelBinding',
   'activeModelBinding',
+  'candidateTargetProfile',
+  'candidateTargetProfileSha256',
   'rollbackId',
   'automaticActivationAllowed',
   'schedulerActivationAllowed',
@@ -407,6 +429,8 @@ function assertCandidatePlan(plan, {
   expectedSourceModel,
   expectedSourceHead = null,
   expectedCentralVersion = null,
+  allowSealedHistoricalSource = false,
+  allowSealedHistoricalTarget = false,
 } = {}) {
   if (!exactKeys(plan, CANDIDATE_PLAN_FIELDS)
     || plan.schemaVersion !== CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.schemaVersion
@@ -419,6 +443,7 @@ function assertCandidatePlan(plan, {
     || !SHA256_PATTERN.test(String(plan.privateBundleContentSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.sourceImplementationClosureSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.requestedImplementationClosureSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.candidateTargetProfileSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.planSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.candidateFullSha256 ?? ''))
     || !Number.isSafeInteger(Number(plan.centralExpectedVersion))
@@ -428,6 +453,13 @@ function assertCandidatePlan(plan, {
     || plan.calibrationEligible !== false
     || plan.privatePayloadLogged !== false) {
     throw new Error('Candidate G operational plan is incomplete or unsafe');
+  }
+  assertProfileRowForSealedBinding({
+    version: 1,
+    payload: plan.candidateTargetProfile,
+  }, plan.activeModelBinding);
+  if (sha256(plan.candidateTargetProfile) !== plan.candidateTargetProfileSha256) {
+    throw new Error('Candidate G operational target profile digest mismatch');
   }
   const {
     planSha256,
@@ -439,13 +471,31 @@ function assertCandidatePlan(plan, {
     throw new Error('Candidate G operational plan digest mismatch');
   }
   const sourceBinding = expectedSourceModel === 'candidate-g'
-    ? candidateModelBinding() : integratedModelBinding();
-  const assertSourceBinding = expectedSourceModel === 'candidate-g'
-    ? assertCandidateBinding : assertIntegratedBinding;
-  assertBinding(plan.sourceModelBinding, sourceBinding, assertSourceBinding,
-    'Candidate G source binding');
-  assertBinding(plan.activeModelBinding, candidateModelBinding(), assertCandidateBinding,
-    'Candidate G requested binding');
+    ? candidateModelBinding()
+    : expectedSourceModel === 'legacy-candidate-g'
+      ? legacyCandidateGControllerBinding()
+      : integratedModelBinding();
+  if (expectedSourceModel === 'legacy-candidate-g') {
+    assertSameSealedBinding(plan.sourceModelBinding, sourceBinding,
+      'Legacy Candidate G source binding');
+  } else if (allowSealedHistoricalSource) {
+    if (sealedBindingKind(plan.sourceModelBinding) !== expectedSourceModel) {
+      throw new Error('Candidate G source binding has the wrong sealed model');
+    }
+  } else {
+    const assertSourceBinding = expectedSourceModel === 'candidate-g'
+      ? assertCandidateBinding : assertIntegratedBinding;
+    assertBinding(plan.sourceModelBinding, sourceBinding, assertSourceBinding,
+      'Candidate G source binding');
+  }
+  if (allowSealedHistoricalTarget) {
+    if (sealedBindingKind(plan.activeModelBinding) !== 'candidate-g') {
+      throw new Error('Candidate G requested binding has the wrong sealed model');
+    }
+  } else {
+    assertBinding(plan.activeModelBinding, candidateModelBinding(), assertCandidateBinding,
+      'Candidate G requested binding');
+  }
   if (expectedSourceHead !== null && plan.sourceHead !== expectedSourceHead) {
     throw new Error('Candidate G operational plan belongs to another source head');
   }
@@ -474,6 +524,58 @@ export function assertCandidateRefreshPlan(plan, options = {}) {
     expectedMode: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.dryRunMode,
     expectedSourceModel: 'candidate-g',
   });
+}
+
+export function assertHistoricalCandidateRefreshPlan(plan, options = {}) {
+  assertCandidatePlan(plan, {
+    ...options,
+    expectedMode: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.dryRunMode,
+    expectedSourceModel: 'candidate-g',
+    allowSealedHistoricalSource: true,
+  });
+  if (sameBinding(plan.sourceModelBinding, candidateModelBinding())) {
+    throw new Error('Historical Candidate G refresh requires a distinct sealed source binding');
+  }
+  return true;
+}
+
+export function assertLegacyCandidateRefreshPlan(plan, options = {}) {
+  return assertCandidatePlan(plan, {
+    ...options,
+    expectedMode: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.dryRunMode,
+    expectedSourceModel: 'legacy-candidate-g',
+  });
+}
+
+function assertCandidatePlanForPendingReconciliation(plan, currentRow) {
+  const document = currentRow?.payload;
+  const rollback = document?.transitionKind
+    === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRollback;
+  const sourceModel = sealedBindingKind(document?.sourceModelBinding);
+  assertCandidatePlan(plan, {
+    expectedMode: rollback
+      ? CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.executeMode
+      : CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.dryRunMode,
+    expectedSourceModel: sourceModel,
+    expectedSourceHead: document.sourceHead,
+    expectedCentralVersion: Number(currentRow.version) - 1,
+    allowSealedHistoricalSource: true,
+    allowSealedHistoricalTarget: true,
+  });
+  if (plan.planSha256 !== document.candidatePlanSha256
+    || plan.candidateFullSha256 !== document.candidateFullSha256
+    || plan.privateBundleContentSha256 !== document.privateBundleContentSha256
+    || !sameBinding(plan.sourceModelBinding, document.sourceModelBinding)
+    || !sameBinding(plan.activeModelBinding, document.requestedModelBinding)
+    || plan.datasetId !== document.datasetId
+    || plan.productionReferenceAt !== document.productionReferenceAt
+    || plan.sourceImplementationClosureSha256
+      !== document.sourceImplementationClosureSha256
+    || plan.requestedImplementationClosureSha256
+      !== document.requestedImplementationClosureSha256) {
+    throw new Error('Candidate G reconciliation plan differs from the exact sealed PENDING row');
+  }
+  return true;
 }
 
 const OPERATIONAL_PAGES_VERIFICATION_FIELDS = Object.freeze([
@@ -595,6 +697,7 @@ function assertOperationalSourceSeal({
   sourceManifest,
   sourceVerification,
   model,
+  binding: sealedSourceBinding = null,
   sourceHead,
   requestedManifest = null,
   expectedImplementationClosureSha256 = null,
@@ -602,8 +705,15 @@ function assertOperationalSourceSeal({
   label = 'Operational transition source',
 } = {}) {
   const candidate = model === 'candidate-g';
-  const binding = candidate ? candidateModelBinding() : integratedModelBinding();
-  const assertExpected = candidate ? assertCandidateBinding : assertIntegratedBinding;
+  const currentBinding = candidate ? candidateModelBinding() : integratedModelBinding();
+  const binding = sealedSourceBinding ?? currentBinding;
+  assertSealedModelBinding(binding, `${label} binding`);
+  if (sealedBindingKind(binding) !== model) {
+    throw new Error(`${label} binding has the wrong sealed model`);
+  }
+  const assertExpected = sameBinding(binding, currentBinding)
+    ? (candidate ? assertCandidateBinding : assertIntegratedBinding)
+    : null;
   if (requestedManifest && sha256(sourceManifest) === sha256(requestedManifest)) {
     throw new Error(`${label} is already the requested target and requires reconciliation`);
   }
@@ -621,12 +731,14 @@ function assertOperationalSourceSeal({
     assertBinding: assertExpected,
   });
   if (currentRow !== null) {
-    assertOperationalActivationDocument(currentRow.payload);
+    assertOperationalActivationDocument(currentRow.payload, {
+      allowSealedHistoricalBindings: true,
+    });
     const sameStoredPublicIdentity = sha256(sourceManifest)
       === currentRow.payload.publicManifestSha256
       && sourceManifest.datasetId === currentRow.payload.datasetId
       && sourceManifest.productionReferenceAt === currentRow.payload.productionReferenceAt;
-    const sameActiveBinding = bindingKind(currentRow.payload.activeModelBinding) === model
+    const sameActiveBinding = sealedBindingKind(currentRow.payload.activeModelBinding) === model
       && sameBinding(currentRow.payload.activeModelBinding, binding);
     if ((!sameStoredPublicIdentity && !(allowSameBindingRefresh && sameActiveBinding))
       || !SAFE_ID_PATTERN.test(String(currentRow.payload.deploymentId ?? ''))) {
@@ -680,8 +792,10 @@ function assertLegacyOperationalSourceSeal({
   if (currentRow !== null) {
     assertOperationalActivationDocument(currentRow.payload);
     if (bindingKind(currentRow.payload.activeModelBinding) !== 'legacy-candidate-g'
-      || currentRow.payload.transitionKind
-        !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+      || ![
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+      ].includes(currentRow.payload.transitionKind)
       || currentRow.payload.publicManifestSha256 !== sha256(sourceManifest)
       || currentRow.payload.datasetId !== sourceManifest.datasetId
       || currentRow.payload.productionReferenceAt !== sourceManifest.productionReferenceAt
@@ -698,12 +812,20 @@ function assertOperationalPendingSourceRestore({
   sourceManifest,
   sourceVerification,
   model,
+  binding: sealedSourceBinding = null,
   sourceHead,
   label = 'Operational pending source restore',
 } = {}) {
   const candidate = model === 'candidate-g';
-  const binding = candidate ? candidateModelBinding() : integratedModelBinding();
-  const assertExpected = candidate ? assertCandidateBinding : assertIntegratedBinding;
+  const currentBinding = candidate ? candidateModelBinding() : integratedModelBinding();
+  const binding = sealedSourceBinding ?? currentBinding;
+  assertSealedModelBinding(binding, `${label} binding`);
+  if (sealedBindingKind(binding) !== model) {
+    throw new Error(`${label} binding has the wrong sealed model`);
+  }
+  const assertExpected = sameBinding(binding, currentBinding)
+    ? (candidate ? assertCandidateBinding : assertIntegratedBinding)
+    : null;
   assertOperationalPublicManifest(sourceManifest, {
     binding,
     assertBinding: assertExpected,
@@ -750,8 +872,10 @@ function assertLegacyOperationalPendingSourceRestore({
   if (observedSha256 !== currentRow?.payload?.sourcePublicManifestSha256
     || observedSha256 === currentRow?.payload?.requestedPublicManifestSha256
     || bindingKind(currentRow?.payload?.sourceModelBinding) !== 'legacy-candidate-g'
-    || currentRow?.payload?.transitionKind
-      !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+    || ![
+      RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+      RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+    ].includes(currentRow?.payload?.transitionKind)
     || !SAFE_ID_PATTERN.test(String(currentRow?.payload?.sourceDeploymentId ?? ''))) {
     throw new Error(`${label} does not match the sealed legacy source endpoint`);
   }
@@ -769,6 +893,7 @@ const INTEGRATED_RETURN_PLAN_FIELDS = Object.freeze([
   'centralExpectedVersion',
   'sourceModelBinding',
   'activeModelBinding',
+  'legacySourceRequired',
   'sourceImplementationClosureSha256',
   'requestedImplementationClosureSha256',
   'candidateActivationDocumentSha256',
@@ -964,6 +1089,7 @@ export function assertIntegratedReturnPlan(plan, {
   readiness = null,
   publicManifest = null,
   publicAudit = null,
+  allowSealedHistoricalTarget = false,
 } = {}) {
   if (!exactKeys(plan, INTEGRATED_RETURN_PLAN_FIELDS)
     || plan.schemaVersion !== RAVSCORE_INTEGRATED_RETURN_POLICY.schemaVersion
@@ -984,6 +1110,7 @@ export function assertIntegratedReturnPlan(plan, {
     || !SHA256_PATTERN.test(String(plan.integratedPublicAuditSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.integratedManifestSha256 ?? ''))
     || !SHA256_PATTERN.test(String(plan.planSha256 ?? ''))
+    || typeof plan.legacySourceRequired !== 'boolean'
     || plan.automaticActivationAllowed !== false
     || plan.schedulerActivationAllowed !== false
     || plan.calibrationEligibleAfterVerifiedActivation !== true
@@ -994,15 +1121,28 @@ export function assertIntegratedReturnPlan(plan, {
   if (sha256(unsealed) !== planSha256) {
     throw new Error('Integrated operational return plan digest mismatch');
   }
-  const sourceKind = bindingKind(plan.sourceModelBinding);
+  const sourceKind = sealedBindingKind(plan.sourceModelBinding);
   if ((plan.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn
       && sourceKind !== 'candidate-g')
     || (plan.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
       && !['candidate-g', 'legacy-candidate-g'].includes(sourceKind))) {
     throw new Error('Integrated return source Candidate G binding is incompatible');
   }
-  assertBinding(plan.activeModelBinding, integratedModelBinding(), assertIntegratedBinding,
-    'Integrated return requested binding');
+  if (plan.legacySourceRequired !== (sourceKind === 'legacy-candidate-g')
+    || (plan.legacySourceRequired
+      && plan.transitionKind !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover)) {
+    throw new Error('Integrated return source verification mode is incompatible');
+  }
+  if (allowSealedHistoricalTarget) {
+    assertSealedModelBinding(plan.activeModelBinding,
+      'Integrated return sealed requested binding');
+    if (sealedBindingKind(plan.activeModelBinding) !== 'integrated') {
+      throw new Error('Integrated return sealed requested binding is incompatible');
+    }
+  } else {
+    assertBinding(plan.activeModelBinding, integratedModelBinding(), assertIntegratedBinding,
+      'Integrated return requested binding');
+  }
   if (expectedSourceHead !== null && plan.sourceHead !== expectedSourceHead) {
     throw new Error('Integrated return plan belongs to another source head');
   }
@@ -1017,7 +1157,8 @@ export function assertIntegratedReturnPlan(plan, {
     }
     const resolved = resolveOperationalRavScoreModel(currentRow);
     if (!['candidate-g', 'legacy-candidate-g'].includes(resolved.model)
-      || bindingKind(plan.sourceModelBinding) !== resolved.model) {
+      || sealedBindingKind(plan.sourceModelBinding) !== resolved.model
+      || !sameBinding(plan.sourceModelBinding, resolved.modelBinding)) {
       throw new Error('Integrated return may only start from active Candidate G');
     }
   } else if (currentProfileRow !== null) {
@@ -1066,10 +1207,11 @@ export function prepareIntegratedOperationalReturn({
   githubSha,
   confirmation,
 } = {}) {
-  const initialRetry = currentRow !== null
-    && resolveOperationalRavScoreModel(currentRow, {
+  const currentResolved = currentRow !== null
+    ? resolveOperationalRavScoreModel(currentRow, {
       profileRow: currentProfileRow,
-    }).initialCutoverRequired === true;
+    }) : null;
+  const initialRetry = currentResolved?.initialCutoverRequired === true;
   const initialCutover = currentRow === null || initialRetry;
   if (ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef || githubSha !== sourceHead
     || (initialCutover
@@ -1089,7 +1231,7 @@ export function prepareIntegratedOperationalReturn({
     if (!Number.isSafeInteger(Number(currentRow.version))) {
       throw new Error('Integrated return requires the exact active central version');
     }
-    const current = resolveOperationalRavScoreModel(currentRow, { profileRow: currentProfileRow });
+    const current = currentResolved;
     if (!['candidate-g', 'legacy-candidate-g'].includes(current.model)) {
       throw new Error('Integrated return may only be prepared from active Candidate G');
     }
@@ -1117,8 +1259,11 @@ export function prepareIntegratedOperationalReturn({
     sourceModelBinding: currentRow === null
       ? (operationalProfileModel(currentProfileRow.payload) === 'legacy-candidate-g'
         ? legacyCandidateGControllerBinding() : candidateModelBinding())
-      : structuredClone(resolveOperationalRavScoreModel(currentRow).modelBinding),
+      : structuredClone(currentResolved.modelBinding),
     activeModelBinding: integratedModelBinding(),
+    legacySourceRequired: currentRow === null
+      ? operationalProfileModel(currentProfileRow.payload) === 'legacy-candidate-g'
+      : currentResolved.legacySourceRequired,
     sourceImplementationClosureSha256,
     requestedImplementationClosureSha256,
     candidateActivationDocumentSha256: sha256(
@@ -1136,6 +1281,200 @@ export function prepareIntegratedOperationalReturn({
   assertIntegratedReturnPlan(plan, {
     expectedSourceHead: sourceHead,
     expectedCentralVersion: Number(currentRow?.version ?? 0),
+    currentRow,
+    currentProfileRow,
+    readiness,
+    publicManifest,
+    publicAudit,
+  });
+  return plan;
+}
+
+const INTEGRATED_HISTORICAL_MAINTENANCE_PLAN_FIELDS = Object.freeze([
+  'schemaVersion',
+  'kind',
+  'mode',
+  'transitionKind',
+  'sourceHead',
+  'datasetId',
+  'productionReferenceAt',
+  'centralExpectedVersion',
+  'sourceModelBinding',
+  'activeModelBinding',
+  'sourceImplementationClosureSha256',
+  'requestedImplementationClosureSha256',
+  'sourceActivationDocumentSha256',
+  'sourceProfileSha256',
+  'integratedReadinessSha256',
+  'integratedPublicAuditSha256',
+  'integratedManifestSha256',
+  'automaticActivationAllowed',
+  'schedulerActivationAllowed',
+  'calibrationEligibleAfterVerifiedActivation',
+  'privatePayloadLogged',
+  'planSha256',
+]);
+
+export function assertIntegratedHistoricalMaintenancePlan(plan, {
+  expectedSourceHead = null,
+  expectedCentralVersion = null,
+  currentRow = null,
+  currentProfileRow = null,
+  readiness = null,
+  publicManifest = null,
+  publicAudit = null,
+  allowSealedHistoricalTarget = false,
+} = {}) {
+  if (!exactKeys(plan, INTEGRATED_HISTORICAL_MAINTENANCE_PLAN_FIELDS)
+    || plan.schemaVersion
+      !== RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.schemaVersion
+    || plan.kind !== RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.kind
+    || plan.mode !== RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.mode
+    || plan.transitionKind !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn
+    || !HEAD_PATTERN.test(String(plan.sourceHead ?? ''))
+    || !SAFE_ID_PATTERN.test(String(plan.datasetId ?? ''))
+    || !validTime(plan.productionReferenceAt)
+    || !Number.isSafeInteger(Number(plan.centralExpectedVersion))
+    || Number(plan.centralExpectedVersion) < 1
+    || !SHA256_PATTERN.test(String(plan.sourceImplementationClosureSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.requestedImplementationClosureSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.sourceActivationDocumentSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.sourceProfileSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.integratedReadinessSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.integratedPublicAuditSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.integratedManifestSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(plan.planSha256 ?? ''))
+    || plan.automaticActivationAllowed !== false
+    || plan.schedulerActivationAllowed !== false
+    || plan.calibrationEligibleAfterVerifiedActivation !== true
+    || plan.privatePayloadLogged !== false) {
+    throw new Error('Historical integrated maintenance plan is incomplete or unsafe');
+  }
+  const { planSha256, ...unsealed } = plan;
+  if (sha256(unsealed) !== planSha256) {
+    throw new Error('Historical integrated maintenance plan digest mismatch');
+  }
+  if (sealedBindingKind(plan.sourceModelBinding) !== 'integrated'
+    || sealedBindingKind(plan.activeModelBinding) !== 'integrated'
+    || sameBinding(plan.sourceModelBinding, plan.activeModelBinding)) {
+    throw new Error('Historical integrated maintenance requires distinct sealed integrated endpoints');
+  }
+  if (!allowSealedHistoricalTarget) {
+    assertBinding(plan.activeModelBinding, integratedModelBinding(), assertIntegratedBinding,
+      'Historical integrated maintenance requested binding');
+  }
+  if (expectedSourceHead !== null && plan.sourceHead !== expectedSourceHead) {
+    throw new Error('Historical integrated maintenance plan belongs to another source head');
+  }
+  if (expectedCentralVersion !== null
+    && Number(plan.centralExpectedVersion) !== Number(expectedCentralVersion)) {
+    throw new Error('Historical integrated maintenance plan belongs to another central CAS version');
+  }
+  if ((currentRow === null) !== (currentProfileRow === null)) {
+    throw new Error('Historical integrated maintenance requires one atomic controller/profile source');
+  }
+  if (currentRow !== null) {
+    if (Number(currentRow.version) !== Number(plan.centralExpectedVersion)
+      || sha256(currentRow.payload) !== plan.sourceActivationDocumentSha256
+      || sha256(currentProfileRow.payload) !== plan.sourceProfileSha256) {
+      throw new Error('Historical integrated maintenance plan belongs to another active document');
+    }
+    const resolved = resolveOperationalRavScoreModel(currentRow, {
+      profileRow: currentProfileRow,
+    });
+    if (resolved.model !== 'integrated'
+      || resolved.pending
+      || !sameBinding(resolved.modelBinding, plan.sourceModelBinding)
+      || resolved.activeImplementationClosureSha256
+        !== plan.sourceImplementationClosureSha256) {
+      throw new Error('Historical integrated maintenance source is not the exact central ACTIVE release');
+    }
+  }
+  if (readiness !== null) {
+    assertIntegratedReadiness(readiness, plan.sourceHead);
+    if (sha256(readiness) !== plan.integratedReadinessSha256
+      || readiness.publicImplementationClosureSha256
+        !== plan.requestedImplementationClosureSha256) {
+      throw new Error('Historical integrated maintenance readiness digest mismatch');
+    }
+  }
+  if (publicManifest !== null || publicAudit !== null) {
+    assertIntegratedPublicEvidence(publicManifest, publicAudit, {
+      sourceHead: plan.sourceHead,
+      datasetId: plan.datasetId,
+    });
+    if (sha256(publicManifest) !== plan.integratedManifestSha256
+      || sha256(publicAudit) !== plan.integratedPublicAuditSha256
+      || publicManifest.productionReferenceAt !== plan.productionReferenceAt) {
+      throw new Error('Historical integrated maintenance public evidence digest mismatch');
+    }
+  }
+  return true;
+}
+
+export function prepareIntegratedHistoricalMaintenance({
+  currentRow,
+  currentProfileRow,
+  sourceHead,
+  publicManifest,
+  publicAudit,
+  readiness,
+  sourceImplementationClosureSha256,
+  requestedImplementationClosureSha256 = readiness?.publicImplementationClosureSha256,
+  eventName,
+  ref,
+  githubSha,
+} = {}) {
+  if (ref !== RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.mainRef
+    || githubSha !== sourceHead
+    || !RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.allowedEventNames
+      .includes(eventName)) {
+    throw new Error('Historical integrated maintenance requires an exact-main production event');
+  }
+  const current = resolveOperationalRavScoreModel(currentRow, {
+    profileRow: currentProfileRow,
+  });
+  if (current.model !== 'integrated'
+    || current.pending
+    || sameBinding(current.modelBinding, integratedModelBinding())) {
+    throw new Error('Historical integrated maintenance requires an ACTIVE historical integrated source');
+  }
+  assertIntegratedReadiness(readiness, sourceHead);
+  if (!SHA256_PATTERN.test(String(sourceImplementationClosureSha256 ?? ''))
+    || sourceImplementationClosureSha256 !== current.activeImplementationClosureSha256
+    || !SHA256_PATTERN.test(String(requestedImplementationClosureSha256 ?? ''))
+    || requestedImplementationClosureSha256
+      !== readiness.publicImplementationClosureSha256) {
+    throw new Error('Historical integrated maintenance lacks exact source/target closures');
+  }
+  assertIntegratedPublicEvidence(publicManifest, publicAudit, { sourceHead });
+  const unsealed = {
+    schemaVersion: RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.schemaVersion,
+    kind: RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.kind,
+    mode: RAVSCORE_INTEGRATED_HISTORICAL_MAINTENANCE_POLICY.mode,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+    sourceHead,
+    datasetId: publicManifest.datasetId,
+    productionReferenceAt: publicManifest.productionReferenceAt,
+    centralExpectedVersion: Number(currentRow.version),
+    sourceModelBinding: structuredClone(current.modelBinding),
+    activeModelBinding: integratedModelBinding(),
+    sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256,
+    sourceActivationDocumentSha256: sha256(currentRow.payload),
+    sourceProfileSha256: sha256(currentProfileRow.payload),
+    integratedReadinessSha256: sha256(readiness),
+    integratedPublicAuditSha256: sha256(publicAudit),
+    integratedManifestSha256: sha256(publicManifest),
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligibleAfterVerifiedActivation: true,
+    privatePayloadLogged: false,
+  };
+  const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
+  assertIntegratedHistoricalMaintenancePlan(plan, {
+    expectedSourceHead: sourceHead,
+    expectedCentralVersion: currentRow.version,
     currentRow,
     currentProfileRow,
     readiness,
@@ -1183,12 +1522,95 @@ export function assertOperationalActivationDocument(document, {
   ];
   const exactCandidate = candidateHashes.every(value => SHA256_PATTERN.test(String(value ?? '')));
   const noCandidate = candidateHashes.every(value => value === null);
+  const legacyRefreshBeforeInitialCutover = document.transitionKind
+    === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover;
+  if (legacyRefreshBeforeInitialCutover) {
+    const sourceKind = classifyBinding(document.sourceModelBinding);
+    const exactLegacySource = sourceKind === 'legacy-candidate-g'
+      && sameBinding(document.sourceModelBinding, legacyCandidateGControllerBinding());
+    const sealedModernSource = sourceKind === 'candidate-g';
+    const sealedCandidateTarget = classifyBinding(document.requestedModelBinding)
+      === 'candidate-g';
+    const exactCandidateTarget = sealedCandidateTarget
+      && (allowSealedHistoricalBindings
+        || sameBinding(document.requestedModelBinding, candidateModelBinding()));
+    const commonInvalid = (!exactLegacySource && !sealedModernSource)
+      || !exactCandidateTarget
+      || !exactCandidate
+      || !noReturn
+      || document.calibrationEligible !== false
+      || document.requestedPublicManifestSha256 === document.sourcePublicManifestSha256
+      || !canonicalTime(document.requestedAt);
+    const pendingActiveBinding = document.sourceModelBinding;
+    const pending = document.status === RAVSCORE_OPERATIONAL_STATUSES.candidatePending
+      && sameBinding(document.activeModelBinding, pendingActiveBinding)
+      && document.publicManifestSha256 === document.sourcePublicManifestSha256
+      && SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
+      && document.failureCode === null
+      && (document.activatedAt === null || canonicalTime(document.activatedAt));
+    const completed = document.status === RAVSCORE_OPERATIONAL_STATUSES.candidateActive
+      && sameBinding(document.activeModelBinding, document.requestedModelBinding)
+      && document.publicManifestSha256 === document.requestedPublicManifestSha256
+      && SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
+      && document.failureCode === null
+      && canonicalTime(document.activatedAt);
+    const abortedActiveBinding = document.sourceModelBinding;
+    const aborted = document.status === RAVSCORE_OPERATIONAL_STATUSES.candidateActive
+      && sameBinding(document.activeModelBinding, abortedActiveBinding)
+      && document.publicManifestSha256 === document.sourcePublicManifestSha256
+      && document.deploymentId === document.sourceDeploymentId
+      && SAFE_ID_PATTERN.test(String(document.failureCode ?? ''))
+      && canonicalTime(document.activatedAt);
+    if (commonInvalid || (!pending && !completed && !aborted)) {
+      throw new Error('Legacy Candidate G pre-cutover refresh lacks an exact two-phase endpoint');
+    }
+    return true;
+  }
+  const historicalIntegratedMaintenance =
+    document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn
+    && classifyBinding(document.sourceModelBinding) === 'integrated'
+    && classifyBinding(document.requestedModelBinding) === 'integrated'
+    && !sameBinding(document.sourceModelBinding, document.requestedModelBinding);
+  if (historicalIntegratedMaintenance) {
+    const commonInvalid = !exactReturn
+      || (!noCandidate && !exactCandidate)
+      || document.requestedPublicManifestSha256 === document.sourcePublicManifestSha256
+      || !canonicalTime(document.requestedAt);
+    const pending = document.status === RAVSCORE_OPERATIONAL_STATUSES.integratedPending
+      && sameBinding(document.activeModelBinding, document.sourceModelBinding)
+      && document.publicManifestSha256 === document.sourcePublicManifestSha256
+      && SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
+      && document.calibrationEligible === false
+      && document.failureCode === null
+      && canonicalTime(document.activatedAt);
+    const completed = document.status === RAVSCORE_OPERATIONAL_STATUSES.integrated
+      && sameBinding(document.activeModelBinding, document.requestedModelBinding)
+      && document.publicManifestSha256 === document.requestedPublicManifestSha256
+      && SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
+      && document.calibrationEligible === true
+      && document.failureCode === null
+      && canonicalTime(document.activatedAt);
+    const aborted = document.status === RAVSCORE_OPERATIONAL_STATUSES.integrated
+      && sameBinding(document.activeModelBinding, document.sourceModelBinding)
+      && document.publicManifestSha256 === document.sourcePublicManifestSha256
+      && document.deploymentId === document.sourceDeploymentId
+      && document.calibrationEligible === true
+      && SAFE_ID_PATTERN.test(String(document.failureCode ?? ''))
+      && canonicalTime(document.activatedAt);
+    if (commonInvalid || (!pending && !completed && !aborted)) {
+      throw new Error('Historical integrated maintenance lacks an exact two-phase endpoint');
+    }
+    return true;
+  }
   if (document.status === RAVSCORE_OPERATIONAL_STATUSES.candidatePending) {
-    const refresh = document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh;
+    const refresh = isCandidateRefreshTransitionKind(document.transitionKind);
+    const refreshBeforeInitialCutover = document.transitionKind
+      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefreshBeforeInitialCutover;
     const rollback = document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRollback;
     const expectedSource = refresh ? 'candidate-g' : 'integrated';
     if (classifyBinding(document.sourceModelBinding) !== expectedSource
       || classifyBinding(document.activeModelBinding) !== expectedSource
+      || !sameBinding(document.activeModelBinding, document.sourceModelBinding)
       || classifyBinding(document.requestedModelBinding) !== 'candidate-g'
       || (!refresh && !rollback)
       || !exactCandidate
@@ -1197,7 +1619,7 @@ export function assertOperationalActivationDocument(document, {
       || document.requestedPublicManifestSha256 === document.sourcePublicManifestSha256
       || !SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
       || document.failureCode !== null
-      || !noReturn) {
+      || (refreshBeforeInitialCutover ? !exactReturn : !noReturn)) {
       throw new Error('Pending Candidate G transition must preserve its exact active source');
     }
   } else if (document.status === RAVSCORE_OPERATIONAL_STATUSES.candidateActive) {
@@ -1205,11 +1627,16 @@ export function assertOperationalActivationDocument(document, {
     const sourceKind = classifyBinding(document.sourceModelBinding);
     const requestedKind = classifyBinding(document.requestedModelBinding);
     const rollback = document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRollback;
-    const refresh = document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh;
+    const refresh = isCandidateRefreshTransitionKind(document.transitionKind);
+    const refreshBeforeInitialCutover = document.transitionKind
+      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefreshBeforeInitialCutover;
     const failedReturn = [RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
       RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover]
       .includes(document.transitionKind);
     const failedRefresh = refresh && document.failureCode !== null;
+    const exactEndpointBinding = failedReturn || failedRefresh
+      ? sameBinding(document.activeModelBinding, document.sourceModelBinding)
+      : sameBinding(document.activeModelBinding, document.requestedModelBinding);
     const correctHistory = rollback
       ? sourceKind === 'integrated' && requestedKind === 'candidate-g'
       : refresh
@@ -1218,13 +1645,14 @@ export function assertOperationalActivationDocument(document, {
     const correctHashes = failedReturn
       ? exactReturn && (document.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn
         ? exactCandidate : noCandidate)
-      : exactCandidate && noReturn;
+      : exactCandidate && (refreshBeforeInitialCutover ? exactReturn : noReturn);
     if (!['candidate-g', 'legacy-candidate-g'].includes(activeKind)
       || (activeKind === 'legacy-candidate-g'
         && document.transitionKind
           !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover)
       || !correctHistory
       || !correctHashes
+      || !exactEndpointBinding
       || document.calibrationEligible !== false
       || !SHA256_PATTERN.test(String(document.publicManifestSha256 ?? ''))
       || !SAFE_ID_PATTERN.test(String(document.deploymentId ?? ''))
@@ -1250,6 +1678,7 @@ export function assertOperationalActivationDocument(document, {
       || !exactReturn;
     if (!['candidate-g', 'legacy-candidate-g'].includes(sourceKind)
       || classifyBinding(document.activeModelBinding) !== sourceKind
+      || !sameBinding(document.activeModelBinding, document.sourceModelBinding)
       || classifyBinding(document.requestedModelBinding) !== 'integrated'
       || (!initial && document.transitionKind !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn)
       || (!initial && sourceKind !== 'candidate-g')
@@ -1374,8 +1803,10 @@ export function resolveOperationalRavScoreModel(row, {
   const candidate = activeKind === 'candidate-g';
   if (profileRow !== null) {
     const legacyBootstrap = legacyCandidate
-      && row.payload.transitionKind
-        === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+      && [
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+      ].includes(row.payload.transitionKind)
       && operationalProfileModel(profileRow.payload) === 'legacy-candidate-g';
     if (!legacyBootstrap) {
       assertProfileRowForSealedBinding(profileRow, row.payload.activeModelBinding);
@@ -1384,11 +1815,12 @@ export function resolveOperationalRavScoreModel(row, {
   const initialCutoverRequired = Boolean(
     (candidate || legacyCandidate)
     && row.payload.status === RAVSCORE_OPERATIONAL_STATUSES.candidateActive
-    && row.payload.transitionKind
-      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
-    && SAFE_ID_PATTERN.test(String(row.payload.failureCode ?? ''))
-    && row.payload.publicManifestSha256 === row.payload.sourcePublicManifestSha256
-    && row.payload.deploymentId === row.payload.sourceDeploymentId
+    && (row.payload.transitionKind
+        === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+      || (candidate && row.payload.transitionKind
+        === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefreshBeforeInitialCutover)
+      || row.payload.transitionKind
+        === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover)
     && row.payload.calibrationEligible === false
   );
   const activeMatchesSource = sameBinding(
@@ -1420,8 +1852,10 @@ export function resolveOperationalRavScoreModel(row, {
     requestedModel:sealedBindingKind(row.payload.requestedModelBinding),
     initialCutoverRequired,
     legacySourceRequired: Boolean(legacyCandidate
-      && row.payload.transitionKind
-        === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover
+      && [
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+      ].includes(row.payload.transitionKind)
       && row.payload.status === RAVSCORE_OPERATIONAL_STATUSES.candidateActive),
     datasetId:row.payload.datasetId,
     productionReferenceAt:row.payload.productionReferenceAt,
@@ -1441,6 +1875,21 @@ export function resolveOperationalRavScoreModel(row, {
     deploymentId:row.payload.deploymentId,
     requestedAt:row.payload.requestedAt,
   });
+}
+
+export function operationalResolvedBindingCurrent(resolved) {
+  const expected = resolved?.model === 'integrated'
+    ? integratedModelBinding()
+    : resolved?.model === 'candidate-g'
+      ? candidateModelBinding()
+      : resolved?.model === 'legacy-candidate-g'
+        ? legacyCandidateGControllerBinding()
+        : null;
+  if (expected === null) {
+    throw new Error('Resolved operational model has no checkout binding');
+  }
+  assertSealedModelBinding(resolved.modelBinding, 'Resolved operational model binding');
+  return sameBinding(resolved.modelBinding, expected);
 }
 
 function baseDocument(plan, now, {
@@ -1596,7 +2045,11 @@ export function operationalActivationTransition({
       failureCode:null,
     };
     assertOperationalActivationDocument(document);
-    return Object.freeze({ document, nextVersion:Number(expectedVersion) + 1 });
+    return Object.freeze({
+      document,
+      nextVersion:Number(expectedVersion) + 1,
+      centralTargetProfile: Object.freeze(structuredClone(plan.candidateTargetProfile)),
+    });
   }
   if (action === 'abort') {
     if (!SAFE_ID_PATTERN.test(String(failureCode ?? ''))) {
@@ -1653,26 +2106,40 @@ export function operationalCandidateRefreshTransition({
     || Number(currentRow?.version) !== Number(expectedVersion)) {
     throw new Error('Operational Candidate G refresh compare-and-swap version mismatch');
   }
-  assertCandidateRefreshPlan(plan, {
+  const historicalAction = [
+    'historical-refresh-begin',
+    'historical-refresh-complete',
+    'historical-refresh-abort',
+  ].includes(action);
+  const normalizedAction = historicalAction
+    ? action.replace('historical-', '') : action;
+  const assertRefreshPlan = historicalAction
+    ? assertHistoricalCandidateRefreshPlan : assertCandidateRefreshPlan;
+  assertRefreshPlan(plan, {
     expectedSourceHead: plan?.sourceHead,
-    expectedCentralVersion: action === 'refresh-begin'
+    expectedCentralVersion: normalizedAction === 'refresh-begin'
       ? expectedVersion : Number(expectedVersion) - 1,
   });
-  if (action === 'refresh-begin') {
+  if (normalizedAction === 'refresh-begin') {
     const current = resolveOperationalRavScoreModel(currentRow, {
       profileRow: currentProfileRow,
     });
     if (current.model !== 'candidate-g') {
       throw new Error('Scheduler may only refresh an already active Candidate G release');
     }
-    if (!sameBinding(currentRow.payload.activeModelBinding, candidateModelBinding())) {
-      throw new Error('Candidate G refresh cannot change the exact active model binding');
+    if (!sameBinding(currentRow.payload.activeModelBinding, plan.sourceModelBinding)
+      || !sameBinding(current.modelBinding, plan.sourceModelBinding)) {
+      throw new Error('Candidate G refresh source differs from the exact centrally active binding');
     }
+    const preserveLegacyPreCutoverLineage = currentRow.payload.transitionKind
+      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS
+        .legacyCandidateRefreshBeforeInitialCutover;
     const activeSourceDeploymentId = assertOperationalSourceSeal({
       currentRow,
       sourceManifest,
       sourceVerification,
       model: 'candidate-g',
+      binding: plan.sourceModelBinding,
       sourceHead: plan.sourceHead,
       requestedManifest,
       expectedImplementationClosureSha256: plan.sourceImplementationClosureSha256,
@@ -1688,14 +2155,19 @@ export function operationalCandidateRefreshTransition({
     const document = {
       ...currentRow.payload,
       status: RAVSCORE_OPERATIONAL_STATUSES.candidatePending,
-      transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh,
+      transitionKind: preserveLegacyPreCutoverLineage
+        ? RAVSCORE_OPERATIONAL_TRANSITION_KINDS
+          .legacyCandidateRefreshBeforeInitialCutover
+        : current.initialCutoverRequired
+          ? RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefreshBeforeInitialCutover
+          : RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh,
       sourceHead: plan.sourceHead,
       datasetId: plan.datasetId,
       productionReferenceAt: plan.productionReferenceAt,
       rollbackId: plan.rollbackId,
-      activeModelBinding: candidateModelBinding(),
+      activeModelBinding: structuredClone(plan.sourceModelBinding),
       requestedModelBinding: candidateModelBinding(),
-      sourceModelBinding: candidateModelBinding(),
+      sourceModelBinding: structuredClone(plan.sourceModelBinding),
       candidatePlanSha256: plan.planSha256,
       candidateFullSha256: plan.candidateFullSha256,
       privateBundleContentSha256: plan.privateBundleContentSha256,
@@ -1712,21 +2184,30 @@ export function operationalCandidateRefreshTransition({
       requestedAt: new Date(now).toISOString(),
       activatedAt: currentRow.payload.activatedAt,
       failureCode: null,
-      returnPlanSha256: null,
-      integratedReadinessSha256: null,
-      integratedPublicAuditSha256: null,
-      integratedManifestSha256: null,
+      returnPlanSha256: current.initialCutoverRequired
+        ? currentRow.payload.returnPlanSha256 : null,
+      integratedReadinessSha256: current.initialCutoverRequired
+        ? currentRow.payload.integratedReadinessSha256 : null,
+      integratedPublicAuditSha256: current.initialCutoverRequired
+        ? currentRow.payload.integratedPublicAuditSha256 : null,
+      integratedManifestSha256: current.initialCutoverRequired
+        ? currentRow.payload.integratedManifestSha256 : null,
     };
-    assertOperationalActivationDocument(document);
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
+  assertOperationalActivationDocument(currentRow.payload, {
+    allowSealedHistoricalBindings: true,
+  });
   if (currentRow.payload.status !== RAVSCORE_OPERATIONAL_STATUSES.candidatePending
-    || currentRow.payload.transitionKind !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.candidateRefresh
+    || !isCandidateRefreshTransitionKind(currentRow.payload.transitionKind)
     || currentRow.payload.candidatePlanSha256 !== plan.planSha256
     || currentRow.payload.sourceHead !== plan.sourceHead) {
     throw new Error('Candidate G refresh completion differs from its sealed PENDING transition');
   }
-  if (action === 'refresh-abort') {
+  if (normalizedAction === 'refresh-abort') {
     if (!SAFE_ID_PATTERN.test(String(failureCode ?? ''))) {
       throw new Error('Candidate G refresh abort requires a bounded failure code');
     }
@@ -1735,6 +2216,7 @@ export function operationalCandidateRefreshTransition({
       sourceManifest,
       sourceVerification,
       model: 'candidate-g',
+      binding: plan.sourceModelBinding,
       sourceHead: plan.sourceHead,
       label: 'Candidate G refresh restored source',
     });
@@ -1742,6 +2224,7 @@ export function operationalCandidateRefreshTransition({
     const document = {
       ...currentRow.payload,
       status: RAVSCORE_OPERATIONAL_STATUSES.candidateActive,
+      activeModelBinding: structuredClone(plan.sourceModelBinding),
       datasetId: sourceManifest.datasetId,
       productionReferenceAt: sourceManifest.productionReferenceAt,
       publicManifestSha256: sha256(sourceManifest),
@@ -1750,10 +2233,12 @@ export function operationalCandidateRefreshTransition({
       activatedAt: new Date(now).toISOString(),
       failureCode: String(failureCode),
     };
-    assertOperationalActivationDocument(document);
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
-  if (action !== 'refresh-complete') {
+  if (normalizedAction !== 'refresh-complete') {
     throw new Error('Unknown Candidate G refresh transition');
   }
   assertOperationalPublicManifest(requestedManifest, {
@@ -1779,14 +2264,210 @@ export function operationalCandidateRefreshTransition({
   const document = {
     ...currentRow.payload,
     status: RAVSCORE_OPERATIONAL_STATUSES.candidateActive,
+    activeModelBinding: candidateModelBinding(),
     publicManifestSha256: sha256(requestedManifest),
     deploymentId: String(deploymentId),
     calibrationEligible: false,
     activatedAt: new Date(now).toISOString(),
     failureCode: null,
   };
-  assertOperationalActivationDocument(document);
-  return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
+  assertOperationalActivationDocument(document, {
+    allowSealedHistoricalBindings: true,
+  });
+  return Object.freeze({
+    document,
+    nextVersion: Number(expectedVersion) + 1,
+    centralTargetProfile: Object.freeze(structuredClone(plan.candidateTargetProfile)),
+  });
+}
+
+// The production baseline may still be the exact schema-2 Candidate G source
+// without an operational row. A non-push weather run must first seal that
+// legacy endpoint, then expose only an exact current Candidate G 210/673
+// artifact. This distinct marker is intentionally not an ordinary refresh:
+// it is the durable, reconcilable bridge from rowless legacy state while the
+// initial integrated cutover remains pending.
+export function operationalLegacyCandidateRefreshTransition({
+  action,
+  currentRow = null,
+  currentProfileRow,
+  expectedVersion,
+  plan,
+  sourceManifest = null,
+  sourceAttestation = null,
+  sourceVerification = null,
+  requestedManifest = null,
+  publicVerification = null,
+  sourceDeploymentId = null,
+  deploymentId = null,
+  failureCode = null,
+  terminalEvidence = null,
+  now = new Date().toISOString(),
+} = {}) {
+  if (!Number.isSafeInteger(Number(expectedVersion)) || Number(expectedVersion) < 0
+    || Number(currentRow?.version ?? 0) !== Number(expectedVersion)) {
+    throw new Error('Legacy Candidate G refresh compare-and-swap version mismatch');
+  }
+  assertLegacyCandidateRefreshPlan(plan, {
+    expectedSourceHead: plan?.sourceHead,
+    expectedCentralVersion: action === 'legacy-refresh-begin'
+      ? expectedVersion : Number(expectedVersion) - 1,
+  });
+  if (action === 'legacy-refresh-begin') {
+    const current = resolveOperationalRavScoreModel(currentRow, {
+      profileRow: currentProfileRow,
+    });
+    if (current.model !== 'legacy-candidate-g'
+      || current.initialCutoverRequired !== true
+      || current.legacySourceRequired !== true) {
+      throw new Error('Legacy Candidate G refresh requires the exact pre-cutover legacy source');
+    }
+    const activeSourceDeploymentId = assertLegacyOperationalSourceSeal({
+      currentRow,
+      sourceManifest,
+      sourceAttestation,
+      sourceVerification,
+      sourceHead: plan.sourceHead,
+      requestedManifest,
+      expectedImplementationClosureSha256: plan.sourceImplementationClosureSha256,
+      label: 'Legacy Candidate G refresh source',
+    });
+    assertOperationalPublicManifest(requestedManifest, {
+      binding: candidateModelBinding(),
+      assertBinding: assertCandidateBinding,
+      datasetId: plan.datasetId,
+      productionReferenceAt: plan.productionReferenceAt,
+      label: 'Legacy Candidate G refresh requested manifest',
+    });
+    const sealedSourceDeploymentId = activeSourceDeploymentId ?? sourceDeploymentId;
+    if (!SAFE_ID_PATTERN.test(String(sealedSourceDeploymentId ?? ''))
+      || !SAFE_ID_PATTERN.test(String(deploymentId ?? ''))) {
+      throw new Error('Legacy Candidate G refresh requires exact source and attempt deployment ids');
+    }
+    const requestedAt = new Date(now).toISOString();
+    const document = {
+      schemaVersion: RAVSCORE_OPERATIONAL_ACTIVATION_SCHEMA,
+      status: RAVSCORE_OPERATIONAL_STATUSES.candidatePending,
+      transitionKind:
+        RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover,
+      sourceHead: plan.sourceHead,
+      datasetId: plan.datasetId,
+      productionReferenceAt: plan.productionReferenceAt,
+      rollbackId: plan.rollbackId,
+      activeModelBinding: legacyCandidateGControllerBinding(),
+      requestedModelBinding: candidateModelBinding(),
+      sourceModelBinding: legacyCandidateGControllerBinding(),
+      candidatePlanSha256: plan.planSha256,
+      candidateFullSha256: plan.candidateFullSha256,
+      privateBundleContentSha256: plan.privateBundleContentSha256,
+      publicManifestSha256: sha256(sourceManifest),
+      sourcePublicManifestSha256: sha256(sourceManifest),
+      requestedPublicManifestSha256: sha256(requestedManifest),
+      sourceImplementationClosureSha256: plan.sourceImplementationClosureSha256,
+      requestedImplementationClosureSha256: plan.requestedImplementationClosureSha256,
+      sourceDeploymentId: String(sealedSourceDeploymentId),
+      deploymentId: String(deploymentId),
+      automaticActivationAllowed: false,
+      schedulerActivationAllowed: false,
+      calibrationEligible: false,
+      requestedAt,
+      activatedAt: currentRow?.payload?.activatedAt ?? requestedAt,
+      failureCode: null,
+      returnPlanSha256: null,
+      integratedReadinessSha256: null,
+      integratedPublicAuditSha256: null,
+      integratedManifestSha256: null,
+    };
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
+  }
+  if (!currentRow) {
+    throw new Error('Legacy Candidate G refresh lacks a central PENDING row');
+  }
+  assertOperationalActivationDocument(currentRow.payload, {
+    allowSealedHistoricalBindings: true,
+  });
+  if (currentRow.payload.status !== RAVSCORE_OPERATIONAL_STATUSES.candidatePending
+    || currentRow.payload.transitionKind
+      !== RAVSCORE_OPERATIONAL_TRANSITION_KINDS.legacyCandidateRefreshBeforeInitialCutover
+    || currentRow.payload.candidatePlanSha256 !== plan.planSha256
+    || currentRow.payload.sourceHead !== plan.sourceHead
+    || currentRow.payload.datasetId !== plan.datasetId) {
+    throw new Error('Legacy Candidate G refresh differs from its sealed PENDING transition');
+  }
+  if (action === 'legacy-refresh-abort') {
+    if (!SAFE_ID_PATTERN.test(String(failureCode ?? ''))) {
+      throw new Error('Legacy Candidate G refresh abort requires a bounded failure code');
+    }
+    assertLegacyOperationalPendingSourceRestore({
+      currentRow,
+      sourceManifest,
+      sourceAttestation,
+      sourceVerification,
+      sourceHead: plan.sourceHead,
+      label: 'Legacy Candidate G refresh restored source',
+    });
+    assertOperationalTerminalSourceEvidence(terminalEvidence, currentRow, sourceManifest);
+    const document = {
+      ...currentRow.payload,
+      status: RAVSCORE_OPERATIONAL_STATUSES.candidateActive,
+      activeModelBinding: legacyCandidateGControllerBinding(),
+      datasetId: sourceManifest.datasetId,
+      productionReferenceAt: sourceManifest.productionReferenceAt,
+      publicManifestSha256: sha256(sourceManifest),
+      deploymentId: currentRow.payload.sourceDeploymentId,
+      calibrationEligible: false,
+      activatedAt: new Date(now).toISOString(),
+      failureCode: String(failureCode),
+    };
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
+  }
+  if (action !== 'legacy-refresh-complete') {
+    throw new Error('Unknown legacy Candidate G refresh transition');
+  }
+  assertOperationalPublicManifest(requestedManifest, {
+    binding: candidateModelBinding(),
+    assertBinding: assertCandidateBinding,
+    datasetId: plan.datasetId,
+    productionReferenceAt: plan.productionReferenceAt,
+    label: 'Legacy Candidate G refreshed manifest',
+  });
+  if (sha256(requestedManifest) !== currentRow.payload.requestedPublicManifestSha256
+    || !SAFE_ID_PATTERN.test(String(deploymentId ?? ''))) {
+    throw new Error('Legacy Candidate G refresh differs from its sealed deployed target');
+  }
+  assertOperationalPagesVerification(publicVerification, {
+    model: 'candidate-g',
+    binding: candidateModelBinding(),
+    sourceHead: plan.sourceHead,
+    publicManifest: requestedManifest,
+    expectedImplementationClosureSha256:
+      currentRow.payload.requestedImplementationClosureSha256,
+    assertBinding: assertCandidateBinding,
+  });
+  const document = {
+    ...currentRow.payload,
+    status: RAVSCORE_OPERATIONAL_STATUSES.candidateActive,
+    activeModelBinding: candidateModelBinding(),
+    publicManifestSha256: sha256(requestedManifest),
+    deploymentId: String(deploymentId),
+    calibrationEligible: false,
+    activatedAt: new Date(now).toISOString(),
+    failureCode: null,
+  };
+  assertOperationalActivationDocument(document, {
+    allowSealedHistoricalBindings: true,
+  });
+  return Object.freeze({
+    document,
+    nextVersion: Number(expectedVersion) + 1,
+    centralTargetProfile: Object.freeze(structuredClone(plan.candidateTargetProfile)),
+  });
 }
 
 // An ordinary integrated weather release does not switch models or profiles,
@@ -1893,6 +2574,271 @@ export function operationalIntegratedMaintenanceTransition({
   return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
 }
 
+function isHistoricalIntegratedMaintenanceDocument(document) {
+  return document?.transitionKind === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn
+    && sealedBindingKind(document.sourceModelBinding) === 'integrated'
+    && sealedBindingKind(document.requestedModelBinding) === 'integrated'
+    && !sameBinding(document.sourceModelBinding, document.requestedModelBinding);
+}
+
+function isIntegratedReturnPendingDocument(document) {
+  return document?.status === RAVSCORE_OPERATIONAL_STATUSES.integratedPending
+    && ['candidate-g', 'legacy-candidate-g']
+      .includes(sealedBindingKind(document.sourceModelBinding))
+    && sealedBindingKind(document.requestedModelBinding) === 'integrated'
+    && [
+      RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+      RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+    ].includes(document.transitionKind);
+}
+
+function assertIntegratedReturnPendingPlan(plan, currentRow, {
+  readiness = null,
+  publicManifest = null,
+  publicAudit = null,
+} = {}) {
+  if (!currentRow || !isIntegratedReturnPendingDocument(currentRow.payload)) {
+    throw new Error('Integrated return reconciliation lacks its exact PENDING source');
+  }
+  assertIntegratedReturnPlan(plan, {
+    expectedSourceHead: currentRow.payload.sourceHead,
+    expectedCentralVersion: Number(currentRow.version) - 1,
+    allowSealedHistoricalTarget: true,
+  });
+  if (currentRow.payload.returnPlanSha256 !== plan.planSha256
+    || currentRow.payload.transitionKind !== plan.transitionKind
+    || currentRow.payload.datasetId !== plan.datasetId
+    || currentRow.payload.productionReferenceAt !== plan.productionReferenceAt
+    || !sameBinding(currentRow.payload.sourceModelBinding, plan.sourceModelBinding)
+    || !sameBinding(currentRow.payload.activeModelBinding, plan.sourceModelBinding)
+    || !sameBinding(currentRow.payload.requestedModelBinding, plan.activeModelBinding)
+    || currentRow.payload.sourceImplementationClosureSha256
+      !== plan.sourceImplementationClosureSha256
+    || currentRow.payload.requestedImplementationClosureSha256
+      !== plan.requestedImplementationClosureSha256
+    || currentRow.payload.requestedPublicManifestSha256 !== plan.integratedManifestSha256
+    || currentRow.payload.integratedReadinessSha256 !== plan.integratedReadinessSha256
+    || currentRow.payload.integratedPublicAuditSha256 !== plan.integratedPublicAuditSha256
+    || currentRow.payload.integratedManifestSha256 !== plan.integratedManifestSha256) {
+    throw new Error('Integrated return PENDING state differs from its immutable plan');
+  }
+  if (readiness !== null || publicManifest !== null || publicAudit !== null) {
+    if (sameBinding(plan.activeModelBinding, integratedModelBinding())) {
+      assertIntegratedReturnPlan(plan, {
+        expectedSourceHead: currentRow.payload.sourceHead,
+        expectedCentralVersion: Number(currentRow.version) - 1,
+        readiness,
+        publicManifest,
+        publicAudit,
+      });
+    } else {
+      assertSealedIntegratedReadiness(readiness, currentRow.payload);
+      assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload);
+      if (sha256(publicManifest) !== plan.integratedManifestSha256) {
+        throw new Error('Integrated return historical target manifest differs from its immutable plan');
+      }
+    }
+  }
+  return true;
+}
+
+function assertHistoricalIntegratedPendingPlan(plan, currentRow, currentProfileRow, {
+  allowSealedHistoricalTarget = false,
+} = {}) {
+  if (!currentRow || !currentProfileRow
+    || currentRow.payload.status !== RAVSCORE_OPERATIONAL_STATUSES.integratedPending
+    || !isHistoricalIntegratedMaintenanceDocument(currentRow.payload)) {
+    throw new Error('Historical integrated maintenance lacks its exact PENDING source');
+  }
+  assertIntegratedHistoricalMaintenancePlan(plan, {
+    expectedSourceHead: currentRow.payload.sourceHead,
+    expectedCentralVersion: Number(currentRow.version) - 1,
+    allowSealedHistoricalTarget,
+  });
+  if (currentRow.payload.returnPlanSha256 !== plan.planSha256
+    || currentRow.payload.datasetId !== plan.datasetId
+    || currentRow.payload.productionReferenceAt !== plan.productionReferenceAt
+    || !sameBinding(currentRow.payload.sourceModelBinding, plan.sourceModelBinding)
+    || !sameBinding(currentRow.payload.activeModelBinding, plan.sourceModelBinding)
+    || !sameBinding(currentRow.payload.requestedModelBinding, plan.activeModelBinding)
+    || currentRow.payload.sourceImplementationClosureSha256
+      !== plan.sourceImplementationClosureSha256
+    || currentRow.payload.requestedImplementationClosureSha256
+      !== plan.requestedImplementationClosureSha256
+    || currentRow.payload.requestedPublicManifestSha256 !== plan.integratedManifestSha256
+    || currentRow.payload.integratedReadinessSha256 !== plan.integratedReadinessSha256
+    || currentRow.payload.integratedPublicAuditSha256 !== plan.integratedPublicAuditSha256
+    || currentRow.payload.integratedManifestSha256 !== plan.integratedManifestSha256
+    || sha256(currentProfileRow.payload) !== plan.sourceProfileSha256) {
+    throw new Error('Historical integrated PENDING state differs from its immutable plan');
+  }
+  assertProfileRowForSealedBinding(currentProfileRow, plan.sourceModelBinding);
+  return true;
+}
+
+export function operationalIntegratedHistoricalMaintenanceTransition({
+  action,
+  currentRow,
+  currentProfileRow,
+  expectedVersion,
+  plan,
+  readiness = null,
+  publicManifest = null,
+  publicAudit = null,
+  publicVerification = null,
+  sourceManifest = null,
+  sourceVerification = null,
+  deploymentId = null,
+  failureCode = null,
+  terminalEvidence = null,
+  now = new Date().toISOString(),
+} = {}) {
+  if (!Number.isSafeInteger(Number(expectedVersion)) || Number(expectedVersion) < 1
+    || Number(currentRow?.version) !== Number(expectedVersion)) {
+    throw new Error('Historical integrated maintenance compare-and-swap version mismatch');
+  }
+  if (action === 'integrated-historical-maintenance-begin') {
+    assertIntegratedHistoricalMaintenancePlan(plan, {
+      expectedSourceHead: plan?.sourceHead,
+      expectedCentralVersion: expectedVersion,
+      currentRow,
+      currentProfileRow,
+      readiness,
+      publicManifest,
+      publicAudit,
+    });
+    assertOperationalPublicManifest(publicManifest, {
+      binding: integratedModelBinding(),
+      assertBinding: assertIntegratedBinding,
+      datasetId: plan.datasetId,
+      productionReferenceAt: plan.productionReferenceAt,
+      label: 'Historical integrated maintenance requested manifest',
+    });
+    const sourceDeploymentId = assertOperationalSourceSeal({
+      currentRow,
+      sourceManifest,
+      sourceVerification,
+      model: 'integrated',
+      binding: plan.sourceModelBinding,
+      sourceHead: plan.sourceHead,
+      requestedManifest: publicManifest,
+      expectedImplementationClosureSha256: plan.sourceImplementationClosureSha256,
+      label: 'Historical integrated maintenance source',
+    });
+    if (!SAFE_ID_PATTERN.test(String(sourceDeploymentId ?? ''))
+      || !SAFE_ID_PATTERN.test(String(deploymentId ?? ''))) {
+      throw new Error('Historical integrated maintenance requires exact source and attempt deployments');
+    }
+    const document = {
+      ...currentRow.payload,
+      status: RAVSCORE_OPERATIONAL_STATUSES.integratedPending,
+      transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.integratedReturn,
+      sourceHead: plan.sourceHead,
+      datasetId: plan.datasetId,
+      productionReferenceAt: plan.productionReferenceAt,
+      activeModelBinding: structuredClone(plan.sourceModelBinding),
+      requestedModelBinding: structuredClone(plan.activeModelBinding),
+      sourceModelBinding: structuredClone(plan.sourceModelBinding),
+      publicManifestSha256: sha256(sourceManifest),
+      sourcePublicManifestSha256: sha256(sourceManifest),
+      requestedPublicManifestSha256: sha256(publicManifest),
+      sourceImplementationClosureSha256: plan.sourceImplementationClosureSha256,
+      requestedImplementationClosureSha256: plan.requestedImplementationClosureSha256,
+      sourceDeploymentId: String(sourceDeploymentId),
+      deploymentId: String(deploymentId),
+      automaticActivationAllowed: false,
+      schedulerActivationAllowed: false,
+      calibrationEligible: false,
+      requestedAt: new Date(now).toISOString(),
+      failureCode: null,
+      returnPlanSha256: plan.planSha256,
+      integratedReadinessSha256: plan.integratedReadinessSha256,
+      integratedPublicAuditSha256: plan.integratedPublicAuditSha256,
+      integratedManifestSha256: plan.integratedManifestSha256,
+    };
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
+  }
+  assertHistoricalIntegratedPendingPlan(plan, currentRow, currentProfileRow);
+  if (action === 'integrated-historical-maintenance-complete') {
+    assertIntegratedHistoricalMaintenancePlan(plan, {
+      expectedSourceHead: plan.sourceHead,
+      expectedCentralVersion: Number(expectedVersion) - 1,
+      readiness,
+      publicManifest,
+      publicAudit,
+    });
+    assertOperationalPagesVerification(publicVerification, {
+      model: 'integrated',
+      binding: integratedModelBinding(),
+      sourceHead: plan.sourceHead,
+      publicManifest,
+      expectedImplementationClosureSha256: plan.requestedImplementationClosureSha256,
+      assertBinding: assertIntegratedBinding,
+    });
+    if (sha256(publicManifest) !== currentRow.payload.requestedPublicManifestSha256
+      || !SAFE_ID_PATTERN.test(String(deploymentId ?? ''))) {
+      throw new Error('Historical integrated maintenance target differs from its sealed deployment');
+    }
+    const document = {
+      ...currentRow.payload,
+      status: RAVSCORE_OPERATIONAL_STATUSES.integrated,
+      activeModelBinding: structuredClone(plan.activeModelBinding),
+      publicManifestSha256: sha256(publicManifest),
+      deploymentId: String(deploymentId),
+      calibrationEligible: true,
+      activatedAt: new Date(now).toISOString(),
+      failureCode: null,
+    };
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({
+      document,
+      nextVersion: Number(expectedVersion) + 1,
+      centralTargetProfile: Object.freeze(structuredClone(readiness.centralProfile)),
+    });
+  }
+  if (action === 'integrated-historical-maintenance-abort') {
+    if (!SAFE_ID_PATTERN.test(String(failureCode ?? ''))) {
+      throw new Error('Historical integrated maintenance abort requires a bounded failure code');
+    }
+    assertOperationalPendingSourceRestore({
+      currentRow,
+      sourceManifest,
+      sourceVerification,
+      model: 'integrated',
+      binding: plan.sourceModelBinding,
+      sourceHead: plan.sourceHead,
+      label: 'Historical integrated maintenance restored source',
+    });
+    assertOperationalTerminalSourceEvidence(terminalEvidence, currentRow, sourceManifest);
+    const document = {
+      ...currentRow.payload,
+      status: RAVSCORE_OPERATIONAL_STATUSES.integrated,
+      activeModelBinding: structuredClone(plan.sourceModelBinding),
+      datasetId: sourceManifest.datasetId,
+      productionReferenceAt: sourceManifest.productionReferenceAt,
+      publicManifestSha256: sha256(sourceManifest),
+      deploymentId: currentRow.payload.sourceDeploymentId,
+      calibrationEligible: true,
+      activatedAt: new Date(now).toISOString(),
+      failureCode: String(failureCode),
+    };
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
+    return Object.freeze({
+      document,
+      nextVersion: Number(expectedVersion) + 1,
+      centralTargetProfile: null,
+    });
+  }
+  throw new Error('Unknown historical integrated maintenance transition');
+}
+
 export function operationalIntegratedReturnTransition({
   action,
   currentRow,
@@ -1916,7 +2862,9 @@ export function operationalIntegratedReturnTransition({
     || Number(currentRow?.version ?? 0) !== Number(expectedVersion)) {
     throw new Error('Operational integrated return compare-and-swap version mismatch');
   }
-  if (currentRow !== null) assertOperationalActivationDocument(currentRow.payload);
+  if (currentRow !== null) assertOperationalActivationDocument(currentRow.payload, {
+    allowSealedHistoricalBindings: true,
+  });
   if (action === 'return-begin') {
     assertIntegratedReturnPlan(plan, {
       expectedSourceHead: plan?.sourceHead,
@@ -1946,7 +2894,7 @@ export function operationalIntegratedReturnTransition({
     if (initialCutover !== (currentRow === null || initialRetry)) {
       throw new Error('Integrated transition source state does not match its sealed kind');
     }
-    const legacyBootstrapSource = initialCutover;
+    const legacyBootstrapSource = plan.legacySourceRequired;
     const activeSourceDeploymentId = legacyBootstrapSource
       ? assertLegacyOperationalSourceSeal({
         currentRow,
@@ -1963,6 +2911,7 @@ export function operationalIntegratedReturnTransition({
         sourceManifest,
         sourceVerification,
         model: 'candidate-g',
+        binding: plan.sourceModelBinding,
         sourceHead: plan.sourceHead,
         requestedManifest: publicManifest,
         expectedImplementationClosureSha256: plan.sourceImplementationClosureSha256,
@@ -2008,7 +2957,9 @@ export function operationalIntegratedReturnTransition({
       integratedPublicAuditSha256: plan.integratedPublicAuditSha256,
       integratedManifestSha256: plan.integratedManifestSha256,
     };
-    assertOperationalActivationDocument(document);
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
   assertIntegratedReturnPlan(plan, { expectedSourceHead: plan?.sourceHead });
@@ -2047,7 +2998,9 @@ export function operationalIntegratedReturnTransition({
       activatedAt: new Date(now).toISOString(),
       failureCode: null,
     };
-    assertOperationalActivationDocument(document);
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
     return Object.freeze({
       document,
       nextVersion: Number(expectedVersion) + 1,
@@ -2058,8 +3011,8 @@ export function operationalIntegratedReturnTransition({
     if (!SAFE_ID_PATTERN.test(String(failureCode ?? ''))) {
       throw new Error('Integrated return abort requires a bounded non-sensitive failure code');
     }
-    const legacyBootstrapSource = currentRow.payload.transitionKind
-      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover;
+    const legacyBootstrapSource = sealedBindingKind(currentRow.payload.sourceModelBinding)
+      === 'legacy-candidate-g';
     if (legacyBootstrapSource) {
       assertLegacyOperationalPendingSourceRestore({
         currentRow,
@@ -2075,6 +3028,7 @@ export function operationalIntegratedReturnTransition({
         sourceManifest,
         sourceVerification,
         model: 'candidate-g',
+        binding: currentRow.payload.sourceModelBinding,
         sourceHead: plan.sourceHead,
         label: 'Integrated return restored Candidate G source',
       });
@@ -2093,7 +3047,9 @@ export function operationalIntegratedReturnTransition({
       publicManifestSha256: sha256(sourceManifest),
       deploymentId: currentRow.payload.sourceDeploymentId,
     };
-    assertOperationalActivationDocument(document);
+    assertOperationalActivationDocument(document, {
+      allowSealedHistoricalBindings: true,
+    });
     return Object.freeze({ document, nextVersion: Number(expectedVersion) + 1 });
   }
   throw new Error('Unknown operational integrated return transition');
@@ -2132,8 +3088,7 @@ export function operationalPendingReconciliationClassification({
   }
   if (observedSha256 === currentRow.payload.sourcePublicManifestSha256) {
     const model = sealedBindingKind(currentRow.payload.sourceModelBinding);
-    if (currentRow.payload.transitionKind
-      === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover) {
+    if (sealedBindingKind(currentRow.payload.sourceModelBinding) === 'legacy-candidate-g') {
       assertLegacyCandidateGManifest(publicManifest,
         'Observed legacy Candidate G reconciliation source');
     } else {
@@ -2216,12 +3171,15 @@ export function operationalPendingReconciliationStabilization({
 
 export function operationalPendingReconciliationTransition({
   currentRow,
+  currentProfileRow = null,
   expectedVersion,
   publicManifest,
   observations,
   publicVerification = null,
   readiness = null,
   publicAudit = null,
+  candidatePlan = null,
+  integratedPlan = null,
   sourceAttestation = null,
   terminalEvidence = null,
   failureCode = null,
@@ -2244,6 +3202,13 @@ export function operationalPendingReconciliationTransition({
     currentRow,
     publicManifest,
   });
+  const historicalIntegrated = isHistoricalIntegratedMaintenanceDocument(currentRow.payload);
+  const historicalCandidate = sealedBindingKind(currentRow.payload.sourceModelBinding)
+    === 'candidate-g'
+    && sealedBindingKind(currentRow.payload.requestedModelBinding) === 'candidate-g'
+    && isCandidateRefreshTransitionKind(currentRow.payload.transitionKind)
+    && !sameBinding(currentRow.payload.sourceModelBinding, candidateModelBinding());
+  const integratedReturn = isIntegratedReturnPendingDocument(currentRow.payload);
   if (stabilization.action !== classification.action
     || stabilization.model !== classification.model) {
     throw new Error('Pending reconciliation is not stably observed at the final endpoint');
@@ -2253,6 +3218,18 @@ export function operationalPendingReconciliationTransition({
       throw new Error('Historical PENDING source abort requires a bounded failure code');
     }
     const sourceBinding = currentRow.payload.sourceModelBinding;
+    if (historicalIntegrated) {
+      assertHistoricalIntegratedPendingPlan(
+        integratedPlan,
+        currentRow,
+        currentProfileRow,
+        { allowSealedHistoricalTarget: true },
+      );
+    } else if (integratedReturn) {
+      assertIntegratedReturnPendingPlan(integratedPlan, currentRow);
+    } else if (historicalCandidate) {
+      assertCandidatePlanForPendingReconciliation(candidatePlan, currentRow);
+    }
     if (classification.model === 'legacy-candidate-g') {
       assertLegacyOperationalPendingSourceRestore({
         currentRow,
@@ -2321,8 +3298,24 @@ export function operationalPendingReconciliationTransition({
       currentRow.payload.requestedImplementationClosureSha256,
   });
   if (integrated) {
+    if (historicalIntegrated) {
+      assertHistoricalIntegratedPendingPlan(
+        integratedPlan,
+        currentRow,
+        currentProfileRow,
+        { allowSealedHistoricalTarget: true },
+      );
+    } else if (integratedReturn) {
+      assertIntegratedReturnPendingPlan(integratedPlan, currentRow, {
+        readiness,
+        publicManifest,
+        publicAudit,
+      });
+    }
     assertSealedIntegratedReadiness(readiness, currentRow.payload);
     assertSealedIntegratedPublicAudit(publicAudit, currentRow.payload);
+  } else {
+    assertCandidatePlanForPendingReconciliation(candidatePlan, currentRow);
   }
   if (!SAFE_ID_PATTERN.test(String(deploymentId ?? ''))) {
     throw new Error('Pending completion requires a bounded verified deployment id');
@@ -2347,7 +3340,8 @@ export function operationalPendingReconciliationTransition({
     nextVersion: Number(expectedVersion) + 1,
     reconciliation: classification,
     centralTargetProfile: integrated
-      ? Object.freeze(structuredClone(readiness.centralProfile)) : null,
+      ? Object.freeze(structuredClone(readiness.centralProfile))
+      : Object.freeze(structuredClone(candidatePlan.candidateTargetProfile)),
   });
 }
 
@@ -2543,7 +3537,11 @@ async function main() {
       profileRow: currentProfileRow,
       allowPending: true,
     });
-    if (options.output) await atomicWriteJson(options.output, resolved);
+    const readOutput = Object.freeze({
+      ...resolved,
+      bindingCurrent: operationalResolvedBindingCurrent(resolved),
+    });
+    if (options.output) await atomicWriteJson(options.output, readOutput);
     console.log(`Operational RavScore state read: ${resolved.status} version ${resolved.centralVersion}.`);
     return;
   }
@@ -2559,13 +3557,60 @@ async function main() {
     return;
   }
 
-  const candidateRefresh = ['refresh-begin', 'refresh-complete', 'refresh-abort']
-    .includes(options.command);
+  const historicalCandidateRefresh = [
+    'historical-refresh-begin',
+    'historical-refresh-complete',
+    'historical-refresh-abort',
+  ].includes(options.command);
+  const candidateRefresh = [
+    'refresh-begin',
+    'refresh-complete',
+    'refresh-abort',
+  ].includes(options.command) || historicalCandidateRefresh;
+  const integratedHistoricalMaintenance = [
+    'integrated-historical-maintenance-begin',
+    'integrated-historical-maintenance-complete',
+    'integrated-historical-maintenance-abort',
+  ].includes(options.command);
+  const legacyCandidateRefresh = [
+    'legacy-refresh-begin',
+    'legacy-refresh-complete',
+    'legacy-refresh-abort',
+  ].includes(options.command);
   const allowedEvents = ['schedule', 'push', 'workflow_dispatch'];
   if (process.env.GITHUB_REF !== 'refs/heads/main'
     || !allowedEvents.includes(process.env.GITHUB_EVENT_NAME)
     || !HEAD_PATTERN.test(String(process.env.GITHUB_SHA ?? ''))) {
     throw new Error('Only exact-main production workflows may mutate operational RavScore activation');
+  }
+  if (options.command === 'prepare-integrated-historical-maintenance') {
+    const [publicManifest, publicAudit, readiness] = await Promise.all([
+      readJsonOption(options, 'manifest', 'Historical integrated maintenance public manifest'),
+      readJsonOption(options, 'audit', 'Historical integrated maintenance public audit'),
+      checkedIntegratedReadinessForEnvironment(
+        process.env.GITHUB_SHA,
+        options['requested-implementation-closure-sha256'],
+      ),
+    ]);
+    const plan = prepareIntegratedHistoricalMaintenance({
+      currentRow,
+      currentProfileRow,
+      sourceHead: process.env.GITHUB_SHA,
+      publicManifest,
+      publicAudit,
+      readiness,
+      sourceImplementationClosureSha256:
+        options['source-implementation-closure-sha256'],
+      requestedImplementationClosureSha256:
+        options['requested-implementation-closure-sha256'],
+      eventName: process.env.GITHUB_EVENT_NAME,
+      ref: process.env.GITHUB_REF,
+      githubSha: process.env.GITHUB_SHA,
+    });
+    if (!options.output) throw new Error('Historical integrated maintenance plan output is required');
+    await atomicWriteJson(options.output, plan);
+    console.log(`Historical integrated maintenance plan sealed for central version ${plan.centralExpectedVersion}; private payload logged: false.`);
+    return;
   }
   if (options.command === 'prepare-integrated-return') {
     const [publicManifest, publicAudit, readiness] = await Promise.all([
@@ -2618,6 +3663,28 @@ async function main() {
     const publicAudit = stabilization.action === 'complete' && stabilization.model === 'integrated'
       ? await readJsonOption(options, 'audit', 'Sealed integrated reconciliation public audit')
       : null;
+    const historicalCandidateSourceAbort = sourceAbort
+      && stabilization.model === 'candidate-g'
+      && sealedBindingKind(currentRow.payload.sourceModelBinding) === 'candidate-g'
+      && sealedBindingKind(currentRow.payload.requestedModelBinding) === 'candidate-g'
+      && isCandidateRefreshTransitionKind(currentRow.payload.transitionKind)
+      && !sameBinding(currentRow.payload.sourceModelBinding, candidateModelBinding());
+    const candidatePlan = ((stabilization.action === 'complete'
+      && stabilization.model === 'candidate-g') || historicalCandidateSourceAbort)
+      ? await readJsonOption(options, 'plan',
+        'Immutable Candidate G reconciliation plan')
+      : null;
+    const historicalIntegratedReconciliation =
+      isHistoricalIntegratedMaintenanceDocument(currentRow.payload)
+      && (stabilization.action === 'complete' || sourceAbort);
+    const integratedReturnReconciliation =
+      isIntegratedReturnPendingDocument(currentRow.payload)
+      && (stabilization.action === 'complete' || sourceAbort);
+    const integratedPlan = historicalIntegratedReconciliation
+      || integratedReturnReconciliation
+      ? await readJsonOption(options, 'plan',
+        'Immutable integrated reconciliation plan')
+      : null;
     const sourceAttestation = sourceAbort && stabilization.model === 'legacy-candidate-g'
       ? await readJsonOption(options, 'source-attestation',
         'Sealed legacy source reconciliation attestation')
@@ -2628,12 +3695,15 @@ async function main() {
       : null;
     transition = operationalPendingReconciliationTransition({
       currentRow,
+      currentProfileRow,
       expectedVersion:Number(options['expected-version']),
       publicManifest,
       observations,
       publicVerification,
       readiness,
       publicAudit,
+      candidatePlan,
+      integratedPlan,
       sourceAttestation,
       terminalEvidence,
       failureCode: options['failure-code'] ?? null,
@@ -2662,43 +3732,160 @@ async function main() {
     });
   } else {
     const plan = await readJsonOption(options, 'plan', 'Operational RavScore plan');
-    if (candidateRefresh) {
-    assertCandidateRefreshPlan(plan, {
-      expectedSourceHead: process.env.GITHUB_SHA,
-      expectedCentralVersion: options.command === 'refresh-begin'
-        ? Number(options['expected-version'])
-        : Number(options['expected-version']) - 1,
-    });
-    const requestedManifest = await readJsonOption(options, 'manifest',
-      'Candidate G refreshed public manifest');
-    const sourceManifest = options.command !== 'refresh-complete'
-      ? await readJsonOption(options, 'source-manifest', 'Candidate G refresh source manifest')
-      : null;
-    const sourceVerification = options.command !== 'refresh-complete'
-      ? await readJsonOption(options, 'source-verification',
-        'Candidate G refresh source verification')
-      : null;
-    const publicVerification = options.command === 'refresh-complete'
-      ? await readJsonOption(options, 'verification', 'Candidate G public deployment verification')
-      : null;
-    transition = operationalCandidateRefreshTransition({
-      action: options.command,
-      currentRow,
-      currentProfileRow,
-      expectedVersion: Number(options['expected-version']),
-      plan,
-      sourceManifest,
-      sourceVerification,
-      requestedManifest,
-      publicVerification,
-      sourceDeploymentId: options['source-deployment-id'] ?? 'public-source-observed',
-      deploymentId: options['deployment-id'] ?? null,
-      failureCode: options['failure-code'] ?? null,
-      terminalEvidence: options.command === 'refresh-abort'
-        ? await readJsonOption(options, 'terminal-evidence',
-          'Candidate G refresh terminal Pages evidence')
-        : null,
-    });
+    if (integratedHistoricalMaintenance) {
+      assertIntegratedHistoricalMaintenancePlan(plan, {
+        expectedSourceHead: process.env.GITHUB_SHA,
+        expectedCentralVersion: options.command === 'integrated-historical-maintenance-begin'
+          ? Number(options['expected-version'])
+          : Number(options['expected-version']) - 1,
+      });
+      const targetRequired =
+        options.command !== 'integrated-historical-maintenance-abort';
+      const sourceRequired =
+        options.command !== 'integrated-historical-maintenance-complete';
+      let publicManifest = null;
+      let publicAudit = null;
+      let readiness = null;
+      let publicVerification = null;
+      let sourceManifest = null;
+      let sourceVerification = null;
+      if (targetRequired) {
+        [publicManifest, publicAudit, readiness] = await Promise.all([
+          readJsonOption(options, 'manifest',
+            'Historical integrated maintenance target public manifest'),
+          readJsonOption(options, 'audit',
+            'Historical integrated maintenance target public audit'),
+          checkedIntegratedReadinessForEnvironment(
+            process.env.GITHUB_SHA,
+            plan.requestedImplementationClosureSha256,
+          ),
+        ]);
+        if (options.command === 'integrated-historical-maintenance-complete') {
+          publicVerification = await readJsonOption(options, 'verification',
+            'Historical integrated maintenance target public verification');
+        }
+      }
+      if (sourceRequired) {
+        [sourceManifest, sourceVerification] = await Promise.all([
+          readJsonOption(options, 'source-manifest',
+            'Historical integrated maintenance source public manifest'),
+          readJsonOption(options, 'source-verification',
+            'Historical integrated maintenance source public verification'),
+        ]);
+      }
+      transition = operationalIntegratedHistoricalMaintenanceTransition({
+        action: options.command,
+        currentRow,
+        currentProfileRow,
+        expectedVersion: Number(options['expected-version']),
+        plan,
+        readiness,
+        publicManifest,
+        publicAudit,
+        publicVerification,
+        sourceManifest,
+        sourceVerification,
+        deploymentId: options['deployment-id'] ?? null,
+        failureCode: options['failure-code'] ?? null,
+        terminalEvidence:
+          options.command === 'integrated-historical-maintenance-abort'
+            ? await readJsonOption(options, 'terminal-evidence',
+              'Historical integrated maintenance terminal Pages evidence')
+            : null,
+      });
+    } else if (legacyCandidateRefresh) {
+      if (!['schedule', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME)) {
+        throw new Error('Legacy Candidate G pre-cutover refresh may only run on a non-push production event');
+      }
+      assertLegacyCandidateRefreshPlan(plan, {
+        expectedSourceHead: process.env.GITHUB_SHA,
+        expectedCentralVersion: options.command === 'legacy-refresh-begin'
+          ? Number(options['expected-version'])
+          : Number(options['expected-version']) - 1,
+      });
+      const requestedManifest = options.command !== 'legacy-refresh-abort'
+        ? await readJsonOption(options, 'manifest',
+          'Legacy Candidate G refresh requested public manifest')
+        : null;
+      const requiresLegacySource = options.command !== 'legacy-refresh-complete';
+      const sourceManifest = requiresLegacySource
+        ? await readJsonOption(options, 'source-manifest',
+          'Legacy Candidate G refresh source manifest')
+        : null;
+      const sourceAttestation = requiresLegacySource
+        ? await readJsonOption(options, 'source-attestation',
+          'Legacy Candidate G refresh source attestation')
+        : null;
+      const sourceVerification = requiresLegacySource
+        ? await readJsonOption(options, 'source-verification',
+          'Legacy Candidate G refresh source verification')
+        : null;
+      const publicVerification = options.command === 'legacy-refresh-complete'
+        ? await readJsonOption(options, 'verification',
+          'Legacy Candidate G refresh target verification')
+        : null;
+      transition = operationalLegacyCandidateRefreshTransition({
+        action: options.command,
+        currentRow,
+        currentProfileRow,
+        expectedVersion: Number(options['expected-version']),
+        plan,
+        sourceManifest,
+        sourceAttestation,
+        sourceVerification,
+        requestedManifest,
+        publicVerification,
+        sourceDeploymentId: options['source-deployment-id'] ?? null,
+        deploymentId: options['deployment-id'] ?? null,
+        failureCode: options['failure-code'] ?? null,
+        terminalEvidence: options.command === 'legacy-refresh-abort'
+          ? await readJsonOption(options, 'terminal-evidence',
+            'Legacy Candidate G refresh terminal Pages evidence')
+          : null,
+      });
+    } else if (candidateRefresh) {
+      const normalizedRefreshCommand = historicalCandidateRefresh
+        ? options.command.replace('historical-', '') : options.command;
+      const assertRefreshPlan = historicalCandidateRefresh
+        ? assertHistoricalCandidateRefreshPlan : assertCandidateRefreshPlan;
+      assertRefreshPlan(plan, {
+        expectedSourceHead: process.env.GITHUB_SHA,
+        expectedCentralVersion: normalizedRefreshCommand === 'refresh-begin'
+          ? Number(options['expected-version'])
+          : Number(options['expected-version']) - 1,
+      });
+      const requestedManifest = normalizedRefreshCommand !== 'refresh-abort'
+        ? await readJsonOption(options, 'manifest',
+          'Candidate G refreshed public manifest')
+        : null;
+      const sourceManifest = normalizedRefreshCommand !== 'refresh-complete'
+        ? await readJsonOption(options, 'source-manifest', 'Candidate G refresh source manifest')
+        : null;
+      const sourceVerification = normalizedRefreshCommand !== 'refresh-complete'
+        ? await readJsonOption(options, 'source-verification',
+          'Candidate G refresh source verification')
+        : null;
+      const publicVerification = normalizedRefreshCommand === 'refresh-complete'
+        ? await readJsonOption(options, 'verification', 'Candidate G public deployment verification')
+        : null;
+      transition = operationalCandidateRefreshTransition({
+        action: options.command,
+        currentRow,
+        currentProfileRow,
+        expectedVersion: Number(options['expected-version']),
+        plan,
+        sourceManifest,
+        sourceVerification,
+        requestedManifest,
+        publicVerification,
+        sourceDeploymentId: options['source-deployment-id'] ?? 'public-source-observed',
+        deploymentId: options['deployment-id'] ?? null,
+        failureCode: options['failure-code'] ?? null,
+        terminalEvidence: normalizedRefreshCommand === 'refresh-abort'
+          ? await readJsonOption(options, 'terminal-evidence',
+            'Candidate G refresh terminal Pages evidence')
+          : null,
+      });
     } else if (['return-begin', 'return-complete', 'return-abort'].includes(options.command)) {
       assertIntegratedReturnPlan(plan, { expectedSourceHead: process.env.GITHUB_SHA });
       const initialCutover = plan.transitionKind
@@ -2736,7 +3923,7 @@ async function main() {
           readJsonOption(options, 'source-verification',
             'Integrated transition source public verification'),
         ]);
-        if (initialCutover) {
+        if (plan.legacySourceRequired) {
           sourceAttestation = await readJsonOption(options, 'source-attestation',
             'Legacy Candidate G source attestation');
         }

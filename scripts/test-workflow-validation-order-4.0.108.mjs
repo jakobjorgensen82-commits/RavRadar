@@ -149,6 +149,9 @@ for (const [name, marker] of Object.entries({
 if (!packageScripts['test:ravscore-integrated']?.includes('npm run test:protected-ravscore-checkpoint')) {
   throw new Error('Den integrerede RavScore-testkæde skal inkludere protected checkpoint-kontrakten.');
 }
+if (!packageScripts['test:candidate-g-operational-rollback']?.includes('scripts/test-ravscore-operational-pages-recovery.mjs')) {
+  throw new Error('Den operationelle RavScore-suite skal inkludere exact-target Pages-recoveryhelperen.');
+}
 if (!packageScripts.validate?.includes('npm run test:production-runtime-privacy')
   || !packageScripts.validate?.includes('npm run test:hydrated-atomic-dataset')) {
   throw new Error('Fuld validering skal håndhæve privat runtime-/Pages-beskyttelse og legacy-only hydration.');
@@ -766,9 +769,11 @@ for (const forbidden of [
 for (const marker of [
   'legacy-candidate-g)',
   'test "$INITIAL_CUTOVER_REQUIRED" = "true"',
-  'test "$GITHUB_EVENT_NAME" = "push"',
+  'test "$LEGACY_SOURCE_REQUIRED" = "true"',
+  'if [ "$GITHUB_EVENT_NAME" = "push" ]; then',
   'action="integrated-cutover"',
-  "if: steps.operational-action.outputs.action == 'integrated-cutover'",
+  'action="candidate-legacy-maintenance"',
+  "steps.operational-action.outputs.action == 'candidate-legacy-maintenance'",
   'node scripts/verify-legacy-candidate-g-source.mjs attest',
   'node scripts/verify-legacy-candidate-g-source.mjs verify',
   '--attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"',
@@ -828,7 +833,7 @@ if (/ravscore_active_shadow|ravscore-active-shadow:|ravradar-active-ravscore-sha
 }
 const candidateRollbackStage = text.slice(
   text.indexOf('name: Seal Candidate G rollback or maintenance plan from the fresh private runtime'),
-  text.indexOf('name: Seal integrated return or initial cutover plan after backend and public gates'),
+  text.indexOf('name: Seal integrated return, initial cutover or historical maintenance plan after backend and public gates'),
 );
 for (const marker of [
   "startsWith(steps.operational-action.outputs.action, 'candidate-')",
@@ -839,8 +844,66 @@ for (const marker of [
   '--source-implementation-closure-sha256 "$source_closure_sha256"',
   '--requested-implementation-closure-sha256 "$requested_closure_sha256"',
   'source_model="candidate-g"',
+  'source_model="historical-candidate-g"',
+  'jq \'.activeModelBinding\' "$RAVRADAR_OPERATIONAL_WORK/current.json"',
+  '--source-binding "$RAVRADAR_OPERATIONAL_WORK/source-binding.json"',
+  'source_model="legacy-candidate-g"',
+  'source_closure_sha256="${{ steps.legacy-source.outputs.implementation_closure_sha256 }}"',
 ]) {
   if (!candidateRollbackStage.includes(marker)) throw new Error(`Candidate-dry-run rollbackauditen mangler ${marker}`);
+}
+const operationalReadBlock = text.slice(
+  text.indexOf('name: Read exact centrally active operational RavScore'),
+  text.indexOf('name: Resolve one fail-closed operational model action'),
+);
+const bindingCurrentReadMarker =
+  'binding_current=$(jq -r \'.bindingCurrent\' "$RAVRADAR_OPERATIONAL_WORK/current.json")';
+if (!operationalReadBlock.includes(bindingCurrentReadMarker)
+  || !text.includes('operational_binding_current: ${{ steps.operational-model.outputs.binding_current }}')) {
+  throw new Error('Operational read/output mangler privacy-safe bindingCurrent.');
+}
+const operationalResolverBlock = text.slice(
+  text.indexOf('name: Resolve one fail-closed operational model action'),
+  text.indexOf('name: Set up Python preflight'),
+);
+for (const marker of [
+  'BINDING_CURRENT: ${{ steps.operational-model.outputs.binding_current }}',
+  'action="candidate-historical-maintenance"',
+  'action="integrated-historical-maintenance"',
+  'Historical integrated binding must be upgraded before Candidate G rollback planning.',
+  '[[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages(-recovery)?-[0-9]+-[0-9]+$ ]]',
+  'elif [ "$BINDING_CURRENT" = "true" ]; then',
+  'test "$BINDING_CURRENT" = "false"',
+]) {
+  if (!operationalResolverBlock.includes(marker)) {
+    throw new Error(`Historical H0→H1 actionresolver mangler ${marker}`);
+  }
+}
+const initialCandidateResolver = operationalResolverBlock.slice(
+  operationalResolverBlock.indexOf('if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then'),
+  operationalResolverBlock.indexOf('if [ "$ROLLBACK_MODE" != "none" ]; then',
+    operationalResolverBlock.indexOf('if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then')),
+);
+if (!(initialCandidateResolver.indexOf('if [ "$GITHUB_EVENT_NAME" = "push" ]; then')
+  < initialCandidateResolver.indexOf('action="integrated-cutover"')
+  && initialCandidateResolver.indexOf('action="integrated-cutover"')
+    < initialCandidateResolver.indexOf('action="candidate-historical-maintenance"'))) {
+  throw new Error('Historical Candidate H0 skal fortsat kunne gå direkte til current integrated ved exact push-cutover.');
+}
+const integratedHistoricalPlanBlock = text.slice(
+  text.indexOf('name: Seal integrated return, initial cutover or historical maintenance plan after backend and public gates'),
+  text.indexOf('name: Generate implementation and coverage audit'),
+);
+for (const marker of [
+  "steps.operational-action.outputs.action == 'integrated-historical-maintenance'",
+  'prepare_command="prepare-integrated-historical-maintenance"',
+  'ravscore-operational-activation.mjs "$prepare_command"',
+  '--source-implementation-closure-sha256 "$source_closure_sha256"',
+  '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
+]) {
+  if (!integratedHistoricalPlanBlock.includes(marker)) {
+    throw new Error(`Historical integrated immutable plan mangler ${marker}`);
+  }
 }
 const candidateRefreshBegin = text.indexOf('name: Begin scheduled Candidate G refresh with exact central CAS');
 const pagesDeploy = text.indexOf('name: Deploy to GitHub Pages', candidateRefreshBegin);
@@ -859,6 +922,155 @@ for (const marker of [
 ]) {
   if (!candidateRefreshBeginBlock.includes(marker)) throw new Error(`Candidate G refresh-begin mangler ${marker}`);
 }
+const legacyRefreshBegin = text.indexOf('name: Begin legacy-to-current Candidate G refresh with exact central CAS');
+const legacyRefreshComplete = text.indexOf('name: Complete legacy-to-current Candidate G refresh only after public verification');
+if (!(legacyRefreshBegin >= 0 && legacyRefreshBegin < pagesDeploy
+  && pagesDeploy < legacyRefreshComplete)) {
+  throw new Error('Legacy Candidate G scheduler-maintenance skal være legacy-refresh-begin → Pages → legacy-refresh-complete.');
+}
+const legacyRefreshBeginBlock = text.slice(legacyRefreshBegin,
+  text.indexOf('\n      - name:', legacyRefreshBegin + 1));
+for (const marker of [
+  'ravscore-operational-activation.mjs legacy-refresh-begin',
+  '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
+  '--source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"',
+  '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
+  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
+]) {
+  if (!legacyRefreshBeginBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-begin mangler ${marker}`);
+}
+const legacyRefreshCompleteBlock = text.slice(legacyRefreshComplete,
+  text.indexOf('\n      - name:', legacyRefreshComplete + 1));
+for (const marker of [
+  'ravscore-operational-activation.mjs legacy-refresh-complete',
+  '--verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"',
+  '--deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"',
+]) {
+  if (!legacyRefreshCompleteBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-complete mangler ${marker}`);
+}
+if (!text.includes("steps.candidate-legacy-refresh-begin.outcome == 'success'")) {
+  throw new Error('En tvetydig legacy Candidate G refresh skal altid gå gennem offentlig identitetsreconciliation.');
+}
+const historicalCandidateBegin = text.indexOf(
+  'name: Begin historical-to-current Candidate G maintenance with exact central CAS',
+);
+const historicalCandidateComplete = text.indexOf(
+  'name: Complete historical-to-current Candidate G maintenance only after public verification',
+);
+if (!(historicalCandidateBegin >= 0 && historicalCandidateBegin < pagesDeploy
+  && pagesDeploy < historicalCandidateComplete)) {
+  throw new Error('Historical Candidate maintenance skal være planforseglet begin → Pages → exact-target complete.');
+}
+for (const [sectionStart, sectionEnd, markers, label] of [
+  [
+    historicalCandidateBegin,
+    text.indexOf('\n      - name:', historicalCandidateBegin + 1),
+    [
+      "if: needs.build-and-prepare.outputs.operational_action == 'candidate-historical-maintenance'",
+      'ravscore-operational-activation.mjs historical-refresh-begin',
+      '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
+      '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
+      '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
+    ],
+    'Historical Candidate begin',
+  ],
+  [
+    historicalCandidateComplete,
+    text.indexOf('\n      - name:', historicalCandidateComplete + 1),
+    [
+      'ravscore-operational-activation.mjs historical-refresh-complete',
+      '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
+      '--verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"',
+    ],
+    'Historical Candidate complete',
+  ],
+]) {
+  const section = text.slice(sectionStart, sectionEnd);
+  for (const marker of markers) {
+    if (!section.includes(marker)) throw new Error(`${label} mangler ${marker}`);
+  }
+}
+const historicalIntegratedBegin = text.indexOf(
+  'name: Begin historical-to-current integrated maintenance with exact central CAS',
+);
+const historicalIntegratedComplete = text.indexOf(
+  'name: Complete historical-to-current integrated maintenance only after public verification',
+);
+if (!(historicalIntegratedBegin >= 0 && historicalIntegratedBegin < pagesDeploy
+  && pagesDeploy < historicalIntegratedComplete)) {
+  throw new Error('Historical integrated maintenance skal være planforseglet begin → Pages → exact-target complete.');
+}
+for (const [sectionStart, sectionEnd, markers, label] of [
+  [
+    historicalIntegratedBegin,
+    text.indexOf('\n      - name:', historicalIntegratedBegin + 1),
+    [
+      'ravscore-operational-activation.mjs integrated-historical-maintenance-begin',
+      '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
+      '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
+      '--source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"',
+      '--audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"',
+    ],
+    'Historical integrated begin',
+  ],
+  [
+    historicalIntegratedComplete,
+    text.indexOf('\n      - name:', historicalIntegratedComplete + 1),
+    [
+      'ravscore-operational-activation.mjs integrated-historical-maintenance-complete',
+      '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
+      '--verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"',
+      '--audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"',
+    ],
+    'Historical integrated complete',
+  ],
+]) {
+  const section = text.slice(sectionStart, sectionEnd);
+  for (const marker of markers) {
+    if (!section.includes(marker)) throw new Error(`${label} mangler ${marker}`);
+  }
+}
+const historicalSourceRestore = text.slice(
+  text.indexOf('name: Restore the exact sealed active source implementation'),
+  text.indexOf('name: Upload privacy-safe source evidence before any activation CAS'),
+);
+for (const marker of [
+  "operational_action == 'candidate-historical-maintenance'",
+  "operational_action == 'integrated-historical-maintenance'",
+  'candidate-historical-maintenance) source_model="candidate-g"',
+  'integrated-historical-maintenance) source_model="integrated"',
+]) {
+  if (!historicalSourceRestore.includes(marker)) {
+    throw new Error(`Historical source restore/verification mangler ${marker}`);
+  }
+}
+const failedTransitionReconcile = text.slice(
+  text.indexOf('name: Reconcile an ambiguous failed transition from observed public identity'),
+  text.indexOf('name: Seal exact verified deployment terminal'),
+);
+for (const marker of [
+  "steps.candidate-historical-refresh-begin.outcome == 'success'",
+  "steps.integrated-historical-maintenance-begin.outcome == 'success'",
+  'source_args+=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")',
+  'completion_args=(',
+  'if [ "$(jq -r \'.requestedModel\' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" = "integrated" ]; then',
+  'elif [ "$model" = "candidate-g" ]',
+  'ravscore-operational-activation.mjs reconcile',
+  '--terminal-evidence "$RAVRADAR_OPERATIONAL_HANDOFF/terminal-evidence.json"',
+]) {
+  if (!failedTransitionReconcile.includes(marker)) {
+    throw new Error(`Historical failure reconcile/abort mangler ${marker}`);
+  }
+}
+const integratedCompletionArgs = failedTransitionReconcile.slice(
+  failedTransitionReconcile.indexOf('if [ "$model" = "integrated" ]; then'),
+  failedTransitionReconcile.indexOf('else\n              test "$model" = "candidate-g"'),
+);
+if (!integratedCompletionArgs.includes(
+  '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
+)) {
+  throw new Error('Alle integrated targets, herunder direct H0 Candidate→H1, skal reconciles mod IntegratedReturnPlan.');
+}
 const integratedMaintenance = text.indexOf('name: Reseal ordinary integrated production without changing model identity');
 if (!(integratedMaintenance > pagesDeploy)
   || !text.slice(integratedMaintenance, text.indexOf('\n      - name:', integratedMaintenance + 1))
@@ -866,14 +1078,235 @@ if (!(integratedMaintenance > pagesDeploy)
   throw new Error('Almindelig integreret produktion skal reseales efter Pages uden en femte transitionstype.');
 }
 for (const marker of [
-  '--observations "$RAVRADAR_OPERATIONAL_WORK/observations.json"',
+  '--observations "$RAVRADAR_OPERATIONAL_WORK/activation-observations.json"',
   '--readiness "$RAVRADAR_OPERATIONAL_WORK/handoff/integrated-readiness.json"',
   '--audit "$RAVRADAR_OPERATIONAL_WORK/handoff/public-audit.json"',
   'ravscore-operational-pages-attempt-terminal-v1',
   'ravscore-operational-recovery-$attempt_run_id-$attempt_number',
   'deploy_step_conclusion',
+  'candidate-execute|candidate-maintenance|candidate-historical-maintenance|candidate-legacy-maintenance)',
+  'integrated|integrated-historical-maintenance|integrated-return|integrated-cutover)',
 ]) {
   if (!text.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
+}
+
+const operationalRecoveryPositions = {
+  reconcile: text.indexOf('\n  reconcile-operational-pending:'),
+  writer: text.indexOf('\n  recover-operational-pages-target:'),
+  finalizer: text.indexOf('\n  finalize-operational-pages-recovery:'),
+  gate: text.indexOf('\n  operational-recovery-gate:'),
+  currentHour: text.indexOf('\n  current-hour-readiness:'),
+};
+assert.deepEqual(
+  Object.values(operationalRecoveryPositions).map((position) => position >= 0),
+  [true, true, true, true, true],
+  'Den todelte operationelle Pages-recoverykæde skal være komplet.',
+);
+assert.ok(
+  operationalRecoveryPositions.reconcile < operationalRecoveryPositions.writer
+    && operationalRecoveryPositions.writer < operationalRecoveryPositions.finalizer
+    && operationalRecoveryPositions.finalizer < operationalRecoveryPositions.gate
+    && operationalRecoveryPositions.gate < operationalRecoveryPositions.currentHour,
+  'Recovery skal være classify → Pages-writer → non-Pages CAS-finalizer → terminal gate → current-hour.',
+);
+const operationalReconcileSection = text.slice(
+  operationalRecoveryPositions.reconcile,
+  operationalRecoveryPositions.writer,
+);
+const operationalWriterSection = text.slice(
+  operationalRecoveryPositions.writer,
+  operationalRecoveryPositions.finalizer,
+);
+const operationalFinalizerSection = text.slice(
+  operationalRecoveryPositions.finalizer,
+  operationalRecoveryPositions.gate,
+);
+const operationalRecoveryGateSection = text.slice(
+  operationalRecoveryPositions.gate,
+  operationalRecoveryPositions.currentHour,
+);
+const geometryExclusion = "if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true))";
+if (!operationalReconcileSection.includes(geometryExclusion)
+  || operationalReconcileSection.includes('GEOMETRY_ONLY')) {
+  throw new Error('Geometry-dispatches skal være helt udelukket fra reconcile/recovery-jobbet.');
+}
+for (const marker of [
+  "needs.reconcile-operational-pending.result == 'success'",
+  "needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'",
+  'pages: write',
+  'id-token: write',
+  'environment:\n      name: github-pages',
+  'uses: actions/configure-pages@v6',
+  'name: github-pages-recovery-${{ github.run_id }}-${{ github.run_attempt }}',
+  'artifact_name: github-pages-recovery-${{ github.run_id }}-${{ github.run_attempt }}',
+  'retention-days: 14',
+  'name: ravscore-operational-recovery-handoff-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  if (!operationalWriterSection.includes(marker)) throw new Error(`Den isolerede Pages-writer mangler ${marker}`);
+}
+for (const forbidden of ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'ravscore-operational-activation.mjs']) {
+  if (operationalWriterSection.includes(forbidden)) {
+    throw new Error(`Pages-writeren må ikke have central state-adgang: ${forbidden}`);
+  }
+}
+for (const marker of [
+  'name: Finalize exact recovered target without Pages privileges',
+  'name: ${{ needs.reconcile-operational-pending.outputs.recovery_bundle_name }}',
+  'name: ravscore-operational-recovery-handoff-${{ github.run_id }}-${{ github.run_attempt }}',
+  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
+  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  'node scripts/ravscore-operational-pages-recovery.mjs',
+  'node scripts/verify-ravscore-operational-pages-deployment.mjs',
+  'node scripts/ravscore-operational-activation.mjs reconcile',
+  '--deployment-id "pages-recovery-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"',
+]) {
+  if (!operationalFinalizerSection.includes(marker)) throw new Error(`Den centrale recovery-finalizer mangler ${marker}`);
+}
+for (const forbidden of ['pages: write', 'id-token: write', 'environment:\n      name: github-pages', 'pattern:', 'merge-multiple:']) {
+  if (operationalFinalizerSection.includes(forbidden)) {
+    throw new Error(`Den centrale finalizer må ikke have bred Pages/artifact-adgang: ${forbidden}`);
+  }
+}
+for (const marker of [
+  'if [ "$(jq -r \'.requestedModel\' "$RAVRADAR_OPERATIONAL_WORK/current-before-cas.json")" = "integrated" ]; then',
+  'completion_args+=(--plan "$handoff/plan.json")',
+]) {
+  if (!operationalFinalizerSection.includes(marker)) {
+    throw new Error(`Recovery-finalizer skal route direct Candidate H0→integrated efter requestedModel: ${marker}`);
+  }
+}
+for (const marker of [
+  '- finalize-operational-pages-recovery',
+  'GEOMETRY_ONLY:',
+  'test "$RECONCILE_RESULT" = "skipped"',
+  'test "$EXACT_TARGET_RESULT" = "skipped"',
+  'test "$FINALIZE_RESULT" = "skipped"',
+  'test "$FINALIZE_RESULT" = "success"',
+]) {
+  if (!operationalRecoveryGateSection.includes(marker)) throw new Error(`Recovery-terminalgaten mangler ${marker}`);
+}
+if (!text.slice(operationalRecoveryPositions.currentHour).startsWith('\n  current-hour-readiness:\n')
+  || !text.slice(operationalRecoveryPositions.currentHour, text.indexOf('\n  trip-storage-readiness:', operationalRecoveryPositions.currentHour))
+    .includes('needs: operational-recovery-gate')) {
+  throw new Error('Current-hour må ikke starte før recovery-finalizeren er terminalt grøn/skipped.');
+}
+
+function assertMarkersOrdered(section, markers, label) {
+  let cursor = -1;
+  for (const marker of markers) {
+    const position = section.indexOf(marker, cursor + 1);
+    if (position < 0 || position <= cursor) {
+      throw new Error(`${label} mangler ordnet markør: ${marker}`);
+    }
+    cursor = position;
+  }
+}
+for (const marker of [
+  'actions/artifacts/$artifact_id/zip',
+  'actions/runs/$attempt_run_id/attempts/$attempt_number',
+  'actions/runs/$attempt_run_id/attempts/$attempt_number/jobs?per_page=100',
+  '.run_attempt == $runAttempt',
+  '[.jobs[]? | select(.name == "Deploy prepared Pages artifact"',
+  '.steps[]? | select(.name == "Deploy to GitHub Pages")',
+  'test "$deploy_job_count" -eq 1',
+  'test "$deploy_step_count" -eq 1',
+  '--artifact-seal "$artifact_seal"',
+  '--artifact-evidence "$RAVRADAR_OPERATIONAL_WORK/artifact-evidence.json"',
+  '--terminal-evidence "$RAVRADAR_OPERATIONAL_WORK/terminal-evidence-v2.json"',
+  'EXACT_TARGET_REDEPLOY',
+  'TARGET_RECONCILE',
+  'SAFE_SOURCE_ABORT',
+]) {
+  if (!operationalReconcileSection.includes(marker)) throw new Error(`Recovery-classifierjobbet mangler ${marker}`);
+}
+for (const marker of [
+  'if [ "$(jq -r \'.requestedModel\' "$RAVRADAR_OPERATIONAL_WORK/current.json")" = "integrated" ]; then',
+  'completion_args+=(--plan "$RAVRADAR_OPERATIONAL_WORK/handoff/plan.json")',
+]) {
+  if (!operationalReconcileSection.includes(marker)) {
+    throw new Error(`TARGET_RECONCILE skal route direct Candidate H0→integrated efter requestedModel: ${marker}`);
+  }
+}
+assertMarkersOrdered(operationalReconcileSection, [
+  'sealed_artifact_digest_raw=',
+  'test "$artifact_digest_sha256" = "$sealed_artifact_digest_sha256"',
+  'downloaded_zip_sha256=',
+  'test "$downloaded_zip_sha256" = "$sealed_artifact_digest_sha256"',
+  'test "$(unzip -Z1 "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip" | wc -l)" -eq 1',
+  'unzip -q "$RAVRADAR_OPERATIONAL_WORK/original-pages.zip"',
+  'python3 - "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar"',
+  'tar --extract',
+], 'Recovery-classifierens seal→REST→raw ZIP→sikker extraction');
+assertMarkersOrdered(operationalWriterSection, [
+  'downloaded_zip_sha256=',
+  'sealed_artifact_digest_raw=',
+  'test "$downloaded_zip_sha256" = "$sealed_artifact_digest_sha256"',
+  'artifactSizeBytes | select(type == "number" and . > 0 and floor == .)',
+  'test "$(unzip -Z1 "$bundle/original-pages.zip" | wc -l)" -eq 1',
+  'unzip -q "$bundle/original-pages.zip"',
+  'python3 - "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar"',
+  'tar --extract',
+], 'Pages-writerens seal→raw ZIP→sikker extraction');
+const pagesArtifactUploadPosition = text.indexOf('name: Upload GitHub Pages artifact');
+const pagesArtifactSealPosition = text.indexOf('name: Resolve and seal the exact uploaded Pages artifact');
+const handoffAfterSealPosition = text.indexOf('name: Upload privacy-safe operational handoff evidence after Pages artifact seal');
+const firstActivationCasPosition = Math.min(...[
+  'node scripts/ravscore-operational-activation.mjs begin',
+  'node scripts/ravscore-operational-activation.mjs refresh-begin',
+  'node scripts/ravscore-operational-activation.mjs legacy-refresh-begin',
+  'node scripts/ravscore-operational-activation.mjs return-begin',
+].map((marker) => text.indexOf(marker)).filter((position) => position >= 0));
+if (!(pagesArtifactUploadPosition < pagesArtifactSealPosition
+  && pagesArtifactSealPosition < handoffAfterSealPosition
+  && handoffAfterSealPosition < firstActivationCasPosition)) {
+  throw new Error('Pages artifact-id/digest/størrelse skal forsegles og handoffes før første activation CAS.');
+}
+const sourceRestoreSection = text.slice(
+  text.indexOf('name: Restore the exact sealed active source implementation'),
+  text.indexOf('\n      - name:', text.indexOf('name: Restore the exact sealed active source implementation') + 1),
+);
+for (const marker of [
+  '^pages-([0-9]+)-([0-9]+)$',
+  'ravscore-operational-handoff-$source_run_id-$source_attempt',
+  '^pages-recovery-([0-9]+)-([0-9]+)$',
+  'ravscore-operational-recovery-handoff-$source_run_id-$source_attempt',
+  'gh run download "$source_run_id"',
+  '--name "$source_handoff_name"',
+]) {
+  if (!sourceRestoreSection.includes(marker)) throw new Error(`Recovery-lineage kan ikke blive næste eksakte source: ${marker}`);
+}
+const recoveryConcurrencySection = text.slice(text.indexOf('\nconcurrency:'), text.indexOf('\njobs:'));
+for (const marker of [
+  "inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national'",
+  "inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot'",
+  "'ravradar-weather-production'",
+  'cancel-in-progress: false',
+]) {
+  if (!recoveryConcurrencySection.includes(marker)) throw new Error(`Event×group-kontrakten mangler ${marker}`);
+}
+const recoveryEventMatrix = [
+  { eventName: 'push', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
+  { eventName: 'schedule', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
+  { eventName: 'workflow_dispatch', pilot: false, national: false, group: 'ravradar-weather-production', reconcile: true },
+  { eventName: 'workflow_dispatch', pilot: true, national: false, group: 'ravradar-geometry-v2-pilot', reconcile: false },
+  { eventName: 'workflow_dispatch', pilot: false, national: true, group: 'ravradar-geometry-v2-national', reconcile: false },
+];
+for (const event of recoveryEventMatrix) {
+  const geometryOnly = event.eventName === 'workflow_dispatch' && (event.pilot || event.national);
+  const evaluatedGroup = event.eventName === 'workflow_dispatch' && event.national
+    ? 'ravradar-geometry-v2-national'
+    : event.eventName === 'workflow_dispatch' && event.pilot
+      ? 'ravradar-geometry-v2-pilot'
+      : 'ravradar-weather-production';
+  const reconcileRuns = !geometryOnly;
+  assert.equal(evaluatedGroup, event.group, `Forkert concurrency-gruppe for ${event.eventName}.`);
+  assert.equal(reconcileRuns, event.reconcile, `Forkert reconcile-job-if for ${event.eventName}.`);
+  if (geometryOnly) {
+    assert.equal(reconcileRuns, false);
+    assert.ok(operationalRecoveryGateSection.includes('test "$RECONCILE_RESULT" = "skipped"'));
+    assert.ok(operationalRecoveryGateSection.includes('test "$EXACT_TARGET_RESULT" = "skipped"'));
+    assert.ok(operationalRecoveryGateSection.includes('test "$FINALIZE_RESULT" = "skipped"'));
+  }
 }
 const deploymentDecisionSection = text.slice(
   text.indexOf('name: Decide whether this sealed artifact may deploy'),
@@ -1156,6 +1589,11 @@ for (const marker of [
   'path: .workflow-outcome/production-outcome.json',
   'if-no-files-found: error',
   "if: always() && steps.classify.outputs.status == 'FAILED'",
+  'RAVRADAR_OUTCOME_JOB_RECOVERY_WRITER: ${{ needs.recover-operational-pages-target.result }}',
+  'RAVRADAR_OUTCOME_JOB_RECOVERY_FINALIZER: ${{ needs.finalize-operational-pages-recovery.result }}',
+  'RAVRADAR_OUTCOME_JOB_RECOVERY_GATE: ${{ needs.operational-recovery-gate.result }}',
+  'RAVRADAR_OUTCOME_RECOVERY_ACTION: ${{ needs.reconcile-operational-pending.outputs.recovery_action }}',
+  'RAVRADAR_OUTCOME_OPERATIONAL_ACTION: ${{ needs.build-and-prepare.outputs.operational_action }}',
   'exit 1',
 ]) {
   if (!outcomeSection.includes(marker)) throw new Error(`Produktionsslutstatusjobbet mangler ${marker}`);
@@ -1167,6 +1605,9 @@ const outcomeNeeds = [...outcomeSection.slice(
 assert.deepEqual(outcomeNeeds, [
   'validate-dispatch',
   'reconcile-operational-pending',
+  'recover-operational-pages-target',
+  'finalize-operational-pages-recovery',
+  'operational-recovery-gate',
   'current-hour-readiness',
   'trip-storage-readiness',
   'build-and-prepare',

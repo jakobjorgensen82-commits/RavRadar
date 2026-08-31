@@ -223,8 +223,12 @@ export function assertCandidateGRollbackContinuation(state, part,
 function candidateInitialState({
   previousCandidateGContinuation,
   legacyCandidateGMigrationState,
+  measuredColdStart,
   part,
 }) {
+  if (typeof measuredColdStart !== 'boolean') {
+    throw new Error('Candidate G rollback measured cold-start flag must be boolean');
+  }
   if (previousCandidateGContinuation !== null
     && previousCandidateGContinuation !== undefined
     && legacyCandidateGMigrationState !== null
@@ -235,7 +239,16 @@ function candidateInitialState({
   const legacy = legacyCandidateGMigrationState ?? null;
   const selected = previous ?? legacy;
   if (selected === null) {
+    if (measuredColdStart) {
+      return {
+        state: null,
+        source: 'VERIFIED_MEASURED_COLD_START',
+      };
+    }
     throw new Error('Candidate G rollback requires an exact previous private or one-time legacy continuation');
+  }
+  if (measuredColdStart) {
+    throw new Error('Candidate G rollback measured cold start may not be hybridized with state');
   }
   assertCandidateGRollbackContinuation(selected, part, previous
     ? 'Previous private Candidate G rollback continuation'
@@ -552,6 +565,7 @@ export function buildCandidateGRollbackPartScoreSeries({
   hourly = [],
   previousCandidateGContinuation = null,
   legacyCandidateGMigrationState = null,
+  measuredColdStart = false,
   nativeCadenceHoldHours = 0,
   nativeCadenceReferenceSample = null,
   scoreStartAt = null,
@@ -567,6 +581,7 @@ export function buildCandidateGRollbackPartScoreSeries({
   const rollbackInitialState = candidateInitialState({
     previousCandidateGContinuation,
     legacyCandidateGMigrationState,
+    measuredColdStart,
     part,
   });
   const candidateGState = buildSourceBoundCandidateGStateSeries(hourly.map(weather => ({

@@ -13,6 +13,7 @@ import { ravScoreModelBinding as integratedModelBinding } from '../js/core/ravsc
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY,
+  assertPreparedCandidateGOperationalRollback,
   prepareCandidateGOperationalRollback as prepareCandidateGOperationalRollbackRaw,
 } from './prepare-candidate-g-operational-rollback.mjs';
 import {
@@ -22,6 +23,9 @@ import {
 import {
   ravScoreModelBinding as candidateModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
+import {
+  legacyCandidateGControllerBinding,
+} from './lib/ravscore-legacy-candidate-g-source.mjs';
 
 const HOUR_MS = 3_600_000;
 const reference = '2026-08-29T12:00:00.000Z';
@@ -206,6 +210,13 @@ assert.equal(prepared.plan.schedulerActivationAllowed, false);
 assert.equal(prepared.plan.automaticActivationAllowed, false);
 assert.equal(prepared.plan.calibrationEligible, false);
 assert.equal(prepared.plan.activeModelBinding.modelId, CANDIDATE_G_STATE_MODEL_ID);
+assert.equal(prepared.plan.candidateTargetProfile.activeModelId,
+  CANDIDATE_G_STATE_MODEL_ID);
+assert.equal(prepared.plan.candidateTargetProfile.modelContractSha256,
+  prepared.plan.activeModelBinding.modelContractSha256);
+assert.equal(prepared.plan.candidateTargetProfile.modelBundleSha256,
+  prepared.plan.activeModelBinding.modelBundleSha256);
+assert.match(prepared.plan.candidateTargetProfileSha256, /^[0-9a-f]{64}$/);
 assert.match(prepared.plan.planSha256, /^[0-9a-f]{64}$/);
 assert.match(prepared.plan.candidateFullSha256, /^[0-9a-f]{64}$/);
 assert.equal(prepared.candidateFull.ravScoreCandidateGRollback, undefined);
@@ -213,6 +224,102 @@ assert.equal(prepared.candidateFull.coastalParts.modelBinding.modelId,
   CANDIDATE_G_STATE_MODEL_ID);
 assert.equal(Object.keys(prepared.candidateFull.coastalParts.zones).length, 210);
 assert.equal(Object.keys(prepared.candidateFull.coastalParts.parts).length, 673);
+assert.throws(() => assertPreparedCandidateGOperationalRollback(
+  prepared.candidateFull,
+  {
+    ...prepared.plan,
+    candidateTargetProfile: {
+      ...prepared.plan.candidateTargetProfile,
+      modelBundleSha256: '0'.repeat(64),
+    },
+  },
+), /plan seal is incompatible/,
+'the immutable plan must bind every Candidate target-profile byte');
+
+const historicalCandidateBinding = Object.freeze({
+  ...candidateModelBinding(),
+  modelContractSha256: 'd'.repeat(64),
+  modelBundleSha256: 'e'.repeat(64),
+});
+const historicalPrepared = prepareCandidateGOperationalRollback(fullRuntime(), {
+  expectedDatasetId: datasetId,
+  sourceHead,
+  sourceModel: 'historical-candidate-g',
+  sourceModelBinding: historicalCandidateBinding,
+  privateBundleContentSha256,
+  centralExpectedVersion: 17,
+  now: time(1),
+});
+assert.deepEqual(historicalPrepared.plan.sourceModelBinding,
+  historicalCandidateBinding);
+assert.deepEqual(historicalPrepared.plan.activeModelBinding, candidateModelBinding());
+assert.doesNotThrow(() => assertPreparedCandidateGOperationalRollback(
+  historicalPrepared.candidateFull,
+  historicalPrepared.plan,
+));
+assert.throws(() => prepareCandidateGOperationalRollback(fullRuntime(), {
+  expectedDatasetId: datasetId,
+  sourceHead,
+  sourceModel: 'candidate-g',
+  sourceModelBinding: historicalCandidateBinding,
+  privateBundleContentSha256,
+  centralExpectedVersion: 17,
+  now: time(1),
+}), /incompatible with source model candidate-g/,
+'ordinary Candidate preparation must never relabel a historical binding as current');
+assert.throws(() => prepareCandidateGOperationalRollback(fullRuntime(), {
+  expectedDatasetId: datasetId,
+  sourceHead,
+  sourceModel: 'historical-candidate-g',
+  sourceModelBinding: candidateModelBinding(),
+  privateBundleContentSha256,
+  centralExpectedVersion: 17,
+  now: time(1),
+}), /incompatible with source model historical-candidate-g/,
+'the historical bridge must require a binding distinct from current Candidate G');
+
+const legacyPrepared = prepareCandidateGOperationalRollback(fullRuntime(), {
+  expectedDatasetId: datasetId,
+  sourceHead,
+  sourceModel: 'legacy-candidate-g',
+  privateBundleContentSha256,
+  centralExpectedVersion: 0,
+  now: time(1),
+});
+assert.deepEqual(legacyPrepared.plan.sourceModelBinding,
+  legacyCandidateGControllerBinding());
+assert.doesNotThrow(() => assertPreparedCandidateGOperationalRollback(
+  legacyPrepared.candidateFull,
+  legacyPrepared.plan,
+  {
+    expectedMode: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.dryRunMode,
+    expectedSourceHead: sourceHead,
+    expectedDatasetId: datasetId,
+  },
+));
+assert.throws(() => assertPreparedCandidateGOperationalRollback(
+  legacyPrepared.candidateFull,
+  {
+    ...legacyPrepared.plan,
+    sourceModelBinding: candidateModelBinding(),
+  },
+), /plan seal is incompatible/,
+'a sealed legacy source plan may not be relabelled as modern Candidate G');
+
+assert.throws(() => prepareCandidateGOperationalRollback(fullRuntime(), {
+  expectedDatasetId: datasetId,
+  sourceHead,
+  sourceModel: 'legacy-candidate-g',
+  mode: 'execute',
+  eventName: 'workflow_dispatch',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+  confirmation: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.executeConfirmation,
+  privateBundleContentSha256,
+  centralExpectedVersion: 0,
+  now: time(1),
+}), /source model is incompatible/,
+'legacy Candidate G is maintenance input only and may never authorize rollback execute');
 
 assert.throws(() => prepareCandidateGOperationalRollback(fullRuntime(), {
   expectedDatasetId: datasetId,

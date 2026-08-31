@@ -1,5 +1,26 @@
 # AI Architecture Map – RavRadar
 
+## 2026-08-31 operational controller/recovery
+
+- `scripts/ravscore-operational-activation.mjs` og central schema-v4 controller holder 30 felter/4 statusser/6 kinds. `read.bindingCurrent` er et payloadfrit exact-binding-boolean. Candidate/integrated historical maintenance og direct Candidate→integrated er planforseglede; ordinary maintenance er exact-current.
+- `scripts/prepare-candidate-g-operational-rollback.mjs` forsegler Candidate targetprofil/digest i planen, aldrig i controlleren. Atomic controller+schema-3-profilread skal matche samme 11-felts aktive binding.
+- `scripts/ravscore-operational-pages-recovery.mjs` klassificerer `SAFE_SOURCE_ABORT`, `EXACT_TARGET_REDEPLOY`, `TARGET_RECONCILE` eller `FAIL_CLOSED`. Workflowet adskiller central classifier, Pages/id-token-writer, non-Pages central finalizer og recovery-gate. `pages-recovery-*` bliver næste restore-lineage.
+- Offentlig 118h-modekontrol tillader `HISTORY_INCOMPLETE` ved gyldige direct inputs, men direct missing forbliver timevis `UNAVAILABLE`. Outcome-v2 og P2-assistent/plain-language er lokalt synkroniseret og måltestet; exact-head-, produktions- og browserbevis er fortsat åbent.
+- Den regenererede 4.0.318-binding er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 filer/7 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1` over 54 filer. Outcome-v2 og P2-måltests er lokalt grønne; exact-head/produktion/browser udestår.
+- Ét aktivt 15-minutters kontroljob observerer og diagnosticerer vejrdrift før sikker reparation. Det tilføjer ingen repositoryscheduler, dubletvagthund eller blind redispatch.
+- Offentlig drift er fortsat Candidate G på `c58deb78`. `33345476979`/`rr-20260831010337-210` var første recoverybevis; seneste external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` bestod fuld DMI/validate/releasegate/storage/Pages og er komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples. 0/210 aktive zoner skyldes Candidate G's historikmemory; state-6-cutover og offentlig browserkontrol er åbne.
+
+## 4.0.318 first-cutover-arkitektur under DEC-0113
+
+- `scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap` henter public manifest, conditions og deres eksakte `coastal-parts-v2.json`; source-path/schema/210/673/zone-/delsæt og eventuelle bytes/SHA bindes. Source-registeret skrives kun til `.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json`; aktivt `data/live/coastal-parts-v2.json` røres ikke af sourcehydreringen.
+- `.github/workflows/update-and-deploy.yml` materialiserer det autoritative aktive coastal-part-register efter central adminsync/apply og før bootstrapresolveren. Denne tidlige materialisering bruger den eksisterende builder og ændrer ikke godkendt geometri eller punkter.
+- `scripts/resolve-candidate-g-wave-bootstrap-target.mjs` validerer 673 source-states mod source-registerets historiske stateKeys og det aktive register separat. Kun all-READY/same-context/common-target giver `candidate-g-migration`; canonical warmup eller source→active-contextændring giver ét nationalt `genuine-cold-start`. Output er kun mode, canonical UTC-time, 673 og source-attestation.
+- `scripts/lib/ravscore-recovery-replay.mjs` accepterer explicit genuine cold start kun med `source_validated=true`, tilstedeværende Candidate G-source og uden afviste integrerede kilder. Derefter fortsætter den eksisterende 0–48 measured-only state-6-replay med `HISTORY_INCOMPLETE`.
+- `scripts/lib/ravscore-candidate-g-rollback-runtime.mjs` og `scripts/lib/ravscore-production-part-pipeline.mjs` har en eksklusiv `VERIFIED_MEASURED_COLD_START`-vej for rollback-oraklet. Den kan ikke kombineres med continuation og skal selv opfylde Candidate G READY før companion/checkpoint/release.
+- Workflowet sender aggregate mode/source-attestation uændret til `update-weather.mjs`; DMI bruger samme mode/target. WAM-gaten kræver en grøn resolver. En eksisterende ikke-annulleret progressiv DMI-zonecache gemmes også efter en senere producentfejl.
+- Schedule/watchdog/manual run under uafsluttet first cutover vælger Candidate G-maintenance; kun push kan vælge integrated-cutover. Enhver source/resolverfejl stopper før dyr vejrhentning, scorebuild, protected writes, artifact, Pages og activation.
+- Run `33333490853` er det safe-fail-bevis, der motiverer arkitekturen, ikke releasebevis. Bot `33334709027` og pilot `33335078275` stoppede ligeledes før deploy/public mutation. 4.0.318 kræver fortsat exact-head, frisk fuld produktion og offentlig verifikation.
+
 ## 4.0.316 publiceringsarkitektur – optional fallback, streng primary
 
 - Den friske measured-only primary og last-verified fallback er to separate publiceringsinputs. Primary kan bygge current+fem døgn uden fallback, når alle egne input-, provenance-, 210/673-, accounting-, audit-, validate- og releasegates består.
@@ -69,7 +90,6 @@ Cloudflare-kontoen skal forblive Workers Free / $0 uden prepaid overflow. Kun `C
 ## Integreret RavScore-model, state og continuation
 
 - `js/core/ravscore-model-contract.js` – kanonisk kontrakt for `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` / state `6.0.0`, bounds-v5-profil/komponent/forklaring, `direction-broad-19-history-tie-v2`, `score-history-water-tie-earliest-v3` samt separat parameterkontrakt- og transitiv bundlehash. Schema 5 er kun historisk, aldrig-offentlig eksakt migrationskilde.
-- Slutbindinger – aktiv kontrakt/bundle er `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae` over 43 filer; Candidate G-rollback er separat `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207` over 54 filer. Den fulde lokale proportionale matrix er grøn; PR exact-head, frisk produktion og offentlig verifikation er fortsat åbne.
 - `js/core/ravscore-integrated.js` – samlet 20/50/30-beregning, hvor de 50 % ejes af `delivery=supply×factor` præcis én gang; direkte inputmissing bliver `UNAVAILABLE`, historikmissing giver konservativt `HISTORY_INCOMPLETE` med scoreBounds/coverage/reasons og ingen empirisk fundpåstand.
 - `js/core/ravscore-current-supply-memory.js` – +10/-8, 0,03→0,15 m/s, 24 timers fuld vægt og cosinusfade til 0 ved 48 timer med højst tre timers gap og 49 afledte evidenspunkter.
 - `js/core/ravscore-wave-mobilisation-state.js` – relativ `Hs² × T`, fire timers build, 48 timers decay, missing-/restart-/migrationkontrakt og højst én times recovery-credit.

@@ -47,9 +47,10 @@ for (const marker of [
   'Vind under 6 m/s',
   'ved 15 m/s',
   'seneste 48 timer',
-  'kausale energivægtede W/N/T-EWMA for bølgeapproach',
+  'kausalt, energivægtet gennemsnit af bølgernes retning',
   'fire timers halveringstid',
-  'bevarer ældre timer med aftagende vægt',
+  'kun den aktuelle og de tidligere timer tæller, aldrig fremtidige timer',
+  'ældre timer tæller gradvist mindre',
   'kun dæmpe det eksisterende supply med højst 15 %',
   'aldrig skabe eller øge det',
   'fysiske vej gennem revler og surfzone er fortsat uopløst',
@@ -58,6 +59,7 @@ for (const marker of [
   assert.ok(learning.includes(marker), `Den aktive model forklares ikke korrekt: ${marker}`);
 }
 assert.doesNotMatch(learning, /uopløst og score-neutral/i, 'Den pensionerede score-neutrale last-mile-kontrakt må ikke stå aktivt i læringsmodulet');
+assert.doesNotMatch(learning, /W\/N\/T|EWMA/i, 'Det offentlige læringsmodul må ikke vise intern bølgestate-jargon');
 assert.doesNotMatch(learning, /seneste fire timers energivægtede bølgeapproach/i,
   'Fire timer må ikke fremstilles som et fast bølgeapproach-vindue i læringsmodulet');
 assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må ikke stå i det offentlige læringsmodul');

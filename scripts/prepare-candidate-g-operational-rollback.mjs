@@ -22,6 +22,13 @@ import {
   assertCandidateGRollbackBinding,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import {
+  LEGACY_CANDIDATE_G_RELEASE_VERSION,
+  legacyCandidateGControllerBinding,
+} from './lib/ravscore-legacy-candidate-g-source.mjs';
+import {
+  PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE,
+} from '../js/core/ravscore-public-model.js';
+import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   assertRavScoreModelBinding as assertCandidateBinding,
   ravScoreModelBinding as candidateModelBinding,
@@ -43,6 +50,47 @@ export const CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY = Object.freeze({
 const SOURCE_HEAD_PATTERN = /^[0-9a-f]{40}$/;
 const DATASET_ID_PATTERN = /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const SHA256_PATTERN = /^[0-9a-f]{64}$/;
+const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
+const SERIALIZED_MODEL_BINDING_FIELDS = Object.freeze([
+  'modelId',
+  'stateSchemaVersion',
+  'variantId',
+  'profileId',
+  'componentSchemaId',
+  'explanationSchemaId',
+  'rankingPolicyId',
+  'bestTimePolicyId',
+  'presentationPolicyId',
+  'modelContractSha256',
+  'modelBundleSha256',
+]);
+const CANDIDATE_TARGET_PROFILE_FIELDS = Object.freeze([
+  'schemaVersion',
+  'sourceVersion',
+  'switchVersion',
+  'requestedProfileId',
+  'activeModelId',
+  'stateSchemaVersion',
+  'variantId',
+  'profileId',
+  'componentSchemaId',
+  'explanationSchemaId',
+  'rankingPolicyId',
+  'bestTimePolicyId',
+  'presentationPolicyId',
+  'modelContractSha256',
+  'modelBundleSha256',
+  'rollbackModelId',
+  'runtimeFallbackModelId',
+  'modelActivationEnabled',
+  'automaticActivationAllowed',
+  'publicAvailabilityPolicy',
+  'crossModelRuntimeFallbackAllowed',
+  'migrationRequiredAtFirstCutover',
+  'status',
+  'activationAuthority',
+  'evidence',
+]);
 const isPlainObject = value => value !== null
   && typeof value === 'object'
   && !Array.isArray(value)
@@ -73,6 +121,76 @@ function exactKeys(value, expected, label) {
     || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...expected].sort())) {
     throw new Error(`${label} has an incompatible field set`);
   }
+}
+
+function sealedSourceModel(binding, label = 'Candidate G operational source binding') {
+  exactKeys(binding, SERIALIZED_MODEL_BINDING_FIELDS, label);
+  if (SERIALIZED_MODEL_BINDING_FIELDS.slice(0, 9)
+    .some(field => !SAFE_ID_PATTERN.test(String(binding[field] ?? '')))
+    || !SHA256_PATTERN.test(String(binding.modelContractSha256 ?? ''))
+    || !SHA256_PATTERN.test(String(binding.modelBundleSha256 ?? ''))) {
+    throw new Error(`${label} is not an exact sealed model binding`);
+  }
+  if (same(binding, legacyCandidateGControllerBinding())) return 'legacy-candidate-g';
+  if (binding.modelId === candidateModelBinding().modelId) return 'candidate-g';
+  if (binding.modelId === integratedModelBinding().modelId) return 'integrated';
+  throw new Error(`${label} has an unknown model id`);
+}
+
+function assertSealedSourceModel(binding, expectedModel, label) {
+  const model = sealedSourceModel(binding, label);
+  const historicalCandidate = expectedModel === 'historical-candidate-g';
+  if ((historicalCandidate ? model !== 'candidate-g' : model !== expectedModel)
+    || (model === 'legacy-candidate-g' && !same(binding, legacyCandidateGControllerBinding()))
+    || (expectedModel === 'candidate-g' && !same(binding, candidateModelBinding()))
+    || (expectedModel === 'integrated' && !same(binding, integratedModelBinding()))
+    || (historicalCandidate && same(binding, candidateModelBinding()))) {
+    throw new Error(`${label} is incompatible with source model ${expectedModel}`);
+  }
+  return binding;
+}
+
+export function candidateGTargetProfileForOperationalPlan() {
+  const binding = candidateModelBinding();
+  return Object.freeze({
+    schemaVersion: '3.0.0',
+    sourceVersion: LEGACY_CANDIDATE_G_RELEASE_VERSION,
+    switchVersion: 'RAVSCORE-PROFILE-SWITCH-CANDIDATE-G-ROLLBACK-1.0.0',
+    requestedProfileId: binding.modelId,
+    activeModelId: binding.modelId,
+    stateSchemaVersion: binding.stateSchemaVersion,
+    variantId: binding.variantId,
+    profileId: binding.profileId,
+    componentSchemaId: binding.componentSchemaId,
+    explanationSchemaId: binding.explanationSchemaId,
+    rankingPolicyId: binding.rankingPolicyId,
+    bestTimePolicyId: binding.bestTimePolicyId,
+    presentationPolicyId: binding.presentationPolicyId,
+    modelContractSha256: binding.modelContractSha256,
+    modelBundleSha256: binding.modelBundleSha256,
+    rollbackModelId: integratedModelBinding().modelId,
+    runtimeFallbackModelId: null,
+    modelActivationEnabled: true,
+    automaticActivationAllowed: false,
+    publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
+    crossModelRuntimeFallbackAllowed: false,
+    migrationRequiredAtFirstCutover: false,
+    status: 'owner-approved-candidate-g-rollback-only-local-fail-closed',
+    activationAuthority: 'DEC-0110-manual-candidate-g-rollback',
+    evidence: Object.freeze({ ...PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE }),
+  });
+}
+
+function assertCandidateTargetProfile(profile) {
+  const expected = candidateGTargetProfileForOperationalPlan();
+  exactKeys(profile, CANDIDATE_TARGET_PROFILE_FIELDS,
+    'Candidate G sealed target central profile');
+  exactKeys(profile.evidence, Object.keys(PUBLIC_RAVSCORE_ACTIVATION_EVIDENCE),
+    'Candidate G sealed target central profile evidence');
+  if (!same(profile, expected)) {
+    throw new Error('Candidate G sealed target central profile differs from the current target');
+  }
+  return true;
 }
 
 function assertManualMode({
@@ -284,6 +402,7 @@ export function prepareCandidateGOperationalRollback(full, {
   requestedImplementationClosureSha256,
   centralExpectedVersion,
   sourceModel = 'integrated',
+  sourceModelBinding = null,
   now = new Date().toISOString(),
   maximumRuntimeAgeHours = CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.maximumRuntimeAgeHours,
 } = {}) {
@@ -307,7 +426,8 @@ export function prepareCandidateGOperationalRollback(full, {
     || Number(centralExpectedVersion) < 0) {
     throw new Error('Candidate G rollback requires an exact central CAS version');
   }
-  if (!['integrated', 'candidate-g'].includes(sourceModel)
+  if (!['integrated', 'candidate-g', 'historical-candidate-g',
+    'legacy-candidate-g'].includes(sourceModel)
     || (resolvedMode === CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.executeMode
       && sourceModel !== 'integrated')) {
     throw new Error('Candidate G rollback source model is incompatible with its mode');
@@ -315,12 +435,27 @@ export function prepareCandidateGOperationalRollback(full, {
   if (RAVSCORE_CALIBRATION_ELIGIBLE !== false) {
     throw new Error('Candidate G rollback must never be calibration eligible');
   }
+  const resolvedSourceModelBinding = structuredClone(sourceModelBinding
+    ?? (sourceModel === 'candidate-g'
+      ? candidateModelBinding()
+      : sourceModel === 'historical-candidate-g'
+        ? null
+        : sourceModel === 'legacy-candidate-g'
+          ? legacyCandidateGControllerBinding()
+          : integratedModelBinding()));
+  assertSealedSourceModel(
+    resolvedSourceModelBinding,
+    sourceModel,
+    'Candidate G operational source binding',
+  );
   const validated = validateRollbackEnvelope(full, {
     expectedDatasetId,
     expectedSourceHead: sourceHead,
     now,
     maximumRuntimeAgeHours,
   });
+  const candidateTargetProfile = candidateGTargetProfileForOperationalPlan();
+  assertCandidateTargetProfile(candidateTargetProfile);
   const activation = {
     schemaVersion: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.schemaVersion,
     kind: CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.kind,
@@ -332,26 +467,30 @@ export function prepareCandidateGOperationalRollback(full, {
     sourceImplementationClosureSha256,
     requestedImplementationClosureSha256,
     centralExpectedVersion: Number(centralExpectedVersion),
-    sourceModelBinding: sourceModel === 'candidate-g'
-      ? candidateModelBinding() : integratedModelBinding(),
+    sourceModelBinding: resolvedSourceModelBinding,
     activeModelBinding: candidateModelBinding(),
+    candidateTargetProfileSha256: sha256(candidateTargetProfile),
     rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
     automaticActivationAllowed: false,
     schedulerActivationAllowed: false,
     calibrationEligible: false,
+  };
+  const planBody = {
+    ...activation,
+    candidateTargetProfile,
   };
   const candidateFull = structuredClone(full);
   delete candidateFull.ravScoreCandidateGRollback;
   candidateFull.coastalParts = structuredClone(validated.runtime);
   candidateFull.ravScoreOperationalActivation = {
     ...activation,
-    planSha256: sha256(activation),
+    planSha256: sha256(planBody),
   };
   return Object.freeze({
     candidateFull,
     plan: Object.freeze({
-      ...activation,
-      planSha256: sha256(activation),
+      ...planBody,
+      planSha256: sha256(planBody),
       candidateFullSha256: sha256(candidateFull),
       privatePayloadLogged: false,
     }),
@@ -371,6 +510,7 @@ const PREPARED_ACTIVATION_FIELDS = Object.freeze([
   'centralExpectedVersion',
   'sourceModelBinding',
   'activeModelBinding',
+  'candidateTargetProfileSha256',
   'rollbackId',
   'automaticActivationAllowed',
   'schedulerActivationAllowed',
@@ -390,6 +530,7 @@ export function assertPreparedCandidateGOperationalRollback(candidateFull, plan,
 } = {}) {
   exactKeys(plan, [
     ...PREPARED_ACTIVATION_FIELDS,
+    'candidateTargetProfile',
     'planSha256',
     'candidateFullSha256',
     'privatePayloadLogged',
@@ -398,14 +539,19 @@ export function assertPreparedCandidateGOperationalRollback(candidateFull, plan,
     planSha256,
     candidateFullSha256,
     privatePayloadLogged,
+    candidateTargetProfile,
     ...activation
   } = plan;
   exactKeys(activation, PREPARED_ACTIVATION_FIELDS, 'Candidate G rollback activation');
   if (!SHA256_PATTERN.test(String(planSha256 ?? ''))
     || !SHA256_PATTERN.test(String(candidateFullSha256 ?? ''))
-    || planSha256 !== sha256(activation)
+    || planSha256 !== sha256({ ...activation, candidateTargetProfile })
     || privatePayloadLogged !== false) {
     throw new Error('Candidate G rollback plan seal is incompatible');
+  }
+  assertCandidateTargetProfile(candidateTargetProfile);
+  if (activation.candidateTargetProfileSha256 !== sha256(candidateTargetProfile)) {
+    throw new Error('Candidate G sealed target central profile digest mismatch');
   }
   if (!isPlainObject(candidateFull)
     || candidateFull.ravScoreCandidateGRollback !== undefined
@@ -445,21 +591,25 @@ export function assertPreparedCandidateGOperationalRollback(candidateFull, plan,
     || activation.calibrationEligible !== false) {
     throw new Error('Candidate G rollback activation semantics are incompatible');
   }
-  const sourceModel = activation.sourceModelBinding?.modelId === candidateModelBinding().modelId
-    ? 'candidate-g' : 'integrated';
+  const sourceModel = sealedSourceModel(
+    activation.sourceModelBinding,
+    'Candidate G prepared source binding',
+  );
   if (activation.mode === CANDIDATE_G_OPERATIONAL_ROLLBACK_POLICY.executeMode
     && sourceModel !== 'integrated') {
     throw new Error('Candidate G execute plan may only begin from integrated');
   }
-  if (sourceModel === 'candidate-g') {
-    assertCandidateBinding(activation.sourceModelBinding, 'Candidate G refresh source model binding');
-  } else {
-    assertIntegratedBinding(activation.sourceModelBinding, 'Candidate G source model binding');
+  if (sourceModel === 'integrated'
+    && !same(activation.sourceModelBinding, integratedModelBinding())) {
+    throw new Error('Candidate G execute source must be the exact current integrated binding');
+  }
+  if (sourceModel === 'legacy-candidate-g') {
+    if (!same(activation.sourceModelBinding, legacyCandidateGControllerBinding())) {
+      throw new Error('Legacy Candidate G refresh source model binding is not exact');
+    }
   }
   assertCandidateBinding(activation.activeModelBinding, 'Candidate G active model binding');
-  if (!same(activation.sourceModelBinding, sourceModel === 'candidate-g'
-    ? candidateModelBinding() : integratedModelBinding())
-    || !same(activation.activeModelBinding, candidateModelBinding())) {
+  if (!same(activation.activeModelBinding, candidateModelBinding())) {
     throw new Error('Candidate G rollback activation has a mixed model binding');
   }
 
@@ -561,6 +711,7 @@ function parseArguments(argv) {
     else if (argument === '--plan') result.plan = value;
     else if (argument === '--mode') result.mode = value;
     else if (argument === '--source-model') result.sourceModel = value;
+    else if (argument === '--source-binding') result.sourceBindingPath = value;
     else if (argument === '--expected-dataset-id') result.expectedDatasetId = value;
     else if (argument === '--source-head') result.sourceHead = value;
     else if (argument === '--private-bundle-sha256') result.privateBundleContentSha256 = value;
@@ -590,6 +741,15 @@ async function main() {
     full = JSON.parse(await fs.readFile(options.input, 'utf8'));
   } catch {
     throw new Error('Candidate G rollback private input cannot be parsed');
+  }
+  if (options.sourceBindingPath) {
+    let sourceBindingDocument;
+    try {
+      sourceBindingDocument = JSON.parse(await fs.readFile(options.sourceBindingPath, 'utf8'));
+    } catch {
+      throw new Error('Candidate G operational source binding cannot be parsed');
+    }
+    options.sourceModelBinding = sourceBindingDocument.modelBinding ?? sourceBindingDocument;
   }
   const prepared = prepareCandidateGOperationalRollback(full, {
     ...options,

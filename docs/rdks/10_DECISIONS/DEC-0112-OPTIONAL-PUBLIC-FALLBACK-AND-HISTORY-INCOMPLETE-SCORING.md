@@ -4,6 +4,12 @@
 
 **Dato:** 2026-08-30
 
+## Præcisering 2026-08-31 – fuld prognoseakse og forklaring
+
+Ved gyldige direkte obligatoriske input for hver time skal state 6 publicere den eksakte akse `productionTarget..productionTarget+117 h`: 118 timer, current og fem kalenderdage, også når ældre historik er ufuldstændig. Hver sådan time er `HISTORY_INCOMPLETE` med vist lower bound, upper bound, spænd, coverage/reasons, synlig DA/DE/EN-advarsel og `calibrationEligible=false`. Advarslen forsvinder automatisk ved `FULL_HISTORY`. Manglende eller ugyldigt direkte strøm-, bølge- eller jagtbarhedsinput gør kun den berørte time `UNAVAILABLE`/`null`; det må ikke maskeres af interpolation, hold/carry eller nabozonelån.
+
+Startup, detaljer, femdøgnsvisning, rangering/beste tidspunkt, admin/ekspert og lokal/Edge-baseret Spørg RavRadar skal skelne `HISTORY_INCOMPLETE` fra direkte inputmangel. Den offentlige DA/DE/EN-forklaring beskriver i almindeligt sprog, at nyere bølgeenergi vejer mest, at vægten halveres over fire timer, og at last-mile-leddet højst dæmper eksisterende leveringssignal 15 %. W/N/T/EWMA er intern notation og må ikke kræves af brugeren. De målrettede P2-tests er lokalt grønne; exact-head-, produktions- og offentlig verifikation af fladen udestår.
+
 ## Hændelse og bevis
 
 4.0.315-retirementen bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav den tidligere D1-/reconstruction-readiness og startede det normale build. Dermed er den stale grøn-no-op-interlock ikke længere den aktuelle blocker.
@@ -86,7 +92,7 @@ Kontrakttests, offline-replays, ablationer og grænsebeviser kan dokumentere det
 
 P0-hændelserne viste tre strukturelle risici: et monolitisk workflow med mange skjulte afhængigheder, grøn topstatus som kan dække over no-op/skipped produktion, og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. De skal reduceres som en eksplicit del af DEC-0102-modelleverancen gennem klarere trinresultater, maskinlæsbar producer-/consumerstatus, central versions-/kontraktmetadata og semantiske tests. Arbejdet må ikke blandes ind i den afgrænsede 4.0.316-P0-hotfix.
 
-Den maskinlæsbare slutstatus er nu implementeret lokalt som schema `ravradar-production-workflow-outcome-v1` med præcis fem terminaler: `NOOP`, `DEFERRED`, `BUILT`, `DEPLOYED` og `FAILED`. `NOOP` kræver bevis for, at ingen vejrproduktion var nødvendig, eller at en isoleret privat geometrioperation afsluttede uden produktionsbuild. `DEFERRED` kræver en eksplicit readiness-udsættelse uden build eller deploy. `BUILT` kræver frisk vejrbygning, fuld `validate`, `release:gate`, privacy-auditeret Pages-site og forseglet handoff, men ingen offentlig deploy. `DEPLOYED` kræver derudover Pages-succes, eksakt offentlig model-/implementation-/210/673-verifikation og afsluttet activation/reseal. Enhver fejl, cancellation, uventet skipped gate eller inkonsistent bevis bliver `FAILED`; den payloadfri status uploades først, hvorefter workflowet forbliver rødt.
+Den historiske pre-recovery-implementering brugte schema `ravradar-production-workflow-outcome-v1` med fem terminaler. 4.0.318's bindende releasekontrakt er `ravradar-production-workflow-outcome-v2`, fordi nested exact-key-resultatet også skal omfatte historical actions og recovery writer/finalizer/gate. Terminalerne er fortsat `NOOP`, `DEFERRED`, `BUILT`, `DEPLOYED` og `FAILED`. `DEPLOYED` kræver Pages eller exact-target finalizer, eksakt offentlig model-/implementation-/210/673-verifikation og afsluttet activation/reseal; fejl, cancellation, ukendt action, uventet skipped gate eller inkonsistent bevis er `FAILED`. Kode, releasegate og måltests er lokalt synkroniseret med v2; exact-head-, produktions- og offentligt slutbevis udestår.
 
 Outcome-artifactet indeholder kun run-/SHA-identitet, kanoniske job-/stepresultater og booleanske beviser samt `privatePayloadIncluded=false`; ingen vejrpayload, koordinater, land-/vandpunkter, rå U/V, modelstate eller credentials må indgå. Dette lukker grøn-no-op-/skipped-semantikken lokalt. Den fortsat store workflowmonolit og den spredte versions-/dokumentations-/kontraktmetadata er stadig åben arkitekturgæld og må ikke kaldes løst af statuskontrakten alene.
 

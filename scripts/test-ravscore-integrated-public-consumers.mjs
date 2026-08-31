@@ -93,15 +93,16 @@ function historyIncompleteResult(reasonCode,{coverage=48,currentGap=false,status
 }
 
 const languageExpectations = {
-  da: [/kausal energivægtet W\/N\/T-EWMA/, /fire timers halveringstid/, /ældre timer med aftagende vægt/, /højst 15 %/, /aldrig skabe eller øge/, /fysisk uopløst/, /0 scorepoint/, /undertow/, /feeder- eller langskyststrøm/, /ripstrømme/, /noget mobilt rav ud/, /lokal batymetri/],
-  de: [/kausaler energiegewichteter W\/N\/T-EWMA/, /Halbwertszeit von vier Stunden/, /ältere Stunden.*abnehmendem Gewicht/, /höchstens 15 %/, /niemals erzeugen oder erhöhen/, /physikalisch unaufgelöst/, /0 Scorepunkte/, /Undertow/, /Küstenlängs-/, /Rippströmungen/, /Teil mobilen Bernsteins seewärts/, /lokale Bathymetrie/],
-  en: [/causal energy-weighted wave-direction W\/N\/T EWMA/, /four-hour half-life/, /older hours in a decaying tail/, /at most 15%/, /never create or increase/, /physically unresolved/, /0 score points/, /undertow/, /longshore current/, /rip currents/, /some mobile amber seaward/, /local bathymetry/],
+  da: [/kausalt, energivægtet gennemsnit af bølgernes retning/, /kun den aktuelle og de tidligere timer.*aldrig fremtidige timer/, /fire timers halveringstid/, /ældre timer tæller gradvist mindre/, /højst 15 %/, /aldrig skabe eller øge/, /fysisk uopløst/, /0 scorepoint/, /undertow/, /feeder- eller langskyststrøm/, /ripstrømme/, /noget mobilt rav ud/, /lokal batymetri/],
+  de: [/kausalen, energiegewichteten Durchschnitt der Wellenrichtung/, /Nur die aktuelle Stunde und frühere Stunden.*niemals zukünftige Stunden/, /Halbwertszeit von vier Stunden/, /ältere Stunden schrittweise weniger zählen/, /höchstens 15 %/, /niemals erzeugen oder erhöhen/, /physikalisch unaufgelöst/, /0 Scorepunkte/, /Undertow/, /Küstenlängs-/, /Rippströmungen/, /Teil mobilen Bernsteins seewärts/, /lokale Bathymetrie/],
+  en: [/causal, energy-weighted average of wave direction/, /only the current and earlier hours.*never future hours/, /four-hour half-life/, /older hours gradually count less/, /at most 15%/, /never create or increase/, /physically unresolved/, /0 score points/, /undertow/, /longshore current/, /rip currents/, /some mobile amber seaward/, /local bathymetry/],
 };
 for (const [language, patterns] of Object.entries(languageExpectations)) {
   const presentation = presentIntegratedRavScoreExplanation(integratedResult(), { language });
   assert.equal(presentation.available, true, `${language}: integreret forklaring skal være tilgængelig`);
   const text = [presentation.title, presentation.summary, ...presentation.facts].join('\n');
   for (const pattern of patterns) assert.match(text, pattern, `${language}: forklaringen mangler ${pattern}`);
+  assert.doesNotMatch(text, /W\/N\/T|EWMA/i, `${language}: den offentlige forklaring må ikke vise intern bølgestate-jargon`);
   assert.match(presentation.facts[0], language === 'en' ? /48 verified history hours.*48-hour/
     : language === 'de' ? /48 verifizierte Verlaufsstunden.*48-Stunden/
       : /48 verificerede historiktimer.*48-timers/,
@@ -273,12 +274,39 @@ const waterQuestions = {
   de:'Was bedeutet fallender Wasserstand?',
   en:'What does falling water level mean?',
 };
+const historyMissingQuestions = {
+  da:'Hvad sker der med RavScore og femdøgnsprognosen, når historikken mangler?',
+  de:'Was passiert mit RavScore und Fünf-Tage-Prognose, wenn Verlaufsdaten fehlen?',
+  en:'What happens to RavScore and the five-day forecast when history is missing?',
+};
+const directMissingQuestions = {
+  da:'Hvad sker der med en prognosetime, hvis der mangler direkte vejrdata?',
+  de:'Was passiert mit einer Prognosestunde, wenn direkte Wetterdaten fehlen?',
+  en:'What happens to a forecast hour when direct weather data is missing?',
+};
+const missingDataExpectations = {
+  da:[/konservativ minimumsscore/, /modelinterval/, /aktuelle prognose og femdøgnsprognosen/, /midlertidig advarsel.*forsvinder automatisk/, /obligatorisk direkte input.*utilgængelig.*udelades fra rangeringer/],
+  de:[/vorsichtigen Mindestwert/, /Modellintervall/, /vollständige aktuelle Prognose und Fünf-Tage-Prognose/, /vorübergehender Hinweis.*verschwindet automatisch/, /erforderliche direkte Eingabe.*nicht verfügbar.*Ranglisten/],
+  en:[/conservative minimum score/, /model range/, /full current and five-day forecasts/, /temporary notice.*disappears automatically/, /required direct input.*unavailable.*omitted from rankings/],
+};
 for (const language of Object.keys(questions)) {
   const context = {
     zone:{ id:'z1', name:'Testkyst' },
     result:integratedResult(),
     weather:{ windSpeedMps:null, waveHeightM:1.1, currentSpeedMps:0.09, waterLevelCm:-8 },
   };
+  for (const [question, result] of [
+    [historyMissingQuestions[language], historyIncompleteResult('CURRENT_HISTORY_INCOMPLETE',{coverage:19,currentGap:true})],
+    [directMissingQuestions[language], {available:false,score:null}],
+  ]) {
+    const missingAnswer = await askRavRadar(
+      question,
+      {...context,result},
+      {language,localOnly:true},
+    );
+    for (const pattern of missingDataExpectations[language]) assert.match(missingAnswer, pattern);
+    assert.doesNotMatch(missingAnswer, /W\/N\/T|EWMA/i);
+  }
   const answer = await askRavRadar(questions[language], context,
     { language, localOnly:true, now:'2026-03-29T10:00:00+02:00' });
   for (const pattern of languageExpectations[language].slice(0, 3)) assert.match(answer, pattern);

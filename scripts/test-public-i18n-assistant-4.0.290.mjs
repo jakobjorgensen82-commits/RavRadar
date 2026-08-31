@@ -110,7 +110,7 @@ globalThis.fetch = async (url, options) => {
       'x-ravradar-model-contract-sha256':binding.modelContractSha256,
       'x-ravradar-model-bundle-sha256':binding.modelBundleSha256,
       'x-ravradar-assistant-knowledge-schema':'rav-assistant-public-knowledge-v1',
-      'x-ravradar-assistant-knowledge-sha256':'6c35d63a21cd8a04f3bb2013fecf642af62f3cb6be6e7cb0b3b8a1b7860e205a',
+      'x-ravradar-assistant-knowledge-sha256':'9926586b1b97032e6d762c4e030c6705ba3581e647abec7e7bfbba5604412694',
     }),
     json:async () => ({ answer:'Rav kan være meget gammelt, men et konkret stykke kan ikke dateres sikkert ud fra udseendet alene.' }),
   };
@@ -206,8 +206,8 @@ for (const html of [aboutHtml, learnHtml]) {
   for (const language of ['da', 'de', 'en']) assert.match(html, new RegExp(`language-flag flag-${language}`), `${language} mangler et stabilt flagikon.`);
 }
 const learnLastMileMarkers = {
-  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 % dämpfen', 'nie erzeugen oder erhöhen', 'bleibt unaufgelöst', 'strukturell unsicher'],
-  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'remains unresolved', 'structurally uncertain'],
+  de:['kausalen, energiegewichteten Durchschnitt der Wellenrichtung', 'Nur die aktuelle Stunde und frühere Stunden zählen, niemals zukünftige Stunden', 'Halbwertszeit von vier Stunden', 'ältere Stunden schrittweise weniger zählen', 'höchstens 15 % dämpfen', 'nie erzeugen oder erhöhen', 'bleibt unaufgelöst', 'strukturell unsicher'],
+  en:['causal, energy-weighted average of wave direction', 'only the current and earlier hours count, never future hours', 'four-hour half-life', 'older hours gradually count less', 'at most 15%', 'never create or increase supply', 'remains unresolved', 'structurally uncertain'],
 };
 for (const language of ['de', 'en']) {
   const score = i18n.t('learn.score', {}, language);
@@ -215,40 +215,45 @@ for (const language of ['de', 'en']) {
     assert.ok(score.includes(marker), `${language} mangler den integrerede modelmarkør ${marker} i grundbogen.`);
   }
   assert.doesNotMatch(score, /score-neutral/i, `${language} genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
+  assert.doesNotMatch(score, /W\/N\/T|EWMA/i, `${language} grundbog må ikke vise intern bølgestate-jargon.`);
   assert.match(i18n.t('learn.knowledge', {}, language), /not.*safe|Sicherheit/i, `${language} mangler grundbogens sikkerhedsgrænse.`);
   assert.equal((i18n.t('learn.knowledge', {}, language).match(/https:\/\//g) || []).length, 7, `${language} skal bevare alle syv faglige kildelinks.`);
   assert.match(i18n.t('about.support', {}, language), /id="mobilepay-qr"/, `${language} skal bevare QR-målet.`);
 }
 for (const marker of [
-  'kausale energivægtede W/N/T-EWMA for bølgeapproach',
+  'kausalt, energivægtet gennemsnit af bølgernes retning',
   'fire timers halveringstid',
-  'bevarer ældre timer med aftagende vægt',
+  'kun den aktuelle og de tidligere timer tæller, aldrig fremtidige timer',
+  'ældre timer tæller gradvist mindre',
   'kun dæmpe det eksisterende supply med højst 15 %',
   'aldrig skabe eller øge det',
   'fysiske vej gennem revler og surfzone er fortsat uopløst',
 ]) assert.ok(learnHtml.includes(marker), `Dansk mangler den integrerede last-mile-markør ${marker} i grundbogen.`);
+assert.doesNotMatch(learnHtml, /W\/N\/T|EWMA/i, 'Dansk grundbog må ikke vise intern bølgestate-jargon.');
 assert.doesNotMatch(learnHtml, /uopløst og score-neutral/i, 'Dansk genindfører den pensionerede score-neutrale last-mile-kontrakt.');
 assert.doesNotMatch(learnHtml, /seneste fire timers energivægtede bølgeapproach/i,
   'Dansk må ikke fremstille fire timer som et fast bølgeapproach-vindue.');
 const assistantWaveMarkers = {
-  da:['kausal energivægtet W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt', 'højst 15 %', 'aldrig skabe eller øge', 'fysisk uopløst'],
-  de:['kausaler energiegewichteter W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht', 'höchstens 15 %', 'nie erzeugen oder erhöhen', 'physikalisch unaufgelöst'],
-  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail', 'at most 15%', 'never create or increase supply', 'physically unresolved'],
+  da:['kausalt, energivægtet gennemsnit af bølgernes retning', 'kun den aktuelle og de tidligere timer tæller, aldrig fremtidige timer', 'fire timers halveringstid', 'ældre timer tæller gradvist mindre', 'højst 15 %', 'aldrig skabe eller øge', 'fysisk uopløst'],
+  de:['kausalen, energiegewichteten Durchschnitt der Wellenrichtung', 'Nur die aktuelle Stunde und frühere Stunden zählen, niemals zukünftige Stunden', 'Halbwertszeit von vier Stunden', 'ältere Stunden schrittweise weniger zählen', 'höchstens 15 %', 'nie erzeugen oder erhöhen', 'physikalisch unaufgelöst'],
+  en:['causal, energy-weighted average of wave direction', 'only the current and earlier hours count, never future hours', 'four-hour half-life', 'older hours gradually count less', 'at most 15%', 'never create or increase supply', 'physically unresolved'],
 };
 const debugLastMileMarkers = {
-  da:['kausale energivægtede W/N/T-EWMA', 'fire timers halveringstid', 'ældre timer med aftagende vægt'],
-  de:['kausale energiegewichtete W/N/T-EWMA', 'Halbwertszeit von vier Stunden', 'ältere Stunden weiter mit abnehmendem Gewicht'],
-  en:['causal energy-weighted wave-direction W/N/T EWMA', 'four-hour half-life', 'older hours in a decaying tail'],
+  da:['kausalt, energivægtet gennemsnit af bølgernes retning', 'kun den aktuelle og de tidligere timer tæller, aldrig fremtidige timer', 'fire timers halveringstid', 'ældre timer tæller gradvist mindre'],
+  de:['kausalen, energiegewichteten Durchschnitt der Wellenrichtung', 'Nur die aktuelle Stunde und frühere Stunden zählen, niemals zukünftige Stunden', 'Halbwertszeit von vier Stunden', 'ältere Stunden schrittweise weniger zählen'],
+  en:['causal, energy-weighted average of wave direction', 'only the current and earlier hours count, never future hours', 'four-hour half-life', 'older hours gradually count less'],
 };
 for (const language of ['da', 'de', 'en']) {
   const answer = i18n.t('assistant.local.waves', {}, language);
   for (const marker of assistantWaveMarkers[language]) {
     assert.ok(answer.includes(marker), `${language} mangler assistantens afgrænsede last-mile-markør ${marker}.`);
   }
+  assert.doesNotMatch(answer, /W\/N\/T|EWMA/i, `${language} assistant må ikke vise intern bølgestate-jargon.`);
   assert.doesNotMatch(answer, /score-neutral/i, `${language} assistant genindfører den pensionerede score-neutrale last-mile-kontrakt.`);
   const debug = i18n.t('score.debug.lastMileMeaning', {}, language);
   for (const marker of debugLastMileMarkers[language]) {
     assert.ok(debug.includes(marker), `${language} debugforklaring mangler EWMA-markøren ${marker}.`);
+  assert.doesNotMatch(debug, /W\/N\/T|EWMA/i, `${language} offentlig debugforklaring må ikke vise intern bølgestate-jargon.`);
   }
 }
 const learnSectionIds = new Set([...learnHtml.matchAll(/<section id="([^"]+)"/g)].map(match => match[1]));

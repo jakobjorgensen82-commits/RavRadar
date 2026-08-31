@@ -213,18 +213,28 @@ const uvFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'identification.uv-c
 assert.match(uvFact?.text || '', /395 nanometres/);
 assert.doesNotMatch(uvFact?.text || '', /365 nanometres/);
 const lastMileFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'transport.grid-not-surf-zone');
-assert.match(lastMileFact?.text || '', /causal energy-weighted W\/N\/T EWMA/);
+assert.match(lastMileFact?.text || '', /energy-weighted average of wave direction/);
+assert.match(lastMileFact?.text || '', /current and earlier hours only, never future hours/);
 assert.match(lastMileFact?.text || '', /four-hour half-life/);
-assert.match(lastMileFact?.text || '', /decaying older tail/);
+assert.match(lastMileFact?.text || '', /older hours gradually count less/);
 assert.match(lastMileFact?.text || '', /up to 15 percent/);
 assert.match(lastMileFact?.text || '', /never create or increase supply/);
 assert.match(lastMileFact?.text || '', /at most 7\.5 raw RavScore points before final rounding/);
 assert.match(lastMileFact?.text || '', /displayed integer can move by 8 points/);
 assert.match(lastMileFact?.text || '', /does not remove structural last-mile uncertainty/);
+assert.doesNotMatch(lastMileFact?.text || '', /W\/N\/T|EWMA/i);
 assert.doesNotMatch(lastMileFact?.text || '', /four-hour wave-approach prior/,
   'Fire timer er halveringstid med ældre hale, ikke et fast wave-approach-vindue.');
 assert.doesNotMatch(lastMileFact?.text || '', /score-neutral/,
   'Schema-5-assistenten må ikke gentage den pensionerede neutrale sidste-mile-kontrakt.');
+const directMissingFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'score.local-missing');
+assert.match(directMissingFact?.text || '', /required direct weather input.*hour itself.*unavailable.*omitted from rankings/i);
+assert.match(directMissingFact?.text || '', /separate from a gap in earlier history/i);
+const historyIncompleteFact = RAV_ASSISTANT_FACTS.find(fact => fact.id === 'score.history-incomplete');
+assert.match(historyIncompleteFact?.text || '', /direct weather inputs.*complete.*earlier history has a gap/i);
+assert.match(historyIncompleteFact?.text || '', /conservative lower-bound score.*lower-to-upper model interval/i);
+assert.match(historyIncompleteFact?.text || '', /full current and five-day forecast/i);
+assert.match(historyIncompleteFact?.text || '', /temporary notice.*disappears automatically/i);
 assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /50% delivery potential/);
 assert.match(RAV_ASSISTANT_WEIGHT_ANSWERS.en, /bounded wave-approach attenuation/);
 assert.match(assistantSystemInstruction(), /Return exactly one JSON object/);

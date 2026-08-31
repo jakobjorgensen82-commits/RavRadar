@@ -14,8 +14,17 @@ for (const marker of [
   'exactly 210 zones',
   'exactly 673 coastal parts',
   'complete schema-2 continuation',
+  'LEGACY_SOURCE_REGISTRY_RELATIVE',
+  'assert_legacy_candidate_g_source_registry',
+  'coastalPartsPath',
+  'coastalPartsSha256',
+  'coastalPartsBytes',
+  '.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json',
   'generic-public-private-runtime-hydration-retired',
 ]) assert.match(hydrator, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+
+assert.doesNotMatch(hydrator, /atomic_write_(?:json|bytes)\(active_registry_path/,
+  'legacy source hydration must never overwrite data/live/coastal-parts-v2.json');
 
 assert.doesNotMatch(publicProjection, /fullConditionsPath:\s*['"]\.\/conditions\.json/,
   'the new public manifest must never advertise the private runtime');
