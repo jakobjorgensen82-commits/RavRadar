@@ -1242,9 +1242,13 @@ for (const marker of [
 ]) {
   if (!operationalRecoveryGateSection.includes(marker)) throw new Error(`Recovery-terminalgaten mangler ${marker}`);
 }
-if (!orchestratorWorkflow.slice(operationalRecoveryPositions.currentHour).startsWith('\n  current-hour-readiness:\n')
-  || !orchestratorWorkflow.slice(operationalRecoveryPositions.currentHour, orchestratorWorkflow.indexOf('\n  trip-storage-readiness:', operationalRecoveryPositions.currentHour))
-    .includes('needs: operational-recovery-gate')) {
+const currentHourAfterRecoverySection = orchestratorWorkflow.slice(
+  operationalRecoveryPositions.currentHour,
+  orchestratorWorkflow.indexOf('\n  trip-storage-readiness:', operationalRecoveryPositions.currentHour),
+);
+if (!currentHourAfterRecoverySection.startsWith('\n  current-hour-readiness:\n')
+  || !currentHourAfterRecoverySection.includes('needs: operational-recovery-gate')
+  || !currentHourAfterRecoverySection.includes("if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}")) {
   throw new Error('Current-hour må ikke starte før recovery-finalizeren er terminalt grøn/skipped.');
 }
 
