@@ -140,10 +140,11 @@ export function bearing(waterPoint, landPoint) {
   if (!finitePoint(waterPoint) || !finitePoint(landPoint)) throw new Error('Ugyldigt land-/vandpunkt');
   const [lon1, lat1] = waterPoint.map(value => Number(value) * Math.PI / 180);
   const [lon2, lat2] = landPoint.map(value => Number(value) * Math.PI / 180);
-  return Number(norm(Math.atan2(
+  const direction = norm(Math.atan2(
     Math.sin(lon2 - lon1) * Math.cos(lat2),
     Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1),
-  ) * 180 / Math.PI).toFixed(1));
+  ) * 180 / Math.PI);
+  return norm(Number(direction.toFixed(1)));
 }
 
 export function candidateGStateKey(part) {
