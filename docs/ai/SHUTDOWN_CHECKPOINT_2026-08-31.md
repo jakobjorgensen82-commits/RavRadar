@@ -21,7 +21,7 @@ Den offentlige model er fortsat Candidate G. Dette checkpoint aktiverer eller pu
 - `version.json` er ottende bindingsforbruger.
 - Candidate G-rollbackbindingen er regenereret som 55-filers bundle:
   - kontrakt `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`
-  - bundle `dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4`
+  - bundle `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`
 - Pages-privacygaten accepterer kun eksakt integreret eller eksakt Candidate G-rollbackbinding fra manifestet og afviser mixed/unknown binding.
 - De 10 Markdown-filer, som midlertidigt blev afkortet ved en lokal redigeringsfejl, er genoprettet fra `947554c4`. Byte-/diffkontrol beviste genopretningen, hvorefter kun de kendte 8-forbruger-, 55-filers- og PR #237-statusrettelser blev genanvendt.
 - Ingen syntetisk historik, interpolation af det gamle driftshul eller Feggesund-nabolån er genindført.

@@ -65,7 +65,7 @@ Følgende værdier skal hentes fra kodekontrakten og må ikke kopieres ind i par
 | Eksakt aldrig-offentlig state-5-migration | `integrated-schema5-ready-point-to-schema6-history-bounds-v1` |
 | Rollback | `integrated-schema6-to-candidate-g-schema2-v3` |
 | Parameterkontrakt | `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` |
-| Transitiv implementeringsbundle | `modelBundleSha256=3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6`; 43 kanonisk normaliserede transitive implementeringsfiler; 8 deklarerede forbrugere |
+| Transitiv implementeringsbundle | `modelBundleSha256=978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9`; 43 kanonisk normaliserede transitive implementeringsfiler; 8 deklarerede forbrugere |
 
 Den serialiserede runtimebinding består præcist af model-, state-, variant-, profil-, komponent-, forklarings-, rangerings-, best-time- og præsentations-id samt de to adskilte hashes: 11 felter i alt. `modelContractSha256` binder den kanoniske parameterkontrakt. `modelBundleSha256` binder den transitive implementering, så en ændring i en indlæst evaluator, adapter, policy eller anden kanonisk modelafhængighed ikke kan gemme sig bag uændret parameter-JSON. Migration og rollback er særskilte overgangskontrakter. Hver continuation-state, hvert checkpoint og den centrale profilselection skal bære og matche alle 11 felter; det samme gælder payload, cache, forklaring og release. Et model-id eller én hash alene er aldrig nok. Ovenstående state-6-værdier er reproduceret af bundlegeneratoren over præcis 43 filer og otte deklarerede forbrugere på den lokale 4.0.318-kandidat; de er ikke i sig selv exact-head- eller produktionsbevis. DEC-0112 er autoritativ for den numeriske `HISTORY_INCOMPLETE`-kontrakt og for 5→6-overgangen.
 
@@ -238,7 +238,7 @@ For at bevare et komplet tur-snapshot må kun den eksakt navngivne `READY`/`memo
 
 Rollbacken er bevidst **fail-closed og local-only for Spørg RavRadar**. Candidate G-Pages-overlayet erstatter klientens offentlige modelbinding, mens assistentens integrerede Edge-funktion forbliver deployet og afviser Candidate G-bindingen med eksakt HTTP `409`. Klienten bruger derefter de eksisterende deterministiske lokale DA/DE/EN-svar. Schema-3-ture lagres fortsat under den eksakte Candidate G-binding med `calibration_eligible=false`. Dette er hverken en Edge/backend-helrollback, en skjult dualmodel eller en Candidate G-serverfallback.
 
-4.0.318's endelige Candidate G-rollbackbundle har sin egen `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og sin egen transitive 55-filers `modelBundleSha256=dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4`. Begge værdier er regenereret, forseglede og regressionstestede; kontraktdigesten alene er aldrig et gyldigt bundlebevis.
+4.0.318's endelige Candidate G-rollbackbundle har sin egen `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og sin egen transitive 55-filers `modelBundleSha256=4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`. Begge værdier er regenereret, forseglede og regressionstestede; kontraktdigesten alene er aldrig et gyldigt bundlebevis.
 
 ## Evidens- og påstandsgrænse
 

@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-08-31
+
+- Denne topstatus superseder ældre topresumeer nedenfor.
+- Kode- og workflowstatus: PR #238 er merged som main `57f76d716310060e0d629c9f9d3691d386a2dd58`, og workflowfixes fra PR #239/#240 er merged videre til `be81005b50294f54367f154c393bb27910e16c6f`.
+- Produktionsstatus: run `33391418061` og `33393684620` stoppede fail-closed før DMI, beskyttede writes, artifact og Pages på grund af én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03` med bearing `360` uden for den aktive `[0,360)`-kontrakt.
+- Nuværende lokale remediation er PR #241: kun kanonisering af afrundet `360` til `0`, uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
+- Lokale bundle-hashes er nu integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Offentlig status er uændret: Candidate G er stadig offentlig. Exact-head, merge, frisk produktion og offentlig browserverifikation af PR #241 udestår.
 # Implementeringsstatus – 4.0.318 first-cutover-hærdning; Candidate G er fortsat offentlig
 
 ## P0/P2 – operationel head-move og exact-target recovery 2026-08-31
@@ -28,7 +36,7 @@
 - [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover; bevar selve integreret activation som push-only. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
 - [x] Opret DEC-0113 samt de fem aktive krav for source-attested cold start, source/active registry-separation, measured rollback, UTC-paritet og pre-mutation-stop.
 - [x] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
-- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer. Version 4.0.318/docs/geodatabevis lukkes i slutpasset.
+- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Version 4.0.318/docs/geodatabevis lukkes i slutpasset.
 - [ ] Bestå egen 4.0.318-PR exact-head, merge sikkert og gennemfør frisk fuld produktion med DMI/Copernicus, validate, releasegate, protected checkpoint/runtime, artifact, Pages og atomisk activation.
 - [ ] Bevis Feggesund 3 × 118 og verificér offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
 - [ ] Begræns konklusionen til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.

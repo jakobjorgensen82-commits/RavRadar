@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-08-31
+
+- Denne topstatus superseder ældre topresumeer nedenfor.
+- PR #238 (modelkilden) er merged som `origin/main 57f76d716310060e0d629c9f9d3691d386a2dd58`. Workflowfixes fra PR #239/#240 er merged videre til `origin/main be81005b50294f54367f154c393bb27910e16c6f`.
+- Produktion `33391418061` og `33393684620` stoppede sikkert før DMI, beskyttede writes, artifact og Pages, fordi én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03` stod med bearing `360`, selv om aktiv kontrakt kræver `[0,360)`.
+- PR #241 er den smalle opfølgning: kun normalisering af afrundet `360` til `0`, ingen geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
+- De lokale bundle-hashes er nu integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Candidate G er fortsat offentlig. Næste chat skal ikke overclaim: opdateret exact-head, merge, frisk produktion og offentlig desktop-/mobilbrowserverifikation udestår fortsat.
 # RavRadar – overlevering til næste chat
 
 > **Historikregel:** 4.0.318-afsnittet nedenfor styrer modelarbejdet; 4.0.316/Candidate G er den offentlige produktionsbaseline. 4.0.317-afsnittet og alle senere sektioner mærket historisk er revisionsspor. Gamle rekonstruktionsordrer må ikke udføres.
@@ -9,7 +17,7 @@
 - 4.0.318 har lokalt grønne måltests for controller-v4, historical Candidate/integrated H0→H1, direct historical Candidate→integrated og exact-target recovery. Orchestrator/build/deploy, alle 40 direkte workflowreaders, role-aware workflowkontrakter, public-integrated 210/673 + 78 browsermoduler, profil/cutover og 8-consumer-binding er grønne; slutreviewet fandt ingen P0/P1. Schemaet forbliver 30 felter/4 statusser/6 transitionstyper; ordinary maintenance er exact-current.
 - Source-abort kræver NOT_STARTED-bevis. Ambiguous Pages source-visible går til exact-target writer + separat finalizer. `pages-recovery-*` er næste source-lineage. Third/mixed/reversed/stale/tampered/missing plan stopper.
 - Outcome er lokalt løftet til `ravradar-production-workflow-outcome-v2`; P2-assistent-/DA/DE/EN-tests for HISTORY_INCOMPLETE vs direct missing og firetimers energivægtet/maks 15 % plain language er grønne.
-- Slutbindingen er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer.
+- Slutbindingen er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
 - Ét aktivt 15-minutters kontroljob diagnosticerer vejr-/GitHubfejl og reparerer sikkert; det må ikke duplikere scheduler/watchdog eller blindt redispatche. Næste rækkefølge: slutdocs/version → fuld `validate:source` → exact-head/merge → frisk fuld state-6-produktion/Pages → Feggesund 3 × 118 → offentlig 210/673/current/fem døgn/desktop/mobil.
 
 ## Aktuelt modelspor – 2026-08-30 lokal 4.0.318 first-cutover-hærdning

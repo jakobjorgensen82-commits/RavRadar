@@ -1,8 +1,16 @@
+# NYESTE CHECKPOINT – 2026-08-31
+
+- Denne topstatus superseder ældre topresumeer nedenfor.
+- PR #238 merged modelkilden til main `57f76d716310060e0d629c9f9d3691d386a2dd58`; workflowfixes PR #239/#240 merged videre til main `be81005b50294f54367f154c393bb27910e16c6f`.
+- Produktion `33391418061` og `33393684620` stoppede korrekt før DMI, beskyttede writes, artifact og Pages på én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03`, hvor bearing var `360`, mens aktiv kontrakt kræver `[0,360)`.
+- PR #241 er den smalle bearing-remediation: afrundet `360` normaliseres til `0` uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
+- Endelige lokale bundle-hashes er integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Candidate G er fortsat offentlig; opdateret exact-head, merge, frisk produktion og offentlig desktop-/mobilbrowserverifikation er stadig åbne releasegates.
 ## 2026-08-31 – 4.0.318 docs-/bindingsslutpass og frisk Candidate G-drift
 
 - Offentlig Candidate G/4.0.316 er frisk som `rr-20260831031027-210` fra full push-produktion `33352634365` på exact mergehead `8c03e25d`. DMI/Copernicus, fuld validate, releasegate, begge skrivefri trip-storage-verifiere, artifact og Pages er grønne; manifest, startup og detaljer binder samme 210 zoner/673 kystdele, `VERIFIED_ONLY`, `syntheticSampleCount=0`. Candidate G er fortsat ærligt 0/210 aktiv på grund af det gamle utilstrækkelige sammenhængende historikvindue; det må heles naturligt og er ikke state-6-bevis. Visuel desktop-/mobilkontrol er stadig åben.
 - Fire sikre pre-deploy-stop (`33343469247`, `33344823000`, `33348745681`, `33351090164`) isolerede transient HTTP 503 i den gamle liveness-probe. Same-version hotfix PR #237 bestod exact-head `33352520408`, blev merged som `8c03e25d`, og backendrun `33352661061` plus fuld produktion `33352634365` verificerede bounded fail-closed retry kun for faste statefri OPTIONS/signeret GET/count-read-probes; normale kald og writes forbliver single-shot.
-- Den lokale 4.0.318-binding er regenereret til integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer.
+- Den lokale 4.0.318-binding er regenereret til integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
 - Outcome v2 og Spørg RavRadar/DA-DE-EN-plain-language er lokalt måltestet. Candidate G forbliver offentlig indtil atomisk cutover; fuld sourcegate, exact-head, frisk state-6-produktion, Feggesund 3 × 118 og offentlig browserkontrol udestår.
 - Ét aktivt 15-minutters kontroljob diagnosticerer vejr- og GitHub-afvigelser og reparerer sikkert; det må ikke duplikere scheduler/watchdog eller blindt redispatche et kendt fejlet build.
 
