@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-01 – vejrpipeline lokalt rettet; releasebevis åbent
+
+- GitHubs hovedworkflow og eksisterende vagthund er aktive, men run `33445662715`, `33446827961` og `33449081608` stoppede i den tidlige kildegate. Run `33442030072` nåede DMI, men stoppede ved den fail-closed Copernicus-targetregistry. Ingen af dem byggede eller deployede et nyt vejrdatasæt; seneste fulde produktionsbevis er `33378344817`.
+- Kildegatefejlen var en UTC-midnatsflage: Spørg RavRadar-testen byggede “i morgen” fra UTC-datoen, mens produktionen korrekt bruger `Europe/Copenhagen`. Testen bruger nu fast klokkeslæt og den fælles forecastkalender.
+- DMI-producentens genbrugsvej kræver nu eksakt aktivt `PART::`-set og mindst ét finite, samme-række, native-proveniensverificeret U/V-par i den låste `target−48..target+117`-matrix. Den faktisk valgte fallbackcache materialiseres atomisk til næste forbruger, og normal/WAM-producenten kan ikke returnere succes med nul sådanne par.
+- Målrettede assistent-, provenance-, targetregistry-, scheduler-, bulk-, WAM 18/18- og integrerede bundletests er grønne. Ingen geometri, land-/vandpunkter, private payloads, koordinater eller rå U/V er læst eller ændret.
+- Første PR #244 exact-head `33450446237` nåede den afsluttende releasegate og stoppede kun, fordi gaten stadig søgte de to gamle inline-provenienslinjer i targetregistryen efter deres tilsigtede flytning til den fælles helper. Den lokale paritetsrettelse attesterer nu både registrykaldet og helperens native-time/provenienskontrakt; den målrettede releasegate er grøn. Ingen merge eller produktion skete på den fejlede head.
+- Exact-head, merge, én frisk fuld vejrproduktion, Pages-deploy og offentlig friskhedsverifikation udestår. Candidate G forbliver offentlig indtil alle gates er grønne.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #242 merged; first cutover nåede DMI/WAM
 
 - PR #242 bestod exact-head-kildegaten `33408976253` på `922891635caf4a95a8cbd92bd1ac09cc8a0398ae` og blev merged som `origin/main 29f39cce44ffe6e3a1c14d5b58e991b61da2faba`.

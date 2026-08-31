@@ -804,17 +804,22 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         operational_binding = source.index(
             "bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete"
         )
-        fail_closed_return = source.index(
-            "if wave_bootstrap_configuration is not None and not bootstrap_complete:\n"
-            "        return 2",
+        success_gate_binding = source.index(
+            "producer_success_is_blocked = producer_success_blocked(",
             operational_binding,
+        )
+        fail_closed_return = source.index(
+            "if producer_success_is_blocked:\n"
+            "        return 2",
+            success_gate_binding,
         )
         final_return = source.index(
             "return 0 if fresh_successes or fresh_partials",
             fail_closed_return,
         )
         self.assertLess(validator, operational_binding)
-        self.assertLess(operational_binding, fail_closed_return)
+        self.assertLess(operational_binding, success_gate_binding)
+        self.assertLess(success_gate_binding, fail_closed_return)
         self.assertLess(fail_closed_return, final_return)
 
     def test_hard_crash_after_history_cannot_bypass_workflow_gate(self) -> None:

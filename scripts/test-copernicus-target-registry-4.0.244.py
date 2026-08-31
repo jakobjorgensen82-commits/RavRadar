@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.copernicus_current import validate_target_registry
+from lib.dmi_native_provenance import strict_verified_part_current_pair_count
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,7 +67,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     ]
     write(folder / "targets.json", {"partCount": 3, "zones": {"Z1": parts[:2], "Z2": parts[2:]}})
     valid = AT
-    write(folder / "dmi.json", {"zones": {
+    dmi_document = {"zones": {
         "PART::dmi-ok": {"samplingPoint": parts[0]["waterPoint"], "hourly": {valid: {
             "time": valid, "current-u": 0.1, "current-v": 0.2,
             "sources": {"current": source(parts[0], REFERENCE)},
@@ -75,7 +76,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
             "time": valid, "current-u": 0.1, "current-v": 0.2,
             "sources": {"current": source(parts[1], REFERENCE, fieldSet=["current-u"])},
         }}},
-    }})
+    }}
+    write(folder / "dmi.json", dmi_document)
 
     github_output = folder / "github-output.txt"
     targeted = run(folder, "--nearest-dmi-hour", "--github-output", str(github_output))
@@ -87,6 +89,18 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert selected["rangeEndAt"] == (REFERENCE + timedelta(hours=117)).isoformat().replace("+00:00", "Z")
     assert selected["totalPairCount"] == 498
     assert selected["dmiVerifiedPairCount"] == 1
+    verifier_targets = [{
+        "partId": part["partId"],
+        "parentZoneId": part["sourceZoneId"],
+        "name": part["name"],
+        "waterPoint": part["waterPoint"],
+    } for part in parts]
+    assert strict_verified_part_current_pair_count(
+        dmi_document,
+        verifier_targets,
+        REFERENCE - timedelta(hours=48),
+        REFERENCE + timedelta(hours=117),
+    ) == selected["dmiVerifiedPairCount"]
     assert selected["requiredPairCount"] == 497
     assert selected["partCount"] == 3, "Every part has at least one exact gap across the range"
     assert selected["coordinatesChanged"] is False

@@ -1,3 +1,11 @@
+## 4.0.318-kandidat – strict DMI-kystdelscache og stabil dansk forecastkalender (2026-09-01)
+
+- Retter en UTC-midnatsflaky Spørg RavRadar-test, så GitHubs kildegate bruger samme `Europe/Copenhagen`-kalender som appen.
+- En DMI-cache kan kun genbruges, når dens aktive `PART::`-set er eksakt, og mindst ét finite U/V-par på samme række har fuld native provenance i `target−48..target+117`.
+- Den valgte fallbackcache skrives atomisk til den fil, targetregistryen faktisk læser; normal og WAM kan ikke rapportere producentsucces med nul strict par.
+- Ingen scoreformel, modelbinding, geometri, land-/vandpunkt eller privat data ændres. Exact-head, merge og frisk produktions-/Pagesbevis udestår.
+- Første PR #244 exact-head `33450446237` fandt én forældet releasegate-assertion efter helperudtrækket. Attesten følger nu den fælles registry→helper-kontrakt; målrettet releasegate er grøn, og opdateret exact-head afventer.
+
 ## 4.0.318-kandidat – DMI/WAM-progressionscache og privat punktkandidat (2026-08-31)
 
 - PR #242 bestod exact-head `33408976253` og blev merged som `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`. Produktion `33412497717` passerede Candidate G-attesteringen og kildegaten, men stoppede i DMI/WAM før artifact, Pages og activation.

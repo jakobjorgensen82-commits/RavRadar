@@ -643,6 +643,7 @@ ok(integratedProfileChain.includes('test-integrated-cutover-install-contract.mjs
 ok(!(packageScripts['test:coastal-geometry-v2']??'').includes('test-ravscore-active-shadow-workflow'),
 'Geometritesten må ikke genaktivere Candidate G-shadowjobbet');
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
+const dmiNativeProvenance=await read('scripts/lib/dmi_native_provenance.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
 const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
 const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
@@ -675,12 +676,18 @@ for(const marker of [
 const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-current-shadow.yml');
 for(const marker of [
   'hours = matrix_hours(reference)',
-  'canonical_row_time(row.get("time") or key) != expected_time',
-  'complete_native_source_for_hour(source, "current", entity_id, entity, expected_time)',
+  'return verified_part_current_pair(document, target, valid_time)',
   '"rangeEndAt": utc_iso(hours[-1])',
   '"requiredPairsSha256": required_pairs_sha256(required_pairs)',
 ]){
   ok(targetRegistry.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler native-timebindingen: ${marker}`);
+}
+for(const marker of [
+  'def verified_part_current_pair(',
+  'canonical_time(row.get("time") or key) != expected_time',
+  'complete_native_source_for_hour(',
+]){
+  ok(dmiNativeProvenance.includes(marker),`Den delte DMI-provenienshelper mangler strict native-timebindingen: ${marker}`);
 }
 const targetRegistryTestChain=packageScripts['test:copernicus-target-registry']??'';
 for(const marker of [

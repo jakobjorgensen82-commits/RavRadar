@@ -2,14 +2,18 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import tempfile
 import types
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from lib.dmi_native_provenance import (
     CURRENT_VECTOR_SELECTION,
     complete_native_source_for_hour,
     sampling_identity,
+    strict_verified_part_current_pair_count,
 )
 
 
@@ -68,6 +72,199 @@ assert source is not None
 entity = sampling_identity(zone)
 assert entity is not None
 assert complete_native_source_for_hour(source, "current", zone["id"], entity, valid_time)
+
+target = {
+    "partId": "TEST",
+    "parentZoneId": "ZONE-TEST",
+    "name": "Test",
+    "waterPoint": [2.0, 1.0],
+}
+targets = [target]
+reference = datetime(2026, 1, 1, 3, tzinfo=timezone.utc)
+document = {
+    "zones": {
+        "PART::TEST": {
+            "hourly": {
+                valid_time: {
+                    "time": valid_time,
+                    "current-u": 0.1,
+                    "current-v": -0.2,
+                    "sources": {"current": source},
+                },
+            },
+        },
+    },
+}
+assert strict_verified_part_current_pair_count(
+    document,
+    targets,
+    reference - timedelta(hours=48),
+    reference + timedelta(hours=117),
+) == 1
+assert producer.coastal_part_current_cache_reusable(document, targets, reference)
+
+stale_positive_diagnostics = {
+    "diagnostics": {
+        "coastalPartCount": 1,
+        "coastalPartComponentHorizonCoverage": {
+            "marine": {"zonesWithAnyData": 1},
+        },
+    },
+    "zones": {},
+}
+assert not producer.coastal_part_current_cache_reusable(
+    stale_positive_diagnostics,
+    targets,
+    reference,
+)
+
+wrong_source = json.loads(json.dumps(document))
+wrong_source["zones"]["PART::TEST"]["hourly"][valid_time]["sources"]["current"][
+    "entityId"
+] = "PART::OTHER"
+assert not producer.coastal_part_current_cache_reusable(
+    wrong_source,
+    targets,
+    reference,
+)
+
+outside_matrix_reference = datetime(2026, 1, 10, 3, tzinfo=timezone.utc)
+assert not producer.coastal_part_current_cache_reusable(
+    document,
+    targets,
+    outside_matrix_reference,
+)
+
+wrong_part_set = {
+    "zones": {
+        "PART::OTHER": document["zones"]["PART::TEST"],
+    },
+}
+assert not producer.coastal_part_current_cache_reusable(
+    wrong_part_set,
+    targets,
+    reference,
+)
+
+extra_part = json.loads(json.dumps(document))
+extra_part["zones"]["PART::EXTRA"] = json.loads(
+    json.dumps(document["zones"]["PART::TEST"])
+)
+assert not producer.coastal_part_current_cache_reusable(
+    extra_part,
+    targets,
+    reference,
+)
+
+missing_vector_component = json.loads(json.dumps(document))
+missing_vector_component["zones"]["PART::TEST"]["hourly"][valid_time].pop(
+    "current-v"
+)
+assert not producer.coastal_part_current_cache_reusable(
+    missing_vector_component,
+    targets,
+    reference,
+)
+
+for component, nonfinite in (
+    ("current-u", float("nan")),
+    ("current-v", float("inf")),
+):
+    nonfinite_vector = json.loads(json.dumps(document))
+    nonfinite_vector["zones"]["PART::TEST"]["hourly"][valid_time][
+        component
+    ] = nonfinite
+    assert not producer.coastal_part_current_cache_reusable(
+        nonfinite_vector,
+        targets,
+        reference,
+    )
+
+split_vector_rows = json.loads(json.dumps(document))
+first_row = split_vector_rows["zones"]["PART::TEST"]["hourly"][valid_time]
+first_row.pop("current-v")
+second_valid_time = "2026-01-01T04:00:00Z"
+second_source = json.loads(json.dumps(source))
+second_source["nativeValidTime"] = second_valid_time
+split_vector_rows["zones"]["PART::TEST"]["hourly"][second_valid_time] = {
+    "time": second_valid_time,
+    "current-v": -0.2,
+    "sources": {"current": second_source},
+}
+assert not producer.coastal_part_current_cache_reusable(
+    split_vector_rows,
+    targets,
+    reference,
+)
+
+malformed_documents = (
+    {"zones": 1},
+    {"zones": ["PART::TEST"]},
+    {"zones": {"PART::TEST": []}},
+    {"zones": {"PART::TEST": {"hourly": []}}},
+    {"zones": {"PART::TEST": {"hourly": {valid_time: []}}}},
+    {
+        "zones": {
+            "PART::TEST": {
+                "hourly": {
+                    valid_time: {
+                        "time": valid_time,
+                        "current-u": 0.1,
+                        "current-v": -0.2,
+                        "sources": [],
+                    },
+                },
+            },
+        },
+    },
+)
+for malformed_document in malformed_documents:
+    assert not producer.coastal_part_current_cache_reusable(
+        malformed_document,
+        targets,
+        reference,
+    )
+assert not producer.coastal_part_current_cache_reusable(
+    document,
+    [None],
+    reference,
+)
+
+for strict_anchor, bootstrap_requested, bootstrap_complete, expected in (
+    (False, False, False, True),
+    (False, True, True, True),
+    (True, True, False, True),
+    (True, False, False, False),
+    (True, True, True, False),
+):
+    assert producer.producer_success_blocked(
+        strict_anchor,
+        bootstrap_requested,
+        bootstrap_complete,
+    ) is expected
+
+with tempfile.TemporaryDirectory() as temporary_directory:
+    original_output = producer.OUTPUT_PATH
+    original_fallback = producer.DEPLOYED_FALLBACK_PATH
+    temporary_root = Path(temporary_directory)
+    producer.OUTPUT_PATH = temporary_root / "live" / "dmi-bulk-cache.json"
+    producer.DEPLOYED_FALLBACK_PATH = temporary_root / "deployed.json"
+    fallback_document = {
+        **document,
+        "zoneRegistrySignature": "test-registry",
+        "generatedAt": valid_time,
+    }
+    producer.DEPLOYED_FALLBACK_PATH.write_text(
+        json.dumps(fallback_document),
+        encoding="utf-8",
+    )
+    try:
+        selected = producer.load_previous("test-registry")
+        producer.atomic_write_bulk_cache(selected)
+        assert json.loads(producer.OUTPUT_PATH.read_text("utf-8")) == fallback_document
+    finally:
+        producer.OUTPUT_PATH = original_output
+        producer.DEPLOYED_FALLBACK_PATH = original_fallback
 
 for field, wrong in (
     ("entityId", "PART::OTHER"),

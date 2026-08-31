@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 import { classifyRavQuestion, askRavRadar } from '../js/services/rav-assistant.js';
+import { forecastDateKeyForDayOffset } from '../js/core/forecast-calendar.js';
 
 const cases = [
   ['hvilket udstyr skal jeg bruge?', 'equipment'],
@@ -21,9 +22,8 @@ const equipment = await askRavRadar(
 assert.match(equipment, /polariserede|ravlygte|waders/i);
 assert.doesNotMatch(equipment, /Aktuelle RavRadar-data/);
 
-const tomorrow = new Date();
-tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-const date = tomorrow.toISOString().slice(0, 10);
+const now = Date.parse('2026-08-31T12:00:00.000Z');
+const date = forecastDateKeyForDayOffset(now, 1);
 const at = hour => `${date}T${String(hour).padStart(2, '0')}:00:00.000Z`;
 const exactBounds = score => ({
   lower: score,
@@ -112,12 +112,12 @@ const context = {
   conditions: { coastalParts },
 };
 
-const bestPlace = await askRavRadar('bedste sted i morgen?', context, { localOnly: true });
+const bestPlace = await askRavRadar('bedste sted i morgen?', context, { localOnly: true, now });
 assert.match(bestPlace, /1\. Zone høj – score 81/);
 assert.match(bestPlace, /2\. Zone lav – score 55/);
 assert.doesNotMatch(bestPlace, /Zone uden data/);
 
-const bestTime = await askRavRadar('bedste tidspunkt i morgen?', context, { localOnly: true });
+const bestTime = await askRavRadar('bedste tidspunkt i morgen?', context, { localOnly: true, now });
 assert.match(bestTime, /Zone høj/);
 assert.match(bestTime, /RavScore 81/);
 assert.match(bestTime, /72/);
@@ -125,7 +125,7 @@ assert.match(bestTime, /72/);
 const noCandidateData = await askRavRadar(
   'bedste sted i morgen?',
   { ...context, conditions: {} },
-  { localOnly: true },
+  { localOnly: true, now },
 );
 assert.match(noCandidateData, /ikke nok gyldige prognosedata/i);
 assert.doesNotMatch(noCandidateData, /score \d+/i);

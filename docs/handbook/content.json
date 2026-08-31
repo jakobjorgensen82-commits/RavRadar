@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.318",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-08-31",
+  "updatedAt": "2026-09-01",
   "sections": [
+    {
+      "id": "weather-strict-part-cache-and-calendar-4-0-318",
+      "chapter": "90",
+      "title": "4.0.318: stabil vejropdatering ved dansk midnat",
+      "summary": "Kildegaten bruger den danske forecastkalender, og DMI-cachegenbrug kræver et faktisk verificeret strømpar for aktive kystdele.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Vejrworkflowet var aktivt, men flere runs stoppede før en ny offentlig vejrpakkes bygning. En test beregnede \"i morgen\" i UTC omkring dansk midnat, og DMI-cachegenbrug kunne godkendes uden et samlet verificeret kystdelsstrømpar. Begge fejl er lokalt rettet og måltestet; frisk produktions- og Pages-bevis udestår.</div><div class=\"handbook-stack\"><p><strong>Kalender:</strong> Relative prognosedage i tests bruger nu RavRadars fælles <code>Europe/Copenhagen</code>-kalender og et fast klokkeslæt.</p><p><strong>DMI-cache:</strong> Genbrug kræver eksakt aktivt <code>PART::</code>-register og mindst ét finite U/V-par på samme time og række med fuld native provenance i den låste <code>target−48..target+117</code>-matrix. Den faktisk valgte fallback materialiseres atomisk til næste trin.</p><p><strong>Fail-closed:</strong> Nul strict par stopper både normal og WAM-produktion, mens reelt progressivt cachearbejde fortsat checkpointes. Ingen scoreformel, geometri, land-/vandpunkt eller private data ændres.</p></div>"
+    },
     {
       "id": "ravscore-operational-recovery-and-historical-maintenance-4-0-318",
       "chapter": "90",

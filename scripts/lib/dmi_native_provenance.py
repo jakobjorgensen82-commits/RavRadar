@@ -271,4 +271,131 @@ def complete_native_source_for_hour(
     return True
 
 
+def _verified_part_current_row(
+    row: Any,
+    target: Any,
+    valid_time: Any,
+) -> bool:
+    if not isinstance(row, dict) or not isinstance(target, dict):
+        return False
+    part_id = str(target.get("partId") or "").strip()
+    parent_zone_id = str(target.get("parentZoneId") or "").strip()
+    sampling_point = _finite_point(target.get("waterPoint"))
+    expected_time = canonical_time(valid_time)
+    if not part_id or not parent_zone_id or sampling_point is None or expected_time is None:
+        return False
+    parsed_time = datetime.fromisoformat(expected_time.replace("Z", "+00:00"))
+    if parsed_time != parsed_time.replace(minute=0, second=0, microsecond=0):
+        return False
+    entity_id = f"PART::{part_id}"
+    entity = {
+        "parentZoneId": parent_zone_id,
+        "entityType": "coastal-part",
+        "samplingContext": "coastal-part-water-point",
+        "samplingPoint": sampling_point,
+    }
+    current_u, current_v = row.get("current-u"), row.get("current-v")
+    if not (
+        isinstance(current_u, (int, float))
+        and not isinstance(current_u, bool)
+        and math.isfinite(float(current_u))
+        and isinstance(current_v, (int, float))
+        and not isinstance(current_v, bool)
+        and math.isfinite(float(current_v))
+    ):
+        return False
+    sources = row.get("sources")
+    if not isinstance(sources, dict):
+        return False
+    source = sources.get("current") or {}
+    return complete_native_source_for_hour(
+        source,
+        "current",
+        entity_id,
+        entity,
+        expected_time,
+    )
+
+
+def verified_part_current_pair(
+    document: Any,
+    target: Any,
+    valid_time: Any,
+) -> bool:
+    """Verify one finite same-row coastal-part current pair at one UTC hour."""
+    if not isinstance(document, dict) or not isinstance(target, dict):
+        return False
+    part_id = str(target.get("partId") or "").strip()
+    expected_time = canonical_time(valid_time)
+    if not part_id or expected_time is None:
+        return False
+    zones = document.get("zones")
+    if not isinstance(zones, dict):
+        return False
+    zone = zones.get(f"PART::{part_id}") or {}
+    if not isinstance(zone, dict):
+        return False
+    hourly = zone.get("hourly") or {}
+    if not isinstance(hourly, dict):
+        return False
+    for key, row in hourly.items():
+        if not isinstance(row, dict) or canonical_time(row.get("time") or key) != expected_time:
+            continue
+        if _verified_part_current_row(row, target, expected_time):
+            return True
+    return False
+
+
+def strict_verified_part_current_pair_count(
+    document: Any,
+    targets: Any,
+    range_start: Any,
+    range_end: Any,
+) -> int:
+    """Count strict part/hour pairs in one inclusive exact-hour matrix."""
+    start_text, end_text = canonical_time(range_start), canonical_time(range_end)
+    if start_text is None or end_text is None or not isinstance(targets, (list, tuple)):
+        return 0
+    start = datetime.fromisoformat(start_text.replace("Z", "+00:00"))
+    end = datetime.fromisoformat(end_text.replace("Z", "+00:00"))
+    if (
+        start != start.replace(minute=0, second=0, microsecond=0)
+        or end != end.replace(minute=0, second=0, microsecond=0)
+        or end < start
+    ):
+        return 0
+    count = 0
+    zones = document.get("zones") if isinstance(document, dict) else {}
+    if not isinstance(zones, dict):
+        return 0
+    for target in targets:
+        if not isinstance(target, dict):
+            continue
+        part_id = str(target.get("partId") or "").strip()
+        zone = zones.get(f"PART::{part_id}") or {}
+        if not isinstance(zone, dict):
+            continue
+        hourly = zone.get("hourly") or {}
+        if not isinstance(hourly, dict):
+            continue
+        verified_times: set[str] = set()
+        for key, row in hourly.items():
+            if not isinstance(row, dict):
+                continue
+            row_time = canonical_time(row.get("time") or key)
+            if row_time is None or row_time in verified_times:
+                continue
+            parsed = datetime.fromisoformat(row_time.replace("Z", "+00:00"))
+            if (
+                parsed != parsed.replace(minute=0, second=0, microsecond=0)
+                or parsed < start
+                or parsed > end
+            ):
+                continue
+            if _verified_part_current_row(row, target, row_time):
+                verified_times.add(row_time)
+        count += len(verified_times)
+    return count
+
+
 verified_native_component_source = complete_native_source_for_hour

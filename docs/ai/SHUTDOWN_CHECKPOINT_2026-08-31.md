@@ -68,3 +68,53 @@ Seneste observerede automatiske Candidate G-produktion `33355833084` på main `8
 3. Kør ikke fulde tests først; luk inventory/consumer- og releasegate-migreringen med måltests.
 4. Opdater aktiv RDKS/håndbog uden at ændre historiske 4.0.317-hashes.
 5. Kør samlet slutreview og derefter den ene bindende exact-head-kæde.
+
+---
+
+# Nedlukningscheckpoint 2 – DMI/Copernicus-kontrakt – 2026-08-31 23:33 CEST
+
+## Eksakt lokal tilstand
+
+- Branch: `codex/dmi-part-cache-reuse-gate`.
+- HEAD og seneste hentede `origin/main`: `0dcde6b8a840aaff51d0d294f4cc46a4604e4992`.
+- Fem lokale, gemte kode-WIP-filer er ændret: `scripts/update-dmi-bulk.py`, `scripts/test-dmi-scheduler-active-zones-4.0.117.mjs`, `scripts/test-dmi-bulk-model-download.mjs`, `scripts/lib/dmi_native_provenance.py` og `scripts/build-copernicus-target-registry.py`.
+- WIP-kontrollen baserer sig endnu på aggregeret diagnostik og er bevist for svag. Den må ikke committes, pushes, merges eller deployes i den nuværende form.
+- Efter den første checkpointskrivning blev den delte strict pair-helper lokalt tilføjet i provenancebiblioteket, og target-registryen blev lokalt omlagt til at kalde den. Den efterfølgende patch af producenten blev afvist uden ændringer. De to nye filer er derfor også utestet WIP og må ikke betragtes som en færdig rettelse.
+- Ingen geometri, land-/vandpunkter, private payloads, koordinater, rå U/V eller credentials er læst, skrevet eller ændret i dette arbejdsafsnit.
+
+## Beviste konklusioner
+
+1. Target-registryens nul-gate er korrekt fail-closed og skal bevares.
+2. DMI-producentens hurtige cachegenbrug kan returnere succes ud fra forældrezonedækning og separate globale U/V-tællinger, selv om ingen eksakt kystdel har et samlet, provenance-verificeret strømpar i den låste `target−48..target+117`-matrix.
+3. Den hurtige sti kan kontrollere den valgte deployed fallback i hukommelsen uden at materialisere netop dette dokument til `data/live/dmi-bulk-cache.json`, som næste trin læser.
+4. Mindste korrekte gate er fortsat mere end nul strict par i den eksakte matrix, ikke en ny procent- eller target-hour-politik. Det faktiske `PART::<id>`-set skal samtidig være eksakt lig det autoritative aktive register.
+5. Samme strict kontrakt skal deles af producent og target-registry. Den normale/WAM-afslutning må heller ikke kunne returnere succes med nul strict current-par.
+
+## GitHub- og vejrstatus ved checkpointet
+
+- GitHubs 15-minutters scheduler og den private cache-keepalive er aktive på main-head `0dcde6b8`.
+- Seneste kontrollerede vejrproduktioner `33434007877`, `33434900041` og `33437475995` sluttede rødt ved den fail-closed Copernicus-target-gate; ingen af dem deployede et nyt artifact.
+- Private Copernicus-cache-keepalive-kørsler fortsatte grønt til og med `33440724601` kl. 21:19 UTC.
+- Det er derfor bevist, at schedulerens triggere lever, men ikke at friske offentlige vejrdatasæt bliver deployet. Dette skal behandles som den højeste driftsprioritet ved genoptagelse; blinde reruns kan ikke løse kontraktbruddet.
+
+## Præcis genoptagelse
+
+1. Erstat den nuværende diagnostikbaserede WIP-helper med en delt, direkte payload-verifikator: eksakt aktivt PART-set, finite U/V på samme eksakte time og `complete_native_source_for_hour()` i den låste 166-timersmatrix.
+2. Materialisér atomisk den faktisk valgte cache til producentens `OUTPUT_PATH` før fast-path-success.
+3. Brug samme gate før normal/WAM-success; checkpoint fremdrift, men returnér non-success ved nul strict current-par.
+4. Test kun de målrettede falske positive cases, producent/registry-paritet, fallback-materialisering og WAM-successkontrakten.
+5. Lav én samlet rettelsescommit, én exact-head-kildekontrol, sikker merge og én frisk produktion. Verificér derefter nyt offentligt dataset; gentag ikke blindt.
+
+Nedlukningsnote 23:43 CEST: Arbejdet blev eksplicit stoppet efter ejerens gentagne nedlukningsbesked. To read-only-agenter blev afbrudt. Ingen lokal test, commit, push, PR, merge eller workflow-dispatch blev startet efter denne note.
+
+---
+
+# Genoptaget checkpoint – vejrpipeline – 2026-09-01
+
+- Computeren er igen online, og ejeren har udtrykkeligt bedt om autonom, kontinuerlig genopretning af vejrdata og derefter fortsat modelimplementering.
+- Liveaudit beviste aktive schedulere/vagthund, men ingen frisk publicering: `33445662715`, `33446827961` og `33449081608` stoppede i kildegaten; `33442030072` stoppede ved Copernicus-targetregistry. Seneste fulde produktionsbevis var `33378344817`.
+- UTC-midnatsflagen i Spørg RavRadar-testen er rettet med fast klokkeslæt og fælles dansk forecastkalender.
+- DMI-cachegenbrug og producentsucces kræver nu eksakt aktivt PART-set og mindst ét finite, samme-række, native-proveniensverificeret U/V-par i `target−48..target+117`; valgt fallback materialiseres atomisk.
+- Assistent-, provenance-, targetregistry-, scheduler-, bulk-, WAM 18/18- og integreret bundletest er grønne. Exact-head, merge, frisk fuld produktion/deploy og offentlig friskhed er næste handling.
+- Ingen geometri, land-/vandpunkter, private payloads, koordinater, rå U/V eller credentials er læst eller ændret.
+- Første PR #244 exact-head `33450446237` stoppede i den afsluttende releasegate på to forældede source-string-assertions til den nu delte DMI-helper. `scripts/release-gate.mjs` attesterer nu registry→helper og helperens native-time/proveniens; målrettet releasegate er grøn. Opdateret exact-head er næste handling.
