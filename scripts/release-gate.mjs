@@ -464,16 +464,20 @@ ok(rawZipHashPosition>=0
 for(const marker of [
   'ravscore-operational-recovery-handoff-v1',
   'pages-recovery-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT',
+]){
+  ok(orchestratorWorkflow.includes(marker),`Pages-recovery-lineage i orchestrator-rollen mangler ${marker}`);
+}
+for(const marker of [
   '^pages-recovery-([0-9]+)-([0-9]+)$',
   'ravscore-operational-recovery-handoff-$source_run_id-$source_attempt',
 ]){
-  ok(orchestratorWorkflow.includes(marker),`Pages-recovery-lineage mangler ${marker}`);
+  ok(deployWorkflow.includes(marker),`Pages-recovery-lineage i deploy-rollen mangler ${marker}`);
 }
 for(const marker of [
-  "text.indexOf('\\n  reconcile-operational-pending:')",
-  "text.indexOf('\\n  recover-operational-pages-target:')",
-  "text.indexOf('\\n  finalize-operational-pages-recovery:')",
-  "text.indexOf('\\n  operational-recovery-gate:')",
+  "orchestratorWorkflow.indexOf('\\n  reconcile-operational-pending:')",
+  "orchestratorWorkflow.indexOf('\\n  recover-operational-pages-target:')",
+  "orchestratorWorkflow.indexOf('\\n  finalize-operational-pages-recovery:')",
+  "orchestratorWorkflow.indexOf('\\n  operational-recovery-gate:')",
   'assertMarkersOrdered(operationalWriterSection',
   'downloaded_zip_sha256=',
   'EXACT_TARGET_REDEPLOY',
