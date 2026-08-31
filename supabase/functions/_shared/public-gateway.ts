@@ -1,3 +1,5 @@
+import { TRIP_STORAGE_LOGIN_REQUIRED_CODE } from "./trip-storage-contract-probe.js";
+
 const DEFAULT_ORIGINS = [
   "https://jakobjorgensen82-commits.github.io",
   "https://ravradar.dk",
@@ -101,7 +103,7 @@ export async function resolveAuthenticatedUserId(request: Request) {
 
 export async function requireAuthenticatedUserId(request: Request) {
   const userId = await resolveAuthenticatedUserId(request);
-  if (!userId) throw new GatewayError(401, "LOGIN_REQUIRED");
+  if (!userId) throw new GatewayError(401, TRIP_STORAGE_LOGIN_REQUIRED_CODE);
   return userId;
 }
 

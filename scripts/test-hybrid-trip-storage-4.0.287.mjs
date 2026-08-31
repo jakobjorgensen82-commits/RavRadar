@@ -705,6 +705,7 @@ class FakeD1Database {
     this.tombstoneRows = new Set();
     this.tripQueryBarrier = null;
     this.tripInsertBarrier = null;
+    this.countFailure = false;
   }
 
   prepare(sql) {
@@ -825,6 +826,7 @@ class FakeD1Database {
       },
       async all() {
         if (!sql.toLowerCase().includes('select count(*)')) throw new Error('Unexpected direct all query');
+        if (database.countFailure) throw new Error('PRIVATE_SYNTHETIC_COUNT_FAILURE');
         return { success: true, results: [{ trip_count: database.rows.size }] };
       },
     };
@@ -854,6 +856,29 @@ const unsigned = await handleRequest(new Request(`${gatewayUrl}/v1/trips/count`,
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
 }), env);
 assert.equal(unsigned.status, 401);
+
+env.TRIP_DB_4.countFailure = true;
+const failingCountTimestamp = String(Date.now());
+const failingCountBody = '{}';
+const failingCountSignature = await tripGatewaySignature({
+  secret: gatewaySecret,
+  timestamp: failingCountTimestamp,
+  method: 'POST',
+  pathname: '/v1/trips/count',
+  bodyText: failingCountBody,
+});
+const unavailableCount = await handleRequest(new Request(`${gatewayUrl}/v1/trips/count`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'X-RavRadar-Signature': failingCountSignature,
+    'X-RavRadar-Timestamp': failingCountTimestamp,
+  },
+  body: failingCountBody,
+}), env);
+assert.equal(unavailableCount.status, 503);
+assert.deepEqual(await unavailableCount.json(), { ok: false, error: 'COUNT_UNAVAILABLE' });
+env.TRIP_DB_4.countFailure = false;
 
 const configuration = { gatewayUrl, sharedSecret: gatewaySecret, fetchImpl: workerFetch, now: Date.now() };
 for (const [status, body, category] of [
@@ -1691,6 +1716,13 @@ const activationMarker = fs.readFileSync('scripts/mark-cloudflare-trip-storage-a
 const capacityAudit = fs.readFileSync('scripts/audit-cloudflare-trip-storage.mjs', 'utf8');
 assert.match(worker, /Array\.from\(\{ length: 10 \}/);
 assert.match(worker, /verifyTripGatewaySignature/);
+const workerCountFunction = worker.match(/async function countTrips\(env\) \{[\s\S]*?(?=\nasync function deleteOwnerTrips)/)?.[0] || '';
+assert.match(workerCountFunction, /select count\(\*\) as trip_count from trip_observations/i);
+assert.doesNotMatch(workerCountFunction, /\b(?:insert|update|delete|replace|upsert|run)\b/i);
+assert.match(
+  worker,
+  /if \(url\.pathname === '\/v1\/trips\/count'\) \{[\s\S]*?return json\(503, \{ ok: false, error: 'COUNT_UNAVAILABLE' \}\);/,
+);
 assert.match(submitFunction, /assertNoPrivateLocation\(payload\.weather_snapshot\)/);
 assert.match(submitFunction, /assertNoPrivateLocation\(payload\.calibration_features\)/);
 assert.match(submitFunction, /assertExternalTripNestedContract\(payload\)/);

@@ -106,6 +106,25 @@ if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive
 const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  dispatch-pilot:'));
 if (copernicusPreserveSection.includes('actions: write')) throw new Error('Kun det minimale Copernicus-dispatchjob må få Actions-skriveret.');
 const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+const activeTripGateStart = text.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
+const protectedWritesStart = text.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
+if (activeTripGateStart < 0 || protectedWritesStart <= activeTripGateStart) {
+  throw new Error('Den aktive trip-storage Edge-/D1-læsegate mangler før beskyttede writes.');
+}
+const activeTripGate = text.slice(activeTripGateStart, protectedWritesStart);
+for (const marker of [
+  'node scripts/verify-trip-storage-edge.mjs',
+  'node scripts/verify-cloudflare-trip-gateway.mjs',
+  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
+  'CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}',
+  'TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}',
+]) {
+  if (!activeTripGate.includes(marker)) throw new Error(`Den aktive pre-write trip-storage-gate mangler ${marker}`);
+}
+const activeTripRun = activeTripGate.slice(0, activeTripGate.indexOf('env:'));
+if (/\$\{\{\s*secrets\./.test(activeTripRun)) {
+  throw new Error('Trip-storage-secrets må kun bindes via step-env og ikke interpoleres i run-scriptet.');
+}
 for (const marker of [
   'schedule:',
   '- cron: "14,29,44,59 * * * *"',
