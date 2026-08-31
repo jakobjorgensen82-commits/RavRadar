@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-08-31 – PR #242 merged; first cutover nåede DMI/WAM
+
+- [x] PR #242 exact-head `33408976253`; merge `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`; legacy Candidate G-profilattestering passerede i produktion.
+- [x] Klassificér produktion `33412497717`: den nåede DMI/WAM og stoppede før artifact/Pages/activation; offentlig Candidate G blev ikke ændret.
+- [x] Ret lokalt den private punktkandidats fejlkaskade og tvang progressive GRIB-/zone-/researchcaches til at gemme efter ikke-annullerede producentforsøg. Bevar WAM-gaten fail-closed og gør dens payloadfri kode direkte observerbar.
+- [x] Måltest: DMI/WAM 18/18, integreret RavScore-generator og reusable-production-workflow grønne.
+- [ ] Exact-head, merge, frisk 4.0.318-produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilkontrol.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.

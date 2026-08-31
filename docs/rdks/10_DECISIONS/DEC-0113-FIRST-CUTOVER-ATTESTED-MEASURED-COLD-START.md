@@ -22,6 +22,12 @@ Bot-/watchdogkørslen `33334709027` på samme main stoppede før produktionsarbe
 
 ## Ejerbeslutning
 
+### Produktionspræcisering 2026-08-31
+
+PR #242 bestod exact-head `33408976253` og blev merged som `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`. Pushproduktion `33412497717` passerede den korrigerede legacy-kildeattestering og den fulde tidlige kildegate, men stoppede i DMI/WAM før artifact, Pages eller activation. En inaktiv privat punktkandidat blev kørt efter et ikke-succesfuldt DMI-producentforsøg og kunne derfor stoppe de progressive cache-save-trin. Det var i strid med punkt 11's krav om at bevare reelt delarbejde.
+
+Den korrigerede kontrakt er snæver: punktkandidaten kører kun efter DMI-success og er ikke en offentlig produktionsblocker; progressive GRIB-, DMI-zone- og current-researchcaches gemmes efter ethvert ikke-annulleret forsøg. Den komplette WAM-/rollbackgate er ikke lempet. Validatorens payloadfri fejlkode gøres eksplicit, mens dens exitstatus fortsat stopper first cutover. Ingen geometri, punkter eller private data ændres.
+
 Ejeren kræver, at den nye model:
 
 - fortsat scorer med tydelig `HISTORY_INCOMPLETE`, når ældre historik mangler, men scoretimens direkte input er gyldige,

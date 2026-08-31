@@ -49,7 +49,11 @@ requireMarkers('Den aktuelle 4.0.318-driftsevidens', `${operational318?.title ||
   '<code>33354263148</code>',
   '<code>rr-20260831034128-210</code>',
   'komplet 210/673 uden syntetiske samples',
-  '0/210 aktiv på grund af sit gamle komplette historikvindue',
+  'PR #242 bestod exact-head <code>33408976253</code>',
+  'merged som <code>29f39cce</code>',
+  'Frisk produktion <code>33412497717</code>',
+  'stoppede før artifact, Pages og deploy',
+  'Den hårde WAM-gate er bevaret',
   candidateGRollbackReleaseBinding.modelBundleSha256,
   '<code>version.json.releaseContract.modelBindings</code>',
 ]);

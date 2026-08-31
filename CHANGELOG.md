@@ -1,3 +1,10 @@
+## 4.0.318-kandidat – DMI/WAM-progressionscache og privat punktkandidat (2026-08-31)
+
+- PR #242 bestod exact-head `33408976253` og blev merged som `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`. Produktion `33412497717` passerede Candidate G-attesteringen og kildegaten, men stoppede i DMI/WAM før artifact, Pages og activation.
+- En inaktiv privat punktkandidat kunne køre efter et fejlet DMI-producentforsøg og dermed forhindre de efterfølgende progressive caches i at blive gemt. Rettelsen kører kun kandidaten efter success og lader den aldrig blokere offentlig produktion.
+- Progressive GRIB-, DMI-zone- og current-researchcaches gemmes nu efter ethvert ikke-annulleret producentforsøg. Den hårde WAM-gate er uændret, men dens begrænsede payloadfri fejlkode bliver synlig uden private data.
+- DMI/WAM 18/18, integreret generator og reusable-production-workflow er målrettet grønne. Candidate G er fortsat offentlig; exact-head, merge, frisk produktion og browserbevis mangler.
+
 ## 4.0.318-kandidat – PR #241 merged; legacy-profilattestering lokalt rettet (2026-08-31)
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.

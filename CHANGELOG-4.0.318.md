@@ -1,3 +1,10 @@
+# Nyeste checkpoint – 2026-08-31 – DMI/WAM-progressionscache og privat punktkandidat
+
+- PR #242 bestod exact-head `33408976253`, blev merged som `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`, og produktion `33412497717` beviste den korrigerede legacy-attestering. Runnet stoppede senere i DMI/WAM før offentlig artifact/Pages/activation.
+- Den lokale rettelse forhindrer en inaktiv privat punktkandidat i at køre på et ikke-succesfuldt DMI-resultat eller blokere progressiv cachepersistens. De tre progressive caches gemmes med `always()` efter ethvert ikke-annulleret forsøg.
+- WAM-validatoren forbliver en hård first-cutover-gate. Dens sikre aggregerede kode føres nu til workflowoutput og rapportering uden payload, koordinater eller rå U/V.
+- Tre proportionale måltests er grønne. Candidate G er fortsat offentlig; exact-head, merge, frisk produktion og offentlig browserkontrol udestår.
+
 # Nyeste checkpoint – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.

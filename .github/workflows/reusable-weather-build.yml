@@ -675,49 +675,64 @@ jobs:
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        id: point-candidate-readiness
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success'
+        continue-on-error: true
         run: node scripts/update-coastal-point-staging.mjs
 
       - name: Save private staged coastal-point cache
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome == 'success' && steps.point-candidate-readiness.outcome == 'success'
         uses: actions/cache/save@v6
         with:
           path: .cache/coastal-point-staging
           key: coastal-point-staging-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save progressed DMI GRIB download cache
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save progressive private DMI zone cache
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''
         uses: actions/cache/save@v6
         with:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save private seven-day current-field research cache
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
         uses: actions/cache/save@v6
         with:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require complete private WAM history before first integrated cutover
+        id: wam-bootstrap-readiness
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled'
         shell: bash
         run: |
-          test "${{ steps.dmi-bulk.outcome }}" = "success"
-          python -B scripts/validate_dmi_wave_history_bootstrap.py \
+          producer_outcome="${{ steps.dmi-bulk.outcome }}"
+          set +e
+          attestation="$(python -B scripts/validate_dmi_wave_history_bootstrap.py \
             --mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}" \
             --target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}" \
             --production-target-hour "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
             --forecast-hour-count 118 \
             --cache data/live/dmi-bulk-cache.json \
-            --registry data/live/coastal-parts-v2.json
+            --registry data/live/coastal-parts-v2.json)"
+          validator_status=$?
+          set -e
+          printf '%s\n' "$attestation"
+          wam_code="$(printf '%s' "$attestation" | jq -r 'if .status == "invalid" then .code else "NONE" end')"
+          if [ "$producer_outcome" != "success" ]; then
+            wam_code="DMI_BULK_FAILED"
+            validator_status=1
+          fi
+          test "$wam_code" = "NONE" || printf '%s\n' "$wam_code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'
+          echo "code=$wam_code" >> "$GITHUB_OUTPUT"
+          exit "$validator_status"
 
       - name: Report DMI bulk result
         if: steps.preflight.outputs.should_run == 'true' && always()
@@ -727,6 +742,7 @@ jobs:
           echo "Partial collections this run: ${{ steps.dmi-bulk.outputs.partial_collections || '0' }}"
           echo "Zones in bulk cache: ${{ steps.dmi-bulk.outputs.zone_count || '0' }}"
           echo "DMI bulk error: ${{ steps.dmi-bulk.outputs.error || 'none' }}"
+          echo "WAM bootstrap code: ${{ steps.wam-bootstrap-readiness.outputs.code || 'unknown' }}"
           if [ "${{ steps.dmi-bulk.outputs.status }}" = "failed" ]; then
             echo "::warning::DMI bulk refresh failed. RavRadar preserves the previous DMI cache and uses fallback providers where necessary."
           fi

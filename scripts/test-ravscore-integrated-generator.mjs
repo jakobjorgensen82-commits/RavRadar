@@ -689,6 +689,16 @@ const wamGateStep = workflowStep(
   'Require complete private WAM history before first integrated cutover',
 );
 assert.ok(
+  wamGateStep.block.includes('id: wam-bootstrap-readiness')
+    && wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
+    && wamGateStep.block.includes('validator_status=$?')
+    && wamGateStep.block.includes('wam_code="DMI_BULK_FAILED"')
+    && wamGateStep.block.includes('validator_status=1')
+    && wamGateStep.block.includes('echo "code=$wam_code" >> "$GITHUB_OUTPUT"')
+    && wamGateStep.block.includes('exit "$validator_status"'),
+  'the hard WAM gate must expose only a bounded safe code while preserving its exit status',
+);
+assert.ok(
   wamGateStep.block.includes(
     '--mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}"',
   ),
@@ -711,7 +721,7 @@ assert.ok(
 );
 assert.ok(
   progressiveDmiSaveStep.block.includes(
-    "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''",
+    "if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''",
   ),
   'a real partial DMI cache must be saved after a failed producer so the next run can continue',
 );
@@ -719,6 +729,15 @@ assert.doesNotMatch(
   progressiveDmiSaveStep.block,
   /success\(\)|dmi-bulk\.outcome\s*(?:==|!=)\s*'failure'|dmi-bulk\.outcome\s*==\s*'success'/,
   'progressive DMI cache persistence must not be restricted to a fully successful producer',
+);
+
+const pointCandidateStep = workflowStep(
+  'Advance private point-candidate readiness without public score impact',
+);
+assert.ok(
+  pointCandidateStep.block.includes('continue-on-error: true')
+    && pointCandidateStep.block.includes("steps.dmi-bulk.outcome == 'success'"),
+  'an inactive private point candidate must not consume a failed DMI cache or block production progress',
 );
 
 const parserRegistryParts = Array.from({ length: 673 }, (_, index) => ({

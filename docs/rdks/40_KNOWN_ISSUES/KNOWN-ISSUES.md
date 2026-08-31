@@ -1,3 +1,7 @@
+# NYESTE CHECKPOINT – 2026-08-31 – DMI/WAM-progressionscache blev skjult af privat punktkandidat
+
+- **ISSUE-RAVSCORE-FIRST-CUTOVER-POINT-STAGE-CASCADE – LØST LOKALT / RELEASEBEVIS ÅBENT P0:** PR #242 blev merged som `29f39cce`, og produktion `33412497717` passerede legacy-attestering og kildegate. Et ikke-succesfuldt DMI-forsøg blev derefter fulgt af den inaktive private punktkandidat, som fejlede før de progressive caches blev gemt; WAM-gaten stoppede også uden at vise sin sikre validator-kode. Den lokale rettelse kører kun punktkandidaten efter DMI-success, gør den ikke-offentlige kandidat ikke-blokerende, bruger `always()` på de tre progressive cache-save-trin og bevarer WAM-validatorens hårde exit med en begrænset payloadfri kode. Ingen offentlig artifact/Pages/activation skete. Exact-head, merge og frisk produktion udestår.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
