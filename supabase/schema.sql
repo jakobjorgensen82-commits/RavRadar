@@ -633,7 +633,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = '778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7'
-      and p_calibration_features ->> 'modelBundleSha256' = '093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061'
+      and p_calibration_features ->> 'modelBundleSha256' = '3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then case
       when jsonb_path_query_array(
