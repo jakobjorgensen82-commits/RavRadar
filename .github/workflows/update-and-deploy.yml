@@ -1112,7 +1112,7 @@ jobs:
   trip-storage-readiness:
     name: Check exact-head D1 trip-storage readiness
     needs: current-hour-readiness
-    if: needs.current-hour-readiness.outputs.ready == 'true'
+    if: ${{ !cancelled() && needs.current-hour-readiness.result == 'success' && needs.current-hour-readiness.outputs.ready == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -1185,7 +1185,7 @@ jobs:
   build-and-prepare:
     name: Build and prepare weather production through reusable workflow
     needs: [validate-dispatch, current-hour-readiness, trip-storage-readiness]
-    if: (needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true') && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true'
+    if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && needs.trip-storage-readiness.result == 'success' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true' }}
     permissions:
       contents: read
       actions: read
@@ -1209,7 +1209,7 @@ jobs:
   geometry-v2-national:
     name: Acquire private national GeoDanmark geometry-v2 source
     needs: [validate-dispatch, current-hour-readiness]
-    if: github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_national == 'true' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true'
+    if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_national == 'true' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -1513,7 +1513,7 @@ jobs:
   geometry-v2-pilot:
     name: Run GeoDanmark geometry-v2 pilot
     needs: [validate-dispatch, current-hour-readiness]
-    if: github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_pilot == 'true'
+    if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_pilot == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -1632,7 +1632,7 @@ jobs:
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow
     needs: build-and-prepare
-    if: github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true'
+    if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}
     permissions:
       contents: read
       actions: read

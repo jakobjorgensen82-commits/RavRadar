@@ -445,6 +445,20 @@ ok(operationalTripStoragePosition>operationalRecoveryPositions.currentHour
   && operationalCurrentHourSection.includes('needs: operational-recovery-gate')
   && operationalCurrentHourSection.includes("if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}"),
 'Current-hour skal genoptage efter bevidst skipped recovery-grene, men kun når terminalgaten er grøn');
+const operationalDownstreamResumeContracts=[
+  {job:'trip-storage-readiness',next:'build-and-prepare',needs:'needs: current-hour-readiness',condition:"if: ${{ !cancelled() && needs.current-hour-readiness.result == 'success' && needs.current-hour-readiness.outputs.ready == 'true' }}"},
+  {job:'build-and-prepare',next:'geometry-v2-national',needs:'needs: [validate-dispatch, current-hour-readiness, trip-storage-readiness]',condition:"if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && needs.trip-storage-readiness.result == 'success' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true' }}"},
+  {job:'geometry-v2-national',next:'geometry-v2-pilot',needs:'needs: [validate-dispatch, current-hour-readiness]',condition:"if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_national == 'true' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' }}"},
+  {job:'geometry-v2-pilot',next:'deploy-pages',needs:'needs: [validate-dispatch, current-hour-readiness]',condition:"if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_pilot == 'true' }}"},
+  {job:'deploy-pages',next:'production-outcome',needs:'needs: build-and-prepare',condition:"if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}"},
+];
+for(const contract of operationalDownstreamResumeContracts){
+  const start=orchestratorWorkflow.indexOf('\n  '+contract.job+':');
+  const end=orchestratorWorkflow.indexOf('\n  '+contract.next+':',start+1);
+  const section=start>=0&&end>start?orchestratorWorkflow.slice(start,end):'';
+  ok(section.includes(contract.needs)&&section.includes(contract.condition),
+  'Downstream recovery routing contract failed: '+contract.job);
+}
 ok(operationalWriterSection.includes("needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'")
   && operationalWriterSection.includes('pages: write')
   && operationalWriterSection.includes('id-token: write')
@@ -485,6 +499,11 @@ for(const marker of [
   "orchestratorWorkflow.indexOf('\\n  finalize-operational-pages-recovery:')",
   "orchestratorWorkflow.indexOf('\\n  operational-recovery-gate:')",
   "if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}",
+  "if: ${{ !cancelled() && needs.current-hour-readiness.result == 'success' && needs.current-hour-readiness.outputs.ready == 'true' }}",
+  "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && needs.trip-storage-readiness.result == 'success' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true' }}",
+  "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_national == 'true' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' }}",
+  "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_pilot == 'true' }}",
+  "if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}",
   'assertMarkersOrdered(operationalWriterSection',
   'downloaded_zip_sha256=',
   'EXACT_TARGET_REDEPLOY',
