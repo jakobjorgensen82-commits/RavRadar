@@ -8,6 +8,11 @@ import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { assertReleaseContractMetadata } from './lib/release-contract-metadata.mjs';
+import {
+  assertRavScoreModelBinding as assertCandidateGRollbackModelBinding,
+  ravScoreModelBinding as candidateGRollbackModelBinding,
+} from './rollback-assets/ravscore-model-contract.js';
 import {
   RAVSCORE_PUBLIC_DETAILS_KIND,
   RAVSCORE_PUBLIC_STARTUP_KIND,
@@ -28,8 +33,10 @@ const EXPECTED_PUBLIC_PATHS = Object.freeze({
   conditionDetailsPath: './public-condition-details.json',
 });
 const ZONE_REGISTRY_FILE = 'data/zones.geojson';
+const PUBLIC_VERSION_FILE = 'version.json';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 const PRIVATE_RUNTIME_MANIFEST_KIND = 'RAVRADAR_PRIVATE_PRODUCTION_RUNTIME_BUNDLE';
 const PRIVATE_RUNTIME_PRIVACY_CLASS = 'PRIVATE_PRODUCTION_RUNTIME';
 const PRIVATE_FIELD = /^(candidateG|ravScoreModel|ravScoreState|state|stateHistory|modelState|derivedState|currentState|continuationState|stateKey|samplingContext|samplingContextKey|transportEvidence|currentEvidence|waveEvidence|rawPayload|privatePayload|diagnostic|diagnostics|privateDiagnostic|runtimeDiagnostic|runtimeDiagnostics|continuationCheckpoint)$/i;
@@ -38,6 +45,9 @@ const RAW_VECTOR_FIELD = /^(currentUMps|currentVMps|uMps|vMps|rawU|rawV|uo|vo|ea
 const PRIVATE_SAMPLING_FIELD = /^(gridPoint|gridIndex|gridCell|gridCoordinates|nativeGrid|samplingPoint|samplePoint|samplingCoordinates|privatePoint|privateCoordinates)$/i;
 const COORDINATE_FIELD = /^(coordinates?|coords?|latitude|longitude|lat|lon|lng)$/i;
 const MODEL_BINDING_FIELD = /^(modelBinding|ravScoreModelBinding)$/i;
+const FORBIDDEN_RELEASE_CONTRACT_FIELD = /^(activeModel|activeModelId|activeDeploymentId|deploymentId|runId|runAttempt|sourceHead|generatedAt|releasedAt|updatedAt|privatePayload|rawPayload|privateData|credentials|secrets|coordinates|waterPoint|landPoint|currentUMps|currentVMps)$/i;
+const INTEGRATED_MODEL_BINDING = ravScoreModelBinding();
+const CANDIDATE_G_ROLLBACK_MODEL_BINDING = candidateGRollbackModelBinding();
 
 function normalizedPath(value) {
   return String(value ?? '')
@@ -246,34 +256,103 @@ async function loadPrivateRuntimeFingerprints(privateManifestPath, { required })
   return fingerprints;
 }
 
-function addBindingIssue(binding, label, issues) {
-  try {
-    assertRavScoreModelBinding(binding, label);
-    const expectedKeys = Object.keys(ravScoreModelBinding()).sort();
-    const actualKeys = Object.keys(binding).sort();
-    if (actualKeys.length !== expectedKeys.length
-      || actualKeys.some((key, index) => key !== expectedKeys[index])) {
-      throw new Error('non-canonical model binding fields');
+function scanReleaseContractFields(value, { issues, tokens = [] }) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => scanReleaseContractFields(item, {
+      issues,
+      tokens: [...tokens, index],
+    }));
+    return;
+  }
+  if (!value || typeof value !== 'object') return;
+  for (const [key, nested] of Object.entries(value)) {
+    const nestedTokens = [...tokens, key];
+    if (FORBIDDEN_RELEASE_CONTRACT_FIELD.test(key)) {
+      issues.push(`version.json releaseContract contains forbidden field ${safePath(key)}`);
     }
-  } catch {
-    issues.push(`${safePath(label)} is not bound to the current RavScore model`);
+    scanReleaseContractFields(nested, { issues, tokens: nestedTokens });
   }
 }
 
-function scanAtomicFields(value, { label, datasetId, productionReferenceAt, issues, tokens = [] }) {
+function validatePublicVersion(document, issues) {
+  const expectedKeys = ['minimumSupportedVersion', 'releaseContract', 'releasedAt', 'version'];
+  const actualKeys = document && typeof document === 'object' && !Array.isArray(document)
+    ? Object.keys(document).sort()
+    : [];
+  if (JSON.stringify(actualKeys) !== JSON.stringify(expectedKeys)) {
+    issues.push('version.json has an unexpected public field set');
+    return;
+  }
+  if (!SEMVER_PATTERN.test(String(document.version ?? ''))
+    || document.minimumSupportedVersion !== document.version
+    || typeof document.releasedAt !== 'string'
+    || !Number.isFinite(Date.parse(document.releasedAt))) {
+    issues.push('version.json has an invalid public release identity');
+  }
+  scanReleaseContractFields(document.releaseContract, { issues });
+  try {
+    assertReleaseContractMetadata(document.releaseContract, {
+      releaseVersion: document.version,
+    });
+  } catch {
+    issues.push('version.json releaseContract is missing, stale or incompatible');
+  }
+}
+
+function resolveSealedModelBinding(binding, issues) {
+  try {
+    assertRavScoreModelBinding(binding, 'public manifest integrated model binding');
+    return INTEGRATED_MODEL_BINDING;
+  } catch {
+    // Candidate G is the only other sealed public model accepted for rollback.
+  }
+  try {
+    assertCandidateGRollbackModelBinding(binding, 'public manifest Candidate G rollback binding');
+    return CANDIDATE_G_ROLLBACK_MODEL_BINDING;
+  } catch {
+    issues.push('manifest.ravScoreModelBinding is not an exact sealed integrated or Candidate G rollback binding');
+    return null;
+  }
+}
+
+function exactBindingMatches(binding, expectedBinding) {
+  if (!binding || typeof binding !== 'object' || Array.isArray(binding)
+    || !expectedBinding || typeof expectedBinding !== 'object') return false;
+  const prototype = Object.getPrototypeOf(binding);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const expectedKeys = Object.keys(expectedBinding).sort();
+  const actualKeys = Object.keys(binding).sort();
+  return actualKeys.length === expectedKeys.length
+    && actualKeys.every((key, index) => key === expectedKeys[index]
+      && binding[key] === expectedBinding[key]);
+}
+
+function addBindingIssue(binding, label, issues, expectedBinding) {
+  if (!exactBindingMatches(binding, expectedBinding)) {
+    issues.push(`${safePath(label)} is not bound to the selected sealed RavScore model`);
+  }
+}
+
+function scanAtomicFields(value, {
+  label,
+  datasetId,
+  productionReferenceAt,
+  expectedBinding,
+  issues,
+  tokens = [],
+}) {
   if (Array.isArray(value)) {
     value.forEach((item, index) => scanAtomicFields(item, {
-      label, datasetId, productionReferenceAt, issues, tokens: [...tokens, index],
+      label, datasetId, productionReferenceAt, expectedBinding, issues, tokens: [...tokens, index],
     }));
     return;
   }
   if (!value || typeof value !== 'object') return;
 
-  const expectedBinding = ravScoreModelBinding();
   for (const [key, nested] of Object.entries(value)) {
     const nestedTokens = [...tokens, key];
     const fieldPath = displayJsonPath(label, nestedTokens);
-    if (MODEL_BINDING_FIELD.test(key)) addBindingIssue(nested, fieldPath, issues);
+    if (MODEL_BINDING_FIELD.test(key)) addBindingIssue(nested, fieldPath, issues, expectedBinding);
     if (key === 'scoreProfileId' || key === 'activeProfileId') {
       if (nested !== expectedBinding.modelId) issues.push(`${safePath(fieldPath)} has a cross-model profile id`);
     }
@@ -292,14 +371,15 @@ function scanAtomicFields(value, { label, datasetId, productionReferenceAt, issu
     if (key === 'productionReferenceAt' && nested !== productionReferenceAt) {
       issues.push(`${safePath(fieldPath)} has a cross-reference-time binding`);
     }
-    scanAtomicFields(nested, { label, datasetId, productionReferenceAt, issues, tokens: nestedTokens });
+    scanAtomicFields(nested, { label, datasetId, productionReferenceAt, expectedBinding, issues, tokens: nestedTokens });
   }
 }
 
 function validatePublicRuntime({ manifest, startup, details, coastalParts, zoneRegistry, texts, issues }) {
   const datasetId = typeof manifest?.datasetId === 'string' ? manifest.datasetId.trim() : '';
   const productionReferenceAt = manifest?.productionReferenceAt;
-  const expectedBinding = ravScoreModelBinding();
+  const expectedBinding = resolveSealedModelBinding(manifest?.ravScoreModelBinding, issues)
+    ?? INTEGRATED_MODEL_BINDING;
 
   if (manifest?.schemaVersion !== 4 || manifest?.complete !== true) {
     issues.push('data/live/manifest.json is not a complete schema-4 manifest');
@@ -322,8 +402,8 @@ function validatePublicRuntime({ manifest, startup, details, coastalParts, zoneR
     issues.push('data/live/manifest.json has an invalid zoneRegistryPath');
   }
 
-  addBindingIssue(manifest?.ravScoreModelBinding, 'manifest.ravScoreModelBinding', issues);
-  addBindingIssue(manifest?.ravScoreRuntime?.modelBinding, 'manifest.ravScoreRuntime.modelBinding', issues);
+  addBindingIssue(manifest?.ravScoreModelBinding, 'manifest.ravScoreModelBinding', issues, expectedBinding);
+  addBindingIssue(manifest?.ravScoreRuntime?.modelBinding, 'manifest.ravScoreRuntime.modelBinding', issues, expectedBinding);
 
   const publicHash = sha256(texts.startup);
   const detailsHash = sha256(texts.details);
@@ -396,13 +476,13 @@ function validatePublicRuntime({ manifest, startup, details, coastalParts, zoneR
     issues.push('manifest and public runtime zone count mismatch');
   }
   scanAtomicFields(startup, {
-    label: 'public-conditions', datasetId, productionReferenceAt, issues,
+    label: 'public-conditions', datasetId, productionReferenceAt, expectedBinding, issues,
   });
   scanAtomicFields(details, {
-    label: 'public-condition-details', datasetId, productionReferenceAt, issues,
+    label: 'public-condition-details', datasetId, productionReferenceAt, expectedBinding, issues,
   });
   scanAtomicFields(manifest, {
-    label: 'manifest', datasetId, productionReferenceAt, issues,
+    label: 'manifest', datasetId, productionReferenceAt, expectedBinding, issues,
   });
 
   if (coastalParts?.schemaVersion !== 2 || coastalParts?.enabled !== true
@@ -511,6 +591,9 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
   if (!fileByRelative.has(ZONE_REGISTRY_FILE)) {
     issues.push(`missing required public zone registry at ${ZONE_REGISTRY_FILE}`);
   }
+  if (!fileByRelative.has(PUBLIC_VERSION_FILE)) {
+    issues.push(`missing required public release contract at ${PUBLIC_VERSION_FILE}`);
+  }
 
   const parsed = new Map();
   const texts = new Map();
@@ -534,6 +617,10 @@ export async function auditPagesArtifactPrivacy(siteRoot, {
     parsed.set(file.relative, document);
     texts.set(file.relative, text);
     scanJsonPrivacy(document, { file: file.relative, issues });
+  }
+
+  if (parsed.has(PUBLIC_VERSION_FILE)) {
+    validatePublicVersion(parsed.get(PUBLIC_VERSION_FILE), issues);
   }
 
   const requiredParsed = [...EXPECTED_LIVE_FILES, ZONE_REGISTRY_FILE].every(file => parsed.has(file));

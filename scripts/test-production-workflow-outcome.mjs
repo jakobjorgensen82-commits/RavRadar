@@ -276,6 +276,28 @@ expectStatus(withPatch(base(), {
   jobs: { buildAndPrepare: 'failure', deployPages: 'skipped' },
 }), 'FAILED', 'UPSTREAM_JOB_FAILED');
 
+// A failed reusable build call can expose no workflow outputs at all. The
+// terminal classifier must therefore use the caller job result rather than
+// mistake an empty proof surface for a harmless no-op.
+expectStatus(withPatch(base(), {
+  jobs: { buildAndPrepare: 'failure', deployPages: 'skipped' },
+  proof: noProductionProof({
+    currentReady: true,
+    tripStorageReady: true,
+  }),
+}), 'FAILED', 'UPSTREAM_JOB_FAILED');
+
+// The same applies when the build succeeded but the reusable deploy call
+// failed before publishing any of its three workflow outputs.
+expectStatus(withPatch(base(), {
+  jobs: { deployPages: 'failure' },
+  proof: {
+    deploymentOutcome: null,
+    publicVerificationOutcome: null,
+    deployedVerified: null,
+  },
+}), 'FAILED', 'UPSTREAM_JOB_FAILED');
+
 expectStatus(withPatch(base(), {
   eventName: 'workflow_dispatch',
   geometryV2Pilot: true,

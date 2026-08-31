@@ -238,7 +238,7 @@ For at bevare et komplet tur-snapshot må kun den eksakt navngivne `READY`/`memo
 
 Rollbacken er bevidst **fail-closed og local-only for Spørg RavRadar**. Candidate G-Pages-overlayet erstatter klientens offentlige modelbinding, mens assistentens integrerede Edge-funktion forbliver deployet og afviser Candidate G-bindingen med eksakt HTTP `409`. Klienten bruger derefter de eksisterende deterministiske lokale DA/DE/EN-svar. Schema-3-ture lagres fortsat under den eksakte Candidate G-binding med `calibration_eligible=false`. Dette er hverken en Edge/backend-helrollback, en skjult dualmodel eller en Candidate G-serverfallback.
 
-4.0.318's endelige Candidate G-rollbackbundle har sin egen `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og sin egen transitive 54-filers `modelBundleSha256=e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1`. Begge værdier er regenereret, forseglede og regressionstestede; kontraktdigesten alene er aldrig et gyldigt bundlebevis.
+4.0.318's endelige Candidate G-rollbackbundle har sin egen `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og sin egen transitive 55-filers `modelBundleSha256=dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4`. Begge værdier er regenereret, forseglede og regressionstestede; kontraktdigesten alene er aldrig et gyldigt bundlebevis.
 
 ## Evidens- og påstandsgrænse
 

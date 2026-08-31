@@ -5,7 +5,7 @@
 
 ## Aktuel offentlig baseline og nye operationelle kontrakter
 
-Nødrollback PR #236 gendannede den eksakte 4.0.316/Candidate G-tree på `origin/main` `c58deb78`. Exact-head `33342157517` var grøn, post-merge-run `33342219152` gennemførte fuld validate, releasegate, artifact og Pages, og normal produktion `33345476979`/`rr-20260831010337-210` var første grønne recoverybevis. Seneste external-watchdog-`workflow_dispatch` `33347230240` gennemførte fuld DMI, validate, releasegate, storage gate og Pages og publicerede `rr-20260831012407-210` komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples; Candidate G er 0/210 aktiv på grund af historikmemory. Den visuelle desktop-/mobilkontrol er stadig åben; evidensen siger intet om, at 4.0.318/state 6 er offentlig.
+Nødrollback PR #236 gendannede den eksakte 4.0.316/Candidate G-tree på `origin/main` `c58deb78`. Exact-head `33342157517` var grøn, post-merge-run `33342219152` gennemførte fuld validate, releasegate, artifact og Pages, og normal produktion `33345476979`/`rr-20260831010337-210` var første grønne recoverybevis. Det tidligere external-watchdog-`workflow_dispatch` `33347230240` gennemførte fuld DMI, validate, releasegate, storage gate og Pages og publicerede `rr-20260831012407-210` komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples; Candidate G er 0/210 aktiv på grund af historikmemory. Den visuelle desktop-/mobilkontrol er stadig åben; evidensen siger intet om, at 4.0.318/state 6 er offentlig.
 
 Runs `33343469247` og `33344823000` stoppede begge sikkert i build/prepare på en forbigående HTTP 503; deploy var skipped, og live Candidate G blev ikke ændret. En snæver bounded-retry-hotfix er under færdiggørelse med PR- og commit-id åbne. Ét aktivt 15-minutters kontroljob følger vejrproduktion og offentlig friskhed som diagnose-/reparationsspor. Det må ikke være en ekstra scheduler/dubletvagthund, blindt redispatche et kendt fejlet build eller skabe parallel produktion.
 
@@ -17,7 +17,7 @@ Ved gyldige direkte timeinput publicerer state 6 hele den eksakte 118-timersakse
 
 Release-outcome er lokalt synkroniseret som `ravradar-production-workflow-outcome-v2`, fordi nested exact-key-resultatet nu omfatter historical actions og exact-target writer/finalizer/gate. Kode/releasegate og måltests er grønne; exact-head og frisk produktion udestår.
 
-Den regenererede integrated binding er `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 transitive filer og 7 bindingsforbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1` over 54 filer. 4.0.317's tidligere `74bfc42...`/`fd3f7e70...` er kun historisk præ-hærdningsevidens.
+Den regenererede integrated binding er `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 transitive filer og 8 bindingsforbrugere. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer. 4.0.317's tidligere `74bfc42...`/`fd3f7e70...` er kun historisk præ-hærdningsevidens.
 
 ## Hvorfor versionen findes
 

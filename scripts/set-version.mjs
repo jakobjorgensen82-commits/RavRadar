@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
+import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 
 const version=process.argv[2];
 const preserveGeodataVersion=process.argv.includes('--preserve-geodata-version');
@@ -65,11 +67,14 @@ for(const file of [...new Set(browserSources)]){
 // Aktive produktionsworkflows sender releaseversionen i deres User-Agent.
 // Hold den tæt koblet til package-versionen, så et versionsløft ikke først
 // opdages efter den dyre centrale datahydrering.
-for(const file of ['.github/workflows/update-and-deploy.yml']){
+for(const file of [...new Set(Object.values(PRODUCTION_WORKFLOW_SOURCES))]){
   let text=await fs.readFile(file,'utf8');
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
   await fs.writeFile(file,text);
 }
+
+// Synkronisér den statiske, offentlige releasekontrakt uden at røre releasedAt.
+await synchronizeReleaseContractMetadata({write:true});
 
 // Den integrerede RavScore-kontrakts switch-, model- og bundle-identiteter er
 // semantiske kontrakter. Kun admin-dokumentets releasekilde løftes ovenfor;

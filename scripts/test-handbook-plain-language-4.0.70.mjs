@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const book = JSON.parse(fs.readFileSync('docs/handbook/content.json', 'utf8'));
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const versionDocument = JSON.parse(fs.readFileSync('version.json', 'utf8'));
 const markdown = fs.readFileSync('HANDBOOK-RAVRADAR.md', 'utf8');
 const systemSpecification = fs.readFileSync('docs/RavRadar-System-Specification.md', 'utf8');
 const ruleEngineSpecification = fs.readFileSync('docs/Rule-Engine.md', 'utf8');
@@ -19,6 +20,13 @@ const duplicateIds = book.sections
 if (duplicateIds.length) throw new Error(`Dublerede håndbogsid'er: ${duplicateIds.join(', ')}`);
 
 const byId = (id) => book.sections.find((section) => section.id === id);
+const releaseContract = versionDocument.releaseContract;
+const integratedReleaseBinding = releaseContract?.modelBindings?.integrated;
+const candidateGRollbackReleaseBinding = releaseContract?.modelBindings?.candidateGRollback;
+const publicManifestAuthority = releaseContract?.publicManifestAuthority;
+if (!integratedReleaseBinding || !candidateGRollbackReleaseBinding || !publicManifestAuthority) {
+  throw new Error('version.json mangler den centrale releaseContract-modelbinding');
+}
 const requireMarkers = (label, text, markers) => {
   for (const marker of markers) {
     if (!text.includes(marker)) throw new Error(`${label} mangler: ${marker}`);
@@ -29,6 +37,25 @@ const forbidMarkers = (label, text, markers) => {
     if (text.includes(marker)) throw new Error(`${label} indeholder erstattet aktiv sandhed: ${marker}`);
   }
 };
+
+
+const operational318 = byId('ravscore-operational-recovery-and-historical-maintenance-4-0-318');
+requireMarkers('Den aktuelle 4.0.318-driftsevidens', `${operational318?.title || ''}\n${operational318?.body || ''}`, [
+  'PR #237',
+  '<code>33352520408</code>',
+  '<code>8c03e25d</code>',
+  '<code>33352661061</code>',
+  '<code>33352634365</code>',
+  '<code>33354263148</code>',
+  '<code>rr-20260831034128-210</code>',
+  'komplet 210/673 uden syntetiske samples',
+  '0/210 aktiv på grund af sit gamle komplette historikvindue',
+  candidateGRollbackReleaseBinding.modelBundleSha256,
+  '<code>version.json.releaseContract.modelBindings</code>',
+]);
+forbidMarkers('Den aktuelle 4.0.318-driftsevidens', operational318?.body || '', [
+  'bounded retry-rettelsens PR/commit er åbne',
+]);
 
 const state6 = byId('integrated-ravscore-state6-history-bounds-2026-08-30');
 requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.body || ''}`, [
@@ -51,8 +78,11 @@ requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.
   '<code>direction-broad-19-history-tie-v2</code>',
   '<code>score-history-water-tie-earliest-v3</code>',
   '<code>score-bands-35-55-75-exceptional90-v1</code>',
-  'modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7',
-  'modelBundleSha256=74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae',
+  `modelContractSha256=${integratedReleaseBinding.modelContractSha256}`,
+  `modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}`,
+  '<code>version.json.releaseContract.modelBindings.integrated</code>',
+  `<code>${publicManifestAuthority.path}</code>`,
+  `<code>${publicManifestAuthority.modelBindingJsonPointer}</code>`,
   'præcis 43 kanonisk normaliserede, transitive implementeringsfiler',
   'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5',
   'integrated-schema5-ready-point-to-schema6-history-bounds-v1',
@@ -63,8 +93,10 @@ requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.
   'atomisk checkpointschema 4',
   '<code>ravscore-continuation-schema6-v2</code>',
   'eksakt otte-fils bundle',
-  'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8',
-  'fd3f7e70ec3706818c153c26140ae592e4f0ad2acc6c157183984689f74a2207',
+  candidateGRollbackReleaseBinding.modelContractSha256,
+  candidateGRollbackReleaseBinding.modelBundleSha256,
+  '<code>version.json.releaseContract.modelBindings.candidateGRollback</code>',
+  'over 55 transitive filer',
   'Trip-/observationslagring af lower/upper/span/coverage/reasons er implementeret',
   'samlet exact-head-/workflow-/produktionsbevis udestår',
   '4.0.316/<code>49dd4cb</code>',
@@ -440,14 +472,14 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'state `6.0.0`',
   'DEC-0110/DEC-0112',
   '`modelContractSha256` binder parameterkontrakten',
-  '4.0.318 er låst med `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`',
-  '`modelBundleSha256=093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 kanonisk normaliserede transitive implementeringsfiler og syv deklarerede forbrugere',
+  `4.0.318 er låst med ` + '`modelContractSha256=' + integratedReleaseBinding.modelContractSha256 + '`',
+  '`modelBundleSha256=' + integratedReleaseBinding.modelBundleSha256 + '` over 43 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere',
   '`ravscore-schema6-with-candidate-g-rollback-companion`',
   '`candidate-g-rollback-ready-companion`',
   '`ravscore-continuation-schema6-v2`',
-  '`modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`',
-  '`modelBundleSha256=e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1`',
-  'over 54 transitive filer',
+  '`modelContractSha256=' + candidateGRollbackReleaseBinding.modelContractSha256 + '`',
+  '`modelBundleSha256=' + candidateGRollbackReleaseBinding.modelBundleSha256 + '`',
+  'over 55 transitive filer',
   '`factor=clamp(1-0.15×W×(1-approach),0.85,1)`',
   '`delivery=supply×factor`',
   '`physicalDeliveryResolved=false`',

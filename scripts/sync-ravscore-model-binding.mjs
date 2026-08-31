@@ -18,6 +18,7 @@ const JSON_BINDING_FILES = Object.freeze([
   'knowledge/rav-assistant-public-v1.json',
   'scripts/fixtures/rav-assistant-evals-v1.json',
 ]);
+const VERSION_PATH = 'version.json';
 const EDGE_PATH = 'supabase/functions/_shared/rav-assistant-contract.ts';
 const SQL_BINDING_PATHS = Object.freeze([
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
@@ -102,6 +103,38 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
     }
   }
 
+  const versionPath = path.join(root, VERSION_PATH);
+  const versionDocument = JSON.parse(await fs.readFile(versionPath, 'utf8'));
+  if (write) {
+    const releaseContract = versionDocument.releaseContract
+      && typeof versionDocument.releaseContract === 'object'
+      && !Array.isArray(versionDocument.releaseContract)
+      ? versionDocument.releaseContract
+      : {};
+    const modelBindings = releaseContract.modelBindings
+      && typeof releaseContract.modelBindings === 'object'
+      && !Array.isArray(releaseContract.modelBindings)
+      ? releaseContract.modelBindings
+      : {};
+    versionDocument.releaseContract = {
+      ...releaseContract,
+      modelBindings: {
+        ...modelBindings,
+        integrated: { ...binding },
+        candidateGRollback: { ...candidateBinding },
+      },
+    };
+    await fs.writeFile(versionPath, `${JSON.stringify(versionDocument, null, 2)}\n`, 'utf8');
+    changed.push(VERSION_PATH);
+  } else {
+    const integrated = versionDocument?.releaseContract?.modelBindings?.integrated;
+    const candidateGRollback = versionDocument?.releaseContract?.modelBindings?.candidateGRollback;
+    assertRavScoreModelBinding(integrated, `${VERSION_PATH} integrated release binding`);
+    assert.deepEqual(integrated, binding, `${VERSION_PATH} has a stale integrated release binding`);
+    assertCandidateGRollbackModelBinding(candidateGRollback, `${VERSION_PATH} Candidate G rollback release binding`);
+    assert.deepEqual(candidateGRollback, candidateBinding, `${VERSION_PATH} has a stale Candidate G rollback release binding`);
+  }
+
   const adminPath = path.join(root, 'data/admin/ravscore-profile-selection.json');
   const admin = JSON.parse(await fs.readFile(adminPath, 'utf8'));
   if (write) {
@@ -163,7 +196,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     const write = process.argv.includes('--write');
     const result = await synchronizeRavScoreModelBinding({ write });
-    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 2} consumers: ${result.binding.modelBundleSha256}.`);
+    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 3} consumers: ${result.binding.modelBundleSha256}.`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'RavScore binding synchronization failed');
     process.exitCode = 1;

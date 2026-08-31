@@ -8,6 +8,8 @@ import {
   auditPagesArtifactPrivacy,
 } from './audit-pages-artifact-privacy.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { buildReleaseContractMetadata } from './lib/release-contract-metadata.mjs';
+import { ravScoreModelBinding as candidateGRollbackModelBinding } from './rollback-assets/ravscore-model-contract.js';
 import {
   RAVSCORE_PUBLIC_DETAILS_KIND,
   RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION,
@@ -20,6 +22,16 @@ const jsonText = value => `${JSON.stringify(value)}\n`;
 const generatedAt = '2026-08-29T12:00:00.000Z';
 const referenceAt = '2026-08-29T11:00:00.000Z';
 const datasetId = 'rr-synthetic-pages-privacy';
+const releaseVersion = '9.9.9';
+
+function publicVersionDocument() {
+  return {
+    version: releaseVersion,
+    releasedAt: generatedAt,
+    minimumSupportedVersion: releaseVersion,
+    releaseContract: buildReleaseContractMetadata({ releaseVersion }),
+  };
+}
 
 function scoreProfile(binding) {
   return {
@@ -176,6 +188,7 @@ async function writeFixture(root, binding) {
   const live = path.join(root, 'data', 'live');
   await fs.mkdir(live, { recursive: true });
   await fs.writeFile(path.join(root, 'index.html'), '<!doctype html><title>synthetic</title>\n');
+  await fs.writeFile(path.join(root, 'version.json'), jsonText(publicVersionDocument()));
   const documents = fixtureDocuments(binding);
   await Promise.all([
     fs.writeFile(path.join(live, 'manifest.json'), jsonText(documents.manifest)),
@@ -191,6 +204,13 @@ async function freshFixture(binding) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-pages-privacy-'));
   await writeFixture(root, binding);
   return root;
+}
+
+async function mutatePublicVersion(root, mutate) {
+  const file = path.join(root, 'version.json');
+  const document = JSON.parse(await fs.readFile(file, 'utf8'));
+  mutate(document);
+  await fs.writeFile(file, jsonText(document));
 }
 
 async function expectRejected(name, mutate, pattern, { binding } = {}) {
@@ -215,6 +235,55 @@ try {
 } finally {
   await fs.rm(cleanRoot, { recursive: true, force: true });
 }
+
+const candidateRollbackRoot = await freshFixture(candidateGRollbackModelBinding());
+try {
+  const result = await auditPagesArtifactPrivacy(candidateRollbackRoot);
+  assert.equal(result.liveFileCount, 4);
+  assert.equal(result.datasetId, datasetId);
+} finally {
+  await fs.rm(candidateRollbackRoot, { recursive: true, force: true });
+}
+
+await expectRejected('missing public release contract', async root => {
+  await fs.rm(path.join(root, 'version.json'));
+}, /missing required public release contract/);
+
+await expectRejected('stale integrated release binding', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.modelBindings.integrated.modelBundleSha256 = '0'.repeat(64);
+  });
+}, /releaseContract/);
+
+await expectRejected('stale Candidate G rollback release binding', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.modelBindings.candidateGRollback.modelBundleSha256 = '0'.repeat(64);
+  });
+}, /releaseContract/);
+
+await expectRejected('active model claim in public release contract', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.activeModel = 'forbidden-static-claim';
+  });
+}, /forbidden field activeModel|releaseContract/);
+
+await expectRejected('dynamic deployment field in public release contract', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.deploymentId = 'pages-dynamic';
+  });
+}, /forbidden field deploymentId|releaseContract/);
+
+await expectRejected('private field in public release contract', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.privatePayload = { present: true };
+  });
+}, /forbidden field privatePayload|private state field|releaseContract/);
+
+await expectRejected('private-payload declaration cannot become true', async root => {
+  await mutatePublicVersion(root, document => {
+    document.releaseContract.privatePayloadIncluded = true;
+  });
+}, /releaseContract/);
 
 const fingerprintRoot = await freshFixture();
 const privateManifestRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-private-fingerprints-'));
@@ -352,12 +421,20 @@ await expectRejected('cross-reference payload', async root => {
   await fs.writeFile(manifestPath, jsonText(manifest));
 }, /cross-reference-time binding|runtime envelope mismatch/);
 
+const mixedSealedBinding = {
+  ...ravScoreModelBinding(),
+  modelBundleSha256: candidateGRollbackModelBinding().modelBundleSha256,
+};
+await expectRejected('mixed integrated and Candidate G binding', async () => {}, /exact sealed|selected sealed|cross-model/, {
+  binding: mixedSealedBinding,
+});
+
 const crossModelBinding = {
   ...ravScoreModelBinding(),
   modelId: 'RRS-SYNTHETIC-OLD-MODEL',
   modelBundleSha256: 'f'.repeat(64),
 };
-await expectRejected('internally consistent cross-model artifact', async () => {}, /current RavScore model|cross-model/, {
+await expectRejected('internally consistent unknown-model artifact', async () => {}, /exact sealed|selected sealed|cross-model/, {
   binding: crossModelBinding,
 });
 
