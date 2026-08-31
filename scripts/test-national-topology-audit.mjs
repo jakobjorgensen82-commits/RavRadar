@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+const workflow=await readProductionWorkflowSource('orchestrator');
 const source=await fs.readFile('scripts/analyze-national-coastal-topology.py','utf8');
 const validator=await fs.readFile('scripts/validate-national-topology-audit.py','utf8');
 for(const marker of ['Havn','Vandloebsmidte','national-water-exclusions.geojson','sandDuneNearRatio','groyneObjectCount','allowedRiverMidWidthClasses','riverMouthMinimumLineLengthM','riverNarrowLinePartRejectedCount','riverMouthPropertyProfile','river-mouth-oversegmentation-mask-withheld','automaticActivationAllowed']) assert.ok(source.includes(marker),`Mangler ${marker}`);

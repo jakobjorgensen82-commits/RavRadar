@@ -819,7 +819,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
 
     def test_hard_crash_after_history_cannot_bypass_workflow_gate(self) -> None:
         workflow = (
-            ROOT / ".github" / "workflows" / "update-and-deploy.yml"
+            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
         gate_start = workflow.index(
             "- name: Require complete private WAM history before first integrated cutover"

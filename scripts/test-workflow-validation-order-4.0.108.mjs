@@ -1,16 +1,31 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import {
+  PRODUCTION_WORKFLOW_SOURCES,
+  readProductionWorkflowSources,
+} from './lib/production-workflow-sources.mjs';
 
-const path = '.github/workflows/update-and-deploy.yml';
 const workflowDirectory = '.github/workflows';
+const productionWorkflowSources = await readProductionWorkflowSources();
+const productionWorkflows = Object.freeze(Object.fromEntries(
+  Object.entries(productionWorkflowSources).map(([role, source]) => [role, source.replace(/\r\n/g, '\n')]),
+));
+const {
+  orchestrator: orchestratorWorkflow,
+  build: buildWorkflow,
+  deploy: deployWorkflow,
+} = productionWorkflows;
+const productionWorkflowNames = new Set(
+  Object.values(PRODUCTION_WORKFLOW_SOURCES).map(sourcePath => sourcePath.split('/').at(-1)),
+);
 const workflowFiles = fs.readdirSync(workflowDirectory)
   .filter((name) => /\.ya?ml$/i.test(name))
   .sort();
-const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
+const expectedWorkflowFiles = ['build-ravscore-historical-wave-pilot.yml', 'deploy-trip-storage.yml', 'extract-private-geodanmark-layer.yml', 'monitor-trip-storage.yml', 'preserve-copernicus-current-shadow.yml', 'retry-national-admin-roundtrip.yml', 'reusable-pages-deploy.yml', 'reusable-weather-build.yml', 'update-and-deploy.yml', 'validate-approved-public-coast.yml', 'validate-copernicus-current-pilot.yml', 'validate-local-part-system-candidate.yml', 'validate-pull-request.yml', 'validate-six-zone-recovery.yml'];
 if (JSON.stringify(workflowFiles) !== JSON.stringify(expectedWorkflowFiles)) {
   throw new Error(`Uventet workflowinventar: ${workflowFiles.join(', ') || '(tomt)'}. Kun produktionsworkflowet og de registrerede private, ikke-deployerende workflows må være aktive.`);
 }
-for (const privateName of expectedWorkflowFiles.filter(name => name !== 'update-and-deploy.yml')) {
+for (const privateName of expectedWorkflowFiles.filter(name => !productionWorkflowNames.has(name))) {
   const privateWorkflow = fs.readFileSync(`${workflowDirectory}/${privateName}`, 'utf8');
   if (privateWorkflow.includes('pages: write') || privateWorkflow.includes('id-token: write') || privateWorkflow.includes('deploy-pages')) {
     throw new Error(`${privateName} må ikke kunne deploye Pages.`);
@@ -26,7 +41,7 @@ const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
   .includes('npm run validate:source'));
 assert.deepEqual(
   sourceGateWorkflowNames,
-  ['deploy-trip-storage.yml', 'update-and-deploy.yml', 'validate-pull-request.yml'],
+  ['deploy-trip-storage.yml', 'reusable-weather-build.yml', 'validate-pull-request.yml'],
   'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
 );
 for (const workflowName of sourceGateWorkflowNames) {
@@ -195,7 +210,7 @@ if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive
 }
 const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  retry-failed-production:'));
 if (copernicusPreserveSection.includes('actions: write')) throw new Error('Det payloadfri Copernicus-keepalivejob må ikke få Actions-skriveret.');
-const text = fs.readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+const text = buildWorkflow;
 const activeTripGateStart = text.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
 const protectedWritesStart = text.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
 if (activeTripGateStart < 0 || protectedWritesStart <= activeTripGateStart) {
@@ -224,8 +239,13 @@ for (const marker of [
   "github.event_name == 'workflow_dispatch' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
   'target_hour: ${{ steps.cache-state.outputs.target_hour }}',
-  'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ needs.current-hour-readiness.outputs.target_hour }}',
   "needs.current-hour-readiness.outputs.ready == 'true'",
+  'production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}',
+]) {
+  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersorkestrator mangler ${marker}`);
+}
+for (const marker of [
+  'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}',
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
   'Bind production to resolved DMI current hour',
   '--nearest-dmi-hour',
@@ -242,8 +262,10 @@ for (const marker of [
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
 }
-if (text.includes('cron-job.org')) throw new Error('Produktionsworkflowet må ikke længere afhænge af cron-job.org.');
-const pushBlock = text.slice(text.indexOf('  push:'), text.indexOf('\n\npermissions:'));
+for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+  if (workflowSource.includes('cron-job.org')) throw new Error(`${role}-workflowet må ikke længere afhænge af cron-job.org.`);
+}
+const pushBlock = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('  push:'), orchestratorWorkflow.indexOf('\n\npermissions:'));
 for (const marker of [
   'branches: [main]',
   'paths-ignore:',
@@ -761,14 +783,16 @@ if (!(positions.legacyCutoverImport < positions.legacySourceFetch
   throw new Error('Den eksakte Candidate G Git-kilde skal hentes efter isoleret public import og før lokal attestation.');
 }
 const legacyFetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
-if (text.split(legacyFetchCommand).length - 1 !== 2
-  || text.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 2) {
+if (buildWorkflow.split(legacyFetchCommand).length - 1 !== 1
+  || deployWorkflow.split(legacyFetchCommand).length - 1 !== 1
+  || buildWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1
+  || deployWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1) {
   throw new Error('Både build-attestation og deploy-verifikation skal hente og bekræfte præcis den pinnede Candidate G-sourcecommit.');
 }
-const legacyDeployFetch = text.indexOf(
+const legacyDeployFetch = deployWorkflow.indexOf(
   'name: Fetch exact public Candidate G source commit for first cutover verification',
 );
-const legacyPublicVerification = text.indexOf(
+const legacyPublicVerification = deployWorkflow.indexOf(
   'name: Verify the complete currently public source model before begin CAS',
 );
 if (legacyDeployFetch < 0 || legacyPublicVerification < 0
@@ -783,7 +807,9 @@ for (const forbidden of [
   'ravscore-integrated-after-normalization',
   'LEGACY_CANDIDATE_G_NORMALIZATION_PENDING',
 ]) {
-  if (text.includes(forbidden)) throw new Error(`Den døde Candidate-normaliseringsomvej må ikke findes: ${forbidden}`);
+  for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+    if (workflowSource.includes(forbidden)) throw new Error(`${role}-workflowet må ikke indeholde den døde Candidate-normaliseringsomvej: ${forbidden}`);
+  }
 }
 for (const marker of [
   'legacy-candidate-g)',
@@ -794,14 +820,18 @@ for (const marker of [
   'action="candidate-legacy-maintenance"',
   "steps.operational-action.outputs.action == 'candidate-legacy-maintenance'",
   'node scripts/verify-legacy-candidate-g-source.mjs attest',
+  '--source-implementation-closure-sha256 "$source_closure_sha256"',
+  '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
+]) {
+  if (!buildWorkflow.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER-build mangler ${marker}`);
+}
+for (const marker of [
   'node scripts/verify-legacy-candidate-g-source.mjs verify',
   '--attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"',
   'node scripts/ravscore-operational-activation.mjs return-begin',
   '"${source_attestation[@]}"',
-  '--source-implementation-closure-sha256 "$source_closure_sha256"',
-  '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
 ]) {
-  if (!text.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER mangler ${marker}`);
+  if (!deployWorkflow.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER-deploy mangler ${marker}`);
 }
 for (const marker of [
   'candidate_g_gap_reconstruction_mode',
@@ -809,7 +839,9 @@ for (const marker of [
   'one-time-candidate-g-gap-reconstruction.mjs',
   '.cache/candidate-g-gap-reconstruction',
 ]) {
-  if (text.includes(marker)) throw new Error(`Den opgivne DEC-0109-sti må ikke genåbnes i workflowet: ${marker}`);
+  for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+    if (workflowSource.includes(marker)) throw new Error(`${role}-workflowet må ikke genåbne den opgivne DEC-0109-sti: ${marker}`);
+  }
 }
 
 const publicAuditBlock = text.slice(positions.publicAudit, positions.reference);
@@ -834,8 +866,10 @@ for (const forbidden of [
   'candidate-g-continuation-checkpoint-v1-',
   'node scripts/candidate-g-continuation-checkpoint.mjs',
 ]) {
-  if (text.includes(forbidden)) {
-    throw new Error(`Den aktive produktionsvej må ikke bevare den historiske engangsrecovery: ${forbidden}`);
+  for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+    if (workflowSource.includes(forbidden)) {
+      throw new Error(`${role}-workflowet må ikke bevare den historiske engangsrecovery: ${forbidden}`);
+    }
   }
 }
 for (const forbidden of [
@@ -843,12 +877,16 @@ for (const forbidden of [
   'candidate-g-public-recovery-fallback.mjs',
   'candidate-g-last-ready-public',
 ]) {
-  if (text.includes(forbidden)) {
-    throw new Error(`Den integrerede produktionsvej må ikke bevare Candidate G-publicering eller shadow: ${forbidden}`);
+  for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+    if (workflowSource.includes(forbidden)) {
+      throw new Error(`${role}-workflowet må ikke bevare Candidate G-publicering eller shadow: ${forbidden}`);
+    }
   }
 }
-if (/ravscore_active_shadow|ravscore-active-shadow:|ravradar-active-ravscore-shadow/.test(text)) {
-  throw new Error('Det pensionerede active-shadow-entrypoint må ikke genindføres ved siden af candidate-dry-run.');
+for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
+  if (/ravscore_active_shadow|ravscore-active-shadow:|ravradar-active-ravscore-shadow/.test(workflowSource)) {
+    throw new Error(`${role}-workflowet må ikke genindføre det pensionerede active-shadow-entrypoint ved siden af candidate-dry-run.`);
+  }
 }
 const candidateRollbackStage = text.slice(
   text.indexOf('name: Seal Candidate G rollback or maintenance plan from the fresh private runtime'),
@@ -924,15 +962,15 @@ for (const marker of [
     throw new Error(`Historical integrated immutable plan mangler ${marker}`);
   }
 }
-const candidateRefreshBegin = text.indexOf('name: Begin scheduled Candidate G refresh with exact central CAS');
-const pagesDeploy = text.indexOf('name: Deploy to GitHub Pages', candidateRefreshBegin);
-const candidateRefreshComplete = text.indexOf('name: Refresh already active Candidate G central evidence after public verification');
+const candidateRefreshBegin = deployWorkflow.indexOf('name: Begin scheduled Candidate G refresh with exact central CAS');
+const pagesDeploy = deployWorkflow.indexOf('name: Deploy to GitHub Pages', candidateRefreshBegin);
+const candidateRefreshComplete = deployWorkflow.indexOf('name: Refresh already active Candidate G central evidence after public verification');
 if (!(candidateRefreshBegin >= 0 && candidateRefreshBegin < pagesDeploy
   && pagesDeploy < candidateRefreshComplete)) {
   throw new Error('Candidate G scheduler-maintenance skal være refresh-begin → Pages → refresh-complete.');
 }
-const candidateRefreshBeginBlock = text.slice(candidateRefreshBegin,
-  text.indexOf('\n      - name:', candidateRefreshBegin + 1));
+const candidateRefreshBeginBlock = deployWorkflow.slice(candidateRefreshBegin,
+  deployWorkflow.indexOf('\n      - name:', candidateRefreshBegin + 1));
 for (const marker of [
   'ravscore-operational-activation.mjs refresh-begin',
   '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
@@ -941,14 +979,14 @@ for (const marker of [
 ]) {
   if (!candidateRefreshBeginBlock.includes(marker)) throw new Error(`Candidate G refresh-begin mangler ${marker}`);
 }
-const legacyRefreshBegin = text.indexOf('name: Begin legacy-to-current Candidate G refresh with exact central CAS');
-const legacyRefreshComplete = text.indexOf('name: Complete legacy-to-current Candidate G refresh only after public verification');
+const legacyRefreshBegin = deployWorkflow.indexOf('name: Begin legacy-to-current Candidate G refresh with exact central CAS');
+const legacyRefreshComplete = deployWorkflow.indexOf('name: Complete legacy-to-current Candidate G refresh only after public verification');
 if (!(legacyRefreshBegin >= 0 && legacyRefreshBegin < pagesDeploy
   && pagesDeploy < legacyRefreshComplete)) {
   throw new Error('Legacy Candidate G scheduler-maintenance skal være legacy-refresh-begin → Pages → legacy-refresh-complete.');
 }
-const legacyRefreshBeginBlock = text.slice(legacyRefreshBegin,
-  text.indexOf('\n      - name:', legacyRefreshBegin + 1));
+const legacyRefreshBeginBlock = deployWorkflow.slice(legacyRefreshBegin,
+  deployWorkflow.indexOf('\n      - name:', legacyRefreshBegin + 1));
 for (const marker of [
   'ravscore-operational-activation.mjs legacy-refresh-begin',
   '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
@@ -958,8 +996,8 @@ for (const marker of [
 ]) {
   if (!legacyRefreshBeginBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-begin mangler ${marker}`);
 }
-const legacyRefreshCompleteBlock = text.slice(legacyRefreshComplete,
-  text.indexOf('\n      - name:', legacyRefreshComplete + 1));
+const legacyRefreshCompleteBlock = deployWorkflow.slice(legacyRefreshComplete,
+  deployWorkflow.indexOf('\n      - name:', legacyRefreshComplete + 1));
 for (const marker of [
   'ravscore-operational-activation.mjs legacy-refresh-complete',
   '--verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"',
@@ -967,13 +1005,13 @@ for (const marker of [
 ]) {
   if (!legacyRefreshCompleteBlock.includes(marker)) throw new Error(`Legacy Candidate G refresh-complete mangler ${marker}`);
 }
-if (!text.includes("steps.candidate-legacy-refresh-begin.outcome == 'success'")) {
+if (!deployWorkflow.includes("steps.candidate-legacy-refresh-begin.outcome == 'success'")) {
   throw new Error('En tvetydig legacy Candidate G refresh skal altid gå gennem offentlig identitetsreconciliation.');
 }
-const historicalCandidateBegin = text.indexOf(
+const historicalCandidateBegin = deployWorkflow.indexOf(
   'name: Begin historical-to-current Candidate G maintenance with exact central CAS',
 );
-const historicalCandidateComplete = text.indexOf(
+const historicalCandidateComplete = deployWorkflow.indexOf(
   'name: Complete historical-to-current Candidate G maintenance only after public verification',
 );
 if (!(historicalCandidateBegin >= 0 && historicalCandidateBegin < pagesDeploy
@@ -983,9 +1021,9 @@ if (!(historicalCandidateBegin >= 0 && historicalCandidateBegin < pagesDeploy
 for (const [sectionStart, sectionEnd, markers, label] of [
   [
     historicalCandidateBegin,
-    text.indexOf('\n      - name:', historicalCandidateBegin + 1),
+    deployWorkflow.indexOf('\n      - name:', historicalCandidateBegin + 1),
     [
-      "if: needs.build-and-prepare.outputs.operational_action == 'candidate-historical-maintenance'",
+      "if: inputs.operational_action == 'candidate-historical-maintenance'",
       'ravscore-operational-activation.mjs historical-refresh-begin',
       '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
       '--source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"',
@@ -995,7 +1033,7 @@ for (const [sectionStart, sectionEnd, markers, label] of [
   ],
   [
     historicalCandidateComplete,
-    text.indexOf('\n      - name:', historicalCandidateComplete + 1),
+    deployWorkflow.indexOf('\n      - name:', historicalCandidateComplete + 1),
     [
       'ravscore-operational-activation.mjs historical-refresh-complete',
       '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
@@ -1004,15 +1042,15 @@ for (const [sectionStart, sectionEnd, markers, label] of [
     'Historical Candidate complete',
   ],
 ]) {
-  const section = text.slice(sectionStart, sectionEnd);
+  const section = deployWorkflow.slice(sectionStart, sectionEnd);
   for (const marker of markers) {
     if (!section.includes(marker)) throw new Error(`${label} mangler ${marker}`);
   }
 }
-const historicalIntegratedBegin = text.indexOf(
+const historicalIntegratedBegin = deployWorkflow.indexOf(
   'name: Begin historical-to-current integrated maintenance with exact central CAS',
 );
-const historicalIntegratedComplete = text.indexOf(
+const historicalIntegratedComplete = deployWorkflow.indexOf(
   'name: Complete historical-to-current integrated maintenance only after public verification',
 );
 if (!(historicalIntegratedBegin >= 0 && historicalIntegratedBegin < pagesDeploy
@@ -1022,7 +1060,7 @@ if (!(historicalIntegratedBegin >= 0 && historicalIntegratedBegin < pagesDeploy
 for (const [sectionStart, sectionEnd, markers, label] of [
   [
     historicalIntegratedBegin,
-    text.indexOf('\n      - name:', historicalIntegratedBegin + 1),
+    deployWorkflow.indexOf('\n      - name:', historicalIntegratedBegin + 1),
     [
       'ravscore-operational-activation.mjs integrated-historical-maintenance-begin',
       '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
@@ -1034,7 +1072,7 @@ for (const [sectionStart, sectionEnd, markers, label] of [
   ],
   [
     historicalIntegratedComplete,
-    text.indexOf('\n      - name:', historicalIntegratedComplete + 1),
+    deployWorkflow.indexOf('\n      - name:', historicalIntegratedComplete + 1),
     [
       'ravscore-operational-activation.mjs integrated-historical-maintenance-complete',
       '--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"',
@@ -1044,14 +1082,14 @@ for (const [sectionStart, sectionEnd, markers, label] of [
     'Historical integrated complete',
   ],
 ]) {
-  const section = text.slice(sectionStart, sectionEnd);
+  const section = deployWorkflow.slice(sectionStart, sectionEnd);
   for (const marker of markers) {
     if (!section.includes(marker)) throw new Error(`${label} mangler ${marker}`);
   }
 }
-const historicalSourceRestore = text.slice(
-  text.indexOf('name: Restore the exact sealed active source implementation'),
-  text.indexOf('name: Upload privacy-safe source evidence before any activation CAS'),
+const historicalSourceRestore = deployWorkflow.slice(
+  deployWorkflow.indexOf('name: Restore the exact sealed active source implementation'),
+  deployWorkflow.indexOf('name: Upload privacy-safe source evidence before any activation CAS'),
 );
 for (const marker of [
   "operational_action == 'candidate-historical-maintenance'",
@@ -1063,9 +1101,9 @@ for (const marker of [
     throw new Error(`Historical source restore/verification mangler ${marker}`);
   }
 }
-const failedTransitionReconcile = text.slice(
-  text.indexOf('name: Reconcile an ambiguous failed transition from observed public identity'),
-  text.indexOf('name: Seal exact verified deployment terminal'),
+const failedTransitionReconcile = deployWorkflow.slice(
+  deployWorkflow.indexOf('name: Reconcile an ambiguous failed transition from observed public identity'),
+  deployWorkflow.indexOf('name: Seal exact verified deployment terminal'),
 );
 for (const marker of [
   "steps.candidate-historical-refresh-begin.outcome == 'success'",
@@ -1090,9 +1128,9 @@ if (!integratedCompletionArgs.includes(
 )) {
   throw new Error('Alle integrated targets, herunder direct H0 Candidate→H1, skal reconciles mod IntegratedReturnPlan.');
 }
-const integratedMaintenance = text.indexOf('name: Reseal ordinary integrated production without changing model identity');
+const integratedMaintenance = deployWorkflow.indexOf('name: Reseal ordinary integrated production without changing model identity');
 if (!(integratedMaintenance > pagesDeploy)
-  || !text.slice(integratedMaintenance, text.indexOf('\n      - name:', integratedMaintenance + 1))
+  || !deployWorkflow.slice(integratedMaintenance, deployWorkflow.indexOf('\n      - name:', integratedMaintenance + 1))
     .includes('ravscore-operational-activation.mjs integrated-maintenance')) {
   throw new Error('Almindelig integreret produktion skal reseales efter Pages uden en femte transitionstype.');
 }
@@ -1106,15 +1144,15 @@ for (const marker of [
   'candidate-execute|candidate-maintenance|candidate-historical-maintenance|candidate-legacy-maintenance)',
   'integrated|integrated-historical-maintenance|integrated-return|integrated-cutover)',
 ]) {
-  if (!text.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
+  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Durable source/target-reconciliation mangler ${marker}`);
 }
 
 const operationalRecoveryPositions = {
-  reconcile: text.indexOf('\n  reconcile-operational-pending:'),
-  writer: text.indexOf('\n  recover-operational-pages-target:'),
-  finalizer: text.indexOf('\n  finalize-operational-pages-recovery:'),
-  gate: text.indexOf('\n  operational-recovery-gate:'),
-  currentHour: text.indexOf('\n  current-hour-readiness:'),
+  reconcile: orchestratorWorkflow.indexOf('\n  reconcile-operational-pending:'),
+  writer: orchestratorWorkflow.indexOf('\n  recover-operational-pages-target:'),
+  finalizer: orchestratorWorkflow.indexOf('\n  finalize-operational-pages-recovery:'),
+  gate: orchestratorWorkflow.indexOf('\n  operational-recovery-gate:'),
+  currentHour: orchestratorWorkflow.indexOf('\n  current-hour-readiness:'),
 };
 assert.deepEqual(
   Object.values(operationalRecoveryPositions).map((position) => position >= 0),
@@ -1128,23 +1166,23 @@ assert.ok(
     && operationalRecoveryPositions.gate < operationalRecoveryPositions.currentHour,
   'Recovery skal være classify → Pages-writer → non-Pages CAS-finalizer → terminal gate → current-hour.',
 );
-const operationalReconcileSection = text.slice(
+const operationalReconcileSection = orchestratorWorkflow.slice(
   operationalRecoveryPositions.reconcile,
   operationalRecoveryPositions.writer,
 );
-const operationalWriterSection = text.slice(
+const operationalWriterSection = orchestratorWorkflow.slice(
   operationalRecoveryPositions.writer,
   operationalRecoveryPositions.finalizer,
 );
-const operationalFinalizerSection = text.slice(
+const operationalFinalizerSection = orchestratorWorkflow.slice(
   operationalRecoveryPositions.finalizer,
   operationalRecoveryPositions.gate,
 );
-const operationalRecoveryGateSection = text.slice(
+const operationalRecoveryGateSection = orchestratorWorkflow.slice(
   operationalRecoveryPositions.gate,
   operationalRecoveryPositions.currentHour,
 );
-const geometryExclusion = "if: github.ref == 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true))";
+const geometryExclusion = "if: github.ref == 'refs/heads/main' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true'";
 if (!operationalReconcileSection.includes(geometryExclusion)
   || operationalReconcileSection.includes('GEOMETRY_ONLY')) {
   throw new Error('Geometry-dispatches skal være helt udelukket fra reconcile/recovery-jobbet.');
@@ -1204,8 +1242,8 @@ for (const marker of [
 ]) {
   if (!operationalRecoveryGateSection.includes(marker)) throw new Error(`Recovery-terminalgaten mangler ${marker}`);
 }
-if (!text.slice(operationalRecoveryPositions.currentHour).startsWith('\n  current-hour-readiness:\n')
-  || !text.slice(operationalRecoveryPositions.currentHour, text.indexOf('\n  trip-storage-readiness:', operationalRecoveryPositions.currentHour))
+if (!orchestratorWorkflow.slice(operationalRecoveryPositions.currentHour).startsWith('\n  current-hour-readiness:\n')
+  || !orchestratorWorkflow.slice(operationalRecoveryPositions.currentHour, orchestratorWorkflow.indexOf('\n  trip-storage-readiness:', operationalRecoveryPositions.currentHour))
     .includes('needs: operational-recovery-gate')) {
   throw new Error('Current-hour må ikke starte før recovery-finalizeren er terminalt grøn/skipped.');
 }
@@ -1266,23 +1304,27 @@ assertMarkersOrdered(operationalWriterSection, [
   'python3 - "$RAVRADAR_OPERATIONAL_WORK/artifact-archive/artifact.tar"',
   'tar --extract',
 ], 'Pages-writerens seal→raw ZIP→sikker extraction');
-const pagesArtifactUploadPosition = text.indexOf('name: Upload GitHub Pages artifact');
-const pagesArtifactSealPosition = text.indexOf('name: Resolve and seal the exact uploaded Pages artifact');
-const handoffAfterSealPosition = text.indexOf('name: Upload privacy-safe operational handoff evidence after Pages artifact seal');
+const pagesArtifactUploadPosition = buildWorkflow.indexOf('name: Upload GitHub Pages artifact');
+const pagesArtifactSealPosition = buildWorkflow.indexOf('name: Resolve and seal the exact uploaded Pages artifact');
+const handoffAfterSealPosition = buildWorkflow.indexOf('name: Upload privacy-safe operational handoff evidence after Pages artifact seal');
+const deployHandoffDownloadPosition = deployWorkflow.indexOf('name: Download sealed operational handoff');
+const deployHandoffVerifyPosition = deployWorkflow.indexOf('name: Verify exact privacy-safe handoff identity');
 const firstActivationCasPosition = Math.min(...[
   'node scripts/ravscore-operational-activation.mjs begin',
   'node scripts/ravscore-operational-activation.mjs refresh-begin',
   'node scripts/ravscore-operational-activation.mjs legacy-refresh-begin',
   'node scripts/ravscore-operational-activation.mjs return-begin',
-].map((marker) => text.indexOf(marker)).filter((position) => position >= 0));
+].map((marker) => deployWorkflow.indexOf(marker)).filter((position) => position >= 0));
 if (!(pagesArtifactUploadPosition < pagesArtifactSealPosition
   && pagesArtifactSealPosition < handoffAfterSealPosition
-  && handoffAfterSealPosition < firstActivationCasPosition)) {
+  && deployHandoffDownloadPosition >= 0
+  && deployHandoffDownloadPosition < deployHandoffVerifyPosition
+  && deployHandoffVerifyPosition < firstActivationCasPosition)) {
   throw new Error('Pages artifact-id/digest/størrelse skal forsegles og handoffes før første activation CAS.');
 }
-const sourceRestoreSection = text.slice(
-  text.indexOf('name: Restore the exact sealed active source implementation'),
-  text.indexOf('\n      - name:', text.indexOf('name: Restore the exact sealed active source implementation') + 1),
+const sourceRestoreSection = deployWorkflow.slice(
+  deployWorkflow.indexOf('name: Restore the exact sealed active source implementation'),
+  deployWorkflow.indexOf('\n      - name:', deployWorkflow.indexOf('name: Restore the exact sealed active source implementation') + 1),
 );
 for (const marker of [
   '^pages-([0-9]+)-([0-9]+)$',
@@ -1294,7 +1336,7 @@ for (const marker of [
 ]) {
   if (!sourceRestoreSection.includes(marker)) throw new Error(`Recovery-lineage kan ikke blive næste eksakte source: ${marker}`);
 }
-const recoveryConcurrencySection = text.slice(text.indexOf('\nconcurrency:'), text.indexOf('\njobs:'));
+const recoveryConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'), orchestratorWorkflow.indexOf('\njobs:'));
 for (const marker of [
   "inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national'",
   "inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot'",
@@ -1449,19 +1491,30 @@ if (!text.includes('uses: actions/cache/restore@v6') || !text.includes('uses: ac
 if (/uses: actions\/cache@v4[\s\S]{0,300}key: dmi-grib-v3-/.test(text)) throw new Error('Den uforanderlige ugentlige primærnøgle må ikke genindføres.');
 if (!text.includes('${{ github.run_id }}-${{ github.run_attempt }}')) throw new Error('Den gemte DMI-cache skal have en unik nøgle pr. kørsel.');
 
-if (!text.includes('build-and-prepare:') || !text.includes('deploy-pages:')) throw new Error('Data/build og Pages-deploy skal være separate jobs.');
-if (!text.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
-if (!text.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
+for (const marker of [
+  'build-and-prepare:',
+  'uses: ./.github/workflows/reusable-weather-build.yml',
+  'deploy-pages:',
+  'needs: build-and-prepare',
+  'uses: ./.github/workflows/reusable-pages-deploy.yml',
+]) {
+  if (!orchestratorWorkflow.includes(marker)) throw new Error(`Produktionsorkestratoren mangler den genbrugelige rollegrænse: ${marker}`);
+}
+if (!buildWorkflow.includes('\n  build-and-prepare:') || !deployWorkflow.includes('\n  deploy-pages:')) {
+  throw new Error('Data/build og Pages-deploy skal ejes af hver sin genbrugelige workflowrolle.');
+}
+if (!orchestratorWorkflow.includes('geometry-v2-pilot:')) throw new Error('Workflow mangler det isolerede GeoDanmark geometry-v2 pilotjob.');
+if (!orchestratorWorkflow.includes("github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)")) {
   throw new Error('Private GeoDanmark-dispatches skal udelukke det almindelige build- og deployjob.');
 }
-const geometryNationalSection = text.slice(text.indexOf('geometry-v2-national:'), text.indexOf('geometry-v2-pilot:'));
-for (const marker of ['geometry_v2_national == true', 'python scripts/build-national-geometry-v2-plan.py', 'python scripts/fetch-geodanmark-national.py', 'python scripts/validate-geodanmark-national-source.py', 'python scripts/analyze-geodanmark-national.py', 'python scripts/fetch-national-water-exclusions.py', 'python scripts/analyze-national-coastal-topology.py', 'python scripts/validate-national-topology-audit.py', 'python scripts/build-national-coastal-parts.py', 'python scripts/validate-national-coastal-parts.py', 'python scripts/build-national-local-part-names.py', 'python scripts/validate-national-local-part-names.py', 'python scripts/build-national-local-part-points.py', 'python scripts/validate-national-local-part-points.py', 'python scripts/validate-national-local-part-dmi-grid.py', 'python scripts/build-national-weather-shadow-contract.py', 'python scripts/validate-national-multi-step-series.py', 'node scripts/validate-national-state-history.mjs', 'python scripts/validate-national-local-part-wind-series.py', 'node scripts/validate-national-shadow-score.mjs', 'Upload compact national geometry-v2 QA artifact', 'national-source-manifest.json', 'national-source-qa.json', 'national-source-qa.geojson', 'national-topology-audit.json', 'national-topology-audit.geojson', 'national-coastal-parts.json', 'national-coastal-parts.geojson', 'national-local-part-name-suggestions.json', 'national-local-part-point-pairs.json', 'national-local-part-dmi-grid.json', 'national-weather-shadow-contract.json', 'national-multi-step-series-validation.json', 'national-state-history-validation.json', 'national-local-part-wind-series.json', 'national-shadow-score-validation.json', 'Upload private national geometry-v2 source artifact']) {
+const geometryNationalSection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('geometry-v2-national:'), orchestratorWorkflow.indexOf('geometry-v2-pilot:'));
+for (const marker of ["needs.validate-dispatch.outputs.geometry_v2_national == 'true'", 'python scripts/build-national-geometry-v2-plan.py', 'python scripts/fetch-geodanmark-national.py', 'python scripts/validate-geodanmark-national-source.py', 'python scripts/analyze-geodanmark-national.py', 'python scripts/fetch-national-water-exclusions.py', 'python scripts/analyze-national-coastal-topology.py', 'python scripts/validate-national-topology-audit.py', 'python scripts/build-national-coastal-parts.py', 'python scripts/validate-national-coastal-parts.py', 'python scripts/build-national-local-part-names.py', 'python scripts/validate-national-local-part-names.py', 'python scripts/build-national-local-part-points.py', 'python scripts/validate-national-local-part-points.py', 'python scripts/validate-national-local-part-dmi-grid.py', 'python scripts/build-national-weather-shadow-contract.py', 'python scripts/validate-national-multi-step-series.py', 'node scripts/validate-national-state-history.mjs', 'python scripts/validate-national-local-part-wind-series.py', 'node scripts/validate-national-shadow-score.mjs', 'Upload compact national geometry-v2 QA artifact', 'national-source-manifest.json', 'national-source-qa.json', 'national-source-qa.geojson', 'national-topology-audit.json', 'national-topology-audit.geojson', 'national-coastal-parts.json', 'national-coastal-parts.geojson', 'national-local-part-name-suggestions.json', 'national-local-part-point-pairs.json', 'national-local-part-dmi-grid.json', 'national-weather-shadow-contract.json', 'national-multi-step-series-validation.json', 'national-state-history-validation.json', 'national-local-part-wind-series.json', 'national-shadow-score-validation.json', 'Upload private national geometry-v2 source artifact']) {
   if (!geometryNationalSection.includes(marker)) throw new Error(`Nationalt GeoDanmark-job mangler ${marker}`);
 }
 if (geometryNationalSection.includes('pages: write') || geometryNationalSection.includes('id-token: write')) throw new Error('Det nationale GeoDanmark-job må ikke have Pages-skriverettigheder.');
-const geometryPilotSection = text.slice(text.indexOf('geometry-v2-pilot:'), text.indexOf('deploy-pages:'));
+const geometryPilotSection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('geometry-v2-pilot:'), orchestratorWorkflow.indexOf('deploy-pages:'));
 for (const marker of [
-  "inputs.geometry_v2_pilot == true",
+  "needs.validate-dispatch.outputs.geometry_v2_pilot == 'true'",
   'DATAFORDELER_API_KEY: ${{ secrets.DATAFORDELER_API_KEY }}',
   'python scripts/sync-admin-config.py',
   'python scripts/apply-central-zone-reviews.py',
@@ -1476,14 +1529,14 @@ for (const marker of [
   if (!geometryPilotSection.includes(marker)) throw new Error(`GeoDanmark-pilotjob mangler ${marker}`);
 }
 if (geometryPilotSection.includes('pages: write') || geometryPilotSection.includes('id-token: write')) throw new Error('GeoDanmark-pilotjobbet må ikke have Pages-skriverettigheder.');
-if (!text.includes('needs: build-and-prepare')) throw new Error('Deployjobbet skal afhænge af det færdige buildjob.');
-const buildSection = text.slice(text.indexOf('build-and-prepare:'), text.indexOf('deploy-pages:'));
-const deploySection = text.slice(text.indexOf('deploy-pages:'), text.indexOf('production-outcome:'));
+if (!orchestratorWorkflow.includes('needs: build-and-prepare')) throw new Error('Deployjobbet skal afhænge af det færdige buildjob.');
+const buildSection = buildWorkflow.slice(buildWorkflow.indexOf('\n  build-and-prepare:'));
+const deploySection = deployWorkflow.slice(deployWorkflow.indexOf('\n  deploy-pages:'));
 const buildTimeoutMinutes = Number(buildSection.match(/^    timeout-minutes: (\d+)$/m)?.[1]);
-const dmiBulkEnd = text.indexOf('\n      - name:', positions.dmiBulk + 1);
-const dmiBulkSection = text.slice(
+const dmiBulkEnd = buildWorkflow.indexOf('\n      - name:', positions.dmiBulk + 1);
+const dmiBulkSection = buildWorkflow.slice(
   positions.dmiBulk,
-  dmiBulkEnd < 0 ? text.length : dmiBulkEnd,
+  dmiBulkEnd < 0 ? buildWorkflow.length : dmiBulkEnd,
 );
 const dmiStepTimeoutMinutes = Number(dmiBulkSection.match(/^        timeout-minutes: (\d+)$/m)?.[1]);
 const bootstrapRuntimeSeconds = Number(
@@ -1547,23 +1600,23 @@ for (const marker of [
 if (pagesPrivacyAuditSection.includes('continue-on-error')) {
   throw new Error('Pages-privacygaten skal være fail-closed før artifact-upload.');
 }
-const productionConcurrencySection = text.slice(text.indexOf('\nconcurrency:'), text.indexOf('\njobs:'));
+const productionConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'), orchestratorWorkflow.indexOf('\njobs:'));
 if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
-if (!text.includes("'ravradar-geometry-v2-national'") || !text.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
-if ((text.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Workflowet skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
+if (!orchestratorWorkflow.includes("'ravradar-geometry-v2-national'") || !orchestratorWorkflow.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
+if ((orchestratorWorkflow.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Orkestratoren skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
+if (buildWorkflow.includes('\nconcurrency:') || deployWorkflow.includes('\nconcurrency:')) throw new Error('De genbrugelige roller må ikke oprette konkurrerende concurrencydomæner.');
 
-const deploymentPosition = text.indexOf('name: Deploy to GitHub Pages');
-const publicVerificationPosition = text.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact');
-const failureReconciliationPosition = text.indexOf('name: Reconcile an ambiguous failed transition from observed public identity');
-const deploymentTerminalPosition = text.indexOf('name: Seal exact verified deployment terminal');
-const outcomeJobPosition = text.indexOf('\n  production-outcome:');
+const deploymentPosition = deployWorkflow.indexOf('name: Deploy to GitHub Pages');
+const publicVerificationPosition = deployWorkflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact');
+const failureReconciliationPosition = deployWorkflow.indexOf('name: Reconcile an ambiguous failed transition from observed public identity');
+const deploymentTerminalPosition = deployWorkflow.indexOf('name: Seal exact verified deployment terminal');
+const outcomeJobPosition = orchestratorWorkflow.indexOf('\n  production-outcome:');
 if (!(deploymentPosition < publicVerificationPosition
   && publicVerificationPosition < failureReconciliationPosition
-  && failureReconciliationPosition < deploymentTerminalPosition
-  && deploymentTerminalPosition < outcomeJobPosition)) {
+  && failureReconciliationPosition < deploymentTerminalPosition)) {
   throw new Error('DEPLOYED-beviset skal ligge efter Pages, offentlig exact 210/673-verifikation og alle activation/reconciliation-trin.');
 }
-const deploymentTerminalSection = text.slice(deploymentTerminalPosition, outcomeJobPosition);
+const deploymentTerminalSection = deployWorkflow.slice(deploymentTerminalPosition);
 for (const marker of [
   'id: deployment-terminal',
   "if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'",
@@ -1595,7 +1648,7 @@ for (const marker of [
   if (!buildSection.includes(marker)) throw new Error(`Buildets slutstatusbevis mangler ${marker}`);
 }
 
-const outcomeSection = text.slice(outcomeJobPosition);
+const outcomeSection = orchestratorWorkflow.slice(outcomeJobPosition);
 for (const marker of [
   'name: Classify exact weather production outcome',
   'if: always()',

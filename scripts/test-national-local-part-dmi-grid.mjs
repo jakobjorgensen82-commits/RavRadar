@@ -1,6 +1,7 @@
 import fs from 'node:fs';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
-const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8');
+const workflow = await readProductionWorkflowSource('orchestrator');
 const source = fs.readFileSync('scripts/validate-national-local-part-dmi-grid.py', 'utf8');
 
 for (const marker of [

@@ -3,6 +3,10 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
 import {
+  PRODUCTION_WORKFLOW_SOURCES,
+  readProductionWorkflowSources,
+} from './lib/production-workflow-sources.mjs';
+import {
   RAVSCORE_BEST_TIME_POLICY_ID,
   RAVSCORE_COMPONENT_SCHEMA_ID,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
@@ -76,6 +80,8 @@ for(const rel of [
   'scripts/test-private-production-runtime-workflow.mjs',
   'scripts/test-pages-artifact-privacy.mjs',
   'scripts/test-production-workflow-outcome.mjs',
+  'scripts/test-release-contract-metadata.mjs',
+  'scripts/test-reusable-production-workflows.mjs',
   'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
   'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
 ]){
@@ -296,11 +302,14 @@ ok(!/calculateRavScore|selectBestTimeForDay|scoreFor\(/.test(publicApp),'Den off
 ok(!/calculateRavScore|score-engine\.js/.test(publicAssistant),'Spørg RavRadar indeholder stadig en vej til den gamle RavScore-motor');
 ok(!/calculateRavScore|selectBestTimeForDay|bestHourForDay/.test(publicInfoPanel),'Informationspanelet indeholder stadig en vej til den gamle RavScore-motor');
 ok(!/Candidate G|isCandidateG|candidateG/.test(publicInfoPanel),'Informationspanelet må ikke vise Candidate G som den aktive offentlige RavScore');
-const workflow=await read('.github/workflows/update-and-deploy.yml');
+const productionWorkflows=await readProductionWorkflowSources({root});
+const orchestratorWorkflow=productionWorkflows.orchestrator;
+const buildWorkflow=productionWorkflows.build;
+const deployWorkflow=productionWorkflows.deploy;
 const candidateOperationalPlanBuilder=await read('scripts/prepare-candidate-g-operational-rollback.mjs');
 const workflowContractTest=await read('scripts/test-workflow-validation-order-4.0.108.mjs');
 const operationalPagesRecovery=await read('scripts/ravscore-operational-pages-recovery.mjs');
-const workflowUserAgentVersions=[...workflow.matchAll(/RavRadar\/(\d+\.\d+\.\d+)/g)].map(match=>match[1]);
+const workflowUserAgentVersions=[...buildWorkflow.matchAll(/RavRadar\/(\d+\.\d+\.\d+)/g)].map(match=>match[1]);
 ok(workflowUserAgentVersions.length>0,'Produktionsworkflowet mangler en versionsbåret RavRadar User-Agent');
 for(const workflowVersion of workflowUserAgentVersions){
   ok(workflowVersion===version,`Produktionsworkflowets User-Agent viser ${workflowVersion}, men releaseversionen er ${version}`);
@@ -317,11 +326,15 @@ for(const marker of [
 for(const marker of [
   'action="candidate-legacy-maintenance"',
   'source_model="legacy-candidate-g"',
+]){
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler legacy→current Candidate G-broen ${marker}`);
+}
+for(const marker of [
   'ravscore-operational-activation.mjs legacy-refresh-begin',
   'ravscore-operational-activation.mjs legacy-refresh-complete',
   "steps.candidate-legacy-refresh-begin.outcome == 'success'",
 ]){
-  ok(workflow.includes(marker),`Produktionsworkflowets legacy→current Candidate G-bro mangler ${marker}`);
+  ok(deployWorkflow.includes(marker),`Produktionsworkflowets deploy-rolle mangler legacy→current Candidate G-broen ${marker}`);
 }
 ok(candidateOperationalPlanBuilder.includes("'legacy-candidate-g'")
   && candidateOperationalPlanBuilder.includes('Legacy Candidate G'),
@@ -365,15 +378,23 @@ for(const marker of [
   'source_model="historical-candidate-g"',
   '--source-binding "$RAVRADAR_OPERATIONAL_WORK/source-binding.json"',
   'prepare_command="prepare-integrated-historical-maintenance"',
+]){
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler historisk H0→H1-routing ${marker}`);
+}
+for(const marker of [
   'ravscore-operational-activation.mjs historical-refresh-begin',
   'ravscore-operational-activation.mjs historical-refresh-complete',
   'ravscore-operational-activation.mjs integrated-historical-maintenance-begin',
   'ravscore-operational-activation.mjs integrated-historical-maintenance-complete',
+]){
+  ok(deployWorkflow.includes(marker),`Produktionsworkflowets deploy-rolle mangler historisk H0→H1-routing ${marker}`);
+}
+for(const marker of [
   'node scripts/ravscore-operational-activation.mjs classify-pending',
   'node scripts/ravscore-operational-activation.mjs reconcile',
   'python scripts/sync-admin-config.py',
 ]){
-  ok(workflow.includes(marker),`Produktionsworkflowets historiske H0→H1-routing mangler ${marker}`);
+  ok(orchestratorWorkflow.includes(marker),`Produktionsworkflowets orchestrator-rolle mangler historisk H0→H1-routing ${marker}`);
 }
 for(const marker of [
   'action="candidate-historical-maintenance"',
@@ -400,11 +421,11 @@ for(const marker of [
   ok(operationalPagesRecovery.includes(marker),`Pages-recoveryhelperen mangler schema/action ${marker}`);
 }
 const operationalRecoveryPositions={
-  reconcile:workflow.indexOf('\n  reconcile-operational-pending:'),
-  writer:workflow.indexOf('\n  recover-operational-pages-target:'),
-  finalizer:workflow.indexOf('\n  finalize-operational-pages-recovery:'),
-  gate:workflow.indexOf('\n  operational-recovery-gate:'),
-  currentHour:workflow.indexOf('\n  current-hour-readiness:'),
+  reconcile:orchestratorWorkflow.indexOf('\n  reconcile-operational-pending:'),
+  writer:orchestratorWorkflow.indexOf('\n  recover-operational-pages-target:'),
+  finalizer:orchestratorWorkflow.indexOf('\n  finalize-operational-pages-recovery:'),
+  gate:orchestratorWorkflow.indexOf('\n  operational-recovery-gate:'),
+  currentHour:orchestratorWorkflow.indexOf('\n  current-hour-readiness:'),
 };
 for(const [job,position] of Object.entries(operationalRecoveryPositions)){
   ok(position>=0,`Pages-recoverykæden mangler job: ${job}`);
@@ -414,10 +435,10 @@ ok(operationalRecoveryPositions.reconcile<operationalRecoveryPositions.writer
   && operationalRecoveryPositions.finalizer<operationalRecoveryPositions.gate
   && operationalRecoveryPositions.gate<operationalRecoveryPositions.currentHour,
 'Pages-recovery skal være classifier → isoleret writer → finalizer → gate → current-hour');
-const operationalReconcileSection=workflow.slice(operationalRecoveryPositions.reconcile,operationalRecoveryPositions.writer);
-const operationalWriterSection=workflow.slice(operationalRecoveryPositions.writer,operationalRecoveryPositions.finalizer);
-const operationalFinalizerSection=workflow.slice(operationalRecoveryPositions.finalizer,operationalRecoveryPositions.gate);
-const operationalRecoveryGateSection=workflow.slice(operationalRecoveryPositions.gate,operationalRecoveryPositions.currentHour);
+const operationalReconcileSection=orchestratorWorkflow.slice(operationalRecoveryPositions.reconcile,operationalRecoveryPositions.writer);
+const operationalWriterSection=orchestratorWorkflow.slice(operationalRecoveryPositions.writer,operationalRecoveryPositions.finalizer);
+const operationalFinalizerSection=orchestratorWorkflow.slice(operationalRecoveryPositions.finalizer,operationalRecoveryPositions.gate);
+const operationalRecoveryGateSection=orchestratorWorkflow.slice(operationalRecoveryPositions.gate,operationalRecoveryPositions.currentHour);
 ok(operationalWriterSection.includes("needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'")
   && operationalWriterSection.includes('pages: write')
   && operationalWriterSection.includes('id-token: write')
@@ -446,7 +467,7 @@ for(const marker of [
   '^pages-recovery-([0-9]+)-([0-9]+)$',
   'ravscore-operational-recovery-handoff-$source_run_id-$source_attempt',
 ]){
-  ok(workflow.includes(marker),`Pages-recovery-lineage mangler ${marker}`);
+  ok(orchestratorWorkflow.includes(marker),`Pages-recovery-lineage mangler ${marker}`);
 }
 for(const marker of [
   "text.indexOf('\\n  reconcile-operational-pending:')",
@@ -549,13 +570,16 @@ ok(!(packageScripts['test:workflow-action-contracts']??'').includes('test-ravsco
 const workflowActionChain=packageScripts['test:workflow-action-contracts']??'';
 ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test:candidate-g-gap-retirement')
+  && workflowActionChain.includes('test:reusable-production-workflows')
   && workflowActionChain.includes('test-workflow-validation-order-4.0.108.mjs')
   && workflowActionChain.includes('test-ravscore-operational-pages-recovery.mjs')
   && workflowActionChain.includes('test:production-workflow-outcome')
   && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
-'Workflowkontrakten skal teste dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
+'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs',
+'Release metadata mangler sin isolerede kontrakttest');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
   'test:candidate-g-gap-workflow',
@@ -637,7 +661,7 @@ for(const marker of [
   ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
 }
 for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
-  ok(workflow.includes(marker),`Produktionsworkflowet mangler den bundne Copernicus-kontrakt: ${marker}`);
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
 for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
@@ -756,10 +780,10 @@ ok(signedTripProbeBlock.includes('verifyTripGatewaySignature')
   &&signedTripProbeBlock.includes('tripStorageReadinessHeaders')
   &&!/enforceRateLimits|requireAuthenticatedUserId|listOwnTripObservations/.test(signedTripProbeBlock),
   'Den signerede Edge-probe må ikke forbruge rate limit, auth-resolve eller storage');
-const activeTripGateStart=workflow.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
-const protectedWritesStart=workflow.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
+const activeTripGateStart=buildWorkflow.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
+const protectedWritesStart=buildWorkflow.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
 const activeTripGate=activeTripGateStart>=0&&protectedWritesStart>activeTripGateStart
-  ?workflow.slice(activeTripGateStart,protectedWritesStart):'';
+  ?buildWorkflow.slice(activeTripGateStart,protectedWritesStart):'';
 ok(activeTripGate.includes('node scripts/verify-trip-storage-edge.mjs')
   &&activeTripGate.includes('node scripts/verify-cloudflare-trip-gateway.mjs')
   &&activeTripGate.includes('CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}')
@@ -843,36 +867,36 @@ ok(publicApp.includes("t('data.couldNotLoad')")
   && publicI18n.includes('The current atomic forecast bundle could not be verified. Older forecast days are not shown.'),
 'Den offentlige brugerflade mangler DA/DE/EN fail-closed-tekst for en uverificeret atomisk datapakke eller startup');
 const workflowPositions={
-  preflightCache:workflow.indexOf('name: Restore dataminimized weather preflight metadata'),
-  publicPreflightManifest:workflow.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
-  preflight:workflow.indexOf('name: Decide whether weather needs updating before private runtime download'),
-  privateRuntimeExpected:workflow.indexOf('name: Build current private-runtime restore expectation'),
-  privateRuntimeRestore:workflow.indexOf('name: Restore newest compatible private runtime from protected storage'),
-  privateRuntimeVerify:workflow.indexOf('name: Verify and restore the private production runtime bundle'),
-  privateRuntimeInstall:workflow.indexOf('name: Install only the allowlisted restored private runtime files'),
-  checkpointRestore:workflow.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
-  protectedCheckpointRestore:workflow.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
-  legacyBootstrapGate:workflow.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
-  legacyBootstrapImport:workflow.indexOf('name: Import exact public Candidate G runtime only for first integrated bootstrap'),
-  resolvedTarget:workflow.indexOf('name: Bind production to resolved DMI current hour'),
-  weather:workflow.indexOf('name: Update central weather cache'),
-  runtime:workflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
-  runtimeAudit:workflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
-  validate:workflow.indexOf('name: Validate full project after fresh weather and current provenance'),
-  releaseGate:workflow.indexOf('name: Run release governance gate after refreshed data validation'),
-  validateData:workflow.indexOf('name: Validate updated weather cache'),
-  checkpointBuild:workflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  checkpointSave:workflow.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
-  protectedCheckpointPublish:workflow.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
-  preflightStateBuild:workflow.indexOf('name: Build dataminimized weather preflight state after final gates'),
-  preflightStateSave:workflow.indexOf('name: Save dataminimized weather preflight state'),
-  privateRuntimeSpec:workflow.indexOf('name: Build private production runtime bundle specification'),
-  privateRuntimeCreate:workflow.indexOf('name: Create the next private production runtime bundle atomically'),
-  privateRuntimeSave:workflow.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
-  privateRuntimeAnonAudit:workflow.indexOf('name: Prove the private runtime object is not anonymously readable'),
-  artifact:workflow.indexOf('name: Build lean GitHub Pages artifact'),
-  pagesPrivacyAudit:workflow.indexOf('name: Audit the complete Pages artifact for private runtime material'),
-  pagesUpload:workflow.indexOf('name: Upload GitHub Pages artifact'),
+  preflightCache:buildWorkflow.indexOf('name: Restore dataminimized weather preflight metadata'),
+  publicPreflightManifest:buildWorkflow.indexOf('name: Fetch only the deployed public manifest for weather preflight'),
+  preflight:buildWorkflow.indexOf('name: Decide whether weather needs updating before private runtime download'),
+  privateRuntimeExpected:buildWorkflow.indexOf('name: Build current private-runtime restore expectation'),
+  privateRuntimeRestore:buildWorkflow.indexOf('name: Restore newest compatible private runtime from protected storage'),
+  privateRuntimeVerify:buildWorkflow.indexOf('name: Verify and restore the private production runtime bundle'),
+  privateRuntimeInstall:buildWorkflow.indexOf('name: Install only the allowlisted restored private runtime files'),
+  checkpointRestore:buildWorkflow.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
+  protectedCheckpointRestore:buildWorkflow.indexOf('name: Restore protected atomic RavScore checkpoint when cache is absent'),
+  legacyBootstrapGate:buildWorkflow.indexOf('name: Resolve the one-time Candidate G bootstrap gate'),
+  legacyBootstrapImport:buildWorkflow.indexOf('name: Import exact public Candidate G runtime only for first integrated bootstrap'),
+  resolvedTarget:buildWorkflow.indexOf('name: Bind production to resolved DMI current hour'),
+  weather:buildWorkflow.indexOf('name: Update central weather cache'),
+  runtime:buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
+  runtimeAudit:buildWorkflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  validate:buildWorkflow.indexOf('name: Validate full project after fresh weather and current provenance'),
+  releaseGate:buildWorkflow.indexOf('name: Run release governance gate after refreshed data validation'),
+  validateData:buildWorkflow.indexOf('name: Validate updated weather cache'),
+  checkpointBuild:buildWorkflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
+  checkpointSave:buildWorkflow.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
+  protectedCheckpointPublish:buildWorkflow.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
+  preflightStateBuild:buildWorkflow.indexOf('name: Build dataminimized weather preflight state after final gates'),
+  preflightStateSave:buildWorkflow.indexOf('name: Save dataminimized weather preflight state'),
+  privateRuntimeSpec:buildWorkflow.indexOf('name: Build private production runtime bundle specification'),
+  privateRuntimeCreate:buildWorkflow.indexOf('name: Create the next private production runtime bundle atomically'),
+  privateRuntimeSave:buildWorkflow.indexOf('name: Publish bounded private runtime with one protected rollback generation'),
+  privateRuntimeAnonAudit:buildWorkflow.indexOf('name: Prove the private runtime object is not anonymously readable'),
+  artifact:buildWorkflow.indexOf('name: Build lean GitHub Pages artifact'),
+  pagesPrivacyAudit:buildWorkflow.indexOf('name: Audit the complete Pages artifact for private runtime material'),
+  pagesUpload:buildWorkflow.indexOf('name: Upload GitHub Pages artifact'),
 };
 for(const [step,position] of Object.entries(workflowPositions)){
   ok(position>=0,`Produktionsworkflowet mangler integreret RavScore-trin: ${step}`);
@@ -890,7 +914,7 @@ for(let index=1;index<workflowOrder.length;index+=1){
   const after=workflowOrder[index];
   ok(workflowPositions[before]<workflowPositions[after],`Produktionsworkflowets rækkefølge er ugyldig: ${before} skal ligge før ${after}`);
 }
-const lightweightPreflightSection=workflow.slice(workflowPositions.preflightCache,workflowPositions.checkpointRestore);
+const lightweightPreflightSection=buildWorkflow.slice(workflowPositions.preflightCache,workflowPositions.checkpointRestore);
 for(const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/weather-preflight-state',
@@ -910,7 +934,7 @@ for(const marker of [
 ok(!lightweightPreflightSection.includes('protected-private-production-runtime.mjs')
   && !lightweightPreflightSection.includes('/tmp/ravradar-private-production-runtime/bundle'),
 'Den tidlige vejrpreflight må ikke hente eller inspicere det fulde private runtimebundle');
-const privateRuntimeRestoreSection=workflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.legacyBootstrapGate);
+const privateRuntimeRestoreSection=buildWorkflow.slice(workflowPositions.privateRuntimeExpected,workflowPositions.legacyBootstrapGate);
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs expected',
   '--target-reference "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
@@ -931,8 +955,8 @@ for(const marker of [
 }
 for(const step of ['privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall']){
   const start=workflowPositions[step];
-  const end=workflow.indexOf('\n      - name:',start+1);
-  const block=workflow.slice(start,end<0?workflow.length:end);
+  const end=buildWorkflow.indexOf('\n      - name:',start+1);
+  const block=buildWorkflow.slice(start,end<0?buildWorkflow.length:end);
   ok(block.includes("if: steps.preflight.outputs.should_run == 'true'"),
     `${step} må ikke køre før den lette preflight har krævet en reel build`);
 }
@@ -941,14 +965,14 @@ for(const marker of [
   'RAVRADAR_PRIVATE_RUNTIME_BUNDLE: /tmp/ravradar-private-production-runtime/bundle',
   'RAVRADAR_PRIVATE_RUNTIME_RESTORE: /tmp/ravradar-private-production-runtime/restored',
 ]){
-  ok(workflow.includes(marker),`Workflowets private runtime-miljø mangler ${marker}`);
+  ok(buildWorkflow.includes(marker),`Workflowets private runtime-miljø mangler ${marker}`);
 }
 ok(!privateRuntimeRestoreSection.includes('path: .cache/private-production-runtime'),
 'Det private produktionsbundle må ikke gendannes i repositoryets cachetræ');
-ok(!workflow.includes('private-production-runtime-v1-')
-  && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(workflow),
+ok(!buildWorkflow.includes('private-production-runtime-v1-')
+  && !/actions\/cache\/(?:restore|save)@v6[\s\S]{0,240}path: \/tmp\/ravradar-private-production-runtime\/bundle/.test(buildWorkflow),
 'Det fulde private runtimebundle må ikke lagres i GitHub Actions cache');
-const checkpointRestoreSection=workflow.slice(workflowPositions.checkpointRestore,workflowPositions.privateRuntimeExpected);
+const checkpointRestoreSection=buildWorkflow.slice(workflowPositions.checkpointRestore,workflowPositions.privateRuntimeExpected);
 for(const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/ravscore-continuation-checkpoint',
@@ -966,7 +990,7 @@ for(const marker of [
 ok(!checkpointRestoreSection.includes('node scripts/ravscore-continuation-checkpoint.mjs')
   && !checkpointRestoreSection.includes('--target data/live/conditions.json'),
 'Schema-4 checkpoint-restoren må ikke mutere conditions direkte');
-const legacyBootstrapSection=workflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.resolvedTarget);
+const legacyBootstrapSection=buildWorkflow.slice(workflowPositions.legacyBootstrapGate,workflowPositions.resolvedTarget);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
@@ -977,11 +1001,11 @@ for(const marker of [
 ]){
   ok(legacyBootstrapSection.includes(marker),`Candidate G-engangsbootstrap mangler ${marker}`);
 }
-ok((workflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
+ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
   && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
-  && !workflow.includes('name: Hydrate latest deployed weather state'),
+  && !buildWorkflow.includes('name: Hydrate latest deployed weather state'),
 'Generisk offentlig hydration skal være pensioneret; kun Candidate G-engangsbootstrap og den isolerede attesterede legacy-kilde må findes');
-const runtimeAuditSection=workflow.slice(workflowPositions.runtimeAudit,workflowPositions.validate);
+const runtimeAuditSection=buildWorkflow.slice(workflowPositions.runtimeAudit,workflowPositions.validate);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
@@ -990,7 +1014,7 @@ for(const marker of [
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
-const checkpointSaveSection=workflow.slice(workflowPositions.checkpointBuild,workflowPositions.privateRuntimeSpec);
+const checkpointSaveSection=buildWorkflow.slice(workflowPositions.checkpointBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
   'node scripts/ravscore-continuation-checkpoint.mjs',
@@ -1007,7 +1031,7 @@ for(const marker of [
   ok(checkpointSaveSection.includes(marker),`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
 }
 ok(!checkpointSaveSection.includes('continue-on-error'),'Protected checkpoint-publicering må ikke skjule fejl');
-const preflightStateSaveSection=workflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
+const preflightStateSaveSection=buildWorkflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
   'node scripts/private-production-runtime-workflow.mjs create-preflight',
@@ -1021,7 +1045,7 @@ for(const marker of [
 }
 ok(!preflightStateSaveSection.includes('continue-on-error'),
 'Dataminimeret vejrpreflight-state skal bygges og gemmes fail-closed efter slutgates');
-const privateRuntimeSaveSection=workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.artifact);
+const privateRuntimeSaveSection=buildWorkflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.artifact);
 for(const marker of [
   'node scripts/private-production-runtime-workflow.mjs create-spec',
   '--repository-root "$GITHUB_WORKSPACE"',
@@ -1042,7 +1066,7 @@ for(const marker of [
 ]){
   ok(privateRuntimeSaveSection.includes(marker),`Private produktionsruntime-bevaring mangler ${marker}`);
 }
-ok(!workflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.privateRuntimeSave).includes('continue-on-error'),
+ok(!buildWorkflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.privateRuntimeSave).includes('continue-on-error'),
 'Det private runtimebundle skal bygges fail-closed');
 for(const forbidden of [
   'ravscore_active_shadow',
@@ -1060,12 +1084,12 @@ for(const forbidden of [
   'candidate-g-continuation-checkpoint-v1-',
   'candidate-g-continuation-checkpoint.mjs',
 ]){
-  ok(!workflow.includes(forbidden),`Den aktive produktionsvej må ikke indeholde Candidate G-checkpoint/shadow/fallback: ${forbidden}`);
+  ok(!buildWorkflow.includes(forbidden),`Den aktive produktionsvej må ikke indeholde Candidate G-checkpoint/shadow/fallback: ${forbidden}`);
 }
 for(const protectedPath of ['handbook.html','documentation.html','data/diagnostics/','data/geometry-v2/','.geometry-v2-work/','data/live/']){
-  ok(workflow.includes(`--exclude '${protectedPath}'`)||workflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
+  ok(buildWorkflow.includes(`--exclude '${protectedPath}'`)||buildWorkflow.includes(`--exclude \"${protectedPath}\"`),`Pages-workflow udelukker ikke ${protectedPath}`);
 }
-const pagesArtifactSection=workflow.slice(workflowPositions.artifact,workflowPositions.pagesPrivacyAudit);
+const pagesArtifactSection=buildWorkflow.slice(workflowPositions.artifact,workflowPositions.pagesPrivacyAudit);
 const expectedPagesLiveFiles=['coastal-parts-v2.json','manifest.json','public-condition-details.json','public-conditions.json'];
 const installedPagesLiveFiles=[...pagesArtifactSection.matchAll(/install -m 0644 "\$pages_source\/data\/live\/([^"\s]+)" "\$pages_destination\/data\/live\/([^"\s]+)"/g)]
   .map(match=>{
@@ -1080,7 +1104,7 @@ ok(pagesLiveWriteLines.length===5
   && pagesLiveWriteLines[0]==='mkdir -p "$pages_destination/data/live"'
   && pagesLiveWriteLines.slice(1).every(line=>line.startsWith('install -m 0644 "$pages_source/data/live/')),
 'Pages-workflowet må kun oprette live-mappen og installere de fire allowlistede filer');
-const pagesPrivacyAuditSection=workflow.slice(workflowPositions.pagesPrivacyAudit,workflowPositions.pagesUpload);
+const pagesPrivacyAuditSection=buildWorkflow.slice(workflowPositions.pagesPrivacyAudit,workflowPositions.pagesUpload);
 for(const marker of [
   'node scripts/audit-pages-artifact-privacy.mjs',
   '--site _site',
@@ -1103,13 +1127,22 @@ for(const marker of [
 ]){
   ok(productionWorkflowOutcome.includes(marker),`Produktionsslutstatuskontrakten mangler ${marker}`);
 }
-const deploymentTerminal=workflow.indexOf('name: Seal exact verified deployment terminal');
-const outcomeJob=workflow.indexOf('\n  production-outcome:');
-ok(workflow.indexOf('name: Deploy to GitHub Pages')<workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')
-  && workflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact')<deploymentTerminal
-  && deploymentTerminal<outcomeJob,
+const deployWorkflowPositions={
+  deploy:deployWorkflow.indexOf('name: Deploy to GitHub Pages'),
+  verify:deployWorkflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact'),
+  terminal:deployWorkflow.indexOf('name: Seal exact verified deployment terminal'),
+};
+for(const [step,position] of Object.entries(deployWorkflowPositions)){
+  ok(position>=0,`Deploy-workflowet mangler terminaltrin: ${step}`);
+}
+ok(deployWorkflowPositions.deploy<deployWorkflowPositions.verify
+  && deployWorkflowPositions.verify<deployWorkflowPositions.terminal,
 'DEPLOYED må først forsegles efter Pages og offentlig exact model/210/673-verifikation');
-const outcomeSection=workflow.slice(outcomeJob);
+const orchestratorDeployJob=orchestratorWorkflow.indexOf('\n  deploy-pages:');
+const outcomeJob=orchestratorWorkflow.indexOf('\n  production-outcome:');
+ok(orchestratorDeployJob>=0&&outcomeJob>orchestratorDeployJob,
+'Orchestratoren skal afslutte den genbrugelige deployrolle før terminalstatus klassificeres');
+const outcomeSection=orchestratorWorkflow.slice(outcomeJob);
 for(const marker of [
   'if: always()',
   'node scripts/production-workflow-outcome.mjs',
@@ -1123,17 +1156,17 @@ for(const marker of [
 for(const forbidden of ['secrets.','SUPABASE_','data/live/','currentUMps','currentVMps','waterPoint','landPoint','coordinates']){
   ok(!outcomeSection.includes(forbidden),`Det payloadfri terminalstatusjob må ikke indeholde ${forbidden}`);
 }
-ok(!workflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
+ok(!buildWorkflow.includes("--exclude 'js/services/handbook-review-store.js'"),'Pages-workflow må ikke udelukke et browsermodul som admin importerer');
 for(const retiredGpsRuntime of ['js/services/trip-service.js','js/services/trip-evidence-legacy-bridge.js']){
-  ok(workflow.includes(`--exclude '${retiredGpsRuntime}'`),`Pages-workflow skal udelukke pensioneret GPS-runtime: ${retiredGpsRuntime}`);
+  ok(buildWorkflow.includes(`--exclude '${retiredGpsRuntime}'`),`Pages-workflow skal udelukke pensioneret GPS-runtime: ${retiredGpsRuntime}`);
 }
-ok(workflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
-ok(workflow.includes("--exclude '_support/'"),'Pages-workflow skal udelukke supportmappen fra det offentlige artifact');
-ok(workflow.includes("--exclude 'RavRadar-support-*.zip'"),'Pages-workflow skal udelukke support-ZIP fra det offentlige artifact');
+ok(buildWorkflow.includes("--exclude 'data/admin/'"),'Pages-workflow skal udelukke rå centrale adminfiler');
+ok(buildWorkflow.includes("--exclude '_support/'"),'Pages-workflow skal udelukke supportmappen fra det offentlige artifact');
+ok(buildWorkflow.includes("--exclude 'RavRadar-support-*.zip'"),'Pages-workflow skal udelukke support-ZIP fra det offentlige artifact');
 for(const retiredPublicPath of ['js/ui/admin-app.js','js/core/rule-engine.js','js/services/rule-service.js','rules/']){
-  ok(workflow.includes(`--exclude '${retiredPublicPath}'`),`Pages-workflow skal holde det pensionerede regelværksted ude af det offentlige artifact: ${retiredPublicPath}`);
+  ok(buildWorkflow.includes(`--exclude '${retiredPublicPath}'`),`Pages-workflow skal holde det pensionerede regelværksted ude af det offentlige artifact: ${retiredPublicPath}`);
 }
-ok(!workflow.includes('generate-public-admin-rules.mjs'),'Workflowet må ikke publicere historiske administratorregler');
+ok(!buildWorkflow.includes('generate-public-admin-rules.mjs'),'Workflowet må ikke publicere historiske administratorregler');
 ok(!await exists('scripts/generate-public-admin-rules.mjs'),'Et pensioneret udgivelsesværktøj må ikke kunne genaktivere administratorregler');
 const publicRuleService=await read('js/services/rule-service.js');
 ok(!publicRuleService.includes('admin-active-rules.json'),'Offentlig regelservice må ikke indlæse centralt gemte administratorregler');
@@ -1153,8 +1186,10 @@ const serviceWorker=await read('service-worker.js');
 ok(!/rule-engine|rule-service|(?:national|local|experimental)-rules\.json/.test(serviceWorker),'Regelværkstedets gamle motor og regelsæt må ikke ligge i den offentlige offlinepakke');
 const moduleClosureTest=await read('scripts/test-pages-module-closure-4.0.68.mjs');
 ok(moduleClosureTest.includes('Pages-artifact mangler browsermodul')&&moduleClosureTest.includes('handbook-review-store.js'),'Release mangler Pages-modullukningstest');
-ok(workflow.includes('SUPABASE_URL')&&workflow.includes('SUPABASE_SERVICE_ROLE_KEY'),'Workflow mangler Supabase secrets');
-ok(!workflow.includes('sb_secret_'),'En konkret sb_secret_-værdi må aldrig stå i workflowet');
+for(const [role,source] of Object.entries(productionWorkflows)){
+  ok(source.includes('SUPABASE_URL')&&source.includes('SUPABASE_SERVICE_ROLE_KEY'),`${role}-workflowet mangler Supabase-secretinterfacet`);
+  ok(!source.includes('sb_secret_'),`${role}-workflowet indeholder en konkret sb_secret_-værdi`);
+}
 const manifest=await readJson('manifest.webmanifest',{});
 ok(String(manifest.start_url||'').startsWith('.'),'Manifest start_url skal være relativ for domæneskift');
 ok(!await exists('CNAME'),'CNAME må først aktiveres, når DNS og Supabase redirects er klar');
@@ -1163,7 +1198,7 @@ ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance
 const rules=await read('docs/rdks/01_AI_OPERATING_RULES.md');
 ok(rules.includes('Bindende release-gate'),'AI operating rules mangler bindende release-gate');
 const trackedSecretPatterns=[/SUPABASE_SERVICE_ROLE_KEY\s*[:=]\s*["']?(sb_secret_|eyJ)/i,/DMI_API_KEY\s*[:=]\s*["'][^$]/i,/DATAFORDELER_API_KEY\s*[:=]\s*["'][^$]/i];
-for(const rel of ['config.js','.github/workflows/update-and-deploy.yml','scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
+for(const rel of ['config.js',...Object.values(PRODUCTION_WORKFLOW_SOURCES),'scripts/sync-admin-config.py','scripts/sync-protected-admin-assets.mjs','scripts/lib/supabase-admin-rest.mjs']){
   const text=await read(rel); for(const rx of trackedSecretPatterns)ok(!rx.test(text),`${rel} ser ud til at indeholde en konkret hemmelig nøgle`);
 }
 if(errors.length){console.error('\nRELEASE GATE FEJLEDE:\n- '+errors.join('\n- '));process.exit(1)}

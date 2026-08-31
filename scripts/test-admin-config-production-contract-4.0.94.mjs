@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const service = fs.readFileSync('js/services/rule-service.js', 'utf8');
 assert.doesNotMatch(service, /admin-active-rules\.json/, 'Centralt gemte administratorregler må ikke læses af en offentlig service');
 assert.doesNotMatch(service, /localStorage\.getItem\('ravradar-admin-rules-v1'/, 'Offentlig kode må ikke læse lokale administratorregler');
 
-const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8');
-assert.doesNotMatch(workflow, /generate-public-admin-rules\.mjs/, 'Workflowet må ikke publicere pensionerede administratorregler');
-assert.match(workflow, /--exclude 'data\/admin\//, 'Rå centrale adminfiler skal fortsat holdes ude af GitHub Pages');
+const buildWorkflow = await readProductionWorkflowSource('build');
+assert.doesNotMatch(buildWorkflow, /generate-public-admin-rules\.mjs/, 'Workflowet må ikke publicere pensionerede administratorregler');
+assert.match(buildWorkflow, /--exclude 'data\/admin\//, 'Rå centrale adminfiler skal fortsat holdes ude af GitHub Pages');
 for (const retiredPublicPath of ['js/ui/admin-app.js', 'js/core/rule-engine.js', 'js/services/rule-service.js', 'rules/']) {
-  assert.match(workflow, new RegExp(`--exclude '${retiredPublicPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`), `Pages-artifactet skal udelukke ${retiredPublicPath}`);
+  assert.match(buildWorkflow, new RegExp(`--exclude '${retiredPublicPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`), `Pages-artifactet skal udelukke ${retiredPublicPath}`);
 }
 
 const admin = fs.readFileSync('admin.html', 'utf8');
@@ -28,7 +29,7 @@ assert.doesNotMatch(dashboard, /loadAdminDocument\('rule-history'/, 'Adminfladen
 assert.doesNotMatch(dashboard, /renderRules|renderKnowledge|openRuleEditor|queueAdminDocumentSave\('rules'|rules_(edit|publish)/, 'Skjult Regelværksted-kode må ikke være en aktiv del af adminmodulet');
 assert.match(dashboard, /Scoreændringer kræver kodegennemgang/, 'Adminfladen skal forklare den sikre arbejdsgang for scoreændringer');
 assert.doesNotMatch(dashboard, /adaptive-model|activateAdaptiveModel|rollbackAdaptiveModel|localModel/, 'Kalibreringsgrundlaget må ikke kunne aktivere eller tilbagerulle en lokal scoremodel');
-assert.match(dashboard, /Siden ændrer aldrig Candidate G eller den offentlige RavScore/, 'Kalibreringsgrundlaget skal forklare, at det er skrivebeskyttet');
+assert.match(dashboard, /Siden ændrer aldrig den aktive model eller den offentlige RavScore/, 'Kalibreringsgrundlaget skal forklare, at det er skrivebeskyttet');
 
 const siteFunctionTest = fs.readFileSync('js/services/site-function-test-service.js', 'utf8');
 assert.doesNotMatch(siteFunctionTest, /['"]rules['"]|['"]rule-history['"]/, 'Den aktive helhedstest må ikke kræve pensionerede adminfaner eller regeldokumenter');

@@ -3,12 +3,16 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const admin=fs.readFileSync('js/ui/admin-dashboard.js','utf8');
 for(const token of ['Slet valgt kystdel','Slet hele zonen','saveDirectionReviewsNow','deleted:true','applyDirectionReviewToFeature']) assert.ok(admin.includes(token),`Admin mangler ${token}`);
-const workflow=fs.readFileSync('.github/workflows/update-and-deploy.yml','utf8');
-assert.ok(workflow.indexOf('Sync centrally saved admin configuration') < workflow.indexOf('Hydrate latest deployed weather state'),'Central zonekonfiguration skal hentes før vejrhyrering');
-assert.ok(workflow.includes('Apply centrally approved zone geometry and deletions'),'Workflow mangler anvendelse af centrale zoneændringer');
+const workflow=await readProductionWorkflowSource('build');
+const centralSyncIndex=workflow.indexOf('Sync centrally saved admin configuration');
+const applyGeometryIndex=workflow.indexOf('Apply centrally approved zone geometry and deletions');
+const protectedRuntimeIndex=workflow.indexOf('Restore newest compatible private runtime from protected storage');
+assert.ok(centralSyncIndex>=0 && centralSyncIndex<applyGeometryIndex && applyGeometryIndex<protectedRuntimeIndex,
+  'Central zonekonfiguration og godkendte zoneændringer skal anvendes før den beskyttede runtime genoprettes');
 
 const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'rav-zone-review-'));
 const zones={type:'FeatureCollection',features:[

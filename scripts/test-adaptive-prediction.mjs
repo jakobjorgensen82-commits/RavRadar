@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
-const [app, observationService, learningAnalysis, serviceWorker, workflow] = await Promise.all([
+const [app, observationService, learningAnalysis, serviceWorker, buildWorkflow] = await Promise.all([
   fs.readFile('app.js', 'utf8'),
   fs.readFile('js/services/observation-service.js', 'utf8'),
   fs.readFile('js/services/learning-analysis.js', 'utf8'),
   fs.readFile('service-worker.js', 'utf8'),
-  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
+  readProductionWorkflowSource('build'),
 ]);
 
 assert.doesNotMatch(app, /prediction-engine|predictAmberChance|adaptive-model|loadAdaptiveModel|withPrediction|\.prediction\s*=/,
@@ -20,7 +21,7 @@ for (const file of [
   'js/core/adaptive-model.js',
   'js/core/prediction-engine.js',
 ]) {
-  assert.match(workflow, new RegExp(`--exclude '${file.replaceAll('/', '\\/')}'`),
+  assert.match(buildWorkflow, new RegExp(`--exclude '${file.replaceAll('/', '\\/')}'`),
     `${file} must be absent from the public Pages artifact`);
 }
 assert.match(observationService,

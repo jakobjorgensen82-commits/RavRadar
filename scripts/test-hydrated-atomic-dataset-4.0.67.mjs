@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
-const [hydrator, publicProjection, workflow] = await Promise.all([
+const [hydrator, publicProjection, buildWorkflow] = await Promise.all([
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
   fs.readFile('scripts/public-conditions-lib.mjs', 'utf8'),
-  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
+  readProductionWorkflowSource('build'),
 ]);
 
 for (const marker of [
@@ -30,7 +31,7 @@ assert.doesNotMatch(publicProjection, /fullConditionsPath:\s*['"]\.\/conditions\
   'the new public manifest must never advertise the private runtime');
 assert.doesNotMatch(publicProjection, /currentPilotHistoryPath/,
   'the new public manifest must never advertise private pilot history');
-assert.match(workflow, /legacy-candidate-g-bootstrap/,
+assert.match(buildWorkflow, /legacy-candidate-g-bootstrap/,
   'the workflow may import public full state only through the explicit one-time Candidate G gate');
 
 console.log('Legacy Candidate G bootstrap is one-time, exact-model/count bound, and retired from the integrated public manifest.');

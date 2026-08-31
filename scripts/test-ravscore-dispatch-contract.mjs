@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
 import { validateRavScoreDispatchContract } from './lib/ravscore-dispatch-contract.mjs';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
-const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8')
-  .replace(/\r\n/g, '\n');
+const workflow = (await readProductionWorkflowSource('orchestrator')).replace(/\r\n/g, '\n');
 const dispatchJobStart = workflow.indexOf('\n  validate-dispatch:');
 const dispatchJobEnd = workflow.indexOf('\n  geometry-v2-pilot:', dispatchJobStart);
 const dispatchJob = dispatchJobStart >= 0 && dispatchJobEnd > dispatchJobStart

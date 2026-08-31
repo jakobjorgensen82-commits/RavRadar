@@ -6,6 +6,7 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { askRavRadar, publicAssistantContext } from '../js/services/rav-assistant.js';
 import { setLanguage, t } from '../js/i18n.js';
 import { bindZoneInfoInteractions } from '../js/ui/info-panel.js';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const memory = new Map();
 globalThis.localStorage ??= {
@@ -591,7 +592,7 @@ const [panelSource, assistantSource, edgeSource, appSource, generatorSource, wor
   fs.readFile(new URL('./public-conditions-lib.mjs', import.meta.url), 'utf8'),
   fs.readFile(new URL('../service-worker.js', import.meta.url), 'utf8'),
   fs.readFile(new URL('../js/ui/developer-panel.js', import.meta.url), 'utf8'),
-  fs.readFile(new URL('../.github/workflows/update-and-deploy.yml', import.meta.url), 'utf8'),
+  readProductionWorkflowSource('build'),
   fs.readFile(new URL('../js/services/trip-service.js', import.meta.url), 'utf8'),
 ]);
 for (const source of [panelSource, assistantSource]) assert.doesNotMatch(source, /transportEvent/,

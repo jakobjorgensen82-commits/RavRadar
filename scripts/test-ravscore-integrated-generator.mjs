@@ -32,6 +32,7 @@ import {
   buildIntegratedPartScoreSeries,
   compactIntegratedRavScoreMode,
 } from './lib/ravscore-integrated-runtime.mjs';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
 const HOUR_MS = 3_600_000;
 const baseMs = Date.parse('2026-08-29T12:00:00.000Z');
@@ -352,10 +353,7 @@ assert.throws(() => buildIntegratedPartScoreSeries({
 
 const updater = await fs.readFile(new URL('./update-weather.mjs', import.meta.url), 'utf8');
 const bulkUpdater = await fs.readFile(new URL('./update-dmi-bulk.py', import.meta.url), 'utf8');
-const productionWorkflow = await fs.readFile(
-  new URL('../.github/workflows/update-and-deploy.yml', import.meta.url),
-  'utf8',
-);
+const productionWorkflows = await readProductionWorkflowSources();
 const productionPartPipeline = await fs.readFile(
   new URL('./lib/ravscore-production-part-pipeline.mjs', import.meta.url),
   'utf8',
@@ -417,10 +415,12 @@ assert.doesNotMatch(updater, /currentUMps:\s*weather\.currentUMps|currentVMps:\s
   'public-destined part score rows must not copy raw current vectors');
 assert.match(updater, /policy:\s*'integrated-model-local-fail-closed'/);
 
-function workflowStep(name) {
+function workflowStep(name, role = 'build') {
+  const productionWorkflow = productionWorkflows[role];
+  assert.equal(typeof productionWorkflow, 'string', `unknown production workflow role: ${role}`);
   const marker = `      - name: ${name}`;
   const occurrences = productionWorkflow.split(marker).length - 1;
-  assert.equal(occurrences, 1, `workflow step ${name} must occur exactly once`);
+  assert.equal(occurrences, 1, `${role} workflow step ${name} must occur exactly once`);
   const start = productionWorkflow.indexOf(marker);
   const next = productionWorkflow.indexOf('\n      - name: ', start + marker.length);
   return {
@@ -479,6 +479,7 @@ assert.match(
 );
 const legacyDeployFetchStep = workflowStep(
   'Fetch exact public Candidate G source commit for first cutover verification',
+  'deploy',
 );
 assert.match(
   legacyDeployFetchStep.block,
@@ -512,13 +513,13 @@ assert.match(
   /jq -r '\.legacySourceRequired'[\s\S]*operational-model\.outputs\.legacy_source_required/,
   'the plan and deploy handoff must agree on legacy source verification before upload',
 );
-const sourceRestoreStep = workflowStep('Restore the exact sealed active source implementation');
+const sourceRestoreStep = workflowStep('Restore the exact sealed active source implementation', 'deploy');
 assert.match(
   sourceRestoreStep.block,
-  /operational_action == 'integrated-cutover' && needs\.build-and-prepare\.outputs\.legacy_source_required != 'true'/,
+  /inputs\.operational_action == 'integrated-cutover' && inputs\.legacy_source_required != 'true'/,
   'a modern schema-4 first-cutover source must restore its exact active deployment seal',
 );
-const sourceObserveStep = workflowStep('Observe and seal the currently public source manifest');
+const sourceObserveStep = workflowStep('Observe and seal the currently public source manifest', 'deploy');
 assert.match(
   sourceObserveStep.block,
   /operational_action == 'candidate-legacy-maintenance'/,
@@ -531,6 +532,7 @@ assert.match(
 );
 const sourceVerifyStep = workflowStep(
   'Verify the complete currently public source model before begin CAS',
+  'deploy',
 );
 assert.match(
   sourceVerifyStep.block,
@@ -549,11 +551,13 @@ assert.doesNotMatch(
 );
 const legacyRefreshBeginStep = workflowStep(
   'Begin legacy-to-current Candidate G refresh with exact central CAS',
+  'deploy',
 );
 const legacyRefreshCompleteStep = workflowStep(
   'Complete legacy-to-current Candidate G refresh only after public verification',
+  'deploy',
 );
-const pagesDeployStep = workflowStep('Deploy to GitHub Pages');
+const pagesDeployStep = workflowStep('Deploy to GitHub Pages', 'deploy');
 assert.ok(
   legacyRefreshBeginStep.start < pagesDeployStep.start
     && pagesDeployStep.start < legacyRefreshCompleteStep.start,
@@ -571,6 +575,7 @@ assert.match(
 );
 const failureReconcileStep = workflowStep(
   'Reconcile an ambiguous failed transition from observed public identity',
+  'deploy',
 );
 assert.match(
   failureReconcileStep.block,
@@ -579,6 +584,7 @@ assert.match(
 );
 const sourceEvidenceUploadStep = workflowStep(
   'Upload privacy-safe source evidence before any activation CAS',
+  'deploy',
 );
 assert.match(
   sourceEvidenceUploadStep.block,
@@ -595,6 +601,7 @@ assert.match(
 );
 const integratedBeginStep = workflowStep(
   'Begin integrated return or first cutover with exact central CAS',
+  'deploy',
 );
 assert.match(
   integratedBeginStep.block,

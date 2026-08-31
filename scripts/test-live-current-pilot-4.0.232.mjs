@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 import {
   controlledLiveCurrentEnabled,
   flattenCoastalPartsWithParentZoneId,
@@ -423,13 +424,13 @@ assert.equal(arrows.length, 1);
 assert.equal(arrows[0].source, 'copernicus-current-grid');
 assert.deepEqual(arrows[0].point, [10.02, 55]);
 
-const [workflow, updateWeather, packageRelease] = await Promise.all([
-  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
+const [buildWorkflow, updateWeather, packageRelease] = await Promise.all([
+  readProductionWorkflowSource('build'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
   fs.readFile('scripts/package-release.mjs', 'utf8'),
 ]);
-const buildPosition = workflow.indexOf('name: Build public seven-day current history and controlled live selection');
-const weatherPosition = workflow.indexOf('name: Update central weather cache');
+const buildPosition = buildWorkflow.indexOf('name: Build public seven-day current history and controlled live selection');
+const weatherPosition = buildWorkflow.indexOf('name: Update central weather cache');
 assert.ok(buildPosition >= 0 && buildPosition < weatherPosition, 'Livehistorikken skal bygges før score og pile.');
 assert.match(updateWeather, /mergeLiveCurrentPilotIntoRecord/);
 assert.match(updateWeather, /current-pilot-history\.json/);

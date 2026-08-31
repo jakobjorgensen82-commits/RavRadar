@@ -5,6 +5,7 @@ import {
   assertCandidateGTripQualityConstraintRows,
   assertCandidateGTripQualityMigrationSql,
 } from './apply-candidate-g-trip-quality-migration.mjs';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
 const migration = fs.readFileSync('supabase/migrations/20260829_candidate_g_reconstructed_trip_exclusion.sql', 'utf8');
 const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
@@ -14,7 +15,10 @@ const edgeVerification = fs.readFileSync('scripts/verify-trip-storage-edge.mjs',
 const edgeNoWriteRetry = fs.readFileSync('scripts/lib/trip-storage-edge-readiness.mjs', 'utf8');
 const edgeContractProbe = fs.readFileSync('supabase/functions/_shared/trip-storage-contract-probe.js', 'utf8');
 const publicGateway = fs.readFileSync('supabase/functions/_shared/public-gateway.ts', 'utf8');
-const activeProductionWorkflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8').replace(/\r\n/g, '\n');
+const {
+  orchestrator: activeProductionOrchestrator,
+  build: activeProductionBuild,
+} = await readProductionWorkflowSources();
 const workerVerification = fs.readFileSync('scripts/verify-cloudflare-trip-gateway.mjs', 'utf8');
 const workerGateway = fs.readFileSync('cloudflare/trip-gateway/worker.js', 'utf8');
 const publicRuntime = fs.readFileSync('js/services/trip-evidence-runtime.js', 'utf8');
@@ -250,10 +254,22 @@ const signedProbeBranch = tripLog.slice(probeBranchIndex, rateLimitIndex);
 assert.match(signedProbeBranch, /verifyTripGatewaySignature/);
 assert.match(signedProbeBranch, /tripStorageReadinessHeaders/);
 assert.doesNotMatch(signedProbeBranch, /enforceRateLimits|requireAuthenticatedUserId|listOwnTripObservations/);
-const activeGateStart = activeProductionWorkflow.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
-const protectedWritesStart = activeProductionWorkflow.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
+const readinessStart = activeProductionOrchestrator.indexOf('\n  trip-storage-readiness:');
+const readinessEnd = activeProductionOrchestrator.indexOf('\n  build-and-prepare:', readinessStart);
+assert.ok(readinessStart >= 0 && readinessEnd > readinessStart);
+const readinessJob = activeProductionOrchestrator.slice(readinessStart, readinessEnd);
+for (const marker of [
+  'name: Check exact-head D1 trip-storage readiness',
+  'name: Require checked-out HEAD to equal current origin/main',
+  'name: Determine exact-head D1 trip-storage readiness without failing the run',
+  'node scripts/verify-trip-storage-edge.mjs',
+  'node scripts/verify-cloudflare-trip-gateway.mjs',
+]) assert.ok(readinessJob.includes(marker), `Trip-storage-readiness-orkestratoren mangler ${marker}`);
+
+const activeGateStart = activeProductionBuild.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
+const protectedWritesStart = activeProductionBuild.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
 assert.ok(activeGateStart >= 0 && protectedWritesStart > activeGateStart);
-const activeGate = activeProductionWorkflow.slice(activeGateStart, protectedWritesStart);
+const activeGate = activeProductionBuild.slice(activeGateStart, protectedWritesStart);
 assert.match(activeGate, /node scripts\/verify-trip-storage-edge\.mjs/);
 assert.match(activeGate, /node scripts\/verify-cloudflare-trip-gateway\.mjs/);
 assert.match(activeGate, /CLOUDFLARE_TRIP_GATEWAY_URL: \$\{\{ secrets\.CLOUDFLARE_TRIP_GATEWAY_URL \}\}/);

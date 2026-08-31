@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
 const source = await fs.readFile('scripts/fetch-geodanmark-pilot.py', 'utf8');
 const analysis = await fs.readFile('scripts/analyze-geodanmark-pilot.py', 'utf8');
@@ -21,7 +22,7 @@ const nationalAdminRoundtrip = await fs.readFile('scripts/validate-national-admi
 const blaavandWeatherPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-weather-shadow-policy.json', 'utf8'));
 const blaavandPolicy = JSON.parse(await fs.readFile('data/geometry-v2/blaavand-detail-policy.json', 'utf8'));
 const mapRenderer = await fs.readFile('scripts/render-geodanmark-pilot-maps.py', 'utf8');
-const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
+const { orchestrator: workflow, build: buildWorkflow } = await readProductionWorkflowSources();
 
 for (const required of [
   'DATAFORDELER_API_KEY',
@@ -70,8 +71,8 @@ assert.match(workflow, /node scripts\/build-national-score-neutral-owner-review\
 assert.match(workflow, /node scripts\/validate-national-admin-roundtrip\.mjs/);
 assert.match(workflow, /DMI_API_KEY:\s*\$\{\{ secrets\.DMI_API_KEY \}\}/);
 assert.match(workflow, /python scripts\/render-geodanmark-pilot-maps\.py/);
-assert.match(workflow, /--exclude 'data\/geometry-v2\/'/);
-assert.match(workflow, /--exclude '\.geometry-v2-work\/'/);
+assert.match(buildWorkflow, /--exclude 'data\/geometry-v2\/'/);
+assert.match(buildWorkflow, /--exclude '\.geometry-v2-work\/'/);
 assert.match(workflow, /include-hidden-files:\s*true/);
 
 const python = process.env.PYTHON || (process.platform === 'win32' ? 'python.exe' : 'python3');

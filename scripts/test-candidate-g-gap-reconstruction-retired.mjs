@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { validateRavScoreDispatchContract } from './lib/ravscore-dispatch-contract.mjs';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
 const read = (file) => fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
-const workflow = read('.github/workflows/update-and-deploy.yml');
+const workflows = await readProductionWorkflowSources();
+const { orchestrator, build } = workflows;
 const pkg = JSON.parse(read('package.json'));
 const releaseGate = read('scripts/release-gate.mjs');
 const decision = read('docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md');
@@ -33,7 +35,9 @@ for (const forbidden of [
   'Causally remove only the descriptor-bound reconstructed evidence',
   'RRGAP-2026-08-29-CANDIDATE-G-01',
 ]) {
-  assert.equal(workflow.includes(forbidden), false, `production workflow must not expose retired marker: ${forbidden}`);
+  for (const [role, source] of Object.entries(workflows)) {
+    assert.equal(source.includes(forbidden), false, `${role} workflow must not expose retired marker: ${forbidden}`);
+  }
 }
 
 const baseDispatch = {
@@ -90,8 +94,9 @@ assert.equal(fs.existsSync('supabase/migrations/20260829_candidate_g_reconstruct
 
 // These are separate, still-authorized safety paths and must not be removed by
 // retirement of the abandoned incident.
-assert.match(workflow, /ravscore_candidate_g_rollback_mode/);
-assert.match(workflow, /Resolve the one-time Candidate G bootstrap gate/);
+assert.match(orchestrator, /ravscore_candidate_g_rollback_mode/);
+assert.match(build, /ravscore_candidate_g_rollback_mode/);
+assert.match(build, /Resolve the one-time Candidate G bootstrap gate/);
 assert.match(decision, /Historisk, tilbagetrukket uden anvendelse og erstattet af DEC-0111/);
 assert.match(decision, /må ikke eksekveres/i);
 

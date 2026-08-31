@@ -1,16 +1,18 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
-const [bulk, nativeProvenance, updater, workflow, hydrator, preflight, packageJson] = await Promise.all([
+const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
   fs.readFile('scripts/lib/dmi_native_provenance.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
-  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8'),
+  readProductionWorkflowSources(),
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
   fs.readFile('scripts/check-weather-update.py', 'utf8'),
   fs.readFile('package.json', 'utf8')
 ]);
+const { orchestrator, build } = workflows;
 const { version: appVersion } = JSON.parse(packageJson);
 
 for (const collection of ['dkss_idw', 'dkss_nsbs', 'dkss_lf', 'harmonie_dini_sf', 'wam_dw', 'wam_nsb']) {
@@ -98,43 +100,43 @@ assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
 assert.match(updater, /open-meteo-adjusted|fallbackPolicy/);
 assert.match(bulk, /write_ocean_diagnostics/);
-assert.match(workflow, new RegExp(`RavRadar/${appVersion.replaceAll('.', '\\.')}`));
-assert.match(workflow, /current-field-shadow\.json/);
-assert.match(workflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
+assert.match(build, new RegExp(`RavRadar/${appVersion.replaceAll('.', '\\.')}`));
+assert.match(build, /current-field-shadow\.json/);
+assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(
-  workflow,
+  build,
   /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
 );
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);
 assert.match(updater, /spatialInterpolation: false/);
-assert.match(workflow, /workflow_dispatch/);
-assert.match(workflow, /^\s+schedule:/m);
-assert.match(workflow, /cron: ["']14,29,44,59 \* \* \* \*["']/);
-assert.match(workflow, /current-hour-readiness/);
-assert.match(workflow, /github\.event_name == 'workflow_dispatch' && inputs\.force != true && inputs\.geometry_v2_pilot != true && inputs\.geometry_v2_national != true/);
-assert.doesNotMatch(workflow, /candidate_g_gap_reconstruction_mode/);
-assert.match(workflow, /CHECK_CURRENT_HOUR/);
-assert.match(workflow, /target_hour: \$\{\{ steps\.cache-state\.outputs\.target_hour \}\}/);
-assert.match(workflow, /RAVRADAR_PRODUCTION_TARGET_HOUR: \$\{\{ needs\.current-hour-readiness\.outputs\.target_hour \}\}/);
+assert.match(orchestrator, /workflow_dispatch/);
+assert.match(orchestrator, /^\s+schedule:/m);
+assert.match(orchestrator, /cron: ["']14,29,44,59 \* \* \* \*["']/);
+assert.match(orchestrator, /current-hour-readiness/);
+assert.match(orchestrator, /github\.event_name == 'workflow_dispatch' && inputs\.force != true && inputs\.geometry_v2_pilot != true && inputs\.geometry_v2_national != true/);
+for (const source of Object.values(workflows)) assert.doesNotMatch(source, /candidate_g_gap_reconstruction_mode/);
+assert.match(orchestrator, /CHECK_CURRENT_HOUR/);
+assert.match(orchestrator, /target_hour: \$\{\{ steps\.cache-state\.outputs\.target_hour \}\}/);
+assert.match(build, /RAVRADAR_PRODUCTION_TARGET_HOUR: \$\{\{ inputs\.production_target_hour \}\}/);
 assert.match(updater, /resolveProductionReferenceTime\(process\.env\.RAVRADAR_PRODUCTION_TARGET_HOUR, new Date\(buildGeneratedAt\)\)/);
-assert.doesNotMatch(workflow, /cron-job\.org/);
-assert.match(workflow, /python scripts\/hydrate-deployed-weather\.py/);
-assert.match(workflow, /python scripts\/check-weather-update\.py/);
-assert.match(workflow, /python -u scripts\/update-dmi-bulk\.py/);
-assert.match(workflow, /node scripts\/build-public-coastal-parts-v2\.mjs/);
-assert.ok(workflow.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < workflow.indexOf('python -u scripts/update-dmi-bulk.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
-assert.match(workflow, /eccodes/);
-assert.match(workflow, /smoke-test-eccodes\.py/);
-assert.match(workflow, /DMI bulk error/);
-assert.match(workflow, /DMI_BULK_FORCE_REFRESH/);
-assert.match(workflow, /actions\/cache\/restore@v6/);
-assert.match(workflow, /actions\/cache\/save@v6/);
-assert.match(workflow, /\.cache\/dmi-grib/);
-assert.doesNotMatch(workflow, /schedule-test\.yml/);
-assert.match(workflow, /DMI_API_KEY/);
-assert.match(workflow, /Report DMI bulk result/);
+assert.doesNotMatch(orchestrator, /cron-job\.org/);
+assert.match(build, /python scripts\/hydrate-deployed-weather\.py/);
+assert.match(build, /python scripts\/check-weather-update\.py/);
+assert.match(build, /python -u scripts\/update-dmi-bulk\.py/);
+assert.match(build, /node scripts\/build-public-coastal-parts-v2\.mjs/);
+assert.ok(build.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < build.indexOf('python -u scripts/update-dmi-bulk.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
+assert.match(build, /eccodes/);
+assert.match(build, /smoke-test-eccodes\.py/);
+assert.match(build, /DMI bulk error/);
+assert.match(build, /DMI_BULK_FORCE_REFRESH/);
+assert.match(build, /actions\/cache\/restore@v6/);
+assert.match(build, /actions\/cache\/save@v6/);
+assert.match(build, /\.cache\/dmi-grib/);
+for (const source of Object.values(workflows)) assert.doesNotMatch(source, /schedule-test\.yml/);
+assert.match(build, /DMI_API_KEY/);
+assert.match(build, /Report DMI bulk result/);
 assert.match(hydrator, /data\/live\/dmi-bulk-cache\.json/);
 assert.match(hydrator, /ravradar-runtime-diagnostics\.json/);
 assert.match(hydrator, /data\/diagnostics\/dmi-ocean-diagnostics\.json/);
