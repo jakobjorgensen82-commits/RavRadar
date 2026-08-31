@@ -88,7 +88,16 @@ const manifest = Object.freeze({
     activeProfileId: LEGACY_CANDIDATE_G_MODEL_ID,
     candidateProfileId: LEGACY_CANDIDATE_G_MODEL_ID,
     rollbackProfileId: null,
+    candidateCoverageReady: true,
+    candidateMemoryReady: false,
+    candidateWarmupEligible: true,
+    candidateMemoryReferenceScope: 'CURRENT_COMMON_ZONE_REFERENCE',
+    freshFinalShadowPassed: false,
+    ownerReviewApproved: true,
+    prePublicWarmupAccepted: true,
     activationState: 'candidate-g-only-local-fail-closed',
+    fallbackReason: null,
+    advisories: Object.freeze(['LOCAL_CANDIDATE_MEMORY_INCOMPLETE']),
     publicAvailabilityPolicy: 'candidate-g-local-fail-closed',
     legacyPublicFallbackAllowed: false,
     automaticActivationAllowed: false,
@@ -115,7 +124,7 @@ const conditions = Object.freeze({
   productionReferenceAt,
   zones,
   coastalParts: Object.freeze({
-    scoreProfile: Object.freeze({ activeProfileId: LEGACY_CANDIDATE_G_MODEL_ID }),
+    scoreProfile: manifest.ravScoreProfile,
     parts,
   }),
 });
@@ -126,6 +135,43 @@ assert.equal(attestation.coastalPartCount, 673);
 assert.equal(attestation.candidateStateCount, 673);
 assert.equal(attestation.privatePayloadLogged, false);
 assert.doesNotMatch(JSON.stringify(attestation), /coordinates|waterPoint|landPoint|rawU|rawV/i);
+assert.throws(() => attestLegacyCandidateGSource({
+  manifest,
+  conditions: {
+    ...conditions,
+    coastalParts: {
+      ...conditions.coastalParts,
+      scoreProfile: {
+        ...manifest.ravScoreProfile,
+        candidateMemoryReady: true,
+        advisories: [],
+      },
+    },
+  },
+}), /conditions and manifest profiles differ/,
+'legacy source attestation must bind the manifest profile to the exact conditions producer output');
+assert.throws(() => attestLegacyCandidateGSource({
+  manifest: {
+    ...manifest,
+    ravScoreProfile: {
+      ...manifest.ravScoreProfile,
+      candidateMemoryReady: true,
+    },
+  },
+  conditions,
+}), /exact schema-2 210\/673 Candidate G runtime/,
+'legacy source attestation must reject readiness flags that contradict their advisories');
+assert.throws(() => attestLegacyCandidateGSource({
+  manifest: {
+    ...manifest,
+    ravScoreProfile: {
+      ...manifest.ravScoreProfile,
+      unexpectedProfileField: true,
+    },
+  },
+  conditions,
+}), /exact schema-2 210\/673 Candidate G runtime/,
+'legacy source attestation must remain fail-closed for unknown public profile fields');
 assert.throws(() => attestLegacyCandidateGSource({
   manifest,
   conditions: {

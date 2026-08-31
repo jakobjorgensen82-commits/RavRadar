@@ -60,8 +60,17 @@ const LEGACY_CENTRAL_EVIDENCE_FIELDS = Object.freeze([
 const LEGACY_PUBLIC_PROFILE_FIELDS = Object.freeze([
   'schemaVersion', 'switchVersion', 'requestedProfileId', 'activeProfileId',
   'candidateProfileId', 'rollbackProfileId', 'activationState',
+  'candidateCoverageReady', 'candidateMemoryReady', 'candidateWarmupEligible',
+  'candidateMemoryReferenceScope', 'freshFinalShadowPassed',
+  'ownerReviewApproved', 'prePublicWarmupAccepted', 'fallbackReason', 'advisories',
   'publicAvailabilityPolicy', 'legacyPublicFallbackAllowed',
   'automaticActivationAllowed',
+]);
+const LEGACY_CANDIDATE_G_MEMORY_REFERENCE_SCOPE = 'CURRENT_COMMON_ZONE_REFERENCE';
+const LEGACY_CANDIDATE_G_READINESS_ADVISORIES = Object.freeze([
+  Object.freeze(['candidateCoverageReady', 'LOCAL_CANDIDATE_COVERAGE_INCOMPLETE']),
+  Object.freeze(['candidateMemoryReady', 'LOCAL_CANDIDATE_MEMORY_INCOMPLETE']),
+  Object.freeze(['candidateWarmupEligible', 'LOCAL_CANDIDATE_MEMORY_GAPS']),
 ]);
 
 const canonical = value => Array.isArray(value)
@@ -74,6 +83,10 @@ const sha256 = value => crypto.createHash('sha256')
   .digest('hex');
 const exactKeys = (value, fields) => value && typeof value === 'object' && !Array.isArray(value)
   && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...fields].sort());
+const expectedLegacyCandidateGAdvisories = profile =>
+  LEGACY_CANDIDATE_G_READINESS_ADVISORIES
+    .filter(([field]) => profile?.[field] !== true)
+    .map(([, advisory]) => advisory);
 
 export const LEGACY_CANDIDATE_G_SOURCE_CONTRACT = Object.freeze({
   schemaVersion: LEGACY_CANDIDATE_G_SOURCE_SCHEMA,
@@ -183,6 +196,7 @@ export function assertLegacyCandidateGSourceIdentity(value,
 export function assertLegacyCandidateGManifest(manifest,
   label = 'Legacy Candidate G public manifest') {
   const profile = manifest?.ravScoreProfile;
+  const expectedAdvisories = expectedLegacyCandidateGAdvisories(profile);
   if (!manifest || manifest.schemaVersion !== LEGACY_CANDIDATE_G_MANIFEST_SCHEMA
     || manifest.complete !== true
     || !manifest.datasetId
@@ -199,7 +213,17 @@ export function assertLegacyCandidateGManifest(manifest,
     || profile.activeProfileId !== LEGACY_CANDIDATE_G_MODEL_ID
     || profile.candidateProfileId !== LEGACY_CANDIDATE_G_MODEL_ID
     || profile.rollbackProfileId !== null
+    || !['candidateCoverageReady', 'candidateMemoryReady', 'candidateWarmupEligible']
+      .every(field => typeof profile[field] === 'boolean')
+    || profile.candidateMemoryReferenceScope !== LEGACY_CANDIDATE_G_MEMORY_REFERENCE_SCOPE
+    || profile.freshFinalShadowPassed !== false
+    || profile.ownerReviewApproved !== true
+    || profile.prePublicWarmupAccepted !== true
     || profile.activationState !== 'candidate-g-only-local-fail-closed'
+    || profile.fallbackReason !== null
+    || !Array.isArray(profile.advisories)
+    || profile.advisories.length !== expectedAdvisories.length
+    || profile.advisories.some((value, index) => value !== expectedAdvisories[index])
     || profile.publicAvailabilityPolicy !== 'candidate-g-local-fail-closed'
     || profile.legacyPublicFallbackAllowed !== false
     || profile.automaticActivationAllowed !== false) {
