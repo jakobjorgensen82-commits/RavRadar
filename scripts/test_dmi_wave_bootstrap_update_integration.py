@@ -826,13 +826,17 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
         gate_end = workflow.index("- name: Report DMI bulk result", gate_start)
         gate = workflow[gate_start:gate_end]
-        outcome_check = gate.index(
-            'test "${{ steps.dmi-bulk.outcome }}" = "success"'
-        )
         validator_call = gate.index(
             "python -B scripts/validate_dmi_wave_history_bootstrap.py"
         )
-        self.assertLess(outcome_check, validator_call)
+        self.assertIn("id: wam-bootstrap-readiness", gate)
+        self.assertIn('producer_outcome="${{ steps.dmi-bulk.outcome }}"', gate)
+        self.assertIn("validator_status=$?", gate)
+        self.assertIn('wam_code="DMI_BULK_FAILED"', gate)
+        self.assertIn("validator_status=1", gate)
+        self.assertIn('echo "code=$wam_code" >> "$GITHUB_OUTPUT"', gate)
+        self.assertIn('exit "$validator_status"', gate)
+        self.assertGreaterEqual(validator_call, 0)
         self.assertIn("--production-target-hour", gate)
         self.assertIn("--forecast-hour-count 118", gate)
 
@@ -843,6 +847,27 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "operational = validate_wave_operational_handoff_cache(",
             validator_source,
         )
+
+    def test_private_point_candidate_cannot_hide_or_block_dmi_progress(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
+        ).read_text("utf-8")
+        point_start = workflow.index(
+            "- name: Advance private point-candidate readiness without public score impact"
+        )
+        point_end = workflow.index("- name: Save private staged coastal-point cache", point_start)
+        point = workflow[point_start:point_end]
+        self.assertIn("id: point-candidate-readiness", point)
+        self.assertIn("steps.dmi-bulk.outcome == 'success'", point)
+        self.assertIn("continue-on-error: true", point)
+        for step_name in (
+            "Save progressed DMI GRIB download cache",
+            "Save progressive private DMI zone cache",
+            "Save private seven-day current-field research cache",
+        ):
+            start = workflow.index(f"- name: {step_name}")
+            end = workflow.index("\n      - name:", start + 1)
+            self.assertIn("if: always()", workflow[start:end])
 
     def test_diagnostic_errors_redact_credentials_and_url_queries(self) -> None:
         secret = "synthetic-private-key"

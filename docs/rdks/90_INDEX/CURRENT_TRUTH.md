@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-08-31 – PR #242 merged; first cutover nåede DMI/WAM
+
+- PR #242 bestod exact-head-kildegaten `33408976253` på `922891635caf4a95a8cbd92bd1ac09cc8a0398ae` og blev merged som `origin/main 29f39cce44ffe6e3a1c14d5b58e991b61da2faba`.
+- Pushproduktion `33412497717` passerede den korrigerede Candidate G-profilattestering og den fulde tidlige kildegate. Den stoppede derefter i DMI-/WAM-bootstrap før offentlig artifact, Pages eller activation; Candidate G og den offentlige side blev ikke ændret.
+- Den konkrete workflowfejl var, at en inaktiv privat punktkandidat kørte efter et ikke-succesfuldt DMI-producentforsøg og kunne blokere de efterfølgende progressive cache-save-trin. WAM-gaten stoppede fortsat hårdt, men den gamle outcome-test skjulte den payloadfri validator-kode.
+- Den lokale branch `codex/ravscore-cutover-gate-severity` lader kun punktkandidaten køre efter DMI-success, gør den ikke-offentlige kandidat ikke-blokerende, tvinger de tre progressive cache-save-trin til at køre efter ethvert ikke-annulleret forsøg og udsender en begrænset WAM-fejlkode uden at lempe validatorens exitstatus.
+- DMI/WAM-integration 18/18, integreret RavScore-generator og reusable-production-workflow er målrettet grønne. Ingen geometri, land-/vandpunkter, private payloads, koordinater eller rå U/V er læst eller ændret.
+- Candidate G/4.0.316 er fortsat eneste offentlige model. Exact-head, merge, frisk produktion og offentlig desktop-/mobilverifikation udestår.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
