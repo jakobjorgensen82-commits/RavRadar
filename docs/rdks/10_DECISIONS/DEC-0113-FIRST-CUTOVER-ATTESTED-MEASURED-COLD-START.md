@@ -1,6 +1,6 @@
 # DEC-0113 – første integrerede cutover bruger attesteret measured-only cold start, når Candidate G ikke er migrationsklar
 
-- **Status:** Ejerbesluttet og implementeret i lokal 4.0.318-kandidat; exact-head-, merge-, frisk produktions-, deploy- og offentlig browserbevis afventer
+- **Status:** Ejerbesluttet og implementeret i lokal 4.0.318-kandidat. Aggregate/cold-start/rollback/recovery, workflowroller, public-integrated 210/673, profil/cutover og 8-consumer-binding er lokalt grønne uden P0/P1-reviewfund; fuld slut-sourcegate, exact-head, merge, frisk produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilbrowser afventer
 - **Dato:** 2026-08-30
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0102, DEC-0110 og DEC-0112

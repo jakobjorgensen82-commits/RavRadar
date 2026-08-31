@@ -2,6 +2,7 @@
 
 ## P0/P2 – operationel head-move og exact-target recovery 2026-08-31
 
+- [x] Bevis seneste offentlige Candidate G-drift på uændret `origin/main 8c03e25d`: produktion `33368963614` gennemførte build, frisk fuld validate, releasegate, protected sync/artifact og Pages; `rr-20260831074016-210` er komplet 210/673. Det er baselinebevis, ikke state-6-bevis.
 - [x] Gendan exact 4.0.316/Candidate G-tree gennem PR #236 på `origin/main c58deb78`; exact-head `33342157517`, post-merge fuld produktion `33342219152` og det første post-merge-manifest `rr-20260830234144-210` 210/673 er grønne.
 - [x] Bevis efterfølgende Candidate G-produktioner og senest den fulde push-produktion `33352634365` på exact mergehead `8c03e25d`: DMI/Copernicus, 210/673, fuld validate, releasegate, begge skrivefri trip-storage-verifiere, artifact og Pages er grønne. Offentlig `rr-20260831031027-210` er atomisk bundet 210 zoner/673 kystdele, `VERIFIED_ONLY`, uden syntetiske samples og med ærlig Candidate G 0/210 aktiv alene på grund af utilstrækkelig sammenhængende historik; dette er ikke state-6-bevis.
 - [x] Klassificér `33343469247`, `33344823000`, `33348745681` og `33351090164` som forbigående HTTP-503-stop før deploy. Same-version hotfix PR #237, exact-head `33352520408`, merge `8c03e25d`, D1-/Edge-/Worker-run `33352661061` og efterfølgende fuld produktion `33352634365` er grønne; normal skrive-/auth-/rateadfærd er fortsat single-shot, mens kun faste statefri probes har bounded fail-closed retry.
@@ -10,6 +11,7 @@
 - [x] Afgræns direct Candidate H0→integrated til immutable IntegratedReturnPlan og dæk same-run/next-run SAFE_SOURCE_ABORT samt target-reconcile.
 - [x] Implementér exact-target Pages writer/finalizer/recovery-lineage og fail-closed third/mixed/reversed/stale/tampered/missing-plan-grænser med mindst mulige jobrettigheder.
 - [x] Synkronisér kode/releasegate lokalt til `ravradar-production-workflow-outcome-v2` og bestå outcome-måltests; exact-head/produktion udestår.
+- [x] Opdel produktionen i eksplicitte orchestrator/build/deploy-roller, migrér alle 40 direkte workflowreaders til rollegrænsen, saml releasekontraktmetadata centralt og bestå role-aware workflow-action-contracts. Den separate P2 om `validate:source`-kædens first-fail-adfærd forbliver efter cutover.
 - [x] Luk P2 lokalt: Spørg RavRadar skelner `HISTORY_INCOMPLETE` fra direkte inputmangel; DA/DE/EN forklarer energivægtet firetimers-halvering/maks 15 % dæmpning uden W/N/T/EWMA-jargon. Exact-head/offentlig kontrol udestår.
 - [x] Registrér ét aktivt 15-minutters kontroljob som diagnose-/reparationsspor. Det må ikke duplikere det eksisterende eksterne watchdog, blindt redispatche et kendt fejlet build eller skabe parallel produktion.
 - [ ] Kør fuld slut-`validate:source`, exact-head CI, merge, frisk 4.0.318-produktion/deploy og offentlig state-6-browserkontrol.
@@ -25,8 +27,8 @@
 - [x] Bevar reelt ikke-annulleret progressivt DMI-cachearbejde efter en senere producentfejl og gør WAM-slutgaten afhængig af succesfuld aggregate resolver, uden at lempe WAM-, score-, checkpoint- eller releasekrav.
 - [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover; bevar selve integreret activation som push-only. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
 - [x] Opret DEC-0113 samt de fem aktive krav for source-attested cold start, source/active registry-separation, measured rollback, UTC-paritet og pre-mutation-stop.
-- [ ] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
-- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer. Version 4.0.318/docs/geodatabevis lukkes i slutpasset.
+- [x] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
+- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer. Version 4.0.318/docs/geodatabevis lukkes i slutpasset.
 - [ ] Bestå egen 4.0.318-PR exact-head, merge sikkert og gennemfør frisk fuld produktion med DMI/Copernicus, validate, releasegate, protected checkpoint/runtime, artifact, Pages og atomisk activation.
 - [ ] Bevis Feggesund 3 × 118 og verificér offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
 - [ ] Begræns konklusionen til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.

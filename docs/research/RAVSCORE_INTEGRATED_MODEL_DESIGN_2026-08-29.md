@@ -68,7 +68,7 @@ Modellen må beskrives som mere sammenhængende og kontraktmæssigt mere robust 
 | Eksakt schema-5-kilde | `integrated-schema5-ready-point-to-schema6-history-bounds-v1`; kun migration fra den aldrig offentlige releasekandidat |
 | Rollback | `integrated-schema6-to-candidate-g-schema2-v3` |
 | Parameterkontrakt | Aktiv 4.0.318-værdi `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`; historisk state-5-værdi `0cd7c263727721696253ae57c45aa3485b4081ff2cbb5b01a1f022b31b1aa7da` |
-| Transitiv implementeringsbundle | Aktiv 4.0.318-værdi `modelBundleSha256=093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061` over 43 filer og 8 bindingsforbrugere; historisk state-5-værdi `27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd` |
+| Transitiv implementeringsbundle | Aktiv 4.0.318-værdi `modelBundleSha256=3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer og 8 bindingsforbrugere; historisk state-5-værdi `27a744e820038d5e508597d02fd0a600479f160a5a5a4a66bdc252e7ea8b3bcd` |
 
 Den serialiserede runtimebinding følger state, checkpoints, central profilselection, offentlige payloads, ture/observationer, releasegates og forklaringer. Den består af model-, state-, variant-, profil-, komponent-, forklarings-, rangerings-, best-time- og præsentations-id samt både `modelContractSha256` og `modelBundleSha256`: 11 felter i alt. Den første hash binder parameterkontrakten; den anden binder den transitive implementeringslukning. Hver continuation-state, hvert checkpoint og den centrale profilselection skal bære og matche alle 11 felter. Migration og rollback er særskilte overgangskontrakter. Et match på model-id eller én hash alene er ikke nok.
 

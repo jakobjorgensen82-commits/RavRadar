@@ -17,7 +17,7 @@ Den lokale state-6-kandidats elleve bindingsfelter omfatter:
 - rangering `direction-broad-19-history-tie-v2`,
 - bedste tidspunkt `score-history-water-tie-earliest-v3`,
 - aktivt `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`, som binder parameterkontrakten,
-- aktivt `modelBundleSha256=093199540ed877c5cb94e16a7f640cb18814103adfc6dc22912d59f8e9eab061`, som binder præcis 43 kanonisk normaliserede transitive implementeringsfiler og 8 bindingsforbrugere.
+- aktivt `modelBundleSha256=3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6`, som binder præcis 43 kanonisk normaliserede transitive implementeringsfiler og 8 bindingsforbrugere.
 
 ### Historisk 4.0.317-proportionalmatrix
 
