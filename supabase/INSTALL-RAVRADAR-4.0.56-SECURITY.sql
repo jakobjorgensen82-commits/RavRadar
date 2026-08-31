@@ -594,7 +594,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-water-tie-earliest-v2'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8'
-      and p_calibration_features ->> 'modelBundleSha256' = 'e20362ad044f2a0da1cc6b196b9ae215fc48a467085a887f174d16a5559a90b1'
+      and p_calibration_features ->> 'modelBundleSha256' = 'dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4'
     -- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END
     then p_calibration_eligible = false and jsonb_path_query_array(
       coalesce(p_calibration_features -> 'reasonCodes', '[]'::jsonb),

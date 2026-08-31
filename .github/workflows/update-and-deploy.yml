@@ -1945,13 +1945,17 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: npm run validate:data
 
-      - name: Verify active trip-storage quality contract without creating data
+      - name: Verify active trip-storage Edge and D1 read contracts without creating data
         if: steps.preflight.outputs.should_run == 'true'
-        run: node scripts/verify-trip-storage-edge.mjs
+        run: |
+          node scripts/verify-trip-storage-edge.mjs
+          node scripts/verify-cloudflare-trip-gateway.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           EXPECTED_TRIP_STORAGE_MODE: d1
           RAVRADAR_REQUIRE_INTEGRATED_BINDING: true
+          CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
+          TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
 
       - name: Reconfirm current origin/main before protected writes and Pages artifact
         if: steps.preflight.outputs.should_run == 'true'

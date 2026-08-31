@@ -75,7 +75,7 @@
     "test:feedback-learning": "node scripts/test-feedback-learning.mjs",
     "test:observation-db-privacy": "node scripts/test-observation-database-privacy.mjs",
     "test:trip-evidence-contract": "node scripts/test-trip-evidence-contract.mjs && node scripts/test-candidate-g-trip-quality-storage-4.0.311.mjs",
-    "test:hybrid-trip-storage": "node scripts/test-hybrid-trip-storage-4.0.287.mjs && node scripts/test-trip-storage-migration-projection-4.0.311.mjs && node scripts/test-trip-storage-legacy-classification-4.0.311.mjs",
+    "test:hybrid-trip-storage": "node scripts/test-hybrid-trip-storage-4.0.287.mjs && node scripts/test-trip-storage-edge-transient-retry.mjs && node scripts/test-trip-storage-migration-projection-4.0.311.mjs && node scripts/test-trip-storage-legacy-classification-4.0.311.mjs",
     "test:user-account-trip-log": "node scripts/test-user-account-trip-log-4.0.264.mjs && node scripts/test-flexible-account-reporting-4.0.265.mjs",
     "test:flexible-account-reporting": "node scripts/test-flexible-account-reporting-4.0.265.mjs",
     "test:adaptive-prediction": "node scripts/test-adaptive-prediction.mjs",

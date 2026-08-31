@@ -2,6 +2,18 @@
 
 Dato: 2026-08-30
 
+## Same-version Edge-verifierhotfix 2026-08-31
+
+- Exact-main-runs `33343469247`, `33344823000` og `33348745681` stoppede alle ved det normale ikke-indloggede turlogkald, da gatewayen svarede HTTP 503. Det tredje run nåede det eksakte step efter grøn vejrproduktion, 210/673, fuld validate og releasegate, men før deploy. Kodeaudit viste efterfølgende, at normalruten kalder den muterende rate-limit-RPC før auth; den må derfor aldrig genkøres. Ingen private payloads blev læst eller logget, ingen turdata blev skrevet, og intet nyt artifact blev publiceret.
+- Grønt external-watchdog `33351078871` oprettede senere præcis én produktion `33351090164`. Den bestod vejr/DMI/Copernicus, 210/673, fuld validate, releasegate og datagates, men gammel step 69 stoppede igen før deploy på normal unauthenticated `trip-log` HTTP 503. Dette er det fjerde uafhængige incidentbevis.
+- D1-count-proben har en uafhængig fast `POST {}`-descriptor med højst tre forsøg ved 429/502/503/504 eller bundet timeout/Node `TypeError`. Usigneret kræver 401; hvert signeret forsøg får frisk timestamp/HMAC og kræver 200 med eksakt-key body `{ok, trip_count}`, `ok=true` og ikke-negativt safe-integer-count. Workeren udfører kun `SELECT`; interne count-readfejl mappes alene til fast datasikker 503.
+- En fælles helper tillader højst tre forsøg med 0/250/750 ms deterministisk ventetid, kun for HTTP 429/502/503/504 samt den eksisterende bundne timeout og Node-fetchens transport-`TypeError`.
+- Retryfladen er fail-closed begrænset til OPTIONS og en privat HMAC-signeret, statefri `trip-log`-GET uden request-body med fast syntetisk signature-path, per-attempt nonce/query og no-store-headers. Helperen ejer hele descriptoren; gammel Edge afviser metoden med ikke-transient 405 før rate limit, mens ny Edge returnerer fast minimal 401 `LOGIN_REQUIRED` før rate/auth/storage.
+- Den signerede probe ligger før rate limit, auth og storage og beviser kun Edge-liveness samt fast response-kontrakt/mode/version. Normal `trip-log`, observationens 400-/kvalitetsprober og alle reelle rate/auth/storage-ruter forbliver single-shot.
+- Den aktive pre-write gate kører også eksisterende Worker-health og HMAC-signeret `/v1/trips/count`. Kun denne separate Worker-probe er et faktisk D1-readiness-bevis.
+- Efter retry kræves stadig eksakt 204/CORS/version/mode, 403 uden tilladt origin eller den signerede faste 401. Forkert ikke-transient kontrakt stopper straks; udmattelse er rød; transient body og transportårsag indgår ikke i fejl eller log.
+- Det er en operational-only kilde-/Edge-/workflow-/test-/RDKS-patch uden Pages-, app-, model-, state-, turdata- eller geodataændring. Versionen forbliver 4.0.316; exact-head, merge og payloadfri liveverifikation mangler.
+
 ## Hændelsen efter 4.0.315-merge
 
 - PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`.

@@ -574,6 +574,7 @@ ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')
 const hybridTripChain=packageScripts['test:hybrid-trip-storage']??'';
 for(const marker of [
   'test-hybrid-trip-storage-4.0.287.mjs',
+  'test-trip-storage-edge-transient-retry.mjs',
   'test-trip-storage-migration-projection-4.0.311.mjs',
   'test-trip-storage-legacy-classification-4.0.311.mjs',
 ]){
@@ -599,6 +600,14 @@ const pagesArtifactPrivacy=await read('scripts/audit-pages-artifact-privacy.mjs'
 const legacyHydration=await read('scripts/hydrate-deployed-weather.py');
 const productionWatchdog=await read('scripts/check-production-watchdog.mjs');
 const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs');
+const tripStorageWorkflow=await read('.github/workflows/deploy-trip-storage.yml');
+const tripGatewayWorker=await read('cloudflare/trip-gateway/worker.js');
+const tripGatewayVerification=await read('scripts/verify-cloudflare-trip-gateway.mjs');
+const tripEdgeVerification=await read('scripts/verify-trip-storage-edge.mjs');
+const tripEdgeReadiness=await read('scripts/lib/trip-storage-edge-readiness.mjs');
+const tripEdgeContractProbe=await read('supabase/functions/_shared/trip-storage-contract-probe.js');
+const tripLogEdge=await read('supabase/functions/trip-log/index.ts');
+const publicGatewayEdge=await read('supabase/functions/_shared/public-gateway.ts');
 for(const marker of [
   "'candidate-legacy-maintenance'",
   "'candidate-historical-maintenance'",
@@ -706,6 +715,116 @@ for(const marker of ['production-run-active','recent-production-run','public-pro
 }
 for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','MAXIMUM_SILENCE_MINUTES:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"']){
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
+}
+for(const marker of [
+  'Object.freeze([0, 250, 750])',
+  'Object.freeze([429, 502, 503, 504])',
+  'assertRetrySafeDescriptor',
+  'TRIP_STORAGE_EDGE_SIGNED_LOGIN_PROBE_KIND',
+  'noWriteRequestDescriptor',
+  'tripGatewaySignature',
+  "url.searchParams.set('_rr_trip_attestation'",
+  "cache: 'no-store'",
+  "'cache-control': 'no-cache, no-store'",
+  'TRIP_STORAGE_EDGE_WRITE_CAPABLE_RETRY_FORBIDDEN',
+]){
+  ok(tripEdgeReadiness.includes(marker),`Trip-storage Edge-retry mangler fail-closed no-write-markøren: ${marker}`);
+}
+ok(tripEdgeVerification.includes('runTripStorageNoWriteContractProbe')
+  &&tripEdgeVerification.includes("'trip-log-signed-login-response'"),
+  'Trip-storage Edge-verifikation mangler den præcise signerede response-contract-probe');
+ok(!/\brequest\s*:/.test(tripEdgeReadiness),'Retryhelperen må ikke acceptere en vilkårlig request-closure');
+ok(tripEdgeContractProbe.includes('signed-login-response-v1')
+  &&tripEdgeContractProbe.includes("TRIP_STORAGE_SIGNED_LOGIN_METHOD = 'GET'")
+  &&tripEdgeContractProbe.includes('hasBody !== false'),
+  'Den signerede Edge-probe mangler eksakt GET-/no-body-/domænebinding');
+ok(publicGatewayEdge.includes('request.method !== "POST"')
+  &&publicGatewayEdge.includes('GatewayError(405, "METHOD_NOT_ALLOWED")'),
+  'Gammel/current normalrute skal afvise signed GET med 405 før rate-limit, så rollout er statefri');
+ok(publicGatewayEdge.includes('throw new GatewayError(401, TRIP_STORAGE_LOGIN_REQUIRED_CODE)'),
+  'Normal auth skal dele den eksakte LOGIN_REQUIRED-kode uden at blive omgået af almindelige kald');
+const tripProbeIndex=tripLogEdge.indexOf('const contractProbeHeader');
+const tripNormalJsonIndex=tripLogEdge.indexOf('const payload = await readJsonObject');
+const tripRateIndex=tripLogEdge.indexOf('await enforceRateLimits');
+const tripAuthIndex=tripLogEdge.indexOf('await requireAuthenticatedUserId');
+const tripStorageIndex=tripLogEdge.indexOf('await listOwnTripObservations');
+ok(tripProbeIndex>=0&&tripProbeIndex<tripNormalJsonIndex&&tripNormalJsonIndex<tripRateIndex
+  &&tripRateIndex<tripAuthIndex&&tripAuthIndex<tripStorageIndex,
+  'Trip-log skal holde den signerede statefri probe før normal rate/auth/storage og normalruten i oprindelig rækkefølge');
+const signedTripProbeBlock=tripLogEdge.slice(tripProbeIndex,tripRateIndex);
+ok(signedTripProbeBlock.includes('verifyTripGatewaySignature')
+  &&signedTripProbeBlock.includes('tripStorageReadinessHeaders')
+  &&!/enforceRateLimits|requireAuthenticatedUserId|listOwnTripObservations/.test(signedTripProbeBlock),
+  'Den signerede Edge-probe må ikke forbruge rate limit, auth-resolve eller storage');
+const activeTripGateStart=workflow.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
+const protectedWritesStart=workflow.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
+const activeTripGate=activeTripGateStart>=0&&protectedWritesStart>activeTripGateStart
+  ?workflow.slice(activeTripGateStart,protectedWritesStart):'';
+ok(activeTripGate.includes('node scripts/verify-trip-storage-edge.mjs')
+  &&activeTripGate.includes('node scripts/verify-cloudflare-trip-gateway.mjs')
+  &&activeTripGate.includes('CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}')
+  &&activeTripGate.includes('TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}'),
+  'Den aktive pre-write gate skal køre både signed Edge-liveness og separat Worker/D1-readiness med env-bundne secrets');
+ok(!/\$\{\{\s*secrets\./.test(activeTripGate.slice(0,activeTripGate.indexOf('env:'))),
+  'Den aktive trip-storage-gate må ikke interpolere secrets i run-scriptet');
+for(const marker of [
+  'WORKER_COUNT_RETRY_DELAYS_MS = Object.freeze([0, 250, 750])',
+  'WORKER_COUNT_TRANSIENT_HTTP_STATUSES = Object.freeze([429, 502, 503, 504])',
+  "const WORKER_COUNT_METHOD = 'POST'",
+  "const WORKER_COUNT_PATH = '/v1/trips/count'",
+  "const WORKER_COUNT_BODY = '{}'",
+  'runWorkerCountReadProbe',
+  'nextWorkerCountTimestamp',
+  'tripGatewaySignature',
+  'response.status !== 200',
+  'Object.keys(body).sort()',
+  'body.trip_count >= 0',
+  'discardWorkerCountResponse',
+  "cache: 'no-store'",
+]){
+  ok(tripGatewayVerification.includes(marker),`Worker-count-retry mangler fail-closed kontraktmarkøren: ${marker}`);
+}
+const workerCountProbeParameters=tripGatewayVerification.match(
+  /export async function runWorkerCountReadProbe\(\{([\s\S]*?)\}\) \{/,
+)?.[1]||'';
+ok(!/\b(?:route|path|body|request|descriptorFactory|requestFactory)\b/.test(workerCountProbeParameters),
+  'Worker-count-helperen må ikke acceptere vilkårlig route, body eller request-closure');
+const workerCountFunction=tripGatewayWorker.match(
+  /async function countTrips\(env\) \{[\s\S]*?(?=\nasync function deleteOwnerTrips)/,
+)?.[0]||'';
+ok(/select count\(\*\) as trip_count from trip_observations/i.test(workerCountFunction)
+  &&!/\b(?:insert|update|delete|replace|upsert|run)\b/i.test(workerCountFunction),
+  'D1-count-readiness skal forblive en ren SELECT uden DML');
+ok(/if \(url\.pathname === '\/v1\/trips\/count'\) \{[\s\S]*?return json\(503, \{ ok: false, error: 'COUNT_UNAVAILABLE' \}\);/.test(tripGatewayWorker),
+  'Kun intern count-read-fejl skal blive en fast datasikker 503, så bounded retry kan skelne den fra kontraktfejl');
+ok(String(pkg.scripts?.['test:hybrid-trip-storage']||'').includes('test-trip-storage-edge-transient-retry.mjs'),'Trip-storage Edge-retrytesten mangler package-binding');
+for(const marker of [
+  'Prepare ten EU-restricted D1 shards, schema and durable phase',
+  'Require safe D1 storage headroom',
+  'Record fail-closed intent for the already-live legacy D1 installation',
+  'Persist the D1 boundary before quiescing the legacy installation',
+  'Record current-run existing-D1 Edge predeployment intent',
+  'Record current-run fresh-Supabase Edge predeployment intent',
+  'Deploy exact maintenance-capable Edge functions while Worker and mode stay unchanged',
+  'Attest both exact Edge boundaries in unchanged D1 mode before leasing maintenance',
+  'Record current-run D1 repair intent immediately before quiescence',
+  'Enter fail-closed expiring maintenance for every existing D1 installation',
+  'TRIP_STORAGE_MODE="maintenance:$maintenance_until"',
+  'Preserve the initial Supabase bridge only for a genuinely fresh D1 installation',
+  'Require enough maintenance lease for bounded Worker replacement',
+  'Install deploy and attest the private D1 gateway after Edge quiescence',
+  'Record local fail-closed intent before a genuinely fresh D1 marker',
+  'Persist the point of no return immediately before fresh D1 activation',
+  'Activate normal Cloudflare D1 mode after verified Worker readiness',
+  'Restore Supabase only for a proven fresh pre-activation installation',
+  'Redeploy exact Edge functions for the restored fresh Supabase bridge',
+  'Persist or reconfirm the D1 boundary during failure roll-forward',
+  'Redeploy exact maintenance-capable Edge functions before failure maintenance',
+  'Enter fail-closed expiring maintenance during D1 failure roll-forward',
+  'Reinstall and redeploy the exact Worker after failure Edge quiescence',
+  'Preserve D1 after the point of no return and repair forward',
+]){
+  ok(tripStorageWorkflow.includes(marker),`Trip-storage-workflowet mangler envejs/fasebevidst cutovermarkør: ${marker}`);
 }
 const unsafePublicRecoveryUse=/\bfallbackRuntime\b|\brecoveryFallbackActive\b|(?:manifest|data)\.recoveryFallback\b|function\s+recoveryFallbackUrl\b|active-last-verified|last-verified-public/.test(publicDataService);
 ok(publicDataService.includes('sameRavScoreModelBinding')
