@@ -319,10 +319,16 @@ export async function handleRequest(request, env) {
     const bodyText = await requestBody(request);
     if (!await authorized(request, env, url.pathname, bodyText)) return json(401, { ok: false, error: 'UNAUTHORIZED' });
     const body = parsedObject(bodyText);
+    if (url.pathname === '/v1/trips/count') {
+      try {
+        return json(200, { ok: true, trip_count: await countTrips(env) });
+      } catch {
+        return json(503, { ok: false, error: 'COUNT_UNAVAILABLE' });
+      }
+    }
     if (url.pathname === '/v1/trips/store') return json(200, { ok: true, ...await storeTrip(env, body) });
     if (url.pathname === '/v1/trips/list') return json(200, { ok: true, rows: await listTrips(env, body) });
     if (url.pathname === '/v1/trips/delete-owner') return json(200, { ok: true, deleted: await deleteOwnerTrips(env, body) });
-    return json(200, { ok: true, trip_count: await countTrips(env) });
   } catch (error) {
     const knownConflict = error?.message === 'TRIP_IDEMPOTENCY_CONFLICT';
     return json(knownConflict ? 409 : 400, { ok: false, error: knownConflict ? 'TRIP_IDEMPOTENCY_CONFLICT' : 'INVALID_REQUEST' });

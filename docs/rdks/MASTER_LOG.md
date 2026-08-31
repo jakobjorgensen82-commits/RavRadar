@@ -1,3 +1,14 @@
+## 2026-08-31 – lokal same-version no-write Edge-retry
+
+- Exact-main-runs `33343469247`, `33344823000` og `33348745681` stoppede alle ved HTTP 503 i normal ikke-indlogget `trip-log`. Det tredje run nåede step'et efter grøn vejrproduktion, 210/673, fuld validate og releasegate, men før deploy. Audit viste, at normalruten forbruger rate limit før auth; den er derfor ikke no-write og må aldrig retries. Ingen private payloads blev læst/logget, ingen turdata blev skrevet, og intet nyt artifact blev publiceret.
+- Efterfølgende oprettede grønt external-watchdog `33351078871` præcis én produktion `33351090164`. Den bestod vejr/DMI/Copernicus, 210/673, fuld validate, releasegate og datagates, men gammel step 69 stoppede igen før deploy på normal unauthenticated `trip-log` HTTP 503. Det er det fjerde uafhængige reproduktionsbevis; der blev fortsat ikke publiceret et artifact.
+- Den lokale patch indfører en fælles fail-closed helper med højst tre forsøg og 0/250/750 ms ved 429/502/503/504 eller bundet timeout/transportfejl. Den læser eller logger ikke transient body/cause.
+- Kun OPTIONS og den private HMAC-signerede, statefri `trip-log`-GET uden body er retryegnede. Helperen ejer fast signature-path, per-attempt nonce/query og no-store-descriptor. Gammel/current normalrute afviser GET med ikke-transient 405 før rate limit; ny branch ligger før rate/auth/storage. Normal `trip-log`, `submit-observation` og eksisterende 400-/kvalitetsprober er single-shot.
+- Signed Edge-proben ligger før rate/auth/storage og beviser kun liveness og fast 401+`LOGIN_REQUIRED`/mode/version-response. Samme pre-write gate kører separat Worker-health plus HMAC-signeret `/v1/trips/count`, som er det reelle D1-readiness-bevis.
+- Worker-count-readiness har en selvstændig fast `POST {}`-descriptor og samme tre snævre transientforsøg. Usigneret kræver 401; hvert signeret forsøg har frisk timestamp/HMAC og kræver 200, `ok=true` og nonnegative safe integer. D1-count er ren SELECT; kun intern readfejl mappes til fast datasikker 503. Ikke-transiente fejl prøves én gang.
+- Ikke-transient kontraktfejl stopper straks, udmattelse forbliver rød, og målrettede tests dækker statuser, transport, forsøg, descriptor-/writeforbud, branch-/normalruteorden og private markører.
+- Dette er en operational-only kilde-/Edge-/workflow-/test-/RDKS-kandidat på `c58deb78`. Versionen forbliver 4.0.316; app, Pages, Candidate G/RavScore, model/state, vejr, turdata, cache/recovery, geometri og punkter er uændrede. Push/PR/merge/livebevis afventer.
+
 ## 2026-08-30 – 4.0.316 gør fallback valgfri for frisk measured-only primary
 
 - 4.0.315-retirementen bestod PR #233 exact-head `33299676128` og blev merged som `63d789a4`. Post-merge-run `33299747300` frigav D1-/reconstruction-readiness og startede build, hvilket lukker den tidligere grøn-no-op-interlock som aktuel blocker.

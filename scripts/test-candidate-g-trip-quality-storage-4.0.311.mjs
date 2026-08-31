@@ -11,6 +11,12 @@ const schema = fs.readFileSync('supabase/schema.sql', 'utf8');
 const installer = fs.readFileSync('supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql', 'utf8');
 const workflow = fs.readFileSync('.github/workflows/deploy-trip-storage.yml', 'utf8').replace(/\r\n/g, '\n');
 const edgeVerification = fs.readFileSync('scripts/verify-trip-storage-edge.mjs', 'utf8');
+const edgeNoWriteRetry = fs.readFileSync('scripts/lib/trip-storage-edge-readiness.mjs', 'utf8');
+const edgeContractProbe = fs.readFileSync('supabase/functions/_shared/trip-storage-contract-probe.js', 'utf8');
+const publicGateway = fs.readFileSync('supabase/functions/_shared/public-gateway.ts', 'utf8');
+const activeProductionWorkflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8').replace(/\r\n/g, '\n');
+const workerVerification = fs.readFileSync('scripts/verify-cloudflare-trip-gateway.mjs', 'utf8');
+const workerGateway = fs.readFileSync('cloudflare/trip-gateway/worker.js', 'utf8');
 const publicRuntime = fs.readFileSync('js/services/trip-evidence-runtime.js', 'utf8');
 const observationService = fs.readFileSync('js/services/observation-service.js', 'utf8');
 const edgeTripStorage = fs.readFileSync('supabase/functions/_shared/trip-storage.js', 'utf8');
@@ -213,6 +219,71 @@ assert.match(edgeReadiness, /X-RavRadar-Trip-Storage-Mode/);
 assert.match(submitObservation, /tripStorageReadinessHeaders\(request\)/);
 assert.match(tripLog, /tripStorageReadinessHeaders\(request\)/);
 assert.match(edgeVerification, /for \(const functionName of \['submit-observation', 'trip-log'\]\)/);
+assert.match(edgeVerification, /runTripStorageNoWriteContractProbe/);
+assert.match(edgeVerification, /'trip-log-signed-login-response'/);
+assert.match(edgeNoWriteRetry, /Object\.freeze\(\[0, 250, 750\]\)/);
+assert.match(edgeNoWriteRetry, /Object\.freeze\(\[429, 502, 503, 504\]\)/);
+assert.match(edgeNoWriteRetry, /assertRetrySafeDescriptor/);
+assert.match(edgeNoWriteRetry, /TRIP_STORAGE_EDGE_SIGNED_LOGIN_PROBE_KIND/);
+assert.match(edgeNoWriteRetry, /noWriteRequestDescriptor/);
+assert.match(edgeNoWriteRetry, /tripGatewaySignature/);
+assert.match(edgeNoWriteRetry, /TRIP_STORAGE_EDGE_WRITE_CAPABLE_RETRY_FORBIDDEN/);
+assert.doesNotMatch(edgeNoWriteRetry, /\brequest\s*:/);
+assert.match(edgeContractProbe, /signed-login-response-v1/);
+assert.match(edgeContractProbe, /TRIP_STORAGE_SIGNED_LOGIN_METHOD = 'GET'/);
+assert.match(edgeContractProbe, /hasBody !== false/);
+assert.match(edgeNoWriteRetry, /url\.searchParams\.set\('_rr_trip_attestation'/);
+assert.match(edgeNoWriteRetry, /cache: 'no-store'/);
+assert.match(publicGateway, /request\.method !== "POST"[\s\S]*GatewayError\(405, "METHOD_NOT_ALLOWED"\)/);
+assert.match(publicGateway, /throw new GatewayError\(401, TRIP_STORAGE_LOGIN_REQUIRED_CODE\)/);
+const probeBranchIndex = tripLog.indexOf('const contractProbeHeader');
+const normalJsonIndex = tripLog.indexOf('const payload = await readJsonObject');
+const rateLimitIndex = tripLog.indexOf('await enforceRateLimits');
+const authIndex = tripLog.indexOf('await requireAuthenticatedUserId');
+const storageIndex = tripLog.indexOf('await listOwnTripObservations');
+assert.ok(probeBranchIndex >= 0
+  && probeBranchIndex < normalJsonIndex
+  && normalJsonIndex < rateLimitIndex
+  && rateLimitIndex < authIndex
+  && authIndex < storageIndex);
+const signedProbeBranch = tripLog.slice(probeBranchIndex, rateLimitIndex);
+assert.match(signedProbeBranch, /verifyTripGatewaySignature/);
+assert.match(signedProbeBranch, /tripStorageReadinessHeaders/);
+assert.doesNotMatch(signedProbeBranch, /enforceRateLimits|requireAuthenticatedUserId|listOwnTripObservations/);
+const activeGateStart = activeProductionWorkflow.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
+const protectedWritesStart = activeProductionWorkflow.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
+assert.ok(activeGateStart >= 0 && protectedWritesStart > activeGateStart);
+const activeGate = activeProductionWorkflow.slice(activeGateStart, protectedWritesStart);
+assert.match(activeGate, /node scripts\/verify-trip-storage-edge\.mjs/);
+assert.match(activeGate, /node scripts\/verify-cloudflare-trip-gateway\.mjs/);
+assert.match(activeGate, /CLOUDFLARE_TRIP_GATEWAY_URL: \$\{\{ secrets\.CLOUDFLARE_TRIP_GATEWAY_URL \}\}/);
+assert.match(activeGate, /TRIP_GATEWAY_SHARED_SECRET: \$\{\{ secrets\.TRIP_GATEWAY_SHARED_SECRET \}\}/);
+assert.doesNotMatch(activeGate.slice(0, activeGate.indexOf('env:')), /\$\{\{\s*secrets\./);
+for (const marker of [
+  'WORKER_COUNT_RETRY_DELAYS_MS = Object.freeze([0, 250, 750])',
+  'WORKER_COUNT_TRANSIENT_HTTP_STATUSES = Object.freeze([429, 502, 503, 504])',
+  "const WORKER_COUNT_METHOD = 'POST'",
+  "const WORKER_COUNT_PATH = '/v1/trips/count'",
+  "const WORKER_COUNT_BODY = '{}'",
+  'runWorkerCountReadProbe',
+  'nextWorkerCountTimestamp',
+  'tripGatewaySignature',
+  'response.status !== 200',
+  'Object.keys(body).sort()',
+  'body.trip_count >= 0',
+  'discardWorkerCountResponse',
+  "cache: 'no-store'",
+]) assert.ok(workerVerification.includes(marker), `Worker-count-retry mangler kontraktmarkøren: ${marker}`);
+const workerCountProbeParameters = workerVerification.match(
+  /export async function runWorkerCountReadProbe\(\{([\s\S]*?)\}\) \{/,
+)?.[1] || '';
+assert.doesNotMatch(workerCountProbeParameters, /\b(?:route|path|body|request|descriptorFactory|requestFactory)\b/);
+const workerCountFunction = workerGateway.match(
+  /async function countTrips\(env\) \{[\s\S]*?(?=\nasync function deleteOwnerTrips)/,
+)?.[0] || '';
+assert.match(workerCountFunction, /select count\(\*\) as trip_count from trip_observations/i);
+assert.doesNotMatch(workerCountFunction, /\b(?:insert|update|delete|replace|upsert|run)\b/i);
+assert.match(workerGateway, /if \(url\.pathname === '\/v1\/trips\/count'\) \{[\s\S]*?return json\(503, \{ ok: false, error: 'COUNT_UNAVAILABLE' \}\);/);
 assert.match(edgeVerification, /TRIP_CALIBRATION_ELIGIBILITY_INVALID/);
 assert.match(edgeVerification, /TRIP_DATA_QUALITY_FLAGS_INVALID/);
 assert.match(publicRuntime, /forecastCalibrationEligible: prepared\.forecastCalibrationEligible/);

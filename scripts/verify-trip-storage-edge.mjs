@@ -2,12 +2,16 @@ import { PUBLIC_CONFIG } from '../config.js';
 import { createBoundedFetch } from './lib/bounded-fetch.mjs';
 import {
   TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS,
+  TRIP_STORAGE_EDGE_SIGNED_LOGIN_PROBE_KIND,
+  TRIP_STORAGE_EDGE_PREFLIGHT_PROBE_KIND,
+  runTripStorageNoWriteContractProbe,
   waitForTripStorageEdgeReadiness,
 } from './lib/trip-storage-edge-readiness.mjs';
 
 const baseUrl = (process.env.SUPABASE_URL || PUBLIC_CONFIG.supabaseUrl || '').replace(/\/$/, '');
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || PUBLIC_CONFIG.supabasePublishableKey || '';
 const expectedStorageMode = String(process.env.EXPECTED_TRIP_STORAGE_MODE || '').trim().toLowerCase();
+const sharedSecret = process.env.TRIP_GATEWAY_SHARED_SECRET || '';
 const fetchWithDeadline = createBoundedFetch({ timeoutMs: TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS });
 if (!baseUrl || !publishableKey) throw new Error('Edge-verifikationens offentlige konfiguration mangler.');
 if (!['d1', 'supabase', 'maintenance'].includes(expectedStorageMode)) {
@@ -31,6 +35,20 @@ async function invoke(functionName, { origin, method = 'POST', body = '{}' } = {
   });
 }
 
+async function invokeNoWriteContractProbe(functionName, origin, probeKind, probeName, assertContract) {
+  return runTripStorageNoWriteContractProbe({
+    baseUrl,
+    publishableKey,
+    sharedSecret,
+    functionName,
+    origin,
+    probeKind,
+    probeName,
+    assertContract,
+    fetchTimeoutMs: TRIP_STORAGE_EDGE_FETCH_TIMEOUT_MS,
+  });
+}
+
 const readiness = await waitForTripStorageEdgeReadiness({
   baseUrl,
   publishableKey,
@@ -42,26 +60,40 @@ if (!readiness.ok) {
 }
 
 for (const functionName of ['submit-observation', 'trip-log']) {
-  const preflight = await invoke(functionName, { origin: 'https://ravradar.dk', method: 'OPTIONS' });
-  if (preflight.status !== 204 || preflight.headers.get('access-control-allow-origin') !== 'https://ravradar.dk') {
-    throw new Error(`${functionName}: tilladt CORS-preflight fejlede.`);
-  }
-  if (preflight.headers.get('x-ravradar-trip-contract-version') !== '4.0.311') {
-    throw new Error(`${functionName}: levende Edge-kontrakt er ikke eksakt 4.0.311.`);
-  }
-  if (preflight.headers.get('x-ravradar-trip-storage-mode') !== expectedStorageMode) {
-    throw new Error(`${functionName}: levende storage-mode er ikke ${expectedStorageMode}.`);
-  }
-  const foreign = await invoke(functionName, { origin: 'https://example.invalid', method: 'OPTIONS' });
-  if (foreign.status !== 403 || foreign.headers.get('access-control-allow-origin')) {
-    throw new Error(`${functionName}: fremmed origin blev ikke afvist sikkert.`);
-  }
+  await invokeNoWriteContractProbe(
+    functionName,
+    'https://ravradar.dk',
+    TRIP_STORAGE_EDGE_PREFLIGHT_PROBE_KIND,
+    `${functionName}-allowed-preflight`,
+    response => response.status === 204
+      && response.headers.get('access-control-allow-origin') === 'https://ravradar.dk'
+      && response.headers.get('x-ravradar-trip-contract-version') === '4.0.311'
+      && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode,
+  );
+  await invokeNoWriteContractProbe(
+    functionName,
+    'https://example.invalid',
+    TRIP_STORAGE_EDGE_PREFLIGHT_PROBE_KIND,
+    `${functionName}-foreign-preflight`,
+    response => response.status === 403
+      && !response.headers.get('access-control-allow-origin'),
+  );
 }
 
-const unauthenticatedLog = await invoke('trip-log', { origin: 'https://ravradar.dk', body: JSON.stringify({ limit: 1 }) });
-if (unauthenticatedLog.status !== 401) throw new Error(`Turloggen accepterede en ikke-indlogget læsning (${unauthenticatedLog.status}).`);
-const unauthenticatedBody = await unauthenticatedLog.json().catch(() => ({}));
-if (unauthenticatedBody?.error !== 'LOGIN_REQUIRED') throw new Error('Turloggens sikre loginfejl mangler.');
+await invokeNoWriteContractProbe(
+  'trip-log',
+  'https://ravradar.dk',
+  TRIP_STORAGE_EDGE_SIGNED_LOGIN_PROBE_KIND,
+  'trip-log-signed-login-response',
+  async response => {
+    if (response.status !== 401) return false;
+    const body = await response.json().catch(() => null);
+    return body?.error === 'LOGIN_REQUIRED'
+      && Object.keys(body).length === 1
+      && response.headers.get('x-ravradar-trip-contract-version') === '4.0.311'
+      && response.headers.get('x-ravradar-trip-storage-mode') === expectedStorageMode;
+  },
+);
 
 const invalidObservation = await invoke('submit-observation', { origin: 'https://ravradar.dk' });
 if (invalidObservation.status !== 400) throw new Error(`Observationens feltgate svarede uventet (${invalidObservation.status}).`);

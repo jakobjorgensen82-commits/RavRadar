@@ -1,5 +1,20 @@
 # Implementeringsstatus – 4.0.316 optional-fallback-hotfix efter rødt post-merge-build
 
+## Same-version driftsfix – transient Edge-gateway uden retry af skriveruter
+
+- [x] Afgræns runs `33343469247`, `33344823000` og `33348745681` til HTTP 503 i normal ikke-indlogget `trip-log`; det tredje nåede step'et efter grøn vejr/210-673/full validate/releasegate og før deploy. Bevis ved kodeaudit, at rate-limit-RPC ligger før auth og gør normalruten ikke-retryegnet.
+- [x] Registrér fjerde reproduktion: grønt watchdog `33351078871` oprettede præcis én produktion `33351090164`, som bestod vejr/DMI/Copernicus, 210/673, validate/releasegate/datagates og stoppede før deploy på gammel step 69 med normal unauthenticated `trip-log` HTTP 503.
+- [x] Implementér fælles højst tre-forsøgs helper med deterministisk 0/250/750 ms for 429/502/503/504 og bundet timeout/transportfejl.
+- [x] Allowlist kun OPTIONS samt privat HMAC-signeret, statefri `trip-log`-GET uden body; helperen ejer fast signature-path, per-attempt nonce/query og no-store-descriptor og afviser alle andre routes før fetch.
+- [x] Bevis rolloutgrænsen: gammel/current normalrute afviser GET med 405 før rate limit; ny signed branch ligger før rate/auth/storage og returnerer fast minimal 401 `LOGIN_REQUIRED`; normal rate→auth→storage forbliver single-shot.
+- [x] Kør eksisterende Worker-health og signerede `/v1/trips/count` i samme pre-write gate som separat faktisk D1-readiness; kald aldrig Edge-responseproben auth- eller storagebevis.
+- [x] Gør count-readiness selv retry-sikker med fast descriptor, frisk signatur pr. forsøg, eksakt 401/200+exact-key/nonnegative-safe-integer-kontrakt og kun 429/502/503/504/timeout/Node-TypeError. Bevis Workerens rene SELECT og map kun intern count-readfejl til fast datasikker 503.
+- [x] Udvid målrettede tests med Worker-count-503→recovery, vedvarende 503, 429/502/504, ikke-transient status/body, ekstra privat success-felt, friske HMAC'er, nonnegative safe integer, bundne attempts, transportfejl, descriptor-ejerskab, SELECT-only og body-/cause-logfravær.
+- [x] Bevar eksakt 204/403/signeret fast 401, umiddelbart stop ved ikke-transient kontraktfejl, rød udmattelse og payloadfri fejl/log.
+- [x] Dæk 503→401, vedvarende 503, 429/502/504, ikke-transient status/header/body, bundne attempts, transportfejl, descriptor-/write-forbud, branchorden, normalrute og body-/cause-logfravær med målrettede tests.
+- [x] Bestå afsluttende målrettede RDKS-/release-/storage-/workflow-/security-/diff-/privacy-/geodatagates; kandidaten er commitklar uden push.
+- [ ] Exact-head CI, merge og payloadfri live-Edge-verifikation afventer ejerens samlede releasekæde.
+
 ## P0 – frisk primary må publiceres uden gyldig ældre fallback
 
 - [x] Bestå PR #233 exact-head `33299676128` og merge 4.0.315 som `63d789a4`.
