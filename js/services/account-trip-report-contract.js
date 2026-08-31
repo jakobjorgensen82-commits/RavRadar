@@ -2,7 +2,7 @@ import {
   TRIP_SEARCH_COVERAGE,
   TRIP_SEARCH_MODES,
   assertTripEvidencePrivacy
-} from './trip-evidence-contract.js?v=4.0.316';
+} from './trip-evidence-contract.js?v=4.0.318';
 
 export const ACCOUNT_TRIP_REPORT_SCHEMA_VERSION = 1;
 export const ACCOUNT_TRIP_REPORT_SOURCE = 'account-manual';
@@ -38,14 +38,22 @@ function requiredChoice(value, allowed, label) {
 
 function optionalGrams(value, found) {
   if (!found || value === '' || value == null) return null;
-  const grams = Number(value);
+  const grams = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && /^\d+(?:[.,]\d+)?$/.test(value.trim())
+      ? Number(value.replace(',', '.'))
+      : Number.NaN;
   if (!Number.isFinite(grams) || grams < 0 || grams > 10000) throw new Error('Gram skal være et tal mellem 0 og 10000.');
   return Math.round(grams * 10) / 10;
 }
 
 export function buildAccountTripReport(input = {}, { now = Date.now() } = {}) {
   const started = requiredIso(input.startedAt, 'Dato og starttid');
-  const searchMinutes = Math.round(Number(input.searchMinutes));
+  const searchMinutes = typeof input.searchMinutes === 'number'
+    ? Math.round(input.searchMinutes)
+    : typeof input.searchMinutes === 'string' && /^\d+$/.test(input.searchMinutes.trim())
+      ? Number(input.searchMinutes)
+      : Number.NaN;
   if (!Number.isInteger(searchMinutes) || searchMinutes < 1 || searchMinutes > MAX_SEARCH_MINUTES) {
     throw new Error('Søgetiden skal være mellem 1 minut og 24 timer.');
   }

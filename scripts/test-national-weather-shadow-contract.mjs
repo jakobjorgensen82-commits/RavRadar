@@ -1,8 +1,10 @@
 import fs from 'node:fs';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
 const source=fs.readFileSync('scripts/build-national-weather-shadow-contract.py','utf8');
 const policy=JSON.parse(fs.readFileSync('data/geometry-v2/national-weather-shadow-policy.json','utf8'));
-const workflow=fs.readFileSync('.github/workflows/update-and-deploy.yml','utf8');
+const workflows=await readProductionWorkflowSources();
+const workflow=workflows.orchestrator;
 for(const marker of ['private-national-shadow-contract-ready','seriesId','historyKey','coverageGaps','crossPartMergeDetected','parentFallbackDetected','rawWeatherValuesStored','publicProjectionEnabled','automaticActivationAllowed'])if(!source.includes(marker))throw new Error(`National shadow-kontrakt mangler ${marker}`);
 if(policy.mergePolicy.crossPartMergeAllowed!==false||policy.mergePolicy.parentFallbackAllowed!==false||policy.mergePolicy.missingRemainsMissing!==true)throw new Error('National shadow-policy tillader ulovlig merge/fallback');
 for(const marker of ['python scripts/build-national-weather-shadow-contract.py','python scripts/validate-national-multi-step-series.py','node scripts/validate-national-state-history.mjs','python scripts/validate-national-local-part-wind-series.py','node scripts/validate-national-shadow-score.mjs','national-weather-shadow-contract.json','national-multi-step-series-validation.json','national-state-history-validation.json','national-local-part-wind-series.json','national-shadow-score-validation.json'])if(!workflow.includes(marker))throw new Error(`Workflow mangler ${marker}`);
@@ -19,10 +21,16 @@ for(const marker of ['passed-private-national-shadow-score-validation','whole-zo
 for(const marker of ['private-score-neutral-ravscore-candidate-shadow','SCORE_MODEL_IDS','deliveryDirectionAudit','alongshore-passage','samplingAwareStrongEventDuration','retentionFeatureCoverage','retentionFeatureDiagnostic','staticLocalFeatureModelIncluded:false','staticLocalFeatureScoreImpact:false','featureEvidenceRequiredForActivation:false','NATIONAL_CONTRACT_HAS_INCOMPLETE_SCORE_INPUT_COVERAGE','nationalCoverageGate','parentZoneMorphologyAcceptedAsLocalPartEvidence','scoreInputCoverageReady','activationCoverageReady','candidate-national-score-input-coverage','candidate-current-normal-threshold-calibration','candidate-initial-reservoir-and-passive-decay-decision','candidate-representative-trip-or-equivalent-validation','candidate-final-ui-and-explanation-review','candidateG5050','candidateGNoDirectWind','candidateGNoDirectWindControl','candidateGWindLedWaders','candidateGWindLedWadersControl','candidateGCurrentLedOutflow8','candidateGCurrentLedOutflow8Preferred','currentTransportDriver','outboundLossPointsPerEffectiveHour','actualOutboundTransportAfterEffectiveHours','outflowExhaustionFinalScoreGate:true','waveCanCreateTransport:false','centralRuleChain','candidateG5050Final','candidateGNoDirectWindFinal','candidateGWindLedWadersFinal','candidateGCurrentLedOutflow8Final'])if(!score.includes(marker))throw new Error(`National RavScore-kandidat-shadow mangler ${marker}`);
 for(const staleMarker of ['candidate-waders-rule-order-public-product-review','candidate-arrow-history-public-product-review','candidate-extreme-review','score-neutral-ui-review','candidate-transport-zero-vs-total-score-zero-owner-decision'])if(score.includes(staleMarker))throw new Error(`National RavScore-kandidat-shadow bærer en lukket eller erstattet gate: ${staleMarker}`);
 for(const retiredMarker of ['NATIONAL_CONTRACT_HAS_NO_COMPLETE_LOCAL_RETENTION_FEATURES','candidate-national-score-input-and-local-retention-coverage'])if(score.includes(retiredMarker))throw new Error(`National RavScore-kandidat-shadow bærer stadig erstattet retention-gate: ${retiredMarker}`);
-const activeStart=workflow.indexOf('ravscore-active-shadow:');
-const activeEnd=workflow.indexOf('geometry-v2-pilot:',activeStart);
-if(activeStart<0||activeEnd<=activeStart)throw new Error('Fallback-kompatibel aktiv RavScore-shadow kunne ikke afgrænses');
-const activeSection=workflow.slice(activeStart,activeEnd);
-for(const marker of ['Download read-only fallback-compatible 210/673 runtime','node scripts/audit-ravscore-candidate-g-public-shadow.mjs','candidate-g-public-shadow-audit.json'])if(!activeSection.includes(marker))throw new Error(`Aktiv RavScore-shadow mangler DEC-0057-kontrakten: ${marker}`);
-for(const staleMarker of ['python scripts/sync-admin-config.py','python scripts/validate-national-local-part-dmi-grid.py','python scripts/validate-national-multi-step-series.py','python scripts/validate-national-local-part-wind-series.py','node scripts/validate-national-shadow-score.mjs'])if(activeSection.includes(staleMarker))throw new Error(`Aktiv RavScore-shadow genbruger stadig den snævre native-only vej: ${staleMarker}`);
+for (const [role, sourceText] of Object.entries(workflows)) {
+  for (const retiredMarker of [
+    'ravscore_active_shadow:',
+    'ravscore-active-shadow:',
+    'Download read-only fallback-compatible 210/673 runtime',
+    'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
+    'candidate-g-public-shadow-audit.json',
+    'ravradar-active-ravscore-shadow',
+  ]) {
+    if (sourceText.includes(retiredMarker)) throw new Error(`${role}-workflowet genåbner den pensionerede offentlige RavScore-shadow: ${retiredMarker}`);
+  }
+}
 console.log('National weather-shadow kontrakt: bestået.');

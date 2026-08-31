@@ -2,13 +2,22 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import { updateStaging } from './update-coastal-point-staging.mjs';
 import {
   activatedRecoveryEntries,
-  candidateGStateKey,
   POINT_STAGE_READY,
+  POINT_STAGE_SCHEMA_VERSION,
+  assertCandidateGCoastalPointRollbackContinuation,
+  assertCoastalPointActivationStateInjection,
+  assertCoastalPointStageModelBinding,
+  assertIntegratedCoastalPointContinuation,
+  buildCoastalPointActivationStatePair,
+  coastalPointStageIdentity,
   promotedDirectionDocument,
   stagedEntries,
 } from './lib/coastal-point-staging-contract.mjs';
+import { projectVerifiedPrivateStageDmiZoneToPart } from './lib/coastal-point-stage-dmi-adapter.mjs';
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const REVIEWS = path.join(ROOT, 'data/admin/direction-reviews.json');
@@ -17,12 +26,20 @@ const PUBLIC_DMI = path.join(ROOT, 'data/live/dmi-bulk-cache.json');
 const PRIVATE_DMI = path.join(ROOT, '.cache/coastal-point-staging/dmi.json');
 const PRIVATE_STATE = path.join(ROOT, '.cache/coastal-point-staging/state.json');
 const PRIVATE_STATUS = path.join(ROOT, '.cache/coastal-point-staging/status.json');
+const PUBLIC_STATUS = path.join(ROOT, 'data/live/coastal-point-staging-status.json');
 const SYNC_META = path.join(ROOT, '.cache/admin-config-sync.json');
 const INJECTION = path.join(ROOT, '.cache/coastal-point-staging/activation-state-injection.json');
 const PENDING = path.join(ROOT, '.cache/coastal-point-staging/pending-promotion.json');
+const MODEL_BINDING = ravScoreModelBinding();
 
 const read = async file => JSON.parse(await fs.readFile(file, 'utf8'));
-const readOptional = async (file, fallback = {}) => { try { return await read(file); } catch { return fallback; } };
+const readOptional = async (file, fallback = {}) => {
+  try { return await read(file); }
+  catch (error) {
+    if (error?.code === 'ENOENT') return fallback;
+    throw error;
+  }
+};
 const atomicWrite = async (file, value) => {
   await fs.mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.tmp`;
@@ -33,9 +50,16 @@ const samePoint = (left, right, tolerance = 1e-7) => Array.isArray(left) && Arra
   && left.length >= 2 && right.length >= 2
   && left.slice(0, 2).every((value, index) => Number.isFinite(Number(value))
     && Math.abs(Number(value) - Number(right[index])) <= tolerance);
+const floorHour = value => new Date(
+  Math.floor(Date.parse(value) / 3_600_000) * 3_600_000,
+).toISOString();
 
-function normalizePromotedDmiZone(zone) {
-  const normalized = structuredClone(zone);
+function normalizePromotedDmiZone(zone, candidate) {
+  const normalized = projectVerifiedPrivateStageDmiZoneToPart(zone, {
+    stageId: candidate.stageId,
+    zoneId: candidate.zoneId,
+    part: { ...candidate.part, zoneId: candidate.zoneId },
+  });
   for (const hour of Object.values(normalized?.hourly ?? {})) {
     for (const [uKey, vKey, speedKey, directionKey] of [
       ['wind-u-10m', 'wind-v-10m', 'wind-speed-10m', 'wind-dir-10m'],
@@ -57,20 +81,24 @@ async function clearTransientActivationFiles(injectionPath, pendingPath) {
 
 export async function prepareActivation({
   now = new Date().toISOString(),
+  productionReference = null,
   reviewsPath = REVIEWS,
   activePartsPath = ACTIVE_PARTS,
   publicDmiPath = PUBLIC_DMI,
   privateDmiPath = PRIVATE_DMI,
   privateStatePath = PRIVATE_STATE,
   privateStatusPath = PRIVATE_STATUS,
+  publicStatusPath = PUBLIC_STATUS,
   syncMetaPath = SYNC_META,
   injectionPath = INJECTION,
   pendingPath = PENDING,
 } = {}) {
-  const [directionDocument, activeParts, privateDmi, privateState, privateStatus, syncMeta] = await Promise.all([
+  const [directionDocument, activeParts, privateDmi, loadedPrivateState, loadedPrivateStatus, syncMeta] = await Promise.all([
     read(reviewsPath), read(activePartsPath), readOptional(privateDmiPath), readOptional(privateStatePath),
     readOptional(privateStatusPath), readOptional(syncMetaPath),
   ]);
+  let privateState = loadedPrivateState;
+  let privateStatus = loadedPrivateStatus;
   const requestedCandidates = stagedEntries(directionDocument, activeParts).filter(entry => entry.activationRequested);
   const recoveryCandidates = requestedCandidates.length ? [] : activatedRecoveryEntries(directionDocument, activeParts);
   const candidates = requestedCandidates.length ? requestedCandidates : recoveryCandidates;
@@ -79,14 +107,45 @@ export async function prepareActivation({
     await clearTransientActivationFiles(injectionPath, pendingPath);
     return { prepared: false, reason: 'no-activation-request' };
   }
+  const legacyStagingCache = [1, 2].includes(privateState?.schemaVersion)
+    || [1, 2].includes(privateStatus?.schemaVersion);
+  if (legacyStagingCache) {
+    await updateStaging({
+      now,
+      productionReference,
+      privateDmiPath,
+      privateStatePath,
+      privateStatusPath,
+      publicStatusPath,
+    });
+    [privateState, privateStatus] = await Promise.all([
+      read(privateStatePath),
+      read(privateStatusPath),
+    ]);
+  }
+  if (privateState?.schemaVersion !== POINT_STAGE_SCHEMA_VERSION
+    || privateStatus?.schemaVersion !== POINT_STAGE_SCHEMA_VERSION) {
+    throw new Error('Coastal-point aktivering kræver canonical schema-3 dual-state staging-state');
+  }
+  assertCoastalPointStageModelBinding(
+    privateState.ravScoreModelBinding,
+    'Coastal-point staging-state model binding',
+  );
+  assertCoastalPointStageModelBinding(
+    privateStatus.ravScoreModelBinding,
+    'Coastal-point staging-status model binding',
+  );
   const statuses = new Map((privateStatus.entries ?? []).map(entry => [entry.stageId, entry]));
   const stateRows = privateState.stages ?? {};
   const maximumStatusAgeMs = 2 * 60 * 60 * 1000;
+  const activationTargetReferenceAt = floorHour(
+    productionReference ?? process.env.RAVRADAR_PRODUCTION_TARGET_HOUR ?? now,
+  );
   for (const candidate of candidates) {
     const status = statuses.get(candidate.stageId);
     const state = stateRows[candidate.stageId];
     const dmiZone = privateDmi?.zones?.[candidate.stageId];
-    const expectedStateKey = candidateGStateKey(candidate.part);
+    const identity = coastalPointStageIdentity(candidate.part);
     if (!status || status.revision !== candidate.revision || status.status !== POINT_STAGE_READY) {
       await clearTransientActivationFiles(injectionPath, pendingPath);
       return { prepared: false, reason: recoveryOnly ? 'activation-recovery-cache-unavailable' : 'candidate-not-ready', partId: candidate.partId };
@@ -95,8 +154,38 @@ export async function prepareActivation({
       await clearTransientActivationFiles(injectionPath, pendingPath);
       return { prepared: false, reason: 'readiness-status-stale', partId: candidate.partId };
     }
-    if (!state?.continuationState || state.stateKey !== expectedStateKey || state.continuationState.stateKey !== expectedStateKey) {
-      throw new Error(`${candidate.partId}: READY-status mangler eksakt Candidate G-tilstand`);
+    assertCoastalPointStageModelBinding(
+      status.ravScoreModelBinding,
+      `${candidate.partId} READY-status model binding`,
+    );
+    assertCoastalPointStageModelBinding(
+      state?.ravScoreModelBinding,
+      `${candidate.partId} READY-state model binding`,
+    );
+    if (status.samplingContextKey !== identity.samplingContextKey
+      || state?.samplingContextKey !== identity.samplingContextKey
+      || status.currentMemoryReady !== true
+      || status.waveMemoryReady !== true
+      || status.lastMileMemoryReady !== true
+      || status.candidateGRollbackReady !== true
+      || status.dualStateTargetBound !== true
+      || !state?.continuationState
+      || !state?.candidateGRollbackContinuationState) {
+      throw new Error(`${candidate.partId}: READY-status mangler eksakt dual-state modeltilstand`);
+    }
+    assertIntegratedCoastalPointContinuation(state.continuationState, {
+      samplingContextKey: identity.samplingContextKey,
+      requireReady: true,
+      label: `${candidate.partId} READY activation-state`,
+    });
+    assertCandidateGCoastalPointRollbackContinuation(
+      state.candidateGRollbackContinuationState,
+      identity.expectedCandidateGStateKey,
+      { requireReady: true, label: `${candidate.partId} READY Candidate G companion` },
+    );
+    if (state.continuationState.time !== activationTargetReferenceAt
+      || state.candidateGRollbackContinuationState.time !== activationTargetReferenceAt) {
+      throw new Error(`${candidate.partId}: READY dual-state tilhører ikke aktiveringens targettime`);
     }
     if (!dmiZone || !samePoint(dmiZone.samplingPoint, candidate.part.waterPoint)) {
       throw new Error(`${candidate.partId}: READY-status mangler eksakt privat DMI-serie`);
@@ -111,12 +200,29 @@ export async function prepareActivation({
     ? directionDocument
     : promotedDirectionDocument(directionDocument, candidates, activatedAt);
   const publicDmi = await read(publicDmiPath);
-  const states = {};
+  const statePairs = {};
   for (const candidate of candidates) {
     publicDmi.zones ??= {};
-    publicDmi.zones[`PART::${candidate.partId}`] = normalizePromotedDmiZone(privateDmi.zones[candidate.stageId]);
-    states[candidate.partId] = structuredClone(stateRows[candidate.stageId].continuationState);
+    publicDmi.zones[`PART::${candidate.partId}`] = normalizePromotedDmiZone(
+      privateDmi.zones[candidate.stageId],
+      candidate,
+    );
+    const identity = coastalPointStageIdentity(candidate.part);
+    statePairs[candidate.partId] = buildCoastalPointActivationStatePair({
+      partId: candidate.partId,
+      samplingContextKey: identity.samplingContextKey,
+      expectedCandidateGStateKey: identity.expectedCandidateGStateKey,
+      integratedState: stateRows[candidate.stageId].continuationState,
+      candidateGState: stateRows[candidate.stageId].candidateGRollbackContinuationState,
+    });
   }
+  const injection = {
+    schemaVersion: POINT_STAGE_SCHEMA_VERSION,
+    ravScoreModelBinding: MODEL_BINDING,
+    preparedAt: now,
+    statePairs,
+  };
+  assertCoastalPointActivationStateInjection(injection);
   const pending = recoveryOnly ? null : {
     schemaVersion: 1,
     preparedAt: now,
@@ -129,10 +235,16 @@ export async function prepareActivation({
   await Promise.all([
     ...(recoveryOnly ? [] : [atomicWrite(reviewsPath, promoted)]),
     atomicWrite(publicDmiPath, publicDmi),
-    atomicWrite(injectionPath, { schemaVersion: 1, preparedAt: now, states }),
+    atomicWrite(injectionPath, injection),
     ...(recoveryOnly ? [fs.rm(pendingPath, { force: true })] : [atomicWrite(pendingPath, pending)]),
   ]);
-  return { prepared: true, recoveryOnly, partIds: candidates.map(candidate => candidate.partId).sort(), expectedVersion };
+  return {
+    prepared: true,
+    recoveryOnly,
+    stagingMigrationApplied: legacyStagingCache,
+    partIds: candidates.map(candidate => candidate.partId).sort(),
+    expectedVersion,
+  };
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {

@@ -1,7 +1,8 @@
 import fs from 'node:fs';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const hydrate = fs.readFileSync('scripts/hydrate-deployed-weather.py', 'utf8');
-const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8');
+const buildWorkflow = await readProductionWorkflowSource('build');
 
 for (const marker of [
   'RETIRED_ZONE_IDS = {"DK-B04-09"}',
@@ -13,7 +14,7 @@ for (const marker of [
 ]) {
   if (!hydrate.includes(marker)) throw new Error(`Hydrering mangler beskyttelse: ${marker}`);
 }
-if (!workflow.includes('python scripts/hydrate-deployed-weather.py')) {
+if (!buildWorkflow.includes('python scripts/hydrate-deployed-weather.py')) {
   throw new Error('Workflow bruger ikke den beskyttede hydrering');
 }
 console.log('OK: Hydreret conditions renses for pensionerede og ukendte zoner før validering.');

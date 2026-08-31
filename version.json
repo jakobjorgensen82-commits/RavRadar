@@ -1,5 +1,83 @@
 {
-  "version": "4.0.316",
-  "releasedAt": "2026-08-30T07:48:10.909Z",
-  "minimumSupportedVersion": "4.0.316"
+  "version": "4.0.318",
+  "releasedAt": "2026-08-31T00:19:01.032Z",
+  "minimumSupportedVersion": "4.0.318",
+  "releaseContract": {
+    "schemaVersion": "ravradar-release-contract-v1",
+    "releaseVersion": "4.0.318",
+    "modelBindings": {
+      "integrated": {
+        "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+        "stateSchemaVersion": "6.0.0",
+        "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+        "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5",
+        "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-bounds-v5",
+        "explanationSchemaId": "ravscore-explanation-integrated-bounds-v5",
+        "rankingPolicyId": "direction-broad-19-history-tie-v2",
+        "bestTimePolicyId": "score-history-water-tie-earliest-v3",
+        "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
+        "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
+        "modelBundleSha256": "3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6"
+      },
+      "candidateGRollback": {
+        "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
+        "stateSchemaVersion": "2.0.0",
+        "variantId": "G-CURRENT-LED-WAVE-MOBILISATION-WADERS-WIND-LED",
+        "profileId": "current-0.03-0.15-in10-out8-exhaust13-window48-boundary0-wave-build4-decay48",
+        "componentSchemaId": "ravscore-components-huntability-transport-mobilisation-candidate-g-v1",
+        "explanationSchemaId": "ravscore-explanation-candidate-g-v3",
+        "rankingPolicyId": "direction-broad-19-v1",
+        "bestTimePolicyId": "score-water-tie-earliest-v2",
+        "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
+        "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
+        "modelBundleSha256": "dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4"
+      }
+    },
+    "publicManifestAuthority": {
+      "path": "data/live/manifest.json",
+      "modelBindingJsonPointer": "/ravScoreModelBinding"
+    },
+    "workflowRoles": {
+      "orchestrator": ".github/workflows/update-and-deploy.yml",
+      "build": ".github/workflows/reusable-weather-build.yml",
+      "deploy": ".github/workflows/reusable-pages-deploy.yml"
+    },
+    "productionOutcome": {
+      "schemaVersion": "ravradar-production-workflow-outcome-v2",
+      "terminals": [
+        "NOOP",
+        "DEFERRED",
+        "BUILT",
+        "DEPLOYED",
+        "FAILED"
+      ]
+    },
+    "documentation": {
+      "handbooks": {
+        "markdown": "HANDBOOK-RAVRADAR.md",
+        "web": "docs/handbook/content.json",
+        "installationCopy": "supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql"
+      },
+      "producerConsumerMatrix": "docs/research/RAVSCORE_INTEGRATED_PRODUCER_CONSUMER_MATRIX_2026-08-29.md",
+      "decisionReferences": [
+        {
+          "id": "DEC-0102",
+          "path": "docs/rdks/10_DECISIONS/DEC-0102-INTEGRATED-NEXT-GENERATION-RAVSCORE.md"
+        },
+        {
+          "id": "DEC-0110",
+          "path": "docs/rdks/10_DECISIONS/DEC-0110-RAVSCORE-INTEGRATED-COASTAL-PROCESS-MODEL.md"
+        },
+        {
+          "id": "DEC-0112",
+          "path": "docs/rdks/10_DECISIONS/DEC-0112-OPTIONAL-PUBLIC-FALLBACK-AND-HISTORY-INCOMPLETE-SCORING.md"
+        },
+        {
+          "id": "DEC-0113",
+          "path": "docs/rdks/10_DECISIONS/DEC-0113-FIRST-CUTOVER-ATTESTED-MEASURED-COLD-START.md"
+        }
+      ]
+    },
+    "privatePayloadIncluded": false
+  }
 }

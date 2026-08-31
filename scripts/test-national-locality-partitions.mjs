@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-const source=await fs.readFile('scripts/build-national-locality-partitions.py','utf8');const validator=await fs.readFile('scripts/validate-national-locality-partitions.py','utf8');const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+const source=await fs.readFile('scripts/build-national-locality-partitions.py','utf8');const validator=await fs.readFile('scripts/validate-national-locality-partitions.py','utf8');const workflow=await readProductionWorkflowSource('orchestrator');
 assert.ok(source.includes('EXPECTED_ZONE_COUNT=210'),'Lokalitetsopdelingen skal følge den aktuelle nationale 210-zonepolitik');
 for(const x of ['official-anchor-midpoint','maximum-length-safeguard','nearby-source-fragment-group','maximumFragmentGroupingGapM','substring','proposedName":None','inventedConnectionCount":0','sourcePartCount'])assert.ok(source.includes(x),`Lokalitetsbygger mangler ${x}`);
 for(const x of ['len(report.get("sourceParts") or [])','difference(source[source_id].buffer(.5))','union.length-source[source_id].length','MultiLineString'])assert.ok(validator.includes(x),`Lokalitetsvalidator mangler ${x}`);

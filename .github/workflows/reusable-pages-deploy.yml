@@ -1,0 +1,605 @@
+name: Reusable RavRadar Pages deployment
+
+on:
+  workflow_call:
+    inputs:
+      active_deployment_id:
+        required: true
+        type: string
+      central_version:
+        required: true
+        type: string
+      deployment_model:
+        required: true
+        type: string
+      integrated_implementation_closure_sha256:
+        required: true
+        type: string
+      legacy_source_required:
+        required: true
+        type: string
+      operational_action:
+        required: true
+        type: string
+    secrets:
+      SUPABASE_SERVICE_ROLE_KEY:
+        required: true
+      SUPABASE_URL:
+        required: true
+    outputs:
+      deployment_outcome:
+        description: "Forwarded deploy-pages deployment_outcome contract"
+        value: ${{ jobs.deploy-pages.outputs.deployment_outcome }}
+      public_verification_outcome:
+        description: "Forwarded deploy-pages public_verification_outcome contract"
+        value: ${{ jobs.deploy-pages.outputs.public_verification_outcome }}
+      deployed_verified:
+        description: "Forwarded deploy-pages deployed_verified contract"
+        value: ${{ jobs.deploy-pages.outputs.deployed_verified }}
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy-pages:
+    name: Deploy prepared Pages artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    outputs:
+      deployment_outcome: ${{ steps.deployment.outcome }}
+      public_verification_outcome: ${{ steps.public-verification.outcome }}
+      deployed_verified: ${{ steps.deployment-terminal.outputs.deployed_verified }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      RAVRADAR_OPERATIONAL_HANDOFF: /tmp/ravradar-operational-handoff
+      RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Fetch exact public Candidate G source commit for first cutover verification
+        if: inputs.legacy_source_required == 'true' && (inputs.operational_action == 'integrated-cutover' || inputs.operational_action == 'candidate-legacy-maintenance')
+        shell: bash
+        run: |
+          legacy_source_head="$(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD);")"
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"
+
+      - name: Download sealed operational handoff
+        uses: actions/download-artifact@v8
+        with:
+          name: ravscore-operational-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
+
+      - name: Verify exact privacy-safe handoff identity
+        shell: bash
+        run: |
+          test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "ravscore-operational-deploy-handoff-v2"
+          test "$(jq -r '.sourceHead' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "$GITHUB_SHA"
+          test "$(jq -r '.action' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.operational_action }}"
+          test "$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.central_version }}"
+          test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.legacy_source_required }}"
+          test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
+
+      - name: Reconfirm prepared SHA before any activation CAS
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$GITHUB_SHA" = "$current_main"
+
+      - name: Observe and seal the currently public source manifest
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-source=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          expected_schema="4"
+          if [ "${{ inputs.legacy_source_required }}" = "true" ]; then
+            expected_schema="2"
+          fi
+          test "$(jq -r '.schemaVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "$expected_schema"
+          test "$(jq -r '.complete' "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json")" = "true"
+          source_digest="$(sha256sum "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" | cut -d' ' -f1)"
+          printf 'public-source-%s\n' "${source_digest:0:24}" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt"
+
+      - name: Restore the exact sealed active source implementation
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || (inputs.operational_action == 'integrated-cutover' && inputs.legacy_source_required != 'true')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTIVE_DEPLOYMENT_ID: ${{ inputs.active_deployment_id }}
+        run: |
+          source_run_id=""
+          source_attempt=""
+          source_handoff_name=""
+          if [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages-([0-9]+)-([0-9]+)$ ]]; then
+            source_run_id="${BASH_REMATCH[1]}"
+            source_attempt="${BASH_REMATCH[2]}"
+            source_handoff_name="ravscore-operational-handoff-$source_run_id-$source_attempt"
+          elif [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages-recovery-([0-9]+)-([0-9]+)$ ]]; then
+            source_run_id="${BASH_REMATCH[1]}"
+            source_attempt="${BASH_REMATCH[2]}"
+            source_handoff_name="ravscore-operational-recovery-handoff-$source_run_id-$source_attempt"
+          else
+            echo "Active RavScore source lacks a recoverable sealed deployment id." >&2
+            exit 1
+          fi
+          gh run download "$source_run_id" \
+            --name "$source_handoff_name" \
+            --dir "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal"
+
+      - name: Verify the complete currently public source model before begin CAS
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        shell: bash
+        run: |
+          case "${{ inputs.operational_action }}" in
+            candidate-execute) source_model="integrated" ;;
+            candidate-maintenance) source_model="candidate-g" ;;
+            candidate-historical-maintenance) source_model="candidate-g" ;;
+            candidate-legacy-maintenance)
+              node scripts/verify-legacy-candidate-g-source.mjs verify \
+                --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+                --source-head "$GITHUB_SHA" \
+                --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+                --attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json" \
+                --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+              exit 0
+              ;;
+            integrated-return) source_model="candidate-g" ;;
+            integrated-historical-maintenance) source_model="integrated" ;;
+            integrated-cutover)
+              if [ "${{ inputs.legacy_source_required }}" = "true" ]; then
+                node scripts/verify-legacy-candidate-g-source.mjs verify \
+                  --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+                  --source-head "$GITHUB_SHA" \
+                  --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+                  --attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json" \
+                  --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+                exit 0
+              fi
+              source_model="candidate-g"
+              ;;
+            *) exit 1 ;;
+          esac
+          node scripts/verify-ravscore-operational-pages-deployment.mjs \
+            --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+            --source-head "$GITHUB_SHA" \
+            --model "$source_model" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+            --binding "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-binding.json" \
+            --contract "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-contract.js" \
+            --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-bundle.generated.js" \
+            --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/source-seal/target-public-closure.json" \
+            --observation-nonce "source-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+
+      - name: Upload privacy-safe source evidence before any activation CAS
+        if: inputs.operational_action == 'candidate-execute' || inputs.operational_action == 'candidate-maintenance' || inputs.operational_action == 'candidate-historical-maintenance' || inputs.operational_action == 'candidate-legacy-maintenance' || inputs.operational_action == 'integrated-historical-maintenance' || inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravscore-operational-recovery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.RAVRADAR_OPERATIONAL_HANDOFF }}
+          retention-days: 14
+          if-no-files-found: error
+
+      - name: Begin manual Candidate G rollback with exact central CAS
+        id: candidate-begin
+        if: inputs.operational_action == 'candidate-execute'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Begin scheduled Candidate G refresh with exact central CAS
+        id: candidate-refresh-begin
+        if: inputs.operational_action == 'candidate-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs refresh-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Begin historical-to-current Candidate G maintenance with exact central CAS
+        id: candidate-historical-refresh-begin
+        if: inputs.operational_action == 'candidate-historical-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs historical-refresh-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Begin legacy-to-current Candidate G refresh with exact central CAS
+        id: candidate-legacy-refresh-begin
+        if: inputs.operational_action == 'candidate-legacy-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs legacy-refresh-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Begin integrated return or first cutover with exact central CAS
+        id: integrated-transition-begin
+        if: inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        shell: bash
+        run: |
+          source_attestation=()
+          if [ "${{ inputs.legacy_source_required }}" = "true" ]; then
+            source_attestation=(
+              --source-attestation
+              "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
+            )
+          fi
+          node scripts/ravscore-operational-activation.mjs return-begin \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "${{ inputs.central_version }}" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
+            --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json" \
+            --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json" \
+            "${source_attestation[@]}" \
+            --source-deployment-id "$(cat "$RAVRADAR_OPERATIONAL_HANDOFF/source-deployment-id.txt")" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Begin historical-to-current integrated maintenance with exact central CAS
+        id: integrated-historical-maintenance-begin
+        if: inputs.operational_action == 'integrated-historical-maintenance'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-begin
+          --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+          --expected-version "${{ inputs.central_version }}"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+          --source-manifest "$RAVRADAR_OPERATIONAL_HANDOFF/source-manifest.json"
+          --source-verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Reconfirm exact main immediately before Pages deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main"
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$GITHUB_SHA" = "$current_main"
+
+      - name: Require checked-out HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+      - name: Verify deployed exact model, implementation and 210/673 artifact
+        id: public-verification
+        run: >-
+          node scripts/verify-ravscore-operational-pages-deployment.mjs
+          --base-url "${{ steps.deployment.outputs.page_url }}"
+          --source-head "$GITHUB_SHA"
+          --model "${{ inputs.deployment_model }}"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --binding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json"
+          --contract "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
+          --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js"
+          --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json"
+          --observation-nonce "target-${{ github.run_id }}-${{ github.run_attempt }}"
+          --output "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
+
+      - name: Reconfirm exact main before activation completion
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$GITHUB_SHA" = "$current_main"
+
+      - name: Complete Candidate G rollback only after public verification
+        if: inputs.operational_action == 'candidate-execute'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Refresh already active Candidate G central evidence after public verification
+        if: inputs.operational_action == 'candidate-maintenance'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs refresh-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Complete historical-to-current Candidate G maintenance only after public verification
+        if: inputs.operational_action == 'candidate-historical-maintenance'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs historical-refresh-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Complete legacy-to-current Candidate G refresh only after public verification
+        if: inputs.operational_action == 'candidate-legacy-maintenance'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs legacy-refresh-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Complete integrated return or first cutover only after public verification
+        if: inputs.operational_action == 'integrated-return' || inputs.operational_action == 'integrated-cutover'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs return-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Complete historical-to-current integrated maintenance only after public verification
+        if: inputs.operational_action == 'integrated-historical-maintenance'
+        shell: bash
+        run: |
+          pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/begin.json")"
+          node scripts/ravscore-operational-activation.mjs integrated-historical-maintenance-complete \
+            --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json" \
+            --expected-version "$pending_version" \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json" \
+            --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json" \
+            --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json" \
+            --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/completed.json"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Reseal ordinary integrated production without changing model identity
+        if: inputs.operational_action == 'integrated'
+        run: >-
+          node scripts/ravscore-operational-activation.mjs integrated-maintenance
+          --expected-version "${{ inputs.central_version }}"
+          --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json"
+          --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+          --verification "$RAVRADAR_OPERATIONAL_HANDOFF/verification.json"
+          --requested-implementation-closure-sha256 "${{ inputs.integrated_implementation_closure_sha256 }}"
+          --deployment-id "pages-${{ github.run_id }}-${{ github.run_attempt }}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Reconcile an ambiguous failed transition from observed public identity
+        if: failure() && (steps.candidate-begin.outcome == 'success' || steps.candidate-refresh-begin.outcome == 'success' || steps.candidate-historical-refresh-begin.outcome == 'success' || steps.candidate-legacy-refresh-begin.outcome == 'success' || steps.integrated-transition-begin.outcome == 'success' || steps.integrated-historical-maintenance-begin.outcome == 'success')
+        shell: bash
+        run: |
+          set -euo pipefail
+          begin_file="$RAVRADAR_OPERATIONAL_HANDOFF/begin.json"
+          pending_version="$(jq -r '.centralVersion' "$begin_file")"
+          attempt_id="$(jq -r '.deploymentId' "$begin_file")"
+          node scripts/ravscore-operational-activation.mjs read \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json"
+          test "$(jq -r '.pending' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" = "true"
+          test "$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" = "$pending_version"
+          test "$(jq -r '.deploymentId' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" = "$attempt_id"
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-failure-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-1.json"
+          observed_at_1="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          sleep 2
+          curl --fail --silent --show-error --location --retry 3 \
+            --header 'Cache-Control: no-cache' \
+            "$RAVRADAR_PUBLIC_BASE_URL/data/live/manifest.json?ravscore-failure-reconcile=$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json"
+          observed_at_2="$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-1.json" \
+            --arg observationNonce "failure-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-1" \
+            --arg observedAt "$observed_at_1" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-1.json"
+          jq -n --slurpfile manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json" \
+            --arg observationNonce "failure-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-2" \
+            --arg observedAt "$observed_at_2" \
+            '{manifest:$manifest[0],observationNonce:$observationNonce,observedAt:$observedAt}' \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-2.json"
+          jq -s '.' \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-1.json" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observation-2.json" \
+            > "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json"
+          cp "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest-2.json" \
+            "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json"
+          node scripts/ravscore-operational-activation.mjs classify-pending \
+            --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+            --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-classification.json"
+          classification="$(jq -r '.action' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-classification.json")"
+          model="$(jq -r '.model' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-classification.json")"
+          if [ "$classification" = "complete" ]; then
+            node scripts/verify-ravscore-operational-pages-deployment.mjs \
+              --base-url "$RAVRADAR_PUBLIC_BASE_URL" \
+              --source-head "$GITHUB_SHA" \
+              --model "$model" \
+              --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+              --binding "$RAVRADAR_OPERATIONAL_HANDOFF/target-binding.json" \
+              --contract "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js" \
+              --bundle "$RAVRADAR_OPERATIONAL_HANDOFF/target-bundle.generated.js" \
+              --public-closure "$RAVRADAR_OPERATIONAL_HANDOFF/target-public-closure.json" \
+              --observation-nonce "failure-target-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+              --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-verification.json"
+          elif [ "$classification" = "wait" ]; then
+            if [ "${{ steps.deployment.outcome }}" != "skipped" ]; then
+              echo "Source remains public after a Pages attempt that may have started; PENDING remains fail-closed." >&2
+              exit 1
+            fi
+            jq --arg checkedAt "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)" \
+              '{schemaVersion:"ravscore-operational-pages-attempt-terminal-v1",transitionSourceHead:.sourceHead,requestedPublicManifestSha256:.requestedPublicManifestSha256,attemptId:.deploymentId,status:"FAILED_BEFORE_PAGES_ACCEPTANCE",pagesRequestAccepted:false,observedSourcePublicManifestSha256:.sourcePublicManifestSha256,checkedAt:$checkedAt,evidenceSource:"github-actions-pages-terminal-readback",privatePayloadRead:false}' \
+              "$begin_file" \
+              > "$RAVRADAR_OPERATIONAL_HANDOFF/terminal-evidence.json"
+          else
+            echo "Failed transition exposed neither its sealed source nor target; refusing reconciliation." >&2
+            exit 1
+          fi
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          test "$GITHUB_SHA" = "$current_main"
+          if [ "$classification" = "complete" ]; then
+            completion_args=()
+            if [ "$model" = "integrated" ]; then
+              completion_args=(
+                --readiness "$RAVRADAR_OPERATIONAL_HANDOFF/integrated-readiness.json"
+                --audit "$RAVRADAR_OPERATIONAL_HANDOFF/public-audit.json"
+                --plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json"
+              )
+            else
+              test "$model" = "candidate-g"
+              completion_args=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
+            fi
+            node scripts/ravscore-operational-activation.mjs reconcile \
+              --expected-version "$pending_version" \
+              --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+              --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
+              --verification "$RAVRADAR_OPERATIONAL_HANDOFF/failure-verification.json" \
+              "${completion_args[@]}" \
+              --deployment-id "$attempt_id" \
+              --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json"
+          else
+            source_args=()
+            if [ "$model" = "legacy-candidate-g" ]; then
+              source_args=(
+                --source-attestation "$RAVRADAR_OPERATIONAL_HANDOFF/legacy-source-attestation.json"
+              )
+            fi
+            if [ "$(jq -r '.requestedModel' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" = "integrated" ]; then
+              source_args+=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
+            elif [ "$model" = "candidate-g" ] \
+              && [ "$(jq -r '.bindingCurrent' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-current.json")" != "true" ]; then
+              source_args+=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
+            fi
+            node scripts/ravscore-operational-activation.mjs reconcile \
+              --expected-version "$pending_version" \
+              --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \
+              --observations "$RAVRADAR_OPERATIONAL_HANDOFF/failure-observations.json" \
+              --verification "$RAVRADAR_OPERATIONAL_HANDOFF/source-verification.json" \
+              "${source_args[@]}" \
+              --terminal-evidence "$RAVRADAR_OPERATIONAL_HANDOFF/terminal-evidence.json" \
+              --failure-code "FAILED_RUN_SOURCE_RECONCILED" \
+              --output "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json"
+          fi
+          case "$(jq -r '.status' "$RAVRADAR_OPERATIONAL_HANDOFF/failure-reconciled.json")" in
+            CANDIDATE_G_PENDING|INTEGRATED_PENDING) exit 1 ;;
+          esac
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Seal exact verified deployment terminal
+        id: deployment-terminal
+        if: success() && steps.deployment.outcome == 'success' && steps.public-verification.outcome == 'success'
+        shell: bash
+        run: echo "deployed_verified=true" >> "$GITHUB_OUTPUT"

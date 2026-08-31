@@ -1,5 +1,6 @@
 import fs from "node:fs";
-const workflow=fs.readFileSync(".github/workflows/update-and-deploy.yml","utf8");
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+const workflow=await readProductionWorkflowSource('build');
 const generator=fs.readFileSync("scripts/refine-coastlines-constrained-4.0.48.py","utf8");
 const pkg=JSON.parse(fs.readFileSync("package.json","utf8"));
 const zones=JSON.parse(fs.readFileSync("data/zones.geojson","utf8"));

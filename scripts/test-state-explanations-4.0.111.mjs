@@ -18,8 +18,10 @@ assert.equal(event.stateExplanation.phase,'indtransport opbygges');
 
 const ui=fs.readFileSync('js/ui/info-panel.js','utf8');
 assert.match(ui,/t\('score\.recentMeaning'\)/);
-assert.match(ui,/t\('score\.historyIncluded'\)/);
+assert.match(ui,/presentActiveRavScoreExplanation\(result, \{ language:getLanguage\(\) \}\)/);
+assert.match(ui,/presentation\.facts\.map/);
+assert.match(ui,/t\('score\.historyDetails'\)/);
 const assistant=fs.readFileSync('js/services/rav-assistant.js','utf8');
-assert.match(assistant,/t\('assistant\.local\.historyHeading'/);
-assert.match(assistant,/state\.facts\.slice\(0, 3\)/);
+assert.match(assistant,/presentIntegratedRavScoreExplanation\(result, \{ language \}\)/);
+assert.match(assistant,/presentation\.facts\.map/);
 console.log('✓ Tidligere strøm- og bølgeforløb forklares i almindeligt dansk');

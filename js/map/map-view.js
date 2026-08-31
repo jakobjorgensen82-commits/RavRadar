@@ -1,4 +1,4 @@
-import { t } from "../i18n.js?v=4.0.316";
+import { t } from "../i18n.js?v=4.0.318";
 
 const palette = { good: "#168653", fair: "#e6a700", weak: "#d9822b", poor: "#d34a3a", unavailable: "#30383c" };
 
@@ -334,6 +334,7 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     const zoneCondition = conditionForZone(zone.id) || {};
     const condition = zoneCondition.current || zoneCondition;
     const flowPoints = zoneCondition.flowPoints || {};
+    const currentSourceMetadata = flowPoints?.sourceMetadata?.current || {};
     const currentProvider = zoneCondition.currentSource || zoneCondition.sources?.current?.provider || null;
     const verifiedCurrent = verifiedCurrentGridSources.has(flowPoints?.sources?.current);
     if (validDirection(condition.currentDirectionDeg) && (currentProvider !== 'dmi' || verifiedCurrent)) {
@@ -341,7 +342,12 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
         type:'current', zoneId:zone.id, partId:null,
         point:pointCoordinates(flowPoints.current, fallbackPoint),
         directionDeg:Number(condition.currentDirectionDeg),
-        source:flowPoints?.sources?.current || 'provider-request-point'
+        source:flowPoints?.sources?.current || 'provider-request-point',
+        sourceClass:typeof currentSourceMetadata.sourceClass === 'string'
+          ? currentSourceMetadata.sourceClass:null,
+        distanceKm:typeof currentSourceMetadata.distanceKm === 'number'
+          && Number.isFinite(currentSourceMetadata.distanceKm)
+          ? currentSourceMetadata.distanceKm:null,
       });
     }
     if (validDirection(condition.windDirectionDeg)) {
@@ -367,7 +373,14 @@ export function buildFlowArrowCandidates(featureCollection, conditionForZone, co
     const sharesZoneReference = Number.isFinite(currentReferenceAt) && partCurrentAt === currentReferenceAt;
     if (sharesZoneReference && validDirection(weather.currentDirectionDeg) && verifiedCurrentGridSources.has(flowPoints?.sources?.current)) {
       const point = pointCoordinates(flowPoints.current);
-      if (point) candidates.push({ type:'current', zoneId:part.zoneId, partId, point, directionDeg:Number(weather.currentDirectionDeg), source:flowPoints.sources.current });
+      const sourceMetadata=flowPoints?.sourceMetadata?.current||{};
+      if (point) candidates.push({
+        type:'current',zoneId:part.zoneId,partId,point,
+        directionDeg:Number(weather.currentDirectionDeg),source:flowPoints.sources.current,
+        sourceClass:typeof sourceMetadata.sourceClass==='string'?sourceMetadata.sourceClass:null,
+        distanceKm:typeof sourceMetadata.distanceKm==='number'&&Number.isFinite(sourceMetadata.distanceKm)
+          ? sourceMetadata.distanceKm:null,
+      });
     }
     const windSource = flowPoints?.sources?.wind;
     if (sharesZoneReference && validDirection(weather.windDirectionDeg) && ['dmi-atmospheric-grid', 'dmi-marine-wind-grid'].includes(windSource)) {

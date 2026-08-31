@@ -385,7 +385,7 @@ assert removed == {"removedSamples": 1, "removedAnchors": 1}
 assert target["id"] not in document["coverageAudits"]
 
 bulk_source = (ROOT / "scripts" / "update-dmi-bulk.py").read_text("utf-8")
-workflow = (ROOT / ".github" / "workflows" / "update-and-deploy.yml").read_text("utf-8")
+workflow = (ROOT / ".github" / "workflows" / "reusable-weather-build.yml").read_text("utf-8")
 assert 'not zone.get("researchCurrent")' in bulk_source
 assert 'parameter in {"current-u", "current-v"}' in bulk_source
 assert "record_current_field_profiles" in bulk_source

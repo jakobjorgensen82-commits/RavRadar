@@ -23,11 +23,18 @@ export const SAFE_IDEMPOTENCY_SOURCE_COLUMNS = Object.freeze([
 ]);
 
 const CALIBRATION_FEATURE_PATHS = Object.freeze([
-  'modelVersion', 'appVersion', 'totalScore', 'huntabilityScore', 'transportScore',
+  'modelVersion', 'appVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
+  'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
+  'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
+  'modelBundleSha256', 'totalScore', 'scoreBoundLower', 'scoreBoundUpper',
+  'scoreBoundModelUncertaintyPoints', 'scoreBoundRawLower', 'scoreBoundRawUpper',
+  'historyCoverageHours', 'huntabilityScore', 'transportScore',
   'mobilisationScore', 'windSpeedMs', 'windDirectionDeg', 'waveHeightM',
   'wavePeriodS', 'waveDirectionDeg', 'currentSpeedMs', 'currentDirectionDeg',
   'waterLevelM', 'waterLevelTrendM3h', 'maxWaveHeight24hM',
-  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'reasonCodes',
+  'hoursSinceEnergyPeak', 'sustainedOnshoreHours', 'scoreQuality',
+  'scoreSemantics', 'scoreCalibrationEligible', 'conservativeTailResetApplied',
+  'historyReasonCodes', 'reasonCodes',
 ].map(key => [key]));
 
 const WEATHER_SNAPSHOT_PATHS = Object.freeze([
@@ -83,8 +90,8 @@ const SAFE_IDEMPOTENCY_RESPONSE_KEYS = new Set([
   ...SUPABASE_OBSERVATION_LEAF_PROJECTIONS.map(projection => projection.alias),
 ]);
 
-function setProjectedLeaf(target, path, value) {
-  if (value === null || value === undefined) return false;
+function setProjectedLeaf(target, path, value, { preserveNull = false } = {}) {
+  if (value === undefined || (value === null && !preserveNull)) return false;
   let current = target;
   for (const key of path.slice(0, -1)) {
     if (!current[key] || typeof current[key] !== 'object' || Array.isArray(current[key])) current[key] = {};
@@ -110,11 +117,20 @@ export function projectSupabaseObservationRow(row) {
   payload.weather_snapshot = {};
   const calibrationFeatures = {};
   let hasCalibrationFeatures = false;
+  const exactCurrentSchema = Number(row.schema_version ?? 1) === 3;
   for (const projection of SUPABASE_OBSERVATION_LEAF_PROJECTIONS) {
     const value = row[projection.alias];
+    const preserveFeatureNull = exactCurrentSchema
+      && (projection.target[0] === 'calibration_features'
+        || projection.target[1] === 'calibrationFeatures');
     if (projection.target[0] === 'weather_snapshot') {
-      setProjectedLeaf(payload, projection.target, value);
-    } else if (setProjectedLeaf({ calibration_features: calibrationFeatures }, projection.target, value)) {
+      setProjectedLeaf(payload, projection.target, value, { preserveNull: preserveFeatureNull });
+    } else if (setProjectedLeaf(
+      { calibration_features: calibrationFeatures },
+      projection.target,
+      value,
+      { preserveNull: preserveFeatureNull },
+    )) {
       hasCalibrationFeatures = true;
     }
   }

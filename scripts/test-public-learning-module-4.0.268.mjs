@@ -40,9 +40,28 @@ for (const marker of [
   'Miniordbog'
 ]) assert.ok(learning.includes(marker), `Læringsmodulet mangler: ${marker}`);
 
-for (const marker of ['20 %', '50 %', '30 %', 'Vind under 6 m/s', 'ved 15 m/s', 'går i nul efter 13 timer']) {
+for (const marker of [
+  '20 %',
+  '50 %',
+  '30 %',
+  'Vind under 6 m/s',
+  'ved 15 m/s',
+  'seneste 48 timer',
+  'kausalt, energivægtet gennemsnit af bølgernes retning',
+  'fire timers halveringstid',
+  'kun den aktuelle og de tidligere timer tæller, aldrig fremtidige timer',
+  'ældre timer tæller gradvist mindre',
+  'kun dæmpe det eksisterende supply med højst 15 %',
+  'aldrig skabe eller øge det',
+  'fysiske vej gennem revler og surfzone er fortsat uopløst',
+  'De andre komponenter nulstilles ikke',
+]) {
   assert.ok(learning.includes(marker), `Den aktive model forklares ikke korrekt: ${marker}`);
 }
+assert.doesNotMatch(learning, /uopløst og score-neutral/i, 'Den pensionerede score-neutrale last-mile-kontrakt må ikke stå aktivt i læringsmodulet');
+assert.doesNotMatch(learning, /W\/N\/T|EWMA/i, 'Det offentlige læringsmodul må ikke vise intern bølgestate-jargon');
+assert.doesNotMatch(learning, /seneste fire timers energivægtede bølgeapproach/i,
+  'Fire timer må ikke fremstilles som et fast bølgeapproach-vindue i læringsmodulet');
 assert.doesNotMatch(learning, /25\s*\/\s*40\s*\/\s*35/, 'Den gamle vægtning må ikke stå i det offentlige læringsmodul');
 assert.match(learning, /Strømmen transporterer/, 'Strøm og bølger skal have forskellige roller');
 assert.match(learning, /Bølgerne mobiliserer/, 'Mobilisering skal forklares i almindeligt dansk');
@@ -55,15 +74,79 @@ assert.match(learning, /Kyst B[\s\S]*flow-arrow">↑<\/span><small>Strøm langs 
 assert.match(learningDe, /Küste B[\s\S]*flow-arrow">↑<\/span><small>Strömung entlang der Küste/, 'Tysk Kyst B skal have opadgående pil');
 assert.match(learningEn, /Coast B[\s\S]*flow-arrow">↑<\/span><small>Current along the coast/, 'Engelsk Kyst B skal have opadgående pil');
 assert.match(learningCss, /\.coast-b\{transform:rotate\(0\)/, 'Kyst B-stregen skal effektivt være lodret');
-assert.match(learning, /Koldt vand kan gøre rav lettere at mobilisere/, 'Koldt vands betydning for mobilisering skal forklares');
+assert.match(learning, /Koldere saltvand er normalt lidt tættere end varmere saltvand med samme saltindhold/, 'Temperaturens lille og salinitetsafhængige tæthedseffekt skal forklares nøgternt');
 assert.match(learning, /TiR96bdTRr0[\s\S]*Rav Jagt/, 'Temperaturforklaringen skal kreditere og linke til Rav Jagts video');
 assert.match(learning, /rav-jagt-where-is-amber\.svg/, 'Rav Jagts kysttværsnit skal indgå i læringskæden');
 assert.match(learning, /På havbunden[\s\S]*I vandsøjlen uden for revlerne[\s\S]*På ydersiden af revlerne[\s\S]*Mellem revler og strand[\s\S]*I vandkanten[\s\S]*På stranden/, 'Rav Jagts seks positioner skal stå i faglig rækkefølge');
-assert.match(learning, /RavRadar koncentrerer sig derfor om en bundnær repræsentation af strømmen/, 'RavRadars bundnære fokus skal forklares');
+assert.match(
+  learning,
+  /verificerede modelgridstrøm[\s\S]*DMI-værdien er et lagmiddel, ikke en lokal bundmåling/,
+  'Den danske læringsside skal kalde strømmen verificeret grid-/lagmiddel og ikke bundmåling',
+);
+assert.match(
+  learningDe,
+  /verifizierte Modellgitterströmung[\s\S]*Schichtmittel, keine lokale Bodenmessung/,
+  'Den tyske læringsside skal kalde strømmen verificeret grid-/lagmiddel og ikke bundmåling',
+);
+assert.match(
+  learningEn,
+  /verified model-grid current[\s\S]*layer mean, not a local bottom measurement/,
+  'Den engelske læringsside skal kalde strømmen verificeret grid-/lagmiddel og ikke bundmåling',
+);
+assert.doesNotMatch(
+  [learning, learningDe, learningEn].join('\n'),
+  /bundnær repræsentation af strømmen|bodennahen Strömungsdarstellung|bottom-near representation of the current/iu,
+  'Ingen læringsside må genindføre gridstrømmen som bundnær måling',
+);
+assert.match(
+  learning,
+  /faldende vand blotlægge materiale, som allerede er afleveret eller fastholdt[\s\S]*beviser ikke, at vandstandsfaldet har samlet materialet/,
+  'Den danske læringsside skal skelne blotlægning og retention fra uprøvet koncentration ved faldende vand',
+);
+assert.match(
+  learningDe,
+  /fallendes Wasser Material freilegen, das bereits[\s\S]*beweist nicht, dass der fallende Wasserstand das Material konzentriert hat/,
+  'Den tyske læringsside skal skelne blotlægning og retention fra uprøvet koncentration ved faldende vand',
+);
+assert.match(
+  learningEn,
+  /falling water may expose material already delivered or retained[\s\S]*does not prove the falling water level concentrated the material/,
+  'Den engelske læringsside skal skelne blotlægning og retention fra uprøvet koncentration ved faldende vand',
+);
+assert.doesNotMatch(
+  [learning, learningDe, learningEn].join('\n'),
+  /blotlægge eller samle|freilegen oder konzentrieren|expose or concentrate/iu,
+  'Læringsmodulet må ikke påstå, at faldende vand i sig selv samler materialet',
+);
+assert.match(
+  learning,
+  /ændret gridstrøm kan give nyt transportbevis[\s\S]*faldende vand kan blotlægge materiale, som allerede er afleveret eller fastholdt[\s\S]*beviser ikke lokal aflejring/,
+  'Den danske hændelseskæde skal skelne transportbevis, blotlægning og uopløst lokal aflejring',
+);
+assert.match(
+  learning,
+  /gridstrømmens lagmiddel[\s\S]*negativt transportbevis[\s\S]*måler ikke den lokale bund- eller surfzonestrøm/,
+  'Det danske fralandsvindseksempel må ikke ommærke modelgridstrøm som lokal bundstrøm',
+);
+assert.match(
+  learningDe,
+  /geänderte Gitterströmung kann neuen relativen Transportbeweis liefern[\s\S]*beweist keine lokale Ablagerung[\s\S]*Schichtmittel[\s\S]*misst weder die lokale Boden- noch Brandungszonenströmung/,
+  'Den tyske hændelseskæde skal bevare grid-/lagmiddel- og last-mile-grænsen',
+);
+assert.match(
+  learningEn,
+  /changed grid current can provide new relative transport evidence[\s\S]*does not prove local deposition[\s\S]*current layer mean[\s\S]*measures neither the local bottom nor surf-zone current/,
+  'Den engelske hændelseskæde skal bevare grid-/lagmiddel- og last-mile-grænsen',
+);
+assert.doesNotMatch(
+  [learning, learningDe, learningEn].join('\n'),
+  /faldende vand hjælper aflevering|fallendes Wasser Ablagerung und Suche erleichtern|falling water assists deposition and searching|bundnære strøm går|Richtung der bodennahen Strömung|direction of the bottom current/iu,
+  'De pensionerede deposition- og lokale bundstrømspåstande må ikke komme tilbage',
+);
 assert.match(learning, /vestvendt kyst[\s\S]*østvendt kyst/, 'Retning skal forklares med konkrete kysteksempler');
 assert.match(learning, /selve revlehullet[\s\S]*bagsiden af revlen/, 'De praktiske samlesteder ved revlehuller skal forklares');
 assert.match(learning, /lige foran og bag linjen/, 'Der skal også søges bag en frisk tanglinje');
-assert.match(learning, /Vinden fortæller ikke i sig selv, hvilken vej den bundnære strøm går/, 'Vind og bundnær strøm må ikke blandes sammen');
+assert.match(learning, /Vinden fortæller ikke i sig selv, hvilken vej den verificerede modelgridstrøm går/, 'Vind og verificeret modelgridstrøm må ikke blandes sammen');
 assert.doesNotMatch(learning, /\bgrus\b/i, 'Grus må ikke stå som et almindeligt ravtegn');
 assert.doesNotMatch(learning, /Fem enkle påstande/, 'Den overflødige myteboks skal være fjernet');
 assert.match(learning, /Undgå varme nåle, ild og andre ødelæggende hjemmetests/, 'Modulet skal fraråde ødelæggende ægthedstests');

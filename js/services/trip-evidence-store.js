@@ -1,10 +1,11 @@
 import {
+  LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_EVIDENCE_SCHEMA_VERSION,
   completeTripEvidence,
   createTripStartRecord,
   migrateLegacyUnattestedTripEvidence,
   migrateLegacyUnattestedTripStart
-} from './trip-evidence-contract.js?v=4.0.316';
+} from './trip-evidence-contract.js?v=4.0.318';
 
 const ACTIVE_KEY = 'ravradar-trip-evidence-v2-active';
 const PENDING_KEY = 'ravradar-trip-evidence-v2-pending';
@@ -31,7 +32,8 @@ export function loadActiveTripEvidence(storage = null) {
   const target = resolveStorage(storage);
   const active = readJson(target, ACTIVE_KEY, null);
   if (active == null) return null;
-  if (active.schemaVersion !== TRIP_EVIDENCE_SCHEMA_VERSION) {
+  if (![LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION, TRIP_EVIDENCE_SCHEMA_VERSION]
+    .includes(active.schemaVersion)) {
     throw new Error('Den aktive tur bruger en ukendt dataversion.');
   }
   const migrated = migrateLegacyUnattestedTripStart(active);

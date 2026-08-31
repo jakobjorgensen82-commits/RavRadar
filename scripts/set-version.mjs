@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises';
+import { PRODUCTION_WORKFLOW_SOURCES } from './lib/production-workflow-sources.mjs';
+import { synchronizeReleaseContractMetadata } from './sync-release-contract-metadata.mjs';
 
 const version=process.argv[2];
 const preserveGeodataVersion=process.argv.includes('--preserve-geodata-version');
@@ -11,10 +13,11 @@ const replacements=[
  ['version.json',json=>({...json,version,minimumSupportedVersion:version,releasedAt:new Date().toISOString()})],
  ['data/admin/ravscore-profile-selection.json',json=>({
    ...json,
-   sourceVersion:version,
-   switchVersion:`RAVSCORE-PROFILE-SWITCH-${version}`
+   sourceVersion:version
  })],
- ['scripts/fixtures/rav-assistant-local-evals-v1.json',json=>({...json,releaseVersion:version})]
+  ['scripts/fixtures/rav-assistant-local-evals-v1.json',json=>({...json,releaseVersion:version})],
+  ['knowledge/rav-assistant-public-v1.json',json=>({...json,releaseVersion:version})],
+  ['scripts/fixtures/rav-assistant-evals-v1.json',json=>({...json,releaseVersion:version})]
 ];
 if(!preserveGeodataVersion){
  replacements.push(
@@ -64,23 +67,19 @@ for(const file of [...new Set(browserSources)]){
 // Aktive produktionsworkflows sender releaseversionen i deres User-Agent.
 // Hold den tæt koblet til package-versionen, så et versionsløft ikke først
 // opdages efter den dyre centrale datahydrering.
-for(const file of ['.github/workflows/update-and-deploy.yml']){
+for(const file of [...new Set(Object.values(PRODUCTION_WORKFLOW_SOURCES))]){
   let text=await fs.readFile(file,'utf8');
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
   await fs.writeFile(file,text);
 }
 
-// Profilomskifterens versionsmærke er en kompatibilitetskontrol. Ret kun
-// mærket her; profilvalg, aktivering og rollback-id'er må ikke versionsløftes.
-{
- const file='js/core/ravscore-profile-switch.js';
- let text=await fs.readFile(file,'utf8');
- text=text.replace(
-   /(switchVersion:\s*'RAVSCORE-PROFILE-SWITCH-)\d+\.\d+\.\d+(')/,
-   `$1${version}$2`
- );
- await fs.writeFile(file,text);
-}
+// Synkronisér den statiske, offentlige releasekontrakt uden at røre releasedAt.
+await synchronizeReleaseContractMetadata({write:true});
+
+// Den integrerede RavScore-kontrakts switch-, model- og bundle-identiteter er
+// semantiske kontrakter. Kun admin-dokumentets releasekilde løftes ovenfor;
+// Candidate G's historiske profilomskifter er et rollback-orakel og må ikke
+// muteres af almindelig app-versionering.
 
 // Releasebærende dokumenter kan være gledet fra package-versionen. Normalisér deres
 // eksplicitte versionsfelter i stedet for kun at erstatte previousVersion.

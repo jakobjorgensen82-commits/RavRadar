@@ -10,6 +10,6 @@ if(!app.includes('createPublicTripEvidenceRuntime')||!app.includes("publicTripEv
 if(app.includes('startTrip()'))throw new Error('Den gamle parallelle turstart findes stadig.');
 if(!sw.includes("url.pathname.includes('/data/live/')")||!sw.includes('isContentAddressedLiveData')||!sw.includes("?'force-cache':'no-store'"))throw new Error('Live-data skelner ikke mellem frisk manifestadgang og SHA-adresseret genbrug.');
 if(!ds.includes('public-conditions.json'))throw new Error('Den offentlige side bruger ikke public-conditions.json.');
-if(!ds.includes('public-condition-details.json')||!ds.includes("conditions.datasetId!==details?.datasetId")||!ds.includes("params.set('sha'"))throw new Error('Den progressive detaljepakke, dens datasetværn eller dens SHA-adresse mangler.');
+if(!ds.includes('public-condition-details.json')||!/conditions\.datasetId\s*!==\s*details(?:\?)?\.datasetId/.test(ds)||!ds.includes("params.set('sha'"))throw new Error('Den progressive detaljepakke, dens datasetværn eller dens SHA-adresse mangler.');
 const m=JSON.parse(manifest);if(m.conditionsPath!=='./public-conditions.json')throw new Error('Manifestet peger ikke på public-conditions.json.');
 console.log('OK: mobilprioritet, direkte turflow uden GPS-sporing og sikker live-cache er koblet ind.');

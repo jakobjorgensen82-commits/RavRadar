@@ -1,7 +1,10 @@
 export const DMI_FORECAST_HOURS = 120;
 export const DMI_FORECAST_SCHEMA_VERSION = 1;
 
-const finite = value => value === null || value === undefined || value === '' ? null : (Number.isFinite(Number(value)) ? Number(value) : null);
+// Score-bearing DMI values cross a strict numeric trust boundary here. JSON
+// strings, booleans and arrays are not physical observations, even when
+// JavaScript could coerce them into a finite Number.
+const finite = value => typeof value === 'number' && Number.isFinite(value) ? value : null;
 const round = (value, digits = 2) => Number.isFinite(value) ? Number(value.toFixed(digits)) : null;
 export const normalizeDegrees = value => ((value % 360) + 360) % 360;
 export function uvToTowardDirectionDeg(uValue, vValue) {
@@ -81,43 +84,277 @@ function timeBracket(items, targetMs, { maxGapMs = 4 * 3600000, edgeToleranceMs 
   return null;
 }
 
-function provenanceAt(item, component) {
-  const source = item?.provenance?.[component];
-  return source?.provider === 'dmi' && source.collection && source.modelRun ? source : null;
-}
-
 function samePoint(first, second, tolerance = 1e-7) {
   return Array.isArray(first) && Array.isArray(second)
-    && first.length >= 2 && second.length >= 2
-    && first.slice(0, 2).every((value, index) => Number.isFinite(Number(value))
-      && Math.abs(Number(value) - Number(second[index])) <= tolerance);
+    && first.length === 2 && second.length === 2
+    && first.every((value, index) => typeof value === 'number'
+      && Number.isFinite(value)
+      && typeof second[index] === 'number'
+      && Number.isFinite(second[index])
+      && Math.abs(value - second[index]) <= tolerance);
 }
 
-function sameCurrentIdentity(before, after) {
-  return Boolean(
-    before?.verticalLayer
-    && before.verticalLayer === after?.verticalLayer
-    && Number(before.vectorSemanticsVersion) === 3
-    && Number(after.vectorSemanticsVersion) === 3
+const COMPONENT_COLLECTIONS = Object.freeze({
+  wind: new Set(['harmonie_dini_sf']),
+  windTail: new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf']),
+  wave: new Set(['wam_dw', 'wam_nsb']),
+  current: new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf']),
+  waterLevel: new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf']),
+  waterTemperature: new Set(['dkss_idw', 'dkss_nsbs', 'dkss_lf'])
+});
+const COMPONENT_KIND = Object.freeze({
+  wind: 'atmospheric-wind-vector',
+  windTail: 'marine-wind-tail-vector',
+  wave: 'wave-mobilisation-tuple',
+  current: 'ocean-current-vector',
+  waterLevel: 'marine-water-level-scalar',
+  waterTemperature: 'marine-water-temperature-scalar'
+});
+const COMPONENT_FIELD_SET = Object.freeze({
+  wind: ['wind-u-10m', 'wind-v-10m'],
+  windTail: ['wind-tail-u-10m', 'wind-tail-v-10m'],
+  wave: ['significant-wave-height', 'dominant-wave-period'],
+  current: ['current-u', 'current-v'],
+  waterLevel: ['sea-mean-deviation'],
+  waterTemperature: ['water-temperature']
+});
+const COMPONENT_SPATIAL_SELECTION = Object.freeze({
+  wind: 'nearest-shared-grid-cell-no-spatial-interpolation',
+  windTail: 'nearest-shared-grid-cell-no-spatial-interpolation',
+  wave: 'nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation',
+  current: 'nearest-shared-grid-cell-no-spatial-interpolation',
+  waterLevel: 'nearest-valid-grid-cell-no-spatial-interpolation',
+  waterTemperature: 'nearest-valid-grid-cell-no-spatial-interpolation'
+});
+const COLLECTION_FAMILY = Object.freeze({
+  harmonie_dini_sf: 'wind',
+  wam_dw: 'wave', wam_nsb: 'wave',
+  dkss_idw: 'marine', dkss_nsbs: 'marine', dkss_lf: 'marine'
+});
+const SHA256 = /^[0-9a-f]{64}$/;
+const explicitTimestampMs = value => {
+  if (typeof value !== 'string' || !/(?:Z|[+-]\d{2}:\d{2})$/i.test(value)) return Number.NaN;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+};
+const exactStringArray = (value, expected) => Array.isArray(value)
+  && value.length === expected.length
+  && value.every((item, index) => item === expected[index]);
+const exactFinitePoint = value => Array.isArray(value)
+  && value.length === 2
+  && value.every(item => typeof item === 'number' && Number.isFinite(item));
+function haversinePointKm(first, second) {
+  if (!exactFinitePoint(first) || !exactFinitePoint(second)) return null;
+  const toRadians = value => value * Math.PI / 180;
+  const [longitude1, latitude1] = first;
+  const [longitude2, latitude2] = second;
+  const latitudeDelta = toRadians(latitude2 - latitude1);
+  const longitudeDelta = toRadians(longitude2 - longitude1);
+  const a = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(toRadians(latitude1)) * Math.cos(toRadians(latitude2))
+    * Math.sin(longitudeDelta / 2) ** 2;
+  return 6371.0088 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(Math.max(0, 1 - a)));
+}
+const sourceKey = component => component === 'windTail' ? 'wind' : component;
+
+export function verifiedDmiNativeSource(source, component, nativeTime) {
+  const runMs = explicitTimestampMs(source?.modelRun);
+  const validMs = explicitTimestampMs(source?.nativeValidTime);
+  const expectedValidMs = explicitTimestampMs(nativeTime);
+  const lead = source?.leadTimeHours;
+  const physicalDistanceKm = haversinePointKm(source?.samplingPoint, source?.gridPoint);
+  if (!(
+    source?.provider === 'dmi'
+    && source.fallback === false
+    && COMPONENT_COLLECTIONS[component]?.has(source.collection)
+    && source.collectionFamily === COLLECTION_FAMILY[source.collection]
+    && source.component === component
+    && source.componentKind === COMPONENT_KIND[component]
+    && exactStringArray(source.fieldSet, COMPONENT_FIELD_SET[component])
+    && Array.isArray(source.optionalFieldSet)
+    && (component === 'wave'
+      ? source.optionalFieldSet.length <= 1
+        && source.optionalFieldSet.every(value => value === 'mean-wave-dir')
+      : source.optionalFieldSet.length === 0)
+    && typeof source.entityId === 'string' && source.entityId
+    && typeof source.parentZoneId === 'string' && source.parentZoneId
+    && typeof source.entityType === 'string' && source.entityType
+    && typeof source.samplingContext === 'string' && source.samplingContext
+    && exactFinitePoint(source.samplingPoint)
+    && exactFinitePoint(source.gridPoint)
+    && SHA256.test(source.gridDefinitionSha256 ?? '')
+    && typeof source.distanceKm === 'number' && Number.isFinite(source.distanceKm) && source.distanceKm >= 0
+    && physicalDistanceKm !== null && Math.abs(source.distanceKm - physicalDistanceKm) <= 0.02
+    && source.spatialSemanticsVersion === 1
+    && source.spatialSelection === COMPONENT_SPATIAL_SELECTION[component]
+    && Number.isFinite(runMs) && Number.isFinite(validMs) && validMs >= runMs
+    && validMs === expectedValidMs
+    && typeof lead === 'number' && Number.isFinite(lead)
+    && Math.abs(lead - (validMs - runMs) / 3600000) <= 0.002
+    && typeof source.itemId === 'string' && source.itemId.trim()
+    && SHA256.test(source.assetIdentitySha256 ?? '')
+    && Number.isFinite(explicitTimestampMs(source.acquiredAt))
+    && (source.itemCreatedAt == null || Number.isFinite(explicitTimestampMs(source.itemCreatedAt)))
+    && (source.itemUpdatedAt == null || Number.isFinite(explicitTimestampMs(source.itemUpdatedAt)))
+  )) return null;
+  if (component === 'current' && !(
+    source.vectorSemanticsVersion === 3
+    && source.vectorSelection === 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer'
+    && source.distanceKm <= 5
+    && typeof source.verticalLayer === 'string' && source.verticalLayer
+    && typeof source.verticalLayerRankM === 'number' && Number.isFinite(source.verticalLayerRankM)
+  )) return null;
+  if (['wind', 'windTail'].includes(component) && !(
+    source.vectorSemanticsVersion === 1
+    && source.vectorSelection === 'nearest-shared-grid-cell-no-spatial-interpolation'
+  )) return null;
+  if (component === 'wave' && source.optionalFieldSet.some(value => value !== 'mean-wave-dir')) return null;
+  return source;
+}
+
+function provenanceAt(item, component) {
+  return verifiedDmiNativeSource(
+    item?.provenance?.[sourceKey(component)],
+    component,
+    item?.step ?? item?.time,
+  );
+}
+
+function sameNativeIdentity(before, after, component) {
+  return Boolean(before && after
+    && before.collection === after.collection
+    && before.collectionFamily === after.collectionFamily
+    && before.modelRun === after.modelRun
+    && before.component === after.component
+    && before.componentKind === after.componentKind
+    && before.entityId === after.entityId
+    && before.parentZoneId === after.parentZoneId
+    && before.entityType === after.entityType
+    && before.samplingContext === after.samplingContext
+    && before.gridDefinitionSha256 === after.gridDefinitionSha256
+    && before.spatialSelection === after.spatialSelection
+    && before.spatialSemanticsVersion === after.spatialSemanticsVersion
+    && before.vectorSelection === after.vectorSelection
+    && before.vectorSemanticsVersion === after.vectorSemanticsVersion
+    && exactStringArray(before.fieldSet, COMPONENT_FIELD_SET[component])
+    && exactStringArray(after.fieldSet, COMPONENT_FIELD_SET[component])
     && samePoint(before.gridPoint, after.gridPoint)
     && samePoint(before.samplingPoint, after.samplingPoint)
+    && Math.abs(before.distanceKm - after.distanceKm) <= 0.001
+    && (component !== 'current' || (
+      before.verticalLayer === after.verticalLayer
+      && before.verticalLayerRankM === after.verticalLayerRankM
+      && before.vectorSemanticsVersion === after.vectorSemanticsVersion
+      && before.vectorSelection === after.vectorSelection
+    ))
   );
+}
+
+const NATIVE_STEP_KEYS = new Set([
+  'itemId', 'assetIdentitySha256', 'nativeValidTime', 'leadTimeHours',
+  'acquiredAt', 'optionalFieldSet', 'itemCreatedAt', 'itemUpdatedAt',
+]);
+
+function matchesExpectedIdentity(source, expectedIdentity) {
+  return Boolean(expectedIdentity
+    && typeof expectedIdentity.entityId === 'string' && expectedIdentity.entityId
+    && typeof expectedIdentity.parentZoneId === 'string' && expectedIdentity.parentZoneId
+    && typeof expectedIdentity.entityType === 'string' && expectedIdentity.entityType
+    && typeof expectedIdentity.samplingContext === 'string' && expectedIdentity.samplingContext
+    && exactFinitePoint(expectedIdentity.samplingPoint)
+    && source?.entityId === expectedIdentity.entityId
+    && source?.parentZoneId === expectedIdentity.parentZoneId
+    && source?.entityType === expectedIdentity.entityType
+    && source?.samplingContext === expectedIdentity.samplingContext
+    && samePoint(source?.samplingPoint, expectedIdentity.samplingPoint));
+}
+
+function reconstructNativeEndpoint(source, step) {
+  const endpoint = {
+    ...source,
+    itemId: step.itemId,
+    assetIdentitySha256: step.assetIdentitySha256,
+    nativeValidTime: step.nativeValidTime,
+    leadTimeHours: step.leadTimeHours,
+    acquiredAt: step.acquiredAt,
+    optionalFieldSet: step.optionalFieldSet,
+  };
+  for (const key of ['nativeValidTimes', 'nativeSteps', 'temporalResolution', 'forecastAgeHours']) delete endpoint[key];
+  for (const key of ['itemCreatedAt', 'itemUpdatedAt']) {
+    if (Object.hasOwn(step, key)) endpoint[key] = step[key];
+    else delete endpoint[key];
+  }
+  return endpoint;
+}
+
+/**
+ * Verify one derived/interpolated DMI source against an exact consumer entity.
+ * Every declared native step is reconstructed and passed through the raw native
+ * verifier; the derived row is accepted only for the store's bounded temporal
+ * modes and one unchanged collection/entity/grid/run tuple.
+ */
+export function verifiedDmiForecastSource(source, component, rowTime, expectedIdentity) {
+  const rowMs = explicitTimestampMs(rowTime);
+  const runMs = explicitTimestampMs(source?.modelRun);
+  if (!Number.isFinite(rowMs) || !Number.isFinite(runMs) || runMs > rowMs
+    || !matchesExpectedIdentity(source, expectedIdentity)
+    || typeof source?.leadTimeHours !== 'number' || !Number.isFinite(source.leadTimeHours)
+    || Math.abs(source.leadTimeHours - (rowMs - runMs) / 3600000) > 0.02
+    || !Array.isArray(source?.nativeValidTimes)
+    || !Array.isArray(source?.nativeSteps)
+    || source.nativeValidTimes.length < 1
+    || source.nativeValidTimes.length !== source.nativeSteps.length) return null;
+
+  const nativeTimes = source.nativeValidTimes.map(explicitTimestampMs);
+  if (nativeTimes.some(value => !Number.isFinite(value))
+    || new Set(nativeTimes).size !== nativeTimes.length
+    || nativeTimes.some((value, index) => index > 0 && value <= nativeTimes[index - 1])) return null;
+  const resolution = String(source.temporalResolution ?? '').toLowerCase();
+  const temporalValid = resolution === 'native' || resolution === 'exact'
+    ? nativeTimes.length === 1 && nativeTimes[0] === rowMs
+    : resolution === 'interpolated'
+      ? nativeTimes.length === 2 && nativeTimes[0] < rowMs && rowMs < nativeTimes[1]
+        && nativeTimes[1] - nativeTimes[0] <= 4 * 3600000
+      : resolution === 'nearest-edge'
+        ? nativeTimes.length === 1 && Math.abs(nativeTimes[0] - rowMs) <= 95 * 60000
+        : false;
+  if (!temporalValid) return null;
+
+  const endpoints = [];
+  for (let index = 0; index < source.nativeSteps.length; index += 1) {
+    const step = source.nativeSteps[index];
+    if (!step || typeof step !== 'object' || Array.isArray(step)
+      || Object.keys(step).some(key => !NATIVE_STEP_KEYS.has(key))
+      || step.nativeValidTime !== source.nativeValidTimes[index]) return null;
+    const endpoint = reconstructNativeEndpoint(source, step);
+    const verified = verifiedDmiNativeSource(endpoint, component, step.nativeValidTime);
+    if (!verified) return null;
+    endpoints.push(verified);
+  }
+  if (endpoints.slice(1).some(endpoint => !sameNativeIdentity(endpoints[0], endpoint, component))) return null;
+
+  const selectedStep = source.nativeSteps.find(step => (
+    step.itemId === source.itemId
+    && step.assetIdentitySha256 === source.assetIdentitySha256
+    && step.nativeValidTime === source.nativeValidTime
+    && step.acquiredAt === source.acquiredAt
+    && (step.itemCreatedAt ?? null) === (source.itemCreatedAt ?? null)
+    && (step.itemUpdatedAt ?? null) === (source.itemUpdatedAt ?? null)
+  ));
+  if (!selectedStep) return null;
+  const expectedOptional = component === 'wave'
+    && endpoints.every(endpoint => endpoint.optionalFieldSet.includes('mean-wave-dir'))
+    ? ['mean-wave-dir']
+    : [];
+  if (!exactStringArray(source.optionalFieldSet, expectedOptional)) return null;
+  return source;
 }
 
 function sameNativeSeries(bracket, component) {
   if (!bracket || bracket.before === bracket.after) return true;
   const before = provenanceAt(bracket.before, component);
   const after = provenanceAt(bracket.after, component);
-  // Overgang for hydreret cache fra før parsergeneration 14: to helt
-  // uidentificerede trin bevarer den hidtidige værdiadfærd, men får ikke
-  // komplet proveniens og forbliver derfor synlige i auditten. Ny og gammel
-  // identitet må aldrig blandes, og to kendte runs skal være ens.
-  if (!before && !after) return true;
-  if (!before || !after || before.collection !== after.collection || before.modelRun !== after.modelRun) return false;
-  // Strøm må kun interpoleres mellem to native trin, når de repræsenterer den
-  // samme fysiske vandkolonne og det samme dybdelag. Et lag- eller celleskift
-  // bliver et ærligt datagab mellem trinnene, aldrig en blandet vektor.
-  return component !== 'current' || sameCurrentIdentity(before, after);
+  return sameNativeIdentity(before, after, component);
 }
 
 function componentBracket(items, targetMs, component, options) {
@@ -134,25 +371,32 @@ function componentSource(bracket, component, targetMs, generatedAt) {
   const modelRunMs = Date.parse(selected.modelRun);
   const generatedMs = Date.parse(generatedAt);
   const nativeValidTimes = [...new Set([before?.nativeValidTime, after?.nativeValidTime].filter(Boolean))];
-  const currentIdentity = component === 'current' ? {
-    gridPoint: selected.gridPoint,
-    samplingPoint: selected.samplingPoint,
-    verticalLayer: selected.verticalLayer,
-    verticalLayerRankM: finite(selected.verticalLayerRankM),
-    distanceKm: finite(selected.distanceKm),
-    vectorSelection: selected.vectorSelection ?? null,
-    vectorSemanticsVersion: finite(selected.vectorSemanticsVersion)
-  } : {};
+  const nativeSteps = [before, after]
+    .filter(Boolean)
+    .filter((value, index, all) => all.findIndex(candidate => candidate.nativeValidTime === value.nativeValidTime && candidate.itemId === value.itemId) === index)
+    .map(source => ({
+      itemId: source.itemId,
+      assetIdentitySha256: source.assetIdentitySha256,
+      nativeValidTime: source.nativeValidTime,
+      leadTimeHours: source.leadTimeHours,
+      acquiredAt: source.acquiredAt,
+      optionalFieldSet: [...source.optionalFieldSet],
+      ...(source.itemCreatedAt ? { itemCreatedAt: source.itemCreatedAt } : {}),
+      ...(source.itemUpdatedAt ? { itemUpdatedAt: source.itemUpdatedAt } : {})
+    }));
+  const optionalFieldSet = component === 'wave'
+    && [before, after].filter(Boolean).every(source => source.optionalFieldSet.includes('mean-wave-dir'))
+    ? ['mean-wave-dir']
+    : [];
   return {
-    provider: 'dmi',
-    collection: selected.collection,
-    modelRun: selected.modelRun,
+    ...selected,
+    optionalFieldSet,
     leadTimeHours: Number.isFinite(modelRunMs) ? round((targetMs - modelRunMs) / 3600000, 2) : null,
     forecastAgeHours: Number.isFinite(modelRunMs) && Number.isFinite(generatedMs) ? round((generatedMs - modelRunMs) / 3600000, 2) : null,
     temporalResolution: bracket.mode === 'exact' ? 'native' : bracket.mode,
     nativeValidTimes,
+    nativeSteps,
     fallback: false,
-    ...currentIdentity
   };
 }
 
@@ -198,6 +442,9 @@ function interpolateDirection(bracket, directionKey, { from = false } = {}) {
   if (!a || !b) return null;
   const u = a.u + (b.u - a.u) * bracket.ratio;
   const v = a.v + (b.v - a.v) * bracket.ratio;
+  // An equally weighted antipodal pair has no defined circular mean. Do not
+  // turn floating-point residue into an arbitrary physical direction.
+  if (Math.hypot(u, v) < 1e-9) return null;
   return vectorToDirection(u, v, { from });
 }
 function interpolateSpeedDirection(bracket, speedKey, directionKey, { from = false } = {}) {
@@ -256,7 +503,7 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
   if (!Number.isFinite(start)) throw new Error('generatedAt must be a valid date');
   const cadenceMs = Math.max(60, Number(sourceCadenceMinutes) || 180) * 60000;
   const bracketOptions = { maxGapMs: Math.max(4 * 3600000, cadenceMs + 15 * 60000), edgeToleranceMs: Math.min(95 * 60000, cadenceMs / 2 + 5 * 60000) };
-  const currentOceanBracket = timeBracket(ocean, start, bracketOptions);
+  const currentOceanBracket = componentBracket(ocean, start, 'waterLevel', bracketOptions);
   const modelCurrentSea = interpolateScalar(currentOceanBracket, 'sea-mean-deviation');
   const modelCurrentCm = modelCurrentSea === null ? null : modelCurrentSea * 100;
   const observationCm = finite(observedWaterLevel?.valueCm);
@@ -266,7 +513,7 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
   for (let index = 0; index < hours; index += 1) {
     const validMs = start + index * 3600000;
     const windBracket = componentBracket(wind, validMs, 'wind', bracketOptions);
-    const windTailBracket = componentBracket(windTail, validMs, 'wind', bracketOptions);
+    const windTailBracket = componentBracket(windTail, validMs, 'windTail', bracketOptions);
     const waveBracket = componentBracket(waves, validMs, 'wave', bracketOptions);
     const currentBracket = componentBracket(ocean, validMs, 'current', bracketOptions);
     const waterLevelBracket = componentBracket(ocean, validMs, 'waterLevel', bracketOptions);
@@ -278,12 +525,24 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
     const selectedWind = primaryWindAvailable ? windVector : windTailVector;
     const windSource = primaryWindAvailable ? 'harmonie_dini_sf' : (windTailVector.speed !== null && windTailVector.direction !== null ? 'dkss' : null);
     const waveHeight = interpolateScalar(waveBracket, 'significant-wave-height');
-    const waveDirection = interpolateDirection(waveBracket, 'mean-wave-dir');
+    const wavePeriod = interpolateScalar(waveBracket, 'dominant-wave-period');
+    const waveDirectionBracket = waveBracket && [waveBracket.before, waveBracket.after]
+      .every((item, index, all) => index > 0 && item === all[index - 1]
+        || provenanceAt(item, 'wave')?.optionalFieldSet?.includes('mean-wave-dir'))
+      ? waveBracket
+      : null;
+    const waveDirection = interpolateDirection(waveDirectionBracket, 'mean-wave-dir');
     const u = interpolateScalar(currentBracket, 'current-u');
     const v = interpolateScalar(currentBracket, 'current-v');
     const sea = interpolateScalar(waterLevelBracket, 'sea-mean-deviation');
-    const sea3 = interpolateScalar(waterLevel3Bracket, 'sea-mean-deviation');
-    const windProvenance = componentSource(primaryWindAvailable ? windBracket : windTailBracket, 'wind', validMs, generatedAt);
+    const waterLevelTrendCompatible = waterLevelBracket && waterLevel3Bracket && sameNativeIdentity(
+      provenanceAt(waterLevelBracket.before, 'waterLevel') ?? provenanceAt(waterLevelBracket.after, 'waterLevel'),
+      provenanceAt(waterLevel3Bracket.before, 'waterLevel') ?? provenanceAt(waterLevel3Bracket.after, 'waterLevel'),
+      'waterLevel'
+    );
+    const sea3 = waterLevelTrendCompatible ? interpolateScalar(waterLevel3Bracket, 'sea-mean-deviation') : null;
+    const selectedWindComponent = primaryWindAvailable ? 'wind' : 'windTail';
+    const windProvenance = componentSource(primaryWindAvailable ? windBracket : windTailBracket, selectedWindComponent, validMs, generatedAt);
     const waveProvenance = componentSource(waveBracket, 'wave', validMs, generatedAt);
     const currentProvenance = componentSource(currentBracket, 'current', validMs, generatedAt);
     const waterLevelProvenance = componentSource(waterLevelBracket, 'waterLevel', validMs, generatedAt);
@@ -294,7 +553,7 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
       windDirectionDeg: round(selectedWind.direction, 0),
       waveHeightM: round(waveHeight, 2),
       waveDirectionDeg: round(waveDirection, 0),
-      wavePeriodS: round(interpolateScalar(waveBracket, 'dominant-wave-period'), 1),
+      wavePeriodS: round(wavePeriod, 1),
       waterLevelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelModelCm: sea === null ? null : round(sea * 100, 0),
       waterLevelBiasCm: 0,
@@ -308,11 +567,11 @@ export function buildDmiForecastHourly({ wind = [], windTail = [], waves = [], o
       temporalResolution: currentBracket?.mode ?? waterLevelBracket?.mode ?? (primaryWindAvailable ? windBracket?.mode : windTailBracket?.mode) ?? waveBracket?.mode ?? null,
       source: 'dmi-forecast',
       sources: {
-        wind: windSource ? (windProvenance ?? { provider: 'dmi', collection: windSource, fallback: false }) : { provider: 'missing', collection: null, fallback: false },
-        wave: waveHeight !== null ? (waveProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
-        current: u !== null && v !== null ? (currentProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
-        waterLevel: sea !== null ? (waterLevelProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false },
-        waterTemperature: interpolateScalar(waterTemperatureBracket, 'water-temperature') !== null ? (waterTemperatureProvenance ?? { provider: 'dmi', fallback: false }) : { provider: 'missing', fallback: false }
+        wind: windSource && windProvenance ? windProvenance : { provider: 'missing', collection: null, fallback: false },
+        wave: waveHeight !== null && wavePeriod !== null && waveProvenance ? waveProvenance : { provider: 'missing', fallback: false },
+        current: u !== null && v !== null && currentProvenance ? currentProvenance : { provider: 'missing', fallback: false },
+        waterLevel: sea !== null && waterLevelProvenance ? waterLevelProvenance : { provider: 'missing', fallback: false },
+        waterTemperature: interpolateScalar(waterTemperatureBracket, 'water-temperature') !== null && waterTemperatureProvenance ? waterTemperatureProvenance : { provider: 'missing', fallback: false }
       },
       waterLevelSource: 'dmi-model-authoritative'
     });

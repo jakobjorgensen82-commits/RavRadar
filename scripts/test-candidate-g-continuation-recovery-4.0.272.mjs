@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -15,16 +16,25 @@ import {
   restoreContinuation,
 } from './restore-candidate-g-continuation.mjs';
 
-const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
+const buildWorkflow = await readProductionWorkflowSource('build');
 for (const marker of [
   'RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180',
   'actions: read',
+  'actions/cache/restore@v6',
+  'name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint',
+  'path: .cache/ravscore-continuation-checkpoint',
+  'node scripts/protected-ravscore-continuation-checkpoint.mjs',
+]) {
+  assert.match(buildWorkflow, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `produktionsworkflowet mangler den aktive schema-6-recoverykontrakt: ${marker}`);
+}
+for (const retiredMarker of [
   'actions/download-artifact@v8',
-  'run-id: ${{ steps.candidate-g-recovery.outputs.source_run_id }}',
+  'steps.candidate-g-recovery.outputs.source_run_id',
   'node scripts/restore-candidate-g-continuation.mjs',
 ]) {
-  assert.match(workflow, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    `produktionsworkflowet mangler recovery-kontrakten: ${marker}`);
+  assert.doesNotMatch(buildWorkflow, new RegExp(retiredMarker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    `produktionsworkflowet må ikke genaktivere pensioneret Candidate G-recovery: ${retiredMarker}`);
 }
 
 const targetRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravradar-candidate-g-target-'));

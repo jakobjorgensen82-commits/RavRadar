@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 60
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       SUPABASE_PROJECT_ID: afqhhdrkjfjtpadntdzo
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -42,7 +43,7 @@ jobs:
           EXPECTED_HEAD_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
           test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
           test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
@@ -58,11 +59,103 @@ jobs:
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
-          "shapely>=2.0,<3"
-          "pyproj>=3.6,<4"
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
 
       - name: Validate exact source head before external writes
         run: npm run validate:source
+
+      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
+        with:
+          version: latest
+
+      - name: Seal the exact integrated public implementation identity
+        id: integrated_cutover
+        shell: bash
+        run: |
+          set -euo pipefail
+          cutover_workdir="$(mktemp -d)"
+          identity_workdir="$(mktemp -d)"
+          node scripts/seal-ravscore-public-browser-closure.mjs --root . --output "$identity_workdir/public-browser-closure.json" --model integrated --identity-output "$identity_workdir/public-implementation-identity.json"
+          closure_sha="$(node -e "const fs=require('node:fs');const value=JSON.parse(fs.readFileSync(process.argv[1],'utf8'));if(!/^[a-f0-9]{64}$/.test(value.implementationClosureSha256))process.exit(1);process.stdout.write(value.implementationClosureSha256)" "$identity_workdir/public-implementation-identity.json")"
+          echo "workdir=$cutover_workdir" >> "$GITHUB_OUTPUT"
+          echo "closure_sha=$closure_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Assert exact integrated backend source before migration planning
+        env:
+          RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs assert-source
+          --public-implementation-closure-sha256
+          "${{ steps.integrated_cutover.outputs.closure_sha }}"
+
+      - name: Prepare an isolated exact cutover migration view
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs prepare-workdir
+          --output "${{ steps.integrated_cutover.outputs.workdir }}"
+
+      - name: Read linked migration history without changing the database
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ steps.integrated_cutover.outputs.workdir }}"
+          supabase link --project-ref "$SUPABASE_PROJECT_ID" --password "$SUPABASE_DB_PASSWORD"
+          supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-before.txt"
+
+      - name: Hydrate only already-applied remote migration identities in the isolated view
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs hydrate-history
+          --workdir "${{ steps.integrated_cutover.outputs.workdir }}"
+          --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-before.txt"
+
+      - name: Dry-run the exact isolated integrated migration plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ steps.integrated_cutover.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
+          supabase db push --linked --dry-run | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
+
+      - name: Require only the two exact integrated cutover migrations
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs plan
+          --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
+          --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
+          --migrations-directory
+          "${{ steps.integrated_cutover.outputs.workdir }}/supabase/migrations"
+
+      - name: Reverify exact main immediately before the first external write
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Apply only the exact dry-run-verified integrated migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ steps.integrated_cutover.outputs.workdir }}"
+          (supabase db push --linked)
+
+      - name: Read back exact applied migration metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${{ steps.integrated_cutover.outputs.workdir }}"
+          supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-applied.txt"
+          cd "$GITHUB_WORKSPACE"
+          node scripts/integrated-cutover-readiness.mjs applied \
+            --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-applied.txt"
+
+      - name: Verify the integrated database contract without reading observations
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/integrated-cutover-readiness.mjs verify-db
 
       - name: Reconfirm current origin/main before the Candidate G database contract
         shell: bash
@@ -76,10 +169,6 @@ jobs:
 
       - name: Atomically apply and verify the Candidate G trip-quality contract
         run: node scripts/apply-candidate-g-trip-quality-migration.mjs
-
-      - uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf
-        with:
-          version: latest
 
       - name: Reconfirm current origin/main before D1 schema and phase inspection
         shell: bash
@@ -391,6 +480,28 @@ jobs:
 
       - name: Reverify the Candidate G trip-quality database contract
         run: node scripts/apply-candidate-g-trip-quality-migration.mjs --verify-only
+
+      - name: Reverify exact main immediately before protected integrated readiness
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Publish protected integrated backend readiness after final live D1 gates
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_EXPECTED_SOURCE_HEAD: ${{ github.sha }}
+          RAVRADAR_REQUIRE_INTEGRATED_BINDING: "true"
+        run: >-
+          node scripts/integrated-cutover-readiness.mjs publish
+          --public-implementation-closure-sha256
+          "${{ steps.integrated_cutover.outputs.closure_sha }}"
 
       - name: Reconfirm exact main before any failure-recovery mutation
         id: failure_exact_head

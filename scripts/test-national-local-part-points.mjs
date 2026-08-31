@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const source = await fs.readFile('scripts/build-national-local-part-points.py', 'utf8');
 const validator = await fs.readFile('scripts/validate-national-local-part-points.py', 'utf8');
-const workflow = await fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8');
+const workflow = await readProductionWorkflowSource('orchestrator');
 const audit = await fs.readFile('scripts/audit-national-local-part-land-water.py', 'utf8');
 const apply = await fs.readFile('scripts/apply-national-land-water-corrections.py', 'utf8');
 const fallbackBuilder = await fs.readFile('scripts/build-fallback-zone-recovery-review.py', 'utf8');

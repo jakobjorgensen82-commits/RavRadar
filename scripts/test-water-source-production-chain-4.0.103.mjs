@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { applyWaterSourceRouting, buildWaterSourceForecastIndex, applyWaterSourceForecastStatus } from './lib/water-source-forecast-routing.mjs';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
 const generatedAt='2026-08-05T12:00:00Z';
 const times=Array.from({length:40},(_,i)=>new Date(Date.parse(generatedAt)+i*3*3600000).toISOString());
@@ -53,7 +54,7 @@ assert.equal(override.output.zones.Z.waterLevel.interpolation.stations.length,1)
 assert.equal(override.output.zones.Z.waterLevel.interpolation.stations[0].weight,1);
 assert.equal(override.output.zones.Z.forecast.hourly[0].waterLevelCm,50,'Administratoroverride skal alene styre den producerede vandstandsserie.');
 
-const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
+const workflow=await readProductionWorkflowSource('build');
 assert.match(workflow,/--exclude '_support\/'/,'Pages-artifact skal udelukke supportmappen.');
 assert.match(workflow,/--exclude 'RavRadar-support-\*\.zip'/,'Pages-artifact skal udelukke support-ZIP.');
 const registry=await fs.readFile('scripts/update-water-source-registry.mjs','utf8');

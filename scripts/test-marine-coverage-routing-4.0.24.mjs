@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
-const [bulk, workflow] = await Promise.all([
+const [bulk, buildWorkflow] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
-  fs.readFile('.github/workflows/update-and-deploy.yml', 'utf8')
+  readProductionWorkflowSource('build')
 ]);
 assert.match(bulk, /GRID_CANDIDATE_TARGET/);
 assert.match(bulk, /LIMFJORD_GRID_CANDIDATE_TARGET/);
@@ -15,6 +16,7 @@ assert.match(bulk, /VALID_POINT_TOO_FAR/);
 assert.match(bulk, /freshMarineZones/);
 assert.match(bulk, /preservedMarineZones/);
 assert.match(bulk, /missingZones/);
-assert.match(workflow, /DMI_BULK_COLLECTIONS_PER_RUN: 2/);
-assert.match(workflow, /DMI_BULK_MAX_RUNTIME_SECONDS: 900/);
+assert.match(buildWorkflow, /DMI_BULK_COLLECTIONS_PER_RUN: 2/);
+assert.match(buildWorkflow, /DMI_BULK_MAX_RUNTIME_SECONDS:.*3000.*900/);
+assert.match(buildWorkflow, /DMI_BULK_FINALIZE_RESERVE_SECONDS:.*180.*120/);
 console.log('Marine overlap, grid candidate and coverage diagnostics test passed.');

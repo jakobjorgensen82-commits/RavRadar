@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
-const workflow = fs.readFileSync('.github/workflows/update-and-deploy.yml', 'utf8');
+const workflows = await readProductionWorkflowSources();
 const audit = fs.readFileSync('scripts/audit-ravscore-candidate-g-public-shadow.mjs', 'utf8');
-for (const marker of [
+for (const [role, workflow] of Object.entries(workflows)) {
+  for (const marker of [
   'ravscore_active_shadow:',
   'ravscore-active-shadow:',
   'Audit fallback-compatible 210/673 Candidate G public shadow',
@@ -11,29 +13,8 @@ for (const marker of [
   'node scripts/audit-ravscore-candidate-g-public-shadow.mjs',
   'candidate-g-public-shadow-audit.json',
   'ravradar-active-ravscore-shadow',
-]) assert.ok(workflow.includes(marker), `Workflow mangler ${marker}`);
-
-const sectionStart = workflow.indexOf('ravscore-active-shadow:');
-const sectionEnd = workflow.indexOf('geometry-v2-pilot:', sectionStart);
-assert.ok(sectionStart >= 0 && sectionEnd > sectionStart, 'RavScore-shadowjobbet kunne ikke afgrænses');
-const section = workflow.slice(sectionStart, sectionEnd);
-assert.match(section, /permissions:\s*\n\s*contents: read/);
-assert.match(section, /public-condition-details\.json/);
-assert.doesNotMatch(section, /pages:\s*write|id-token:\s*write|deploy-pages/);
-for (const forbidden of [
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'scripts/sync-admin-config.py',
-  'pip install',
-  'scripts/validate-national-local-part-dmi-grid.py',
-  'scripts/build-national-weather-shadow-contract.py',
-  'scripts/validate-national-multi-step-series.py',
-  'scripts/validate-national-local-part-wind-series.py',
-  'scripts/validate-national-shadow-score.mjs',
-  'scripts/apply-central-zone-reviews.py',
-  'scripts/sync-protected-admin-assets.mjs',
-  'actions/upload-pages-artifact',
-  'actions/deploy-pages',
-]) assert.ok(!section.includes(forbidden), `Den fallback-kompatible shadow maa ikke bruge ${forbidden}`);
+  ]) assert.ok(!workflow.includes(marker), `${role}-workflowet må ikke genåbne den pensionerede RavScore-shadow: ${marker}`);
+}
 
 for (const marker of [
   'EXPECTED_ZONES = 210',
@@ -51,11 +32,4 @@ for (const marker of [
   'coordinatesIncluded: false',
   'privateReplayPayloadIncluded: false',
 ]) assert.ok(audit.includes(marker), `Shadowauditen mangler ${marker}`);
-const buildStart = workflow.indexOf('  build-and-prepare:');
-const buildSteps = workflow.indexOf('\n    steps:', buildStart);
-assert.ok(buildStart >= 0 && buildSteps > buildStart, 'Det almindelige buildjob kunne ikke afgrænses');
-assert.ok(
-  workflow.slice(buildStart, buildSteps).includes('inputs.ravscore_active_shadow != true'),
-  'Det almindelige buildjob skal fortsat udelukke den private RavScore-shadow.',
-);
-console.log('Fallback-kompatibel 210/673 Candidate G public shadow-workflow: bestået.');
+console.log('Den pensionerede offentlige Candidate G-shadow har ingen workflow-entrypoint; det offline auditværktøj forbliver datasikkert.');

@@ -1,13 +1,13 @@
 {
   "schemaVersion": "2.0",
-  "updatedForRelease": "4.0.60",
+  "updatedForRelease": "4.0.315",
   "statements": [
     {
       "id": "KB-001",
-      "statement": "RavScore skal skelne mellem fysisk frigivelse/transport og muligheden for sikkert og praktisk at finde rav.",
+      "statement": "RavScore skal skelne mellem relative modelbeviser for fysiske processer og praktiske søgeforhold; den er hverken en sikkerhedsvurdering eller en fundchance.",
       "knowledgeClass": "project-principle",
       "confidence": "stor",
-      "source": "js/core/score-engine.js"
+      "source": "js/core/ravscore-integrated.js; js/core/ravscore-public-model.js"
     },
     {
       "id": "KB-002",
@@ -18,7 +18,7 @@
     },
     {
       "id": "KB-003",
-      "statement": "Høj energi kan mobilisere rav, mens det bedste jagttidspunkt kan opstå senere, når transporten fortsætter og jagtbarheden forbedres.",
+      "statement": "Høj bølgeenergi kan skabe mobiliseringsmulighed, mens et bedre søgetidspunkt kan opstå senere, når transportbeviset består og søgeforholdene forbedres.",
       "knowledgeClass": "documented-process-plus-project-hypothesis",
       "confidence": "mellem",
       "source": "HANDBOOK-RAVRADAR.md sections 6 and 15"
@@ -28,14 +28,14 @@
       "statement": "Vindretning må ikke bruges som synonym for bundnær strømretning.",
       "knowledgeClass": "project-principle",
       "confidence": "stor",
-      "source": "DEC-0004; js/core/score-engine.js"
+      "source": "DEC-0004; js/core/ravscore-model-contract.js; js/core/ravscore-integrated.js"
     },
     {
       "id": "KB-005",
-      "statement": "Statiske kystegenskaber som rev, lavt vand og vegetation må kun forstærke en allerede dokumenteret indgående eller skrå transport i den aktive model.",
-      "knowledgeClass": "implemented-model-rule",
+      "statement": "Statiske kystegenskaber som rev, lavt vand og vegetation er kun kontekst i releasekandidaten og giver ingen score. Den fysiske levering, aflejring og retention gennem nærkyst- og surfzonen er fortsat uopløst. Modellen bruger alene en kausal energivægtet WAM-approach med fire timers halveringstid og en ældre hale til en afgrænset envejsdæmpning på 0–15 % af eksisterende supply; leddet kan aldrig skabe eller øge supply og er ikke en fysisk landingsandel.",
+      "knowledgeClass": "known-model-limitation",
       "confidence": "stor",
-      "source": "js/core/score-engine.js"
+      "source": "js/core/ravscore-model-contract.js; js/core/ravscore-wave-approach-state.js; js/core/ravscore-integrated.js"
     },
     {
       "id": "KB-006",

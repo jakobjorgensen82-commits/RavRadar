@@ -6,21 +6,59 @@ import {
   dmiForecastCoverage,
   interpolateWaterLevelStations,
   normalizeForecastHourly,
-  selectDmiForecastAt
+  selectDmiForecastAt,
+  verifiedDmiForecastSource,
+  verifiedDmiNativeSource,
 } from './lib/dmi-forecast-store.mjs';
 
 const generatedAt = '2026-07-24T12:00:00.000Z';
+const componentKind = {
+  wind: 'atmospheric-wind-vector', windTail: 'marine-wind-tail-vector',
+  wave: 'wave-mobilisation-tuple', current: 'ocean-current-vector',
+  waterLevel: 'marine-water-level-scalar', waterTemperature: 'marine-water-temperature-scalar'
+};
+const componentFields = {
+  wind: ['wind-u-10m', 'wind-v-10m'], windTail: ['wind-tail-u-10m', 'wind-tail-v-10m'],
+  wave: ['significant-wave-height', 'dominant-wave-period'], current: ['current-u', 'current-v'],
+  waterLevel: ['sea-mean-deviation'], waterTemperature: ['water-temperature']
+};
+const collectionFamily = collection => collection.startsWith('dkss_') ? 'marine' : collection.startsWith('wam_') ? 'wave' : 'wind';
 const native = (component, collection, step, modelRun = generatedAt, overrides = {}) => ({
   [component]: {
-    provider: 'dmi', collection, modelRun, nativeValidTime: step,
+    provider: 'dmi', fallback: false, collection, collectionFamily: collectionFamily(collection),
+    component, componentKind: componentKind[component], fieldSet: componentFields[component],
+    optionalFieldSet: component === 'wave' ? ['mean-wave-dir'] : [],
+    modelRun, nativeValidTime: step,
+    leadTimeHours: (Date.parse(step) - Date.parse(modelRun)) / 3600000,
+    entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+    samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56],
+    gridPoint: [10.02, 56.01], gridDefinitionSha256: 'a'.repeat(64), distanceKm: 1.67,
+    spatialSelection: component === 'wave'
+      ? 'nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation'
+      : ['waterLevel', 'waterTemperature'].includes(component)
+        ? 'nearest-valid-grid-cell-no-spatial-interpolation'
+        : 'nearest-shared-grid-cell-no-spatial-interpolation',
+    spatialSemanticsVersion: 1,
+    ...(['wind', 'windTail'].includes(component) ? {
+      vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation', vectorSemanticsVersion: 1
+    } : {}),
+    itemId: `item-${component}-${step}`, assetIdentitySha256: 'b'.repeat(64), acquiredAt: generatedAt,
     ...(component === 'current' ? {
-      gridPoint: [10.02, 56.01], samplingPoint: [10, 56],
-      verticalLayer: 'depthbelowsea:7', verticalLayerRankM: 7, distanceKm: 1.7,
+      verticalLayer: 'depthbelowsea:7', verticalLayerRankM: 7, distanceKm: 1.67,
       vectorSelection: 'nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer', vectorSemanticsVersion: 3
     } : {}),
     ...overrides
   }
 });
+{
+  const exact = native('current', 'dkss_idw', generatedAt).current;
+  assert.equal(verifiedDmiNativeSource(exact, 'current', generatedAt), exact);
+  assert.equal(verifiedDmiNativeSource({ ...exact, entityId: '' }, 'current', generatedAt), null);
+  assert.equal(verifiedDmiNativeSource({ ...exact, modelRun: '2026-07-24T12:00:00' }, 'current', generatedAt), null);
+  assert.equal(verifiedDmiNativeSource({ ...exact, acquiredAt: '2026-07-24T12:00:00' }, 'current', generatedAt), null);
+  assert.equal(verifiedDmiNativeSource({ ...exact, itemCreatedAt: null, itemUpdatedAt: null }, 'current', generatedAt).itemCreatedAt, null,
+    'explicit null optional STAC timestamps must match the Python verifier');
+}
 const series = (parameter, mapper) => Array.from({ length: 130 }, (_, i) => ({
   step: new Date(Date.parse(generatedAt) + i * 3600000).toISOString(),
   [parameter]: mapper(i)
@@ -37,6 +75,71 @@ assert.equal(built.hourly[0].waterLevelCm, 10, 'DMI-modelvandstanden skal forbli
 assert.equal(built.hourly[0].waterLevelSource, 'dmi-model-authoritative');
 assert.equal(built.hourly.at(-1).source, 'dmi-forecast');
 
+// RavScore's private DMI boundary must not turn JSON-coercible values into
+// physical evidence. Every non-number below would otherwise become finite via
+// Number(value), including false -> 0 and [0.2] -> 0.2.
+{
+  const malformed = buildDmiForecastHourly({
+    wind: [{
+      step: generatedAt,
+      'wind-speed-10m': '8',
+      'wind-dir-10m': true,
+      provenance: native('wind', 'harmonie_dini_sf', generatedAt),
+    }],
+    waves: [{
+      step: generatedAt,
+      'significant-wave-height': [1.2],
+      'mean-wave-dir': '280',
+      'dominant-wave-period': false,
+      provenance: native('wave', 'wam_dw', generatedAt),
+    }],
+    ocean: [{
+      step: generatedAt,
+      'sea-mean-deviation': '0.1',
+      'current-u': [0.1],
+      'current-v': true,
+      'water-temperature': '15',
+      provenance: {
+        ...native('current', 'dkss_idw', generatedAt),
+        ...native('waterLevel', 'dkss_idw', generatedAt),
+        ...native('waterTemperature', 'dkss_idw', generatedAt),
+      },
+    }],
+    observedWaterLevel: { valueCm: '25' },
+    generatedAt,
+    hours: 1,
+  });
+  const [hour] = malformed.hourly;
+  assert.equal(hour.windSpeedMps, null);
+  assert.equal(hour.windDirectionDeg, null);
+  assert.equal(hour.waveHeightM, null);
+  assert.equal(hour.waveDirectionDeg, null);
+  assert.equal(hour.wavePeriodS, null);
+  assert.equal(hour.currentUMps, null);
+  assert.equal(hour.currentVMps, null);
+  assert.equal(hour.waterLevelCm, null);
+  assert.equal(hour.waterTemperatureC, null);
+  assert.equal(hour.sources.wind.provider, 'missing');
+  assert.equal(hour.sources.wave.provider, 'missing');
+  assert.equal(hour.sources.current.provider, 'missing');
+  assert.equal(hour.sources.waterLevel.provider, 'missing');
+  assert.equal(malformed.observationDifferenceCm, null);
+}
+
+{
+  const exact = native('current', 'dkss_idw', generatedAt).current;
+  assert.equal(
+    verifiedDmiNativeSource({ ...exact, samplingPoint: ['10', 56] }, 'current', generatedAt),
+    null,
+    'koordinatstrenge må ikke matche et scorebærende samplingpunkt',
+  );
+  assert.equal(
+    verifiedDmiNativeSource({ ...exact, samplingPoint: [10, 56, 0] }, 'current', generatedAt),
+    null,
+    'samplingpunktets identitet er et eksakt koordinatpar',
+  );
+}
+
 
 const sparseWind = [
   { step: generatedAt, 'wind-speed-10m': 5, 'wind-dir-10m': 180, provenance: native('wind', 'harmonie_dini_sf', generatedAt) },
@@ -50,18 +153,20 @@ assert.ok(Math.abs(sparse.hourly[2].windSpeedMps - 6.8) < 0.01, 'Vind skal vekto
 assert.equal(sparse.hourly[5].windSpeedMps, null, 'Sidste modeltrin må ikke gentages uden for tolerancen');
 
 const windTail = [
-  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 20, 'wind-dir-10m': 90, provenance: native('wind', 'dkss', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()) },
-  { step: new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString(), 'wind-speed-10m': 23, 'wind-dir-10m': 90, provenance: native('wind', 'dkss', new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString()) }
+  { step: new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString(), 'wind-speed-10m': 20, 'wind-dir-10m': 90, provenance: { wind: native('windTail', 'dkss_idw', new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString()).windTail } },
+  { step: new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString(), 'wind-speed-10m': 23, 'wind-dir-10m': 90, provenance: { wind: native('windTail', 'dkss_idw', new Date(Date.parse(generatedAt) + 6 * 3600000).toISOString()).windTail } }
 ];
 const chainedWind = buildDmiForecastHourly({ wind: sparseWind, windTail, generatedAt, hours: 7 });
 assert.equal(chainedWind.hourly[3].sources.wind.collection, 'harmonie_dini_sf', 'HARMONIE skal vinde ved overlap');
 assert.equal(chainedWind.hourly[3].windSpeedMps, 8, 'DKSS maa ikke overskrive HARMONIE ved samme tidspunkt');
-assert.equal(chainedWind.hourly[5].sources.wind.collection, 'dkss', 'DKSS skal overtage efter HARMONIE-horisonten');
+assert.equal(chainedWind.hourly[5].sources.wind.collection, 'dkss_idw', 'DKSS skal overtage efter HARMONIE-horisonten');
+assert.equal(chainedWind.hourly[5].sources.wind.component, 'windTail');
 assert.equal(chainedWind.hourly[5].sources.wind.modelRun, generatedAt);
 assert.equal(chainedWind.hourly[5].sources.wind.leadTimeHours, 5);
 assert.equal(chainedWind.hourly[5].sources.wind.forecastAgeHours, 0);
 assert.equal(chainedWind.hourly[5].sources.wind.temporalResolution, 'interpolated');
 assert.deepEqual(chainedWind.hourly[5].sources.wind.nativeValidTimes, [windTail[0].step, windTail[1].step]);
+assert.equal(chainedWind.hourly[5].sources.wind.nativeSteps.length, 2, 'Begge eksakte STAC-items skal bevares gennem interpolation');
 assert.ok(chainedWind.hourly[5].windSpeedMps > 20 && chainedWind.hourly[5].windSpeedMps < 23, 'DKSS-halen skal kun interpoleres inden for DKSS-serien');
 assert.equal(chainedWind.interpolation.modelBoundaryInterpolation, false);
 
@@ -171,4 +276,160 @@ console.log('DMI 120-timers Forecast Store og Water Level Engine bestået.');
   assert.equal(guarded.hourly[2].currentVMps, null, 'lagovergangen skal vaere et aerligt datagab');
   assert.equal(guarded.hourly[3].currentVMps, 0.2);
   assert.equal(guarded.hourly[3].sources.current.verticalLayer, 'surface:0');
+}
+
+// Integrated provenance regression: interpolation is permitted only inside one
+// exact component/entity/grid/run tuple with two captured native STAC items.
+{
+  const later = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const windRow = (step, overrides = {}) => ({
+    step, 'wind-speed-10m': step === generatedAt ? 4 : 10, 'wind-dir-10m': 180,
+    provenance: native('wind', 'harmonie_dini_sf', step, generatedAt, overrides)
+  });
+  const assertRejectedBetween = (overrides, message) => {
+    const result = buildDmiForecastHourly({ wind: [windRow(generatedAt), windRow(later, overrides)], generatedAt, hours: 4 });
+    assert.equal(result.hourly[1].windSpeedMps, null, message);
+    assert.equal(result.hourly[2].sources.wind.provider, 'missing', `${message} (proveniens)`);
+  };
+  assertRejectedBetween({ entityId: 'PART::OTHER' }, 'krydsdel-interpolation skal afvises');
+  assertRejectedBetween({ gridPoint: [10.03, 56.01] }, 'gridcelleskift skal afvises');
+  assertRejectedBetween({ gridDefinitionSha256: 'c'.repeat(64) }, 'griddefinitionsskift skal afvises');
+  assertRejectedBetween({ distanceKm: 0.1 }, 'metadataafstand skal stemme med sampling- og gridpunkt');
+  assertRejectedBetween({ itemId: '' }, 'manglende STAC-item capture skal afvises');
+  assertRejectedBetween({ acquiredAt: 'invalid' }, 'manglende faktisk acquisitionstid skal afvises');
+  assertRejectedBetween({ itemCreatedAt: 'invalid' }, 'ugyldig deklareret STAC-oprettelsestid skal afvises');
+  assertRejectedBetween({ optionalFieldSet: ['mean-wave-dir'] }, 'vind må ikke arve bølgens valgfrie feltkontrakt');
+  assertRejectedBetween({ collection: 'wam_dw', collectionFamily: 'wave' }, 'component/collection-swap skal afvises');
+
+  const built = buildDmiForecastHourly({
+    wind: [windRow(generatedAt), windRow(later)], generatedAt, hours: 4
+  });
+  const expectedIdentity = {
+    entityId: 'PART::TEST', parentZoneId: 'ZONE-TEST', entityType: 'coastal-part',
+    samplingContext: 'coastal-part-water-point', samplingPoint: [10, 56]
+  };
+  const nullMetadataBuilt = buildDmiForecastHourly({
+    wind: [
+      windRow(generatedAt, { itemCreatedAt: null, itemUpdatedAt: null }),
+      windRow(later, { itemCreatedAt: null, itemUpdatedAt: null }),
+    ],
+    generatedAt,
+    hours: 4,
+  });
+  assert.equal(verifiedDmiForecastSource(
+    nullMetadataBuilt.hourly[1].sources.wind,
+    'wind',
+    nullMetadataBuilt.hourly[1].time,
+    expectedIdentity,
+  ), nullMetadataBuilt.hourly[1].sources.wind,
+  'missing and explicit-null optional STAC timestamps must have equivalent verifier semantics');
+  const exactSource = built.hourly[0].sources.wind;
+  const interpolatedSource = built.hourly[1].sources.wind;
+  assert.equal(
+    verifiedDmiForecastSource(exactSource, 'wind', built.hourly[0].time, expectedIdentity),
+    exactSource,
+    'native derived source skal genverificeres gennem sit eksakte endpoint',
+  );
+  assert.equal(
+    verifiedDmiForecastSource(interpolatedSource, 'wind', built.hourly[1].time, expectedIdentity),
+    interpolatedSource,
+    'interpolation inden for samme komplette tuple skal genverificeres',
+  );
+  assert.equal(verifiedDmiForecastSource(
+    interpolatedSource,
+    'wind',
+    built.hourly[1].time,
+    { ...expectedIdentity, entityId: 'PART::OTHER' },
+  ), null, 'consumerens forventede delidentitet er bindende');
+  assert.equal(verifiedDmiForecastSource({
+    ...interpolatedSource,
+    nativeSteps: interpolatedSource.nativeSteps.map((step, index) => index
+      ? { ...step, acquiredAt: 'forged' }
+      : step),
+  }, 'wind', built.hourly[1].time, expectedIdentity), null, 'hvert native endpoint skal genverificeres');
+  assert.equal(verifiedDmiForecastSource({
+    ...interpolatedSource,
+    temporalResolution: 'native',
+  }, 'wind', built.hourly[1].time, expectedIdentity), null, 'to endpoints må ikke ommærkes som native');
+  assert.equal(verifiedDmiForecastSource({
+    ...interpolatedSource,
+    gridPoint: [10.5, 56.01],
+  }, 'wind', built.hourly[1].time, expectedIdentity), null, 'forfalsket gridpunkt/afstand skal afvises');
+  assert.equal(verifiedDmiForecastSource({
+    ...interpolatedSource,
+    componentKind: 'wave-mobilisation-tuple',
+  }, 'wind', built.hourly[1].time, expectedIdentity), null, 'component-kind swap skal afvises');
+  assert.equal(verifiedDmiForecastSource(
+    exactSource, 'wind', built.hourly[0].time.replace('.000Z', ''), expectedIdentity,
+  ), null, 'timezone-free consumer time is not provenance evidence');
+  assert.equal(verifiedDmiForecastSource({
+    ...interpolatedSource,
+    modelRun: interpolatedSource.modelRun.replace('.000Z', ''),
+  }, 'wind', built.hourly[1].time, expectedIdentity), null,
+  'timezone-free derived model run is not provenance evidence');
+}
+
+// Wave height+period remains the atomic score tuple. Direction is optional and
+// may only survive when its producer proves the same exact cell.
+{
+  const later = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const waveRow = (step, sourceOverrides = {}, rowOverrides = {}) => ({
+    step,
+    'significant-wave-height': step === generatedAt ? 1 : 2,
+    'dominant-wave-period': step === generatedAt ? 5 : 7,
+    'mean-wave-dir': 250,
+    ...rowOverrides,
+    provenance: native('wave', 'wam_dw', step, generatedAt, sourceOverrides)
+  });
+  const valid = buildDmiForecastHourly({ waves: [waveRow(generatedAt), waveRow(later)], generatedAt, hours: 4 });
+  assert.ok(valid.hourly[1].waveHeightM > 1 && valid.hourly[1].waveHeightM < 2);
+  assert.ok(valid.hourly[1].wavePeriodS > 5 && valid.hourly[1].wavePeriodS < 7);
+  assert.equal(valid.hourly[1].sources.wave.fieldSet.join(','), 'significant-wave-height,dominant-wave-period');
+
+  const noDirectionProof = buildDmiForecastHourly({
+    waves: [
+      waveRow(generatedAt, { optionalFieldSet: [] }),
+      waveRow(later, { optionalFieldSet: [] })
+    ], generatedAt, hours: 4
+  });
+  assert.equal(noDirectionProof.hourly[1].waveDirectionDeg, null, 'retning uden same-cell optional-field-bevis skal bortfalde');
+  assert.ok(noDirectionProof.hourly[1].waveHeightM > 1, 'højde/periode-tuplet forbliver anvendeligt uden retning');
+
+  const antipodalLater = new Date(Date.parse(generatedAt) + 2 * 3600000).toISOString();
+  const antipodal = buildDmiForecastHourly({
+    waves: [
+      waveRow(generatedAt, {}, { 'mean-wave-dir': 0 }),
+      waveRow(antipodalLater, {}, { 'mean-wave-dir': 180 }),
+    ],
+    generatedAt,
+    hours: 3,
+  });
+  assert.equal(
+    antipodal.hourly[1].waveDirectionDeg,
+    null,
+    'det antipodale 0/180-graders midpoint har ingen defineret cirkulær middelretning',
+  );
+  assert.ok(
+    antipodal.hourly[1].waveHeightM > 1 && antipodal.hourly[1].wavePeriodS > 5,
+    'udefineret middelretning må ikke fjerne den verificerede mobiliseringstuple',
+  );
+
+  const brokenTuple = buildDmiForecastHourly({
+    waves: [waveRow(generatedAt), waveRow(later, { fieldSet: ['significant-wave-height'] })],
+    generatedAt, hours: 4
+  });
+  assert.equal(brokenTuple.hourly[1].waveHeightM, null, 'ufuldstændigt bølgetuple må ikke interpoleres');
+  assert.equal(brokenTuple.hourly[1].wavePeriodS, null);
+}
+
+// A 3-hour water-level difference is meaningful only inside the same exact
+// entity/run/grid identity; otherwise the context remains honestly missing.
+{
+  const later = new Date(Date.parse(generatedAt) + 3 * 3600000).toISOString();
+  const oceanRows = [
+    { step: generatedAt, 'sea-mean-deviation': 0.1, provenance: native('waterLevel', 'dkss_idw', generatedAt) },
+    { step: later, 'sea-mean-deviation': 0.3, provenance: native('waterLevel', 'dkss_idw', later, generatedAt, { entityId: 'PART::OTHER' }) }
+  ];
+  const result = buildDmiForecastHourly({ ocean: oceanRows, generatedAt, hours: 1, sourceCadenceMinutes: 180 });
+  assert.equal(result.hourly[0].waterLevelTrendCm3h, null);
 }

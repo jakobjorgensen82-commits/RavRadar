@@ -1,12 +1,38 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-08-31
+
+- PR #236: exact 4.0.316/Candidate G på `c58deb78`; exact-head `33342157517` og post-merge `33342219152` er grønne. `33345476979`/`rr-20260831010337-210` var første recoverybevis. Det tidligere external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` bestod fuld DMI/validate/releasegate/storage/Pages og er 210/673, `VERIFIED_ONLY`, uden syntetiske samples; Candidate G er 0/210 aktiv på grund af historikmemory. Visuel mobil/desktop er ikke afsluttet. `33343469247`/`33344823000` var transient-503-stop uden deploy; bounded retry-hotfixen er produktionsverificeret gennem PR #237, exact-head `33352520408`, merge `8c03e25d`, backend `33352661061` og fuld produktion `33352634365`; automatisk run `33354263148` publicerede `rr-20260831034128-210` komplet 210/673.
+- Controller-v4 = exact 30 felter, fire statusser, seks transitionstyper. Historical Candidate/integrated H0→H1 kræver atomic ACTIVE controller+profil, exact 11-feltsbinding, immutable plan og begin/complete/abort. Direct Candidate→integrated bruger IntegratedReturnPlan. Ordinary paths accepterer kun current binding.
+- Pages source-abort kræver NOT_STARTED. Ambiguous source-visible = exact sealed target-redeploy + non-Pages finalizer; recoverydeployment er næste source-lineage. Unknown/mixed/third/tamper/stale/missing plan stopper.
+- State 6: 118 timer scorebare som `HISTORY_INCOMPLETE` ved gyldige direct inputs, timevis `UNAVAILABLE` ved direct missing. Outcome v2 og P2-assistent/plain-language er lokalt implementeret og måltestet; exact-head/produktion/browser er åbne releasegates. Integrated slutbinding er `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer/8 consumers; Candidate G-rollback er `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4` over 55 filer. 4.0.318 er ikke offentlig.
+- Ét aktivt 15-minutters kontroljob er diagnose-/reparationsspor for vejrdrift, ikke ny scheduler eller dubletvagthund; ingen blind redispatch af kendt fejl.
+
+## Aktuelt DEC-0113-checkpoint – 4.0.318 attesteret measured-only first cutover
+
+- Offentlig model er fortsat 4.0.316/Candidate G. PR #235/exact-head `33332106627` blev merged som `a584d1cf`, men produktion `33333490853` stoppede sikkert før DMI, protected writes, artifact og Pages, fordi 0 READY/673 kanoniske warmupstates blev behandlet som invalid migration. Det er ikke et modeldeploy.
+- Source-attestation, migrationsegnethed og aktiv samplingkontekst er separate. Public Candidate G manifest/conditions/source-register valideres som én 210/673-enhed på isoleret sti. Det aktive register materialiseres efter central adminhydrering og må ikke omskrive source eller flytte geometri/punkter.
+- 673 READY + samme source/active stateKey-context + ét target giver migration. Komplet canonical warmup eller legitim contextændring giver national `genuine-cold-start`. Invalid/tampered/ukendt source stopper. Cold start kræver aggregate `source_validated=true`, og en afvist integreret continuation/checkpoint må ikke maskeres.
+- Integrated cold replay bruger kun faktiske private, verificerede 0–48 timer plus reel target og giver `HISTORY_INCOMPLETE`; Candidate G-rollback bygges separat measured-only og skal selv blive 48-timers READY. Ingen syntetisk historik, interpolation, zonelån eller carry-forward.
+- Bootstrap-UTC er canonical uden millisekunder og Node→Python-testet. Ikke-annulleret reel DMI-cacheprogression bevares privat. Første cutover er push-only; ikke-push jobs vedligeholder Candidate G.
+- Botrun `33334709027` og pilot `33335078275` var sikre røde stop uden Pages/offentlig mutation. 4.0.318's endelige transitive modelbinding og releasebevis er pending; brug ikke 4.0.317-hashene som bevis for den færdige hærdede head, før bindingsgeneratoren er kørt.
+- Der påstås ikke empirisk bedre fundpræcision, og ingen geometri, kystnormal, land-/vandpunkt, private payload, koordinat eller rå U/V ændres eller eksponeres.
+
+## Aktuelt DEC-0110/0112-modelarbejde – state 6 er ikke udgivet
+
+- Offentlig 4.0.316 bruger fortsat Candidate G. Den lokale efterfølger er `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` med bounds-v5, direkte input→`UNAVAILABLE`, historikmissing→konservativ `HISTORY_INCOMPLETE`, 48 h aktiv currenthistorik, 168 h score-neutral researchretention og 288/40 h conservative tail closure. Den aktive binding er `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6` over 43 filer og 8 bindingsforbrugere. Candidate G migreres via v5, schema 5 er kun den aldrig-offentlige eksakte 5→6-kilde, og rollback er v3 med separat READY companion samt forseglet 55-filers binding `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`dcbd8d72aa9794dc7dc24eae52f23d25914af61a49c5fcd73742818f4ca77bb4`.
+- Ejeren opgav den fiktive morgenhulsrekonstruktion før descriptor, apply, mutation eller publicering. DEC-0109 bevares kun historisk; bestil ikke ny incident-inspect/apply og overfør aldrig interpolation til den integrerede model.
+- Kandidaten er pending exact-head, merge, frisk produktion/deploy og offentlig 210/673 desktop-/mobilkontrol. Den må ikke kaldes offentlig eller empirisk mere fundpræcis. Offentlig `rr-20260830091913-210` var frisk 210/673, men Candidate G gav 0 aktive/210 `UNAVAILABLE` på grund af utilstrækkelig currenthistorik; det er regressionsevidens, ikke state-6-bevis.
+- State-løs recovery bruger `bounded-private-48h-history-cold-replay-v3` med eksakte expected/complete/unknown-counts og transition. 48/48 dokumenterer et fuldt currentvindue, men er stadig `HISTORY_INCOMPLETE` indtil 288-timers wave-tail closure. Checkpointschema 4/cache-v2 med atomisk READY companion er implementeret. Under manuel Candidate G-rollback må kun eksakt `READY`/`memoryReady` Candidate G projicere sin egen mode-score som exact full-history med collapsed bounds/coverage 48; `calibrationEligible=false` består. Trip-bounds-persistens er lukket lokalt gennem klient/DTO/Edge/SQL. Den daværende 4.0.317-matrix var grøn; 4.0.318-deltaet kræver en ny fuld slutmatrix.
+- Feggesund-parenten er 118/118 wave-missing i sanitiseret `rr-20260830104132-210`, men tre aktive dele findes med `marineCoverage=full`, og Candidate G-current er tilgængelig i begge modes. Fordi state 6 producerer part-level, skal frisk integrated 3 × 118 først afgøre, om der er et reelt hul. Kun derefter og kun ved dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis `DK-B05-11` vurderes særskilt. Ingen proxy er implementeret.
+
 ## 4.0.316 – fraværende fallback er ikke det samme som ugyldig primary
 
 - PR #233/exact-head `33299676128` og merge `63d789a4` pensionerede den stale D1-interlock. Run `33299747300` startede build og stoppede først ved fallbackstaging; det er rødt årsagsbevis, ikke et deploybevis.
 - En fallback er en valgfri reserve for en frisk measured-only primary. Ingen kandidat inden for 72 timer og prognosehorisonten skal give eksplicit fravær, ikke blokere current+fem døgn.
 - Gammel/udløbet fallback må aldrig vises eller blive hængende i manifest/public files. Malformed fallback eller uventet primary accounting/audit er fortsat fejl og må ikke forveksles med forventet fravær.
 - `HISTORY_INCOMPLETE`, public fallback og direct-input-availability er tre separate akser. Den kommende model scorer current+fem døgn ved gyldige direkte input med tydelig DA/DE/EN-advarsel og `calibrationEligible=false`; manglende direkte input er `UNAVAILABLE`.
-- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er kandidat, indtil fuld post-merge produktion og offentlig kontrol findes.
+- Optional recovery må aldrig skabe interpolation eller syntetiske data. 4.0.316 er den produktionsverificerede offentlige baseline; den friske offentlige regression `rr-20260830091913-210` beviser 210/673 med 0 aktive zoner og 210 `UNAVAILABLE` under utilstrækkelig sammenhængende currenthistorik, ikke state-6-adfærd.
 
 ## Historisk 4.0.315 – en grøn no-op er ikke frisk produktion
 
@@ -25,7 +51,7 @@
 - Interpolationens domæne er fortsat kun incidentets forseglede venstre/højre bracket. Et andet manglende punkt i en ellers lovlig suffix forbliver manglende, og finalt 48h non-restart replay skal stadig være `READY`.
 - Live-inspect `33279639424` viste kun `ONE_TIME_GAP_AMBIGUOUS_NATIVE_CADENCE` og stoppede før descriptor/mutation. Det er årsagsevidens, ikke bevis for gennemført rekonstruktion.
 
-## 4.0.314 – et højreanker er ikke et cadencebevis
+## Historisk 4.0.314 – et højreanker er ikke et cadencebevis
 
 - En gyldig målt after-state kan have ét punkt og stadig reproduceres som schema-2.0 `WINDOW_INCOMPLETE`; punktet kan være det eksakte højre bracket uden at bevise kadencen alene.
 - Tillad aldrig globalt minimum ét. Kun `AFTER` kan bruge singleton, og kun når before+target hver leverer mindst to enstemmige intervaller og uafhængigt beviser native 3-timerskadence.
@@ -45,6 +71,8 @@
 - Response-body er ubetroet data. Både fejlede og succesfulde malformed gateway-svar skal blive faste lokale fejl uden bodyudsnit.
 
 ## Historisk DEC-0109 – aldrig anvendt og operationelt erstattet af DEC-0111
+
+Ejeren opgav udførelsen, før der fandtes descriptor, apply, mutation, artifact eller offentliggørelse. Afsnittet nedenfor beskriver derfor kun den bevarede negative trust-/rollbackkontrakt, ikke en åben operationsplan.
 
 - Et komplet aktuelt vejrdatasæt kan godt have ufuldstændig Candidate G-memory; aktuelle vejrdata og 48-timers transportbevis er forskellige sandheder.
 - Den historisk godkendte rekonstruktion for incident `RRGAP-2026-08-29-CANDIDATE-G-01` blev trukket tilbage før descriptor/apply og må ikke eksekveres. De følgende punkter beskriver kun den defensive klassifikation, som ældre eller ukendt input fortsat skal møde fail-closed.
@@ -81,11 +109,23 @@ PR #222/exact-head `33247789054`, merge `792648c3`, post-merge-produktion `33247
 
 GitHub forbliver normal scheduler. Den eksterne tjeneste kender kun repository, workflow, `main` og et boolsk watchdogintent og kan ikke se vejr, Candidate G-state, koordinater, rå U/V eller private data. Keepalive-workflowet foretager selv den eksisterende 45-minutters kontrol mod ufølsom workflowhistorik og det offentlige manifest. Direkte eksterne produktions- og pilotkald er fravalgt for at bevare eventsemantik, retry, cache og concurrency. Se DEC-0107.
 
-## 4.0.308-kandidat – naturlige sikkerhedsformuleringer
+## Historisk, aldrig offentlig modelstatus – state-5/4.0.315-releasekandidaten
+
+Dette afsnit bevares kun som revisionsspor for state 5, som aldrig blev offentlig. Den aktive state-6-sandhed står øverst; de gamle v4-, schema-5-, exact-48- og rollback-v2-identiteter nedenfor må kun bruges som historisk regressions- og eksakt migrationskilde.
+
+Den senest produktionsverificerede offentlige baseline er 4.0.310 med Candidate G som eneste offentlige model. Den lokalt implementerede efterfølger under DEC-0110 er én samlet 4.0.315-releasekandidat: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `5.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-coldrestart-gapcredit1-lastmileewma4-atten15-v4`, komponent `ravscore-components-huntability-delivery-mobilisation-v4` og forklaring `ravscore-explanation-integrated-v4`. Slutdigests fastlåses først på den afsluttede head; exact-head, merge, frisk produktion og offentlig kontrol mangler, så lokal dokumentation eller test er ikke produktionsbevis.
+
+Den integrerede kandidat bevarer 20/50/30, 0,03/0,15 m/s og +10/-8, men bruger 24 timers fuld strømvægt og cosinusfade til nul ved 48 timer. Bølgemobilisering følger `Hs² × T` med 4/48-timers forløb. Et stærkt fralandsforløb kan fortsat gøre supply/transportbeviset 0 efter cirka 13 effektive timer, men nulstiller ikke hele RavScore. Sidste mile bruger en kausal energivægtet `W/N/T`-EWMA med fire timers halveringstid og en ældre hale: DMI-WAM `FROM` roteres præcis én gang +180° til `TOWARD` mod den uændrede eksisterende kystnormal; `normalAlignment` er det energivægtede normalmoment divideret med aktivitet, `approach=clamp((normalAlignment+0,25)/1,25,0,1)`, `factor=clamp(1-0.15×W×(1-approach),0.85,1)`, og `delivery=supply×factor` anvendes præcis én gang. Bølger kan aldrig skabe/øge supply; maksimal rå totalscoredæmpning er 7,5 point før slutafrunding; vist RavScore kan derfor ændres 8 point. Aktiv retningsmissing fejler lukket. Kun `waveHeightM=0` er eksakt calm og neutral; `wavePeriodS` skal stadig være finit og ikke-negativ. `waveHeightM>0` med `wavePeriodS=0` er `INVALID` og fejler lukket.
+
+Modelgridstrøm er ikke lokal bundnær strøm, undertow, feeder-/langskyststrøm eller ripstrøm. Faldende vand kan både ledsage søværts transport af noget mobilt rav og blotlægge eller gøre fastholdt rav bag revler lettere at afsøge; vandstand giver derfor 0 direkte point. Fysisk levering er fortsat uopløst, `physicalDeliveryResolved=false`, og fysisk interval er `null`. DDM's officielle 50 m-grid kan kun være statisk kontekst, fordi det ikke opløser dynamiske revler eller surfzoneprocesser; ingen kystnormal, geometri eller land-/vandpunkter flyttes. Rainville m.fl. 2026 er kun buoyant-object-analogi og ikke ravkalibrering. Modellen må beskrives som fysisk og teknisk forbedret, men ikke som empirisk mere fundpræcis uden repræsentative fund og nul-fund.
+
+Første cutover bruger `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema5-v4`. Den genvægter kun Candidate G's signerede, allerede afledte kystnormale currentevidens; rå U/V læses/kopieres ikke, og der påstås ingen rå genberegningslighed. Præcis 673 gyldige schema-2-states skal give ét fælles kanonisk target. Wave-approach bygges af 40 private præ-target-positioner fra ét sammenhængende DMI WAM-run pr. anvendt collection med same-cell native provenance; kun et gap på højst fire timer må interpoleres i identisk run/collection/grid/celle. Udeladt EWMA-hale er højst `1/1024`, og konservativ rå-scorefejl er højst `0.01171875` før afrunding. Mixed target, invalid state eller utilgængeligt run stopper fail-closed, så Candidate G forbliver offentlig; der dannes ingen syntetisk/offentlig historik. Ægte cold start er særskilt og kræver præcis 48 sammenhængende private verificerede timepositioner plus den reelle targetrække. Rollback `integrated-schema5-to-candidate-g-schema2-v2` beregnes fra samme targettid uden dobbelt recovery-credit. Normal fortsættelse bruger privat hashbundet runtime eller state-5-checkpoint; Pages får kun de fire offentlige schema-4-livefiler. Nøddrift må kun bruge en komplet atomisk continuation fra samme integrerede model i højst 72 timer eller kortere forecastudløb; cross-model fallback og interpolation er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke kalibreringsgrundlag. Candidate G bliver efter cutover kun privat migration-/offline-/rollback-orakel og kan kun igen blive offentlig gennem det manuelle, fuldt verificerede controllerforløb. Den tidligere planlagte fiktive morgenhulsudførelse blev opgivet før descriptor/apply/mutation/publicering; DEC-0109 bevares som historisk afgrænset sikkerhedskontrakt. Se DEC-0110 og de integrerede design-, evidens- og producent-/forbrugerdokumenter fra 2026-08-29.
+
+## Produktionsverificeret 4.0.308 – naturlige sikkerhedsformuleringer
 
 Den offentlige prøve viste, at den eksisterende kildebundne viden om hvidt fosfor var for snævert routet: “Hvad er hvidt fosfor på stranden?” manglede ordet rav og blev derfor afvist. DA/DE/EN-emnematchet genkender nu selve stofnavnet og naturlige strand-/fundformuleringer. Svaret, evidensklassen og den officielle Forsvaret-proveniens er uændrede; kun adgangsformuleringen er bredere. Se DEC-0106.
 
-## 4.0.307-kandidat – 152 kildeklassificerede lokale emner og rettet scopegrænse
+## Produktionsverificeret 4.0.307 – 152 kildeklassificerede lokale emner og rettet scopegrænse
 
 Den ekstra høje audit erstatter antagelsen om, at seks nye emnefamilier var en tilstrækkelig breddeudvidelse. Et deterministisk katalog giver nu 152 DA/DE/EN-emner oven på de 17 eksisterende intent-kontrakter og testes med 456 katalogspørgsmål uden netværk eller AI-kvote. Hvert emne har evidensklasse og kilde-ID. De 27 offentligt registrerede kilder omfatter ekstern ravforskning, fagfællebedømt kystanalogi, officielle kyst-/sikkerheds-/regelkilder, RavRadars større forskningsgrundlag og Rav Jagt som navngiven praktisk ekspert. Specifik lokal viden vælges før brede standardsvar; dynamiske sted-/tid-/scoresvar bevarer deres Candidate G-vej.
 
@@ -93,7 +133,7 @@ Browser og Edge bruger Unicode-helordsgrænser, så `Skagen` ikke rammer det uve
 
 Den visuelle mobilprøve fandt en skjult afhængighed: UI'en ventede tidligere på prognosedetaljer før alle spørgsmål. `ravQuestionNeedsConditionDetails` begrænser nu denne venten til dynamisk bedste sted, bedste tid og score. Katalogsvar, sikkerhed og generel forskning svarer lokalt, selv når detaljefilen er utilgængelig.
 
-## 4.0.306-kandidat
+## Historisk 4.0.306-kandidat
 
 Det separate smårettelsesspor ændrer offentlig tekst/UI, Grundbogen og read-only Spørg RavRadar-viden. Aktiv UV-angivelse er 395 nm; koldt vand forklares tydeligere som mobiliseringsfaktor uden nyt scoreinput. Zonesøgning, pilesignatur, Rav Jagt-illustration og synlige BernsteinScore/AmberScore er tilføjet. Candidate G/modelsporet er urørt. Se DEC-0103.
 
@@ -205,10 +245,11 @@ Ved Codex-overgangen blev dette produktionsverificeret: tre Limfjordszoner havde
 ## Vandstandskilder
 Vandstandskilder omfatter observationsstationer og prognosepunkter. Observationsstatus og forecast/cache-status er forskellige begreber. En kilde kan fortsat være prognosebrugbar, mens dens gyldige forecastcache består, selv om nye observationer midlertidigt udebliver. Aktiv adminrouting vinder over auto-routing; auto primær/sekundær, afstande, vægte og metode skal være synlige og konsistente gennem score og prognoser.
 
-## RavScore og historisk state
-RavScore bruger aktuelle og dokumenterede forhold. Eksisterende pålidelige morfologidata bevares. Den historiske state-model beregnes i pipeline og er fortsat skyggetilstand i 4.0.117; den skal valideres fagligt før nye numeriske scorebidrag aktiveres. Faktisk DMI-strøm er eneste gyldige strømgrundlag for transportstate.
+## Historisk 4.0.117-grundlag – RavScore og state
 
-En større kildekritisk forskningsrunde er planlagt som P3, men ikke startet. Den skal senere validere hele kæden fra frigivelse til jagtbarhed, auditere den faktiske scorekode og særskilt undersøge, om rumlige strømstrukturer tilfører information ud over punktvise DMI-vektorer. Indtil en separat, evidensbaseret beslutning eventuelt siger andet, bruges generelle strømbånd fortsat hverken som scoreinput eller fallback. Forskningen har ingen automatisk tilladelse til at ændre RavScore.
+Ved 4.0.117 brugte RavScore aktuelle og dokumenterede forhold, mens den daværende historiske state-model fortsat var skyggetilstand og krævede faglig validering før nye numeriske bidrag. Dette er et historisk fundament, ikke den aktuelle modelstatus. Candidate G blev senere offentlig, og DEC-0102/0107 har siden gennemført den planlagte kildekritiske forsknings- og implementeringsrunde som en lokal integreret releasekandidat.
+
+Den vedvarende regel er, at faktisk verificeret DMI-/godkendt Copernicus-gridstrøm er transportgrundlag, mens generelle strømbånd hverken er scoreinput eller fallback. Nye numeriske virkninger kræver fortsat en særskilt evidensbaseret beslutning og får ingen automatisk aktivering.
 
 ## Performance
 Public klienten skal starte hurtigt. Store råhistorikker, private audits og tunge beregninger må ikke flyttes til browserstartup. Den historiske målsætning/baseline er ca. 2–3,5 sekunder; tidligere regression mod ca. 13 sekunder er en advarsel om at holde pipelinearbejde server-/buildside.

@@ -1,8 +1,21 @@
 {
   "schemaVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.293",
+  "releaseVersion": "4.0.318",
+  "ravScoreModelBinding": {
+    "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
+    "stateSchemaVersion": "6.0.0",
+    "variantId": "COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2",
+    "profileId": "cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5",
+    "componentSchemaId": "ravscore-components-huntability-delivery-mobilisation-bounds-v5",
+    "explanationSchemaId": "ravscore-explanation-integrated-bounds-v5",
+    "rankingPolicyId": "direction-broad-19-history-tie-v2",
+    "bestTimePolicyId": "score-history-water-tie-earliest-v3",
+    "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
+    "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
+    "modelBundleSha256": "3aede43fee8e2054ffd1bf81b098ef2713033b16a10d3234414f6306c31f5fa6"
+  },
   "scoreModel": {
-    "id": "candidate-g",
+    "id": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "publicOnly": true,
     "weights": {
       "huntability": 20,
@@ -10,7 +23,11 @@
       "mobilisation": 30
     }
   },
-  "locales": ["da", "de", "en"],
+  "locales": [
+    "da",
+    "de",
+    "en"
+  ],
   "allowedTopics": [
     "amber-identification",
     "amber-origin-density-and-secondary-stores",
@@ -20,7 +37,7 @@
     "coastal-sorting-and-local-traps",
     "weather-event-sequence",
     "public-ravradar-forecast",
-    "candidate-g-explanation",
+    "integrated-ravscore-explanation",
     "wind-waves-current-water-level",
     "coastal-hunting-safety-boundary",
     "amber-geology-age-and-botanical-origin",
@@ -45,20 +62,24 @@
   ],
   "facts": [
     {
-      "id": "score.candidate-g-only",
-      "text": "Candidate G is RavRadar's only public score model. Older score models must not be used as public fallback."
+      "id": "score.integrated-only",
+      "text": "The integrated coastal-process RavScore is RavRadar's only public score model. Candidate G is retained only as a historical rollback oracle; it is neither a public model, a shadow model nor a runtime fallback."
     },
     {
       "id": "score.weights-20-50-30",
-      "text": "Candidate G combines 20 percent huntability, 50 percent transport towards the coast and 30 percent amber mobilisation."
+      "text": "The integrated RavScore combines 20 percent huntability, 50 percent delivery potential from verified model-grid-current evidence with bounded wave-approach attenuation and 30 percent wave energy and mobilisation opportunity."
     },
     {
       "id": "score.local-missing",
-      "text": "If Candidate G lacks coherent evidence for a zone, hunting mode or hour, that result is unavailable and omitted from rankings. It must not borrow a score from an older model, another zone, another coastal part or another hour."
+      "text": "If a required direct weather input is missing or invalid for the score hour itself, that hour is unavailable and omitted from rankings. This is separate from a gap in earlier history. RavRadar must not interpolate, carry a value forward or borrow a score from another model, zone, coastal part or hour."
+    },
+    {
+      "id": "score.history-incomplete",
+      "text": "When the direct weather inputs for the current and forecast score hours are complete but required earlier history has a gap, RavRadar still publishes a conservative lower-bound score with an explicit lower-to-upper model interval across the full current and five-day forecast. A temporary notice is shown and disappears automatically when the required history is complete. The verified-history hour count describes coverage and does not prove an unbroken sequence. This state is not calibration eligible."
     },
     {
       "id": "score.no-find-guarantee",
-      "text": "RavScore describes modelled amber-hunting conditions. It never promises that amber will be found and is not statistically calibrated against enough representative find and no-find trips."
+      "text": "RavScore describes relative model evidence and search conditions. It is an index, not a percentage chance or a claim of find precision, because RavRadar does not have representative find and no-find evidence."
     },
     {
       "id": "amber.origin-and-secondary-stores",
@@ -86,7 +107,7 @@
     },
     {
       "id": "transport.current-led",
-      "text": "Verified current is the main transport signal. Transport towards the coast is favoured, but alongshore flow can still move amber and is not automatically worthless. Outflow must not be described as delivery towards the coast."
+      "text": "Verified model-grid current is RavScore's main relative transport-evidence signal. A coastward component supports evidence towards the coastal zone; alongshore flow remains relevant physical context but does not resolve local amber delivery. Outflow is negative supply evidence, not proof that all local amber has left."
     },
     {
       "id": "wind.indirect-not-bottom-current",
@@ -97,16 +118,16 @@
       "text": "Wave height alone is not enough to describe mobilisation. Wave period, duration, water depth and seabed also matter; long waves reach deeper than short waves of the same height, and a brief peak is not equivalent to hours of developed sea."
     },
     {
-      "id": "transport.layered-water",
-      "text": "Surface flow, deeper flow, wave drift and return flow can differ in direction. RavRadar focuses on a bottom-near current representation because most amber lies or moves close to the seabed; a surface arrow is not automatically a reliable bottom-transport direction."
+      "id": "transport.grid-not-surf-zone",
+      "text": "Per-part verified model-grid current is relative coastal-zone transport evidence. When used, an owner-approved regional proxy and distance are disclosed; it is not a local grid point. RavRadar resolves no surf-zone undertow, feeder or longshore currents, rip currents, or exact bar/channel paths. A causal energy-weighted average of wave direction uses current and earlier hours only, never future hours. With a four-hour half-life, older hours gradually count less. It can attenuate existing supply by up to 15 percent in the 50-percent delivery component and never create or increase supply. It can remove at most 7.5 raw RavScore points before final rounding; the displayed integer can move by 8 points. It is not a physical landing fraction and does not remove structural last-mile uncertainty."
     },
     {
       "id": "mobilisation.wave-memory",
-      "text": "Amber mobilisation is driven by one wave-energy state based on wave height squared times wave period. It builds over about four hours and decays with a 48-hour half-life, so the period after energetic weather can remain relevant. These are tested working rules, not universal natural limits."
+      "text": "RavScore's mobilisation component is a relative wave-energy prior based on wave height squared times wave period. Its four-hour build and 48-hour half-life are tested working priors; RavRadar does not observe local amber inventory or actual movement, and these are neither universal natural limits nor find-calibrated rules."
     },
     {
       "id": "water-level.context",
-      "text": "Water level can move or expose the wash line and affect access to hunting areas. It must be interpreted with the other conditions and is not by itself proof of amber."
+      "text": "Falling water can accompany some seaward movement. Lower water can also expose material already delivered or retained behind bars and along edges, making a smaller area easier to search; this does not prove that the fall concentrated it. Without local bathymetry this context gives no RavScore points and is not proof that amber arrived or that all amber left."
     },
     {
       "id": "coast.sorting-and-traps",
@@ -130,7 +151,7 @@
     },
     {
       "id": "sequence.release-transport-deposition",
-      "text": "An amber-hunting event is a sequence: waves may first release material, current may then transport it, and a calmer or falling phase may improve deposition and searching. Prolonged strong outflow can carry material away again, so one current weather value never tells the whole story."
+      "text": "An amber-hunting event may involve release, transport, nearshore delivery, deposition and retention. RavScore uses wave energy as mobilisation opportunity, verified model-grid current as relative supply evidence and a bounded wave-approach attenuation before the delivery component, but does not resolve the final path across bars and channels. Strong outflow can carry some material away, while lower water may expose material already delivered or retained behind a bar; this does not show that the fall concentrated it, and one model-current value never tells the whole story."
     },
     {
       "id": "amber.resin-maturation",
@@ -150,7 +171,7 @@
     },
     {
       "id": "amber.cold-water-buoyancy",
-      "text": "Colder seawater is generally denser and gives amber more buoyancy. Most Baltic amber still sinks, but the smaller density difference can make it materially easier for waves and turbulence to lift and mobilise; this physical fact does not by itself change RavScore weights or guarantee delivery."
+      "text": "At the same salinity, colder seawater is generally slightly denser and can reduce amber's submerged density difference a little. Most Baltic amber still sinks, the effect on lifting or mobilisation of natural pieces in local conditions is unquantified, and temperature is not a RavScore input."
     },
     {
       "id": "identification.fluorescence-varies",
@@ -187,10 +208,6 @@
     {
       "id": "evidence.source-classes",
       "text": "RavRadar distinguishes direct amber experiments, peer-reviewed coastal analogies, official rules and safety guidance, and named practitioner experience. These sources can complement each other but must not be presented as equally strong evidence."
-    },
-    {
-      "id": "forecast.expired-days",
-      "text": "In emergency operation an older verified forecast dataset may contain fewer than five calendar days that are still current or future. Expired days must be removed and old forecast values must never be relabelled with new dates."
     },
     {
       "id": "public-context.selected-zone-only",

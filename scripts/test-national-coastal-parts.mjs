@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';import fs from 'node:fs/promises';
-const source=await fs.readFile('scripts/build-national-coastal-parts.py','utf8');const validator=await fs.readFile('scripts/validate-national-coastal-parts.py','utf8');const workflow=await fs.readFile('.github/workflows/update-and-deploy.yml','utf8');
+import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
+const source=await fs.readFile('scripts/build-national-coastal-parts.py','utf8');const validator=await fs.readFile('scripts/validate-national-coastal-parts.py','utf8');const workflow=await readProductionWorkflowSource('orchestrator');
 for(const x of ['inventedConnectionCount":0','official-place-name-required','landPointProposed":False','weatherSamplingEnabled":False','blocked-planned-conflict','blocked-locality-review','maximumReviewPartLengthKm','maximumFragmentsPerReviewPart'])assert.ok(source.includes(x),`Mangler ${x}`);
 for(const x of ['proposedName") is not None','inventedConnectionCount','EXPECTED_ZONE_COUNT=210','zoneCount")!=EXPECTED_ZONE_COUNT'])assert.ok(validator.includes(x),`Validator mangler ${x}`);
 assert.ok(source.includes('EXPECTED_ZONE_COUNT=210'),'Delgeneratoren skal følge den aktuelle nationale 210-zonepolitik');
