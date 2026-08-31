@@ -439,6 +439,12 @@ const operationalReconcileSection=orchestratorWorkflow.slice(operationalRecovery
 const operationalWriterSection=orchestratorWorkflow.slice(operationalRecoveryPositions.writer,operationalRecoveryPositions.finalizer);
 const operationalFinalizerSection=orchestratorWorkflow.slice(operationalRecoveryPositions.finalizer,operationalRecoveryPositions.gate);
 const operationalRecoveryGateSection=orchestratorWorkflow.slice(operationalRecoveryPositions.gate,operationalRecoveryPositions.currentHour);
+const operationalTripStoragePosition=orchestratorWorkflow.indexOf('\n  trip-storage-readiness:',operationalRecoveryPositions.currentHour);
+const operationalCurrentHourSection=orchestratorWorkflow.slice(operationalRecoveryPositions.currentHour,operationalTripStoragePosition);
+ok(operationalTripStoragePosition>operationalRecoveryPositions.currentHour
+  && operationalCurrentHourSection.includes('needs: operational-recovery-gate')
+  && operationalCurrentHourSection.includes("if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}"),
+'Current-hour skal genoptage efter bevidst skipped recovery-grene, men kun når terminalgaten er grøn');
 ok(operationalWriterSection.includes("needs.reconcile-operational-pending.outputs.recovery_action == 'EXACT_TARGET_REDEPLOY'")
   && operationalWriterSection.includes('pages: write')
   && operationalWriterSection.includes('id-token: write')
@@ -478,6 +484,7 @@ for(const marker of [
   "orchestratorWorkflow.indexOf('\\n  recover-operational-pages-target:')",
   "orchestratorWorkflow.indexOf('\\n  finalize-operational-pages-recovery:')",
   "orchestratorWorkflow.indexOf('\\n  operational-recovery-gate:')",
+  "if: ${{ !cancelled() && needs.operational-recovery-gate.result == 'success' }}",
   'assertMarkersOrdered(operationalWriterSection',
   'downloaded_zip_sha256=',
   'EXACT_TARGET_REDEPLOY',
