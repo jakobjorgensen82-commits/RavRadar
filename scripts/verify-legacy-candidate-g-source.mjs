@@ -100,6 +100,9 @@ export function attestLegacyCandidateGSource({ manifest, conditions } = {}) {
     || conditions.coastalParts?.scoreProfile?.activeProfileId !== LEGACY_CANDIDATE_G_MODEL_ID) {
     throw new Error('Legacy Candidate G local source lacks exact 210/673 runtime identity');
   }
+  if (!same(conditions.coastalParts.scoreProfile, manifest.ravScoreProfile)) {
+    throw new Error('Legacy Candidate G conditions and manifest profiles differ');
+  }
   let candidateStateCount = 0;
   for (const part of Object.values(parts)) {
     const state = part?.candidateG?.currentState;

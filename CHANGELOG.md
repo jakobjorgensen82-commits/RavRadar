@@ -1,3 +1,12 @@
+## 4.0.318-kandidat – PR #241 merged; legacy-profilattestering lokalt rettet (2026-08-31)
+
+- Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
+- PR #241 bestod exact-head-kildegaten i run `33397737159` og blev merged som `origin/main a1ce7632b4262d742ec4a8a59746a61241c3b79a`.
+- Mergeproduktion `33400836760` passerede den tidligere Højbjerg/bearing-gate og beviste dermed den smalle `360→0`-rettelse. Den stoppede derefter fail-closed i den lokale legacy-kildeattestering, før DMI, beskyttede writes, artifact og Pages; Candidate G og den offentlige side blev ikke ændret.
+- Rodårsagen er reproduceret: attesteringens testfixture tillod kun 11 profilfelter, mens den fastlåste 4.0.316-producent og den aktive offentlige Candidate G-manifestform har 20. Den lokale branch `codex/ravscore-legacy-profile-attestation` validerer nu den fulde eksakte feltmængde, readiness/advisory-konsistens og bit-for-bit samme profil i manifest og conditions. Ukendte felter og blandede profiler stopper fortsat.
+- Målrettet legacy-, activation-, workflow-, deploy- og cutover-matrix samt privacy-sikker offentlig manifest/payload/53-fils source-closure-verifikation er grøn. Ingen private conditions-payloads, koordinater, rå U/V, geometri eller land-/vandpunkter er læst eller ændret.
+- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.318-produktion og offentlig desktop-/mobilverifikation udestår.
+
 ## 4.0.318-kandidat – nyeste checkpoint efter source-merge, workflowfixes og bearing-360 stop (2026-08-31)
 
 - **Denne topstatus superseder ældre topresumeer nedenfor.** PR #238 (modelkilden) er merged som `origin/main 57f76d716310060e0d629c9f9d3691d386a2dd58`. Workflowfixes fra PR #239/#240 er derefter merged til `origin/main be81005b50294f54367f154c393bb27910e16c6f`.
