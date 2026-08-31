@@ -1252,6 +1252,46 @@ if (!currentHourAfterRecoverySection.startsWith('\n  current-hour-readiness:\n')
   throw new Error('Current-hour må ikke starte før recovery-finalizeren er terminalt grøn/skipped.');
 }
 
+const downstreamResumeContracts = [
+  {
+    job: 'trip-storage-readiness',
+    next: 'build-and-prepare',
+    needs: 'needs: current-hour-readiness',
+    condition: "if: ${{ !cancelled() && needs.current-hour-readiness.result == 'success' && needs.current-hour-readiness.outputs.ready == 'true' }}",
+  },
+  {
+    job: 'build-and-prepare',
+    next: 'geometry-v2-national',
+    needs: 'needs: [validate-dispatch, current-hour-readiness, trip-storage-readiness]',
+    condition: "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && needs.trip-storage-readiness.result == 'success' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' && needs.validate-dispatch.outputs.geometry_v2_national != 'true' && needs.current-hour-readiness.outputs.ready == 'true' && needs.trip-storage-readiness.outputs.ready == 'true' }}",
+  },
+  {
+    job: 'geometry-v2-national',
+    next: 'geometry-v2-pilot',
+    needs: 'needs: [validate-dispatch, current-hour-readiness]',
+    condition: "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_national == 'true' && needs.validate-dispatch.outputs.geometry_v2_pilot != 'true' }}",
+  },
+  {
+    job: 'geometry-v2-pilot',
+    next: 'deploy-pages',
+    needs: 'needs: [validate-dispatch, current-hour-readiness]',
+    condition: "if: ${{ !cancelled() && needs.validate-dispatch.result == 'success' && needs.current-hour-readiness.result == 'success' && github.event_name == 'workflow_dispatch' && needs.validate-dispatch.outputs.geometry_v2_pilot == 'true' }}",
+  },
+  {
+    job: 'deploy-pages',
+    next: 'production-outcome',
+    needs: 'needs: build-and-prepare',
+    condition: "if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && github.ref == 'refs/heads/main' && needs.build-and-prepare.outputs.should_deploy == 'true' }}",
+  },
+];
+for (const contract of downstreamResumeContracts) {
+  const start = orchestratorWorkflow.indexOf('\n  ' + contract.job + ':');
+  const end = orchestratorWorkflow.indexOf('\n  ' + contract.next + ':', start + 1);
+  const section = start >= 0 && end > start ? orchestratorWorkflow.slice(start, end) : '';
+  if (!section.includes(contract.needs) || !section.includes(contract.condition)) {
+    throw new Error('Downstream recovery routing contract failed: ' + contract.job);
+  }
+}
 function assertMarkersOrdered(section, markers, label) {
   let cursor = -1;
   for (const marker of markers) {
