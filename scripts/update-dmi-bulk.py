@@ -430,13 +430,30 @@ def select_forecast_run(
         for run, rows in runs.items() if rows
     }
     mature = [run for run, hours in future_horizon.items() if hours >= retention_horizon_hours]
-    if preferred_run in mature:
+    latest = max(future_horizon, key=epoch)
+    cadence_hours = observed_run_cadence_hours(runs)
+    preferred_lag_hours = (
+        max(0.0, (epoch(latest) - epoch(preferred_run)) / 3600.0)
+        if preferred_run in mature
+        else 0.0
+    )
+    preferred_still_scheduled = (
+        preferred_run in mature
+        and (
+            preferred_run == latest
+            or (
+                cadence_hours is not None
+                and preferred_lag_hours <= cadence_hours + 1e-6
+            )
+        )
+    )
+    stale_preferred_discarded = preferred_run in mature and not preferred_still_scheduled
+    if preferred_still_scheduled:
         selected = preferred_run
     elif mature:
         selected = max(mature, key=epoch)
     else:
         selected = max(future_horizon, key=lambda run: (future_horizon[run], epoch(run)))
-    latest = max(future_horizon, key=epoch)
     return selected, {
         "latestRun": latest,
         "selectedRun": selected,
@@ -444,8 +461,54 @@ def select_forecast_run(
         "selectedRunFutureHorizonHours": round(future_horizon[selected], 1),
         "runRetentionHorizonHours": retention_horizon_hours,
         "preferredProgressiveRunRetained": selected == preferred_run,
+        "preferredProgressiveRunDiscardedAsStale": stale_preferred_discarded,
         "incompleteLatestRunDeferred": selected != latest,
     }
+
+
+def prioritize_strict_current_recovery(
+    scheduled: list[str],
+    strict_current_anchor_available: bool,
+) -> list[str]:
+    """Put DKSS first only while the exact coastal-part current anchor is absent."""
+    if strict_current_anchor_available:
+        return list(scheduled)
+    return [
+        *[collection for collection in scheduled if collection in MARINE_COLLECTIONS],
+        *[collection for collection in scheduled if collection not in MARINE_COLLECTIONS],
+    ]
+
+
+def prioritize_first_cutover_collections(
+    scheduled: list[str],
+    strict_current_anchor_available: bool,
+) -> list[str]:
+    """Order the bounded first-cutover loop without starving strict DKSS recovery."""
+    wam = [collection for collection in scheduled if collection in WAVE_BOOTSTRAP_COLLECTIONS]
+    remainder = [collection for collection in scheduled if collection not in WAVE_BOOTSTRAP_COLLECTIONS]
+    if strict_current_anchor_available:
+        return [*wam, *remainder]
+    return [
+        *[collection for collection in remainder if collection in MARINE_COLLECTIONS],
+        *wam,
+        *[collection for collection in remainder if collection not in MARINE_COLLECTIONS],
+    ]
+
+
+def reusable_processed_steps(
+    previous_run: dict[str, Any],
+    *,
+    collection: str,
+    same_processing: bool,
+    same_run: bool,
+    strict_current_anchor_available: bool,
+) -> dict[str, Any]:
+    """Never let loose legacy DKSS step markers suppress strict-current recovery."""
+    if not same_processing or not same_run:
+        return {}
+    if collection in MARINE_COLLECTIONS and not strict_current_anchor_available:
+        return {}
+    return dict(previous_run.get("processedSteps") or {})
 
 
 def list_latest_assets(
@@ -3922,17 +3985,28 @@ def main() -> int:
         if not zone.get("waterSource") and not zone.get("researchCurrent") and not zone.get("privateStage")
     ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
+    scheduled = prioritize_strict_current_recovery(
+        scheduled,
+        coastal_part_current_cache_healthy,
+    )
+    schedule_coverage["strictCurrentRecoveryActive"] = not coastal_part_current_cache_healthy
     if wave_bootstrap_configuration is not None:
         # The first integrated cutover has one bounded exception to ordinary
-        # deficit scheduling: both WAM collections must establish the same-run
-        # operational bridge before unrelated productive collections can use
-        # the two normal processing slots.
-        wam_first = sorted(WAVE_BOOTSTRAP_COLLECTIONS, key=COLLECTION_ORDER.index)
-        scheduled = wam_first + [
-            collection for collection in scheduled
-            if collection not in WAVE_BOOTSTRAP_COLLECTIONS
-        ]
-        schedule_coverage["privateWaveBootstrapWamFirst"] = True
+        # deficit scheduling. Both WAM collections remain in the six-slot loop,
+        # but a missing strict current anchor keeps all DKSS collections ahead
+        # of them; the separately checkpointed history bootstrap still runs
+        # before this loop and may resume over more than one cutover attempt.
+        scheduled = prioritize_first_cutover_collections(
+            scheduled,
+            coastal_part_current_cache_healthy,
+        )
+        schedule_coverage["privateWaveBootstrapWamFirst"] = coastal_part_current_cache_healthy
+        schedule_coverage["privateWaveBootstrapDkssFirst"] = not coastal_part_current_cache_healthy
+    schedule_coverage["strictCurrentRecoveryDkssFirst"] = (
+        not coastal_part_current_cache_healthy
+        and bool(scheduled)
+        and scheduled[0] in MARINE_COLLECTIONS
+    )
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
@@ -4032,7 +4106,23 @@ def main() -> int:
                 and previous_run.get("processingSignature") == processing_signature
             )
             same_run = previous_run.get("referenceTime") == run
-            previous_steps = dict(previous_run.get("processedSteps") or {}) if same_processing and same_run else {}
+            previous_steps = reusable_processed_steps(
+                previous_run,
+                collection=collection,
+                same_processing=same_processing,
+                same_run=same_run,
+                strict_current_anchor_available=coastal_part_current_cache_healthy,
+            )
+            if (
+                collection in MARINE_COLLECTIONS
+                and not coastal_part_current_cache_healthy
+                and same_processing
+                and same_run
+            ):
+                result["diagnostics"]["strictCurrentRecoveryProcessedStepsDiscarded"] = (
+                    int(result["diagnostics"].get("strictCurrentRecoveryProcessedStepsDiscarded") or 0)
+                    + len(previous_run.get("processedSteps") or {})
+                )
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
             previously_processed = {
                 valid for valid, step in previous_steps.items()

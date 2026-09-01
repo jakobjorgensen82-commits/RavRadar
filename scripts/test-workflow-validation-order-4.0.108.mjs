@@ -223,8 +223,9 @@ for (const marker of [
   'name: Apply centrally approved zone reviews locally',
   'python scripts/apply-central-zone-reviews.py',
   'name: Materialize the centrally hydrated authoritative coastal-part registry',
-  'Bind one exact current UTC target after the bounded DMI refresh',
-  'test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'Validate the operational request and bind the exact target hour',
+  'Expose the exact target hour already used by the DMI refresh',
+  'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}',
   'productionReferenceAt,evidencePurpose:"CURRENT_CUTOVER_PREFLIGHT"',
   "'.productionReferenceAt'",
 ]) {
@@ -240,6 +241,10 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Hydrate current central admin configuration read-only'),
   operationalPreflight.indexOf('name: Apply centrally approved zone reviews locally'),
   operationalPreflight.indexOf('name: Materialize the centrally hydrated authoritative coastal-part registry'),
+  operationalPreflight.indexOf('name: Hydrate an optional independent deployed Candidate G DMI donor'),
+  operationalPreflight.indexOf('--root "$donor_root"'),
+  operationalPreflight.indexOf('cp "$donor_root/data/live/dmi-bulk-cache.json" .cache/deployed-dmi-bulk-cache.json'),
+  operationalPreflight.indexOf('name: Restore progressive private DMI zone cache'),
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
@@ -254,6 +259,19 @@ const operationalPositions = [
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
   throw new Error('Operational-118-preflight skal følge DMI→always-save→terminalgate→exact range→update:weather→integrated audit.');
+}
+if (!operationalPreflight.includes('$RUNNER_TEMP/ravradar-118-deployed-donor')) {
+  throw new Error('Operational-118-preflightens deployed DMI-donor skal være isoleret under RUNNER_TEMP.');
+}
+if (!operationalPreflight.includes('if python scripts/hydrate-deployed-weather.py')
+  || !operationalPreflight.includes('The fresh official DMI attempt continues without a deployed fallback.')) {
+  throw new Error('En utilgængelig deployed donor må ikke blokere det friske officielle DMI-forsøg.');
+}
+if (operationalPreflight.includes('cp data/live/dmi-bulk-cache.json .cache/deployed-dmi-bulk-cache.json')) {
+  throw new Error('Den progressive DMI-cache må ikke duplikeres som sin egen deployed fallback.');
+}
+if (operationalPreflight.includes('test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"')) {
+  throw new Error('Et UTC-timeskifte må ikke forkaste et ellers eksakt, jobafgrænset 118-timersbevis.');
 }
 for (const saveName of [
   'Save progressed DMI GRIB cache before any terminal decision',

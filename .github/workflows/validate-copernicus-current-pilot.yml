@@ -242,7 +242,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Validate the operational request and bind only the cache generation
+      - name: Validate the operational request and bind the exact target hour
         id: operational-target
         shell: bash
         env:
@@ -251,6 +251,9 @@ jobs:
         run: |
           test "$PILOT_FULL_COAST" != "true"
           test -z "$PREFLIGHT_SAMPLE_TIME"
+          target_hour="$(date -u +%Y-%m-%dT%H:00:00Z)"
+          printf '%s\n' "$target_hour" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$'
+          echo "target_hour=$target_hour" >> "$GITHUB_OUTPUT"
           echo "cache_generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
           echo "Accepted a current-hour, non-deploying 118-hour data preflight."
 
@@ -271,6 +274,28 @@ jobs:
 
       - name: Materialize the centrally hydrated authoritative coastal-part registry
         run: node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Hydrate an optional independent deployed Candidate G DMI donor
+        shell: bash
+        run: |
+          donor_root="$RUNNER_TEMP/ravradar-118-deployed-donor"
+          mkdir -p "$donor_root/data" .cache
+          rm -f .cache/deployed-dmi-bulk-cache.json
+          cp data/zones.geojson "$donor_root/data/zones.geojson"
+          if python scripts/hydrate-deployed-weather.py \
+              --legacy-candidate-g-bootstrap \
+              --root "$donor_root" \
+              && test -s "$donor_root/data/live/dmi-bulk-cache.json"; then
+            cp "$donor_root/data/live/dmi-bulk-cache.json" .cache/deployed-dmi-bulk-cache.json
+            echo "A strictly validated independent deployed DMI donor is available."
+          else
+            rm -f .cache/deployed-dmi-bulk-cache.json
+            echo "::warning title=Optional deployed DMI donor unavailable::The fresh official DMI attempt continues without a deployed fallback."
+          fi
+        env:
+          RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
+          RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -294,14 +319,6 @@ jobs:
           restore-keys: |
             dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
             dmi-zone-cache-v1-${{ runner.os }}-
-
-      - name: Preserve restored DMI cache as compatible fallback candidate
-        shell: bash
-        run: |
-          mkdir -p .cache
-          if test -f data/live/dmi-bulk-cache.json; then
-            cp data/live/dmi-bulk-cache.json .cache/deployed-dmi-bulk-cache.json
-          fi
 
       - name: Restore private Copernicus operational range cache
         uses: actions/cache/restore@v6
@@ -333,6 +350,7 @@ jobs:
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
+          RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
           WEATHER_USER_AGENT: "RavRadar/4.0.319 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
@@ -371,14 +389,15 @@ jobs:
           echo "ready=true" >> "$GITHUB_OUTPUT"
           echo "DMI producer passed its bounded terminal gate; exact gap selection may start."
 
-      - name: Bind one exact current UTC target after the bounded DMI refresh
+      - name: Expose the exact target hour already used by the DMI refresh
         shell: bash
+        env:
+          LOCKED_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
         run: |
-          target="$(date -u +%Y-%m-%dT%H:00:00Z)"
-          printf '%s\n' "$target" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$'
-          test "$(date -u -d "$target" +%Y-%m-%dT%H:00:00Z)" = "$target"
-          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$target" >> "$GITHUB_ENV"
-          echo "Bound the exact current UTC target immediately before the 118-hour current proof."
+          printf '%s\n' "$LOCKED_TARGET_HOUR" | grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$'
+          test "$(date -u -d "$LOCKED_TARGET_HOUR" +%Y-%m-%dT%H:00:00Z)" = "$LOCKED_TARGET_HOUR"
+          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$LOCKED_TARGET_HOUR" >> "$GITHUB_ENV"
+          echo "Reused the exact UTC target already bound before the DMI refresh."
 
       - name: Seal exact operational DMI gaps for target through target plus 117
         id: target-registry
@@ -488,8 +507,7 @@ jobs:
           test "$(jq -r '.coverage.partCount' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "673"
           test "$(jq -r '.coverage.publicForecastHours' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "118"
           test "$(jq -r '.coverage.unavailableZoneModeCount' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "0"
-          test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          echo "Integrated weather preflight passed: 210 zones, 673 parts and 118 available forecast hours; no deploy was attempted."
+          echo "Integrated weather preflight passed for its one exact bounded target: 210 zones, 673 parts and 118 available forecast hours; no deploy was attempted."
 
       - name: Upload only the privacy-safe preflight evidence
         uses: actions/upload-artifact@v7

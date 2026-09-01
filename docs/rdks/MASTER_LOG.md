@@ -1,4 +1,12 @@
-# NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
+# NYESTE CHECKPOINT – 2026-09-01 – DMI-currentrodårsag lokalt rettet; frisk 118-timersbevis åbent
+
+- Runs `33510636195` og `33512163102` behandlede HARMONIE/WAM, men nul trin i `dkss_idw`, `dkss_nsbs` og `dkss_lf`. Fejlen `DMI_STRICT_CURRENT_ANCHOR_MISSING` dokumenterer derfor en lokal DKSS-udsultning i RavRadar, ikke at DMI generelt ikke kunne levere currentdata.
+- Cachelinjen førte tilbage til det negative run `33498108421`. Den konkrete lokale kombination var en preferred progressionsrun, som kunne afvises som stale uden fremskift til en nyere moden run, en “deployed donor” der blot kopierede den samme progressive cache, og genbrugte DKSS-`processedSteps` uden et strict current anchor.
+- 4.0.319-kandidaten binder ét eksakt jobtarget før DMI og genbruger det gennem beviset uden at forkaste et ellers eksakt snapshot ved et efterfølgende UTC-timeskifte. En ældre preferred run beholdes kun foran en nyere moden run ved kendt observeret cadence og højst én cadences lag; ukendt cadence fastholder aldrig den ældre run. Uden strict anchor står DKSS først i den normale collection-loop, og DKSS genbehandles.
+- En deployed Candidate G-DMI-donor er valgfri og isoleret under `RUNNER_TEMP`; kun en strict-kompatibel donor må bruges, og frisk officiel DMI fortsætter uden den. Første integrerede cutovers særskilt checkpointede WAM-historikbootstrap ligger før den normale loop og kan fortsætte over flere forsøg. Den efterfølgende seks-collection-loop sætter DKSS foran WAM alene, mens strict anchor mangler; normal drift bevarer to collections. DMI-first og Copernicus som exact-gap-supplement er uændret. Ingen score-, geometri-, punkt-, kystnormal- eller private dataændringer indgår.
+- De tre målrettede DMI-slutdifftests og Python-syntakskontrollen er grønne. Et frisk isoleret 673 × 118-preflightbevis afventer sammen med exact-head, merge, fuld produktion og offentlig browserkontrol. Candidate G er fortsat offentlig.
+
+# TIDLIGERE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
 - PR #241 bestod exact-head-kildegaten i run `33397737159` og blev merged som `origin/main a1ce7632b4262d742ec4a8a59746a61241c3b79a`.

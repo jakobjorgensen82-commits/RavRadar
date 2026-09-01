@@ -139,6 +139,11 @@ assert.match(
   build,
   /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
 );
+assert.match(
+  build,
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '2' \}\}/,
+  'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normale vejrkørsler forbliver afgrænset til to collections.',
+);
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
 assert.match(updater, /bulk-stac-grib-first-with-sequential-edr-repair/);

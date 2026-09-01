@@ -122,6 +122,61 @@ assert run_diag['incompleteLatestRunDeferred'] is True, run_diag
 assert run_diag['preferredProgressiveRunRetained'] is True, run_diag
 assert run_diag['runRetentionHorizonHours']==48, run_diag
 
+# A progressive cache may not pin a run beyond one observed publication
+# cadence when a newer mature run is already available.
+stale_preferred_runs={
+ '2026-01-01T12:00:00Z':[row('2026-01-06T12:00:00Z')],
+ '2026-01-01T15:00:00Z':[row('2026-01-06T15:00:00Z')],
+ '2026-01-01T18:00:00Z':[row('2026-01-06T18:00:00Z')],
+ '2026-01-01T21:00:00Z':[row('2026-01-02T09:00:00Z')],
+}
+selected,run_diag=module.select_forecast_run(
+ stale_preferred_runs,'2026-01-01T12:00:00Z',module.epoch('2026-01-03T18:00:00Z'),48,
+)
+assert selected=='2026-01-01T18:00:00Z', run_diag
+assert run_diag['preferredProgressiveRunRetained'] is False, run_diag
+assert run_diag['preferredProgressiveRunDiscardedAsStale'] is True, run_diag
+assert run_diag['incompleteLatestRunDeferred'] is True, run_diag
+
+# Even when the returned catalog is too sparse to infer a cadence, an older
+# preferred run may not hide a newer mature run.
+unknown_cadence_runs={
+ '2026-01-01T00:00:00Z':[row('2026-01-08T00:00:00Z')],
+ '2026-01-03T01:00:00Z':[row('2026-01-10T01:00:00Z')],
+}
+selected,run_diag=module.select_forecast_run(
+ unknown_cadence_runs,'2026-01-01T00:00:00Z',module.epoch('2026-01-03T02:00:00Z'),48,
+)
+assert selected=='2026-01-03T01:00:00Z', run_diag
+assert run_diag['preferredProgressiveRunDiscardedAsStale'] is True, run_diag
+
+# Missing strict provenance moves all DKSS collections ahead of non-current
+# families and invalidates only DKSS processed-step reuse.
+mixed_schedule=['wam_dw','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw','wam_nsb']
+recovery_schedule=module.prioritize_strict_current_recovery(mixed_schedule,False)
+assert recovery_schedule[:3]==['dkss_nsbs','dkss_lf','dkss_idw'], recovery_schedule
+assert module.prioritize_strict_current_recovery(mixed_schedule,True)==mixed_schedule
+assert module.prioritize_first_cutover_collections(recovery_schedule,False)==[
+ 'dkss_nsbs','dkss_lf','dkss_idw','wam_dw','wam_nsb','harmonie_dini_sf',
+]
+assert module.prioritize_first_cutover_collections(mixed_schedule,True)==[
+ 'wam_dw','wam_nsb','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw',
+]
+old_steps={'2026-01-01T00:00:00Z':{'complete':True,'recognizedParameters':['current-u','current-v']}}
+old_run={'processedSteps':old_steps}
+assert module.reusable_processed_steps(
+ old_run,collection='dkss_idw',same_processing=True,same_run=True,
+ strict_current_anchor_available=False,
+)=={}
+assert module.reusable_processed_steps(
+ old_run,collection='dkss_idw',same_processing=True,same_run=True,
+ strict_current_anchor_available=True,
+)==old_steps
+assert module.reusable_processed_steps(
+ old_run,collection='wam_dw',same_processing=True,same_run=True,
+ strict_current_anchor_available=False,
+)==old_steps
+
 # Schedule facts are inferred from the exact STAC response. Missing created
 # stays unknown; no publication timestamp is fabricated.
 catalog={
@@ -152,10 +207,15 @@ real_time=module.time.time
 module.time.time=lambda:module.epoch('2026-01-01T20:00:00Z')
 stale_run,stale_assets,stale_diag=module.list_latest_assets('wam_dw')
 assert stale_run is None and stale_assets==[] and stale_diag['rejectedStaleRun'] is True, stale_diag
+stale_run,stale_assets,stale_diag=module.list_latest_assets('wam_dw','2026-01-01T00:00:00Z')
+assert stale_run is None and stale_assets==[] and stale_diag['rejectedStaleRun'] is True, stale_diag
 module.time.time=lambda:module.epoch('2026-01-01T09:00:00Z')
 fresh_run,fresh_assets,fresh_diag=module.list_latest_assets('wam_dw')
 assert fresh_run=='2026-01-01T06:00:00Z' and len(fresh_assets)==1, fresh_diag
 assert fresh_assets[0]['id']=='item-c' and fresh_assets[0]['itemCreatedAt']=='2026-01-01T07:00:00Z'
+advanced_run,advanced_assets,advanced_diag=module.list_latest_assets('wam_dw','2026-01-01T00:00:00Z')
+assert advanced_run=='2026-01-01T06:00:00Z' and len(advanced_assets)==1, advanced_diag
+assert advanced_diag['preferredProgressiveRunDiscardedAsStale'] is True, advanced_diag
 module.time.time=real_time
 
 # Exact part identity and one shared grid definition/cell are mandatory. Height

@@ -5,7 +5,10 @@
 - [x] Bevar migrationens coherent 40-timers WAM-gate som migration-only og operational exact bridge+target..+117 som hard gate. Copernicus schema 3 bruger `OPERATIONAL_COMPLETE` for hard current og særskilt advisory measured-only −48 h. Ingen syntese, interpolation, carry-forward eller neighbor data.
 - [x] Før `calibrationEligible=false` gennem controller, trip/observation, admin, hydrering og reconciliation; tillad kun `true` efter forseglet full-history-audit.
 - [x] Implementér og kontrakttest branch-dispatch 118h-preflight samt DMI atomic compatible-cache backfill, save-before-terminal-gate og selector-after-ready.
-- [ ] Få et grønt frisk 118-timers datapreflightbevis. `33498108421` er fortsat negativ upstream stale-katalogevidens.
+- [x] Klassificér `33510636195`/`33512163102`: nul DKSS-behandling afslører lokal cache-/runudsultning; `33498108421` er negativ run-/cachelineage, ikke bevis for bred upstream-DMI-fejl.
+- [x] Ret lokalt preferred-run-fremskift også ved ukendt cadence, jobafgrænset target over UTC-timeskifte, betinget DKSS-first/genbehandling i den normale loop uden strict anchor og en valgfri strict-valideret deployed donor, som ikke må blokere frisk officiel DMI. Ved første cutover ligger den særskilt checkpointede WAM-historikbootstrap før den normale seks-collection-loop og kan fortsætte over flere forsøg; normal drift bevarer to collections.
+- [x] Bestå de målrettede scheduler-/bulk-/workflowkontrakttests samt Python-syntakskontrollen.
+- [ ] Få et grønt frisk 118-timers datapreflightbevis. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.
 - [ ] Kør exact-head, sikker merge, frisk integrated produktion og offentlig desktop-/mobilkontrol af 210/673, current/fem døgn, begge modes, warning og Feggesund direct 3 × 118.
 - Candidate G er fortsat eneste offentlige model. Lokale implementeringer og måltests er ikke exact-head-, preflight-, produktions- eller releasebevis.
 

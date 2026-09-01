@@ -4,7 +4,7 @@
 
 ## Integrated-first med målt historikopbygning – lokal 4.0.319-kandidat, ikke produktion
 
-Candidate G/4.0.316 er fortsat den eneste offentlige model. Den nye beslutning er, at state 6 må gå online som én samlet integreret model, når den friske direkte og operationelle prognosekæde er komplet, selv om den ældre historik endnu ikke er fuldt opbygget. Cutover-, warmup-, kalibrerings-, current- og preflightkontrakterne er lokalt implementeret og måltestet; grøn 118-timers datapreflight, exact-head, merge, frisk fuld produktion/releasegate/artifact/Pages og offentlig desktop-/mobilkontrol er stadig afventende.
+Candidate G/4.0.316 er fortsat den eneste offentlige model. Den nye beslutning er, at state 6 må gå online som én samlet integreret model, når den friske direkte og operationelle prognosekæde er komplet, selv om den ældre historik endnu ikke er fuldt opbygget. Cutover-, warmup-, kalibrerings-, current- og preflightkontrakterne er lokalt implementeret og måltestet. Den seneste DMI-rodrettelse er lokalt implementeret, og dens målrettede scheduler-/bulk-/workflowtests samt Python-syntakskontrol er grønne. Grøn 118-timers datapreflight, exact-head, merge, frisk fuld produktion/releasegate/artifact/Pages og offentlig desktop-/mobilkontrol er stadig afventende.
 
 Den hårde gate er 118 sammenhængende timer fra current til +117 for alle 673 kystdele og begge jagtformer. Hver time skal have gyldige direkte obligatoriske input samt den kausale operationelle WAM-run- og lagbro. Mangler et sådant direkte eller operationelt input, er timen `UNAVAILABLE`, og releasen stopper. Kun manglende ældre præ-target-historik må blive `HISTORY_INCOMPLETE`.
 
@@ -13,6 +13,16 @@ Currentkæden skelner nu teknisk mellem de to tidsretninger. Den private Coperni
 En særskilt branch-valgt 118-timers preflight med inputtet `operational_118_preflight` kan kontrollere hele data- og runtimekæden før release: DMI, de persistente caches, terminalkontrol, operationel Copernicus-range, vejrbygning og den integrerede 210/673/118-audit. Den kører bevidst ikke sourcegate, fuld validate, releasegate, adminsync, Pages, deploy eller browserkontrol og kan derfor ikke kaldes produktion. Den må kun gemme én filtreret, privacy-sikker rapport i syv dage; original audit, conditions og vejrcaches uploades ikke.
 
 DMI-cachegenbrug er data-bevarende, men må ikke skabe et kunstigt strømpar. Nyere progressions- og rotationsmetadata forbliver grundlag, og kun en strict-verificeret cache fra samme samplingregistergeneration må udfylde manglende timer. Hver vejrtime kopieres som én samlet række — aldrig som komplementære U/V- eller bølgefelter fra forskellige runs eller acquisitions. De tre eksisterende caches gemmes før en payloadfri terminalgate; Copernicus-selector kører kun efter `DMI_READY` og et verificeret strømanker.
+
+De isolerede runs `33510636195` og `33512163102` behandlede HARMONIE og WAM, men nul trin i de tre DKSS-currentfamilier. Fejlen `DMI_STRICT_CURRENT_ANCHOR_MISSING` betyder derfor ikke, at DMI generelt manglede strømdata. RavRadar havde fastholdt en ældre foretrukken run, som senere blev afvist som stale uden at skifte til en nyere moden run. Samtidig var preflightens “deployed donor” blot en kopi af den samme progressive cache, og gamle DKSS-stepmarkører kunne forhindre den nødvendige genbehandling.
+
+Rettelsen binder én eksakt targettime før DMI og genbruger samme jobafgrænsede snapshot, selv om væguret krydser en UTC-time under kørslen. En ældre foretrukken run beholdes kun foran en nyere moden run, når systemet kender den observerede cadence, og den højst er én cadence bagud. Er cadence ukendt, vælges den nyere modne run. Mangler et strict current anchor, behandles de tre DKSS-familier først i den normale collection-loop, og deres gamle stepmarkører genbruges ikke.
+
+Preflighten forsøger valgfrit at hente en uafhængig offentlig Candidate G-DMI-donor i en isoleret midlertidig mappe. Kun en donor, der består den fulde strenge kompatibilitetskontrol, må bruges. Kan den ikke hentes eller valideres, fortsætter RavRadar med at hente frisk officiel DMI uden denne reserve.
+
+Ved den nye models første cutover ligger den særskilt checkpointede WAM-historikbootstrap fortsat før den normale collection-loop og kan fortsætte over flere forsøg. Den efterfølgende loop har plads til seks collections. Mangler strict current anchor, står DKSS foran WAM i denne loop; findes anchor, kan WAM stå først. Normal drift bevarer loftet på to. Det er derfor ikke en ubetinget global DKSS-first-regel.
+
+DMI er stadig førstevalg. Først efter en grøn DMI-terminalkontrol må Copernicus udfylde de eksakte kystdels- og timehuller, som DMI faktisk ikke leverede. Der hentes ikke landsdækkende Copernicus som erstatning for fungerende DMI-data.
 
 Ved `HISTORY_INCOMPLETE` viser RavRadar fortsat hele current- og femdøgnsprognosen med den konservative nedre score, øvre grænse, dækning og en tydelig DA/DE/EN-advarsel. Advarslen forsvinder automatisk ved `FULL_HISTORY`. Scoren er altid `calibrationEligible=false`, mens historikken er ufuldstændig. Der gættes ikke, og der interpoleres, bæres frem eller lånes ikke fra naboer.
 
@@ -26,7 +36,7 @@ Hvis RavRadar efter aktivering mangler privat integreret state, kan samme model 
 
 Ingen cold-replay- eller warmupvej må skabe syntetisk historik, interpolation, carry, neutral nulstrøm eller nabolån. Den historiske 40-timers sammenhængende WAM-bro og dens snævre same-run-regel tilhører kun Candidate G-migrationen. Feggesund skal i denne release bestå direkte 3 × 118 timer; den tidligere mulighed for en nabozoneproxy er pensioneret uden at ændre geometri, land-/vandpunkter eller kystnormal.
 
-Den seneste driftsevidens er stadig negativ: run `33498108421` så stale katalogplan for alle forsøgte DMI-collections og gav derfor intet 118-timers currentbevis. Den efterfølgende selector-kaskade og risikoen for tabt progression er lokalt lukket, men upstream-data skal stadig bestå den isolerede preflight. Det er derfor forkert at kalde modellen live eller releaseklar endnu.
+Den seneste driftsevidens er stadig negativ, men årsagen er nu korrekt afgrænset. Run `33498108421` er negativ run-/cachelineageevidens; de senere runs viste nul DKSS-behandling og dermed en lokal cache-/runfejl, ikke en dokumenteret bred upstream-DMI-fejl. Rettelsens måltests og Python-syntakskontrol er grønne; den isolerede 673 × 118-preflight afventer fortsat. Det er derfor forkert at kalde modellen live eller releaseklar endnu.
 
 ## Aktuel release- og driftsstatus – 1. september 2026
 

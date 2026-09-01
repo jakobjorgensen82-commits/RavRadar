@@ -668,7 +668,7 @@ jobs:
           DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
-          DMI_BULK_COLLECTIONS_PER_RUN: 2
+          DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '2' }}
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_REFRESH_MINUTES: 60
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
