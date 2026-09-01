@@ -765,6 +765,72 @@ finally:
     producer.nearest_candidates = original_nearest_candidates
     producer.GRID_INDEX_CACHE.clear()
 
+# A grid-definition digest is string metadata, not a number. Both the shared
+# vector path and the scalar path must preserve it without passing it to round().
+original_codes_grib_new_from_file = producer.codes_grib_new_from_file
+original_codes_release = producer.codes_release
+original_classify_parameter = producer.classify_parameter
+original_valid_candidates_batch = producer.valid_candidates_batch
+original_nearest_valid_batch = producer.nearest_valid_batch
+original_nearest_candidates = producer.nearest_candidates
+original_should_stop_work = producer.should_stop_work
+original_raw_cache_source_capture = producer.raw_cache_source_capture
+try:
+    with tempfile.TemporaryDirectory() as directory:
+        asset_path = Path(directory) / "synthetic-dkss.grib"
+        asset_path.write_bytes(b"synthetic")
+        handles = iter((1, 2, 3, None))
+        producer.codes_grib_new_from_file = lambda _handle: next(handles)
+        producer.codes_release = lambda _gid: None
+        parameters = {
+            1: "current-u",
+            2: "current-v",
+            3: "sea-mean-deviation",
+        }
+        producer.classify_parameter = lambda gid, _collection: parameters[gid]
+        producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
+            item["id"]: [dict(candidate, index=7)] for item in wanted
+        }
+        producer.nearest_valid_batch = lambda _gid, _collection, wanted: {
+            item["id"]: dict(candidate, index=7) for item in wanted
+        }
+        producer.nearest_candidates = lambda *_args, **_kwargs: [dict(candidate, index=7)]
+        producer.should_stop_work = lambda: False
+        producer.raw_cache_source_capture = lambda *_args: None
+        output = {
+            "generatedAt": "2026-01-01T02:00:00Z",
+            "zones": {
+                zone["id"]: {
+                    "hourly": {},
+                    "gridPoints": {},
+                    "collections": {},
+                },
+            },
+        }
+        producer.process_grib(
+            asset_path,
+            "dkss_lf",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            [zone],
+            output,
+            {},
+        )
+        grid_points = output["zones"][zone["id"]]["gridPoints"]
+        assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
+        assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
+        hour = output["zones"][zone["id"]]["hourly"][valid_time]
+        assert "current-u" in hour and "sea-mean-deviation" in hour
+finally:
+    producer.codes_grib_new_from_file = original_codes_grib_new_from_file
+    producer.codes_release = original_codes_release
+    producer.classify_parameter = original_classify_parameter
+    producer.valid_candidates_batch = original_valid_candidates_batch
+    producer.nearest_valid_batch = original_nearest_valid_batch
+    producer.nearest_candidates = original_nearest_candidates
+    producer.should_stop_work = original_should_stop_work
+    producer.raw_cache_source_capture = original_raw_cache_source_capture
+
 # DKSS native cadence is hourly. A newer run whose tail is still publishing is
 # deferred in favour of the preceding mature run, and every official hour in
 # +0..+117 is selected. An internal STAC absence remains an explicit exact gap.

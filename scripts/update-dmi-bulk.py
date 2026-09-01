@@ -2423,6 +2423,22 @@ def candidate_cell_key(candidate: dict[str, Any]) -> tuple[str, float, float] | 
     return definition, round(float(latitude), 7), round(float(longitude), 7)
 
 
+def grid_point_metadata(
+    candidate: dict[str, Any],
+    excluded_keys: tuple[str, ...],
+) -> dict[str, Any]:
+    """Copy grid metadata while rounding only numeric values."""
+    return {
+        key: (
+            round(value, 5)
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+            else value
+        )
+        for key, value in candidate.items()
+        if key not in excluded_keys
+    }
+
+
 def select_common_grid_tuple(
     candidates_by_parameter: dict[str, list[dict[str, Any]]],
     required_parameters: tuple[str, ...],
@@ -2729,7 +2745,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         for key, candidate in ((first_key, first), (second_key, second)):
                             hour[key] = candidate["value"]
                             point["gridPoints"][key] = {
-                                **{k: round(v, 5) for k, v in candidate.items() if k not in {"value", "index"}},
+                                **grid_point_metadata(candidate, ("value", "index")),
                                 "verticalLayer": layer_key,
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
@@ -2837,7 +2853,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     else:
                         (hour.get("sources") or {}).pop(component, None)
                     point["gridPoints"][parameter] = {
-                        **{k: round(v, 5) for k, v in nearest.items() if k != "value"},
+                        **grid_point_metadata(nearest, ("value",)),
                         **point_extra,
                     }
                     point["collections"][parameter] = collection
