@@ -103,7 +103,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 try:
     from eccodes import (
-        codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
+        OutOfAreaError, codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
         codes_grib_new_from_file, codes_release,
     )
 except ImportError as exc:
@@ -1953,10 +1953,31 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
         except TypeError:
             try:
                 candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
+            except OutOfAreaError as exc:
+                # Bounded DKSS marine grids legitimately reject probes outside
+                # their domain. This is a spatial observation, not a broken
+                # decoder; the remaining probes still search actual grid cells.
+                if collection in MARINE_COLLECTIONS:
+                    continue
+                raise DmiGridLookupError(
+                    "DMI nearest-grid lookup failed (OutOfAreaError)"
+                ) from exc
             except Exception as exc:
-                raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+                raise DmiGridLookupError(
+                    f"DMI nearest-grid lookup failed ({type(exc).__name__})"
+                ) from exc
+        except OutOfAreaError as exc:
+            # Only ecCodes' explicit out-of-domain result is recoverable. Every
+            # unknown grid failure remains fatal and can never authorize fallback.
+            if collection in MARINE_COLLECTIONS:
+                continue
+            raise DmiGridLookupError(
+                "DMI nearest-grid lookup failed (OutOfAreaError)"
+            ) from exc
         except Exception as exc:
-            raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+            raise DmiGridLookupError(
+                f"DMI nearest-grid lookup failed ({type(exc).__name__})"
+            ) from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         for candidate in candidates or []:

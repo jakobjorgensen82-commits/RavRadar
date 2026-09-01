@@ -46,6 +46,7 @@ sys.modules['urllib3']=urllib3
 sys.modules['urllib3.util']=urllib3_util
 sys.modules['urllib3.util.retry']=urllib3_retry
 eccodes=types.ModuleType('eccodes')
+eccodes.OutOfAreaError=type('OutOfAreaError',(Exception,),{})
 for name in ('codes_get','codes_get_array','codes_get_elements','codes_grib_find_nearest','codes_grib_new_from_file','codes_release'):
     setattr(eccodes,name,lambda *a,**k: None)
 sys.modules['eccodes']=eccodes

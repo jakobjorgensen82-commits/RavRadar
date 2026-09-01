@@ -32,6 +32,7 @@ STALE_MODEL_RUN = (REFERENCE - timedelta(hours=6)).isoformat().replace("+00:00",
 # The ledger builder is pure Python after import. Keep this contract test
 # independent of the platform GRIB DLL.
 eccodes = types.ModuleType("eccodes")
+eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
 for name in (
     "codes_get", "codes_get_array", "codes_get_elements", "codes_grib_find_nearest",
     "codes_grib_new_from_file", "codes_release",

@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # The parity test exercises provenance construction only; an import-safe ecCodes
 # stub keeps it independent of the platform GRIB DLL.
 eccodes = types.ModuleType("eccodes")
+eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
 for name in (
     "codes_get", "codes_get_array", "codes_get_elements", "codes_grib_find_nearest",
     "codes_grib_new_from_file", "codes_release",
@@ -589,6 +590,42 @@ try:
     else:
         raise AssertionError("Nearest-grid exception must fail closed")
     assert producer.GRID_INDEX_CACHE == {}
+
+    # A bounded-grid result is not a decoder failure. Skip an out-of-area probe
+    # while the remaining redundant probes still return actual grid candidates.
+    probe_calls = [0]
+
+    def boundary_then_candidate(_gid, lat, lon, *args, **kwargs):
+        del args, kwargs
+        probe_calls[0] += 1
+        if probe_calls[0] == 1:
+            raise producer.OutOfAreaError("synthetic grid boundary")
+        return [{"index": 17, "lat": lat, "lon": lon}]
+
+    producer.GRID_INDEX_CACHE.clear()
+    producer.codes_grib_find_nearest = boundary_then_candidate
+    boundary_candidates = producer.nearest_candidates(993, "dkss_idw", zone)
+    assert boundary_candidates
+    assert boundary_candidates[0]["index"] == 17
+    completed_probe_calls = probe_calls[0]
+    assert producer.nearest_candidates(993, "dkss_idw", zone) == boundary_candidates
+    assert probe_calls[0] == completed_probe_calls
+
+    # A complete set of explicit out-of-area results is an attested spatial
+    # outcome, not an unknown local processing error.
+    def outside_grid(*_args, **_kwargs):
+        raise producer.OutOfAreaError("synthetic grid boundary")
+
+    producer.GRID_INDEX_CACHE.clear()
+    producer.codes_grib_find_nearest = outside_grid
+    assert producer.nearest_candidates(994, "dkss_idw", zone) == []
+    producer.GRID_INDEX_CACHE.clear()
+    try:
+        producer.nearest_candidates(995, "wam_dw", zone)
+    except producer.DmiGridLookupError:
+        pass
+    else:
+        raise AssertionError("Non-DKSS out-of-area lookup must remain fail-closed")
 
     producer.nearest_candidates = lambda *_args, **_kwargs: [{
         "index": 7,

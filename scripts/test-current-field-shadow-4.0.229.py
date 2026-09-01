@@ -412,6 +412,7 @@ assert "regional_proxy_targets" in bulk_source
 # bounded private-only bootstrap when an older cache has no stable-key file.
 if "eccodes" not in sys.modules:
     fake_eccodes = types.ModuleType("eccodes")
+    fake_eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
     for function_name in (
         "codes_get", "codes_get_array", "codes_get_elements", "codes_grib_find_nearest",
         "codes_grib_new_from_file", "codes_release",
