@@ -26,6 +26,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts/build-copernicus-target-registry.py"
 REFERENCE = datetime(2026, 8, 21, 8, tzinfo=timezone.utc)
 AT = REFERENCE.isoformat().replace("+00:00", "Z")
+MODEL_RUN = (REFERENCE - timedelta(hours=3)).isoformat().replace("+00:00", "Z")
+STALE_MODEL_RUN = (REFERENCE - timedelta(hours=6)).isoformat().replace("+00:00", "Z")
 
 # The ledger builder is pure Python after import. Keep this contract test
 # independent of the platform GRIB DLL.
@@ -56,7 +58,7 @@ def write(path: Path, value: dict) -> None:
 def official_asset(collection: str, valid: str) -> dict:
     return {
         "collection": collection,
-        "modelRun": AT,
+        "modelRun": MODEL_RUN,
         "validTime": valid,
         "itemId": f"item-{collection}-{valid}",
         "assetIdentitySha256": "b" * 64,
@@ -70,7 +72,7 @@ def source(
     target: dict,
     valid_time: datetime,
     *,
-    model_run: str = AT,
+    model_run: str = MODEL_RUN,
 ) -> dict:
     valid = utc(valid_time)
     parsed_run = datetime.fromisoformat(model_run.replace("Z", "+00:00"))
@@ -166,7 +168,7 @@ def processed_run(
             )
         processed_steps[valid_time] = step
     return {
-        "referenceTime": AT,
+        "referenceTime": MODEL_RUN,
         "parserVersion": producer.PARSER_VERSION,
         "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
         "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
@@ -204,9 +206,9 @@ def dmi_document(
                 continue
             parsed = datetime.fromisoformat(valid_time.replace("Z", "+00:00"))
             model_run = (
-                utc(REFERENCE - timedelta(hours=3))
+                STALE_MODEL_RUN
                 if (target["partId"], valid_time) in stale
-                else AT
+                else MODEL_RUN
             )
             hourly[valid_time] = {
                 "time": valid_time,
@@ -237,7 +239,7 @@ def dmi_document(
     }
     catalogs = {
         collection: (
-            AT,
+            MODEL_RUN,
             [official_asset(collection, valid_time) for valid_time in official_hours],
             {
                 "catalogInventoryComplete": True,
@@ -559,7 +561,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
             empty_inventory_ledger["targetRegistrySha256"],
         )
     except ValueError as exc:
-        assert "official inventory is empty" in str(exc)
+        assert "lacks its native terminal asset" in str(exc)
     else:
         raise AssertionError("Globally empty official inventory proof must fail closed")
 
