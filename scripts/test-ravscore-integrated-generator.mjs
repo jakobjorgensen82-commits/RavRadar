@@ -691,17 +691,19 @@ assert.ok(
   'the WAM producer must receive the aggregate resolver target hour',
 );
 const wamGateStep = workflowStep(
-  'Require complete private WAM history before first integrated cutover',
+  'Require complete operational WAM handoff before first integrated cutover',
 );
 assert.ok(
   wamGateStep.block.includes('id: wam-bootstrap-readiness')
     && wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
     && wamGateStep.block.includes('validator_status=$?')
     && wamGateStep.block.includes('wam_code="DMI_BULK_FAILED"')
+    && wamGateStep.block.includes('history_incomplete="false"')
     && wamGateStep.block.includes('validator_status=1')
     && wamGateStep.block.includes('echo "code=$wam_code" >> "$GITHUB_OUTPUT"')
+    && wamGateStep.block.includes('echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('exit "$validator_status"'),
-  'the hard WAM gate must expose only a bounded safe code while preserving its exit status',
+  'the operational WAM gate must expose bounded status while preserving producer failure and exit status',
 );
 assert.ok(
   wamGateStep.block.includes(

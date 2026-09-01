@@ -708,7 +708,7 @@ jobs:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require complete private WAM history before first integrated cutover
+      - name: Require complete operational WAM handoff before first integrated cutover
         id: wam-bootstrap-readiness
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled'
         shell: bash
@@ -726,12 +726,15 @@ jobs:
           set -e
           printf '%s\n' "$attestation"
           wam_code="$(printf '%s' "$attestation" | jq -r 'if .status == "invalid" then .code else "NONE" end')"
+          history_incomplete="$(printf '%s' "$attestation" | jq -r 'if .status == "ok" and .historyIncomplete == true then "true" else "false" end')"
           if [ "$producer_outcome" != "success" ]; then
             wam_code="DMI_BULK_FAILED"
+            history_incomplete="false"
             validator_status=1
           fi
           test "$wam_code" = "NONE" || printf '%s\n' "$wam_code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'
           echo "code=$wam_code" >> "$GITHUB_OUTPUT"
+          echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"
           exit "$validator_status"
 
       - name: Report DMI bulk result

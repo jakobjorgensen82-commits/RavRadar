@@ -2145,17 +2145,18 @@ def execute_private_wave_history_bootstrap(
             )
         except WaveBootstrapError as exc:
             # Cache-first is an optimisation, never a permission to infer the
-            # new same-cell provenance from legacy zone summaries.  A rejected
-            # private PART wave cache is checkpointed without its wave rows and
-            # rebuilt only through the normal measured DMI path below.  The
-            # validator itself remains strict, and absent live WAM still fails.
-            reset_rows = reset_private_part_wave_cache(result, parts)
+            # new same-cell provenance from legacy zone summaries.  Only the
+            # documented legacy MISSING_CELL shape is destructive-rebuildable.
+            # A valid partial history (for example MISSING_HOUR) is preserved
+            # so the integrated cold start can replay every verified real hour.
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
                 "failureCode": exc.code,
-                "resetWaveRowCount": reset_rows,
             }
-            write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            if exc.code == "MISSING_CELL":
+                reset_rows = reset_private_part_wave_cache(result, parts)
+                aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
         else:
             expected_exact = (
                 registry.part_count * len(configuration["requiredHours"])
@@ -2213,7 +2214,36 @@ def execute_private_wave_history_bootstrap(
             continue
         if should_stop_work():
             raise RuntimeError("private WAM bootstrap runtime budget reached before STAC selection")
-        plan, assets = list_private_wave_bootstrap_assets(collection, configuration)
+        try:
+            plan, assets = list_private_wave_bootstrap_assets(
+                collection,
+                configuration,
+            )
+        except WaveBootstrapError as exc:
+            if (
+                configuration["mode"] != WAVE_BOOTSTRAP_COLD_START_MODE
+                or exc.code != "NO_COHERENT_RUN"
+            ):
+                raise
+            # A genuine cold start may continue without a complete 49-hour WAM
+            # suffix.  This records only aggregate absence and returns to the
+            # normal WAM loop, whose exact bridge and coherent 118-hour horizon
+            # remain mandatory.  No row is synthesized, borrowed or carried.
+            aggregate["collections"][collection] = {
+                "status": "history-incomplete",
+                "failureCode": exc.code,
+                "partCount": len(relevant),
+                "selectedAssetCount": 0,
+                "processedAssetCount": 0,
+            }
+            aggregate["status"] = "history-incomplete"
+            aggregate["historyIncomplete"] = True
+            aggregate["historyIncompleteCode"] = exc.code
+            aggregate["lockedHourCount"] = sum(
+                len(hours) for hours in locked.values()
+            )
+            write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            return locked
         plan_attestation = plan.sanitized_attestation()
         collection_summary = {
             "selectionMode": plan_attestation["selectionMode"],

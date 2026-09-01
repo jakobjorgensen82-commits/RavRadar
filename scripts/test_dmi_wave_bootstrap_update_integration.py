@@ -585,10 +585,11 @@ class ColdCacheFirstTests(unittest.TestCase):
         self.assertNotIn("gridPoint", serialized)
         self.assertNotIn("significant-wave-height", serialized)
 
-    def test_missing_cached_first_hour_fails_when_live_stac_cannot_supply_it(self) -> None:
+    def test_missing_cached_first_hour_is_preserved_as_history_incomplete(self) -> None:
         result = copy.deepcopy(self.complete_cache)
         first_zone = next(iter(result["zones"].values()))
         first_zone["hourly"].pop(self.required[0])
+        preserved_hour = first_zone["hourly"][self.required[1]]
         with (
             patch.object(
                 producer,
@@ -596,26 +597,32 @@ class ColdCacheFirstTests(unittest.TestCase):
                 side_effect=producer.WaveBootstrapError("NO_COHERENT_RUN"),
             ) as stac,
             patch.object(producer, "should_stop_work", return_value=False),
-            patch.object(producer, "write_checkpoint"),
+            patch.object(producer, "write_checkpoint") as checkpoint,
         ):
-            with self.assertRaises(producer.WaveBootstrapError) as raised:
-                producer.execute_private_wave_history_bootstrap(
-                    result,
-                    self.parts,
-                    {"bytes": 0},
-                    set(),
-                    self.configuration,
-                    registry=self.registry,
-                )
+            locked = producer.execute_private_wave_history_bootstrap(
+                result,
+                self.parts,
+                {"bytes": 0},
+                set(),
+                self.configuration,
+                registry=self.registry,
+            )
 
-        self.assertEqual(raised.exception.code, "NO_COHERENT_RUN")
+        self.assertEqual(locked, {})
         stac.assert_called_once()
+        checkpoint.assert_called_once()
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["cacheFirst"]["status"], "incomplete")
         self.assertEqual(
             aggregate["cacheFirst"]["failureCode"],
             "MISSING_HOUR",
         )
+        self.assertNotIn("resetWaveRowCount", aggregate["cacheFirst"])
+        self.assertEqual(aggregate["status"], "history-incomplete")
+        self.assertTrue(aggregate["historyIncomplete"])
+        self.assertEqual(aggregate["historyIncompleteCode"], "NO_COHERENT_RUN")
+        self.assertIn("significant-wave-height", preserved_hour)
+        self.assertIn("wave", preserved_hour["sources"])
 
     def test_legacy_missing_cell_resets_only_part_wave_before_measured_rebuild(self) -> None:
         result = copy.deepcopy(self.complete_cache)
@@ -633,19 +640,18 @@ class ColdCacheFirstTests(unittest.TestCase):
             patch.object(producer, "should_stop_work", return_value=False),
             patch.object(producer, "write_checkpoint") as checkpoint,
         ):
-            with self.assertRaises(producer.WaveBootstrapError) as raised:
-                producer.execute_private_wave_history_bootstrap(
-                    result,
-                    self.parts,
-                    {"bytes": 0},
-                    set(),
-                    self.configuration,
-                    registry=self.registry,
-                )
+            locked = producer.execute_private_wave_history_bootstrap(
+                result,
+                self.parts,
+                {"bytes": 0},
+                set(),
+                self.configuration,
+                registry=self.registry,
+            )
 
-        self.assertEqual(raised.exception.code, "NO_COHERENT_RUN")
+        self.assertEqual(locked, {})
         stac.assert_called_once()
-        checkpoint.assert_called_once()
+        self.assertEqual(checkpoint.call_count, 2)
         aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
         self.assertEqual(aggregate["cacheFirst"]["failureCode"], "MISSING_CELL")
         self.assertEqual(
@@ -667,6 +673,35 @@ class ColdCacheFirstTests(unittest.TestCase):
             ):
                 self.assertNotIn(field, point.get("gridPoints") or {})
                 self.assertNotIn(field, point.get("collections") or {})
+
+    def test_migration_still_fails_when_no_coherent_history_run_exists(self) -> None:
+        result = copy.deepcopy(self.complete_cache)
+        migration = {
+            **self.configuration,
+            "mode": MIGRATION_MODE,
+            "policy": MIGRATION_POLICY,
+            "requiredHours": policy_utc_hours(TARGET, MIGRATION_POLICY),
+        }
+        with (
+            patch.object(
+                producer,
+                "list_private_wave_bootstrap_assets",
+                side_effect=producer.WaveBootstrapError("NO_COHERENT_RUN"),
+            ),
+            patch.object(producer, "should_stop_work", return_value=False),
+            patch.object(producer, "write_checkpoint"),
+        ):
+            with self.assertRaises(producer.WaveBootstrapError) as raised:
+                producer.execute_private_wave_history_bootstrap(
+                    result,
+                    self.parts,
+                    {"bytes": 0},
+                    set(),
+                    migration,
+                    registry=self.registry,
+                )
+
+        self.assertEqual(raised.exception.code, "NO_COHERENT_RUN")
 
 
 class ResumeAndFailClosedTests(unittest.TestCase):
@@ -878,7 +913,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
         gate_start = workflow.index(
-            "- name: Require complete private WAM history before first integrated cutover"
+            "- name: Require complete operational WAM handoff before first integrated cutover"
         )
         gate_end = workflow.index("- name: Report DMI bulk result", gate_start)
         gate = workflow[gate_start:gate_end]
@@ -889,8 +924,13 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn('producer_outcome="${{ steps.dmi-bulk.outcome }}"', gate)
         self.assertIn("validator_status=$?", gate)
         self.assertIn('wam_code="DMI_BULK_FAILED"', gate)
+        self.assertIn('history_incomplete="false"', gate)
         self.assertIn("validator_status=1", gate)
         self.assertIn('echo "code=$wam_code" >> "$GITHUB_OUTPUT"', gate)
+        self.assertIn(
+            'echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"',
+            gate,
+        )
         self.assertIn('exit "$validator_status"', gate)
         self.assertGreaterEqual(validator_call, 0)
         self.assertIn("--production-target-hour", gate)

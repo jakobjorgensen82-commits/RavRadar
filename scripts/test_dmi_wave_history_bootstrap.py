@@ -12,6 +12,8 @@ import unittest
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -40,10 +42,19 @@ from lib.dmi_native_provenance import (  # noqa: E402
     haversine_point_km,
     wave_distance_allowed,
 )
+import validate_dmi_wave_history_bootstrap as bootstrap_cli  # noqa: E402
 
 
 TARGET = "2026-08-30T12:00:00Z"
 COLLECTION = "wam_dw"
+
+
+class _SanitizedSummary:
+    def __init__(self, payload: dict) -> None:
+        self.payload = payload
+
+    def sanitized_attestation(self) -> dict:
+        return dict(self.payload)
 
 
 def utc_offset(base: str, hours: int) -> str:
@@ -1109,6 +1120,101 @@ class CacheValidationTests(unittest.TestCase):
             '"mean-wave-dir"',
         ):
             self.assertNotIn(forbidden, combined)
+
+
+class BootstrapCliClassificationTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.registry = SimpleNamespace(part_count=673)
+        self.operational = _SanitizedSummary({
+            "status": "ok",
+            "schemaVersion": "dmi-wave-history-bootstrap-v1",
+            "mode": "operational-same-run-handoff",
+            "registryPartCount": 673,
+            "forecastHourCount": 118,
+        })
+
+    def build(self, mode: str, history_error: str) -> dict:
+        with (
+            patch.object(
+                bootstrap_cli,
+                "load_coastal_part_registry",
+                return_value=self.registry,
+            ),
+            patch.object(
+                bootstrap_cli,
+                "validate_wave_operational_handoff_cache",
+                return_value=self.operational,
+            ) as operational,
+            patch.object(
+                bootstrap_cli,
+                "validate_wave_history_cache",
+                side_effect=WaveBootstrapError(history_error),
+            ) as history,
+        ):
+            result = bootstrap_cli.build_attestation(
+                {},
+                {},
+                mode=mode,
+                target_hour=TARGET,
+                production_target_hour=TARGET,
+                forecast_hour_count=118,
+            )
+        operational.assert_called_once()
+        history.assert_called_once()
+        return result
+
+    def test_cold_start_accepts_only_bounded_missing_history_after_handoff(self) -> None:
+        for code in ("MISSING_HOUR", "INTERPOLATION_GAP"):
+            with self.subTest(code=code):
+                result = self.build(COLD_START_MODE, code)
+                self.assertEqual(result["status"], "ok")
+                self.assertTrue(result["historyIncomplete"])
+                self.assertEqual(result["historyIncompleteCode"], code)
+                self.assertEqual(
+                    result["operationalHandoff"]["forecastHourCount"],
+                    118,
+                )
+
+    def test_migration_remains_strict_for_missing_history(self) -> None:
+        with self.assertRaises(WaveBootstrapError) as raised:
+            self.build(MIGRATION_MODE, "MISSING_HOUR")
+        self.assertEqual(raised.exception.code, "MISSING_HOUR")
+
+    def test_provenance_and_cell_errors_remain_strict_for_cold_start(self) -> None:
+        for code in ("MISSING_CELL", "MISSING_PROVENANCE"):
+            with self.subTest(code=code):
+                with self.assertRaises(WaveBootstrapError) as raised:
+                    self.build(COLD_START_MODE, code)
+                self.assertEqual(raised.exception.code, code)
+
+    def test_operational_failure_stops_before_history_classification(self) -> None:
+        with (
+            patch.object(
+                bootstrap_cli,
+                "load_coastal_part_registry",
+                return_value=self.registry,
+            ),
+            patch.object(
+                bootstrap_cli,
+                "validate_wave_operational_handoff_cache",
+                side_effect=WaveBootstrapError("OPERATIONAL_HANDOFF_INVALID"),
+            ),
+            patch.object(
+                bootstrap_cli,
+                "validate_wave_history_cache",
+            ) as history,
+        ):
+            with self.assertRaises(WaveBootstrapError) as raised:
+                bootstrap_cli.build_attestation(
+                    {},
+                    {},
+                    mode=COLD_START_MODE,
+                    target_hour=TARGET,
+                    production_target_hour=TARGET,
+                    forecast_hour_count=118,
+                )
+        self.assertEqual(raised.exception.code, "OPERATIONAL_HANDOFF_INVALID")
+        history.assert_not_called()
 
 
 class OperationalHandoffTests(unittest.TestCase):
