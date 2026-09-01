@@ -1,3 +1,12 @@
+## 4.0.318-kandidat – PR #244 merged; målt legacy-WAM-rebuild og sikker produktionskø (2026-09-01)
+
+- PR #244 bestod den opdaterede exact-head-kildegate `33452730102` og blev merged som `27906d7d83883622d87d66b141869302b016d6c6`.
+- Push-run `33471225980` blev annulleret før jobs, da den daværende enkelt-pending-concurrency lod et watchdog-dispatch erstatte det. Efterfølgeren `33471276238` stoppede derefter sikkert i legacy-WAM-kæden på manglende same-cell-bølgeproveniens og efterfølgende manglende strengt verificeret DMI-currentpar. Der blev ikke skrevet central vejrcache eller andre beskyttede data, og der blev ikke bygget artifact eller deployet Pages.
+- Den lokale remediation behandler cache-first som optimering: afviste legacy-`PART::`-bølgerækker fjernes alene fra den private cache, et partial checkpoint gemmes, og bølgerne genhentes målt gennem den normale DMI STAC/GRIB-vej. Strøm, vind, vandstand, temperatur og punktidentitet bevares; manglende live-WAM stopper fortsat fail-closed.
+- Den integrerede wave-bootstrap-resolver, forlænget runtime, force-refresh og first-cutover-attestering kan nu kun aktiveres af den eksakte action `integrated-cutover`. Schedule, watchdog og manuel Candidate G-vedligehold kan ikke starte den integrerede bootstrapvej.
+- Produktionsworkflowet bruger `queue: max` sammen med `cancel-in-progress: false`. Watchdoggen henter den ufiltrerede runliste, filtrerer `main` lokalt, fejler lukket ved ukendt historik og gentager hele kontrollen umiddelbart før dispatch; begge beslutninger skal være positive.
+- DMI/WAM-regressionerne er grønne 20/20, wave-validatoren 26/26 samt integreret generator, watchdog og workflowkontrakter er grønne. Ny exact-head, frisk fuld produktion/Pages og offentlig browserverifikation udestår. Candidate G er fortsat sidste offentlige model; state 6 er ikke live.
+
 ## 4.0.318-kandidat – strict DMI-kystdelscache og stabil dansk forecastkalender (2026-09-01)
 
 - Retter en UTC-midnatsflaky Spørg RavRadar-test, så GitHubs kildegate bruger samme `Europe/Copenhagen`-kalender som appen.

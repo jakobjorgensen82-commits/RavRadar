@@ -627,6 +627,7 @@ const aggregateResolverStep = workflowStep(
   'Resolve one aggregate Candidate G wave-bootstrap target',
 );
 const dmiBulkStep = workflowStep('Update DMI bulk model cache');
+const firstCutoverGuard = "steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
 assert.ok(
   dmiBulkStep.block.includes('continue-on-error: true'),
   'the DMI producer must yield control after a real failure so its progressive cache can be saved before the cutover gate fails closed',
@@ -648,17 +649,21 @@ assert.ok(
   aggregateResolverStep.block.includes('--registry data/live/coastal-parts-v2.json'),
   'the aggregate resolver must separately bind the active central registry',
 );
+assert.ok(
+  aggregateResolverStep.block.includes(`if: ${firstCutoverGuard}`),
+  'schedule, watchdog and manual Candidate G maintenance must never run the integrated bootstrap resolver',
+);
 
 const updateWeatherStep = workflowStep('Update central weather cache');
 assert.ok(
   updateWeatherStep.block.includes(
-    "RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}",
+    `RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}`,
   ),
   'the resolver mode must enter update-weather unchanged during the first cutover',
 );
 assert.ok(
   updateWeatherStep.block.includes(
-    "RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}",
+    `RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}`,
   ),
   'the resolver source-validation attestation must enter update-weather unchanged during the first cutover',
 );
@@ -675,7 +680,7 @@ assert.match(
 
 assert.ok(
   dmiBulkStep.block.includes(
-    "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}",
+    `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
   ),
   'the WAM producer must receive the aggregate resolver mode without remapping it',
 );

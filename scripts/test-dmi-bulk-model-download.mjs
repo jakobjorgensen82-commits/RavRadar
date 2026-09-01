@@ -109,7 +109,7 @@ assert.match(build, /current-field-shadow\.json/);
 assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(
   build,
-  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
+  /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
 );
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);

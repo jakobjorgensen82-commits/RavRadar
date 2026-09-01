@@ -617,6 +617,57 @@ class ColdCacheFirstTests(unittest.TestCase):
             "MISSING_HOUR",
         )
 
+    def test_legacy_missing_cell_resets_only_part_wave_before_measured_rebuild(self) -> None:
+        result = copy.deepcopy(self.complete_cache)
+        first_zone = next(iter(result["zones"].values()))
+        first_hour = next(iter(first_zone["hourly"].values()))
+        first_hour["current-u"] = 0.125
+        first_hour.setdefault("sources", {})["current"] = {"sentinel": "preserved"}
+        first_hour["sources"]["wave"].pop("gridPoint")
+        with (
+            patch.object(
+                producer,
+                "list_private_wave_bootstrap_assets",
+                side_effect=producer.WaveBootstrapError("NO_COHERENT_RUN"),
+            ) as stac,
+            patch.object(producer, "should_stop_work", return_value=False),
+            patch.object(producer, "write_checkpoint") as checkpoint,
+        ):
+            with self.assertRaises(producer.WaveBootstrapError) as raised:
+                producer.execute_private_wave_history_bootstrap(
+                    result,
+                    self.parts,
+                    {"bytes": 0},
+                    set(),
+                    self.configuration,
+                    registry=self.registry,
+                )
+
+        self.assertEqual(raised.exception.code, "NO_COHERENT_RUN")
+        stac.assert_called_once()
+        checkpoint.assert_called_once()
+        aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
+        self.assertEqual(aggregate["cacheFirst"]["failureCode"], "MISSING_CELL")
+        self.assertEqual(
+            aggregate["cacheFirst"]["resetWaveRowCount"],
+            673 * len(self.required),
+        )
+        self.assertEqual(first_hour["current-u"], 0.125)
+        self.assertEqual(first_hour["sources"]["current"], {"sentinel": "preserved"})
+        for point in result["zones"].values():
+            for hour in point["hourly"].values():
+                self.assertNotIn("significant-wave-height", hour)
+                self.assertNotIn("dominant-wave-period", hour)
+                self.assertNotIn("mean-wave-dir", hour)
+                self.assertNotIn("wave", hour.get("sources") or {})
+            for field in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            ):
+                self.assertNotIn(field, point.get("gridPoints") or {})
+                self.assertNotIn(field, point.get("collections") or {})
+
 
 class ResumeAndFailClosedTests(unittest.TestCase):
     def test_resume_requires_selected_asset_identity(self) -> None:
@@ -851,6 +902,47 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn(
             "operational = validate_wave_operational_handoff_cache(",
             validator_source,
+        )
+
+    def test_candidate_maintenance_cannot_enable_integrated_wave_bootstrap(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
+        ).read_text("utf-8")
+        cutover_guard = (
+            "steps.operational-action.outputs.action == 'integrated-cutover' "
+            "&& steps.legacy-bootstrap.outputs.required == 'true'"
+        )
+        resolver_start = workflow.index(
+            "- name: Resolve one aggregate Candidate G wave-bootstrap target"
+        )
+        resolver_end = workflow.index("\n      - name:", resolver_start + 1)
+        self.assertIn(f"if: {cutover_guard}", workflow[resolver_start:resolver_end])
+
+        dmi_start = workflow.index("- name: Update DMI bulk model cache")
+        dmi_end = workflow.index("\n      - name:", dmi_start + 1)
+        dmi = workflow[dmi_start:dmi_end]
+        for marker in (
+            f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ {cutover_guard} && '3000' || '900' }}}}",
+            f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {cutover_guard} && '180' || '120' }}}}",
+            f"DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}}}",
+        ):
+            self.assertIn(marker, dmi)
+        self.assertIn(
+            "DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || "
+            f"({cutover_guard}) }}}}",
+            dmi,
+        )
+
+        weather_start = workflow.index("- name: Update central weather cache")
+        weather_end = workflow.index("\n      - name:", weather_start + 1)
+        weather = workflow[weather_start:weather_end]
+        self.assertIn(
+            f"RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}}}",
+            weather,
+        )
+        self.assertIn(
+            f"RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}}}",
+            weather,
         )
 
     def test_private_point_candidate_cannot_hide_or_block_dmi_progress(self) -> None:

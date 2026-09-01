@@ -306,6 +306,7 @@ const productionWorkflows=await readProductionWorkflowSources({root});
 const orchestratorWorkflow=productionWorkflows.orchestrator;
 const buildWorkflow=productionWorkflows.build;
 const deployWorkflow=productionWorkflows.deploy;
+const dmiBulkProducer=await read('scripts/update-dmi-bulk.py');
 const candidateOperationalPlanBuilder=await read('scripts/prepare-candidate-g-operational-rollback.mjs');
 const workflowContractTest=await read('scripts/test-workflow-validation-order-4.0.108.mjs');
 const operationalPagesRecovery=await read('scripts/ravscore-operational-pages-recovery.mjs');
@@ -771,12 +772,16 @@ for(const marker of ['EXPECTED_LIVE_FILES','PRIVATE_FIELD','RAW_VECTOR_FIELD','l
 for(const marker of ['--legacy-candidate-g-bootstrap','generic-public-private-runtime-hydration-retired','assert_legacy_candidate_g_cutover_source']){
   ok(legacyHydration.includes(marker),`Legacy-only hydration mangler ${marker}`);
 }
-for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale']){
+for(const marker of ['production-run-active','recent-production-run','public-production-fresh','production-silent-and-public-manifest-stale','head_branch','malformed ${branch} workflow-run history']){
   ok(productionWatchdog.includes(marker),`Produktions-watchdoget mangler fail-safe tilstanden: ${marker}`);
 }
-for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','MAXIMUM_SILENCE_MINUTES:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"']){
+for(const marker of ['types: [requested, completed]','retry-failed-production:',`contains(fromJSON('["failure","timed_out","startup_failure"]'), github.event.workflow_run.conclusion)`,'external_watchdog:','default: false',"github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",'production-watchdog:','MAXIMUM_SILENCE_MINUTES:',"external_watchdog == true && '15' || '45'",'--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"','runs?per_page=100','--branch main','id: watchdog-recheck',"steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'"]){
   ok(heartbeatWorkflow.includes(marker),`Produktionsorkestreringen mangler selvrecovery: ${marker}`);
 }
+ok((heartbeatWorkflow.match(/node scripts\/check-production-watchdog\.mjs/g)||[]).length===2,'Produktions-watchdoggen skal have inspect og fail-closed recheck');
+ok(!heartbeatWorkflow.includes('runs?branch=main'),'Produktions-watchdoggen må ikke bruge GitHubs forbigående branch-filtrerede runindeks');
+const productionConcurrency=orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'),orchestratorWorkflow.indexOf('\njobs:'));
+ok(productionConcurrency.includes('queue: max')&&productionConcurrency.includes('cancel-in-progress: false'),'Produktionskøen skal bevare ventende push-runs uden at afbryde aktive transitioner');
 for(const marker of [
   'Object.freeze([0, 250, 750])',
   'Object.freeze([429, 502, 503, 504])',
@@ -1037,6 +1042,36 @@ for(const marker of [
   'RAVRADAR_DEPLOYED_BASE_URL:',
 ]){
   ok(legacyBootstrapSection.includes(marker),`Candidate G-engangsbootstrap mangler ${marker}`);
+}
+const firstCutoverGuard="steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
+const waveResolverStart=buildWorkflow.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target');
+const dmiBulkStart=buildWorkflow.indexOf('name: Update DMI bulk model cache');
+const waveResolverSection=buildWorkflow.slice(waveResolverStart,dmiBulkStart);
+const dmiBulkSection=buildWorkflow.slice(dmiBulkStart,workflowPositions.weather);
+const weatherSection=buildWorkflow.slice(workflowPositions.weather,workflowPositions.runtime);
+ok(waveResolverStart>=0&&dmiBulkStart>waveResolverStart
+  && waveResolverSection.includes(`if: ${firstCutoverGuard}`),
+'Candidate G-maintenance må aldrig starte den integrerede WAM-resolver');
+for(const marker of [
+  `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ ${firstCutoverGuard} && '3000' || '900' }}`,
+  `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${firstCutoverGuard} && '180' || '120' }}`,
+  `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
+]){
+  ok(dmiBulkSection.includes(marker),`DMI-producenten mangler actionbundet first-cutover-miljø: ${marker}`);
+}
+for(const marker of [
+  `RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}`,
+  `RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}`,
+]){
+  ok(weatherSection.includes(marker),`Vejrgeneratoren mangler actionbundet first-cutover-attestering: ${marker}`);
+}
+for(const marker of [
+  'def reset_private_part_wave_cache(',
+  'reset_rows = reset_private_part_wave_cache(result, parts)',
+  '"resetWaveRowCount": reset_rows',
+  'write_checkpoint(result, fresh_zone_ids, budget, "partial")',
+]){
+  ok(dmiBulkProducer.includes(marker),`DMI cold-cache-overgangen mangler målt rebuildkontrakt: ${marker}`);
 }
 ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
   && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
