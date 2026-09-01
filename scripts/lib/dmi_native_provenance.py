@@ -74,8 +74,9 @@ COMPONENT_SPATIAL_SELECTION = {
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 HASH_PREFIX = "sha256:"
 CURRENT_ATTESTATION_CONTRACT_ID = "dmi-canonical-part-current-attestation-v2"
-CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-ledger-v3"
-CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 3
+CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-ledger-v4"
+CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4
+DKSS_MAX_FORECAST_LEAD_HOURS = 120
 CURRENT_PART_OUTCOME_CONTRACT_ID = "dmi-official-asset-current-part-outcomes-v1"
 CURRENT_OPERATIONAL_LEDGER_STATES = (
     "EXPECTED",
@@ -1287,6 +1288,14 @@ def validate_current_operational_ledger(
         if collection_row.get("stateCounts") != counts:
             raise ValueError("DMI current operational state counts mismatch")
         official_times = sorted(asset["validTime"] for asset in official_assets)
+        native_terminal_time = canonical_time(
+            datetime.fromisoformat(model_run.replace("Z", "+00:00"))
+            + timedelta(hours=DKSS_MAX_FORECAST_LEAD_HOURS)
+        )
+        if native_terminal_time not in official_times:
+            raise ValueError(
+                "DMI current official inventory lacks its native terminal asset"
+            )
         if (
             collection_row.get("officialValidTimeCount") != len(official_times)
             or collection_row.get("officialValidTimesSha256") != valid_times_sha256(official_times)

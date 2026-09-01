@@ -55,6 +55,7 @@ from lib.dmi_native_provenance import (
     CURRENT_PREFERRED_DISTANCE_KM,
     CURRENT_VECTOR_SELECTION,
     CURRENT_VECTOR_SEMANTICS_VERSION,
+    DKSS_MAX_FORECAST_LEAD_HOURS,
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
     build_current_part_outcome_proof,
@@ -1044,25 +1045,51 @@ def list_latest_assets(
             if required
             else epoch(minimum_valid_time)
         )
-        selection_runs = {
+        causal_runs = {
             candidate_run: rows
             for candidate_run, rows in runs.items()
             if epoch(candidate_run) <= first_required_epoch
-            and (
-                allow_documented_required_gaps
-                or required <= {iso(row.get("valid")) for row in rows}
-            )
+        }
+        exact_covering_runs = {
+            candidate_run: rows
+            for candidate_run, rows in causal_runs.items()
+            if required <= {iso(row.get("valid")) for row in rows}
             and (
                 required_horizon_end is None
                 or max(epoch(row.get("valid")) for row in rows)
                     >= epoch(required_horizon_end)
             )
         }
+        if allow_documented_required_gaps and collection in MARINE_COLLECTIONS:
+            # DKSS is a native five-day product.  At a production target that
+            # falls between its 00/06/12/18 UTC run anchors, the newest fully
+            # published run legitimately ends before target+117.  Prove that
+            # the selected run itself reached its documented +120 h terminal
+            # lead; only then may the exhaustively inventoried remainder of the
+            # public axis become exact upstream absence for Copernicus.
+            selection_runs = {
+                candidate_run: rows
+                for candidate_run, rows in causal_runs.items()
+                if any(
+                    epoch(row.get("valid"))
+                        == epoch(candidate_run)
+                            + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+                    for row in rows
+                )
+            }
+            stats["nativeRunTerminalLeadHoursRequired"] = (
+                DKSS_MAX_FORECAST_LEAD_HOURS
+            )
+            stats["nativeCompleteRunCount"] = len(selection_runs)
+        else:
+            selection_runs = exact_covering_runs
         stats["requiredExactValidTimeCount"] = len(required)
-        stats["runsCoveringRequiredExactTimes"] = len(selection_runs)
+        stats["runsCoveringRequiredExactTimes"] = len(exact_covering_runs)
         stats["documentedRequiredGapsAllowed"] = allow_documented_required_gaps
-        stats["requiredHorizonEndCovered"] = bool(selection_runs) if required_horizon_end else None
         if not selection_runs:
+            stats["selectedNativeRunComplete"] = False
+            stats["requiredHorizonEndCovered"] = False if required_horizon_end else None
+            stats["requiredWindowInventoryComplete"] = False
             stats["missingRequiredExactTimes"] = True
             return None, [], stats
     retention_horizon_hours = (
@@ -1070,8 +1097,49 @@ def list_latest_assets(
     )
     run, run_selection = select_forecast_run(
         selection_runs,
-        preferred_run if preferred_run in selection_runs else None,
+        (
+            None
+            if allow_documented_required_gaps
+                and collection in MARINE_COLLECTIONS
+            else preferred_run if preferred_run in selection_runs else None
+        ),
         retention_horizon_hours=retention_horizon_hours,
+    )
+    selected_valid_times = {
+        iso(row.get("valid")) for row in runs[run] if iso(row.get("valid"))
+    }
+    selected_horizon_end_covered = (
+        max(epoch(value) for value in selected_valid_times)
+            >= epoch(required_horizon_end)
+        if required_horizon_end and selected_valid_times
+        else None
+    )
+    selected_native_run_complete = (
+        collection in MARINE_COLLECTIONS
+        and any(
+            epoch(value)
+                == epoch(run) + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+            for value in selected_valid_times
+        )
+    )
+    stats["selectedNativeRunComplete"] = selected_native_run_complete
+    stats["requiredHorizonEndCovered"] = selected_horizon_end_covered
+    stats["requiredWindowInventoryComplete"] = bool(
+        stats.get("catalogInventoryComplete") is True
+        and (
+            (
+                allow_documented_required_gaps
+                and collection in MARINE_COLLECTIONS
+                and selected_native_run_complete
+            )
+            or (
+                required <= selected_valid_times
+                and (
+                    required_horizon_end is None
+                    or selected_horizon_end_covered is True
+                )
+            )
+        )
     )
     eligible_latest_run = str(run_selection["latestRun"])
     latest_run = max(runs, key=epoch)
@@ -3897,7 +3965,14 @@ def build_current_operational_ledger(
             model_run
             and isinstance(stats, dict)
             and stats.get("catalogInventoryComplete") is True
-            and stats.get("requiredHorizonEndCovered") is True
+            and (
+                stats.get("requiredHorizonEndCovered") is True
+                or (
+                    stats.get("documentedRequiredGapsAllowed") is True
+                    and stats.get("selectedNativeRunComplete") is True
+                    and stats.get("requiredWindowInventoryComplete") is True
+                )
+            )
             and stats.get("rejectedStaleRun") is not True
             and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
             and official_assets_valid

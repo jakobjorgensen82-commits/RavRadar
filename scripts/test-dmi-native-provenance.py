@@ -662,6 +662,10 @@ try:
     assert selected_stats["officialNativeCadenceHours"] == 1
     assert selected_stats["catalogInventoryComplete"] is True
     assert len(selected_stats["officialRequiredAssets"]) == 118
+    assert selected_stats["nativeCompleteRunCount"] == 1
+    assert selected_stats["selectedNativeRunComplete"] is True
+    assert selected_stats["requiredHorizonEndCovered"] is True
+    assert selected_stats["requiredWindowInventoryComplete"] is True
 
     # The same inventory remains complete when STAC requires a two-page chain.
     page_one = catalog_items[:100]
@@ -920,9 +924,264 @@ try:
     assert len(gap_assets) == 117
     assert missing_hour not in {row["valid"] for row in gap_assets}
     assert gap_stats["officialRequiredGapCount"] == 1
+
+    # At a target seven hours after the preceding complete DKSS run, DMI's
+    # native +120 h endpoint resolves target..+113.  The exact four-hour public
+    # tail is an upstream absence for the supplement, while a newer partial run
+    # remains ineligible.
+    tail_reference = older_run + timedelta(hours=7)
+    tail_latest_run = older_run + timedelta(hours=6)
+    tail_latest_partial_items = [
+        stac_item(tail_latest_run, lead) for lead in range(31)
+    ]
+    producer.time.time = lambda: tail_reference.timestamp()
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": [*tail_latest_partial_items, *older_items],
+    }
+    tail_hours = set(producer.operational_current_valid_times(tail_reference))
+    tail_end = max(tail_hours, key=producer.epoch)
+    tail_run, tail_assets, tail_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=tail_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=tail_hours,
+        required_horizon_end_time=tail_end,
+        allow_documented_required_gaps=True,
+    )
+    assert tail_run == older_run.isoformat().replace("+00:00", "Z")
+    assert len(tail_assets) == 114
+    assert tail_stats["nativeCompleteRunCount"] == 1
+    assert tail_stats["selectedNativeRunComplete"] is True
+    assert tail_stats["requiredHorizonEndCovered"] is False
+    assert tail_stats["requiredWindowInventoryComplete"] is True
+    assert tail_stats["officialRequiredGapCount"] == 4
+
+    # A partial run must never turn its unpublished native tail into a large
+    # apparent DMI gap, even when the STAC page itself is exhaustive.
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": tail_latest_partial_items,
+    }
+    partial_run, partial_assets, partial_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=tail_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=tail_hours,
+        required_horizon_end_time=tail_end,
+        allow_documented_required_gaps=True,
+    )
+    assert partial_run is None
+    assert partial_assets == []
+    assert partial_stats["catalogInventoryComplete"] is True
+    assert partial_stats["nativeCompleteRunCount"] == 0
+    assert partial_stats["selectedNativeRunComplete"] is False
+    assert partial_stats["requiredWindowInventoryComplete"] is False
+
+    # A later row cannot stand in for the documented exact +120 endpoint.
+    endpoint_missing_items = [
+        stac_item(older_run, lead) for lead in [*range(120), 121]
+    ]
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": endpoint_missing_items,
+    }
+    endpoint_run, endpoint_assets, endpoint_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=tail_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=tail_hours,
+        required_horizon_end_time=tail_end,
+        allow_documented_required_gaps=True,
+    )
+    assert endpoint_run is None
+    assert endpoint_assets == []
+    assert endpoint_stats["nativeCompleteRunCount"] == 0
+
+    # Operational DMI-first selection always uses the newest complete native
+    # cycle; an older cached preferred run may not create a larger Copernicus
+    # tail merely because it remains within one publication cadence.
+    preferred_reference = older_run + timedelta(hours=13)
+    middle_run = older_run + timedelta(hours=6)
+    newest_run = older_run + timedelta(hours=12)
+    middle_complete_items = [stac_item(middle_run, lead) for lead in range(121)]
+    newest_partial_items = [stac_item(newest_run, lead) for lead in range(31)]
+    producer.time.time = lambda: preferred_reference.timestamp()
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": [*newest_partial_items, *middle_complete_items, *older_items],
+    }
+    preferred_hours = set(
+        producer.operational_current_valid_times(preferred_reference)
+    )
+    preferred_end = max(preferred_hours, key=producer.epoch)
+    preferred_selected_run, _, preferred_stats = producer.list_latest_assets(
+        "dkss_idw",
+        older_run.isoformat().replace("+00:00", "Z"),
+        minimum_valid_time=preferred_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=preferred_hours,
+        required_horizon_end_time=preferred_end,
+        allow_documented_required_gaps=True,
+    )
+    assert preferred_selected_run == middle_run.isoformat().replace("+00:00", "Z")
+    assert preferred_stats["nativeCompleteRunCount"] == 2
 finally:
     producer.request_json = original_request_json
     producer.time.time = original_time
+
+# The same target+113 native endpoint must pass the complete operational ledger
+# and expose exactly four tail pairs—not a national Copernicus substitution.
+tail_direct_hours = sorted(tail_hours, key=producer.epoch)[:-4]
+tail_ledger_document = {
+    "zones": {
+        "PART::TEST": {
+            "samplingPoint": [2.0, 1.0],
+            "hourly": {},
+        },
+    },
+    "runs": {},
+}
+tail_official_catalogs = {}
+for collection in sorted(producer.MARINE_COLLECTIONS):
+    processing_signature = f"tail-{collection}"
+    official_assets = []
+    processed_steps = {}
+    for hour in tail_direct_hours:
+        official_asset, source_asset = ledger_asset(collection, hour)
+        official_assets.append(official_asset)
+        processed_steps[hour] = {
+            "complete": True,
+            "recognizedParameters": ["current-u", "current-v"],
+            "zonesTouched": 1,
+            "parserVersion": producer.PARSER_VERSION,
+            "processingSignature": processing_signature,
+            "sourceAsset": source_asset,
+            "currentPartOutcomeProof": producer.build_current_part_outcome_proof(
+                [] if collection == "dkss_lf" else [target["partId"]],
+                [target["partId"]],
+                producer.target_fingerprint(targets),
+                processing_signature,
+                source_asset,
+            ),
+        }
+        if collection == "dkss_lf":
+            native_source = producer.native_component_source(
+                collection,
+                "2026-01-01T00:00:00Z",
+                hour,
+                component="current",
+                zone=zone,
+                grid_candidate=candidate,
+                capture={
+                    "itemId": source_asset["itemId"],
+                    "assetIdentitySha256": source_asset["assetIdentitySha256"],
+                    "assetSizeBytes": source_asset["assetSizeBytes"],
+                    "acquiredAt": source_asset["acquiredAt"],
+                    "contentLengthBytes": source_asset["contentLengthBytes"],
+                    "contentSha256": source_asset["contentSha256"],
+                    "itemCreatedAt": source_asset["itemCreatedAt"],
+                    "itemUpdatedAt": source_asset["itemUpdatedAt"],
+                },
+                spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+                verticalLayer="depthBelowSea:1",
+                verticalLayerRankM=1.0,
+                vectorSelection=CURRENT_VECTOR_SELECTION,
+                vectorSemanticsVersion=3,
+            )
+            assert native_source is not None
+            tail_ledger_document["zones"]["PART::TEST"]["hourly"][hour] = {
+                "time": hour,
+                "current-u": 0.1,
+                "current-v": -0.2,
+                "sources": {"current": native_source},
+            }
+    tail_ledger_document["runs"][collection] = {
+        "referenceTime": "2026-01-01T00:00:00Z",
+        "parserVersion": producer.PARSER_VERSION,
+        "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+        "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+        "processingSignature": processing_signature,
+        "processedSteps": processed_steps,
+    }
+    tail_official_catalogs[collection] = (
+        "2026-01-01T00:00:00Z",
+        official_assets,
+        {
+            "catalogInventoryComplete": True,
+            "requiredHorizonEndCovered": False,
+            "documentedRequiredGapsAllowed": True,
+            "selectedNativeRunComplete": True,
+            "requiredWindowInventoryComplete": True,
+            "requiredRowsTruncatedByAssetLimit": 0,
+            "officialRequiredValidTimeCount": len(official_assets),
+            "officialRequiredValidTimes": tail_direct_hours,
+            "officialRequiredAssets": official_assets,
+        },
+    )
+tail_ledger = producer.build_current_operational_ledger(
+    tail_ledger_document,
+    targets,
+    tail_reference,
+    tail_official_catalogs,
+)
+assert tail_ledger["ready"] is True
+assert tail_ledger["failureCodes"] == []
+assert tail_ledger["attestation"]["verifiedPairCount"] == 114
+assert tail_ledger["upstreamAbsencePairCount"] == 4
+assert tail_ledger["operationalComplementPairCount"] == 4
+assert all(
+    row["stateCounts"]["UPSTREAM_ABSENT"] == 4
+    for row in tail_ledger["collections"]
+)
+tail_ledger_document.setdefault("diagnostics", {})[
+    "currentOperationalLedger"
+] = tail_ledger
+assert producer.current_operational_cache_ready(
+    tail_ledger_document,
+    targets,
+    tail_reference,
+)
+
+# Recomputed counts and hashes cannot make a v4 ledger valid after one
+# collection's exact native +120 endpoint has been removed.
+tampered_terminal_ledger = json.loads(json.dumps(tail_ledger))
+tampered_collection = next(
+    row for row in tampered_terminal_ledger["collections"]
+    if row["collection"] == "dkss_idw"
+)
+native_terminal_time = (
+    older_run + timedelta(hours=producer.DKSS_MAX_FORECAST_LEAD_HOURS)
+).isoformat().replace("+00:00", "Z")
+tampered_row = next(
+    row for row in tampered_collection["validTimes"]
+    if row["validTime"] == native_terminal_time
+)
+tampered_row.update({
+    "state": "UPSTREAM_ABSENT",
+    "officialAsset": None,
+    "sourceAsset": None,
+    "partOutcomeProof": None,
+})
+tampered_assets = [
+    row["officialAsset"]
+    for row in tampered_collection["validTimes"]
+    if row["officialAsset"] is not None
+]
+tampered_times = sorted(asset["validTime"] for asset in tampered_assets)
+tampered_collection["officialValidTimeCount"] = len(tampered_assets)
+tampered_collection["officialValidTimesSha256"] = producer.valid_times_sha256(
+    tampered_times
+)
+tampered_collection["officialAssetsSha256"] = (
+    producer.current_official_assets_sha256(tampered_assets)
+)
+tampered_collection["stateCounts"] = {
+    state: sum(
+        row["state"] == state for row in tampered_collection["validTimes"]
+    )
+    for state in producer.CURRENT_OPERATIONAL_LEDGER_STATES
+}
+assert not producer.current_operational_ledger_ready(
+    tampered_terminal_ledger,
+    tail_ledger["attestation"],
+    targets,
+    tail_reference,
+    tail_reference + timedelta(hours=117),
+    producer.target_fingerprint(targets),
+)
 
 with tempfile.TemporaryDirectory() as temporary_directory:
     original_output = producer.OUTPUT_PATH
