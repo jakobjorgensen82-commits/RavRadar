@@ -57,6 +57,7 @@ from lib.dmi_native_provenance import (
     CURRENT_VECTOR_SEMANTICS_VERSION,
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
+    build_current_part_outcome_proof,
     canonical_time,
     canonical_current_source_asset,
     canonical_verified_part_current_attestation,
@@ -64,10 +65,12 @@ from lib.dmi_native_provenance import (
     component_collection_allowed,
     current_official_assets_sha256,
     current_operational_ledger_ready,
+    derive_current_part_outcome_partition,
     part_time_pairs_sha256,
     processed_source_assets_from_current_operational_ledger,
     sampling_identity,
     sanitized_current_attestation,
+    validate_current_part_outcome_proof,
     valid_times_sha256,
     wave_distance_allowed,
 )
@@ -172,9 +175,9 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 19
+PARSER_VERSION = 20
 PARAMETER_MAP_VERSION = 4
-GRID_LOOKUP_VERSION = 7
+GRID_LOOKUP_VERSION = 8
 # The integrated model can replay at most 48 hours before its first public
 # target. Keep a bounded private buffer with one full native-cadence safety
 # margin; this cache is never part of the Pages artifact.
@@ -260,6 +263,10 @@ HINT_ALIASES = {
 }
 
 
+class DmiGridLookupError(RuntimeError):
+    """An ecCodes/grid failure that must never masquerade as spatial absence."""
+
+
 def iso(value: Any) -> str | None:
     if not value:
         return None
@@ -305,30 +312,75 @@ def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, An
     return document
 
 
+STAC_RUN_TIME_ALIASES = (
+    "forecast:reference_datetime", "reference_datetime", "modelRun", "model_run",
+)
+STAC_VALID_TIME_ALIASES = (
+    "datetime", "forecast:valid_time", "valid_time", "end_datetime", "start_datetime",
+)
+
+
+def _canonical_stac_time_aliases(
+    item: Any,
+    aliases: tuple[str, ...],
+    *,
+    required: bool,
+) -> tuple[str | None, bool]:
+    """Parse every present alias and reject malformed or conflicting claims."""
+    if not isinstance(item, dict) or not isinstance(item.get("properties"), dict):
+        return None, False
+    properties = item["properties"]
+    parsed: list[str] = []
+    for key in aliases:
+        if key not in properties:
+            continue
+        raw = properties.get(key)
+        if (
+            not isinstance(raw, str)
+            or raw != raw.strip()
+            or not re.fullmatch(
+                r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                r"(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})",
+                raw,
+            )
+        ):
+            return None, False
+        try:
+            parsed_time = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None, False
+        if parsed_time.tzinfo is None or parsed_time.utcoffset() is None:
+            return None, False
+        value = parsed_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        parsed.append(value)
+    if not parsed:
+        return None, not required
+    if len(set(parsed)) != 1:
+        return None, False
+    return parsed[0], True
+
+
 def item_run(item: dict[str, Any]) -> str | None:
-    props = item.get("properties") or {}
-    for key in ("forecast:reference_datetime", "reference_datetime", "modelRun", "model_run"):
-        value = iso(props.get(key))
-        if value:
-            return value
+    value, valid = _canonical_stac_time_aliases(
+        item, STAC_RUN_TIME_ALIASES, required=True,
+    )
     # Publication and valid-time metadata are not model-run identity.  If DMI
     # omits every explicit run field, this item is unusable rather than guessed
     # from `created`, the item id or the forecast-valid timestamp.
-    return None
+    return value if valid else None
 
 
 def item_valid(item: dict[str, Any]) -> str | None:
-    props = item.get("properties") or {}
-    for key in ("datetime", "forecast:valid_time", "valid_time", "end_datetime", "start_datetime"):
-        value = iso(props.get(key))
-        if value:
-            return value
-    return None
+    value, valid = _canonical_stac_time_aliases(
+        item, STAC_VALID_TIME_ALIASES, required=True,
+    )
+    return value if valid else None
 
 
 def item_timestamp(item: dict[str, Any], key: str) -> str | None:
-    """Return only an explicit STAC timestamp; never infer publication time."""
-    return iso((item.get("properties") or {}).get(key))
+    """Return one canonical explicit STAC timestamp; never infer it."""
+    value, valid = _canonical_stac_time_aliases(item, (key,), required=False)
+    return value if valid else None
 
 
 def observed_run_cadence_hours(runs: dict[str, list[dict[str, Any]]]) -> float | None:
@@ -381,8 +433,30 @@ def asset_map(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return merged
 
 
+def _canonical_stac_asset_size(asset: Any) -> tuple[int | None, bool]:
+    if not isinstance(asset, dict):
+        return None, False
+    parsed: list[int] = []
+    for key in ("file:size", "size", "content_length"):
+        if key not in asset:
+            continue
+        raw = asset.get(key)
+        if isinstance(raw, int) and not isinstance(raw, bool):
+            value = raw
+        else:
+            return None, False
+        if value <= 0:
+            return None, False
+        parsed.append(value)
+    if not parsed:
+        return None, True
+    if len(set(parsed)) != 1:
+        return None, False
+    return parsed[0], True
+
+
 def grib_asset(item: dict[str, Any]) -> tuple[str, int | None, str] | None:
-    ranked: list[tuple[int, str, int | None, str]] = []
+    ranked: list[tuple[int, str, str, dict[str, Any]]] = []
     for key, asset in asset_map(item).items():
         href = asset.get("href")
         if not isinstance(href, str) or not href.strip():
@@ -393,18 +467,63 @@ def grib_asset(item: dict[str, Any]) -> tuple[str, int | None, str] | None:
         haystack = f"{key} {title} {roles} {href}".lower()
         if "grib" not in media and "grib" not in haystack and not re.search(r"\.(grib2?|grb2?|bin)(\?|$)", haystack):
             continue
-        size = asset.get("file:size") or asset.get("size") or asset.get("content_length")
-        try:
-            size = int(size) if size is not None else None
-        except (TypeError, ValueError):
-            size = None
         preferred = key.lower() in {"data", "grib", "download"} or "data" in roles
-        ranked.append((0 if preferred else 1, href.strip(), size, f"{key} {title}"))
+        ranked.append((0 if preferred else 1, href.strip(), f"{key} {title}", asset))
     if not ranked:
         return None
     ranked.sort(key=lambda row: (row[0], row[1]))
-    _, href, size, description = ranked[0]
+    _, href, description, selected_asset = ranked[0]
+    size, size_valid = _canonical_stac_asset_size(selected_asset)
+    if not size_valid:
+        return None
     return href, size, description
+
+
+def canonical_stac_item_identity(item: Any) -> dict[str, Any] | None:
+    """Return one fail-closed item/run/time/asset revision identity."""
+    if not isinstance(item, dict):
+        return None
+    raw_item_id = item.get("id")
+    if (
+        not isinstance(raw_item_id, str)
+        or not raw_item_id
+        or raw_item_id != raw_item_id.strip()
+    ):
+        return None
+    run, run_valid = _canonical_stac_time_aliases(
+        item, STAC_RUN_TIME_ALIASES, required=True,
+    )
+    valid_time, valid_time_valid = _canonical_stac_time_aliases(
+        item, STAC_VALID_TIME_ALIASES, required=True,
+    )
+    created_at, created_valid = _canonical_stac_time_aliases(
+        item, ("created",), required=False,
+    )
+    updated_at, updated_valid = _canonical_stac_time_aliases(
+        item, ("updated",), required=False,
+    )
+    asset = grib_asset(item)
+    if not (
+        run_valid
+        and valid_time_valid
+        and created_valid
+        and updated_valid
+        and run
+        and valid_time
+        and asset is not None
+    ):
+        return None
+    href, size, description = asset
+    return {
+        "itemId": raw_item_id,
+        "modelRun": run,
+        "validTime": valid_time,
+        "itemCreatedAt": created_at,
+        "itemUpdatedAt": updated_at,
+        "href": href,
+        "size": size,
+        "description": description,
+    }
 
 
 def metadata_text(item: dict[str, Any], asset_description: str = "") -> str:
@@ -622,6 +741,8 @@ def reusable_processed_steps(
     strict_current_anchor_available: bool,
     required_valid_times: set[str] | None = None,
     required_asset_provenance: dict[str, dict[str, Any]] | None = None,
+    current_target_ids: list[str] | None = None,
+    current_target_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Reuse only current-parser checkpoints bound to the selected STAC asset."""
     if not same_processing or not same_run:
@@ -640,7 +761,12 @@ def reusable_processed_steps(
             and step.get("parserVersion") == PARSER_VERSION
             and step.get("processingSignature") == processing_signature
         }
-    if required_valid_times is None or not isinstance(required_asset_provenance, dict):
+    if (
+        required_valid_times is None
+        or not isinstance(required_asset_provenance, dict)
+        or not isinstance(current_target_ids, list)
+        or not current_target_registry_sha256
+    ):
         return {}
     required = {
         canonical_time(value) for value in required_valid_times
@@ -652,7 +778,7 @@ def reusable_processed_steps(
         if valid_time not in required:
             continue
         official_asset = required_asset_provenance.get(valid_time)
-        if processed_step_source_for_official_asset(
+        source = processed_step_source_for_official_asset(
             step,
             collection=collection,
             model_run=previous_run.get("referenceTime"),
@@ -660,8 +786,20 @@ def reusable_processed_steps(
             processing_signature=processing_signature,
             official_asset=official_asset,
             require_reusable_size=True,
-        ) is not None:
-            reusable[valid_time] = step
+        )
+        if source is None:
+            continue
+        try:
+            validate_current_part_outcome_proof(
+                step.get("currentPartOutcomeProof"),
+                current_target_ids,
+                current_target_registry_sha256,
+                processing_signature,
+                source,
+            )
+        except ValueError:
+            continue
+        reusable[valid_time] = step
     _ = strict_current_anchor_available
     return reusable
 
@@ -726,10 +864,18 @@ def _bounded_stac_inventory(
         raw_items_fetched += len(features)
         unique_features: list[dict[str, Any]] = []
         for item in features:
-            item_id = str(item.get("id") or "").strip()
-            if not item_id:
+            raw_item_id = item.get("id")
+            if raw_item_id is None or raw_item_id == "":
                 failure_codes.add("STAC_ITEM_IDENTITY_MISSING")
                 continue
+            if (
+                not isinstance(raw_item_id, str)
+                or raw_item_id != raw_item_id.strip()
+                or not raw_item_id.strip()
+            ):
+                failure_codes.add("STAC_ITEM_IDENTITY_INVALID")
+                continue
+            item_id = raw_item_id
             if item_id in seen_item_ids:
                 failure_codes.add("STAC_DUPLICATE_ITEM_IDENTITY")
                 continue
@@ -835,25 +981,35 @@ def list_latest_assets(
         "duplicateValidTimes": 0,
         "sampleItems": [],
     }
+    seen_run_valid_times: set[tuple[str, str]] = set()
     for item in items:
-        run, valid, asset = item_run(item), item_valid(item), grib_asset(item)
-        if not run or not valid or not asset:
+        identity = canonical_stac_item_identity(item)
+        if identity is None:
             stats["itemsWithoutGrib"] += 1
             stats["unparseableItems"] += 1
             continue
-        href, size, _description = asset
+        run = identity["modelRun"]
+        valid = identity["validTime"]
         maximum_lead_hours = (
             WAM_MAX_FORECAST_LEAD_HOURS
             if collection in WAVE_BOOTSTRAP_COLLECTIONS
             else HOURS + 6
         )
+        run_valid_time = (run, valid)
+        if run_valid_time in seen_run_valid_times:
+            stats["duplicateValidTimes"] += 1
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            })
+            continue
+        seen_run_valid_times.add(run_valid_time)
         if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + maximum_lead_hours * 3600:
             continue
-        item_id = str(item.get("id") or "").strip()
-        if not item_id:
-            stats["itemsWithoutGrib"] += 1
-            stats["unparseableItems"] += 1
-            continue
+        href = identity["href"]
+        size = identity["size"]
+        item_id = identity["itemId"]
         asset_identity = asset_identity_sha256(href)
         if asset_identity is None:
             stats["itemsWithoutGrib"] += 1
@@ -865,8 +1021,8 @@ def list_latest_assets(
             "size": size,
             "id": item_id,
             "assetIdentitySha256": asset_identity,
-            "itemCreatedAt": item_timestamp(item, "created"),
-            "itemUpdatedAt": item_timestamp(item, "updated"),
+            "itemCreatedAt": identity["itemCreatedAt"],
+            "itemUpdatedAt": identity["itemUpdatedAt"],
         }
         runs.setdefault(run, []).append(row)
         stats["forecastStepAssets"] += 1
@@ -1013,6 +1169,11 @@ def list_latest_assets(
             continue
         if row["valid"] in unique:
             stats["duplicateValidTimes"] += 1
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            })
             continue
         unique[row["valid"]] = {
             **row,
@@ -1633,7 +1794,15 @@ def grid_signature(gid: int) -> tuple[Any, ...]:
         "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
         "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
     )
-    return tuple(safe_get(gid, key) for key in keys)
+    values: list[Any] = []
+    for key in keys:
+        try:
+            values.append(codes_get(gid, key))
+        except Exception as exc:
+            raise DmiGridLookupError(
+                "DMI grid identity could not be read completely"
+            ) from exc
+    return tuple(values)
 
 
 def grid_definition_sha256(gid: int) -> str:
@@ -1673,9 +1842,12 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
         except TypeError:
-            candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
-        except Exception:
-            candidates = []
+            try:
+                candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
+            except Exception as exc:
+                raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+        except Exception as exc:
+            raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         direct = []
@@ -1711,9 +1883,12 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, npoints=4)
         except TypeError:
-            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
-        except Exception:
-            candidates = []
+            try:
+                candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
+            except Exception as exc:
+                raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+        except Exception as exc:
+            raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         for candidate in candidates or []:
@@ -1821,8 +1996,10 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
         return {}
     try:
         raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception:
-        return {}
+    except Exception as exc:
+        raise DmiGridLookupError("DMI batched vector lookup failed") from exc
+    if not isinstance(raw_values, (list, tuple)) or len(raw_values) != len(unique_indices):
+        raise DmiGridLookupError("DMI batched vector lookup returned an invalid result")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
     definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, list[dict[str, float]]] = {}
@@ -1868,8 +2045,10 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
         return {}
     try:
         raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception:
-        return {}
+    except Exception as exc:
+        raise DmiGridLookupError("DMI batched scalar lookup failed") from exc
+    if not isinstance(raw_values, (list, tuple)) or len(raw_values) != len(unique_indices):
+        raise DmiGridLookupError("DMI batched scalar lookup returned an invalid result")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
     definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, dict[str, float]] = {}
@@ -2198,7 +2377,8 @@ def native_component_source(
 def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any],
                  current_shadow: dict[str, Any] | None = None,
-                 private_stage_output: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 private_stage_output: dict[str, Any] | None = None,
+                 current_part_outcomes: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -2210,6 +2390,17 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         and (not zone.get("requiredCollection") or zone.get("requiredCollection") == collection)
     }
     zone_by_id = {str(zone.get("id")): zone for zone in zones if zone.get("id")}
+    operational_part_zone_ids = {
+        str(zone.get("id"))
+        for zone in zones
+        if zone.get("coastalPart")
+        and not zone.get("privateStage")
+        and not zone.get("researchCurrent")
+        and str(zone.get("id") or "").startswith("PART::")
+    }
+    current_verified_part_zone_ids: set[str] = set()
+    if current_part_outcomes is not None:
+        current_part_outcomes.clear()
     source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
@@ -2389,6 +2580,11 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         )
                         if source:
                             hour.setdefault("sources", {})[component] = source
+                            if (
+                                family == "current"
+                                and zone["id"] in operational_part_zone_ids
+                            ):
+                                current_verified_part_zone_ids.add(str(zone["id"]))
                         else:
                             (hour.get("sources") or {}).pop(component, None)
                     continue
@@ -2557,6 +2753,24 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         diagnostics["currentFieldShadowSamplesWritten"] = int(
             diagnostics.get("currentFieldShadowSamplesWritten") or 0
         ) + written
+    if (
+        current_part_outcomes is not None
+        and collection in MARINE_COLLECTIONS
+        and not interrupted
+        and operational_part_zone_ids
+        and {"current-u", "current-v"} <= found
+    ):
+        current_part_outcomes.update({
+            "complete": True,
+            "targetPartIds": sorted(
+                zone_id.removeprefix("PART::")
+                for zone_id in operational_part_zone_ids
+            ),
+            "spatialUnavailablePartIds": sorted(
+                zone_id.removeprefix("PART::")
+                for zone_id in operational_part_zone_ids - current_verified_part_zone_ids
+            ),
+        })
     return found, touched, interrupted, messages_seen, zone_lookups
 
 
@@ -3623,6 +3837,8 @@ def build_current_operational_ledger(
     valid_times = operational_current_valid_times(reference)
     valid_time_set = set(valid_times)
     range_end = reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    part_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
+    registry_sha256 = target_fingerprint(targets)
     provisional_collections: list[dict[str, Any]] = []
     failure_codes: set[str] = set()
     for collection in sorted(MARINE_COLLECTIONS):
@@ -3706,6 +3922,7 @@ def build_current_operational_ledger(
         for valid_time in valid_times:
             official_asset = official_by_time.get(valid_time)
             source_asset = None
+            part_outcome_proof = None
             if not catalog_complete:
                 state = "LOCALLY_SKIPPED"
             elif official_asset is None:
@@ -3723,16 +3940,32 @@ def build_current_operational_ledger(
                 if source_asset is None:
                     state = "LOCALLY_SKIPPED"
                 else:
-                    state = "PROCESSED"
+                    try:
+                        part_outcome_proof = validate_current_part_outcome_proof(
+                            step.get("currentPartOutcomeProof"),
+                            part_ids,
+                            registry_sha256,
+                            processing_signature,
+                            source_asset,
+                        )
+                    except (TypeError, ValueError):
+                        part_outcome_proof = None
+                    if part_outcome_proof is None:
+                        state = "LOCALLY_SKIPPED"
+                        source_asset = None
+                    else:
+                        state = "PROCESSED"
             rows.append({
                 "validTime": valid_time,
                 "state": state,
                 "officialAsset": official_asset,
                 "sourceAsset": source_asset,
+                "partOutcomeProof": part_outcome_proof,
             })
         provisional_collections.append({
             "collection": collection,
             "modelRun": model_run,
+            "processingSignature": processing_signature,
             "validTimes": rows,
         })
         if not catalog_complete:
@@ -3798,44 +4031,48 @@ def build_current_operational_ledger(
         failure_codes.add("ACTIVE_CURRENT_REGISTRY_EMPTY")
     if sum(row["officialValidTimeCount"] for row in collection_ledgers) == 0:
         failure_codes.add("OFFICIAL_DKSS_CATALOG_COLLAPSE")
-    for valid_time, states in states_by_time.items():
+    for states in states_by_time.values():
         if len(states) != len(MARINE_COLLECTIONS):
             failure_codes.add("OFFICIAL_DKSS_LEDGER_INCOMPLETE")
-        elif not all(state == "UPSTREAM_ABSENT" for state in states) and "VERIFIED" not in states:
+        elif any(state in {"EXPECTED", "LOCALLY_SKIPPED"} for state in states):
+            failure_codes.add("LOCALLY_SKIPPED_DKSS_ASSET")
+
+    try:
+        partition = derive_current_part_outcome_partition(
+            collection_ledgers,
+            part_ids,
+            valid_times,
+        )
+    except (TypeError, ValueError):
+        partition = {
+            "verifiedPairs": [],
+            "upstreamAbsencePairs": [],
+            "spatialUnavailablePairs": [],
+            "operationalComplementPairs": [],
+        }
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+
+    if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+
+    verified_times = {
+        row["validTime"] for row in partition["verifiedPairs"]
+    }
+    for valid_time, states in states_by_time.items():
+        if (
+            len(states) == len(MARINE_COLLECTIONS)
+            and not all(state == "UPSTREAM_ABSENT" for state in states)
+            and valid_time not in verified_times
+        ):
+            # An official asset may legitimately miss individual coastal parts,
+            # but not silently turn the whole national matrix into Copernicus.
             failure_codes.add("SYSTEMIC_CURRENT_TIME_COLLAPSE")
 
-    verified = {
-        (str(row.get("partId") or ""), canonical_time(row.get("validTime")))
-        for row in attestation.get("verifiedPairs") or []
-        if isinstance(row, dict)
-    }
-    part_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
-    upstream_absence_pairs = [
-        {"partId": part_id, "validTime": valid_time}
-        for valid_time in valid_times
-        if len(states_by_time.get(valid_time) or []) == len(MARINE_COLLECTIONS)
-        and all(
-            state == "UPSTREAM_ABSENT"
-            for state in states_by_time[valid_time]
-        )
-        for part_id in part_ids
-    ]
-    upstream_absence_identities = {
-        (row["partId"], row["validTime"])
-        for row in upstream_absence_pairs
-    }
-    expected_identities = {
-        (part_id, valid_time)
-        for valid_time in valid_times
-        for part_id in part_ids
-    }
-    if (
-        verified & upstream_absence_identities
-        or (verified | upstream_absence_identities) != expected_identities
-    ):
-        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
-    registry_sha256 = target_fingerprint(targets)
-    authorized_complement = upstream_absence_pairs if not failure_codes else []
+    upstream_absence_pairs = partition["upstreamAbsencePairs"]
+    spatial_unavailable_pairs = partition["spatialUnavailablePairs"]
+    authorized_complement = (
+        partition["operationalComplementPairs"] if not failure_codes else []
+    )
     ledger = {
         "schemaVersion": CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
         "contractId": CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
@@ -3851,6 +4088,11 @@ def build_current_operational_ledger(
             upstream_absence_pairs
         ),
         "upstreamAbsencePairs": upstream_absence_pairs,
+        "spatialUnavailablePairCount": len(spatial_unavailable_pairs),
+        "spatialUnavailablePairsSha256": part_time_pairs_sha256(
+            spatial_unavailable_pairs
+        ),
+        "spatialUnavailablePairs": spatial_unavailable_pairs,
         "operationalComplementPairCount": len(authorized_complement),
         "operationalComplementPairsSha256": part_time_pairs_sha256(
             authorized_complement
@@ -4881,6 +5123,11 @@ def main() -> int:
         operational_current_valid_times(locked_production_reference)
     )
     required_current_horizon_end = max(required_current_valid_times, key=epoch)
+    current_target_ids = sorted(
+        str(target.get("partId") or "").strip()
+        for target in coastal_part_targets
+    )
+    current_target_registry_sha256 = target_fingerprint(coastal_part_targets)
     for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
@@ -5009,6 +5256,16 @@ def main() -> int:
                     if collection in MARINE_COLLECTIONS
                     else None
                 ),
+                current_target_ids=(
+                    current_target_ids
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                current_target_registry_sha256=(
+                    current_target_registry_sha256
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
             )
             if (
                 collection in MARINE_COLLECTIONS
@@ -5116,6 +5373,7 @@ def main() -> int:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
+                current_part_outcome_observation: dict[str, Any] = {}
                 found, touched, interrupted, messages_seen, zone_lookups = process_grib(
                     path,
                     collection,
@@ -5126,6 +5384,7 @@ def main() -> int:
                     result["diagnostics"],
                     current_shadow,
                     coastal_point_stage,
+                    current_part_outcome_observation,
                 )
                 scrub_private_stage_diagnostics(result["diagnostics"])
                 if coastal_point_stage_targets:
@@ -5175,12 +5434,30 @@ def main() -> int:
                     "validTime": asset["valid"],
                     **(source_capture or {}),
                 }) if source_capture is not None else None
+                step_part_outcome_proof = None
+                if (
+                    collection in MARINE_COLLECTIONS
+                    and step_source_asset is not None
+                    and current_part_outcome_observation.get("complete") is True
+                    and current_part_outcome_observation.get("targetPartIds")
+                        == current_target_ids
+                ):
+                    step_part_outcome_proof = build_current_part_outcome_proof(
+                        current_part_outcome_observation.get(
+                            "spatialUnavailablePartIds"
+                        ),
+                        current_target_ids,
+                        current_target_registry_sha256,
+                        processing_signature,
+                        step_source_asset,
+                    )
                 step_complete = bool(
                     set(step_recognized) >= required_for_family
                     and len(touched) > 0
                     and (
                         collection not in MARINE_COLLECTIONS
                         or step_source_asset is not None
+                        and step_part_outcome_proof is not None
                     )
                 )
                 if not interrupted and step_complete:
@@ -5200,6 +5477,8 @@ def main() -> int:
                         "parserVersion": PARSER_VERSION,
                         "processingSignature": processing_signature,
                         **({"sourceAsset": step_source_asset}
+                           if collection in MARINE_COLLECTIONS else {}),
+                        **({"currentPartOutcomeProof": step_part_outcome_proof}
                            if collection in MARINE_COLLECTIONS else {}),
                     }
                 fresh_zone_ids.update(touched)

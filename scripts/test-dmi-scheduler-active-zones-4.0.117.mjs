@@ -175,11 +175,20 @@ source_asset={
  **official_asset,'acquiredAt':'2026-01-01T01:00:00Z',
  'contentLengthBytes':1024,'contentSha256':'d'*64,
 }
+current_targets=[{
+ 'partId':'TEST','parentZoneId':'ZONE-TEST','name':'Test',
+ 'waterPoint':[2.0,1.0],
+}]
+current_target_ids=['TEST']
+current_target_registry_sha256=module.target_fingerprint(current_targets)
 old_steps={reuse_time:{
  'complete':True,'recognizedParameters':['current-u','current-v'],'zonesTouched':1,
  'parserVersion':module.PARSER_VERSION,'processingSignature':reuse_signature,
  'sourceAsset':source_asset,
 }}
+old_steps[reuse_time]['currentPartOutcomeProof']=module.build_current_part_outcome_proof(
+ [],current_target_ids,current_target_registry_sha256,reuse_signature,source_asset,
+)
 old_run={
  'referenceTime':reuse_time,'processingSignature':reuse_signature,
  'processedSteps':old_steps,
@@ -188,11 +197,15 @@ assert module.reusable_processed_steps(
  old_run,collection='dkss_idw',same_processing=True,same_run=True,
  strict_current_anchor_available=False,required_valid_times={reuse_time},
  required_asset_provenance={reuse_time:official_asset},
+ current_target_ids=current_target_ids,
+ current_target_registry_sha256=current_target_registry_sha256,
 )==old_steps
 assert module.reusable_processed_steps(
  old_run,collection='dkss_idw',same_processing=True,same_run=True,
  strict_current_anchor_available=True,required_valid_times={reuse_time},
  required_asset_provenance={reuse_time:official_asset},
+ current_target_ids=current_target_ids,
+ current_target_registry_sha256=current_target_registry_sha256,
 )==old_steps
 unsigned_run={**old_run,'processedSteps':{reuse_time:{
  key:value for key,value in old_steps[reuse_time].items()
@@ -202,6 +215,8 @@ assert module.reusable_processed_steps(
  unsigned_run,collection='dkss_idw',same_processing=True,same_run=True,
  strict_current_anchor_available=True,required_valid_times={reuse_time},
  required_asset_provenance={reuse_time:official_asset},
+ current_target_ids=current_target_ids,
+ current_target_registry_sha256=current_target_registry_sha256,
 )=={}
 wam_steps={reuse_time:{
  'complete':True,'recognizedParameters':['significant-wave-height'],

@@ -112,34 +112,66 @@ def source(
     }
 
 
-def processed_run(collection: str, official_hours: list[str]) -> dict:
+def processed_run(
+    collection: str,
+    official_hours: list[str],
+    targets: list[dict],
+    *,
+    spatial_unavailable_pairs: set[tuple[str, str]] | None = None,
+    missing_proofs: set[tuple[str, str]] | None = None,
+) -> dict:
     processing_signature = f"test-{collection}"
+    target_ids = sorted(str(target["partId"]) for target in targets)
+    target_registry_sha256 = producer.target_fingerprint(targets)
+    unavailable = set(spatial_unavailable_pairs or set())
+    missing = set(missing_proofs or set())
+    processed_steps = {}
+    for valid_time in official_hours:
+        source_asset = {
+            **official_asset(collection, valid_time),
+            "acquiredAt": AT,
+            "contentLengthBytes": 1024,
+            "contentSha256": "d" * 64,
+        }
+        # The synthetic public cache selects dkss_idw. Other collections are
+        # terminally processed but do not claim that their bytes supplied a
+        # public pair. Explicit spatial gaps are unavailable in every source.
+        unavailable_part_ids = [
+            part_id
+            for part_id in target_ids
+            if collection != "dkss_idw"
+            or (part_id, valid_time) in unavailable
+        ]
+        step = {
+            "complete": True,
+            "recognizedParameters": [
+                "sea-mean-deviation",
+                "current-u",
+                "current-v",
+            ],
+            "zonesTouched": 1,
+            "parserVersion": producer.PARSER_VERSION,
+            "processingSignature": processing_signature,
+            "sourceAsset": source_asset,
+        }
+        if (collection, valid_time) not in missing:
+            step["currentPartOutcomeProof"] = (
+                producer.build_current_part_outcome_proof(
+                    unavailable_part_ids,
+                    target_ids,
+                    target_registry_sha256,
+                    processing_signature,
+                    source_asset,
+                )
+            )
+        processed_steps[valid_time] = step
     return {
         "referenceTime": AT,
         "parserVersion": producer.PARSER_VERSION,
         "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
         "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
         "processingSignature": processing_signature,
-        "processedSteps": {
-            valid_time: {
-                "complete": True,
-                "recognizedParameters": [
-                    "sea-mean-deviation",
-                    "current-u",
-                    "current-v",
-                ],
-                "zonesTouched": 1,
-                "parserVersion": producer.PARSER_VERSION,
-                "processingSignature": processing_signature,
-                "sourceAsset": {
-                    **official_asset(collection, valid_time),
-                    "acquiredAt": AT,
-                    "contentLengthBytes": 1024,
-                    "contentSha256": "d" * 64,
-                },
-            }
-            for valid_time in official_hours
-        },
+        "processedSteps": processed_steps,
     }
 
 
@@ -149,16 +181,27 @@ def dmi_document(
     upstream_absent: set[str] | None = None,
     verified_hours: set[str] | None = None,
     stale_pairs: set[tuple[str, str]] | None = None,
+    spatial_unavailable_pairs: set[tuple[str, str]] | None = None,
+    missing_proofs: set[tuple[str, str]] | None = None,
 ) -> dict:
     required_hours = producer.operational_current_valid_times(REFERENCE)
     absent = set(upstream_absent or set())
     official_hours = [hour for hour in required_hours if hour not in absent]
     verified = set(official_hours if verified_hours is None else verified_hours)
     stale = set(stale_pairs or set())
+    spatial_unavailable = set(spatial_unavailable_pairs or set())
+    terminal_unavailable = spatial_unavailable | {
+        (str(target["partId"]), valid_time)
+        for target in targets
+        for valid_time in official_hours
+        if valid_time not in verified
+    }
     zones = {}
     for target in targets:
         hourly = {}
         for valid_time in sorted(verified):
+            if (target["partId"], valid_time) in spatial_unavailable:
+                continue
             parsed = datetime.fromisoformat(valid_time.replace("Z", "+00:00"))
             model_run = (
                 utc(REFERENCE - timedelta(hours=3))
@@ -181,7 +224,13 @@ def dmi_document(
     document = {
         "zones": zones,
         "runs": {
-            collection: processed_run(collection, official_hours)
+            collection: processed_run(
+                collection,
+                official_hours,
+                targets,
+                spatial_unavailable_pairs=terminal_unavailable,
+                missing_proofs=missing_proofs,
+            )
             for collection in sorted(producer.MARINE_COLLECTIONS)
         },
         "diagnostics": {},
@@ -300,6 +349,88 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert output_values["required_pair_count"] == "1"
     assert output_values["advisory_history_required_pair_count"] == "48"
 
+    # One exact part may be unavailable in all three fully processed official
+    # sources while another part verifies the same hour. The national guard
+    # remains green and only that terminal spatial gap enters the complement.
+    spatial_part = {
+        "partId": "dmi-spatial",
+        "sourceZoneId": "Z2",
+        "name": "Spatial gap",
+        "waterPoint": [10.0, 56.0],
+    }
+    spatial_parts = [parts[0], spatial_part]
+    spatial_targets = [{
+        "partId": part["partId"],
+        "parentZoneId": part["sourceZoneId"],
+        "name": part["name"],
+        "waterPoint": part["waterPoint"],
+    } for part in spatial_parts]
+    spatial_time = utc(REFERENCE + timedelta(hours=7))
+    spatial_pair = {
+        "partId": "dmi-spatial",
+        "validTime": spatial_time,
+    }
+    spatial_dmi = dmi_document(
+        spatial_targets,
+        spatial_unavailable_pairs={("dmi-spatial", spatial_time)},
+    )
+    spatial_ledger = spatial_dmi["diagnostics"]["currentOperationalLedger"]
+    assert spatial_ledger["ready"] is True
+    assert spatial_ledger["failureCodes"] == []
+    assert spatial_ledger["upstreamAbsencePairs"] == []
+    assert spatial_ledger["spatialUnavailablePairs"] == [spatial_pair]
+    assert spatial_ledger["operationalComplementPairs"] == [spatial_pair]
+    write(folder / "targets.json", {
+        "partCount": 2,
+        "zones": {"Z1": [parts[0]], "Z2": [spatial_part]},
+    })
+    write(folder / "dmi.json", spatial_dmi)
+    selected_spatial = run(folder)
+    assert selected_spatial.returncode == 0, (
+        selected_spatial.stdout + selected_spatial.stderr
+    )
+    spatial_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert spatial_registry["operationalDmiVerifiedPairCount"] == 235
+    assert spatial_registry["operationalRequiredPairs"] == [spatial_pair]
+    assert spatial_registry["operationalRequiredPairCount"] == 1
+
+    # Outcome proof tampering is detected independently by the selector-side
+    # validator; an old authorized complement cannot survive the mutation.
+    tampered_proof = copy.deepcopy(spatial_dmi)
+    tampered_rows = next(
+        row["validTimes"]
+        for row in tampered_proof["diagnostics"]["currentOperationalLedger"]["collections"]
+        if row["collection"] == "dkss_idw"
+    )
+    tampered_row = next(
+        row for row in tampered_rows if row["validTime"] == spatial_time
+    )
+    tampered_row["partOutcomeProof"]["outcomesSha256"] = "f" * 64
+    write(folder / "dmi.json", tampered_proof)
+    refused_proof_tamper = run(folder)
+    assert refused_proof_tamper.returncode != 0
+    assert "outcome proof" in refused_proof_tamper.stdout.lower()
+
+    # A parser/grid exception cannot manufacture negative evidence. Its absent
+    # terminal proof is LOCALLY_SKIPPED, makes the ledger red, and authorizes no
+    # Copernicus pair even though the public row itself still exists.
+    missing_proof_dmi = dmi_document(
+        targets,
+        missing_proofs={("dkss_idw", AT)},
+    )
+    missing_proof_ledger = (
+        missing_proof_dmi["diagnostics"]["currentOperationalLedger"]
+    )
+    assert missing_proof_ledger["ready"] is False
+    assert "LOCALLY_SKIPPED_DKSS_ASSET" in missing_proof_ledger["failureCodes"]
+    assert missing_proof_ledger["operationalComplementPairs"] == []
+    write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})
+    write(folder / "dmi.json", missing_proof_dmi)
+    refused_missing_proof = run(folder)
+    assert refused_missing_proof.returncode != 0
+
     # A stale pair from a non-selected run is a local/unattested processing gap,
     # never negative upstream evidence. It blocks readiness and cannot become a
     # Copernicus target, even when another part verifies that official hour.
@@ -335,7 +466,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     write(folder / "dmi.json", stale_dmi)
     stale_targeted = run(folder)
     assert stale_targeted.returncode != 0
-    assert "without exact upstream absence" in stale_targeted.stdout
+    assert "selection failed" in stale_targeted.stdout.lower()
 
     # Restore the one-target fixture for independent tamper regressions below.
     write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})
@@ -364,6 +495,73 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         REFERENCE + timedelta(hours=117),
         gap_ledger["targetRegistrySha256"],
     )
+
+    # A collection ledger must name one exact canonical selected model run.
+    for invalid_model_run in (
+        None,
+        REFERENCE.astimezone(timezone(timedelta(hours=2))).isoformat(),
+    ):
+        invalid_run_ledger = copy.deepcopy(gap_ledger)
+        invalid_run_ledger["collections"][0]["modelRun"] = invalid_model_run
+        try:
+            validate_current_operational_ledger(
+                invalid_run_ledger,
+                original_attestation,
+                targets,
+                REFERENCE,
+                REFERENCE + timedelta(hours=117),
+                gap_ledger["targetRegistrySha256"],
+            )
+        except ValueError as exc:
+            assert "collection run is invalid" in str(exc)
+        else:
+            raise AssertionError("Missing or noncanonical selected model run must fail closed")
+
+    # The producer already marks a globally empty official inventory as a
+    # catalog collapse. The independent validator must enforce the same proof
+    # even if a forged ledger relabels every hour as an exact complement.
+    all_operational_hours = set(producer.operational_current_valid_times(REFERENCE))
+    empty_inventory_dmi = dmi_document(
+        targets,
+        upstream_absent=all_operational_hours,
+    )
+    empty_inventory_ledger = copy.deepcopy(
+        empty_inventory_dmi["diagnostics"]["currentOperationalLedger"]
+    )
+    assert "OFFICIAL_DKSS_CATALOG_COLLAPSE" in empty_inventory_ledger["failureCodes"]
+    empty_inventory_attestation = canonical_verified_part_current_attestation(
+        empty_inventory_dmi,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+    )
+    empty_inventory_ledger["operationalComplementPairs"] = copy.deepcopy(
+        empty_inventory_ledger["upstreamAbsencePairs"]
+    )
+    empty_inventory_ledger["operationalComplementPairCount"] = (
+        empty_inventory_ledger["upstreamAbsencePairCount"]
+    )
+    empty_inventory_ledger["operationalComplementPairsSha256"] = (
+        empty_inventory_ledger["upstreamAbsencePairsSha256"]
+    )
+    empty_inventory_ledger["attestation"] = sanitized_current_attestation(
+        empty_inventory_attestation
+    )
+    empty_inventory_ledger["ready"] = True
+    empty_inventory_ledger["failureCodes"] = []
+    try:
+        validate_current_operational_ledger(
+            empty_inventory_ledger,
+            empty_inventory_attestation,
+            targets,
+            REFERENCE,
+            REFERENCE + timedelta(hours=117),
+            empty_inventory_ledger["targetRegistrySha256"],
+        )
+    except ValueError as exc:
+        assert "official inventory is empty" in str(exc)
+    else:
+        raise AssertionError("Globally empty official inventory proof must fail closed")
 
     # Supplying a matching sanitized summary is insufficient: the validator
     # must independently recompute every v2 list/count/digest claim.

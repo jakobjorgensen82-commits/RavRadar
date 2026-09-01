@@ -58,8 +58,11 @@ assert.match(bulk, /build_ocean_diagnostics/);
 assert.match(bulk, /select_common_vector_candidate/);
 assert.match(bulk, /water_source_parameter_allowed/);
 assert.match(bulk, /invalidatedMismatchedVectors/);
-assert.match(bulk, /PARSER_VERSION = 19/);
+assert.match(bulk, /PARSER_VERSION = 20/);
+assert.match(bulk, /GRID_LOOKUP_VERSION = 8/);
 assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
+assert.match(nativeProvenance, /CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 3/);
+assert.match(nativeProvenance, /dmi-official-dkss-operational-current-ledger-v3/);
 assert.match(bulk, /PRIVATE_REPLAY_RETENTION_HOURS = max\(\s*54,/);
 assert.match(bulk, /previous\.get\("spatialProvenanceVersion"\) == SPATIAL_PROVENANCE_VERSION/,
   'legacy bulkcache uden eksakt spatial proveniens må ikke ramme fresh-cache genvejen');

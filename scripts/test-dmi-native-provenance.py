@@ -423,6 +423,19 @@ for collection in sorted(producer.MARINE_COLLECTIONS):
         }
         for hour in required_hours
     }
+    for step in processed_steps.values():
+        step["currentPartOutcomeProof"] = producer.build_current_part_outcome_proof(
+            (
+                []
+                if collection == "dkss_lf"
+                and step["sourceAsset"]["validTime"] == valid_time
+                else [target["partId"]]
+            ),
+            [target["partId"]],
+            producer.target_fingerprint(targets),
+            processing_signature,
+            step["sourceAsset"],
+        )
     official_assets = [ledger_asset(collection, hour)[0] for hour in required_hours]
     ledger_document["runs"][collection] = {
         "referenceTime": "2026-01-01T00:00:00Z",
@@ -473,6 +486,13 @@ signed_step = {
     "processingSignature": reuse_signature,
     "sourceAsset": reuse_source,
 }
+signed_step["currentPartOutcomeProof"] = producer.build_current_part_outcome_proof(
+    [],
+    [target["partId"]],
+    producer.target_fingerprint(targets),
+    reuse_signature,
+    reuse_source,
+)
 reuse_run = {
     "referenceTime": "2026-01-01T00:00:00Z",
     "processingSignature": reuse_signature,
@@ -485,6 +505,8 @@ reuse_args = {
     "strict_current_anchor_available": True,
     "required_valid_times": {reuse_hour},
     "required_asset_provenance": {reuse_hour: reuse_official},
+    "current_target_ids": [target["partId"]],
+    "current_target_registry_sha256": producer.target_fingerprint(targets),
 }
 assert producer.reusable_processed_steps(reuse_run, **reuse_args) == {
     reuse_hour: signed_step,
@@ -495,6 +517,61 @@ assert producer.reusable_processed_steps(unsigned_run, **reuse_args) == {}
 signalless_source_run = json.loads(json.dumps(reuse_run))
 signalless_source_run["processedSteps"][reuse_hour].pop("sourceAsset")
 assert producer.reusable_processed_steps(signalless_source_run, **reuse_args) == {}
+tampered_outcome_run = json.loads(json.dumps(reuse_run))
+tampered_outcome_run["processedSteps"][reuse_hour]["currentPartOutcomeProof"][
+    "outcomesSha256"
+] = "sha256:" + "0" * 64
+assert producer.reusable_processed_steps(tampered_outcome_run, **reuse_args) == {}
+
+# ecCodes/grid failures are local processing failures. They must propagate and
+# must never be cached or reclassified as a terminal spatial DMI gap.
+original_find_nearest = producer.codes_grib_find_nearest
+original_codes_get = producer.codes_get
+original_get_elements = producer.codes_get_elements
+original_nearest_candidates = producer.nearest_candidates
+try:
+    producer.GRID_INDEX_CACHE.clear()
+
+    def fail_nearest(*_args, **_kwargs):
+        raise RuntimeError("synthetic grid failure")
+
+    producer.codes_get = fail_nearest
+    try:
+        producer.grid_signature(990)
+    except producer.DmiGridLookupError:
+        pass
+    else:
+        raise AssertionError("Unreadable grid identity must fail closed")
+    producer.codes_get = original_codes_get
+
+    producer.codes_grib_find_nearest = fail_nearest
+    try:
+        producer.nearest_candidates(991, "dkss_idw", zone)
+    except producer.DmiGridLookupError:
+        pass
+    else:
+        raise AssertionError("Nearest-grid exception must fail closed")
+    assert producer.GRID_INDEX_CACHE == {}
+
+    producer.nearest_candidates = lambda *_args, **_kwargs: [{
+        "index": 7,
+        "latitude": 1.0,
+        "longitude": 2.0,
+        "distanceKm": 0.0,
+    }]
+    producer.codes_get_elements = fail_nearest
+    try:
+        producer.valid_candidates_batch(992, "dkss_idw", [zone])
+    except producer.DmiGridLookupError:
+        pass
+    else:
+        raise AssertionError("Batched grid exception must fail closed")
+finally:
+    producer.codes_grib_find_nearest = original_find_nearest
+    producer.codes_get = original_codes_get
+    producer.codes_get_elements = original_get_elements
+    producer.nearest_candidates = original_nearest_candidates
+    producer.GRID_INDEX_CACHE.clear()
 
 # DKSS native cadence is hourly. A newer run whose tail is still publishing is
 # deferred in favour of the preceding mature run, and every official hour in
@@ -650,10 +727,125 @@ try:
     )
     assert bad_stats["catalogInventoryComplete"] is False
     assert "UNPARSEABLE_STAC_ITEM" in bad_stats["catalogInventoryFailureCodes"]
+    invalid_catalog_results = []
+    invalid_identity_cases = (
+        (
+            "malformed secondary run alias",
+            lambda item: item["properties"].update({"reference_datetime": "not-a-time"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "conflicting secondary run alias",
+            lambda item: item["properties"].update({
+                "modelRun": older_run.isoformat().replace("+00:00", "Z"),
+            }),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "malformed secondary valid-time alias",
+            lambda item: item["properties"].update({"forecast:valid_time": "not-a-time"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "conflicting secondary valid-time alias",
+            lambda item: item["properties"].update({
+                "valid_time": older_run.isoformat().replace("+00:00", "Z"),
+            }),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "timezone-naive explicit run",
+            lambda item: item["properties"].update({"model_run": "2026-01-01T03:00:00"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "malformed created timestamp",
+            lambda item: item["properties"].update({"created": "not-a-time"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "timezone-naive updated timestamp",
+            lambda item: item["properties"].update({"updated": "2026-01-01T04:00:00"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "numeric item id",
+            lambda item: item.update({"id": 42}),
+            "STAC_ITEM_IDENTITY_INVALID",
+        ),
+        (
+            "blank item id",
+            lambda item: item.update({"id": "   "}),
+            "STAC_ITEM_IDENTITY_INVALID",
+        ),
+        (
+            "boolean asset size",
+            lambda item: item["assets"]["data"].update({"file:size": True}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "zero asset size",
+            lambda item: item["assets"]["data"].update({"file:size": 0}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "string asset size",
+            lambda item: item["assets"]["data"].update({"file:size": "1024"}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+        (
+            "conflicting asset-size aliases",
+            lambda item: item["assets"]["data"].update({"size": 2048}),
+            "UNPARSEABLE_STAC_ITEM",
+        ),
+    )
+    for label, mutate, expected_failure_code in invalid_identity_cases:
+        invalid_catalog = json.loads(json.dumps(catalog_items))
+        mutate(invalid_catalog[0])
+        producer.request_json = (
+            lambda *_args, _catalog=invalid_catalog, **_kwargs: {
+                "features": _catalog,
+            }
+        )
+        _invalid_run, invalid_assets, invalid_stats = producer.list_latest_assets(
+            "dkss_idw",
+            minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+            required_valid_times=selection_hours,
+            required_horizon_end_time=selection_end,
+            allow_documented_required_gaps=True,
+        )
+        assert invalid_stats["catalogInventoryComplete"] is False, label
+        assert expected_failure_code in invalid_stats["catalogInventoryFailureCodes"], label
+        invalid_catalog_results.append((invalid_assets, invalid_stats))
+
+    # Distinct STAC items may not compete for one collection/run/validTime.
+    duplicate_catalog = json.loads(json.dumps(catalog_items))
+    duplicate_item = json.loads(json.dumps(older_items[50]))
+    duplicate_item["id"] = "duplicate-run-valid-time"
+    duplicate_item["assets"]["data"]["href"] = (
+        "https://example.invalid/duplicate-run-valid-time.grib"
+    )
+    duplicate_catalog.append(duplicate_item)
+    producer.request_json = lambda *_args, **_kwargs: {"features": duplicate_catalog}
+    _duplicate_run, duplicate_assets, duplicate_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert duplicate_stats["catalogInventoryComplete"] is False
+    assert duplicate_stats["duplicateValidTimes"] == 1
+    assert (
+        "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME"
+        in duplicate_stats["catalogInventoryFailureCodes"]
+    )
     for incomplete_assets, incomplete_stats in (
         (overlap_assets, overlap_stats),
         (_truncated_assets, truncated_stats),
         (_bad_assets, bad_stats),
+        *invalid_catalog_results,
+        (duplicate_assets, duplicate_stats),
     ):
         incomplete_catalogs = dict(official_catalogs)
         incomplete_catalogs["dkss_idw"] = (

@@ -74,8 +74,9 @@ COMPONENT_SPATIAL_SELECTION = {
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 HASH_PREFIX = "sha256:"
 CURRENT_ATTESTATION_CONTRACT_ID = "dmi-canonical-part-current-attestation-v2"
-CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-ledger-v2"
-CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 2
+CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-ledger-v3"
+CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 3
+CURRENT_PART_OUTCOME_CONTRACT_ID = "dmi-official-asset-current-part-outcomes-v1"
 CURRENT_OPERATIONAL_LEDGER_STATES = (
     "EXPECTED",
     "PROCESSED",
@@ -240,6 +241,183 @@ def canonical_current_source_asset(source: Any) -> dict[str, Any] | None:
         "itemCreatedAt": item_created_at,
         "itemUpdatedAt": item_updated_at,
     }
+
+
+def current_search_semantics() -> dict[str, Any]:
+    """Return the payload-free current search contract bound into outcomes."""
+    return {
+        "spatialProvenanceVersion": SPATIAL_PROVENANCE_VERSION,
+        "spatialSelection": COMPONENT_SPATIAL_SELECTION["current"],
+        "vectorSelection": CURRENT_VECTOR_SELECTION,
+        "vectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
+        "maximumDistanceKm": CURRENT_MAX_DISTANCE_KM,
+    }
+
+
+def current_source_asset_sha256(source: Any) -> str:
+    canonical = canonical_current_source_asset(source)
+    if canonical is None:
+        raise ValueError("Current outcome source asset is invalid")
+    return _canonical_sha256({
+        "contractId": "dmi-current-source-asset-content-v1",
+        "source": canonical,
+    })
+
+
+def build_current_part_outcome_proof(
+    spatial_unavailable_part_ids: Any,
+    target_ids: Any,
+    target_registry_sha256: Any,
+    processing_signature: Any,
+    source_asset: Any,
+) -> dict[str, Any]:
+    """Bind one processed official asset to an exact target outcome partition."""
+    if not isinstance(target_ids, (list, tuple)):
+        raise ValueError("Current outcome target ids are malformed")
+    canonical_targets = sorted(str(value or "").strip() for value in target_ids)
+    if (
+        any(not value for value in canonical_targets)
+        or len(set(canonical_targets)) != len(canonical_targets)
+    ):
+        raise ValueError("Current outcome target ids are invalid")
+    if not isinstance(spatial_unavailable_part_ids, (list, tuple)):
+        raise ValueError("Current spatial-unavailable ids are malformed")
+    unavailable = sorted(str(value or "").strip() for value in spatial_unavailable_part_ids)
+    if (
+        any(not value for value in unavailable)
+        or len(set(unavailable)) != len(unavailable)
+        or not set(unavailable) <= set(canonical_targets)
+    ):
+        raise ValueError("Current spatial-unavailable ids are invalid")
+    registry_sha256 = str(target_registry_sha256 or "")
+    signature = str(processing_signature or "")
+    if (
+        not re.fullmatch(r"sha256:[0-9a-f]{64}", registry_sha256)
+        or not signature
+        or signature != signature.strip()
+    ):
+        raise ValueError("Current outcome processing identity is invalid")
+    proof = {
+        "contractId": CURRENT_PART_OUTCOME_CONTRACT_ID,
+        "targetRegistrySha256": registry_sha256,
+        "targetCount": len(canonical_targets),
+        "processingSignature": signature,
+        "sourceAssetSha256": current_source_asset_sha256(source_asset),
+        "searchSemantics": current_search_semantics(),
+        "spatialUnavailablePartCount": len(unavailable),
+        "verifiedDmiPartCount": len(canonical_targets) - len(unavailable),
+        "spatialUnavailablePartIds": unavailable,
+    }
+    return {
+        **proof,
+        "outcomesSha256": _canonical_sha256({
+            "contractId": "dmi-official-asset-current-part-outcome-proof-v1",
+            "proof": proof,
+        }),
+    }
+
+
+def validate_current_part_outcome_proof(
+    proof: Any,
+    target_ids: Any,
+    target_registry_sha256: Any,
+    processing_signature: Any,
+    source_asset: Any,
+) -> dict[str, Any]:
+    if not isinstance(proof, dict):
+        raise ValueError("Current part outcome proof is missing")
+    expected = build_current_part_outcome_proof(
+        proof.get("spatialUnavailablePartIds"),
+        target_ids,
+        target_registry_sha256,
+        processing_signature,
+        source_asset,
+    )
+    if proof != expected:
+        raise ValueError("Current part outcome proof is not canonical")
+    return expected
+
+
+def derive_current_part_outcome_partition(
+    collections: Any,
+    target_ids: Any,
+    valid_times: Any,
+) -> dict[str, list[dict[str, str]]]:
+    """Derive the exact verified/upstream/spatial partition from terminal rows."""
+    if not isinstance(collections, (list, tuple)):
+        raise ValueError("Current outcome collections are malformed")
+    by_collection = {
+        str(row.get("collection") or ""): {
+            str(item.get("validTime") or ""): item
+            for item in (row.get("validTimes") or [])
+            if isinstance(item, dict)
+        }
+        for row in collections
+        if isinstance(row, dict)
+    }
+    if set(by_collection) != set(MARINE_COLLECTIONS):
+        raise ValueError("Current outcome collection partition is incomplete")
+    canonical_targets = sorted(str(value or "").strip() for value in target_ids)
+    canonical_times = [canonical_time(value) for value in valid_times]
+    if (
+        any(not value for value in canonical_targets)
+        or len(set(canonical_targets)) != len(canonical_targets)
+        or any(value is None for value in canonical_times)
+        or len(set(canonical_times)) != len(canonical_times)
+    ):
+        raise ValueError("Current outcome matrix identity is invalid")
+    result = {
+        "verifiedPairs": [],
+        "upstreamAbsencePairs": [],
+        "spatialUnavailablePairs": [],
+        "operationalComplementPairs": [],
+    }
+    unavailable_by_collection_time = {
+        (collection, valid_time): set(
+            (row.get("partOutcomeProof") or {}).get(
+                "spatialUnavailablePartIds"
+            ) or []
+        )
+        for collection, rows in by_collection.items()
+        for valid_time, row in rows.items()
+        if isinstance(row, dict)
+    }
+    for valid_time in canonical_times:
+        assert valid_time is not None
+        for part_id in canonical_targets:
+            outcomes: list[str] = []
+            for collection in sorted(MARINE_COLLECTIONS):
+                row = by_collection[collection].get(valid_time)
+                if not isinstance(row, dict):
+                    raise ValueError("Current outcome valid-time partition is incomplete")
+                state = row.get("state")
+                if state == "UPSTREAM_ABSENT":
+                    outcomes.append("OFFICIAL_TIME_ABSENT")
+                    continue
+                proof = row.get("partOutcomeProof")
+                if state not in {"PROCESSED", "VERIFIED"} or not isinstance(proof, dict):
+                    raise ValueError("Current outcome contains unfinished local work")
+                if part_id in unavailable_by_collection_time.get(
+                    (collection, valid_time), ()
+                ):
+                    outcomes.append("DMI_SPATIAL_UNAVAILABLE")
+                else:
+                    outcomes.append("VERIFIED_DMI")
+            pair = {"partId": part_id, "validTime": valid_time}
+            if "VERIFIED_DMI" in outcomes:
+                result["verifiedPairs"].append(pair)
+            elif all(outcome == "OFFICIAL_TIME_ABSENT" for outcome in outcomes):
+                result["upstreamAbsencePairs"].append(pair)
+                result["operationalComplementPairs"].append(pair)
+            elif all(
+                outcome in {"OFFICIAL_TIME_ABSENT", "DMI_SPATIAL_UNAVAILABLE"}
+                for outcome in outcomes
+            ):
+                result["spatialUnavailablePairs"].append(pair)
+                result["operationalComplementPairs"].append(pair)
+            else:
+                raise ValueError("Current outcome partition is ambiguous")
+    return result
 
 
 def current_pair_sources_sha256(rows: Any) -> str:
@@ -978,6 +1156,19 @@ def validate_current_operational_ledger(
         raise ValueError("DMI current operational ledger registry binding mismatch")
     if ledger.get("attestation") != sanitized_current_attestation(attestation):
         raise ValueError("DMI current operational ledger attestation mismatch")
+    if not isinstance(targets, (list, tuple)):
+        raise ValueError("DMI current operational targets are malformed")
+    target_ids = sorted(
+        str(target.get("partId") or "").strip()
+        for target in targets
+        if isinstance(target, dict)
+    )
+    if (
+        len(target_ids) != len(targets)
+        or len(set(target_ids)) != len(target_ids)
+        or any(not part_id for part_id in target_ids)
+    ):
+        raise ValueError("DMI current operational target ids are invalid")
 
     collections = ledger.get("collections")
     if not isinstance(collections, list) or [row.get("collection") for row in collections if isinstance(row, dict)] != sorted(MARINE_COLLECTIONS):
@@ -990,11 +1181,21 @@ def validate_current_operational_ledger(
         if source is not None
     }
     state_by_collection: dict[str, dict[str, dict[str, Any]]] = {}
+    official_asset_count = 0
     for collection_row in collections:
         if not isinstance(collection_row, dict):
             raise ValueError("DMI current operational collection row is malformed")
         collection = str(collection_row.get("collection") or "")
         model_run = canonical_time(collection_row.get("modelRun"))
+        if model_run is None or collection_row.get("modelRun") != model_run:
+            raise ValueError("DMI current operational collection run is invalid")
+        processing_signature = collection_row.get("processingSignature")
+        if (
+            not isinstance(processing_signature, str)
+            or not processing_signature
+            or processing_signature != processing_signature.strip()
+        ):
+            raise ValueError("DMI current operational processing signature is invalid")
         rows = collection_row.get("validTimes")
         if not isinstance(rows, list) or len(rows) != len(expected_times):
             raise ValueError("DMI current operational valid-time ledger is incomplete")
@@ -1005,6 +1206,7 @@ def validate_current_operational_ledger(
         for row in rows:
             if not isinstance(row, dict) or set(row) != {
                 "validTime", "state", "officialAsset", "sourceAsset",
+                "partOutcomeProof",
             }:
                 raise ValueError("DMI current operational valid-time row is malformed")
             state = str(row.get("state") or "")
@@ -1013,6 +1215,7 @@ def validate_current_operational_ledger(
                 raise ValueError("DMI current operational valid-time state is invalid")
             raw_official_asset = row.get("officialAsset")
             raw_source_asset = row.get("sourceAsset")
+            raw_part_outcome_proof = row.get("partOutcomeProof")
             if raw_official_asset is not None and (
                 not isinstance(raw_official_asset, dict)
                 or set(raw_official_asset) != CURRENT_OFFICIAL_ASSET_FIELDS
@@ -1028,8 +1231,13 @@ def validate_current_operational_ledger(
             )
             source_asset = canonical_current_source_asset(raw_source_asset)
             if state == "UPSTREAM_ABSENT":
-                if official_asset is not None or source_asset is not None:
+                if (
+                    official_asset is not None
+                    or source_asset is not None
+                    or raw_part_outcome_proof is not None
+                ):
                     raise ValueError("DMI upstream-absent state contains local asset evidence")
+                part_outcome_proof = None
             elif state in {"PROCESSED", "VERIFIED"}:
                 if official_asset is None or source_asset is None:
                     raise ValueError("DMI processed state lacks exact official/source asset evidence")
@@ -1046,16 +1254,31 @@ def validate_current_operational_ledger(
                     raise ValueError("DMI processed source does not match the selected official asset")
                 if state == "VERIFIED" and _canonical_json(source_asset) not in pair_source_evidence:
                     raise ValueError("DMI current VERIFIED state has no canonical pair/source evidence")
-            elif state == "EXPECTED" and source_asset is not None:
-                raise ValueError("DMI expected state may not claim processed source evidence")
-            elif state == "LOCALLY_SKIPPED" and source_asset is not None:
-                raise ValueError("DMI locally-skipped state may not claim processed source evidence")
+                part_outcome_proof = validate_current_part_outcome_proof(
+                    raw_part_outcome_proof,
+                    target_ids,
+                    target_registry_sha256,
+                    processing_signature,
+                    source_asset,
+                )
+            else:
+                if source_asset is not None or raw_part_outcome_proof is not None:
+                    raise ValueError(
+                        "DMI unfinished state may not claim processed outcome evidence"
+                    )
+                part_outcome_proof = None
             if official_asset is not None:
                 official_assets.append(official_asset)
             states[valid_time] = {
                 "state": state,
                 "officialAsset": official_asset,
                 "sourceAsset": source_asset,
+                "partOutcomeProof": part_outcome_proof,
+                "spatialUnavailablePartIds": frozenset(
+                    (part_outcome_proof or {}).get(
+                        "spatialUnavailablePartIds"
+                    ) or []
+                ),
             }
         counts = {
             state: sum(value["state"] == state for value in states.values())
@@ -1071,8 +1294,20 @@ def validate_current_operational_ledger(
                 != current_official_assets_sha256(official_assets)
         ):
             raise ValueError("DMI current official valid-time identity mismatch")
+        official_asset_count += len(official_assets)
         state_by_collection[collection] = states
 
+    if official_asset_count == 0:
+        raise ValueError("DMI current official inventory is empty")
+
+    partition = derive_current_part_outcome_partition(
+        collections,
+        target_ids,
+        expected_times,
+    )
+    if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
+        raise ValueError("DMI outcome proof and current attestation diverge")
+    verified_times = {row["validTime"] for row in partition["verifiedPairs"]}
     for valid_time in expected_times:
         states = [
             state_by_collection[collection][valid_time]["state"]
@@ -1080,7 +1315,10 @@ def validate_current_operational_ledger(
         ]
         if any(state in {"EXPECTED", "LOCALLY_SKIPPED"} for state in states):
             raise ValueError("DMI current ledger contains unfinished local work")
-        if not all(state == "UPSTREAM_ABSENT" for state in states) and "VERIFIED" not in states:
+        if (
+            not all(state == "UPSTREAM_ABSENT" for state in states)
+            and valid_time not in verified_times
+        ):
             raise ValueError("DMI current ledger has a systemic official-time collapse")
 
     for raw in attestation.get("verifiedPairSources") or []:
@@ -1094,49 +1332,14 @@ def validate_current_operational_ledger(
             not state_row
             or state_row["state"] != "VERIFIED"
             or state_row["sourceAsset"] != source
+            or str(raw.get("partId") or "").strip()
+                in state_row["spatialUnavailablePartIds"]
         ):
             raise ValueError("DMI pair/source is not bound to a selected processed ledger state")
 
-    if not isinstance(targets, (list, tuple)):
-        raise ValueError("DMI current operational targets are malformed")
-    target_ids = sorted(str(target.get("partId") or "").strip() for target in targets if isinstance(target, dict))
-    if (
-        len(target_ids) != len(targets)
-        or len(set(target_ids)) != len(target_ids)
-        or any(not part_id for part_id in target_ids)
-    ):
-        raise ValueError("DMI current operational target ids are invalid")
-    verified_identities = {
-        (str(row.get("partId") or ""), canonical_time(row.get("validTime")))
-        for row in (attestation.get("verifiedPairs") or [])
-        if isinstance(row, dict)
-    }
-    expected_upstream_absence = [
-        {"partId": part_id, "validTime": valid_time}
-        for valid_time in expected_times
-        if all(
-            state_by_collection[collection][valid_time]["state"]
-                == "UPSTREAM_ABSENT"
-            for collection in sorted(MARINE_COLLECTIONS)
-        )
-        for part_id in target_ids
-    ]
-    upstream_absence_identities = {
-        (row["partId"], row["validTime"])
-        for row in expected_upstream_absence
-    }
-    expected_identities = {
-        (part_id, valid_time)
-        for valid_time in expected_times
-        for part_id in target_ids
-    }
-    if (
-        verified_identities & upstream_absence_identities
-        or (verified_identities | upstream_absence_identities) != expected_identities
-    ):
-        raise ValueError(
-            "DMI current ledger contains an unverified part/time without exact upstream absence"
-        )
+    expected_upstream_absence = partition["upstreamAbsencePairs"]
+    expected_spatial_unavailable = partition["spatialUnavailablePairs"]
+    expected_complement = partition["operationalComplementPairs"]
     if (
         ledger.get("upstreamAbsencePairs") != expected_upstream_absence
         or ledger.get("upstreamAbsencePairCount") != len(expected_upstream_absence)
@@ -1144,13 +1347,21 @@ def validate_current_operational_ledger(
             != part_time_pairs_sha256(expected_upstream_absence)
     ):
         raise ValueError("DMI current upstream-absence proof is not exact")
+    if (
+        ledger.get("spatialUnavailablePairs") != expected_spatial_unavailable
+        or ledger.get("spatialUnavailablePairCount")
+            != len(expected_spatial_unavailable)
+        or ledger.get("spatialUnavailablePairsSha256")
+            != part_time_pairs_sha256(expected_spatial_unavailable)
+    ):
+        raise ValueError("DMI current spatial-unavailable proof is not exact")
     complement = ledger.get("operationalComplementPairs")
-    if complement != expected_upstream_absence:
+    if complement != expected_complement:
         raise ValueError("DMI current operational complement is not exact")
     if (
-        ledger.get("operationalComplementPairCount") != len(expected_upstream_absence)
+        ledger.get("operationalComplementPairCount") != len(expected_complement)
         or ledger.get("operationalComplementPairsSha256")
-            != part_time_pairs_sha256(expected_upstream_absence)
+            != part_time_pairs_sha256(expected_complement)
     ):
         raise ValueError("DMI current operational complement identity mismatch")
     if ledger.get("ready") is not True or ledger.get("failureCodes") != []:
