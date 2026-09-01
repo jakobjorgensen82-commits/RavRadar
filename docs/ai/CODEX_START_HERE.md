@@ -18,14 +18,18 @@
 
 Dette er den obligatoriske indgang til RavRadar for Codex og andre kodeassistenter. Projektet må ikke behandles som en samling isolerede filer. Hver ændring skal forstås som et træk i et sammenhængende system.
 
-## Nyeste P0-checkpoint 2026-09-01 – DMI-currentrodårsag lokalt rettet; frisk preflight afventer
+## Nyeste P0-checkpoint 2026-09-01 – DMI-currentfasefejl lokalt rettet; ny frisk preflight afventer
+
+- Isoleret run `33520738058` på `3a26ba0c` nåede producenten, men hard gate stoppede payloadfrit med `DMI_STRICT_CURRENT_ANCHOR_MISSING`. Runnet er negativt runtimebevis, ikke grønt 673 × 118-bevis eller bevis for bred upstream-DMI-mangel.
+- Den yderligere lokale rodårsag var en faseforskel: tidlig cache-health kunne være grøn, før den senere autoritative sampling-/gridvektoroprydning fjernede et uforeneligt `samplingPoint` eller top-level `current-u`/`current-v`-par. Working-tree-rettelsen gør `coastal_part_current_cache_reusable` fasekonsistent med begge kontroller. Direkte provenance-test, bulk-test, scheduler-test og Python-syntakskontrol er grønne lokalt; ny eksakt GitHub-kørsel er endnu ikke kørt eller grøn.
+- DMI er bindende primærkilde i både nuværende drift og den nye integrerede model. Copernicus må kun udfylde eksakte, dokumenterede manglende DMI-tuples efter grøn DMI-terminalgate og må aldrig skjule eller erstatte en systemisk DMI-fejl.
 
 - De isolerede 118-timers runs `33510636195` og `33512163102` nåede DMI-producenten, men den payloadfri logoptælling viste nul behandlede trin i `dkss_idw`, `dkss_nsbs` og `dkss_lf`, mens HARMONIE og WAM blev behandlet. `DMI_STRICT_CURRENT_ANCHOR_MISSING` er derfor ikke bevis for, at DMI generelt manglede currentdata; fejlen lå i RavRadars lokale cache-/runvalg før DKSS-behandlingen.
 - Den progressive cachelinje førte tilbage til det negative run `33498108421`. En foretrukken ældre run kunne blive fastholdt og derefter afvist som stale uden skift til en nyere moden run. Preflightens såkaldte deployed donor var samtidig blot en kopi af den samme progressive cache, og gamle DKSS-`processedSteps` kunne undertrykke en nødvendig genbehandling uden strict current anchor.
 - Den lokale rettelse binder ét eksakt jobtarget før DMI og genbruger det gennem hele beviset, også hvis væguret krydser en UTC-time under kørslen. En ældre preferred run må kun beholdes foran en nyere moden run, når en kendt observeret cadence viser, at den højst er én cadence bagud; ved ukendt cadence vælges den nyere modne run. Mens strict current anchor mangler, står de tre DKSS-familier først i den normale collection-loop, og netop deres gamle stepmarkører genbruges ikke.
 - Preflighten forsøger valgfrit at hydrere en uafhængig offentlig Candidate G-DMI-donor under `RUNNER_TEMP`. Kun en donor, der består den strenge kompatibilitetskontrol, må bruges; er den fraværende eller ugyldig, fortsætter det friske officielle DMI-forsøg uden deployed fallback.
 - Den samme beskyttelse gælder den nye model: den særskilt checkpointede WAM-historikbootstrap ligger fortsat før den normale collection-loop og kan fortsætte over flere cutoverforsøg. I selve seks-collection-loopet står DKSS foran WAM, når strict current anchor mangler; med et gyldigt anchor kan WAM igen stå først. Normal vedligeholdelse behandler fortsat højst to collections. Copernicus er uændret sidste led og må kun supplere de eksakte resterende DMI-huller pr. kystdel og time efter grøn DMI-terminalgate.
-- Ingen scoreformel, geometri, kystnormal, land-/vandpunkt, private payloads, koordinater eller rå U/V er ændret. De tre målrettede DMI-slutdifftests og Python-syntakskontrollen er grønne. Frisk isoleret 673 × 118-preflight, exact-head, merge, fuld produktion og offentlig kontrol er fortsat åbne beviser. Candidate G er fortsat den eneste offentlige model.
+- Ingen scoreformel, geometri, kystnormal, land-/vandpunkt, private payloads, koordinater eller rå U/V er ændret. Frisk isoleret 673 × 118-preflight på den nye kodehead, exact-head, merge, fuld produktion og offentlig kontrol er fortsat åbne beviser. Candidate G er fortsat den eneste offentlige model.
 
 ## Nyeste P0-checkpoint 2026-08-31
 

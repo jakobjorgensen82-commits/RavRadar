@@ -7,8 +7,9 @@
 - [x] Implementér og kontrakttest branch-dispatch 118h-preflight samt DMI atomic compatible-cache backfill, save-before-terminal-gate og selector-after-ready.
 - [x] Klassificér `33510636195`/`33512163102`: nul DKSS-behandling afslører lokal cache-/runudsultning; `33498108421` er negativ run-/cachelineage, ikke bevis for bred upstream-DMI-fejl.
 - [x] Ret lokalt preferred-run-fremskift også ved ukendt cadence, jobafgrænset target over UTC-timeskifte, betinget DKSS-first/genbehandling i den normale loop uden strict anchor og en valgfri strict-valideret deployed donor, som ikke må blokere frisk officiel DMI. Ved første cutover ligger den særskilt checkpointede WAM-historikbootstrap før den normale seks-collection-loop og kan fortsætte over flere forsøg; normal drift bevarer to collections.
+- [x] Klassificér `33520738058` som negativt fasebevis og gør tidlig current-cache-health konsistent med senere autoritativ sampling-/gridvektoroprydning. Bevar DMI som primær i både nuværende og ny model; Copernicus er kun exact-gap-supplement efter grøn DMI-terminalgate.
 - [x] Bestå de målrettede scheduler-/bulk-/workflowkontrakttests samt Python-syntakskontrollen.
-- [ ] Få et grønt frisk 118-timers datapreflightbevis. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.
+- [ ] Få et grønt frisk 118-timers datapreflightbevis på den nye eksakte kodehead. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.
 - [ ] Kør exact-head, sikker merge, frisk integrated produktion og offentlig desktop-/mobilkontrol af 210/673, current/fem døgn, begge modes, warning og Feggesund direct 3 × 118.
 - Candidate G er fortsat eneste offentlige model. Lokale implementeringer og måltests er ikke exact-head-, preflight-, produktions- eller releasebevis.
 

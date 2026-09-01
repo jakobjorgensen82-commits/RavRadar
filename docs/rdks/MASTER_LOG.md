@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-01 – DMI-currentrodårsag lokalt rettet; frisk 118-timersbevis åbent
+# NYESTE CHECKPOINT – 2026-09-01 – DMI-cachefaser gjort konsistente; frisk 118-timersbevis åbent
+
+- Isoleret run `33520738058` på `3a26ba0c` nåede DMI-producenten, men den payloadfri hard gate stoppede med `DMI_STRICT_CURRENT_ANCHOR_MISSING`; det er negativt fasebevis, ikke bevis for bred DMI-mangel eller 673 × 118.
+- Tidlig cache-health kunne godkende et strict current-timerækkepar, som den senere autoritative sampling-/gridvektoroprydning fjernede. Den lokale rettelse kræver nu samme aktive `samplingPoint` og et samlet same-grid U/V-resumé i begge faser; et helt fraværende resumé må fortsat genopbygges fra verificeret timeproveniens.
+- Direkte provenance-test, bulk-test, scheduler-test og Python-syntakskontrol er grønne lokalt, og uafhængigt slutdiffreview fandt ingen P0/P1. Ny eksakt GitHub-preflight, 673 × 118, exact-head, merge, produktion og offentlig kontrol afventer.
+- DMI er primær i Candidate G-drift og den nye integrerede model. Copernicus må først efter grøn DMI-terminalgate udfylde præcise dokumenterede DMI-part-/timehuller; det må aldrig maskere en systemisk DMI-fejl.
+
+# TIDLIGERE CHECKPOINT – 2026-09-01 – DMI-currentrodårsag lokalt rettet; frisk 118-timersbevis åbent
 
 - Runs `33510636195` og `33512163102` behandlede HARMONIE/WAM, men nul trin i `dkss_idw`, `dkss_nsbs` og `dkss_lf`. Fejlen `DMI_STRICT_CURRENT_ANCHOR_MISSING` dokumenterer derfor en lokal DKSS-udsultning i RavRadar, ikke at DMI generelt ikke kunne levere currentdata.
 - Cachelinjen førte tilbage til det negative run `33498108421`. Den konkrete lokale kombination var en preferred progressionsrun, som kunne afvises som stale uden fremskift til en nyere moden run, en “deployed donor” der blot kopierede den samme progressive cache, og genbrugte DKSS-`processedSteps` uden et strict current anchor.

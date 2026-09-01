@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-01",
   "sections": [
     {
+      "id": "dmi-cache-health-phase-consistency-4-0-319",
+      "chapter": "88.10",
+      "title": "DMI-cache kontrolleres ens før og efter oprydning",
+      "summary": "En beskadiget strømcache kan ikke længere springe DKSS over; DMI er primær, og Copernicus må kun udfylde præcise dokumenterede DMI-huller.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Run <code>33520738058</code> viste en lokal fasefejl, ikke at DMI generelt manglede strømdata. Den tidlige cachekontrol kunne være grøn, før den afsluttende oprydning fjernede det samme strømpar.</div><div class=\"handbook-stack\"><p><strong>Samme regel i begge faser:</strong> Kystdelens registrerede samplingpunkt skal svare til det aktive vandpunkt. U/V-gridresuméet må enten mangle samlet og blive genopbygget fra verificeret timeproveniens eller bestå same-grid-kontrollen. Et halvt eller afvigende par tæller ikke som sund cache.</p><p><strong>DMI først:</strong> En cache, som ikke kan overleve oprydningen, aktiverer den eksisterende DKSS-recovery før andre kilder. Reglen gælder både Candidate G-vedligeholdelse og den nye integrerede model.</p><p><strong>Copernicus er kun supplement:</strong> Først efter en grøn DMI-terminalgate må Copernicus udfylde de eksakte dokumenterede kystdels-/timehuller, som DMI reelt mangler. Copernicus må ikke skjule eller erstatte en systemisk DMI-fejl.</p><p><strong>Status:</strong> Rettelsen og de afgrænsede lokale tests er grønne. Frisk eksakt 673 × 118-preflight, exact-head, merge, produktion og offentlig kontrol afventer.</p></div>"
+    },
+    {
       "id": "weather-legacy-wam-rebuild-and-queue-4-0-318",
       "chapter": "90",
       "title": "4.0.318: målt WAM-genopbygning og sikker produktionskø",

@@ -84,6 +84,7 @@ reference = datetime(2026, 1, 1, 3, tzinfo=timezone.utc)
 document = {
     "zones": {
         "PART::TEST": {
+            "samplingPoint": [2.0, 1.0],
             "hourly": {
                 valid_time: {
                     "time": valid_time,
@@ -102,6 +103,52 @@ assert strict_verified_part_current_pair_count(
     reference + timedelta(hours=117),
 ) == 1
 assert producer.coastal_part_current_cache_reusable(document, targets, reference)
+
+matching_summary = json.loads(json.dumps(document))
+matching_summary["zones"]["PART::TEST"]["gridPoints"] = {
+    "current-u": {"longitude": 2.0, "latitude": 1.0},
+    "current-v": {"longitude": 2.0, "latitude": 1.0},
+}
+assert producer.coastal_part_current_cache_reusable(
+    matching_summary,
+    targets,
+    reference,
+)
+
+mismatched_summary = json.loads(json.dumps(matching_summary))
+mismatched_summary["zones"]["PART::TEST"]["gridPoints"]["current-v"] = {
+    "longitude": 2.1,
+    "latitude": 1.0,
+}
+assert not producer.coastal_part_current_cache_reusable(
+    mismatched_summary,
+    targets,
+    reference,
+)
+
+partial_summary = json.loads(json.dumps(matching_summary))
+partial_summary["zones"]["PART::TEST"]["gridPoints"].pop("current-v")
+assert not producer.coastal_part_current_cache_reusable(
+    partial_summary,
+    targets,
+    reference,
+)
+
+missing_sampling_point = json.loads(json.dumps(document))
+missing_sampling_point["zones"]["PART::TEST"].pop("samplingPoint")
+assert not producer.coastal_part_current_cache_reusable(
+    missing_sampling_point,
+    targets,
+    reference,
+)
+
+wrong_sampling_point = json.loads(json.dumps(document))
+wrong_sampling_point["zones"]["PART::TEST"]["samplingPoint"] = [2.1, 1.0]
+assert not producer.coastal_part_current_cache_reusable(
+    wrong_sampling_point,
+    targets,
+    reference,
+)
 
 stale_positive_diagnostics = {
     "diagnostics": {

@@ -11,10 +11,11 @@
 - [x] Implementér og måltest DMI compatible-cache backfill som atomiske hele vejrtime-rækker fra strict donor med samme registrygeneration. Bevar de tre saves før payloadfri terminalgate, og lad selector kræve `DMI_READY` plus strict current anchor.
 - [x] Klassificér runs `33510636195`/`33512163102` korrekt: nul DKSS-trin, men HARMONIE/WAM-behandling. Afvis derfor bred DMI-mangel som konklusion; `33498108421` er negativ cachelineage, ikke selvstændigt upstreambevis.
 - [x] Implementér den lokale rodrettelse: ét jobtarget bindes før DMI og består et UTC-timeskifte; ukendt cadence kan ikke fastholde en ældre preferred run foran en nyere moden; DKSS prioriteres og genbehandles i den normale loop uden strict anchor; en valgfri uafhængig deployed donor bruges kun efter strict kontrol, mens frisk officiel DMI kan fortsætte uden den.
+- [x] Klassificér `33520738058` som et sikkert negativt hard-gate-bevis og luk den yderligere fasefejl lokalt: tidlig `coastal_part_current_cache_reusable` bruger nu samme autoritative `samplingPoint` og top-level `current-u`/`current-v`-gridpar som den senere oprydning.
 - [x] Før samme beskyttelse ind i den nye models first cutover: den særskilt checkpointede WAM-historikbootstrap ligger fortsat før collection-loopet og kan fortsætte over flere forsøg. I den normale seks-collection-loop står DKSS foran WAM, når strict anchor mangler; ellers bevares WAM-first. Normal drift forbliver to collections. Bevar DMI-first og Copernicus alene som exact-gap-supplement.
 - [x] Opdatér audit, activation, releasegate, workflow og de målrettede warmup/recovery/calibration/current/DMI-kontrakttests.
 - [x] Bestå de målrettede scheduler-/runvalg-, DKSS-recovery-, collectionbudget- og preflight-donor-/targetlås-tests på den samlede slutdiff samt Python-`py_compile`.
-- [ ] Kør den isolerede 118-timers datapreflight grønt; hverken `33498108421`, `33510636195` eller `33512163102` beviser 673 × 118 currentdækning.
+- [ ] Kør den isolerede 118-timers datapreflight grønt på den nye eksakte kodehead; hverken `33498108421`, `33510636195`, `33512163102` eller `33520738058` beviser 673 × 118 currentdækning.
 - [ ] Bestå exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol af 210/673, current, fem døgn, begge modes, `HISTORY_INCOMPLETE`-advarsel og Feggesund direct 3 × 118.
 
 # NYESTE CHECKPOINT – 2026-09-01 – PR #244 merged; WAM-cacheovergang og watchdograce remediated lokalt

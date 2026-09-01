@@ -35,7 +35,7 @@ from lib.current_field_shadow import (
     save_document as save_current_field_shadow,
     status as current_field_shadow_status,
 )
-from lib.dmi_cache_migration import prune_previous_sampling_mismatches
+from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
     PUBLIC_END_OFFSET_HOURS,
@@ -3035,7 +3035,7 @@ def coastal_part_current_cache_reusable(
     targets: list[dict[str, Any]],
     reference: datetime,
 ) -> bool:
-    """Require exact active PART identity and one strict pair in the matrix."""
+    """Require one strict pair that survives the later cache sanitizers."""
     if not isinstance(document, dict) or not isinstance(targets, list):
         return False
     zones = document.get("zones")
@@ -3055,9 +3055,31 @@ def coastal_part_current_cache_reusable(
     }
     if not expected_ids or len(expected_ids) != len(targets) or actual_ids != expected_ids:
         return False
+    surviving_targets = []
+    for target in targets:
+        part_id = str(target.get("partId") or "").strip()
+        zone = zones.get(f"PART::{part_id}")
+        if not isinstance(zone, dict) or not same_sampling_point(
+            zone.get("samplingPoint"),
+            target.get("waterPoint"),
+        ):
+            continue
+        grid_points = zone.get("gridPoints")
+        if grid_points is None:
+            grid_points = {}
+        if not isinstance(grid_points, dict):
+            continue
+        current_u_point = grid_points.get("current-u")
+        current_v_point = grid_points.get("current-v")
+        if (
+            current_u_point is not None
+            or current_v_point is not None
+        ) and not same_grid_point(current_u_point, current_v_point):
+            continue
+        surviving_targets.append(target)
     return strict_verified_part_current_pair_count(
         document,
-        targets,
+        surviving_targets,
         reference - timedelta(hours=COLD_BRIDGE_HOURS),
         reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
     ) > 0
