@@ -409,7 +409,7 @@ with tempfile.TemporaryDirectory() as temporary:
   exact_capture,href='https://example.test/local-wave.grib',
   item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
   item_updated_at=None,expected_size=None,
- ), 'unknown official size must force a fresh download'
+ ), 'a capture with a declared size must not be relabelled as size-less'
  assert not module.cached_capture_matches_official(
   exact_capture,href='https://example.test/local-wave.grib',
   item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
@@ -423,6 +423,33 @@ with tempfile.TemporaryDirectory() as temporary:
  assert module.reusable_cached_asset_path(
   exact_asset,'wam_dw','2026-01-01T00:00:00Z',
  )==asset_path
+ module.register_raw_cache_asset(
+  asset_path,'https://example.test/local-wave.grib','wam_dw',
+  '2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  acquired_at='2026-01-01T02:00:00Z',expected_size=None,
+  content_sha256=module.hashlib.sha256(b'fixture').hexdigest(),
+ )
+ size_less_capture=module.raw_cache_source_capture(
+  asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+ )
+ assert size_less_capture is not None and size_less_capture['assetSizeBytes'] is None
+ assert module.cached_capture_matches_official(
+  size_less_capture,href='https://example.test/local-wave.grib',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  item_updated_at=None,expected_size=None,
+ )
+ size_less_asset=dict(exact_asset,size=None)
+ assert module.reusable_cached_asset_path(
+  size_less_asset,'wam_dw','2026-01-01T00:00:00Z',
+ )==asset_path
+ downloaded_path,reused=module.download_asset(
+  size_less_asset['href'],None,{'bytes':0},collection='wam_dw',
+  model_run='2026-01-01T00:00:00Z',valid_time=size_less_asset['valid'],
+  item_id=size_less_asset['id'],item_created_at=size_less_asset['itemCreatedAt'],
+  item_updated_at=None,
+ )
+ assert downloaded_path==asset_path and reused
  revised_asset=dict(exact_asset,itemUpdatedAt='2026-01-01T01:30:00Z')
  assert module.reusable_cached_asset_path(
   revised_asset,'wam_dw','2026-01-01T00:00:00Z',

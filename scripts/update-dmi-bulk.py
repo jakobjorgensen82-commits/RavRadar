@@ -697,7 +697,6 @@ def processed_step_source_for_official_asset(
     valid_time: Any,
     processing_signature: Any,
     official_asset: Any,
-    require_reusable_size: bool = False,
 ) -> dict[str, Any] | None:
     if not isinstance(step, dict) or not isinstance(official_asset, dict):
         return None
@@ -716,8 +715,6 @@ def processed_step_source_for_official_asset(
     expected = official_current_asset_identity(collection, model_run, official_asset)
     expected_valid_time = canonical_time(valid_time)
     if source is None or expected is None or expected["validTime"] != expected_valid_time:
-        return None
-    if require_reusable_size and expected["assetSizeBytes"] is None:
         return None
     if (
         source["collection"] != expected["collection"]
@@ -786,7 +783,6 @@ def reusable_processed_steps(
             valid_time=valid_time,
             processing_signature=processing_signature,
             official_asset=official_asset,
-            require_reusable_size=True,
         )
         if source is None:
             continue
@@ -1562,18 +1558,27 @@ def cached_capture_matches_official(
     item_updated_at: str | None,
     expected_size: int | None,
 ) -> bool:
-    """Unknown size or any STAC revision delta forces a fresh download."""
-    return bool(
-        isinstance(capture, dict)
-        and isinstance(expected_size, int)
+    """Bind cached bytes to the exact STAC revision and optional declared size."""
+    declared_size_valid = (
+        expected_size is None
+        or isinstance(expected_size, int)
         and not isinstance(expected_size, bool)
         and expected_size > 0
+    )
+    content_length = capture.get("contentLengthBytes") if isinstance(capture, dict) else None
+    return bool(
+        isinstance(capture, dict)
+        and declared_size_valid
         and capture.get("itemId") == str(item_id or "").strip()
         and capture.get("assetIdentitySha256") == asset_identity_sha256(href)
         and capture.get("itemCreatedAt") == (iso(item_created_at) if item_created_at else None)
         and capture.get("itemUpdatedAt") == (iso(item_updated_at) if item_updated_at else None)
         and capture.get("assetSizeBytes") == expected_size
-        and capture.get("contentLengthBytes") == expected_size
+        and isinstance(content_length, int)
+        and not isinstance(content_length, bool)
+        and content_length > 0
+        and (expected_size is None or content_length == expected_size)
+        and iso(capture.get("acquiredAt")) is not None
         and re.fullmatch(r"[0-9a-f]{64}", str(capture.get("contentSha256") or ""))
     )
 
@@ -1599,11 +1604,7 @@ def download_asset(
         raise RuntimeError("DMI bulk asset has an invalid declared size")
     path = cached_asset_path(href)
     cached_size = path.stat().st_size if path.exists() else 0
-    if (
-        expected_size is not None
-        and cached_size > 0
-        and cached_size == expected_size
-    ):
+    if cached_size > 0:
         capture = (
             raw_cache_source_capture(path, collection, model_run, valid_time)
             if collection and model_run and valid_time else None
@@ -2061,6 +2062,27 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
         ]
     GRID_BATCH_WARMED.add(warm_key)
 
+def batched_element_values(gid: int, indices: list[int], context: str) -> list[Any]:
+    """Accept ecCodes' documented ndarray success result without masking failures."""
+    try:
+        raw_values = codes_get_elements(gid, "values", indices)
+    except Exception as exc:
+        raise DmiGridLookupError(f"DMI batched {context} lookup failed") from exc
+    try:
+        if isinstance(raw_values, (str, bytes, bytearray, dict)):
+            raise TypeError("non-array result")
+        values = list(raw_values)
+    except (TypeError, ValueError) as exc:
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup returned an invalid result"
+        ) from exc
+    if len(values) != len(indices):
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup returned an invalid result"
+        )
+    return values
+
+
 def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, list[dict[str, float]]]:
     """Returner alle gyldige kandidater pr. zone for et GRIB-felt.
 
@@ -2083,12 +2105,7 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 unique_indices.append(index)
     if not unique_indices:
         return {}
-    try:
-        raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception as exc:
-        raise DmiGridLookupError("DMI batched vector lookup failed") from exc
-    if not isinstance(raw_values, (list, tuple)) or len(raw_values) != len(unique_indices):
-        raise DmiGridLookupError("DMI batched vector lookup returned an invalid result")
+    raw_values = batched_element_values(gid, unique_indices, "vector")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
     definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, list[dict[str, float]]] = {}
@@ -2132,12 +2149,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                 unique_indices.append(index)
     if not unique_indices:
         return {}
-    try:
-        raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception as exc:
-        raise DmiGridLookupError("DMI batched scalar lookup failed") from exc
-    if not isinstance(raw_values, (list, tuple)) or len(raw_values) != len(unique_indices):
-        raise DmiGridLookupError("DMI batched scalar lookup returned an invalid result")
+    raw_values = batched_element_values(gid, unique_indices, "scalar")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
     definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, dict[str, float]] = {}

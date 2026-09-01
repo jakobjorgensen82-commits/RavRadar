@@ -549,6 +549,30 @@ reuse_args = {
 assert producer.reusable_processed_steps(reuse_run, **reuse_args) == {
     reuse_hour: signed_step,
 }
+# DMI's STAC schema may omit a declared byte size. The exact local capture still
+# binds content length/digest, acquisition and the complete item revision, so the
+# signed checkpoint remains reusable without inventing a size claim.
+size_less_official = {**reuse_official, "assetSizeBytes": None}
+size_less_source = {**reuse_source, "assetSizeBytes": None}
+size_less_step = {**signed_step, "sourceAsset": size_less_source}
+size_less_step["currentPartOutcomeProof"] = producer.build_current_part_outcome_proof(
+    [],
+    [target["partId"]],
+    producer.target_fingerprint(targets),
+    reuse_signature,
+    size_less_source,
+)
+size_less_run = {
+    **reuse_run,
+    "processedSteps": {reuse_hour: size_less_step},
+}
+size_less_args = {
+    **reuse_args,
+    "required_asset_provenance": {reuse_hour: size_less_official},
+}
+assert producer.reusable_processed_steps(size_less_run, **size_less_args) == {
+    reuse_hour: size_less_step,
+}
 unsigned_run = json.loads(json.dumps(reuse_run))
 unsigned_run["processedSteps"][reuse_hour].pop("processingSignature")
 assert producer.reusable_processed_steps(unsigned_run, **reuse_args) == {}
@@ -633,13 +657,39 @@ try:
         "longitude": 2.0,
         "distanceKm": 0.0,
     }]
+
+    class NumpyArrayLike:
+        """Exercise the documented ecCodes ndarray protocol without NumPy."""
+
+        def __init__(self, values):
+            self.values = list(values)
+
+        def __iter__(self):
+            return iter(self.values)
+
+    producer.codes_get_elements = lambda *_args, **_kwargs: NumpyArrayLike([0.25])
+    vector_rows = producer.valid_candidates_batch(992, "dkss_idw", [zone])
+    scalar_rows = producer.nearest_valid_batch(992, "dkss_idw", [zone])
+    assert vector_rows[zone["id"]][0]["value"] == 0.25
+    assert scalar_rows[zone["id"]]["value"] == 0.25
+
+    producer.codes_get_elements = lambda *_args, **_kwargs: NumpyArrayLike([])
+    for helper in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        try:
+            helper(992, "dkss_idw", [zone])
+        except producer.DmiGridLookupError:
+            pass
+        else:
+            raise AssertionError("A wrong-length ecCodes array must fail closed")
+
     producer.codes_get_elements = fail_nearest
-    try:
-        producer.valid_candidates_batch(992, "dkss_idw", [zone])
-    except producer.DmiGridLookupError:
-        pass
-    else:
-        raise AssertionError("Batched grid exception must fail closed")
+    for helper in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+        try:
+            helper(992, "dkss_idw", [zone])
+        except producer.DmiGridLookupError:
+            pass
+        else:
+            raise AssertionError("Batched grid exception must fail closed")
 finally:
     producer.codes_grib_find_nearest = original_find_nearest
     producer.codes_get = original_codes_get
