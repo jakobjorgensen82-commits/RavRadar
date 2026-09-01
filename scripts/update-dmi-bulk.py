@@ -267,6 +267,12 @@ HINT_ALIASES = {
 class DmiGridLookupError(RuntimeError):
     """An ecCodes/grid failure that must never masquerade as spatial absence."""
 
+    def __init__(self, message: str, failure_code: str) -> None:
+        super().__init__(message)
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", failure_code):
+            raise ValueError("DMI grid failure code must be bounded and payload-free")
+        self.failure_code = failure_code
+
 
 def iso(value: Any) -> str | None:
     if not value:
@@ -291,6 +297,52 @@ def safe_error_message(error: Any, maximum: int = 500) -> str:
     text = re.sub(r"(?i)(api[-_]?key|token|signature|sig)=([^\s&]+)", r"\1=[redacted]", text)
     text = re.sub(r"(https?://[^\s?]+)\?[^\s]+", r"\1?[redacted]", text)
     return text[:maximum] or type(error).__name__
+
+
+def collection_failure_code(error: Exception) -> str:
+    """Classify one collection failure without exposing exception payloads."""
+    if isinstance(error, DmiGridLookupError):
+        return error.failure_code
+    message = safe_error_message(error)
+    fixed_prefix_codes = (
+        ("DMI metadata request failed", "STAC_REQUEST_FAILED"),
+        ("DMI metadata response is not valid JSON", "STAC_RESPONSE_INVALID_JSON"),
+        ("DMI metadata response is not a JSON object", "STAC_RESPONSE_INVALID_OBJECT"),
+        ("DMI bulk asset has an invalid declared size", "ASSET_DECLARED_SIZE_INVALID"),
+        ("DMI bulk asset has an invalid Content-Length", "ASSET_CONTENT_LENGTH_INVALID"),
+        ("DMI bulk asset length conflicts with STAC metadata", "ASSET_LENGTH_CONFLICT"),
+        ("DMI bulk asset download is incomplete", "ASSET_DOWNLOAD_INCOMPLETE"),
+        ("DMI bulk asset request failed", "ASSET_REQUEST_FAILED"),
+        ("DMI bulk download budget", "DOWNLOAD_BUDGET_EXCEEDED"),
+        ("no forecast-step GRIB assets found", "STAC_NO_FORECAST_ASSETS"),
+        ("GRIB downloaded but no required RavRadar parameters were recognized", "GRIB_PARAMETERS_UNRECOGNIZED"),
+    )
+    for prefix, code in fixed_prefix_codes:
+        if message.startswith(prefix):
+            return code
+    parser_codes = {
+        KeyError: "PARSER_KEY_ERROR",
+        TypeError: "PARSER_TYPE_ERROR",
+        IndexError: "PARSER_INDEX_ERROR",
+        AttributeError: "PARSER_ATTRIBUTE_ERROR",
+        ValueError: "PARSER_VALUE_ERROR",
+    }
+    for error_type, code in parser_codes.items():
+        if isinstance(error, error_type):
+            return code
+    return "COLLECTION_RUNTIME_FAILURE"
+
+
+def diagnostic_collection_failure_codes(diagnostics: dict[str, Any]) -> list[str]:
+    """Return at most three deterministic, payload-free marine failure codes."""
+    observed = {
+        str(error.get("failureCode"))
+        for error in (diagnostics.get("errors") or [])
+        if isinstance(error, dict)
+        and str(error.get("collection") or "") in MARINE_COLLECTIONS
+        and re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", str(error.get("failureCode") or ""))
+    }
+    return sorted(observed)[:3]
 
 
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -1869,7 +1921,8 @@ def grid_signature(gid: int) -> tuple[Any, ...]:
             values.append(codes_get(gid, key))
         except Exception as exc:
             raise DmiGridLookupError(
-                "DMI grid identity could not be read completely"
+                "DMI grid identity could not be read completely",
+                "GRID_IDENTITY_READ_FAILED",
             ) from exc
     return tuple(values)
 
@@ -1914,9 +1967,15 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
             try:
                 candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
             except Exception as exc:
-                raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+                raise DmiGridLookupError(
+                    "DMI nearest-grid lookup failed",
+                    "NEAREST_GRID_LOOKUP_FAILED",
+                ) from exc
         except Exception as exc:
-            raise DmiGridLookupError("DMI nearest-grid lookup failed") from exc
+            raise DmiGridLookupError(
+                "DMI nearest-grid lookup failed",
+                "NEAREST_GRID_LOOKUP_FAILED",
+            ) from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         direct = []
@@ -1961,11 +2020,13 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
                 if collection in MARINE_COLLECTIONS:
                     continue
                 raise DmiGridLookupError(
-                    "DMI nearest-grid lookup failed (OutOfAreaError)"
+                    "DMI nearest-grid lookup failed (OutOfAreaError)",
+                    "NEAREST_GRID_OUT_OF_AREA",
                 ) from exc
             except Exception as exc:
                 raise DmiGridLookupError(
-                    f"DMI nearest-grid lookup failed ({type(exc).__name__})"
+                    f"DMI nearest-grid lookup failed ({type(exc).__name__})",
+                    "NEAREST_GRID_LOOKUP_FAILED",
                 ) from exc
         except OutOfAreaError as exc:
             # Only ecCodes' explicit out-of-domain result is recoverable. Every
@@ -1973,11 +2034,13 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
             if collection in MARINE_COLLECTIONS:
                 continue
             raise DmiGridLookupError(
-                "DMI nearest-grid lookup failed (OutOfAreaError)"
+                "DMI nearest-grid lookup failed (OutOfAreaError)",
+                "NEAREST_GRID_OUT_OF_AREA",
             ) from exc
         except Exception as exc:
             raise DmiGridLookupError(
-                f"DMI nearest-grid lookup failed ({type(exc).__name__})"
+                f"DMI nearest-grid lookup failed ({type(exc).__name__})",
+                "NEAREST_GRID_LOOKUP_FAILED",
             ) from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
@@ -2063,22 +2126,37 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
     GRID_BATCH_WARMED.add(warm_key)
 
 def batched_element_values(gid: int, indices: list[int], context: str) -> list[Any]:
-    """Accept ecCodes' documented ndarray success result without masking failures."""
+    """Normalize only ordered ecCodes list/tuple or documented 1-D ndarray results."""
+    context_code = "VECTOR" if context == "vector" else "SCALAR" if context == "scalar" else "UNKNOWN"
     try:
         raw_values = codes_get_elements(gid, "values", indices)
     except Exception as exc:
-        raise DmiGridLookupError(f"DMI batched {context} lookup failed") from exc
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup failed",
+            f"BATCHED_{context_code}_LOOKUP_FAILED",
+        ) from exc
     try:
-        if isinstance(raw_values, (str, bytes, bytearray, dict)):
+        if isinstance(raw_values, (list, tuple)):
+            values = list(raw_values)
+        elif (
+            type(raw_values).__module__.split(".", 1)[0] == "numpy"
+            and getattr(raw_values, "ndim", None) == 1
+            and callable(getattr(raw_values, "tolist", None))
+        ):
+            values = raw_values.tolist()
+            if not isinstance(values, list):
+                raise TypeError("non-list ndarray conversion")
+        else:
             raise TypeError("non-array result")
-        values = list(raw_values)
     except (TypeError, ValueError) as exc:
         raise DmiGridLookupError(
-            f"DMI batched {context} lookup returned an invalid result"
+            f"DMI batched {context} lookup returned an invalid result",
+            f"BATCHED_{context_code}_RESULT_INVALID",
         ) from exc
     if len(values) != len(indices):
         raise DmiGridLookupError(
-            f"DMI batched {context} lookup returned an invalid result"
+            f"DMI batched {context} lookup returned an invalid result",
+            f"BATCHED_{context_code}_RESULT_INVALID",
         )
     return values
 
@@ -4930,6 +5008,7 @@ def write_github_outputs(
     *,
     terminal_code: str = "DMI_UNCLASSIFIED",
     strict_current_anchor_ready: bool = False,
+    collection_failure_codes: list[str] | None = None,
 ) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
     if output_path:
@@ -4938,6 +5017,12 @@ def write_github_outputs(
             if re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", terminal_code or "")
             else "DMI_UNCLASSIFIED"
         )
+        bounded_failure_codes = sorted({
+            str(code)
+            for code in (collection_failure_codes or [])
+            if re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", str(code))
+        })[:3]
+        bounded_failure_csv = ",".join(bounded_failure_codes) or "NONE"
         with open(output_path, "a", encoding="utf-8") as handle:
             handle.write(f"status={status}\n")
             handle.write(f"fresh_collections={fresh_collections}\n")
@@ -4945,6 +5030,7 @@ def write_github_outputs(
             handle.write(f"zone_count={zone_count}\n")
             handle.write(f"downloaded_bytes={downloaded_bytes}\n")
             handle.write(f"terminal_code={bounded_code}\n")
+            handle.write(f"collection_failure_codes={bounded_failure_csv}\n")
             handle.write(
                 "strict_current_anchor_ready="
                 f"{'true' if strict_current_anchor_ready else 'false'}\n"
@@ -5350,7 +5436,11 @@ def main() -> int:
         if productive_collections >= COLLECTIONS_PER_RUN:
             break
         if should_stop_work():
-            result["diagnostics"]["errors"].append({"collection": collection, "message": "bulk runtime budget reached"})
+            result["diagnostics"]["errors"].append({
+                "collection": collection,
+                "message": "bulk runtime budget reached",
+                "failureCode": "RUNTIME_BUDGET_REACHED",
+            })
             break
         result["diagnostics"]["collectionsAttempted"].append(collection)
         collection_start_bytes = budget["bytes"]
@@ -5694,9 +5784,15 @@ def main() -> int:
                 productive_collections += 1
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
-                result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
+                result["diagnostics"]["errors"].append({
+                    "collection": collection,
+                    "message": budget_stop,
+                    "failureCode": "RUNTIME_BUDGET_REACHED",
+                    "partialProgressPreserved": True,
+                })
         except Exception as exc:
             message = safe_error_message(exc)
+            failure_code = collection_failure_code(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1
             parser_blocked = "no required RavRadar parameters" in message
             parser_exception = isinstance(exc, (KeyError, TypeError, IndexError, AttributeError))
@@ -5707,7 +5803,13 @@ def main() -> int:
             state["failureClass"] = failure_class
             state["blockedParserVersion"] = PARSER_VERSION if (parser_blocked or parser_exception) else None
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
-            result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
+            result["diagnostics"]["errors"].append({
+                "collection": collection,
+                "message": message,
+                "failureCode": failure_code,
+                "failureClass": state["failureClass"],
+                "retryAfterMinutes": delay_minutes,
+            })
 
     replay_targets: list[dict[str, Any]] = []
     if not research_rotation_completed:
@@ -5870,6 +5972,7 @@ def main() -> int:
         len(result["zones"]), budget["bytes"],
         terminal_code=terminal_code,
         strict_current_anchor_ready=strict_current_anchor_available,
+        collection_failure_codes=diagnostic_collection_failure_codes(diag),
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))

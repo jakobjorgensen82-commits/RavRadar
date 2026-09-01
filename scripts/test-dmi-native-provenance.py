@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 import tempfile
 import types
@@ -415,6 +416,48 @@ assert producer.producer_terminal_code(
     },
 ) == "DMI_CURRENT_LEDGER_INCOMPLETE"
 
+assert producer.diagnostic_collection_failure_codes({
+    "errors": [
+        {"collection": "harmonie_dini_sf", "failureCode": "PARSER_TYPE_ERROR"},
+        {"collection": "dkss_lf", "failureCode": "BATCHED_SCALAR_LOOKUP_FAILED"},
+        {"collection": "dkss_idw", "failureCode": "BATCHED_VECTOR_LOOKUP_FAILED"},
+        {"collection": "dkss_idw", "failureCode": "BATCHED_VECTOR_LOOKUP_FAILED"},
+        {"collection": "dkss_idw", "failureCode": "unsafe payload"},
+    ],
+}) == ["BATCHED_SCALAR_LOOKUP_FAILED", "BATCHED_VECTOR_LOOKUP_FAILED"]
+
+original_github_output = os.environ.get("GITHUB_OUTPUT")
+try:
+    with tempfile.TemporaryDirectory() as output_dir:
+        output_path = Path(output_dir) / "github-output.txt"
+        os.environ["GITHUB_OUTPUT"] = str(output_path)
+        producer.write_github_outputs(
+            "failed",
+            terminal_code="DMI_READY\nUNSAFE",
+            collection_failure_codes=[
+                "BATCHED_VECTOR_LOOKUP_FAILED",
+                "unsafe payload",
+                "BATCHED_SCALAR_LOOKUP_FAILED",
+                "BATCHED_VECTOR_LOOKUP_FAILED",
+            ],
+        )
+        output_lines = output_path.read_text(encoding="utf-8").splitlines()
+        assert "terminal_code=DMI_UNCLASSIFIED" in output_lines
+        assert (
+            "collection_failure_codes="
+            "BATCHED_SCALAR_LOOKUP_FAILED,BATCHED_VECTOR_LOOKUP_FAILED"
+        ) in output_lines
+        output_path.unlink()
+        producer.write_github_outputs("failed", collection_failure_codes=[])
+        assert "collection_failure_codes=NONE" in output_path.read_text(
+            encoding="utf-8"
+        ).splitlines()
+finally:
+    if original_github_output is None:
+        os.environ.pop("GITHUB_OUTPUT", None)
+    else:
+        os.environ["GITHUB_OUTPUT"] = original_github_output
+
 # A fully processed official asset axis with only one surviving DKSS pair is a
 # systemic collapse, not 117 legitimate Copernicus target hours.
 required_hours = producer.operational_current_valid_times(reference)
@@ -600,8 +643,8 @@ try:
     producer.codes_get = fail_nearest
     try:
         producer.grid_signature(990)
-    except producer.DmiGridLookupError:
-        pass
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "GRID_IDENTITY_READ_FAILED"
     else:
         raise AssertionError("Unreadable grid identity must fail closed")
     producer.codes_get = original_codes_get
@@ -609,8 +652,8 @@ try:
     producer.codes_grib_find_nearest = fail_nearest
     try:
         producer.nearest_candidates(991, "dkss_idw", zone)
-    except producer.DmiGridLookupError:
-        pass
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "NEAREST_GRID_LOOKUP_FAILED"
     else:
         raise AssertionError("Nearest-grid exception must fail closed")
     assert producer.GRID_INDEX_CACHE == {}
@@ -646,8 +689,8 @@ try:
     producer.GRID_INDEX_CACHE.clear()
     try:
         producer.nearest_candidates(995, "wam_dw", zone)
-    except producer.DmiGridLookupError:
-        pass
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "NEAREST_GRID_OUT_OF_AREA"
     else:
         raise AssertionError("Non-DKSS out-of-area lookup must remain fail-closed")
 
@@ -661,11 +704,20 @@ try:
     class NumpyArrayLike:
         """Exercise the documented ecCodes ndarray protocol without NumPy."""
 
+        __module__ = "numpy"
+        ndim = 1
+
         def __init__(self, values):
             self.values = list(values)
 
         def __iter__(self):
             return iter(self.values)
+
+        def tolist(self):
+            return list(self.values)
+
+    producer.codes_get_elements = lambda *_args, **_kwargs: [0.25]
+    assert producer.batched_element_values(992, [7], "vector") == [0.25]
 
     producer.codes_get_elements = lambda *_args, **_kwargs: NumpyArrayLike([0.25])
     vector_rows = producer.valid_candidates_batch(992, "dkss_idw", [zone])
@@ -673,21 +725,37 @@ try:
     assert vector_rows[zone["id"]][0]["value"] == 0.25
     assert scalar_rows[zone["id"]]["value"] == 0.25
 
+    # An unordered iterable can silently detach values from their requested
+    # grid indexes even when its length happens to match.
+    producer.codes_get_elements = lambda *_args, **_kwargs: {0.25}
+    try:
+        producer.batched_element_values(992, [7], "vector")
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "BATCHED_VECTOR_RESULT_INVALID"
+    else:
+        raise AssertionError("An unordered ecCodes result must fail closed")
+
     producer.codes_get_elements = lambda *_args, **_kwargs: NumpyArrayLike([])
-    for helper in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+    for helper, expected_code in (
+        (producer.valid_candidates_batch, "BATCHED_VECTOR_RESULT_INVALID"),
+        (producer.nearest_valid_batch, "BATCHED_SCALAR_RESULT_INVALID"),
+    ):
         try:
             helper(992, "dkss_idw", [zone])
-        except producer.DmiGridLookupError:
-            pass
+        except producer.DmiGridLookupError as exc:
+            assert exc.failure_code == expected_code
         else:
             raise AssertionError("A wrong-length ecCodes array must fail closed")
 
     producer.codes_get_elements = fail_nearest
-    for helper in (producer.valid_candidates_batch, producer.nearest_valid_batch):
+    for helper, expected_code in (
+        (producer.valid_candidates_batch, "BATCHED_VECTOR_LOOKUP_FAILED"),
+        (producer.nearest_valid_batch, "BATCHED_SCALAR_LOOKUP_FAILED"),
+    ):
         try:
             helper(992, "dkss_idw", [zone])
-        except producer.DmiGridLookupError:
-            pass
+        except producer.DmiGridLookupError as exc:
+            assert exc.failure_code == expected_code
         else:
             raise AssertionError("Batched grid exception must fail closed")
 finally:

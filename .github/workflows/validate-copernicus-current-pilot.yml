@@ -369,7 +369,7 @@ jobs:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require successful DMI production before gap selection
+      - name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"
         id: dmi-terminal-gate
         shell: bash
         env:

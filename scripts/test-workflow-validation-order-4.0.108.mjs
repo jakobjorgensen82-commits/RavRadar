@@ -249,7 +249,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
-  operationalPreflight.indexOf('name: Require successful DMI production before gap selection'),
+  operationalPreflight.indexOf('name: "Require DMI production ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Prove exact target through target plus 117 current coverage'),
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
@@ -260,6 +260,11 @@ const operationalPositions = [
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
   throw new Error('Operational-118-preflight skal følge DMI→always-save→terminalgate→exact range→update:weather→integrated audit.');
+}
+if (!operationalPreflight.includes(
+  'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
+)) {
+  throw new Error('Operational-118-preflightens terminaltrin skal vise begge payloadfri DMI-koder.');
 }
 if (!operationalPreflight.includes('$RUNNER_TEMP/ravradar-118-deployed-donor')) {
   throw new Error('Operational-118-preflightens deployed DMI-donor skal være isoleret under RUNNER_TEMP.');

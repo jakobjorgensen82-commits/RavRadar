@@ -131,6 +131,7 @@ for (const code of [
   assert.match(bulk, new RegExp(code));
 }
 assert.match(bulk, /terminal_code=\{bounded_code\}/);
+assert.match(bulk, /collection_failure_codes=\{bounded_failure_csv\}/);
 assert.match(bulk, /strict_current_anchor_ready=/);
 assert.match(updater, /DMI_OCEAN_REQUEST_TIMEOUT_MS/);
 assert.match(updater, /lastObservationSuccessMs/);
