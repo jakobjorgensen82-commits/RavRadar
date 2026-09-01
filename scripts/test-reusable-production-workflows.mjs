@@ -87,7 +87,7 @@ const contracts = [
   ['build', build, PRODUCTION_WORKFLOW_INTERFACES.build],
   ['deploy', deploy, PRODUCTION_WORKFLOW_INTERFACES.deploy],
 ];
-assert.equal(PRODUCTION_WORKFLOW_INTERFACES.build.outputs.length, 21, 'exact 21 build outputs');
+assert.equal(PRODUCTION_WORKFLOW_INTERFACES.build.outputs.length, 28, 'exact 28 build outputs');
 assert.equal(PRODUCTION_WORKFLOW_INTERFACES.deploy.outputs.length, 3, 'exact 3 deploy outputs');
 
 for (const [role, sourceText, contract] of contracts) {
@@ -300,6 +300,13 @@ for (const output of [
   'pages_build_outcome',
   'pages_privacy_outcome',
   'handoff_upload_outcome',
+  'checkpoint_disposition',
+  'checkpoint_disposition_sha256',
+  'checkpoint_dataset_id',
+  'checkpoint_runtime_audit_sha256',
+  'checkpoint_build_outcome',
+  'checkpoint_save_outcome',
+  'checkpoint_publish_outcome',
   'pages_configure_outcome',
   'pages_upload_outcome',
   'artifact_built',

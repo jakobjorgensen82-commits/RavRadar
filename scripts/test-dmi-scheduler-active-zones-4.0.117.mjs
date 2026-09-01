@@ -151,7 +151,8 @@ assert selected=='2026-01-03T01:00:00Z', run_diag
 assert run_diag['preferredProgressiveRunDiscardedAsStale'] is True, run_diag
 
 # Missing strict provenance moves all DKSS collections ahead of non-current
-# families and invalidates only DKSS processed-step reuse.
+# families. Step reuse is independently bound to parser/signature and, for
+# DKSS, the exact selected official asset capture.
 mixed_schedule=['wam_dw','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw','wam_nsb']
 recovery_schedule=module.prioritize_strict_current_recovery(mixed_schedule,False)
 assert recovery_schedule[:3]==['dkss_nsbs','dkss_lf','dkss_idw'], recovery_schedule
@@ -162,20 +163,55 @@ assert module.prioritize_first_cutover_collections(recovery_schedule,False)==[
 assert module.prioritize_first_cutover_collections(mixed_schedule,True)==[
  'wam_dw','wam_nsb','dkss_nsbs','harmonie_dini_sf','dkss_lf','dkss_idw',
 ]
-old_steps={'2026-01-01T00:00:00Z':{'complete':True,'recognizedParameters':['current-u','current-v']}}
-old_run={'processedSteps':old_steps}
+reuse_time='2026-01-01T00:00:00Z'
+reuse_signature='parser-current'
+official_asset={
+ 'collection':'dkss_idw','modelRun':reuse_time,'validTime':reuse_time,
+ 'itemId':'selected-item','assetIdentitySha256':'b'*64,
+ 'assetSizeBytes':1024,
+ 'itemCreatedAt':reuse_time,'itemUpdatedAt':None,
+}
+source_asset={
+ **official_asset,'acquiredAt':'2026-01-01T01:00:00Z',
+ 'contentLengthBytes':1024,'contentSha256':'d'*64,
+}
+old_steps={reuse_time:{
+ 'complete':True,'recognizedParameters':['current-u','current-v'],'zonesTouched':1,
+ 'parserVersion':module.PARSER_VERSION,'processingSignature':reuse_signature,
+ 'sourceAsset':source_asset,
+}}
+old_run={
+ 'referenceTime':reuse_time,'processingSignature':reuse_signature,
+ 'processedSteps':old_steps,
+}
 assert module.reusable_processed_steps(
  old_run,collection='dkss_idw',same_processing=True,same_run=True,
- strict_current_anchor_available=False,
+ strict_current_anchor_available=False,required_valid_times={reuse_time},
+ required_asset_provenance={reuse_time:official_asset},
+)==old_steps
+assert module.reusable_processed_steps(
+ old_run,collection='dkss_idw',same_processing=True,same_run=True,
+ strict_current_anchor_available=True,required_valid_times={reuse_time},
+ required_asset_provenance={reuse_time:official_asset},
+)==old_steps
+unsigned_run={**old_run,'processedSteps':{reuse_time:{
+ key:value for key,value in old_steps[reuse_time].items()
+ if key!='processingSignature'
+}}}
+assert module.reusable_processed_steps(
+ unsigned_run,collection='dkss_idw',same_processing=True,same_run=True,
+ strict_current_anchor_available=True,required_valid_times={reuse_time},
+ required_asset_provenance={reuse_time:official_asset},
 )=={}
+wam_steps={reuse_time:{
+ 'complete':True,'recognizedParameters':['significant-wave-height'],
+ 'parserVersion':module.PARSER_VERSION,'processingSignature':reuse_signature,
+}}
 assert module.reusable_processed_steps(
- old_run,collection='dkss_idw',same_processing=True,same_run=True,
- strict_current_anchor_available=True,
-)==old_steps
-assert module.reusable_processed_steps(
- old_run,collection='wam_dw',same_processing=True,same_run=True,
+ {'processingSignature':reuse_signature,'processedSteps':wam_steps},
+ collection='wam_dw',same_processing=True,same_run=True,
  strict_current_anchor_available=False,
-)==old_steps
+)==wam_steps
 
 # Schedule facts are inferred from the exact STAC response. Missing created
 # stays unknown; no publication timestamp is fabricated.
@@ -243,7 +279,11 @@ assert module.select_common_grid_tuple({
 },('significant-wave-height','dominant-wave-period')) is None
 
 zone={'id':'PART::TEST','parentZoneId':'ZONE-TEST','coastalPart':True,'coastType':'limfjord','lon':2.0,'lat':1.0}
-capture={'itemId':'item-1','assetIdentitySha256':'c'*64,'acquiredAt':'2026-01-01T02:00:00Z'}
+capture={
+ 'itemId':'item-1','assetIdentitySha256':'c'*64,
+ 'assetSizeBytes':7,'acquiredAt':'2026-01-01T02:00:00Z',
+ 'contentLengthBytes':7,'contentSha256':'d'*64,
+}
 source=module.native_component_source(
  'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
  component='wave',zone=zone,grid_candidate=height,capture=capture,
@@ -322,12 +362,13 @@ module.time.time=real_time
 import pathlib, tempfile
 with tempfile.TemporaryDirectory() as temporary:
  module.RAW_DIR=pathlib.Path(temporary)
- asset_path=module.RAW_DIR/'fixture.grib'
+ asset_path=module.cached_asset_path('https://example.test/local-wave.grib')
  asset_path.write_bytes(b'fixture')
  module.register_raw_cache_asset(
   asset_path,'https://example.test/local-wave.grib','wam_dw',
   '2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
   item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  expected_size=7,
  )
  assert module.raw_cache_source_capture(
   asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
@@ -337,6 +378,50 @@ with tempfile.TemporaryDirectory() as temporary:
   '2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
   item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
   acquired_at='2026-01-01T02:00:00Z',
+  expected_size=7,content_sha256=module.hashlib.sha256(b'fixture').hexdigest(),
+ )
+ exact_capture=module.raw_cache_source_capture(
+  asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+ )
+ assert exact_capture is not None
+ assert module.cached_capture_matches_official(
+  exact_capture,href='https://example.test/local-wave.grib',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  item_updated_at=None,expected_size=7,
+ )
+ assert not module.cached_capture_matches_official(
+  exact_capture,href='https://example.test/local-wave.grib',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  item_updated_at=None,expected_size=None,
+ ), 'unknown official size must force a fresh download'
+ assert not module.cached_capture_matches_official(
+  exact_capture,href='https://example.test/local-wave.grib',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  item_updated_at='2026-01-01T01:30:00Z',expected_size=7,
+ ), 'same href/id with a changed STAC revision must not reuse old bytes'
+ exact_asset={
+  'href':'https://example.test/local-wave.grib','id':'local-wave-item',
+  'valid':'2026-01-01T03:00:00Z','size':7,
+  'itemCreatedAt':'2026-01-01T01:00:00Z','itemUpdatedAt':None,
+ }
+ assert module.reusable_cached_asset_path(
+  exact_asset,'wam_dw','2026-01-01T00:00:00Z',
+ )==asset_path
+ revised_asset=dict(exact_asset,itemUpdatedAt='2026-01-01T01:30:00Z')
+ assert module.reusable_cached_asset_path(
+  revised_asset,'wam_dw','2026-01-01T00:00:00Z',
+ ) is None, 'replay paths must not relabel cached bytes as a new STAC revision'
+ asset_path.write_bytes(b'Fixture')
+ assert module.raw_cache_source_capture(
+  asset_path,'wam_dw','2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+ ) is None, 'same-size byte mutation must invalidate the stored content digest'
+ asset_path.write_bytes(b'fixture')
+ module.register_raw_cache_asset(
+  asset_path,'https://example.test/local-wave.grib','wam_dw',
+  '2026-01-01T00:00:00Z','2026-01-01T03:00:00Z',
+  item_id='local-wave-item',item_created_at='2026-01-01T01:00:00Z',
+  acquired_at='2026-01-01T02:00:00Z',expected_size=7,
+  content_sha256=module.hashlib.sha256(b'fixture').hexdigest(),
  )
  gids=iter([1,2,3,None])
  module.codes_grib_new_from_file=lambda handle:next(gids)

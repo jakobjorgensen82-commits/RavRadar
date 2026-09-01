@@ -336,7 +336,7 @@ jobs:
         run: python -u scripts/update-dmi-bulk.py
         env:
           DMI_BULK_HOURS: 118
-          DMI_BULK_MAX_DOWNLOAD_MB: 2048
+          DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
           DMI_BULK_MAX_RUNTIME_SECONDS: 3000
           DMI_BULK_FINALIZE_RESERVE_SECONDS: 180

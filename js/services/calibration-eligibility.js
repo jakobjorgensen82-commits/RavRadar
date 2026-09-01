@@ -60,6 +60,8 @@ export const CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED =
   'ravscore-reconstructed-derived-evidence';
 export const CALIBRATION_INELIGIBLE_REASON_UNATTESTED =
   'ravscore-evidence-trust-unattested';
+export const CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK =
+  'ravscore-global-warmup-calibration-lock';
 export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
@@ -287,6 +289,9 @@ function currentFeatureIssues(features) {
     || features.reasonCodes.some(value => !validId(value))) {
     issues.push('CALIBRATION_REASON_CODES_INVALID');
   }
+  const globalWarmupReasonCount = Array.isArray(features.reasonCodes)
+    ? features.reasonCodes.filter(reason => reason
+      === CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK).length : 0;
   if (!['FULL_HISTORY','HISTORY_INCOMPLETE'].includes(features.scoreQuality)
     || typeof features.scoreCalibrationEligible !== 'boolean'
     || typeof features.conservativeTailResetApplied !== 'boolean'
@@ -315,12 +320,15 @@ function currentFeatureIssues(features) {
         !==(features.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')
       ||(candidateGRollback&&(features.scoreSemantics!=='EXACT_POINT_SCORE'
         ||features.conservativeTailResetApplied!==false))
+      ||globalWarmupReasonCount > 1
+      ||(candidateGRollback&&globalWarmupReasonCount > 0)
       ||features.reasonCodes?.includes(CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE)) {
       issues.push('SCORE_QUALITY_FEATURES_INVALID');
     }
   } else if(features.scoreCalibrationEligible!==false
     ||features.scoreSemantics!=='CONSERVATIVE_ENCLOSING_LOWER_BOUND'
     ||features.historyReasonCodes.length===0
+    ||globalWarmupReasonCount > 0
     ||!features.reasonCodes?.includes(CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE)) {
     issues.push('SCORE_QUALITY_FEATURES_INVALID');
   }
@@ -559,6 +567,8 @@ export function expectedCalibrationEligibility(row, expectedBinding) {
   const features = rowValue(row, 'calibration_features', 'calibrationFeatures');
   if (Array.isArray(features?.reasonCodes)
     && features.reasonCodes.some(reason => TRIP_NON_CALIBRATION_QUALITY_FLAGS.includes(reason))) return false;
+  if (Array.isArray(features?.reasonCodes)
+    && features.reasonCodes.includes(CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK)) return false;
   if(features?.scoreQuality!=='FULL_HISTORY'||features?.scoreCalibrationEligible!==true)return false;
   const actualZone = rowValue(row, 'actual_zone_id', 'zoneId');
   const actualPart = rowValue(row, 'actual_coastal_part_id', 'coastalPartId');

@@ -928,10 +928,10 @@ const workflowPositions={
   weather:buildWorkflow.indexOf('name: Update central weather cache'),
   runtime:buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
   runtimeAudit:buildWorkflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  checkpointDisposition:buildWorkflow.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   validate:buildWorkflow.indexOf('name: Validate full project after fresh weather and current provenance'),
   releaseGate:buildWorkflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:buildWorkflow.indexOf('name: Validate updated weather cache'),
-  checkpointApplicability:buildWorkflow.indexOf('name: Record strict checkpoint as not applicable during measured rollback warmup'),
   checkpointBuild:buildWorkflow.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
   checkpointSave:buildWorkflow.indexOf('name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates'),
   protectedCheckpointPublish:buildWorkflow.indexOf('name: Publish atomic RavScore checkpoint to protected admin storage'),
@@ -952,8 +952,8 @@ const workflowOrder=[
   'preflightCache','publicPreflightManifest','preflight','checkpointRestore','protectedCheckpointRestore',
   'privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall',
   'legacyBootstrapGate','legacyBootstrapImport',
-  'resolvedTarget','weather','runtime','runtimeAudit','validate','releaseGate','validateData',
-  'checkpointApplicability','checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
+  'resolvedTarget','weather','runtime','runtimeAudit','checkpointDisposition','validate','releaseGate','validateData',
+  'checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
   'privateRuntimeSpec','privateRuntimeCreate','privateRuntimeSave','privateRuntimeAnonAudit','artifact','pagesPrivacyAudit','pagesUpload',
 ];
 for(let index=1;index<workflowOrder.length;index+=1){
@@ -1078,6 +1078,7 @@ ok(waveResolverStart>=0&&dmiBulkStart>waveResolverStart
   && waveResolverSection.includes(`if: ${firstCutoverGuard}`),
 'Candidate G-maintenance må aldrig starte den integrerede WAM-resolver');
 for(const marker of [
+  `DMI_BULK_MAX_DOWNLOAD_MB: \${{ ${firstCutoverGuard} && '4096' || '2048' }}`,
   `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ ${firstCutoverGuard} && '3000' || '900' }}`,
   `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${firstCutoverGuard} && '180' || '120' }}`,
   `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
@@ -1121,31 +1122,43 @@ for(const marker of [
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
-const checkpointNotApplicableSection=buildWorkflow.slice(
-  workflowPositions.checkpointApplicability,
-  workflowPositions.checkpointBuild,
+const checkpointDispositionSection=buildWorkflow.slice(
+  workflowPositions.checkpointDisposition,
+  workflowPositions.validate,
 );
 for(const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'false'",
-  'test "$(jq -er \'.rollback.status\' "$audit_path")" = "BUILDING_MEASURED_ONLY"',
-  'test "$(jq -er \'.rollback.activationReady\' "$audit_path")" = "false"',
-  'audit_sha256="$(AUDIT_PATH="$audit_path" node --input-type=module',
-  'sha256CanonicalJson',
-  "JSON.parse(fs.readFileSync(process.env.AUDIT_PATH, 'utf8'))",
-  'dataset_id="$(jq -er \'.datasetId\' data/live/manifest.json)"',
-  'jq -n \\',
-  'ravscore-continuation-checkpoint-applicability-v1',
+  'id: checkpoint-disposition',
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
+  'READY_PUBLISHED',
   'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
-  'checkpointRequired:false',
-  'checkpointBuilt:false',
-  'checkpointPublished:false',
+  'checkpoint_required="true"',
+  'checkpoint_required="false"',
+  'dataset_id="$(jq -er \'.datasetId | select(type == "string" and length > 0)\' data/live/manifest.json)"',
+  'runtime_audit_sha256=',
+  'sha256CanonicalJson',
+  'ravscore-continuation-checkpoint-disposition-v1',
+  'sourceHead:$sourceHead',
+  'datasetId:$datasetId',
+  'runtimeAuditSha256:$runtimeAuditSha256',
+  'rollbackStatus:$rollbackStatus',
+  'rollbackActivationReady:$rollbackActivationReady',
+  'checkpointRequired:$checkpointRequired',
   'privatePayloadIncluded:false',
-  '> "$applicability_path"',
+  'bindingSha256',
+  'Unexpected checkpoint disposition fields',
+  'Checkpoint disposition binding mismatch',
+  'echo "disposition=$disposition" >> "$GITHUB_OUTPUT"',
+  'echo "disposition_sha256=$disposition_sha256" >> "$GITHUB_OUTPUT"',
+  'echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"',
+  'echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"',
 ]){
-  ok(checkpointNotApplicableSection.includes(marker),`Maskinlaesbar measured-warmup checkpoint-N/A mangler ${marker}`);
+  ok(checkpointDispositionSection.includes(marker),`Den obligatoriske hashbundne checkpointdisposition mangler ${marker}`);
 }
-ok(!checkpointNotApplicableSection.includes('continue-on-error'),
-'Measured-warmup checkpoint-N/A må ikke skjule en kontraktfejl');
+ok(!checkpointDispositionSection.includes('continue-on-error'),
+  'Checkpointdispositionen må ikke skjule en kontraktfejl');
+ok(!buildWorkflow.includes('ravscore-continuation-checkpoint-applicability'),
+  'Den valgfri applicability-ghostfil må ikke længere findes i produktionsworkflowet');
 const checkpointSaveSection=buildWorkflow.slice(workflowPositions.checkpointBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
@@ -1230,12 +1243,33 @@ const operationalHandoffSection=buildWorkflow.slice(
   buildWorkflow.indexOf('name: Decide whether this sealed artifact may deploy'),
 );
 for(const marker of [
-  'if [ -f .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json ]; then',
-  'cp .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json \\',
-  '"$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-applicability.json"',
+  'cp .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"',
+  'cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"',
+  'checkpoint_disposition="${{ steps.checkpoint-disposition.outputs.disposition }}"',
+  'checkpoint_disposition_sha256="${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}"',
+  'checkpoint_build_outcome="${{ steps.checkpoint-build.outcome }}"',
+  'checkpoint_save_outcome="${{ steps.checkpoint-save.outcome }}"',
+  'checkpoint_publish_outcome="${{ steps.checkpoint-publish.outcome }}"',
+  'ravscore-continuation-checkpoint-disposition-v1',
+  'recomputed_runtime_audit_sha256=',
+  'Checkpoint disposition binding mismatch',
+  'READY_PUBLISHED)',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP)',
+  'test "$checkpoint_build_outcome" = "success"',
+  'test "$checkpoint_save_outcome" = "success"',
+  'test "$checkpoint_publish_outcome" = "success"',
+  'checkpointDisposition:$checkpointDisposition',
+  'checkpointDispositionSha256:$checkpointDispositionSha256',
+  'checkpointDatasetId:$checkpointDatasetId',
+  'checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256',
+  'checkpointBuildOutcome:$checkpointBuildOutcome',
+  'checkpointSaveOutcome:$checkpointSaveOutcome',
+  'checkpointPublishOutcome:$checkpointPublishOutcome',
 ]){
-  ok(operationalHandoffSection.includes(marker),`Det privacy-sikre handoff mangler checkpoint-N/A-evidens: ${marker}`);
+  ok(operationalHandoffSection.includes(marker),`Det privacy-sikre handoff mangler obligatorisk checkpointdisposition: ${marker}`);
 }
+ok(!operationalHandoffSection.includes('if [ -f .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json ]; then'),
+  'Checkpointdispositionen må ikke være et valgfrit ghost proof i handoffet');
 for(const forbidden of [
   'ravscore_active_shadow',
   'ravscore-active-shadow:',
@@ -1290,22 +1324,42 @@ for(const marker of [
   "'FAILED'",
   "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2'",
   'privatePayloadIncluded: false',
+  "'READY_PUBLISHED'",
+  "'NOT_APPLICABLE_DURING_MEASURED_WARMUP'",
+  'checkpointProofIsDeploymentReady',
+  "CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT",
   "return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED')",
   "return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED')",
 ]){
   ok(productionWorkflowOutcome.includes(marker),`Produktionsslutstatuskontrakten mangler ${marker}`);
 }
 const deployWorkflowPositions={
+  checkpointBegin:deployWorkflow.indexOf('name: Validate checkpoint disposition before any Pages begin CAS'),
   deploy:deployWorkflow.indexOf('name: Deploy to GitHub Pages'),
   verify:deployWorkflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact'),
+  checkpointComplete:deployWorkflow.indexOf('name: Revalidate checkpoint disposition before Pages completion CAS'),
   terminal:deployWorkflow.indexOf('name: Seal exact verified deployment terminal'),
 };
 for(const [step,position] of Object.entries(deployWorkflowPositions)){
   ok(position>=0,`Deploy-workflowet mangler terminaltrin: ${step}`);
 }
-ok(deployWorkflowPositions.deploy<deployWorkflowPositions.verify
-  && deployWorkflowPositions.verify<deployWorkflowPositions.terminal,
-'DEPLOYED må først forsegles efter Pages og offentlig exact model/210/673-verifikation');
+ok(deployWorkflowPositions.checkpointBegin<deployWorkflowPositions.deploy
+  && deployWorkflowPositions.deploy<deployWorkflowPositions.verify
+  && deployWorkflowPositions.verify<deployWorkflowPositions.checkpointComplete
+  && deployWorkflowPositions.checkpointComplete<deployWorkflowPositions.terminal,
+'DEPLOYED må først forsegles efter checkpointvalidering ved begin/complete samt offentlig exact model/210/673-verifikation');
+for(const marker of [
+  'id: checkpoint-disposition-begin',
+  'id: checkpoint-disposition-complete',
+  "read('checkpoint-disposition.json')",
+  "read('checkpoint-runtime-audit.json')",
+  'sha256CanonicalJson(binding)',
+  'sha256CanonicalJson(runtimeAudit)',
+  "handoff.checkpointBuildOutcome !== 'success'",
+  "handoff.checkpointPublishOutcome !== 'skipped'",
+]){
+  ok(deployWorkflow.includes(marker),`Pages-workflowets obligatoriske checkpointvalidering mangler ${marker}`);
+}
 const orchestratorDeployJob=orchestratorWorkflow.indexOf('\n  deploy-pages:');
 const outcomeJob=orchestratorWorkflow.indexOf('\n  production-outcome:');
 ok(orchestratorDeployJob>=0&&outcomeJob>orchestratorDeployJob,
@@ -1316,6 +1370,13 @@ for(const marker of [
   'node scripts/production-workflow-outcome.mjs',
   'name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}',
   'path: .workflow-outcome/production-outcome.json',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DATASET_ID:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_RUNTIME_AUDIT_SHA256:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_BUILD:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_SAVE:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH:',
   "if: always() && steps.classify.outputs.status == 'FAILED'",
   'exit 1',
 ]){

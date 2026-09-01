@@ -21,7 +21,7 @@ const JSON_BINDING_FILES = Object.freeze([
 const VERSION_PATH = 'version.json';
 const EDGE_PATH = 'supabase/functions/_shared/rav-assistant-contract.ts';
 const SQL_BINDING_PATHS = Object.freeze([
-  'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
+  'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
   'supabase/schema.sql',
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 ]);

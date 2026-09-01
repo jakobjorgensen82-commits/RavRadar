@@ -28,7 +28,12 @@ from lib.copernicus_current import (
     validate_target_registry,
 )
 from lib.copernicus_target_identity import target_fingerprint
-from lib.dmi_native_provenance import verified_part_current_pair
+from lib.dmi_native_provenance import (
+    canonical_verified_part_current_attestation,
+    processed_source_assets_from_current_operational_ledger,
+    validate_current_operational_ledger,
+    verified_part_current_pair,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -90,22 +95,56 @@ def build_registry(
     full_coast: bool,
 ) -> dict[str, Any]:
     hours = matrix_hours(reference)
-    operational_required_pairs: list[dict[str, str]] = []
+    targets = [{
+        "partId": row["partId"],
+        "parentZoneId": row["parentZoneId"],
+        "name": row["name"],
+        "waterPoint": [round(float(row["waterPoint"][0]), 7), round(float(row["waterPoint"][1]), 7)],
+    } for row in all_targets]
+    registry_sha256 = target_fingerprint(targets)
+    if full_coast:
+        operational_required_pairs = [
+            {"partId": target["partId"], "validTime": utc_iso(valid_time)}
+            for valid_time in hours
+            if valid_time >= reference
+            for target in targets
+        ]
+        operational_verified_count = 0
+    else:
+        ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
+        allowed_source_assets = processed_source_assets_from_current_operational_ledger(
+            ledger
+        )
+        attestation = canonical_verified_part_current_attestation(
+            dmi,
+            targets,
+            reference,
+            hours[-1],
+            allowed_source_assets,
+        )
+        validate_current_operational_ledger(
+            ledger,
+            attestation,
+            targets,
+            reference,
+            hours[-1],
+            registry_sha256,
+        )
+        operational_required_pairs = [
+            {"partId": row["partId"], "validTime": row["validTime"]}
+            for row in ledger["operationalComplementPairs"]
+        ]
+        operational_verified_count = int(attestation["verifiedPairCount"])
+
     advisory_history_required_pairs: list[dict[str, str]] = []
-    operational_verified_count = 0
     advisory_history_verified_count = 0
     for valid_time in hours:
-        for target in all_targets:
+        if valid_time >= reference:
+            continue
+        for target in targets:
             verified = False if full_coast else has_verified_local_dmi(dmi, target, valid_time)
-            operational = valid_time >= reference
-            if verified and operational:
-                operational_verified_count += 1
-            elif verified:
+            if verified:
                 advisory_history_verified_count += 1
-            elif operational:
-                operational_required_pairs.append({
-                    "partId": target["partId"], "validTime": utc_iso(valid_time),
-                })
             else:
                 advisory_history_required_pairs.append({
                     "partId": target["partId"], "validTime": utc_iso(valid_time),
@@ -116,12 +155,6 @@ def build_registry(
         row["partId"]
         for row in [*operational_required_pairs, *advisory_history_required_pairs]
     }
-    targets = [{
-        "partId": row["partId"],
-        "parentZoneId": row["parentZoneId"],
-        "name": row["name"],
-        "waterPoint": [round(float(row["waterPoint"][0]), 7), round(float(row["waterPoint"][1]), 7)],
-    } for row in all_targets]
     target_by_id = {row["partId"]: row for row in targets}
     zones: dict[str, list[dict[str, Any]]] = {}
     for part_id in sorted(unique_required_ids):
@@ -157,7 +190,7 @@ def build_registry(
         "advisoryHistoryPartCount": len({
             row["partId"] for row in advisory_history_required_pairs
         }),
-        "targetRegistrySha256": target_fingerprint(targets),
+        "targetRegistrySha256": registry_sha256,
         "dmiCurrentInputSha256": dmi_sha256,
         "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
         "operationalRequiredPairsSha256": required_pairs_sha256(operational_required_pairs),
@@ -228,12 +261,6 @@ def main() -> int:
     document = build_registry(
         all_targets, dmi, reference, file_sha256(args.dmi), full_coast=args.full_coast,
     )
-    if (
-        not args.full_coast
-        and document["operationalDmiVerifiedPairCount"] == 0
-        and all_targets
-    ):
-        raise RuntimeError("No strictly provenance-verified DMI current pair exists in the locked range; refusing implicit full-coast Copernicus collection")
     atomic_write(args.output, document)
     write_github_output(args.github_output, document)
     print(

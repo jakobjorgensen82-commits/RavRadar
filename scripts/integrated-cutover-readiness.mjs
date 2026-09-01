@@ -35,9 +35,9 @@ const MODEL_BINDING_FIELDS = Object.freeze([
   'presentationPolicyId', 'modelContractSha256', 'modelBundleSha256',
 ]);
 export const TRIP_BINDING_POLICY_ID =
-  'ravradar-trip-v3-exact-integrated-candidate-g-history-emergency-v3';
+  'ravradar-trip-v3-exact-integrated-candidate-g-global-warmup-v5';
 export const TRIP_ACTIVE_ADMISSION_POLICY_ID =
-  'ravradar-trip-v3-exact-operational-active-reasons-v3';
+  'ravradar-trip-v3-exact-operational-active-global-warmup-v5';
 const ASSISTANT_FUNCTION = 'ravradar-assistant';
 const PUBLIC_ORIGIN = 'https://ravradar.dk';
 
@@ -51,6 +51,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     version: '20260829020000',
     id: '20260829020000_integrated_trip_calibration_binding',
     filename: '20260829020000_integrated_trip_calibration_binding.sql',
+  }),
+  Object.freeze({
+    version: '20260901010000',
+    id: '20260901010000_integrated_trip_measured_warmup_admission',
+    filename: '20260901010000_integrated_trip_measured_warmup_admission.sql',
   }),
 ]);
 
@@ -74,13 +79,17 @@ function normaliseTripBindingPolicyDefinition(value) {
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS[1].filename,
+    REQUIRED_CUTOVER_MIGRATIONS[2].filename,
   ), 'utf8');
-  const match = migration.match(
+  const truthMatch = migration.match(
+    /create or replace function public\.ravradar_trip_v3_calibration_truth_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
+  );
+  const bindingMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_binding_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
-  assert.ok(match && match[1], 'trip binding allowlist policy definition is missing from the migration');
-  const definition = normaliseTripBindingPolicyDefinition(match[1]);
+  assert.ok(truthMatch?.[1] && bindingMatch?.[1],
+    'trip truth/binding policy definition is missing from the migration');
+  const definition = `${normaliseTripBindingPolicyDefinition(truthMatch[1])}\n-- binding-function --\n${normaliseTripBindingPolicyDefinition(bindingMatch[1])}`;
   return Object.freeze({
     id: TRIP_BINDING_POLICY_ID,
     sha256: sha256(definition),
@@ -101,6 +110,10 @@ function sqlFunctionBody(source, functionName, label) {
 export async function expectedTripActiveAdmissionPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
+    REQUIRED_CUTOVER_MIGRATIONS[2].filename,
+  ), 'utf8');
+  const triggerMigration = await fs.readFile(path.join(
+    migrationsDirectory,
     REQUIRED_CUTOVER_MIGRATIONS[1].filename,
   ), 'utf8');
   const definition = sqlFunctionBody(
@@ -109,7 +122,7 @@ export async function expectedTripActiveAdmissionPolicy({ migrationsDirectory = 
     'active trip admission policy',
   );
   const triggerFunctionDefinition = sqlFunctionBody(
-    migration,
+    triggerMigration,
     'public.ravradar_observation_require_active_v3_binding',
     'active trip admission trigger function',
   );
@@ -219,7 +232,7 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       // RavRadar's historical repository used date-only migration names and
       // therefore contains pre-cutover duplicates. They are never passed to db
       // push: the workflow builds a temporary normalized view from remote
-      // applied history plus the two exact new migrations. New duplicates are
+      // applied history plus the three exact cutover migrations. New duplicates are
       // still a hard error.
       assert.ok(version.length === 8 && version <= '20260828',
         `duplicate Supabase migration version ${version}: ${versionToFilename.get(version)} and ${filename}`);
@@ -442,8 +455,11 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
     expectedActiveAdmissionPolicy.sha256,
     'database active trip admission policy definition hash drifted',
   );
-  assert.match(String(value.tripActiveAdmissionPolicy.triggerDefinition ?? ''),
-    /CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE[\s\S]* ON (?:public\.)?observations[\s\S]*ravradar_observation_require_active_v3_binding\(\)/i,
+  const activeTriggerDefinition = String(
+    value.tripActiveAdmissionPolicy.triggerDefinition ?? '',
+  ).replaceAll('"', '').replace(/\s+/g, ' ').trim();
+  assert.match(activeTriggerDefinition,
+    /^CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE OF schema_version, model_version, calibration_features, calibration_eligible, actual_zone_id, actual_coastal_part_id, forecast_zone_id, forecast_coastal_part_id ON (?:public\.)?observations FOR EACH ROW EXECUTE FUNCTION (?:public\.)?ravradar_observation_require_active_v3_binding\(\);?$/i,
     'database active trip admission trigger definition is incompatible');
   assertExactKeys(value.checks, [
     'schemaVersionConstraintPresent',
@@ -453,6 +469,7 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
     'tripV3ConstraintValidatedAgainstHistoricalRows',
     'tripIdIndexPresent',
     'bindingPolicyDefinitionPresent',
+    'bindingTruthCalledForBothModels',
     'activeBindingAdmissionDefinitionPresent',
     'activeBindingTriggerPresent',
     'activeBindingTriggerCallsGateExactlyOnce',
@@ -469,6 +486,7 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
     'tripV3ConstraintPresent',
     'tripIdIndexPresent',
     'bindingPolicyDefinitionPresent',
+    'bindingTruthCalledForBothModels',
     'activeBindingAdmissionDefinitionPresent',
     'activeBindingTriggerPresent',
     'activeBindingTriggerCallsGateExactlyOnce',

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {
   TRIP_EVIDENCE_SCHEMA_VERSION,
+  GLOBAL_WARMUP_CALIBRATION_LOCK_REASON,
   HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
@@ -63,11 +64,39 @@ const publicProfile = resolvePublicRavScoreProfile({
   modelMemoryReady: true,
   modelMigrationReady: true,
 });
+function createScoreAvailability(allCurrentScoresFullHistory = true) {
+  const historyIncomplete = !allCurrentScoresFullHistory;
+  return Object.freeze({
+    schemaVersion: 2,
+    policy: 'integrated-model-local-fail-closed',
+    allZonesActive: true,
+    activeZoneCount: 210,
+    unavailableZoneCount: 0,
+    totalZoneCount: 210,
+    allCurrentScoresFullHistory,
+    fullHistoryModeCount: historyIncomplete ? 419 : 420,
+    historyIncompleteModeCount: historyIncomplete ? 1 : 0,
+    historyIncompleteZoneCount: historyIncomplete ? 1 : 0,
+    evaluatedAt: '2026-08-21T02:50:00.000Z',
+    unavailableZones: [],
+    historyIncompleteZones: historyIncomplete ? [{
+      zoneId: 'zone-99',
+      zoneName: 'Global warmup-zone',
+      modes: ['waders'],
+      historyCoverageHours: 19,
+      historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    }] : [],
+  });
+}
+const fullHistoryScoreAvailability = createScoreAvailability(true);
+const globalWarmupScoreAvailability = createScoreAvailability(false);
+
 function createPublicManifest({
   datasetId,
   generatedAt,
   productionReferenceAt,
   evidenceTrust = verifiedOnlyTrust,
+  scoreAvailability = fullHistoryScoreAvailability,
 }) {
   return {
     datasetId,
@@ -79,6 +108,7 @@ function createPublicManifest({
     coastalPartCount: 673,
     ravScoreModelBinding: publicBinding,
     ravScoreEvidenceTrust: evidenceTrust,
+    ravScoreAvailability: scoreAvailability,
     publicConditionsSha256: 'a'.repeat(64),
     publicConditionsBytes: 1,
     publicConditionDetailsSha256: 'b'.repeat(64),
@@ -442,7 +472,11 @@ const freshConditions = {
   generatedAt: freshManifest.generatedAt,
   ravScoreEvidenceTrust: verifiedOnlyTrust,
   ravScoreRuntime: { modelBinding: publicBinding },
-  coastalParts: { modelBinding: publicBinding, evidenceTrust: verifiedOnlyTrust },
+  coastalParts: {
+    modelBinding: publicBinding,
+    evidenceTrust: verifiedOnlyTrust,
+    scoreAvailability: freshManifest.ravScoreAvailability,
+  },
   publicRuntimeAvailability: selectPublicRuntimeAvailability(freshManifest, {
     now: Date.parse(input.startedAt),
     modelBinding: publicBinding,
@@ -501,9 +535,108 @@ assert.equal(publicStart.calibrationFeatures.waterLevelM, 0.22);
 assert.equal(publicStart.calibrationFeatures.waterLevelTrendM3h, -0.08);
 assert.equal(publicStart.calibrationFeatures.mobilisationScore, 58);
 assert.equal(publicStart.forecastSnapshot.validAt, '2026-08-21T03:00:00.000Z');
+assert.equal(publicStart.forecastCalibrationEligible, true);
+assert.equal(publicStart.calibrationFeatures.reasonCodes
+  .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON), false);
+
+const globalWarmupManifest = createPublicManifest({
+  datasetId: freshManifest.datasetId,
+  generatedAt: freshManifest.generatedAt,
+  productionReferenceAt: freshManifest.productionReferenceAt,
+  scoreAvailability: globalWarmupScoreAvailability,
+});
+const globalWarmupConditions = {
+  ...freshConditions,
+  coastalParts: {
+    ...freshConditions.coastalParts,
+    scoreAvailability: globalWarmupScoreAvailability,
+  },
+  publicRuntimeAvailability: selectPublicRuntimeAvailability(globalWarmupManifest, {
+    now: Date.parse(input.startedAt),
+    modelBinding: publicBinding,
+  }),
+};
+const globalWarmupStart = createTripStartFromPublicState({
+  ...publicStartInput,
+  tripId: '57575757-5757-4575-8575-575757575757',
+  manifest: globalWarmupManifest,
+  conditions: globalWarmupConditions,
+});
+assert.deepEqual(globalWarmupStart.dataQualityFlags, []);
+assert.equal(globalWarmupStart.forecastCalibrationEligible, false);
+assert.equal(globalWarmupStart.calibrationFeatures.reasonCodes
+  .filter(reason => reason === GLOBAL_WARMUP_CALIBRATION_LOCK_REASON).length, 1);
+const completedGlobalWarmup = completeTripEvidence(globalWarmupStart, {
+  endedAt: input.endedAt,
+  zoneId: input.zoneId,
+  coastalPartId: input.coastalPartId,
+  searchCoverage: 'normal',
+  found: false,
+  grams: null,
+});
+const globalWarmupColumns = toObservationTripColumns(completedGlobalWarmup);
+assert.equal(completedGlobalWarmup.calibrationEligible, false);
+assert.equal(globalWarmupColumns.calibration_eligible, false);
+assert.deepEqual(globalWarmupColumns.data_quality_flags, []);
+assert.deepEqual(globalWarmupColumns.weather_snapshot.calibrationFeatures,
+  globalWarmupColumns.calibration_features);
+
+const delayedWarmupStorage = new MemoryStorage();
+delayedWarmupStorage.setItem(tripEvidenceStorageKeys.pending,
+  JSON.stringify([completedGlobalWarmup]));
+const postWarmupStart = createTripStartFromPublicState({
+  ...publicStartInput,
+  tripId: '58585858-5858-4585-8585-585858585858',
+});
+assert.equal(postWarmupStart.forecastCalibrationEligible, true);
+assert.equal(postWarmupStart.calibrationFeatures.reasonCodes
+  .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON), false);
+const [delayedWarmupRetry] = listPendingTripEvidence(delayedWarmupStorage);
+assert.equal(delayedWarmupRetry.calibrationEligible, false);
+assert.ok(delayedWarmupRetry.calibrationFeatures.reasonCodes
+  .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON));
+const delayedWarmupPayloads = [];
+const delayedWarmupUpload = await uploadPendingTripEvidence({
+  storage: delayedWarmupStorage,
+  persist: async payload => delayedWarmupPayloads.push(payload),
+});
+assert.deepEqual(delayedWarmupUpload, { attempted: 1, submitted: 1, failed: 0, failures: [] });
+assert.equal(delayedWarmupPayloads[0].calibration_eligible, false);
+assert.deepEqual(delayedWarmupPayloads[0].data_quality_flags, []);
+assert.ok(delayedWarmupPayloads[0].calibration_features.reasonCodes
+  .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON));
+
+assert.throws(() => createTripStartFromPublicState({
+  ...publicStartInput,
+  tripId: '59595959-5959-4595-8595-595959595959',
+  conditions: {
+    ...freshConditions,
+    coastalParts: {
+      ...freshConditions.coastalParts,
+      scoreAvailability: globalWarmupScoreAvailability,
+    },
+  },
+}), /globale RavScore-historikkvalitet.*manifestbundet/);
+assert.throws(() => createTripStartRecord({
+  ...globalWarmupStart,
+  calibrationFeatures: {
+    ...globalWarmupStart.calibrationFeatures,
+    reasonCodes: [
+      ...globalWarmupStart.calibrationFeatures.reasonCodes,
+      GLOBAL_WARMUP_CALIBRATION_LOCK_REASON,
+    ],
+  },
+}), /SCORE_QUALITY|scorekvalitet|Scorekvalitet|kalibreringsstatus/i);
+assert.throws(() => createTripStartRecord({
+  ...globalWarmupStart,
+  forecastCalibrationEligible: true,
+}), /kalibreringsstatus|kalibrering/i);
+
 const historyIncompleteStart = createTripStartFromPublicState({
   ...publicStartInput,
   tripId: '56565656-5656-4565-8565-565656565656',
+  manifest: globalWarmupManifest,
+  conditions: globalWarmupConditions,
   coastalPart: {
     ...freshCoastalPart,
     current: {
@@ -534,6 +667,18 @@ assert.deepEqual({
 },{lower:63,upper:77,span:14});
 assert.deepEqual(historyIncompleteStart.calibrationFeatures.historyReasonCodes,
   ['CURRENT_HISTORY_INCOMPLETE']);
+assert.equal(historyIncompleteStart.calibrationFeatures.reasonCodes
+  .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON), false);
+assert.throws(() => createTripStartRecord({
+  ...historyIncompleteStart,
+  calibrationFeatures: {
+    ...historyIncompleteStart.calibrationFeatures,
+    reasonCodes: [
+      ...historyIncompleteStart.calibrationFeatures.reasonCodes,
+      GLOBAL_WARMUP_CALIBRATION_LOCK_REASON,
+    ],
+  },
+}), /SCORE_QUALITY|scorekvalitet|Scorekvalitet|kalibreringsstatus/i);
 assert.throws(() => createTripStartFromPublicState({
   ...publicStartInput,
   zoneId: 'zone-99',
@@ -576,6 +721,7 @@ const fallbackContext = {
     coastalParts: {
       modelBinding: publicBinding,
       evidenceTrust: verifiedOnlyTrust,
+      scoreAvailability: fallbackManifest.ravScoreAvailability,
       zones: {
         'zone-42': { currentReferenceAt: fallbackAvailability.selectedReferenceAt },
       },

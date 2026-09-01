@@ -107,7 +107,10 @@ assert.match(bulk, /HINT_ALIASES\.get\(canonical, \(\)\)/);
 assert.match(bulk, /parser-exception/);
 assert.match(bulk, /marine_cache_healthy/);
 assert.match(bulk, /and coastal_part_current_cache_healthy/);
-assert.match(bulk, /strict_verified_part_current_pair_count/);
+assert.match(bulk, /current_operational_cache_ready/);
+assert.match(bulk, /build_current_operational_ledger/);
+assert.match(bulk, /LOCALLY_SKIPPED_DKSS_ASSET/);
+assert.match(bulk, /SYSTEMIC_CURRENT_TIME_COLLAPSE/);
 assert.match(bulk, /def backfill_compatible_cache_data\(/);
 assert.match(bulk, /strict_donors = \[/);
 assert.match(bulk, /coastal_part_targets=coastal_part_targets/);
@@ -118,9 +121,8 @@ assert.match(bulk, /def producer_terminal_code\(/);
 for (const code of [
   'DMI_READY',
   'DMI_CATALOG_SCHEDULE_STALE',
-  'DMI_STRICT_CURRENT_ANCHOR_MISSING',
+  'DMI_CURRENT_LEDGER_INCOMPLETE',
   'DMI_WAVE_BOOTSTRAP_INCOMPLETE',
-  'DMI_NO_PRODUCTIVE_COLLECTION',
   'DMI_PRODUCER_EXCEPTION',
 ]) {
   assert.match(bulk, new RegExp(code));
@@ -138,6 +140,11 @@ assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(
   build,
   /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
+);
+assert.match(
+  build,
+  /DMI_BULK_MAX_DOWNLOAD_MB: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '4096' \|\| '2048' \}\}/,
+  'Første integrerede cutover skal kunne hente den målte fulde bootstrapmængde; normale vejrkørsler beholder 2048 MB-grænsen.',
 );
 assert.match(
   build,

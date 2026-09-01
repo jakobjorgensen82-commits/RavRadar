@@ -35,17 +35,19 @@ const PUBLISHABLE_KEY = 'sb_publishable_test_only';
 await inspectMigrationSources();
 
 const integratedMigration = await fs.readFile(
-  'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
+  'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
   'utf8',
 );
 for (const marker of [
   'create or replace function public.ravradar_integrated_cutover_contract(',
   'from supabase_migrations.schema_migrations m',
-  "where m.version::text in ('20260829010000', '20260829020000')",
+  "where m.version::text in ('20260829010000', '20260829020000', '20260901010000')",
   "c.conname = 'ravradar_observations_trip_v3_check'",
+  "set local lock_timeout = '5s';",
+  'create or replace function public.ravradar_trip_v3_calibration_truth_allowed(',
   'create or replace function public.ravradar_trip_v3_binding_allowed(',
   'create or replace function public.ravradar_trip_v3_active_binding_admitted(',
-  'create trigger ravradar_observations_active_v3_binding_trigger',
+  "'bindingTruthCalledForBothModels'",
   "'bindingGateCalledExactlyOnce'",
   "'candidateGRollbackBindingPresent'",
   "'unknownModelBindingRejected'",
@@ -58,6 +60,14 @@ for (const marker of [
   ') to service_role;',
   'reads no observation rows.',
 ]) assert.ok(integratedMigration.includes(marker), `integrated migration metadata RPC is missing ${marker}`);
+for (const forbidden of [
+  /\bdrop\s+(?:trigger|constraint|index)\b/i,
+  /\bcreate\s+(?:trigger|(?:unique\s+)?index)\b/i,
+  /\balter\s+table\b/i,
+  /\bnot\s+valid\b/i,
+  /\bvalidate\s+constraint\b/i,
+]) assert.doesNotMatch(integratedMigration, forbidden,
+  `additive measured-warmup migration contains forbidden historical DDL: ${forbidden}`);
 const rpcSql = integratedMigration.slice(integratedMigration.indexOf('create or replace function public.ravradar_integrated_cutover_contract('));
 assert.doesNotMatch(rpcSql, /\bfrom\s+public\.observations\b/i,
   'integrated cutover RPC must not read observation rows');
@@ -116,20 +126,22 @@ const unicodeList = `
 ───────────────────┼──────────────────┼──────────────────────
  20260826          │ 20260826         │ 2026-08-26 00:00:00
  20260829010000    │ 20260829010000   │ 2026-08-29 01:00:00
- 20260829020000    │                  │ 2026-08-29 02:00:00
+ 20260829020000    │ 20260829020000   │ 2026-08-29 02:00:00
+ 20260901010000    │                  │ 2026-09-01 01:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
   { local: '20260829010000', remote: '20260829010000' },
-  { local: '20260829020000', remote: null },
+  { local: '20260829020000', remote: '20260829020000' },
+  { local: '20260901010000', remote: null },
 ]);
 
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: unicodeList,
-  dryRunText: 'DRY RUN: 20260829020000_integrated_trip_calibration_binding.sql',
+  dryRunText: 'DRY RUN: 20260901010000_integrated_trip_measured_warmup_admission.sql',
 });
-assert.deepEqual(plan.pendingVersions, ['20260829020000']);
-assert.deepEqual(plan.alreadyAppliedVersions, ['20260829010000']);
+assert.deepEqual(plan.pendingVersions, ['20260901010000']);
+assert.deepEqual(plan.alreadyAppliedVersions, ['20260829010000', '20260829020000']);
 
 await assert.rejects(
   assertSupabaseMigrationPlan({
@@ -151,6 +163,7 @@ await assert.rejects(
       LOCAL | REMOTE | TIME
       20260829010000 | | pending
       20260829020000 | 20260829020000 | applied
+      20260901010000 | | pending
     `,
     dryRunText: 'DRY RUN: 20260829010000_ravscore_operational_documents_no_history.sql',
   }),
@@ -162,6 +175,7 @@ const appliedList = `
  20260826 | 20260826 | old
  20260829010000 | 20260829010000 | now
  20260829020000 | 20260829020000 | now
+ 20260901010000 | 20260901010000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -173,6 +187,7 @@ try {
     fs.writeFile(path.join(duplicateDirectory, '20260829010000_ravscore_operational_documents_no_history.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260829010000_duplicate.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260829020000_integrated_trip_calibration_binding.sql'), '-- test\n'),
+    fs.writeFile(path.join(duplicateDirectory, '20260901010000_integrated_trip_measured_warmup_admission.sql'), '-- test\n'),
   ]);
   await assert.rejects(inspectMigrationSources({ migrationsDirectory: duplicateDirectory }), /duplicate Supabase migration version/);
 } finally {
@@ -189,6 +204,7 @@ try {
        │ 20260823 │ historical
  20260829010000 │ │ pending
  20260829020000 │ │ pending
+ 20260901010000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -204,6 +220,7 @@ try {
       │ 20260830 │ future
       20260829010000 │ │ pending
       20260829020000 │ │ pending
+ 20260901010000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -233,10 +250,10 @@ assert.deepEqual(Object.keys(readiness), [
 assert.equal(readiness.sourceHead, SOURCE_HEAD);
 assert.equal(readiness.tripSchemaVersion, 3);
 assert.equal(readiness.tripBindingPolicyId,
-  'ravradar-trip-v3-exact-integrated-candidate-g-history-emergency-v3');
+  'ravradar-trip-v3-exact-integrated-candidate-g-global-warmup-v5');
 assert.match(readiness.tripBindingPolicySha256, /^[a-f0-9]{64}$/);
 assert.equal(readiness.tripActiveAdmissionPolicyId,
-  'ravradar-trip-v3-exact-operational-active-reasons-v3');
+  'ravradar-trip-v3-exact-operational-active-global-warmup-v5');
 assert.match(readiness.tripActiveAdmissionPolicySha256, /^[a-f0-9]{64}$/);
 assert.equal(readiness.modelContractSha256, readiness.modelBinding.modelContractSha256);
 assert.equal(readiness.modelBundleSha256, readiness.modelBinding.modelBundleSha256);
@@ -276,7 +293,7 @@ const databaseReadback = {
     id: expectedActiveAdmissionPolicy.id,
     definition: expectedActiveAdmissionPolicy.definition,
     triggerFunctionDefinition: expectedActiveAdmissionPolicy.triggerFunctionDefinition,
-    triggerDefinition: 'CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE OF schema_version ON public.observations FOR EACH ROW EXECUTE FUNCTION ravradar_observation_require_active_v3_binding()',
+    triggerDefinition: 'CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE OF schema_version, model_version, calibration_features, calibration_eligible, actual_zone_id, actual_coastal_part_id, forecast_zone_id, forecast_coastal_part_id ON public.observations FOR EACH ROW EXECUTE FUNCTION ravradar_observation_require_active_v3_binding()',
   },
   checks: {
     schemaVersionConstraintPresent: true,
@@ -286,6 +303,7 @@ const databaseReadback = {
     tripV3ConstraintValidatedAgainstHistoricalRows: false,
     tripIdIndexPresent: true,
     bindingPolicyDefinitionPresent: true,
+    bindingTruthCalledForBothModels: true,
     activeBindingAdmissionDefinitionPresent: true,
     activeBindingTriggerPresent: true,
     activeBindingTriggerCallsGateExactlyOnce: true,
@@ -505,8 +523,18 @@ await assert.rejects(verifyIntegratedDatabaseReadback({
   fetchImpl: async () => new Response(JSON.stringify(driftedActiveAdmissionDatabase), { status: 200 }),
 }), /active trip admission policy definition hash drifted/);
 
+const reducedActiveTriggerDatabase = structuredClone(databaseReadback);
+reducedActiveTriggerDatabase.tripActiveAdmissionPolicy.triggerDefinition =
+  'CREATE TRIGGER ravradar_observations_active_v3_binding_trigger BEFORE INSERT OR UPDATE OF schema_version ON public.observations FOR EACH ROW EXECUTE FUNCTION ravradar_observation_require_active_v3_binding()';
+await assert.rejects(verifyIntegratedDatabaseReadback({
+  url: URL,
+  serviceRoleKey: SERVICE_KEY,
+  fetchImpl: async () => new Response(JSON.stringify(reducedActiveTriggerDatabase), { status: 200 }),
+}), /active trip admission trigger definition is incompatible/);
+
 for (const rejectedCheck of [
   'bindingPolicyDefinitionPresent',
+  'bindingTruthCalledForBothModels',
   'activeBindingAdmissionDefinitionPresent',
   'activeBindingTriggerPresent',
   'activeBindingTriggerCallsGateExactlyOnce',

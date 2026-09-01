@@ -91,6 +91,27 @@ on:
       handoff_upload_outcome:
         description: "Forwarded build-and-prepare handoff_upload_outcome contract"
         value: ${{ jobs.build-and-prepare.outputs.handoff_upload_outcome }}
+      checkpoint_disposition:
+        description: "Hash-bound checkpoint disposition for this built dataset"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_disposition }}
+      checkpoint_disposition_sha256:
+        description: "Canonical checkpoint disposition binding SHA-256"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_disposition_sha256 }}
+      checkpoint_dataset_id:
+        description: "Dataset bound by the checkpoint disposition"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_dataset_id }}
+      checkpoint_runtime_audit_sha256:
+        description: "Runtime audit SHA-256 bound by the checkpoint disposition"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_runtime_audit_sha256 }}
+      checkpoint_build_outcome:
+        description: "Checkpoint build step outcome"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_build_outcome }}
+      checkpoint_save_outcome:
+        description: "Checkpoint cache-save step outcome"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_save_outcome }}
+      checkpoint_publish_outcome:
+        description: "Protected checkpoint publish step outcome"
+        value: ${{ jobs.build-and-prepare.outputs.checkpoint_publish_outcome }}
       pages_configure_outcome:
         description: "Forwarded build-and-prepare pages_configure_outcome contract"
         value: ${{ jobs.build-and-prepare.outputs.pages_configure_outcome }}
@@ -145,6 +166,13 @@ jobs:
       pages_privacy_outcome: ${{ steps.pages-privacy.outcome }}
       pages_artifact_seal_outcome: ${{ steps.pages-artifact-seal.outcome }}
       handoff_upload_outcome: ${{ steps.handoff-upload.outcome }}
+      checkpoint_disposition: ${{ steps.checkpoint-disposition.outputs.disposition }}
+      checkpoint_disposition_sha256: ${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}
+      checkpoint_dataset_id: ${{ steps.checkpoint-disposition.outputs.dataset_id }}
+      checkpoint_runtime_audit_sha256: ${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}
+      checkpoint_build_outcome: ${{ steps.checkpoint-build.outcome }}
+      checkpoint_save_outcome: ${{ steps.checkpoint-save.outcome }}
+      checkpoint_publish_outcome: ${{ steps.checkpoint-publish.outcome }}
       pages_configure_outcome: ${{ steps.pages-configure.outcome }}
       pages_upload_outcome: ${{ steps.pages-upload.outcome }}
       artifact_built: ${{ steps.pages-build.outputs.built }}
@@ -662,7 +690,7 @@ jobs:
         run: python -u scripts/update-dmi-bulk.py
         env:
           DMI_BULK_HOURS: 118
-          DMI_BULK_MAX_DOWNLOAD_MB: 2048
+          DMI_BULK_MAX_DOWNLOAD_MB: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
           DMI_BULK_MAX_RUNTIME_SECONDS: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '3000' || '900' }}
           DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '180' || '120' }}
@@ -944,6 +972,44 @@ jobs:
           echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"
           echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"
 
+      - name: Create and validate exactly one checkpoint disposition before release gate
+        id: checkpoint-disposition
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json
+          base_path="$disposition_path.base"
+          rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
+          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean")' "$audit_path")"
+          case "$rollback_status:$rollback_activation_ready" in
+            READY:true)
+              disposition="READY_PUBLISHED"
+              checkpoint_required="true"
+              ;;
+            BUILDING_MEASURED_ONLY:false)
+              disposition="NOT_APPLICABLE_DURING_MEASURED_WARMUP"
+              checkpoint_required="false"
+              ;;
+            *)
+              echo "Runtime audit cannot produce an allowed checkpoint disposition." >&2
+              exit 1
+              ;;
+          esac
+          dataset_id="$(jq -er '.datasetId | select(type == "string" and length > 0)' data/live/manifest.json)"
+          test "$(jq -er '.datasetId' "$audit_path")" = "$dataset_id"
+          runtime_audit_sha256="$(AUDIT_PATH="$audit_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.AUDIT_PATH, 'utf8'))));")"
+          jq -n --arg disposition "$disposition" --arg sourceHead "$GITHUB_SHA" --arg datasetId "$dataset_id" --arg runtimeAuditSha256 "$runtime_audit_sha256" --arg rollbackStatus "$rollback_status" --argjson rollbackActivationReady "$rollback_activation_ready" --argjson checkpointRequired "$checkpoint_required" '{schemaVersion:"ravscore-continuation-checkpoint-disposition-v1",disposition:$disposition,sourceHead:$sourceHead,datasetId:$datasetId,runtimeAuditSha256:$runtimeAuditSha256,rollbackStatus:$rollbackStatus,rollbackActivationReady:$rollbackActivationReady,checkpointRequired:$checkpointRequired,privatePayloadIncluded:false}' > "$base_path"
+          disposition_sha256="$(DISPOSITION_PATH="$base_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.DISPOSITION_PATH, 'utf8'))));")"
+          jq --arg bindingSha256 "$disposition_sha256" '. + {bindingSha256:$bindingSha256}' "$base_path" > "$disposition_path"
+          rm "$base_path"
+          DISPOSITION_PATH="$disposition_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; const value=JSON.parse(fs.readFileSync(process.env.DISPOSITION_PATH,'utf8')); const expected=['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort(); if(JSON.stringify(Object.keys(value).sort())!==JSON.stringify(expected)) throw new Error('Unexpected checkpoint disposition fields'); const {bindingSha256,...binding}=value; if(!/^[a-f0-9]{64}$/.test(bindingSha256)||sha256CanonicalJson(binding)!==bindingSha256) throw new Error('Checkpoint disposition binding mismatch');"
+          echo "disposition=$disposition" >> "$GITHUB_OUTPUT"
+          echo "disposition_sha256=$disposition_sha256" >> "$GITHUB_OUTPUT"
+          echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"
+          echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"
+
       - name: Generate and strictly validate production reference zones
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
         run: node scripts/generate-state-reference-report-4.0.113.mjs --strict
@@ -1018,24 +1084,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Record strict checkpoint as not applicable during measured rollback warmup
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'false'
-        shell: bash
-        run: |
-          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
-          applicability_path=.geometry-v2-work/ravscore-continuation-checkpoint-applicability.json
-          test "$(jq -er '.rollback.status' "$audit_path")" = "BUILDING_MEASURED_ONLY"
-          test "$(jq -er '.rollback.activationReady' "$audit_path")" = "false"
-          audit_sha256="$(AUDIT_PATH="$audit_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.AUDIT_PATH, 'utf8'))));")"
-          dataset_id="$(jq -er '.datasetId' data/live/manifest.json)"
-          jq -n \
-            --arg sourceHead "$GITHUB_SHA" \
-            --arg datasetId "$dataset_id" \
-            --arg auditSha256 "$audit_sha256" \
-            '{schemaVersion:"ravscore-continuation-checkpoint-applicability-v1",status:"NOT_APPLICABLE_DURING_MEASURED_WARMUP",sourceHead:$sourceHead,datasetId:$datasetId,integratedPublicAuditSha256:$auditSha256,warmupStatus:"BUILDING_MEASURED_ONLY",checkpointRequired:false,checkpointBuilt:false,checkpointPublished:false,privatePayloadIncluded:false}' \
-            > "$applicability_path"
-
       - name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates
+        id: checkpoint-build
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
@@ -1044,6 +1094,7 @@ jobs:
           --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
 
       - name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates
+        id: checkpoint-save
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true' && steps.operational-action.outputs.action != 'candidate-dry-run'
         uses: actions/cache/save@v6
         with:
@@ -1059,6 +1110,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
       - name: Publish atomic RavScore checkpoint to protected admin storage
+        id: checkpoint-publish
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true' && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
@@ -1409,10 +1461,8 @@ jobs:
             target_closure="$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json"
             target_identity="$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
           fi
-          if [ -f .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json ]; then
-            cp .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json \
-              "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-applicability.json"
-          fi
+          cp .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"
+          cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"
           cp "$target_root/js/core/ravscore-model-contract.js" \
             "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"
           cp "$target_root/js/core/ravscore-model-bundle.generated.js" \
@@ -1434,13 +1484,54 @@ jobs:
             test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_WORK/plan.json")" = \
               "${{ steps.operational-model.outputs.legacy_source_required }}"
           fi
-          jq -n \
-            --arg action "${{ steps.operational-action.outputs.action }}" \
-            --arg sourceHead "$GITHUB_SHA" \
-            --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" \
-            --arg legacySourceRequired "${{ steps.operational-model.outputs.legacy_source_required }}" \
-            '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:($legacySourceRequired == "true"),privatePayloadIncluded:false}' \
-            > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
+          checkpoint_disposition="${{ steps.checkpoint-disposition.outputs.disposition }}"
+          checkpoint_disposition_sha256="${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}"
+          checkpoint_dataset_id="${{ steps.checkpoint-disposition.outputs.dataset_id }}"
+          checkpoint_runtime_audit_sha256="${{ steps.checkpoint-disposition.outputs.runtime_audit_sha256 }}"
+          checkpoint_build_outcome="${{ steps.checkpoint-build.outcome }}"
+          checkpoint_save_outcome="${{ steps.checkpoint-save.outcome }}"
+          checkpoint_publish_outcome="${{ steps.checkpoint-publish.outcome }}"
+          disposition_path="$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"
+          runtime_audit_path="$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"
+          test "$(jq -er '.schemaVersion' "$disposition_path")" = "ravscore-continuation-checkpoint-disposition-v1"
+          test "$(jq -er '.sourceHead' "$disposition_path")" = "$GITHUB_SHA"
+          test "$(jq -er '.datasetId' "$disposition_path")" = "$checkpoint_dataset_id"
+          test "$(jq -er '.datasetId' "$RAVRADAR_OPERATIONAL_HANDOFF/manifest.json")" = "$checkpoint_dataset_id"
+          test "$(jq -er '.datasetId' "$runtime_audit_path")" = "$checkpoint_dataset_id"
+          test "$(jq -er '.disposition' "$disposition_path")" = "$checkpoint_disposition"
+          test "$(jq -er '.bindingSha256' "$disposition_path")" = "$checkpoint_disposition_sha256"
+          test "$(jq -er '.runtimeAuditSha256' "$disposition_path")" = "$checkpoint_runtime_audit_sha256"
+          recomputed_runtime_audit_sha256="$(AUDIT_PATH="$runtime_audit_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.AUDIT_PATH,'utf8'))));")"
+          test "$recomputed_runtime_audit_sha256" = "$checkpoint_runtime_audit_sha256"
+          DISPOSITION_PATH="$disposition_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; const value=JSON.parse(fs.readFileSync(process.env.DISPOSITION_PATH,'utf8')); const {bindingSha256,...binding}=value; if(sha256CanonicalJson(binding)!==bindingSha256) throw new Error('Checkpoint disposition binding mismatch');"
+          case "$checkpoint_disposition" in
+            READY_PUBLISHED)
+              test "$(jq -er '.rollbackStatus' "$disposition_path")" = "READY"
+              test "$(jq -er '.rollbackActivationReady' "$disposition_path")" = "true"
+              test "$(jq -er '.checkpointRequired' "$disposition_path")" = "true"
+              test "$checkpoint_build_outcome" = "success"
+              if [ "${{ steps.operational-action.outputs.action }}" = "candidate-dry-run" ]; then
+                test "$checkpoint_save_outcome" = "skipped"
+                test "$checkpoint_publish_outcome" = "skipped"
+              else
+                test "$checkpoint_save_outcome" = "success"
+                test "$checkpoint_publish_outcome" = "success"
+              fi
+              ;;
+            NOT_APPLICABLE_DURING_MEASURED_WARMUP)
+              test "$(jq -er '.rollbackStatus' "$disposition_path")" = "BUILDING_MEASURED_ONLY"
+              test "$(jq -er '.rollbackActivationReady' "$disposition_path")" = "false"
+              test "$(jq -er '.checkpointRequired' "$disposition_path")" = "false"
+              test "$checkpoint_build_outcome" = "skipped"
+              test "$checkpoint_save_outcome" = "skipped"
+              test "$checkpoint_publish_outcome" = "skipped"
+              ;;
+            *)
+              echo "Missing or unsupported checkpoint disposition." >&2
+              exit 1
+              ;;
+          esac
+          jq -n --arg action "${{ steps.operational-action.outputs.action }}" --arg sourceHead "$GITHUB_SHA" --arg centralVersion "${{ steps.operational-model.outputs.central_version }}" --arg legacySourceRequired "${{ steps.operational-model.outputs.legacy_source_required }}" --arg checkpointDisposition "$checkpoint_disposition" --arg checkpointDispositionSha256 "$checkpoint_disposition_sha256" --arg checkpointDatasetId "$checkpoint_dataset_id" --arg checkpointRuntimeAuditSha256 "$checkpoint_runtime_audit_sha256" --arg checkpointBuildOutcome "$checkpoint_build_outcome" --arg checkpointSaveOutcome "$checkpoint_save_outcome" --arg checkpointPublishOutcome "$checkpoint_publish_outcome" '{schemaVersion:"ravscore-operational-deploy-handoff-v2",action:$action,sourceHead:$sourceHead,centralVersion:($centralVersion|tonumber),legacySourceRequired:($legacySourceRequired == "true"),checkpointDisposition:$checkpointDisposition,checkpointDispositionSha256:$checkpointDispositionSha256,checkpointDatasetId:$checkpointDatasetId,checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256,checkpointBuildOutcome:$checkpointBuildOutcome,checkpointSaveOutcome:$checkpointSaveOutcome,checkpointPublishOutcome:$checkpointPublishOutcome,privatePayloadIncluded:false}' > "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json"
           if grep -R -E -i '"(waterPoint|landPoint|currentUMps|currentVMps|rawPayload|privatePayload)"' "$RAVRADAR_OPERATIONAL_HANDOFF"; then
             echo "Operational deploy handoff contains forbidden private fields."
             exit 1

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from lib.dmi_native_provenance import (
     CURRENT_VECTOR_SELECTION,
+    canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
     sampling_identity,
     strict_verified_part_current_pair_count,
@@ -51,7 +52,10 @@ candidate = {
 capture = {
     "itemId": "exact-stac-item",
     "assetIdentitySha256": "b" * 64,
+    "assetSizeBytes": 1024,
     "acquiredAt": "2026-01-01T02:00:00Z",
+    "contentLengthBytes": 1024,
+    "contentSha256": "d" * 64,
     "itemCreatedAt": "2026-01-01T01:00:00Z",
 }
 source = producer.native_component_source(
@@ -102,7 +106,33 @@ assert strict_verified_part_current_pair_count(
     reference - timedelta(hours=48),
     reference + timedelta(hours=117),
 ) == 1
+attestation = canonical_verified_part_current_attestation(
+    document,
+    targets,
+    reference,
+    reference + timedelta(hours=117),
+)
+assert attestation["verifiedPairCount"] == 1
+assert attestation["verifiedSourceTimeCount"] == 1
 assert producer.coastal_part_current_cache_reusable(document, targets, reference)
+
+# A cache-map key may never borrow the public row/source time.  All three
+# temporal claims must independently canonicalize to the same exact hour.
+key_time_mismatch = json.loads(json.dumps(document))
+key_time_mismatch["zones"]["PART::TEST"]["hourly"] = {
+    "2026-01-01T04:00:00Z": key_time_mismatch["zones"]["PART::TEST"]["hourly"][valid_time],
+}
+assert strict_verified_part_current_pair_count(
+    key_time_mismatch,
+    targets,
+    reference,
+    reference + timedelta(hours=117),
+) == 0
+assert not producer.coastal_part_current_cache_reusable(
+    key_time_mismatch,
+    targets,
+    reference,
+)
 
 matching_summary = json.loads(json.dumps(document))
 matching_summary["zones"]["PART::TEST"]["gridPoints"] = {
@@ -310,7 +340,7 @@ assert producer.producer_terminal_code(
     bootstrap_complete=False,
     productive=False,
     diagnostics={"collectionsAttempted": ["dkss_idw"], "stacByCollection": {}},
-) == "DMI_STRICT_CURRENT_ANCHOR_MISSING"
+) == "DMI_CURRENT_LEDGER_INCOMPLETE"
 assert producer.producer_terminal_code(
     strict_current_anchor_available=True,
     wave_bootstrap_requested=True,
@@ -324,7 +354,7 @@ assert producer.producer_terminal_code(
     bootstrap_complete=False,
     productive=False,
     diagnostics={},
-) == "DMI_NO_PRODUCTIVE_COLLECTION"
+) == "DMI_READY"
 assert producer.producer_terminal_code(
     strict_current_anchor_available=True,
     wave_bootstrap_requested=False,
@@ -332,6 +362,338 @@ assert producer.producer_terminal_code(
     productive=True,
     diagnostics={},
 ) == "DMI_READY"
+
+# One strict DKSS pair plus productive HARMONIE is not an official-current
+# ledger and must never become DMI_READY.
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=True,
+    diagnostics={
+        "collectionsAttempted": ["dkss_idw", "harmonie_dini_sf"],
+        "collectionsSucceeded": ["harmonie_dini_sf"],
+        "stacByCollection": {},
+    },
+) == "DMI_CURRENT_LEDGER_INCOMPLETE"
+
+# A fully processed official asset axis with only one surviving DKSS pair is a
+# systemic collapse, not 117 legitimate Copernicus target hours.
+required_hours = producer.operational_current_valid_times(reference)
+ledger_document = json.loads(json.dumps(document))
+ledger_document["runs"] = {}
+official_catalogs = {}
+
+
+def ledger_asset(collection: str, hour: str) -> tuple[dict, dict]:
+    exact_fixture_source = collection == "dkss_lf" and hour == valid_time
+    official = {
+        "collection": collection,
+        "modelRun": "2026-01-01T00:00:00Z",
+        "validTime": hour,
+        "itemId": "exact-stac-item" if exact_fixture_source else f"item-{collection}-{hour}",
+        "assetIdentitySha256": "b" * 64 if exact_fixture_source else "c" * 64,
+        "assetSizeBytes": 1024,
+        "itemCreatedAt": "2026-01-01T01:00:00Z",
+        "itemUpdatedAt": None,
+    }
+    return official, {
+        **official,
+        "acquiredAt": "2026-01-01T02:00:00Z",
+        "contentLengthBytes": 1024,
+        "contentSha256": "d" * 64,
+    }
+
+
+for collection in sorted(producer.MARINE_COLLECTIONS):
+    processing_signature = f"test-{collection}"
+    official_assets = []
+    processed_steps = {
+        hour: {
+            "complete": True,
+            "recognizedParameters": [
+                "sea-mean-deviation",
+                "current-u",
+                "current-v",
+            ],
+            "zonesTouched": 1,
+            "parserVersion": producer.PARSER_VERSION,
+            "processingSignature": processing_signature,
+            "sourceAsset": ledger_asset(collection, hour)[1],
+        }
+        for hour in required_hours
+    }
+    official_assets = [ledger_asset(collection, hour)[0] for hour in required_hours]
+    ledger_document["runs"][collection] = {
+        "referenceTime": "2026-01-01T00:00:00Z",
+        "parserVersion": producer.PARSER_VERSION,
+        "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+        "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+        "processingSignature": processing_signature,
+        "processedSteps": processed_steps,
+    }
+    official_catalogs[collection] = (
+        "2026-01-01T00:00:00Z",
+        official_assets,
+        {
+            "catalogInventoryComplete": True,
+            "requiredHorizonEndCovered": True,
+            "requiredRowsTruncatedByAssetLimit": 0,
+            "officialRequiredValidTimeCount": len(required_hours),
+            "officialRequiredValidTimes": required_hours,
+            "officialRequiredAssets": official_assets,
+        },
+    )
+collapsed_ledger = producer.build_current_operational_ledger(
+    ledger_document,
+    targets,
+    reference,
+    official_catalogs,
+)
+assert collapsed_ledger["ready"] is False
+assert "SYSTEMIC_CURRENT_TIME_COLLAPSE" in collapsed_ledger["failureCodes"]
+assert collapsed_ledger["attestation"]["verifiedPairCount"] == 1
+ledger_document.setdefault("diagnostics", {})["currentOperationalLedger"] = collapsed_ledger
+assert not producer.current_operational_cache_ready(
+    ledger_document,
+    targets,
+    reference,
+)
+
+# A checkpoint is reusable only with the current parser/signature and the exact
+# selected official asset capture. Unsigned legacy rows are always reprocessed.
+reuse_hour = required_hours[0]
+reuse_official, reuse_source = ledger_asset("dkss_idw", reuse_hour)
+reuse_signature = "test-reuse-signature"
+signed_step = {
+    "complete": True,
+    "recognizedParameters": ["current-u", "current-v"],
+    "zonesTouched": 1,
+    "parserVersion": producer.PARSER_VERSION,
+    "processingSignature": reuse_signature,
+    "sourceAsset": reuse_source,
+}
+reuse_run = {
+    "referenceTime": "2026-01-01T00:00:00Z",
+    "processingSignature": reuse_signature,
+    "processedSteps": {reuse_hour: signed_step},
+}
+reuse_args = {
+    "collection": "dkss_idw",
+    "same_processing": True,
+    "same_run": True,
+    "strict_current_anchor_available": True,
+    "required_valid_times": {reuse_hour},
+    "required_asset_provenance": {reuse_hour: reuse_official},
+}
+assert producer.reusable_processed_steps(reuse_run, **reuse_args) == {
+    reuse_hour: signed_step,
+}
+unsigned_run = json.loads(json.dumps(reuse_run))
+unsigned_run["processedSteps"][reuse_hour].pop("processingSignature")
+assert producer.reusable_processed_steps(unsigned_run, **reuse_args) == {}
+signalless_source_run = json.loads(json.dumps(reuse_run))
+signalless_source_run["processedSteps"][reuse_hour].pop("sourceAsset")
+assert producer.reusable_processed_steps(signalless_source_run, **reuse_args) == {}
+
+# DKSS native cadence is hourly. A newer run whose tail is still publishing is
+# deferred in favour of the preceding mature run, and every official hour in
+# +0..+117 is selected. An internal STAC absence remains an explicit exact gap.
+selection_reference = datetime(2026, 1, 1, 3, tzinfo=timezone.utc)
+older_run = datetime(2026, 1, 1, 0, tzinfo=timezone.utc)
+latest_run = datetime(2026, 1, 1, 3, tzinfo=timezone.utc)
+
+
+def stac_item(model_run: datetime, lead: int) -> dict:
+    valid = model_run + timedelta(hours=lead)
+    item_id = f"{model_run.hour:02d}-{lead:03d}"
+    return {
+        "id": item_id,
+        "properties": {
+            "forecast:reference_datetime": model_run.isoformat().replace("+00:00", "Z"),
+            "datetime": valid.isoformat().replace("+00:00", "Z"),
+            "created": (model_run + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        },
+        "assets": {
+            "data": {
+                "href": f"https://example.invalid/{item_id}.grib",
+                "type": "application/x-grib",
+                "file:size": 1024,
+            },
+        },
+    }
+
+
+older_items = [stac_item(older_run, lead) for lead in range(121)]
+latest_partial_items = [stac_item(latest_run, lead) for lead in range(108)]
+original_request_json = producer.request_json
+original_time = producer.time.time
+try:
+    producer.time.time = lambda: selection_reference.timestamp()
+    catalog_items = [*latest_partial_items, *older_items]
+    producer.request_json = lambda *_args, **_kwargs: {"features": catalog_items}
+    selection_hours = set(producer.operational_current_valid_times(selection_reference))
+    selection_end = max(selection_hours, key=producer.epoch)
+    selected_run, selected_assets, selected_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert selected_run == older_run.isoformat().replace("+00:00", "Z")
+    assert len(selected_assets) == 118
+    assert {row["valid"] for row in selected_assets} == selection_hours
+    assert selected_stats["incompleteLatestRunDeferred"] is True
+    assert selected_stats["officialNativeCadenceHours"] == 1
+    assert selected_stats["catalogInventoryComplete"] is True
+    assert len(selected_stats["officialRequiredAssets"]) == 118
+
+    # The same inventory remains complete when STAC requires a two-page chain.
+    page_one = catalog_items[:100]
+    page_two = catalog_items[100:]
+    pagination_requests = []
+
+    def paged_request(url: str, _params=None) -> dict:
+        pagination_requests.append((url, _params))
+        features = page_two if "page=2" in url else page_one
+        return {
+            "features": features,
+            "numberMatched": len(catalog_items),
+            "numberReturned": len(features),
+            "links": [] if "page=2" in url else [{
+                "rel": "next",
+                "href": (
+                    f"{producer.STAC_ROOT}/collections/dkss_idw/items?page=2"
+                ),
+            }],
+        }
+
+    producer.request_json = paged_request
+    paged_run, paged_assets, paged_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert paged_run == selected_run
+    assert len(paged_assets) == 118
+    assert paged_stats["paginationPagesFetched"] == 2
+    assert paged_stats["catalogInventoryComplete"] is True
+    assert pagination_requests[0][1]["datetime"] == (
+        f"{min(selection_hours, key=producer.epoch)}/"
+        f"{selection_end}"
+    )
+    assert pagination_requests[1][1] is None
+
+    # An overlapping/replayed item identity across pages makes unique-item
+    # exhaustion unprovable, even when numberMatched would otherwise balance.
+    overlap_page_two = [page_one[-1], *page_two]
+
+    def overlap_request(url: str, _params=None) -> dict:
+        features = overlap_page_two if "page=2" in url else page_one
+        return {
+            "features": features,
+            "numberMatched": len(catalog_items),
+            "numberReturned": len(features),
+            "links": [] if "page=2" in url else [{
+                "rel": "next",
+                "href": (
+                    f"{producer.STAC_ROOT}/collections/dkss_idw/items?page=2"
+                ),
+            }],
+        }
+
+    producer.request_json = overlap_request
+    _overlap_run, overlap_assets, overlap_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert overlap_stats["catalogInventoryComplete"] is False
+    assert "STAC_DUPLICATE_ITEM_IDENTITY" in overlap_stats["catalogInventoryFailureCodes"]
+    assert overlap_stats["paginationItemsFetched"] == len(catalog_items) + 1
+    assert overlap_stats["paginationUniqueItems"] == len(catalog_items)
+
+    # A full terminal page without next/total evidence is truncated and may
+    # never turn unseen official hours into upstream absence.
+    truncated_items = (catalog_items * 5)[:producer.STAC_PAGE_LIMIT]
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": truncated_items,
+        "numberReturned": len(truncated_items),
+        "links": [],
+    }
+    _truncated_run, _truncated_assets, truncated_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert truncated_stats["catalogInventoryComplete"] is False
+    assert "STAC_PAGINATION_UNPROVEN" in truncated_stats["catalogInventoryFailureCodes"]
+
+    # One locally unparseable STAC item invalidates the catalog proof even when
+    # every required official asset is otherwise present.
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": [*catalog_items, {"id": "bad", "properties": {}, "assets": {}}],
+    }
+    _bad_run, _bad_assets, bad_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert bad_stats["catalogInventoryComplete"] is False
+    assert "UNPARSEABLE_STAC_ITEM" in bad_stats["catalogInventoryFailureCodes"]
+    for incomplete_assets, incomplete_stats in (
+        (overlap_assets, overlap_stats),
+        (_truncated_assets, truncated_stats),
+        (_bad_assets, bad_stats),
+    ):
+        incomplete_catalogs = dict(official_catalogs)
+        incomplete_catalogs["dkss_idw"] = (
+            selected_run,
+            incomplete_assets,
+            incomplete_stats,
+        )
+        incomplete_ledger = producer.build_current_operational_ledger(
+            ledger_document,
+            targets,
+            reference,
+            incomplete_catalogs,
+        )
+        idw_ledger = next(
+            row for row in incomplete_ledger["collections"]
+            if row["collection"] == "dkss_idw"
+        )
+        assert idw_ledger["stateCounts"]["LOCALLY_SKIPPED"] == 118
+        assert idw_ledger["stateCounts"]["UPSTREAM_ABSENT"] == 0
+        assert incomplete_ledger["ready"] is False
+
+    missing_hour = (older_run + timedelta(hours=50)).isoformat().replace("+00:00", "Z")
+    catalog_items = [
+        *latest_partial_items,
+        *(item for item in older_items if item["properties"]["datetime"] != missing_hour),
+    ]
+    producer.request_json = lambda *_args, **_kwargs: {"features": catalog_items}
+    _run, gap_assets, gap_stats = producer.list_latest_assets(
+        "dkss_idw",
+        minimum_valid_time=selection_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=selection_hours,
+        required_horizon_end_time=selection_end,
+        allow_documented_required_gaps=True,
+    )
+    assert len(gap_assets) == 117
+    assert missing_hour not in {row["valid"] for row in gap_assets}
+    assert gap_stats["officialRequiredGapCount"] == 1
+finally:
+    producer.request_json = original_request_json
+    producer.time.time = original_time
 
 with tempfile.TemporaryDirectory() as temporary_directory:
     original_output = producer.OUTPUT_PATH

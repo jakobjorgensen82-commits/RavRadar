@@ -12,6 +12,7 @@ import {
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
   CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED,
+  CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK,
   CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_NON_CALIBRATION_QUALITY_FLAGS,
   assertCalibrationScoreQualityContract,
@@ -34,6 +35,8 @@ export const HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE;
 export const UNATTESTED_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED;
+export const GLOBAL_WARMUP_CALIBRATION_LOCK_REASON =
+  CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK;
 export const TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY =
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY;
 
@@ -118,7 +121,8 @@ export function assertTripForecastQualityBinding({
     throw new Error('Nød-, historikufuldstændig, rekonstrueret eller uattesteret RavScore skal være udelukket fra kalibrering.');
   }
   if (flags.length === 0 && RAVSCORE_CALIBRATION_ELIGIBLE === true
-    && forecastCalibrationEligible === false) {
+    && forecastCalibrationEligible === false
+    && !reasonCodes.includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON)) {
     throw new Error('En verificeret aktiv RavScore-prognose må ikke være udelukket fra kalibrering uden en årsag.');
   }
   return flags;
@@ -366,7 +370,10 @@ export function createTripStartRecord(input = {}) {
     reasonCodes: calibrationFeatures.reasonCodes,
     forecastCalibrationEligible: input.forecastCalibrationEligible
   });
-  const expectedForecastEligibility = bindingEligible && dataQualityFlags.length === 0;
+  const globalWarmupLocked = calibrationFeatures.reasonCodes
+    .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON);
+  const expectedForecastEligibility = bindingEligible && dataQualityFlags.length === 0
+    && !globalWarmupLocked;
   if (input.forecastCalibrationEligible !== expectedForecastEligibility) {
     throw new Error('Turstartens kalibreringsstatus matcher ikke den eksakte RavScore-modelbinding.');
   }

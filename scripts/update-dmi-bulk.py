@@ -20,6 +20,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.current_field_shadow import (
@@ -41,21 +42,33 @@ from lib.copernicus_current import (
     PUBLIC_END_OFFSET_HOURS,
     load_targets as load_coastal_part_targets,
 )
+from lib.copernicus_target_identity import target_fingerprint
 from lib.dmi_native_provenance import (
     COLLECTION_FAMILY,
     COMPONENT_FIELD_SET,
     COMPONENT_KIND,
     COMPONENT_SPATIAL_SELECTION,
     CURRENT_MAX_DISTANCE_KM,
+    CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
+    CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
+    CURRENT_OPERATIONAL_LEDGER_STATES,
     CURRENT_PREFERRED_DISTANCE_KM,
     CURRENT_VECTOR_SELECTION,
     CURRENT_VECTOR_SEMANTICS_VERSION,
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
+    canonical_time,
+    canonical_current_source_asset,
+    canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
     component_collection_allowed,
+    current_official_assets_sha256,
+    current_operational_ledger_ready,
+    part_time_pairs_sha256,
+    processed_source_assets_from_current_operational_ledger,
     sampling_identity,
-    strict_verified_part_current_pair_count,
+    sanitized_current_attestation,
+    valid_times_sha256,
     wave_distance_allowed,
 )
 from lib.coastal_point_staging import (
@@ -105,6 +118,7 @@ DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
 CACHE_MANIFEST_NAME = "asset-manifest.json"
+RAW_CACHE_MANIFEST_SCHEMA_VERSION = 2
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
 CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
 CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
@@ -123,6 +137,12 @@ MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "204
 MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780")))
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
+STAC_PAGE_LIMIT = max(1, min(1000, int(os.getenv("DMI_STAC_PAGE_LIMIT", "1000"))))
+STAC_MAX_PAGES = max(1, min(100, int(os.getenv("DMI_STAC_MAX_PAGES", "20"))))
+STAC_MAX_INVENTORY_ITEMS = max(
+    STAC_PAGE_LIMIT,
+    min(100_000, int(os.getenv("DMI_STAC_MAX_INVENTORY_ITEMS", "20000"))),
+)
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
 COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
 WAM_MAX_FORECAST_LEAD_HOURS = 132
@@ -495,6 +515,104 @@ def prioritize_first_cutover_collections(
     ]
 
 
+def asset_identity_sha256(href: Any) -> str | None:
+    text = str(href or "").strip()
+    if not text:
+        return None
+    canonical_href = text.split("?", 1)[0].split("#", 1)[0]
+    return hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
+
+
+def official_current_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: Any,
+) -> dict[str, Any] | None:
+    if collection not in MARINE_COLLECTIONS or not isinstance(asset, dict):
+        return None
+    run = canonical_time(model_run)
+    valid_time = canonical_time(asset.get("valid") or asset.get("validTime"))
+    item_id = str(asset.get("id") or asset.get("itemId") or "").strip()
+    identity = str(asset.get("assetIdentitySha256") or "")
+    asset_size = (
+        asset.get("assetSizeBytes")
+        if "assetSizeBytes" in asset
+        else asset.get("size")
+    )
+    item_created_at = canonical_time(asset.get("itemCreatedAt"))
+    item_updated_at = canonical_time(asset.get("itemUpdatedAt"))
+    if not identity:
+        identity = str(asset_identity_sha256(asset.get("href")) or "")
+    if not (
+        run
+        and valid_time
+        and item_id
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and (
+            asset_size is None
+            or isinstance(asset_size, int) and not isinstance(asset_size, bool)
+            and asset_size > 0
+        )
+        and (asset.get("itemCreatedAt") is None or item_created_at)
+        and (asset.get("itemUpdatedAt") is None or item_updated_at)
+    ):
+        return None
+    return {
+        "collection": collection,
+        "modelRun": run,
+        "validTime": valid_time,
+        "itemId": item_id,
+        "assetIdentitySha256": identity,
+        "assetSizeBytes": asset_size,
+        "itemCreatedAt": item_created_at,
+        "itemUpdatedAt": item_updated_at,
+    }
+
+
+def processed_step_source_for_official_asset(
+    step: Any,
+    *,
+    collection: str,
+    model_run: Any,
+    valid_time: Any,
+    processing_signature: Any,
+    official_asset: Any,
+    require_reusable_size: bool = False,
+) -> dict[str, Any] | None:
+    if not isinstance(step, dict) or not isinstance(official_asset, dict):
+        return None
+    if (
+        step.get("complete") is not True
+        or step.get("parserVersion") != PARSER_VERSION
+        or not isinstance(processing_signature, str)
+        or not processing_signature
+        or step.get("processingSignature") != processing_signature
+        or not {"current-u", "current-v"}
+            <= set(step.get("recognizedParameters") or [])
+        or int(step.get("zonesTouched") or 0) <= 0
+    ):
+        return None
+    source = canonical_current_source_asset(step.get("sourceAsset"))
+    expected = official_current_asset_identity(collection, model_run, official_asset)
+    expected_valid_time = canonical_time(valid_time)
+    if source is None or expected is None or expected["validTime"] != expected_valid_time:
+        return None
+    if require_reusable_size and expected["assetSizeBytes"] is None:
+        return None
+    if (
+        source["collection"] != expected["collection"]
+        or source["modelRun"] != expected["modelRun"]
+        or source["validTime"] != expected["validTime"]
+        or source["itemId"] != expected["itemId"]
+        or source["assetIdentitySha256"] != expected["assetIdentitySha256"]
+        or source["assetSizeBytes"] != expected["assetSizeBytes"]
+        or source["itemCreatedAt"] != expected["itemCreatedAt"]
+        or source["itemUpdatedAt"] != expected["itemUpdatedAt"]
+    ):
+        return None
+    return source
+
+
 def reusable_processed_steps(
     previous_run: dict[str, Any],
     *,
@@ -502,13 +620,170 @@ def reusable_processed_steps(
     same_processing: bool,
     same_run: bool,
     strict_current_anchor_available: bool,
+    required_valid_times: set[str] | None = None,
+    required_asset_provenance: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Never let loose legacy DKSS step markers suppress strict-current recovery."""
+    """Reuse only current-parser checkpoints bound to the selected STAC asset."""
     if not same_processing or not same_run:
         return {}
-    if collection in MARINE_COLLECTIONS and not strict_current_anchor_available:
+    processing_signature = previous_run.get("processingSignature")
+    if not isinstance(processing_signature, str) or not processing_signature:
         return {}
-    return dict(previous_run.get("processedSteps") or {})
+    steps = previous_run.get("processedSteps") or {}
+    if not isinstance(steps, dict):
+        return {}
+    if collection not in MARINE_COLLECTIONS:
+        return {
+            valid_time: step
+            for valid_time, step in steps.items()
+            if isinstance(step, dict)
+            and step.get("parserVersion") == PARSER_VERSION
+            and step.get("processingSignature") == processing_signature
+        }
+    if required_valid_times is None or not isinstance(required_asset_provenance, dict):
+        return {}
+    required = {
+        canonical_time(value) for value in required_valid_times
+        if canonical_time(value)
+    }
+    reusable: dict[str, Any] = {}
+    for raw_valid_time, step in steps.items():
+        valid_time = canonical_time(raw_valid_time)
+        if valid_time not in required:
+            continue
+        official_asset = required_asset_provenance.get(valid_time)
+        if processed_step_source_for_official_asset(
+            step,
+            collection=collection,
+            model_run=previous_run.get("referenceTime"),
+            valid_time=valid_time,
+            processing_signature=processing_signature,
+            official_asset=official_asset,
+            require_reusable_size=True,
+        ) is not None:
+            reusable[valid_time] = step
+    _ = strict_current_anchor_available
+    return reusable
+
+
+def _bounded_stac_inventory(
+    collection: str,
+    minimum_valid_time: str,
+    maximum_valid_time: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Follow one same-origin STAC item chain to documented exhaustion."""
+    endpoint = f"{STAC_ROOT.rstrip('/')}/collections/{collection}/items"
+    endpoint_parts = urlparse(endpoint)
+    next_url: str | None = endpoint
+    next_params: dict[str, Any] | None = {
+        "limit": STAC_PAGE_LIMIT,
+        "bbox": "7,54,16,58",
+        "datetime": f"{minimum_valid_time}/{maximum_valid_time}",
+        "sortorder": "datetime,DESC",
+    }
+    items: list[dict[str, Any]] = []
+    raw_items_fetched = 0
+    seen_item_ids: set[str] = set()
+    seen_urls: set[str] = set()
+    number_matched: int | None = None
+    failure_codes: set[str] = set()
+    pages = 0
+    exhausted = False
+    while next_url is not None:
+        if pages >= STAC_MAX_PAGES:
+            failure_codes.add("STAC_PAGINATION_PAGE_LIMIT")
+            break
+        canonical_request = next_url
+        if next_params:
+            canonical_request += "?initial-page"
+        if canonical_request in seen_urls:
+            failure_codes.add("STAC_PAGINATION_CYCLE")
+            break
+        seen_urls.add(canonical_request)
+        data = request_json(next_url, next_params)
+        pages += 1
+        features = data.get("features")
+        if not isinstance(features, list) or any(not isinstance(item, dict) for item in features):
+            failure_codes.add("STAC_FEATURES_MALFORMED")
+            break
+        returned = data.get("numberReturned")
+        if returned is not None:
+            if isinstance(returned, bool) or not isinstance(returned, int) or returned < 0 or returned != len(features):
+                failure_codes.add("STAC_NUMBER_RETURNED_MISMATCH")
+                break
+        matched = data.get("numberMatched")
+        if matched is not None:
+            if isinstance(matched, bool) or not isinstance(matched, int) or matched < 0:
+                failure_codes.add("STAC_NUMBER_MATCHED_INVALID")
+                break
+            if number_matched is not None and matched != number_matched:
+                failure_codes.add("STAC_NUMBER_MATCHED_CHANGED")
+                break
+            number_matched = matched
+        if raw_items_fetched + len(features) > STAC_MAX_INVENTORY_ITEMS:
+            failure_codes.add("STAC_INVENTORY_ITEM_LIMIT")
+            break
+        raw_items_fetched += len(features)
+        unique_features: list[dict[str, Any]] = []
+        for item in features:
+            item_id = str(item.get("id") or "").strip()
+            if not item_id:
+                failure_codes.add("STAC_ITEM_IDENTITY_MISSING")
+                continue
+            if item_id in seen_item_ids:
+                failure_codes.add("STAC_DUPLICATE_ITEM_IDENTITY")
+                continue
+            seen_item_ids.add(item_id)
+            unique_features.append(item)
+        items.extend(unique_features)
+        links = data.get("links") or []
+        if not isinstance(links, list):
+            failure_codes.add("STAC_LINKS_MALFORMED")
+            break
+        raw_next = [
+            str(link.get("href") or "").strip()
+            for link in links
+            if isinstance(link, dict) and str(link.get("rel") or "").lower() == "next"
+        ]
+        raw_next = [value for value in raw_next if value]
+        if len(raw_next) > 1:
+            failure_codes.add("STAC_MULTIPLE_NEXT_LINKS")
+            break
+        if raw_next:
+            candidate = urljoin(next_url, raw_next[0])
+            candidate_parts = urlparse(candidate)
+            if (
+                candidate_parts.scheme != endpoint_parts.scheme
+                or candidate_parts.netloc != endpoint_parts.netloc
+                or candidate_parts.path.rstrip("/") != endpoint_parts.path.rstrip("/")
+                or candidate_parts.fragment
+            ):
+                failure_codes.add("STAC_UNSAFE_NEXT_LINK")
+                break
+            next_url = candidate
+            next_params = None
+            continue
+        if number_matched is not None:
+            if len(items) == number_matched:
+                exhausted = True
+            else:
+                failure_codes.add("STAC_NUMBER_MATCHED_NOT_EXHAUSTED")
+        elif len(features) < STAC_PAGE_LIMIT:
+            # A terminal short page with no next relation exhausts the bounded
+            # collection query even when the server omits aggregate counts.
+            exhausted = True
+        else:
+            failure_codes.add("STAC_PAGINATION_UNPROVEN")
+        next_url = None
+    return items, {
+        "paginationPagesFetched": pages,
+        "paginationItemsFetched": raw_items_fetched,
+        "paginationUniqueItems": len(items),
+        "paginationNumberMatched": number_matched,
+        "paginationExhausted": exhausted,
+        "catalogInventoryComplete": exhausted and not failure_codes,
+        "catalogInventoryFailureCodes": sorted(failure_codes),
+    }
 
 
 def list_latest_assets(
@@ -518,14 +793,44 @@ def list_latest_assets(
     minimum_valid_time: str | None = None,
     required_valid_times: set[str] | None = None,
     required_horizon_end_time: str | None = None,
+    allow_documented_required_gaps: bool = False,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
-    data = request_json(f"{STAC_ROOT}/collections/{collection}/items",
-                        {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
-    items = data.get("features") or []
+    required = {
+        iso(value) for value in (required_valid_times or set())
+        if iso(value)
+    }
+    inventory_start = (
+        min(required, key=epoch)
+        if required
+        else iso(minimum_valid_time)
+        or datetime.fromtimestamp(time.time() - 3600, timezone.utc)
+            .isoformat().replace("+00:00", "Z")
+    )
+    inventory_end = (
+        iso(required_horizon_end_time)
+        or (max(required, key=epoch) if required else None)
+        or datetime.fromtimestamp(
+            time.time() + (
+                WAM_MAX_FORECAST_LEAD_HOURS
+                if collection in WAVE_BOOTSTRAP_COLLECTIONS
+                else HOURS + 6
+            ) * 3600,
+            timezone.utc,
+        ).isoformat().replace("+00:00", "Z")
+    )
+    if epoch(inventory_end) < epoch(inventory_start):
+        inventory_end = inventory_start
+    items, inventory_stats = _bounded_stac_inventory(
+        collection,
+        inventory_start,
+        inventory_end,
+    )
     runs: dict[str, list[dict[str, Any]]] = {}
     stats = {
+        **inventory_stats,
         "itemsSeen": len(items),
         "itemsWithoutGrib": 0,
+        "unparseableItems": 0,
         "forecastStepAssets": 0,
         "duplicateValidTimes": 0,
         "sampleItems": [],
@@ -534,6 +839,7 @@ def list_latest_assets(
         run, valid, asset = item_run(item), item_valid(item), grib_asset(item)
         if not run or not valid or not asset:
             stats["itemsWithoutGrib"] += 1
+            stats["unparseableItems"] += 1
             continue
         href, size, _description = asset
         maximum_lead_hours = (
@@ -546,12 +852,19 @@ def list_latest_assets(
         item_id = str(item.get("id") or "").strip()
         if not item_id:
             stats["itemsWithoutGrib"] += 1
+            stats["unparseableItems"] += 1
+            continue
+        asset_identity = asset_identity_sha256(href)
+        if asset_identity is None:
+            stats["itemsWithoutGrib"] += 1
+            stats["unparseableItems"] += 1
             continue
         row = {
             "valid": valid,
             "href": href,
             "size": size,
             "id": item_id,
+            "assetIdentitySha256": asset_identity,
             "itemCreatedAt": item_timestamp(item, "created"),
             "itemUpdatedAt": item_timestamp(item, "updated"),
         }
@@ -559,12 +872,14 @@ def list_latest_assets(
         stats["forecastStepAssets"] += 1
         if len(stats["sampleItems"]) < 5:
             stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
+    if stats["unparseableItems"]:
+        stats["catalogInventoryComplete"] = False
+        stats["catalogInventoryFailureCodes"] = sorted({
+            *(stats.get("catalogInventoryFailureCodes") or []),
+            "UNPARSEABLE_STAC_ITEM",
+        })
     if not runs:
         return None, [], stats
-    required = {
-        iso(value) for value in (required_valid_times or set())
-        if iso(value)
-    }
     selection_runs = runs
     required_horizon_end = iso(required_horizon_end_time)
     if required or required_horizon_end:
@@ -577,7 +892,10 @@ def list_latest_assets(
             candidate_run: rows
             for candidate_run, rows in runs.items()
             if epoch(candidate_run) <= first_required_epoch
-            and required <= {iso(row.get("valid")) for row in rows}
+            and (
+                allow_documented_required_gaps
+                or required <= {iso(row.get("valid")) for row in rows}
+            )
             and (
                 required_horizon_end is None
                 or max(epoch(row.get("valid")) for row in rows)
@@ -586,6 +904,7 @@ def list_latest_assets(
         }
         stats["requiredExactValidTimeCount"] = len(required)
         stats["runsCoveringRequiredExactTimes"] = len(selection_runs)
+        stats["documentedRequiredGapsAllowed"] = allow_documented_required_gaps
         stats["requiredHorizonEndCovered"] = bool(selection_runs) if required_horizon_end else None
         if not selection_runs:
             stats["missingRequiredExactTimes"] = True
@@ -640,13 +959,53 @@ def list_latest_assets(
         stats["rejectedStaleRun"] = True
         return None, [], stats
     stats.update(run_selection)
+    selected_official_required = sorted({
+        str(iso(row.get("valid")))
+        for row in runs[run]
+        if iso(row.get("valid")) in required
+    }, key=epoch)
+    stats["officialRequiredValidTimeCount"] = len(selected_official_required)
+    stats["officialRequiredValidTimes"] = selected_official_required
+    official_by_time: dict[str, dict[str, Any]] = {}
+    for row in sorted(
+        runs[run],
+        key=lambda value: (
+            epoch(value["valid"]),
+            str(value["id"]),
+            str(value.get("assetIdentitySha256") or ""),
+        ),
+    ):
+        if row["valid"] not in required or row["valid"] in official_by_time:
+            continue
+        identity = official_current_asset_identity(collection, run, row)
+        if identity is None:
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "UNPARSEABLE_SELECTED_STAC_ASSET",
+            })
+            continue
+        official_by_time[row["valid"]] = identity
+    stats["officialRequiredAssets"] = [
+        official_by_time[valid_time]
+        for valid_time in sorted(official_by_time, key=epoch)
+    ]
+    stats["officialRequiredGapCount"] = max(0, len(required) - len(selected_official_required))
+    stats["officialNativeCadenceHours"] = 1 if collection in MARINE_COLLECTIONS else None
     unique: dict[str, dict[str, Any]] = {}
     minimum_valid_epoch = (
         epoch(minimum_valid_time)
         if minimum_valid_time is not None
         else time.time() - 3600
     )
-    for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
+    for row in sorted(
+        runs[run],
+        key=lambda r: (
+            epoch(r["valid"]),
+            str(r["id"]),
+            str(r.get("assetIdentitySha256") or ""),
+        ),
+    ):
         if epoch(row["valid"]) < minimum_valid_epoch:
             stats["expiredForecastStepsSkipped"] = int(stats.get("expiredForecastStepsSkipped") or 0) + 1
             continue
@@ -663,9 +1022,21 @@ def list_latest_assets(
             "latestRun": latest_run,
             "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
         }
-    rows = sorted(unique.values(), key=lambda r: epoch(r["valid"]))
-    stats["selectedForecastSteps"] = min(len(rows), MAX_ASSETS_PER_COLLECTION)
-    return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
+    rows = sorted(
+        unique.values(),
+        key=lambda row: (
+            0 if row["valid"] in required else 1,
+            epoch(row["valid"]),
+        ),
+    )
+    selected_rows = rows[:MAX_ASSETS_PER_COLLECTION]
+    selected_required = sum(row["valid"] in required for row in selected_rows)
+    stats["requiredRowsTruncatedByAssetLimit"] = max(
+        0,
+        len(selected_official_required) - selected_required,
+    )
+    stats["selectedForecastSteps"] = len(selected_rows)
+    return run, selected_rows, stats
 
 
 def private_wave_bootstrap_configuration() -> dict[str, Any] | None:
@@ -786,9 +1157,12 @@ def load_raw_cache_manifest() -> dict[str, Any]:
     try:
         document = json.loads(raw_cache_manifest_path().read_text("utf-8"))
     except Exception:
-        return {"schemaVersion": 1, "assets": {}}
-    if document.get("schemaVersion") != 1 or not isinstance(document.get("assets"), dict):
-        return {"schemaVersion": 1, "assets": {}}
+        return {"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION, "assets": {}}
+    if (
+        document.get("schemaVersion") != RAW_CACHE_MANIFEST_SCHEMA_VERSION
+        or not isinstance(document.get("assets"), dict)
+    ):
+        return {"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION, "assets": {}}
     return document
 
 
@@ -811,6 +1185,8 @@ def register_raw_cache_asset(
     item_created_at: str | None = None,
     item_updated_at: str | None = None,
     acquired_at: str | None = None,
+    expected_size: int | None = None,
+    content_sha256: str | None = None,
 ) -> None:
     if not collection or not model_run or not valid_time:
         return
@@ -818,15 +1194,45 @@ def register_raw_cache_asset(
     assets = document.setdefault("assets", {})
     registered_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     previous = assets.get(path.name) or {}
+    actual_size = path.stat().st_size
     canonical_href = href.split("?", 1)[0].split("#", 1)[0]
     asset_identity_sha256 = hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
     normalized_item_id = str(item_id or "").strip() or None
+    normalized_created_at = iso(item_created_at) if item_created_at else None
+    normalized_updated_at = iso(item_updated_at) if item_updated_at else None
+    declared_size = (
+        expected_size
+        if isinstance(expected_size, int)
+        and not isinstance(expected_size, bool)
+        and expected_size > 0
+        else None
+    )
+    normalized_content_sha256 = str(content_sha256 or "")
+    if not re.fullmatch(r"[0-9a-f]{64}", normalized_content_sha256):
+        normalized_content_sha256 = ""
     same_capture_identity = bool(
         previous.get("collection") == collection
         and iso(previous.get("modelRun")) == iso(model_run)
         and iso(previous.get("validTime")) == iso(valid_time)
         and previous.get("itemId") == normalized_item_id
         and previous.get("assetIdentitySha256") == asset_identity_sha256
+        and previous.get("itemCreatedAt") == normalized_created_at
+        and previous.get("itemUpdatedAt") == normalized_updated_at
+        and previous.get("assetSizeBytes") == declared_size
+        and previous.get("contentLengthBytes") == actual_size
+        and re.fullmatch(r"[0-9a-f]{64}", str(previous.get("contentSha256") or ""))
+    )
+    captured_content_sha256 = (
+        normalized_content_sha256
+        if normalized_content_sha256
+        else str(previous.get("contentSha256") or "") if same_capture_identity
+        else None
+    )
+    captured_at = (
+        iso(acquired_at)
+        if acquired_at and normalized_content_sha256
+        else previous.get("acquiredAt") if same_capture_identity
+        else None
     )
     assets[path.name] = {
         "canonicalHref": canonical_href,
@@ -835,22 +1241,16 @@ def register_raw_cache_asset(
         "modelRun": model_run,
         "validTime": valid_time,
         "itemId": normalized_item_id,
-        "itemCreatedAt": (
-            iso(item_created_at) if item_created_at
-            else previous.get("itemCreatedAt") if same_capture_identity else None
-        ),
-        "itemUpdatedAt": (
-            iso(item_updated_at) if item_updated_at
-            else previous.get("itemUpdatedAt") if same_capture_identity else None
-        ),
+        "itemCreatedAt": normalized_created_at,
+        "itemUpdatedAt": normalized_updated_at,
+        "assetSizeBytes": declared_size,
         # Registration/last-use time is not acquisition time.  Preserve an
         # already proven capture only for the exact same item identity, or use
         # a timestamp supplied by the code path that actually downloaded it.
-        "acquiredAt": (
-            previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))
-            else iso(acquired_at) if acquired_at else None
-        ),
-        "bytes": path.stat().st_size,
+        "acquiredAt": captured_at,
+        "contentLengthBytes": actual_size,
+        "contentSha256": captured_content_sha256,
+        "bytes": actual_size,
         "lastUsedAt": registered_at,
     }
     save_raw_cache_manifest(document)
@@ -916,6 +1316,39 @@ def cached_asset_path(href: str) -> pathlib.Path:
     return RAW_DIR / f"{hashlib.sha256(canonical_href.encode()).hexdigest()[:24]}{suffix}"
 
 
+def file_content_sha256(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def cached_capture_matches_official(
+    capture: Any,
+    *,
+    href: str,
+    item_id: str | None,
+    item_created_at: str | None,
+    item_updated_at: str | None,
+    expected_size: int | None,
+) -> bool:
+    """Unknown size or any STAC revision delta forces a fresh download."""
+    return bool(
+        isinstance(capture, dict)
+        and isinstance(expected_size, int)
+        and not isinstance(expected_size, bool)
+        and expected_size > 0
+        and capture.get("itemId") == str(item_id or "").strip()
+        and capture.get("assetIdentitySha256") == asset_identity_sha256(href)
+        and capture.get("itemCreatedAt") == (iso(item_created_at) if item_created_at else None)
+        and capture.get("itemUpdatedAt") == (iso(item_updated_at) if item_updated_at else None)
+        and capture.get("assetSizeBytes") == expected_size
+        and capture.get("contentLengthBytes") == expected_size
+        and re.fullmatch(r"[0-9a-f]{64}", str(capture.get("contentSha256") or ""))
+    )
+
+
 def download_asset(
     href: str,
     expected_size: int | None,
@@ -938,20 +1371,21 @@ def download_asset(
     path = cached_asset_path(href)
     cached_size = path.stat().st_size if path.exists() else 0
     if (
-        cached_size > 0
-        and (expected_size is None or cached_size == expected_size)
+        expected_size is not None
+        and cached_size > 0
+        and cached_size == expected_size
     ):
         capture = (
             raw_cache_source_capture(path, collection, model_run, valid_time)
             if collection and model_run and valid_time else None
         )
-        expected_asset_identity = hashlib.sha256(
-            href.split("?", 1)[0].split("#", 1)[0].encode("utf-8")
-        ).hexdigest()
-        if (
-            capture
-            and capture.get("itemId") == str(item_id or "").strip()
-            and capture.get("assetIdentitySha256") == expected_asset_identity
+        if cached_capture_matches_official(
+            capture,
+            href=href,
+            item_id=item_id,
+            item_created_at=item_created_at,
+            item_updated_at=item_updated_at,
+            expected_size=expected_size,
         ):
             try:
                 os.utime(path, None)
@@ -960,6 +1394,7 @@ def download_asset(
             register_raw_cache_asset(
                 path, href, collection, model_run, valid_time,
                 item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
+                expected_size=expected_size,
             )
             return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
@@ -978,6 +1413,7 @@ def download_asset(
             if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
                 raise RuntimeError("DMI bulk download budget exceeded before next asset")
             tmp_path: pathlib.Path | None = None
+            content_digest = hashlib.sha256()
             try:
                 with tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False) as tmp:
                     tmp_path = pathlib.Path(tmp.name)
@@ -987,6 +1423,7 @@ def download_asset(
                         budget["bytes"] += len(chunk)
                         if budget["bytes"] > MAX_DOWNLOAD_BYTES:
                             raise RuntimeError("DMI bulk download budget exceeded during asset download")
+                        content_digest.update(chunk)
                         tmp.write(chunk)
                 actual_size = tmp_path.stat().st_size
                 if (
@@ -1007,6 +1444,8 @@ def download_asset(
         path, href, collection, model_run, valid_time,
         item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
         acquired_at=acquired_at,
+        expected_size=expected_size,
+        content_sha256=content_digest.hexdigest(),
     )
     return path, False
 
@@ -1019,6 +1458,11 @@ def raw_cache_source_capture(
 ) -> dict[str, Any] | None:
     """Resolve an exact local capture without inventing STAC/acquisition facts."""
     row = (load_raw_cache_manifest().get("assets") or {}).get(path.name) or {}
+    try:
+        actual_size = path.stat().st_size
+        actual_content_sha256 = file_content_sha256(path)
+    except OSError:
+        return None
     if not (
         row.get("collection") == collection
         and iso(row.get("modelRun")) == iso(model_run)
@@ -1026,18 +1470,63 @@ def raw_cache_source_capture(
         and str(row.get("itemId") or "").strip()
         and iso(row.get("acquiredAt"))
         and re.fullmatch(r"[0-9a-f]{64}", str(row.get("assetIdentitySha256") or ""))
+        and (
+            row.get("assetSizeBytes") is None
+            or isinstance(row.get("assetSizeBytes"), int)
+            and not isinstance(row.get("assetSizeBytes"), bool)
+            and row.get("assetSizeBytes") > 0
+        )
+        and isinstance(row.get("contentLengthBytes"), int)
+        and not isinstance(row.get("contentLengthBytes"), bool)
+        and row.get("contentLengthBytes") == actual_size
+        and (
+            row.get("assetSizeBytes") is None
+            or row.get("assetSizeBytes") == actual_size
+        )
+        and re.fullmatch(r"[0-9a-f]{64}", str(row.get("contentSha256") or ""))
+        and row.get("contentSha256") == actual_content_sha256
     ):
         return None
     capture = {
         "itemId": str(row["itemId"]),
         "assetIdentitySha256": str(row["assetIdentitySha256"]),
+        "assetSizeBytes": row.get("assetSizeBytes"),
         "acquiredAt": iso(row["acquiredAt"]),
+        "contentLengthBytes": actual_size,
+        "contentSha256": actual_content_sha256,
+        "itemCreatedAt": iso(row.get("itemCreatedAt")),
+        "itemUpdatedAt": iso(row.get("itemUpdatedAt")),
     }
-    if iso(row.get("itemCreatedAt")):
-        capture["itemCreatedAt"] = iso(row["itemCreatedAt"])
-    if iso(row.get("itemUpdatedAt")):
-        capture["itemUpdatedAt"] = iso(row["itemUpdatedAt"])
     return capture
+
+
+def reusable_cached_asset_path(
+    asset: Any,
+    collection: str,
+    model_run: str,
+) -> pathlib.Path | None:
+    """Return a cached GRIB only when its bytes prove this STAC revision."""
+    if not isinstance(asset, dict):
+        return None
+    path = cached_asset_path(str(asset.get("href") or ""))
+    if not path.is_file():
+        return None
+    capture = raw_cache_source_capture(
+        path,
+        collection,
+        model_run,
+        str(asset.get("valid") or ""),
+    )
+    if not cached_capture_matches_official(
+        capture,
+        href=str(asset.get("href") or ""),
+        item_id=str(asset.get("id") or "") or None,
+        item_created_at=asset.get("itemCreatedAt"),
+        item_updated_at=asset.get("itemUpdatedAt"),
+        expected_size=asset.get("size"),
+    ):
+        return None
+    return path
 
 
 def safe_get(gid: int, key: str) -> Any:
@@ -1626,7 +2115,10 @@ def native_component_source(
     optional_fields = tuple(optional_field_set)
     item_id = str((capture or {}).get("itemId") or "").strip()
     asset_identity = str((capture or {}).get("assetIdentitySha256") or "")
+    asset_size = (capture or {}).get("assetSizeBytes")
     acquired_at = iso((capture or {}).get("acquiredAt"))
+    content_length = (capture or {}).get("contentLengthBytes")
+    content_sha256 = str((capture or {}).get("contentSha256") or "")
     item_created_at = iso((capture or {}).get("itemCreatedAt"))
     item_updated_at = iso((capture or {}).get("itemUpdatedAt"))
     physical_distance = (
@@ -1656,7 +2148,18 @@ def native_component_source(
         and math.isclose(float(grid_candidate["distanceKm"]), physical_distance, rel_tol=0, abs_tol=0.02)
         and item_id
         and re.fullmatch(r"[0-9a-f]{64}", asset_identity)
+        and (
+            asset_size is None
+            or isinstance(asset_size, int)
+            and not isinstance(asset_size, bool)
+            and asset_size > 0
+        )
         and acquired_at
+        and isinstance(content_length, int)
+        and not isinstance(content_length, bool)
+        and content_length > 0
+        and re.fullmatch(r"[0-9a-f]{64}", content_sha256)
+        and (asset_size is None or asset_size == content_length)
         and ((capture or {}).get("itemCreatedAt") is None or item_created_at)
         and ((capture or {}).get("itemUpdatedAt") is None or item_updated_at)
     ):
@@ -1682,7 +2185,10 @@ def native_component_source(
         "spatialSemanticsVersion": SPATIAL_PROVENANCE_VERSION,
         "itemId": item_id,
         "assetIdentitySha256": asset_identity,
+        "assetSizeBytes": asset_size,
         "acquiredAt": acquired_at,
+        "contentLengthBytes": content_length,
+        "contentSha256": content_sha256,
         **({"itemCreatedAt": item_created_at} if item_created_at else {}),
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
@@ -3030,6 +3536,369 @@ def production_reference_hour(value: Any = None) -> datetime:
     return exact
 
 
+def operational_current_valid_times(reference: datetime) -> list[str]:
+    return [
+        (reference + timedelta(hours=offset)).isoformat().replace("+00:00", "Z")
+        for offset in range(PUBLIC_END_OFFSET_HOURS + 1)
+    ]
+
+
+def coastal_part_current_attestation(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    range_start: datetime,
+    range_end: datetime,
+    allowed_source_assets: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Attest the same structurally sanitized view before and after merge."""
+    zones = document.get("zones") if isinstance(document, dict) else None
+    expected_ids = {
+        f"PART::{str(target.get('partId') or '').strip()}"
+        for target in targets
+        if isinstance(target, dict) and str(target.get("partId") or "").strip()
+    }
+    actual_ids = {
+        str(zone_id)
+        for zone_id in (zones or {})
+        if str(zone_id).startswith("PART::")
+    } if isinstance(zones, dict) else set()
+    eligible: dict[str, Any] = {}
+    if expected_ids and len(expected_ids) == len(targets) and actual_ids == expected_ids:
+        for target in targets:
+            part_id = str(target.get("partId") or "").strip()
+            zone_id = f"PART::{part_id}"
+            zone = zones.get(zone_id)
+            if not isinstance(zone, dict) or not same_sampling_point(
+                zone.get("samplingPoint"),
+                target.get("waterPoint"),
+            ):
+                continue
+            grid_points = zone.get("gridPoints")
+            if grid_points is None:
+                grid_points = {}
+            if not isinstance(grid_points, dict):
+                continue
+            current_u_point = grid_points.get("current-u")
+            current_v_point = grid_points.get("current-v")
+            if (
+                current_u_point is not None
+                or current_v_point is not None
+            ) and not same_grid_point(current_u_point, current_v_point):
+                continue
+            eligible[zone_id] = zone
+    return canonical_verified_part_current_attestation(
+        {"zones": eligible},
+        targets,
+        range_start,
+        range_end,
+        allowed_source_assets,
+    )
+
+
+def current_operational_attestation(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    allowed_source_assets: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return coastal_part_current_attestation(
+        document,
+        targets,
+        reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        allowed_source_assets,
+    )
+
+
+def build_current_operational_ledger(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    official_catalogs: dict[
+        str,
+        tuple[str | None, list[dict[str, Any]], dict[str, Any]],
+    ],
+) -> dict[str, Any]:
+    """Close every official DKSS asset/hour without inventing fallback gaps."""
+    valid_times = operational_current_valid_times(reference)
+    valid_time_set = set(valid_times)
+    range_end = reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    provisional_collections: list[dict[str, Any]] = []
+    failure_codes: set[str] = set()
+    for collection in sorted(MARINE_COLLECTIONS):
+        catalog = official_catalogs.get(collection)
+        if catalog is None:
+            run, assets, stats = None, [], {}
+        else:
+            run, assets, stats = catalog
+        model_run = canonical_time(run)
+        raw_official_assets = (
+            stats.get("officialRequiredAssets")
+            if isinstance(stats, dict)
+            and isinstance(stats.get("officialRequiredAssets"), list)
+            else []
+        )
+        official_by_time: dict[str, dict[str, Any]] = {}
+        official_assets_valid = True
+        for raw_asset in raw_official_assets:
+            identity = official_current_asset_identity(collection, model_run, raw_asset)
+            if (
+                identity is None
+                or identity["validTime"] not in valid_time_set
+                or identity["validTime"] in official_by_time
+            ):
+                official_assets_valid = False
+                continue
+            official_by_time[identity["validTime"]] = identity
+        declared_times = {
+            str(canonical_time(value))
+            for value in (
+                stats.get("officialRequiredValidTimes")
+                if isinstance(stats, dict)
+                and isinstance(stats.get("officialRequiredValidTimes"), list)
+                else []
+            )
+            if canonical_time(value) in valid_time_set
+        }
+        if declared_times != set(official_by_time):
+            official_assets_valid = False
+        selected_by_time: dict[str, dict[str, Any]] = {}
+        selected_assets_valid = True
+        for raw_asset in assets if isinstance(assets, list) else []:
+            identity = official_current_asset_identity(collection, model_run, raw_asset)
+            if identity is None:
+                selected_assets_valid = False
+                continue
+            if identity["validTime"] not in valid_time_set:
+                continue
+            if identity["validTime"] in selected_by_time:
+                selected_assets_valid = False
+                continue
+            selected_by_time[identity["validTime"]] = identity
+        if selected_by_time != official_by_time:
+            selected_assets_valid = False
+        catalog_complete = bool(
+            model_run
+            and isinstance(stats, dict)
+            and stats.get("catalogInventoryComplete") is True
+            and stats.get("requiredHorizonEndCovered") is True
+            and stats.get("rejectedStaleRun") is not True
+            and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
+            and official_assets_valid
+            and selected_assets_valid
+            and stats.get("officialRequiredValidTimeCount") == len(official_by_time)
+        )
+        run_info = ((document.get("runs") or {}).get(collection) or {})
+        processing_signature = run_info.get("processingSignature")
+        run_matches = (
+            isinstance(run_info, dict)
+            and canonical_time(run_info.get("referenceTime")) == model_run
+            and run_info.get("parserVersion") == PARSER_VERSION
+            and run_info.get("parameterMapVersion") == PARAMETER_MAP_VERSION
+            and run_info.get("gridLookupVersion") == GRID_LOOKUP_VERSION
+            and isinstance(processing_signature, str)
+            and bool(processing_signature)
+        )
+        processed_steps = run_info.get("processedSteps") if run_matches else {}
+        if not isinstance(processed_steps, dict):
+            processed_steps = {}
+        rows: list[dict[str, Any]] = []
+        for valid_time in valid_times:
+            official_asset = official_by_time.get(valid_time)
+            source_asset = None
+            if not catalog_complete:
+                state = "LOCALLY_SKIPPED"
+            elif official_asset is None:
+                state = "UPSTREAM_ABSENT"
+            else:
+                step = processed_steps.get(valid_time)
+                source_asset = processed_step_source_for_official_asset(
+                    step,
+                    collection=collection,
+                    model_run=model_run,
+                    valid_time=valid_time,
+                    processing_signature=processing_signature,
+                    official_asset=official_asset,
+                )
+                if source_asset is None:
+                    state = "LOCALLY_SKIPPED"
+                else:
+                    state = "PROCESSED"
+            rows.append({
+                "validTime": valid_time,
+                "state": state,
+                "officialAsset": official_asset,
+                "sourceAsset": source_asset,
+            })
+        provisional_collections.append({
+            "collection": collection,
+            "modelRun": model_run,
+            "validTimes": rows,
+        })
+        if not catalog_complete:
+            failure_codes.add("OFFICIAL_DKSS_CATALOG_INCOMPLETE")
+
+    processed_assets = [
+        row["sourceAsset"]
+        for collection_row in provisional_collections
+        for row in collection_row["validTimes"]
+        if row["state"] == "PROCESSED" and row["sourceAsset"] is not None
+    ]
+    attestation = current_operational_attestation(
+        document,
+        targets,
+        reference,
+        processed_assets,
+    )
+    attested_source_keys = {
+        json.dumps(source, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        for raw in attestation.get("verifiedPairSources") or []
+        if isinstance(raw, dict)
+        for source in [canonical_current_source_asset(raw.get("source"))]
+        if source is not None
+    }
+    collection_ledgers: list[dict[str, Any]] = []
+    states_by_time: dict[str, list[str]] = {valid_time: [] for valid_time in valid_times}
+    for collection_row in provisional_collections:
+        for row in collection_row["validTimes"]:
+            source_asset = row["sourceAsset"]
+            if (
+                row["state"] == "PROCESSED"
+                and source_asset is not None
+                and json.dumps(
+                    source_asset,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ) in attested_source_keys
+            ):
+                row["state"] = "VERIFIED"
+            states_by_time[row["validTime"]].append(row["state"])
+        official_assets = [
+            row["officialAsset"]
+            for row in collection_row["validTimes"]
+            if row["officialAsset"] is not None
+        ]
+        official_times = sorted(asset["validTime"] for asset in official_assets)
+        counts = {
+            state: sum(row["state"] == state for row in collection_row["validTimes"])
+            for state in CURRENT_OPERATIONAL_LEDGER_STATES
+        }
+        collection_row.update({
+            "officialValidTimeCount": len(official_assets),
+            "officialValidTimesSha256": valid_times_sha256(official_times),
+            "officialAssetsSha256": current_official_assets_sha256(official_assets),
+            "stateCounts": counts,
+        })
+        collection_ledgers.append(collection_row)
+        if counts["LOCALLY_SKIPPED"]:
+            failure_codes.add("LOCALLY_SKIPPED_DKSS_ASSET")
+
+    if not targets:
+        failure_codes.add("ACTIVE_CURRENT_REGISTRY_EMPTY")
+    if sum(row["officialValidTimeCount"] for row in collection_ledgers) == 0:
+        failure_codes.add("OFFICIAL_DKSS_CATALOG_COLLAPSE")
+    for valid_time, states in states_by_time.items():
+        if len(states) != len(MARINE_COLLECTIONS):
+            failure_codes.add("OFFICIAL_DKSS_LEDGER_INCOMPLETE")
+        elif not all(state == "UPSTREAM_ABSENT" for state in states) and "VERIFIED" not in states:
+            failure_codes.add("SYSTEMIC_CURRENT_TIME_COLLAPSE")
+
+    verified = {
+        (str(row.get("partId") or ""), canonical_time(row.get("validTime")))
+        for row in attestation.get("verifiedPairs") or []
+        if isinstance(row, dict)
+    }
+    part_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
+    upstream_absence_pairs = [
+        {"partId": part_id, "validTime": valid_time}
+        for valid_time in valid_times
+        if len(states_by_time.get(valid_time) or []) == len(MARINE_COLLECTIONS)
+        and all(
+            state == "UPSTREAM_ABSENT"
+            for state in states_by_time[valid_time]
+        )
+        for part_id in part_ids
+    ]
+    upstream_absence_identities = {
+        (row["partId"], row["validTime"])
+        for row in upstream_absence_pairs
+    }
+    expected_identities = {
+        (part_id, valid_time)
+        for valid_time in valid_times
+        for part_id in part_ids
+    }
+    if (
+        verified & upstream_absence_identities
+        or (verified | upstream_absence_identities) != expected_identities
+    ):
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+    registry_sha256 = target_fingerprint(targets)
+    authorized_complement = upstream_absence_pairs if not failure_codes else []
+    ledger = {
+        "schemaVersion": CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
+        "contractId": CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
+        "productionReferenceAt": canonical_time(reference),
+        "operationalRangeEndAt": canonical_time(range_end),
+        "hourCount": len(valid_times),
+        "targetCount": len(targets),
+        "targetRegistrySha256": registry_sha256,
+        "attestation": sanitized_current_attestation(attestation),
+        "collections": collection_ledgers,
+        "upstreamAbsencePairCount": len(upstream_absence_pairs),
+        "upstreamAbsencePairsSha256": part_time_pairs_sha256(
+            upstream_absence_pairs
+        ),
+        "upstreamAbsencePairs": upstream_absence_pairs,
+        "operationalComplementPairCount": len(authorized_complement),
+        "operationalComplementPairsSha256": part_time_pairs_sha256(
+            authorized_complement
+        ),
+        "operationalComplementPairs": authorized_complement,
+        "ready": not failure_codes,
+        "failureCodes": sorted(failure_codes),
+    }
+    if ledger["ready"] and not current_operational_ledger_ready(
+        ledger,
+        attestation,
+        targets,
+        reference,
+        range_end,
+        registry_sha256,
+    ):
+        ledger["ready"] = False
+        ledger["failureCodes"] = ["CURRENT_LEDGER_CONTRACT_INVALID"]
+    return ledger
+
+
+def current_operational_cache_ready(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+) -> bool:
+    try:
+        ledger = ((document.get("diagnostics") or {}).get("currentOperationalLedger"))
+        allowed_source_assets = processed_source_assets_from_current_operational_ledger(ledger)
+        attestation = current_operational_attestation(
+            document,
+            targets,
+            reference,
+            allowed_source_assets,
+        )
+        registry_sha256 = target_fingerprint(targets)
+    except (TypeError, ValueError):
+        return False
+    return current_operational_ledger_ready(
+        ledger,
+        attestation,
+        targets,
+        reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        registry_sha256,
+    )
+
+
 def coastal_part_current_cache_reusable(
     document: dict[str, Any],
     targets: list[dict[str, Any]],
@@ -3038,51 +3907,16 @@ def coastal_part_current_cache_reusable(
     """Require one strict pair that survives the later cache sanitizers."""
     if not isinstance(document, dict) or not isinstance(targets, list):
         return False
-    zones = document.get("zones")
-    if not isinstance(zones, dict) or any(
-        not isinstance(target, dict) for target in targets
-    ):
+    try:
+        attestation = coastal_part_current_attestation(
+            document,
+            targets,
+            reference - timedelta(hours=COLD_BRIDGE_HOURS),
+            reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        )
+    except (TypeError, ValueError):
         return False
-    expected_ids = {
-        f"PART::{str(target.get('partId') or '').strip()}"
-        for target in targets
-        if str(target.get("partId") or "").strip()
-    }
-    actual_ids = {
-        str(zone_id)
-        for zone_id in zones
-        if str(zone_id).startswith("PART::")
-    }
-    if not expected_ids or len(expected_ids) != len(targets) or actual_ids != expected_ids:
-        return False
-    surviving_targets = []
-    for target in targets:
-        part_id = str(target.get("partId") or "").strip()
-        zone = zones.get(f"PART::{part_id}")
-        if not isinstance(zone, dict) or not same_sampling_point(
-            zone.get("samplingPoint"),
-            target.get("waterPoint"),
-        ):
-            continue
-        grid_points = zone.get("gridPoints")
-        if grid_points is None:
-            grid_points = {}
-        if not isinstance(grid_points, dict):
-            continue
-        current_u_point = grid_points.get("current-u")
-        current_v_point = grid_points.get("current-v")
-        if (
-            current_u_point is not None
-            or current_v_point is not None
-        ) and not same_grid_point(current_u_point, current_v_point):
-            continue
-        surviving_targets.append(target)
-    return strict_verified_part_current_pair_count(
-        document,
-        surviving_targets,
-        reference - timedelta(hours=COLD_BRIDGE_HOURS),
-        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
-    ) > 0
+    return int(attestation.get("verifiedPairCount") or 0) > 0
 
 
 def producer_success_blocked(
@@ -3090,7 +3924,7 @@ def producer_success_blocked(
     wave_bootstrap_requested: bool,
     bootstrap_complete: bool,
 ) -> bool:
-    """Fail closed when current anchoring or requested WAM bootstrap is absent."""
+    """Fail closed when the current ledger or requested WAM bootstrap is absent."""
     return (
         not strict_current_anchor_available
         or (wave_bootstrap_requested and not bootstrap_complete)
@@ -3110,7 +3944,7 @@ def producer_terminal_code(
         attempted = [
             str(collection)
             for collection in (diagnostics.get("collectionsAttempted") or [])
-            if str(collection)
+            if str(collection) in MARINE_COLLECTIONS
         ]
         stac = diagnostics.get("stacByCollection") or {}
         if (
@@ -3123,11 +3957,12 @@ def producer_terminal_code(
             )
         ):
             return "DMI_CATALOG_SCHEDULE_STALE"
-        return "DMI_STRICT_CURRENT_ANCHOR_MISSING"
+        return "DMI_CURRENT_LEDGER_INCOMPLETE"
     if wave_bootstrap_requested and not bootstrap_complete:
         return "DMI_WAVE_BOOTSTRAP_INCOMPLETE"
-    if not productive:
-        return "DMI_NO_PRODUCTIVE_COLLECTION"
+    # The exact ledger is itself the productivity proof. HARMONIE success may
+    # neither manufacture nor be required for DMI current readiness.
+    _ = productive
     return "DMI_READY"
 
 
@@ -3576,9 +4411,10 @@ def replay_current_field_shadow_from_cache(
             CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
         )
         resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
-            (asset, cached_asset_path(str(asset.get("href") or "")))
+            (asset, path)
             for asset in candidates
-            if cached_asset_path(str(asset.get("href") or "")).is_file()
+            for path in [reusable_cached_asset_path(asset, collection, model_run)]
+            if path is not None
         ]
         if model_run and not resolved and candidates and bootstrap_remaining > 0 and not should_stop_work():
             # Prefer the far edge of the accepted +12 h research window.  It
@@ -3630,6 +4466,7 @@ def replay_current_field_shadow_from_cache(
                 item_id=str(asset.get("id") or "") or None,
                 item_created_at=asset.get("itemCreatedAt"),
                 item_updated_at=asset.get("itemUpdatedAt"),
+                expected_size=asset.get("size"),
             )
             replay_diagnostics: dict[str, Any] = {
                 "batchedGridReads": 0,
@@ -3777,7 +4614,7 @@ def main() -> int:
         error for error in (previous_diag.get("errors") or [])
         if str(error.get("collection", "")).startswith("dkss_")
     ]
-    coastal_part_current_cache_healthy = coastal_part_current_cache_reusable(
+    coastal_part_current_cache_healthy = current_operational_cache_ready(
         previous,
         coastal_part_targets,
         locked_production_reference,
@@ -3968,8 +4805,9 @@ def main() -> int:
     }
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
-              "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
+              "method": f"DMI STAC forecast-step GRIB inventory; hourly official DKSS current ledger; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h non-ledger stride; no spatial interpolation",
               "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature,
+              "currentOperationalCadenceHours": 1,
               "currentVectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
               "currentVectorSelection": CURRENT_VECTOR_SELECTION,
               "currentPreferredDistanceKm": CURRENT_PREFERRED_DISTANCE_KM,
@@ -4032,24 +4870,43 @@ def main() -> int:
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
-    # Prefetch the small STAC inventories once, but leave all GRIB download/time
-    # capacity to the public builder first.  If no fresh marine asset covers the
-    # private selection, the isolated replay may use only the budget left over at
-    # the end of the normal build.  Research must never starve public weather.
+    # Prefetch every official DKSS inventory once against the exact +0..+117
+    # current axis. DKSS publishes hourly assets; the global three-hour stride
+    # is only a local capacity optimization and must never manufacture a
+    # Copernicus gap. A mature run may have an internal, explicitly observed
+    # STAC hole, but a latest run whose tail is still publishing is deferred.
     prefetched_marine: dict[str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]] = {}
     research_replay_catalog: dict[str, dict[str, Any]] = {}
-    if research_targets:
-        for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
-            try:
-                previous_run = (previous.get("runs") or {}).get(collection) or {}
-                run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
-                prefetched_marine[collection] = (run, assets, stac_stats)
-                research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
-            except Exception as exc:
-                result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
-                    "collection": collection,
-                    "message": safe_error_message(exc),
-                })
+    required_current_valid_times = set(
+        operational_current_valid_times(locked_production_reference)
+    )
+    required_current_horizon_end = max(required_current_valid_times, key=epoch)
+    for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+        try:
+            previous_run = (previous.get("runs") or {}).get(collection) or {}
+            run, assets, stac_stats = list_latest_assets(
+                collection,
+                previous_run.get("referenceTime"),
+                minimum_valid_time=canonical_time(locked_production_reference),
+                required_valid_times=required_current_valid_times,
+                required_horizon_end_time=required_current_horizon_end,
+                allow_documented_required_gaps=True,
+            )
+            prefetched_marine[collection] = (run, assets, stac_stats)
+            result["diagnostics"]["stacByCollection"][collection] = stac_stats
+            research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
+        except Exception as exc:
+            safe_message = safe_error_message(exc)
+            failed_stats = {
+                "requiredHorizonEndCovered": False,
+                "prefetchFailed": True,
+            }
+            prefetched_marine[collection] = (None, [], failed_stats)
+            result["diagnostics"]["stacByCollection"][collection] = failed_stats
+            result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
+                "collection": collection,
+                "message": safe_message,
+            })
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
     regional_proxy_collection_completed = False
@@ -4123,6 +4980,14 @@ def main() -> int:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
             processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
+            required_asset_provenance = {
+                str(identity["validTime"]): identity
+                for asset in assets
+                for identity in [official_current_asset_identity(collection, run, asset)]
+                if collection in MARINE_COLLECTIONS
+                and identity is not None
+                and identity["validTime"] in required_current_valid_times
+            }
             same_processing = (
                 not bootstrap_operational_wam
                 and previous_run.get("processingSignature") == processing_signature
@@ -4134,6 +4999,16 @@ def main() -> int:
                 same_processing=same_processing,
                 same_run=same_run,
                 strict_current_anchor_available=coastal_part_current_cache_healthy,
+                required_valid_times=(
+                    required_current_valid_times
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                required_asset_provenance=(
+                    required_asset_provenance
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
             )
             if (
                 collection in MARINE_COLLECTIONS
@@ -4143,7 +5018,10 @@ def main() -> int:
             ):
                 result["diagnostics"]["strictCurrentRecoveryProcessedStepsDiscarded"] = (
                     int(result["diagnostics"].get("strictCurrentRecoveryProcessedStepsDiscarded") or 0)
-                    + len(previous_run.get("processedSteps") or {})
+                    + max(
+                        0,
+                        len(previous_run.get("processedSteps") or {}) - len(previous_steps),
+                    )
                 )
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
             previously_processed = {
@@ -4181,8 +5059,8 @@ def main() -> int:
                         and not stage_asset_complete(coastal_point_stage, coastal_point_stage_targets, collection, asset["valid"])
                         and not should_stop_work()
                     ):
-                        cached_path = cached_asset_path(str(asset.get("href") or ""))
-                        if cached_path.is_file():
+                        cached_path = reusable_cached_asset_path(asset, collection, run)
+                        if cached_path is not None:
                             register_raw_cache_asset(
                                 cached_path,
                                 str(asset.get("href") or ""),
@@ -4192,6 +5070,7 @@ def main() -> int:
                                 item_id=str(asset.get("id") or "") or None,
                                 item_created_at=asset.get("itemCreatedAt"),
                                 item_updated_at=asset.get("itemUpdatedAt"),
+                                expected_size=asset.get("size"),
                             )
                             private_diagnostics: dict[str, Any] = {
                                 "gribFieldInventory": {},
@@ -4285,7 +5164,25 @@ def main() -> int:
                 result["diagnostics"]["zoneLookups"] += zone_lookups
                 required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
                 step_recognized = sorted(set(found) & set(TARGETS[COLLECTION_FAMILY[collection]]))
-                step_complete = set(step_recognized) >= required_for_family and len(touched) > 0
+                source_capture = (
+                    raw_cache_source_capture(path, collection, run, asset["valid"])
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                )
+                step_source_asset = canonical_current_source_asset({
+                    "collection": collection,
+                    "modelRun": run,
+                    "validTime": asset["valid"],
+                    **(source_capture or {}),
+                }) if source_capture is not None else None
+                step_complete = bool(
+                    set(step_recognized) >= required_for_family
+                    and len(touched) > 0
+                    and (
+                        collection not in MARINE_COLLECTIONS
+                        or step_source_asset is not None
+                    )
+                )
                 if not interrupted and step_complete:
                     run_info["assetsProcessed"] += 1
                     previously_processed.add(asset["valid"])
@@ -4301,7 +5198,9 @@ def main() -> int:
                         "zonesTouched": len(touched),
                         "complete": step_complete,
                         "parserVersion": PARSER_VERSION,
-                        "processingSignature": processing_signature
+                        "processingSignature": processing_signature,
+                        **({"sourceAsset": step_source_asset}
+                           if collection in MARINE_COLLECTIONS else {}),
                     }
                 fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
@@ -4409,7 +5308,17 @@ def main() -> int:
         prune_coastal_point_stage_hours(coastal_point_stage, generated)
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     clean_and_summarize(result, fresh_zone_ids, budget)
-    strict_current_anchor_available = coastal_part_current_cache_reusable(
+    current_operational_ledger = build_current_operational_ledger(
+        result,
+        coastal_part_targets,
+        locked_production_reference,
+        prefetched_marine,
+    )
+    result["diagnostics"]["currentOperationalLedger"] = current_operational_ledger
+    result["diagnostics"]["currentOperationalAttestation"] = (
+        current_operational_ledger["attestation"]
+    )
+    strict_current_anchor_available = current_operational_cache_ready(
         result,
         coastal_part_targets,
         locked_production_reference,
@@ -4419,12 +5328,15 @@ def main() -> int:
     )
     if not strict_current_anchor_available:
         result["diagnostics"]["errors"].append({
-            "collection": "dmi-current-anchor-gate",
+            "collection": "dmi-current-ledger-gate",
             "message": (
-                "No strict coastal-part current pair exists in the locked "
-                "production matrix"
+                "The official DKSS asset/valid-time ledger is not complete "
+                "for the locked operational matrix"
             ),
             "failureClass": "producer-success-gate",
+            "failureCodes": result["diagnostics"]["currentOperationalLedger"].get(
+                "failureCodes"
+            ),
         })
     bootstrap_operational_complete = False
     if wave_bootstrap_configuration is not None:
@@ -4464,7 +5376,10 @@ def main() -> int:
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete
     producer_productive = bool(
-        fresh_successes or fresh_partials or bootstrap_complete
+        strict_current_anchor_available
+        or fresh_successes
+        or fresh_partials
+        or bootstrap_complete
     )
     producer_success_is_blocked = producer_success_blocked(
         strict_current_anchor_available,
@@ -4478,7 +5393,10 @@ def main() -> int:
     if producer_success_is_blocked:
         result["refreshStatus"] = "failed"
     else:
-        result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or bootstrap_complete or result["diagnostics"]["zeroProgressCollections"] else "failed")
+        result["refreshStatus"] = "ok" if strict_current_anchor_available else (
+            "partial" if fresh_successes or fresh_partials or bootstrap_complete
+            or result["diagnostics"]["zeroProgressCollections"] else "failed"
+        )
 
     write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     prune_stats = prune_raw_cache()

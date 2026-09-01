@@ -962,6 +962,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         dmi_end = workflow.index("\n      - name:", dmi_start + 1)
         dmi = workflow[dmi_start:dmi_end]
         for marker in (
+            f"DMI_BULK_MAX_DOWNLOAD_MB: ${{{{ {cutover_guard} && '4096' || '2048' }}}}",
             f"DMI_BULK_MAX_RUNTIME_SECONDS: ${{{{ {cutover_guard} && '3000' || '900' }}}}",
             f"DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{{{ {cutover_guard} && '180' || '120' }}}}",
             f"DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{{{ {cutover_guard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}}}",
