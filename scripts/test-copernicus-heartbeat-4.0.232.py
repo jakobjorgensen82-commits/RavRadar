@@ -120,12 +120,22 @@ def main() -> None:
         "production-watchdog:",
         "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)",
         "node scripts/check-production-watchdog.mjs",
+        "runs?per_page=100",
+        "--branch main",
+        "id: watchdog-recheck",
         "MAXIMUM_SILENCE_MINUTES:",
         "external_watchdog == true && '15' || '45'",
         '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"',
-        "steps.watchdog.outputs.dispatch == 'true'",
+        "steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'",
     ):
         need(marker in workflow, f"Heartbeat workflow is missing {marker}")
+    need(workflow.count("node scripts/check-production-watchdog.mjs") == 2,
+         "Production watchdog must inspect once and recheck once before dispatch")
+    need("runs?branch=main" not in workflow,
+         "Production watchdog must not trust GitHub's transient branch-filtered run index")
+    watchdog_section = workflow[workflow.index("  production-watchdog:"):]
+    need("continue-on-error" not in watchdog_section,
+         "Production watchdog inspection and recheck must fail closed")
     need("actions/cache/save@v6" not in workflow, "workflow_run heartbeat must not try to write a read-only cache")
     need("actions/upload-artifact" not in workflow, "Heartbeat must never export raw cache evidence")
     need("github.event_name == 'workflow_dispatch' && inputs.external_watchdog != true" not in workflow,

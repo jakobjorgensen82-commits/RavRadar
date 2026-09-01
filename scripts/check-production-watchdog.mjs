@@ -4,14 +4,31 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ACTIVE_RUN_STATUSES = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending']);
+const KNOWN_RUN_STATUSES = new Set([...ACTIVE_RUN_STATUSES, 'completed']);
 const finiteTime = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
 
-export function assessProductionWatchdog({ runs, manifest, nowMs = Date.now(), maximumSilenceMinutes = 45 }) {
+export function assessProductionWatchdog({
+  runs,
+  manifest,
+  nowMs = Date.now(),
+  maximumSilenceMinutes = 45,
+  branch = 'main',
+}) {
   if (!Number.isFinite(nowMs) || maximumSilenceMinutes < 15 || maximumSilenceMinutes > 180) {
     throw new Error('Production watchdog received an invalid bounded time policy');
   }
-  const workflowRuns = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs : null;
-  if (!workflowRuns) throw new Error('Production watchdog could not validate the workflow-run list');
+  if (typeof branch !== 'string' || !branch.trim()) {
+    throw new Error('Production watchdog received an invalid branch policy');
+  }
+  const allWorkflowRuns = Array.isArray(runs?.workflow_runs) ? runs.workflow_runs : null;
+  if (!allWorkflowRuns) throw new Error('Production watchdog could not validate the workflow-run list');
+  const workflowRuns = allWorkflowRuns.filter(run => run?.head_branch === branch);
+  if (workflowRuns.length === 0) {
+    throw new Error(`Production watchdog could not validate ${branch} workflow-run history`);
+  }
+  if (workflowRuns.some(run => !KNOWN_RUN_STATUSES.has(String(run?.status || '')) || !finiteTime(run?.created_at))) {
+    throw new Error(`Production watchdog found malformed ${branch} workflow-run history`);
+  }
   const active = workflowRuns.find(run => ACTIVE_RUN_STATUSES.has(String(run?.status || '')));
   if (active) return { dispatch: false, reason: 'production-run-active' };
   const newestRunMs = workflowRuns
@@ -32,10 +49,11 @@ export function assessProductionWatchdog({ runs, manifest, nowMs = Date.now(), m
 }
 
 function parseArgs(argv) {
-  const result = { maximumSilenceMinutes: 45 };
+  const result = { maximumSilenceMinutes: 45, branch: 'main' };
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
     if (value === '--runs') result.runsPath = argv[++index];
+    else if (value === '--branch') result.branch = argv[++index];
     else if (value === '--manifest-url') result.manifestUrl = argv[++index];
     else if (value === '--github-output') result.githubOutput = argv[++index];
     else if (value === '--maximum-silence-minutes') result.maximumSilenceMinutes = Number(argv[++index]);
@@ -56,6 +74,7 @@ async function main() {
     runs,
     manifest: await response.json(),
     maximumSilenceMinutes: options.maximumSilenceMinutes,
+    branch: options.branch,
   });
   if (options.githubOutput) {
     await fs.appendFile(options.githubOutput, `dispatch=${result.dispatch ? 'true' : 'false'}\nreason=${result.reason}\n`);

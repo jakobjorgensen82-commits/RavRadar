@@ -202,9 +202,13 @@ if (/\b(?:push|pull_request):/.test(copernicusPilot)) throw new Error('Copernicu
 const copernicusUpload = copernicusPilot.slice(copernicusPilot.indexOf('- name: Upload private support evidence'));
 if (copernicusUpload.includes('.cache/')) throw new Error('Den rå Copernicus-cache må ikke uploades som supportartefakt.');
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs']) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs', 'runs?per_page=100', '--branch main', 'id: watchdog-recheck', "steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'"]) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
+if ((copernicusKeepalive.match(/node scripts\/check-production-watchdog\.mjs/g) || []).length !== 2) throw new Error('Watchdoggen skal have præcis ét inspect og ét fail-closed recheck.');
+if (copernicusKeepalive.includes('runs?branch=main')) throw new Error('Watchdoggen må ikke stole på GitHubs forbigående branch-filtrerede runindeks.');
+const productionWatchdogSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  production-watchdog:'));
+if (productionWatchdogSection.includes('continue-on-error')) throw new Error('Watchdoggens inspect/recheck skal være fail-closed.');
 if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive.includes('actions/upload-artifact')) {
   throw new Error('Copernicus-keepalive må hverken oprette en ny cachekopi eller eksportere rådata.');
 }
@@ -1385,6 +1389,7 @@ for (const marker of [
   "inputs.geometry_v2_national == true && 'ravradar-geometry-v2-national'",
   "inputs.geometry_v2_pilot == true && 'ravradar-geometry-v2-pilot'",
   "'ravradar-weather-production'",
+  'queue: max',
   'cancel-in-progress: false',
 ]) {
   if (!recoveryConcurrencySection.includes(marker)) throw new Error(`Event×group-kontrakten mangler ${marker}`);
@@ -1646,6 +1651,7 @@ if (pagesPrivacyAuditSection.includes('continue-on-error')) {
 }
 const productionConcurrencySection = orchestratorWorkflow.slice(orchestratorWorkflow.indexOf('\nconcurrency:'), orchestratorWorkflow.indexOf('\njobs:'));
 if (!productionConcurrencySection.includes('cancel-in-progress: false')) throw new Error('En ny kørsel må aldrig afbryde en operationel RavScore-transition.');
+if (!productionConcurrencySection.includes('queue: max')) throw new Error('Ventende push-runs må aldrig erstattes af nyere watchdog-runs.');
 if (!orchestratorWorkflow.includes("'ravradar-geometry-v2-national'") || !orchestratorWorkflow.includes("'ravradar-geometry-v2-pilot'")) throw new Error('Private GeoDanmark-jobs skal have separate concurrency-grupper fra vejropdateringer.');
 if ((orchestratorWorkflow.match(/cancel-in-progress:/g) || []).length !== 1) throw new Error('Orkestratoren skal have præcis én fælles, ikke-annullerende concurrencykontrakt.');
 if (buildWorkflow.includes('\nconcurrency:') || deployWorkflow.includes('\nconcurrency:')) throw new Error('De genbrugelige roller må ikke oprette konkurrerende concurrencydomæner.');

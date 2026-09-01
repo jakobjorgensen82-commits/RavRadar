@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-01 – PR #244 merged; WAM-cacheovergang og watchdograce remediated lokalt
+
+- [x] Bestå PR #244's opdaterede exact-head `33452730102` og merge som `27906d7d83883622d87d66b141869302b016d6c6`.
+- [x] Klassificér produktion `33471276238` som et sikkert stop før beskyttede writes, artifact, Pages og deploy: legacy Candidate G-WAM-cachen mangler de nyere same-cell-proveniensfelter og udløser korrekt `MISSING_CELL`; Candidate G/offentlig side blev ikke ændret.
+- [x] Bevar den strikte WAM-validator, men håndtér netop legacy-cacheformen som genopbyggelig bølge-cold-cache: nulstil kun private `PART::`-bølgefelter og deres source/summary, checkpoint progressionen og genhent officielle målte DMI-data. Bevar øvrige vejrkomponenter, cacheidentiteter og punkter; ingen syntese, interpolation eller inferens.
+- [x] Isolér Candidate G-maintenance fra integreret first-cutover, så kun `integrated-cutover` kan aktivere resolver, reserver, force-refresh/WAM-mode og first-cutover-miljø.
+- [x] Luk watchdogens pending-race lokalt med `queue: max`, ufiltreret historiklæsning plus lokal main-filtrering og en fail-closed recheck umiddelbart før dispatch.
+- [x] Bestå målrettede DMI/WAM-cache-, bootstrap-, actionisolations- og integrerede generatorregressioner uden score-, provenance-, geometri- eller punktlempelse.
+- [ ] Bestå den aktuelle remediations egen exact-head, merge den sikkert, kør én frisk fuld målt vejrproduktion gennem validate/releasegate/artifact/Pages, og verificér offentlig current, fem døgn og desktop/mobil. Candidate G forbliver offentlig indtil da.
+
 # NYESTE CHECKPOINT – 2026-09-01 – genopret vejrpipeline før modelcutover
 
 - [x] Bevis at scheduler/vagthund fortsat starter runs, men at `33445662715`, `33446827961` og `33449081608` stoppede før vejrbygning på en UTC-midnatsflaky assistenttest; `33442030072` stoppede senere ved nul strict DMI-kystdelspar.

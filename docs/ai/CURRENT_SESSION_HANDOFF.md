@@ -1,3 +1,13 @@
+## NYESTE DELTA – 2026-09-01 – PR #244 merged; målt WAM-rebuild og købeskyttelse lokalt grøn
+
+- Denne status superseder de ældre topresumeer nedenfor, som bevares som revisionsspor.
+- PR #244 bestod opdateret exact-head `33452730102` og blev merged som `origin/main 27906d7d83883622d87d66b141869302b016d6c6`.
+- Push-run `33471225980` blev annulleret før jobs, fordi den daværende enkelt-pending-concurrency lod watchdog-dispatchet erstatte den ventende push. Efterfølgeren `33471276238` stoppede fail-closed i legacy-WAM på manglende same-cell-proveniens og dernæst manglende strengt verificeret DMI-currentpar. Ingen central vejrcache, beskyttede writes, artifact eller Pages blev produceret.
+- Lokal DMI-remediation nulstiller kun afviste private `PART::`-bølgefelter/-proveniens, gemmer et partial checkpoint og genopbygger dem med målte data gennem normal DMI STAC/GRIB. Current, vind, vandstand, temperatur og punktidentitet bevares; manglende live-WAM stopper fortsat.
+- First-cutover-miljøet er action-isoleret: kun `integrated-cutover` sammen med required legacy bootstrap må starte wave-resolver, lang runtime, force-refresh, privat bootstrapmode og source-attestering. Candidate G schedule/watchdog/manual maintenance kan ikke aktivere dette spor.
+- Produktionsworkflowet bruger lokalt `queue: max`/`cancel-in-progress: false`. Watchdoggen bruger ufiltreret op til 100-runs-historik med lokal `main`-filtrering, fail-closed validering og en ny fuld recheck lige før dispatch. POST kræver to positive stilhedsbeslutninger.
+- Målrettet evidens er grøn: DMI/WAM 20/20, wave-validator 26/26, integreret generator, watchdog og workflowkontrakter. Exact-head, frisk fuld produktion/Pages og offentlig desktop-/mobilbrowser udestår. Candidate G er fortsat sidste offentlige model; den integrerede state-6-model er ikke live.
+
 ## NYESTE DELTA – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.

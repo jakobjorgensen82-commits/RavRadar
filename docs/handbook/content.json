@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-01",
   "sections": [
     {
+      "id": "weather-legacy-wam-rebuild-and-queue-4-0-318",
+      "chapter": "90",
+      "title": "4.0.318: målt WAM-genopbygning og sikker produktionskø",
+      "summary": "PR #244 er merged, men Candidate G er fortsat offentlig; legacy-bølger genhentes målt, first-cutover er action-isoleret, og watchdoggen kan ikke længere erstatte en ventende push.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> PR #244 bestod exact-head <code>33452730102</code> og blev merged som <code>27906d7d</code>. Push-run <code>33471225980</code> blev annulleret før jobs af den tidligere enkelt-pending-kø. Efterfølgeren <code>33471276238</code> stoppede sikkert i legacy-WAM-kæden uden central vejrcache, beskyttede writes, artifact eller Pages. Candidate G er derfor fortsat sidste offentlige model; den integrerede state-6-model er ikke live.</div><div class=\"handbook-stack\"><p><strong>Målt rebuild:</strong> En gammel privat <code>PART::</code>-bølgerække uden den krævede same-cell-proveniens bruges ikke og får ikke opfundet en celleidentitet. Kun bølgefelter og bølgeproveniens fjernes, et partial checkpoint gemmes, og bølgerne genhentes fra den normale målte DMI STAC/GRIB-vej. Strøm, vind, vandstand, temperatur og punktidentitet bevares. Manglende live-WAM stopper fortsat fail-closed.</p><p><strong>Action-isolation:</strong> Kun operationen <code>integrated-cutover</code> må aktivere den integrerede wave-resolver, lang DMI-runtime, first-cutover-refresh, privat bootstrapmode og source-attestering. Schedule, watchdog og manuel Candidate G-vedligehold kan ikke starte dette spor.</p><p><strong>Kø og watchdog:</strong> Produktionsworkflowet bruger <code>queue: max</code> med <code>cancel-in-progress: false</code>. Watchdoggen henter en ufiltreret runliste, filtrerer <code>main</code> lokalt og fejler lukket ved ugyldig historik. Før et eventuelt dispatch gentages hele kontrollen mod en ny runliste og det offentlige manifest; begge beslutninger skal stadig være positive.</p><p><strong>Bevisgrænse:</strong> DMI/WAM 20/20, wave-validator 26/26, integreret generator, watchdog og workflowkontrakter er lokalt grønne. Ny exact-head, frisk fuld produktion/Pages og offentlig desktop-/mobilkontrol udestår.</p></div>"
+    },
+    {
       "id": "weather-strict-part-cache-and-calendar-4-0-318",
       "chapter": "90",
       "title": "4.0.318: stabil vejropdatering ved dansk midnat",

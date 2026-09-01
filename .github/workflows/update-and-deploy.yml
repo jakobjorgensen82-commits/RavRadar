@@ -72,6 +72,7 @@ concurrency:
   # incoming push, schedule or force run must never cancel an atomic model
   # transition between preparation, full gates and Pages deployment. Queued
   # normal runs re-check freshness and become cheap no-ops as needed.
+  queue: max
   cancel-in-progress: false
 
 jobs:

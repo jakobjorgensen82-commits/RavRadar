@@ -2,6 +2,18 @@
 
 **Håndbogsversion:** 4.0.318
 
+## Aktuel release- og driftsstatus – 1. september 2026
+
+PR #244 bestod den opdaterede exact-head-kildegate i run `33452730102` og blev merged som `27906d7d83883622d87d66b141869302b016d6c6`. Den første push-produktion `33471225980` blev annulleret før nogen jobs, fordi GitHubs daværende enkelt-pending-concurrency lod et watchdog-dispatch erstatte den ventende push. Efterfølgeren `33471276238` stoppede derefter sikkert i den gamle WAM-cache: dens bølgerækker kunne ikke bevise den nye same-cell-proveniens, og der fandtes efter stoppet ikke et strengt verificeret DMI-currentpar til næste målregister. Runnet skrev ikke central vejrcache eller andre beskyttede data og byggede hverken artifact eller Pages-deploy.
+
+Den lokale rettelse gætter ikke den manglende celleidentitet. Når private legacy-`PART::`-bølgerækker afvises, fjernes kun bølgefelterne og deres bølgeproveniens fra den private cache. Et partial checkpoint gemmes, hvorefter de samme kystdele genopbygges med faktisk målte WAM-data gennem den normale DMI STAC/GRIB-vej. Strøm, vind, vandstand, temperatur og punktidentitet forbliver urørte. Hvis de målte WAM-data ikke kan hentes eller valideres, stopper produktionen fortsat fail-closed.
+
+First-cutover-arbejdet er samtidig isoleret fra almindelig drift. Kun den eksakte operation `integrated-cutover` må starte den integrerede wave-bootstrap-resolver, få den lange DMI-runtime, tvinge first-cutover-refresh eller føre resolverens source-attestering ind i generatoren. Planlagte kørsler, watchdog og manuel Candidate G-vedligehold bruger den normale Candidate G-vej og kan ikke aktivere den integrerede bootstrap ved et gammelt legacyflag.
+
+Produktionskøen bruger nu `queue: max` sammen med `cancel-in-progress: false`, så en ny watchdogkørsel ikke erstatter en allerede ventende push. Watchdoggen undgår GitHubs fejlramte branchfiltrerede indeks: den henter op til 100 workflow-runs, filtrerer `main` lokalt og stopper uden dispatch ved tom, ukendt eller ugyldig historik. Hvis første kontrol vil dispatch'e, hentes og vurderes runhistorik og offentligt manifest igen umiddelbart før POST; produktion bestilles kun, når begge kontroller stadig siger samtidig stilhed.
+
+De målrettede DMI/WAM-regressioner er grønne 20/20, wave-validatoren 26/26, og integreret generator, watchdog samt workflowkontrakter er grønne. Det er lokalt kildebevis, ikke releasebevis. En ny exact-head, frisk fuld produktion med validate/releasegate/artifact/Pages og offentlig desktop-/mobilkontrol mangler stadig. Candidate G er derfor fortsat den sidste offentlige model; `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` er ikke live.
+
 ## Aktuel status og sikker modelvedligehold – 31. august 2026
 
 Vejrpipelinen blev 1. september stoppet af to uafhængige kontrolfejl: en test brugte UTC-dato til “i morgen” omkring dansk midnat, og DMI-cachegenbrug kunne godkendes uden et faktisk samlet, verificeret strømpar for en aktiv kystdel. Den lokale rettelse bruger RavRadars fælles danske kalender og kræver et finite U/V-par på samme time og række med korrekt DMI-proveniens i den relevante produktionsmatrix. Den valgte fallbackcache skrives atomisk videre til næste trin. Kontrollen er fortsat streng: uden et sådant par bliver runnet rødt, men det allerede hentede reelle cachearbejde bevares. Frisk produktions- og Pages-verifikation udestår.

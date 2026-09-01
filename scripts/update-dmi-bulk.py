@@ -2041,6 +2041,59 @@ def private_wave_bootstrap_hour_complete(
     )
 
 
+def reset_private_part_wave_cache(
+    result: dict[str, Any],
+    parts: list[dict[str, Any]],
+) -> int:
+    """Discard only private PART wave rows before a measured cold rebuild.
+
+    Candidate G's pinned legacy cache predates the time-bound same-cell WAM
+    provenance contract.  Those rows remain useful evidence that data existed,
+    but their missing cell identity cannot be reconstructed from zone summaries.
+    Remove only the wave component and let the ordinary DMI STAC/GRIB path
+    reacquire it.  Current, wind, water level, temperatures and point identity
+    are deliberately left untouched.
+    """
+    reset_rows = 0
+    for zone in parts:
+        zone_id = str(zone.get("id") or "")
+        point = (result.get("zones") or {}).get(zone_id)
+        if not isinstance(point, dict):
+            continue
+        for hour in (point.get("hourly") or {}).values():
+            if not isinstance(hour, dict):
+                continue
+            sources = hour.get("sources")
+            had_wave = any(
+                key in hour
+                for key in (
+                    "significant-wave-height",
+                    "dominant-wave-period",
+                    "mean-wave-dir",
+                )
+            ) or (isinstance(sources, dict) and "wave" in sources)
+            for key in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            ):
+                hour.pop(key, None)
+            if isinstance(sources, dict):
+                sources.pop("wave", None)
+                if not sources:
+                    hour.pop("sources", None)
+            if had_wave:
+                reset_rows += 1
+        for key in (
+            "significant-wave-height",
+            "dominant-wave-period",
+            "mean-wave-dir",
+        ):
+            (point.get("gridPoints") or {}).pop(key, None)
+            (point.get("collections") or {}).pop(key, None)
+    return reset_rows
+
+
 def execute_private_wave_history_bootstrap(
     result: dict[str, Any],
     zones: list[dict[str, Any]],
@@ -2091,12 +2144,18 @@ def execute_private_wave_history_bootstrap(
                 policy=configuration["policy"],
             )
         except WaveBootstrapError as exc:
-            if exc.code != "MISSING_HOUR":
-                raise
+            # Cache-first is an optimisation, never a permission to infer the
+            # new same-cell provenance from legacy zone summaries.  A rejected
+            # private PART wave cache is checkpointed without its wave rows and
+            # rebuilt only through the normal measured DMI path below.  The
+            # validator itself remains strict, and absent live WAM still fails.
+            reset_rows = reset_private_part_wave_cache(result, parts)
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
                 "failureCode": exc.code,
+                "resetWaveRowCount": reset_rows,
             }
+            write_checkpoint(result, fresh_zone_ids, budget, "partial")
         else:
             expected_exact = (
                 registry.part_count * len(configuration["requiredHours"])

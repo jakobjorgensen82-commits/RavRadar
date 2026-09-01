@@ -93,16 +93,36 @@ jobs:
           gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/runs?branch=main&per_page=20" \
+            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/runs?per_page=100" \
             > "$RUNNER_TEMP/ravradar-production-runs.json"
           node scripts/check-production-watchdog.mjs \
             --runs "$RUNNER_TEMP/ravradar-production-runs.json" \
+            --branch main \
+            --manifest-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/manifest.json" \
+            --maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES" \
+            --github-output "$GITHUB_OUTPUT"
+
+      - name: Reconfirm production silence immediately before dispatch
+        id: watchdog-recheck
+        if: steps.watchdog.outputs.dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAXIMUM_SILENCE_MINUTES: ${{ github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true && '15' || '45' }}
+        run: |
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "repos/${{ github.repository }}/actions/workflows/update-and-deploy.yml/runs?per_page=100" \
+            > "$RUNNER_TEMP/ravradar-production-runs-recheck.json"
+          node scripts/check-production-watchdog.mjs \
+            --runs "$RUNNER_TEMP/ravradar-production-runs-recheck.json" \
+            --branch main \
             --manifest-url "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/data/live/manifest.json" \
             --maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES" \
             --github-output "$GITHUB_OUTPUT"
 
       - name: Dispatch one production after verified silence
-        if: steps.watchdog.outputs.dispatch == 'true'
+        if: steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

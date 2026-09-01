@@ -3,7 +3,11 @@ import { assessProductionWatchdog } from './check-production-watchdog.mjs';
 
 const nowMs = Date.parse('2026-08-27T12:45:00.000Z');
 const manifest = { generatedAt: '2026-08-27T11:30:00.000Z' };
-const run = (status, createdAt) => ({ status, created_at: createdAt });
+const run = (status, createdAt, headBranch = 'main') => ({
+  status,
+  created_at: createdAt,
+  head_branch: headBranch,
+});
 
 assert.equal(assessProductionWatchdog({
   runs: { workflow_runs: [run('in_progress', '2026-08-27T11:00:00.000Z')] },
@@ -32,7 +36,11 @@ assert.equal(stale.dispatch, true);
 assert.equal(stale.reason, 'production-silent-and-public-manifest-stale');
 
 assert.throws(() => assessProductionWatchdog({ runs: {}, manifest, nowMs }), /workflow-run list/);
-assert.throws(() => assessProductionWatchdog({ runs: { workflow_runs: [] }, manifest: {}, nowMs }), /manifest time/);
+assert.throws(() => assessProductionWatchdog({
+  runs: { workflow_runs: [run('completed', '2026-08-27T11:00:00.000Z')] },
+  manifest: {},
+  nowMs,
+}), /manifest time/);
 
 const externalPolicy = { maximumSilenceMinutes: 15 };
 assert.equal(assessProductionWatchdog({
@@ -65,6 +73,45 @@ assert.equal(assessProductionWatchdog({
   nowMs,
   ...externalPolicy,
 }).reason, 'production-run-active', 'Aktiv produktion skal blokere ved den korte eksterne grænse');
+assert.equal(assessProductionWatchdog({
+  runs: { workflow_runs: [
+    run('in_progress', '2026-08-27T12:44:00.000Z', 'feature/test'),
+    run('completed', '2026-08-27T11:00:00.000Z'),
+  ] },
+  manifest,
+  nowMs,
+  ...externalPolicy,
+}).dispatch, true, 'Et aktivt non-main-run må ikke skjule reel main-stilhed');
+assert.equal(assessProductionWatchdog({
+  runs: { workflow_runs: [
+    run('completed', '2026-08-27T12:44:00.000Z', 'feature/test'),
+    run('completed', '2026-08-27T12:35:00.000Z'),
+  ] },
+  manifest,
+  nowMs,
+  ...externalPolicy,
+}).reason, 'recent-production-run', 'Nyere non-main-runs må ikke skjule et nyligt main-run');
+assert.equal(assessProductionWatchdog({
+  runs: { workflow_runs: [
+    run('completed', '2026-08-27T12:44:00.000Z', 'feature/test'),
+    run('pending', '2026-08-27T11:00:00.000Z'),
+  ] },
+  manifest,
+  nowMs,
+  ...externalPolicy,
+}).reason, 'production-run-active', 'Et pending main-run skal overleve en ufiltreret runliste');
+assert.throws(() => assessProductionWatchdog({
+  runs: { workflow_runs: [run('completed', '2026-08-27T12:44:00.000Z', 'feature/test')] },
+  manifest,
+  nowMs,
+  ...externalPolicy,
+}), /main workflow-run history/);
+assert.throws(() => assessProductionWatchdog({
+  runs: { workflow_runs: [run('completed', 'not-a-time')] },
+  manifest,
+  nowMs,
+  ...externalPolicy,
+}), /malformed main workflow-run history/);
 assert.throws(() => assessProductionWatchdog({
   runs: { workflow_runs: [] }, manifest, nowMs, maximumSilenceMinutes: 14,
 }), /invalid bounded time policy/);
