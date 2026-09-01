@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -29,7 +28,7 @@ from lib.copernicus_current import (
     validate_target_registry,
 )
 from lib.copernicus_target_identity import target_fingerprint
-from lib.dmi_native_provenance import complete_native_source_for_hour
+from lib.dmi_native_provenance import verified_part_current_pair
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,44 +62,10 @@ def utc_hour(value: str | None) -> datetime:
     return parsed.replace(minute=0, second=0, microsecond=0)
 
 
-def finite(value: Any) -> bool:
-    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value))
-
-
-def canonical_row_time(value: Any) -> str | None:
-    try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-    except (TypeError, ValueError):
-        return None
-    if parsed.tzinfo is None:
-        return None
-    parsed = parsed.astimezone(timezone.utc)
-    if parsed != parsed.replace(minute=0, second=0, microsecond=0):
-        return None
-    return utc_iso(parsed)
-
-
 def has_verified_local_dmi(
     document: dict[str, Any], target: dict[str, Any], valid_time: datetime,
 ) -> bool:
-    entity_id = f"PART::{target['partId']}"
-    zone = (document.get("zones") or {}).get(entity_id) or {}
-    entity = {
-        "parentZoneId": target["parentZoneId"],
-        "entityType": "coastal-part",
-        "samplingContext": "coastal-part-water-point",
-        "samplingPoint": target["waterPoint"],
-    }
-    expected_time = utc_iso(valid_time)
-    for key, row in ((zone.get("hourly") or {}).items()):
-        if not isinstance(row, dict) or canonical_row_time(row.get("time") or key) != expected_time:
-            continue
-        if not finite(row.get("current-u")) or not finite(row.get("current-v")):
-            continue
-        source = ((row.get("sources") or {}).get("current") or {})
-        if complete_native_source_for_hour(source, "current", entity_id, entity, expected_time):
-            return True
-    return False
+    return verified_part_current_pair(document, target, valid_time)
 
 
 def matrix_hours(reference: datetime) -> list[datetime]:

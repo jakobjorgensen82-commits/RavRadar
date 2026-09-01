@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-01 – genopret vejrpipeline før modelcutover
+
+- [x] Bevis at scheduler/vagthund fortsat starter runs, men at `33445662715`, `33446827961` og `33449081608` stoppede før vejrbygning på en UTC-midnatsflaky assistenttest; `33442030072` stoppede senere ved nul strict DMI-kystdelspar.
+- [x] Gør Spørg RavRadar-testen deterministisk med fælles dansk forecastkalender.
+- [x] Del én strict DMI-current-verifikator mellem producent og Copernicus-targetregistry; kræv eksakt aktivt PART-set, finite U/V i samme time/række, korrekt native provenance og låst `target−48..target+117`.
+- [x] Materialisér valgt fallback atomisk, og blokér normal/WAM-producentsucces ved nul strict par uden at kassere reelt progressivt cachearbejde.
+- [x] Bestå de målrettede assistent-, provenance-, registry-, scheduler-, bulk-, WAM 18/18- og bundlekontroller.
+- [x] Klassificér første PR #244 exact-head `33450446237`: alle forudgående checks nåede releasegaten, som havde to forældede source-string-assertions til den nu fælles helper. Flyt attesten til registry→helper-kaldet og helperens native-time/proveniens; målrettet releasegate er grøn, og ingen merge/produktion skete.
+- [ ] Exact-head, sikker merge, én frisk produktion gennem DMI/Copernicus, fuld validate, releasegate, artifact/Pages og offentlig friskhed; fortsæt derefter first cutover og slutbrowserkontrol.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #242 merged; first cutover nåede DMI/WAM
 
 - [x] PR #242 exact-head `33408976253`; merge `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`; legacy Candidate G-profilattestering passerede i produktion.

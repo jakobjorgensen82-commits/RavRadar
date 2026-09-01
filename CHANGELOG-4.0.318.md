@@ -1,3 +1,11 @@
+# Nyeste checkpoint – 2026-09-01 – strict DMI-kystdelscache og dansk forecastkalender
+
+- Spørg RavRadar-kildegaten bruger nu et fast testtidspunkt og den fælles `Europe/Copenhagen`-forecastkalender, så dansk midnat ikke kan stoppe vejropdateringer.
+- DMI-genbrug kræver eksakt aktivt `PART::`-set og mindst ét finite, samme-række, native-proveniensverificeret U/V-par i `target−48..target+117`.
+- Den faktisk valgte fallbackcache materialiseres atomisk før targetregistryen; normal/WAM-success er fail-closed ved nul strict par.
+- Måltests er grønne. Exact-head, merge, frisk produktion/deploy og offentlig friskhedsverifikation udestår.
+- Første PR #244 exact-head `33450446237` stoppede kun på releasegatens forældede forventning om inline-provenienskode. Gaten attesterer nu det fælles helperkald og helperens native-time/proveniens; lokal releasegate er grøn.
+
 # Nyeste checkpoint – 2026-08-31 – DMI/WAM-progressionscache og privat punktkandidat
 
 - PR #242 bestod exact-head `33408976253`, blev merged som `29f39cce44ffe6e3a1c14d5b58e991b61da2faba`, og produktion `33412497717` beviste den korrigerede legacy-attestering. Runnet stoppede senere i DMI/WAM før offentlig artifact/Pages/activation.

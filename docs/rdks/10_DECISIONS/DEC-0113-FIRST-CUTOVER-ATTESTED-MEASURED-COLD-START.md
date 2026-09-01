@@ -1,6 +1,8 @@
 # DEC-0113 – første integrerede cutover bruger attesteret measured-only cold start, når Candidate G ikke er migrationsklar
 
 - **Status:** Ejerbesluttet og implementeret i lokal 4.0.318-kandidat. Aggregate/cold-start/rollback/recovery, workflowroller, public-integrated 210/673, profil/cutover og 8-consumer-binding er lokalt grønne uden P0/P1-reviewfund; fuld slut-sourcegate, exact-head, merge, frisk produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilbrowser afventer
+
+**Driftspræcisering 2026-09-01:** En genbrugt DMI-kystdelscache er kun producentmæssig succes, når dens aktive `PART::`-identitet er eksakt, og mindst ét finite U/V-par på samme time/række har fuld native provenance i den låste `target−48..target+117`-matrix. Den valgte cache skal være atomisk materialiseret til næste forbruger. Nul strict par stopper både normal og WAM-produktion, men reelt progressivt arbejde checkpointes fortsat. Testfixtures for relative prognosedage skal bruge den fælles danske forecastkalender og et fast klokkeslæt. Dette ændrer ingen score-, geometri-, punkt- eller private datakontrakter.
 - **Dato:** 2026-08-30
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0102, DEC-0110 og DEC-0112

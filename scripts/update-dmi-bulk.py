@@ -35,6 +35,11 @@ from lib.current_field_shadow import (
     status as current_field_shadow_status,
 )
 from lib.dmi_cache_migration import prune_previous_sampling_mismatches
+from lib.copernicus_current import (
+    COLD_BRIDGE_HOURS,
+    PUBLIC_END_OFFSET_HOURS,
+    load_targets as load_coastal_part_targets,
+)
 from lib.dmi_native_provenance import (
     COLLECTION_FAMILY,
     COMPONENT_FIELD_SET,
@@ -49,6 +54,7 @@ from lib.dmi_native_provenance import (
     complete_native_source_for_hour,
     component_collection_allowed,
     sampling_identity,
+    strict_verified_part_current_pair_count,
     wave_distance_allowed,
 )
 from lib.coastal_point_staging import (
@@ -2747,6 +2753,68 @@ def coverage_summary(zones: dict[str, Any], required: tuple[str, ...]) -> dict[s
     }
 
 
+def production_reference_hour(value: Any = None) -> datetime:
+    raw = os.getenv("RAVRADAR_PRODUCTION_TARGET_HOUR") if value is None else value
+    if raw in (None, ""):
+        parsed = datetime.now(timezone.utc)
+    elif isinstance(raw, datetime):
+        parsed = raw
+    else:
+        parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        raise ValueError("Production reference must include a timezone")
+    parsed = parsed.astimezone(timezone.utc)
+    exact = parsed.replace(minute=0, second=0, microsecond=0)
+    if raw not in (None, "") and parsed != exact:
+        raise ValueError("Production reference must be an exact UTC hour")
+    return exact
+
+
+def coastal_part_current_cache_reusable(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+) -> bool:
+    """Require exact active PART identity and one strict pair in the matrix."""
+    if not isinstance(document, dict) or not isinstance(targets, list):
+        return False
+    zones = document.get("zones")
+    if not isinstance(zones, dict) or any(
+        not isinstance(target, dict) for target in targets
+    ):
+        return False
+    expected_ids = {
+        f"PART::{str(target.get('partId') or '').strip()}"
+        for target in targets
+        if str(target.get("partId") or "").strip()
+    }
+    actual_ids = {
+        str(zone_id)
+        for zone_id in zones
+        if str(zone_id).startswith("PART::")
+    }
+    if not expected_ids or len(expected_ids) != len(targets) or actual_ids != expected_ids:
+        return False
+    return strict_verified_part_current_pair_count(
+        document,
+        targets,
+        reference - timedelta(hours=COLD_BRIDGE_HOURS),
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+    ) > 0
+
+
+def producer_success_blocked(
+    strict_current_anchor_available: bool,
+    wave_bootstrap_requested: bool,
+    bootstrap_complete: bool,
+) -> bool:
+    """Fail closed when current anchoring or requested WAM bootstrap is absent."""
+    return (
+        not strict_current_anchor_available
+        or (wave_bootstrap_requested and not bootstrap_complete)
+    )
+
+
 def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
     """Fjern gamle/partielle vektorer der ikke kan bevises at dele gitterpunkt."""
     removed = []
@@ -3056,14 +3124,21 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
     DIAGNOSTICS_TEXT_PATH.write_text("\n".join(lines) + "\n", "utf-8")
 
 
+def atomic_write_bulk_cache(document: dict[str, Any]) -> None:
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temporary = OUTPUT_PATH.with_suffix(".json.tmp")
+    temporary.write_text(
+        json.dumps(document, ensure_ascii=False, indent=2) + "\n",
+        "utf-8",
+    )
+    temporary.replace(OUTPUT_PATH)
+
+
 def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
     result["refreshStatus"] = status
     result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     clean_and_summarize(result, fresh_zone_ids, budget)
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = OUTPUT_PATH.with_suffix(".json.tmp")
-    tmp.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
-    tmp.replace(OUTPUT_PATH)
+    atomic_write_bulk_cache(result)
     write_ocean_diagnostics(result)
 
 
@@ -3337,6 +3412,8 @@ def main() -> int:
     part_doc: dict[str, Any] = {"zones": {}}
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
+    coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
+    locked_production_reference = production_reference_hour()
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
         for feature in zones_geo.get("features", [])
@@ -3361,6 +3438,11 @@ def main() -> int:
         error for error in (previous_diag.get("errors") or [])
         if str(error.get("collection", "")).startswith("dkss_")
     ]
+    coastal_part_current_cache_healthy = coastal_part_current_cache_reusable(
+        previous,
+        coastal_part_targets,
+        locked_production_reference,
+    )
     previous_refresh_status = str(previous.get("refreshStatus") or "").lower()
     horizon_coverage = previous_diag.get("componentHorizonCoverage") or {}
     previous_zone_count = max(1, int(previous_diag.get("zoneCount") or len(previous.get("zones") or {}) or 1))
@@ -3373,6 +3455,7 @@ def main() -> int:
         and int(previous_ocean.get("waterTemperatureZones") or 0) >= previous_zone_count
         and marine_horizon_healthy
         and wind_horizon_healthy
+        and coastal_part_current_cache_healthy
         and not previous_marine_errors
         and previous_refresh_status not in {"failed", "partial"}
     )
@@ -3392,6 +3475,7 @@ def main() -> int:
         # En nylig parserfejl må aldrig blokere et nyt DKSS-forsøg efter en kodeopdatering.
         previous.setdefault("refreshStatus", "fresh-bulk-cache")
         previous.setdefault("diagnostics", {})
+        atomic_write_bulk_cache(previous)
         write_ocean_diagnostics(previous)
         ocean = build_ocean_diagnostics(previous)["summary"]
         write_github_outputs(
@@ -3437,21 +3521,17 @@ def main() -> int:
     # ikke et separat DMI-kald pr. kystdel. De offentlige kystdele indgår i den
     # reelle dækningsnævner; kun private forskningsmål holdes udenfor.
     zone_coast_types = {zone["id"]: zone.get("coastType") or "east" for zone in zones}
-    if COASTAL_PART_POINTS_PATH.exists():
-        for parent_zone_id, parts in (part_doc.get("zones") or {}).items():
-            for part in parts or []:
-                part_id = part.get("partId")
-                point = part.get("waterPoint")
-                if not part_id or not isinstance(point, list) or len(point) != 2:
-                    continue
-                zones.append({
-                    "id": f"PART::{part_id}",
-                    "lon": float(point[0]),
-                    "lat": float(point[1]),
-                    "coastType": zone_coast_types.get(parent_zone_id, "east"),
-                    "coastalPart": True,
-                    "parentZoneId": parent_zone_id,
-                })
+    for target in coastal_part_targets:
+        parent_zone_id = target["parentZoneId"]
+        point = target["waterPoint"]
+        zones.append({
+            "id": f"PART::{target['partId']}",
+            "lon": float(point[0]),
+            "lat": float(point[1]),
+            "coastType": zone_coast_types.get(parent_zone_id, "east"),
+            "coastalPart": True,
+            "parentZoneId": parent_zone_id,
+        })
 
     # Kandidater samples i samme hentede GRIB-filer, men skrives til en separat
     # privat cache. De indgår aldrig i den offentlige registrering, dækningsnævner
@@ -3944,6 +4024,23 @@ def main() -> int:
         prune_coastal_point_stage_hours(coastal_point_stage, generated)
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     clean_and_summarize(result, fresh_zone_ids, budget)
+    strict_current_anchor_available = coastal_part_current_cache_reusable(
+        result,
+        coastal_part_targets,
+        locked_production_reference,
+    )
+    result["diagnostics"]["strictCoastalPartCurrentAnchorAvailable"] = (
+        strict_current_anchor_available
+    )
+    if not strict_current_anchor_available:
+        result["diagnostics"]["errors"].append({
+            "collection": "dmi-current-anchor-gate",
+            "message": (
+                "No strict coastal-part current pair exists in the locked "
+                "production matrix"
+            ),
+            "failureClass": "producer-success-gate",
+        })
     bootstrap_operational_complete = False
     if wave_bootstrap_configuration is not None:
         bootstrap_diagnostics = result["diagnostics"].get(
@@ -3981,9 +4078,16 @@ def main() -> int:
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete
-    if fresh_successes or fresh_partials or bootstrap_complete:
+    producer_success_is_blocked = producer_success_blocked(
+        strict_current_anchor_available,
+        wave_bootstrap_configuration is not None,
+        bootstrap_complete,
+    )
+    if not producer_success_is_blocked and (
+        fresh_successes or fresh_partials or bootstrap_complete
+    ):
         result["sourceUpdatedAt"] = generated
-    if wave_bootstrap_configuration is not None and not bootstrap_complete:
+    if producer_success_is_blocked:
         result["refreshStatus"] = "failed"
     else:
         result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or bootstrap_complete or result["diagnostics"]["zeroProgressCollections"] else "failed")
@@ -4001,7 +4105,7 @@ def main() -> int:
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
-    if wave_bootstrap_configuration is not None and not bootstrap_complete:
+    if producer_success_is_blocked:
         return 2
     return 0 if fresh_successes or fresh_partials or bootstrap_complete else 2
 
