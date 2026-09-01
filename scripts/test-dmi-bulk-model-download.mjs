@@ -80,6 +80,17 @@ assert.match(bulk, /CLOSER_CURRENT_COLUMN_SELECTED_FOR_NATIVE_TIME/);
 assert.match(nativeProvenance, /CURRENT_MAX_DISTANCE_KM = 5\.0/);
 assert.match(bulk, /prefer_vector_choice/);
 assert.match(bulk, /currentFieldShadow/);
+const regionalProxyBuilder = bulk.indexOf('regional_proxy_targets: list[dict[str, Any]] = []');
+const regionalProxyConsumer = bulk.indexOf('research_targets = rotating_research_targets + regional_proxy_targets');
+assert.ok(regionalProxyBuilder >= 0 && regionalProxyConsumer > regionalProxyBuilder,
+  'Den private regionale proxy skal bygges i et afgrænset fail-closed blok');
+const regionalProxyBlock = bulk.slice(regionalProxyBuilder, regionalProxyConsumer);
+assert.match(regionalProxyBlock, /try:/);
+assert.match(regionalProxyBlock, /except \(OSError, ValueError, TypeError, KeyError\):/);
+assert.match(regionalProxyBlock, /regional_proxy_configuration_status = "FAILED_CLOSED"/);
+assert.match(regionalProxyBlock, /operationel DMI-produktion fortsætter/);
+assert.doesNotMatch(regionalProxyBlock, /raise\b|safe_error_message/,
+  'En privat proxyfejl må hverken abortere DMI-producenten eller logge policypayload');
 assert.match(bulk, /prune_previous_sampling_mismatches/);
 assert.match(bulk, /removedSamplingPointMismatches/);
 assert.match(bulk, /sanitize_water_temperature_surface_integrity/);

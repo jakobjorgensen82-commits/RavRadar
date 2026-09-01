@@ -3807,17 +3807,34 @@ def main() -> int:
         int(current_shadow.get("cursor") or 0),
         CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
     )
-    regional_proxy_policy = json.loads(CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8"))
-    regional_proxy_targets = build_regional_proxy_targets(
-        regional_proxy_policy,
-        part_doc,
-        zone_coast_types,
-    )
+    regional_proxy_targets: list[dict[str, Any]] = []
+    regional_proxy_configuration_status = "FAILED_CLOSED"
+    try:
+        regional_proxy_policy = json.loads(
+            CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8")
+        )
+        regional_proxy_targets = build_regional_proxy_targets(
+            regional_proxy_policy,
+            part_doc,
+            zone_coast_types,
+        )
+        regional_proxy_configuration_status = (
+            "CONFIGURED" if regional_proxy_targets else "NOT_CONFIGURED"
+        )
+    except (OSError, ValueError, TypeError, KeyError):
+        # This candidate is private, score-neutral research only. A stale or
+        # incompatible policy must disable the candidate without aborting the
+        # operational DMI producer or exposing policy payloads in CI logs.
+        progress(
+            "privat regional proxykandidat blev fail-closed; "
+            "operationel DMI-produktion fortsætter"
+        )
     research_targets = rotating_research_targets + regional_proxy_targets
     research_run_metrics: dict[str, Any] = {
         "rotationAdvancedThisRun": False,
         "samplesWrittenThisRun": 0,
         "cachedReplayAssetsThisRun": 0,
+        "regionalProxyConfigurationStatus": regional_proxy_configuration_status,
         "regionalProxyConfiguredThisRun": len(regional_proxy_targets),
     }
     zones.extend(research_targets)
