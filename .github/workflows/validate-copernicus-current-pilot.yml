@@ -260,7 +260,16 @@ jobs:
           -r requirements-dmi.txt
           -r requirements-copernicus.txt
 
-      - name: Materialize the checked-in authoritative coastal-part registry
+      - name: Hydrate current central admin configuration read-only
+        run: python scripts/sync-admin-config.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Apply centrally approved zone reviews locally
+        run: python scripts/apply-central-zone-reviews.py
+
+      - name: Materialize the centrally hydrated authoritative coastal-part registry
         run: node scripts/build-public-coastal-parts-v2.mjs
 
       - name: Refresh the official DMI water-source registry

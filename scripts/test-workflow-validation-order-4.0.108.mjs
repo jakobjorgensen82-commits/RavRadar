@@ -216,6 +216,13 @@ for (const marker of [
   'DMI_BULK_COMPLETE_HORIZON_HOURS: 118',
   '--allow-nonmatching-seal',
   'test -z "$PREFLIGHT_SAMPLE_TIME"',
+  'name: Hydrate current central admin configuration read-only',
+  'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
+  'SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}',
+  'python scripts/sync-admin-config.py',
+  'name: Apply centrally approved zone reviews locally',
+  'python scripts/apply-central-zone-reviews.py',
+  'name: Materialize the centrally hydrated authoritative coastal-part registry',
   'Bind one exact current UTC target after the bounded DMI refresh',
   'test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'productionReferenceAt,evidencePurpose:"CURRENT_CUTOVER_PREFLIGHT"',
@@ -230,6 +237,9 @@ if ((operationalPreflight.match(/--allow-nonmatching-seal/g) || []).length !== 1
   throw new Error('Kun den indledende cacheinspektion må klassificere en ikke-matchende seal som ufuldstændig.');
 }
 const operationalPositions = [
+  operationalPreflight.indexOf('name: Hydrate current central admin configuration read-only'),
+  operationalPreflight.indexOf('name: Apply centrally approved zone reviews locally'),
+  operationalPreflight.indexOf('name: Materialize the centrally hydrated authoritative coastal-part registry'),
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
@@ -291,8 +301,6 @@ for (const forbidden of [
   'validate:source',
   'npm run validate',
   'release:gate',
-  'SUPABASE_',
-  'python scripts/sync-admin-config.py',
   'node scripts/sync-protected-admin-assets.mjs',
   'actions/configure-pages',
   'actions/upload-pages-artifact',
