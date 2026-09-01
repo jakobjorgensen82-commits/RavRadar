@@ -1,3 +1,39 @@
+# Nedlukningscheckpoint – integreret model før fuld historik – 2026-09-01 10:40 CEST
+
+## Varigt gemt
+
+- Branch: `codex/ravscore-history-incomplete-cutover`.
+- Pushet head: `5f058e0b` (`Allow integrated cutover with incomplete wave history`).
+- Branchens base er seneste hentede `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950`.
+- Den sammenhængende WAM-del er implementeret i seks filer og ligger på remote-branchen; worktree var rent umiddelbart efter push.
+- 51/51 målrettede Python-tests, den målrettede Node-workflowtest og `git diff --check` er grønne.
+
+## Bindende ejerretning og implementeret del
+
+- Den integrerede model skal online med friske direkte input og en eksakt, sammenhængende 118-timers aktuel/femdøgnsprognose, selv om fortidshistorikken endnu ikke er komplet.
+- Manglende fortid er `HISTORY_INCOMPLETE`, vises tydeligt offentligt og opbygges bagefter af reelle målte data. Den må ikke fjerne score eller femdøgnsprognose.
+- Ingen syntetisk rekonstruktion, interpolation, carry-forward eller lån fra nabozoner er tilladt.
+- Cold-start `NO_COHERENT_RUN` for den historiske WAM-matrix er nu advisory history-incomplete og fortsætter til den normale operationelle WAM-hentning. Migration er fortsat strict.
+- Kun legacy `MISSING_CELL` nulstiller bølgedelen. Gyldig delhistorik og `MISSING_HOUR` bevares.
+- Operationel exact bridge plus én coherent 118-timers WAM-run er fortsat en ufravigelig gate. Proveniens-, celle-, felt-, retnings-, run- og registerfejl stopper fortsat fail-closed.
+
+## Åbent før modellen kan gå online
+
+1. Bevar det eksisterende schema-4 Candidate G-rollbackcheckpoint 100 % strict og kun `READY`.
+2. Gem en separat privat `BUILDING_MEASURED_ONLY`-warmup for alle 673 kanoniske dele; den må aldrig betegnes rollback-companion eller eksponeres offentligt.
+3. Tillad første integrerede cutover og efterfølgende same-binding integrated maintenance med denne målte warmup, mens kalibrering er låst. Manuel Candidate G-rollback og return fra Candidate kræver stadig 673/673 `READY`.
+4. Spring checkpoint-build/save/protected-publish over under warmup, men bevar den private runtimebundle, så measured-only-fremdriften fortsætter på næste kørsel.
+5. Luk audit, activation, state-less recovery, releasegate, workflow og måltests. Derefter RDKS/håndbog/changelog, exact-head-CI, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol af 210/673, score, advarsel og fem døgn.
+
+## Sikkerhed og genoptagelse
+
+- Candidate G er fortsat den sidste offentlige model; `5f058e0b` er ikke merged eller deployet og må ikke beskrives som live.
+- Ingen geometri, zoner, kystnormaler, land-/vandpunkter, private payloads, koordinater, rå U/V eller credentials er ændret eller skrevet i dette delta.
+- To implementeringsagenter er afsluttet; der er ingen bevidst efterladt lokal test- eller skriveproces.
+- Ved genoptagelse: læs obligatorisk startkæde og dette topcheckpoint, fetch `origin/main`, verificér branch/head/status, implementér punkt 1–4 med måltests, og kør ikke unødvendige fulde lokale testgentagelser.
+
+---
+
 # Nedlukningscheckpoint – RavScore state 6 – 2026-08-31 06:34 CEST
 
 ## Status
