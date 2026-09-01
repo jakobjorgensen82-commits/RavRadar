@@ -35,6 +35,7 @@ export const RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES = Object.freeze({
   automatic: 'auto',
   candidateGMigration: 'candidate-g-migration',
   genuineColdStart: 'genuine-cold-start',
+  integratedStateLessRecovery: 'integrated-state-less-recovery',
 });
 export const RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION =
   'VALIDATED_ROLLBACK_ORACLE_REBUILT_FROM_MEASURED_HISTORY';
@@ -514,7 +515,10 @@ export function selectRavScoreInitialState({
   if (!part?.partId) throw new Error('RavScore initial-state selection requires a coastal part');
   if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
     .includes(candidateGBootstrapMode)
-    || typeof candidateGSourceValidated !== 'boolean') {
+    || typeof candidateGSourceValidated !== 'boolean'
+    || (candidateGBootstrapMode
+      === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery
+      && candidateGSourceValidated !== false)) {
     failClosed(
       'RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_INVALID',
       'RavScore first-cutover bootstrap selection is invalid',
@@ -551,6 +555,78 @@ export function selectRavScoreInitialState({
     return { state: pointState, source: 'POINT_ACTIVATION', rejectedSources, expiredSources };
   }
   const existingIntegrated = existingPart?.ravScoreModel?.currentState ?? null;
+  const checkpointState = checkpointStates?.[part.partId] ?? null;
+  const legacyState = existingPart?.candidateG?.currentState ?? null;
+  if (candidateGBootstrapMode
+    === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery) {
+    let validExistingIntegrated = null;
+    let validCheckpointState = null;
+    if (existingIntegrated) {
+      try {
+        assertIntegratedCoastalPointContinuation(existingIntegrated, {
+          samplingContextKey,
+          label: 'Existing integrated RavScore continuation',
+        });
+        if (integratedContinuationExpired(existingIntegrated)) {
+          expiredSources.push('EXISTING_INTEGRATED_EXPIRED');
+        } else {
+          validExistingIntegrated = existingIntegrated;
+        }
+      } catch {
+        rejectedSources.push('EXISTING_INTEGRATED_INVALID');
+      }
+    }
+    if (checkpointState) {
+      try {
+        assertIntegratedCoastalPointContinuation(checkpointState, {
+          samplingContextKey,
+          label: 'Protected integrated RavScore checkpoint',
+        });
+        if (integratedContinuationExpired(checkpointState)) {
+          expiredSources.push('INTEGRATED_CHECKPOINT_EXPIRED');
+        } else {
+          validCheckpointState = checkpointState;
+        }
+      } catch {
+        rejectedSources.push('INTEGRATED_CHECKPOINT_INVALID');
+      }
+    }
+    if (rejectedSources.length) {
+      failClosed(
+        'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+        'RavScore integrated state-less recovery found an invalid integrated state source',
+      );
+    }
+    if (validExistingIntegrated) {
+      return {
+        state: validExistingIntegrated,
+        source: 'EXISTING_INTEGRATED',
+        rejectedSources,
+        expiredSources,
+      };
+    }
+    if (validCheckpointState) {
+      return {
+        state: validCheckpointState,
+        source: 'INTEGRATED_CHECKPOINT',
+        rejectedSources,
+        expiredSources,
+      };
+    }
+    if (legacyState && !existingIntegrated && !checkpointState) {
+      failClosed(
+        'RAVSCORE_INTEGRATED_STATE_LESS_RECOVERY_CANDIDATE_ONLY',
+        'RavScore integrated state-less recovery may not accept or migrate Candidate G-only state',
+      );
+    }
+    return {
+      state: null,
+      source: 'COLD_START',
+      rejectedSources,
+      expiredSources,
+      candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+    };
+  }
   if (existingIntegrated) {
     try {
       assertIntegratedCoastalPointContinuation(existingIntegrated, {
@@ -571,7 +647,6 @@ export function selectRavScoreInitialState({
       rejectedSources.push('EXISTING_INTEGRATED_INVALID');
     }
   }
-  const checkpointState = checkpointStates?.[part.partId] ?? null;
   if (checkpointState) {
     try {
       assertIntegratedCoastalPointContinuation(checkpointState, {
@@ -592,7 +667,6 @@ export function selectRavScoreInitialState({
       rejectedSources.push('INTEGRATED_CHECKPOINT_INVALID');
     }
   }
-  const legacyState = existingPart?.candidateG?.currentState ?? null;
   if (candidateGBootstrapMode === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart) {
     if (candidateGSourceValidated !== true || !legacyState || rejectedSources.length) {
       failClosed(

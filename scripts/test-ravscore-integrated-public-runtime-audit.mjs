@@ -116,6 +116,11 @@ const candidateStateTemplate = buildCandidateGDerivedStateSeries(
   { stateKey: `sha256:${'1'.repeat(64)}` },
 ).continuationState;
 assert.equal(candidateStateTemplate.transportMemoryReady, true);
+const candidateWarmupStateTemplate = buildCandidateGDerivedStateSeries(
+  baseSamples.slice(-13),
+  { stateKey: `sha256:${'2'.repeat(64)}` },
+).continuationState;
+assert.equal(candidateWarmupStateTemplate.transportMemoryReady, false);
 const historyIncompleteBaseSeries = buildIntegratedRavScoreStateSeries(
   baseSamples.map(sample => sample.time === time(-1)
     ? { ...sample, waveDirectionDeg:null }
@@ -158,6 +163,13 @@ function readyState(part, transition, series = baseSeries) {
 function candidateStateFor(part) {
   return {
     ...structuredClone(candidateStateTemplate),
+    stateKey: candidateGStateKey(part),
+  };
+}
+
+function candidateWarmupStateFor(part) {
+  return {
+    ...structuredClone(candidateWarmupStateTemplate),
     stateKey: candidateGStateKey(part),
   };
 }
@@ -515,6 +527,41 @@ function syntheticFull({
   };
 }
 
+function withCandidateGMeasuredWarmup(source, { clone = true } = {}) {
+  const full = clone ? structuredClone(source) : source;
+  const candidateBinding = candidateGRollbackModelBinding();
+  delete full.ravScoreCandidateGRollback;
+  const warmupParts = Object.fromEntries(Object.entries(full.coastalParts.parts)
+    .map(([partId, part]) => [partId, {
+      ravScoreModel: {
+        currentState: candidateWarmupStateFor({ ...part, partId }),
+      },
+    }]));
+  full.ravScoreCandidateGWarmup = {
+    schemaVersion: '1.0.0',
+    kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+    status: 'BUILDING_MEASURED_ONLY',
+    evidencePolicy: 'MEASURED_ONLY',
+    syntheticHistoryAllowed: false,
+    sourceModelBinding: binding,
+    candidateModelBinding: candidateBinding,
+    automaticActivationAllowed: false,
+    publicDuringNormalOperation: false,
+    runtime: {
+      schemaVersion: 1,
+      enabled: true,
+      status: 'BUILDING_MEASURED_ONLY',
+      generatedAt: full.productionReferenceAt,
+      modelBinding: candidateBinding,
+      expectedPartCount: Object.keys(warmupParts).length,
+      measuredPartCount: Object.keys(warmupParts).length,
+      parts: warmupParts,
+    },
+  };
+  return full;
+}
+
 function unitAuditManifest(full, startup, startupText, details, detailsText) {
   const startupSha256 = sha256Text(startupText);
   const detailsSha256 = sha256Text(detailsText);
@@ -586,15 +633,16 @@ function audit(full, package_, expectedZoneCount, expectedPartCount) {
   });
 }
 
-const national = syntheticFull({
+let national = syntheticFull({
   zoneCount: 210,
   partCounts: Array.from({ length: 210 }, (_, index) => index < 43 ? 4 : 3),
 });
 assert.equal(Object.keys(national.coastalParts.parts).length, 673);
-const nationalPackage = publicPackage(national);
-const nationalReport = audit(national, nationalPackage, 210, 673);
+let nationalPackage = publicPackage(national);
+let nationalReport = audit(national, nationalPackage, 210, 673);
 assert.deepEqual(nationalReport.errors, []);
 assert.equal(nationalReport.status, 'passed');
+assert.equal(nationalReport.productionReferenceAt, REFERENCE_AT);
 assert.equal(nationalReport.coverage.zoneCount, 210);
 assert.equal(nationalReport.coverage.partCount, 673);
 assert.equal(nationalReport.coverage.publicForecastHours, RAVSCORE_PUBLIC_FORECAST_HOURS);
@@ -606,12 +654,37 @@ assert.equal(nationalReport.coverage.zoneModeCount,
   210 * RAVSCORE_PUBLIC_FORECAST_HOURS * 2);
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);
+assert.deepEqual(nationalReport.history, {
+  allCurrentScoresFullHistory: true,
+  currentFullHistoryModeCount: 420,
+  currentHistoryIncompleteModeCount: 0,
+});
+assert.equal(nationalReport.rollback.status, 'READY');
+assert.equal(nationalReport.rollback.activationReady, true);
 assert.equal(nationalReport.rollback.readyPartCount, 673);
 assert.equal(nationalReport.rollback.evidenceLimitExceededPartCount, 0);
 assert.equal(nationalReport.rollback.reconstructionFailurePartCount, 0);
 assert.equal(nationalReport.rollback.stateContractMismatchPartCount, 0);
 assert.equal(nationalReport.rollback.oracleMismatchPartCount, 0);
 assert.ok(nationalReport.payload.startupBytes < nationalReport.payload.detailsBytes);
+
+let nationalWarmup = withCandidateGMeasuredWarmup(national, { clone: false });
+let nationalWarmupReport = audit(nationalWarmup, nationalPackage, 210, 673);
+assert.deepEqual(nationalWarmupReport.errors, []);
+assert.equal(nationalWarmupReport.status, 'passed');
+assert.equal(nationalWarmupReport.rollback.status, 'BUILDING_MEASURED_ONLY');
+assert.equal(nationalWarmupReport.rollback.activationReady, false);
+assert.equal(nationalWarmupReport.rollback.companionPresent, false);
+assert.equal(nationalWarmupReport.rollback.warmupPresent, true);
+assert.equal(nationalWarmupReport.rollback.runtimePartCount, 673);
+assert.equal(nationalWarmupReport.rollback.readyPartCount, 0);
+assert.equal(nationalWarmupReport.rollback.stateContractMismatchPartCount, 0);
+assert.equal(nationalWarmupReport.rollback.oracleMismatchPartCount, 0);
+nationalReport = null;
+nationalWarmupReport = null;
+nationalPackage = null;
+nationalWarmup = null;
+national = null;
 
 const small = syntheticFull({ zoneCount: 1, partCounts: [1] });
 assert.throws(
@@ -684,6 +757,12 @@ const historyIncompleteReport = audit(
 );
 assert.deepEqual(historyIncompleteReport.errors, [],
   'canonical wave/last-mile HISTORY_INCOMPLETE must pass without weakening rollback');
+assert.deepEqual(historyIncompleteReport.history, {
+  allCurrentScoresFullHistory: false,
+  currentFullHistoryModeCount: 0,
+  currentHistoryIncompleteModeCount: 2,
+});
+assert.equal(historyIncompleteReport.rollback.activationReady, true);
 assert.equal(historyIncompleteReport.rollback.readyPartCount, 1);
 
 const mismatchedHistorySummary = structuredClone(historyIncompleteSmall);
@@ -1060,8 +1139,9 @@ assert.equal(companionRollbackLimitReport.rollback.evidenceLimitExceededPartCoun
 const missingCompanion = structuredClone(small);
 delete missingCompanion.ravScoreCandidateGRollback;
 const missingCompanionReport = audit(missingCompanion, smallPackage, 1, 1);
-assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_DESCRIPTOR_INVALID'));
-assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH'));
+assert.ok(missingCompanionReport.errors
+  .includes('CANDIDATE_G_PRIVATE_RUNTIME_ROOT_INVALID'));
+assert.equal(missingCompanionReport.rollback.activationReady, false);
 
 const incompleteCompanion = structuredClone(small);
 delete incompleteCompanion.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1'];
@@ -1082,6 +1162,85 @@ crossBindingCompanion.ravScoreCandidateGRollback.rollbackModelBinding.modelId = 
 assert.ok(audit(crossBindingCompanion, smallPackage, 1, 1).errors
   .includes('ROLLBACK_COMPANION_BINDING_MISMATCH'));
 
+const validSmallWarmup = withCandidateGMeasuredWarmup(small);
+const validSmallWarmupPackage = publicPackage(validSmallWarmup);
+const validSmallWarmupReport = audit(
+  validSmallWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.deepEqual(validSmallWarmupReport.errors, []);
+assert.equal(validSmallWarmupReport.rollback.status, 'BUILDING_MEASURED_ONLY');
+assert.equal(validSmallWarmupReport.rollback.activationReady, false);
+assert.equal(validSmallWarmupReport.rollback.readyPartCount, 0);
+
+const ambiguousCandidateGRoots = structuredClone(validSmallWarmup);
+ambiguousCandidateGRoots.ravScoreCandidateGRollback =
+  structuredClone(small.ravScoreCandidateGRollback);
+const ambiguousCandidateGRootsReport = audit(
+  ambiguousCandidateGRoots,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(ambiguousCandidateGRootsReport.errors
+  .includes('CANDIDATE_G_PRIVATE_RUNTIME_ROOT_INVALID'));
+assert.equal(ambiguousCandidateGRootsReport.rollback.activationReady, false);
+
+const malformedWarmupDescriptor = structuredClone(validSmallWarmup);
+malformedWarmupDescriptor.ravScoreCandidateGWarmup.syntheticHistoryAllowed = true;
+assert.ok(audit(
+  malformedWarmupDescriptor,
+  validSmallWarmupPackage,
+  1,
+  1,
+).errors.includes('CANDIDATE_G_WARMUP_DESCRIPTOR_INVALID'));
+
+const incompleteWarmup = structuredClone(validSmallWarmup);
+delete incompleteWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1'];
+incompleteWarmup.ravScoreCandidateGWarmup.runtime.measuredPartCount = 0;
+const incompleteWarmupReport = audit(
+  incompleteWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(incompleteWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_RUNTIME_INVALID'));
+assert.ok(incompleteWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_PART_COVERAGE_MISMATCH'));
+
+const tamperedWarmup = structuredClone(validSmallWarmup);
+tamperedWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState.transportPotential += 1;
+const tamperedWarmupReport = audit(
+  tamperedWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(tamperedWarmupReport.errors
+  .some(code => code.startsWith('CANDIDATE_G_WARMUP_')),
+'a tampered measured warmup continuation must fail its private warmup contract');
+assert.equal(tamperedWarmupReport.rollback.activationReady, false);
+
+const mislabeledReadyWarmup = structuredClone(validSmallWarmup);
+mislabeledReadyWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState = structuredClone(
+    small.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1']
+      .ravScoreModel.currentState,
+  );
+const mislabeledReadyWarmupReport = audit(
+  mislabeledReadyWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(mislabeledReadyWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_ALREADY_READY'));
+assert.equal(mislabeledReadyWarmupReport.rollback.activationReady, false);
+
 const scoreMismatch = structuredClone(small);
 scoreMismatch.coastalParts.parts['synthetic-part-1']
   .ravScoreModel.modes.waders.score += 1;
@@ -1101,6 +1260,15 @@ for (const [field, value] of [
     `${field} must be rejected from the public details payload`);
   assert.ok(leaked.errors.includes('PUBLIC_DETAILS_NOT_CANONICAL'));
 }
+
+const publicWarmupLeak = structuredClone(smallPackage);
+publicWarmupLeak.details.ravScoreCandidateGWarmup = {
+  status: 'BUILDING_MEASURED_ONLY',
+};
+publicWarmupLeak.detailsText = compactJson(publicWarmupLeak.details);
+assert.ok(audit(small, publicWarmupLeak, 1, 1).errors
+  .includes('PUBLIC_PRIVACY_CONTRACT_FAILED'),
+'The private measured warmup root must never enter a public payload.');
 
 const staleManifest = structuredClone(smallPackage);
 staleManifest.manifest.publicConditionsSha256 = '0'.repeat(64);

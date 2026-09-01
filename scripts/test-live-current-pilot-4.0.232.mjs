@@ -185,6 +185,85 @@ const zeroGapLive = {
 };
 assert.equal(controlledLiveCurrentEnabled(zeroGapLive), true,
   'full DMI coverage still requires and accepts an exact COMPLETE zero-gap seal');
+
+const ADVISORY_AT = '2026-08-18T12:00:00Z';
+const ADVISORY_RECORD_ID = sha256('fixture-record-advisory');
+const advisoryRequiredPairs = [{ partId: part.partId, validTime: ADVISORY_AT }];
+const operationalLive = withMeasuredAdvisory => {
+  const advisoryHistoryRecordRefs = withMeasuredAdvisory ? [{
+    partId: part.partId,
+    validTime: ADVISORY_AT,
+    recordId: ADVISORY_RECORD_ID,
+    acquisitionId: ACQUISITION_ID,
+    source: 'copernicus-baltic-nemo',
+  }] : [];
+  const operationalIdentity = {
+    sealContractId: 'copernicus-current-operational118-advisory-history48-seal-v1',
+    productionReferenceAt: REFERENCE_AT,
+    operationalRangeStartAt: REFERENCE_AT,
+    operationalRangeEndAt: FUTURE_AT,
+    operationalHourCount: 118,
+    advisoryHistoryStartAt: '2026-08-16T13:00:00Z',
+    advisoryHistoryEndAt: '2026-08-18T12:00:00Z',
+    advisoryHistoryHourCount: 48,
+    targetRegistrySha256: fingerprint(part),
+    dmiCurrentInputSha256: sha256('fixture-operational-dmi-input'),
+    dmiVerifierContractId: 'dmi-native-current-provenance-v1',
+    operationalRequiredPairsSha256: sha256({
+      contractId: 'copernicus-required-part-time-pairs-v1', pairs: requiredPairs,
+    }),
+    operationalRequiredPairCount: recordRefs.length,
+    operationalRecordRefs: recordRefs,
+    operationalRecordRefsSha256: sha256(recordRefs),
+    advisoryHistoryRequiredPairsSha256: sha256({
+      contractId: 'copernicus-required-part-time-pairs-v1', pairs: advisoryRequiredPairs,
+    }),
+    advisoryHistoryRequiredPairCount: 1,
+    advisoryHistoryRecordRefs,
+    advisoryHistoryRecordRefsSha256: sha256(advisoryHistoryRecordRefs),
+    advisoryHistoryAvailablePairCount: advisoryHistoryRecordRefs.length,
+    advisoryHistoryMissingPairCount: 1 - advisoryHistoryRecordRefs.length,
+    advisoryHistoryComplete: advisoryHistoryRecordRefs.length === 1,
+    selectionPolicyId: 'per-native-time-nearest-shared-uv-column-then-deepest-common-layer-v1',
+    acquisitionIds: [ACQUISITION_ID],
+  };
+  const operationalCollectionId = sha256(operationalIdentity);
+  const resign = entry => {
+    const projected = { ...entry, collectionId: operationalCollectionId };
+    projected.recordProjectionSha256 = sha256(projectionPayload(projected));
+    return projected;
+  };
+  const entries = [resign(copernicusEntry), resign(futureCopernicusEntry)];
+  if (withMeasuredAdvisory) {
+    entries.unshift(resign(makeCopernicusEntry(ADVISORY_AT, ADVISORY_RECORD_ID, 0.08, 0.03)));
+  }
+  return {
+    ...live,
+    copernicusRangeSeal: {
+      collectionId: operationalCollectionId,
+      status: 'OPERATIONAL_COMPLETE',
+      ...Object.fromEntries(Object.entries(operationalIdentity)
+        .filter(([key]) => ![
+          'operationalRecordRefs', 'advisoryHistoryRecordRefs', 'acquisitionIds',
+        ].includes(key))),
+      sealedAt: SEALED_AT,
+    },
+    entries,
+  };
+};
+const operationWithoutHistory = operationalLive(false);
+assert.equal(controlledLiveCurrentEnabled(operationWithoutHistory), true,
+  'complete target..+117 operation must remain enabled with explicitly missing advisory history');
+const operationWithMeasuredHistory = operationalLive(true);
+assert.equal(controlledLiveCurrentEnabled(operationWithMeasuredHistory), true,
+  'measured advisory history must remain usable when it is actually present');
+assert.equal(controlledLiveCurrentEnabled({
+  ...operationWithoutHistory,
+  copernicusRangeSeal: {
+    ...operationWithoutHistory.copernicusRangeSeal,
+    advisoryHistoryMissingPairCount: 0,
+  },
+}), false, 'tampered advisory-history completeness must fail the whole operation seal closed');
 const regionalPart = { partId: 'R1', zoneId: 'ZR', waterPoint: [11, 56] };
 const regionalEntry = {
   partId: 'R1', parentZoneId: 'ZR', validTime: '2026-08-18T12:00:00.000Z',

@@ -324,7 +324,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.318 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -456,13 +456,24 @@ jobs:
         shell: bash
         env:
           PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}
+          OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}
         run: |
           if test "$PRIVATE_RUNTIME_AVAILABLE" = "true" || test -f .cache/ravscore-continuation-checkpoint/checkpoint.json; then
             echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "stateless_integrated_recovery=false" >> "$GITHUB_OUTPUT"
             echo "Private integrated continuation is available."
-          else
+          elif test "$OPERATIONAL_ACTION" = "integrated-cutover"; then
             echo "required=true" >> "$GITHUB_OUTPUT"
+            echo "stateless_integrated_recovery=false" >> "$GITHUB_OUTPUT"
             echo "No integrated continuation exists; the exact one-time Candidate G bootstrap is required."
+          elif test "$OPERATIONAL_ACTION" = "integrated"; then
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"
+            echo "No protected continuation exists; active integrated scoring will use measured state-less recovery."
+          else
+            echo "required=false" >> "$GITHUB_OUTPUT"
+            echo "stateless_integrated_recovery=false" >> "$GITHUB_OUTPUT"
+            echo "No protected continuation exists; this non-integrated action remains fail-closed."
           fi
 
       - name: Import exact public Candidate G runtime only for first integrated bootstrap
@@ -471,7 +482,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.318 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -496,7 +507,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.318 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -671,7 +682,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.318 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -708,9 +719,42 @@ jobs:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
+      - name: Require successful DMI producer before current supplement
+        id: dmi-terminal-gate
+        if: always() && steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        env:
+          PRODUCER_OUTCOME: ${{ steps.dmi-bulk.outcome || 'skipped' }}
+          PRODUCER_STATUS: ${{ steps.dmi-bulk.outputs.status || 'unknown' }}
+          PRODUCER_CODE: ${{ steps.dmi-bulk.outputs.terminal_code || 'DMI_UNCLASSIFIED' }}
+          STRICT_CURRENT_ANCHOR_READY: ${{ steps.dmi-bulk.outputs.strict_current_anchor_ready || 'false' }}
+        run: |
+          code="$PRODUCER_CODE"
+          if ! printf '%s\n' "$code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'; then
+            code="DMI_UNCLASSIFIED"
+          fi
+          status_ready=false
+          case "$PRODUCER_STATUS" in
+            ok|partial|fresh-bulk-cache) status_ready=true ;;
+          esac
+          ready=false
+          if test "$PRODUCER_OUTCOME" = "success" \
+            && test "$code" = "DMI_READY" \
+            && test "$STRICT_CURRENT_ANCHOR_READY" = "true" \
+            && test "$status_ready" = "true"; then
+            ready=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          echo "strict_current_anchor_ready=$STRICT_CURRENT_ANCHOR_READY" >> "$GITHUB_OUTPUT"
+          if test "$ready" != "true"; then
+            echo "::error title=DMI terminal gate::$code"
+            exit 1
+          fi
+
       - name: Require complete operational WAM handoff before first integrated cutover
         id: wam-bootstrap-readiness
-        if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled'
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success'
         shell: bash
         run: |
           producer_outcome="${{ steps.dmi-bulk.outcome }}"
@@ -745,13 +789,15 @@ jobs:
           echo "Partial collections this run: ${{ steps.dmi-bulk.outputs.partial_collections || '0' }}"
           echo "Zones in bulk cache: ${{ steps.dmi-bulk.outputs.zone_count || '0' }}"
           echo "DMI bulk error: ${{ steps.dmi-bulk.outputs.error || 'none' }}"
+          echo "DMI terminal code: ${{ steps.dmi-terminal-gate.outputs.code || 'DMI_UNCLASSIFIED' }}"
+          echo "Strict current anchor ready: ${{ steps.dmi-terminal-gate.outputs.strict_current_anchor_ready || 'false' }}"
           echo "WAM bootstrap code: ${{ steps.wam-bootstrap-readiness.outputs.code || 'unknown' }}"
           if [ "${{ steps.dmi-bulk.outputs.status }}" = "failed" ]; then
             echo "::warning::DMI bulk refresh failed. RavRadar preserves the previous DMI cache and uses fallback providers where necessary."
           fi
 
       - name: Refresh private Copernicus cache after DMI cache churn
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'
         id: copernicus-shadow-post-dmi
         uses: actions/cache/restore@v6
         with:
@@ -761,13 +807,12 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Select exact-hour DMI gaps for targeted Copernicus supplement
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'
         id: copernicus-targets
         run: >-
           python scripts/build-copernicus-target-registry.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --output .cache/copernicus-current-targets.json
-          --nearest-dmi-hour
           --github-output "$GITHUB_OUTPUT"
 
       - name: Bind production to resolved DMI current hour
@@ -855,7 +900,8 @@ jobs:
           DMI_OCEAN_REQUEST_TIMEOUT_MS: 60000
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.318 (${{ github.server_url }}/${{ github.repository }})"
+          RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
+          WEATHER_USER_AGENT: "RavRadar/4.0.319 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -878,11 +924,25 @@ jobs:
         run: node scripts/generate-public-conditions.mjs
 
       - name: Audit actual integrated RavScore public runtime before deploy
+        id: ravscore-integrated-runtime-audit
         if: steps.preflight.outputs.should_run == 'true'
-        run: >-
-          node scripts/audit-ravscore-integrated-public-runtime.mjs
-          --input data/live/conditions.json
-          --output .geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+        shell: bash
+        run: |
+          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          node scripts/audit-ravscore-integrated-public-runtime.mjs \
+            --input data/live/conditions.json \
+            --output "$audit_path"
+          rollback_status="$(jq -er '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")' "$audit_path")"
+          rollback_activation_ready="$(jq -er '.rollback.activationReady | select(type == "boolean")' "$audit_path")"
+          all_current_scores_full_history="$(jq -er '.history.allCurrentScoresFullHistory | select(type == "boolean")' "$audit_path")"
+          if test "$rollback_status" = "READY"; then
+            test "$rollback_activation_ready" = "true"
+          else
+            test "$rollback_activation_ready" = "false"
+          fi
+          echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"
+          echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"
+          echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"
 
       - name: Generate and strictly validate production reference zones
         if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
@@ -958,8 +1018,25 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Record strict checkpoint as not applicable during measured rollback warmup
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'false'
+        shell: bash
+        run: |
+          audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json
+          applicability_path=.geometry-v2-work/ravscore-continuation-checkpoint-applicability.json
+          test "$(jq -er '.rollback.status' "$audit_path")" = "BUILDING_MEASURED_ONLY"
+          test "$(jq -er '.rollback.activationReady' "$audit_path")" = "false"
+          audit_sha256="$(AUDIT_PATH="$audit_path" node --input-type=module -e "import fs from 'node:fs'; import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs'; process.stdout.write(sha256CanonicalJson(JSON.parse(fs.readFileSync(process.env.AUDIT_PATH, 'utf8'))));")"
+          dataset_id="$(jq -er '.datasetId' data/live/manifest.json)"
+          jq -n \
+            --arg sourceHead "$GITHUB_SHA" \
+            --arg datasetId "$dataset_id" \
+            --arg auditSha256 "$audit_sha256" \
+            '{schemaVersion:"ravscore-continuation-checkpoint-applicability-v1",status:"NOT_APPLICABLE_DURING_MEASURED_WARMUP",sourceHead:$sourceHead,datasetId:$datasetId,integratedPublicAuditSha256:$auditSha256,warmupStatus:"BUILDING_MEASURED_ONLY",checkpointRequired:false,checkpointBuilt:false,checkpointPublished:false,privatePayloadIncluded:false}' \
+            > "$applicability_path"
+
       - name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true'
         run: >-
           node scripts/ravscore-continuation-checkpoint.mjs
           --save
@@ -967,14 +1044,14 @@ jobs:
           --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json
 
       - name: Save atomic schema-6 and Candidate G rollback checkpoint after final gates
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true' && steps.operational-action.outputs.action != 'candidate-dry-run'
         uses: actions/cache/save@v6
         with:
           path: .cache/ravscore-continuation-checkpoint
           key: ravscore-continuation-schema6-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reconfirm current main before protected RavScore write
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true'
         shell: bash
         run: |
           git fetch --no-tags origin main
@@ -982,7 +1059,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
 
       - name: Publish atomic RavScore checkpoint to protected admin storage
-        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true' && steps.operational-action.outputs.action != 'candidate-dry-run'
         run: >-
           node scripts/protected-ravscore-continuation-checkpoint.mjs
           --publish
@@ -1331,6 +1408,10 @@ jobs:
             target_root="$GITHUB_WORKSPACE"
             target_closure="$RAVRADAR_OPERATIONAL_WORK/integrated-public-closure.json"
             target_identity="$RAVRADAR_OPERATIONAL_WORK/integrated-implementation-identity.json"
+          fi
+          if [ -f .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json ]; then
+            cp .geometry-v2-work/ravscore-continuation-checkpoint-applicability.json \
+              "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-applicability.json"
           fi
           cp "$target_root/js/core/ravscore-model-contract.js" \
             "$RAVRADAR_OPERATIONAL_HANDOFF/target-contract.js"

@@ -8,6 +8,7 @@ and collection rotation are persisted across runs.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
@@ -2433,6 +2434,86 @@ def cache_progress_time(document: dict[str, Any]) -> float:
     return max((epoch(value) for value in timestamps), default=0.0)
 
 
+def backfill_compatible_cache_data(
+    primary: dict[str, Any],
+    donor: dict[str, Any],
+) -> None:
+    """Backfill missing cache data without replacing newer progress metadata.
+
+    Both documents have already been bound to the same sampling-registry
+    signature by load_previous. The newest progressive cache therefore remains
+    authoritative for collection rotation and processed-step state, while an
+    older strict cache may restore only values that are absent. All normal
+    provenance and component sanitizers still run before reuse.
+    """
+    for key in (
+        "schemaVersion",
+        "sourceUpdatedAt",
+        "method",
+        "hours",
+        "timeStrideHours",
+        "currentVectorSemanticsVersion",
+        "currentVectorSelection",
+        "currentPreferredDistanceKm",
+        "currentMaxDistanceKm",
+        "spatialProvenanceVersion",
+        "privateReplayRetentionHours",
+    ):
+        if key in donor:
+            primary.setdefault(key, copy.deepcopy(donor[key]))
+    for container_name in ("collectionState", "runs"):
+        primary_container = primary.setdefault(container_name, {})
+        donor_container = donor.get(container_name) or {}
+        if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
+            continue
+        for key, value in donor_container.items():
+            primary_container.setdefault(key, copy.deepcopy(value))
+    primary_zones = primary.setdefault("zones", {})
+    donor_zones = donor.get("zones") or {}
+    if not isinstance(primary_zones, dict) or not isinstance(donor_zones, dict):
+        return
+    for zone_id, donor_zone in donor_zones.items():
+        if not isinstance(donor_zone, dict):
+            continue
+        primary_zone = primary_zones.setdefault(zone_id, {})
+        if not isinstance(primary_zone, dict):
+            continue
+        for key in (
+            "samplingPoint",
+            "parentZoneId",
+            "entityType",
+            "samplingContext",
+            "coastalPart",
+            "marineSelection",
+        ):
+            if key in donor_zone:
+                primary_zone.setdefault(key, copy.deepcopy(donor_zone[key]))
+        for container_name in ("gridPoints", "collections"):
+            primary_container = primary_zone.setdefault(container_name, {})
+            donor_container = donor_zone.get(container_name) or {}
+            if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
+                continue
+            for key, value in donor_container.items():
+                primary_container.setdefault(key, copy.deepcopy(value))
+        primary_hourly = primary_zone.setdefault("hourly", {})
+        donor_hourly = donor_zone.get("hourly") or {}
+        if not isinstance(primary_hourly, dict) or not isinstance(donor_hourly, dict):
+            continue
+        for valid_time, donor_row in donor_hourly.items():
+            if not isinstance(donor_row, dict):
+                continue
+            primary_row = primary_hourly.get(valid_time)
+            structurally_empty = (
+                isinstance(primary_row, dict)
+                and set(primary_row) <= {"time"}
+            )
+            if primary_row is None or structurally_empty:
+                # A weather row is one atomic acquisition/provenance unit.
+                # Never compose complementary vector or wave fields across
+                # caches, model runs or source attestations.
+                primary_hourly[valid_time] = copy.deepcopy(donor_row)
+
+
 def sampling_registry_signature() -> str:
     """Hash only fields that can change which DMI grid points are sampled.
 
@@ -2489,11 +2570,38 @@ def sampling_registry_signature() -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
-def load_previous(expected_signature: str) -> dict[str, Any]:
+def load_previous(
+    expected_signature: str,
+    *,
+    coastal_part_targets: list[dict[str, Any]] | None = None,
+    production_reference: datetime | None = None,
+) -> dict[str, Any]:
     candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
-        return max(compatible, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+        primary = max(
+            compatible,
+            key=lambda document: (cache_progress_time(document), cache_quality(document)),
+        )
+        merged = copy.deepcopy(primary)
+        if coastal_part_targets is not None and production_reference is not None:
+            strict_donors = [
+                document
+                for document in compatible
+                if document is not primary
+                and coastal_part_current_cache_reusable(
+                    document,
+                    coastal_part_targets,
+                    production_reference,
+                )
+            ]
+            for donor in sorted(
+                strict_donors,
+                key=lambda document: (cache_quality(document), cache_progress_time(document)),
+                reverse=True,
+            ):
+                backfill_compatible_cache_data(merged, donor)
+        return merged
     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
     # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
     # er bygget, fjernes kun de zoner/kystdele hvis eget samplingPoint er ændret.
@@ -2902,6 +3010,40 @@ def producer_success_blocked(
         not strict_current_anchor_available
         or (wave_bootstrap_requested and not bootstrap_complete)
     )
+
+
+def producer_terminal_code(
+    *,
+    strict_current_anchor_available: bool,
+    wave_bootstrap_requested: bool,
+    bootstrap_complete: bool,
+    productive: bool,
+    diagnostics: dict[str, Any],
+) -> str:
+    """Return one bounded, payload-free terminal classification for CI."""
+    if not strict_current_anchor_available:
+        attempted = [
+            str(collection)
+            for collection in (diagnostics.get("collectionsAttempted") or [])
+            if str(collection)
+        ]
+        stac = diagnostics.get("stacByCollection") or {}
+        if (
+            attempted
+            and isinstance(stac, dict)
+            and all(
+                isinstance(stac.get(collection), dict)
+                and stac[collection].get("rejectedStaleRun") is True
+                for collection in attempted
+            )
+        ):
+            return "DMI_CATALOG_SCHEDULE_STALE"
+        return "DMI_STRICT_CURRENT_ANCHOR_MISSING"
+    if wave_bootstrap_requested and not bootstrap_complete:
+        return "DMI_WAVE_BOOTSTRAP_INCOMPLETE"
+    if not productive:
+        return "DMI_NO_PRODUCTIVE_COLLECTION"
+    return "DMI_READY"
 
 
 def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
@@ -3440,16 +3582,35 @@ def replay_current_field_shadow_from_cache(
     return summary
 
 
-def write_github_outputs(status: str, fresh_collections: int = 0, partial_collections: int = 0,
-                         zone_count: int = 0, downloaded_bytes: int = 0, error: str | None = None) -> None:
+def write_github_outputs(
+    status: str,
+    fresh_collections: int = 0,
+    partial_collections: int = 0,
+    zone_count: int = 0,
+    downloaded_bytes: int = 0,
+    error: str | None = None,
+    *,
+    terminal_code: str = "DMI_UNCLASSIFIED",
+    strict_current_anchor_ready: bool = False,
+) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
     if output_path:
+        bounded_code = (
+            terminal_code
+            if re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", terminal_code or "")
+            else "DMI_UNCLASSIFIED"
+        )
         with open(output_path, "a", encoding="utf-8") as handle:
             handle.write(f"status={status}\n")
             handle.write(f"fresh_collections={fresh_collections}\n")
             handle.write(f"partial_collections={partial_collections}\n")
             handle.write(f"zone_count={zone_count}\n")
             handle.write(f"downloaded_bytes={downloaded_bytes}\n")
+            handle.write(f"terminal_code={bounded_code}\n")
+            handle.write(
+                "strict_current_anchor_ready="
+                f"{'true' if strict_current_anchor_ready else 'false'}\n"
+            )
             if error:
                 safe_error = safe_error_message(error)
                 handle.write(f"error={safe_error}\n")
@@ -3496,13 +3657,17 @@ def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
     current_zone_registry_signature = sampling_registry_signature()
-    previous = load_previous(current_zone_registry_signature)
     zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))
     part_doc: dict[str, Any] = {"zones": {}}
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
     locked_production_reference = production_reference_hour()
+    previous = load_previous(
+        current_zone_registry_signature,
+        coastal_part_targets=coastal_part_targets,
+        production_reference=locked_production_reference,
+    )
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
         for feature in zones_geo.get("features", [])
@@ -3571,6 +3736,8 @@ def main() -> int:
             "fresh-bulk-cache",
             zone_count=len(previous.get("zones") or {}),
             downloaded_bytes=0,
+            terminal_code="DMI_READY",
+            strict_current_anchor_ready=True,
         )
         if os.getenv("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as h:
@@ -4167,6 +4334,9 @@ def main() -> int:
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete
+    producer_productive = bool(
+        fresh_successes or fresh_partials or bootstrap_complete
+    )
     producer_success_is_blocked = producer_success_blocked(
         strict_current_anchor_available,
         wave_bootstrap_configuration is not None,
@@ -4188,15 +4358,24 @@ def main() -> int:
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
+    terminal_code = producer_terminal_code(
+        strict_current_anchor_available=strict_current_anchor_available,
+        wave_bootstrap_requested=wave_bootstrap_configuration is not None,
+        bootstrap_complete=bootstrap_complete,
+        productive=producer_productive,
+        diagnostics=diag,
+    )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
-        len(result["zones"]), budget["bytes"]
+        len(result["zones"]), budget["bytes"],
+        terminal_code=terminal_code,
+        strict_current_anchor_ready=strict_current_anchor_available,
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
     if producer_success_is_blocked:
         return 2
-    return 0 if fresh_successes or fresh_partials or bootstrap_complete else 2
+    return 0 if producer_productive else 2
 
 
 if __name__ == "__main__":
@@ -4204,7 +4383,12 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as exc:
         print(f"DMI bulk downloader failed safely: {safe_error_message(exc)}", file=sys.stderr, flush=True)
-        write_github_outputs("failed", error=safe_error_message(exc))
+        write_github_outputs(
+            "failed",
+            error=safe_error_message(exc),
+            terminal_code="DMI_PRODUCER_EXCEPTION",
+            strict_current_anchor_ready=False,
+        )
         write_failure_summary(exc)
         raise SystemExit(2)
 

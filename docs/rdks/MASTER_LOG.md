@@ -5,7 +5,7 @@
 - Mergeproduktion `33400836760` passerede den tidligere Højbjerg/bearing-gate og beviste dermed den smalle `360→0`-rettelse. Den stoppede derefter fail-closed i den lokale legacy-kildeattestering, før DMI, beskyttede writes, artifact og Pages; Candidate G og den offentlige side blev ikke ændret.
 - Rodårsagen er reproduceret: attesteringens testfixture tillod kun 11 profilfelter, mens den fastlåste 4.0.316-producent og den aktive offentlige Candidate G-manifestform har 20. Den lokale branch `codex/ravscore-legacy-profile-attestation` validerer nu den fulde eksakte feltmængde, readiness/advisory-konsistens og bit-for-bit samme profil i manifest og conditions. Ukendte felter og blandede profiler stopper fortsat.
 - Målrettet legacy-, activation-, workflow-, deploy- og cutover-matrix samt privacy-sikker offentlig manifest/payload/53-fils source-closure-verifikation er grøn. Ingen private conditions-payloads, koordinater, rå U/V, geometri eller land-/vandpunkter er læst eller ændret.
-- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.318-produktion og offentlig desktop-/mobilverifikation udestår.
+- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.319-produktion og offentlig desktop-/mobilverifikation udestår.
 
 # NYESTE CHECKPOINT – 2026-08-31
 
@@ -13,7 +13,7 @@
 - PR #238 merged modelkilden til main `57f76d716310060e0d629c9f9d3691d386a2dd58`; workflowfixes PR #239/#240 merged videre til main `be81005b50294f54367f154c393bb27910e16c6f`.
 - Produktion `33391418061` og `33393684620` stoppede korrekt før DMI, beskyttede writes, artifact og Pages på én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03`, hvor bearing var `360`, mens aktiv kontrakt kræver `[0,360)`.
 - PR #241 er den smalle bearing-remediation: afrundet `360` normaliseres til `0` uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
-- Endelige lokale bundle-hashes er integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Endelige lokale bundle-hashes er integrated `e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 - Candidate G er fortsat offentlig; opdateret exact-head, merge, frisk produktion og offentlig desktop-/mobilbrowserverifikation er stadig åbne releasegates.
 ## 2026-08-31 – 4.0.318 docs-/bindingsslutpass og frisk Candidate G-drift
 

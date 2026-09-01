@@ -669,13 +669,53 @@ assert.ok(
 );
 assert.match(
   updater,
-  /candidateGBootstrapMode:\s*RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
-  'update-weather must pass the exact workflow mode into initial-state selection',
+  /const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =\s*process\.env\.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true'/,
+  'update-weather must require the explicit stateless integrated cold-start environment attestation',
 );
 assert.match(
   updater,
-  /candidateGSourceValidated:\s*RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED/,
-  'update-weather must pass the exact workflow source attestation into initial-state selection',
+  /RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED\s*\? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES\.integratedStateLessRecovery\s*:\s*RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
+  'the explicit stateless attestation must override only the effective selector mode',
+);
+assert.match(
+  updater,
+  /RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED\s*\? false\s*:\s*RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED/,
+  'stateless integrated recovery must never inherit Candidate G source validation',
+);
+assert.match(
+  updater,
+  /candidateGBootstrapMode:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
+  'update-weather must pass the effective workflow mode into initial-state selection',
+);
+assert.match(
+  updater,
+  /candidateGSourceValidated:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED/,
+  'update-weather must pass the mode-bound source attestation into initial-state selection',
+);
+assert.match(
+  updater,
+  /initialSelection\.source === 'COLD_START'[\s\S]*?genuineColdStart,[\s\S]*?integratedStateLessRecovery,[\s\S]*?\.includes\(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE\)[\s\S]*?candidateGRollbackMeasuredColdStart = true/,
+  'both attested cold-start modes must rebuild Candidate G rollback state from measured history',
+);
+assert.match(
+  updater,
+  /function selectPreviousPrivateCandidateGRuntime\(previous\)[\s\S]*?rollbackPresent && warmupPresent[\s\S]*?Previous private Candidate G runtime has ambiguous roots/,
+  'previous integrated continuation must fail closed when both private Candidate G roots are present',
+);
+assert.match(
+  updater,
+  /Previous private Candidate G READY descriptor is invalid[\s\S]*?assertPrivateCandidateGContinuation\([\s\S]*?Previous private Candidate G READY continuation/,
+  'the READY root must validate its exact descriptor and every bounded continuation before reuse',
+);
+assert.match(
+  updater,
+  /Previous private Candidate G warmup descriptor is invalid[\s\S]*?exactObjectKeys\(wrapper, \['ravScoreModel'\]\)[\s\S]*?Previous private Candidate G warmup continuation/,
+  'the measured warmup root must remain minimal and validate every bounded continuation before reuse',
+);
+assert.match(
+  updater,
+  /const previousPrivateCandidateGRuntime = selectPreviousPrivateCandidateGRuntime\(\s*previous,?\s*\)[\s\S]*?previousPrivateCandidateGRuntime,/,
+  'update-weather must route exactly the validated private root into Candidate G continuation',
 );
 
 assert.ok(

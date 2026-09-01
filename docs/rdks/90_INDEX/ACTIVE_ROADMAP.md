@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-01 – DEC-0114 integrated-first releasevej
+
+- [x] Bind ejerens supersession i DEC-0114: strict direct+operational 118 h kan frigive den integrerede model, mens measured-only ældre historik opbygges bagefter som synlig `HISTORY_INCOMPLETE` med `calibrationEligible=false`.
+- [x] Færdiggør og måltest privat `BUILDING_MEASURED_ONLY`, strict schema-4 READY-checkpoint med eksplicit warmup-N/A, state-less same-model recovery, audit/activation og fail-closed invalid/tampered-state-grænser.
+- [x] Bevar migrationens coherent 40-timers WAM-gate som migration-only og operational exact bridge+target..+117 som hard gate. Copernicus schema 3 bruger `OPERATIONAL_COMPLETE` for hard current og særskilt advisory measured-only −48 h. Ingen syntese, interpolation, carry-forward eller neighbor data.
+- [x] Før `calibrationEligible=false` gennem controller, trip/observation, admin, hydrering og reconciliation; tillad kun `true` efter forseglet full-history-audit.
+- [x] Implementér og kontrakttest branch-dispatch 118h-preflight samt DMI atomic compatible-cache backfill, save-before-terminal-gate og selector-after-ready.
+- [ ] Få et grønt frisk 118-timers datapreflightbevis. `33498108421` er fortsat negativ upstream stale-katalogevidens.
+- [ ] Kør exact-head, sikker merge, frisk integrated produktion og offentlig desktop-/mobilkontrol af 210/673, current/fem døgn, begge modes, warning og Feggesund direct 3 × 118.
+- Candidate G er fortsat eneste offentlige model. Lokale implementeringer og måltests er ikke exact-head-, preflight-, produktions- eller releasebevis.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
@@ -5,7 +16,7 @@
 - Mergeproduktion `33400836760` passerede den tidligere Højbjerg/bearing-gate og beviste dermed den smalle `360→0`-rettelse. Den stoppede derefter fail-closed i den lokale legacy-kildeattestering, før DMI, beskyttede writes, artifact og Pages; Candidate G og den offentlige side blev ikke ændret.
 - Rodårsagen er reproduceret: attesteringens testfixture tillod kun 11 profilfelter, mens den fastlåste 4.0.316-producent og den aktive offentlige Candidate G-manifestform har 20. Den lokale branch `codex/ravscore-legacy-profile-attestation` validerer nu den fulde eksakte feltmængde, readiness/advisory-konsistens og bit-for-bit samme profil i manifest og conditions. Ukendte felter og blandede profiler stopper fortsat.
 - Målrettet legacy-, activation-, workflow-, deploy- og cutover-matrix samt privacy-sikker offentlig manifest/payload/53-fils source-closure-verifikation er grøn. Ingen private conditions-payloads, koordinater, rå U/V, geometri eller land-/vandpunkter er læst eller ændret.
-- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.318-produktion og offentlig desktop-/mobilverifikation udestår.
+- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.319-produktion og offentlig desktop-/mobilverifikation udestår.
 
 # NYESTE CHECKPOINT – 2026-08-31
 
@@ -21,7 +32,7 @@
 - Næste mindste sikre rækkefølge:
   - grøn exact-head for PR #241
   - merge
-  - frisk 4.0.318-produktion
+  - frisk 4.0.319-produktion
   - offentlig desktop-/mobilbrowserverifikation
 - Candidate G er fortsat offentlig, indtil den opdaterede exact-head/merge/prod/browser-kæde er bevist.
 # RavRadar - aktivt roadmap
@@ -31,16 +42,16 @@
 - [x] Bevar den friske offentlige Candidate G-base: `33345476979`/`rr-20260831010337-210` var første grønne recoverybevis, og seneste external-watchdog-`workflow_dispatch` `33347230240` publicerede `rr-20260831012407-210` komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples. Candidate G er ærligt 0/210 aktiv på grund af historikmemory. De forudgående runs `33343469247`/`33344823000` var sikre transient-503-stop uden deploy; bounded retry-hotfixen bestod PR #237 exact-head `33352520408`, merge `8c03e25d` og grøn backend-/fuld produktion `33352661061`/`33352634365`.
 - [x] Luk lokalt `ravradar-production-workflow-outcome-v2`, Spørg RavRadar-kvalitetsskeln og DA/DE/EN-plain-language for firetimers energivægtning/højst 15 % dæmpning. Fuld sourcegate, exact-head, produktion og offentlig kontrol er stadig releasegates.
 - [x] Aktivér ét 15-minutters diagnose-/reparationskontroljob for vejrfriskhed uden at oprette en ny scheduler eller dubletvagthund; ingen blind redispatch af et kendt fejlet build.
-- [x] Regenerér 4.0.318-slutbindingerne: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
+- [x] Regenerér 4.0.319-slutbindingerne: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
 - [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
 - [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
 - [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5-profil/komponent/forklaring, kausal energivægtet bølgeapproach samt afgrænset `delivery=supply×factor` uden wave-created supply.
 - [x] Bevar fysisk usikkerhed ærligt: `physicalDeliveryResolved=false`, fysisk interval `null`, ingen empirisk fundpræcisionspåstand, vandstand score-neutral og DDM 50 m kun som statisk kontekst.
-- [x] Bind v5-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`-grænse. Bevar schema 5 kun som eksakt, aldrig-offentlig 5→6-ready-migrationskilde; aktiv cache/checkpoint/recovery er schema 6, rollback er v3, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
+- [x] Bind v5-migrationen til signed-evidence Candidate G-current-reweight uden rå U/V, præcis 673/common-target, 40 private WAM-præ-target-positioner fra coherent run pr. collection, same-cell provenance, højst fire timers same-run-interpolation og `1/1024`-grænse. Denne historiske WAM-gate er migration-only efter DEC-0114. Bevar schema 5 kun som eksakt, aldrig-offentlig 5→6-ready-migrationskilde; aktiv runtime/recovery er schema 6, checkpoint er strict READY-betinget, rollback er v3, og same-model atomisk nøddrift er højst 72 timer uden cross-model fallback/interpolation.
 - [x] Adskil direkte inputmissing som `UNAVAILABLE` fra historikmissing som numerisk konservativ `HISTORY_INCOMPLETE`; bevar 48 h aktiv currenthistorik, 168 h score-neutral researchretention, 288 h wave-tail og 40 h last-mile-closure med eksplicit `conservativeResetAt`.
 - [x] Bind `direction-broad-19-history-tie-v2` og `score-history-water-tie-earliest-v3`: numerisk score først, `FULL_HISTORY` kun ved eksakt tie, derefter eksisterende ranking-/vand-/tidsregler.
 - [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
-- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 bølgetimer. Parent-zone `rr-20260830104132-210` er 118/118 missing, men delene findes og har `marineCoverage=full`, så en proxy kan være unødvendig. Kun ved et reelt part-level-hul og dokumenteret umulig korrekt direkte kilde må den ejerautoriserede konservative nabozonehypotese for præcis denne ene zone gå til særskilt RDKS/adapter/proveniens/usikkerhed/kapacitet/rollback; den er ikke implementeret.
+- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 direkte bølgetimer. Parent-zonens missingdata er ikke bevis for partserierne. DEC-0114 pensionerer neighbor-proxysporet for denne release; faktisk direct missing følger `UNAVAILABLE`/fail-closed uden interpolation eller punktflytning.
 - [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
 - [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige state-6-model på desktop og mobil. Indtil da er 4.0.316/Candidate G fortsat produktionssandhed, ikke shadowmodel.
 

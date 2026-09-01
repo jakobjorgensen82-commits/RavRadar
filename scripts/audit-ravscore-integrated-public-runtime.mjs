@@ -11,6 +11,10 @@ import { waveApproachDeliveryContext } from '../js/core/ravscore-wave-approach-s
 import { buildIntegratedRavScoreStateSeries }
   from '../js/core/ravscore-integrated-state-pipeline.js';
 import {
+  buildBoundedCurrentTransportMemory,
+  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+} from '../js/core/ravscore-regime-memory.js';
+import {
   RAVSCORE_COLD_REPLAY_ID,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   RAVSCORE_LAST_MILE_POLICY,
@@ -79,6 +83,8 @@ const HOUR_MS = 3_600_000;
 const SHA256_KEY_PATTERN = /^sha256:[a-f0-9]{64}$/;
 const HISTORY_REASON_CODE_PATTERN = /^[A-Z][A-Z0-9_]{0,127}$/;
 const EPSILON = 1e-6;
+const CANDIDATE_G_MEASURED_WARMUP_STATUS = 'BUILDING_MEASURED_ONLY';
+const CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY = 'MEASURED_ONLY';
 const scoreQualityRank = value => value === RAVSCORE_SCORE_QUALITY.FULL_HISTORY ? 0
   : value === RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE ? 1
     : 2;
@@ -415,6 +421,34 @@ function assertCanonicalBinding(binding) {
   return true;
 }
 
+function candidateGTransportReplayMatches(state) {
+  try {
+    const replay = buildBoundedCurrentTransportMemory(state.transportEvidence, {
+      ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+      referenceTime: state.transportReferenceAt,
+      restartAfterVerifiedTimeGap: true,
+    });
+    if (replay.memoryReady !== state.transportMemoryReady
+      || replay.status !== state.transportMemoryStatus
+      || replay.windowHours !== state.transportMemoryWindowHours
+      || !close(replay.coverageHours, state.transportMemoryCoverageHours)
+      || !sameCanonical(replay.evidence, state.transportEvidence)) {
+      return false;
+    }
+    // A latest measured gap deliberately freezes the prior bounded value, so
+    // no transport result can be reconstructed from the retained evidence
+    // alone. Every replayable measured suffix must match the sealed oracle.
+    return replay.result === null
+      || (close(replay.result.transportPotential, state.transportPotential)
+        && close(
+          replay.result.outboundEpisodeEffectiveHours,
+          state.outboundEpisodeEffectiveHours,
+        ));
+  } catch {
+    return false;
+  }
+}
+
 function publicModeFormulaIsConsistent(mode, value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   if (value.available !== true) {
@@ -609,6 +643,16 @@ function addPublicPackageChecks({
   } catch {
     collector.fail('PUBLIC_PRIVACY_CONTRACT_FAILED');
   }
+  const publicCandidateGPrivateRootPattern =
+    /ravScoreCandidateG(?:Rollback|Warmup)/;
+  collector.add(![
+    startupText,
+    detailsText,
+    JSON.stringify(manifest),
+    coastalPartsText,
+  ].some(value => typeof value === 'string'
+    && publicCandidateGPrivateRootPattern.test(value)),
+  'PUBLIC_PRIVACY_CONTRACT_FAILED');
   collector.add(!containsRetiredPublicModelField(startup)
     && !containsRetiredPublicModelField(details)
     && !containsRetiredPublicModelField(manifest),
@@ -726,17 +770,28 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   const profileCoverageAndMigrationReady = profile?.modelCoverageReady === true
     && profile?.modelMigrationReady === true;
 
-  // Candidate G is a separate, private rollback companion. It must be
-  // complete and independently bound; schema 6 is never a reconstruction
-  // source for Candidate G rollback readiness.
+  // Candidate G has exactly one private root. A READY runtime is the strict
+  // manual rollback source. A measured warmup is continuation-only and can
+  // never be treated as a rollback companion or activation proof.
   const rollbackDescriptor = full?.ravScoreCandidateGRollback;
-  const rollbackRuntime = rollbackDescriptor?.runtime;
-  const rollbackRuntimeParts = rollbackRuntime?.parts
-    && typeof rollbackRuntime.parts === 'object'
-    && !Array.isArray(rollbackRuntime.parts)
-    ? rollbackRuntime.parts : {};
+  const warmupDescriptor = full?.ravScoreCandidateGWarmup;
+  const rollbackDescriptorPresent = rollbackDescriptor !== null
+    && rollbackDescriptor !== undefined;
+  const warmupDescriptorPresent = warmupDescriptor !== null
+    && warmupDescriptor !== undefined;
+  const privateCandidateGRootExclusive = Number(rollbackDescriptorPresent)
+    + Number(warmupDescriptorPresent) === 1;
+  collector.add(privateCandidateGRootExclusive,
+    'CANDIDATE_G_PRIVATE_RUNTIME_ROOT_INVALID');
+  const candidateDescriptor = rollbackDescriptorPresent
+    ? rollbackDescriptor : warmupDescriptor;
+  const candidateRuntime = candidateDescriptor?.runtime;
+  const candidateRuntimeParts = candidateRuntime?.parts
+    && typeof candidateRuntime.parts === 'object'
+    && !Array.isArray(candidateRuntime.parts)
+    ? candidateRuntime.parts : {};
   const integratedPartIds = parts.map(([partId]) => partId).sort();
-  const rollbackPartIds = Object.keys(rollbackRuntimeParts).sort();
+  const candidatePartIds = Object.keys(candidateRuntimeParts).sort();
   const rollbackDescriptorShapeValid = sameKeys(rollbackDescriptor, [
     'schemaVersion',
     'kind',
@@ -754,34 +809,94 @@ export function auditIntegratedRavScorePublicRuntime(full, {
     && rollbackDescriptor.rollbackId === CANDIDATE_G_OPERATIONAL_ROLLBACK_ID
     && rollbackDescriptor.automaticActivationAllowed === false
     && rollbackDescriptor.publicDuringNormalOperation === false;
-  collector.add(rollbackDescriptorShapeValid,
-    'ROLLBACK_COMPANION_DESCRIPTOR_INVALID');
-  let rollbackBindingsValid = false;
+  const warmupDescriptorShapeValid = sameKeys(warmupDescriptor, [
+    'schemaVersion',
+    'kind',
+    'privacyClass',
+    'status',
+    'evidencePolicy',
+    'syntheticHistoryAllowed',
+    'sourceModelBinding',
+    'candidateModelBinding',
+    'automaticActivationAllowed',
+    'publicDuringNormalOperation',
+    'runtime',
+  ])
+    && warmupDescriptor.schemaVersion === '1.0.0'
+    && warmupDescriptor.kind === 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME'
+    && warmupDescriptor.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+    && warmupDescriptor.status === CANDIDATE_G_MEASURED_WARMUP_STATUS
+    && warmupDescriptor.evidencePolicy
+      === CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY
+    && warmupDescriptor.syntheticHistoryAllowed === false
+    && warmupDescriptor.automaticActivationAllowed === false
+    && warmupDescriptor.publicDuringNormalOperation === false;
+  if (rollbackDescriptorPresent) {
+    collector.add(rollbackDescriptorShapeValid,
+      'ROLLBACK_COMPANION_DESCRIPTOR_INVALID');
+  } else {
+    collector.add(warmupDescriptorShapeValid,
+      'CANDIDATE_G_WARMUP_DESCRIPTOR_INVALID');
+  }
+  let candidateBindingsValid = false;
   try {
-    assertRavScoreModelBinding(rollbackDescriptor?.sourceModelBinding);
-    assertCandidateGRollbackModelBinding(rollbackDescriptor?.rollbackModelBinding);
-    assertCandidateGRollbackModelBinding(rollbackRuntime?.modelBinding);
-    rollbackBindingsValid = sameCanonical(
-      rollbackDescriptor.rollbackModelBinding,
+    assertRavScoreModelBinding(candidateDescriptor?.sourceModelBinding);
+    assertCandidateGRollbackModelBinding(
+      rollbackDescriptorPresent
+        ? candidateDescriptor?.rollbackModelBinding
+        : candidateDescriptor?.candidateModelBinding,
+    );
+    assertCandidateGRollbackModelBinding(candidateRuntime?.modelBinding);
+    candidateBindingsValid = sameCanonical(
+      rollbackDescriptorPresent
+        ? candidateDescriptor.rollbackModelBinding
+        : candidateDescriptor.candidateModelBinding,
       candidateGRollbackModelBinding(),
     );
   } catch {
-    rollbackBindingsValid = false;
+    candidateBindingsValid = false;
   }
-  collector.add(rollbackBindingsValid, 'ROLLBACK_COMPANION_BINDING_MISMATCH');
-  const rollbackRuntimeReady = rollbackRuntime?.schemaVersion === 1
-    && rollbackRuntime?.enabled === true
-    && rollbackRuntime?.generatedAt === full?.productionReferenceAt
-    && safeNonNegativeInteger(rollbackRuntime?.expectedPartCount)
-    && rollbackRuntime.expectedPartCount === expectedPartCount
-    && safeNonNegativeInteger(rollbackRuntime?.scoredPartCount)
-    && rollbackRuntime.scoredPartCount === expectedPartCount
-    && rollbackRuntime?.scoreProfile?.modelCoverageReady === true
-    && rollbackRuntime?.scoreProfile?.modelMemoryReady === true
-    && rollbackRuntime?.scoreProfile?.modelMigrationReady === true;
-  collector.add(rollbackRuntimeReady, 'ROLLBACK_COMPANION_RUNTIME_NOT_READY');
-  collector.add(sameCanonical(rollbackPartIds, integratedPartIds),
-    'ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH');
+  collector.add(candidateBindingsValid, rollbackDescriptorPresent
+    ? 'ROLLBACK_COMPANION_BINDING_MISMATCH'
+    : 'CANDIDATE_G_WARMUP_BINDING_MISMATCH');
+  const rollbackRuntimeReady = rollbackDescriptorPresent
+    && candidateRuntime?.schemaVersion === 1
+    && candidateRuntime?.enabled === true
+    && candidateRuntime?.generatedAt === full?.productionReferenceAt
+    && safeNonNegativeInteger(candidateRuntime?.expectedPartCount)
+    && candidateRuntime.expectedPartCount === expectedPartCount
+    && safeNonNegativeInteger(candidateRuntime?.scoredPartCount)
+    && candidateRuntime.scoredPartCount === expectedPartCount
+    && candidateRuntime?.scoreProfile?.modelCoverageReady === true
+    && candidateRuntime?.scoreProfile?.modelMemoryReady === true
+    && candidateRuntime?.scoreProfile?.modelMigrationReady === true;
+  const warmupRuntimeValid = warmupDescriptorPresent
+    && sameKeys(candidateRuntime, [
+      'schemaVersion',
+      'enabled',
+      'status',
+      'generatedAt',
+      'modelBinding',
+      'expectedPartCount',
+      'measuredPartCount',
+      'parts',
+    ])
+    && candidateRuntime.schemaVersion === 1
+    && candidateRuntime.enabled === true
+    && candidateRuntime.status === CANDIDATE_G_MEASURED_WARMUP_STATUS
+    && candidateRuntime.generatedAt === full?.productionReferenceAt
+    && safeNonNegativeInteger(candidateRuntime.expectedPartCount)
+    && candidateRuntime.expectedPartCount === expectedPartCount
+    && safeNonNegativeInteger(candidateRuntime.measuredPartCount)
+    && candidateRuntime.measuredPartCount === expectedPartCount;
+  collector.add(rollbackDescriptorPresent ? rollbackRuntimeReady : warmupRuntimeValid,
+    rollbackDescriptorPresent
+      ? 'ROLLBACK_COMPANION_RUNTIME_NOT_READY'
+      : 'CANDIDATE_G_WARMUP_RUNTIME_INVALID');
+  collector.add(sameCanonical(candidatePartIds, integratedPartIds),
+    rollbackDescriptorPresent
+      ? 'ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH'
+      : 'CANDIDATE_G_WARMUP_PART_COVERAGE_MISMATCH');
 
   const availability = coastal?.scoreAvailability;
   const availabilityBaseReady = availability?.schemaVersion === 2
@@ -1150,40 +1265,53 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       collector.fail('STATE_REPLAY_FAILED');
     }
 
-    const rollbackState = rollbackRuntimeParts?.[partId]?.ravScoreModel?.currentState;
-    const rollbackEvidenceCompatible = Array.isArray(rollbackState?.transportEvidence)
-      && rollbackState.transportEvidence.length >= 1
-      && rollbackState.transportEvidence.length <= 49;
-    collector.add(rollbackEvidenceCompatible, 'ROLLBACK_EVIDENCE_LIMIT_EXCEEDED');
-    if (!rollbackEvidenceCompatible) {
+    const candidateState = candidateRuntimeParts?.[partId]?.ravScoreModel?.currentState;
+    const candidateEvidenceCompatible = Array.isArray(candidateState?.transportEvidence)
+      && candidateState.transportEvidence.length >= 1
+      && candidateState.transportEvidence.length <= 49;
+    collector.add(candidateEvidenceCompatible, rollbackDescriptorPresent
+      ? 'ROLLBACK_EVIDENCE_LIMIT_EXCEEDED'
+      : 'CANDIDATE_G_WARMUP_EVIDENCE_LIMIT_EXCEEDED');
+    if (!candidateEvidenceCompatible) {
       rollbackEvidenceLimitExceededPartCount += 1;
     }
-    const rollbackShapeValid = rollbackEvidenceCompatible
-      && sameKeys(rollbackState, CANDIDATE_G_CONTINUATION_FIELDS)
-      && rollbackState?.transportMemoryReady === true
-      && rollbackState?.transportMemoryStatus === 'READY'
-      && rollbackState?.transportMemoryWindowHours === 48
-      && close(rollbackState?.transportMemoryCoverageHours, 48)
-      && rollbackState?.time === full?.productionReferenceAt
-      && rollbackState?.transportReferenceAt === full?.productionReferenceAt
-      && !containsForbiddenStateMaterial(rollbackState);
-    collector.add(rollbackShapeValid, 'ROLLBACK_STATE_CONTRACT_MISMATCH');
-    if (!rollbackShapeValid) rollbackStateContractMismatchPartCount += 1;
-    let rollbackOracleMatches = false;
-    if (rollbackShapeValid) {
+    const candidateCommonShapeValid = candidateEvidenceCompatible
+      && sameKeys(candidateState, CANDIDATE_G_CONTINUATION_FIELDS)
+      && candidateState?.time === full?.productionReferenceAt
+      && candidateState?.transportReferenceAt === full?.productionReferenceAt
+      && !containsForbiddenStateMaterial(candidateState);
+    const candidateReadyShapeValid = candidateCommonShapeValid
+      && candidateState?.transportMemoryReady === true
+      && candidateState?.transportMemoryStatus === 'READY'
+      && candidateState?.transportMemoryWindowHours === 48
+      && close(candidateState?.transportMemoryCoverageHours, 48);
+    const candidateStateContractValid = rollbackDescriptorPresent
+      ? candidateReadyShapeValid : candidateCommonShapeValid;
+    collector.add(candidateStateContractValid, rollbackDescriptorPresent
+      ? 'ROLLBACK_STATE_CONTRACT_MISMATCH'
+      : 'CANDIDATE_G_WARMUP_STATE_CONTRACT_MISMATCH');
+    if (!candidateStateContractValid) rollbackStateContractMismatchPartCount += 1;
+    let candidateOracleMatches = false;
+    if (candidateStateContractValid) {
       try {
-        rollbackOracleMatches = assertCandidateGRollbackContinuation(
-          rollbackState,
+        candidateOracleMatches = assertCandidateGRollbackContinuation(
+          candidateState,
           { ...part, partId },
-          `Public-runtime Candidate G rollback companion ${partId}`,
-        );
+          rollbackDescriptorPresent
+            ? 'Private Candidate G READY runtime continuation'
+            : 'Private Candidate G measured warmup continuation',
+        ) && candidateGTransportReplayMatches(candidateState);
       } catch {
-        rollbackOracleMatches = false;
+        candidateOracleMatches = false;
       }
     }
-    collector.add(rollbackOracleMatches, 'ROLLBACK_ORACLE_MISMATCH');
-    if (!rollbackOracleMatches) rollbackOracleMismatchPartCount += 1;
-    if (rollbackShapeValid && rollbackOracleMatches) rollbackReadyPartCount += 1;
+    collector.add(candidateOracleMatches, rollbackDescriptorPresent
+      ? 'ROLLBACK_ORACLE_MISMATCH'
+      : 'CANDIDATE_G_WARMUP_ORACLE_MISMATCH');
+    if (!candidateOracleMatches) rollbackOracleMismatchPartCount += 1;
+    if (candidateReadyShapeValid && candidateOracleMatches) {
+      rollbackReadyPartCount += 1;
+    }
 
     collector.add(sameKeys(model?.modes, MODES), 'PART_MODE_SET_MISMATCH');
     const weather = part?.current?.weather ?? {};
@@ -1236,6 +1364,9 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   collector.add(stateKeys.size === expectedPartCount, 'STATE_SAMPLING_CONTEXT_COVERAGE_MISMATCH');
   collector.add(initialStateSources.size === 1, 'MIXED_STATE_TRANSITION_COHORT');
   collector.add(lineageSources.size === 1, 'MIXED_STATE_LINEAGE_COHORT');
+  collector.add(!warmupDescriptorPresent
+    || rollbackReadyPartCount < expectedPartCount,
+  'CANDIDATE_G_WARMUP_ALREADY_READY');
 
   for (const [zoneId, current] of currentRowsByZone) {
     const zoneParts = parts.filter(([, part]) => part?.zoneId === zoneId);
@@ -1348,9 +1479,24 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   });
   const result = collector.result();
   const publicPrivacyContractPassed = !result.errors.includes('PUBLIC_PRIVACY_CONTRACT_FAILED');
+  const candidateDescriptorValid = rollbackDescriptorPresent
+    ? rollbackDescriptorShapeValid && candidateBindingsValid
+    : warmupDescriptorShapeValid && candidateBindingsValid;
+  const candidateGenerationReferenceBound = candidateRuntime?.generatedAt
+    === full?.productionReferenceAt;
+  const rollbackActivationReady = privateCandidateGRootExclusive
+    && rollbackDescriptorPresent
+    && candidateDescriptorValid
+    && rollbackRuntimeReady
+    && sameCanonical(candidatePartIds, integratedPartIds)
+    && rollbackReadyPartCount === expectedPartCount
+    && rollbackEvidenceLimitExceededPartCount === 0
+    && rollbackStateContractMismatchPartCount === 0
+    && rollbackOracleMismatchPartCount === 0;
   return {
     schemaVersion: 1,
     status: result.errors.length ? 'failed' : 'passed',
+    productionReferenceAt: full.productionReferenceAt,
     model: {
       modelId: RAVSCORE_MODEL_ID,
       stateSchemaVersion: RAVSCORE_STATE_SCHEMA_VERSION,
@@ -1375,13 +1521,22 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       coldReplayStateCount,
       uniqueSamplingContextCount: stateKeys.size,
     },
+    history: {
+      allCurrentScoresFullHistory:
+        currentFullHistoryModeCount === expectedZoneCount * MODES.length
+          && currentHistoryIncompleteModeCount === 0,
+      currentFullHistoryModeCount,
+      currentHistoryIncompleteModeCount,
+    },
     rollback: {
-      companionPresent: rollbackDescriptor !== null
-        && rollbackDescriptor !== undefined,
-      descriptorValid: rollbackDescriptorShapeValid && rollbackBindingsValid,
-      generationReferenceBound: rollbackRuntime?.generatedAt
-        === full?.productionReferenceAt,
-      runtimePartCount: rollbackPartIds.length,
+      status: rollbackDescriptorPresent
+        ? 'READY' : CANDIDATE_G_MEASURED_WARMUP_STATUS,
+      activationReady: rollbackActivationReady,
+      companionPresent: rollbackDescriptorPresent,
+      warmupPresent: warmupDescriptorPresent,
+      descriptorValid: candidateDescriptorValid,
+      generationReferenceBound: candidateGenerationReferenceBound,
+      runtimePartCount: candidatePartIds.length,
       readyPartCount: rollbackReadyPartCount,
       evidenceLimitExceededPartCount: rollbackEvidenceLimitExceededPartCount,
       reconstructionFailurePartCount: rollbackReconstructionFailurePartCount,

@@ -1,3 +1,18 @@
+# NYESTE CHECKPOINT – 2026-09-01 – DEC-0114 cutover-lukninger lokalt måltestet
+
+- [x] Registrér ejerens supersession i DEC-0114: den integrerede model må frigives med strict direct+operational 118 h, mens ældre measured-only historik fortsætter bagefter som `HISTORY_INCOMPLETE`.
+- [x] Bevar migrationens coherent 40-timers WAM-gate som migration-only og den operationelle exact bridge + coherent target..+117 som hård first-cutover-gate. Ingen syntese, interpolation, carry-forward eller nabo-/kystdelslån.
+- [x] Implementér og måltest privat `BUILDING_MEASURED_ONLY` for eksakt 673 dele i runtimebundlen uden at kalde den companion, READY, rollbackkilde eller offentlig shadow.
+- [x] Bevar schema-4-checkpointet 673/673 READY-strict, og attestér build/save/protected-publish som `NOT_APPLICABLE_DURING_MEASURED_WARMUP` i workflow/outcome/releaseaudit; afvis tilfældig skip og ghost proof.
+- [x] Tillad `INITIAL_INTEGRATED_CUTOVER` og same-binding integrated maintenance med warmup; hold `calibrationEligible=false` gennem controller, trip/observation, admin, hydrering og reconciliation. Kun en forseglet full-history-audit må sætte `true`; manuel Candidate G-rollback/return forbliver utilgængelig indtil senere 673/673 READY.
+- [x] Luk state-less same-model integrated recovery ved faktisk fravær af runtime/checkpoint; bevar tilstedeværende invalid/tampered state fatal.
+- [x] Implementér Copernicus schema 3 `OPERATIONAL_COMPLETE`: `target..+117` er hard operational current, mens measured-only `−48..−1` er rådgivende historik med egne counts/hashes og må være incomplete.
+- [x] Implementér og workflowtest branch-dispatch `operational_118_preflight` uden source/full/release/admin/Pages/deploy/browser og med præcis én filtreret syv-dages safe rapport.
+- [x] Implementér og måltest DMI compatible-cache backfill som atomiske hele vejrtime-rækker fra strict donor med samme registrygeneration. Bevar de tre saves før payloadfri terminalgate, og lad selector kræve `DMI_READY` plus strict current anchor.
+- [x] Opdatér audit, activation, releasegate, workflow og de målrettede warmup/recovery/calibration/current/DMI-kontrakttests.
+- [ ] Kør den isolerede 118-timers datapreflight grønt. Run `33498108421` er kun negativ stale-katalogevidens og beviser ikke currentdækning.
+- [ ] Bestå exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol af 210/673, current, fem døgn, begge modes, `HISTORY_INCOMPLETE`-advarsel og Feggesund direct 3 × 118.
+
 # NYESTE CHECKPOINT – 2026-09-01 – PR #244 merged; WAM-cacheovergang og watchdograce remediated lokalt
 
 - [x] Bestå PR #244's opdaterede exact-head `33452730102` og merge som `27906d7d83883622d87d66b141869302b016d6c6`.
@@ -24,7 +39,7 @@
 - [x] Klassificér produktion `33412497717`: den nåede DMI/WAM og stoppede før artifact/Pages/activation; offentlig Candidate G blev ikke ændret.
 - [x] Ret lokalt den private punktkandidats fejlkaskade og tvang progressive GRIB-/zone-/researchcaches til at gemme efter ikke-annullerede producentforsøg. Bevar WAM-gaten fail-closed og gør dens payloadfri kode direkte observerbar.
 - [x] Måltest: DMI/WAM 18/18, integreret RavScore-generator og reusable-production-workflow grønne.
-- [ ] Exact-head, merge, frisk 4.0.318-produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilkontrol.
+- [ ] Exact-head, merge, frisk 4.0.319-produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilkontrol.
 
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
@@ -33,7 +48,7 @@
 - Mergeproduktion `33400836760` passerede den tidligere Højbjerg/bearing-gate og beviste dermed den smalle `360→0`-rettelse. Den stoppede derefter fail-closed i den lokale legacy-kildeattestering, før DMI, beskyttede writes, artifact og Pages; Candidate G og den offentlige side blev ikke ændret.
 - Rodårsagen er reproduceret: attesteringens testfixture tillod kun 11 profilfelter, mens den fastlåste 4.0.316-producent og den aktive offentlige Candidate G-manifestform har 20. Den lokale branch `codex/ravscore-legacy-profile-attestation` validerer nu den fulde eksakte feltmængde, readiness/advisory-konsistens og bit-for-bit samme profil i manifest og conditions. Ukendte felter og blandede profiler stopper fortsat.
 - Målrettet legacy-, activation-, workflow-, deploy- og cutover-matrix samt privacy-sikker offentlig manifest/payload/53-fils source-closure-verifikation er grøn. Ingen private conditions-payloads, koordinater, rå U/V, geometri eller land-/vandpunkter er læst eller ændret.
-- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.318-produktion og offentlig desktop-/mobilverifikation udestår.
+- Candidate G/4.0.316 er fortsat eneste offentlige model. Ny exact-head, sikker merge, én frisk 4.0.319-produktion og offentlig desktop-/mobilverifikation udestår.
 
 # NYESTE CHECKPOINT – 2026-08-31
 
@@ -41,9 +56,9 @@
 - Kode- og workflowstatus: PR #238 er merged som main `57f76d716310060e0d629c9f9d3691d386a2dd58`, og workflowfixes fra PR #239/#240 er merged videre til `be81005b50294f54367f154c393bb27910e16c6f`.
 - Produktionsstatus: run `33391418061` og `33393684620` stoppede fail-closed før DMI, beskyttede writes, artifact og Pages på grund af én aktiv offentlig Højbjerg-del i `DK-B04-01` / `dk-b04-01-national-part-03` med bearing `360` uden for den aktive `[0,360)`-kontrakt.
 - Nuværende lokale remediation er PR #241: kun kanonisering af afrundet `360` til `0`, uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
-- Lokale bundle-hashes er nu integrated `978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+- Lokale bundle-hashes er nu integrated `e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 - Offentlig status er uændret: Candidate G er stadig offentlig. Exact-head, merge, frisk produktion og offentlig browserverifikation af PR #241 udestår.
-# Implementeringsstatus – 4.0.318 first-cutover-hærdning; Candidate G er fortsat offentlig
+# Implementeringsstatus – 4.0.319 first-cutover-hærdning; Candidate G er fortsat offentlig
 
 ## P0/P2 – operationel head-move og exact-target recovery 2026-08-31
 
@@ -59,23 +74,23 @@
 - [x] Opdel produktionen i eksplicitte orchestrator/build/deploy-roller, migrér alle 40 direkte workflowreaders til rollegrænsen, saml releasekontraktmetadata centralt og bestå role-aware workflow-action-contracts. Den separate P2 om `validate:source`-kædens first-fail-adfærd forbliver efter cutover.
 - [x] Luk P2 lokalt: Spørg RavRadar skelner `HISTORY_INCOMPLETE` fra direkte inputmangel; DA/DE/EN forklarer energivægtet firetimers-halvering/maks 15 % dæmpning uden W/N/T/EWMA-jargon. Exact-head/offentlig kontrol udestår.
 - [x] Registrér ét aktivt 15-minutters kontroljob som diagnose-/reparationsspor. Det må ikke duplikere det eksisterende eksterne watchdog, blindt redispatche et kendt fejlet build eller skabe parallel produktion.
-- [ ] Kør fuld slut-`validate:source`, exact-head CI, merge, frisk 4.0.318-produktion/deploy og offentlig state-6-browserkontrol.
+- [ ] Kør fuld slut-`validate:source`, exact-head CI, merge, frisk 4.0.319-produktion/deploy og offentlig state-6-browserkontrol.
 
-## P0 – 4.0.318 attesteret measured-only cold-start og endelig release
+## P0 – 4.0.319 attesteret measured-only cold-start og endelig release
 
 - [x] Bestå PR #235 exact-head `33332106627` på `30306a51c4e360c5054368f1b0167e3aaa3862ee` og merge 4.0.317-kilden som main `a584d1cf1a53692b10b0f01244eab4fb91ca89b1`.
 - [x] Klassificér produktion `33333490853` som et sikkert pre-DMI/pre-write/pre-artifact/pre-Pages-stop: 0 READY/673 kanoniske warmupstates blev fejlagtigt afvist af migration-only-resolveren; Candidate G og central offentlig profil blev ikke ændret.
 - [x] Adskil legacy source-registry fra aktivt centralt materialiseret register og bind source manifest/conditions/register til 210/673, zone-/delsæt og eventuelle byte-/SHA-256-felter uden at flytte geometri, zoner, kystnormaler eller land-/vandpunkter.
 - [x] Implementér aggregate modevalg: kun fælles READY/source=active går til `candidate-g-migration`; komplet kanonisk warmup eller legitim contextændring går nationalt til `genuine-cold-start`; invalid/tampered source stopper.
 - [x] Bind explicit `source_validated=true` gennem workflow og statevælger, bevar default fail-closed, og normalisér resolverens UTC-target til `YYYY-MM-DDTHH:00:00Z` med direkte Node→Python-roundtriptest.
-- [x] Implementér separat eksklusiv Candidate G measured-only cold rollback, som først kan blive READY companion efter egen reelle 48-timersreplay og aldrig hybridiseres med continuation eller rekonstrueres fra state-6-bounds.
-- [x] Bevar reelt ikke-annulleret progressivt DMI-cachearbejde efter en senere producentfejl og gør WAM-slutgaten afhængig af succesfuld aggregate resolver, uden at lempe WAM-, score-, checkpoint- eller releasekrav.
+- [x] Implementér separat eksklusiv Candidate G measured-only cold rollback, som først kan blive READY companion efter egen reelle 48-timersreplay og aldrig hybridiseres med continuation eller rekonstrueres fra state-6-bounds. DEC-0114 præciserer, at non-READY stopper checkpoint/manuel rollback, ikke first cutover; runtime-warmup-deltaet er lokalt måltestet, mens exact-head og produktion fortsat er åbne.
+- [x] Bevar reelt ikke-annulleret progressivt DMI-cachearbejde efter en senere producentfejl og gør den operationelle WAM-slutgate afhængig af succesfuld aggregate resolver. DEC-0114 lemper ikke WAM-/scoregaterne, men gør checkpointet betinget N/A og fjerner fuld historik som selvstændig releaseforudsætning ved genuine cold start.
 - [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover; bevar selve integreret activation som push-only. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
 - [x] Opret DEC-0113 samt de fem aktive krav for source-attested cold start, source/active registry-separation, measured rollback, UTC-paritet og pre-mutation-stop.
 - [x] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
-- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Version 4.0.318/docs/geodatabevis lukkes i slutpasset.
-- [ ] Bestå egen 4.0.318-PR exact-head, merge sikkert og gennemfør frisk fuld produktion med DMI/Copernicus, validate, releasegate, protected checkpoint/runtime, artifact, Pages og atomisk activation.
-- [ ] Bevis Feggesund 3 × 118 og verificér offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
+- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Version 4.0.319/docs/geodatabevis lukkes i slutpasset.
+- [ ] Bestå egen 4.0.319-PR exact-head, merge sikkert og gennemfør frisk fuld produktion med DMI/Copernicus, validate, releasegate, obligatorisk protected runtime, checkpoint enten strict READY eller eksplicit warmup-N/A, artifact, Pages og atomisk activation.
+- [ ] Bevis Feggesund direct 3 × 118 uden neighbor proxy og verificér offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
 - [ ] Begræns konklusionen til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.
 
 ## Historisk præ-hærdningscheckpoint – 4.0.317-kilden og PR #235
@@ -93,15 +108,15 @@
 - [x] Luk workflow-outcome lokalt med det payloadfri `NOOP`/`DEFERRED`/`BUILT`/`DEPLOYED`/`FAILED`; hver terminal kræver præcis sit tilladte bevisniveau, og `FAILED` holder runnet rødt.
 - [x] Luk spatial-samplingbeslutningen uden nye fetchkrav: aktiv current bruger uændret eksisterende havpunkt/kystnormal; privat 0/5/15-km-flerlagscache forbliver score-neutral offline forskning.
 - [x] Bevis separat, at geodata kun ændrer det autoriserede topversionsfelt 4.0.316→4.0.317; ingen geometri, zoner eller land-/vandpunkter ændres.
-- [x] Historisk 4.0.317: den daværende proportionale matrix var grøn gennem rollback-orakel/runtime/stage/trip/assistant/Pages og de daværende gates. 4.0.318's nye fulde slutmatrix står åben ovenfor.
+- [x] Historisk 4.0.317: den daværende proportionale matrix var grøn gennem rollback-orakel/runtime/stage/trip/assistant/Pages og de daværende gates. 4.0.319's nye fulde slutmatrix står åben ovenfor.
 - [x] Bind releasegaten til den faktiske to-dokument-RPC/SQL-CAS-ejer og service-role-rettigheder, native-time DMI-matrix -48..+117, dynamisk 15/45-minutters watchdog, eksplicit fallbackafvisning, faktiske DA/DE/EN-tekster og schema-4 startup-envelope/hash/modelbinding; gør SQL/RPC-installationsparitet obligatorisk i `test:ravscore-integrated-profile`/`validate:source`, og aggregér krævede fil-/JSON-fejl med en isoleret sourcegate-test. Den fulde lokale `release:gate` er grøn efter justeringen; exact-head og produktion er fortsat åbne.
 - [x] Registrér at PR #235's første exact-head `33324239464`/job `99291456658` stoppede i `validate:source` på en stale state-6-feedbackfixture uden merge, produktionsbuild/artifact eller deploy; gennemgå derefter de resterende uafhængige kontrakter og ret de yderligere stale public-fixtures, den aktive adaptive observationsskrivning og bundle-driften samlet uden at omgå gaten.
 - [x] Pensionér adaptiv ny-skrivning, opdatér quality/bounds-/payload-/forklaringsfixtures, regenerér den 43-filers bundle til `74bfc42bb008f6743f374fc35201d3ea6f81f6e360c99873541fed83eeadcbae`, synkronisér bindingsforbrugerne og bestå en ny fuld lokal `validate:source` inklusive indlejret `release:gate` i kildekontekst; dette erstatter ikke frisk centralt hydreret produktionsvalidate/releasegate.
 - [x] Push remediationen som `7bc848610794b87f62a6a3763564ca46a0d7528e`; registrér at anden exact-head `33329919843`/job `99306529711` bestod de forudgående model-/runtime-/rollback-/DMI-dele og stoppede fail-closed ved manglende `xarray`, fordi CI ikke installerede de ejede geometry-/Copernicus-requirements. Ingen merge, produktionsbuild/artifact, deploy eller offentlig ændring skete.
 - [x] Luk dependency-pariteten systemisk i PR-, produktions- og turlagerworkflows: installér alle tre ejede requirements-sæt umiddelbart før hver `validate:source` med samme betingelse, hæv PR-timeout 30→45 minutter, lås workflowinventar/rækkefølge/betingelse i regressionen og bestå målrettede workflow-, Copernicus- og modelbundletests.
 - [x] Fetch finalt `origin/main` og bekræft head `49dd4cb454656bdf629e5df760176705e38d2cb0` samt ingen nyere main-delta at integrere før samlet remediationcommit.
-- [ ] Bevis Feggesund på part-level i frisk integreret produktion: alle tre aktive dele × 118 timer. Kun et reelt part-hul og dokumenteret umulig korrekt direkte officiel data kan åbne en særskilt, zonespecifik beslutning; ingen proxy er implementeret.
-- [x] Commit/push dependency-paritetsrettelsen, bestå PR #235 exact-head `33332106627`, og merge som `a584d1cf`. Første produktion `33333490853` stoppede derefter sikkert før DMI/artifact/Pages og flyttede den resterende releasegate til 4.0.318-afsnittet ovenfor.
+- [ ] Bevis Feggesund på part-level i frisk integreret produktion: alle tre aktive dele × 118 direkte timer. DEC-0114 pensionerer neighbor-proxysporet for denne release; et reelt direct-input-hul følger `UNAVAILABLE`/fail-closed uden interpolation eller punktflytning.
+- [x] Commit/push dependency-paritetsrettelsen, bestå PR #235 exact-head `33332106627`, og merge som `a584d1cf`. Første produktion `33333490853` stoppede derefter sikkert før DMI/artifact/Pages og flyttede den resterende releasegate til 4.0.319-afsnittet ovenfor.
 - [ ] Verificér state 6 offentligt på 210/673, current og fem døgn, begge modes, primære og sekundære scoreflader, warnings, lokal/Edge-assistent, admin/ekspert samt desktop/mobil. Indtil da er offentlig 4.0.316/Candidate G den eneste offentlige model.
 - [ ] Begræns alle påstande til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.
 

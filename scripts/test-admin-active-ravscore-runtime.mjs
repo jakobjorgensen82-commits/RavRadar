@@ -271,6 +271,14 @@ assert.equal(historyIncompleteIntegrated.kind, 'integrated');
 assert.equal(historyIncompleteIntegrated.scoreProfile.modelMemoryReady, false);
 assert.equal(historyIncompleteIntegrated.historyQuality.allCurrentScoresFullHistory, false);
 assert.equal(historyIncompleteIntegrated.historyQuality.calibrationEligible, false);
+assert.equal(historyIncompleteIntegrated.observationCalibrationEligible, false);
+assert.equal(historyIncompleteIntegrated.diagnosticScoreProfile.observationCalibrationEligible, false);
+const historyIncompleteDto = applyAdminObservationModelPolicy({
+  calibration_eligible: true,
+  calibration_binding_status: 'current-eligible',
+}, historyIncompleteIntegrated);
+assert.equal(historyIncompleteDto.calibration_eligible, false);
+assert.equal(historyIncompleteDto.calibration_binding_status, 'current-ineligible');
 
 const malformedHistoryRuntime = clone(historyIncompleteIntegratedRuntime);
 malformedHistoryRuntime.conditions.coastalParts.scoreAvailability
@@ -301,6 +309,10 @@ assert.match(dashboardSource, /activePublicModel:\{/);
 assert.match(dashboardSource, /diagnosticScoreProfile/);
 assert.match(dashboardSource,
   /allowCalibration:active\.value\.observationCalibrationEligible/);
+assert.match(dashboardSource,
+  /Den aktive offentlige modeltilstand er udtrykkeligt ikke kalibreringsegnet\./);
+assert.doesNotMatch(dashboardSource,
+  /Observationer fra den manuelle Candidate G-driftsrollback/);
 assert.doesNotMatch(dashboardSource, /ravscore-model-contract/);
 assert.doesNotMatch(dashboardSource, /RAVSCORE_MODEL_CONTRACT|ravScoreModelBinding\s*\(/);
 assert.doesNotMatch(dashboardSource,

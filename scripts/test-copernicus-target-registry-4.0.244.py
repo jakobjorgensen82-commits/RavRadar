@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression for the locked 166-hour Copernicus DMI-gap matrix."""
+"""Regression for split operational/advisory Copernicus DMI-gap matrices."""
 from __future__ import annotations
 
 import copy
@@ -83,12 +83,18 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     targeted = run(folder, "--nearest-dmi-hour", "--github-output", str(github_output))
     assert targeted.returncode == 0, targeted.stdout + targeted.stderr
     selected = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
-    assert selected["schemaVersion"] == 2 and selected["matrixHourCount"] == 166
+    assert selected["schemaVersion"] == 3 and selected["matrixHourCount"] == 166
+    assert selected["operationalHourCount"] == 118
+    assert selected["advisoryHistoryHourCount"] == 48
     assert selected["productionReferenceAt"] == AT and selected["targetHour"] == AT
     assert selected["rangeStartAt"] == (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z")
     assert selected["rangeEndAt"] == (REFERENCE + timedelta(hours=117)).isoformat().replace("+00:00", "Z")
     assert selected["totalPairCount"] == 498
     assert selected["dmiVerifiedPairCount"] == 1
+    assert selected["operationalTotalPairCount"] == 354
+    assert selected["operationalDmiVerifiedPairCount"] == 1
+    assert selected["advisoryHistoryTotalPairCount"] == 144
+    assert selected["advisoryHistoryDmiVerifiedPairCount"] == 0
     verifier_targets = [{
         "partId": part["partId"],
         "parentZoneId": part["sourceZoneId"],
@@ -101,14 +107,16 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         REFERENCE - timedelta(hours=48),
         REFERENCE + timedelta(hours=117),
     ) == selected["dmiVerifiedPairCount"]
-    assert selected["requiredPairCount"] == 497
+    assert selected["operationalRequiredPairCount"] == 353
+    assert selected["advisoryHistoryRequiredPairCount"] == 144
     assert selected["partCount"] == 3, "Every part has at least one exact gap across the range"
     assert selected["coordinatesChanged"] is False
-    assert any(row == {"partId": "bad-proof", "validTime": AT} for row in selected["requiredPairs"])
-    assert not any(row == {"partId": "dmi-ok", "validTime": AT} for row in selected["requiredPairs"])
+    assert any(row == {"partId": "bad-proof", "validTime": AT} for row in selected["operationalRequiredPairs"])
+    assert not any(row == {"partId": "dmi-ok", "validTime": AT} for row in selected["operationalRequiredPairs"])
     output_values = dict(line.split("=", 1) for line in github_output.read_text(encoding="utf-8").splitlines())
     assert output_values["target_hour"] == AT and output_values["production_reference_at"] == AT
-    assert output_values["required_pair_count"] == "497"
+    assert output_values["required_pair_count"] == "353"
+    assert output_values["advisory_history_required_pair_count"] == "144"
 
     # The private registry is itself a strict trust boundary: extra fields,
     # boolean-as-number points and a disguised implicit full-coast matrix are
@@ -116,7 +124,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     for mutate in (
         lambda value: value.update(unexpected=True),
         lambda value: value["targets"][0].update(waterPoint=[True, 57.0]),
-        lambda value: value.update(dmiVerifiedPairCount=0, requiredPairCount=498),
+        lambda value: value.update(operationalDmiVerifiedPairCount=0),
     ):
         damaged = copy.deepcopy(selected)
         mutate(damaged)
@@ -131,17 +139,25 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     # fill the missing exact hour, even when an old workflow passes the flag.
     nearby = REFERENCE - timedelta(hours=1)
     nearby_text = nearby.isoformat().replace("+00:00", "Z")
+    operational_anchor = REFERENCE + timedelta(hours=1)
+    operational_anchor_text = operational_anchor.isoformat().replace("+00:00", "Z")
     dmi = json.loads((folder / "dmi.json").read_text(encoding="utf-8"))
-    dmi["zones"]["PART::dmi-ok"]["hourly"] = {nearby_text: {
-        "time": nearby_text, "current-u": 0.1, "current-v": 0.2,
-        "sources": {"current": source(parts[0], nearby)},
-    }}
+    dmi["zones"]["PART::dmi-ok"]["hourly"] = {
+        nearby_text: {
+            "time": nearby_text, "current-u": 0.1, "current-v": 0.2,
+            "sources": {"current": source(parts[0], nearby)},
+        },
+        operational_anchor_text: {
+            "time": operational_anchor_text, "current-u": 0.1, "current-v": 0.2,
+            "sources": {"current": source(parts[0], operational_anchor)},
+        },
+    }
     write(folder / "dmi.json", dmi)
     locked = run(folder, "--nearest-dmi-hour")
     assert locked.returncode == 0, locked.stdout + locked.stderr
     locked_registry = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
     assert locked_registry["productionReferenceAt"] == AT
-    assert {"partId": "dmi-ok", "validTime": AT} in locked_registry["requiredPairs"]
+    assert {"partId": "dmi-ok", "validTime": AT} in locked_registry["operationalRequiredPairs"]
 
     # Weak/incomplete provenance across the whole matrix must stop rather than
     # implicitly requesting a nationwide authenticated download.
@@ -153,6 +169,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert full.returncode == 0, full.stdout + full.stderr
     nationwide = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
     assert nationwide["selectionMode"] == "manual-full-coast"
-    assert nationwide["requiredPairCount"] == 498
+    assert nationwide["operationalRequiredPairCount"] == 354
+    assert nationwide["advisoryHistoryRequiredPairCount"] == 144
 
-print("OK: Copernicus target registry locks exact -48..+117 DMI-gap pairs without reference rebinding.")
+print("OK: Copernicus target registry separates exact operational gaps from advisory measured history.")

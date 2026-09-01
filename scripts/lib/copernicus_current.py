@@ -32,6 +32,8 @@ CACHE_SCHEMA_VERSION = 2
 CACHE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_CACHE"
 TARGET_REGISTRY_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY"
 MATRIX_CONTRACT_ID = "exact-dmi-gap-matrix-minus48-plus117-v1"
+OPERATIONAL_MATRIX_CONTRACT_ID = "exact-dmi-gap-operational118-advisory-history48-v1"
+OPERATIONAL_SEAL_CONTRACT_ID = "copernicus-current-operational118-advisory-history48-seal-v1"
 REQUEST_CONTRACT_ID = "copernicus-current-multitime-bounded-spatial-shards-v1"
 LEGACY_HISTORY_REQUEST_CONTRACT_ID = "copernicus-current-schema1-history-migration-v1"
 SELECTION_POLICY_ID = "per-native-time-nearest-shared-uv-column-then-deepest-common-layer-v1"
@@ -410,6 +412,10 @@ def safe_shadow_summary(document: dict[str, Any]) -> dict[str, Any]:
         })
     target_stability = [stability(rows) for rows in by_target_source.values()]
     valid_times = sorted({str(row.get("validTime")) for row in records if row.get("validTime")})
+    collections = [row for row in document.get("collections") or [] if isinstance(row, dict)]
+    operational_collections = [
+        row for row in collections if row.get("status") == "OPERATIONAL_COMPLETE"
+    ]
     return {
         "recordCount": len(records),
         "validTimeCount": len(valid_times),
@@ -420,7 +426,18 @@ def safe_shadow_summary(document: dict[str, Any]) -> dict[str, Any]:
         "gridUnstableTargetSourceCount": sum(row["gridCellVariantCount"] > 1 for row in target_stability),
         "layerUnstableTargetSourceCount": sum(row["verticalLayerCount"] > 1 for row in target_stability),
         "completeAcquisitionCount": sum(row.get("status") == "COMPLETE" for row in document.get("acquisitions") or []),
-        "completeCoverageCollectionCount": sum(row.get("status") == "COMPLETE" for row in document.get("collections") or []),
+        "completeCoverageCollectionCount": sum(
+            row.get("status") in {"COMPLETE", "OPERATIONAL_COMPLETE"} for row in collections
+        ),
+        "operationalCompleteCoverageCollectionCount": len(operational_collections),
+        "advisoryHistoryAvailablePairCount": sum(
+            int(row.get("advisoryHistoryAvailablePairCount") or 0)
+            for row in operational_collections
+        ),
+        "advisoryHistoryMissingPairCount": sum(
+            int(row.get("advisoryHistoryMissingPairCount") or 0)
+            for row in operational_collections
+        ),
         "sources": source_rows,
     }
 
@@ -477,6 +494,35 @@ TARGET_REGISTRY_FIELDS = {
     "dmiVerifiedPairCount", "totalPairCount", "coordinatesChanged", "targets",
     "requiredPairs", "zones",
 }
+OPERATIONAL_COLLECTION_FIELDS = {
+    "collectionId", "status", "sealContractId", "productionReferenceAt",
+    "operationalRangeStartAt", "operationalRangeEndAt", "operationalHourCount",
+    "advisoryHistoryStartAt", "advisoryHistoryEndAt", "advisoryHistoryHourCount",
+    "targetRegistrySha256", "dmiCurrentInputSha256", "dmiVerifierContractId",
+    "operationalRequiredPairsSha256", "operationalRequiredPairCount",
+    "operationalRecordRefs", "operationalRecordRefsSha256",
+    "advisoryHistoryRequiredPairs", "advisoryHistoryRequiredPairsSha256",
+    "advisoryHistoryRequiredPairCount", "advisoryHistoryRecordRefs",
+    "advisoryHistoryRecordRefsSha256", "advisoryHistoryAvailablePairCount",
+    "advisoryHistoryMissingPairCount", "advisoryHistoryComplete",
+    "selectionPolicyId", "acquisitionIds", "sealedAt",
+}
+OPERATIONAL_TARGET_REGISTRY_FIELDS = {
+    "schemaVersion", "kind", "matrixContractId", "selectionMode",
+    "productionReferenceAt", "targetHour", "rangeStartAt", "rangeEndAt",
+    "coldBridgeHours", "publicHourCount", "matrixHourCount",
+    "operationalRangeStartAt", "operationalRangeEndAt", "operationalHourCount",
+    "advisoryHistoryStartAt", "advisoryHistoryEndAt", "advisoryHistoryHourCount",
+    "targetCount", "sourcePartCount", "partCount", "operationalPartCount",
+    "advisoryHistoryPartCount", "targetRegistrySha256", "dmiCurrentInputSha256",
+    "dmiVerifierContractId", "operationalRequiredPairsSha256",
+    "operationalRequiredPairCount", "operationalDmiVerifiedPairCount",
+    "operationalTotalPairCount", "advisoryHistoryRequiredPairsSha256",
+    "advisoryHistoryRequiredPairCount", "advisoryHistoryDmiVerifiedPairCount",
+    "advisoryHistoryTotalPairCount", "dmiVerifiedPairCount", "totalPairCount",
+    "coordinatesChanged", "targets", "operationalRequiredPairs",
+    "advisoryHistoryRequiredPairs", "zones",
+}
 TARGET_IDENTITY_FIELDS = {"partId", "parentZoneId", "name", "waterPoint"}
 TARGET_ZONE_FIELDS = {"partId", "sourceZoneId", "name", "waterPoint"}
 REQUIRED_PAIR_FIELDS = {"partId", "validTime"}
@@ -517,7 +563,7 @@ def required_pairs_sha256(pairs: list[dict[str, Any]]) -> str:
     return canonical_sha256({"contractId": "copernicus-required-part-time-pairs-v1", "pairs": normalized})
 
 
-def validate_target_registry(document: Any) -> dict[str, Any]:
+def _validate_legacy_target_registry(document: Any) -> dict[str, Any]:
     registry = _require_exact_fields(document, TARGET_REGISTRY_FIELDS, "Copernicus range target registry")
     schema_version = registry.get("schemaVersion")
     if (
@@ -621,6 +667,159 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
     return registry
 
 
+def validate_target_registry(document: Any) -> dict[str, Any]:
+    """Validate legacy full-range or schema-3 operational/advisory registries."""
+    schema_version = document.get("schemaVersion") if isinstance(document, dict) else None
+    if schema_version == 2 and not isinstance(schema_version, bool):
+        return _validate_legacy_target_registry(document)
+    registry = _require_exact_fields(
+        document,
+        OPERATIONAL_TARGET_REGISTRY_FIELDS,
+        "Copernicus operational target registry",
+    )
+    if (
+        isinstance(schema_version, bool)
+        or not isinstance(schema_version, int)
+        or schema_version != 3
+        or registry.get("kind") != TARGET_REGISTRY_KIND
+        or registry.get("matrixContractId") != OPERATIONAL_MATRIX_CONTRACT_ID
+    ):
+        raise ValueError("Copernicus operational target registry schema is invalid")
+    if registry.get("selectionMode") not in {"dmi-gaps-only", "manual-full-coast"}:
+        raise ValueError("Copernicus operational target selection mode is invalid")
+
+    reference = _hour(registry.get("productionReferenceAt"), "registry production reference")
+    history_start, public_end = range_bounds(reference)
+    history_end = reference - timedelta(hours=1)
+    if registry.get("targetHour") != utc_iso(reference):
+        raise ValueError("Copernicus operational target hour is not the locked reference")
+    expected_ranges = {
+        "rangeStartAt": utc_iso(history_start),
+        "rangeEndAt": utc_iso(public_end),
+        "operationalRangeStartAt": utc_iso(reference),
+        "operationalRangeEndAt": utc_iso(public_end),
+        "advisoryHistoryStartAt": utc_iso(history_start),
+        "advisoryHistoryEndAt": utc_iso(history_end),
+    }
+    if any(registry.get(key) != value for key, value in expected_ranges.items()):
+        raise ValueError("Copernicus operational/advisory target ranges are invalid")
+    horizons = (
+        registry.get("coldBridgeHours"),
+        registry.get("publicHourCount"),
+        registry.get("matrixHourCount"),
+        registry.get("operationalHourCount"),
+        registry.get("advisoryHistoryHourCount"),
+    )
+    if (
+        any(isinstance(value, bool) or not isinstance(value, int) for value in horizons)
+        or horizons != (
+            COLD_BRIDGE_HOURS,
+            PUBLIC_HOUR_COUNT,
+            COLD_BRIDGE_HOURS + PUBLIC_HOUR_COUNT,
+            PUBLIC_HOUR_COUNT,
+            COLD_BRIDGE_HOURS,
+        )
+    ):
+        raise ValueError("Copernicus operational/advisory horizons are invalid")
+
+    operational_pairs = registry.get("operationalRequiredPairs")
+    advisory_pairs = registry.get("advisoryHistoryRequiredPairs")
+    if not isinstance(operational_pairs, list) or not isinstance(advisory_pairs, list):
+        raise ValueError("Copernicus operational/advisory pair arrays are malformed")
+    for raw in [*operational_pairs, *advisory_pairs]:
+        _require_exact_fields(raw, REQUIRED_PAIR_FIELDS, "Copernicus required pair")
+    if operational_pairs != sorted(operational_pairs, key=lambda row: (row["validTime"], row["partId"])):
+        raise ValueError("Copernicus operational required pairs are not canonical")
+    if advisory_pairs != sorted(advisory_pairs, key=lambda row: (row["validTime"], row["partId"])):
+        raise ValueError("Copernicus advisory-history pairs are not canonical")
+    operational_times = {
+        utc_iso(reference + timedelta(hours=index)) for index in range(PUBLIC_HOUR_COUNT)
+    }
+    advisory_times = {
+        utc_iso(history_start + timedelta(hours=index)) for index in range(COLD_BRIDGE_HOURS)
+    }
+    if any(str(row.get("validTime") or "") not in operational_times for row in operational_pairs):
+        raise ValueError("Copernicus operational pair lies outside target..+117")
+    if any(str(row.get("validTime") or "") not in advisory_times for row in advisory_pairs):
+        raise ValueError("Copernicus advisory pair lies outside -48..-1")
+
+    targets = registry.get("targets")
+    target_count = len(targets) if isinstance(targets, list) else -1
+    operational_total = target_count * PUBLIC_HOUR_COUNT
+    advisory_total = target_count * COLD_BRIDGE_HOURS
+    count_fields = (
+        registry.get("operationalRequiredPairCount"),
+        registry.get("operationalDmiVerifiedPairCount"),
+        registry.get("operationalTotalPairCount"),
+        registry.get("advisoryHistoryRequiredPairCount"),
+        registry.get("advisoryHistoryDmiVerifiedPairCount"),
+        registry.get("advisoryHistoryTotalPairCount"),
+    )
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in count_fields):
+        raise ValueError("Copernicus operational/advisory counts are invalid")
+    if (
+        registry["operationalRequiredPairCount"] != len(operational_pairs)
+        or registry["operationalRequiredPairsSha256"] != required_pairs_sha256(operational_pairs)
+        or registry["operationalTotalPairCount"] != operational_total
+        or registry["operationalDmiVerifiedPairCount"] + len(operational_pairs) != operational_total
+        or registry["advisoryHistoryRequiredPairCount"] != len(advisory_pairs)
+        or registry["advisoryHistoryRequiredPairsSha256"] != required_pairs_sha256(advisory_pairs)
+        or registry["advisoryHistoryTotalPairCount"] != advisory_total
+        or registry["advisoryHistoryDmiVerifiedPairCount"] + len(advisory_pairs) != advisory_total
+        or registry.get("totalPairCount") != operational_total + advisory_total
+        or registry.get("dmiVerifiedPairCount")
+            != registry["operationalDmiVerifiedPairCount"]
+            + registry["advisoryHistoryDmiVerifiedPairCount"]
+    ):
+        raise ValueError("Copernicus operational/advisory cardinality does not close")
+    if (
+        registry["selectionMode"] == "dmi-gaps-only"
+        and target_count > 0
+        and registry["operationalDmiVerifiedPairCount"] == 0
+    ):
+        raise ValueError("Implicit full-coast operational Copernicus collection is forbidden")
+
+    combined_pairs = sorted(
+        [*operational_pairs, *advisory_pairs],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    legacy_projection = {
+        "schemaVersion": 2,
+        "kind": registry["kind"],
+        "matrixContractId": MATRIX_CONTRACT_ID,
+        "selectionMode": registry["selectionMode"],
+        "productionReferenceAt": registry["productionReferenceAt"],
+        "targetHour": registry["targetHour"],
+        "rangeStartAt": registry["rangeStartAt"],
+        "rangeEndAt": registry["rangeEndAt"],
+        "coldBridgeHours": registry["coldBridgeHours"],
+        "publicHourCount": registry["publicHourCount"],
+        "matrixHourCount": registry["matrixHourCount"],
+        "targetCount": registry["targetCount"],
+        "sourcePartCount": registry["sourcePartCount"],
+        "partCount": registry["partCount"],
+        "targetRegistrySha256": registry["targetRegistrySha256"],
+        "dmiCurrentInputSha256": registry["dmiCurrentInputSha256"],
+        "dmiVerifierContractId": registry["dmiVerifierContractId"],
+        "requiredPairsSha256": required_pairs_sha256(combined_pairs),
+        "requiredPairCount": len(combined_pairs),
+        "dmiVerifiedPairCount": registry["dmiVerifiedPairCount"],
+        "totalPairCount": registry["totalPairCount"],
+        "coordinatesChanged": registry["coordinatesChanged"],
+        "targets": registry["targets"],
+        "requiredPairs": combined_pairs,
+        "zones": registry["zones"],
+    }
+    _validate_legacy_target_registry(legacy_projection)
+    operational_ids = {str(row["partId"]) for row in operational_pairs}
+    advisory_ids = {str(row["partId"]) for row in advisory_pairs}
+    if registry.get("operationalPartCount") != len(operational_ids):
+        raise ValueError("Copernicus operational target count mismatch")
+    if registry.get("advisoryHistoryPartCount") != len(advisory_ids):
+        raise ValueError("Copernicus advisory-history target count mismatch")
+    return registry
+
+
 def _identity_without(value: dict[str, Any], *excluded: str) -> str:
     return canonical_sha256({key: item for key, item in value.items() if key not in excluded})
 
@@ -634,7 +833,12 @@ def record_id(value: dict[str, Any]) -> str:
 
 
 def collection_id(value: dict[str, Any]) -> str:
-    return _identity_without(value, "collectionId", "status", "sealedAt")
+    excluded = ["collectionId", "status", "sealedAt"]
+    if value.get("sealContractId") == OPERATIONAL_SEAL_CONTRACT_ID:
+        # The private pair list proves advisory subset membership inside the cache.
+        # Its canonical hash/count remain identity-bound in the public seal.
+        excluded.append("advisoryHistoryRequiredPairs")
+    return _identity_without(value, *excluded)
 
 
 def target_identity_fingerprint(target: dict[str, Any]) -> str:
@@ -802,7 +1006,7 @@ def _validate_record(
     return {**record, "_validTime": valid_time}
 
 
-def _validate_collection(
+def _validate_legacy_collection(
     value: Any,
     acquisitions: dict[str, dict[str, Any]],
     records: dict[str, dict[str, Any]],
@@ -882,6 +1086,154 @@ def _validate_collection(
     return {**collection, "_reference": reference}
 
 
+def _validate_collection(
+    value: Any,
+    acquisitions: dict[str, dict[str, Any]],
+    records: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Validate either the legacy full-range seal or the operational seal.
+
+    The operational seal is activation-complete on target..+117.  Its -48h
+    history is measured-only advisory evidence and may be incomplete, but every
+    present row must still satisfy the same exact join/provenance contracts.
+    """
+    if isinstance(value, dict) and set(value) == COLLECTION_FIELDS:
+        return _validate_legacy_collection(value, acquisitions, records)
+    collection = _require_exact_fields(
+        value, OPERATIONAL_COLLECTION_FIELDS, "Copernicus operational coverage collection",
+    )
+    if (
+        collection["status"] != "OPERATIONAL_COMPLETE"
+        or collection["sealContractId"] != OPERATIONAL_SEAL_CONTRACT_ID
+    ):
+        raise ValueError("Copernicus operational coverage collection status/contract is invalid")
+    reference = _hour(collection["productionReferenceAt"], "production reference")
+    history_start, operational_end = range_bounds(reference)
+    history_end = reference - timedelta(hours=1)
+    expected_ranges = {
+        "operationalRangeStartAt": utc_iso(reference),
+        "operationalRangeEndAt": utc_iso(operational_end),
+        "advisoryHistoryStartAt": utc_iso(history_start),
+        "advisoryHistoryEndAt": utc_iso(history_end),
+    }
+    if any(collection.get(key) != expected for key, expected in expected_ranges.items()):
+        raise ValueError("Copernicus operational/advisory collection ranges are invalid")
+    horizon = (collection["operationalHourCount"], collection["advisoryHistoryHourCount"])
+    if (
+        any(isinstance(item, bool) or not isinstance(item, int) for item in horizon)
+        or horizon != (PUBLIC_HOUR_COUNT, COLD_BRIDGE_HOURS)
+    ):
+        raise ValueError("Copernicus operational/advisory collection horizon is invalid")
+    for field in (
+        "targetRegistrySha256", "dmiCurrentInputSha256",
+        "operationalRequiredPairsSha256", "operationalRecordRefsSha256",
+        "advisoryHistoryRequiredPairsSha256", "advisoryHistoryRecordRefsSha256",
+    ):
+        if not valid_sha256(collection[field]):
+            raise ValueError(f"Copernicus operational collection has invalid {field}")
+    if (
+        collection["dmiVerifierContractId"] != DMI_VERIFIER_CONTRACT_ID
+        or collection["selectionPolicyId"] != SELECTION_POLICY_ID
+    ):
+        raise ValueError("Copernicus operational collection verifier/selection contract is not pinned")
+
+    operational_refs = collection["operationalRecordRefs"]
+    advisory_refs = collection["advisoryHistoryRecordRefs"]
+    advisory_required = collection["advisoryHistoryRequiredPairs"]
+    for label, rows in (
+        ("operational record refs", operational_refs),
+        ("advisory-history record refs", advisory_refs),
+        ("advisory-history required pairs", advisory_required),
+    ):
+        if not isinstance(rows, list) or any(not isinstance(row, dict) for row in rows):
+            raise ValueError(f"Copernicus {label} are malformed")
+        if rows != sorted(rows, key=lambda row: (row.get("validTime", ""), row.get("partId", ""))):
+            raise ValueError(f"Copernicus {label} are not canonical")
+    for ref in [*operational_refs, *advisory_refs]:
+        _require_exact_fields(ref, RECORD_REF_FIELDS, "Copernicus operational coverage record ref")
+    for pair in advisory_required:
+        _require_exact_fields(pair, REQUIRED_PAIR_FIELDS, "Copernicus advisory-history required pair")
+
+    operational_pairs = [
+        {"partId": str(row["partId"]), "validTime": utc_iso(_hour(row["validTime"], "operational ref time"))}
+        for row in operational_refs
+    ]
+    advisory_pairs = [
+        {"partId": str(row["partId"]), "validTime": utc_iso(_hour(row["validTime"], "advisory ref time"))}
+        for row in advisory_refs
+    ]
+    if any(not (reference <= _parse_shadow_time(row["validTime"]) <= operational_end) for row in operational_pairs):
+        raise ValueError("Copernicus operational ref lies outside target..+117")
+    if any(not (history_start <= _parse_shadow_time(row["validTime"]) <= history_end) for row in advisory_pairs):
+        raise ValueError("Copernicus advisory ref lies outside -48..-1")
+    if any(not (history_start <= _hour(row["validTime"], "advisory required time") <= history_end) for row in advisory_required):
+        raise ValueError("Copernicus advisory required pair lies outside -48..-1")
+    if len({(row["partId"], row["validTime"]) for row in [*operational_pairs, *advisory_pairs]}) != len(operational_pairs) + len(advisory_pairs):
+        raise ValueError("Copernicus operational/advisory refs overlap or contain duplicates")
+
+    integer_counts = (
+        collection["operationalRequiredPairCount"],
+        collection["advisoryHistoryRequiredPairCount"],
+        collection["advisoryHistoryAvailablePairCount"],
+        collection["advisoryHistoryMissingPairCount"],
+    )
+    if any(isinstance(item, bool) or not isinstance(item, int) or item < 0 for item in integer_counts):
+        raise ValueError("Copernicus operational/advisory collection counts are invalid")
+    if (
+        collection["operationalRequiredPairCount"] != len(operational_refs)
+        or collection["operationalRequiredPairsSha256"] != required_pairs_sha256(operational_pairs)
+        or collection["operationalRecordRefsSha256"] != canonical_sha256(operational_refs)
+        or collection["advisoryHistoryRequiredPairCount"] != len(advisory_required)
+        or collection["advisoryHistoryRequiredPairsSha256"] != required_pairs_sha256(advisory_required)
+        or collection["advisoryHistoryAvailablePairCount"] != len(advisory_refs)
+        or collection["advisoryHistoryRecordRefsSha256"] != canonical_sha256(advisory_refs)
+        or collection["advisoryHistoryAvailablePairCount"] + collection["advisoryHistoryMissingPairCount"]
+            != collection["advisoryHistoryRequiredPairCount"]
+        or collection["advisoryHistoryComplete"]
+            is not (collection["advisoryHistoryMissingPairCount"] == 0)
+    ):
+        raise ValueError("Copernicus operational/advisory collection cardinality does not close")
+    advisory_required_set = {
+        (str(row["partId"]), utc_iso(_hour(row["validTime"], "advisory required time")))
+        for row in advisory_required
+    }
+    advisory_ref_set = {(row["partId"], row["validTime"]) for row in advisory_pairs}
+    if not advisory_ref_set.issubset(advisory_required_set):
+        raise ValueError("Copernicus advisory refs are outside the measured-only required history matrix")
+
+    all_refs = sorted(
+        [*operational_refs, *advisory_refs],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    all_pairs = sorted(
+        [*operational_pairs, *advisory_pairs],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    legacy_projection = {
+        "status": "COMPLETE",
+        "productionReferenceAt": collection["productionReferenceAt"],
+        "rangeStartAt": collection["advisoryHistoryStartAt"],
+        "rangeEndAt": collection["operationalRangeEndAt"],
+        "coldBridgeHours": COLD_BRIDGE_HOURS,
+        "publicHourCount": PUBLIC_HOUR_COUNT,
+        "targetRegistrySha256": collection["targetRegistrySha256"],
+        "dmiCurrentInputSha256": collection["dmiCurrentInputSha256"],
+        "dmiVerifierContractId": collection["dmiVerifierContractId"],
+        "requiredPairsSha256": required_pairs_sha256(all_pairs),
+        "requiredPairCount": len(all_refs),
+        "selectionPolicyId": collection["selectionPolicyId"],
+        "recordRefs": all_refs,
+        "recordRefsSha256": canonical_sha256(all_refs),
+        "acquisitionIds": collection["acquisitionIds"],
+        "sealedAt": collection["sealedAt"],
+    }
+    legacy_projection["collectionId"] = collection_id(legacy_projection)
+    _validate_legacy_collection(legacy_projection, acquisitions, records)
+    if collection["collectionId"] != collection_id(collection):
+        raise ValueError("Copernicus operational collection identity hash mismatch")
+    return {**collection, "_reference": reference}
+
+
 def validate_shadow(
     document: Any,
     target_identities: dict[str, dict[str, Any]] | None = None,
@@ -950,7 +1302,7 @@ def validate_shadow(
             raise ValueError("Duplicate Copernicus coverage collection identity")
         collection_ids.add(collection["collectionId"])
     if require_collection and not cache["collections"]:
-        raise ValueError("Copernicus range cache has no COMPLETE coverage collection")
+        raise ValueError("Copernicus range cache has no activation-complete coverage collection")
     return cache
 
 
@@ -1201,6 +1553,8 @@ def make_coverage_collection(
     required_pairs: list[dict[str, Any]],
     record_refs: list[dict[str, str]],
     sealed_at: datetime,
+    advisory_history_required_pairs: list[dict[str, Any]] | None = None,
+    advisory_history_record_refs: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     start, end = range_bounds(production_reference_at)
     canonical_refs = sorted(record_refs, key=lambda row: (row["validTime"], row["partId"]))
@@ -1209,6 +1563,59 @@ def make_coverage_collection(
     required_hash = required_pairs_sha256(required_pairs)
     if required_hash != required_pairs_sha256(canonical_refs):
         raise RuntimeError("Copernicus record refs do not match the exact DMI-gap matrix")
+    if advisory_history_required_pairs is not None or advisory_history_record_refs is not None:
+        advisory_required = sorted(
+            advisory_history_required_pairs or [],
+            key=lambda row: (row["validTime"], row["partId"]),
+        )
+        advisory_refs = sorted(
+            advisory_history_record_refs or [],
+            key=lambda row: (row["validTime"], row["partId"]),
+        )
+        advisory_required_set = {
+            (str(row["partId"]), utc_iso(_hour(row["validTime"], "advisory required time")))
+            for row in advisory_required
+        }
+        advisory_ref_set = {
+            (str(row["partId"]), utc_iso(_hour(row["validTime"], "advisory ref time")))
+            for row in advisory_refs
+        }
+        if not advisory_ref_set.issubset(advisory_required_set):
+            raise RuntimeError("Copernicus advisory refs are outside the measured-only history matrix")
+        missing_count = len(advisory_required_set - advisory_ref_set)
+        value = {
+            "status": "OPERATIONAL_COMPLETE",
+            "sealContractId": OPERATIONAL_SEAL_CONTRACT_ID,
+            "productionReferenceAt": utc_iso(production_reference_at),
+            "operationalRangeStartAt": utc_iso(production_reference_at),
+            "operationalRangeEndAt": utc_iso(end),
+            "operationalHourCount": PUBLIC_HOUR_COUNT,
+            "advisoryHistoryStartAt": utc_iso(start),
+            "advisoryHistoryEndAt": utc_iso(production_reference_at - timedelta(hours=1)),
+            "advisoryHistoryHourCount": COLD_BRIDGE_HOURS,
+            "targetRegistrySha256": target_registry_sha256,
+            "dmiCurrentInputSha256": dmi_current_input_sha256,
+            "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
+            "operationalRequiredPairsSha256": required_hash,
+            "operationalRequiredPairCount": len(required_pairs),
+            "operationalRecordRefs": canonical_refs,
+            "operationalRecordRefsSha256": canonical_sha256(canonical_refs),
+            "advisoryHistoryRequiredPairs": advisory_required,
+            "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_required),
+            "advisoryHistoryRequiredPairCount": len(advisory_required),
+            "advisoryHistoryRecordRefs": advisory_refs,
+            "advisoryHistoryRecordRefsSha256": canonical_sha256(advisory_refs),
+            "advisoryHistoryAvailablePairCount": len(advisory_refs),
+            "advisoryHistoryMissingPairCount": missing_count,
+            "advisoryHistoryComplete": missing_count == 0,
+            "selectionPolicyId": SELECTION_POLICY_ID,
+            "acquisitionIds": sorted({
+                row["acquisitionId"] for row in [*canonical_refs, *advisory_refs]
+            }),
+            "sealedAt": utc_iso(sealed_at),
+        }
+        value["collectionId"] = collection_id(value)
+        return value
     value = {
         "status": "COMPLETE",
         "productionReferenceAt": utc_iso(production_reference_at),

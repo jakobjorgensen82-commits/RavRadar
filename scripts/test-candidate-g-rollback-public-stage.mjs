@@ -496,6 +496,9 @@ try {
     ['extra Candidate payload envelope', startupPath, document => {
       document.ravScoreRuntime.hiddenFallback = true;
     }],
+    ['private measured warmup payload', startupPath, document => {
+      document.ravScoreCandidateGWarmup = {};
+    }],
     ['extra Candidate manifest runtime', manifestPath, document => {
       document.ravScoreRuntime.hiddenFallback = true;
     }],

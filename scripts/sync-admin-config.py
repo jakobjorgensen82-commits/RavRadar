@@ -506,8 +506,10 @@ def is_exact_active_operational_controller(controller, profile_binding, profile_
 
     if profile_kind != "integrated" or status != "INTEGRATED_ACTIVE":
         return False
-    if controller["calibrationEligible"] is not True:
-        return False
+    # The exact ACTIVE integrated controller may legitimately remain false
+    # while measured history warms. Shape, binding, endpoint hashes and the
+    # atomic controller/profile snapshot remain mandatory above; hydration
+    # must not silently promote or reject that sealed disposition.
 
     integrated_maintenance = (
         same_sealed_binding(source_binding, requested_binding)

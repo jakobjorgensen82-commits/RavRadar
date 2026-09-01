@@ -18,7 +18,7 @@ from typing import Any
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
     DMI_VERIFIER_CONTRACT_ID,
-    MATRIX_CONTRACT_ID,
+    OPERATIONAL_MATRIX_CONTRACT_ID,
     PUBLIC_END_OFFSET_HOURS,
     PUBLIC_HOUR_COUNT,
     file_sha256,
@@ -90,17 +90,32 @@ def build_registry(
     full_coast: bool,
 ) -> dict[str, Any]:
     hours = matrix_hours(reference)
-    required_pairs: list[dict[str, str]] = []
-    verified_count = 0
+    operational_required_pairs: list[dict[str, str]] = []
+    advisory_history_required_pairs: list[dict[str, str]] = []
+    operational_verified_count = 0
+    advisory_history_verified_count = 0
     for valid_time in hours:
         for target in all_targets:
             verified = False if full_coast else has_verified_local_dmi(dmi, target, valid_time)
-            if verified:
-                verified_count += 1
+            operational = valid_time >= reference
+            if verified and operational:
+                operational_verified_count += 1
+            elif verified:
+                advisory_history_verified_count += 1
+            elif operational:
+                operational_required_pairs.append({
+                    "partId": target["partId"], "validTime": utc_iso(valid_time),
+                })
             else:
-                required_pairs.append({"partId": target["partId"], "validTime": utc_iso(valid_time)})
-    required_pairs.sort(key=lambda row: (row["validTime"], row["partId"]))
-    unique_required_ids = {row["partId"] for row in required_pairs}
+                advisory_history_required_pairs.append({
+                    "partId": target["partId"], "validTime": utc_iso(valid_time),
+                })
+    operational_required_pairs.sort(key=lambda row: (row["validTime"], row["partId"]))
+    advisory_history_required_pairs.sort(key=lambda row: (row["validTime"], row["partId"]))
+    unique_required_ids = {
+        row["partId"]
+        for row in [*operational_required_pairs, *advisory_history_required_pairs]
+    }
     targets = [{
         "partId": row["partId"],
         "parentZoneId": row["parentZoneId"],
@@ -118,9 +133,9 @@ def build_registry(
             "waterPoint": target["waterPoint"],
         })
     return {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "kind": REGISTRY_KIND,
-        "matrixContractId": MATRIX_CONTRACT_ID,
+        "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
         "selectionMode": "manual-full-coast" if full_coast else "dmi-gaps-only",
         "productionReferenceAt": utc_iso(reference),
         "targetHour": utc_iso(reference),
@@ -129,19 +144,38 @@ def build_registry(
         "coldBridgeHours": COLD_BRIDGE_HOURS,
         "publicHourCount": PUBLIC_HOUR_COUNT,
         "matrixHourCount": len(hours),
+        "operationalRangeStartAt": utc_iso(reference),
+        "operationalRangeEndAt": utc_iso(hours[-1]),
+        "operationalHourCount": PUBLIC_HOUR_COUNT,
+        "advisoryHistoryStartAt": utc_iso(hours[0]),
+        "advisoryHistoryEndAt": utc_iso(reference - timedelta(hours=1)),
+        "advisoryHistoryHourCount": COLD_BRIDGE_HOURS,
         "targetCount": len(targets),
         "sourcePartCount": len(targets),
         "partCount": len(unique_required_ids),
+        "operationalPartCount": len({row["partId"] for row in operational_required_pairs}),
+        "advisoryHistoryPartCount": len({
+            row["partId"] for row in advisory_history_required_pairs
+        }),
         "targetRegistrySha256": target_fingerprint(targets),
         "dmiCurrentInputSha256": dmi_sha256,
         "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
-        "requiredPairsSha256": required_pairs_sha256(required_pairs),
-        "requiredPairCount": len(required_pairs),
-        "dmiVerifiedPairCount": verified_count,
+        "operationalRequiredPairsSha256": required_pairs_sha256(operational_required_pairs),
+        "operationalRequiredPairCount": len(operational_required_pairs),
+        "operationalDmiVerifiedPairCount": operational_verified_count,
+        "operationalTotalPairCount": len(targets) * PUBLIC_HOUR_COUNT,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(
+            advisory_history_required_pairs,
+        ),
+        "advisoryHistoryRequiredPairCount": len(advisory_history_required_pairs),
+        "advisoryHistoryDmiVerifiedPairCount": advisory_history_verified_count,
+        "advisoryHistoryTotalPairCount": len(targets) * COLD_BRIDGE_HOURS,
+        "dmiVerifiedPairCount": operational_verified_count + advisory_history_verified_count,
         "totalPairCount": len(targets) * len(hours),
         "coordinatesChanged": False,
         "targets": targets,
-        "requiredPairs": required_pairs,
+        "operationalRequiredPairs": operational_required_pairs,
+        "advisoryHistoryRequiredPairs": advisory_history_required_pairs,
         "zones": zones,
     }
 
@@ -173,10 +207,12 @@ def write_github_output(path: Path | None, document: dict[str, Any]) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(f"target_hour={document['productionReferenceAt']}\n")
         handle.write(f"production_reference_at={document['productionReferenceAt']}\n")
-        handle.write(f"local_dmi_count={document['dmiVerifiedPairCount']}\n")
+        handle.write(f"local_dmi_count={document['operationalDmiVerifiedPairCount']}\n")
         handle.write(f"target_part_count={document['partCount']}\n")
-        handle.write(f"required_pair_count={document['requiredPairCount']}\n")
-        handle.write(f"required_pairs_sha256={document['requiredPairsSha256']}\n")
+        handle.write(f"required_pair_count={document['operationalRequiredPairCount']}\n")
+        handle.write(f"required_pairs_sha256={document['operationalRequiredPairsSha256']}\n")
+        handle.write(f"operational_required_pair_count={document['operationalRequiredPairCount']}\n")
+        handle.write(f"advisory_history_required_pair_count={document['advisoryHistoryRequiredPairCount']}\n")
 
 
 def main() -> int:
@@ -192,14 +228,21 @@ def main() -> int:
     document = build_registry(
         all_targets, dmi, reference, file_sha256(args.dmi), full_coast=args.full_coast,
     )
-    if not args.full_coast and document["dmiVerifiedPairCount"] == 0 and all_targets:
+    if (
+        not args.full_coast
+        and document["operationalDmiVerifiedPairCount"] == 0
+        and all_targets
+    ):
         raise RuntimeError("No strictly provenance-verified DMI current pair exists in the locked range; refusing implicit full-coast Copernicus collection")
     atomic_write(args.output, document)
     write_github_output(args.github_output, document)
     print(
         "Copernicus exact range targets: "
-        f"{document['requiredPairCount']} DMI-gap pairs across {document['partCount']} parts; "
-        f"DMI verified {document['dmiVerifiedPairCount']}/{document['totalPairCount']}; "
+        f"{document['operationalRequiredPairCount']} operational DMI-gap pairs across "
+        f"{document['operationalPartCount']} parts; "
+        f"advisory history {document['advisoryHistoryRequiredPairCount']} gaps; "
+        f"DMI verified operationally {document['operationalDmiVerifiedPairCount']}/"
+        f"{document['operationalTotalPairCount']}; "
         f"reference={document['productionReferenceAt']}; coordinates changed: no."
     )
     return 0

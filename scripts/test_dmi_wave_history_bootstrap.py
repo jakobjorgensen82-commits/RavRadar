@@ -1164,7 +1164,7 @@ class BootstrapCliClassificationTests(unittest.TestCase):
         return result
 
     def test_cold_start_accepts_only_bounded_missing_history_after_handoff(self) -> None:
-        for code in ("MISSING_HOUR", "INTERPOLATION_GAP"):
+        for code in ("MISSING_HOUR", "INTERPOLATION_GAP", "NO_COHERENT_RUN"):
             with self.subTest(code=code):
                 result = self.build(COLD_START_MODE, code)
                 self.assertEqual(result["status"], "ok")

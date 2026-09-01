@@ -97,8 +97,25 @@ assert.match(bulk, /parser-exception/);
 assert.match(bulk, /marine_cache_healthy/);
 assert.match(bulk, /and coastal_part_current_cache_healthy/);
 assert.match(bulk, /strict_verified_part_current_pair_count/);
+assert.match(bulk, /def backfill_compatible_cache_data\(/);
+assert.match(bulk, /strict_donors = \[/);
+assert.match(bulk, /coastal_part_targets=coastal_part_targets/);
+assert.match(bulk, /production_reference=locked_production_reference/);
 assert.match(bulk, /atomic_write_bulk_cache\(previous\)/);
 assert.match(bulk, /not strict_current_anchor_available/);
+assert.match(bulk, /def producer_terminal_code\(/);
+for (const code of [
+  'DMI_READY',
+  'DMI_CATALOG_SCHEDULE_STALE',
+  'DMI_STRICT_CURRENT_ANCHOR_MISSING',
+  'DMI_WAVE_BOOTSTRAP_INCOMPLETE',
+  'DMI_NO_PRODUCTIVE_COLLECTION',
+  'DMI_PRODUCER_EXCEPTION',
+]) {
+  assert.match(bulk, new RegExp(code));
+}
+assert.match(bulk, /terminal_code=\{bounded_code\}/);
+assert.match(bulk, /strict_current_anchor_ready=/);
 assert.match(updater, /DMI_OCEAN_REQUEST_TIMEOUT_MS/);
 assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
@@ -141,6 +158,37 @@ assert.match(build, /\.cache\/dmi-grib/);
 for (const source of Object.values(workflows)) assert.doesNotMatch(source, /schedule-test\.yml/);
 assert.match(build, /DMI_API_KEY/);
 assert.match(build, /Report DMI bulk result/);
+const dmiProducer = build.indexOf('name: Update DMI bulk model cache');
+const dmiGribSave = build.indexOf('name: Save progressed DMI GRIB download cache');
+const dmiZoneSave = build.indexOf('name: Save progressive private DMI zone cache');
+const dmiShadowSave = build.indexOf('name: Save private seven-day current-field research cache');
+const dmiTerminalGate = build.indexOf('name: Require successful DMI producer before current supplement');
+const copernicusSelector = build.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement');
+assert.ok(
+  dmiProducer < dmiGribSave
+    && dmiGribSave < dmiZoneSave
+    && dmiZoneSave < dmiShadowSave
+    && dmiShadowSave < dmiTerminalGate
+    && dmiTerminalGate < copernicusSelector,
+  'DMI-progression skal gemmes før den hårde terminalgate og gapselector',
+);
+const terminalGateBlock = build.slice(dmiTerminalGate, copernicusSelector);
+for (const marker of [
+  'id: dmi-terminal-gate',
+  'steps.dmi-bulk.outputs.terminal_code',
+  'steps.dmi-bulk.outputs.strict_current_anchor_ready',
+  'test "$code" = "DMI_READY"',
+  'echo "ready=$ready" >> "$GITHUB_OUTPUT"',
+]) {
+  assert.ok(terminalGateBlock.includes(marker), `DMI-terminalgaten mangler ${marker}`);
+}
+assert.doesNotMatch(terminalGateBlock, /continue-on-error/);
+const selectorBlock = build.slice(
+  copernicusSelector,
+  build.indexOf('name: Bind production to resolved DMI current hour'),
+);
+assert.match(selectorBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.doesNotMatch(selectorBlock, /--nearest-dmi-hour|--full-coast/);
 assert.match(hydrator, /data\/live\/dmi-bulk-cache\.json/);
 assert.match(hydrator, /ravradar-runtime-diagnostics\.json/);
 assert.match(hydrator, /data\/diagnostics\/dmi-ocean-diagnostics\.json/);

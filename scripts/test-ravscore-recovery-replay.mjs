@@ -14,6 +14,8 @@ import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate
 import { buildRavScoreProductionPartSeries } from './lib/ravscore-production-part-pipeline.mjs';
 import {
   buildRavScoreRecoveryReplay,
+  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
+  RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
   ravScoreCandidateMigrationWaveBootstrapTargetAt,
   ravScoreRecoverySourceStartAt,
   selectRavScoreInitialState,
@@ -1035,6 +1037,106 @@ assert.equal(selectRavScoreInitialState({
 assert.equal(selectRavScoreInitialState({
   part, existingPart: { candidateG: existingPart.candidateG }, checkpointStates: {},
 }).source, 'CANDIDATE_G_MIGRATION');
+const integratedStateLessRecoveryMode =
+  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery;
+const stateLessRecoveryFromExisting = selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates,
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.equal(stateLessRecoveryFromExisting.source, 'EXISTING_INTEGRATED');
+assert.equal(stateLessRecoveryFromExisting.state, initialState,
+  'state-less recovery mode must still prefer a fresh exact integrated continuation');
+const stateLessRecoveryFromAbsence = selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates: {},
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromAbsence, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: [],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'explicit integrated state-less recovery must attest only measured cold replay');
+assert.equal(
+  Object.keys(stateLessRecoveryFromAbsence)
+    .some(key => /synthetic|interpolat|reconstruct/i.test(key)),
+  false,
+  'state-less recovery selection must not authorize synthesis, interpolation or reconstruction',
+);
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: { candidateG: existingPart.candidateG },
+  checkpointStates: {},
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code
+  === 'RAVSCORE_INTEGRATED_STATE_LESS_RECOVERY_CANDIDATE_ONLY',
+'integrated state-less recovery must never accept or migrate Candidate G-only state');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: {
+    ...existingPart,
+    ravScoreModel: {
+      currentState: { ...initialState, modelBundleSha256: 'invalid' },
+    },
+  },
+  checkpointStates,
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code === 'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+'state-less recovery must not mask an invalid present integrated state with a valid checkpoint');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates: {
+    [part.partId]: { ...initialState, samplingContextKey: 'sha256:invalid' },
+  },
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code === 'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+'state-less recovery must fail when any present integrated checkpoint is invalid');
+const stateLessRecoveryFromExpiredIntegrated = selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates: {},
+  targetReferenceAt: time(73),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromExpiredIntegrated, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: ['EXISTING_INTEGRATED_EXPIRED'],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'a legitimate expired integrated state must become measured-only cold replay');
+const stateLessRecoveryFromExpiredCheckpoint = selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates,
+  targetReferenceAt: time(73),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromExpiredCheckpoint, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: ['INTEGRATED_CHECKPOINT_EXPIRED'],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'a legitimate expired integrated checkpoint must become measured-only cold replay');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates: {},
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+  candidateGSourceValidated: true,
+}), error => error?.code === 'RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_INVALID',
+'state-less recovery must not reuse the aggregate Candidate G first-cutover attestation');
 const warmupCandidateState = buildCandidateGDerivedStateSeries(
   Array.from({ length: 6 }, (_, index) => ({
     time: time(index - 5),

@@ -2,7 +2,7 @@ import {
   RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS as MODEL_BINDING_FIELDS,
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.318';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.319';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/;
@@ -157,6 +157,8 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     throw new Error('Den offentlige RavScore-profil tillader en ukendt eller blandet driftsvej.');
   }
   const binding = frozenCopy(runtimeBinding);
+  const observationCalibrationEligible = mode.observationCalibrationEligible === true
+    && availability.allCurrentScoresFullHistory === true;
   const scoreProfile = Object.freeze({
     schemaVersion: profile.schemaVersion,
     switchVersion: profile.switchVersion,
@@ -173,7 +175,7 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     activationState: profile.activationState,
     publicAvailabilityPolicy: profile.publicAvailabilityPolicy,
     weights: Object.freeze({ huntability: 20, transport: 50, mobilisation: 30 }),
-    observationCalibrationEligible: mode.observationCalibrationEligible,
+    observationCalibrationEligible,
     adminRules: false,
     publicShadow: false,
     crossModelFallback: false,
@@ -190,7 +192,7 @@ export function resolveAdminActivePublicRavScore({ manifest, conditions } = {}) 
     kind: mode.kind,
     labelDa: mode.labelDa,
     statusDa: mode.statusDa,
-    observationCalibrationEligible: mode.observationCalibrationEligible,
+    observationCalibrationEligible,
     binding,
     scoreProfile,
     diagnosticScoreProfile,

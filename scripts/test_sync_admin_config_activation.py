@@ -235,6 +235,21 @@ class RavScoreSelectionPrecedenceTest(unittest.TestCase):
             "preserve-local-integrated-for-historical-integrated-maintenance",
         )
 
+    def test_historical_integrated_warmup_controller_false_is_preserved(self):
+        current = integrated_selection("4.0.309")
+        binding = historical_binding(MODULE.profile_model_binding(current), "warmup")
+        central = integrated_selection("4.0.308", binding=binding)
+        controller = active_controller(binding, "integrated")
+        controller["calibrationEligible"] = False
+
+        self.assertTrue(MODULE.is_exact_active_operational_controller(
+            controller, binding, "integrated"
+        ))
+        self.assertEqual(
+            MODULE.ravscore_selection_hydration_action(current, central, controller),
+            "preserve-local-integrated-for-historical-integrated-maintenance",
+        )
+
     def test_historical_integrated_return_complete_installs_exact_current_target(self):
         current = integrated_selection("4.0.309")
         target = MODULE.profile_model_binding(current)

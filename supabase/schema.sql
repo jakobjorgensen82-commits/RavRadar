@@ -485,7 +485,7 @@ begin
 end;
 $$;
 
-+-- Validate the immutable public score-quality snapshot independently of the
+-- Validate the immutable public score-quality snapshot independently of the
 -- transport/storage client. This is deliberately model-bound: the integrated
 -- model can store a bounded HISTORY_INCOMPLETE score, while the sealed
 -- Candidate G rollback may store only an exact, READY 48-hour point score and
@@ -633,7 +633,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = '778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7'
-      and p_calibration_features ->> 'modelBundleSha256' = '978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9'
+      and p_calibration_features ->> 'modelBundleSha256' = 'e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then case
       when jsonb_path_query_array(
@@ -1072,7 +1072,19 @@ begin
   return (
     p_model_id = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0'
     and operational ->> 'status' = 'INTEGRATED_ACTIVE'
-    and operational ->> 'calibrationEligible' = 'true'
+    and (
+      operational ->> 'calibrationEligible' = 'true'
+      or (
+        -- RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_BEGIN
+        operational ->> 'calibrationEligible' = 'false'
+        and p_calibration_eligible = false
+        and p_reason_codes in (
+          '["ravscore-history-incomplete"]'::jsonb,
+          '["public-emergency-last-complete","ravscore-history-incomplete"]'::jsonb
+        )
+        -- RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_END
+      )
+    )
     and profile ->> 'switchVersion' = 'RAVSCORE-PROFILE-SWITCH-INTEGRATED-1.0.0'
     and profile ->> 'publicAvailabilityPolicy' = 'integrated-model-local-fail-closed'
     and profile ->> 'status' like 'owner-approved-integrated-model-only-%'

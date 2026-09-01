@@ -1,6 +1,6 @@
 # DEC-0112 – frisk primary må publiceres uden gyldig fallback; HISTORY_INCOMPLETE er en særskilt scorekvalitet
 
-**Status:** Ejerbesluttet og bindende. Publiceringsdelen ligger på den offentlige 4.0.316/Candidate G-baseline. Modeldelen er nu den bindende numeriske state-6-udvidelse af DEC-0102 og DEC-0110, men er endnu ikke frigivet eller offentligt verificeret.
+**Status:** Ejerbesluttet og bindende. Publiceringsdelen ligger på den offentlige 4.0.316/Candidate G-baseline. Modeldelen er den bindende numeriske state-6-udvidelse af DEC-0102 og DEC-0110 og er operationelt præciseret af DEC-0114, men er endnu ikke frigivet eller offentligt verificeret.
 
 **Dato:** 2026-08-30
 
@@ -58,13 +58,13 @@ Den numeriske kontrakt er:
 7. **Retention er ikke scorehukommelse.** Der må opbevares 168 timers datasikker researchhistorik til replay, audit og senere analyse, men `researchRetentionScoreEffect=NONE`: ingen score, rangering eller bedste-tid må afhænge af mere end de aktive procesvinduer. Retention må ikke blive en skjult syvdøgnsvægtning.
 8. **Kalibrering forbliver lukket.** `HISTORY_INCOMPLETE` og `UNAVAILABLE` har altid `calibrationEligible=false` i browser, lokale og Edge-baserede Spørg RavRadar-svar, konto/tur/observation, D1/Supabase, admin, ekspertflader, manifest og audits. Kun `FULL_HISTORY` kan være kalibreringsegnet, og det er ikke i sig selv et fundbevis.
 
-## Afgrænset åben Feggesund-hypotese – ikke implementeret
+## Feggesund-hypotese – nabozoneproxy pensioneret for denne release
 
 Det sanitiserede parent-zone-datasæt `rr-20260830104132-210` viser 118/118 bølgefelter som `missing` for `DK-B05-11`, men de tre aktive part-id'er findes, registry markerer alle tre `marineCoverage=full`, og Candidate G-current er tilgængelig for både strand og waders. Den integrerede model producerer fra 673 part-level-serier; parent-gabet beviser derfor ikke, at de tre integrerede partserier mangler bølger.
 
-Ejeren har givet en snæver forskningsautorisation: Først skal en frisk integreret part-level-produktion bevise alle tre deles eksakte 118-timers direkte bølgedækning. Kun hvis den kontrol viser et reelt part-level-hul, og korrekt direkte bølgeevidens derefter dokumenteret er umulig at skaffe fra DMI eller en egnet officiel alternativ kilde, må netop denne ene zone vurderes for en konservativ nabozoneinterpolation som sidste udvej. Det er **ikke** en aktiv modelbeslutning, ikke en produktionsadapter og ikke en generel undtagelse fra direct-input-`UNAVAILABLE`.
+Først skal en frisk integreret part-level-produktion bevise alle tre deles eksakte 118-timers direkte bølgedækning. Den tidligere snævre mulighed for senere at vurdere en konservativ nabozoneinterpolation er pensioneret for denne release af DEC-0114. Det er fortsat ikke en produktionsadapter eller en undtagelse fra direct-input-`UNAVAILABLE`.
 
-En senere proxy kræver særskilt RDKS-beslutning, fuld producent-/forbrugerkontrakt, provenance, usikkerhedsgrænse, kapacitetsvurdering, tests, rollback og produktionsbevis. Den må aldrig flytte geometri, land-/vandpunkter eller kystnormal, skabe historik, låne strøm, brede sig til andre zoner eller skjule sin egen kilde- og usikkerhedsstatus. Indtil den friske part-level-kontrol er udført, er både behovet for en alternativ kilde og proxyhypotesen åbne; et faktisk manglende direkte part-input følger fortsat `UNAVAILABLE`.
+Et faktisk manglende direkte part-input følger fortsat `UNAVAILABLE` og må ikke udfyldes fra en nabozone, en anden kystdel eller syntetisk historik. En eventuel fremtidig proxy kan kun genåbnes ved en ny udtrykkelig ejerbeslutning efter denne release og vil da kræve særskilt RDKS, fuld producent-/forbrugerkontrakt, provenance, usikkerhedsgrænse, kapacitetsvurdering, tests, rollback og produktionsbevis. Den må aldrig flytte geometri, land-/vandpunkter eller kystnormal.
 
 ## Migration, checkpoint, recovery og rollback
 
@@ -90,9 +90,9 @@ Kontrakttests, offline-replays, ablationer og grænsebeviser kan dokumentere det
 
 ## Systemisk arkitekturroadmap
 
-P0-hændelserne viste tre strukturelle risici: et monolitisk workflow med mange skjulte afhængigheder, grøn topstatus som kan dække over no-op/skipped produktion, og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. I den lokale 4.0.318-kandidat er produktionen opdelt i eksplicitte orchestrator/build/deploy-roller, alle 40 direkte readers er migreret, terminalstatus er maskinlæsbar, og releasekontraktmetadata er samlet centralt. Role-aware semantiske tests er grønne; exact-head- og produktionsbevis udestår. Arbejdet blev ikke blandet ind i den afgrænsede 4.0.316-P0-hotfix.
+P0-hændelserne viste tre strukturelle risici: et monolitisk workflow med mange skjulte afhængigheder, grøn topstatus som kan dække over no-op/skipped produktion, og spredt kobling mellem versioner, dokumentation og tekstfølsomme tests. I den lokale 4.0.319-kandidat er produktionen opdelt i eksplicitte orchestrator/build/deploy-roller, alle 40 direkte readers er migreret, terminalstatus er maskinlæsbar, og releasekontraktmetadata er samlet centralt. Role-aware semantiske tests er grønne; exact-head- og produktionsbevis udestår. Arbejdet blev ikke blandet ind i den afgrænsede 4.0.316-P0-hotfix.
 
-Den historiske pre-recovery-implementering brugte schema `ravradar-production-workflow-outcome-v1` med fem terminaler. 4.0.318's bindende releasekontrakt er `ravradar-production-workflow-outcome-v2`, fordi nested exact-key-resultatet også skal omfatte historical actions og recovery writer/finalizer/gate. Terminalerne er fortsat `NOOP`, `DEFERRED`, `BUILT`, `DEPLOYED` og `FAILED`. `DEPLOYED` kræver Pages eller exact-target finalizer, eksakt offentlig model-/implementation-/210/673-verifikation og afsluttet activation/reseal; fejl, cancellation, ukendt action, uventet skipped gate eller inkonsistent bevis er `FAILED`. Kode, releasegate og måltests er lokalt synkroniseret med v2; exact-head-, produktions- og offentligt slutbevis udestår.
+Den historiske pre-recovery-implementering brugte schema `ravradar-production-workflow-outcome-v1` med fem terminaler. 4.0.319's bindende releasekontrakt er `ravradar-production-workflow-outcome-v2`, fordi nested exact-key-resultatet også skal omfatte historical actions og recovery writer/finalizer/gate. Terminalerne er fortsat `NOOP`, `DEFERRED`, `BUILT`, `DEPLOYED` og `FAILED`. `DEPLOYED` kræver Pages eller exact-target finalizer, eksakt offentlig model-/implementation-/210/673-verifikation og afsluttet activation/reseal; fejl, cancellation, ukendt action, uventet skipped gate eller inkonsistent bevis er `FAILED`. Kode, releasegate og måltests er lokalt synkroniseret med v2; exact-head-, produktions- og offentligt slutbevis udestår.
 
 Outcome-artifactet indeholder kun run-/SHA-identitet, kanoniske job-/stepresultater og booleanske beviser samt `privatePayloadIncluded=false`; ingen vejrpayload, koordinater, land-/vandpunkter, rå U/V, modelstate eller credentials må indgå. Grøn-no-op-/skipped-semantikken, workflowrolleopdelingen, de 40 reader-migrationer og den centrale releasekontraktmetadata er lokalt lukket som én samlet arkitekturændring og afventer exact-head-/produktionsbevis. Den lange first-fail-`validate:source`-kæde er fortsat en særskilt P2 efter modelcutover.
 

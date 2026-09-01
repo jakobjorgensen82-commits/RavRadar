@@ -70,6 +70,28 @@ for (const [functionName, migrationSource] of [
     canonicalDefinition, `${functionName} drifted in security installer`);
 }
 
+for (const [label, source] of Object.entries(documents)) {
+  const admission = functionDefinition(
+    source,
+    label,
+    'public.ravradar_trip_v3_active_binding_admitted',
+  );
+  const begin = admission.indexOf('RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_BEGIN');
+  const end = admission.indexOf('RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_END');
+  assert.ok(begin >= 0 && end > begin,
+    `${label} lacks the bounded integrated measured-warmup admission`);
+  const warmup = normalize(admission.slice(begin, end));
+  assert.match(warmup, /operational ->> 'calibrationEligible' = 'false'/,
+    `${label} does not bind warmup admission to the exact false controller`);
+  assert.match(warmup, /p_calibration_eligible = false/,
+    `${label} could admit calibration-eligible warmup evidence`);
+  assert.match(warmup,
+    /p_reason_codes in \( '\["ravscore-history-incomplete"\]'::jsonb, '\["public-emergency-last-complete","ravscore-history-incomplete"\]'::jsonb \)/,
+    `${label} does not limit warmup admission to canonical HISTORY_INCOMPLETE evidence`);
+  assert.doesNotMatch(warmup, /RRS-CANDIDATE|unknown|reconstructed|unattested/i,
+    `${label} broadens warmup admission beyond the exact integrated history contract`);
+}
+
 function activeTriggerDefinition(source, label) {
   const match = source.match(
     /create trigger ravradar_observations_active_v3_binding_trigger[\s\S]*?execute function public\.ravradar_observation_require_active_v3_binding\(\);/i,

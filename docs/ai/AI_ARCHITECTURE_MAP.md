@@ -6,11 +6,11 @@
 - `scripts/prepare-candidate-g-operational-rollback.mjs` forsegler Candidate targetprofil/digest i planen, aldrig i controlleren. Atomic controller+schema-3-profilread skal matche samme 11-felts aktive binding.
 - `scripts/ravscore-operational-pages-recovery.mjs` klassificerer `SAFE_SOURCE_ABORT`, `EXACT_TARGET_REDEPLOY`, `TARGET_RECONCILE` eller `FAIL_CLOSED`. Workflowet adskiller central classifier, Pages/id-token-writer, non-Pages central finalizer og recovery-gate. `pages-recovery-*` bliver næste restore-lineage.
 - Offentlig 118h-modekontrol tillader `HISTORY_INCOMPLETE` ved gyldige direct inputs, men direct missing forbliver timevis `UNAVAILABLE`. Outcome-v2 og P2-assistent/plain-language er lokalt synkroniseret og måltestet; exact-head-, produktions- og browserbevis er fortsat åbent.
-- Den regenererede 4.0.318-binding er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Outcome-v2 og P2-måltests er lokalt grønne; exact-head/produktion/browser udestår.
+- Den regenererede 4.0.319-binding er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Outcome-v2 og P2-måltests er lokalt grønne; exact-head/produktion/browser udestår.
 - Ét aktivt 15-minutters kontroljob observerer og diagnosticerer vejrdrift før sikker reparation. Det tilføjer ingen repositoryscheduler, dubletvagthund eller blind redispatch.
 - Offentlig drift er fortsat Candidate G på `c58deb78`. `33345476979`/`rr-20260831010337-210` var første recoverybevis; seneste external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` bestod fuld DMI/validate/releasegate/storage/Pages og er komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples. 0/210 aktive zoner skyldes Candidate G's historikmemory; state-6-cutover og offentlig browserkontrol er åbne.
 
-## 4.0.318 first-cutover-arkitektur under DEC-0113
+## 4.0.319 first-cutover-arkitektur under DEC-0113
 
 - `scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap` henter public manifest, conditions og deres eksakte `coastal-parts-v2.json`; source-path/schema/210/673/zone-/delsæt og eventuelle bytes/SHA bindes. Source-registeret skrives kun til `.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json`; aktivt `data/live/coastal-parts-v2.json` røres ikke af sourcehydreringen.
 - `.github/workflows/update-and-deploy.yml` materialiserer det autoritative aktive coastal-part-register efter central adminsync/apply og før bootstrapresolveren. Denne tidlige materialisering bruger den eksisterende builder og ændrer ikke godkendt geometri eller punkter.
@@ -19,7 +19,7 @@
 - `scripts/lib/ravscore-candidate-g-rollback-runtime.mjs` og `scripts/lib/ravscore-production-part-pipeline.mjs` har en eksklusiv `VERIFIED_MEASURED_COLD_START`-vej for rollback-oraklet. Den kan ikke kombineres med continuation og skal selv opfylde Candidate G READY før companion/checkpoint/release.
 - Workflowet sender aggregate mode/source-attestation uændret til `update-weather.mjs`; DMI bruger samme mode/target. WAM-gaten kræver en grøn resolver. En eksisterende ikke-annulleret progressiv DMI-zonecache gemmes også efter en senere producentfejl.
 - Schedule/watchdog/manual run under uafsluttet first cutover vælger Candidate G-maintenance; kun push kan vælge integrated-cutover. Enhver source/resolverfejl stopper før dyr vejrhentning, scorebuild, protected writes, artifact, Pages og activation.
-- Run `33333490853` er det safe-fail-bevis, der motiverer arkitekturen, ikke releasebevis. Bot `33334709027` og pilot `33335078275` stoppede ligeledes før deploy/public mutation. 4.0.318 kræver fortsat exact-head, frisk fuld produktion og offentlig verifikation.
+- Run `33333490853` er det safe-fail-bevis, der motiverer arkitekturen, ikke releasebevis. Bot `33334709027` og pilot `33335078275` stoppede ligeledes før deploy/public mutation. 4.0.319 kræver fortsat exact-head, frisk fuld produktion og offentlig verifikation.
 
 ## 4.0.316 publiceringsarkitektur – optional fallback, streng primary
 

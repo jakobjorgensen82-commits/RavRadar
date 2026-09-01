@@ -25,6 +25,7 @@ const COPERNICUS_REQUEST_CONTRACT_ID = 'copernicus-current-multitime-bounded-spa
 const COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID = 'copernicus-current-schema1-history-migration-v1';
 const COPERNICUS_RECORD_PROJECTION_CONTRACT_ID = 'copernicus-live-current-record-fixed-decimal-v1';
 const COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID = 'copernicus-required-part-time-pairs-v1';
+const COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID = 'copernicus-current-operational118-advisory-history48-seal-v1';
 const SHA256_PATTERN = /^sha256:[0-9a-f]{64}$/;
 const COPERNICUS_RANGE_SEAL_FIELDS = Object.freeze([
   'collectionId',
@@ -41,6 +42,32 @@ const COPERNICUS_RANGE_SEAL_FIELDS = Object.freeze([
   'requiredPairCount',
   'selectionPolicyId',
   'recordRefsSha256',
+  'sealedAt',
+]);
+const COPERNICUS_OPERATIONAL_RANGE_SEAL_FIELDS = Object.freeze([
+  'collectionId',
+  'status',
+  'sealContractId',
+  'productionReferenceAt',
+  'operationalRangeStartAt',
+  'operationalRangeEndAt',
+  'operationalHourCount',
+  'advisoryHistoryStartAt',
+  'advisoryHistoryEndAt',
+  'advisoryHistoryHourCount',
+  'targetRegistrySha256',
+  'dmiCurrentInputSha256',
+  'dmiVerifierContractId',
+  'operationalRequiredPairsSha256',
+  'operationalRequiredPairCount',
+  'operationalRecordRefsSha256',
+  'advisoryHistoryRequiredPairsSha256',
+  'advisoryHistoryRequiredPairCount',
+  'advisoryHistoryRecordRefsSha256',
+  'advisoryHistoryAvailablePairCount',
+  'advisoryHistoryMissingPairCount',
+  'advisoryHistoryComplete',
+  'selectionPolicyId',
   'sealedAt',
 ]);
 const COPERNICUS_DOCUMENT_PROOFS = new WeakMap();
@@ -208,27 +235,57 @@ function basicControlledLiveDocument(document) {
 function buildCopernicusDocumentProof(document) {
   if (!basicControlledLiveDocument(document)) return null;
   const seal = document.copernicusRangeSeal;
-  if (!exactObjectFields(seal, COPERNICUS_RANGE_SEAL_FIELDS)
-    || seal.status !== 'COMPLETE'
-    || seal.coldBridgeHours !== COPERNICUS_COLD_BRIDGE_HOURS
-    || seal.publicHourCount !== COPERNICUS_PUBLIC_HOUR_COUNT
+  const operationalSeal = seal?.status === 'OPERATIONAL_COMPLETE';
+  const sealFields = operationalSeal
+    ? COPERNICUS_OPERATIONAL_RANGE_SEAL_FIELDS
+    : COPERNICUS_RANGE_SEAL_FIELDS;
+  if (!exactObjectFields(seal, sealFields)
+    || (!operationalSeal && seal.status !== 'COMPLETE')
     || seal.dmiVerifierContractId !== COPERNICUS_DMI_VERIFIER_CONTRACT_ID
     || seal.selectionPolicyId !== COPERNICUS_SELECTION_POLICY_ID
     || seal.targetRegistrySha256 !== document.targetFingerprint
     || !SHA256_PATTERN.test(seal.collectionId)
     || !SHA256_PATTERN.test(seal.targetRegistrySha256)
     || !SHA256_PATTERN.test(seal.dmiCurrentInputSha256)
-    || !SHA256_PATTERN.test(seal.requiredPairsSha256)
-    || !SHA256_PATTERN.test(seal.recordRefsSha256)
-    || !Number.isInteger(seal.requiredPairCount)
-    || seal.requiredPairCount < 0) return null;
+    || (operationalSeal
+      ? (seal.sealContractId !== COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID
+        || seal.operationalHourCount !== COPERNICUS_PUBLIC_HOUR_COUNT
+        || seal.advisoryHistoryHourCount !== COPERNICUS_COLD_BRIDGE_HOURS
+        || !SHA256_PATTERN.test(seal.operationalRequiredPairsSha256)
+        || !SHA256_PATTERN.test(seal.operationalRecordRefsSha256)
+        || !SHA256_PATTERN.test(seal.advisoryHistoryRequiredPairsSha256)
+        || !SHA256_PATTERN.test(seal.advisoryHistoryRecordRefsSha256)
+        || !Number.isInteger(seal.operationalRequiredPairCount)
+        || seal.operationalRequiredPairCount < 0
+        || !Number.isInteger(seal.advisoryHistoryRequiredPairCount)
+        || seal.advisoryHistoryRequiredPairCount < 0
+        || !Number.isInteger(seal.advisoryHistoryAvailablePairCount)
+        || seal.advisoryHistoryAvailablePairCount < 0
+        || !Number.isInteger(seal.advisoryHistoryMissingPairCount)
+        || seal.advisoryHistoryMissingPairCount < 0
+        || seal.advisoryHistoryAvailablePairCount + seal.advisoryHistoryMissingPairCount
+          !== seal.advisoryHistoryRequiredPairCount
+        || seal.advisoryHistoryComplete !== (seal.advisoryHistoryMissingPairCount === 0))
+      : (seal.coldBridgeHours !== COPERNICUS_COLD_BRIDGE_HOURS
+        || seal.publicHourCount !== COPERNICUS_PUBLIC_HOUR_COUNT
+        || !SHA256_PATTERN.test(seal.requiredPairsSha256)
+        || !SHA256_PATTERN.test(seal.recordRefsSha256)
+        || !Number.isInteger(seal.requiredPairCount)
+        || seal.requiredPairCount < 0))) return null;
   const referenceAt = exactUtcHour(seal.productionReferenceAt);
-  const rangeStartAt = exactUtcHour(seal.rangeStartAt);
-  const rangeEndAt = exactUtcHour(seal.rangeEndAt);
+  const rangeStartAt = exactUtcHour(
+    operationalSeal ? seal.advisoryHistoryStartAt : seal.rangeStartAt,
+  );
+  const rangeEndAt = exactUtcHour(
+    operationalSeal ? seal.operationalRangeEndAt : seal.rangeEndAt,
+  );
   const sealedAt = canonicalTime(seal.sealedAt);
   if (!referenceAt || !rangeStartAt || !rangeEndAt || !sealedAt
     || rangeStartAt !== shiftedHour(referenceAt, -COPERNICUS_COLD_BRIDGE_HOURS)
     || rangeEndAt !== shiftedHour(referenceAt, COPERNICUS_PUBLIC_END_OFFSET_HOURS)
+    || (operationalSeal
+      && (exactUtcHour(seal.operationalRangeStartAt) !== referenceAt
+        || exactUtcHour(seal.advisoryHistoryEndAt) !== shiftedHour(referenceAt, -1)))
     || Math.abs(Date.parse(sealedAt) - Date.parse(referenceAt))
       > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000) return null;
 
@@ -237,7 +294,10 @@ function buildCopernicusDocumentProof(document) {
     || entry?.sourceClass === 'supplemental-local-current'
     || entry?.recordProjectionContractId === COPERNICUS_RECORD_PROJECTION_CONTRACT_ID
   ));
-  if (copernicusEntries.length !== seal.requiredPairCount) return null;
+  const expectedEntryCount = operationalSeal
+    ? seal.operationalRequiredPairCount + seal.advisoryHistoryAvailablePairCount
+    : seal.requiredPairCount;
+  if (copernicusEntries.length !== expectedEntryCount) return null;
   const entryMembership = new WeakSet();
   const entrySha256ByObject = new WeakMap();
   const refs = [];
@@ -293,12 +353,51 @@ function buildCopernicusDocumentProof(document) {
   }
   refs.sort((left, right) => left.validTime.localeCompare(right.validTime)
     || left.partId.localeCompare(right.partId));
-  const pairs = refs.map(({ partId, validTime }) => ({ partId, validTime }));
-  if (canonicalSha256(refs) !== seal.recordRefsSha256
-    || canonicalSha256({ contractId: COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID, pairs })
-      !== seal.requiredPairsSha256) return null;
+  const operationalRefs = refs.filter(row => Date.parse(row.validTime) >= Date.parse(referenceAt));
+  const advisoryHistoryRefs = refs.filter(row => Date.parse(row.validTime) < Date.parse(referenceAt));
+  if (operationalSeal) {
+    const operationalPairs = operationalRefs.map(({ partId, validTime }) => ({ partId, validTime }));
+    if (operationalRefs.length !== seal.operationalRequiredPairCount
+      || advisoryHistoryRefs.length !== seal.advisoryHistoryAvailablePairCount
+      || canonicalSha256(operationalRefs) !== seal.operationalRecordRefsSha256
+      || canonicalSha256(advisoryHistoryRefs) !== seal.advisoryHistoryRecordRefsSha256
+      || canonicalSha256({
+        contractId: COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID,
+        pairs: operationalPairs,
+      }) !== seal.operationalRequiredPairsSha256) return null;
+  } else {
+    const pairs = refs.map(({ partId, validTime }) => ({ partId, validTime }));
+    if (canonicalSha256(refs) !== seal.recordRefsSha256
+      || canonicalSha256({ contractId: COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID, pairs })
+        !== seal.requiredPairsSha256) return null;
+  }
   const acquisitionIds = [...new Set(refs.map(row => row.acquisitionId))].sort();
-  const collectionIdentity = {
+  const collectionIdentity = operationalSeal ? {
+    sealContractId: seal.sealContractId,
+    productionReferenceAt: seal.productionReferenceAt,
+    operationalRangeStartAt: seal.operationalRangeStartAt,
+    operationalRangeEndAt: seal.operationalRangeEndAt,
+    operationalHourCount: seal.operationalHourCount,
+    advisoryHistoryStartAt: seal.advisoryHistoryStartAt,
+    advisoryHistoryEndAt: seal.advisoryHistoryEndAt,
+    advisoryHistoryHourCount: seal.advisoryHistoryHourCount,
+    targetRegistrySha256: seal.targetRegistrySha256,
+    dmiCurrentInputSha256: seal.dmiCurrentInputSha256,
+    dmiVerifierContractId: seal.dmiVerifierContractId,
+    operationalRequiredPairsSha256: seal.operationalRequiredPairsSha256,
+    operationalRequiredPairCount: seal.operationalRequiredPairCount,
+    operationalRecordRefs: operationalRefs,
+    operationalRecordRefsSha256: seal.operationalRecordRefsSha256,
+    advisoryHistoryRequiredPairsSha256: seal.advisoryHistoryRequiredPairsSha256,
+    advisoryHistoryRequiredPairCount: seal.advisoryHistoryRequiredPairCount,
+    advisoryHistoryRecordRefs: advisoryHistoryRefs,
+    advisoryHistoryRecordRefsSha256: seal.advisoryHistoryRecordRefsSha256,
+    advisoryHistoryAvailablePairCount: seal.advisoryHistoryAvailablePairCount,
+    advisoryHistoryMissingPairCount: seal.advisoryHistoryMissingPairCount,
+    advisoryHistoryComplete: seal.advisoryHistoryComplete,
+    selectionPolicyId: seal.selectionPolicyId,
+    acquisitionIds,
+  } : {
     productionReferenceAt: seal.productionReferenceAt,
     rangeStartAt: seal.rangeStartAt,
     rangeEndAt: seal.rangeEndAt,

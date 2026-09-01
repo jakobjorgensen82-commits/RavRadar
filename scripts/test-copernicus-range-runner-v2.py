@@ -15,6 +15,7 @@ import xarray as xr
 from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     LEGACY_HISTORY_REQUEST_CONTRACT_ID,
+    OPERATIONAL_MATRIX_CONTRACT_ID,
     file_sha256,
     required_pairs_sha256,
     validate_shadow,
@@ -60,6 +61,55 @@ def registry(dmi_sha: str, *, include_legacy_history: bool = False) -> dict:
         "dmiVerifiedPairCount": 166 - len(pairs), "totalPairCount": 166,
         "coordinatesChanged": False,
         "targets": [TARGET], "requiredPairs": pairs,
+        "zones": {"z1": [{
+            "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
+        }]},
+    }
+
+
+def operational_registry(dmi_sha: str) -> dict:
+    operational_pairs = [
+        {"partId": "p1", "validTime": REFERENCE.isoformat().replace("+00:00", "Z")},
+        {"partId": "p1", "validTime": FUTURE.isoformat().replace("+00:00", "Z")},
+    ]
+    advisory_pairs = [{
+        "partId": "p1",
+        "validTime": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }]
+    return {
+        "schemaVersion": 3,
+        "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
+        "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
+        "selectionMode": "dmi-gaps-only",
+        "productionReferenceAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "targetHour": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "rangeStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "rangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "coldBridgeHours": 48, "publicHourCount": 118, "matrixHourCount": 166,
+        "operationalRangeStartAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "operationalRangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "operationalHourCount": 118,
+        "advisoryHistoryStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryEndAt": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryHourCount": 48,
+        "targetCount": 1, "sourcePartCount": 1, "partCount": 1,
+        "operationalPartCount": 1, "advisoryHistoryPartCount": 1,
+        "targetRegistrySha256": target_fingerprint([TARGET]),
+        "dmiCurrentInputSha256": dmi_sha,
+        "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
+        "operationalRequiredPairsSha256": required_pairs_sha256(operational_pairs),
+        "operationalRequiredPairCount": len(operational_pairs),
+        "operationalDmiVerifiedPairCount": 118 - len(operational_pairs),
+        "operationalTotalPairCount": 118,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_pairs),
+        "advisoryHistoryRequiredPairCount": len(advisory_pairs),
+        "advisoryHistoryDmiVerifiedPairCount": 48 - len(advisory_pairs),
+        "advisoryHistoryTotalPairCount": 48,
+        "dmiVerifiedPairCount": 163, "totalPairCount": 166,
+        "coordinatesChanged": False,
+        "targets": [TARGET],
+        "operationalRequiredPairs": operational_pairs,
+        "advisoryHistoryRequiredPairs": advisory_pairs,
         "zones": {"z1": [{
             "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
         }]},
@@ -130,6 +180,29 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert cache["acquisitions"][0]["requestEndAt"] == FUTURE.isoformat().replace("+00:00", "Z")
     report_text = (folder / "cache.json.report.json").read_text(encoding="utf-8").lower()
     assert all(token not in report_text for token in ("samplingpoint", "gridpoint", "umps", "vmps"))
+
+    # Schema 3 must seal complete target..+117 operation even when an advisory
+    # -48h pair is unavailable.  It must not request or synthesize that history.
+    write(folder / "registry.json", operational_registry(file_sha256(folder / "dmi.json")))
+    operational_run = run(folder, "operational-cache.json")
+    assert operational_run.returncode == 0, operational_run.stdout + operational_run.stderr
+    operational_cache = validate_shadow(
+        json.loads((folder / "operational-cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    operational_seal = operational_cache["collections"][0]
+    assert operational_seal["status"] == "OPERATIONAL_COMPLETE"
+    assert len(operational_seal["operationalRecordRefs"]) == 2
+    assert operational_seal["advisoryHistoryRecordRefs"] == []
+    assert operational_seal["advisoryHistoryMissingPairCount"] == 1
+    assert operational_seal["advisoryHistoryComplete"] is False
+    operational_report = json.loads(
+        (folder / "operational-cache.json.report.json").read_text(encoding="utf-8")
+    )
+    assert operational_report["operationalSealComplete"] is True
+    assert operational_report["historySyntheticPairCount"] == 0
+    write(folder / "registry.json", registry(file_sha256(folder / "dmi.json")))
 
     # The real schema-1 cache had a cache-level updatedAt but no guaranteed
     # per-row capturedAt.  It may contribute historical rows once, never the

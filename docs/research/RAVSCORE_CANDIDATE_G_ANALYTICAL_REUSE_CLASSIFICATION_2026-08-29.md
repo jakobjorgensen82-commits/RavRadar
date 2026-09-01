@@ -1,12 +1,12 @@
 # Candidate G — analytisk genbrugsklassifikation
 
 - **Dato:** 2026-08-30
-- **Status:** Implementeret klassifikation for den samlede state-6-kandidat. 4.0.317 bestod PR #235-exact-head og blev merged som `a584d1cf`, men produktion `33333490853` stoppede sikkert før mutation/deploy på en for streng 673-`READY`-forudsætning. 4.0.318 lukker first-cutover lokalt; Candidate G er fortsat offentlig i 4.0.316. Seneste offentlige Candidate G-evidens er grøn `33347230240`/`rr-20260831012407-210` 210/673, mens frisk produktion og offentligt cutover af state 6 ikke er gennemført
+- **Status:** Implementeret klassifikation for den samlede state-6-kandidat. 4.0.317 bestod PR #235-exact-head og blev merged som `a584d1cf`, men produktion `33333490853` stoppede sikkert før mutation/deploy på en for streng 673-`READY`-forudsætning. 4.0.319 lukker first-cutover lokalt; Candidate G er fortsat offentlig i 4.0.316. Seneste offentlige Candidate G-evidens er grøn `33347230240`/`rr-20260831012407-210` 210/673, mens frisk produktion og offentligt cutover af state 6 ikke er gennemført
 - **Offentlig model under arbejdet:** Candidate G
 - **Autoritativ ny kontrakt:** `js/core/ravscore-model-contract.js`
 - **Geodata/private data:** Ikke læst eller ændret i analysen
 
-Den klassificerede målkontrakt er model `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Candidate G-migrationen er `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5`, den historiske aldrig-offentlige state-5-kandidat kan kun migreres fra et eksakt ready-punkt gennem `integrated-schema5-ready-point-to-schema6-history-bounds-v1`, og rollback er `integrated-schema6-to-candidate-g-schema2-v3`. 4.0.318's endelige 11-feltsbinding bruger `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9` over 43 transitive filer og otte deklarerede forbrugere. Den separate 55-filers Candidate G-rollbackbinding er `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
+Den klassificerede målkontrakt er model `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Candidate G-migrationen er `candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5`, den historiske aldrig-offentlige state-5-kandidat kan kun migreres fra et eksakt ready-punkt gennem `integrated-schema5-ready-point-to-schema6-history-bounds-v1`, og rollback er `integrated-schema6-to-candidate-g-schema2-v3`. 4.0.319's endelige 11-feltsbinding bruger `modelContractSha256=778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7` og `modelBundleSha256=e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 transitive filer og otte deklarerede forbrugere. Den separate 55-filers Candidate G-rollbackbinding er `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 
 ## Formål og metode
 
@@ -14,7 +14,7 @@ Hvert aktivt Candidate G-led er vurderet som **BEVAR**, **FORBEDR**, **ERSTAT**,
 
 **BEVAR** betyder ikke, at en regel er en naturkonstant eller fundkalibreret. Det betyder, at den fortsat er en forsvarlig, eksplicit prior, og at der ikke foreligger bedre evidens. **UTILSTRÆKKELIG EVIDENS** betyder, at en mulig fysisk proces skal forklares som usikkerhed og ikke omsættes til et tal.
 
-## First-cutover, cache og offentlig kontinuitet i 4.0.318
+## First-cutover, cache og offentlig kontinuitet i 4.0.319
 
 | Candidate G-led | Klassifikation | Begrundelse og konsekvens |
 |---|---|---|

@@ -239,7 +239,15 @@ def main() -> int:
         if authoritative is None or target_fingerprint([target]) != target_fingerprint([authoritative]):
             raise RuntimeError("Copernicus target registry contains a changed central target identity")
     target_identities = {row["partId"]: row for row in authoritative_targets}
-    required_pairs = registry["requiredPairs"]
+    operational_contract = registry["schemaVersion"] == 3
+    required_pairs = (
+        registry["operationalRequiredPairs"]
+        if operational_contract
+        else registry["requiredPairs"]
+    )
+    advisory_history_required_pairs = (
+        registry["advisoryHistoryRequiredPairs"] if operational_contract else []
+    )
 
     existing = load_shadow(args.shadow, reference, target_identities)
     existing_acquisitions, existing_records = merge_cache_evidence(existing, [], [], reference, target_identities)
@@ -336,8 +344,12 @@ def main() -> int:
     record_refs, missing = select_required_records(required_pairs, acquisitions, records, reference)
     if missing:
         raise RuntimeError(
-            f"Copernicus range acquisition is incomplete for {len(missing)}/{len(required_pairs)} exact DMI-gap pairs"
+            "Copernicus operational acquisition is incomplete for "
+            f"{len(missing)}/{len(required_pairs)} exact DMI-gap pairs in target..+117"
         )
+    advisory_history_record_refs, advisory_history_missing = select_required_records(
+        advisory_history_required_pairs, acquisitions, records, reference,
+    )
     collection = make_coverage_collection(
         production_reference_at=reference,
         target_registry_sha256=registry["targetRegistrySha256"],
@@ -345,6 +357,12 @@ def main() -> int:
         required_pairs=required_pairs,
         record_refs=record_refs,
         sealed_at=acquisition_at,
+        advisory_history_required_pairs=(
+            advisory_history_required_pairs if operational_contract else None
+        ),
+        advisory_history_record_refs=(
+            advisory_history_record_refs if operational_contract else None
+        ),
     )
     shadow = atomic_write_shadow(
         args.shadow,
@@ -357,14 +375,17 @@ def main() -> int:
 
     source_by_acquisition = {row["acquisitionId"]: row["source"] for row in acquisitions}
     selected_by_source = {source: 0 for source in source_by_acquisition.values()}
-    for ref in record_refs:
+    selected_refs = [*record_refs, *advisory_history_record_refs]
+    for ref in selected_refs:
         source = source_by_acquisition[ref["acquisitionId"]]
         selected_by_source[source] = selected_by_source.get(source, 0) + 1
     existing_ids = {row["recordId"] for row in existing_records}
-    reused_history_count = sum(
-        ref["recordId"] in existing_ids and parse_time(ref["validTime"], "ref time") < reference
-        for ref in record_refs
-    )
+    reused_history_count = sum(ref["recordId"] in existing_ids for ref in advisory_history_record_refs)
+    if not operational_contract:
+        reused_history_count = sum(
+            ref["recordId"] in existing_ids and parse_time(ref["validTime"], "ref time") < reference
+            for ref in record_refs
+        )
     report = {
         "schemaVersion": 2,
         "generatedAt": utc_iso(acquisition_at),
@@ -386,6 +407,12 @@ def main() -> int:
         "requiredPairCount": len(required_pairs),
         "verifiedPairCount": len(record_refs),
         "missingPairCount": 0,
+        "operationalSealComplete": True,
+        "advisoryHistoryRequiredPairCount": len(advisory_history_required_pairs),
+        "advisoryHistoryAvailablePairCount": len(advisory_history_record_refs),
+        "advisoryHistoryMissingPairCount": len(advisory_history_missing),
+        "advisoryHistoryComplete": len(advisory_history_missing) == 0,
+        "historySyntheticPairCount": 0,
         "reusedHistoricalPairCount": reused_history_count,
         "newAcquisitionCount": len(new_acquisitions),
         "selectedPairsBySource": dict(sorted(selected_by_source.items())),
@@ -400,11 +427,14 @@ def main() -> int:
     lines = [
         "RavRadar privat Copernicus-strømrange",
         f"Produktionsreference: {report['productionReferenceAt']}",
-        f"Eksakte DMI-gappar: {report['verifiedPairCount']}/{report['requiredPairCount']}",
-        f"Genbrugte historiske par: {report['reusedHistoricalPairCount']}",
+        f"Eksakte operationelle DMI-gappar: {report['verifiedPairCount']}/{report['requiredPairCount']}",
+        "Målt rådgivende historik: "
+        f"{report['advisoryHistoryAvailablePairCount']}/"
+        f"{report['advisoryHistoryRequiredPairCount']}",
+        f"Genbrugte målte historiske par: {report['reusedHistoricalPairCount']}",
         f"Nye komplette acquisitions: {report['newAcquisitionCount']}",
-        "Coverage-seal: COMPLETE",
-        "Interpolation/hold: nej",
+        "Coverage-seal: OPERATIONAL_COMPLETE" if operational_contract else "Coverage-seal: COMPLETE",
+        "Historiksyntese/interpolation/hold: nej",
     ]
     atomic_write_text(args.summary, "\n".join(lines) + "\n")
     print("\n".join(lines))

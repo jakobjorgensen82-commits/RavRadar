@@ -243,6 +243,49 @@ for strict_anchor, bootstrap_requested, bootstrap_complete, expected in (
         bootstrap_complete,
     ) is expected
 
+all_stale = {
+    "collectionsAttempted": ["dkss_idw", "wam_dw"],
+    "stacByCollection": {
+        "dkss_idw": {"rejectedStaleRun": True},
+        "wam_dw": {"rejectedStaleRun": True},
+    },
+}
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics=all_stale,
+) == "DMI_CATALOG_SCHEDULE_STALE"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics={"collectionsAttempted": ["dkss_idw"], "stacByCollection": {}},
+) == "DMI_STRICT_CURRENT_ANCHOR_MISSING"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=True,
+    wave_bootstrap_requested=True,
+    bootstrap_complete=False,
+    productive=True,
+    diagnostics={},
+) == "DMI_WAVE_BOOTSTRAP_INCOMPLETE"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=True,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics={},
+) == "DMI_NO_PRODUCTIVE_COLLECTION"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=True,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=True,
+    diagnostics={},
+) == "DMI_READY"
+
 with tempfile.TemporaryDirectory() as temporary_directory:
     original_output = producer.OUTPUT_PATH
     original_fallback = producer.DEPLOYED_FALLBACK_PATH
@@ -262,6 +305,109 @@ with tempfile.TemporaryDirectory() as temporary_directory:
         selected = producer.load_previous("test-registry")
         producer.atomic_write_bulk_cache(selected)
         assert json.loads(producer.OUTPUT_PATH.read_text("utf-8")) == fallback_document
+
+        progressive_document = {
+            "schemaVersion": 2,
+            "zoneRegistrySignature": "test-registry",
+            "generatedAt": "2026-01-01T05:00:00Z",
+            "checkpointedAt": "2026-01-01T06:00:00Z",
+            "sourceUpdatedAt": "2026-01-01T04:00:00Z",
+            "collectionState": {
+                "dkss_lf": {"lastAttemptAt": "2026-01-01T05:30:00Z"},
+            },
+            "runs": {
+                "dkss_lf": {"referenceTime": "2026-01-01T00:00:00Z"},
+            },
+            "zones": {
+                "PART::TEST": {
+                    "hourly": {},
+                    "gridPoints": {},
+                    "collections": {},
+                },
+            },
+        }
+        producer.OUTPUT_PATH.write_text(
+            json.dumps(progressive_document),
+            encoding="utf-8",
+        )
+        selected = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=reference,
+        )
+        assert selected["generatedAt"] == progressive_document["generatedAt"]
+        assert selected["checkpointedAt"] == progressive_document["checkpointedAt"]
+        assert selected["collectionState"] == progressive_document["collectionState"]
+        assert selected["runs"] == progressive_document["runs"]
+        assert strict_verified_part_current_pair_count(
+            selected,
+            targets,
+            reference - timedelta(hours=48),
+            reference + timedelta(hours=117),
+        ) == 1
+        producer.atomic_write_bulk_cache(selected)
+        materialized = json.loads(producer.OUTPUT_PATH.read_text("utf-8"))
+        assert strict_verified_part_current_pair_count(
+            materialized,
+            targets,
+            reference - timedelta(hours=48),
+            reference + timedelta(hours=117),
+        ) == 1
+
+        partial_primary = json.loads(json.dumps(progressive_document))
+        mismatched_source = json.loads(json.dumps(source))
+        mismatched_source["modelRun"] = "2025-12-31T18:00:00Z"
+        partial_primary["zones"]["PART::TEST"]["hourly"][valid_time] = {
+            "time": valid_time,
+            "current-u": 0.9,
+            "sources": {"current": mismatched_source},
+        }
+        producer.OUTPUT_PATH.write_text(
+            json.dumps(partial_primary),
+            encoding="utf-8",
+        )
+        producer.DEPLOYED_FALLBACK_PATH.write_text(
+            json.dumps(fallback_document),
+            encoding="utf-8",
+        )
+        atomic_selected = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=reference,
+        )
+        atomic_row = atomic_selected["zones"]["PART::TEST"]["hourly"][valid_time]
+        assert atomic_row["current-u"] == 0.9
+        assert "current-v" not in atomic_row
+        assert strict_verified_part_current_pair_count(
+            atomic_selected,
+            targets,
+            reference - timedelta(hours=48),
+            reference + timedelta(hours=117),
+        ) == 0
+
+        incompatible_fallback = {
+            **fallback_document,
+            "zoneRegistrySignature": "other-registry",
+        }
+        producer.DEPLOYED_FALLBACK_PATH.write_text(
+            json.dumps(incompatible_fallback),
+            encoding="utf-8",
+        )
+        producer.OUTPUT_PATH.write_text(
+            json.dumps(progressive_document),
+            encoding="utf-8",
+        )
+        incompatible_selected = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=reference,
+        )
+        assert strict_verified_part_current_pair_count(
+            incompatible_selected,
+            targets,
+            reference - timedelta(hours=48),
+            reference + timedelta(hours=117),
+        ) == 0
     finally:
         producer.OUTPUT_PATH = original_output
         producer.DEPLOYED_FALLBACK_PATH = original_fallback

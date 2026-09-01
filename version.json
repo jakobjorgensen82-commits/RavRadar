@@ -1,10 +1,10 @@
 {
-  "version": "4.0.318",
-  "releasedAt": "2026-08-31T00:19:01.032Z",
-  "minimumSupportedVersion": "4.0.318",
+  "version": "4.0.319",
+  "releasedAt": "2026-09-01T12:34:19.215Z",
+  "minimumSupportedVersion": "4.0.319",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.318",
+    "releaseVersion": "4.0.319",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
-        "modelBundleSha256": "978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9"
+        "modelBundleSha256": "e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -75,6 +75,10 @@
         {
           "id": "DEC-0113",
           "path": "docs/rdks/10_DECISIONS/DEC-0113-FIRST-CUTOVER-ATTESTED-MEASURED-COLD-START.md"
+        },
+        {
+          "id": "DEC-0114",
+          "path": "docs/rdks/10_DECISIONS/DEC-0114-INTEGRATED-FIRST-WITH-MEASURED-HISTORY-WARMUP.md"
         }
       ]
     },

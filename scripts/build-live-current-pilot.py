@@ -19,6 +19,7 @@ from typing import Any
 from lib.copernicus_current import (
     COPERNICUS_SOURCE_CONTRACTS,
     DMI_VERIFIER_CONTRACT_ID,
+    OPERATIONAL_SEAL_CONTRACT_ID,
     RECORD_PROJECTION_CONTRACT_ID,
     file_sha256,
     live_record_projection_sha256,
@@ -205,28 +206,46 @@ def copernicus_entries(
     reference_text = utc_iso(production_reference)
     collections = [
         row for row in cache["collections"]
-        if row.get("status") == "COMPLETE" and row.get("productionReferenceAt") == reference_text
+        if row.get("status") in {"COMPLETE", "OPERATIONAL_COMPLETE"}
+        and row.get("productionReferenceAt") == reference_text
     ]
     if len(collections) != 1:
-        raise RuntimeError("Copernicus projection requires exactly one COMPLETE seal for productionReferenceAt")
+        raise RuntimeError("Copernicus projection requires exactly one activation-complete seal for productionReferenceAt")
     collection = collections[0]
     if (
         collection.get("targetRegistrySha256") != fingerprint
         or collection.get("dmiCurrentInputSha256") != dmi_current_input_sha256
         or collection.get("dmiVerifierContractId") != DMI_VERIFIER_CONTRACT_ID
     ):
-        raise RuntimeError("Copernicus COMPLETE seal does not match current target/DMI input identity")
-    seal_fields = (
+        raise RuntimeError("Copernicus seal does not match current target/DMI input identity")
+    operational_contract = collection.get("status") == "OPERATIONAL_COMPLETE"
+    if operational_contract and collection.get("sealContractId") != OPERATIONAL_SEAL_CONTRACT_ID:
+        raise RuntimeError("Copernicus operational seal contract is invalid")
+    seal_fields = ((
+        "collectionId", "status", "sealContractId", "productionReferenceAt",
+        "operationalRangeStartAt", "operationalRangeEndAt", "operationalHourCount",
+        "advisoryHistoryStartAt", "advisoryHistoryEndAt", "advisoryHistoryHourCount",
+        "targetRegistrySha256", "dmiCurrentInputSha256", "dmiVerifierContractId",
+        "operationalRequiredPairsSha256", "operationalRequiredPairCount",
+        "operationalRecordRefsSha256", "advisoryHistoryRequiredPairsSha256",
+        "advisoryHistoryRequiredPairCount", "advisoryHistoryRecordRefsSha256",
+        "advisoryHistoryAvailablePairCount", "advisoryHistoryMissingPairCount",
+        "advisoryHistoryComplete", "selectionPolicyId", "sealedAt",
+    ) if operational_contract else (
         "collectionId", "status", "productionReferenceAt", "rangeStartAt", "rangeEndAt",
         "coldBridgeHours", "publicHourCount", "targetRegistrySha256", "dmiCurrentInputSha256",
         "dmiVerifierContractId", "requiredPairsSha256", "requiredPairCount", "selectionPolicyId",
         "recordRefsSha256", "sealedAt",
-    )
+    ))
     range_seal = {field: collection[field] for field in seal_fields}
     acquisition_by_id = {row["acquisitionId"]: row for row in cache["acquisitions"]}
     record_by_id = {row["recordId"]: row for row in cache["records"]}
     selected: list[dict[str, Any]] = []
-    for ref in collection["recordRefs"]:
+    collection_refs = (
+        [*collection["operationalRecordRefs"], *collection["advisoryHistoryRecordRefs"]]
+        if operational_contract else collection["recordRefs"]
+    )
+    for ref in collection_refs:
         row = record_by_id[ref["recordId"]]
         acquisition = acquisition_by_id[ref["acquisitionId"]]
         part_id = row["partId"]
@@ -418,7 +437,7 @@ def main() -> int:
     )
     if enabled and copernicus_range_seal is None:
         raise RuntimeError(
-            "Controlled-live current requires an exact COMPLETE Copernicus range seal, "
+            "Controlled-live current requires an exact activation-complete Copernicus seal, "
             "including when the sealed DMI-gap matrix is empty"
         )
     policy = read_json(args.policy)
