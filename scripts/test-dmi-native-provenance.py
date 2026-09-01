@@ -342,6 +342,43 @@ assert producer.producer_terminal_code(
     diagnostics={"collectionsAttempted": ["dkss_idw"], "stacByCollection": {}},
 ) == "DMI_CURRENT_LEDGER_INCOMPLETE"
 assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics={
+        "collectionsAttempted": ["dkss_idw"],
+        "stacByCollection": {
+            "dkss_idw": {
+                "catalogInventoryFailureCodes": ["UNPARSEABLE_STAC_ITEM"],
+            },
+        },
+    },
+) == "DMI_UNPARSEABLE_STAC_ITEM"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics={
+        "collectionsAttempted": ["dkss_idw"],
+        "stacByCollection": {},
+        "currentOperationalLedger": {
+            "failureCodes": ["LOCALLY_SKIPPED_DKSS_ASSET"],
+        },
+    },
+) == "DMI_LOCALLY_SKIPPED_DKSS_ASSET"
+assert producer.producer_terminal_code(
+    strict_current_anchor_available=False,
+    wave_bootstrap_requested=False,
+    bootstrap_complete=False,
+    productive=False,
+    diagnostics={
+        "collectionsAttempted": ["dkss_idw"],
+        "stacByCollection": {"dkss_idw": {"prefetchFailed": True}},
+    },
+) == "DMI_DKSS_PREFETCH_FAILED"
+assert producer.producer_terminal_code(
     strict_current_anchor_available=True,
     wave_bootstrap_requested=True,
     bootstrap_complete=False,

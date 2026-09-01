@@ -4199,6 +4199,72 @@ def producer_terminal_code(
             )
         ):
             return "DMI_CATALOG_SCHEDULE_STALE"
+        if isinstance(stac, dict) and any(
+            isinstance(stac.get(collection), dict)
+            and stac[collection].get("prefetchFailed") is True
+            for collection in MARINE_COLLECTIONS
+        ):
+            return "DMI_DKSS_PREFETCH_FAILED"
+        safe_stac_codes = (
+            "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            "STAC_DUPLICATE_ITEM_IDENTITY",
+            "STAC_FEATURES_MALFORMED",
+            "STAC_INVENTORY_ITEM_LIMIT",
+            "STAC_ITEM_IDENTITY_INVALID",
+            "STAC_ITEM_IDENTITY_MISSING",
+            "STAC_LINKS_MALFORMED",
+            "STAC_MULTIPLE_NEXT_LINKS",
+            "STAC_NUMBER_MATCHED_CHANGED",
+            "STAC_NUMBER_MATCHED_INVALID",
+            "STAC_NUMBER_MATCHED_NOT_EXHAUSTED",
+            "STAC_NUMBER_RETURNED_MISMATCH",
+            "STAC_PAGINATION_CYCLE",
+            "STAC_PAGINATION_PAGE_LIMIT",
+            "STAC_PAGINATION_UNPROVEN",
+            "STAC_UNSAFE_NEXT_LINK",
+            "UNPARSEABLE_SELECTED_STAC_ASSET",
+            "UNPARSEABLE_STAC_ITEM",
+        )
+        observed_stac_codes = {
+            str(code)
+            for collection in MARINE_COLLECTIONS
+            for details in [stac.get(collection) if isinstance(stac, dict) else None]
+            if isinstance(details, dict)
+            for code in (details.get("catalogInventoryFailureCodes") or [])
+        }
+        for code in safe_stac_codes:
+            if code in observed_stac_codes:
+                return f"DMI_{code}"
+        ledger = diagnostics.get("currentOperationalLedger") or {}
+        safe_ledger_codes = (
+            "ACTIVE_CURRENT_REGISTRY_EMPTY",
+            "OFFICIAL_DKSS_CATALOG_INCOMPLETE",
+            "OFFICIAL_DKSS_CATALOG_COLLAPSE",
+            "OFFICIAL_DKSS_LEDGER_INCOMPLETE",
+            "LOCALLY_SKIPPED_DKSS_ASSET",
+            "SYSTEMIC_CURRENT_TIME_COLLAPSE",
+            "UNATTESTED_CURRENT_PART_TIME",
+            "CURRENT_LEDGER_CONTRACT_INVALID",
+        )
+        observed_ledger_codes = {
+            str(code) for code in (
+                ledger.get("failureCodes")
+                if isinstance(ledger, dict)
+                and isinstance(ledger.get("failureCodes"), list)
+                else []
+            )
+        }
+        for code in safe_ledger_codes:
+            if code in observed_ledger_codes:
+                return f"DMI_{code}"
+        if not attempted:
+            return "DMI_DKSS_NOT_ATTEMPTED"
+        if any(
+            isinstance(error, dict)
+            and str(error.get("collection") or "") in MARINE_COLLECTIONS
+            for error in (diagnostics.get("errors") or [])
+        ):
+            return "DMI_DKSS_COLLECTION_FAILED"
         return "DMI_CURRENT_LEDGER_INCOMPLETE"
     if wave_bootstrap_requested and not bootstrap_complete:
         return "DMI_WAVE_BOOTSTRAP_INCOMPLETE"
