@@ -235,6 +235,7 @@ export function createTripStartFromPublicState({
     forecastSnapshot,
     calibrationFeatures,
     forecastCalibrationEligible: RAVSCORE_CALIBRATION_ELIGIBLE === true
+      && modeState.calibrationEligible === true
       && dataQualityFlags.length === 0
       && !globalWarmupLocked,
     dataQualityFlags

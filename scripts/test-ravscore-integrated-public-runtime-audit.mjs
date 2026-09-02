@@ -23,6 +23,11 @@ import {
   selectPublicRavScoreResult,
 } from '../js/core/ravscore-public-model.js';
 import { auditIntegratedRavScorePublicRuntime } from './audit-ravscore-integrated-public-runtime.mjs';
+import {
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  buildFeggesundWaveCoverageProof,
+  buildFeggesundWaveInputProofEntry,
+} from './lib/feggesund-wave-proxy.mjs';
 import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
@@ -329,8 +334,10 @@ function syntheticFull({
   partCounts,
   transition = 'continuation',
   historyIncomplete = false,
+  includeFeggesund = false,
 }) {
   assert.equal(partCounts.length, zoneCount);
+  if (includeFeggesund) assert.equal(partCounts.at(-1), 3);
   const runtimeSeries = historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
   const selectedSeries = transition === 'cold' ? coldBaseSeries : runtimeSeries;
   const runtimeRow = transition === 'cold' ? coldBaseRow
@@ -345,7 +352,9 @@ function syntheticFull({
   const parts = {};
   let partNumber = 0;
   for (let zoneNumber = 0; zoneNumber < zoneCount; zoneNumber += 1) {
-    const zoneId = `synthetic-zone-${zoneNumber + 1}`;
+    const zoneId = includeFeggesund && zoneNumber === zoneCount - 1
+      ? FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID
+      : `synthetic-zone-${zoneNumber + 1}`;
     const partIds = [];
     let firstRuntime = null;
     for (let localPart = 0; localPart < partCounts[zoneNumber]; localPart += 1) {
@@ -466,6 +475,34 @@ function syntheticFull({
         currentState: candidateStateFor({ ...part, partId }),
       },
     }]));
+  const feggesundPartIds = Object.entries(parts)
+    .filter(([, part]) => part.zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID)
+    .map(([partId]) => partId);
+  const waveInputProofs = includeFeggesund ? {
+    feggesund: buildFeggesundWaveCoverageProof({
+      forecastStartAt: REFERENCE_AT,
+      forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,
+      partIds: feggesundPartIds,
+      entries: feggesundPartIds.flatMap(partId => publicForecastOffsets
+        .map(offsetHours => buildFeggesundWaveInputProofEntry({
+          partId,
+          time: time(offsetHours),
+          hour: {
+            waveHeightM: weather.waveHeightM,
+            wavePeriodS: weather.wavePeriodS,
+            waveDirectionDeg: weather.waveDirectionDeg,
+            waveInputSource: 'DIRECT_OFFICIAL',
+            waveInputNoticeId: null,
+            waveProvenance: {
+              status: 'verified',
+              provider: 'dmi',
+              collection: 'wam_dw',
+              component: 'wave',
+            },
+          },
+        }))),
+    }),
+  } : null;
   return {
     datasetId: `synthetic-integrated-${zoneCount}-${partNumber}`,
     generatedAt: REFERENCE_AT,
@@ -519,6 +556,7 @@ function syntheticFull({
         unavailableZones: [],
         historyIncompleteZones,
       },
+      ...(waveInputProofs ? { waveInputProofs } : {}),
       expectedPartCount: partNumber,
       scoredPartCount: partNumber,
       parts,
@@ -636,6 +674,7 @@ function audit(full, package_, expectedZoneCount, expectedPartCount) {
 let national = syntheticFull({
   zoneCount: 210,
   partCounts: Array.from({ length: 210 }, (_, index) => index < 43 ? 4 : 3),
+  includeFeggesund: true,
 });
 assert.equal(Object.keys(national.coastalParts.parts).length, 673);
 let nationalPackage = publicPackage(national);
@@ -652,6 +691,47 @@ assert.equal(nationalReport.coverage.stateReplayCount, 673);
 assert.equal(nationalReport.coverage.reconstructedModeCount, 1_346);
 assert.equal(nationalReport.coverage.zoneModeCount,
   210 * RAVSCORE_PUBLIC_FORECAST_HOURS * 2);
+assert.deepEqual(
+  {
+    targetPartCount: nationalReport.coverage.feggesundWave.targetPartCount,
+    forecastHours: nationalReport.coverage.feggesundWave.forecastHours,
+    expectedEntries: nationalReport.coverage.feggesundWave.expectedEntries,
+    acceptedEntries: nationalReport.coverage.feggesundWave.acceptedEntries,
+    directEntries: nationalReport.coverage.feggesundWave.directEntries,
+    proxyEntries: nationalReport.coverage.feggesundWave.proxyEntries,
+    missingEntries: nationalReport.coverage.feggesundWave.missingEntries,
+  },
+  {
+    targetPartCount: 3,
+    forecastHours: 118,
+    expectedEntries: 354,
+    acceptedEntries: 354,
+    directEntries: 354,
+    proxyEntries: 0,
+    missingEntries: 0,
+  },
+  'the national audit must account for every Feggesund part and forecast hour',
+);
+assert.match(nationalReport.coverage.feggesundWave.policySha256, /^[0-9a-f]{64}$/);
+assert.match(nationalReport.coverage.feggesundWave.coverageSha256, /^[0-9a-f]{64}$/);
+for (const publicDestination of [
+  nationalPackage.startupText,
+  nationalPackage.detailsText,
+  nationalPackage.coastalPartsText,
+  JSON.stringify(nationalPackage.manifest),
+]) {
+  assert.doesNotMatch(
+    publicDestination.toLowerCase(),
+    /waveinputproofs|feggesundneighborwavesource|sourceevidencesha256/,
+    'the private Feggesund proof chain must not enter public payloads',
+  );
+}
+const savedFeggesundProof = national.coastalParts.waveInputProofs.feggesund;
+delete national.coastalParts.waveInputProofs;
+assert.ok(audit(national, nationalPackage, 210, 673).errors
+  .includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
+'a national 210/673 runtime must fail without its exact Feggesund proof ledger');
+national.coastalParts.waveInputProofs = { feggesund: savedFeggesundProof };
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);
 assert.deepEqual(nationalReport.history, {
@@ -728,7 +808,24 @@ for (const result of [
   };
 }
 const smallPackage = publicPackage(small);
-assert.equal(audit(small, smallPackage, 1, 1).status, 'passed');
+const smallReport = audit(small, smallPackage, 1, 1);
+assert.equal(smallReport.status, 'passed');
+assert.deepEqual(smallReport.coverage.feggesundWave, {
+  targetPartCount: 0,
+  forecastHours: 0,
+  expectedEntries: 0,
+  acceptedEntries: 0,
+  directEntries: 0,
+  proxyEntries: 0,
+  missingEntries: 0,
+  policySha256: null,
+  coverageSha256: null,
+}, 'small fixtures without Feggesund must not require a national proof ledger');
+const publicProofLeak = structuredClone(smallPackage);
+publicProofLeak.manifest.waveInputProofs = { forbidden: true };
+assert.ok(audit(small, publicProofLeak, 1, 1).errors
+  .includes('PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT'),
+'any private Feggesund proof marker in a public destination must fail closed');
 
 const historyIncompleteSmall = syntheticFull({
   zoneCount: 1,

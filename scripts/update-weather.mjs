@@ -64,10 +64,19 @@ import {
   buildIntegratedPartPublicProjection,
   buildIntegratedZoneHourlyProjection,
   dmiExpectedIdentityForPart,
+  verifiedDmiForecastComponentSource,
   verifiedDmiNativeComponentSource,
   verifiedBulkCurrent,
   verifiedIntegratedPartHourly,
 } from './lib/ravscore-production-adapters.mjs';
+import {
+  FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  bindVerifiedFeggesundWaveSource,
+  buildFeggesundWaveCoverageProof,
+  buildFeggesundWaveInputProofEntry,
+  buildFeggesundWaveProxy,
+} from './lib/feggesund-wave-proxy.mjs';
 import {
   buildRavScoreProductionPartSeries,
   selectRavScoreProductionInitialState,
@@ -1081,7 +1090,26 @@ function bulkZoneToForecastRecord(
     && ravScoreNumber(item['dominant-wave-period']) !== null);
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
   if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
-  const mergedHourly = mergeHourlyPreferDmi(built.hourly, compatiblePrevious?.hourly ?? [], { generatedAt });
+  const mergedDmiHourly = mergeHourlyPreferDmi(
+    built.hourly,
+    compatiblePrevious?.hourly ?? [],
+    { generatedAt },
+  );
+  const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
+    ? mergedDmiHourly.map(hour => {
+      const {
+        feggesundNeighborWaveSource: discardedAttestation,
+        ...withoutAttestation
+      } = hour;
+      const attestation = verifiedFeggesundNeighborSource(
+        withoutAttestation,
+        dmiIdentity,
+      );
+      return attestation
+        ? { ...withoutAttestation, feggesundNeighborWaveSource: attestation }
+        : withoutAttestation;
+    })
+    : mergedDmiHourly;
   const oldCompleteness = compatiblePrevious?.model?.completeness ?? {};
   return createDmiForecastRecord({
     zoneId,
@@ -1120,6 +1148,91 @@ function bulkZoneToForecastRecord(
       }
     }
   });
+}
+
+function verifiedFeggesundNeighborSource(hour, expectedIdentity) {
+  const source = verifiedDmiForecastComponentSource(
+    hour?.sources?.wave,
+    hour?.time,
+    'wave',
+    expectedIdentity,
+  );
+  const height = ravScoreNumber(hour?.waveHeightM);
+  const period = ravScoreNumber(hour?.wavePeriodS);
+  const direction = source?.optionalFieldSet?.includes('mean-wave-dir')
+    ? ravScoreNumber(hour?.waveDirectionDeg)
+    : null;
+  if (!source || height === null || height < 0 || period === null || period <= 0
+    || (height > 0 && (direction === null || direction < 0 || direction >= 360))) {
+    return null;
+  }
+  return bindVerifiedFeggesundWaveSource({
+    parentZoneId: expectedIdentity.parentZoneId,
+    time: hour.time,
+    waveHeightM: height,
+    wavePeriodS: period,
+    waveDirectionDeg: direction,
+    verifiedDmiSource: source,
+  });
+}
+
+function feggesundNeighborSourcesByTime(parentForecastStore, forecastStartAt) {
+  const startMs = Date.parse(forecastStartAt);
+  const endMs = startMs + (DMI_FORECAST_HOURS - 1) * 3_600_000;
+  const byZone = new Map(FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.map(zoneId => {
+    const hourly = parentForecastStore?.zones?.[zoneId]?.hourly ?? [];
+    return [zoneId, new Map(hourly
+      .filter(hour => Date.parse(hour?.time) >= startMs && Date.parse(hour?.time) <= endMs)
+      .filter(hour => hour?.feggesundNeighborWaveSource)
+      .map(hour => [hour.time, hour.feggesundNeighborWaveSource]))];
+  }));
+  const byTime = new Map();
+  for (let index = 0; index < DMI_FORECAST_HOURS; index += 1) {
+    const time = new Date(startMs + index * 3_600_000).toISOString();
+    const sources = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS
+      .map(zoneId => byZone.get(zoneId)?.get(time))
+      .filter(Boolean);
+    if (sources.length === FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.length) {
+      byTime.set(time, sources);
+    }
+  }
+  return byTime;
+}
+
+function applyFeggesundOperationalWaveProxy(record, part, sourcesByTime) {
+  if (part?.zoneId !== FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) return record;
+  const targetEntityId = `PART::${part.partId}`;
+  const hourly = (record?.hourly ?? []).map(hour => {
+    const height = ravScoreNumber(hour?.waveHeightM);
+    const period = ravScoreNumber(hour?.wavePeriodS);
+    const direction = ravScoreNumber(hour?.waveDirectionDeg);
+    const source = hour?.sources?.wave;
+    const entireDirectTupleMissing = height === null
+      && period === null
+      && direction === null
+      && (!source || source.provider === 'missing');
+    if (!entireDirectTupleMissing) return hour;
+    const sources = sourcesByTime.get(hour.time);
+    if (!sources) return hour;
+    try {
+      const projection = buildFeggesundWaveProxy({
+        targetEntityId,
+        targetParentZoneId: FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+        time: hour.time,
+        sources,
+      });
+      return {
+        ...hour,
+        waveHeightM: projection.waveHeightM,
+        wavePeriodS: projection.wavePeriodS,
+        waveDirectionDeg: projection.waveDirectionDeg,
+        sources: { ...(hour.sources ?? {}), wave: projection.proxy },
+      };
+    } catch {
+      return hour;
+    }
+  });
+  return { ...record, hourly };
 }
 
 function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt) {
@@ -1704,6 +1817,7 @@ function selectPreviousPrivateCandidateGRuntime(previous) {
 function scoreCoastalPartsRuntime(
   contract,
   parentFeatures,
+  parentForecastStore,
   bulkCache,
   deployedBulkCache,
   liveCurrentPilot,
@@ -1729,6 +1843,11 @@ function scoreCoastalPartsRuntime(
   const expectedByZone = new Map();
   const partRows = [];
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
+  const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
+    parentForecastStore,
+    partForecastStartAt,
+  );
+  const feggesundWaveProofEntries = [];
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
     expectedByZone.set(zoneId, parts.length);
@@ -1814,7 +1933,12 @@ function scoreCoastalPartsRuntime(
         expectedIdentity: partDmiIdentity,
       });
       if (!dmiRecord) continue;
-      const record = mergeLiveCurrentPilotIntoRecord(dmiRecord, { ...part, zoneId }, liveCurrentPilot, {
+      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
+        dmiRecord,
+        { ...part, zoneId },
+        feggesundSourcesByTime,
+      );
+      const record = mergeLiveCurrentPilotIntoRecord(operationalDmiRecord, { ...part, zoneId }, liveCurrentPilot, {
         primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
           bulkCache,
           bulkCache?.zones?.[bulkId],
@@ -1825,6 +1949,20 @@ function scoreCoastalPartsRuntime(
         )),
       });
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
+      if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
+        const endMs = Date.parse(partForecastStartAt)
+          + (DMI_FORECAST_HOURS - 1) * 3_600_000;
+        for (const hour of hourly.filter(candidate => (
+          Date.parse(candidate.time) >= Date.parse(partForecastStartAt)
+          && Date.parse(candidate.time) <= endMs
+        ))) {
+          feggesundWaveProofEntries.push(buildFeggesundWaveInputProofEntry({
+            partId: part.partId,
+            time: hour.time,
+            hour,
+          }));
+        }
+      }
       const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       const replayStartAt = ravScoreRecoverySourceStartAt(
@@ -2032,7 +2170,7 @@ function scoreCoastalPartsRuntime(
       const result = current?.[mode];
       if (result?.available !== true || !Number.isFinite(result.score)) continue;
       if (result.scoreQuality === 'FULL_HISTORY') {
-        if (result.calibrationEligible !== true
+        if (typeof result.calibrationEligible !== 'boolean'
           || result.historyCoverageHours !== RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
           || !Array.isArray(result.historyReasonCodes)
           || result.historyReasonCodes.length !== 0) {
@@ -2087,6 +2225,14 @@ function scoreCoastalPartsRuntime(
     unavailableZones,
     historyIncompleteZones,
   };
+  const feggesundWaveCoverage = buildFeggesundWaveCoverageProof({
+    forecastStartAt: partForecastStartAt,
+    forecastHours: DMI_FORECAST_HOURS,
+    partIds: (contract?.zones?.[FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID] ?? [])
+      .map(part => part?.partId)
+      .filter(Boolean),
+    entries: feggesundWaveProofEntries,
+  });
   const integratedRuntime = {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     modelBinding: ravScoreModelBinding(),
@@ -2096,6 +2242,7 @@ function scoreCoastalPartsRuntime(
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
     currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
     scoreAvailability,
+    waveInputProofs: { feggesund: feggesundWaveCoverage },
     parts, zones
   };
   const candidateGRollbackRuntime = buildPrivateCandidateGRollbackRuntime({
@@ -3286,6 +3433,7 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,
     features,
+    nextDmiForecastStore,
     dmiBulkCache,
     deployedDmiBulkCache,
     liveCurrentPilot,

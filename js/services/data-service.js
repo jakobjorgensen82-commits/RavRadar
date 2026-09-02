@@ -360,7 +360,7 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
     }
   }
   if (value.scoreQuality === 'FULL_HISTORY') {
-    if (value.calibrationEligible !== RAVSCORE_CALIBRATION_ELIGIBLE) {
+    if (RAVSCORE_CALIBRATION_ELIGIBLE !== true) {
       throw new Error(label + ' har en forkert kalibreringsstatus for den aktive model.');
     }
   } else if (value.calibrationEligible !== false) {

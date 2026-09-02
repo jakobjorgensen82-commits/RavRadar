@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-01 – DMI-cachefaser gjort konsistente; frisk 118-timersbevis åbent
+# NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first bølgeproxy lokalt lukket; releasebevis åbent
+
+- Ejeren har besluttet én snæver undtagelse til det generelle forbud mod nabolån: kun `DK-B05-11`, kun bølger og kun når hele den direkte lokale `Hs`/periode/mean-FROM-tuple mangler. Direkte lokal DMI-WAM vinder altid; komplette, direkte, same-run tuples fra både `DK-B05-10` og `DK-B05-12` må da danne den faste 50/50 energikonsistente proxy. Alle andre mangler forbliver fail-closed.
+- Proxyen er lokalt implementeret og dokumenteret med deterministisk `LOW`/`MODERATE`/`HIGH` usikkerhed, fast DA/DE/EN-advarsel og `calibrationEligible=false` gennem mode, zone, public, tur og observation, også ved ellers `FULL_HISTORY`. Den ændrer ingen current-, historik-, recovery-, geometri-, land-/vandpunkt- eller kystnormal-kontrakt og er ikke en lokal surfzonemodel eller empirisk fundpræcisionsbevis.
+- Release kræver fortsat privacy-safe 3 × 118 med `DIRECT` + `FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION` = 354 og `MISSING` = 0 samt exact-head, merge, frisk fuld produktion og offentlig desktop-/mobilverifikation. Candidate G er fortsat offentlig indtil atomisk cutover.
+- Slutbundles er nu forseglet og lokalt måltestet: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 deklarerede forbrugere og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer. Exact-head, slutligt 118-bevis, merge, frisk fuld produktion og offentlig browserkontrol afventer; eksplicitte 4.0.317/4.0.318-hashes længere nede er historiske checkpoints.
+
+# TIDLIGERE CHECKPOINT – 2026-09-01 – DMI-cachefaser gjort konsistente; frisk 118-timersbevis åbent
 
 - Isoleret run `33520738058` på `3a26ba0c` nåede DMI-producenten, men den payloadfri hard gate stoppede med `DMI_STRICT_CURRENT_ANCHOR_MISSING`; det er negativt fasebevis, ikke bevis for bred DMI-mangel eller 673 × 118.
 - Tidlig cache-health kunne godkende et strict current-timerækkepar, som den senere autoritative sampling-/gridvektoroprydning fjernede. Den lokale rettelse kræver nu samme aktive `samplingPoint` og et samlet same-grid U/V-resumé i begge faser; et helt fraværende resumé må fortsat genopbygges fra verificeret timeproveniens.

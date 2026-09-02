@@ -56,7 +56,7 @@ for (const [label, source] of Object.entries({
     `${label} does not grant the operational CAS to service_role`);
 }
 for (const [functionName, migrationSource] of [
-  ['public.ravradar_trip_v3_score_quality_allowed', stableTripMigration],
+  ['public.ravradar_trip_v3_score_quality_allowed', documents.migration],
   ['public.ravradar_trip_v3_calibration_truth_allowed', documents.migration],
   ['public.ravradar_trip_v3_binding_allowed', documents.migration],
   ['public.ravradar_trip_v3_active_binding_admitted', documents.migration],
@@ -73,6 +73,54 @@ for (const [functionName, migrationSource] of [
     canonicalDefinition, `${functionName} drifted in historical schema`);
   assert.equal(normalize(functionDefinition(documents.installer, 'security installer', functionName)),
     canonicalDefinition, `${functionName} drifted in security installer`);
+}
+for (const [label, source] of Object.entries(documents)) {
+  const scoreQuality = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_score_quality_allowed',
+  ));
+  assert.match(scoreQuality,/score_calibration_eligible in \(true, false\)/,
+    `${label} must treat FULL_HISTORY calibration eligibility as a ceiling`);
+  assert.match(scoreQuality,
+    /jsonb_typeof\(p_calibration_features -> 'scoreCalibrationEligible'\) is distinct from 'boolean'/,
+    `${label} must reject a missing scoreCalibrationEligible field`);
+  const calibrationTruth = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_calibration_truth_allowed',
+  ));
+  assert.match(calibrationTruth,
+    /jsonb_typeof\(p_calibration_features -> 'scoreCalibrationEligible'\) is distinct from 'boolean'/,
+    `${label} calibration truth must reject a missing scoreCalibrationEligible field`);
+  assert.match(calibrationTruth,
+    /scoreCalibrationEligible'\)::boolean and p_actual_zone_id = p_forecast_zone_id/,
+    `${label} must apply scoreCalibrationEligible as the trip calibration ceiling`);
+}
+
+for (const [label, source] of Object.entries(documents)) {
+  const activeAdmission = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_active_binding_admitted',
+  ));
+  assert.match(activeAdmission,
+    /'scoreCalibrationEligible', p_calibration_eligible/,
+    `${label} active admission must bind the synthetic score ceiling fail-closed`);
+  const readback = normalize(functionDefinition(source,label));
+  const trimmedDefinitions = [...readback.matchAll(
+    /select pg_catalog\.btrim\(p\.prosrc, E' \\n\\r\\t'\) into (trip_[a-z_]+_definition)/g,
+  )].map(match => match[1]);
+  assert.deepEqual(trimmedDefinitions, [
+    'trip_score_quality_definition',
+    'trip_calibration_truth_definition',
+    'trip_binding_gate_definition',
+    'trip_active_admission_definition',
+    'trip_active_trigger_function_definition',
+  ], `${label} must canonicalise all five pg_proc bodies before live hashing`);
+  assert.doesNotMatch(readback,/select p\.prosrc/,
+    `${label} must not hash a raw whitespace-sensitive pg_proc body`);
+  assert.match(readback,
+    /trip_score_quality_definition \|\| E'\\n-- calibration-truth-function --\\n' \|\| trip_calibration_truth_definition/,
+    `${label} live policy hash must include the score-quality validator`);
+  assert.match(readback,/'integratedProxyCeilingBindingPresent'/,
+    `${label} readback lacks the false-ceiling integrated probe`);
+  assert.match(readback,/'integratedMissingCalibrationCeilingRejected'/,
+    `${label} readback lacks the missing-ceiling negative probe`);
 }
 
 for (const [label, source] of Object.entries(documents)) {

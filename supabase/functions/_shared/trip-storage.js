@@ -405,7 +405,9 @@ function assertCalibrationFeatureContract(value, exact = false) {
       &&historyReasons.every(code=>/^[A-Z][A-Z0-9_]{0,127}$/.test(code));
     const candidateGRollback=value.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID;
     const full=value.scoreQuality==='FULL_HISTORY'
-      &&value.scoreCalibrationEligible===!candidateGRollback
+      &&(candidateGRollback
+        ? value.scoreCalibrationEligible===false
+        : typeof value.scoreCalibrationEligible==='boolean')
       &&value.historyCoverageHours===48&&historyReasons.length===0
       &&value.scoreBoundLower===value.scoreBoundUpper
       &&value.scoreBoundRawLower===value.scoreBoundRawUpper
@@ -570,7 +572,8 @@ export function assertExternalTripQualityBinding(payload) {
     }
     if(globalWarmupReasonCount > 1
       ||(globalWarmupReasonCount === 1 && (historyFlag
-        ||features?.scoreCalibrationEligible!==true
+        ||features?.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID
+        ||features?.scoreQuality!=='FULL_HISTORY'
         ||payload.calibration_eligible!==false))){
       throw new Error('TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID');
     }

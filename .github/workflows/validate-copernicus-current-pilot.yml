@@ -507,6 +507,17 @@ jobs:
           test "$(jq -r '.coverage.partCount' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "673"
           test "$(jq -r '.coverage.publicForecastHours' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "118"
           test "$(jq -r '.coverage.unavailableZoneModeCount' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "0"
+          test "$(jq -er '.coverage.feggesundWave.targetPartCount | select(type == "number")' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "3"
+          test "$(jq -er '.coverage.feggesundWave.forecastHours | select(type == "number")' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "118"
+          test "$(jq -er '.coverage.feggesundWave.expectedEntries | select(type == "number")' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "354"
+          test "$(jq -er '.coverage.feggesundWave.acceptedEntries | select(type == "number")' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "354"
+          test "$(jq -er '.coverage.feggesundWave.missingEntries | select(type == "number")' .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json)" = "0"
+          jq -e '.coverage.feggesundWave as $wave | (($wave.directEntries + $wave.proxyEntries) == 354)' \
+            .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json > /dev/null
+          jq -e '.coverage.feggesundWave.policySha256 | strings | test("^[0-9a-f]{64}$")' \
+            .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json > /dev/null
+          jq -e '.coverage.feggesundWave.coverageSha256 | strings | test("^[0-9a-f]{64}$")' \
+            .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json > /dev/null
           echo "Integrated weather preflight passed for its one exact bounded target: 210 zones, 673 parts and 118 available forecast hours; no deploy was attempted."
 
       - name: Upload only the privacy-safe preflight evidence

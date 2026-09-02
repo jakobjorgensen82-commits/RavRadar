@@ -309,7 +309,9 @@ function currentFeatureIssues(features) {
     issues.push('SCORE_BOUNDS_FEATURES_INVALID');
   } else if (features.scoreQuality==='FULL_HISTORY') {
     const candidateGRollback=features.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID;
-    if(features.scoreCalibrationEligible!==!candidateGRollback
+    if((candidateGRollback
+      ? features.scoreCalibrationEligible!==false
+      : typeof features.scoreCalibrationEligible!=='boolean')
       ||features.historyCoverageHours!==48
       ||features.historyReasonCodes.length!==0
       ||features.scoreBoundLower!==features.scoreBoundUpper

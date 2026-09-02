@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxykontrakt
+
+- [x] Supersedér den pensionerede neighbor-hypotese med én fast, snæver undtagelse: direkte lokal DMI WAM vinder altid; kun `DK-B05-11`, kun når hele den direkte bølgetuple mangler for en time, må de to direkte DMI-naboserier `DK-B05-10` og `DK-B05-12` danne en 50/50 energikonsistent bølgeproxy.
+- [x] Afgræns proxyen til bølgehøjde, periode og FROM-retning. Den må aldrig levere strøm, currenthistorik, recovery-backfill, kunstig historik eller ændre geometri, land-/vandpunkter eller kystnormal.
+- [x] Bind usikkerhed som `LOW`/`MODERATE`/`HIGH`, synligt DA/DE/EN-brugervarsel og `calibrationEligible=false` gennem mode, zone, offentlig payload, tur og observation for enhver proxytimes afledte score – også ved ellers `FULL_HISTORY`. En direkte DMI-time følger den normale historikregel.
+- [x] Bind releasegaten til privacy-sikkert bevis for præcis 3 × 118 timeudfald (`DIRECT`, `FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION` eller `MISSING`), hvor direct + proxy = 354 og missing = 0, uden koordinater, rå U/V eller private payloads.
+- [x] Forsegl og måltest slutbundles: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 deklarerede forbrugere; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer.
+- [ ] Bestå exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol. Candidate G er fortsat den eneste offentlige model; exact-head- og produktionsbevis for proxykontrakten afventer.
+
 # NYESTE CHECKPOINT – 2026-09-01 – DEC-0114 cutover-lukninger lokalt måltestet
 
 - [x] Registrér ejerens supersession i DEC-0114: den integrerede model må frigives med strict direct+operational 118 h, mens ældre measured-only historik fortsætter bagefter som `HISTORY_INCOMPLETE`.
@@ -16,7 +25,7 @@
 - [x] Opdatér audit, activation, releasegate, workflow og de målrettede warmup/recovery/calibration/current/DMI-kontrakttests.
 - [x] Bestå de målrettede scheduler-/runvalg-, DKSS-recovery-, collectionbudget- og preflight-donor-/targetlås-tests på den samlede slutdiff samt Python-`py_compile`.
 - [ ] Kør den isolerede 118-timers datapreflight grønt på den nye eksakte kodehead; hverken `33498108421`, `33510636195`, `33512163102` eller `33520738058` beviser 673 × 118 currentdækning.
-- [ ] Bestå exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol af 210/673, current, fem døgn, begge modes, `HISTORY_INCOMPLETE`-advarsel og Feggesund direct 3 × 118.
+- [ ] Bestå exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol af 210/673, current, fem døgn, begge modes, `HISTORY_INCOMPLETE`-advarsel og Feggesunds policybundne 3 × 118.
 
 # NYESTE CHECKPOINT – 2026-09-01 – PR #244 merged; WAM-cacheovergang og watchdograce remediated lokalt
 
@@ -93,9 +102,9 @@
 - [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover; bevar selve integreret activation som push-only. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
 - [x] Opret DEC-0113 samt de fem aktive krav for source-attested cold start, source/active registry-separation, measured rollback, UTC-paritet og pre-mutation-stop.
 - [x] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
-- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer. Version 4.0.319/docs/geodatabevis lukkes i slutpasset.
+- [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer. Version 4.0.319/docs/geodatabevis lukkes i slutpasset.
 - [ ] Bestå egen 4.0.319-PR exact-head, merge sikkert og gennemfør frisk fuld produktion med DMI/Copernicus, validate, releasegate, obligatorisk protected runtime, checkpoint enten strict READY eller eksplicit warmup-N/A, artifact, Pages og atomisk activation.
-- [ ] Bevis Feggesund direct 3 × 118 uden neighbor proxy og verificér offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
+- [ ] Bevis Feggesunds policybundne 3 × 118 med direct-first og den eneste tilladte two-neighbor wave-only proxy; verificér samtidig offentlig state 6 på 210/673, current og fem døgn, begge modes, primary/secondary/warnings/assistent/admin/ekspert samt desktop/mobil.
 - [ ] Begræns konklusionen til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.
 
 ## Historisk præ-hærdningscheckpoint – 4.0.317-kilden og PR #235
@@ -120,7 +129,7 @@
 - [x] Push remediationen som `7bc848610794b87f62a6a3763564ca46a0d7528e`; registrér at anden exact-head `33329919843`/job `99306529711` bestod de forudgående model-/runtime-/rollback-/DMI-dele og stoppede fail-closed ved manglende `xarray`, fordi CI ikke installerede de ejede geometry-/Copernicus-requirements. Ingen merge, produktionsbuild/artifact, deploy eller offentlig ændring skete.
 - [x] Luk dependency-pariteten systemisk i PR-, produktions- og turlagerworkflows: installér alle tre ejede requirements-sæt umiddelbart før hver `validate:source` med samme betingelse, hæv PR-timeout 30→45 minutter, lås workflowinventar/rækkefølge/betingelse i regressionen og bestå målrettede workflow-, Copernicus- og modelbundletests.
 - [x] Fetch finalt `origin/main` og bekræft head `49dd4cb454656bdf629e5df760176705e38d2cb0` samt ingen nyere main-delta at integrere før samlet remediationcommit.
-- [ ] Bevis Feggesund på part-level i frisk integreret produktion: alle tre aktive dele × 118 direkte timer. DEC-0114 pensionerer neighbor-proxysporet for denne release; et reelt direct-input-hul følger `UNAVAILABLE`/fail-closed uden interpolation eller punktflytning.
+- [ ] Bevis Feggesund på part-level i frisk integreret produktion: alle tre aktive dele × 118 policygyldige timer. Direkte lokal DMI vinder; kun en helt manglende bølgetuple må erstattes af den faste B05-10+B05-12-wave-only proxy. Mangler en af de to naboer, er timen `MISSING`/fail-closed. Punkter og geometri flyttes ikke.
 - [x] Commit/push dependency-paritetsrettelsen, bestå PR #235 exact-head `33332106627`, og merge som `a584d1cf`. Første produktion `33333490853` stoppede derefter sikkert før DMI/artifact/Pages og flyttede den resterende releasegate til 4.0.319-afsnittet ovenfor.
 - [ ] Verificér state 6 offentligt på 210/673, current og fem døgn, begge modes, primære og sekundære scoreflader, warnings, lokal/Edge-assistent, admin/ekspert samt desktop/mobil. Indtil da er offentlig 4.0.316/Candidate G den eneste offentlige model.
 - [ ] Begræns alle påstande til kontraktmæssig konsistens, fysisk sammenhæng og teknisk forbedring; ingen empirisk bedre fundpræcision uden repræsentativt fundgrundlag.

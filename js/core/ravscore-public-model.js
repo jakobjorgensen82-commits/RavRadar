@@ -407,7 +407,7 @@ function exactScoreQualityContract(modelResult) {
       || !/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
     || new Set(reasonCodes).size !== reasonCodes.length) return false;
   if (quality === 'FULL_HISTORY') {
-    return modelResult.calibrationEligible === true
+    return typeof modelResult.calibrationEligible === 'boolean'
       && coverage === RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
       && reasonCodes.length === 0
       && ['EXACT_POINT_SCORE', 'CONSERVATIVE_TAIL_RESET_POINT_SCORE']

@@ -155,7 +155,7 @@ const SCORE_BOUND_FIELDS = Object.freeze([
 ]);
 
 function exactPublicScoreQuality(result, {
-  fullCalibrationEligible = true,
+  fullCalibrationEligible = null,
   historyIncompleteAllowed = true,
   tailResetAllowed = true,
 } = {}) {
@@ -175,7 +175,8 @@ function exactPublicScoreQuality(result, {
     || reasons.some(code=>typeof code!=='string'||!/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
     || new Set(reasons).size!==reasons.length
     || typeof result.conservativeTailResetApplied!=='boolean')return false;
-  if(result.scoreQuality==='FULL_HISTORY')return result.calibrationEligible===fullCalibrationEligible
+  if(result.scoreQuality==='FULL_HISTORY')return typeof result.calibrationEligible==='boolean'
+    &&(fullCalibrationEligible===null||result.calibrationEligible===fullCalibrationEligible)
     &&coverage===48&&reasons.length===0
     &&bounds.lower===bounds.upper&&bounds.rawLower===bounds.rawUpper
     &&(result.scoreSemantics==='EXACT_POINT_SCORE'

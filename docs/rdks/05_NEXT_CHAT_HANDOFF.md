@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxy
+
+- Denne topstatus superseder ældre direct-only-/proxy-pensioneringsresumeer nedenfor; de bevares som revisionsspor.
+- Direkte lokal DMI WAM vinder altid. Kun `DK-B05-11`, kun ved hel lokal `(Hs, period, mean FROM direction)`-missing, må komplette direkte DMI-tuples fra både `DK-B05-10` og `DK-B05-12` ved samme time/run danne den faste 50/50 energikonsistente bølgeproxy.
+- Proxytimer bærer `LOW`/`MODERATE`/`HIGH`, tydeligt DA/DE/EN-varsel og `calibrationEligible=false` gennem mode, zone, public, tur og observation, også ved ellers `FULL_HISTORY`. Direkte DMI følger normal historikregel.
+- Undtagelsen er wave-only: ingen current, historik, recovery-backfill, kunstig state, geometri-, land-/vandpunkt- eller kystnormalændring. Ingen lokal surfzone- eller empirisk fundpræcisionspåstand.
+- Release kræver privacy-sikkert 3 × 118-bevis med direct + proxy = 354 og missing = 0. Exact-head, merge, frisk fuld produktion og offentlig desktop-/mobilverifikation afventer fortsat; Candidate G er stadig offentlig.
+- Slutbundles er forseglet og lokalt måltestet: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer og 8 deklarerede forbrugere; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer. Exact-head, slutligt 118-timers/Feggesund-bevis, merge, frisk fuld produktion og offentlig browserkontrol afventer; hashes i eksplicit historiske 4.0.317/4.0.318-afsnit er revisionsspor.
+
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
 
 - Denne topstatus superseder ældre topresumeer nedenfor, men bevarer dem som revisionsspor.
@@ -26,7 +35,7 @@
 - 4.0.319 har lokalt grønne måltests for controller-v4, historical Candidate/integrated H0→H1, direct historical Candidate→integrated og exact-target recovery. Orchestrator/build/deploy, alle 40 direkte workflowreaders, role-aware workflowkontrakter, public-integrated 210/673 + 78 browsermoduler, profil/cutover og 8-consumer-binding er grønne; slutreviewet fandt ingen P0/P1. Schemaet forbliver 30 felter/4 statusser/6 transitionstyper; ordinary maintenance er exact-current.
 - Source-abort kræver NOT_STARTED-bevis. Ambiguous Pages source-visible går til exact-target writer + separat finalizer. `pages-recovery-*` er næste source-lineage. Third/mixed/reversed/stale/tampered/missing plan stopper.
 - Outcome er lokalt løftet til `ravradar-production-workflow-outcome-v2`; P2-assistent-/DA/DE/EN-tests for HISTORY_INCOMPLETE vs direct missing og firetimers energivægtet/maks 15 % plain language er grønne.
-- Slutbindingen er integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
+- Slutbindingen er integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer.
 - Ét aktivt 15-minutters kontroljob diagnosticerer vejr-/GitHubfejl og reparerer sikkert; det må ikke duplikere scheduler/watchdog eller blindt redispatche. Næste rækkefølge: slutdocs/version → fuld `validate:source` → exact-head/merge → frisk fuld state-6-produktion/Pages → Feggesund 3 × 118 → offentlig 210/673/current/fem døgn/desktop/mobil.
 
 ## Aktuelt modelspor – 2026-08-30 lokal 4.0.319 first-cutover-hærdning

@@ -132,6 +132,13 @@ assert.equal(JSON.stringify(safeContext).includes('token'), false);
 assert.equal(JSON.stringify(safeContext).includes('email'), false);
 assert.equal(JSON.stringify(safeContext).includes('rawVector'), false);
 assert.equal(JSON.stringify(safeContext).includes('provider'), false);
+const inputLockedContext = publicAssistantContext({
+  modelBinding:RAV_ASSISTANT_RAVSCORE_MODEL_BINDING,
+  result:{...fullScoreResult,calibrationEligible:false},
+}, 'en');
+assert.equal(inputLockedContext.result.scoreQuality,'FULL_HISTORY');
+assert.equal(inputLockedContext.result.calibrationEligible,false,
+  'Edge must preserve an input-locked FULL_HISTORY score instead of hiding it');
 for (const missingScore of [null, '', '   ', '68', false, true, undefined, [], {}, -1, 101]) {
   assert.deepEqual(
     publicAssistantContext({

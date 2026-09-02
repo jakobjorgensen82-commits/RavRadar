@@ -226,6 +226,24 @@ assert.equal(evidence.grams, 12.5);
 assert.equal(evidence.calibrationEligible, true);
 assert.equal('route' in evidence, false);
 
+const inputLockedCalibrationFeatures = createCalibrationFeatureSnapshot({
+  ...calibrationFeatures,
+  scoreCalibrationEligible:false,
+});
+const inputLockedEvidence = buildTripEvidence({
+  ...input,
+  calibrationFeatures:inputLockedCalibrationFeatures,
+  forecastCalibrationEligible:false,
+});
+assert.equal(inputLockedEvidence.calibrationEligible,false,
+  'FULL_HISTORY with an independent input lock must stay out of observation calibration');
+assert.throws(() => buildTripEvidence({
+  ...input,
+  calibrationFeatures:inputLockedCalibrationFeatures,
+  forecastCalibrationEligible:true,
+}), /inputlåst RavScore|kalibreringsstatus/,
+'a client must not override the score-level input ceiling');
+
 const columns = toObservationTripColumns(evidence);
 assert.equal(columns.schema_version, TRIP_EVIDENCE_SCHEMA_VERSION);
 assert.equal(columns.result, 'medium');

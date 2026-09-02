@@ -82,6 +82,9 @@ const weather = {
   waveHeightM: 1,
   wavePeriodS: 6,
   waveDirectionDeg: 270,
+  waveInputSource: 'DIRECT_OFFICIAL',
+  waveInputUncertainty: 'LOW',
+  waveInputNoticeId: null,
   waterLevelCm: 12,
   waterLevelTrendCm3h: -2,
   waterTemperatureC: 15,
@@ -151,6 +154,65 @@ assert.ok(migrated.scores[0].ravScoreModel.modes.beach.available);
 assert.ok(migrated.scores[0].ravScoreModel.modes.waders.available);
 assert.equal(Object.hasOwn(migrated.scores[0], 'candidateG'), false,
   'the production row must not contain a Candidate G shadow result');
+assert.deepEqual(
+  {
+    waveInputSource: migrated.scores[0].weather.waveInputSource,
+    waveInputUncertainty: migrated.scores[0].weather.waveInputUncertainty,
+    waveInputNoticeId: migrated.scores[0].weather.waveInputNoticeId,
+  },
+  {
+    waveInputSource: 'DIRECT_OFFICIAL',
+    waveInputUncertainty: 'LOW',
+    waveInputNoticeId: null,
+  },
+  'the integrated score row must retain only the compact direct-wave quality tuple',
+);
+for (const mode of ['waders','beach']) {
+  assert.equal(migrated.scores[0].ravScoreModel.modes[mode].scoreQuality, 'FULL_HISTORY');
+  assert.equal(migrated.scores[0].ravScoreModel.modes[mode].calibrationEligible, true,
+    'a direct FULL_HISTORY hour must retain normal calibration eligibility');
+}
+
+const proxiedWaveInput = buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: [{
+    ...weather,
+    waveInputSource: 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty: 'MODERATE',
+    waveInputNoticeId: 'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  }],
+  initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
+});
+assert.deepEqual(
+  {
+    waveInputSource: proxiedWaveInput.scores[0].weather.waveInputSource,
+    waveInputUncertainty: proxiedWaveInput.scores[0].weather.waveInputUncertainty,
+    waveInputNoticeId: proxiedWaveInput.scores[0].weather.waveInputNoticeId,
+  },
+  {
+    waveInputSource: 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty: 'MODERATE',
+    waveInputNoticeId: 'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+  'the integrated score row must retain the bounded public Feggesund quality tuple',
+);
+for (const mode of ['waders','beach']) {
+  assert.equal(proxiedWaveInput.scores[0].ravScoreModel.modes[mode].scoreQuality, 'FULL_HISTORY');
+  assert.equal(proxiedWaveInput.scores[0].ravScoreModel.modes[mode].calibrationEligible, false,
+    'a proxy FULL_HISTORY hour must remain calibration ineligible');
+}
+assert.throws(() => buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: [{ ...weather, waveInputUncertainty: 'UNKNOWN' }],
+  initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
+}), /wave input quality contract is invalid/,
+'an unknown wave-quality combination must fail closed at the integrated projection');
 
 const missingWind = buildIntegratedPartScoreSeries({
   part,

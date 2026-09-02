@@ -1,4 +1,10 @@
 import fs from 'node:fs';
+import {
+  GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST as integratedBundleManifest,
+} from '../js/core/ravscore-model-bundle.generated.js';
+import {
+  GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST as candidateGRollbackBundleManifest,
+} from './rollback-assets/ravscore-model-bundle.generated.js';
 
 const book = JSON.parse(fs.readFileSync('docs/handbook/content.json', 'utf8'));
 const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
@@ -27,6 +33,12 @@ const publicManifestAuthority = releaseContract?.publicManifestAuthority;
 if (!integratedReleaseBinding || !candidateGRollbackReleaseBinding || !publicManifestAuthority) {
   throw new Error('version.json mangler den centrale releaseContract-modelbinding');
 }
+const integratedBundleFileCount = integratedBundleManifest?.files?.length;
+const candidateGRollbackBundleFileCount = candidateGRollbackBundleManifest?.files?.length;
+if (!Number.isInteger(integratedBundleFileCount) || integratedBundleFileCount <= 0
+  || !Number.isInteger(candidateGRollbackBundleFileCount) || candidateGRollbackBundleFileCount <= 0) {
+  throw new Error('De genererede RavScore-bundlemanifester mangler et gyldigt filantal');
+}
 const requireMarkers = (label, text, markers) => {
   for (const marker of markers) {
     if (!text.includes(marker)) throw new Error(`${label} mangler: ${marker}`);
@@ -40,7 +52,7 @@ const forbidMarkers = (label, text, markers) => {
 
 
 const operational318 = byId('ravscore-operational-recovery-and-historical-maintenance-4-0-318');
-requireMarkers('Den aktuelle 4.0.318-driftsevidens', `${operational318?.title || ''}\n${operational318?.body || ''}`, [
+requireMarkers('Den historiske 4.0.318-driftsevidens', `${operational318?.title || ''}\n${operational318?.body || ''}`, [
   'PR #237',
   '<code>33352520408</code>',
   '<code>8c03e25d</code>',
@@ -54,15 +66,27 @@ requireMarkers('Den aktuelle 4.0.318-driftsevidens', `${operational318?.title ||
   'Frisk produktion <code>33412497717</code>',
   'stoppede før artifact, Pages og deploy',
   'Den hårde WAM-gate er bevaret',
-  candidateGRollbackReleaseBinding.modelBundleSha256,
-  '<code>version.json.releaseContract.modelBindings</code>',
 ]);
-forbidMarkers('Den aktuelle 4.0.318-driftsevidens', operational318?.body || '', [
+forbidMarkers('Den historiske 4.0.318-driftsevidens', operational318?.body || '', [
   'bounded retry-rettelsens PR/commit er åbne',
 ]);
 
+const active419 = byId('integrated-cutover-data-and-calibration-closure-4-0-318');
+requireMarkers('Den aktive 4.0.319-binding', `${active419?.title || ''}\n${active419?.body || ''}`, [
+  'RavScore 4.0.319',
+  'Candidate G/4.0.316 er fortsat offentlig',
+  `<code>modelContractSha256=${integratedReleaseBinding.modelContractSha256}</code>`,
+  `<code>modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}</code>`,
+  `over ${integratedBundleFileCount} kanonisk normaliserede transitive implementeringsfiler`,
+  'deklarerede forbrugere',
+  `<code>modelContractSha256=${candidateGRollbackReleaseBinding.modelContractSha256}</code>`,
+  `<code>modelBundleSha256=${candidateGRollbackReleaseBinding.modelBundleSha256}</code>`,
+  `over ${candidateGRollbackBundleFileCount} transitive filer`,
+  '<code>version.json.releaseContract.modelBindings</code>',
+]);
+
 const state6 = byId('integrated-ravscore-state6-history-bounds-2026-08-30');
-requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.body || ''}`, [
+requireMarkers('Det historiske state-6-kapitel', `${state6?.title || ''}\n${state6?.body || ''}`, [
   'Candidate G er fortsat den eneste offentlige model',
   '4.0.317-testkandidat',
   'state <code>6.0.0</code>',
@@ -82,12 +106,6 @@ requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.
   '<code>direction-broad-19-history-tie-v2</code>',
   '<code>score-history-water-tie-earliest-v3</code>',
   '<code>score-bands-35-55-75-exceptional90-v1</code>',
-  `modelContractSha256=${integratedReleaseBinding.modelContractSha256}`,
-  `modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}`,
-  '<code>version.json.releaseContract.modelBindings.integrated</code>',
-  `<code>${publicManifestAuthority.path}</code>`,
-  `<code>${publicManifestAuthority.modelBindingJsonPointer}</code>`,
-  'præcis 43 kanonisk normaliserede, transitive implementeringsfiler',
   'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5',
   'integrated-schema5-ready-point-to-schema6-history-bounds-v1',
   'integrated-schema6-to-candidate-g-schema2-v3',
@@ -97,10 +115,6 @@ requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.
   'atomisk checkpointschema 4',
   '<code>ravscore-continuation-schema6-v2</code>',
   'eksakt otte-fils bundle',
-  candidateGRollbackReleaseBinding.modelContractSha256,
-  candidateGRollbackReleaseBinding.modelBundleSha256,
-  '<code>version.json.releaseContract.modelBindings.candidateGRollback</code>',
-  'over 55 transitive filer',
   'Trip-/observationslagring af lower/upper/span/coverage/reasons er implementeret',
   'samlet exact-head-/workflow-/produktionsbevis udestår',
   '4.0.316/<code>49dd4cb</code>',
@@ -110,19 +124,34 @@ requireMarkers('Det aktive state-6-kapitel', `${state6?.title || ''}\n${state6?.
   'ikke at state 6 er udgivet eller empirisk mere fundpræcis',
 ]);
 
-const feggesundPartGate = byId('feggesund-open-part-level-wave-gate-2026-08-30');
-requireMarkers('Den åbne Feggesund part-level-gate', `${feggesundPartGate?.title || ''}\n${feggesundPartGate?.body || ''}`, [
-  '<code>rr-20260830104132-210</code>',
-  '118/118 bølgefelter <code>missing</code>',
-  'tre aktive kystdele',
-  '<code>marineCoverage=full</code>',
-  '673 kystdelsserier',
-  'en proxy kan være unødvendig',
-  'reelt part-level-hul',
-  'ikke implementeret',
-  'direct-input-<code>UNAVAILABLE</code>',
-  'må aldrig skabe historik, låne strøm',
+const feggesundPartGate = byId('feggesund-direct-first-two-neighbor-wave-proxy-2026-09-02');
+const feggesundPartGateText = `${feggesundPartGate?.title || ''}\n${feggesundPartGate?.summary || ''}\n${feggesundPartGate?.body || ''}`;
+requireMarkers('Den aktive Feggesund direct-first-gate', feggesundPartGateText, [
+  '<code>DK-B05-11</code>',
+  'komplette lokale DMI-WAM-tuple altid',
+  'Kun når hele tupletten',
+  '<code>DK-B05-10</code>',
+  '<code>DK-B05-12</code>',
+  'wave-only proxy',
+  'Delvis lokal tuple',
+  '<code>MISSING</code>',
+  'kvadratroden af middelværdien af <code>Hs²</code>',
+  'cirkulær FROM-retning',
+  '<code>LOW</code>',
+  '<code>MODERATE</code>',
+  '<code>HIGH</code>',
+  'DA/DE/EN',
+  '<code>calibrationEligible=false</code>',
+  '<code>FULL_HISTORY</code>',
+  'currenthistorik',
+  'recovery-backfill',
   'land-/vandpunkter eller kystnormal',
+  'Direct + proxy skal være 354 og missing 0',
+  'ikke lokal surfzonemodel eller bevis for bedre fundpræcision',
+]);
+forbidMarkers('Den aktive Feggesund direct-first-gate', feggesundPartGateText, [
+  'en proxy kan være unødvendig',
+  'ikke implementeret',
 ]);
 
 const ddmStaticContext = byId('ddm-2024-static-context-not-surf-score-2026-08-30');
@@ -447,6 +476,8 @@ forbidMarkers('Aktive generiske kapitler', activeGenericText, [
 ]);
 
 for (const historicalId of [
+  'ravscore-operational-recovery-and-historical-maintenance-4-0-318',
+  'integrated-ravscore-state6-history-bounds-2026-08-30',
   'causal-production-bounded-recovery-4-0-289',
   'candidate-g-rolling-boundary-continuity-4-0-286',
   'candidate-g-state-continuity-recovery-4-0-272',
@@ -477,13 +508,14 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'DEC-0110/DEC-0112',
   '`modelContractSha256` binder parameterkontrakten',
   `4.0.319 er låst med ` + '`modelContractSha256=' + integratedReleaseBinding.modelContractSha256 + '`',
-  '`modelBundleSha256=' + integratedReleaseBinding.modelBundleSha256 + '` over 43 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere',
+  '`modelBundleSha256=' + integratedReleaseBinding.modelBundleSha256 + '` over ' + integratedBundleFileCount + ' kanonisk normaliserede transitive implementeringsfiler',
+  'deklarerede forbrugere',
   '`ravscore-schema6-with-candidate-g-rollback-companion`',
   '`candidate-g-rollback-ready-companion`',
   '`ravscore-continuation-schema6-v2`',
   '`modelContractSha256=' + candidateGRollbackReleaseBinding.modelContractSha256 + '`',
   '`modelBundleSha256=' + candidateGRollbackReleaseBinding.modelBundleSha256 + '`',
-  'over 55 transitive filer',
+  'over ' + candidateGRollbackBundleFileCount + ' transitive filer',
   '`factor=clamp(1-0.15×W×(1-approach),0.85,1)`',
   '`delivery=supply×factor`',
   '`physicalDeliveryResolved=false`',
@@ -506,10 +538,15 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   '`calibrationEligible=false` består',
   'cross-model fallback og interpolation er forbudt',
   'højst 72 timer eller kortere forecastudløb',
-  'rr-20260830104132-210',
-  'tre aktive kystdele',
-  'En nabozoneproxy kan derfor være helt unødvendig',
-  'reelt hul på kystdelsniveau',
+  'Feggesund/`DK-B05-11` har et vedvarende lokalt bølgehul',
+  'Den nye regel er direct-first',
+  'Kun når hele tupletten med signifikant bølgehøjde, periode og middelretning mangler',
+  '`DK-B05-10`',
+  '`DK-B05-12`',
+  '`calibrationEligible=false`',
+  'direkte + proxy skal være 354',
+  'missing skal være 0',
+  'ikke en lokal surfzonemodel',
 ]);
 
 requireMarkers('Gældende systemspecifikation', systemSpecification, [
@@ -551,10 +588,15 @@ requireMarkers('Gældende systemspecifikation', systemSpecification, [
   'Første cutover er `INITIAL_INTEGRATED_CUTOVER`',
   'ingen særskilt Candidate G-assistent-Edge',
   'Cross-model fallback og interpolation er forbudt',
-  'rr-20260830104132-210',
-  'tre aktive kystdele',
-  'Frisk integrated produktion',
-  'Ingen proxy er implementeret',
+  'Feggesund/`DK-B05-11` har én fast wave-only undtagelse',
+  'Komplet lokal DMI-WAM-tuple vinder altid',
+  '`DK-B05-10`',
+  '`DK-B05-12`',
+  '`calibrationEligible=false`',
+  '3 × 118',
+  'direct + proxy = 354',
+  'missing = 0',
+  'ikke lokal surfzonemodel eller empirisk fundpræcisionsbevis',
 ]);
 forbidMarkers('Gældende systemspecifikation', systemSpecification, [
   'Når transport er 0, er den samlede RavScore 0',
@@ -676,9 +718,15 @@ requireMarkers('Vejrpipelinespecifikationen', weatherPipelineSpecification, [
   'rr-20260831012407-210',
   'VERIFIED_ONLY',
   'syntheticSampleCount=0',
-  'rr-20260830104132-210',
-  '3 × 118 direkte bølgetimer',
-  'ikke implementeret',
+  'Feggesund har én fast direct-first-undtagelse',
+  'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+  '`DK-B05-10`',
+  '`DK-B05-12`',
+  '`calibrationEligible=false`',
+  '3 × 118 privacy-sikre dispositioner',
+  'direct + proxy = 354',
+  'missing = 0',
+  'aldrig current, historik, recovery-backfill',
   'ravScoreCandidateGRollback',
   'CANDIDATE_G_PENDING',
   'INTEGRATED_PENDING',

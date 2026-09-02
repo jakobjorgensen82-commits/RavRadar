@@ -61,14 +61,18 @@ const scoreProfile = resolvePublicRavScoreProfile({
   modelMigrationReady: true,
 });
 
-function publicMode(score, mode, time = generatedAt, winningPartId = 'part-fixture', winningPartName = 'Fixture part') {
+function publicMode(score, mode, time = generatedAt, winningPartId = 'part-fixture',
+  winningPartName = 'Fixture part', {
+    calibrationEligible = true,
+    waveInputQuality = {},
+  } = {}) {
   const scoreBounds = {
     lower:score, upper:score, modelUncertaintyPoints:0, rawLower:score, rawUpper:score,
   };
   return {
     available: true,
     scoreQuality: 'FULL_HISTORY',
-    calibrationEligible: true,
+    calibrationEligible,
     scoreSemantics: 'EXACT_POINT_SCORE',
     conservativeTailResetApplied: false,
     scoreBounds,
@@ -144,6 +148,7 @@ function publicMode(score, mode, time = generatedAt, winningPartId = 'part-fixtu
         status: 'verified', provider: 'dmi', collection: 'safe',
         gridPoint: [99, 99], samplingPoint: [98, 98],
       },
+      ...waveInputQuality,
     },
   };
 }
@@ -151,6 +156,16 @@ function publicMode(score, mode, time = generatedAt, winningPartId = 'part-fixtu
 const zones = {};
 const coastalZones = {};
 const parts = {};
+const feggesundWaveQuality = {
+  waveInputSource: 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+  waveInputUncertainty: 'HIGH',
+  waveInputNoticeId: 'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+};
+const directWaveQuality = {
+  waveInputSource: 'DIRECT_OFFICIAL',
+  waveInputUncertainty: 'LOW',
+  waveInputNoticeId: null,
+};
 let partIndex = 0;
 for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
   const zoneId = `zone-${zoneIndex}`;
@@ -161,8 +176,17 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
     const partId = `part-${partIndex}`;
     partIds.push(partId);
     const partName = `Part ${partIndex}`;
-    const waders = publicMode(55 + (partIndex % 10), 'waders', generatedAt, partId, partName);
-    const beach = publicMode(60 + (partIndex % 10), 'beach', generatedAt, partId, partName);
+    const proxyInput = zoneIndex === 0 && localIndex === 0;
+    const waders = publicMode(55 + (partIndex % 10), 'waders', generatedAt, partId,
+      partName, {
+        calibrationEligible:!proxyInput,
+        waveInputQuality:proxyInput ? feggesundWaveQuality : directWaveQuality,
+      });
+    const beach = publicMode(60 + (partIndex % 10), 'beach', generatedAt, partId,
+      partName, {
+        calibrationEligible:!proxyInput,
+        waveInputQuality:proxyInput ? feggesundWaveQuality : directWaveQuality,
+      });
     parts[partId] = {
       zoneId,
       name: partName,
@@ -182,7 +206,11 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
   const winner = partIds[0];
   const coverage = (mode, time, hourIndex) => ({
     ...publicMode((mode === 'waders' ? 60 : 65) + (hourIndex % 10), mode, time,
-      winner, parts[winner].name),
+      winner, parts[winner].name, {
+        calibrationEligible:!(zoneIndex === 0 && hourIndex === 0),
+        waveInputQuality:zoneIndex === 0 && hourIndex === 0
+          ? feggesundWaveQuality : directWaveQuality,
+      }),
     winningPartId: winner,
     winningPartName: parts[winner].name,
     scoreSpread: 9,
@@ -203,13 +231,21 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
     provider: 'dmi',
     flowPoints: { current: [10, 56], wind: [10.02, 56.02], wave: [10.03, 56.03], sources: { current: 'dmi-marine-grid', wind: 'dmi-atmospheric-grid', wave: 'dmi-wave-grid' } },
     sources: { current: { provider: 'dmi' } },
-    current: { windSpeedMps: 4, currentSpeedMps: .1, currentUMps: .1, currentVMps: .2 },
+    current: {
+      windSpeedMps: 4, currentSpeedMps: .1, currentUMps: .1, currentVMps: .2,
+      ...(zoneIndex === 0 ? feggesundWaveQuality : {}),
+    },
     history: {},
     forecast: {
       provider: 'dmi',
       generatedAt,
       validUntil: ravScorePublicHorizonValidUntil(generatedAt),
-      hourly: horizonTimes.map(time => ({ time, currentUMps: .1, currentVMps: .2 })),
+      hourly: horizonTimes.map((time, hourIndex) => ({
+        time, currentUMps: .1, currentVMps: .2,
+        ...(zoneIndex === 0 && hourIndex === 0
+          ? feggesundWaveQuality
+          : zoneIndex === 0 && hourIndex === 1 ? directWaveQuality : {}),
+      })),
     },
   };
 }
@@ -261,9 +297,41 @@ assert.throws(() => buildPublicConditions({
 const startup = buildPublicConditions(full);
 const details = buildPublicConditionDetails(full);
 assert.equal(startup.coastalParts.zones['zone-0'].hourly[0].waders.scoreQuality, 'FULL_HISTORY');
-assert.equal(startup.coastalParts.zones['zone-0'].hourly[0].waders.calibrationEligible, true);
+assert.equal(startup.coastalParts.zones['zone-0'].hourly[0].waders.calibrationEligible, false);
+assert.equal(startup.coastalParts.zones['zone-1'].hourly[0].waders.calibrationEligible, true,
+  'direct FULL_HISTORY zones must retain normal calibration eligibility');
 assert.deepEqual(startup.coastalParts.zones['zone-0'].hourly[0].waders.historyReasonCodes, []);
 assert.equal(startup.nationalForecast.modes.waders[0].rows[0].scoreQuality, 'FULL_HISTORY');
+
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field => [field, startup.zones['zone-0'].current[field]])),
+  feggesundWaveQuality,
+  'startup current weather must expose only the compact Feggesund wave-quality tuple',
+);
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field => [field, details.zones['zone-0'].forecast.hourly[0][field]])),
+  feggesundWaveQuality,
+  'detail hourly weather must expose the compact Feggesund wave-quality tuple',
+);
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field => [field, details.zones['zone-0'].forecast.hourly[1][field]])),
+  directWaveQuality,
+  'detail hourly weather must retain the exact direct-official tuple',
+);
+full.zones['zone-0'].current.waveInputSource = 'UNKNOWN';
+assert.throws(() => buildPublicConditions(full),
+  /wave input quality contract is invalid/,
+  'startup projection must reject an unknown wave-quality combination');
+full.zones['zone-0'].current.waveInputSource = feggesundWaveQuality.waveInputSource;
+delete full.zones['zone-0'].forecast.hourly[0].waveInputNoticeId;
+assert.throws(() => buildPublicConditionDetails(full),
+  /wave input quality contract is incomplete/,
+  'detail projection must reject a partial wave-quality tuple');
+full.zones['zone-0'].forecast.hourly[0].waveInputNoticeId =
+  feggesundWaveQuality.waveInputNoticeId;
 
 const historyIncompleteFull = structuredClone(full);
 historyIncompleteFull.coastalParts.scoreProfile = resolvePublicRavScoreProfile({

@@ -49,7 +49,15 @@ import {
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
-import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
+import {
+  compactIntegratedRavScoreMode,
+  integratedInputCalibrationEligible,
+} from './lib/ravscore-integrated-runtime.mjs';
+import {
+  FEGGESUND_WAVE_DISPOSITIONS,
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  buildFeggesundWaveCoverageProof,
+} from './lib/feggesund-wave-proxy.mjs';
 import {
   CANDIDATE_G_CONTINUATION_FIELDS,
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
@@ -233,7 +241,7 @@ function exactPublicScoreQuality(value) {
     || value.score!==bounds.lower
     || typeof value.conservativeTailResetApplied!=='boolean') return false;
   if (value.scoreQuality === RAVSCORE_SCORE_QUALITY.FULL_HISTORY) {
-    return value.calibrationEligible === true
+    return typeof value.calibrationEligible === 'boolean'
       && value.historyCoverageHours === RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
       && value.historyReasonCodes.length === 0
       && bounds.lower===bounds.upper&&bounds.rawLower===bounds.rawUpper
@@ -334,7 +342,9 @@ function historyScoreViewFromContinuation(state, persisted) {
     throw new Error('Persisted UNAVAILABLE history envelope is not clean');
   }
   if (!persistedUnavailable && (persisted?.scoreQuality !== quality
-    || persisted?.calibrationEligible !== !incomplete
+    || (incomplete
+      ? persisted?.calibrationEligible !== false
+      : typeof persisted?.calibrationEligible !== 'boolean')
     || persisted?.historyCoverageHours !== state.currentMemoryCoverageHours
     || persisted?.conservativeTailResetApplied !== conservativeTailResetApplied
     || sameCanonical(
@@ -570,6 +580,16 @@ function addPublicPackageChecks({
 
   collector.add(startupText === compactJson(startup), 'PUBLIC_STARTUP_NOT_COMPACT');
   collector.add(detailsText === compactJson(details), 'PUBLIC_DETAILS_NOT_COMPACT');
+  const publicDestinationText = [
+    startupText,
+    detailsText,
+    coastalPartsText ?? '',
+    JSON.stringify(manifest ?? {}),
+  ].join('').toLowerCase();
+  collector.add(!publicDestinationText.includes('waveinputproofs')
+    && !publicDestinationText.includes('feggesundneighborwavesource')
+    && !publicDestinationText.includes('sourceevidencesha256'),
+  'PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT');
   collector.add(Object.keys(startup?.zones ?? {}).length === expectedZoneCount,
     'PUBLIC_STARTUP_ZONE_COUNT_MISMATCH');
   collector.add(Object.keys(details?.zones ?? {}).length === expectedZoneCount,
@@ -711,6 +731,42 @@ function addPublicPackageChecks({
   };
 }
 
+function verifiedFeggesundCoverageSummary(coastal, parts) {
+  const declared = coastal?.waveInputProofs?.feggesund;
+  const actualPartIds = parts
+    .filter(([, part]) => part?.zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID)
+    .map(([partId]) => partId)
+    .sort();
+  const rebuilt = buildFeggesundWaveCoverageProof({
+    forecastStartAt: declared?.forecastStartAt,
+    forecastHours: declared?.forecastHours,
+    partIds: declared?.partIds,
+    entries: declared?.entries,
+  });
+  const direct = rebuilt.counts[FEGGESUND_WAVE_DISPOSITIONS.direct];
+  const proxy = rebuilt.counts[FEGGESUND_WAVE_DISPOSITIONS.proxy];
+  const missing = rebuilt.counts[FEGGESUND_WAVE_DISPOSITIONS.missing];
+  const expectedEntries = 3 * RAVSCORE_PUBLIC_FORECAST_HOURS;
+  if (!sameCanonical(rebuilt, declared)
+    || !sameCanonical(rebuilt.partIds, actualPartIds)
+    || rebuilt.forecastHours !== RAVSCORE_PUBLIC_FORECAST_HOURS
+    || direct + proxy !== expectedEntries
+    || missing !== 0) {
+    throw new Error('Feggesund wave coverage proof is incomplete');
+  }
+  return {
+    targetPartCount: actualPartIds.length,
+    forecastHours: rebuilt.forecastHours,
+    expectedEntries,
+    acceptedEntries: direct + proxy,
+    directEntries: direct,
+    proxyEntries: proxy,
+    missingEntries: missing,
+    policySha256: rebuilt.policySha256,
+    coverageSha256: rebuilt.coverageSha256,
+  };
+}
+
 export function auditIntegratedRavScorePublicRuntime(full, {
   startup,
   startupText = startup ? compactJson(startup) : '',
@@ -742,6 +798,35 @@ export function auditIntegratedRavScorePublicRuntime(full, {
   collector.add(safeNonNegativeInteger(coastal?.scoredPartCount)
     && coastal.scoredPartCount === expectedPartCount,
     'SCORED_PART_COUNT_MISMATCH');
+  const feggesundTargetPartCount = parts.filter(([, part]) =>
+    part?.zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID).length;
+  const feggesundWaveCoverageRequired = (expectedZoneCount === 210
+      && expectedPartCount === 673)
+    || feggesundTargetPartCount > 0;
+  let feggesundWaveCoverage = {
+    targetPartCount: feggesundTargetPartCount,
+    forecastHours: feggesundWaveCoverageRequired
+      ? RAVSCORE_PUBLIC_FORECAST_HOURS
+      : 0,
+    expectedEntries: feggesundWaveCoverageRequired
+      ? 3 * RAVSCORE_PUBLIC_FORECAST_HOURS
+      : 0,
+    acceptedEntries: 0,
+    directEntries: 0,
+    proxyEntries: 0,
+    missingEntries: feggesundWaveCoverageRequired
+      ? 3 * RAVSCORE_PUBLIC_FORECAST_HOURS
+      : 0,
+    policySha256: null,
+    coverageSha256: null,
+  };
+  if (feggesundWaveCoverageRequired) {
+    try {
+      feggesundWaveCoverage = verifiedFeggesundCoverageSummary(coastal, parts);
+    } catch {
+      collector.fail('FEGGESUND_WAVE_COVERAGE_INCOMPLETE');
+    }
+  }
   collector.add(!containsRetiredPublicModelField(coastal), 'PUBLIC_SHADOW_FIELD_PRESENT');
 
   try {
@@ -1326,7 +1411,9 @@ export function auditIntegratedRavScorePublicRuntime(full, {
           mode,
           weather,
           zone: { onshoreDirectionDeg: part?.onshoreDirectionDeg },
-        }, { state: evaluationState }));
+        }, { state: evaluationState }), {
+          inputCalibrationEligible: integratedInputCalibrationEligible(weather),
+        });
         collector.add(sameCanonical(persisted, expected), 'MODE_RECONSTRUCTION_MISMATCH');
         reconstructedModeCount += 1;
       } catch {
@@ -1443,7 +1530,8 @@ export function auditIntegratedRavScorePublicRuntime(full, {
         && current?.[mode]?.scoreQuality === (historyIncomplete
           ? RAVSCORE_SCORE_QUALITY.HISTORY_INCOMPLETE
           : RAVSCORE_SCORE_QUALITY.FULL_HISTORY)
-        && current?.[mode]?.calibrationEligible === !historyIncomplete
+        && current?.[mode]?.calibrationEligible === (!historyIncomplete
+          && available.every(row => row.detail.calibrationEligible === true))
         && current?.[mode]?.scoreSemantics === (historyIncomplete
           ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
           : conservativeTailResetApplied
@@ -1514,6 +1602,7 @@ export function auditIntegratedRavScorePublicRuntime(full, {
       reconstructedModeCount,
       zoneModeCount,
       unavailableZoneModeCount,
+      feggesundWave: feggesundWaveCoverage,
     },
     continuation: {
       migratedStateCount,

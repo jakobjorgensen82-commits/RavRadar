@@ -38,6 +38,7 @@ import {
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
+  'waveInputSource','waveInputUncertainty','waveInputNoticeId',
   'waterLevelCm','waterLevelTrendCm3h','currentSpeedMps','currentDirectionDeg','waterTemperatureC'
 ];
 const CURRENT_FIELDS = HOURLY_FIELDS.filter(key => key !== 'time' && key !== 'airTemperatureC');
@@ -65,6 +66,11 @@ const HISTORY_COVERAGE_HOURS = RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours;
 const SCORE_BOUND_FIELDS = Object.freeze([
   'lower','upper','modelUncertaintyPoints','rawLower','rawUpper',
 ]);
+const WAVE_INPUT_QUALITY_FIELDS = Object.freeze([
+  'waveInputSource','waveInputUncertainty','waveInputNoticeId',
+]);
+const FEGGESUND_WAVE_PROXY_SOURCE = 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION';
+const FEGGESUND_WAVE_PROXY_NOTICE_ID = 'FEGGESUND_NEIGHBOR_WAVE_PROXY';
 
 function assertPublicScoreBounds(value) {
   if (value.available === false) {
@@ -219,6 +225,29 @@ function projectCurrentProvenance(value) {
   ]);
 }
 
+function projectWaveInputQuality(value) {
+  const present = WAVE_INPUT_QUALITY_FIELDS.filter(field => Object.hasOwn(value, field));
+  if (present.length === 0) return {};
+  if (present.length !== WAVE_INPUT_QUALITY_FIELDS.length) {
+    throw new Error('Public wave input quality contract is incomplete');
+  }
+  const projected = Object.fromEntries(WAVE_INPUT_QUALITY_FIELDS
+    .map(field => [field, value[field]]));
+  const nullQuality = projected.waveInputSource === null
+    && projected.waveInputUncertainty === null
+    && projected.waveInputNoticeId === null;
+  const directQuality = projected.waveInputSource === 'DIRECT_OFFICIAL'
+    && projected.waveInputUncertainty === 'LOW'
+    && projected.waveInputNoticeId === null;
+  const proxyQuality = projected.waveInputSource === FEGGESUND_WAVE_PROXY_SOURCE
+    && ['LOW', 'MODERATE', 'HIGH'].includes(projected.waveInputUncertainty)
+    && projected.waveInputNoticeId === FEGGESUND_WAVE_PROXY_NOTICE_ID;
+  if (!nullQuality && !directQuality && !proxyQuality) {
+    throw new Error('Public wave input quality contract is invalid');
+  }
+  return projected;
+}
+
 function projectWeather(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   if (value.time !== undefined && (typeof value.time !== 'string'
@@ -238,6 +267,7 @@ function projectWeather(value) {
     }
     weather[field] = value[field];
   }
+  Object.assign(weather, projectWaveInputQuality(value));
   const provenance = projectCurrentProvenance(value.currentProvenance);
   return provenance ? { ...weather, currentProvenance: provenance } : weather;
 }
@@ -456,7 +486,7 @@ function assertPublicScoreQuality(value) {
   }
   if (value.scoreQuality === 'FULL_HISTORY') {
     if (value.available !== true
-      || value.calibrationEligible !== RAVSCORE_CALIBRATION_ELIGIBLE) {
+      || RAVSCORE_CALIBRATION_ELIGIBLE !== true) {
       throw new Error('Public FULL_HISTORY RavScore has invalid active-model calibration eligibility');
     }
   } else if (value.calibrationEligible !== false) {

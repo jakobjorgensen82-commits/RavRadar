@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-01 – DEC-0114 integrated-first releasevej
+# NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first proxy og slutrelease
+
+- [x] Implementér den eneste tilladte Feggesund-undtagelse: direkte lokal `DK-B05-11`-WAM vinder; kun en helt manglende lokal bølgetuple må bruge komplette, direkte, same-run DMI-tuples fra både `DK-B05-10` og `DK-B05-12`.
+- [x] Før usikkerhed, DA/DE/EN-advarsel og `calibrationEligible=false` gennem alle proxyberørte mode-/zone-/public-/tur-/observationsforbrugere, også ved ellers `FULL_HISTORY`; bevar bølge-only-grænsen og uændret geometri/punkter/kystnormal.
+- [x] Regenerér og forsegl slutbindingerne: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 deklarerede forbrugere; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer.
+- [ ] Bestå privacy-safe 3 × 118 med direct + proxy = 354 og missing = 0, og gennemfør exact-head, merge, frisk fuld produktion og offentlig desktop-/mobilkontrol.
+
+# TIDLIGERE CHECKPOINT – 2026-09-01 – DEC-0114 integrated-first releasevej
 
 - [x] Bind ejerens supersession i DEC-0114: strict direct+operational 118 h kan frigive den integrerede model, mens measured-only ældre historik opbygges bagefter som synlig `HISTORY_INCOMPLETE` med `calibrationEligible=false`.
 - [x] Færdiggør og måltest privat `BUILDING_MEASURED_ONLY`, strict schema-4 READY-checkpoint med eksplicit warmup-N/A, state-less same-model recovery, audit/activation og fail-closed invalid/tampered-state-grænser.
@@ -10,7 +17,7 @@
 - [x] Klassificér `33520738058` som negativt fasebevis og gør tidlig current-cache-health konsistent med senere autoritativ sampling-/gridvektoroprydning. Bevar DMI som primær i både nuværende og ny model; Copernicus er kun exact-gap-supplement efter grøn DMI-terminalgate.
 - [x] Bestå de målrettede scheduler-/bulk-/workflowkontrakttests samt Python-syntakskontrollen.
 - [ ] Få et grønt frisk 118-timers datapreflightbevis på den nye eksakte kodehead. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.
-- [ ] Kør exact-head, sikker merge, frisk integrated produktion og offentlig desktop-/mobilkontrol af 210/673, current/fem døgn, begge modes, warning og Feggesund direct 3 × 118.
+- [ ] Kør exact-head, sikker merge, frisk integrated produktion og offentlig desktop-/mobilkontrol af 210/673, current/fem døgn, begge modes, warnings og Feggesunds policybundne 3 × 118.
 - Candidate G er fortsat eneste offentlige model. Lokale implementeringer og måltests er ikke exact-head-, preflight-, produktions- eller releasebevis.
 
 # NYESTE CHECKPOINT – 2026-08-31 – PR #241 merged; legacy-profilattestering lokalt rettet
@@ -41,12 +48,19 @@
 - Candidate G er fortsat offentlig, indtil den opdaterede exact-head/merge/prod/browser-kæde er bevist.
 # RavRadar - aktivt roadmap
 
+## Model-P0 – Feggesund direct-first wave-only proxy og releasebevis
+
+- [x] Lås den eneste naboundtagelse til `DK-B05-11`: direkte lokal DMI WAM vinder altid; kun en helt manglende lokal bølgetuple må erstattes af en 50/50 energikonsistent tuple fra direkte DMI-serier for både `DK-B05-10` og `DK-B05-12` ved samme time/run.
+- [x] Hold strøm, currenthistorik, recovery-backfill, kunstig historik, geometri, punkter og kystnormal helt udenfor undtagelsen.
+- [x] Før `LOW`/`MODERATE`/`HIGH`, synligt DA/DE/EN-varsel og `calibrationEligible=false` gennem alle downstream-forbrugere for timer, der faktisk bruger proxyen – også ved `FULL_HISTORY`.
+- [ ] Bestå privacy-sikkert 3 × 118-bevis med direct + proxy = 354 og missing = 0; derefter exact-head, sikker merge, frisk produktion og offentlig desktop-/mobilkontrol. Candidate G forbliver offentlig indtil atomisk aktivering.
+
 ## Model-P0 – samlet integreret RavScore under DEC-0110, ikke udgivet
 
 - [x] Bevar den friske offentlige Candidate G-base: `33345476979`/`rr-20260831010337-210` var første grønne recoverybevis, og seneste external-watchdog-`workflow_dispatch` `33347230240` publicerede `rr-20260831012407-210` komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples. Candidate G er ærligt 0/210 aktiv på grund af historikmemory. De forudgående runs `33343469247`/`33344823000` var sikre transient-503-stop uden deploy; bounded retry-hotfixen bestod PR #237 exact-head `33352520408`, merge `8c03e25d` og grøn backend-/fuld produktion `33352661061`/`33352634365`.
 - [x] Luk lokalt `ravradar-production-workflow-outcome-v2`, Spørg RavRadar-kvalitetsskeln og DA/DE/EN-plain-language for firetimers energivægtning/højst 15 % dæmpning. Fuld sourcegate, exact-head, produktion og offentlig kontrol er stadig releasegates.
 - [x] Aktivér ét 15-minutters diagnose-/reparationskontroljob for vejrfriskhed uden at oprette en ny scheduler eller dubletvagthund; ingen blind redispatch af et kendt fejlet build.
-- [x] Regenerér 4.0.319-slutbindingerne: integrated `778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7`/`e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` over 43 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96` over 55 filer.
+- [x] Regenerér 4.0.319-slutbindingerne: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 filer/8 consumers; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 filer.
 - [x] Stop og teknisk pensionér den planlagte fiktive udførelse af morgenhullet før descriptor, apply, mutation, artifact eller offentliggørelse. DEC-0109 bevares kun som historisk incident-/trustkontrakt; workflow-inputs/job, incidentpolicy og mutator er fjernet, og en negativ gate forhindrer genåbning.
 - [x] Klassificér hver aktiv Candidate G-del som BEVAR, FORBEDR, ERSTAT, FJERN eller UTILSTRÆKKELIG EVIDENS og bind den samlede kandidat til DEC-0110.
 - [x] Implementér én modelkontrakt: `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, bounds-v5-profil/komponent/forklaring, kausal energivægtet bølgeapproach samt afgrænset `delivery=supply×factor` uden wave-created supply.
@@ -55,7 +69,7 @@
 - [x] Adskil direkte inputmissing som `UNAVAILABLE` fra historikmissing som numerisk konservativ `HISTORY_INCOMPLETE`; bevar 48 h aktiv currenthistorik, 168 h score-neutral researchretention, 288 h wave-tail og 40 h last-mile-closure med eksplicit `conservativeResetAt`.
 - [x] Bind `direction-broad-19-history-tie-v2` og `score-history-water-tie-earliest-v3`: numerisk score først, `FULL_HISTORY` kun ved eksakt tie, derefter eksisterende ranking-/vand-/tidsregler.
 - [x] Opdatér producent-/forbrugermatrix, modelregister, RDKS, Markdown-/webhåndbog og releasekandidatens system-, regel-, vejr- og forskningsdokumentation.
-- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 direkte bølgetimer. Parent-zonens missingdata er ikke bevis for partserierne. DEC-0114 pensionerer neighbor-proxysporet for denne release; faktisk direct missing følger `UNAVAILABLE`/fail-closed uden interpolation eller punktflytning.
+- [ ] Bevis Feggesund/`DK-B05-11` i en frisk integrated part-level-produktion: alle tre aktive dele × præcis 118 policygyldige bølgetimer. Direkte lokal DMI vinder; kun en helt manglende tuple må bruge den faste B05-10+B05-12-wave-only proxy. Mangler begge gyldige nabotuple ikke, er timen `MISSING`/fail-closed. Ingen punktflytning.
 - [ ] Bestå målrettede kontrakttests og én fuld exact-head-kildegate på den færdige PR-head.
 - [ ] Merge sikkert, kør frisk produktion med fulde gates og verificér den ene offentlige state-6-model på desktop og mobil. Indtil da er 4.0.316/Candidate G fortsat produktionssandhed, ikke shadowmodel.
 

@@ -58,13 +58,11 @@ Den numeriske kontrakt er:
 7. **Retention er ikke scorehukommelse.** Der må opbevares 168 timers datasikker researchhistorik til replay, audit og senere analyse, men `researchRetentionScoreEffect=NONE`: ingen score, rangering eller bedste-tid må afhænge af mere end de aktive procesvinduer. Retention må ikke blive en skjult syvdøgnsvægtning.
 8. **Kalibrering forbliver lukket.** `HISTORY_INCOMPLETE` og `UNAVAILABLE` har altid `calibrationEligible=false` i browser, lokale og Edge-baserede Spørg RavRadar-svar, konto/tur/observation, D1/Supabase, admin, ekspertflader, manifest og audits. Kun `FULL_HISTORY` kan være kalibreringsegnet, og det er ikke i sig selv et fundbevis.
 
-## Feggesund-hypotese – nabozoneproxy pensioneret for denne release
+## Historisk Feggesund-konklusion – snævert supersederet af DEC-0114
 
-Det sanitiserede parent-zone-datasæt `rr-20260830104132-210` viser 118/118 bølgefelter som `missing` for `DK-B05-11`, men de tre aktive part-id'er findes, registry markerer alle tre `marineCoverage=full`, og Candidate G-current er tilgængelig for både strand og waders. Den integrerede model producerer fra 673 part-level-serier; parent-gabet beviser derfor ikke, at de tre integrerede partserier mangler bølger.
+Dette afsnits oprindelige pensionering af enhver Feggesund-proxy er supersederet af ejerbeslutningen 2026-09-02 i DEC-0114 og må ikke længere læses som aktiv direct-only-kontrakt. DEC-0114 tillader præcis én operationel undtagelse: kun `DK-B05-11`, kun den komplette bølgetuple og kun når direkte lokal DMI-WAM mangler helt, mens både `DK-B05-10` og `DK-B05-12` leverer komplette, direkte og same-run DMI-tuples. Den faste 50/50 energikonsistente proxy skal mærkes med usikkerhed/advarsel, og enhver proxyinvolveret score har `calibrationEligible=false` gennem alle forbrugere.
 
-Først skal en frisk integreret part-level-produktion bevise alle tre deles eksakte 118-timers direkte bølgedækning. Den tidligere snævre mulighed for senere at vurdere en konservativ nabozoneinterpolation er pensioneret for denne release af DEC-0114. Det er fortsat ikke en produktionsadapter eller en undtagelse fra direct-input-`UNAVAILABLE`.
-
-Et faktisk manglende direkte part-input følger fortsat `UNAVAILABLE` og må ikke udfyldes fra en nabozone, en anden kystdel eller syntetisk historik. En eventuel fremtidig proxy kan kun genåbnes ved en ny udtrykkelig ejerbeslutning efter denne release og vil da kræve særskilt RDKS, fuld producent-/forbrugerkontrakt, provenance, usikkerhedsgrænse, kapacitetsvurdering, tests, rollback og produktionsbevis. Den må aldrig flytte geometri, land-/vandpunkter eller kystnormal.
+Alle generelle regler i denne beslutning består: ingen current-, historik- eller recovery-backfill, ingen carry-forward eller generelt zonelån, og ingen ændring af geometri, land-/vandpunkter eller kystnormal. Et privacy-sikkert 3 × 118-bevis og de fulde releasegates er fortsat nødvendige. Den sanitiserede parentserie var årsagsevidens, ikke dokumentation for lokal surfzonefysik eller empirisk højere fundpræcision.
 
 ## Migration, checkpoint, recovery og rollback
 

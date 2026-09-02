@@ -116,13 +116,18 @@ jobs:
           supabase migration list --linked | tee "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
           supabase db push --linked --dry-run | tee "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
 
-      - name: Require only the two exact integrated cutover migrations
-        run: >-
-          node scripts/integrated-cutover-readiness.mjs plan
-          --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt"
-          --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt"
-          --migrations-directory
-          "${{ steps.integrated_cutover.outputs.workdir }}/supabase/migrations"
+      - name: Require only the three exact integrated cutover migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          migrations_directory="${{ steps.integrated_cutover.outputs.workdir }}/supabase/migrations"
+          test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"
+          test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"
+          test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"
+          node scripts/integrated-cutover-readiness.mjs plan \
+            --migration-list "$RUNNER_TEMP/ravscore-cutover-migrations-plan.txt" \
+            --dry-run "$RUNNER_TEMP/ravscore-cutover-dry-run.txt" \
+            --migrations-directory "$migrations_directory"
 
       - name: Reverify exact main immediately before the first external write
         shell: bash

@@ -10,6 +10,12 @@ import {
   verifiedDmiNativeSource,
 } from './dmi-forecast-store.mjs';
 import { verifiedLivePilotSource } from './live-current-pilot.mjs';
+import {
+  FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
+  FEGGESUND_WAVE_PROXY_NOTICE_ID,
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  verifyCompactFeggesundWaveProxy,
+} from './feggesund-wave-proxy.mjs';
 
 export const RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION = 3;
 export const RAVSCORE_LOCAL_MARGIN_POINTS = 7;
@@ -58,7 +64,7 @@ function exactAvailableScoreContract(value) {
     || new Set(value.historyReasonCodes).size !== value.historyReasonCodes.length
     || typeof value.conservativeTailResetApplied !== 'boolean') return false;
   if (value.scoreQuality === 'FULL_HISTORY') {
-    return value.calibrationEligible === true
+    return typeof value.calibrationEligible === 'boolean'
       && value.historyCoverageHours === 48
       && value.historyReasonCodes.length === 0
       && bounds.lower === bounds.upper
@@ -315,7 +321,7 @@ function sanitizeWind(hour, expectedIdentity) {
 }
 
 function sanitizeWave(hour, expectedIdentity) {
-  const source = verifiedDmiForecastComponentSource(
+  const directSource = verifiedDmiForecastComponentSource(
     hour?.sources?.wave,
     hour?.time,
     'wave',
@@ -328,10 +334,24 @@ function sanitizeWave(hour, expectedIdentity) {
     : finite(hour.waveDirectionDeg);
   const directionValueValid = direction === null
     || (direction >= 0 && direction < 360);
-  const directionAttested = Array.isArray(source?.optionalFieldSet)
-    && source.optionalFieldSet.length === 1
-    && source.optionalFieldSet[0] === 'mean-wave-dir';
-  const valid = source && height !== null && height >= 0
+  const proxyVerified = !directSource
+    && expectedIdentity?.parentZoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID
+    && verifyCompactFeggesundWaveProxy({
+      targetEntityId: expectedIdentity?.entityId,
+      targetParentZoneId: expectedIdentity?.parentZoneId,
+      time: hour?.time,
+      projection: {
+        waveHeightM: height,
+        wavePeriodS: period,
+        waveDirectionDeg: direction,
+        proxy: hour?.sources?.wave,
+      },
+    });
+  const directionAttested = proxyVerified
+    || (Array.isArray(directSource?.optionalFieldSet)
+      && directSource.optionalFieldSet.length === 1
+      && directSource.optionalFieldSet[0] === 'mean-wave-dir');
+  const valid = (directSource || proxyVerified) && height !== null && height >= 0
     && period !== null && period >= 0
     && directionValueValid;
   return valid ? {
@@ -343,12 +363,26 @@ function sanitizeWave(hour, expectedIdentity) {
     waveDirectionDeg: direction !== null && directionAttested
       ? normalizeDegrees(direction)
       : null,
-    waveProvenance: { ...source, status: 'verified' },
+    waveProvenance: proxyVerified
+      ? { ...hour.sources.wave, status: 'verified-derived' }
+      : { ...directSource, status: 'verified' },
+    waveInputSource: proxyVerified
+      ? FEGGESUND_WAVE_PROXY_INPUT_SOURCE
+      : 'DIRECT_OFFICIAL',
+    waveInputUncertainty: proxyVerified
+      ? hour.sources.wave.disagreementClass
+      : 'LOW',
+    waveInputNoticeId: proxyVerified
+      ? FEGGESUND_WAVE_PROXY_NOTICE_ID
+      : null,
   } : {
     waveHeightM: null,
     wavePeriodS: null,
     waveDirectionDeg: null,
     waveProvenance: { status: 'unverified', reason: 'no-exact-authorized-wave-source' },
+    waveInputSource: null,
+    waveInputUncertainty: null,
+    waveInputNoticeId: null,
   };
 }
 
@@ -585,6 +619,8 @@ export function buildIntegratedZoneHourlyProjection({
       const rawUpper = Math.max(...available.map(row => row.detail.scoreBounds.rawUpper));
       const historyIncomplete = available.some(row =>
         row.detail.scoreQuality === 'HISTORY_INCOMPLETE');
+      const calibrationInputLocked = available.some(row =>
+        row.detail.calibrationEligible !== true);
       const historyCoverageHours = Math.min(...available
         .map(row => row.detail.historyCoverageHours));
       const historyReasonCodes = [...new Set(available
@@ -609,6 +645,27 @@ export function buildIntegratedZoneHourlyProjection({
         ? 'whole-zone'
         : near.length === 1 ? 'only-part' : 'several-parts';
       const weather = winner.weather ?? {};
+      const proxyWaveInputs = available
+        .map(row => row.weather ?? {})
+        .filter(candidate =>
+          candidate.waveInputSource === FEGGESUND_WAVE_PROXY_INPUT_SOURCE
+          && ['LOW', 'MODERATE', 'HIGH'].includes(candidate.waveInputUncertainty)
+          && candidate.waveInputNoticeId === FEGGESUND_WAVE_PROXY_NOTICE_ID);
+      const aggregateWaveInputQuality = proxyWaveInputs.length > 0
+        ? {
+          waveInputSource: FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
+          waveInputUncertainty: proxyWaveInputs
+            .map(candidate => candidate.waveInputUncertainty)
+            .sort((left, right) =>
+              ['LOW', 'MODERATE', 'HIGH'].indexOf(right)
+              - ['LOW', 'MODERATE', 'HIGH'].indexOf(left))[0],
+          waveInputNoticeId: FEGGESUND_WAVE_PROXY_NOTICE_ID,
+        }
+        : {
+          waveInputSource: weather.waveInputSource,
+          waveInputUncertainty: weather.waveInputUncertainty,
+          waveInputNoticeId: weather.waveInputNoticeId,
+        };
       const explanation = winner.detail?.explanation ?? {};
       result[mode] = {
         modelBinding: ravScoreModelBinding(),
@@ -630,7 +687,7 @@ export function buildIntegratedZoneHourlyProjection({
         scoreSpread: high - low,
         comparisonPartCount: available.length,
         scoreQuality: historyIncomplete ? 'HISTORY_INCOMPLETE' : 'FULL_HISTORY',
-        calibrationEligible: !historyIncomplete,
+        calibrationEligible: !historyIncomplete && !calibrationInputLocked,
         scoreSemantics: historyIncomplete
           ? 'CONSERVATIVE_ENCLOSING_LOWER_BOUND'
           : conservativeTailResetApplied
@@ -654,6 +711,7 @@ export function buildIntegratedZoneHourlyProjection({
           waveHeightM: weather.waveHeightM,
           wavePeriodS: weather.wavePeriodS,
           waveDirectionDeg: weather.waveDirectionDeg,
+          ...aggregateWaveInputQuality,
           waterLevelCm: weather.waterLevelCm,
           waterLevelTrendCm3h: weather.waterLevelTrendCm3h,
           currentSpeedMps: weather.currentSpeedMps,

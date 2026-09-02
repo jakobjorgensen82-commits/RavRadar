@@ -108,7 +108,8 @@ function publicScoreQuality(result, available) {
   };
   if (available
     && result.scoreQuality === 'FULL_HISTORY'
-    && result.calibrationEligible === RAVSCORE_CALIBRATION_ELIGIBLE
+    && typeof result.calibrationEligible === 'boolean'
+    && RAVSCORE_CALIBRATION_ELIGIBLE === true
     && coverage === ASSISTANT_HISTORY_HOURS
     && reasonCodes?.length === 0
     && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
@@ -118,7 +119,7 @@ function publicScoreQuality(result, available) {
       ===(result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')) {
     return {
       scoreQuality:'FULL_HISTORY',
-      calibrationEligible:RAVSCORE_CALIBRATION_ELIGIBLE,
+      calibrationEligible:result.calibrationEligible,
       scoreSemantics:result.scoreSemantics,
       conservativeTailResetApplied:result.conservativeTailResetApplied,
       scoreBounds,historyCoverageHours:coverage, historyReasonCodes:[],

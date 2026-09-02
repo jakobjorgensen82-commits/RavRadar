@@ -229,6 +229,14 @@ for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}',
   'productionReferenceAt,evidencePurpose:"CURRENT_CUTOVER_PREFLIGHT"',
   "'.productionReferenceAt'",
+  "'.coverage.feggesundWave.targetPartCount | select(type == \"number\")'",
+  "'.coverage.feggesundWave.forecastHours | select(type == \"number\")'",
+  "'.coverage.feggesundWave.expectedEntries | select(type == \"number\")'",
+  "'.coverage.feggesundWave.acceptedEntries | select(type == \"number\")'",
+  "'.coverage.feggesundWave.missingEntries | select(type == \"number\")'",
+  "(($wave.directEntries + $wave.proxyEntries) == 354)",
+  "'.coverage.feggesundWave.policySha256 | strings | test(\"^[0-9a-f]{64}$\")'",
+  "'.coverage.feggesundWave.coverageSha256 | strings | test(\"^[0-9a-f]{64}$\")'",
 ]) {
   if (!copernicusPilot.includes(marker)) {
     throw new Error(`Den isolerede operational-118-preflight mangler ${marker}`);
@@ -598,6 +606,10 @@ for (const marker of [
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'npm run validate:source',
   'Validate exact source head before external writes',
+  'Require only the three exact integrated cutover migrations',
+  'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
+  'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
+  'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

@@ -359,6 +359,46 @@ try {
       calibrationFeatures: integratedFeatures,
     },
   };
+  const integratedLockedFeatures = {
+    ...integratedFeatures,
+    scoreCalibrationEligible:false,
+  };
+  const integratedLockedPayload = {
+    ...integratedEligiblePayload,
+    calibration_eligible:false,
+    calibration_features:integratedLockedFeatures,
+    weather_snapshot:{
+      ...integratedEligiblePayload.weather_snapshot,
+      calibrationFeatures:integratedLockedFeatures,
+    },
+  };
+  assert.equal(externalTripPayload(integratedLockedPayload).calibration_eligible,false,
+    'Edge must accept exact integrated FULL_HISTORY evidence under a false input ceiling');
+  assert.throws(() => externalTripPayload({
+    ...integratedLockedPayload,
+    calibration_eligible:true,
+  }), /TRIP_CALIBRATION_ELIGIBILITY_INVALID/,
+  'Edge must reject calibration=true when scoreCalibrationEligible is false');
+  const integratedWarmupLockedFeatures = {
+    ...integratedLockedFeatures,
+    reasonCodes: [
+      ...integratedLockedFeatures.reasonCodes,
+      'ravscore-global-warmup-calibration-lock',
+    ],
+  };
+  const integratedWarmupAndInputLockedPayload = {
+    ...integratedLockedPayload,
+    calibration_features: integratedWarmupLockedFeatures,
+    weather_snapshot: {
+      ...integratedLockedPayload.weather_snapshot,
+      calibrationFeatures: integratedWarmupLockedFeatures,
+    },
+  };
+  assert.equal(
+    externalTripPayload(integratedWarmupAndInputLockedPayload).calibration_eligible,
+    false,
+    'Edge must accept FULL_HISTORY with both the input ceiling and global warmup lock',
+  );
   for (const historicalMigration of [false, true]) {
     const d1FailSafe = externalTripPayload(integratedEligiblePayload, { historicalMigration });
     assert.equal(d1FailSafe.calibration_eligible, false,

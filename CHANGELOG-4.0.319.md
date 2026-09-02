@@ -1,7 +1,13 @@
 # RavRadar 4.0.319 – integrated-first med målt historik og DMI-currentgenopretning
 
-**Dato:** 2026-09-01
-**Status:** Lokal kandidat. Candidate G/4.0.316 er fortsat den eneste offentlige model. De målrettede DMI-slutdifftests og Python-syntakskontrollen er grønne. Frisk isoleret 673 × 118-preflight, exact-head, merge, fuld produktion/releasegate/artifact/Pages, aktivering og offentlig desktop-/mobilverifikation afventer.
+**Dato:** 2026-09-02
+**Status:** Lokal kandidat. Candidate G/4.0.316 er fortsat den eneste offentlige model. Slutbundles og de målrettede lokale tests er grønne. Frisk isoleret 673 × 118-preflight, Feggesunds 3 × 118, exact-head, merge, fuld produktion/releasegate/artifact/Pages, aktivering og offentlig desktop-/mobilverifikation afventer.
+
+## Forseglede 4.0.319-bindinger
+
+- Integrated: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 deklarerede forbrugere.
+- Candidate G-rollback: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 transitive filer.
+- Disse lokale værdier er slutidentiteterne for kandidaten, men er ikke i sig selv exact-head-, 118-timers-, merge-, produktions- eller browserbevis.
 
 ## Integrated-first uden kunstig historik
 
@@ -9,7 +15,8 @@
 - Manglende ældre præ-target-historik giver `HISTORY_INCOMPLETE` med konservativ lower/upper, dækning, tydelig DA/DE/EN-advarsel og `calibrationEligible=false`. Manglende direkte eller operationelt input er fortsat `UNAVAILABLE` og stopper release for den berørte time.
 - Den private Candidate G-side er enten 673/673 `READY` eller `BUILDING_MEASURED_ONLY` fra egne målte fortsættelser. Warmup er ikke offentlig model, shadow, controllerstatus, automatisk fallback eller rollbackbevis.
 - Checkpointschema 4 og READY-companionen er uændret. Under warmup er checkpoint build/save/protected-publish eksplicit `NOT_APPLICABLE_DURING_MEASURED_WARMUP`; tilfældigt skip eller ghost proof er fatal.
-- Cold replay og warmup bruger ingen syntese, rekonstruktion, interpolation, carry-forward, neutral nulstrøm eller nabo-/kystdelslån. Feggesund skal bestå direkte 3 × 118 uden punkt-, kystnormal- eller geometriændring.
+- Cold replay og warmup bruger ingen syntese, rekonstruktion, carry-forward, neutral nulstrøm eller generelt nabo-/kystdelslån. Den eneste operationelle undtagelse er Feggesund/`DK-B05-11`: direkte lokal DMI-WAM vinder altid, men når hele den lokale bølgetuple mangler, må de to direkte verificerede samtidige `DK-B05-10`- og `DK-B05-12`-tuples danne en 50/50 energikonsistent bølgeproxy. Den ændrer ikke strøm, historik, recovery, punkter, kystnormal eller geometri.
+- Feggesund-proxyen blander `Hs²`, periode og cirkulær FROM-retning, mærker uenighed `LOW|MODERATE|HIGH`, viser en tydelig DA/DE/EN-advarsel og er altid `calibrationEligible=false` — også ved `FULL_HISTORY`. En privat, hashbundet 3 × 118-ledger skal bevise præcis 354 accepterede direkte/proxyinput og nul manglende; kun tre kompakte kvalitetsfelter må nå offentlig runtime.
 
 ## DMI-currentrodårsag og lokal rettelse
 
@@ -25,4 +32,4 @@
 
 - Ingen scoreformel, model-id, stateversion, geometri, kystnormal, land-/vandpunkt, private payloads, koordinater eller rå U/V ændres af DMI-rodrettelsen.
 - Målrettede scheduler-/runvalg-, DKSS-recovery-, collectionbudget- og preflight-donor-/targetlås-tests samt Python-`py_compile` er grønne på slutdiffen.
-- Derefter kræves et grønt frisk isoleret 673 × 118-preflightbevis, exact-head, sikker merge, frisk fuld produktion, Feggesund direkte 3 × 118 og offentlig current-/femdøgns-/desktop-/mobilverifikation. Ingen af de tre negative runs er release- eller currentdækningsbevis.
+- Derefter kræves et grønt frisk isoleret 673 × 118-preflightbevis, exact-head, sikker merge, frisk fuld produktion, Feggesund 3 × 118 direkte/proxy-ledger og offentlig current-/femdøgns-/desktop-/mobilverifikation. Ingen af de negative runs er release- eller currentdækningsbevis.

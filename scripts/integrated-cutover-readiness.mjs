@@ -35,9 +35,9 @@ const MODEL_BINDING_FIELDS = Object.freeze([
   'presentationPolicyId', 'modelContractSha256', 'modelBundleSha256',
 ]);
 export const TRIP_BINDING_POLICY_ID =
-  'ravradar-trip-v3-exact-integrated-candidate-g-global-warmup-v5';
+  'ravradar-trip-v3-exact-integrated-candidate-g-global-warmup-v6';
 export const TRIP_ACTIVE_ADMISSION_POLICY_ID =
-  'ravradar-trip-v3-exact-operational-active-global-warmup-v5';
+  'ravradar-trip-v3-exact-operational-active-global-warmup-v6';
 const ASSISTANT_FUNCTION = 'ravradar-assistant';
 const PUBLIC_ORIGIN = 'https://ravradar.dk';
 
@@ -81,15 +81,18 @@ export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIO
     migrationsDirectory,
     REQUIRED_CUTOVER_MIGRATIONS[2].filename,
   ), 'utf8');
+  const scoreQualityMatch = migration.match(
+    /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
+  );
   const truthMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_calibration_truth_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
   const bindingMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_binding_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
   );
-  assert.ok(truthMatch?.[1] && bindingMatch?.[1],
-    'trip truth/binding policy definition is missing from the migration');
-  const definition = `${normaliseTripBindingPolicyDefinition(truthMatch[1])}\n-- binding-function --\n${normaliseTripBindingPolicyDefinition(bindingMatch[1])}`;
+  assert.ok(scoreQualityMatch?.[1] && truthMatch?.[1] && bindingMatch?.[1],
+    'trip score-quality/truth/binding policy definition is missing from the migration');
+  const definition = `${normaliseTripBindingPolicyDefinition(scoreQualityMatch[1])}\n-- calibration-truth-function --\n${normaliseTripBindingPolicyDefinition(truthMatch[1])}\n-- binding-function --\n${normaliseTripBindingPolicyDefinition(bindingMatch[1])}`;
   return Object.freeze({
     id: TRIP_BINDING_POLICY_ID,
     sha256: sha256(definition),
@@ -475,6 +478,8 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
     'activeBindingTriggerCallsGateExactlyOnce',
     'bindingGateCalledExactlyOnce',
     'integratedModelBindingPresent',
+    'integratedProxyCeilingBindingPresent',
+    'integratedMissingCalibrationCeilingRejected',
     'candidateGRollbackBindingPresent',
     'unknownModelBindingRejected',
     'exactModelBindingPresent',
@@ -492,6 +497,8 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
     'activeBindingTriggerCallsGateExactlyOnce',
     'bindingGateCalledExactlyOnce',
     'integratedModelBindingPresent',
+    'integratedProxyCeilingBindingPresent',
+    'integratedMissingCalibrationCeilingRejected',
     'candidateGRollbackBindingPresent',
     'unknownModelBindingRejected',
     'exactModelBindingPresent',
