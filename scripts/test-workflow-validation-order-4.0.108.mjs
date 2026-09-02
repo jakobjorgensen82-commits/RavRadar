@@ -278,8 +278,12 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
   operationalPreflight.indexOf('npm run update:weather'),
   operationalPreflight.indexOf('name: Attach exact current provenance and rebuild the public projection'),
+  operationalPreflight.indexOf('npm run build:current-provenance'),
+  operationalPreflight.indexOf('node scripts/generate-public-conditions.mjs'),
   operationalPreflight.indexOf('name: Prove only 210 zones, 673 parts and all 118 forecast hours'),
   operationalPreflight.indexOf('node scripts/audit-ravscore-integrated-public-runtime.mjs'),
+  operationalPreflight.indexOf('name: Report only privacy-safe 118-hour evidence'),
+  operationalPreflight.indexOf("'.coverage.feggesundWave.targetPartCount"),
 ];
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {

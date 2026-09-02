@@ -258,6 +258,7 @@ assert.match(smoke, /getattr\(eccodes_module, "__version__", None\)/);
 assert.match(smoke, /getattr\(eccodes_module, "bindings_version", None\)/);
 assert.match(smoke, /invalid_versions/);
 assert.match(smoke, /f"\{name\}=\{value\}"/);
+assert.doesNotMatch(smoke, /", "\.join\(version_fields\)/);
 assert.match(build, /DMI bulk error/);
 assert.match(build, /DMI_BULK_FORCE_REFRESH/);
 assert.match(build, /actions\/cache\/restore@v6/);
