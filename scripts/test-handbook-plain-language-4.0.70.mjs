@@ -71,8 +71,8 @@ forbidMarkers('Den historiske 4.0.318-driftsevidens', operational318?.body || ''
   'bounded retry-rettelsens PR/commit er åbne',
 ]);
 
-const active419 = byId('integrated-cutover-data-and-calibration-closure-4-0-318');
-requireMarkers(`Den aktive ${pkg.version}-binding`, `${active419?.title || ''}\n${active419?.body || ''}`, [
+const activeBinding = byId('ravscore-final-bindings-4-0-320');
+requireMarkers(`Den aktive ${pkg.version}-binding`, `${activeBinding?.title || ''}\n${activeBinding?.body || ''}`, [
   `RavScore ${pkg.version}`,
   'Candidate G/4.0.316 er fortsat offentlig',
   `<code>modelContractSha256=${integratedReleaseBinding.modelContractSha256}</code>`,
@@ -501,13 +501,13 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'VERIFIED_ONLY',
   'syntheticSampleCount=0',
   '0 aktive zoner og 210 `UNAVAILABLE`',
-  'Aktuel status – RavScore 4.0.319 first-cutover-kandidat',
-  'Status for det aktuelle modelarbejde – lokal 4.0.319-cutoverkandidat, ikke produktion',
+  `Aktuel status – RavScore ${pkg.version} first-cutover-kandidat`,
+  `Status for det aktuelle modelarbejde – lokal ${pkg.version}-cutoverkandidat, ikke produktion`,
   'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0',
   'state `6.0.0`',
   'DEC-0110/DEC-0112',
   '`modelContractSha256` binder parameterkontrakten',
-  `4.0.319 er låst med ` + '`modelContractSha256=' + integratedReleaseBinding.modelContractSha256 + '`',
+  `${pkg.version} er låst med ` + '`modelContractSha256=' + integratedReleaseBinding.modelContractSha256 + '`',
   '`modelBundleSha256=' + integratedReleaseBinding.modelBundleSha256 + '` over ' + integratedBundleFileCount + ' kanonisk normaliserede transitive implementeringsfiler',
   'deklarerede forbrugere',
   '`ravscore-schema6-with-candidate-g-rollback-companion`',

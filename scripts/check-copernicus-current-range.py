@@ -44,8 +44,8 @@ def arguments() -> argparse.Namespace:
         "--require-source-stage-ready",
         action="store_true",
         help=(
-            "Fail unless either the pure Copernicus seal is complete or a current "
-            "target/DMI/shadow-bound source-stage READY sidecar exists"
+            "Fail unless a current target/DMI/shadow-bound source-stage READY "
+            "sidecar exists, including beside an operational COMPLETE seal"
         ),
     )
     parser.add_argument(
@@ -199,12 +199,43 @@ def inspect(
     })
     if any(collection.get(key) != value for key, value in expected.items()):
         raise RuntimeError("Private Copernicus seal does not match the exact target/DMI gap matrix")
+    source_stage_present = bool(
+        source_stage_path
+        and source_stage_path.exists()
+        and source_stage_path.stat().st_size > 0
+    )
+    validated_stage: dict[str, Any] | None = None
+    if operational_contract and source_stage_present:
+        try:
+            validated_stage = validate_source_stage(
+                json.loads(source_stage_path.read_text(encoding="utf-8")),
+                registry=registry,
+                shadow=cache,
+                target_identities=target_identities,
+                shadow_sha256=file_sha256(shadow_path),
+            )
+        except (KeyError, TypeError, ValueError, RuntimeError):
+            if not allow_nonmatching_seal:
+                raise
+    if validated_stage is not None and (
+        validated_stage.get("missingPairCount") != 0
+        or validated_stage.get("selectedRecordRefCount") != required_pair_count
+        or validated_stage.get("selectedRecordRefsSha256")
+            != collection.get("operationalRecordRefsSha256")
+    ):
+        if not allow_nonmatching_seal:
+            raise RuntimeError(
+                "Complete Copernicus seal has mismatching source-stage evidence"
+            )
+        validated_stage = None
     return {
         "cachePresent": True,
         "completeRangePresent": True,
         "operationalSealPresent": True,
-        "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
-        "sourceStageReady": True,
+        "sourceStagePresent": source_stage_present,
+        "sourceStageReady": (
+            validated_stage is not None if operational_contract else True
+        ),
         "productionReferenceAt": reference,
         "requiredPairCount": (
             collection["operationalRequiredPairCount"]

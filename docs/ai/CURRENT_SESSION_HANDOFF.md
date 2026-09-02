@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.320-bundles synkroniseret
+
+- Rollbackbundle blev genereret først i egen proces som `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer. Den integrerede bundle blev derefter genereret i en ny proces som `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 filer; alle otte bindingsforbrugere og release metadata er synkroniseret.
+- Kontrakthashene er fortsat integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og Candidate G `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`. Candidate G er stadig offentlig.
+- Den fokuserede lokale slutmatrix er grøn. Næste trin er sikker eksplicit staging uden `.cache`, commit/push og exact-head; derefter 673 × 118, Supabase før/efter, merge, frisk produktion og offentlig mobil/desktop.
+
+# NYESTE CHECKPOINT – 2026-09-03 – Om-side og hjemmeskærmswebapp
+
+- Ejerbeslutningen er implementeret lokalt i den eksisterende Om-side: DA/DE/EN viser iPhone/Safari- og Android/Chrome-trin. Manifestet har relative appgrænser, standalone og 192/512-pixels ikoner; forside/Om linker samme manifest og 180-pixels Apple-touch-ikon.
+- Ingen ny popup, runtime, model-, vejr-, state-, cache-, brugerdata-, geometri- eller punktadfærd er tilføjet. Den eksisterende målrettede Om-test er grøn. Offentlig installation og mobil/desktop-layout bevises sammen med 4.0.320 efter merge/deploy.
+
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug; fortsæt lean releasevej
 
 - Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` nåede grøn DMI-terminalgate og 7.889 eksakte operationelle Copernicus-restpar; gammel all-or-nothing shardpersistens fejlede ved timeout.
@@ -46,6 +57,15 @@
 - Lokale bundle-hashes er nu integrated `e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` og Candidate G-rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 - Candidate G er fortsat offentlig. Den opdaterede exact-head-, merge-, friske 4.0.319-produktions- og offentlige desktop-/mobilbrowserkæde udestår fortsat og må ikke overclaims.
 # RavRadar - aktuelt Codex-handoff
+
+## NYESTE DELTA – 2026-09-02 – kildelukning færdig; exact-time hold før push
+
+- Aktiv branch er `codex/ravscore-history-incomplete-cutover`, som bygger videre på baseline `1df200d9b56bb9ac4a7304ae3a07a2db8f45abf3` og indeholder den samlede 4.0.320-kandidat; `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er hentet og allerede indeholdt. Candidate G er stadig offentlig.
+- Main-run `33682062077` opdaterede og gemte DMI-bulk-/zone-/GRIB- og syvdages researchcache samt bevarede Copernicus-cachen. Det stoppede på den gamle mains exact-gap-selector, før Copernicus-supplement og 673 × 118; intet artifact, Pages eller deploy blev lavet.
+- Source-stage v2 lukker Baltic→AMM15 pr. eksakt par og kræver valgt-produktdomæne, komplet Baltic-forudsætning eller deterministisk `NOT_APPLICABLE`, registry/DMI/shadow/hashbinding og source-stage også ved komplet nonempty Copernicus-lukning. Måltests og uafhængigt review er grønne.
+- Regionalt hold er reduceret til state-only uden U/V, hastighed, retning, grid eller pil og bindes nu til eksakt del/tid/kildetid/alder. En sidste måltest fandt en gammel grov autorisation i history-missing-grenen; den lukkes fail-closed før push. Historik `target−48..−1` må aldrig få regionalt hold.
+- Supabase-pointerens CAS-fejl efterlader ikke længere et tredje nyoprettet orphanobjekt, når frisk readback beviser, at det hverken er current eller previous; enhver usikkerhed bevarer objektet og den oprindelige fejl. Testen er grøn.
+- `.cache` forbliver urørt og unstaged. Exact-time hold, slutbundles/bindinger og den fokuserede slutmatrix er lukket i det nyere checkpoint øverst; næste rækkefølge er commit/push → exact-head/673 × 118 → Supabase live før/efter → merge, frisk produktion og offentlig mobil/desktop.
 
 ## NYESTE DELTA – 2026-08-31
 
@@ -1174,3 +1194,9 @@ Run `32479158213` paa merge `34ed1dbc39c18aaefcb77aac89028ebb29c45468` sprang pr
 - Git Credential Manager er sat til den Windows-DPAPI-krypterede filstore med global `credential.credentialStore=dpapi`; et frisk noninteraktivt `git ls-remote` og PR #60-flowet bekræftede vedvarende adgang uden nyt browserlogin.
 - Brug den bundne Codex-Git under `.cache\codex-runtimes\codex-primary-runtime\dependencies\native\git\cmd\git.exe`, hvis appens PATH mister Git efter sleep eller genstart.
 - Start lange autonome forløb med en read-only `git ls-remote`- og GitHub-connectorpreflight. Ingen credentials, tokens eller storeindhold må logges eller committes.
+# NYESTE CHECKPOINT – 2026-09-02 – Supabase-kapacitet måles parallelt med 118-timers cache
+
+- Ejeren bad om, at Supabase-egress/lager afklares nu, mens 118-timers cachen fyldes. Den tunge progressive vejr-/GRIB-cache er GitHub Actions-data; Supabase bærer den beskyttede integrerede runtime med current/previous og checkpoint.
+- DEC-0114 kræver nu en privacy-sikker produktionsækvivalent størrelsesmåling i preflight, faktisk live forbrug før/efter én kontrolleret fuld produktion og mindst 30 procent fremskrevet reserve over billingperioden. Normal build budgetteres foreløbigt som mindst 2 × objektstørrelsen i uncached egress og rollbackvej som 3 ×.
+- Et ældre dashboardsnapshot på cirka 0,516/5 GB er kun historik, ikke live bevis. Cutover er blokeret ved ukendt eller utilstrækkelig kapacitet. Preflight må kun rapportere aggregerede byteantal og må aldrig uploade/logge privat runtime, poster, koordinater eller rå U/V.
+- Seneste sikre Copernicus-måling var 4.008 verificerede og 2.637 resterende operationelle exact-gap-par efter 1.200 sekunder. Fortsættelsesrun 33661411019 blev startet på exact-head-valideret branch; tidsestimater skal bindes til workflowets UTC-target og konverteres eksplicit til Europe/Copenhagen, aldrig udledes af chatklokkeslæt.

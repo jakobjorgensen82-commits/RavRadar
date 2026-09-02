@@ -17,6 +17,12 @@ import {
   deriveCurrentTransportEvidence,
 } from '../../js/core/ravscore-regime-memory.js';
 import {
+  canonicalRavScoreStateOnlyCurrentHold,
+} from '../../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  stateOnlyCurrentRowForbiddenFields,
+} from './live-current-pilot.mjs';
+import {
   RAVSCORE_COMPONENT_SCHEMA_ID,
   RAVSCORE_EXPLANATION_SCHEMA_ID,
   RAVSCORE_MODEL_BUNDLE_SHA256,
@@ -81,6 +87,15 @@ function assertStrictWeatherRows(hourly, part) {
       && (!legacyQuantizedSpeed(weather.currentSpeedMps)
         || !legacyQuantizedDirection(weather.currentDirectionDeg))) {
       throw new Error('Candidate G regional current must use the legacy-quantized speed and direction projection');
+    }
+    const stateOnlyHold = exactStateOnlyCurrentHoldForPart(
+      weather.currentStateOnlyHold,
+      weather.time,
+      part,
+    );
+    if (stateOnlyHold && stateOnlyCurrentRowForbiddenFields(weather)
+      .some(field => weather[field] !== null && weather[field] !== undefined)) {
+      throw new Error('Candidate G state-only current hold cannot contain a vector or projection');
     }
   }
 }
@@ -268,6 +283,16 @@ function exactRegionalHoldProvenance(value) {
     && inRange(value.distanceKm, 0, 15);
 }
 
+function exactStateOnlyCurrentHoldForPart(value, rowTime, part) {
+  const marker = canonicalRavScoreStateOnlyCurrentHold(value, rowTime);
+  if (marker === null) return null;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId ?? null;
+  if (marker.partId !== part?.partId || marker.parentZoneId !== parentZoneId) {
+    throw new Error('Candidate G state-only current hold has a different coastal-part context');
+  }
+  return marker;
+}
+
 const REGIONAL_REFERENCE_FIELDS = Object.freeze([
   'time',
   'currentSpeedMps',
@@ -358,24 +383,33 @@ function buildSourceBoundCandidateGStateSeries(samples, {
       part,
     );
   }
-  let holdAuthorized = Boolean(nativeCadenceReferenceSample)
-    && !continuation.transportEvidence.some(item => item.strength === null);
+  let holdAuthorized = Boolean(nativeCadenceReferenceSample);
   const rows = [];
   let initialStateAccepted = null;
   let initialStateResetReason = null;
   for (let index = 0; index < samples.length; index += 1) {
     const sample = samples[index];
-    if (sample.currentVerified === true) {
-      holdAuthorized = exactRegionalHoldProvenance(sample.currentProvenance)
-        && !continuation?.transportEvidence?.some(item => item.strength === null);
+    const explicitStateOnlyHold = exactStateOnlyCurrentHoldForPart(
+      sample.currentStateOnlyHold,
+      sample.time,
+      part,
+    );
+    if (sample.currentVerified === true && explicitStateOnlyHold !== null) {
+      throw new Error('Candidate G current cannot be both verified and state-only held');
     }
-    const holdHours = sample.currentVerified === true || !holdAuthorized
-      ? 0 : nativeCadenceHoldHours;
+    const exactHoldAuthorized = sample.currentVerified !== true
+      && explicitStateOnlyHold !== null
+      && holdAuthorized
+      && continuation
+      && Date.parse(continuation.transportReferenceAt)
+        === Date.parse(explicitStateOnlyHold.sourceValidTime)
+      && explicitStateOnlyHold.holdAgeHours <= nativeCadenceHoldHours;
+    const holdHours = exactHoldAuthorized ? explicitStateOnlyHold.holdAgeHours : 0;
     const result = buildCandidateGDerivedStateSeries([sample], {
       stateKey,
       initialState: continuation,
       nativeCadenceHoldHours: holdHours,
-      nativeCadenceReferenceSample: index === 0 && holdAuthorized
+      nativeCadenceReferenceSample: index === 0 && exactHoldAuthorized
         ? nativeCadenceReferenceSample : null,
     });
     if (index === 0) {
@@ -386,8 +420,20 @@ function buildSourceBoundCandidateGStateSeries(samples, {
     if (!row) throw new Error('Candidate G source-bound state row is missing');
     rows.push(row);
     continuation = result.continuationState;
-    if (row.currentTransition !== 'NATIVE_CADENCE_HOLD'
-      && sample.currentVerified !== true) holdAuthorized = false;
+    if (sample.currentVerified === true) {
+      const sampleTime = new Date(sample.time).toISOString();
+      const lastEvidence = continuation?.transportEvidence?.at(-1) ?? null;
+      // A new exact regional source row may legitimately restart the bounded
+      // verified suffix after an earlier unknown. Authorize only after the
+      // oracle has actually accepted that direct row and removed the broken
+      // prefix; the old unknown can therefore neither poison nor be skipped.
+      holdAuthorized = exactRegionalHoldProvenance(sample.currentProvenance)
+        && continuation?.transportReferenceAt === sampleTime
+        && lastEvidence?.time === sampleTime
+        && finite(lastEvidence?.strength);
+    } else if (row.currentTransition !== 'NATIVE_CADENCE_HOLD') {
+      holdAuthorized = false;
+    }
   }
   return {
     schemaVersion: CANDIDATE_G_STATE_SCHEMA_VERSION,
@@ -574,7 +620,7 @@ export function buildCandidateGRollbackPartScoreSeries({
     throw new Error('Candidate G rollback adapter requires one part and hourly rows');
   }
   assertStrictWeatherRows(hourly, part);
-  if (!inRange(nativeCadenceHoldHours, 0, Number.POSITIVE_INFINITY)) {
+  if (!inRange(nativeCadenceHoldHours, 0, 3)) {
     throw new Error('Candidate G rollback native cadence hold must be a strict non-negative number');
   }
   const stateKey = candidateGStateKey(part);
@@ -595,6 +641,11 @@ export function buildCandidateGRollbackPartScoreSeries({
       && finite(weather.currentDirectionDeg)
       && weather.currentProvenance?.status === 'verified',
     currentProvenance: weather.currentProvenance ?? null,
+    currentStateOnlyHold: exactStateOnlyCurrentHoldForPart(
+      weather.currentStateOnlyHold,
+      weather.time,
+      part,
+    ),
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
   })), {
@@ -668,7 +719,11 @@ export function buildCandidateGRollbackPartScoreSeries({
               transition: derivedState.currentTransition,
               evaluatedAt: weather.time,
               referenceAt: derivedState.transportReferenceAt,
-              maximumHoldHours: nativeCadenceHoldHours,
+              maximumHoldHours: exactStateOnlyCurrentHoldForPart(
+                weather.currentStateOnlyHold,
+                weather.time,
+                part,
+              )?.holdAgeHours ?? 0,
               transportMemoryReady: derivedState.transportMemoryReady,
               transportMemoryStatus: derivedState.transportMemoryStatus,
             }

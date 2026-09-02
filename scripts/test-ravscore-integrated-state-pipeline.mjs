@@ -708,6 +708,30 @@ const regionalAuthorization = {
   collection: 'dkss_lf',
   distanceKm: 6.2,
 };
+const regionalHoldSha256 = `sha256:${'b'.repeat(64)}`;
+const regionalStateOnlyHold = (validHour, sourceHour = 0) => ({
+  contractId: 'regional-dmi-exact-state-only-hold-v1',
+  status: 'verified-derived-state-only',
+  classification: 'REGIONAL_DMI_DERIVED_HOLD',
+  stateOnly: true,
+  partId: 'TEST-PART',
+  parentZoneId: 'TEST-ZONE',
+  targetIdentityFingerprint: samplingContextKey,
+  validTime: time(validHour),
+  sourceValidTime: time(sourceHour),
+  holdAgeHours: validHour - sourceHour,
+  provider: 'dmi',
+  sourceClass: regionalAuthorization.sourceClass,
+  source: regionalAuthorization.source,
+  collection: regionalAuthorization.collection,
+  modelRun: time(-48),
+  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureId: regionalHoldSha256,
+  closureAssignmentSha256: regionalHoldSha256,
+  sourceAssetSha256: regionalHoldSha256,
+  sourceProofSha256: regionalHoldSha256,
+  vectorCommitmentSha256: regionalHoldSha256,
+});
 const regionalCurrentSample = {
   ...currentSample,
   currentProvenance: { status: 'verified', ...regionalAuthorization },
@@ -722,7 +746,10 @@ const regionalMigrated = buildIntegratedRavScoreStateSeries([regionalCurrentSamp
   },
   candidateGWaveApproachBootstrap,
 });
-const nativeHold = buildIntegratedRavScoreStateSeries([missingCurrentAt(2)], {
+const nativeHold = buildIntegratedRavScoreStateSeries([{
+  ...missingCurrentAt(2),
+  currentStateOnlyHold: regionalStateOnlyHold(2),
+}], {
   samplingContextKey,
   initialState: regionalMigrated.continuationState,
   nativeCadenceHoldHours: 3,
@@ -780,7 +807,10 @@ assert.throws(() => buildIntegratedRavScoreStateSeries([], {
 }), /signed current evidence/,
 'removing a persisted native-hold interval proof must fail closed');
 
-const continuedFromNativeHold = buildIntegratedRavScoreStateSeries([missingCurrentAt(3)], {
+const continuedFromNativeHold = buildIntegratedRavScoreStateSeries([{
+  ...missingCurrentAt(3),
+  currentStateOnlyHold: regionalStateOnlyHold(3),
+}], {
   samplingContextKey,
   initialState: nativeHold.continuationState,
   nativeCadenceHoldHours: 3,
@@ -789,7 +819,7 @@ assert.equal(continuedFromNativeHold.initialStateAccepted, true);
 assert.equal(continuedFromNativeHold.rows[0].currentMemoryReady, true);
 assert.equal(continuedFromNativeHold.rows[0].currentMemoryStatus, 'READY_NATIVE_HOLD');
 assert.equal(continuedFromNativeHold.rows[0].currentReferenceAt, time(0),
-  'source-bound native hold must continue across independent runs without inventing hours');
+  'source-bound native hold must continue only with its own exact-time marker');
 const expiredNativeHold = buildIntegratedRavScoreStateSeries([missingCurrentAt(4)], {
   samplingContextKey,
   initialState: continuedFromNativeHold.continuationState,

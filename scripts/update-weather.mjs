@@ -1951,7 +1951,7 @@ function scoreCoastalPartsRuntime(
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
         const endMs = Date.parse(partForecastStartAt)
-          + (DMI_FORECAST_HOURS - 1) * 3_600_000;
+          + (RAVSCORE_PUBLIC_FORECAST_HOURS - 1) * 3_600_000;
         for (const hour of hourly.filter(candidate => (
           Date.parse(candidate.time) >= Date.parse(partForecastStartAt)
           && Date.parse(candidate.time) <= endMs
@@ -2063,17 +2063,17 @@ function scoreCoastalPartsRuntime(
         recoverySources,
         publicHourly: hourly,
         nativeCadenceHoldHours,
-        resolveNativeCadenceReferenceSample: replayStartTime =>
+        resolveNativeCadenceReferenceSample: sourceValidTime =>
           latestVerifiedNativeCadenceSampleForPart(
             { ...part, zoneId },
             liveCurrentPilot,
-            replayStartTime,
+            sourceValidTime,
           ),
-        resolveCandidateGNativeCadenceReferenceSample: replayStartTime =>
+        resolveCandidateGNativeCadenceReferenceSample: sourceValidTime =>
           latestVerifiedNativeCadenceSampleForPart(
             { ...part, zoneId },
             liveCurrentPilot,
-            replayStartTime,
+            sourceValidTime,
             { projection: 'candidate-g-legacy-quantized' },
           ),
       });
@@ -2227,7 +2227,7 @@ function scoreCoastalPartsRuntime(
   };
   const feggesundWaveCoverage = buildFeggesundWaveCoverageProof({
     forecastStartAt: partForecastStartAt,
-    forecastHours: DMI_FORECAST_HOURS,
+    forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,
     partIds: (contract?.zones?.[FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID] ?? [])
       .map(part => part?.partId)
       .filter(Boolean),

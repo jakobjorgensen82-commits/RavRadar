@@ -722,7 +722,19 @@ for(const marker of ['atomic_write_shadow_checkpoint(','remainingOperationalPair
 for(const marker of ['collections=[]','require_collection=False']){
   ok(copernicusCurrentLib.includes(marker),`Copernicus-cachelageret mangler uforseglet partial state: ${marker}`);
 }
-for(const marker of ['Save progressive private Copernicus cache after interrupted fill',"steps.copernicus-fill.outcome == 'failure'",'copernicus-current-shadow-v1-production-progress-']){
+for(const marker of [
+  'Save non-cancelled private Copernicus source-stage progress',
+  "steps.copernicus-fill.outcome != 'cancelled'",
+  "steps.copernicus-fill.outcome != 'skipped'",
+  '.cache/copernicus-current-shadow.json',
+  '.cache/copernicus-current-source-stage.json',
+  'copernicus-current-shadow-v1-production-progress-',
+  'Remove only invalid production Copernicus source disposition',
+  'rm -f .cache/copernicus-current-source-stage.json',
+  'Require completed Copernicus source stage before combined current closure',
+  '--require-source-stage-ready',
+  'Save validated private Copernicus progress before downstream closure',
+]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler privat Copernicus-progressave: ${marker}`);
 }
 for(const marker of [
@@ -1447,6 +1459,12 @@ for(const [role,source] of Object.entries(productionWorkflows)){
 }
 const manifest=await readJson('manifest.webmanifest',{});
 ok(String(manifest.start_url||'').startsWith('.'),'Manifest start_url skal være relativ for domæneskift');
+ok(manifest.display==='standalone'&&manifest.scope==='.'+'/'&&manifest.id==='.'+'/',
+'Manifestet skal installere RavRadar som en afgrænset standalone-webapp');
+ok(Array.isArray(manifest.icons)
+  && manifest.icons.some(icon=>icon?.src==='assets/icons/ravradar-192.png'&&icon?.sizes==='192x192'&&icon?.type==='image/png')
+  && manifest.icons.some(icon=>icon?.src==='assets/icons/ravradar-512.png'&&icon?.sizes==='512x512'&&icon?.type==='image/png'),
+'Manifestet mangler de installerbare 192- og 512-pixels appikoner');
 ok(!await exists('CNAME'),'CNAME må først aktiveres, når DNS og Supabase redirects er klar');
 const decision=await read('docs/rdks/10_DECISIONS/DEC-0013-RELEASE-GOVERNANCE.md');
 ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance mangler');

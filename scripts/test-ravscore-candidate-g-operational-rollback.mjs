@@ -41,6 +41,7 @@ const baseMs = Date.parse('2026-08-29T12:00:00.000Z');
 const time = offset => new Date(baseMs + offset * HOUR_MS).toISOString();
 const part = {
   partId: 'ROLLBACK-SYNTHETIC-PART-1',
+  zoneId: 'ROLLBACK-SYNTHETIC-ZONE-1',
   waterPoint: [8, 55],
   onshoreDirectionDeg: 90,
 };
@@ -249,6 +250,62 @@ const missingWeather = offset => ({
   currentDirectionDeg: null,
   currentProvenance: { status: 'unverified', reason: 'NO_EXACT_CURRENT' },
 });
+const HOLD_SHA = `sha256:${'a'.repeat(64)}`;
+const stateOnlyCurrentHold = (validOffset, sourceOffset) => ({
+  contractId: 'regional-dmi-exact-state-only-hold-v1',
+  status: 'verified-derived-state-only',
+  classification: 'REGIONAL_DMI_DERIVED_HOLD',
+  stateOnly: true,
+  partId: part.partId,
+  parentZoneId: part.zoneId,
+  targetIdentityFingerprint: HOLD_SHA,
+  validTime: time(validOffset),
+  sourceValidTime: time(sourceOffset),
+  holdAgeHours: validOffset - sourceOffset,
+  provider: 'dmi',
+  sourceClass: regionalProvenance.sourceClass,
+  source: regionalProvenance.source,
+  collection: regionalProvenance.collection,
+  modelRun: time(-60),
+  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureId: HOLD_SHA,
+  closureAssignmentSha256: HOLD_SHA,
+  sourceAssetSha256: HOLD_SHA,
+  sourceProofSha256: HOLD_SHA,
+  vectorCommitmentSha256: HOLD_SHA,
+});
+const heldWeather = (validOffset, sourceOffset) => {
+  const {
+    currentUMps: _discardedU,
+    currentVMps: _discardedV,
+    currentSpeedMps: _discardedSpeed,
+    currentDirectionDeg: _discardedDirection,
+    ...stateOnlyWeather
+  } = missingWeather(validOffset);
+  return {
+    ...stateOnlyWeather,
+    currentStateOnlyHold: stateOnlyCurrentHold(validOffset, sourceOffset),
+  };
+};
+for (const [field, value] of [
+  ['rawU', 0.1],
+  ['eastwardCurrent', 0.1],
+  ['currentAlignment', 0.5],
+  ['coastNormalSpeedMps', 0.1],
+  ['currentVerified', false],
+  ['gridCoordinates', [8, 55]],
+  ['rawVector', [0.1, 0.2]],
+  ['flowArrow', { directionDeg: 90 }],
+]) {
+  assert.throws(() => buildCandidateGRollbackPartScoreSeries({
+    part,
+    zone,
+    hourly: [{ ...heldWeather(1, 0), [field]: value }],
+    legacyCandidateGMigrationState: legacyState,
+    nativeCadenceHoldHours: 3,
+  }), /cannot contain a vector or projection/,
+  `Candidate G must reject state-only hold field ${field}`);
+}
 const transition = (run, index = -1) =>
   run.scores.at(index).candidateG.publicContext.currentTransition;
 const stateTransition = (run, index = -1) =>
@@ -310,7 +367,7 @@ const regionalReference = (speed = 0.03) => ({
 const phase1 = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: phase0Low.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: regionalReference(0.03),
@@ -318,7 +375,7 @@ const phase1 = buildCandidateGRollbackPartScoreSeries({
 const phase2 = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(3)],
+  hourly: [heldWeather(3, 1)],
   previousCandidateGContinuation: phase1.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: regionalReference(0.03),
@@ -336,7 +393,7 @@ assert.equal(phase2.candidateGState.continuationState.transportReferenceAt, time
 const phase1High = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: phase0High.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: regionalReference(0.04),
@@ -349,7 +406,7 @@ for (const [exactSpeed, continuation] of [
   assert.throws(() => buildCandidateGRollbackPartScoreSeries({
     part,
     zone,
-    hourly: [missingWeather(2)],
+    hourly: [heldWeather(2, 1)],
     previousCandidateGContinuation: continuation,
     nativeCadenceHoldHours: 3,
     nativeCadenceReferenceSample: regionalReference(exactSpeed),
@@ -359,7 +416,7 @@ for (const [exactSpeed, continuation] of [
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: phase0Low.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -371,7 +428,7 @@ assert.throws(() => buildCandidateGRollbackPartScoreSeries({
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: phase0Low.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -381,14 +438,24 @@ assert.throws(() => buildCandidateGRollbackPartScoreSeries({
 }), /lacks exact regional source authorization/,
 'the bounded Candidate reference must reject hidden raw-vector fields');
 
-const regionalThenMissing = buildCandidateGRollbackPartScoreSeries({
+const regionalThenExactHold = buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [regionalWeather(1), heldWeather(2, 1)],
+  legacyCandidateGMigrationState: legacyState,
+  nativeCadenceHoldHours: 3,
+});
+assert.equal(transition(regionalThenExactHold), 'NATIVE_CADENCE_HOLD');
+const regionalThenUnmarked = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
   hourly: [regionalWeather(1), missingWeather(2)],
   legacyCandidateGMigrationState: legacyState,
   nativeCadenceHoldHours: 3,
+  scoreStartAt: time(3),
 });
-assert.equal(transition(regionalThenMissing), 'NATIVE_CADENCE_HOLD');
+assert.equal(stateTransition(regionalThenUnmarked), 'UNVERIFIED_PAUSE',
+  'a neighbouring missing hour without its own closure marker must not inherit hold');
 
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
@@ -461,7 +528,7 @@ const warmRegionalReference = {
 const warmRegionalHold = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: regionalSeed.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: warmRegionalReference,
@@ -470,7 +537,7 @@ assert.equal(transition(warmRegionalHold), 'NATIVE_CADENCE_HOLD');
 const warmWithoutSourceAuthorization = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: regionalSeed.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   scoreStartAt: time(3),
@@ -480,7 +547,7 @@ assert.equal(stateTransition(warmWithoutSourceAuthorization), 'UNVERIFIED_PAUSE'
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: regionalSeed.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -497,7 +564,7 @@ assert.throws(() => buildCandidateGRollbackPartScoreSeries({
 assert.throws(() => buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(2)],
+  hourly: [heldWeather(2, 1)],
   previousCandidateGContinuation: direct.candidateGState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -513,10 +580,10 @@ const ambiguousLegacyState = {
     ? { ...item, strength: null }
     : item),
 };
-const ambiguousHold = buildCandidateGRollbackPartScoreSeries({
+const historyIncompleteExactHold = buildCandidateGRollbackPartScoreSeries({
   part,
   zone,
-  hourly: [missingWeather(1)],
+  hourly: [heldWeather(1, 0)],
   previousCandidateGContinuation: ambiguousLegacyState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -525,9 +592,40 @@ const ambiguousHold = buildCandidateGRollbackPartScoreSeries({
   },
   scoreStartAt: time(2),
 });
-assert.equal(stateTransition(ambiguousHold), 'UNVERIFIED_PAUSE',
-  'ambiguous legacy null evidence must not be retrospectively rewritten as a cadence hold');
-assert.equal(ambiguousHold.candidateGState.continuationState.transportEvidence
+assert.equal(stateTransition(historyIncompleteExactHold), 'NATIVE_CADENCE_HOLD',
+  'an exact operational marker may hold its own target despite older incomplete history');
+assert.equal(historyIncompleteExactHold.candidateGState.continuationState.transportEvidence
   .some(item => item.strength === null), true);
+
+const restartedRegionalHold = buildCandidateGRollbackPartScoreSeries({
+  part,
+  zone,
+  hourly: [
+    regionalWeather(1),
+    missingWeather(2),
+    heldWeather(3, 1),
+    regionalWeather(4),
+    heldWeather(5, 4),
+  ],
+  legacyCandidateGMigrationState: legacyState,
+  nativeCadenceHoldHours: 3,
+  scoreStartAt: time(6),
+});
+assert.equal(stateTransition(restartedRegionalHold, -4), 'UNVERIFIED_PAUSE',
+  'an unmarked gap must immediately revoke Candidate G hold authorization');
+assert.equal(stateTransition(restartedRegionalHold, -3), 'UNVERIFIED_PAUSE',
+  'a later marker may not skip across the earlier unmarked gap');
+assert.equal(stateTransition(restartedRegionalHold, -2), 'BOUNDED_MEMORY_WARMUP',
+  'a new direct regional row must restart a measured-only bounded suffix');
+assert.equal(stateTransition(restartedRegionalHold), 'NATIVE_CADENCE_HOLD',
+  'the restarted direct regional row must authorize its own exact next hold');
+assert.equal(
+  restartedRegionalHold.candidateGState.continuationState.transportReferenceAt,
+  time(4),
+  'the restarted hold must reference only the new direct regional source time',
+);
+assert.equal(restartedRegionalHold.candidateGState.continuationState.transportEvidence
+  .some(item => item.strength === null), true,
+  'the exact hold must not erase the earlier historical unknown from readiness');
 
 console.log('Candidate G operational rollback oracle, separate continuation, source hold, binding and privacy: bestået.');

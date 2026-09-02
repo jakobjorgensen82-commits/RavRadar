@@ -43,6 +43,30 @@ const part = {
   onshoreDirectionDeg: 90,
 };
 const zone = { id: 'SYNTHETIC-ZONE-1', onshoreDirectionDeg: 90 };
+const HOLD_SHA = `sha256:${'a'.repeat(64)}`;
+const stateOnlyCurrentHold = (validOffset, sourceOffset) => ({
+  contractId: 'regional-dmi-exact-state-only-hold-v1',
+  status: 'verified-derived-state-only',
+  classification: 'REGIONAL_DMI_DERIVED_HOLD',
+  stateOnly: true,
+  partId: part.partId,
+  parentZoneId: zone.id,
+  targetIdentityFingerprint: HOLD_SHA,
+  validTime: time(validOffset),
+  sourceValidTime: time(sourceOffset),
+  holdAgeHours: validOffset - sourceOffset,
+  provider: 'dmi',
+  sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy',
+  collection: 'dkss_lf',
+  modelRun: time(-48),
+  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureId: HOLD_SHA,
+  closureAssignmentSha256: HOLD_SHA,
+  sourceAssetSha256: HOLD_SHA,
+  sourceProofSha256: HOLD_SHA,
+  vectorCommitmentSha256: HOLD_SHA,
+});
 assert.throws(
   () => compactIntegratedRavScoreMode({ available: false, score: null }),
   /model binding is missing/,
@@ -282,15 +306,27 @@ const regionalSeed = buildIntegratedPartScoreSeries({
 const regionalHold = buildIntegratedPartScoreSeries({
   part,
   zone,
-  hourly: [{
-    ...weather,
-    time: time(1),
-    currentSpeedMps: null,
-    currentDirectionDeg: null,
-    currentUMps: null,
-    currentVMps: null,
-    currentProvenance: null,
-  }],
+  hourly: [
+    {
+      ...weather,
+      time: time(1),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+      currentStateOnlyHold: stateOnlyCurrentHold(1, 0),
+    },
+    {
+      ...weather,
+      time: time(2),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+    },
+  ],
   initialState: regionalSeed.ravScoreState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -302,6 +338,35 @@ const regionalHold = buildIntegratedPartScoreSeries({
   },
 });
 assert.equal(regionalHold.ravScoreState.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(regionalHold.ravScoreState.rows[1].currentTransition, 'UNVERIFIED_MISSING',
+  'an adjacent missing forecast hour without its own closure marker must not inherit a global hold');
+assert.equal(regionalHold.ravScoreState.rows[1].currentDirectInputAvailable, false);
+for (const [field, value] of [
+  ['rawU', 0.1],
+  ['currentVerified', false],
+  ['currentGridCell', { id: 'stale' }],
+  ['coastNormalSpeedMps', 0.1],
+  ['flowArrow', { directionDeg: 90 }],
+]) {
+  assert.throws(() => buildIntegratedPartScoreSeries({
+    part,
+    zone,
+    hourly: [{
+      ...weather,
+      time: time(1),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+      currentStateOnlyHold: stateOnlyCurrentHold(1, 0),
+      [field]: value,
+    }],
+    initialState: regionalSeed.ravScoreState.continuationState,
+    nativeCadenceHoldHours: 3,
+  }), /not bound to the exact part\/hour/,
+  `integrated runtime must reject state-only hold field ${field}`);
+}
 const expectedRegionalReferenceKeys = [
   'collection',
   'distanceKm',

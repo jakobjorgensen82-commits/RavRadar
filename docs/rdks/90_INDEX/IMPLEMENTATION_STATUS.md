@@ -1,4 +1,25 @@
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.320 slutbinding
+
+- [x] Regenerér Candidate G-rollback i egen proces: kontrakt `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`, bundle `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d`, 56 filer.
+- [x] Regenerér derefter integrated i ny proces: kontrakt `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`, bundle `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3`, 44 filer/8 forbrugere.
+- [x] Synkronisér modelbinding og release metadata til alle eksisterende forbrugere.
+- [x] Bestå den fokuserede lokale Python-/Node-/workflow-/PWA-/versions-/RDKS-slutmatrix uden at lempe runtimegater.
+- [ ] Commit/push og exact-head; derefter 673 × 118, Supabase-kapacitet, merge, frisk produktion og offentlig mobil/desktop.
+
+# NYESTE CHECKPOINT – 2026-09-03 – hjemmeskærmswebapp og Om-vejledning
+
+- [x] Bevar den eksisterende service worker og standalone-model; tilføj samme relative manifestidentitet til forside og Om-side uden popup eller separat runtime.
+- [x] Lever 192/512-pixels manifestikoner og 180-pixels Apple-touch-ikon med sikker maskeringsmargen.
+- [x] Læg de korte iPhone/Safari- og Android/Chrome-trin direkte på den eksisterende **Om RavRadar**-side på DA/DE/EN og oplys, at friske prognoser kræver internet.
+- [x] Bestå den målrettede Om/PWA-test med tekst-, oversættelses-, manifest-, link- og PNG-dimensionskontrol.
+- [ ] Bekræft installation/åbning på offentlig 4.0.320 i mobilbrowser og kontroller desktoplayout som del af den samlede slutverifikation.
+
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-performance, parser og atomisk checkpoint
+
+- [x] Forkast den foreløbige præ-Copernicus-partition, som kunne ændre kildeordenen og tælle regionale par uden dataevidens.
+- [x] Bevar alle eksakte DMI-restpar i Baltic→AMM15-køen; source-stage v2 attesterer valgt-produktdomæne og samme-par Baltic-forudsætning før AMM15 samt dokumenteret udtømning før regional fallback.
+- [x] Bind præcis otte fallback-berettigede Limfjordsdele til policy, låst target/reference, kildeasset og provenance; klassificér kun bevist regional native eller kausalt 1–3 timers state-only hold med eksakt del/forecasttime/kildetime/alder, uden vektor/pil, nabotime- eller historikautorisation.
+- [ ] Luk samlet 673 × 118 med præcis én kildeklasse pr. celle, ingen overlap og ingen missing i frisk preflight. Target−48..target−1 er allerede lokalt bundet som særskilt rådgivende historik af verificerede, faktisk hentede kildefelter uden syntese; Copernicus-bidrag er fortidige modelfelter, ikke målinger. Ufuldstændig historik bevarer forecast.
 
 - [x] Bestå exact-head `33643225606`; bevis i `33645673684`, at den private partial cache gendannes, og afgræns derefter den fejlagtige complete-seal-inspektion før fill.
 - [x] Tillad fuldt valideret uforseglet partial state alene i initial `--allow-nonmatching-seal`-inspektion; bevar strict/terminal collectionseal fail-closed og bestå den målrettede trevejsregression.
@@ -3002,3 +3023,11 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [x] PR #60 exact-head-gate `32566573875` på `a13e5387`, merge `41e01e2d` og exact-commit-produktion `32566631701` er grønne.
 - [x] GitHub Pages deployment `6035679906` er `success`; live 4.0.252/datasæt `rr-20260822100745-210` har 210 zoner og 673 kystdele med matchende startpakkehash.
 - Historisk status ved dette checkpoint: Candidate G var diagnostic-only, og 25/40/35 var aktiv. DEC-0060/4.0.261 erstatter kun aktiveringsstatussen; beskyttede data, geometri og land-/vandpunkter er fortsat uændrede.
+# NYESTE CHECKPOINT – 2026-09-02 – Supabase-kapacitetsgate før state-6-cutover
+
+- [x] Fastslå arkitekturen: tung vejr-/GRIB-cache er GitHub Actions; Supabase rummer beskyttet integreret runtime, current/previous og checkpoint.
+- [x] Bind foreløbigt egressbudget til mindst 2 × komprimeret objekt pr. normal fuld produktion og 3 × ved rollback-/previous-vej.
+- [ ] Mål produktionsækvivalent komprimeret objekt, rå bundle og checkpoint i isoleret preflight med kun aggregerede byteantal og uden privat artifact/payload.
+- [ ] Mål live Supabase-forbrug før/efter én kontrolleret fuld produktion, fastslå virkelig fuld buildfrekvens og dokumentér mindst 30 procent reserve over hele billingperioden.
+- [ ] Hvis budgettet ikke består: fjern unødvendig normal full-object-restore/readback eller formindsk/opdel bundlen uden at svække rollback, checkpoint, hashes, privacy eller recovery.
+- [ ] Hold integrated cutover blokeret, indtil alle ovenstående målinger og eventuel remediation er grønne.

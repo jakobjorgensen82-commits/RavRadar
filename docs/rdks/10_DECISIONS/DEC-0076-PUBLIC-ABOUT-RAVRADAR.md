@@ -23,6 +23,7 @@ RavRadar skal have en tydelig offentlig afsenderside, så brugeren kan forstå, 
 7. Ejerens to billeder leveres som komprimerede, responsive billedvarianter. Orienteringen skal være fysisk indarbejdet i de leverede pixels og må ikke afhænge af browserens EXIF-fortolkning. Siden skal fungere uden vandret rulning på mobil og bruge et luftigt tospaltet layout på større skærme.
 8. Siden og dens lokale aktiver indgår i service-workerens appskal, så den følger samme versionsstyrede cache som resten af den offentlige app.
 9. Ejeren giver stående godkendelse til, at de to beskyttede geodatafilers topversionsfelt automatisk følger enhver fremtidig reel RavRadar-release. Godkendelsen gælder kun, når en præcis diffkontrol beviser, at `data/kystdata.json` og `data/zones.geojson` ikke ændrer andet end versionsfeltet. Enhver øvrig geodataændring er fortsat uden for denne godkendelse og skal stoppe arbejdsforløbet.
+10. **Udvidelse i 4.0.320:** Den eksisterende Om-side skal indeholde en kort trin-for-trin-vejledning til at lægge RavRadar på hjemmeskærmen fra iPhone/Safari og Android/Chrome på DA/DE/EN. Manifestet skal have gyldige 192/512-pixels ikoner, og iPhone skal have et 180-pixels Apple-touch-ikon. Forsiden og Om-siden skal pege på samme relative manifest/appidentitet, så installation starter på RavRadars forside. Dette er en installerbar webapp, ikke en App Store-/Play Store-app.
 
 ## Kontrol
 
@@ -31,6 +32,7 @@ RavRadar skal have en tydelig offentlig afsenderside, så brugeren kan forstå, 
 - Tekstkontrakten skal indeholde ejer, formål, begrænsning, scorekontekst, kompleksitet og frivillig støtte.
 - Responsive brudpunkter, billedvarianternes faktiske orientering og dimensioner samt fravær af vandret overflow skal kontrolleres målrettet.
 - Pages- og service-worker-kontrakter skal indeholde siden og alle nødvendige aktiver.
+- Den målrettede Om-test skal kontrollere installationsvejledning på DA/DE/EN, standalone/start/scope, manifest-/Apple-links og de faktiske 192/512/180-pixels PNG-dimensioner.
 - Hver release skal kontrollere de to beskyttede geodatafiler særskilt og afvise ændringen, hvis diffen indeholder andet end det forventede versionsfelt.
 - Offentlig efterkontrol skal bekræfte den mergede version på både bred og smal visning.
 

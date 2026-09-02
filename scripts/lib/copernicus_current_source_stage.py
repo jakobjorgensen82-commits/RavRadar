@@ -31,10 +31,14 @@ from .copernicus_current import (
 from .copernicus_target_identity import target_fingerprint
 
 
-SOURCE_STAGE_SCHEMA_VERSION = 1
+SOURCE_STAGE_SCHEMA_VERSION = 2
 SOURCE_STAGE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_SOURCE_STAGE"
-SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v1"
+SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v2"
 SOURCE_STAGE_STATUS = "READY"
+SOURCE_ORDER_SELECTED_SOURCE = "copernicus-nws-amm15"
+SOURCE_ORDER_PREREQUISITE_SOURCE = "copernicus-baltic-nemo"
+SOURCE_ORDER_ATTEMPTED_EXHAUSTED = "ATTEMPTED_EXHAUSTED"
+SOURCE_ORDER_NOT_APPLICABLE = "NOT_APPLICABLE"
 SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
 SPATIAL_SHARD_LATITUDE_DEGREES = 0.75
 SPATIAL_SHARD_MAX_TARGETS = 24
@@ -90,10 +94,16 @@ SOURCE_STAGE_FIELDS = {
     "selectedRecordRefCount", "selectedRecordRefsSha256",
     "missingPairs", "missingPairCount", "missingPairsSha256",
     "attempts", "attemptsSha256", "products", "productsSha256",
+    "sourceOrderEvidence", "sourceOrderEvidenceCount",
+    "sourceOrderEvidenceSha256",
     "shadowSha256", "scoreImpact", "publicRuntime",
     "coordinatesIncluded", "rawVectorsIncluded",
 }
 PAIR_FIELDS = {"partId", "validTime"}
+SOURCE_ORDER_EVIDENCE_FIELDS = {
+    "partId", "validTime", "selectedSource", "prerequisiteSource",
+    "disposition", "attemptId", "evidenceSha256",
+}
 
 
 class CopernicusSourceStageError(ValueError):
@@ -328,6 +338,82 @@ def _derive_products(
     return rows
 
 
+def _source_order_evidence(
+    record_refs: list[dict[str, Any]],
+    targets: list[dict[str, Any]],
+    attempts: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Prove the Baltic prerequisite for every selected AMM15 pair.
+
+    An in-domain pair needs one completed Baltic attempt and no selected
+    Baltic record.  An out-of-domain pair gets an explicit NOT_APPLICABLE
+    disposition derived only from the pinned Baltic domain; a timeout or
+    failed request can never produce that disposition.
+    """
+    target_by_id = {str(row["partId"]): row for row in targets}
+    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
+    baltic = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+    )
+    attempt_by_pair: dict[tuple[str, str], str] = {}
+    for attempt in attempts:
+        if attempt.get("source") != SOURCE_ORDER_PREREQUISITE_SOURCE:
+            continue
+        for pair in attempt.get("requestedPairs") or []:
+            key = (str(pair.get("partId") or ""), str(pair.get("validTime") or ""))
+            if key in attempt_by_pair:
+                raise CopernicusSourceStageError(
+                    "A Baltic pair has more than one prerequisite attempt"
+                )
+            attempt_by_pair[key] = str(attempt.get("attemptId") or "")
+
+    evidence: list[dict[str, Any]] = []
+    for ref in sorted(record_refs, key=lambda row: (row["validTime"], row["partId"])):
+        part_id = str(ref.get("partId") or "")
+        valid_time = str(ref.get("validTime") or "")
+        target = target_by_id.get(part_id)
+        if target is None:
+            raise CopernicusSourceStageError(
+                "A selected Copernicus pair has no bound target"
+            )
+        selected_source = str(ref.get("source") or "")
+        selected_product = product_by_source.get(selected_source)
+        if selected_product is None or not eligible_target(target, selected_product):
+            raise CopernicusSourceStageError(
+                "A selected Copernicus pair lies outside its pinned product domain"
+            )
+        if selected_source != SOURCE_ORDER_SELECTED_SOURCE:
+            continue
+        attempt_id = attempt_by_pair.get((part_id, valid_time))
+        if eligible_target(target, baltic):
+            if not valid_sha256(attempt_id):
+                raise CopernicusSourceStageError(
+                    "An in-domain AMM15 pair lacks a completed Baltic prerequisite attempt"
+                )
+            disposition = SOURCE_ORDER_ATTEMPTED_EXHAUSTED
+        else:
+            if attempt_id is not None:
+                raise CopernicusSourceStageError(
+                    "An out-of-domain AMM15 pair cannot claim a Baltic attempt"
+                )
+            disposition = SOURCE_ORDER_NOT_APPLICABLE
+            attempt_id = None
+        identity = {
+            "partId": part_id,
+            "validTime": valid_time,
+            "selectedSource": SOURCE_ORDER_SELECTED_SOURCE,
+            "prerequisiteSource": SOURCE_ORDER_PREREQUISITE_SOURCE,
+            "disposition": disposition,
+            "attemptId": attempt_id,
+        }
+        evidence.append({
+            **identity,
+            "evidenceSha256": canonical_sha256(identity),
+        })
+    return evidence
+
+
 def _source_stage_id(document: dict[str, Any]) -> str:
     return canonical_sha256({key: value for key, value in document.items() if key != "sourceStageId"})
 
@@ -360,8 +446,6 @@ def validate_source_stage(
         reference,
     )
     missing_pairs = sorted(missing_pairs, key=lambda row: (row["validTime"], row["partId"]))
-    if not missing_pairs:
-        raise CopernicusSourceStageError("Source-stage READY cannot replace a complete Copernicus seal")
     if (
         stage.get("schemaVersion") != SOURCE_STAGE_SCHEMA_VERSION
         or stage.get("kind") != SOURCE_STAGE_KIND
@@ -417,6 +501,40 @@ def validate_source_stage(
     expected_products = _derive_products(required_pairs, targets, attempts)
     if stage.get("products") != expected_products or stage.get("productsSha256") != canonical_sha256(expected_products):
         raise CopernicusSourceStageError("Copernicus source-stage product evidence mismatch")
+    expected_source_order_evidence = _source_order_evidence(
+        record_refs,
+        targets,
+        attempts,
+    )
+    source_order_evidence = stage.get("sourceOrderEvidence")
+    if not isinstance(source_order_evidence, list):
+        raise CopernicusSourceStageError(
+            "Copernicus source-order evidence is malformed"
+        )
+    for raw in source_order_evidence:
+        evidence = _exact_dict(
+            raw,
+            SOURCE_ORDER_EVIDENCE_FIELDS,
+            "Copernicus source-order evidence row",
+        )
+        identity = {
+            key: value for key, value in evidence.items()
+            if key != "evidenceSha256"
+        }
+        if evidence.get("evidenceSha256") != canonical_sha256(identity):
+            raise CopernicusSourceStageError(
+                "Copernicus source-order evidence identity mismatch"
+            )
+    if (
+        source_order_evidence != expected_source_order_evidence
+        or stage.get("sourceOrderEvidenceCount")
+            != len(expected_source_order_evidence)
+        or stage.get("sourceOrderEvidenceSha256")
+            != canonical_sha256(expected_source_order_evidence)
+    ):
+        raise CopernicusSourceStageError(
+            "Copernicus AMM15 prerequisite evidence mismatch"
+        )
     attempted_by_source = {
         source: {
             (pair["partId"], pair["validTime"])
@@ -469,6 +587,11 @@ def build_source_stage(
     )
     targets = sorted(target_identities.values(), key=lambda row: (row["parentZoneId"], row["partId"]))
     products = _derive_products(required_pairs, targets, canonical_attempts)
+    source_order_evidence = _source_order_evidence(
+        record_refs,
+        targets,
+        canonical_attempts,
+    )
     value: dict[str, Any] = {
         "schemaVersion": SOURCE_STAGE_SCHEMA_VERSION,
         "kind": SOURCE_STAGE_KIND,
@@ -490,6 +613,9 @@ def build_source_stage(
         "attemptsSha256": canonical_sha256(canonical_attempts),
         "products": products,
         "productsSha256": canonical_sha256(products),
+        "sourceOrderEvidence": source_order_evidence,
+        "sourceOrderEvidenceCount": len(source_order_evidence),
+        "sourceOrderEvidenceSha256": canonical_sha256(source_order_evidence),
         "shadowSha256": shadow_sha256,
         "scoreImpact": False,
         "publicRuntime": False,
@@ -572,6 +698,16 @@ def safe_source_stage_summary(document: dict[str, Any]) -> dict[str, Any]:
             for index, row in enumerate(document["products"], start=1)
         ],
         "productsSha256": document["productsSha256"],
+        "sourceOrderEvidenceCount": document["sourceOrderEvidenceCount"],
+        "sourceOrderEvidenceSha256": document["sourceOrderEvidenceSha256"],
+        "sourceOrderAttemptedExhaustedCount": sum(
+            row["disposition"] == SOURCE_ORDER_ATTEMPTED_EXHAUSTED
+            for row in document["sourceOrderEvidence"]
+        ),
+        "sourceOrderNotApplicableCount": sum(
+            row["disposition"] == SOURCE_ORDER_NOT_APPLICABLE
+            for row in document["sourceOrderEvidence"]
+        ),
         "shadowSha256": document["shadowSha256"],
         "coordinatesIncluded": False,
         "rawVectorsIncluded": False,

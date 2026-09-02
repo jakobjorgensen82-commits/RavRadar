@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-03 – installerbar webapp på eksisterende Om-side
+
+- `about.html` indeholder nu den korte DA/DE/EN-vejledning til iPhone/Safari og Android/Chrome. Forside og Om-side linker samme relative standalone-manifest og Apple-touch-ikon; 192/512/180-pixels PNG-aktiver er måltestet lokalt.
+- Bevar DEC-0099's lette første service-worker-installation: ingen tvungen prompt, ingen precache af store Om-billeder og ingen ny runtime. Offentlig mobil/desktop-/installationskontrol afventer den samlede 4.0.320-release.
+
+# NYESTE CHECKPOINT – 2026-09-03 – source-stage v2 og exact-time state-only hold
+
+- Fortsæt fra `codex/ravscore-history-incomplete-cutover`, som bygger videre på baseline `1df200d9b56bb9ac4a7304ae3a07a2db8f45abf3` og indeholder den samlede 4.0.320-kandidat. Hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er ancestor; Candidate G er fortsat offentlig.
+- `33682062077` og `33687215451` gemte DMI-cacheprogressionen og bevarede Copernicus-cachen, men gammel main stoppede ved exact-gap-selector før Copernicus-fill, 673 × 118 og deploy. Arbejdet skal ikke genstartes.
+- Source-stage v2 lukker valgt produktdomæne og Baltic→AMM15-forudsætning pr. eksakt par. Regionalt hold er state-only og eksakt del-/forecasttime-/kildetime-/alderbundet uden vektor, pil, nabotime eller historik. Rettelsen og de relevante måltests er grønne; den uafhængige exact-time-revision fandt ingen P0/P1.
+- Begge bundles og bindingsforbrugerne er nu synkroniseret: integrated `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 filer/8 forbrugere og Candidate G-rollback `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer. Den samlede fokuserede slutmatrix er grøn efter rettelse af to stale test-/tekstforventninger; runtimegaterne blev ikke lempet. Den låste rest er commit/push → exact-head/673 × 118 → Supabase live før/efter → merge, frisk produktion og offentlig mobil/desktop. `.cache`, private payloads, koordinater, rå U/V, geometri og punkter må ikke røres eller stages.
+
 # NYESTE CHECKPOINT – 2026-09-02 – fortsæt 4.0.320 fra DMI-rodrettelsen
 
 - Aktiv branch er `codex/ravscore-history-incomplete-cutover`. Baselinehead før 4.0.320-diff er `4414970419c1526c485cf830ba399dff7499ad3c`; hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor. Rør ikke andre worktrees, private data, koordinater, rå U/V, geometri eller punkter.
@@ -36,6 +48,14 @@
 # RavRadar – overlevering til næste chat
 
 > **Historikregel:** 4.0.319-afsnittet nedenfor styrer modelarbejdet; 4.0.316/Candidate G er den offentlige produktionsbaseline. 4.0.317-afsnittet og alle senere sektioner mærket historisk er revisionsspor. Gamle rekonstruktionsordrer må ikke udføres.
+
+## Nyeste kildeordenspræcisering – 2026-09-02
+
+- Bevar DEC-0041-ordenen eksakt: lokal DMI → Copernicus Baltic → AMM15 → regional `dkss_lf` alene for rester blandt præcis de otte policybundne Limfjordsdele.
+- Alle operationelle DMI-restpar target..+117 går først gennem begge Copernicus-kilder. Regional fallback er først tilladt efter dokumenteret kildeudtømning for det konkrete par; timeout, fejl eller uafsluttet shard er ikke udtømning.
+- Regional lukning kræver selvstændigt policy-, target/reference-, kildeasset- og provenancebevis og må kun være native eller et kausalt 1–3 timers derived-state hold. Hold skaber ingen ny U/V, hastighed, retning eller pil.
+- Slutbeviset er én samlet 673 × 118-revision med præcis én kilde pr. celle, ingen overlap og ingen missing. Target−48..target−1 forbliver særskilt rådgivende historik af verificerede, faktisk hentede kildefelter uden syntese; Copernicus-bidrag er fortidige modelfelter, ikke målinger. Ufuldstændig historik må ikke fjerne current- eller femdøgnsprognosen.
+- Den foreløbige genvej, som kunne springe Copernicus-led over eller forhåndstælle regional dækning, er forkastet. Genindfør den ikke.
 
 ## Nyeste checkpoint – 2026-08-31
 

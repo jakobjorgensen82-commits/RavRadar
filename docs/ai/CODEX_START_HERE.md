@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-03 – source-stage v2 og exact-time regional state
+
+- Aktiv branch `codex/ravscore-history-incomplete-cutover` bygger videre på baseline `1df200d9b56bb9ac4a7304ae3a07a2db8f45abf3` og indeholder den samlede 4.0.320-kandidat; `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er hentet og ancestor. Candidate G er offentlig, indtil resten af releasekæden er bevist.
+- Main-runs `33682062077` og `33687215451` gemte DMI-bulk-/zone-/GRIB-/researchcache og bevarede Copernicus-cachen, men gammel main stoppede ved exact-gap-selector før fill/673 × 118/artifact/deploy.
+- Source-stage v2 kræver pr. valgt Baltic/AMM15-par eget produktdomæne, komplet samme-par Baltic-forudsætning eller deterministisk `NOT_APPLICABLE`, samt eksakt registry/DMI/shadow/hashbinding. Nonempty komplet Copernicus uden stage stopper.
+- Regionalt derived hold er state-only og bindes til præcis `(partId, validTime, sourceValidTime, holdAgeHours)`. Det skaber ingen U/V/fart/retning/grid/pil, kan ikke autorisere nabotimer og er forbudt i target−48..−1-historikken. Rettelsen og de relevante måltests er grønne; den uafhængige exact-time-revision fandt ingen P0/P1.
+- Rollback- og integrated-bundles er nu regenereret i hver sin proces og synkroniseret til alle bindingsforbrugere: Candidate G `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer og integrated `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 filer/8 forbrugere. Den samlede fokuserede Python-/Node-/workflow-/PWA-/versions-/RDKS-slutmatrix er grøn. `.cache` er urørt og må aldrig stages. Næste rækkefølge: commit/push → exact-head/673 × 118 → Supabase live før/efter → merge, frisk produktion og offentlig mobil/desktop.
+
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 atomisk DMI-assetprogression
 
 - Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` gennemførte DMI-terminalgaten med 71.525/79.414 DMI-par og afgrænsede præcis 7.889 operationelle Copernicus-restpar; stoppet skyldtes, at den gamle all-or-nothing-pilot tabte færdige spatialshards ved to 600-sekunders timeouts.

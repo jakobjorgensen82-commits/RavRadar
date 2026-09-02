@@ -634,7 +634,9 @@ jobs:
         id: copernicus-shadow-refresh
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-pre-dmi-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             copernicus-current-shadow-v1-
@@ -829,7 +831,9 @@ jobs:
         id: copernicus-shadow-post-dmi
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-post-dmi-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             copernicus-current-shadow-v1-
@@ -847,21 +851,30 @@ jobs:
         if: steps.preflight.outputs.should_run == 'true'
         run: echo "RAVRADAR_PRODUCTION_TARGET_HOUR=${{ steps.copernicus-targets.outputs.target_hour }}" >> "$GITHUB_ENV"
 
-      - name: Inspect targeted Copernicus coverage after fresh DMI
+      - name: Inspect target-bound Copernicus source stage after fresh DMI
         if: steps.preflight.outputs.should_run == 'true'
         id: targeted-copernicus-cache
         run: >-
-          python scripts/check-copernicus-current-hour.py
+          python scripts/check-copernicus-current-range.py
+          --shadow .cache/copernicus-current-shadow.json
+          --source-stage .cache/copernicus-current-source-stage.json
+          --registry .cache/copernicus-current-targets.json
+          --dmi data/live/dmi-bulk-cache.json
+          --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --targets .cache/copernicus-current-targets.json
+          --allow-nonmatching-seal
           --github-output "$GITHUB_OUTPUT"
 
+      - name: Remove only invalid production Copernicus source disposition
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        run: rm -f .cache/copernicus-current-source-stage.json
+
       - name: Install targeted Copernicus dependencies
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify targeted Copernicus credentials
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -873,7 +886,7 @@ jobs:
 
       - name: Fill only exact-hour DMI gaps from Copernicus
         id: copernicus-fill
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -887,30 +900,41 @@ jobs:
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
 
-      - name: Save progressive private Copernicus cache after interrupted fill
-        if: always() && steps.copernicus-fill.outcome == 'failure' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+      - name: Save non-cancelled private Copernicus source-stage progress
+        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-production-progress-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require complete target/DMI-bound Copernicus current range before scoring
+      - name: Require completed Copernicus source stage before combined current closure
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           python scripts/check-copernicus-current-range.py
           --shadow .cache/copernicus-current-shadow.json
+          --source-stage .cache/copernicus-current-source-stage.json
           --registry .cache/copernicus-current-targets.json
           --dmi data/live/dmi-bulk-cache.json
           --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --require-complete
+          --require-source-stage-ready
 
-      - name: Save targeted private Copernicus supplement
+      - name: Save validated private Copernicus progress before downstream closure
         if: steps.preflight.outputs.should_run == 'true' && success()
         uses: actions/cache/save@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-production-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Build exact DMI-first current operational closure
+        if: steps.preflight.outputs.should_run == 'true'
+        run: >-
+          python scripts/build-current-operational-closure.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Build public seven-day current history and controlled live selection
         if: steps.preflight.outputs.should_run == 'true'

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import runpy
 import subprocess
 import sys
 import tempfile
@@ -16,15 +17,23 @@ from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     LEGACY_HISTORY_REQUEST_CONTRACT_ID,
     OPERATIONAL_MATRIX_CONTRACT_ID,
+    canonical_sha256,
     file_sha256,
     required_pairs_sha256,
     validate_shadow,
 )
 from lib.copernicus_target_identity import target_fingerprint
+from lib.current_operational_closure import (
+    ADVISORY_ASSIGNMENT_CONTRACT_ID,
+    ADVISORY_RECORD_REF_CONTRACT_ID,
+    COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/run-copernicus-current-pilot.py"
+CHECKER = ROOT / "scripts/check-copernicus-current-range.py"
+LIVE_CURRENT = runpy.run_path(str(ROOT / "scripts/build-live-current-pilot.py"))
 REFERENCE = datetime(2026, 8, 29, 8, tzinfo=timezone.utc)
 FUTURE = REFERENCE + timedelta(hours=117)
 TARGET = {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [9.1, 57.0]}
@@ -188,11 +197,26 @@ def run(folder: Path, shadow_name: str = "cache.json", fixture_name: str = "fixt
         "--targets", str(folder / "registry.json"),
         "--authoritative-targets", str(folder / "targets.json"),
         "--shadow", str(folder / shadow_name),
+        "--source-stage", str(folder / f"{shadow_name}.source-stage.json"),
         "--report", str(folder / f"{shadow_name}.report.json"),
         "--summary", str(folder / f"{shadow_name}.summary.txt"),
         "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
         "--acquisition-at", (REFERENCE + timedelta(minutes=10)).isoformat().replace("+00:00", "Z"),
         "--fixture-directory", str(folder / fixture_name),
+    ], cwd=ROOT, capture_output=True, text=True, check=False)
+
+
+def require_complete(folder: Path, shadow_name: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run([
+        sys.executable, "-B", str(CHECKER),
+        "--shadow", str(folder / shadow_name),
+        "--source-stage", str(folder / f"{shadow_name}.source-stage.json"),
+        "--registry", str(folder / "registry.json"),
+        "--dmi", str(folder / "dmi.json"),
+        "--targets", str(folder / "targets.json"),
+        "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
+        "--require-complete",
+        "--require-source-stage-ready",
     ], cwd=ROOT, capture_output=True, text=True, check=False)
 
 
@@ -233,8 +257,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     report_text = (folder / "cache.json.report.json").read_text(encoding="utf-8").lower()
     assert all(token not in report_text for token in ("samplingpoint", "gridpoint", "umps", "vmps"))
 
-    # Schema 3 must seal complete target..+117 operation even when an advisory
-    # -48h pair is unavailable.  It must not request or synthesize that history.
+    # Schema 3 must keep complete target..+117 operation deployable even when
+    # bounded advisory backfill cannot recover the historical DMI gap.
     write(folder / "registry.json", operational_registry(file_sha256(folder / "dmi.json")))
     operational_run = run(folder, "operational-cache.json")
     assert operational_run.returncode == 0, operational_run.stdout + operational_run.stderr
@@ -254,6 +278,122 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     )
     assert operational_report["operationalSealComplete"] is True
     assert operational_report["historySyntheticPairCount"] == 0
+    assert operational_report["advisoryHistoryFill"]["status"] == "BOUNDED_INCOMPLETE"
+    assert operational_report["advisoryHistoryFill"]["exhaustionAttested"] is False
+    operational_gate = require_complete(folder, "operational-cache.json")
+    assert operational_gate.returncode == 0, operational_gate.stdout + operational_gate.stderr
+
+    # One past exact DMI gap is acquired from Baltic after operational closure.
+    # It remains advisory: the same operational deploy gate passes, and no
+    # interpolation, carry, regional source or exhaustion claim is introduced.
+    advisory_fixtures = folder / "advisory-fixtures"
+    advisory_fixtures.mkdir()
+    advisory_data = xr.Dataset(
+        data_vars={
+            "uo": (("time", "depth", "latitude", "longitude"), np.array([
+                [[[0.05]]], [[[0.1]]], [[[0.2]]],
+            ], dtype=float)),
+            "vo": (("time", "depth", "latitude", "longitude"), np.array([
+                [[[0.15]]], [[[0.3]]], [[[0.4]]],
+            ], dtype=float)),
+        },
+        coords={
+            "time": np.array([
+                (REFERENCE - timedelta(hours=1)).replace(tzinfo=None).isoformat(),
+                REFERENCE.replace(tzinfo=None).isoformat(),
+                FUTURE.replace(tzinfo=None).isoformat(),
+            ], dtype="datetime64[s]"),
+            "depth": [5.0], "latitude": [57.0], "longitude": [9.1],
+        },
+    )
+    advisory_data.to_netcdf(advisory_fixtures / "copernicus-baltic-nemo.nc")
+    advisory_run = run(folder, "advisory-cache.json", "advisory-fixtures")
+    assert advisory_run.returncode == 0, advisory_run.stdout + advisory_run.stderr
+    advisory_cache = validate_shadow(
+        json.loads((folder / "advisory-cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    advisory_seal = advisory_cache["collections"][0]
+    assert advisory_seal["status"] == "OPERATIONAL_COMPLETE"
+    assert len(advisory_seal["operationalRecordRefs"]) == 2
+    assert len(advisory_seal["advisoryHistoryRecordRefs"]) == 1
+    assert advisory_seal["advisoryHistoryMissingPairCount"] == 0
+    assert advisory_seal["advisoryHistoryComplete"] is True
+    advisory_report = json.loads(
+        (folder / "advisory-cache.json.report.json").read_text(encoding="utf-8")
+    )
+    assert advisory_report["advisoryHistoryFill"] == {
+        "status": "COMPLETE",
+        "requiredPairCount": 1,
+        "initialAvailablePairCount": 0,
+        "acquiredPairCount": 1,
+        "availablePairCount": 1,
+        "missingPairCount": 0,
+        "attemptedShardCount": 1,
+        "completedShardCount": 1,
+        "failedShardCount": 0,
+        "boundedWorkRemaining": False,
+        "budgetReached": False,
+        "exhaustionAttested": False,
+        "regionalHistoryUsed": False,
+        "interpolationCarryOrLoanUsed": False,
+        "newAcquisitionCount": 1,
+    }
+    advisory_gate = require_complete(folder, "advisory-cache.json")
+    assert advisory_gate.returncode == 0, advisory_gate.stdout + advisory_gate.stderr
+    advisory_ref = advisory_seal["advisoryHistoryRecordRefs"][0]
+    advisory_identity = {
+        **advisory_ref,
+        "classification": COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
+        "recordRefSha256": canonical_sha256({
+            "contractId": ADVISORY_RECORD_REF_CONTRACT_ID,
+            "recordRef": advisory_ref,
+        }),
+    }
+    advisory_assignment = {
+        **advisory_identity,
+        "assignmentSha256": canonical_sha256({
+            "schemaVersion": 1,
+            "contractId": ADVISORY_ASSIGNMENT_CONTRACT_ID,
+            "assignment": advisory_identity,
+        }),
+    }
+    selected, projected_seal, projected_advisory = LIVE_CURRENT["copernicus_entries"](
+        advisory_cache,
+        {"p1": TARGET},
+        [],
+        {
+            "productionReferenceAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+            "closureId": "fixture-closure",
+            "advisoryHistoryAssignments": [advisory_assignment],
+        },
+    )
+    assert selected == []
+    assert projected_seal["status"] == "OPERATIONAL_COMPLETE"
+    assert projected_seal["targetRegistrySha256"] == target_fingerprint([TARGET])
+    assert projected_seal["dmiCurrentInputSha256"] == file_sha256(folder / "dmi.json")
+    assert (
+        projected_seal["advisoryHistoryRecordRefsSha256"]
+        == advisory_seal["advisoryHistoryRecordRefsSha256"]
+    )
+    assert len(projected_advisory) == 1
+    assert projected_advisory[0]["recordId"] == (
+        advisory_seal["advisoryHistoryRecordRefs"][0]["recordId"]
+    )
+    assert projected_advisory[0]["acquisitionId"] == (
+        advisory_seal["advisoryHistoryRecordRefs"][0]["acquisitionId"]
+    )
+    assert projected_advisory[0]["collectionId"] == "fixture-closure"
+    assert projected_advisory[0]["validTime"] == (
+        REFERENCE - timedelta(hours=1)
+    ).isoformat().replace("+00:00", "Z")
+    assert projected_advisory[0]["source"] == "copernicus-baltic-nemo"
+    assert (
+        projected_advisory[0]["classification"]
+        == COPERNICUS_ADVISORY_PAST_MODEL_FIELD
+    )
+    assert projected_advisory[0]["interpolation"] is False
     write(folder / "registry.json", registry(file_sha256(folder / "dmi.json")))
 
     # The real schema-1 cache had a cache-level updatedAt but no guaranteed

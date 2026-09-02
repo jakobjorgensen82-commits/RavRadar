@@ -5,8 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline' https://unpkg.com; img-src 'self' data: blob: https://unpkg.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://services.arcgisonline.com https://server.arcgisonline.com; connect-src 'self' https://afqhhdrkjfjtpadntdzo.supabase.co; font-src 'self' data:; worker-src 'self' blob:; manifest-src 'self'; upgrade-insecure-requests">
   <meta name="theme-color" content="#073b4c">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="RavRadar">
   <meta name="description" data-i18n-content="about.meta.description" content="Mød Jakob Jørgensen, og læs om ideen og det frivillige arbejde bag RavRadar.">
   <title data-i18n="about.meta.title">Om RavRadar</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
   <link rel="stylesheet" href="about.css?v=4.0.320">
 </head>
 <body>
@@ -51,6 +57,15 @@
       <article class="card"><span class="card-number">1</span><h3>En vurdering – ikke et løfte</h3><p>RavRadar beregner en RavScore ud fra vejr- og havdata. Lokale forhold kan altid afvige, og selv gode forhold er ingen garanti for fund.</p></article>
       <article class="card"><span class="card-number">2</span><h3>Bygget så grundigt som muligt</h3><p>Systemet er udviklet ved at samle faglig viden, data, praktiske erfaringer og mange timers analyse. Det bliver forbedret, når ny viden og virkelige ture viser, at noget kan gøres bedre.</p></article>
       <article class="card"><span class="card-number">3</span><h3>Gratis for alle</h3><p>RavRadar er gratis at bruge. Et frivilligt bidrag er altid valgfrit og giver hverken bedre scorer eller særlige funktioner.</p></article>
+    </section>
+
+    <section class="section install-panel" id="installer" data-i18n-aria-label="about.install.aria" data-i18n-html="about.install" aria-label="Installer RavRadar på din telefon">
+      <div class="install-intro"><p class="eyebrow">RavRadar på hjemmeskærmen</p><h2>Brug RavRadar som en app</h2><p>Du kan lægge RavRadar på telefonens hjemmeskærm. Så åbner siden i sit eget vindue, ligesom en almindelig app.</p></div>
+      <div class="install-steps">
+        <article class="install-card"><h3>iPhone · Safari</h3><ol><li>Åbn RavRadars <a href="./">forside</a> i Safari.</li><li>Tryk på <strong>Del</strong> – eller på <strong>•••</strong> og derefter <strong>Del</strong>.</li><li>Vælg <strong>Føj til hjemmeskærm</strong>. Hvis valget mangler, findes det under <strong>Rediger handlinger</strong>.</li><li>Slå <strong>Åbn som webapp</strong> til, hvis valget vises, og tryk <strong>Tilføj</strong>.</li></ol></article>
+        <article class="install-card"><h3>Android · Chrome</h3><ol><li>Åbn RavRadars <a href="./">forside</a> i Chrome.</li><li>Tryk på menuen med de tre prikker ved adresselinjen.</li><li>Vælg <strong>Installér og opret genvej</strong>, <strong>Installér app</strong> eller <strong>Føj til startskærm</strong>.</li><li>Tryk <strong>Installér</strong> eller <strong>Tilføj</strong>, og følg beskeden på skærmen.</li></ol></article>
+      </div>
+      <p class="install-note">RavRadar opdateres automatisk. Du skal fortsat have internetforbindelse for at hente friske prognoser.</p>
     </section>
 
     <section class="context-panel" data-i18n-aria-label="about.score.aria" data-i18n-html="about.score" aria-label="Sådan skal RavScore forstås">

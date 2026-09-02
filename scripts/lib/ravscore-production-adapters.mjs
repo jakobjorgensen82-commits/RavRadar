@@ -9,7 +9,12 @@ import {
   verifiedDmiForecastSource,
   verifiedDmiNativeSource,
 } from './dmi-forecast-store.mjs';
-import { verifiedLivePilotSource } from './live-current-pilot.mjs';
+import {
+  stateOnlyCurrentRowForbiddenFields,
+  stripStateOnlyCurrentRowProjection,
+  verifiedLivePilotSource,
+  verifiedStateOnlyCurrentHold,
+} from './live-current-pilot.mjs';
 import {
   FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
   FEGGESUND_WAVE_PROXY_NOTICE_ID,
@@ -434,6 +439,33 @@ function sameDmiSeries(left, right) {
 export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
   const expectedDmiIdentity = dmiExpectedIdentityForPart(part, bulkId);
   const sanitized = normalizeForecastHourly(record?.hourly ?? []).map(hour => {
+    const holdProvenance = hour?.currentProvenance;
+    const currentStateOnlyHold = verifiedStateOnlyCurrentHold(
+      holdProvenance,
+      hour?.time,
+      part,
+    );
+    const hasStateOnlyHoldSignal = hour?.currentStateOnlyHold !== null
+      && hour?.currentStateOnlyHold !== undefined
+      || holdProvenance?.status === 'verified-derived-state-only'
+      || holdProvenance?.classification === 'REGIONAL_DMI_DERIVED_HOLD'
+      || holdProvenance?.stateOnly === true;
+    if (hasStateOnlyHoldSignal && !currentStateOnlyHold) {
+      throw new Error('Integrated current sanitizer rejected an invalid state-only hold');
+    }
+    if (hour?.currentStateOnlyHold !== null
+      && hour?.currentStateOnlyHold !== undefined
+      && JSON.stringify(hour.currentStateOnlyHold) !== JSON.stringify(currentStateOnlyHold)) {
+      throw new Error('Integrated current sanitizer found a mismatched state-only hold marker');
+    }
+    if (currentStateOnlyHold && stateOnlyCurrentRowForbiddenFields(hour)
+      .some(field => hour[field] !== null && hour[field] !== undefined)) {
+      throw new Error('Integrated state-only hold cannot contain current vector or projection fields');
+    }
+    const { currentStateOnlyHold: _discardedHold, ...plainHourWithoutHold } = hour;
+    const hourWithoutHold = currentStateOnlyHold
+      ? stripStateOnlyCurrentRowProjection(plainHourWithoutHold)
+      : plainHourWithoutHold;
     const source = hour?.currentProvenance?.status === 'verified'
       ? hour.currentProvenance
       : hour?.sources?.current;
@@ -456,6 +488,19 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
     const wind = sanitizeWind(hour, expectedDmiIdentity);
     const wave = sanitizeWave(hour, expectedDmiIdentity);
     const waterLevel = sanitizeWaterLevel(hour, expectedDmiIdentity);
+    if (currentStateOnlyHold) {
+      return {
+        ...hourWithoutHold,
+        ...wind,
+        ...wave,
+        ...waterLevel,
+        currentProvenance: {
+          status: 'unverified',
+          reason: 'closure-verified-exact-state-only-hold',
+        },
+        currentStateOnlyHold,
+      };
+    }
     const coastNormalSpeedMps = proof
       ? coastNormalSpeedMpsFromUv(
         hour.currentUMps,
@@ -472,7 +517,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
       // is valid. Preserve the established forecast precision while keeping raw
       // U/V inside the private producer.
       return {
-        ...hour,
+        ...hourWithoutHold,
         ...wind,
         ...wave,
         ...waterLevel,
@@ -491,7 +536,7 @@ export function verifiedIntegratedPartHourly(record, bulkCache, bulkId, part) {
       };
     }
     return {
-      ...hour,
+      ...hourWithoutHold,
       ...wind,
       ...wave,
       ...waterLevel,

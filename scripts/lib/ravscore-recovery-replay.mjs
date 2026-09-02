@@ -10,6 +10,7 @@ import {
 } from '../../js/core/ravscore-model-contract.js';
 import {
   buildIntegratedRavScoreStateSeries,
+  canonicalRavScoreStateOnlyCurrentHold,
   validateCandidateGMigrationSource,
 } from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
@@ -182,6 +183,27 @@ function assertDmiCurrentProvenance(provenance, part, rowTime) {
     return false;
   }
   return true;
+}
+
+function exactOperationalStateOnlyHold(value, rowTime, part) {
+  let marker = null;
+  try {
+    marker = canonicalRavScoreStateOnlyCurrentHold(value, rowTime);
+  } catch {
+    failClosed(
+      'RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_INVALID',
+      'RavScore recovery public row has an invalid state-only current hold',
+    );
+  }
+  if (marker === null) return null;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId ?? null;
+  if (marker.partId !== part?.partId || marker.parentZoneId !== parentZoneId) {
+    failClosed(
+      'RAVSCORE_RECOVERY_REPLAY_STATE_ONLY_HOLD_CONTEXT_MISMATCH',
+      'RavScore recovery state-only current hold has a different coastal-part context',
+    );
+  }
+  return marker;
 }
 
 function compactCurrentHoldProof(provenance) {
@@ -372,7 +394,7 @@ export function ravScoreRecoverySourceStartAt(initialState, targetReferenceAt) {
 
 function verifiedNativeCadenceBoundaryReference(
   sample,
-  { firstReplayTime, nativeCadenceHoldHours },
+  { authorizedHolds, nativeCadenceHoldHours },
 ) {
   if (sample === null || sample === undefined) return null;
   const keys = Object.keys(sample).sort();
@@ -391,9 +413,9 @@ function verifiedNativeCadenceBoundaryReference(
   } catch {
     time = null;
   }
-  const gapHours = time === null
-    ? Number.NaN
-    : (Date.parse(firstReplayTime) - Date.parse(time)) / HOUR_MS;
+  const exactAuthorizedSource = time !== null
+    && authorizedHolds.some(marker => marker.sourceValidTime === time
+      && marker.holdAgeHours <= Number(nativeCadenceHoldHours));
   if (!validShape
     || sample.currentVerified !== true
     || !finite(sample.currentSpeedMps)
@@ -412,8 +434,7 @@ function verifiedNativeCadenceBoundaryReference(
     || sample.currentProvenance.distanceKm > 15
     || !finite(nativeCadenceHoldHours)
     || Number(nativeCadenceHoldHours) <= 0
-    || !(gapHours > 0)
-    || gapHours > Number(nativeCadenceHoldHours)) {
+    || !exactAuthorizedSource) {
     failClosed(
       'RAVSCORE_RECOVERY_REPLAY_NATIVE_REFERENCE_INVALID',
       'RavScore recovery native-cadence boundary reference is invalid',
@@ -756,7 +777,19 @@ export function buildRavScoreRecoveryReplay({
       'RavScore recovery replay lacks the exact production target row',
     );
   }
-  const canonicalPublicRows = publicRows.map(item => ({ ...item.row, time: item.time }));
+  const canonicalPublicRows = publicRows.map(item => {
+    const currentStateOnlyHold = exactOperationalStateOnlyHold(
+      item.row?.currentStateOnlyHold,
+      item.time,
+      part,
+    );
+    const { currentStateOnlyHold: _discardedHold, ...row } = item.row;
+    return {
+      ...row,
+      time: item.time,
+      ...(currentStateOnlyHold ? { currentStateOnlyHold } : {}),
+    };
+  });
   const coldStart = !initialState;
   const stateTime = coldStart
     ? new Date(targetMs - RAVSCORE_COLD_START_REPLAY_HOURS * HOUR_MS).toISOString()
@@ -892,46 +925,23 @@ export function buildRavScoreRecoveryReplay({
       waveByTime: migrationWaveByTime,
     });
 
-  let latestVerifiedCurrentAt = (() => {
-    if (coldStart) return Number.NEGATIVE_INFINITY;
-    const candidates = initialState.currentEvidence ?? initialState.transportEvidence ?? [];
-    return [...candidates]
-      .filter(item => item?.strength !== null && finite(item?.strength))
-      .map(item => Date.parse(item.time))
-      .filter(Number.isFinite)
-      .sort((left, right) => right - left)[0] ?? Number.NEGATIVE_INFINITY;
-  })();
-  let nativeHoldAuthorized = initialState?.currentNativeHoldAuthorization !== null
-    && initialState?.currentNativeHoldAuthorization !== undefined;
-  if (candidateGCurrentBootstrap) {
-    nativeHoldAuthorized =
-      candidateGCurrentBootstrap.currentNativeHoldAuthorization !== null;
-    latestVerifiedCurrentAt = Date.parse(candidateGCurrentBootstrap.currentReferenceAt);
-  }
   const replayTimes = [...union.keys()]
     .sort((left, right) => Date.parse(left) - Date.parse(right));
-  const firstReplayTime = replayTimes[0] ?? target;
-  const boundaryReference = verifiedNativeCadenceBoundaryReference(
-    nativeCadenceReferenceSample,
-    { firstReplayTime, nativeCadenceHoldHours },
+  const replayBoundaryAt = ravScoreRecoveryReplayStartAt(
+    initialState,
+    target,
   );
-  if (boundaryReference) {
-    latestVerifiedCurrentAt = Date.parse(boundaryReference.time);
-    nativeHoldAuthorized = true;
-  }
+  verifiedNativeCadenceBoundaryReference(
+    nativeCadenceReferenceSample,
+    {
+      authorizedHolds: canonicalPublicRows
+        .map(row => row.currentStateOnlyHold)
+        .filter(marker => marker?.validTime === replayBoundaryAt),
+      nativeCadenceHoldHours,
+    },
+  );
   const replayRows = replayTimes.map(time => {
     const row = union.get(time);
-    if (row.current) {
-      latestVerifiedCurrentAt = Date.parse(time);
-      nativeHoldAuthorized =
-        row.current.row.currentProvenance?.sourceClass
-          === 'owner-approved-regional-proxy';
-    }
-    const nativeHold = !row.current
-      && Number(nativeCadenceHoldHours) > 0
-      && nativeHoldAuthorized
-      && Number.isFinite(latestVerifiedCurrentAt)
-      && (Date.parse(time) - latestVerifiedCurrentAt) / HOUR_MS <= Number(nativeCadenceHoldHours);
     return {
       time,
       ...(row.current?.row ?? {
@@ -940,9 +950,7 @@ export function buildRavScoreRecoveryReplay({
         currentCoastNormalSpeedMps: null,
         currentProvenance: {
           status: 'unverified',
-          reason: nativeHold
-            ? 'native-cadence-hold-without-invented-current'
-            : 'bounded-unknown-history-interval',
+          reason: 'bounded-unknown-history-interval',
         },
       }),
       ...(row.wave?.row ?? {

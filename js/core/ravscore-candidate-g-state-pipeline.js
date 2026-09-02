@@ -176,13 +176,10 @@ export function buildCandidateGDerivedStateSeries(
   let transportEvidence = acceptedState
     ? acceptedState.transportEvidence.map(item => ({ ...item }))
     : [];
-  if (safeNativeCadenceHoldHours > 0) {
-    // Older continuation states recorded the expected hours between native
-    // regional samples as explicit nulls. Removing only those null markers is
-    // a lossless migration of the verified evidence; it does not create or
-    // interpolate a current sample.
-    transportEvidence = transportEvidence.filter(item => Number.isFinite(item?.strength));
-  }
+  // Never erase an earlier unknown merely because the current operation has
+  // one exact cadence-hold authorization. The source-bound wrapper decides
+  // whether this specific row may hold; historical null evidence must remain
+  // visible to readiness until a later verified suffix naturally replaces it.
   if (nativeCadenceReferenceSample !== null && nativeCadenceReferenceSample !== undefined) {
     const firstSampleTime = ordered[0]?.time;
     const referenceSampleTime = validTime(nativeCadenceReferenceSample?.time)

@@ -509,7 +509,9 @@ export function buildFeggesundWaveInputProofEntry({ partId, time, hour } = {}) {
   const source = hour?.waveInputSource;
   const directTupleValid = height !== null && height >= 0
     && period !== null && period >= 0
-    && (direction === null || (direction >= 0 && direction < 360));
+    && (height === 0
+      ? direction === null || (direction >= 0 && direction < 360)
+      : period > 0 && direction !== null && direction >= 0 && direction < 360);
   const proxyTupleValid = height !== null && height >= 0
     && period !== null && period > 0
     && (height > 0

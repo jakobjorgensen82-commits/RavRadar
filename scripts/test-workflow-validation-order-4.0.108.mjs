@@ -221,8 +221,15 @@ for (const marker of [
   '--attempts 1',
   'id: copernicus-fill',
   '--timeout-seconds 1200',
-  'name: Save progressive private Copernicus cache after interrupted fill',
-  "steps.copernicus-fill.outcome == 'failure'",
+  'name: Save non-cancelled private Copernicus source-stage progress',
+  "steps.copernicus-fill.outcome != 'cancelled'",
+  '.cache/copernicus-current-source-stage.json',
+  '--require-source-stage-ready',
+  'name: Remove only invalid operational Copernicus source disposition',
+  "steps.current-range.outputs.source_stage_ready != 'true'",
+  'rm -f .cache/copernicus-current-source-stage.json',
+  'name: Save validated private Copernicus progress before downstream closure',
+  'name: Build exact DMI-first target through target plus 117 current closure',
   'copernicus-current-shadow-v1-118-preflight-progress-',
   'test -z "$PREFLIGHT_SAMPLE_TIME"',
   'name: Hydrate current central admin configuration read-only',
@@ -251,6 +258,13 @@ for (const marker of [
   }
 }
 const operationalPreflight = copernicusPilot.slice(operationalPreflightStart);
+for (const block of operationalPreflight.split('\n      - name:')) {
+  if (block.includes('actions/cache/')
+    && block.includes('.cache/copernicus-current-shadow.json')
+    && !block.includes('.cache/copernicus-current-source-stage.json')) {
+    throw new Error('Hvert operationalt shadow-cachetrin skal også bære source-stage-sidecaren.');
+  }
+}
 const operationalUserAgentVersions = [...operationalPreflight.matchAll(
   /WEATHER_USER_AGENT:\s*"RavRadar\/([0-9.]+) 118h /g,
 )].map(match => match[1]);
@@ -277,10 +291,14 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
   operationalPreflight.indexOf('name: "Require DMI production ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
-  operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus seal'),
+  operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
+  operationalPreflight.indexOf('name: Remove only invalid operational Copernicus source disposition'),
+  operationalPreflight.indexOf('name: Install Copernicus acquisition dependency only when source stage is absent'),
   operationalPreflight.indexOf('name: Fill only the exact operational DMI gap seal'),
-  operationalPreflight.indexOf('name: Save progressive private Copernicus cache after interrupted fill'),
-  operationalPreflight.indexOf('name: Prove exact target through target plus 117 current coverage'),
+  operationalPreflight.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+  operationalPreflight.indexOf('name: Require completed Copernicus source stage'),
+  operationalPreflight.indexOf('name: Save validated private Copernicus progress before downstream closure'),
+  operationalPreflight.indexOf('name: Build exact DMI-first target through target plus 117 current closure'),
   operationalPreflight.indexOf('name: Build controlled live current selection'),
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
   operationalPreflight.indexOf('npm run update:weather'),
@@ -294,7 +312,7 @@ const operationalPositions = [
 ];
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
-  throw new Error('Operational-118-preflight skal følge install→ecCodes-smoke→DMI→always-save→terminalgate→exact gaps→Copernicus complement→live current→update:weather→provenance→integrated audit.');
+  throw new Error('Operational-118-preflight skal følge install→ecCodes-smoke→DMI→always-save→terminalgate→exact gaps→source-stage-inspektion→eventuel Copernicus→progress-save→source-stage-gate→valid-save→closure→live current→update:weather→provenance→integrated audit.');
 }
 if (!operationalPreflight.includes(
   'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
@@ -325,18 +343,68 @@ for (const saveName of [
     throw new Error(`${saveName} skal gemme progression før terminalgaten.`);
   }
 }
-const copernicusProgressSaveStart = operationalPreflight.indexOf('name: Save progressive private Copernicus cache after interrupted fill');
+const copernicusProgressSaveStart = operationalPreflight.indexOf('name: Save non-cancelled private Copernicus source-stage progress');
 const copernicusProgressSaveEnd = operationalPreflight.indexOf('\n      - name:', copernicusProgressSaveStart + 1);
 const copernicusProgressSave = operationalPreflight.slice(
   copernicusProgressSaveStart,
   copernicusProgressSaveEnd < 0 ? operationalPreflight.length : copernicusProgressSaveEnd,
 );
 if (copernicusProgressSaveStart < 0
-  || !copernicusProgressSave.includes("steps.copernicus-fill.outcome == 'failure'")
+  || !copernicusProgressSave.includes("steps.copernicus-fill.outcome != 'cancelled'")
+  || !copernicusProgressSave.includes("steps.copernicus-fill.outcome != 'skipped'")
   || !copernicusProgressSave.includes("hashFiles('.cache/copernicus-current-shadow.json') != ''")
+  || !copernicusProgressSave.includes('.cache/copernicus-current-source-stage.json')
   || !copernicusProgressSave.includes('uses: actions/cache/save@v6')
   || !copernicusProgressSave.includes('copernicus-current-shadow-v1-118-preflight-progress-')) {
-  throw new Error('Operational-118-preflight skal gemme privat Copernicus-shardprogress efter en afbrudt fill.');
+  throw new Error('Operational-118-preflight skal gemme privat Copernicus-shard/source-stage-progression efter ethvert ikke-annulleret fill.');
+}
+const operationalSourceInspection = operationalPreflight.slice(
+  operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
+  operationalPreflight.indexOf('name: Install Copernicus acquisition dependency only when source stage is absent'),
+);
+for (const marker of [
+  '--source-stage .cache/copernicus-current-source-stage.json',
+  '--allow-nonmatching-seal',
+  '--github-output "$GITHUB_OUTPUT"',
+]) {
+  if (!operationalSourceInspection.includes(marker)) {
+    throw new Error(`Operational source-stage-inspektion mangler ${marker}`);
+  }
+}
+const operationalSourceRestoreStart = operationalPreflight.indexOf(
+  'name: Restore private Copernicus operational range cache',
+);
+const operationalSourceRestore = operationalPreflight.slice(
+  operationalSourceRestoreStart,
+  operationalPreflight.indexOf('\n      - name:', operationalSourceRestoreStart + 1),
+);
+if (!operationalSourceRestore.includes('.cache/copernicus-current-shadow.json')
+  || !operationalSourceRestore.includes('.cache/copernicus-current-source-stage.json')) {
+  throw new Error('Operational preflight skal gendanne shadow og source-stage i samme cachetrin.');
+}
+const operationalDependencyInstall = operationalPreflight.slice(
+  operationalPreflight.indexOf('name: Install only weather-source dependencies'),
+  operationalPreflight.indexOf('name: Smoke-test the required low-level ecCodes API'),
+);
+if (operationalDependencyInstall.includes('requirements-copernicus.txt')) {
+  throw new Error('Operational preflight må ikke installere Copernicus før source-stage-inspektionen kræver det.');
+}
+const operationalAcquisitionSection = operationalPreflight.slice(
+  operationalPreflight.indexOf('name: Install Copernicus acquisition dependency only when source stage is absent'),
+  operationalPreflight.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+);
+if ((operationalAcquisitionSection.match(/steps\.current-range\.outputs\.source_stage_ready != 'true'/g) || []).length !== 3
+  || operationalAcquisitionSection.includes('complete_range_present')) {
+  throw new Error('Install, credentials og acquisition må kun springes over på valideret source_stage_ready/komplet seal.');
+}
+const operationalValidatedSave = operationalPreflight.slice(
+  operationalPreflight.indexOf('name: Save validated private Copernicus progress before downstream closure'),
+  operationalPreflight.indexOf('name: Build exact DMI-first target through target plus 117 current closure'),
+);
+if (!operationalValidatedSave.includes('.cache/copernicus-current-shadow.json')
+  || !operationalValidatedSave.includes('.cache/copernicus-current-source-stage.json')
+  || !operationalValidatedSave.includes('actions/cache/save@v6')) {
+  throw new Error('Valideret shadow og source-stage skal gemmes samlet straks før closure.');
 }
 const privacySafeUploadMarker = 'name: Upload only the privacy-safe preflight evidence';
 const privacySafeUploadStart = operationalPreflight.indexOf(privacySafeUploadMarker);
@@ -403,6 +471,13 @@ if (copernicusKeepalive.includes('actions/cache/save@v6') || copernicusKeepalive
 const copernicusPreserveSection = copernicusKeepalive.slice(copernicusKeepalive.indexOf('  preserve:'), copernicusKeepalive.indexOf('  retry-failed-production:'));
 if (copernicusPreserveSection.includes('actions: write')) throw new Error('Det payloadfri Copernicus-keepalivejob må ikke få Actions-skriveret.');
 const text = buildWorkflow;
+for (const block of text.split('\n      - name:')) {
+  if (block.includes('actions/cache/')
+    && block.includes('.cache/copernicus-current-shadow.json')
+    && !block.includes('.cache/copernicus-current-source-stage.json')) {
+    throw new Error('Hvert produktions-shadow-cachetrin skal også bære source-stage-sidecaren.');
+  }
+}
 const activeTripGateStart = text.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
 const protectedWritesStart = text.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact');
 if (activeTripGateStart < 0 || protectedWritesStart <= activeTripGateStart) {
@@ -440,18 +515,79 @@ for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}',
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
   'Bind production to resolved DMI current hour',
-  'Inspect targeted Copernicus coverage after fresh DMI',
+  'Inspect target-bound Copernicus source stage after fresh DMI',
+  'Remove only invalid production Copernicus source disposition',
+  "steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'",
+  'rm -f .cache/copernicus-current-source-stage.json',
   'Fill only exact-hour DMI gaps from Copernicus',
-  'Require complete target/DMI-bound Copernicus current range before scoring',
+  'Require completed Copernicus source stage before combined current closure',
   'python scripts/check-copernicus-current-range.py',
+  '--source-stage .cache/copernicus-current-source-stage.json',
+  '--allow-nonmatching-seal',
   '--registry .cache/copernicus-current-targets.json',
   '--dmi data/live/dmi-bulk-cache.json',
   '--targets data/live/coastal-parts-v2.json',
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  '--require-complete',
-  'Save targeted private Copernicus supplement',
+  '--require-source-stage-ready',
+  'Save non-cancelled private Copernicus source-stage progress',
+  'Save validated private Copernicus progress before downstream closure',
+  'Build exact DMI-first current operational closure',
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
+}
+const productionSourceInspection = text.slice(
+  text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
+  text.indexOf('name: Install targeted Copernicus dependencies'),
+);
+for (const marker of [
+  '--shadow .cache/copernicus-current-shadow.json',
+  '--source-stage .cache/copernicus-current-source-stage.json',
+  '--allow-nonmatching-seal',
+  '--github-output "$GITHUB_OUTPUT"',
+]) {
+  if (!productionSourceInspection.includes(marker)) {
+    throw new Error(`Produktionsworkflowets source-stage-inspektion mangler ${marker}`);
+  }
+}
+for (const restoreName of [
+  'Refresh private Copernicus cache before DMI cache churn',
+  'Refresh private Copernicus cache after DMI cache churn',
+]) {
+  const restoreStart = text.indexOf(`name: ${restoreName}`);
+  const restoreEnd = text.indexOf('\n      - name:', restoreStart + 1);
+  const restoreBlock = text.slice(restoreStart, restoreEnd < 0 ? text.length : restoreEnd);
+  if (!restoreBlock.includes('.cache/copernicus-current-shadow.json')
+    || !restoreBlock.includes('.cache/copernicus-current-source-stage.json')) {
+    throw new Error(`${restoreName} skal gendanne shadow og source-stage samlet.`);
+  }
+}
+const productionAcquisitionSection = text.slice(
+  text.indexOf('name: Install targeted Copernicus dependencies'),
+  text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+);
+if ((productionAcquisitionSection.match(/steps\.targeted-copernicus-cache\.outputs\.source_stage_ready != 'true'/g) || []).length !== 3
+  || productionAcquisitionSection.includes('current_hour_present')
+  || productionAcquisitionSection.includes('complete_range_present')) {
+  throw new Error('Produktionens install, credentials og acquisition må kun springes over på valideret source_stage_ready/komplet seal.');
+}
+const productionProgressSave = text.slice(
+  text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+  text.indexOf('name: Require completed Copernicus source stage before combined current closure'),
+);
+if (!productionProgressSave.includes("steps.copernicus-fill.outcome != 'cancelled'")
+  || !productionProgressSave.includes("steps.copernicus-fill.outcome != 'skipped'")
+  || !productionProgressSave.includes('.cache/copernicus-current-shadow.json')
+  || !productionProgressSave.includes('.cache/copernicus-current-source-stage.json')) {
+  throw new Error('Produktion skal gemme shadow og source-stage samlet efter ethvert ikke-annulleret acquisitionforsøg.');
+}
+const productionValidatedSave = text.slice(
+  text.indexOf('name: Save validated private Copernicus progress before downstream closure'),
+  text.indexOf('name: Build exact DMI-first current operational closure'),
+);
+if (!productionValidatedSave.includes('.cache/copernicus-current-shadow.json')
+  || !productionValidatedSave.includes('.cache/copernicus-current-source-stage.json')
+  || !productionValidatedSave.includes('actions/cache/save@v6')) {
+  throw new Error('Produktion skal gemme valideret shadow og source-stage samlet umiddelbart før closure.');
 }
 if (text.includes('--nearest-dmi-hour') || text.includes('--full-coast')) {
   throw new Error('Produktionsworkflowet må hverken rebindes til nearest-time eller vælge implicit full-coast.');
@@ -502,7 +638,13 @@ const positions = {
   dmiTerminalGate: text.indexOf('name: Require successful DMI producer before current supplement'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
-  copernicusRangeGate: text.indexOf('name: Require complete target/DMI-bound Copernicus current range before scoring'),
+  copernicusInspect: text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
+  copernicusNormalize: text.indexOf('name: Remove only invalid production Copernicus source disposition'),
+  copernicusFill: text.indexOf('name: Fill only exact-hour DMI gaps from Copernicus'),
+  copernicusProgressSave: text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
+  copernicusRangeGate: text.indexOf('name: Require completed Copernicus source stage before combined current closure'),
+  copernicusValidatedSave: text.indexOf('name: Save validated private Copernicus progress before downstream closure'),
+  currentClosure: text.indexOf('name: Build exact DMI-first current operational closure'),
   liveCurrentBuild: text.indexOf('name: Build public seven-day current history and controlled live selection'),
   weather: text.indexOf('name: Update central weather cache'),
   provenance: text.indexOf('name: Attach scientific current provenance and exact DMI grid points'),
@@ -554,7 +696,13 @@ const expected = [
   'dmiTerminalGate',
   'targetedCopernicus',
   'resolvedCurrentHour',
+  'copernicusInspect',
+  'copernicusNormalize',
+  'copernicusFill',
+  'copernicusProgressSave',
   'copernicusRangeGate',
+  'copernicusValidatedSave',
+  'currentClosure',
   'liveCurrentBuild',
   'weather',
   'provenance',

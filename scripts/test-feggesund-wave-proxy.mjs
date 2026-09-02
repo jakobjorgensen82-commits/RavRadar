@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import {
   FEGGESUND_WAVE_PROXY_POLICY,
   FEGGESUND_WAVE_PROXY_POLICY_SHA256,
@@ -26,6 +27,20 @@ const canonicalValue = value => {
 const digest = value => crypto.createHash('sha256')
   .update(JSON.stringify(canonicalValue(value)))
   .digest('hex');
+const updateWeatherSource = fs.readFileSync(
+  new URL('./update-weather.mjs', import.meta.url),
+  'utf8',
+);
+assert.match(
+  updateWeatherSource,
+  /\+\s*\(RAVSCORE_PUBLIC_FORECAST_HOURS - 1\) \* 3_600_000;/,
+  'Feggesund proof entries must stop at the 118-hour public horizon',
+);
+assert.match(
+  updateWeatherSource,
+  /buildFeggesundWaveCoverageProof\(\{\s*forecastStartAt: partForecastStartAt,\s*forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,/,
+  'Feggesund coverage proof must use the 118-hour public horizon',
+);
 const source = (parentZoneId, waveHeightM, wavePeriodS, waveDirectionDeg, digit) => ({
   parentZoneId,
   validTime: TIME,
@@ -182,11 +197,24 @@ assert.equal(verifyCompactFeggesundWaveProxy({
   projection: directionlessActiveProxy,
 }), false, 'compact proxy must reject positive waves without a finite direction');
 
-const directDirectionOptional = buildFeggesundWaveInputProofEntry({
+const completeDirect = buildFeggesundWaveInputProofEntry({
   partId: 'synthetic-feggesund-part',
   time: TIME,
   hour: {
     waveHeightM: 1,
+    wavePeriodS: 6,
+    waveDirectionDeg: 45,
+    waveInputSource: 'DIRECT_OFFICIAL',
+    waveInputNoticeId: null,
+    waveProvenance: { status: 'verified', provider: 'dmi' },
+  },
+});
+assert.equal(completeDirect.disposition, 'DIRECT');
+const exactCalmDirect = buildFeggesundWaveInputProofEntry({
+  partId: 'synthetic-feggesund-part',
+  time: TIME,
+  hour: {
+    waveHeightM: 0,
     wavePeriodS: 0,
     waveDirectionDeg: null,
     waveInputSource: 'DIRECT_OFFICIAL',
@@ -194,8 +222,24 @@ const directDirectionOptional = buildFeggesundWaveInputProofEntry({
     waveProvenance: { status: 'verified', provider: 'dmi' },
   },
 });
-assert.equal(directDirectionOptional.disposition, 'DIRECT',
-  'direct DMI keeps the existing height/period rule even without direction');
+assert.equal(exactCalmDirect.disposition, 'DIRECT',
+  'verified exact calm remains a physically valid direct DMI tuple');
+for (const invalidDirectTuple of [
+  { waveHeightM: 1, wavePeriodS: 0, waveDirectionDeg: 45 },
+  { waveHeightM: 1, wavePeriodS: 6, waveDirectionDeg: null },
+]) {
+  assert.throws(() => buildFeggesundWaveInputProofEntry({
+    partId: 'synthetic-feggesund-part',
+    time: TIME,
+    hour: {
+      ...invalidDirectTuple,
+      waveInputSource: 'DIRECT_OFFICIAL',
+      waveInputNoticeId: null,
+      waveProvenance: { status: 'verified', provider: 'dmi' },
+    },
+  }), /inconsistent accepted input/,
+  'coverage proof must not classify an incomplete official tuple as DIRECT');
+}
 for (const invalidProxyTuple of [
   { waveHeightM: 1, wavePeriodS: 0, waveDirectionDeg: 45 },
   { waveHeightM: 1, wavePeriodS: 6, waveDirectionDeg: null },

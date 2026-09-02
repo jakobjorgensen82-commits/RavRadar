@@ -49,10 +49,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install central geometry and Copernicus dependencies
+      - name: Install central geometry dependencies
         run: |
           python -m pip install --disable-pip-version-check "shapely>=2.0,<3" "pyproj>=3.6,<4"
-          python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Rebuild the latest centrally approved sampling points
         env:
@@ -101,20 +100,13 @@ jobs:
           args+=(--github-output "$GITHUB_OUTPUT")
           python scripts/build-copernicus-target-registry.py "${args[@]}"
 
-      - name: Run deterministic pilot tests
-        run: |
-          python scripts/test-copernicus-current-pilot.py
-          python scripts/test-copernicus-range-runner-v2.py
-          python scripts/test-copernicus-range-checker-v2.py
-          python scripts/test-copernicus-shadow-retention-4.0.232.py
-          python scripts/test-live-current-pilot-4.0.232.py
-          python scripts/test-current-regional-proxy-policy.py
-
       - name: Restore private sealed Copernicus range cache
         if: steps.dmi-coverage.outputs.available == 'true'
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             copernicus-current-range-v2-
@@ -129,10 +121,31 @@ jobs:
           --registry .cache/copernicus-current-targets.json
           --dmi data/live/dmi-bulk-cache.json
           --targets data/live/coastal-parts-v2.json
+          --source-stage .cache/copernicus-current-source-stage.json
+          --allow-nonmatching-seal
           --github-output "$GITHUB_OUTPUT"
 
+      - name: Remove only invalid restored Copernicus source disposition
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        run: rm -f .cache/copernicus-current-source-stage.json
+
+      - name: Install Copernicus acquisition dependency only when source stage is absent
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Run deterministic pilot tests only before a new acquisition
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        run: |
+          python scripts/test-copernicus-current-pilot.py
+          python scripts/test-copernicus-range-runner-v2.py
+          python scripts/test-copernicus-range-checker-v2.py
+          python scripts/test-copernicus-shadow-retention-4.0.232.py
+          python scripts/test-current-operational-closure.py
+          python scripts/test-current-operational-live-builder.py
+          python scripts/test-current-regional-proxy-policy.py
+
       - name: Verify Copernicus secrets are configured
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present != 'true'
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -142,21 +155,30 @@ jobs:
 
       - name: Complete only the exact sealed DMI-gap range
         id: acquisition
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present != 'true'
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
-          --attempts 2
-          --timeout-seconds 600
+          --attempts 1
+          --timeout-seconds 1200
           --backoff-seconds 20
           --
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "${{ steps.target-registry.outputs.target_hour }}"
 
-      - name: Prove the resulting exact range seal
+      - name: Save non-cancelled Copernicus source-stage progress
+        if: always() && steps.dmi-coverage.outputs.available == 'true' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-range-v2-progress-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Prove the resulting exact Copernicus source stage
         if: steps.dmi-coverage.outputs.available == 'true'
         run: >-
           python scripts/check-copernicus-current-range.py
@@ -164,14 +186,17 @@ jobs:
           --registry .cache/copernicus-current-targets.json
           --dmi data/live/dmi-bulk-cache.json
           --targets data/live/coastal-parts-v2.json
-          --require-complete
+          --source-stage .cache/copernicus-current-source-stage.json
+          --require-source-stage-ready
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Save private sealed Copernicus range cache
+      - name: Save validated private Copernicus source stage
         if: steps.dmi-coverage.outputs.available == 'true' && success()
         uses: actions/cache/save@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reject secret or raw-vector leakage from support report
@@ -211,8 +236,8 @@ jobs:
             data/diagnostics/copernicus-current-pilot.txt
 
       - name: Report safe duplicate suppression
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.complete_range_present == 'true'
-        run: echo "The exact target-48 through target+117 DMI-gap range is already sealed; authenticated download skipped."
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready == 'true'
+        run: echo "The exact target/DMI/shadow-bound Copernicus source stage is already valid; dependency installation, credentials and authenticated download were skipped."
 
       - name: Report safe private-cache skip
         if: steps.dmi-coverage.outputs.available != 'true'
@@ -261,7 +286,6 @@ jobs:
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
-          -r requirements-copernicus.txt
 
       - name: Smoke-test the required low-level ecCodes API
         run: python scripts/smoke-test-eccodes.py
@@ -326,7 +350,9 @@ jobs:
       - name: Restore private Copernicus operational range cache
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             copernicus-current-shadow-v1-
@@ -410,7 +436,7 @@ jobs:
           --output .cache/copernicus-current-targets.json
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Inspect existing exact operational Copernicus seal
+      - name: Inspect existing exact operational Copernicus source stage
         id: current-range
         run: >-
           python scripts/check-copernicus-current-range.py
@@ -418,11 +444,20 @@ jobs:
           --registry .cache/copernicus-current-targets.json
           --dmi data/live/dmi-bulk-cache.json
           --targets data/live/coastal-parts-v2.json
+          --source-stage .cache/copernicus-current-source-stage.json
           --allow-nonmatching-seal
           --github-output "$GITHUB_OUTPUT"
 
+      - name: Remove only invalid operational Copernicus source disposition
+        if: steps.current-range.outputs.source_stage_ready != 'true'
+        run: rm -f .cache/copernicus-current-source-stage.json
+
+      - name: Install Copernicus acquisition dependency only when source stage is absent
+        if: steps.current-range.outputs.source_stage_ready != 'true'
+        run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
       - name: Verify Copernicus credentials only when exact gaps remain
-        if: steps.current-range.outputs.complete_range_present != 'true'
+        if: steps.current-range.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -432,7 +467,7 @@ jobs:
 
       - name: Fill only the exact operational DMI gap seal
         id: copernicus-fill
-        if: steps.current-range.outputs.complete_range_present != 'true'
+        if: steps.current-range.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -446,28 +481,38 @@ jobs:
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
-      - name: Save progressive private Copernicus cache after interrupted fill
-        if: always() && steps.copernicus-fill.outcome == 'failure' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+      - name: Save non-cancelled private Copernicus source-stage progress
+        if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-118-preflight-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Prove exact target through target plus 117 current coverage
+      - name: Require completed Copernicus source stage
         run: >-
           python scripts/check-copernicus-current-range.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --registry .cache/copernicus-current-targets.json
           --dmi data/live/dmi-bulk-cache.json
           --targets data/live/coastal-parts-v2.json
-          --require-complete
+          --source-stage .cache/copernicus-current-source-stage.json
+          --require-source-stage-ready
 
-      - name: Save exact private Copernicus operational seal
+      - name: Save validated private Copernicus progress before downstream closure
         if: success()
         uses: actions/cache/save@v6
         with:
-          path: .cache/copernicus-current-shadow.json
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
           key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Build exact DMI-first target through target plus 117 current closure
+        run: >-
+          python scripts/build-current-operational-closure.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
       - name: Build controlled live current selection
         run: python scripts/build-live-current-pilot.py
@@ -504,6 +549,119 @@ jobs:
           node scripts/audit-ravscore-integrated-public-runtime.mjs
           --input data/live/conditions.json
           --output "$RAVRADAR_PRIVATE_PREFLIGHT_REPORT"
+
+      - name: Measure incremental production-equivalent private runtime size without Supabase
+        shell: bash
+        run: |
+          private_root="$RUNNER_TEMP/ravradar-private-capacity-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          private_bundle="$private_root/bundle"
+          mkdir -p "$private_root"
+          node scripts/private-production-runtime-workflow.mjs incremental-size-dry-run \
+            --repository-root "$GITHUB_WORKSPACE" \
+            --private-root "$private_root" \
+            --bundle "$private_bundle" \
+            --source-head "$GITHUB_SHA" \
+            --checkpoint .cache/ravscore-continuation-checkpoint/checkpoint.json \
+            --runtime-audit "$RAVRADAR_PRIVATE_PREFLIGHT_REPORT" \
+            --output .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+          rmdir "$private_root"
+
+      - name: Require only conservative incremental private runtime size bounds
+        run: >-
+          jq -e '. as $report
+          | $report.kind == "RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN"
+          and $report.privacyClass == "AGGREGATE_PRIVATE_RUNTIME_CAPACITY"
+          and $report.incrementalGate.scope == "INCREMENTAL_PRIVATE_RUNTIME_ONLY"
+          and $report.incrementalGate.status == "WITHIN_INCREMENTAL_SIZE_BOUNDS"
+          and $report.incrementalGate.fullCutoverCapacityEvaluated == false
+          and $report.egress.reservePercent == 30
+          and $report.egress.usableBudgetPercent == 70
+          and $report.egress.conservativeMonthDays == 31
+          and $report.egress.scheduledFullBuildsPerDay == 60
+          and $report.egress.scheduledFullBuildsPerMonth == 1860
+          and $report.egress.normalObjectReadsPerFullBuild == 2
+          and $report.egress.rollbackObjectReadsPerFullBuild == 3
+          and $report.egress.usableBudgetBytes
+            == (($report.egress.monthlyQuotaBytes * 70 / 100) | floor)
+          and $report.egress.normalPerFullBuildBytes
+            == ($report.measurements.archiveObjectBytes * 2)
+          and $report.egress.rollbackPerFullBuildBytes
+            == ($report.measurements.archiveObjectBytes * 3)
+          and $report.egress.projectedMonthlyNormalBytes
+            == ($report.measurements.archiveObjectBytes * 2 * 1860)
+          and $report.egress.projectedMonthlyRollbackBytes
+            == ($report.measurements.archiveObjectBytes * 3 * 1860)
+          and $report.storage.reservePercent == 30
+          and $report.storage.usableBudgetPercent == 70
+          and $report.storage.retainedObjectGenerations == 2
+          and $report.storage.usableBudgetBytes
+            == (($report.storage.quotaBytes * 70 / 100) | floor)
+          and $report.storage.retainedStorageBytes
+            == ($report.measurements.archiveObjectBytes * 2)
+          and (($report.measurements.checkpointAvailable == true
+            and $report.measurements.checkpointSerializedBytes > 0
+            and $report.measurements.checkpointDisposition == "CHECKPOINT_SIZE_MEASURED"
+            and $report.measurements.checkpointAbsenceAttestedByRuntimeAudit == false)
+            or ($report.measurements.checkpointAvailable == false
+            and $report.measurements.checkpointSerializedBytes == null
+            and $report.measurements.checkpointDisposition
+              == "NOT_APPLICABLE_DURING_MEASURED_WARMUP"
+            and $report.measurements.checkpointAbsenceAttestedByRuntimeAudit == true))
+          and $report.cutoverGate.status
+            == "BLOCKED_PENDING_LIVE_BEFORE_AFTER_AND_OTHER_EGRESS"
+          and $report.cutoverGate.cutoverEligible == false
+          and $report.cutoverGate.liveSupabaseBeforeAfterMeasurementRequired == true
+          and $report.cutoverGate.liveSupabaseBeforeAfterMeasurementIncluded == false
+          and $report.cutoverGate.otherUnifiedEgressProjectionRequired == true
+          and $report.cutoverGate.otherUnifiedEgressProjectionIncluded == false
+          and $report.cutoverGate.checkpointDatabaseEgressIncluded == false
+          and $report.controls.supabaseRequestAttempted == false
+          and $report.controls.privatePayloadUploaded == false
+          and $report.controls.privatePayloadArtifactUploaded == false
+          and $report.controls.archivePersisted == false
+          and $report.controls.temporaryBundleRemoved == true'
+          .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+          > /dev/null
+
+      - name: Report only aggregate incremental private runtime size evidence
+        shell: bash
+        run: |
+          jq -c '{
+            schemaVersion,
+            kind,
+            privacyClass,
+            incrementalGate,
+            measurements,
+            egress: (.egress | {
+              monthlyQuotaBytes,
+              reservePercent,
+              usableBudgetPercent,
+              usableBudgetBytes,
+              conservativeMonthDays,
+              scheduledFullBuildsPerDay,
+              scheduledFullBuildsPerMonth,
+              normalObjectReadsPerFullBuild,
+              rollbackObjectReadsPerFullBuild,
+              normalPerFullBuildBytes,
+              rollbackPerFullBuildBytes,
+              projectedMonthlyNormalBytes,
+              projectedMonthlyRollbackBytes,
+              normalWithinBudget,
+              rollbackWithinBudget
+            }),
+            storage: (.storage | {
+              quotaBytes,
+              reservePercent,
+              usableBudgetPercent,
+              usableBudgetBytes,
+              retainedObjectGenerations,
+              retainedStorageBytes,
+              withinBudget
+            }),
+            cutoverGate,
+            controls
+          }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
+          echo "Incremental private-runtime size is within its isolated bounds. Live Supabase before/after measurement and the billing-period projection after all other unified egress remain mandatory before cutover."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

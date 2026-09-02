@@ -221,6 +221,19 @@ try {
   });
   assert.equal(archiveOne.descriptor.objectSha256, archiveTwo.descriptor.objectSha256);
   assert.deepEqual(archiveOne.archive, archiveTwo.archive, 'protected archive bytes must be deterministic');
+  assert.equal(Object.isFrozen(archiveOne.archiveMetrics), true);
+  assert.equal(archiveOne.archiveMetrics.rawPayloadBytes > 0, true);
+  assert.equal(
+    archiveOne.archiveMetrics.envelopeBytes >= archiveOne.archiveMetrics.rawPayloadBytes,
+    true,
+  );
+  assert.equal(archiveOne.archiveMetrics.objectBytes, archiveOne.archive.length);
+  assert.equal(archiveOne.archiveMetrics.objectBytes, archiveOne.descriptor.objectBytes);
+  assert.deepEqual(
+    archiveOne.archiveMetrics,
+    archiveTwo.archiveMetrics,
+    'aggregate archive measurements must be deterministic with the production packer',
+  );
 
   const publishedFirst = await publishProtectedPrivateProductionRuntime({
     privateRoot,
@@ -453,6 +466,10 @@ try {
   });
   cleanStorage.objects.set(thirdArchive.descriptor.objectPath, thirdArchive.archive);
   documents.losePatch();
+  const referencedBeforeCasLoss = new Set([
+    documents.row().payload.current.objectPath,
+    documents.row().payload.previous.objectPath,
+  ]);
   await assert.rejects(
     publishProtectedPrivateProductionRuntime({
       privateRoot,
@@ -467,6 +484,14 @@ try {
     /compare-and-swap lost a concurrent write/,
   );
   assert.equal(documents.row().version, 3);
+  assert.equal(cleanStorage.objects.size, 2,
+    'a lost CAS must remove only the newly-created unreferenced object');
+  assert.deepEqual(new Set(cleanStorage.objects.keys()), referencedBeforeCasLoss,
+    'a lost CAS must preserve both pointer-referenced generations');
+  assert.equal(cleanStorage.removed.length, 1,
+    'a lost CAS must perform exactly one bounded orphan cleanup');
+  assert.equal(referencedBeforeCasLoss.has(cleanStorage.removed[0]), false,
+    'orphan cleanup must never delete current or previous');
 
   const implementation = await fs.readFile(
     'scripts/protected-private-production-runtime.mjs',

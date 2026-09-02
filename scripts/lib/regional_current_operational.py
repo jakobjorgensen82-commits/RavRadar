@@ -565,6 +565,7 @@ def _validated_sample(
         "validTimeAt": valid_time_dt,
         "sourceAssetSha256": source_asset_sha256,
         "sourceProofSha256": source_proof_sha256,
+        "vectorCommitmentSha256": vector_commitment_sha256,
     }
 
 
@@ -652,6 +653,7 @@ def _classify_pairs(
                 "sourceModelRun": selected["modelRun"],
                 "sourceAssetSha256": selected["sourceAssetSha256"],
                 "sourceProofSha256": selected["sourceProofSha256"],
+                "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
             })
             continue
         prior: list[tuple[int, dict[str, Any]]] = []
@@ -680,6 +682,7 @@ def _classify_pairs(
                 "holdAgeHours": age_hours,
                 "sourceAssetSha256": selected["sourceAssetSha256"],
                 "sourceProofSha256": selected["sourceProofSha256"],
+                "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
             })
         elif any(
             (gap_dt - datetime.fromisoformat(value.replace("Z", "+00:00"))).total_seconds()
@@ -818,6 +821,7 @@ def _validate_private_proof(private_proof: Any) -> dict[str, Any]:
             "sourceModelRun",
             "sourceAssetSha256",
             "sourceProofSha256",
+            "vectorCommitmentSha256",
         }
         if classification == REGIONAL_DMI_DERIVED_HOLD:
             expected_fields.add("holdAgeHours")
@@ -835,6 +839,8 @@ def _validate_private_proof(private_proof: Any) -> dict[str, Any]:
             or not _SHA256.fullmatch(row["sourceAssetSha256"])
             or not isinstance(row.get("sourceProofSha256"), str)
             or not _SHA256.fullmatch(row["sourceProofSha256"])
+            or not isinstance(row.get("vectorCommitmentSha256"), str)
+            or not _SHA256.fullmatch(row["vectorCommitmentSha256"])
         ):
             _fail("PRIVATE_PROOF_INVALID")
         if classification == REGIONAL_DMI_NATIVE:

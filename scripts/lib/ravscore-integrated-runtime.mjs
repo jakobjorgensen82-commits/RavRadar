@@ -1,5 +1,8 @@
 import { evaluateRavScoreIntegrated } from '../../js/core/ravscore-integrated.js';
-import { buildIntegratedRavScoreStateSeries } from '../../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  buildIntegratedRavScoreStateSeries,
+  canonicalRavScoreStateOnlyCurrentHold,
+} from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -8,6 +11,7 @@ import {
   ravScoreModelBinding,
 } from '../../js/core/ravscore-model-contract.js';
 import { candidateGStateKey } from './coastal-point-staging-contract.mjs';
+import { stateOnlyCurrentRowForbiddenFields } from './live-current-pilot.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -233,6 +237,23 @@ function scoreWeatherProjection(weather = {}) {
   };
 }
 
+function stateOnlyCurrentHoldForPart(weather, part, zone) {
+  const marker = canonicalRavScoreStateOnlyCurrentHold(
+    weather?.currentStateOnlyHold,
+    weather?.time,
+  );
+  if (marker === null) return null;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? zone?.id ?? null;
+  if (marker.partId !== part?.partId
+    || typeof parentZoneId !== 'string'
+    || marker.parentZoneId !== parentZoneId
+    || stateOnlyCurrentRowForbiddenFields(weather)
+      .some(field => weather[field] !== null && weather[field] !== undefined)) {
+    throw new Error('Integrated state-only current hold is not bound to the exact part/hour');
+  }
+  return marker;
+}
+
 /**
  * Production adapter for one coastal part. Raw current vectors stay in the
  * caller's forecast record; only derived speed/direction and compact signed
@@ -266,6 +287,7 @@ export function buildIntegratedPartScoreSeries({
       : null,
     currentVerified: weather.currentProvenance?.status === 'verified',
     currentProvenance: weather.currentProvenance ?? null,
+    currentStateOnlyHold: stateOnlyCurrentHoldForPart(weather, part, zone),
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
     waveDirectionDeg: weather.waveDirectionDeg,
