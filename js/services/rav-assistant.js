@@ -109,7 +109,8 @@ function publicScoreQuality(result, available) {
   if (available
     && result.scoreQuality === 'FULL_HISTORY'
     && typeof result.calibrationEligible === 'boolean'
-    && RAVSCORE_CALIBRATION_ELIGIBLE === true
+    && (RAVSCORE_CALIBRATION_ELIGIBLE === true
+      || result.calibrationEligible === false)
     && coverage === ASSISTANT_HISTORY_HOURS
     && reasonCodes?.length === 0
     && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']

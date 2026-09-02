@@ -12,7 +12,7 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
   modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-  modelBundleSha256: "8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807",
+  modelBundleSha256: "db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -135,7 +135,8 @@ function publicScoreQuality(result, available) {
   if (available
     && result.scoreQuality === "FULL_HISTORY"
     && typeof result.calibrationEligible === 'boolean'
-    && ASSISTANT_FULL_HISTORY_CALIBRATION_ELIGIBLE === true
+    && (ASSISTANT_FULL_HISTORY_CALIBRATION_ELIGIBLE === true
+      || result.calibrationEligible === false)
     && coverage === ASSISTANT_HISTORY_HOURS
     && reasonCodes?.length === 0
     && ["EXACT_POINT_SCORE", "CONSERVATIVE_TAIL_RESET_POINT_SCORE"]

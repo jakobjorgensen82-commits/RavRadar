@@ -486,7 +486,8 @@ function assertPublicScoreQuality(value) {
   }
   if (value.scoreQuality === 'FULL_HISTORY') {
     if (value.available !== true
-      || RAVSCORE_CALIBRATION_ELIGIBLE !== true) {
+      || (RAVSCORE_CALIBRATION_ELIGIBLE !== true
+        && value.calibrationEligible !== false)) {
       throw new Error('Public FULL_HISTORY RavScore has invalid active-model calibration eligibility');
     }
   } else if (value.calibrationEligible !== false) {

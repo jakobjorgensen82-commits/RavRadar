@@ -5,9 +5,10 @@
 
 ## Forseglede 4.0.319-bindinger
 
-- Integrated: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 deklarerede forbrugere.
-- Candidate G-rollback: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=1efabdda91d8ba491b10d406bfc325079a75e75b7c84807d8c24dfdf4f9e6fc3` over 56 transitive filer.
+- Integrated: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 deklarerede forbrugere.
+- Candidate G-rollback: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=ea22921e298a03ed1ef8787a4dbd79fd4fdf1a9b8e188d3c4b44e03f16fdceb0` over 56 transitive filer.
 - Disse lokale værdier er slutidentiteterne for kandidaten, men er ikke i sig selv exact-head-, 118-timers-, merge-, produktions- eller browserbevis.
+- Exact-head `33577887262` stoppede sikkert i Candidate G-rollbackens offentlige stage, fordi `FULL_HISTORY` med `calibrationEligible=false` blev afvist af den nye integrerede calibration-ceiling. Rettelsen gør de fem bindende validatorer symmetriske uden at åbne integreret kalibrering; rollback public-stage 210/673, Candidate-assistent, integrerede public consumers og Edge er måltestet grønne. Ny exact-head afventer.
 
 ## Integrated-first uden kunstig historik
 

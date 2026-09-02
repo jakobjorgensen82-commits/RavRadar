@@ -92,7 +92,8 @@ function strictScoreQuality(value, { available } = {}) {
   if (available === true
     && value.scoreQuality === 'FULL_HISTORY'
     && typeof value.calibrationEligible === 'boolean'
-    && RAVSCORE_CALIBRATION_ELIGIBLE === true
+    && (RAVSCORE_CALIBRATION_ELIGIBLE === true
+      || value.calibrationEligible === false)
     && value.historyCoverageHours === HISTORY_COVERAGE_HOURS
     && historyReasonCodes.length === 0
     && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']

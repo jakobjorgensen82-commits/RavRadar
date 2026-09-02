@@ -39,7 +39,7 @@ Alle rækker i matrixen bruger denne kanoniske binding fra `js/core/ravscore-mod
 | Rangering | `direction-broad-19-history-tie-v2` |
 | Bedste tidspunkt | `score-history-water-tie-earliest-v3` |
 | Parameterkontrakt | Aktiv 4.0.319-værdi `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` |
-| Transitiv implementeringsbundle | Aktiv 4.0.319-værdi `modelBundleSha256=8f723615a4ec0c0809c83caadfb843de2c5811e213d29518e1d60d9baa973807` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 bindingsforbrugere |
+| Transitiv implementeringsbundle | Aktiv 4.0.319-værdi `modelBundleSha256=db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 bindingsforbrugere |
 
 Et match på model-id eller parameterhash uden resten af bindingen er inkompatibelt. Producenter og forbrugere kontrollerer både parameterkontrakten og den transitive implementeringsbundle. Dual-hash-red-team-fundet er lukket lokalt: `modelContractSha256` og `modelBundleSha256` følger den fulde 11-feltsbinding transitivt og afvises særskilt ved mismatch. Bundlegeneratoren reproducerer den aktive 4.0.319-digest over præcis 44 filer og 8 bindingsforbrugere; matrixen er fortsat ikke exact-head- eller produktionsbevis.
 
