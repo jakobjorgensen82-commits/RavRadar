@@ -1102,9 +1102,18 @@ for(const marker of [
   'def reset_private_part_wave_cache(',
   'reset_rows = reset_private_part_wave_cache(result, parts)',
   'aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows',
-  'write_checkpoint(result, fresh_zone_ids, budget, "partial")',
+  'def process_grib_transactionally(',
+  'restore_mapping(diagnostics, diagnostics_snapshot)',
+  'commit_asset_stage_document(output, output_stage)',
+  'def write_checkpoint(',
+  '"validation": "pending-finalization"',
+  'atomic_write_bulk_cache(result, pretty=False)',
+  'def write_finalized_cache(',
+  'atomic_write_bulk_cache(result, pretty=True)',
+  'write_ocean_diagnostics(result)',
+  'class ProgressCheckpointController:',
 ]){
-  ok(dmiBulkProducer.includes(marker),`DMI cold-cache-overgangen mangler målt rebuildkontrakt: ${marker}`);
+  ok(dmiBulkProducer.includes(marker),`DMI asset-/checkpointkæden mangler atomisk progression: ${marker}`);
 }
 ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
   && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
