@@ -628,6 +628,161 @@ tampered_outcome_run["processedSteps"][reuse_hour]["currentPartOutcomeProof"][
 ] = "sha256:" + "0" * 64
 assert producer.reusable_processed_steps(tampered_outcome_run, **reuse_args) == {}
 
+# Exact native current hours remain complete while optional marine fields retain
+# the established non-ledger stride. Progress checkpoints are bounded by both
+# work count and wall time and can always be forced at a safe boundary.
+filter_run = "2026-01-01T00:00:00Z"
+filter_non_stride = "2026-01-01T07:00:00Z"
+filter_stride = "2026-01-01T09:00:00Z"
+filter_required = {filter_non_stride, filter_stride}
+assert producer.operational_asset_parameter_filter(
+    "dkss_lf", filter_non_stride, filter_run, filter_required
+) == set(producer.REQUIRED_TARGETS["marine"])
+assert producer.operational_asset_parameter_filter(
+    "dkss_lf", filter_stride, filter_run, filter_required
+) is None
+assert producer.operational_asset_parameter_filter(
+    "dkss_lf", "2026-01-01T08:00:00Z", filter_run, filter_required
+) is None
+assert producer.operational_asset_parameter_filter(
+    "wam_dw", filter_non_stride, filter_run, filter_required
+) is None
+
+checkpoint_at = 100.0
+assert not producer.progress_checkpoint_due(0, checkpoint_at, force=True)
+assert not producer.progress_checkpoint_due(
+    producer.CHECKPOINT_MAX_ASSETS - 1,
+    checkpoint_at,
+    now_monotonic=checkpoint_at + producer.CHECKPOINT_MAX_SECONDS - 1,
+)
+assert producer.progress_checkpoint_due(
+    producer.CHECKPOINT_MAX_ASSETS,
+    checkpoint_at,
+    now_monotonic=checkpoint_at,
+)
+assert producer.progress_checkpoint_due(
+    1,
+    checkpoint_at,
+    now_monotonic=checkpoint_at + producer.CHECKPOINT_MAX_SECONDS,
+)
+assert producer.progress_checkpoint_due(
+    1,
+    checkpoint_at,
+    force=True,
+    now_monotonic=checkpoint_at,
+)
+
+# One low-level SAME_GRID context must return the exact same canonical marine
+# candidate union as the legacy high-level helper using the unchanged probes.
+original_low_new = producer.codes_grib_nearest_new
+original_low_find = producer.codes_grib_nearest_find
+original_low_delete = producer.codes_grib_nearest_delete
+original_same_grid_flag = producer.CODES_GRIB_NEAREST_SAME_GRID
+original_high_find = producer.codes_grib_find_nearest
+try:
+    signature = ("synthetic-grid",)
+    low_new_calls = []
+    low_find_flags = []
+    low_delete_calls = []
+
+    def deterministic_four(_gid, latitude, longitude, *args, **kwargs):
+        del args, kwargs
+        base = abs(
+            int(round((float(latitude) + 90.0) * 1_000_000)) * 1_000_003
+            + int(round((float(longitude) + 180.0) * 1_000_000))
+        )
+        return [
+            {
+                "index": base + offset,
+                "lat": float(latitude) + offset * 0.00001,
+                "lon": float(longitude) - offset * 0.00001,
+            }
+            for offset in range(4)
+        ]
+
+    producer.GRID_INDEX_CACHE.clear()
+    producer.codes_grib_find_nearest = deterministic_four
+    legacy_candidates = producer.nearest_candidates(
+        996,
+        "dkss_lf",
+        zone,
+        signature=signature,
+    )
+
+    producer.GRID_INDEX_CACHE.clear()
+    producer.CODES_GRIB_NEAREST_SAME_GRID = 1
+    producer.codes_grib_nearest_new = lambda gid: low_new_calls.append(gid) or 4242
+
+    def low_find(nearest_id, gid, latitude, longitude, flags, is_lsm, npoints):
+        assert nearest_id == 4242 and is_lsm is False and npoints == 4
+        low_find_flags.append(flags)
+        return deterministic_four(gid, latitude, longitude)
+
+    producer.codes_grib_nearest_find = low_find
+    producer.codes_grib_nearest_delete = lambda nearest_id: low_delete_calls.append(nearest_id)
+    producer.warm_marine_grid_cache(996, "dkss_lf", [zone], signature)
+    warmed_candidates = producer.nearest_candidates(
+        996,
+        "dkss_lf",
+        zone,
+        signature=signature,
+    )
+    assert warmed_candidates == legacy_candidates
+    assert low_new_calls == [996]
+    assert low_delete_calls == [4242]
+    assert low_find_flags[0] == 0
+    assert set(low_find_flags[1:]) == {producer.CODES_GRIB_NEAREST_SAME_GRID}
+    completed_find_count = len(low_find_flags)
+    producer.warm_marine_grid_cache(996, "dkss_lf", [zone], signature)
+    assert len(low_find_flags) == completed_find_count
+    assert low_new_calls == [996]
+
+    # A rejected first probe must not enable SAME_GRID before ecCodes has
+    # successfully initialized the reusable nearest geometry.
+    producer.GRID_INDEX_CACHE.clear()
+    low_find_flags.clear()
+    low_delete_calls.clear()
+    first_boundary = [True]
+
+    def boundary_low_find(nearest_id, gid, latitude, longitude, flags, is_lsm, npoints):
+        assert nearest_id == 4242 and is_lsm is False and npoints == 4
+        low_find_flags.append(flags)
+        if first_boundary[0]:
+            first_boundary[0] = False
+            raise producer.OutOfAreaError("synthetic first probe outside grid")
+        return deterministic_four(gid, latitude, longitude)
+
+    producer.codes_grib_nearest_find = boundary_low_find
+    producer.warm_marine_grid_cache(996, "dkss_lf", [zone], signature)
+    assert low_find_flags[:2] == [0, 0]
+    assert set(low_find_flags[2:]) == {producer.CODES_GRIB_NEAREST_SAME_GRID}
+    assert low_delete_calls == [4242]
+
+    # A low-level failure is fail-closed, deletes the nearest object and leaves
+    # no partially warmed candidate map behind.
+    producer.GRID_INDEX_CACHE.clear()
+    low_delete_calls.clear()
+
+    def fail_low_find(*_args, **_kwargs):
+        raise RuntimeError("synthetic low-level nearest failure")
+
+    producer.codes_grib_nearest_find = fail_low_find
+    try:
+        producer.warm_marine_grid_cache(997, "dkss_lf", [zone], signature)
+    except producer.DmiGridLookupError as exc:
+        assert exc.failure_code == "NEAREST_GRID_LOOKUP_FAILED"
+    else:
+        raise AssertionError("Low-level nearest failure must fail closed")
+    assert low_delete_calls == [4242]
+    assert producer.GRID_INDEX_CACHE == {}
+finally:
+    producer.codes_grib_nearest_new = original_low_new
+    producer.codes_grib_nearest_find = original_low_find
+    producer.codes_grib_nearest_delete = original_low_delete
+    producer.CODES_GRIB_NEAREST_SAME_GRID = original_same_grid_flag
+    producer.codes_grib_find_nearest = original_high_find
+    producer.GRID_INDEX_CACHE.clear()
+
 # ecCodes/grid failures are local processing failures. They must propagate and
 # must never be cached or reclassified as a terminal spatial DMI gap.
 original_find_nearest = producer.codes_grib_find_nearest
@@ -725,6 +880,80 @@ try:
     assert vector_rows[zone["id"]][0]["value"] == 0.25
     assert scalar_rows[zone["id"]]["value"] == 0.25
 
+    # Grid identity and its digest are message-local work. Adding more zones
+    # must not multiply ecCodes metadata calls before a cache hit can be read.
+    metadata_calls = []
+
+    def counting_codes_get(_gid, key):
+        metadata_calls.append(key)
+        return 9999.0 if key == "missingValue" else f"grid-{key}"
+
+    second_zone = {**zone, "id": "PART::TEST-2"}
+    producer.codes_get = counting_codes_get
+    producer.codes_get_elements = lambda *_args, **_kwargs: [0.25]
+    counted_rows = producer.valid_candidates_batch(
+        998,
+        "dkss_idw",
+        [zone, second_zone],
+    )
+    assert set(counted_rows) == {zone["id"], second_zone["id"]}
+    assert metadata_calls.count("md5GridSection") == 1
+    assert metadata_calls.count("missingValue") == 1
+    assert len(metadata_calls) == 12
+    legacy_definition_signature = tuple(
+        f"grid-{key}" for key in producer.GRID_DEFINITION_KEYS
+    )
+    assert counted_rows[zone["id"]][0]["gridDefinitionSha256"] == (
+        producer.grid_definition_sha256_from_signature(
+            legacy_definition_signature
+        )
+    )
+    assert counted_rows[zone["id"]][0]["gridDefinitionSha256"] != (
+        producer.grid_definition_sha256_from_signature(
+            ("grid-md5GridSection", *legacy_definition_signature)
+        )
+    )
+
+    # Grid v9 keeps the public legacy digest stable, but two GRIB grids with
+    # identical dimensions and different grid-section md5 must never share the
+    # internal nearest-index cache.
+    def grid_identity_codes_get(gid, key):
+        if key == "md5GridSection":
+            return f"grid-section-{gid}"
+        return f"grid-{key}"
+
+    producer.codes_get = grid_identity_codes_get
+    first_cache_signature = producer.grid_cache_signature(1001)
+    second_cache_signature = producer.grid_cache_signature(1002)
+    assert first_cache_signature[1:] == second_cache_signature[1:]
+    assert first_cache_signature != second_cache_signature
+    producer.GRID_INDEX_CACHE.clear()
+
+    def one_grid_candidate(index):
+        def lookup(_latitude, _longitude):
+            return [{"index": index, "lat": 1.0, "lon": 2.0}]
+
+        return lookup
+
+    first_grid_rows = original_nearest_candidates(
+        1001,
+        "dkss_idw",
+        zone,
+        signature=first_cache_signature,
+        nearest_lookup=one_grid_candidate(71),
+    )
+    second_grid_rows = original_nearest_candidates(
+        1002,
+        "dkss_idw",
+        zone,
+        signature=second_cache_signature,
+        nearest_lookup=one_grid_candidate(72),
+    )
+    assert first_grid_rows[0]["index"] == 71
+    assert second_grid_rows[0]["index"] == 72
+    assert len(producer.GRID_INDEX_CACHE) == 2
+    producer.GRID_INDEX_CACHE.clear()
+
     # An unordered iterable can silently detach values from their requested
     # grid indexes even when its length happens to match.
     producer.codes_get_elements = lambda *_args, **_kwargs: {0.25}
@@ -779,20 +1008,23 @@ try:
     with tempfile.TemporaryDirectory() as directory:
         asset_path = Path(directory) / "synthetic-dkss.grib"
         asset_path.write_bytes(b"synthetic")
-        handles = iter((1, 2, 3, None))
+        handles = iter((1, 2, 3, 4, 5, None))
         producer.codes_grib_new_from_file = lambda _handle: next(handles)
         producer.codes_release = lambda _gid: None
         parameters = {
             1: "current-u",
             2: "current-v",
             3: "sea-mean-deviation",
+            4: "wind-tail-u-10m",
+            5: "wind-tail-v-10m",
         }
         producer.classify_parameter = lambda gid, _collection: parameters[gid]
         producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
             item["id"]: [dict(candidate, index=7)] for item in wanted
         }
         producer.nearest_valid_batch = lambda _gid, _collection, wanted: {
-            item["id"]: dict(candidate, index=7) for item in wanted
+            item["id"]: dict(candidate, index=7, _candidateCount=4)
+            for item in wanted
         }
         producer.nearest_candidates = lambda *_args, **_kwargs: [dict(candidate, index=7)]
         producer.should_stop_work = lambda: False
@@ -807,7 +1039,7 @@ try:
                 },
             },
         }
-        producer.process_grib(
+        unfiltered_found, _, _, _, _ = producer.process_grib(
             asset_path,
             "dkss_lf",
             "2026-01-01T00:00:00Z",
@@ -819,8 +1051,111 @@ try:
         grid_points = output["zones"][zone["id"]]["gridPoints"]
         assert grid_points["current-u"]["gridDefinitionSha256"] == "a" * 64
         assert grid_points["sea-mean-deviation"]["gridDefinitionSha256"] == "a" * 64
+        assert all("_candidateCount" not in point for point in grid_points.values())
         hour = output["zones"][zone["id"]]["hourly"][valid_time]
         assert "current-u" in hour and "sea-mean-deviation" in hour
+        assert {"wind-tail-u-10m", "wind-tail-v-10m"} <= set(hour)
+        assert {"wind-tail-u-10m", "wind-tail-v-10m"} <= unfiltered_found
+
+        # Exact native-current hours between optional-field stride positions
+        # still decode all required marine fields, but skip both optional wind
+        # messages before any grid lookup or output projection.
+        handles = iter((1, 2, 3, 4, 5, None))
+        filtered_output = {
+            "generatedAt": "2026-01-01T02:00:00Z",
+            "zones": {
+                zone["id"]: {
+                    "hourly": {},
+                    "gridPoints": {},
+                    "collections": {},
+                },
+            },
+        }
+        filtered_found, filtered_touched, _, _, _ = producer.process_grib(
+            asset_path,
+            "dkss_lf",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            [zone],
+            filtered_output,
+            {},
+            allowed_parameters=set(producer.REQUIRED_TARGETS["marine"]),
+        )
+        filtered_hour = filtered_output["zones"][zone["id"]]["hourly"][valid_time]
+        assert filtered_found == set(producer.REQUIRED_TARGETS["marine"])
+        assert filtered_touched == {zone["id"]}
+        assert {"current-u", "current-v", "sea-mean-deviation"} <= set(filtered_hour)
+        assert "wind-tail-u-10m" not in filtered_hour
+        assert "wind-tail-v-10m" not in filtered_hour
+        assert "wind-tail-u-10m" not in filtered_output["zones"][zone["id"]]["gridPoints"]
+        assert "wind-tail-v-10m" not in filtered_output["zones"][zone["id"]]["gridPoints"]
+
+        # Spatial outcome is collection-local. A valid farther DKSS candidate
+        # must not be labelled unavailable merely because an already selected
+        # DMI collection remains the closer global winner.
+        losing_candidate = {
+            **candidate,
+            "longitude": 2.02,
+            "distanceKm": 1.0,
+            "index": 9,
+        }
+        existing_source = producer.native_component_source(
+            "dkss_idw",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            component="current",
+            zone=zone,
+            grid_candidate=candidate,
+            capture=capture,
+            spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+            verticalLayer="depthBelowSea:1",
+            verticalLayerRankM=1.0,
+            vectorSelection=producer.CURRENT_VECTOR_SELECTION,
+            vectorSemanticsVersion=producer.CURRENT_VECTOR_SEMANTICS_VERSION,
+        )
+        assert existing_source is not None
+        handles = iter((11, 12, None))
+        producer.codes_grib_new_from_file = lambda _handle: next(handles)
+        producer.classify_parameter = lambda gid, _collection: {
+            11: "current-u",
+            12: "current-v",
+        }[gid]
+        producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
+            item["id"]: [dict(losing_candidate)] for item in wanted
+        }
+        losing_output = {
+            "generatedAt": "2026-01-01T02:00:00Z",
+            "zones": {
+                zone["id"]: {
+                    "hourly": {
+                        valid_time: {
+                            "time": valid_time,
+                            "current-u": 0.4,
+                            "current-v": -0.3,
+                            "sources": {"current": existing_source},
+                        },
+                    },
+                    "gridPoints": {},
+                    "collections": {},
+                },
+            },
+        }
+        part_outcome = {}
+        producer.process_grib(
+            asset_path,
+            "dkss_lf",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            [zone],
+            losing_output,
+            {},
+            current_part_outcomes=part_outcome,
+        )
+        assert part_outcome["complete"] is True
+        assert part_outcome["targetPartIds"] == ["TEST"]
+        assert part_outcome["spatialUnavailablePartIds"] == []
+        retained = losing_output["zones"][zone["id"]]["hourly"][valid_time]
+        assert retained["current-u"] == 0.4 and retained["current-v"] == -0.3
 finally:
     producer.codes_grib_new_from_file = original_codes_grib_new_from_file
     producer.codes_release = original_codes_release

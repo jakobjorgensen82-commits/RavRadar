@@ -102,6 +102,7 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 try:
+    import eccodes as eccodes_module
     from eccodes import (
         OutOfAreaError, codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
         codes_grib_new_from_file, codes_release,
@@ -111,6 +112,30 @@ except ImportError as exc:
         "ecCodes Python API er ikke kompatibelt: codes_get_elements mangler. "
         "Installer requirements-dmi.txt igen."
     ) from exc
+
+# The public high-level nearest helper constructs and destroys an ecCodes
+# nearest object for every call. The low-level API lets a cold grid warm one
+# object and reuse its geometry for the exact same probe sequence. Keep this
+# optional at import time so provenance-only tests and older local bindings can
+# still exercise the fail-closed high-level path.
+codes_grib_nearest_new = getattr(eccodes_module, "codes_grib_nearest_new", None)
+codes_grib_nearest_find = getattr(eccodes_module, "codes_grib_nearest_find", None)
+codes_grib_nearest_delete = getattr(eccodes_module, "codes_grib_nearest_delete", None)
+CODES_GRIB_NEAREST_SAME_GRID = getattr(
+    eccodes_module,
+    "CODES_GRIB_NEAREST_SAME_GRID",
+    None,
+)
+ECCODES_API_VERSION = re.sub(
+    r"[^A-Za-z0-9._+-]",
+    "_",
+    str(getattr(eccodes_module, "__version__", "unknown")),
+)[:48]
+ECCODES_BINDING_VERSION = re.sub(
+    r"[^A-Za-z0-9._+-]",
+    "_",
+    str(getattr(eccodes_module, "bindings_version", "unknown")),
+)[:48]
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
@@ -141,6 +166,8 @@ MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "204
 MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780")))
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
+CHECKPOINT_MAX_ASSETS = max(1, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8")))
+CHECKPOINT_MAX_SECONDS = max(10, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60")))
 STAC_PAGE_LIMIT = max(1, min(1000, int(os.getenv("DMI_STAC_PAGE_LIMIT", "1000"))))
 STAC_MAX_PAGES = max(1, min(100, int(os.getenv("DMI_STAC_MAX_PAGES", "20"))))
 STAC_MAX_INVENTORY_ITEMS = max(
@@ -178,7 +205,7 @@ DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octe
 
 PARSER_VERSION = 20
 PARAMETER_MAP_VERSION = 4
-GRID_LOOKUP_VERSION = 8
+GRID_LOOKUP_VERSION = 9
 # The integrated model can replay at most 48 hours before its first public
 # target. Keep a bounded private buffer with one full native-cadence safety
 # margin; this cache is never part of the Pages artifact.
@@ -607,6 +634,28 @@ def parameter_hint(item: dict[str, Any], family: str, asset_description: str = "
 def stride_selected(valid: str, run: str) -> bool:
     offset_hours = max(0, round((epoch(valid) - epoch(run)) / 3600))
     return offset_hours <= 6 or offset_hours % TIME_STRIDE_HOURS == 0 or offset_hours >= HOURS - 1
+
+
+def operational_asset_parameter_filter(
+    collection: str,
+    valid_time: str,
+    model_run: str,
+    required_current_valid_times: set[str],
+) -> set[str] | None:
+    """Keep exact hourly current proof without oversampling optional fields.
+
+    The official DKSS ledger requires every native +0..+117 asset, but the
+    established non-ledger capacity contract samples optional marine fields at
+    ``TIME_STRIDE_HOURS``. Exact required hours between those stride positions
+    therefore decode only sea level and the shared-cell U/V pair.
+    """
+    if (
+        collection in MARINE_COLLECTIONS
+        and valid_time in required_current_valid_times
+        and not stride_selected(valid_time, model_run)
+    ):
+        return set(REQUIRED_TARGETS["marine"])
+    return None
 
 
 def select_forecast_run(
@@ -1508,7 +1557,7 @@ def register_raw_cache_asset(
     captured_at = (
         iso(acquired_at)
         if acquired_at and normalized_content_sha256
-        else previous.get("acquiredAt") if same_capture_identity
+        else previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))
         else None
     )
     assets[path.name] = {
@@ -1903,17 +1952,41 @@ def should_stop_work() -> bool:
     return runtime_remaining() <= 0
 
 
+def progress_checkpoint_due(
+    completed_assets_since_write: int,
+    last_write_monotonic: float,
+    *,
+    force: bool = False,
+    now_monotonic: float | None = None,
+) -> bool:
+    if completed_assets_since_write <= 0:
+        return False
+    now_value = time.monotonic() if now_monotonic is None else now_monotonic
+    return bool(
+        force
+        or completed_assets_since_write >= CHECKPOINT_MAX_ASSETS
+        or now_value - last_write_monotonic >= CHECKPOINT_MAX_SECONDS
+    )
+
+
 def progress(message: str) -> None:
     elapsed = time.monotonic() - STARTED
     print(f"[DMI bulk +{elapsed:6.1f}s] {message}", flush=True)
 
 
-def grid_signature(gid: int) -> tuple[Any, ...]:
+GRID_DEFINITION_KEYS = (
+    "gridType", "Ni", "Nj", "numberOfPoints",
+    "latitudeOfFirstGridPointInDegrees", "longitudeOfFirstGridPointInDegrees",
+    "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
+    "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
+)
+
+
+def grid_cache_signature(gid: int) -> tuple[Any, ...]:
+    """Read one order-sensitive cache identity without changing public hashes."""
     keys = (
-        "gridType", "Ni", "Nj", "numberOfPoints",
-        "latitudeOfFirstGridPointInDegrees", "longitudeOfFirstGridPointInDegrees",
-        "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
-        "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
+        "md5GridSection",
+        *GRID_DEFINITION_KEYS,
     )
     values: list[Any] = []
     for key in keys:
@@ -1927,9 +2000,29 @@ def grid_signature(gid: int) -> tuple[Any, ...]:
     return tuple(values)
 
 
-def grid_definition_sha256(gid: int) -> str:
-    canonical = json.dumps(grid_signature(gid), ensure_ascii=False, separators=(",", ":"), default=str)
+def grid_definition_signature_from_cache(
+    cache_signature: tuple[Any, ...],
+) -> tuple[Any, ...]:
+    if len(cache_signature) != len(GRID_DEFINITION_KEYS) + 1:
+        raise DmiGridLookupError(
+            "DMI grid cache identity has an unexpected shape",
+            "GRID_IDENTITY_READ_FAILED",
+        )
+    return tuple(cache_signature[1:])
+
+
+def grid_signature(gid: int) -> tuple[Any, ...]:
+    """Return the legacy public/state grid definition identity unchanged."""
+    return grid_definition_signature_from_cache(grid_cache_signature(gid))
+
+
+def grid_definition_sha256_from_signature(signature: tuple[Any, ...]) -> str:
+    canonical = json.dumps(signature, ensure_ascii=False, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def grid_definition_sha256(gid: int) -> str:
+    return grid_definition_sha256_from_signature(grid_signature(gid))
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -1941,7 +2034,23 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
 
 
-def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[dict[str, Any]]:
+def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
+    if collection in MARINE_COLLECTIONS:
+        return (
+            LIMFJORD_GRID_CANDIDATE_TARGET
+            if zone.get("coastType") == "limfjord"
+            else GRID_CANDIDATE_TARGET
+        )
+    return ATMOSPHERIC_GRID_CANDIDATE_TARGET
+
+
+def nearest_candidates(
+    gid: int,
+    collection: str,
+    zone: dict[str, Any],
+    signature: tuple[Any, ...] | None = None,
+    nearest_lookup: Any = None,
+) -> list[dict[str, Any]]:
     """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
 
     ecCodes returnerer højst fire punkter pr. opslag på flere grids. Derfor probes
@@ -1952,11 +2061,9 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     # Atmosfæriske grids (HARMONIE) er komplette land/hav-grids og kræver ikke
     # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
     # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
-    if collection in MARINE_COLLECTIONS:
-        candidate_target = LIMFJORD_GRID_CANDIDATE_TARGET if zone.get("coastType") == "limfjord" else GRID_CANDIDATE_TARGET
-    else:
-        candidate_target = ATMOSPHERIC_GRID_CANDIDATE_TARGET
-    cache_key = (collection, grid_signature(gid), zone["id"], candidate_target)
+    candidate_target = grid_candidate_target(collection, zone)
+    resolved_signature = signature if signature is not None else grid_signature(gid)
+    cache_key = (collection, resolved_signature, zone["id"], candidate_target)
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
@@ -2009,25 +2116,24 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     by_index: dict[int, dict[str, Any]] = {}
     for dlat, dlon in probes:
         try:
-            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, npoints=4)
-        except TypeError:
-            try:
-                candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
-            except OutOfAreaError as exc:
-                # Bounded DKSS marine grids legitimately reject probes outside
-                # their domain. This is a spatial observation, not a broken
-                # decoder; the remaining probes still search actual grid cells.
-                if collection in MARINE_COLLECTIONS:
-                    continue
-                raise DmiGridLookupError(
-                    "DMI nearest-grid lookup failed (OutOfAreaError)",
-                    "NEAREST_GRID_OUT_OF_AREA",
-                ) from exc
-            except Exception as exc:
-                raise DmiGridLookupError(
-                    f"DMI nearest-grid lookup failed ({type(exc).__name__})",
-                    "NEAREST_GRID_LOOKUP_FAILED",
-                ) from exc
+            if nearest_lookup is not None:
+                candidates = nearest_lookup(zone["lat"] + dlat, zone["lon"] + dlon)
+            else:
+                try:
+                    candidates = codes_grib_find_nearest(
+                        gid,
+                        zone["lat"] + dlat,
+                        zone["lon"] + dlon,
+                        npoints=4,
+                    )
+                except TypeError:
+                    candidates = codes_grib_find_nearest(
+                        gid,
+                        zone["lat"] + dlat,
+                        zone["lon"] + dlon,
+                        False,
+                        4,
+                    )
         except OutOfAreaError as exc:
             # Only ecCodes' explicit out-of-domain result is recoverable. Every
             # unknown grid failure remains fatal and can never authorize fallback.
@@ -2060,7 +2166,85 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     return normalized
 
 
-def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str, Any]]) -> None:
+def warm_marine_grid_cache(
+    gid: int,
+    collection: str,
+    zones: list[dict[str, Any]],
+    signature: tuple[Any, ...],
+) -> None:
+    """Warm the unchanged marine probe union with one ecCodes nearest object."""
+    if collection not in MARINE_COLLECTIONS or not zones:
+        return
+    pending = [
+        zone
+        for zone in zones
+        if (
+            collection,
+            signature,
+            zone["id"],
+            grid_candidate_target(collection, zone),
+        ) not in GRID_INDEX_CACHE
+    ]
+    if not pending:
+        return
+    if not (
+        callable(codes_grib_nearest_new)
+        and callable(codes_grib_nearest_find)
+        and callable(codes_grib_nearest_delete)
+        and isinstance(CODES_GRIB_NEAREST_SAME_GRID, int)
+    ):
+        return
+
+    nearest_id = None
+    first_lookup = True
+    pending_keys = [
+        (collection, signature, zone["id"], grid_candidate_target(collection, zone))
+        for zone in pending
+    ]
+    try:
+        nearest_id = codes_grib_nearest_new(gid)
+
+        def lookup(latitude: float, longitude: float) -> Any:
+            nonlocal first_lookup
+            flags = 0 if first_lookup else CODES_GRIB_NEAREST_SAME_GRID
+            candidates = codes_grib_nearest_find(
+                nearest_id,
+                gid,
+                latitude,
+                longitude,
+                flags,
+                False,
+                4,
+            )
+            # A bounded DKSS grid may reject the first probe. SAME_GRID is only
+            # safe after one successful lookup has actually initialized the
+            # reusable ecCodes geometry on this nearest object.
+            first_lookup = False
+            return candidates
+
+        for zone in pending:
+            nearest_candidates(
+                gid,
+                collection,
+                zone,
+                signature=signature,
+                nearest_lookup=lookup,
+            )
+    except Exception:
+        for key in pending_keys:
+            GRID_INDEX_CACHE.pop(key, None)
+        raise
+    finally:
+        if nearest_id is not None:
+            codes_grib_nearest_delete(nearest_id)
+
+
+def warm_atmospheric_grid_cache(
+    gid: int,
+    collection: str,
+    zones: list[dict[str, Any]],
+    signature: tuple[Any, ...] | None = None,
+) -> None:
     """Resolve every HARMONIE point from one grid-coordinate scan.
 
     HARMONIE is a complete atmospheric grid, so one nearest cell is sufficient.
@@ -2073,8 +2257,8 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
     """
     if collection != "harmonie_dini_sf" or not zones:
         return
-    signature = grid_signature(gid)
-    warm_key = (collection, signature, ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+    resolved_signature = signature if signature is not None else grid_signature(gid)
+    warm_key = (collection, resolved_signature, ATMOSPHERIC_GRID_CANDIDATE_TARGET)
     if warm_key in GRID_BATCH_WARMED:
         return
     try:
@@ -2113,7 +2297,7 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
             nearby,
             key=lambda item: haversine_km(zone_lat, zone_lon, item[1], item[2]),
         )[:ATMOSPHERIC_GRID_CANDIDATE_TARGET]
-        cache_key = (collection, signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+        cache_key = (collection, resolved_signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
         GRID_INDEX_CACHE[cache_key] = [
             {
                 "index": index,
@@ -2168,13 +2352,23 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     Denne funktion bevarer kandidatlisten, så U og V efterfølgende kan vælge det
     nærmeste *fælles* fysiske gitterpunkt.
     """
-    warm_atmospheric_grid_cache(gid, collection, zones)
+    cache_signature = grid_cache_signature(gid)
+    definition_sha256 = grid_definition_sha256_from_signature(
+        grid_definition_signature_from_cache(cache_signature)
+    )
+    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(gid, collection, zone)
+        candidates = nearest_candidates(
+            gid,
+            collection,
+            zone,
+            signature=cache_signature,
+        )
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
@@ -2185,7 +2379,6 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
         return {}
     raw_values = batched_element_values(gid, unique_indices, "vector")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
-    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, list[dict[str, float]]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         rows = []
@@ -2213,12 +2406,23 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     processing signature. Moving a land/data point therefore forces a rebuild,
     while repeated forecast steps on the same grid reuse the nearest-index map.
     """
+    cache_signature = grid_cache_signature(gid)
+    definition_sha256 = grid_definition_sha256_from_signature(
+        grid_definition_signature_from_cache(cache_signature)
+    )
+    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(gid, collection, zone)
+        candidates = nearest_candidates(
+            gid,
+            collection,
+            zone,
+            signature=cache_signature,
+        )
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
@@ -2229,7 +2433,6 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
         return {}
     raw_values = batched_element_values(gid, unique_indices, "scalar")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
-    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, dict[str, float]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         for candidate in candidates:
@@ -2242,6 +2445,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "distanceKm": candidate["distanceKm"],
                     "index": int(candidate["index"]),
                     "gridDefinitionSha256": definition_sha256,
+                    "_candidateCount": len(candidates),
                 }
                 break
     return resolved
@@ -2573,7 +2777,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any],
                  current_shadow: dict[str, Any] | None = None,
                  private_stage_output: dict[str, Any] | None = None,
-                 current_part_outcomes: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 current_part_outcomes: dict[str, Any] | None = None,
+                 allowed_parameters: set[str] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -2593,7 +2798,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         and not zone.get("researchCurrent")
         and str(zone.get("id") or "").startswith("PART::")
     }
-    current_verified_part_zone_ids: set[str] = set()
+    current_candidate_available_part_zone_ids: set[str] = set()
     if current_part_outcomes is not None:
         current_part_outcomes.clear()
     source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
@@ -2631,6 +2836,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     persistent_fields[sig_key]["messagesSeen"] = int(persistent_fields[sig_key].get("messagesSeen") or 0) + 1
                 parameter = classify_parameter(gid, collection)
                 if not parameter:
+                    continue
+                if allowed_parameters is not None and parameter not in allowed_parameters:
                     continue
                 scalar_layer = None
                 if parameter == "water-temperature":
@@ -2699,6 +2906,14 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             if distance > CURRENT_MAX_DISTANCE_KM:
                                 search["rejectedReason"] = "CURRENT_POINT_OVER_5KM"
                                 continue
+                            if zone["id"] in operational_part_zone_ids:
+                                # Outcome proof is collection-local. A valid DMI
+                                # candidate remains spatially available even if a
+                                # closer candidate from another DMI collection is
+                                # already the global public winner for this hour.
+                                current_candidate_available_part_zone_ids.add(
+                                    str(zone["id"])
+                                )
                             if not prefer_current_hour_candidate(
                                 point,
                                 valid_time,
@@ -2775,11 +2990,6 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         )
                         if source:
                             hour.setdefault("sources", {})[component] = source
-                            if (
-                                family == "current"
-                                and zone["id"] in operational_part_zone_ids
-                            ):
-                                current_verified_part_zone_ids.add(str(zone["id"]))
                         else:
                             (hour.get("sources") or {}).pop(component, None)
                     continue
@@ -2807,7 +3017,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                             "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
                         })
-                        search["candidatesExamined"] = max(int(search.get("candidatesExamined") or 0), len(nearest_candidates(gid, collection, zone)))
+                        search["candidatesExamined"] = max(
+                            int(search.get("candidatesExamined") or 0),
+                            int(nearest.get("_candidateCount") or 0),
+                        )
                         old_distance = search.get("nearestValidDistanceKm")
                         distance = float(nearest["distanceKm"])
                         search["nearestValidDistanceKm"] = round(distance if old_distance is None else min(float(old_distance), distance), 3)
@@ -2853,7 +3066,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     else:
                         (hour.get("sources") or {}).pop(component, None)
                     point["gridPoints"][parameter] = {
-                        **grid_point_metadata(nearest, ("value",)),
+                        **grid_point_metadata(nearest, ("value", "_candidateCount")),
                         **point_extra,
                     }
                     point["collections"][parameter] = collection
@@ -2963,7 +3176,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             ),
             "spatialUnavailablePartIds": sorted(
                 zone_id.removeprefix("PART::")
-                for zone_id in operational_part_zone_ids - current_verified_part_zone_ids
+                for zone_id in (
+                    operational_part_zone_ids
+                    - current_candidate_available_part_zone_ids
+                )
             ),
         })
     return found, touched, interrupted, messages_seen, zone_lookups
@@ -5355,6 +5571,11 @@ def main() -> int:
     merge_previous(result, previous, active_output_ids)
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
     budget = {"bytes": 0}
+    # Validate and normalize the hydrated cache once before delayed progress
+    # checkpoints. This prevents stale provenance or mismatched vectors from
+    # influencing a later candidate while avoiding a full-cache rescan after
+    # every single hourly asset.
+    clean_and_summarize(result, set(), budget)
     # Local coastal parts use the same downloaded GRIB fields as parent zones.
     # They must remain in the coverage denominator; excluding them allowed the
     # scheduler to stop while most public local scores still lacked current.
@@ -5463,6 +5684,8 @@ def main() -> int:
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
+        checkpoint_assets_since_write = 0
+        checkpoint_last_write_monotonic = time.monotonic()
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             if collection in prefetched_marine:
@@ -5506,7 +5729,12 @@ def main() -> int:
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
-            processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
+            processing_signature = (
+                f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}"
+                f"|grid:{GRID_LOOKUP_VERSION}|eccodes-api:{ECCODES_API_VERSION}"
+                f"|eccodes-binding:{ECCODES_BINDING_VERSION}"
+                f"|zones:{zone_registry_signature}"
+            )
             required_asset_provenance = {
                 str(identity["validTime"]): identity
                 for asset in assets
@@ -5653,7 +5881,14 @@ def main() -> int:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
+                asset_processing_started = time.monotonic()
                 current_part_outcome_observation: dict[str, Any] = {}
+                allowed_parameters = operational_asset_parameter_filter(
+                    collection,
+                    asset["valid"],
+                    run,
+                    required_current_valid_times,
+                )
                 found, touched, interrupted, messages_seen, zone_lookups = process_grib(
                     path,
                     collection,
@@ -5665,7 +5900,9 @@ def main() -> int:
                     current_shadow,
                     coastal_point_stage,
                     current_part_outcome_observation,
+                    allowed_parameters=allowed_parameters,
                 )
+                asset_processing_seconds = time.monotonic() - asset_processing_started
                 scrub_private_stage_diagnostics(result["diagnostics"])
                 if coastal_point_stage_targets:
                     prune_coastal_point_stage_hours(coastal_point_stage, generated)
@@ -5764,8 +6001,27 @@ def main() -> int:
                 fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
-                progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")
+                checkpoint_assets_since_write += 1
+                if progress_checkpoint_due(
+                    checkpoint_assets_since_write,
+                    checkpoint_last_write_monotonic,
+                    force=interrupted,
+                ):
+                    write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                    checkpoint_assets_since_write = 0
+                    checkpoint_last_write_monotonic = time.monotonic()
+                    checkpoint_status = "checkpoint gemt"
+                else:
+                    checkpoint_status = (
+                        f"checkpoint samler {checkpoint_assets_since_write} assets"
+                    )
+                progress(
+                    f"{collection}: forecast-step behandlet på "
+                    f"{asset_processing_seconds:.1f}s; {checkpoint_status}; "
+                    f"steps={run_info['assetsProcessed']}, "
+                    f"felter={sorted(recognized)}, "
+                    f"resterende={runtime_remaining():.0f}s"
+                )
                 if interrupted:
                     budget_stop = "bulk runtime budget reached inside GRIB processing"
                     break
@@ -5806,6 +6062,18 @@ def main() -> int:
                     "failureCode": "RUNTIME_BUDGET_REACHED",
                     "partialProgressPreserved": True,
                 })
+            if progress_checkpoint_due(
+                checkpoint_assets_since_write,
+                checkpoint_last_write_monotonic,
+                force=True,
+            ):
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                checkpoint_assets_since_write = 0
+                checkpoint_last_write_monotonic = time.monotonic()
+                progress(
+                    f"{collection}: collection-checkpoint gemt; "
+                    f"steps={run_info['assetsProcessed']}"
+                )
         except Exception as exc:
             message = safe_error_message(exc)
             failure_code = collection_failure_code(exc)
@@ -5826,6 +6094,14 @@ def main() -> int:
                 "failureClass": state["failureClass"],
                 "retryAfterMinutes": delay_minutes,
             })
+            if progress_checkpoint_due(
+                checkpoint_assets_since_write,
+                checkpoint_last_write_monotonic,
+                force=True,
+            ):
+                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                checkpoint_assets_since_write = 0
+                checkpoint_last_write_monotonic = time.monotonic()
 
     replay_targets: list[dict[str, Any]] = []
     if not research_rotation_completed:

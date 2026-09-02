@@ -1,5 +1,13 @@
 # Aktive krav – samlet register
 
+## 4.0.320 – deterministisk og bounded DMI-currentproduktion
+
+- **REQ-DMI-LOW-LEVEL-SAME-GRID-REUSE-001 – BINDENDE / LOKALT IMPLEMENTERET / FRISK RUNBEVIS AFVENTER:** DKSS-parseren skal oprette højst ét nearest-handle pr. GRIB-message og må først bruge `CODES_GRIB_NEAREST_SAME_GRID` efter et vellykket første opslag. Manglende low-level `new/find/delete`, flag eller ukendt ecCodes API-/bindingsversion skal stoppe smoketesten før producenten; en skjult high-level performancefallback er ikke tilladt.
+- **REQ-DMI-GRID-CACHE-PROVENANCE-SEPARATION-001 – BINDENDE:** Intern grid-cacheidentitet skal bruge `md5GridSection` og processing-signaturen skal binde `GRID_LOOKUP_VERSION=9`, ecCodes API-version og bindingsversion. Offentlig `gridDefinitionSha256` skal fortsat være den eksisterende legacy-griddefinition, så en performanceændring ikke invaliderer eller ommærker målt historik, provenance, state eller recovery.
+- **REQ-DMI-EXACT-CURRENT-OPTIONAL-STRIDE-001 – BINDENDE:** For hver krævet DKSS-currenttime skal `current-u`, `current-v` og `sea-mean-deviation` behandles; valgfrie marine felter må følge den etablerede tretimersstride. Fieldfilteret må ikke ændre spatial-first, samme-celle-/lagparring, 5 km, missing eller sourceprioritet.
+- **REQ-DMI-BOUNDED-ASSET-CHECKPOINT-001 – BINDENDE:** Progressiv cache skal checkpointes senest efter otte afsluttede assets eller 60 sekunder og tvinges ved interruption, collectionslut og exception. Et checkpoint repræsenterer kun afsluttede assetgrænser; en halv GRIB-fil eller partial cache må aldrig kaldes terminal dækning eller releasebevis.
+- **REQ-DMI-GRID-METADATA-NUMERIC-ONLY-001 – BINDENDE:** Kun finite numerisk gridmetadata må afrundes eller publiceres. Tekst, boolean, objekt eller andre coercible typer skal ignoreres/afvises efter feltets kontrakt og må aldrig styrte hele producenten eller omsættes til evidens.
+
 ## 4.0.319 – integrated-first measured warmup under DEC-0114
 
 - **REQ-DMI-PRIMARY-PHASE-CONSISTENT-CURRENT-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / NYT RUNBEVIS AFVENTER:** Både Candidate G-drift og den nye integrerede model bruger DMI som primær kilde. Tidlig cache-health skal bedømme samme autoritative `samplingPoint` og top-level `current-u`/`current-v`-gridpar som den senere oprydning; en cache, som terminalfasen vil fjerne current fra, må ikke undertrykke DKSS-genopbygning. Copernicus må kun udfylde eksakte, dokumenterede manglende DMI-tuples efter grøn DMI-terminalgate og må aldrig maskere eller erstatte en systemisk DMI-fejl. Run `33520738058` er negativt fasebevis; ny eksakt 673 × 118-preflight, merge, produktion og offentlig verifikation afventer.

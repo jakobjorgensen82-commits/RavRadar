@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-02 – fortsæt 4.0.320 fra DMI-rodrettelsen
+
+- Aktiv branch er `codex/ravscore-history-incomplete-cutover`. Baselinehead før 4.0.320-diff er `4414970419c1526c485cf830ba399dff7499ad3c`; hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor. Rør ikke andre worktrees, private data, koordinater, rå U/V, geometri eller punkter.
+- Root cause er lukket lokalt: officielle DKSS-assets blev hentet, mens high-level nearest-opslag gentog gridarbejdet. Den nye low-level message-cache bruger `SAME_GRID` efter første success, grid-v9 + ecCodes API-/bindingsversion for processed cache og uændret offentlig griddefinition/proveniens.
+- Bevar exact timevis U/V+vandstand, optional tretimersstride, 5 km/spatial-first/lag/missing, DMI-first og Copernicus kun på eksakte resthuller. Checkpoint er 8 assets/60 sekunder ved afsluttede assetgrænser og forced ved interruption/collectionslut/exception.
+- Main-run `33591129416` hentede DMI-filer, men gammel main stoppede før deploy på tekstlig gridmetadata. Den lokale numeric-only-rettelse findes i samme diff; intet fra runnet er releasebevis.
+- Næste lean rækkefølge: afslut de afgrænsede måltests og 4.0.320-docs → commit/push → én exact-head `validate:source` → én isoleret 673 × 118-currentpreflight plus separat Feggesund tre dele × 118 wave-ledger → fetch main igen → sikker merge → fuld produktion/activation → offentlig desktop/mobil. Candidate G er fortsat offentlig indtil atomisk cutover.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxy
 
 - Denne topstatus superseder ældre direct-only-/proxy-pensioneringsresumeer nedenfor; de bevares som revisionsspor.

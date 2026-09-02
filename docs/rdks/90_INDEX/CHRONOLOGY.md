@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-flaskehalsen fjernet lokalt
+
+- Branch-preflights hentede officielle DKSS-assets, men high-level nearest-opslag genbyggede samme gridstruktur titusinder af gange; 47/118 trin på 2.852 sekunder var lokal beregningsfejl, ikke DMI-fravær. Den nye message-lokale low-level SAME_GRID-vej bevarer sampling-, lag-, 5 km-, missing- og provenienssemantik.
+- Cacheversion 9 binder `md5GridSection` og ecCodes API-/bindingsversion internt, mens offentlig legacy-griddefinition bevares. Checkpoints er bounded til 8 assets/60 sekunder og forced ved sikre afslutningsgrænser. Main-run `33591129416` afdækkede desuden den gamle parsers tekstlige gridmetadata; numeric-only-rettelsen er lokal og deployede ikke fra det fejlede run.
+- Appversionen er løftet til 4.0.320 med autoriseret topversion-only-geodatadiff, og de afgrænsede producent-/smoke-/checkpoint-/dokumenttests er grønne. Model-id/state/bundles, DMI-first/Copernicus exact-gap, Feggesund og scorekontrakten er uændrede. Exact-head, frisk 673 × 118-currentpreflight, separat Feggesund tre dele × 118-wavebevis, merge, produktion og offentlig kontrol afventer.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only undtagelse
 
 - Ejeren supersederede snævert den tidligere Feggesund-pensionering: direkte lokal DMI-WAM for `DK-B05-11` vinder altid; kun når hele bølgetupletten mangler, må komplette, direkte, same-run DMI-tuples fra både `DK-B05-10` og `DK-B05-12` danne en 50/50 energikonsistent proxy. Alle generelle forbud mod current-, historik-, recovery- og nabolån består.

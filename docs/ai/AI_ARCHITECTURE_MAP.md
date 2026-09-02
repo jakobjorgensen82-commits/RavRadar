@@ -1,5 +1,12 @@
 # AI Architecture Map – RavRadar
 
+## 2026-09-02 4.0.320 DMI-gridgenbrug
+
+- `scripts/update-dmi-bulk.py` ejer ét message-lokalt low-level ecCodes-nearest-handle. Første opslag bruger ingen `SAME_GRID`; flaget må først bruges efter success. `scripts/smoke-test-eccodes.py` stopper preflight før producenten, hvis `new/find/delete`, flag eller kendt API-/bindingsversion mangler.
+- `GRID_LOOKUP_VERSION=9`, `md5GridSection` og ecCodes-versionerne er intern processed-cacheidentitet. `gridDefinitionSha256` forbliver den eksisterende public/provenance-definition, så optimeringen ikke re-identificerer målt historik, state eller recovery.
+- Exact currenttime behandler U/V+vandstand; optional DKSS-felter følger tretimersstride. Checkpoint er højst 8 afsluttede assets/60 sekunder og forced ved interruption, collectionslut og exception. Spatial-first, fælles celle/lag, 5 km, missing, DMI-first og Copernicus exact-gap er uændrede.
+- Main-run `33591129416` hentede DMI-assets og stoppede sikkert på gammel main's tekstlige gridmetadata før deploy. Lokal numeric-only parser og sluttests er grønne; exact-head, frisk 673 × 118-currentpreflight og separat Feggesund tre dele × 118-wavebevis afventer samlet releasebevis. Candidate G er stadig offentlig.
+
 ## 2026-09-02 Feggesund direct-first bølgeundtagelse
 
 - Direkte lokal, fuldt verificeret DMI `wam_dw` for `DK-B05-11` vinder altid. Kun når hele den lokale tuple (`Hs`, periode og mean **FROM** direction) mangler for en konkret time, må komplette, direkte og same-run tuples fra de faste naboer `DK-B05-10` og `DK-B05-12` danne `FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION`.

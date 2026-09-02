@@ -2,6 +2,16 @@
 
 Kildeprioriteten er komponentvis, ikke én fælles kæde. DMI er førstevalg. For strøm bruges derefter kun den kontrollerede Copernicus-/regionalproxykontrakt ved eksakte DMI-huller; Open-Meteo/MET-strøm må ikke blive scoregrundlag. For andre tilladte komponenthaler undersøges relevante DMI-produkter før den dokumenterede eksterne fallback. Cache og privat runtime bevarer allerede valideret kontinuitet, men er ikke en selvstændig kilde, der må overtrumfe frisk provenance.
 
+## 4.0.320 – deterministisk DKSS-gridgenbrug
+
+De isolerede 118-timers forsøg hentede officielle DKSS-assets, men brugte titusinder af high-level nearest-kald, som genopbyggede samme grid-søgestruktur. Første asset tog cirka 388 sekunder, og 47/118 trin brugte 2.852 sekunder. Det er lokal performanceevidens, ikke upstream-DMI-mangel. Producenten opretter nu ét low-level ecCodes-nearest-handle pr. GRIB-message, udfører første opslag uden `SAME_GRID` og genbruger først flaget efter et vellykket opslag. Smoketesten kræver low-level `new/find/delete`, flaget og kendte API-/bindingsversioner før den dyre producent.
+
+`GRID_LOOKUP_VERSION=9`, `md5GridSection`, ecCodes API-version og bindingsversion invaliderer den interne processed cache. Den offentlige `gridDefinitionSha256` beregnes fortsat fra den eksisterende legacy-griddefinition. Derfor bevares målt historik, native provenance, state-, checkpoint- og recoveryidentiteter. Et nyt gridsektion-hash må ikke ommærke historik eller blandes ind i den offentlige scorepayload.
+
+På eksakte DKSS-currenttimer behandles fortsat `current-u`, `current-v` og `sea-mean-deviation`; valgfrie marine felter følger tretimersstride. Messagegridmetadata beregnes én gang, og kun finite numeriske værdier må afrundes. Samplingpunkt, spatial-first-kandidater, fælles celle/lag, 5 km, missing og collectionvalg er uændrede. Progressiv cache gemmes ved afsluttede assetgrænser senest efter otte assets eller 60 sekunder og tvinges ved interruption, collectionslut og exception. En partial cache er progression, aldrig `DMI_READY` eller releasebevis.
+
+Main-run `33591129416` hentede DMI-filer, men den gamle parser stoppede på tekstlig gridmetadata før artifact/Pages. Den lokale numeric-only-rettelse lukker netop denne parserfejl. DMI-first og Copernicus alene på exact residual gaps er uændret; én frisk isoleret currentpreflight skal stadig bevise 673 kystdele × 118 timer. Feggesunds tre bølgekystdele × 118 timer er et separat wave-only-bevis.
+
 ## Controller-, historical-maintenance- og Pages-recoverykontrakt
 
 Normal produktion læser controller og central profil atomisk. `bindingCurrent=true` er kun et privacy-sikkert resultat af, at alle 11 aktive bindingsfelter matcher checkoutets forventede binding; det offentliggør ingen payload. En H0-binding må kun føres til H1 gennem `candidate-historical-maintenance` eller `integrated-historical-maintenance` med immutable plan, exact sourceprofil/-manifest/-deployment/-closure og tofaset begin/complete/abort. Direct historical Candidate→integrated bruger `IntegratedReturnPlan`. Ordinary `candidate-maintenance` og `integrated` kræver exact current binding og må ikke overtage den historiske undtagelse.

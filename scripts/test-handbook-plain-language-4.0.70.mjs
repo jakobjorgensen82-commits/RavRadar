@@ -72,8 +72,8 @@ forbidMarkers('Den historiske 4.0.318-driftsevidens', operational318?.body || ''
 ]);
 
 const active419 = byId('integrated-cutover-data-and-calibration-closure-4-0-318');
-requireMarkers('Den aktive 4.0.319-binding', `${active419?.title || ''}\n${active419?.body || ''}`, [
-  'RavScore 4.0.319',
+requireMarkers(`Den aktive ${pkg.version}-binding`, `${active419?.title || ''}\n${active419?.body || ''}`, [
+  `RavScore ${pkg.version}`,
   'Candidate G/4.0.316 er fortsat offentlig',
   `<code>modelContractSha256=${integratedReleaseBinding.modelContractSha256}</code>`,
   `<code>modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}</code>`,

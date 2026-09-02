@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-02 – DMI-nearest-flaskehals og gridmetadata lokalt rettet
+
+- **ISSUE-DMI-HIGH-LEVEL-NEAREST-REBUILD – LØST LOKALT / FRISK PREFLIGHT ÅBEN P0:** DMI leverede DKSS-assets, men high-level nearest-kald genopbyggede samme gridindeks for hvert punkt. Første asset brugte cirka 388 sekunder, et senere cirka 51 sekunder, og preflight nåede 47/118 på 2.852 sekunder. 4.0.320 bruger ét low-level nearest-handle pr. message med `SAME_GRID` efter første success og fail-fast smoke uden API'et.
+- **ISSUE-DMI-CACHE-HASH-WOULD-REIDENTIFY-HISTORY – LØST LOKALT:** `md5GridSection` er kun intern cacheidentitet. Den eksisterende offentlige `gridDefinitionSha256` bevares, mens grid-v9 + ecCodes API-/bindingsversion alene invaliderer processed cache. Dermed ændres ingen målt historik, provenance-, state- eller recoveryidentitet.
+- **ISSUE-DMI-CHECKPOINT-FULL-CACHE-WORK – LØST LOKALT:** Fuld clean/summarize/write pr. asset gav unødigt arbejde. Checkpointet er nu bounded til 8 assets/60 sekunder og forced ved sikre afslutningsgrænser; terminalgaten er uændret.
+- **ISSUE-DMI-GRID-METADATA-STRING-ROUND – LØST LOKALT / PRODUKTIONSBEVIS ÅBENT:** Main-run `33591129416` hentede DMI-filer, men den gamle parser kaldte `round` på en tekstværdi og stoppede før deploy. 4.0.320 bruger kun finite numeriske metadata. Ugyldig metadata bliver ikke coercet eller skjult.
+- **ISSUE-RAVSCORE-4.0.320-RELEASE-CLOSURE – ÅBEN P0:** Candidate G er stadig offentlig. De afgrænsede sluttests er grønne. Exact-head, frisk isoleret 673 × 118-currentpreflight, særskilt Feggesund tre dele × 118-waveledger, sikker merge, fuld state-6-produktion/aktivering og offentlig desktop-/mobilkontrol mangler.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund-proxy fastlagt; releasebevis åbent
 
 - **ISSUE-FEGGESUND-TWO-NEIGHBOR-WAVE-PROXY – LØST LOKALT / RELEASEBEVIS ÅBENT P0:** Den tidligere pensionering er supersederet af én ejerbesluttet undtagelse. Direkte lokal DMI WAM vinder altid. Kun `DK-B05-11` og kun når hele den direkte bølgetuple mangler for en time, må direkte DMI-tuple fra både `DK-B05-10` og `DK-B05-12` ved samme time/run danne en 50/50 energikonsistent bølgeproxy. Delvise tuples, én manglende nabo eller anden provenance giver `MISSING`.

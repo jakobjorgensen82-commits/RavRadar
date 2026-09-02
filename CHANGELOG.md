@@ -1,3 +1,11 @@
+## 4.0.320-kandidat – deterministisk DMI-gridgenbrug (2026-09-02)
+
+- Isolerede preflights viste, at DMI leverede DKSS-filer, mens titusinder af high-level nearest-kald genopbyggede samme grid-søgestruktur. Producenten genbruger nu ét message-lokalt ecCodes-nearest-handle med `CODES_GRIB_NEAREST_SAME_GRID`; smoketesten kræver low-level API'et, så den gamle langsomme vej ikke kan passere.
+- `GRID_LOOKUP_VERSION=9`, `md5GridSection`, ecCodes API-version og bindingsversion invaliderer kun processed cache. Den offentlige legacy-`gridDefinitionSha256`, målte historik, provenance, state, recovery, sampling-/lagvalg og 5 km-grænse er uændrede.
+- Eksakte currenttimer behandler fortsat U/V og vandstand; valgfrie DKSS-felter følger tretimersstride. Checkpoint sker senest efter otte afsluttede assets eller 60 sekunder og tvinges ved interruption, collectionslut og exception.
+- Main-run `33591129416` hentede DMI-assets, men den gamle parser stoppede på tekstlig gridmetadata og deployede intet. Den lokale 4.0.320-parser accepterer kun finite tal og fejler fortsat lukket ved ugyldig metadata.
+- DMI-first, exact-gap Copernicus, 118-timersgaten, Feggesund-reglen, model-id/state, `HISTORY_INCOMPLETE`, scoresemantik, geometri og punkter ændres ikke. Exact-head, frisk 673 × 118-currentpreflight, særskilt Feggesund 3 × 118-wavebevis, merge, fuld produktion og offentlig desktop-/mobilverifikation afventer.
+
 ## 4.0.319-kandidat – integrated-first med measured-only historikopbygning (2026-09-02)
 
 - Den afsluttende lokale releasegate fandt to stale tekstmarkører fra før de stærkere DMI-refaktoreringer. Kildegaten binder nu den faktiske cache-key/row/native-time-kontrol og den gældende nested `resetWaveRowCount`-registrering; runtimekode og dataadfærd er uændret.

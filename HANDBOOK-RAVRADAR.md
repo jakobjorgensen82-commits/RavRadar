@@ -1,10 +1,16 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.319
+**Håndbogsversion:** 4.0.320
 
-## Integrated-first med målt historikopbygning – lokal 4.0.319-kandidat, ikke produktion
+## Integrated-first med målt historikopbygning – lokal 4.0.320-kandidat, ikke produktion
 
-Candidate G/4.0.316 er fortsat den eneste offentlige model. Den nye beslutning er, at state 6 må gå online som én samlet integreret model, når den friske direkte og operationelle prognosekæde er komplet, selv om den ældre historik endnu ikke er fuldt opbygget. Cutover-, warmup-, kalibrerings-, current- og preflightkontrakterne er lokalt implementeret og måltestet. Den seneste DMI-rodrettelse er lokalt implementeret, og dens målrettede scheduler-/bulk-/workflowtests samt Python-syntakskontrol er grønne. Grøn 118-timers datapreflight, exact-head, merge, frisk fuld produktion/releasegate/artifact/Pages og offentlig desktop-/mobilkontrol er stadig afventende.
+Candidate G/4.0.316 er fortsat den eneste offentlige model. Den nye beslutning er, at state 6 må gå online som én samlet integreret model, når den friske direkte og operationelle prognosekæde er komplet, selv om den ældre historik endnu ikke er fuldt opbygget. Cutover-, warmup-, kalibrerings-, current- og preflightkontrakterne er lokalt implementeret og måltestet. 4.0.320 lukker den seneste DMI-beregningsflaskehals lokalt. Grøn 118-timers datapreflight, exact-head, merge, frisk fuld produktion/releasegate/artifact/Pages og offentlig desktop-/mobilkontrol er stadig afventende.
+
+DMI leverede faktisk DKSS-filerne i de seneste isolerede forsøg. Forsinkelsen opstod i RavRadar, fordi samme GRIB-grid blev gjort klar til nearest-søgning igen for hvert kystpunkt. Producenten gør nu gridet klar én gang pr. GRIB-message og genbruger det sikkert til de øvrige punkter. Det ændrer ikke, hvilket vandpunkt, gridpunkt, lag eller felt der kan vælges, og det udvider ikke 5 km-grænsen.
+
+Den interne processed cache får en ny gridgeneration og bindes til både ecCodes-API'et og Python-bindingens version. Den offentlige griddefinition, målt historik, provenance, state og recovery beholder deres eksisterende identitet. Det er altså en performance- og robusthedsrettelse, ikke en ny strømfortolkning eller en nulstilling af allerede indsamlet historik.
+
+De obligatoriske DKSS-currentfelter U, V og vandstand behandles stadig for hver krævet forecasttime; de valgfrie marine felter følger fortsat den etablerede tretimersrytme. Progression gemmes senest efter otte færdige assets eller 60 sekunder og altid ved afbrydelse, collectionslut eller fejl. En halv GRIB-fil og en delvis cache er aldrig releasebevis. DMI er stadig førstevalg, og Copernicus må stadig kun udfylde præcise dokumenterede resthuller efter en grøn DMI-slutkontrol.
 
 Den hårde gate er 118 sammenhængende timer fra current til +117 for alle 673 kystdele og begge jagtformer. Hver time skal have gyldige obligatoriske input samt den kausale operationelle WAM-run- og lagbro. Direkte lokale data vinder altid. Den eneste accepterede afledte bølgetuple er Feggesund-undtagelsen beskrevet nedenfor; andet manglende direkte eller operationelt input er `UNAVAILABLE` og stopper release. Kun manglende ældre præ-target-historik må blive `HISTORY_INCOMPLETE`.
 
@@ -909,7 +915,7 @@ Korrektionen bruges kun, når få dele bærer den høje score. Hvis mindst halvd
 
 Derfor kan en zone med en lidt lavere vist RavScore stå højere på Bedste områder eller 5-dages RavRadar, hvis dens gode forhold gælder bredere. Når brugeren åbner zonen, vises fortsat den oprindelige lokale score, de oprindelige delscorer og den oprindelige forklaring. Ingen pile, vejrdata eller land-/vandpunkter ændres.
 
-**Håndbogsversion:** 4.0.319
+**Historisk afsnitscheckpoint:** 4.0.319
 
 **Opdateret:** 19. august 2026
 

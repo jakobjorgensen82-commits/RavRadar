@@ -2,7 +2,7 @@ import {
   RAVSCORE_PUBLIC_MODEL_BINDING_FIELDS as MODEL_BINDING_FIELDS,
   assertExactPublicRavScoreProfile,
   assertSameExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.319';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.320';
 
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,255}$/;

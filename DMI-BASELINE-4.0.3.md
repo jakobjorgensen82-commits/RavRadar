@@ -1,6 +1,6 @@
 # RavRadar DMI baseline 4.0.3
 
-Dette dokument er den kendte reference for den fungerende DMI-pipeline. Fremtidige ændringer skal sammenlignes med denne baseline.
+> **Historisk baseline:** Dette dokument beskriver 4.0.3 og må ikke læses som den aktuelle driftskontrakt. Den gældende DMI-first-, provenance-, grid-, checkpoint- og 118-timerskontrakt står i `docs/Weather-Pipeline.md`, aktiv RDKS og producent-/forbrugermatrixen. Fremtidige ændringer skal stadig regressionssammenlignes med denne baseline, men gamle budgetter eller API-former må ikke genindføres som nutidig sandhed.
 
 ## Dataflow
 
@@ -11,7 +11,7 @@ Dette dokument er den kendte reference for den fungerende DMI-pipeline. Fremtidi
 5. Den offentlige centrale vejrfil skrives til `data/live/conditions.json`.
 6. Hele `data/live/` kopieres med til GitHub Pages-artifaktet.
 
-## Kendte tekniske krav
+## Kendte tekniske krav i 4.0.3 (historisk)
 
 - Python 3.12 i GitHub Actions.
 - ecCodes API skal indeholde `codes_get_elements`, `codes_grib_find_nearest`, `codes_grib_new_from_file` og `codes_release`.

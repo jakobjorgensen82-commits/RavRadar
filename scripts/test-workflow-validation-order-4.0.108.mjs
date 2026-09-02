@@ -215,6 +215,8 @@ for (const marker of [
   'timeout-minutes: 110',
   'DMI_BULK_MAX_DOWNLOAD_MB: 4096',
   'DMI_BULK_COMPLETE_HORIZON_HOURS: 118',
+  'name: Smoke-test the required low-level ecCodes API',
+  'python scripts/smoke-test-eccodes.py',
   '--allow-nonmatching-seal',
   'test -z "$PREFLIGHT_SAMPLE_TIME"',
   'name: Hydrate current central admin configuration read-only',
@@ -247,6 +249,8 @@ if ((operationalPreflight.match(/--allow-nonmatching-seal/g) || []).length !== 1
   throw new Error('Kun den indledende cacheinspektion må klassificere en ikke-matchende seal som ufuldstændig.');
 }
 const operationalPositions = [
+  operationalPreflight.indexOf('name: Install only weather-source dependencies'),
+  operationalPreflight.indexOf('name: Smoke-test the required low-level ecCodes API'),
   operationalPreflight.indexOf('name: Hydrate current central admin configuration read-only'),
   operationalPreflight.indexOf('name: Apply centrally approved zone reviews locally'),
   operationalPreflight.indexOf('name: Materialize the centrally hydrated authoritative coastal-part registry'),
@@ -267,7 +271,7 @@ const operationalPositions = [
 ];
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
-  throw new Error('Operational-118-preflight skal følge DMI→always-save→terminalgate→exact range→update:weather→integrated audit.');
+  throw new Error('Operational-118-preflight skal følge install→ecCodes-smoke→DMI→always-save→terminalgate→exact range→update:weather→integrated audit.');
 }
 if (!operationalPreflight.includes(
   'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',

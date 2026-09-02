@@ -1,7 +1,7 @@
 {
   "schemaVersion": "rav-assistant-evals-v1",
   "knowledgeVersion": "rav-assistant-public-knowledge-v1",
-  "releaseVersion": "4.0.319",
+  "releaseVersion": "4.0.320",
   "ravScoreModelBinding": {
     "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
     "stateSchemaVersion": "6.0.0",

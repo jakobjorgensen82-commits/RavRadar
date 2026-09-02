@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug og parserhærdning
+
+- To isolerede preflights beviste, at officielle DKSS-assets blev leveret, men RavRadar brugte high-level nearest-opslag, som gentog det samme gridarbejde titusinder af gange. Første asset var cirka 388 sekunder; preflighten nåede 47/118 på 2.852 sekunder. Dette supersederer hypotesen om bredt DMI-fravær for de runs.
+- Producenten bruger nu ét low-level nearest-handle pr. GRIB-message og `SAME_GRID` først efter første vellykkede opslag. Smoke kræver API'et og kendte ecCodes API-/bindingsversioner. Grid-v9 og `md5GridSection` invaliderer processed cache, men offentlig legacy-`gridDefinitionSha256` bevares, så målt historik/provenance/state/recovery ikke ændres.
+- Required current-U/V/vandstand forbliver timevis; valgfrie DKSS-felter følger tretimersstride. Checkpoint sker ved afsluttede assets senest 8/60 sekunder og forced ved interruption, collectionslut og exception. Samplingpunkt, spatial-first, lag, 5 km, missing, DMI-first og exact-gap Copernicus er uændrede.
+- Main-run `33591129416` hentede DMI-filer og stoppede derefter sikkert på tekstlig gridmetadata i den gamle main-parser før artifact/Pages. Den lokale 4.0.320-kandidat bruger kun finite tal; der er ikke deployet data fra runnet.
+- De fire nye exact-hour/grid-v9/API-version/checkpoint-kontrakter, faktisk ecCodes-smoke samt RDKS/håndbog/version er grønne. `origin/main 28f24d1c` er hentet og allerede indeholdt i modelbranchens lineage. Model-id/state/bundles, scoreformel, geometri og punkter er uændrede. Exact-head, frisk isoleret 673 × 118-currentpreflight, særskilt Feggesund tre dele × 118-waveledger, merge, fuld produktion/activation og offentlig browserkontrol er åbne.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first bølgeproxy lokalt lukket; releasebevis åbent
 
 - Ejeren har besluttet én snæver undtagelse til det generelle forbud mod nabolån: kun `DK-B05-11`, kun bølger og kun når hele den direkte lokale `Hs`/periode/mean-FROM-tuple mangler. Direkte lokal DMI-WAM vinder altid; komplette, direkte, same-run tuples fra både `DK-B05-10` og `DK-B05-12` må da danne den faste 50/50 energikonsistente proxy. Alle andre mangler forbliver fail-closed.

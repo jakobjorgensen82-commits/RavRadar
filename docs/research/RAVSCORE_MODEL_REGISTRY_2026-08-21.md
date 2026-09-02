@@ -1,8 +1,10 @@
-# RavScore-modelregister – opdateret 2026-08-31
+# RavScore-modelregister – opdateret 2026-09-02
 
-4.0.317/state 6 blev aldrig offentlig. Emergency PR #236 gendannede exact 4.0.316/Candidate G-tree på `origin/main c58deb78`; exact-head `33342157517` og post-merge fuld produktion `33342219152` er grønne. `33345476979`/`rr-20260831010337-210` var første recoverybevis. Det tidligere external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` bestod fuld DMI/validate/releasegate/storage/Pages og er komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples; Candidate G er 0/210 aktiv på grund af historikmemory. Visuel browserkontrol er åben. `33343469247`/`33344823000` var transient-503-stop uden deploy; bounded retry-hotfixen er produktionsverificeret gennem PR #237, exact-head `33352520408`, merge `8c03e25d`, backend `33352661061` og fuld produktion `33352634365`; automatisk run `33354263148` publicerede `rr-20260831034128-210` komplet 210/673. 4.0.319 er lokal og må ikke kaldes offentlig før fuld sourcegate, exact-head/merge, frisk state-6-produktion og 210/673 desktop-/mobilkontrol.
+4.0.317/state 6 blev aldrig offentlig. Emergency PR #236 gendannede exact 4.0.316/Candidate G-tree på `origin/main c58deb78`; exact-head `33342157517` og post-merge fuld produktion `33342219152` er grønne. `33345476979`/`rr-20260831010337-210` var første recoverybevis. Det tidligere external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` bestod fuld DMI/validate/releasegate/storage/Pages og er komplet 210/673, `VERIFIED_ONLY`, uden syntetiske samples; Candidate G er 0/210 aktiv på grund af historikmemory. Visuel browserkontrol er åben. `33343469247`/`33344823000` var transient-503-stop uden deploy; bounded retry-hotfixen er produktionsverificeret gennem PR #237, exact-head `33352520408`, merge `8c03e25d`, backend `33352661061` og fuld produktion `33352634365`; automatisk run `33354263148` publicerede `rr-20260831034128-210` komplet 210/673. 4.0.320 er den lokale releasecarrier og må ikke kaldes offentlig før exact-head/merge, frisk 673 × 118-current, separat Feggesund 3 × 118-wave, fuld state-6-produktion og 210/673 desktop-/mobilkontrol.
 
-## 4.0.319 operationelle registerudvidelser
+4.0.320 ændrer DMI-producentens gridgenbrug, parserrobusthed og checkpointomkostning, men ikke RavScore-modellen. `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`, state `6.0.0`, kontrakthash og 44-filers modelbundle er uændrede, fordi `scripts/update-dmi-bulk.py` ikke er del af den forseglede modelimplementeringslukning. DMI-first-, provenance- og producent-/forbrugergaterne beskytter i stedet dette inputled.
+
+## 4.0.320 operationelle registerudvidelser
 
 | Regel-ID | Identitet/flow | Bindende grænse |
 | --- | --- | --- |
@@ -14,7 +16,7 @@
 
 | ID | Status | Vægte | Formål |
 | --- | --- | --- | --- |
-| RRS-COASTAL-PROCESS-INTEGRATED-1.1.0 | Samlet state-6-kandidat; source blev merged i 4.0.317, men den fejlende mergeproduktion publicerede den ikke. 4.0.319 afventer frisk fuld produktion og offentlig kontrol før sikker DEC-0110/0112-cutover | 20/50/30 | Én integreret kæde for tilførsel, 4/48-bølgemobilisering, 24/48-strømtransport, konservative history-bounds, kausal energivægtet bølgeapproach med fire timers halveringstid og højst 15 % dæmpning i sidste led samt jagtbarhed; state 6.0.0 |
+| RRS-COASTAL-PROCESS-INTEGRATED-1.1.0 | Samlet state-6-kandidat; source blev merged i 4.0.317, men den fejlende mergeproduktion publicerede den ikke. 4.0.320 er uændret modelbinding på en hærdet DMI-releasecarrier og afventer frisk fuld produktion og offentlig kontrol før sikker DEC-0110/0112/0114-cutover | 20/50/30 | Én integreret kæde for tilførsel, 4/48-bølgemobilisering, 24/48-strømtransport, konservative history-bounds, kausal energivægtet bølgeapproach med fire timers halveringstid og højst 15 % dæmpning i sidste led samt jagtbarhed; state 6.0.0 |
 | RRS-LEGACY-WEIGHTS-4.0.241 | Historisk sammenligning | 40/35/25 | Viser virkningen af den tidligere vægtning på samme komponenter |
 | RRS-CURRENT-B0-4.0.247 | Historisk rollback i Candidate G's aktiveringsforløb | 25/40/35 | Må ikke vælges som skjult eller global fallback efter DEC-0110-cutover |
 | RRS-CAND-A-SMOOTH-EVENT | Forskningskandidat | 25/40/35 | Glatte kurver og hændelseshukommelse |

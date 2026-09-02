@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.319; offentlig baseline 4.0.316 – opdateret 2026-09-02
+# AI Roadmap – RavRadar 4.0.320; offentlig baseline 4.0.316 – opdateret 2026-09-02
+
+## Nyeste releasehale – 4.0.320
+
+1. [x] Fastslå DKSS-flaskehalsen som repeated high-level nearest, implementér message-lokalt low-level `SAME_GRID`, grid-v9/ecCodes-versioneret processed cache og uændret offentlig griddefinition.
+2. [x] Bevar required timevis U/V+vandstand, optional tretimersstride, spatial-first/fælles celle/lag/5 km/missing, DMI-first og exact-gap Copernicus; gør checkpoint bounded ved 8 afsluttede assets/60 sekunder samt forced afslutning.
+3. [x] Bestå de afgrænsede exact-hour/grid/provenance/API/smoke/checkpoint/workflow-, RDKS-, håndbogs-, version- og modelbindingstests.
+4. [ ] Commit/push én samlet 4.0.320-head og bestå exact-head `validate:source` én gang.
+5. [ ] Bevis current for 673 dele × 118 timer og separat Feggesund wave for tre dele × 118 timer; fetch nyeste main, merge, kør fuld produktion/aktivering og verificér offentlig desktop/mobil.
 
 ## Nyeste releasehale 2026-08-31
 
@@ -8,7 +16,7 @@
 4. [x] Synkronisér outcome lokalt til schema v2 og luk P2-assistent/plain-language-tests; exact-head/offentlig kontrol udestår.
 5. [x] Bevis `33345476979`/`rr-20260831010337-210` som første grønne Candidate G-recovery og seneste external-watchdog-`workflow_dispatch` `33347230240`/`rr-20260831012407-210` som fuldt DMI/validate/releasegate/storage/Pages-grønt 210/673-bevis med `VERIFIED_ONLY`, nul syntetiske samples og ærlig 0/210 aktiv på grund af historikmemory; klassificér `33343469247`/`33344823000` som transient-503-stop uden deploy.
 6. [x] Hold ét 15-minutters kontroljob aktivt som diagnose-/reparationsspor; ingen ekstra scheduler, dubletvagthund eller blind redispatch.
-7. [ ] Bevar den forseglede slutbinding, luk version/docs, kør fuld `validate:source`, exact-head/merge, frisk state-6-produktion, Feggesund 3 × 118 og offentlig 210/673/current/fem døgn/desktop/mobil.
+7. [ ] Bevar den forseglede slutbinding, og gennemfør den resterende 4.0.320 exact-head/merge, friske state-6-produktion, 673 × 118-current, separate Feggesund 3 × 118-wave og offentlige 210/673/current/fem døgn/desktop/mobil.
 
 ## Aktuel P0 – first-cutover-hærdning og endelig modelrelease
 
@@ -20,7 +28,7 @@
 6. [x] Implementér eksklusiv measured-only Candidate G cold rollback og kræv dens egen 48-timers READY før companion/checkpoint/release.
 7. [x] Normalisér UTC-target uden millisekunder, tilføj direkte Node→Python-paritet og bevar progressiv reel DMI-cache efter ikke-annulleret producentfejl.
 8. [x] Bevar push-only integrated cutover og lad ikke-push drift vedligeholde Candidate G; klassificér `33334709027` og `33335078275` som sikre røde stop uden deploy.
-9. [ ] Afslut samlet review og målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests samt RDKS.
+9. [x] Afslut samlet review og målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests samt RDKS for den lokale slutdiff.
 10. [x] Regenerér endelig modelkontrakt/bundle: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 filer/8 forbrugere og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`ea22921e298a03ed1ef8787a4dbd79fd4fdf1a9b8e188d3c4b44e03f16fdceb0` over 56 filer. Versionslukning og geodatabevis ligger fortsat i slutgaten.
 11. [ ] Bestå ny exact-head, sikker merge og frisk fuld produktion med validate/releasegate/protected state/artifact/Pages/activation. Første exact-head `33577887262` stoppede sikkert i Candidate G-rollbackens public stage; fem-validator-rettelsen og fire måltests er grønne.
 12. [ ] Bevis Feggesund 3 × 118 og offentlig 210/673/current/fem døgn/begge modes/quality-warnings/assistent/admin/ekspert på desktop og mobil.

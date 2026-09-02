@@ -1,11 +1,13 @@
 # Integreret RavScore — producent-/forbrugermatrix
 
 - **Dato:** 2026-08-29
-- **Status:** Candidate G/4.0.316 er fortsat den eneste offentlige model. Integrated-first-, warmup-, schema-3-current-, calibration-, preflight-, DMI-terminal- og Feggesund-direct-first/proxydeltaet til 4.0.319 er lokalt implementeret og måltestet. Grøn frisk 118-timers datapreflight, fuld slut-sourcegate, exact-head, merge, frisk state-6-produktion/releasegate/artifact/Pages, Feggesunds policybundne 3 × 118 og offentlig desktop-/mobilvalidering er fortsat afventende. Tidligere Candidate G-runs og safe-fail-runs nedenfor er revisionsspor, ikke bevis for at state 6 er live.
+- **Status:** Candidate G/4.0.316 er fortsat den eneste offentlige model. Integrated-first-, warmup-, schema-3-current-, calibration-, preflight-, DMI-terminal-, Feggesund-direct-first/proxy- og 4.0.320-DMI-gridgenbrugsdeltaet er lokalt implementeret. Grøn frisk 118-timers datapreflight, fuld slut-sourcegate, exact-head, merge, frisk state-6-produktion/releasegate/artifact/Pages, Feggesunds policybundne 3 × 118 og offentlig desktop-/mobilvalidering er fortsat afventende. Tidligere Candidate G-runs og safe-fail-runs nedenfor er revisionsspor, ikke bevis for at state 6 er live.
 - **Princip:** Den integrerede model må ikke udgives, før alle dens producenter, adapters og offentlige forbrugere er bundet til samme model, den direkte og operationelle 118-timersakse er komplet, og de åbne slutgates er grønne. En privat, komplet measured-only Candidate G-warmup må ledsage første cutover uden at være rollbackklar; det er ikke en offentlig model og må ikke omfortolkes som checkpoint- eller rollbackbevis.
 - **Offentlig model indtil cutover:** Candidate G
 
-## 4.0.319 operationelle producent-/forbrugerlukninger
+## 4.0.320 operationelle producent-/forbrugerlukninger
+
+DMI-rækken har én ny intern producentkontrakt: samme GRIB-message genbruger ét low-level nearest-handle efter første vellykkede opslag. Grid-v9, `md5GridSection` og ecCodes API-/bindingsversion invaliderer processed cache; offentlig griddefinition og alle downstream provenance-/state-/recoverybindinger er uændrede. Required current-U/V/vandstand behandles timevis, optional DKSS-felter tretimers, og bounded asset-checkpointing ændrer ikke terminalgaten. Alle adapters og forbrugere modtager derfor samme felter, tider og identiteter som før; kun producentens gentagne gridarbejde fjernes.
 
 | Producent | Forbrugere | Eksakt kontrakt og releasegate |
 | --- | --- | --- |

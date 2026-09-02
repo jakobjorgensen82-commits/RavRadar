@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug lokalt lukket; frisk 118-bevis åbent
+
+- To isolerede branch-preflights beviste en lokal beregningsflaskehals, ikke bred DMI-mangel: DKSS-assets blev hentet, men high-level `codes_grib_find_nearest` genopbyggede samme søgestruktur titusinder af gange. Første asset brugte cirka 388 sekunder, et senere cirka 51 sekunder, og 47/118 trin blev nået på 2.852 sekunder.
+- 4.0.320 genbruger ét ecCodes-nearest-handle pr. message og sætter `CODES_GRIB_NEAREST_SAME_GRID` først efter et vellykket opslag. Operational-preflightens smoke kræver low-level `new/find/delete` samt kendt API-/bindingsversion og stopper før den dyre producent, hvis kontrakten mangler.
+- Processed cache bindes til `GRID_LOOKUP_VERSION=9`, `md5GridSection`, ecCodes API-version og bindingsversion. Den offentlige legacy-`gridDefinitionSha256` ændres ikke; målt historik, provenance, state-/cache-/recoverybindinger og scoreinput re-identificeres derfor ikke af optimeringen.
+- Required DKSS-currentfelter behandles på hver eksakt time; valgfrie marine felter følger fortsat tretimersstride. Samplingpunkt, spatial-first, dybeste fælles lag, 5 km, missing og DMI-first/Copernicus-exact-gap er uændrede. Checkpoint sker ved afsluttede assets senest 8 assets/60 sekunder og tvinges ved interruption, collectionslut og exception.
+- Main-run `33591129416` hentede DMI-filer, men stoppede sikkert før artifact/Pages på den gamle parsers tekstlige gridmetadata. Den lokale numeric-only-rettelse lukker dette uden at skjule ugyldig metadata.
+- De afgrænsede exact-hour/optional-field-, grid-v9/provenance-, API-/bindings-smoke-, checkpoint-wiring-, RDKS-, håndbogs- og versionskontroller er grønne på slutdiffen.
+- `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er hentet og er allerede ancestor til modelbranchens head. Candidate G er fortsat offentlig; ny exact-head, frisk isoleret 673 × 118-currentpreflight, separat Feggesund tre dele × 118-waveledger, merge, fuld produktion/aktivering og offentlig desktop-/mobilkontrol mangler. Der påstås ingen empirisk bedre fundpræcision.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave proxy
 
 - Ejeren har supersederet alene DEC-0114's tidligere pensionering af Feggesund-proxyen. Kun `DK-B05-11` og kun en eksakt time, hvor hele den lokale direkte wave-tuple mangler, må bruge den faste 50/50-proxy fra begge `DK-B05-10` og `DK-B05-12`; direkte lokal DMI-WAM vinder altid, og partial/invalid local eller én manglende nabo stopper fail-closed.

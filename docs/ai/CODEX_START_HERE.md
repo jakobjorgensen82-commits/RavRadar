@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug
+
+- Fortsæt fra branch `codex/ravscore-history-incomplete-cutover`; committed baseline er `4414970419c1526c485cf830ba399dff7499ad3c`, og hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor. Netpausen ændrede/pushede intet.
+- DMI leverede DKSS-assets. Den lokale flaskehals var repeated high-level nearest. Message-lokalt low-level handle, `SAME_GRID` efter første success, grid-v9/ecCodes-versioneret processed cache, uændret public griddefinition, required-vs-optional fieldfilter, bounded checkpoint og numeric-only gridmetadata er implementeret.
+- Bevar DMI-first, exact-gap Copernicus, spatial-first/fælles celle/lag/5 km, 118-timersgaten, Feggesund, model-id/state/bundles, scorekontrakt og alle geometri-/punktforbud.
+- Kør kun måltests lokalt, derefter én exact-head sourcegate og én isoleret 673 × 118-currentpreflight; Feggesunds tre dele × 118 timer er et separat wave-only-bevis. Først efter grøn evidens: fetch main, merge, fuld produktion/activation og offentlig desktop/mobil.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxy
 
 - Denne topstatus superseder ældre direct-only-/proxy-pensioneringsresumeer nedenfor; de bevares som revisionsspor.

@@ -1,5 +1,12 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-02 – 4.0.320 DMI-gridgenbrug
+
+- DMI leverede DKSS-assets i de isolerede preflights. Flaskehalsen var lokal: high-level nearest-opslag genopbyggede samme messagegrid titusinder af gange. 4.0.320 genbruger ét low-level ecCodes-handle pr. GRIB-message og aktiverer først `SAME_GRID` efter et vellykket første opslag.
+- Intern processed cache bindes til gridgeneration 9, `md5GridSection` samt ecCodes API-/bindingsversion. Den offentlige legacy-griddefinition, målt historik, provenance, state, checkpoint og recovery beholder deres identitet. Required U/V+vandstand er fortsat timevis; optional DKSS-felter tretimers.
+- Bounded checkpoint sker ved afsluttede assets senest 8/60 sekunder og forced ved interruption, collectionslut og exception. Spatial-first, fælles celle/lag, 5 km, missing, DMI-first og Copernicus exact-gap er uændrede. Main-run `33591129416` stoppede før deploy på gammel main's tekstlige gridmetadata; lokal numeric-only parser og måltests er grønne.
+- Åbne beviser er exact-head, 673 kystdele × 118 timers currentpreflight, separat Feggesund tre dele × 118 timers wave-ledger, merge, fuld produktion/aktivering og offentlig desktop/mobil. Candidate G er fortsat offentlig.
+
 ## Nyeste sandhed 2026-09-02 – Feggesund
 
 - DEC-0114 har nu én fast, lokalt implementeret direct-first bølgeundtagelse for `DK-B05-11`: direkte lokal DMI-WAM vinder altid; kun når hele `Hs`/periode/mean-FROM-tuplen mangler, må komplette same-run DMI-tuples fra både `DK-B05-10` og `DK-B05-12` danne en 50/50 energikonsistent proxy. En delvis lokal tuple eller én manglende/afledt nabo stopper fail-closed.

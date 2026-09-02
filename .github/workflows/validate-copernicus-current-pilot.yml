@@ -263,6 +263,9 @@ jobs:
           -r requirements-dmi.txt
           -r requirements-copernicus.txt
 
+      - name: Smoke-test the required low-level ecCodes API
+        run: python scripts/smoke-test-eccodes.py
+
       - name: Hydrate current central admin configuration read-only
         run: python scripts/sync-admin-config.py
         env:
@@ -295,7 +298,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.319 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -352,7 +355,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.319 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -480,7 +483,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.319 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

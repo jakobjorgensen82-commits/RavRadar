@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-performance- og parserrodrettelse
+
+- [x] Reproducer den dyre DKSS-vej og afvis bred upstream-mangel: officielle assets blev hentet, mens messagegridets nearest-struktur blev genopbygget titusinder af gange.
+- [x] Implementér message-lokalt low-level ecCodes-handle med sikker første lookup og efterfølgende `SAME_GRID`; kræv API'et i smoke før producenten.
+- [x] Adskil intern grid-cacheidentitet fra offentlig/provenancebærende griddefinition; bind processed cache til grid-v9 samt ecCodes API- og bindingsversion uden at re-identificere målt historik.
+- [x] Bevar eksakt current U/V+vandstand pr. time, optional DKSS-stride, spatial-first/lag/5 km/missing/proveniens og DMI-first/Copernicus-exact-gap.
+- [x] Gør checkpointing bounded ved afsluttede assets (8/60 sek.) og force ved interruption, collectionslut og exception; bevar partial cache som progression, aldrig readiness.
+- [x] Afvis tekstlig/ikke-finite gridmetadata i stedet for at kalde `round`; main-run `33591129416` er negativt parserbevis uden deploy.
+- [x] Bestå de afgrænsede exact-hour/optional-field-, grid-v9/provenance-, API-/bindings-smoke- og checkpoint-wiring-tests samt RDKS/håndbog/version på slutdiffen.
+- [ ] Bestå exact-head `validate:source`, én frisk isoleret 673 × 118-currentpreflight, særskilt Feggesund tre dele × 118-waveledger, sikker merge, fuld produktion/aktivering og offentlig desktop-/mobilkontrol.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxykontrakt
 
 - [x] Supersedér den pensionerede neighbor-hypotese med én fast, snæver undtagelse: direkte lokal DMI WAM vinder altid; kun `DK-B05-11`, kun når hele den direkte bølgetuple mangler for en time, må de to direkte DMI-naboserier `DK-B05-10` og `DK-B05-12` danne en 50/50 energikonsistent bølgeproxy.

@@ -3,14 +3,15 @@ import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
-const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson] = await Promise.all([
+const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson, smoke] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
   fs.readFile('scripts/lib/dmi_native_provenance.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
   readProductionWorkflowSources(),
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
   fs.readFile('scripts/check-weather-update.py', 'utf8'),
-  fs.readFile('package.json', 'utf8')
+  fs.readFile('package.json', 'utf8'),
+  fs.readFile('scripts/smoke-test-eccodes.py', 'utf8')
 ]);
 const { orchestrator, build } = workflows;
 const { version: appVersion } = JSON.parse(packageJson);
@@ -59,7 +60,79 @@ assert.match(bulk, /select_common_vector_candidate/);
 assert.match(bulk, /water_source_parameter_allowed/);
 assert.match(bulk, /invalidatedMismatchedVectors/);
 assert.match(bulk, /PARSER_VERSION = 20/);
-assert.match(bulk, /GRID_LOOKUP_VERSION = 8/);
+assert.match(bulk, /GRID_LOOKUP_VERSION = 9/);
+assert.match(bulk, /md5GridSection/);
+assert.match(bulk, /grid_cache_signature/);
+assert.match(bulk, /grid_definition_signature_from_cache/);
+assert.match(bulk, /codes_grib_nearest_new/);
+assert.match(bulk, /codes_grib_nearest_find/);
+assert.match(bulk, /CODES_GRIB_NEAREST_SAME_GRID/);
+assert.match(bulk, /codes_grib_nearest_delete/);
+assert.match(bulk, /ECCODES_API_VERSION/);
+assert.match(bulk, /ECCODES_BINDING_VERSION/);
+assert.match(bulk, /bindings_version/);
+assert.match(bulk, /operational_asset_parameter_filter/);
+assert.match(bulk, /progress_checkpoint_due/);
+assert.match(bulk, /DMI_BULK_CHECKPOINT_MAX_ASSETS/);
+assert.match(bulk, /DMI_BULK_CHECKPOINT_MAX_SECONDS/);
+const bulkMainStart = bulk.indexOf('def main()');
+const processingSignatureStart = bulk.indexOf('processing_signature = (', bulkMainStart);
+const processingSignatureEnd = bulk.indexOf('required_asset_provenance = {', processingSignatureStart);
+assert.ok(
+  bulkMainStart >= 0
+    && processingSignatureStart > bulkMainStart
+    && processingSignatureEnd > processingSignatureStart,
+  'DMI-producentens aktive processing-signatur skal kunne afgrænses i main.'
+);
+const processingSignatureBlock = bulk.slice(processingSignatureStart, processingSignatureEnd);
+const processingGridVersion = processingSignatureBlock.indexOf('|grid:{GRID_LOOKUP_VERSION}');
+const processingApiVersion = processingSignatureBlock.indexOf('|eccodes-api:{ECCODES_API_VERSION}');
+const processingBindingVersion = processingSignatureBlock.indexOf('|eccodes-binding:{ECCODES_BINDING_VERSION}');
+assert.ok(
+  processingGridVersion >= 0
+    && processingGridVersion < processingApiVersion
+    && processingApiVersion < processingBindingVersion,
+  'Processing-signaturen skal binde grid-, ecCodes API- og Python-bindingsversion i den rækkefølge.'
+);
+
+const checkpointScopeStart = bulk.indexOf('checkpoint_assets_since_write = 0', bulkMainStart);
+const checkpointScopeEnd = bulk.indexOf('replay_targets: list[dict[str, Any]] = []', checkpointScopeStart);
+assert.ok(
+  checkpointScopeStart > bulkMainStart && checkpointScopeEnd > checkpointScopeStart,
+  'Den aktive collection-loop skal have en afgrænset progress-checkpointkontrakt.'
+);
+const checkpointScope = bulk.slice(checkpointScopeStart, checkpointScopeEnd);
+const assetIncrement = checkpointScope.indexOf('checkpoint_assets_since_write += 1');
+const assetDue = checkpointScope.indexOf('if progress_checkpoint_due(', assetIncrement);
+const interruptedForce = checkpointScope.indexOf('force=interrupted', assetDue);
+const assetWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', interruptedForce);
+const assetReset = checkpointScope.indexOf('checkpoint_assets_since_write = 0', assetWrite);
+const exceptionStart = checkpointScope.indexOf('except Exception as exc:', assetReset);
+const collectionForce = checkpointScope.indexOf('force=True', assetReset);
+const collectionWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', collectionForce);
+const exceptionDue = checkpointScope.indexOf('if progress_checkpoint_due(', exceptionStart);
+const exceptionForce = checkpointScope.indexOf('force=True', exceptionDue);
+const exceptionWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', exceptionForce);
+assert.ok(
+  assetIncrement >= 0
+    && assetIncrement < assetDue
+    && assetDue < interruptedForce
+    && interruptedForce < assetWrite
+    && assetWrite < assetReset,
+  'Hvert afsluttet asset skal tælle mod cadence og interruption skal tvinge write før reset.'
+);
+assert.ok(
+  collectionForce > assetReset
+    && collectionForce < collectionWrite
+    && collectionWrite < exceptionStart,
+  'En restbatch skal tvinges til checkpoint ved normal collection-afslutning.'
+);
+assert.ok(
+  exceptionDue > exceptionStart
+    && exceptionDue < exceptionForce
+    && exceptionForce < exceptionWrite,
+  'En restbatch skal tvinges til checkpoint i collectionens exception-vej.'
+);
 assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
 assert.match(nativeProvenance, /CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4/);
 assert.match(nativeProvenance, /dmi-official-dkss-operational-current-ledger-v4/);
@@ -177,6 +250,13 @@ assert.match(build, /node scripts\/build-public-coastal-parts-v2\.mjs/);
 assert.ok(build.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < build.indexOf('python -u scripts/update-dmi-bulk.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
 assert.match(build, /eccodes/);
 assert.match(build, /smoke-test-eccodes\.py/);
+assert.match(smoke, /codes_grib_nearest_new/);
+assert.match(smoke, /codes_grib_nearest_find/);
+assert.match(smoke, /codes_grib_nearest_delete/);
+assert.match(smoke, /CODES_GRIB_NEAREST_SAME_GRID/);
+assert.match(smoke, /getattr\(eccodes_module, "__version__", None\)/);
+assert.match(smoke, /getattr\(eccodes_module, "bindings_version", None\)/);
+assert.match(smoke, /invalid_versions/);
 assert.match(build, /DMI bulk error/);
 assert.match(build, /DMI_BULK_FORCE_REFRESH/);
 assert.match(build, /actions\/cache\/restore@v6/);

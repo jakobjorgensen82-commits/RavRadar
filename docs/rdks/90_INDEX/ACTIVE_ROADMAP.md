@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 lean slutvej
+
+- [x] Fastslå DMI-rodårsagen med timings og kodeprofil; afvis både blind Copernicus-erstatning og flere symptompatches.
+- [x] Implementér deterministic low-level SAME_GRID-genbrug, cache-/provenanceadskillelse, optional-field-stride, bounded checkpoint og numeric-only gridmetadata.
+- [x] Luk de afgrænsede DMI-/smoke-/workflow-/proveniens-/checkpointtests og RDKS/version 4.0.320; ingen bred lokal validate-dublet.
+- [ ] Push én samlet head og bestå exact-head `validate:source` én gang.
+- [ ] Kør én isoleret branch-preflight og kræv komplet DMI-first/exact-residual-Copernicus-current for 673 dele × 118 timer; kræv separat Feggesund wave-only-ledger for tre dele × 118 timer.
+- [ ] Fetch/integrér nyeste grønne main, merge sikkert, følg fuld produktion/activation og verificér state 6 offentligt på desktop og mobil.
+
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first proxy og slutrelease
 
 - [x] Implementér den eneste tilladte Feggesund-undtagelse: direkte lokal `DK-B05-11`-WAM vinder; kun en helt manglende lokal bølgetuple må bruge komplette, direkte, same-run DMI-tuples fra både `DK-B05-10` og `DK-B05-12`.
