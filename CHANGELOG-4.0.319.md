@@ -5,6 +5,7 @@
 
 ## Forseglede 4.0.319-bindinger
 
+- Den afsluttende lokale releasegate fandt to forældede tekstmarkører fra før de nuværende, stærkere DMI-refaktoreringer: cache-key/row/native-time bindes nu eksplicit, og målt `MISSING_CELL`-rebuild registrerer tælleren via den gældende nested assignment. Kun releasegatens kildebindingsmarkører er justeret; de relevante DMI-proveniens- og measured-rebuild-tests er fortsat grønne, og runtime er uændret.
 - Integrated: `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 kanonisk normaliserede transitive implementeringsfiler og 8 deklarerede forbrugere.
 - Candidate G-rollback: `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=ea22921e298a03ed1ef8787a4dbd79fd4fdf1a9b8e188d3c4b44e03f16fdceb0` over 56 transitive filer.
 - Disse lokale værdier er slutidentiteterne for kandidaten, men er ikke i sig selv exact-head-, 118-timers-, merge-, produktions- eller browserbevis.

@@ -8,6 +8,7 @@
 - [x] Klassificér exact-head `33577887262` som sikkert Candidate G-rollback-stop på calibration-ceiling; gør de fem validatorer symmetriske og bestå de fire måltests.
 - [x] Klassificér exact-head `33580532775` som et test-only stop efter grøn model-/rollbackkæde; opdatér de to forældede DMI-kildeassertions til den korrekte producentsemantik og bestå 21/21 måltests uden runtimeændring.
 - [x] Kør kun den hidtil uafviklede sourcegate-rest: ret den ene syntetiske live-current-fixture med producentens gældende indholdsbinding og bevar validatorens fail-closed-adfærd; afvis hydreringstestens lokale WindowsApps-Python-fejl med en grøn bundled-Python-genkørsel. Ingen runtimeændring.
+- [x] Opdatér releasegatens to stale tekstmarkører til de allerede gældende, stærkere DMI-kontrakter for cache-key/row/native-time og målt `MISSING_CELL`-rebuildtælling. Ingen runtimeændring.
 - [ ] Bestå ny exact-head, sikker merge, frisk fuld produktion og offentlig desktop-/mobilkontrol. Candidate G er fortsat den eneste offentlige model.
 
 # NYESTE CHECKPOINT – 2026-09-01 – DEC-0114 cutover-lukninger lokalt måltestet

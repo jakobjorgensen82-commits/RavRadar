@@ -688,8 +688,14 @@ for(const marker of [
   ok(targetRegistry.includes(marker),`Copernicus' eksakte operationelle DMI-gapmatrix mangler native-timebindingen: ${marker}`);
 }
 for(const marker of [
+  'def _matching_verified_part_current_rows(',
+  'key_time = canonical_time(key)',
+  'row_time = canonical_time(row.get("time"))',
+  'key_time is None or row_time is None or key_time != row_time or row_time in seen',
+  'or parsed < start',
+  'or parsed > end',
+  'or not _verified_part_current_row(row, target, row_time)',
   'def verified_part_current_pair(',
-  'canonical_time(row.get("time") or key) != expected_time',
   'complete_native_source_for_hour(',
 ]){
   ok(dmiNativeProvenance.includes(marker),`Den delte DMI-provenienshelper mangler strict native-timebindingen: ${marker}`);
@@ -1095,7 +1101,7 @@ for(const marker of [
 for(const marker of [
   'def reset_private_part_wave_cache(',
   'reset_rows = reset_private_part_wave_cache(result, parts)',
-  '"resetWaveRowCount": reset_rows',
+  'aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows',
   'write_checkpoint(result, fresh_zone_ids, budget, "partial")',
 ]){
   ok(dmiBulkProducer.includes(marker),`DMI cold-cache-overgangen mangler målt rebuildkontrakt: ${marker}`);
