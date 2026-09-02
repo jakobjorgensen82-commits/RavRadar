@@ -28,6 +28,10 @@ RUNNER = ROOT / "scripts/run-copernicus-current-pilot.py"
 REFERENCE = datetime(2026, 8, 29, 8, tzinfo=timezone.utc)
 FUTURE = REFERENCE + timedelta(hours=117)
 TARGET = {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [9.1, 57.0]}
+RESUME_TARGETS = [
+    {"partId": "p1", "parentZoneId": "z1", "name": "P1", "waterPoint": [10.0, 57.0]},
+    {"partId": "p2", "parentZoneId": "z1", "name": "P2", "waterPoint": [12.0, 57.0]},
+]
 
 
 def write(path: Path, value: object) -> None:
@@ -113,6 +117,54 @@ def operational_registry(dmi_sha: str) -> dict:
         "zones": {"z1": [{
             "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
         }]},
+    }
+
+
+def resume_registry(dmi_sha: str) -> dict:
+    operational_pairs = sorted([
+        {"partId": target["partId"], "validTime": valid_time.isoformat().replace("+00:00", "Z")}
+        for target in RESUME_TARGETS
+        for valid_time in (REFERENCE, FUTURE)
+    ], key=lambda row: (row["validTime"], row["partId"]))
+    advisory_pairs: list[dict[str, str]] = []
+    return {
+        "schemaVersion": 3,
+        "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
+        "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
+        "selectionMode": "dmi-gaps-only",
+        "productionReferenceAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "targetHour": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "rangeStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "rangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "coldBridgeHours": 48, "publicHourCount": 118, "matrixHourCount": 166,
+        "operationalRangeStartAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "operationalRangeEndAt": FUTURE.isoformat().replace("+00:00", "Z"),
+        "operationalHourCount": 118,
+        "advisoryHistoryStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryEndAt": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryHourCount": 48,
+        "targetCount": 2, "sourcePartCount": 2, "partCount": 2,
+        "operationalPartCount": 2, "advisoryHistoryPartCount": 0,
+        "targetRegistrySha256": target_fingerprint(RESUME_TARGETS),
+        "dmiCurrentInputSha256": dmi_sha,
+        "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
+        "operationalRequiredPairsSha256": required_pairs_sha256(operational_pairs),
+        "operationalRequiredPairCount": 4,
+        "operationalDmiVerifiedPairCount": 232,
+        "operationalTotalPairCount": 236,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_pairs),
+        "advisoryHistoryRequiredPairCount": 0,
+        "advisoryHistoryDmiVerifiedPairCount": 96,
+        "advisoryHistoryTotalPairCount": 96,
+        "dmiVerifiedPairCount": 328, "totalPairCount": 332,
+        "coordinatesChanged": False,
+        "targets": RESUME_TARGETS,
+        "operationalRequiredPairs": operational_pairs,
+        "advisoryHistoryRequiredPairs": advisory_pairs,
+        "zones": {"z1": [
+            {"partId": row["partId"], "sourceZoneId": "z1", "name": row["name"], "waterPoint": row["waterPoint"]}
+            for row in RESUME_TARGETS
+        ]},
     }
 
 
@@ -282,4 +334,48 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert zero_cache["acquisitions"] == [] and zero_cache["records"] == []
     assert zero_cache["collections"][0]["requiredPairCount"] == 0
 
-print("OK: multi-time runner hashes raw subset before parse and seals only complete atomic coverage.")
+    # A failed later shard must leave a valid unsealed checkpoint.  A second
+    # run can finish with only the missing shard fixture, proving true resume.
+    resume_folder = folder / "resume"
+    resume_folder.mkdir()
+    partial_fixtures = resume_folder / "partial-fixtures"
+    resumed_fixtures = resume_folder / "resumed-fixtures"
+    partial_fixtures.mkdir()
+    resumed_fixtures.mkdir()
+    write(resume_folder / "targets.json", {
+        "partCount": 2,
+        "zones": {"z1": [
+            {"partId": row["partId"], "sourceZoneId": "z1", "name": row["name"], "waterPoint": row["waterPoint"]}
+            for row in RESUME_TARGETS
+        ]},
+    })
+    write(resume_folder / "dmi.json", {"fixture": "resume-bound-by-registry"})
+    write(resume_folder / "registry.json", resume_registry(file_sha256(resume_folder / "dmi.json")))
+    source = "copernicus-baltic-nemo"
+    data.assign_coords(longitude=[10.0]).to_netcdf(partial_fixtures / f"{source}-000.nc")
+
+    interrupted = run(resume_folder, "cache.json", "partial-fixtures")
+    assert interrupted.returncode != 0 and "shard 1" in interrupted.stderr
+    checkpoint = validate_shadow(
+        json.loads((resume_folder / "cache.json").read_text(encoding="utf-8")),
+        {row["partId"]: row for row in RESUME_TARGETS},
+    )
+    assert checkpoint["collections"] == []
+    assert len(checkpoint["acquisitions"]) == 1 and len(checkpoint["records"]) == 2
+    assert not (resume_folder / "cache.json.tmp").exists()
+
+    (partial_fixtures / f"{source}-000.nc").unlink()
+    data.assign_coords(longitude=[12.0]).to_netcdf(resumed_fixtures / f"{source}-001.nc")
+    resumed = run(resume_folder, "cache.json", "resumed-fixtures")
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    assert "remainingOperationalPairs=0" in resumed.stdout
+    completed_checkpoint = validate_shadow(
+        json.loads((resume_folder / "cache.json").read_text(encoding="utf-8")),
+        {row["partId"]: row for row in RESUME_TARGETS},
+        require_collection=True,
+    )
+    assert len(completed_checkpoint["acquisitions"]) == 2
+    assert len(completed_checkpoint["records"]) == 4
+    assert completed_checkpoint["collections"][0]["status"] == "OPERATIONAL_COMPLETE"
+
+print("OK: multi-time runner seals atomically and resumes only verified shard checkpoints.")

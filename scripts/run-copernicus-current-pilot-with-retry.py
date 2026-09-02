@@ -26,8 +26,8 @@ def arguments() -> argparse.Namespace:
 def validate_budget(attempts: int, timeout_seconds: float, backoff_seconds: float) -> None:
     if attempts < 1 or attempts > 3:
         raise ValueError("Copernicus retry attempts must be between 1 and 3")
-    if timeout_seconds <= 0 or timeout_seconds > 600:
-        raise ValueError("Copernicus attempt timeout must be above 0 and at most 600 seconds")
+    if timeout_seconds <= 0 or timeout_seconds > 1200:
+        raise ValueError("Copernicus attempt timeout must be above 0 and at most 1200 seconds")
     if backoff_seconds < 0 or backoff_seconds > 120:
         raise ValueError("Copernicus retry backoff must be between 0 and 120 seconds")
 

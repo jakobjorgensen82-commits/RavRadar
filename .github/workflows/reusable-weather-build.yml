@@ -872,19 +872,27 @@ jobs:
           fi
 
       - name: Fill only exact-hour DMI gaps from Copernicus
+        id: copernicus-fill
         if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.current_hour_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
-          --attempts 2
-          --timeout-seconds 360
+          --attempts 1
+          --timeout-seconds 1200
           --backoff-seconds 20
           --
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
+
+      - name: Save progressive private Copernicus cache after interrupted fill
+        if: always() && steps.copernicus-fill.outcome == 'failure' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-production-progress-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require complete target/DMI-bound Copernicus current range before scoring
         if: steps.preflight.outputs.should_run == 'true'

@@ -327,10 +327,10 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-range-v2-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            copernicus-current-range-v2-
             copernicus-current-shadow-v1-
+            copernicus-current-range-v2-
 
       - name: Refresh all bounded official DMI collections for the proof
         id: dmi-bulk
@@ -431,19 +431,27 @@ jobs:
           test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
 
       - name: Fill only the exact operational DMI gap seal
+        id: copernicus-fill
         if: steps.current-range.outputs.complete_range_present != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
-          --attempts 2
-          --timeout-seconds 600
+          --attempts 1
+          --timeout-seconds 1200
           --backoff-seconds 20
           --
           --targets .cache/copernicus-current-targets.json
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+
+      - name: Save progressive private Copernicus cache after interrupted fill
+        if: always() && steps.copernicus-fill.outcome == 'failure' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/copernicus-current-shadow.json
+          key: copernicus-current-shadow-v1-118-preflight-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Prove exact target through target plus 117 current coverage
         run: >-
@@ -459,7 +467,7 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-range-v2-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build controlled live current selection
         run: python scripts/build-live-current-pilot.py

@@ -24,6 +24,7 @@ from lib.copernicus_current import (
     REQUEST_CONTRACT_ID,
     SELECTION_POLICY_ID,
     atomic_write_shadow,
+    atomic_write_shadow_checkpoint,
     file_sha256,
     load_shadow,
     load_targets,
@@ -321,8 +322,35 @@ def main() -> int:
                 if records:
                     new_acquisitions.append(acquisition)
                     new_records.extend(records)
-                for row in records:
-                    remaining.discard((row["partId"], row["validTime"]))
+                    checkpoint_acquisitions, checkpoint_records = merge_cache_evidence(
+                        existing,
+                        new_acquisitions,
+                        new_records,
+                        reference,
+                        target_identities,
+                    )
+                    _, checkpoint_missing = select_required_records(
+                        required_pairs,
+                        checkpoint_acquisitions,
+                        checkpoint_records,
+                        reference,
+                    )
+                    atomic_write_shadow_checkpoint(
+                        args.shadow,
+                        acquisitions=checkpoint_acquisitions,
+                        records=checkpoint_records,
+                        updated_at=acquisition_at,
+                        target_identities=target_identities,
+                    )
+                    remaining = {
+                        (row["partId"], row["validTime"])
+                        for row in checkpoint_missing
+                    }
+                    print(
+                        "Copernicus shard checkpoint: "
+                        f"verifiedOperationalPairs={len(required_pairs) - len(remaining)}, "
+                        f"remainingOperationalPairs={len(remaining)}."
+                    )
                 product_record_count += len(records)
                 surface_count += sum(row["layerQuality"] == "surface-only" for row in records)
             product_reports.append({

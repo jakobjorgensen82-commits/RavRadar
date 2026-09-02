@@ -646,6 +646,8 @@ ok(!(packageScripts['test:coastal-geometry-v2']??'').includes('test-ravscore-act
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
 const dmiNativeProvenance=await read('scripts/lib/dmi_native_provenance.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
+const copernicusRangeRunner=await read('scripts/run-copernicus-current-pilot.py');
+const copernicusCurrentLib=await read('scripts/lib/copernicus_current.py');
 const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
 const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
 const privateRuntimeBundle=await read('scripts/private-production-runtime-bundle.mjs');
@@ -708,11 +710,20 @@ for(const marker of [
 ]){
   ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
 }
-for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
+for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 1200','--backoff-seconds 20']){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
-for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
+for(const marker of ['attempts > 3','timeout_seconds > 1200','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
+}
+for(const marker of ['atomic_write_shadow_checkpoint(','remainingOperationalPairs=']){
+  ok(copernicusRangeRunner.includes(marker),`Copernicus-rangeproducenten mangler resumérbart shard-checkpoint: ${marker}`);
+}
+for(const marker of ['collections=[]','require_collection=False']){
+  ok(copernicusCurrentLib.includes(marker),`Copernicus-cachelageret mangler uforseglet partial state: ${marker}`);
+}
+for(const marker of ['Save progressive private Copernicus cache after interrupted fill',"steps.copernicus-fill.outcome == 'failure'",'copernicus-current-shadow-v1-production-progress-']){
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler privat Copernicus-progressave: ${marker}`);
 }
 for(const marker of [
   "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",

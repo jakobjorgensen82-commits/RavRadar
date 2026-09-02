@@ -1638,6 +1638,57 @@ def make_coverage_collection(
     return value
 
 
+def _atomic_write_shadow_state(
+    path: Path,
+    *,
+    acquisitions: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    collections: list[dict[str, Any]],
+    updated_at: datetime,
+    target_identities: dict[str, dict[str, Any]],
+    require_collection: bool,
+) -> dict[str, Any]:
+    document = empty_shadow(updated_at)
+    document["acquisitions"] = sorted(acquisitions, key=lambda row: row["acquisitionId"])
+    document["collections"] = sorted(collections, key=lambda row: row["productionReferenceAt"])
+    document["records"] = sorted(records, key=lambda row: (row["validTime"], row["partId"], row["recordId"]))
+    validate_shadow(document, target_identities, require_collection=require_collection)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    try:
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(json.dumps(document, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        round_trip = json.loads(temporary.read_text(encoding="utf-8"))
+        validate_shadow(round_trip, target_identities, require_collection=require_collection)
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return document
+
+
+def atomic_write_shadow_checkpoint(
+    path: Path,
+    *,
+    acquisitions: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    updated_at: datetime,
+    target_identities: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Persist verified shard progress without creating an activation seal."""
+    return _atomic_write_shadow_state(
+        path,
+        acquisitions=acquisitions,
+        records=records,
+        collections=[],
+        updated_at=updated_at,
+        target_identities=target_identities,
+        require_collection=False,
+    )
+
+
 def atomic_write_shadow(
     path: Path,
     *,
@@ -1647,22 +1698,12 @@ def atomic_write_shadow(
     updated_at: datetime,
     target_identities: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    document = empty_shadow(updated_at)
-    document["acquisitions"] = sorted(acquisitions, key=lambda row: row["acquisitionId"])
-    document["collections"] = [collection]
-    document["records"] = sorted(records, key=lambda row: (row["validTime"], row["partId"], row["recordId"]))
-    validate_shadow(document, target_identities, require_collection=True)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_name(path.name + ".tmp")
-    try:
-        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
-            handle.write(json.dumps(document, ensure_ascii=False, indent=2, allow_nan=False) + "\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        round_trip = json.loads(temporary.read_text(encoding="utf-8"))
-        validate_shadow(round_trip, target_identities, require_collection=True)
-        os.replace(temporary, path)
-    finally:
-        if temporary.exists():
-            temporary.unlink()
-    return document
+    return _atomic_write_shadow_state(
+        path,
+        acquisitions=acquisitions,
+        records=records,
+        collections=[collection],
+        updated_at=updated_at,
+        target_identities=target_identities,
+        require_collection=True,
+    )

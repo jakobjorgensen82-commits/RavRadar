@@ -2,6 +2,8 @@
 
 ## Nyeste sandhed 2026-09-02 – 4.0.320 DMI-gridgenbrug
 
+- Exact-head `33627490090` er grøn. Preflight `33632361928` beviste DMI-terminalen og afgrænsede 7.889 operationelle Copernicus-restpar, men eksponerede all-or-nothing shardpersistens. Validerede shards checkpointes nu privat og uforseglet; ét 1.200-sekunders forsøg pr. run efterlader tid til failure-save, og næste run fortsætter kun resten. Frisk 673 × 118-bevis mangler.
+
 - DMI leverede DKSS-assets i de isolerede preflights. Flaskehalsen var lokal: high-level nearest-opslag genopbyggede samme messagegrid titusinder af gange. 4.0.320 genbruger ét low-level ecCodes-handle pr. GRIB-message og aktiverer først `SAME_GRID` efter et vellykket første opslag.
 - Intern processed cache bindes til gridgeneration 9, `md5GridSection` samt ecCodes API-/bindingsversion. Den offentlige legacy-griddefinition, målt historik, provenance, state, checkpoint og recovery beholder deres identitet. Required U/V+vandstand er fortsat timevis; optional DKSS-felter tretimers.
 - Bounded checkpoint sker ved afsluttede assets senest 8/60 sekunder og forced ved interruption, collectionslut og exception. Spatial-first, fælles celle/lag, 5 km, missing, DMI-first og Copernicus exact-gap er uændrede. Main-run `33591129416` stoppede før deploy på gammel main's tekstlige gridmetadata; lokal numeric-only parser og måltests er grønne.

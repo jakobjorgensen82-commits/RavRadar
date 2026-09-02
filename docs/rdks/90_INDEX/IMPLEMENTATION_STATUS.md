@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-performance, parser og atomisk checkpoint
 
+- [x] Bestå exact-head `33627490090`; afgræns med preflight `33632361928` 71.525/79.414 DMI-par og 7.889 operationelle Copernicus-restpar samt den gamle timeoutbetingede all-or-nothing-persistens.
+- [x] Checkpoint hver komplet valideret Copernicus-shard atomisk uden activationseal; genoptag kun manglende par, gem privat progression ved failure og brug ét bounded 1.200-sekunders forsøg pr. workflowrun, så save-trinnet ligger inden for jobbudgettet.
+
 - [x] Reproducer den dyre DKSS-vej og afvis bred upstream-mangel: officielle assets blev hentet, mens messagegridets nearest-struktur blev genopbygget titusinder af gange.
 - [x] Implementér message-lokalt low-level ecCodes-handle med sikker første lookup og efterfølgende `SAME_GRID`; kræv API'et i smoke før producenten.
 - [x] Adskil intern grid-cacheidentitet fra offentlig/provenancebærende griddefinition; bind processed cache til grid-v9 samt ecCodes API- og bindingsversion uden at re-identificere målt historik.

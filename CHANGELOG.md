@@ -1,5 +1,8 @@
 ## 4.0.320-kandidat – deterministisk DMI-gridgenbrug (2026-09-02)
 
+- Exact-head `33627490090` bestod. Preflight `33632361928` nåede grøn DMI-terminalgate og fandt 7.889 eksakte operationelle Copernicus-restpar; gammel all-or-nothing-persistens tabte færdige spatialshards ved timeout.
+- Copernicus-rangeproducenten checkpoint'er nu hver valideret shard som uforseglet privat state. Ét hard-bounded 1.200-sekunders forsøg pr. workflowrun gemmer progression ved failure, og senere runs henter kun resten. Kun komplet target..+117 kan forsegles `OPERATIONAL_COMPLETE`; DMI-first, model, score, geometri og punkter er uændrede.
+
 - Isolerede preflights viste, at DMI leverede DKSS-filer, mens titusinder af high-level nearest-kald genopbyggede samme grid-søgestruktur. Producenten genbruger nu ét message-lokalt ecCodes-nearest-handle med `CODES_GRIB_NEAREST_SAME_GRID`; smoketesten kræver low-level API'et, så den gamle langsomme vej ikke kan passere.
 - `GRID_LOOKUP_VERSION=9`, `md5GridSection`, ecCodes API-version og bindingsversion invaliderer kun processed cache. Den offentlige legacy-`gridDefinitionSha256`, målte historik, provenance, state, recovery, sampling-/lagvalg og 5 km-grænse er uændrede.
 - Eksakte currenttimer behandler fortsat U/V og vandstand; valgfrie DKSS-felter følger tretimersstride. Checkpoint sker senest efter otte afsluttede assets eller 60 sekunder og tvinges ved interruption, collectionslut og exception.

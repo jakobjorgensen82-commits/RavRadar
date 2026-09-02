@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-02",
   "sections": [
     {
+      "id": "copernicus-resumable-operational-gap-fill-4-0-320",
+      "chapter": "88.12",
+      "title": "Copernicus fortsætter sikkert efter en tidsgrænse",
+      "summary": "Kun helt færdige og kontrollerede Copernicus-delpakker gemmes privat, så næste workflowrun kan fortsætte med de resterende præcise DMI-huller.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> DMI prøves fortsat først. Hvis Copernicus ikke når alle præcise resthuller i ét forsøg, går færdigt arbejde ikke længere tabt.</div><div class=\"handbook-stack\"><p><strong>Kun validerede delpakker:</strong> Hver færdig download kontrolleres for filhash, indhold, mål, tid, celle og lag, før den gemmes atomisk i den private cache.</p><p><strong>Fortsættelse:</strong> Næste workflowrun genkontrollerer cachen og henter kun de manglende eksakte kystdels-/timepar. Hvert forsøg har en fast grænse på 20 minutter, så GitHub også når at gemme progressionen ved en fejl.</p><p><strong>Ingen falsk færdigstatus:</strong> En delvis cache har intet COMPLETE-seal, kan aldrig blive <code>OPERATIONAL_COMPLETE</code> og kan ikke nå offentlig runtime. Først komplet target til +117-dækning kan godkendes.</p><p><strong>Uændret faglig kontrakt:</strong> Der skabes ingen historik, interpolation, carry-forward eller nabolån. DMI-first, score, provenance, geometri, land-/vandpunkter og privacy er uændrede. Frisk 673 × 118-preflight er fortsat det nødvendige driftsbevis.</p></div>"
+    },
+    {
       "id": "dmi-deterministic-grid-reuse-4-0-320",
       "chapter": "88.11",
       "title": "DMI-gridet genbruges sikkert i stedet for at blive beregnet igen",

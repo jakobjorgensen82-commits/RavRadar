@@ -2,6 +2,8 @@
 
 ## 2026-09-02 4.0.320 DMI-gridgenbrug
 
+- `scripts/run-copernicus-current-pilot.py` skriver efter hver komplet shard en atomisk schema-2 partial cache med acquisitions/records og uden collectionseal. Retry genvaliderer cachen og vælger kun manglende exact pairs. Produktions- og 118-preflightworkflows bruger ét 1.200-sekunders forsøg og gemmer den private cache ved failure; `check-copernicus-current-range.py` og schema-3 `OPERATIONAL_COMPLETE` forbliver terminale forbrugergates.
+
 - `scripts/update-dmi-bulk.py` ejer ét message-lokalt low-level ecCodes-nearest-handle. Første opslag bruger ingen `SAME_GRID`; flaget må først bruges efter success. `scripts/smoke-test-eccodes.py` stopper preflight før producenten, hvis `new/find/delete`, flag eller kendt API-/bindingsversion mangler.
 - `GRID_LOOKUP_VERSION=9`, `md5GridSection` og ecCodes-versionerne er intern processed-cacheidentitet. `gridDefinitionSha256` forbliver den eksisterende public/provenance-definition, så optimeringen ikke re-identificerer målt historik, state eller recovery.
 - Exact currenttime behandler U/V+vandstand; optional DKSS-felter følger tretimersstride. Checkpoint er højst 8 afsluttede assets/60 sekunder og forced ved interruption, collectionslut og exception. Spatial-first, fælles celle/lag, 5 km, missing, DMI-first og Copernicus exact-gap er uændrede.

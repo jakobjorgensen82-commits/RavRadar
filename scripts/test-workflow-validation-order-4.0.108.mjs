@@ -218,6 +218,12 @@ for (const marker of [
   'name: Smoke-test the required low-level ecCodes API',
   'python scripts/smoke-test-eccodes.py',
   '--allow-nonmatching-seal',
+  '--attempts 1',
+  'id: copernicus-fill',
+  '--timeout-seconds 1200',
+  'name: Save progressive private Copernicus cache after interrupted fill',
+  "steps.copernicus-fill.outcome == 'failure'",
+  'copernicus-current-shadow-v1-118-preflight-progress-',
   'test -z "$PREFLIGHT_SAMPLE_TIME"',
   'name: Hydrate current central admin configuration read-only',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
@@ -273,6 +279,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus seal'),
   operationalPreflight.indexOf('name: Fill only the exact operational DMI gap seal'),
+  operationalPreflight.indexOf('name: Save progressive private Copernicus cache after interrupted fill'),
   operationalPreflight.indexOf('name: Prove exact target through target plus 117 current coverage'),
   operationalPreflight.indexOf('name: Build controlled live current selection'),
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
@@ -317,6 +324,19 @@ for (const saveName of [
   if (!block.includes('if: always()') || !block.includes("steps.dmi-bulk.outcome != 'cancelled'")) {
     throw new Error(`${saveName} skal gemme progression før terminalgaten.`);
   }
+}
+const copernicusProgressSaveStart = operationalPreflight.indexOf('name: Save progressive private Copernicus cache after interrupted fill');
+const copernicusProgressSaveEnd = operationalPreflight.indexOf('\n      - name:', copernicusProgressSaveStart + 1);
+const copernicusProgressSave = operationalPreflight.slice(
+  copernicusProgressSaveStart,
+  copernicusProgressSaveEnd < 0 ? operationalPreflight.length : copernicusProgressSaveEnd,
+);
+if (copernicusProgressSaveStart < 0
+  || !copernicusProgressSave.includes("steps.copernicus-fill.outcome == 'failure'")
+  || !copernicusProgressSave.includes("hashFiles('.cache/copernicus-current-shadow.json') != ''")
+  || !copernicusProgressSave.includes('uses: actions/cache/save@v6')
+  || !copernicusProgressSave.includes('copernicus-current-shadow-v1-118-preflight-progress-')) {
+  throw new Error('Operational-118-preflight skal gemme privat Copernicus-shardprogress efter en afbrudt fill.');
 }
 const privacySafeUploadMarker = 'name: Upload only the privacy-safe preflight evidence';
 const privacySafeUploadStart = operationalPreflight.indexOf(privacySafeUploadMarker);

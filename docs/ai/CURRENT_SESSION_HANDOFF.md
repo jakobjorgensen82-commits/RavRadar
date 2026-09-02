@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug; fortsæt lean releasevej
 
+- Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` nåede grøn DMI-terminalgate og 7.889 eksakte operationelle Copernicus-restpar; gammel all-or-nothing shardpersistens fejlede ved timeout.
+- Lokal rettelse checkpoint'er validerede Copernicus-shards atomisk uden seal, bruger ét 1.200-sekunders forsøg pr. run, gemmer privat progression ved failure og fortsætter kun manglende par. Måltests og uafhængig review er grønne efter jobbudgetrettelsen; frisk preflight, merge, produktion og offentlig kontrol er åbne.
+
 - Aktiv branch `codex/ravscore-history-incomplete-cutover` står på committed baseline `4414970419c1526c485cf830ba399dff7499ad3c` plus lokal 4.0.320-diff. `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er hentet og allerede ancestor. Candidate G er fortsat offentlig; intet blev pushet under netpausen.
 - DKSS-assets blev leveret, men high-level nearest genopbyggede samme grid titusinder af gange. Low-level message-handle + `SAME_GRID` efter første success, grid-v9/ecCodes-versioneret processed cache, uændret offentlig griddefinition, exact required-fieldfilter og bounded asset-checkpoints er implementeret.
 - Main-run `33591129416` stoppede sikkert før deploy på gammel main's tekstlige gridmetadata; numeric-only parseren findes lokalt. Ingen geometri, punkter, private payloads, koordinater eller rå U/V er ændret/læst.

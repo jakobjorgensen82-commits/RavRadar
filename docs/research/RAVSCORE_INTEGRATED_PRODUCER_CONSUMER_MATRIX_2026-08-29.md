@@ -9,6 +9,8 @@
 
 DMI-rækken har én ny intern producentkontrakt: samme GRIB-message genbruger ét low-level nearest-handle efter første vellykkede opslag. Grid-v9, `md5GridSection` og ecCodes API-/bindingsversion invaliderer processed cache; offentlig griddefinition og alle downstream provenance-/state-/recoverybindinger er uændrede. Required current-U/V/vandstand behandles timevis, optional DKSS-felter tretimers, og bounded asset-checkpointing ændrer ikke terminalgaten. Alle adapters og forbrugere modtager derfor samme felter, tider og identiteter som før; kun producentens gentagne gridarbejde fjernes.
 
+Copernicus-rækken har tilsvarende én ny robusthedskontrakt: producenten skriver hver fuldt valideret spatialshard atomisk som uforseglet privat schema-2-state; workflowet gemmer gyldig progression ved failure, og næste run genvaliderer og producerer kun manglende exact-gap-par. Partial state har ingen COMPLETE-collection og kan ikke nå generator, state eller offentlig runtime. Ét 1.200-sekunders forsøg pr. workflowrun holder save inden for jobbudgettet. DMI-first, targetbinding, acquisitions, recordrefs, raw-data-privacy og den terminale `OPERATIONAL_COMPLETE`-gate er uændrede.
+
 | Producent | Forbrugere | Eksakt kontrakt og releasegate |
 | --- | --- | --- |
 | Atomisk central controller+profil-read | actionresolver, planbyggere, adminhydrering, activation | ACTIVE schema-v4 exact 30 felter og schema-3-profil skal dele komplet 11-felts aktiv binding; `bindingCurrent` er eneste payloadfri klassifikation. PENDING/missing/mismatch/tamper stopper |

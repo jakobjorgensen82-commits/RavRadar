@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 atomisk DMI-progression lokalt lukket; frisk 118-bevis åbent
 
+- Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` nåede `DMI_READY; NONE`, dokumenterede 71.525/79.414 DMI-par og præcis 7.889 operationelle restpar. Den efterfølgende fejl var lokal all-or-nothing-persistens ved Copernicus-timeout, ikke API-, credential- eller bred DMI-fejl.
+- Hver færdig Copernicus-spatialshard gemmes nu atomisk i privat schema-2-state uden collectionseal. Ét 1.200-sekunders forsøg pr. job sikrer plads til cache-save; næste workflowrun fortsætter kun manglende exact pairs. Partial state kan aldrig attestere `OPERATIONAL_COMPLETE`, og ingen rå U/V, koordinater eller private payloads uploades eller logges. Frisk 673 × 118-runbevis er fortsat åbent.
+
 - De isolerede branch-preflights beviste lokale flaskehalse, ikke bred DMI-mangel: high-level `codes_grib_find_nearest` genopbyggede samme grid titusinder af gange, og run `33604589582` brugte cirka 1.105 sekunder på 26–27 gamle fuld-cache-checkpoints, før det stoppede sikkert med bevaret progression.
 - 4.0.320 genbruger ét ecCodes-nearest-handle pr. message og sætter `CODES_GRIB_NEAREST_SAME_GRID` først efter et vellykket opslag. Operational-preflightens smoke kræver low-level `new/find/delete` samt kendt API-/bindingsversion og stopper før den dyre producent, hvis kontrakten mangler.
 - Processed cache bindes til `GRID_LOOKUP_VERSION=9`, `md5GridSection`, ecCodes API-version og bindingsversion. Den offentlige legacy-`gridDefinitionSha256` ændres ikke; målt historik, provenance, state-/cache-/recoverybindinger og scoreinput re-identificeres derfor ikke af optimeringen.

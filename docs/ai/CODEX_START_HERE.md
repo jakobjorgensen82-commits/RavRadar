@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 atomisk DMI-assetprogression
 
+- Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` gennemførte DMI-terminalgaten med 71.525/79.414 DMI-par og afgrænsede præcis 7.889 operationelle Copernicus-restpar; stoppet skyldtes, at den gamle all-or-nothing-pilot tabte færdige spatialshards ved to 600-sekunders timeouts.
+- Copernicus checkpoint'er nu hver fuldt downloadede, hashkontrollerede og validerede shard atomisk som uforseglet privat state. Ét hard-bounded 1.200-sekunders forsøg pr. workflowrun efterlader plads til failure-save; næste run springer attesterede par over. Kun komplet target..+117 må blive `OPERATIONAL_COMPLETE`. DMI-first, data, provenance, score, geometri og punkter er uændrede.
+
 - Fortsæt fra branch `codex/ravscore-history-incomplete-cutover` med udgangspunkt i committed baseline `eebab205c6633e32b993f2c18b0933c392e1d20c`. Hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor.
 - Run `33604589582` beviste officielle DKSS-assets og bevaret progression, men også cirka 1.105 sekunders spild på 26–27 gamle fuld-cache-checkpoints. Main-runs `33608982473` og `33617117320` gentog den gamle main-parsers string-`round`-fejl og stoppede korrekt før bred Copernicus/deploy.
 - Hvert asset behandles nu copy-on-write og committer først efter grøn komplet validator; interruption/exception/validatorfejl ruller public/private/shadow/outcomes/diagnostics tilbage. Den fælles controller checkpoint'er kompakt og atomisk ved 8 committede assets/60 sekunder; tung finalisering sker én gang.
