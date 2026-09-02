@@ -73,8 +73,16 @@ assert.match(bulk, /ECCODES_BINDING_VERSION/);
 assert.match(bulk, /bindings_version/);
 assert.match(bulk, /operational_asset_parameter_filter/);
 assert.match(bulk, /progress_checkpoint_due/);
-assert.match(bulk, /DMI_BULK_CHECKPOINT_MAX_ASSETS/);
-assert.match(bulk, /DMI_BULK_CHECKPOINT_MAX_SECONDS/);
+assert.match(
+  bulk,
+  /CHECKPOINT_MAX_ASSETS = max\(1, int\(os\.getenv\("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8"\)\)\)/,
+  'Progress-checkpointcadencen skal som default være højst otte committed assets.',
+);
+assert.match(
+  bulk,
+  /CHECKPOINT_MAX_SECONDS = max\(10, int\(os\.getenv\("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60"\)\)\)/,
+  'Progress-checkpointcadencen skal som default være højst 60 sekunder.',
+);
 const bulkMainStart = bulk.indexOf('def main()');
 const processingSignatureStart = bulk.indexOf('processing_signature = (', bulkMainStart);
 const processingSignatureEnd = bulk.indexOf('required_asset_provenance = {', processingSignatureStart);
@@ -95,43 +103,145 @@ assert.ok(
   'Processing-signaturen skal binde grid-, ecCodes API- og Python-bindingsversion i den rækkefølge.'
 );
 
-const checkpointScopeStart = bulk.indexOf('checkpoint_assets_since_write = 0', bulkMainStart);
-const checkpointScopeEnd = bulk.indexOf('replay_targets: list[dict[str, Any]] = []', checkpointScopeStart);
+const progressWriterStart = bulk.indexOf('def write_checkpoint(');
+const finalWriterStart = bulk.indexOf('def write_finalized_cache(', progressWriterStart);
+const finalWriterEnd = bulk.indexOf('def percentile_95(', finalWriterStart);
 assert.ok(
-  checkpointScopeStart > bulkMainStart && checkpointScopeEnd > checkpointScopeStart,
-  'Den aktive collection-loop skal have en afgrænset progress-checkpointkontrakt.'
+  progressWriterStart >= 0
+    && finalWriterStart > progressWriterStart
+    && finalWriterEnd > finalWriterStart,
+  'Progress- og final-cachewriterne skal kunne afgrænses separat.',
 );
-const checkpointScope = bulk.slice(checkpointScopeStart, checkpointScopeEnd);
-const assetIncrement = checkpointScope.indexOf('checkpoint_assets_since_write += 1');
-const assetDue = checkpointScope.indexOf('if progress_checkpoint_due(', assetIncrement);
-const interruptedForce = checkpointScope.indexOf('force=interrupted', assetDue);
-const assetWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', interruptedForce);
-const assetReset = checkpointScope.indexOf('checkpoint_assets_since_write = 0', assetWrite);
-const exceptionStart = checkpointScope.indexOf('except Exception as exc:', assetReset);
-const collectionForce = checkpointScope.indexOf('force=True', assetReset);
-const collectionWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', collectionForce);
-const exceptionDue = checkpointScope.indexOf('if progress_checkpoint_due(', exceptionStart);
-const exceptionForce = checkpointScope.indexOf('force=True', exceptionDue);
-const exceptionWrite = checkpointScope.indexOf('write_checkpoint(result, fresh_zone_ids, budget, "partial")', exceptionForce);
+const progressWriter = bulk.slice(progressWriterStart, finalWriterStart);
+const finalWriter = bulk.slice(finalWriterStart, finalWriterEnd);
+assert.match(progressWriter, /atomic_write_bulk_cache\(result, pretty=False\)/);
+assert.match(progressWriter, /"validation": "pending-finalization"/);
+assert.doesNotMatch(
+  progressWriter,
+  /clean_and_summarize|write_ocean_diagnostics|build_ocean_diagnostics/,
+  'Et progress-checkpoint må ikke køre fuld clean eller ocean-diagnostik.',
+);
+assert.match(finalWriter, /atomic_write_bulk_cache\(result, pretty=True\)/);
+assert.match(finalWriter, /write_ocean_diagnostics\(result\)/);
+assert.match(
+  bulk,
+  /def atomic_write_bulk_cache\([\s\S]*?pretty: bool = True,[\s\S]*?temporary\.replace\(OUTPUT_PATH\)/,
+  'Den atomiske cachewriter skal bevare pretty=True som API-default og afslutte med replace.',
+);
+
+const checkpointControllerStart = bulk.indexOf('class ProgressCheckpointController:', finalWriterEnd);
+const checkpointControllerEnd = bulk.indexOf('def scrub_private_stage_diagnostics(', checkpointControllerStart);
 assert.ok(
-  assetIncrement >= 0
-    && assetIncrement < assetDue
-    && assetDue < interruptedForce
-    && interruptedForce < assetWrite
-    && assetWrite < assetReset,
-  'Hvert afsluttet asset skal tælle mod cadence og interruption skal tvinge write før reset.'
+  checkpointControllerStart > finalWriterEnd && checkpointControllerEnd > checkpointControllerStart,
+  'Den fælles ProgressCheckpointController skal kunne afgrænses.',
+);
+const checkpointController = bulk.slice(checkpointControllerStart, checkpointControllerEnd);
+assert.match(
+  checkpointController,
+  /def note_committed_asset\([\s\S]*?self\.committed_assets_since_write \+= 1[\s\S]*?self\.bulk_dirty = True[\s\S]*?return self\.flush_if_due\(\)/,
+  'Kun et committed asset må flytte den fælles checkpointcadence.',
+);
+assert.match(
+  checkpointController,
+  /def flush_if_due\([\s\S]*?if force and \(self\.bulk_dirty or self\.sidecars_dirty\):[\s\S]*?write_checkpoint\([\s\S]*?if self\.sidecars_dirty and self\.sidecar_flush is not None:/,
+  'Forced flush skal gemme både dirty bulk og private sidecars gennem samme controller.',
+);
+
+const controllerInit = bulk.indexOf('checkpoint_controller = ProgressCheckpointController(', bulkMainStart);
+const collectionLoopStart = bulk.indexOf('for collection in scheduled:', controllerInit);
+const replayStart = bulk.indexOf('replay_targets: list[dict[str, Any]] = []', collectionLoopStart);
+assert.ok(
+  controllerInit > bulkMainStart
+    && collectionLoopStart > controllerInit
+    && replayStart > collectionLoopStart,
+  'Main skal oprette én controller før bootstrap og collection-loop.',
+);
+const replayMarkerEnd = replayStart + 'replay_targets: list[dict[str, Any]] = []'.length;
+const mainCheckpointScope = bulk.slice(controllerInit, replayMarkerEnd);
+assert.match(
+  mainCheckpointScope,
+  /checkpoint_controller=checkpoint_controller/,
+  'WAM-bootstrap skal dele main-controlleren i stedet for at eje en separat cadence.',
+);
+assert.doesNotMatch(
+  mainCheckpointScope,
+  /checkpoint_assets_since_write|checkpoint_last_write_monotonic/,
+  'Collection-lokale checkpointtællere må ikke genindføres.',
+);
+const assetCommit = mainCheckpointScope.indexOf('checkpoint_controller.note_committed_asset(');
+const budgetGuard = mainCheckpointScope.indexOf('if not checkpoint_controller.can_start_asset():');
+const budgetFlush = mainCheckpointScope.indexOf('checkpoint_controller.flush_if_due(force=True)', budgetGuard);
+const transactionFailureFlush = mainCheckpointScope.indexOf(
+  'failure_flush=lambda: checkpoint_controller.flush_if_due(force=True)',
+  budgetFlush,
+);
+const collectionException = mainCheckpointScope.lastIndexOf('except Exception as exc:');
+const exceptionFlush = mainCheckpointScope.indexOf(
+  'checkpoint_controller.flush_if_due(force=True)',
+  collectionException,
+);
+assert.ok(assetCommit >= 0, 'Et fuldført asset skal registreres hos controlleren.');
+assert.ok(
+  budgetGuard >= 0 && budgetFlush > budgetGuard,
+  'Budgetstop før et nyt asset skal tvinge dirty progression til disk.',
 );
 assert.ok(
-  collectionForce > assetReset
-    && collectionForce < collectionWrite
-    && collectionWrite < exceptionStart,
-  'En restbatch skal tvinges til checkpoint ved normal collection-afslutning.'
+  transactionFailureFlush > budgetFlush,
+  'Interruption/asset-exception skal tvinge den senest committed progression til disk.',
 );
 assert.ok(
-  exceptionDue > exceptionStart
-    && exceptionDue < exceptionForce
-    && exceptionForce < exceptionWrite,
-  'En restbatch skal tvinges til checkpoint i collectionens exception-vej.'
+  collectionException >= 0 && exceptionFlush > collectionException,
+  'Collectionens exception-vej skal tvinge en controllerflush.',
+);
+assert.match(
+  mainCheckpointScope,
+  /\n    checkpoint_controller\.flush_if_due\(force=True\)\n\n    replay_targets:/,
+  'Collection-loopet skal afsluttes med præcis én fælles forced flush.',
+);
+assert.equal(
+  (mainCheckpointScope.match(/\n    checkpoint_controller\.flush_if_due\(force=True\)\n\n    replay_targets:/g) || []).length,
+  1,
+  'Den afsluttende forced flush må ikke duplikeres.',
+);
+
+const completionGateStart = mainCheckpointScope.indexOf('selected_valid_time_values = [');
+const completionGateEnd = mainCheckpointScope.indexOf('if made_progress:', completionGateStart);
+assert.ok(
+  completionGateStart >= 0 && completionGateEnd > completionGateStart,
+  'Collectionens komplette assetmængde skal klassificeres eksplicit.',
+);
+const completionGate = mainCheckpointScope.slice(completionGateStart, completionGateEnd);
+assert.match(
+  completionGate,
+  /collection_assets_complete = \(\s*bool\(selected_valid_time_values\)\s*and len\(selected_valid_times\) == len\(selected_valid_time_values\)\s*and selected_valid_times <= completed_or_locked\s*\)/,
+  'Tom, blank eller duplikeret selected-valid-time-liste må aldrig klassificeres som komplet.',
+);
+assert.match(
+  completionGate,
+  /if not made_progress and collection_assets_complete and recognized >= required/,
+  'En genbrugt collection må kun blive unchanged/success-lignende, når alle valgte assets er komplette.',
+);
+assert.match(
+  completionGate,
+  /elif collection_assets_complete and recognized >= required and run_info\["assetsProcessed"\]:/,
+  'En collection med delvist behandlede assets må ikke registreres som success.',
+);
+assert.match(
+  completionGate,
+  /elif recognized:[\s\S]*?collectionsPartial/,
+  'Genkendte felter uden komplet assetmængde skal forblive partial progression.',
+);
+
+const finalClean = bulk.indexOf('clean_and_summarize(result, fresh_zone_ids, budget)', replayStart);
+const finalizedWrite = bulk.indexOf('write_finalized_cache(result, result["refreshStatus"])', finalClean);
+assert.ok(
+  finalClean > replayStart && finalizedWrite > finalClean,
+  'Den ene terminale cachewrite skal ligge efter fuld clean/summarize.',
+);
+assert.equal(
+  (bulk.slice(bulkMainStart).match(/write_finalized_cache\(result, result\["refreshStatus"\]\)/g) || []).length,
+  1,
+  'Main må kun udføre én terminal finalized cachewrite.',
 );
 assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
 assert.match(nativeProvenance, /CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4/);

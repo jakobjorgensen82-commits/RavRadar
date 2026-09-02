@@ -1973,6 +1973,41 @@ def progress(message: str) -> None:
     elapsed = time.monotonic() - STARTED
     print(f"[DMI bulk +{elapsed:6.1f}s] {message}", flush=True)
 
+class AssetStagedZone(dict):
+    """Copy-on-write view of one zone while a single GRIB asset is parsed.
+
+    Most assets only replace one native valid-time row. Copying the complete
+    673 x 118 cache for every asset would be prohibitively expensive, while a
+    plain shallow copy could leak mutations into the durable cache. Keep the
+    hourly mapping shallow, own the active row and the small point metadata,
+    and detach every row only if a marine-owner change needs cross-time
+    deletion.
+    """
+
+    def __init__(self, source: dict[str, Any], valid_time: str) -> None:
+        super().__init__(source)
+        hourly = dict(source.get("hourly") or {})
+        if valid_time in hourly:
+            hourly[valid_time] = copy.deepcopy(hourly[valid_time])
+        self["hourly"] = hourly
+        for key in ("gridPoints", "collections", "marineSelection"):
+            value = source.get(key)
+            self[key] = copy.deepcopy(value) if isinstance(value, dict) else {}
+        self._all_hourly_rows_owned = False
+
+    def detach_all_hourly_rows(self) -> None:
+        if self._all_hourly_rows_owned:
+            return
+        self["hourly"] = {
+            valid_time: copy.deepcopy(hour)
+            for valid_time, hour in (self.get("hourly") or {}).items()
+        }
+        self._all_hourly_rows_owned = True
+
+    def committed_copy(self) -> dict[str, Any]:
+        return dict(self)
+
+
 
 GRID_DEFINITION_KEYS = (
     "gridType", "Ni", "Nj", "numberOfPoints",
@@ -2577,6 +2612,8 @@ def accept_marine_collection(
     if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
         return False
     if selection.get("collection") != collection:
+        if isinstance(point, AssetStagedZone):
+            point.detach_all_hourly_rows()
         for hour in (point.get("hourly") or {}).values():
             for key in MARINE_SCALAR_PARAMETERS:
                 hour.pop(key, None)
@@ -3185,6 +3222,168 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
     return found, touched, interrupted, messages_seen, zone_lookups
 
 
+def build_asset_stage_document(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    valid_time: str,
+    *,
+    private_stage: bool,
+) -> dict[str, Any]:
+    source_zones = document.get("zones") or {}
+    staged_zones: dict[str, AssetStagedZone] = {}
+    for zone in zones:
+        if bool(zone.get("privateStage")) != private_stage:
+            continue
+        zone_id = str(zone.get("id") or "")
+        if not zone_id:
+            continue
+        source = source_zones.get(zone_id)
+        if isinstance(source, dict):
+            staged_zones[zone_id] = AssetStagedZone(
+                source,
+                valid_time,
+            )
+    return {
+        "generatedAt": document.get("generatedAt"),
+        "zones": staged_zones,
+    }
+
+
+def commit_asset_stage_document(
+    document: dict[str, Any],
+    staged: dict[str, Any],
+) -> None:
+    committed_zones = dict(document.get("zones") or {})
+    for zone_id, zone in (staged.get("zones") or {}).items():
+        committed_zones[zone_id] = (
+            zone.committed_copy()
+            if isinstance(zone, AssetStagedZone)
+            else dict(zone)
+        )
+    document["zones"] = committed_zones
+
+
+def restore_mapping(target: dict[str, Any], snapshot: dict[str, Any]) -> None:
+    target.clear()
+    target.update(snapshot)
+
+
+def build_current_shadow_stage(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+) -> dict[str, Any]:
+    """Copy only research targets that one asset may mutate."""
+    stage = dict(document)
+    target_ids = {
+        str(zone.get("id") or "")
+        for zone in zones
+        if zone.get("researchCurrent")
+        and (
+            not zone.get("requiredCollection")
+            or zone.get("requiredCollection") == collection
+        )
+    }
+    for key in ("anchors", "coverageAudits"):
+        values = dict(document.get(key) or {})
+        for target_id in target_ids:
+            if target_id in values:
+                values[target_id] = copy.deepcopy(values[target_id])
+        stage[key] = values
+    return stage
+
+
+def process_grib_transactionally(
+    path: pathlib.Path,
+    collection: str,
+    model_run: str,
+    valid_time: str,
+    zones: list[dict[str, Any]],
+    output: dict[str, Any],
+    diagnostics: dict[str, Any],
+    current_shadow: dict[str, Any] | None = None,
+    private_stage_output: dict[str, Any] | None = None,
+    current_part_outcomes: dict[str, Any] | None = None,
+    allowed_parameters: set[str] | None = None,
+    *,
+    prepare_stage: Any | None = None,
+    failure_flush: Any | None = None,
+    stage_validator: Any | None = None,
+    validation_error: str = "GRIB asset stage validation failed",
+) -> tuple[set[str], set[str], bool, int, int]:
+    """Parse one asset against copy-on-write state and commit only at EOF.
+
+    Diagnostics are restored on interruption/exception. Data, private coastal
+    staging and research-shadow state remain isolated until the complete asset
+    and any caller-supplied invariant have passed.
+    """
+    output_stage = build_asset_stage_document(
+        output,
+        zones,
+        valid_time,
+        private_stage=False,
+    )
+    private_output_stage = (
+        build_asset_stage_document(
+            private_stage_output,
+            zones,
+            valid_time,
+            private_stage=True,
+        )
+        if private_stage_output is not None
+        else None
+    )
+    diagnostics_snapshot = copy.deepcopy(diagnostics)
+    shadow_stage = (
+        build_current_shadow_stage(current_shadow, zones, collection)
+        if current_shadow is not None
+        else None
+    )
+    part_outcomes_stage = {} if current_part_outcomes is not None else None
+    try:
+        if prepare_stage is not None:
+            prepare_stage(output_stage, private_output_stage)
+        outcome = process_grib(
+            path,
+            collection,
+            model_run,
+            valid_time,
+            zones,
+            output_stage,
+            diagnostics,
+            shadow_stage,
+            private_output_stage,
+            part_outcomes_stage,
+            allowed_parameters=allowed_parameters,
+        )
+        found, touched, interrupted, messages_seen, zone_lookups = outcome
+        if interrupted:
+            restore_mapping(diagnostics, diagnostics_snapshot)
+            if failure_flush is not None:
+                failure_flush()
+            return set(), set(), True, 0, 0
+        if stage_validator is not None and not stage_validator(
+            output_stage,
+            private_output_stage,
+            outcome,
+        ):
+            raise RuntimeError(validation_error)
+    except Exception:
+        restore_mapping(diagnostics, diagnostics_snapshot)
+        if failure_flush is not None:
+            failure_flush()
+        raise
+    commit_asset_stage_document(output, output_stage)
+    if private_stage_output is not None and private_output_stage is not None:
+        commit_asset_stage_document(private_stage_output, private_output_stage)
+    if current_shadow is not None and shadow_stage is not None:
+        restore_mapping(current_shadow, shadow_stage)
+    if current_part_outcomes is not None and part_outcomes_stage is not None:
+        current_part_outcomes.clear()
+        current_part_outcomes.update(part_outcomes_stage)
+    return found, touched, False, messages_seen, zone_lookups
+
+
 def private_wave_bootstrap_hour_complete(
     result: dict[str, Any],
     zone: dict[str, Any],
@@ -3234,6 +3433,18 @@ def private_wave_bootstrap_hour_complete(
         point,
         asset.valid_time,
     )
+
+
+class MappingWaveAsset:
+    """Attribute view of a normal STAC asset for exact wave provenance checks."""
+
+    def __init__(self, asset: dict[str, Any], model_run: str) -> None:
+        self.valid_time = str(asset.get("valid") or "")
+        self.model_run = model_run
+        self.item_id = str(asset.get("id") or "")
+        self.asset_identity_sha256 = str(
+            asset.get("assetIdentitySha256") or ""
+        )
 
 
 def reset_private_part_wave_cache(
@@ -3297,6 +3508,7 @@ def execute_private_wave_history_bootstrap(
     configuration: dict[str, Any],
     *,
     registry: Any | None = None,
+    checkpoint_controller: Any | None = None,
 ) -> dict[str, set[str]]:
     """Acquire and checkpoint the one bounded private WAM bridge.
 
@@ -3328,6 +3540,12 @@ def execute_private_wave_history_bootstrap(
         "collections": {},
     }
     result.setdefault("diagnostics", {})["privateWaveHistoryBootstrap"] = aggregate
+    owns_controller = checkpoint_controller is None
+    controller = checkpoint_controller or ProgressCheckpointController(
+        result,
+        fresh_zone_ids,
+        budget,
+    )
     if configuration["mode"] == WAVE_BOOTSTRAP_COLD_START_MODE:
         if registry is None:
             raise RuntimeError("private WAM cold bootstrap registry is missing")
@@ -3351,7 +3569,8 @@ def execute_private_wave_history_bootstrap(
             if exc.code == "MISSING_CELL":
                 reset_rows = reset_private_part_wave_cache(result, parts)
                 aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                controller.mark_bulk_dirty()
+                controller.flush_if_due(force=True)
         else:
             expected_exact = (
                 registry.part_count * len(configuration["requiredHours"])
@@ -3397,7 +3616,8 @@ def execute_private_wave_history_bootstrap(
                 aggregate["lockedHourCount"] = sum(
                     len(hours) for hours in locked.values()
                 )
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                controller.mark_bulk_dirty()
+                controller.flush_if_due(force=True)
                 return locked
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
@@ -3408,6 +3628,7 @@ def execute_private_wave_history_bootstrap(
         if not relevant:
             continue
         if should_stop_work():
+            controller.flush_if_due(force=True)
             raise RuntimeError("private WAM bootstrap runtime budget reached before STAC selection")
         try:
             plan, assets = list_private_wave_bootstrap_assets(
@@ -3419,6 +3640,7 @@ def execute_private_wave_history_bootstrap(
                 configuration["mode"] != WAVE_BOOTSTRAP_COLD_START_MODE
                 or exc.code != "NO_COHERENT_RUN"
             ):
+                controller.flush_if_due(force=True)
                 raise
             # A genuine cold start may continue without a complete 49-hour WAM
             # suffix.  This records only aggregate absence and returns to the
@@ -3437,7 +3659,8 @@ def execute_private_wave_history_bootstrap(
             aggregate["lockedHourCount"] = sum(
                 len(hours) for hours in locked.values()
             )
-            write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            controller.mark_bulk_dirty()
+            controller.flush_if_due(force=True)
             return locked
         plan_attestation = plan.sanitized_attestation()
         collection_summary = {
@@ -3458,7 +3681,8 @@ def execute_private_wave_history_bootstrap(
             if epoch(asset.valid_time) < epoch(configuration["targetHour"])
         }
         for asset_number, asset in enumerate(assets, start=1):
-            if should_stop_work():
+            if not controller.can_start_asset():
+                controller.flush_if_due(force=True)
                 raise RuntimeError("private WAM bootstrap runtime budget reached")
             already_complete = all(
                 private_wave_bootstrap_hour_complete(result, zone, collection, asset)
@@ -3469,17 +3693,21 @@ def execute_private_wave_history_bootstrap(
                 if asset.valid_time in expected_locked_hours:
                     locked[collection].add(asset.valid_time)
                 continue
-            path, reused = download_asset(
-                asset.href,
-                asset.size_bytes,
-                budget,
-                collection=collection,
-                model_run=asset.model_run,
-                valid_time=asset.valid_time,
-                item_id=asset.item_id,
-                item_created_at=asset.item_created_at,
-                item_updated_at=asset.item_updated_at,
-            )
+            try:
+                path, reused = download_asset(
+                    asset.href,
+                    asset.size_bytes,
+                    budget,
+                    collection=collection,
+                    model_run=asset.model_run,
+                    valid_time=asset.valid_time,
+                    item_id=asset.item_id,
+                    item_created_at=asset.item_created_at,
+                    item_updated_at=asset.item_updated_at,
+                )
+            except Exception:
+                controller.flush_if_due(force=True)
+                raise
             if reused:
                 result["diagnostics"]["reusedAssets"] = int(
                     result["diagnostics"].get("reusedAssets") or 0
@@ -3488,22 +3716,44 @@ def execute_private_wave_history_bootstrap(
                 f"{collection}: privat WAM-bootstrap {asset_number}/{len(assets)} "
                 f"({'genbrugt' if reused else 'downloadet'})"
             )
-            found, touched, interrupted, messages_seen, zone_lookups = process_grib(
-                path,
-                collection,
-                asset.model_run,
-                asset.valid_time,
-                relevant,
-                result,
-                result["diagnostics"],
+            asset_processing_started = time.monotonic()
+
+            def bootstrap_stage_complete(
+                staged_result: dict[str, Any],
+                _private_stage: dict[str, Any] | None,
+                outcome: tuple[set[str], set[str], bool, int, int],
+            ) -> bool:
+                return (
+                    {"significant-wave-height", "dominant-wave-period"}
+                    <= outcome[0]
+                    and all(
+                        private_wave_bootstrap_hour_complete(
+                            staged_result,
+                            zone,
+                            collection,
+                            asset,
+                        )
+                        for zone in relevant
+                    )
+                )
+
+            found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                path, collection, asset.model_run, asset.valid_time, relevant,
+                result, result["diagnostics"],
+                failure_flush=lambda: controller.flush_if_due(force=True),
+                stage_validator=bootstrap_stage_complete,
+                validation_error="private WAM bootstrap GRIB tuple is incomplete",
             )
+            asset_processing_seconds = time.monotonic() - asset_processing_started
             result["diagnostics"]["messagesSeen"] = int(
                 result["diagnostics"].get("messagesSeen") or 0
             ) + messages_seen
             result["diagnostics"]["zoneLookups"] = int(
                 result["diagnostics"].get("zoneLookups") or 0
             ) + zone_lookups
-            if interrupted or not {"significant-wave-height", "dominant-wave-period"} <= found:
+            if interrupted:
+                raise RuntimeError("private WAM bootstrap runtime budget reached inside GRIB processing")
+            if not {"significant-wave-height", "dominant-wave-period"} <= found:
                 raise RuntimeError("private WAM bootstrap GRIB tuple is incomplete")
             if not all(
                 private_wave_bootstrap_hour_complete(result, zone, collection, asset)
@@ -3514,17 +3764,25 @@ def execute_private_wave_history_bootstrap(
             collection_summary["processedAssetCount"] += 1
             if asset.valid_time in expected_locked_hours:
                 locked[collection].add(asset.valid_time)
-            if asset_number % 4 == 0:
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            checkpoint_written = controller.note_committed_asset(
+                seconds=asset_processing_seconds,
+            )
+            if checkpoint_written:
+                progress(
+                    f"{collection}: fælles progress-checkpoint gemt"
+                )
         if locked[collection] != expected_locked_hours:
+            controller.flush_if_due(force=True)
             raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
     if set(locked) != set(WAVE_BOOTSTRAP_COLLECTIONS):
+        controller.flush_if_due(force=True)
         raise RuntimeError("private WAM bootstrap lacks one required collection")
     aggregate["status"] = "history-complete"
     aggregate["lockedHourCount"] = sum(len(hours) for hours in locked.values())
-    write_checkpoint(result, fresh_zone_ids, budget, "partial")
+    controller.mark_bulk_dirty()
+    if owns_controller:
+        controller.flush_if_due(force=True)
     return locked
-
 
 def clear_operational_wave_window(
     result: dict[str, Any],
@@ -3580,6 +3838,55 @@ def clear_operational_wave_window(
             (point.get("gridPoints") or {}).pop(key, None)
             (point.get("collections") or {}).pop(key, None)
     return cleared
+
+def clear_staged_operational_wave_hour(
+    staged_result: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    valid_time: str,
+) -> int:
+    """Clear one WAM-owned hour inside an uncommitted asset stage only."""
+    cleared = 0
+    public_targets = [
+        zone for zone in zones
+        if not zone.get("waterSource")
+        and not zone.get("researchCurrent")
+        and not zone.get("privateStage")
+    ]
+    for zone in relevant_zones(collection, public_targets):
+        point = (staged_result.get("zones") or {}).get(
+            str(zone.get("id") or "")
+        )
+        if not isinstance(point, dict):
+            continue
+        hour = (point.get("hourly") or {}).get(valid_time)
+        if not isinstance(hour, dict):
+            continue
+        sources = hour.get("sources")
+        had_wave = any(
+            key in hour
+            for key in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            )
+        ) or (isinstance(sources, dict) and "wave" in sources)
+        for key in (
+            "significant-wave-height",
+            "dominant-wave-period",
+            "mean-wave-dir",
+        ):
+            hour.pop(key, None)
+            (point.get("gridPoints") or {}).pop(key, None)
+            (point.get("collections") or {}).pop(key, None)
+        if isinstance(sources, dict):
+            sources.pop("wave", None)
+            if not sources:
+                hour.pop("sources", None)
+        if had_wave:
+            cleared += 1
+    return cleared
+
 
 def wind_from_uv(hour: dict[str, Any]) -> None:
     u, v = hour.get("wind-u-10m"), hour.get("wind-v-10m")
@@ -5001,22 +5308,129 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
     DIAGNOSTICS_TEXT_PATH.write_text("\n".join(lines) + "\n", "utf-8")
 
 
-def atomic_write_bulk_cache(document: dict[str, Any]) -> None:
+def atomic_write_bulk_cache(
+    document: dict[str, Any],
+    *,
+    pretty: bool = True,
+) -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     temporary = OUTPUT_PATH.with_suffix(".json.tmp")
-    temporary.write_text(
-        json.dumps(document, ensure_ascii=False, indent=2) + "\n",
-        "utf-8",
+    payload = json.dumps(
+        document,
+        ensure_ascii=False,
+        indent=2 if pretty else None,
+        separators=None if pretty else (",", ":"),
     )
+    temporary.write_text(payload + "\n", "utf-8")
     temporary.replace(OUTPUT_PATH)
 
 
 def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
+    """Persist committed progress without global cleanup or diagnostics."""
     result["refreshStatus"] = status
     result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    clean_and_summarize(result, fresh_zone_ids, budget)
-    atomic_write_bulk_cache(result)
+    result.setdefault("diagnostics", {})["progressCheckpoint"] = {
+        "schemaVersion": 1,
+        "validation": "pending-finalization",
+    }
+    atomic_write_bulk_cache(result, pretty=False)
+
+
+def write_finalized_cache(result: dict[str, Any], status: str) -> None:
+    """Persist the already-cleaned terminal cache and diagnostics exactly once."""
+    result["refreshStatus"] = status
+    result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    result.setdefault("diagnostics", {}).pop("progressCheckpoint", None)
+    atomic_write_bulk_cache(result, pretty=True)
     write_ocean_diagnostics(result)
+
+
+def percentile_95(values: list[float], default: float) -> float:
+    finite = sorted(
+        float(value)
+        for value in values
+        if isinstance(value, (int, float)) and math.isfinite(float(value))
+    )
+    if not finite:
+        return float(default)
+    index = max(0, math.ceil(len(finite) * 0.95) - 1)
+    return finite[index]
+
+
+class ProgressCheckpointController:
+    """One shared cadence for committed bulk and dirty private sidecars."""
+
+    def __init__(
+        self,
+        result: dict[str, Any],
+        fresh_zone_ids: set[str],
+        budget: dict[str, int],
+        sidecar_flush: Any | None = None,
+    ) -> None:
+        self.result = result
+        self.fresh_zone_ids = fresh_zone_ids
+        self.budget = budget
+        self.sidecar_flush = sidecar_flush
+        self.committed_assets_since_write = 0
+        self.last_write_monotonic = time.monotonic()
+        self.bulk_dirty = False
+        self.sidecars_dirty = False
+        self.asset_seconds: list[float] = []
+        self.progress_write_seconds: list[float] = []
+
+    def can_start_asset(self) -> bool:
+        expected_asset = percentile_95(self.asset_seconds, 75.0)
+        expected_write = percentile_95(self.progress_write_seconds, 10.0)
+        return runtime_remaining() > max(
+            30.0,
+            expected_asset + expected_write + 10.0,
+        )
+
+    def note_committed_asset(
+        self,
+        *,
+        seconds: float | None = None,
+        sidecars_dirty: bool = False,
+    ) -> bool:
+        self.committed_assets_since_write += 1
+        self.bulk_dirty = True
+        self.sidecars_dirty = self.sidecars_dirty or sidecars_dirty
+        if seconds is not None and math.isfinite(float(seconds)):
+            self.asset_seconds.append(float(seconds))
+        return self.flush_if_due()
+
+    def mark_bulk_dirty(self) -> None:
+        self.bulk_dirty = True
+
+    def mark_sidecars_dirty(self) -> None:
+        self.sidecars_dirty = True
+
+    def flush_if_due(self, *, force: bool = False) -> bool:
+        due = progress_checkpoint_due(
+            self.committed_assets_since_write,
+            self.last_write_monotonic,
+            force=force,
+        )
+        if force and (self.bulk_dirty or self.sidecars_dirty):
+            due = True
+        if not due:
+            return False
+        if self.bulk_dirty:
+            started = time.monotonic()
+            write_checkpoint(
+                self.result,
+                self.fresh_zone_ids,
+                self.budget,
+                "partial",
+            )
+            self.progress_write_seconds.append(time.monotonic() - started)
+            self.bulk_dirty = False
+            self.committed_assets_since_write = 0
+            self.last_write_monotonic = time.monotonic()
+        if self.sidecars_dirty and self.sidecar_flush is not None:
+            self.sidecar_flush()
+            self.sidecars_dirty = False
+        return True
 
 
 def scrub_private_stage_diagnostics(diagnostics: dict[str, Any]) -> None:
@@ -5199,7 +5613,7 @@ def replay_current_field_shadow_from_cache(
                 "messagesSeen": 0,
                 "zoneLookups": 0,
             }
-            found, _touched, interrupted, messages_seen, zone_lookups = process_grib(
+            found, _touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
                 path,
                 collection,
                 model_run,
@@ -5659,15 +6073,41 @@ def main() -> int:
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
     bootstrap_locked_hours: dict[str, set[str]] = {}
-    if wave_bootstrap_configuration is not None:
-        bootstrap_locked_hours = execute_private_wave_history_bootstrap(
-            result,
-            zones,
-            budget,
-            fresh_zone_ids,
-            wave_bootstrap_configuration,
-            registry=load_wave_bootstrap_registry(part_doc),
+
+    def flush_private_progress_sidecars() -> None:
+        result["diagnostics"]["currentFieldShadow"] = (
+            write_current_field_shadow_checkpoint(
+                current_shadow,
+                generated,
+                selected_research_part_ids,
+                research_run_metrics,
+                regional_proxy_targets,
+            )
         )
+        if coastal_point_stage_targets:
+            prune_coastal_point_stage_hours(coastal_point_stage, generated)
+            save_coastal_point_stage(
+                COASTAL_POINT_STAGE_PATH,
+                coastal_point_stage,
+            )
+
+    checkpoint_controller = ProgressCheckpointController(
+        result, fresh_zone_ids, budget, flush_private_progress_sidecars,
+    )
+    if wave_bootstrap_configuration is not None:
+        try:
+            bootstrap_locked_hours = execute_private_wave_history_bootstrap(
+                result,
+                zones,
+                budget,
+                fresh_zone_ids,
+                wave_bootstrap_configuration,
+                registry=load_wave_bootstrap_registry(part_doc),
+                checkpoint_controller=checkpoint_controller,
+            )
+        except Exception:
+            checkpoint_controller.flush_if_due(force=True)
+            raise
 
     for collection in scheduled:
         if productive_collections >= COLLECTIONS_PER_RUN:
@@ -5684,8 +6124,8 @@ def main() -> int:
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
-        checkpoint_assets_since_write = 0
-        checkpoint_last_write_monotonic = time.monotonic()
+        # Progress cadence is shared across collections by checkpoint_controller.
+        # No collection-local checkpoint clock is maintained.
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             if collection in prefetched_marine:
@@ -5717,15 +6157,9 @@ def main() -> int:
                 and collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
             if bootstrap_operational_wam:
-                cleared = clear_operational_wave_window(
-                    result,
-                    zones,
-                    collection,
-                    wave_bootstrap_configuration["targetHour"],
+                result["diagnostics"]["operationalWaveStageMode"] = (
+                    "per-asset-atomic"
                 )
-                result["diagnostics"]["operationalWaveRowsCleared"] = int(
-                    result["diagnostics"].get("operationalWaveRowsCleared") or 0
-                ) + cleared
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
@@ -5843,7 +6277,13 @@ def main() -> int:
                                 "marineGridSearch": {},
                                 "batchedGridReads": 0,
                             }
-                            process_grib(
+                            (
+                                _stage_found,
+                                _stage_touched,
+                                staged_interrupted,
+                                _stage_messages,
+                                _stage_lookups,
+                            ) = process_grib_transactionally(
                                 cached_path,
                                 collection,
                                 run,
@@ -5853,11 +6293,13 @@ def main() -> int:
                                 private_diagnostics,
                                 None,
                                 coastal_point_stage,
+                                failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
                             )
-                            prune_coastal_point_stage_hours(coastal_point_stage, generated)
-                            save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
+                            if not staged_interrupted:
+                                checkpoint_controller.mark_sidecars_dirty()
                     continue
-                if should_stop_work():
+                if not checkpoint_controller.can_start_asset():
+                    checkpoint_controller.flush_if_due(force=True)
                     budget_stop = "bulk runtime budget reached"
                     break
                 try:
@@ -5889,7 +6331,61 @@ def main() -> int:
                     run,
                     required_current_valid_times,
                 )
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib(
+                operational_wave_asset = (
+                    MappingWaveAsset(asset, run)
+                    if bootstrap_operational_wam
+                    else None
+                )
+                operational_wave_zones = (
+                    relevant_zones(
+                        collection,
+                        [
+                            zone for zone in zones
+                            if not zone.get("waterSource")
+                            and not zone.get("researchCurrent")
+                            and not zone.get("privateStage")
+                        ],
+                    )
+                    if bootstrap_operational_wam
+                    else []
+                )
+                staged_wave_clear = {"rows": 0}
+
+                def prepare_operational_wave_stage(
+                    staged_result: dict[str, Any],
+                    _private_stage: dict[str, Any] | None,
+                ) -> None:
+                    if bootstrap_operational_wam:
+                        staged_wave_clear["rows"] = (
+                            clear_staged_operational_wave_hour(
+                                staged_result,
+                                zones,
+                                collection,
+                                asset["valid"],
+                            )
+                        )
+
+                def validate_operational_wave_stage(
+                    staged_result: dict[str, Any],
+                    _private_stage: dict[str, Any] | None,
+                    outcome: tuple[set[str], set[str], bool, int, int],
+                ) -> bool:
+                    if not bootstrap_operational_wam:
+                        return True
+                    return (
+                        operational_wave_asset is not None
+                        and {"significant-wave-height", "dominant-wave-period"}
+                            <= outcome[0]
+                        and all(
+                            private_wave_bootstrap_hour_complete(
+                                staged_result, zone, collection,
+                                operational_wave_asset,
+                            )
+                            for zone in operational_wave_zones
+                        )
+                    )
+
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
                     path,
                     collection,
                     run,
@@ -5901,12 +6397,19 @@ def main() -> int:
                     coastal_point_stage,
                     current_part_outcome_observation,
                     allowed_parameters=allowed_parameters,
+                    prepare_stage=prepare_operational_wave_stage,
+                    failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                    stage_validator=validate_operational_wave_stage,
+                    validation_error="operational WAM asset is not exact and complete",
                 )
+                if bootstrap_operational_wam and not interrupted:
+                    result["diagnostics"]["operationalWaveRowsCleared"] = int(
+                        result["diagnostics"].get("operationalWaveRowsCleared") or 0
+                    ) + staged_wave_clear["rows"]
                 asset_processing_seconds = time.monotonic() - asset_processing_started
                 scrub_private_stage_diagnostics(result["diagnostics"])
-                if coastal_point_stage_targets:
-                    prune_coastal_point_stage_hours(coastal_point_stage, generated)
-                    save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
+                if coastal_point_stage_targets and not interrupted:
+                    checkpoint_controller.mark_sidecars_dirty()
                 research_run_metrics["samplesWrittenThisRun"] = (
                     int(replay_summary.get("samplesWritten") or 0)
                     + int(result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0)
@@ -5921,13 +6424,7 @@ def main() -> int:
                     current_shadow["lastSelectedPartIds"] = selected_research_part_ids
                     research_rotation_completed = True
                     research_run_metrics["rotationAdvancedThisRun"] = True
-                    result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-                        current_shadow,
-                        generated,
-                        selected_research_part_ids,
-                        research_run_metrics,
-                        regional_proxy_targets,
-                    )
+                    checkpoint_controller.mark_sidecars_dirty()
                 if (
                     collection == REGIONAL_PROXY_REQUIRED_COLLECTION
                     and regional_proxy_targets
@@ -6001,19 +6498,19 @@ def main() -> int:
                 fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
-                checkpoint_assets_since_write += 1
-                if progress_checkpoint_due(
-                    checkpoint_assets_since_write,
-                    checkpoint_last_write_monotonic,
-                    force=interrupted,
-                ):
-                    write_checkpoint(result, fresh_zone_ids, budget, "partial")
-                    checkpoint_assets_since_write = 0
-                    checkpoint_last_write_monotonic = time.monotonic()
-                    checkpoint_status = "checkpoint gemt"
+                if interrupted:
+                    checkpoint_status = "afbrudt asset kasseret"
                 else:
+                    checkpoint_written = (
+                        checkpoint_controller.note_committed_asset(
+                            seconds=asset_processing_seconds,
+                        )
+                    )
                     checkpoint_status = (
-                        f"checkpoint samler {checkpoint_assets_since_write} assets"
+                        "checkpoint gemt"
+                        if checkpoint_written
+                        else "checkpoint samler "
+                            f"{checkpoint_controller.committed_assets_since_write} assets"
                     )
                 progress(
                     f"{collection}: forecast-step behandlet på "
@@ -6028,15 +6525,30 @@ def main() -> int:
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
             run_info["recognizedParameters"] = sorted(recognized)
             required = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            selected_valid_time_values = [
+                str(asset.get("valid") or "") for asset in assets
+            ]
+            selected_valid_times = {
+                valid_time for valid_time in selected_valid_time_values
+                if valid_time
+            }
+            completed_or_locked = previously_processed | set(
+                bootstrap_locked_hours.get(collection, set())
+            )
+            collection_assets_complete = (
+                bool(selected_valid_time_values)
+                and len(selected_valid_times) == len(selected_valid_time_values)
+                and selected_valid_times <= completed_or_locked
+            )
             made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
-            if not made_progress and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
+            if not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
                 state["lastCheckedAt"] = generated
                 state["referenceTime"] = run
                 state["lastError"] = None
                 state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsUnchanged"].append(collection)
                 result["diagnostics"]["zeroProgressCollections"].append(collection)
-            elif recognized >= required and run_info["assetsProcessed"]:
+            elif collection_assets_complete and recognized >= required and run_info["assetsProcessed"]:
                 state["lastSuccessfulAt"] = generated
                 state["referenceTime"] = run
                 state["consecutiveFailures"] = 0
@@ -6050,6 +6562,11 @@ def main() -> int:
                 state["consecutiveFailures"] = 0
                 state["nextEligibleAt"] = None
                 result["diagnostics"]["collectionsPartial"].append(collection)
+            elif budget_stop:
+                state["lastBudgetInterruptedAt"] = generated
+                state["referenceTime"] = run
+                state["lastError"] = None
+                state["nextEligibleAt"] = None
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
             if made_progress:
@@ -6062,18 +6579,8 @@ def main() -> int:
                     "failureCode": "RUNTIME_BUDGET_REACHED",
                     "partialProgressPreserved": True,
                 })
-            if progress_checkpoint_due(
-                checkpoint_assets_since_write,
-                checkpoint_last_write_monotonic,
-                force=True,
-            ):
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
-                checkpoint_assets_since_write = 0
-                checkpoint_last_write_monotonic = time.monotonic()
-                progress(
-                    f"{collection}: collection-checkpoint gemt; "
-                    f"steps={run_info['assetsProcessed']}"
-                )
+            if budget_stop:
+                checkpoint_controller.flush_if_due(force=True)
         except Exception as exc:
             message = safe_error_message(exc)
             failure_code = collection_failure_code(exc)
@@ -6094,14 +6601,9 @@ def main() -> int:
                 "failureClass": state["failureClass"],
                 "retryAfterMinutes": delay_minutes,
             })
-            if progress_checkpoint_due(
-                checkpoint_assets_since_write,
-                checkpoint_last_write_monotonic,
-                force=True,
-            ):
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
-                checkpoint_assets_since_write = 0
-                checkpoint_last_write_monotonic = time.monotonic()
+            checkpoint_controller.flush_if_due(force=True)
+
+    checkpoint_controller.flush_if_due(force=True)
 
     replay_targets: list[dict[str, Any]] = []
     if not research_rotation_completed:
@@ -6245,11 +6747,11 @@ def main() -> int:
             or result["diagnostics"]["zeroProgressCollections"] else "failed"
         )
 
-    write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     prune_stats = prune_raw_cache()
     cache_after = raw_cache_inventory()
     write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
+    write_finalized_cache(result, result["refreshStatus"])
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
     terminal_code = producer_terminal_code(

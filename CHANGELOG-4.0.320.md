@@ -9,8 +9,9 @@
 - `scripts/update-dmi-bulk.py` opretter nu ét ecCodes-nearest-handle pr. GRIB-message og genbruger det med `CODES_GRIB_NEAREST_SAME_GRID` efter første vellykkede opslag. Manglende low-level API stopper i smoketesten; den gamle langsomme fallback kan ikke passere ubemærket.
 - Cacheidentiteten bruger `md5GridSection`, `GRID_LOOKUP_VERSION=9`, ecCodes API-version og Python-bindingens version. Den offentlige `gridDefinitionSha256` forbliver den eksisterende legacy-definition, så målt historik, provenance, state og recovery ikke re-identificeres af en ren performanceoptimering.
 - Eksakte DKSS-currenttimer behandler fortsat de obligatoriske `current-u`, `current-v` og `sea-mean-deviation`. Valgfrie marine felter følger den etablerede tretimersstride. Samplingpunkt, 5 km-grænse, spatial-first-/lagvalg, missing- og provenancekontrakter er uændrede.
-- Progressive caches checkpointes senest efter otte afsluttede assets eller 60 sekunder og tvinges ved interruption, collectionslut og exception. Holdbarheden ligger ved afsluttede assetgrænser; en halv GRIB-fil kaldes aldrig et checkpoint eller releasebevis.
-- Seneste main-produktion `33591129416` beviste, at DMI-filerne kunne hentes, men den gamle main-parser stoppede på ikke-numerisk gridmetadata (`type str doesn't define __round__ method`) og deployede intet. 4.0.320 accepterer kun finite numerisk gridmetadata og bevarer fail-closed-resultatet.
+- Hvert asset behandles copy-on-write mod public cache, privat stage, current-shadow, collection-outcome og diagnostics. Kun en grøn komplet assetvalidator committer; interruption, exception og validatorfejl ruller hele assettet tilbage uden `processedStep` eller falsk collection-success. Én fælles controller checkpoint'er bulk og sidecars kompakt/atomisk senest efter otte committede assets eller 60 sekunder og ved forced grænser. Fuld clean/summarize/ocean-diagnostics og pretty finalisering sker én gang ved terminal write.
+- Isoleret run `33604589582` bevarede progressionen, men viste, at 26–27 gamle fuld-cache-checkpoints kostede cirka 1.105 sekunder. Main-runs `33591129416`, `33608982473` og `33617117320` beviste, at DMI-filerne kunne hentes, men den gamle main-parser stoppede på tekstlig gridmetadata (`type str doesn't define __round__ method`) og deployede intet. 4.0.320 accepterer kun finite numerisk gridmetadata, bevarer teksthashen som provenance og lader exact-gap-selector stoppe bred Copernicus-erstatning.
+- Tolv dynamiske transaction/checkpointtests, 21 WAM-bootstraptests, producent-/workflowtesten, native provenance og uafhængig slutreview er grønne uden P1/P2-fund.
 
 ## Uændrede kontrakter
 
@@ -20,7 +21,7 @@
 
 ## Åbne releasebeviser
 
-- De afgrænsede Python-/Node-/workflow-/smoke-/proveniens-/grid-/checkpointtests skal være grønne på den endelige diff.
+- De afgrænsede Python-/Node-/workflow-/smoke-/proveniens-/grid-/checkpointtests er grønne på den aktuelle slutdiff; GitHub skal nu bevise den committede exact head.
 - PR'ens eksakte head skal bestå `validate:source` én gang.
 - Derefter skal én isoleret preflight bevise operationel current for alle 673 kystdele × 118 timer med DMI-first og exact residual Copernicus. Feggesunds privacy-sikre tre bølgekystdele × 118 timer bevises særskilt.
 - Først derefter må branchen merges, den fulde produktions-/releasekæde køre, og state 6 verificeres offentligt på desktop og mobil.

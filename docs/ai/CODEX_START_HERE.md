@@ -1,9 +1,10 @@
-# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-gridgenbrug
+# NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 atomisk DMI-assetprogression
 
-- Fortsæt fra branch `codex/ravscore-history-incomplete-cutover`; committed baseline er `4414970419c1526c485cf830ba399dff7499ad3c`, og hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor. Netpausen ændrede/pushede intet.
-- DMI leverede DKSS-assets. Den lokale flaskehals var repeated high-level nearest. Message-lokalt low-level handle, `SAME_GRID` efter første success, grid-v9/ecCodes-versioneret processed cache, uændret public griddefinition, required-vs-optional fieldfilter, bounded checkpoint og numeric-only gridmetadata er implementeret.
-- Bevar DMI-first, exact-gap Copernicus, spatial-first/fælles celle/lag/5 km, 118-timersgaten, Feggesund, model-id/state/bundles, scorekontrakt og alle geometri-/punktforbud.
-- Kør kun måltests lokalt, derefter én exact-head sourcegate og én isoleret 673 × 118-currentpreflight; Feggesunds tre dele × 118 timer er et separat wave-only-bevis. Først efter grøn evidens: fetch main, merge, fuld produktion/activation og offentlig desktop/mobil.
+- Fortsæt fra branch `codex/ravscore-history-incomplete-cutover` med udgangspunkt i committed baseline `eebab205c6633e32b993f2c18b0933c392e1d20c`. Hentet `origin/main 28f24d1c1fc2c9d971b5acb43cf91bddd80fb950` er allerede ancestor.
+- Run `33604589582` beviste officielle DKSS-assets og bevaret progression, men også cirka 1.105 sekunders spild på 26–27 gamle fuld-cache-checkpoints. Main-runs `33608982473` og `33617117320` gentog den gamle main-parsers string-`round`-fejl og stoppede korrekt før bred Copernicus/deploy.
+- Hvert asset behandles nu copy-on-write og committer først efter grøn komplet validator; interruption/exception/validatorfejl ruller public/private/shadow/outcomes/diagnostics tilbage. Den fælles controller checkpoint'er kompakt og atomisk ved 8 committede assets/60 sekunder; tung finalisering sker én gang.
+- Tolv dynamiske transaction/checkpointtests, 21 WAM-bootstraptests, producent-/workflowtest, native provenance, syntaks/diff og uafhængig review er grønne uden P1/P2-blokker. Bevar DMI-first, exact-gap Copernicus, spatial-first/fælles celle/lag/5 km, 118-timersgaten, Feggesund, model-id/state/bundles, scorekontrakt og alle geometri-/punktforbud.
+- Næste sekvens er commit/push, én exact-head sourcegate og én isoleret 673 × 118-currentpreflight; Feggesunds tre dele × 118 timer er et separat wave-only-bevis. Først efter grøn evidens: fetch main, merge, fuld produktion/activation og offentlig desktop/mobil.
 
 # NYESTE CHECKPOINT – 2026-09-02 – Feggesund direct-first wave-only proxy
 

@@ -3,8 +3,8 @@
 ## Nyeste releasehale – 4.0.320
 
 1. [x] Fastslå DKSS-flaskehalsen som repeated high-level nearest, implementér message-lokalt low-level `SAME_GRID`, grid-v9/ecCodes-versioneret processed cache og uændret offentlig griddefinition.
-2. [x] Bevar required timevis U/V+vandstand, optional tretimersstride, spatial-first/fælles celle/lag/5 km/missing, DMI-first og exact-gap Copernicus; gør checkpoint bounded ved 8 afsluttede assets/60 sekunder samt forced afslutning.
-3. [x] Bestå de afgrænsede exact-hour/grid/provenance/API/smoke/checkpoint/workflow-, RDKS-, håndbogs-, version- og modelbindingstests.
+2. [x] Bevar required timevis U/V+vandstand, optional tretimersstride, spatial-first/fælles celle/lag/5 km/missing, DMI-first og exact-gap Copernicus; gør hvert asset atomisk og checkpoint compact/shared/bounded ved 8 committede assets/60 sekunder samt forced afslutning.
+3. [x] Bestå 12 dynamiske transaction/checkpointtests, 21 WAM-bootstraptests samt de afgrænsede exact-hour/grid/provenance/API/smoke/workflow-, native-proveniens-, RDKS-, håndbogs-, version- og modelbindingstests; uafhængig slutreview fandt ingen P1/P2-blokker.
 4. [ ] Commit/push én samlet 4.0.320-head og bestå exact-head `validate:source` én gang.
 5. [ ] Bevis current for 673 dele × 118 timer og separat Feggesund wave for tre dele × 118 timer; fetch nyeste main, merge, kør fuld produktion/aktivering og verificér offentlig desktop/mobil.
 

@@ -95,7 +95,7 @@
     "test:onshore-geometry": "node scripts/test-onshore-zone-geometry.mjs",
     "test:admin-direction-audit": "node scripts/test-admin-direction-audit.mjs && node scripts/test-admin-part-direction-editor-4.0.192.mjs",
     "test:direction-anchors": "node scripts/test-direction-anchors.mjs",
-    "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs && python scripts/test-dmi-cache-migration-4.0.229.py && python scripts/test-current-cross-collection-selection-4.0.230.py",
+    "test:dmi-bulk": "node scripts/test-dmi-bulk-model-download.mjs && python scripts/test-dmi-transactional-checkpoint.py && python scripts/test-dmi-cache-migration-4.0.229.py && python scripts/test-current-cross-collection-selection-4.0.230.py",
     "test:dmi-progressive-zone-cache": "node scripts/test-dmi-progressive-zone-cache-4.0.188.mjs",
     "test:dmi-wave-bootstrap": "python -B scripts/test_dmi_wave_history_bootstrap.py && python -B scripts/test_dmi_wave_bootstrap_update_integration.py && node scripts/test-resolve-candidate-g-wave-bootstrap-target.mjs",
     "test:dmi-bulk-forecast-integration": "node scripts/test-dmi-bulk-forecast-integration.mjs && python scripts/test-dmi-native-provenance.py && npm run test:dmi-wave-bootstrap",
