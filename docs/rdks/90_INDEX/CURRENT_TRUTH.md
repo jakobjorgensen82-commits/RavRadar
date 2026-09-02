@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 atomisk DMI-progression lokalt lukket; frisk 118-bevis åbent
 
+- Fortsættelsesrun `33645673684` beviste grøn restore af den gemte partial Copernicus-cache, men fandt en adapterfejl: initial range-inspection krævede stadig collectionseal og stoppede før fill. Den lokale checker validerer nu partial state med `require_collection=false` alene under det eksisterende `--allow-nonmatching-seal`; strict og terminal proof kræver fortsat activation-complete collection.
+- Exact-head `33643225606` er grøn på `f31a8fc3`. Den nye checkerregression beviser tre adskilte udfald: strict partial afvises, refreshable partial fortsætter som incomplete, og terminal `--require-complete` afvises. Frisk continuation-preflight på den nye head afventer.
+
 - Exact-head `33627490090` er grøn på `c8aa5665`. Preflight `33632361928` nåede `DMI_READY; NONE`, dokumenterede 71.525/79.414 DMI-par og præcis 7.889 operationelle restpar. Den efterfølgende fejl var lokal all-or-nothing-persistens ved Copernicus-timeout, ikke API-, credential- eller bred DMI-fejl.
 - Hver færdig Copernicus-spatialshard gemmes nu atomisk i privat schema-2-state uden collectionseal. Ét 1.200-sekunders forsøg pr. job sikrer plads til cache-save; næste workflowrun fortsætter kun manglende exact pairs. Partial state kan aldrig attestere `OPERATIONAL_COMPLETE`, og ingen rå U/V, koordinater eller private payloads uploades eller logges. Frisk 673 × 118-runbevis er fortsat åbent.
 

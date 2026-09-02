@@ -1,5 +1,8 @@
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-performance, parser og atomisk checkpoint
 
+- [x] Bestå exact-head `33643225606`; bevis i `33645673684`, at den private partial cache gendannes, og afgræns derefter den fejlagtige complete-seal-inspektion før fill.
+- [x] Tillad fuldt valideret uforseglet partial state alene i initial `--allow-nonmatching-seal`-inspektion; bevar strict/terminal collectionseal fail-closed og bestå den målrettede trevejsregression.
+
 - [x] Bestå exact-head `33627490090`; afgræns med preflight `33632361928` 71.525/79.414 DMI-par og 7.889 operationelle Copernicus-restpar samt den gamle timeoutbetingede all-or-nothing-persistens.
 - [x] Checkpoint hver komplet valideret Copernicus-shard atomisk uden activationseal; genoptag kun manglende par, gem privat progression ved failure og brug ét bounded 1.200-sekunders forsøg pr. workflowrun, så save-trinnet ligger inden for jobbudgettet.
 

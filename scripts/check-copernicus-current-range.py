@@ -90,7 +90,11 @@ def inspect(
             "productionReferenceAt": reference,
             "requiredPairCount": required_pair_count,
         }
-    cache = validate_shadow(document, target_identities, require_collection=True)
+    cache = validate_shadow(
+        document,
+        target_identities,
+        require_collection=not allow_nonmatching_seal,
+    )
     expected_status = "OPERATIONAL_COMPLETE" if operational_contract else "COMPLETE"
     matches = [
         row for row in cache["collections"]

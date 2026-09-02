@@ -1,5 +1,7 @@
 ## 4.0.320-kandidat – deterministisk DMI-gridgenbrug (2026-09-02)
 
+- Fortsættelsesrun `33645673684` gendannede shardcachen, men initialinspektionen afviste korrekt uforseglet state, før fill kunne fortsætte. Checkeren accepterer nu en fuldt valideret partial cache kun under `--allow-nonmatching-seal`; strict og terminal `--require-complete` kræver uændret et activation-complete seal. Måltesten dækker alle tre udfald.
+
 - Exact-head `33627490090` bestod. Preflight `33632361928` nåede grøn DMI-terminalgate og fandt 7.889 eksakte operationelle Copernicus-restpar; gammel all-or-nothing-persistens tabte færdige spatialshards ved timeout.
 - Copernicus-rangeproducenten checkpoint'er nu hver valideret shard som uforseglet privat state. Ét hard-bounded 1.200-sekunders forsøg pr. workflowrun gemmer progression ved failure, og senere runs henter kun resten. Kun komplet target..+117 kan forsegles `OPERATIONAL_COMPLETE`; DMI-first, model, score, geometri og punkter er uændrede.
 

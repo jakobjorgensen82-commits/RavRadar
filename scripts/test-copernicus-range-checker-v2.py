@@ -13,6 +13,7 @@ from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     OPERATIONAL_MATRIX_CONTRACT_ID,
     atomic_write_shadow,
+    atomic_write_shadow_checkpoint,
     canonical_sha256,
     file_sha256,
     make_acquisition,
@@ -260,6 +261,30 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as r
     assert operational_good.returncode == 0, operational_good.stdout + operational_good.stderr
     operational_current = run_current(folder)
     assert operational_current.returncode == 0 and "already contains" in operational_current.stdout
+
+    # A valid unsealed per-shard checkpoint must be refreshable during the
+    # initial inspection, but it remains invalid for every terminal proof.
+    atomic_write_shadow_checkpoint(
+        folder / "cache.json",
+        acquisitions=acquisitions,
+        records=records,
+        updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
+    strict_partial = run(folder)
+    assert strict_partial.returncode != 0 and "no activation-complete" in strict_partial.stdout
+    refreshable_partial = run(folder, allow_nonmatching_seal=True)
+    assert refreshable_partial.returncode == 0 and "complete acquisition is required" in refreshable_partial.stdout
+    required_partial = run(folder, allow_nonmatching_seal=True, require_complete=True)
+    assert required_partial.returncode != 0 and "required but absent" in required_partial.stdout
+    atomic_write_shadow(
+        folder / "cache.json",
+        acquisitions=acquisitions,
+        records=records,
+        collection=operational_collection,
+        updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
 
     # A valid cache restored from the preceding reference is useful retained
     # evidence, but it is not the locked seal for this preflight.  The initial

@@ -1,5 +1,7 @@
 # NYESTE CHECKPOINT – 2026-09-02 – DMI-nearest-flaskehals og gridmetadata lokalt rettet
 
+- **ISSUE-COPERNICUS-PARTIAL-RESTORE-INSPECT-SEAL – LØST LOKALT / FRISK PREFLIGHT ÅBEN P0:** Fortsættelsesrun `33645673684` gendannede den private cache, men initialinspektionen krævede fejlagtigt et activation-complete seal og stoppede før fill. `--allow-nonmatching-seal` validerer nu hele partial state uden collectionkrav og klassificerer den som uforseglet; terminal check uden flag forbliver strict og kræver fortsat komplet seal. Den målrettede strict/refreshable/terminal-regression er grøn.
+
 - **ISSUE-COPERNICUS-118-ALL-OR-NOTHING-TIMEOUT – LØST LOKALT / FRISK PREFLIGHT ÅBEN P0:** Run `33632361928` nåede grøn DMI-terminalgate, men den gamle pilot persisterede først efter alle spatialshards og tabte derfor færdigt arbejde ved to 600-sekunders timeouts. Per-shard atomisk partial checkpoint, resume af kun manglende exact pairs, ét 1.200-sekunders forsøg pr. workflowrun og privat save-on-failure lukker rodårsagen uden falsk seal. Ingen publicering eller deploy skete.
 
 - **ISSUE-DMI-HIGH-LEVEL-NEAREST-REBUILD – LØST LOKALT / FRISK PREFLIGHT ÅBEN P0:** DMI leverede DKSS-assets, men high-level nearest-kald genopbyggede samme gridindeks for hvert punkt. Første asset brugte cirka 388 sekunder, et senere cirka 51 sekunder, og preflight nåede 47/118 på 2.852 sekunder. 4.0.320 bruger ét low-level nearest-handle pr. message med `SAME_GRID` efter første success og fail-fast smoke uden API'et.
