@@ -46,5 +46,5 @@ print(
     "ecCodes Python API smoke test passed: "
     + ", ".join(required)
     + "; versionsidentiteter: "
-    + ", ".join(version_fields)
+    + ", ".join(f"{name}={value}" for name, value in version_fields.items())
 )

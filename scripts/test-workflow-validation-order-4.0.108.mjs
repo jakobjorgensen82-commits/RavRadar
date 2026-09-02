@@ -245,6 +245,14 @@ for (const marker of [
   }
 }
 const operationalPreflight = copernicusPilot.slice(operationalPreflightStart);
+const operationalUserAgentVersions = [...operationalPreflight.matchAll(
+  /WEATHER_USER_AGENT:\s*"RavRadar\/([0-9.]+) 118h /g,
+)].map(match => match[1]);
+assert.deepEqual(
+  operationalUserAgentVersions,
+  [packageJson.version, packageJson.version, packageJson.version],
+  'Alle tre operationelle 118h-user-agents skal følge package.json-versionen.',
+);
 if ((operationalPreflight.match(/--allow-nonmatching-seal/g) || []).length !== 1) {
   throw new Error('Kun den indledende cacheinspektion må klassificere en ikke-matchende seal som ufuldstændig.');
 }
@@ -263,15 +271,19 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
   operationalPreflight.indexOf('name: "Require DMI production ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
+  operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus seal'),
+  operationalPreflight.indexOf('name: Fill only the exact operational DMI gap seal'),
   operationalPreflight.indexOf('name: Prove exact target through target plus 117 current coverage'),
+  operationalPreflight.indexOf('name: Build controlled live current selection'),
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
   operationalPreflight.indexOf('npm run update:weather'),
+  operationalPreflight.indexOf('name: Attach exact current provenance and rebuild the public projection'),
   operationalPreflight.indexOf('name: Prove only 210 zones, 673 parts and all 118 forecast hours'),
   operationalPreflight.indexOf('node scripts/audit-ravscore-integrated-public-runtime.mjs'),
 ];
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
-  throw new Error('Operational-118-preflight skal følge install→ecCodes-smoke→DMI→always-save→terminalgate→exact range→update:weather→integrated audit.');
+  throw new Error('Operational-118-preflight skal følge install→ecCodes-smoke→DMI→always-save→terminalgate→exact gaps→Copernicus complement→live current→update:weather→provenance→integrated audit.');
 }
 if (!operationalPreflight.includes(
   'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
