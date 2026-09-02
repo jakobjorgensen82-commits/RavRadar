@@ -65,6 +65,7 @@ from lib.dmi_native_provenance import (
     complete_native_source_for_hour,
     component_collection_allowed,
     current_official_assets_sha256,
+    current_source_asset_sha256,
     current_operational_ledger_ready,
     derive_current_part_outcome_partition,
     part_time_pairs_sha256,
@@ -2839,6 +2840,17 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
     if current_part_outcomes is not None:
         current_part_outcomes.clear()
     source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
+    shadow_source_asset = canonical_current_source_asset({
+        "collection": collection,
+        "modelRun": model_run,
+        "validTime": valid_time,
+        **(source_capture or {}),
+    }) if source_capture is not None and collection in MARINE_COLLECTIONS else None
+    shadow_source_asset_sha256 = (
+        current_source_asset_sha256(shadow_source_asset)
+        if shadow_source_asset is not None
+        else None
+    )
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -3194,6 +3206,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             model_run,
             valid_time,
             str(output.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+            shadow_source_asset_sha256,
         )
         diagnostics["currentFieldShadowSamplesWritten"] = int(
             diagnostics.get("currentFieldShadowSamplesWritten") or 0
@@ -5498,6 +5511,7 @@ def replay_current_field_shadow_from_cache(
     current_shadow: dict[str, Any],
     generated: str,
     budget: dict[str, int],
+    locked_production_reference: datetime | None = None,
 ) -> dict[str, Any]:
     """Advance the private rotation without public output mutation.
 
@@ -5545,18 +5559,93 @@ def replay_current_field_shadow_from_cache(
     for collection in sorted(replay_collections, key=COLLECTION_ORDER.index):
         entry = catalog.get(collection) or {}
         model_run = str(entry.get("modelRun") or "")
-        candidates = eligible_replay_assets(
-            list(entry.get("assets") or []),
-            generated,
-            CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+        regional_operational_replay = (
+            collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+            and any(
+                target.get("regionalProxyCandidate")
+                and target.get("requiredCollection") == collection
+                for target in research_targets
+            )
         )
+        if regional_operational_replay:
+            replay_reference = locked_production_reference or datetime.fromtimestamp(
+                epoch(generated),
+                timezone.utc,
+            )
+            required_times = operational_current_valid_times(replay_reference)
+            required_time_set = set(required_times)
+            assets_by_time = {
+                iso(asset.get("valid")): asset
+                for asset in list(entry.get("assets") or [])
+                if iso(asset.get("valid")) in required_time_set
+            }
+            candidates = [assets_by_time[value] for value in required_times if value in assets_by_time]
+        else:
+            candidates = eligible_replay_assets(
+                list(entry.get("assets") or []),
+                generated,
+                CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+                12,
+            )
         resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
             (asset, path)
             for asset in candidates
             for path in [reusable_cached_asset_path(asset, collection, model_run)]
             if path is not None
         ]
-        if model_run and not resolved and candidates and bootstrap_remaining > 0 and not should_stop_work():
+        fully_bound_cached = False
+        if regional_operational_replay and resolved:
+            regional_target_ids = {
+                str(target.get("id") or "")
+                for target in research_targets
+                if target.get("regionalProxyCandidate")
+                and target.get("requiredCollection") == collection
+            }
+            unresolved: list[tuple[dict[str, Any], pathlib.Path]] = []
+            for asset, path in resolved:
+                capture = raw_cache_source_capture(
+                    path,
+                    collection,
+                    model_run,
+                    str(asset.get("valid") or ""),
+                )
+                source_asset = canonical_current_source_asset({
+                    "collection": collection,
+                    "modelRun": model_run,
+                    "validTime": str(asset.get("valid") or ""),
+                    **(capture or {}),
+                }) if capture is not None else None
+                source_hash = (
+                    current_source_asset_sha256(source_asset)
+                    if source_asset is not None
+                    else None
+                )
+                valid_time = iso(asset.get("valid"))
+                covered = source_hash is not None and all(
+                    any(
+                        sample.get("collection") == collection
+                        and iso(sample.get("modelRun")) == iso(model_run)
+                        and iso(sample.get("validTime")) == valid_time
+                        and sample.get("sourceAssetSha256") == source_hash
+                        for sample in (
+                            ((current_shadow.get("anchors") or {}).get(target_id) or {}).get("samples")
+                            or []
+                        )
+                    )
+                    for target_id in regional_target_ids
+                )
+                if not covered:
+                    unresolved.append((asset, path))
+            fully_bound_cached = len(resolved) == len(candidates) and not unresolved
+            resolved = unresolved
+        if (
+            model_run
+            and not resolved
+            and candidates
+            and not fully_bound_cached
+            and bootstrap_remaining > 0
+            and not should_stop_work()
+        ):
             # Prefer the far edge of the accepted +12 h research window.  It
             # remains eligible for many subsequent 15-minute rotations, so a
             # legacy-cache bootstrap cannot turn into repeated downloads.
@@ -5743,6 +5832,25 @@ def main() -> int:
         for feature in zones_geo.get("features", [])
         if (feature.get("properties") or {}).get("id")
     }
+    regional_proxy_targets: list[dict[str, Any]] = []
+    regional_proxy_configuration_status = "FAILED_CLOSED"
+    try:
+        regional_proxy_policy = json.loads(
+            CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8")
+        )
+        regional_proxy_targets = build_regional_proxy_targets(
+            regional_proxy_policy,
+            part_doc,
+            zone_coast_types,
+        )
+        regional_proxy_configuration_status = (
+            "CONFIGURED" if regional_proxy_targets else "NOT_CONFIGURED"
+        )
+    except (OSError, ValueError, TypeError, KeyError):
+        progress(
+            "privat regional proxykandidat blev fail-closed; "
+            "operationel DMI-produktion fortsætter"
+        )
     direction_document = load_document(COASTAL_POINT_STAGE_REVIEWS_PATH)
     coastal_point_stage_targets = build_coastal_point_stage_targets(
         direction_document,
@@ -5865,11 +5973,9 @@ def main() -> int:
     zones.extend(coastal_point_stage_targets)
     coastal_point_stage = load_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage_targets)
 
-    # Privat, score-neutral forskningsopsamling. Det roterende udsnit belyser det
-    # ydre felt. De otte ejer-godkendte Limfjordsdele tilføjes samtidig som en
-    # separat fail-closed allowlist, så kun dkss_lf-værdier op til 15 km kan
-    # gemmes i den private syvdøgnscache. Ingen research-id'er skrives til den
-    # offentlige bulk-cache eller schedulerens dækningsmål.
+    # Privat forskningsopsamling plus den allerede godkendte operationelle
+    # Limfjordsproxy. Kun den strengt validerede otte-dels allowlist må bruge
+    # dkss_lf op til 15 km; roterende forskning forbliver score-neutral.
     current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
     rotating_research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
         part_doc,
@@ -5877,28 +5983,6 @@ def main() -> int:
         int(current_shadow.get("cursor") or 0),
         CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
     )
-    regional_proxy_targets: list[dict[str, Any]] = []
-    regional_proxy_configuration_status = "FAILED_CLOSED"
-    try:
-        regional_proxy_policy = json.loads(
-            CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8")
-        )
-        regional_proxy_targets = build_regional_proxy_targets(
-            regional_proxy_policy,
-            part_doc,
-            zone_coast_types,
-        )
-        regional_proxy_configuration_status = (
-            "CONFIGURED" if regional_proxy_targets else "NOT_CONFIGURED"
-        )
-    except (OSError, ValueError, TypeError, KeyError):
-        # This candidate is private, score-neutral research only. A stale or
-        # incompatible policy must disable the candidate without aborting the
-        # operational DMI producer or exposing policy payloads in CI logs.
-        progress(
-            "privat regional proxykandidat blev fail-closed; "
-            "operationel DMI-produktion fortsætter"
-        )
     research_targets = rotating_research_targets + regional_proxy_targets
     research_run_metrics: dict[str, Any] = {
         "rotationAdvancedThisRun": False,
@@ -6608,8 +6692,10 @@ def main() -> int:
     replay_targets: list[dict[str, Any]] = []
     if not research_rotation_completed:
         replay_targets.extend(rotating_research_targets)
-    if not regional_proxy_collection_completed:
-        replay_targets.extend(regional_proxy_targets)
+    # Always audit the complete locked regional target..+117 axis. Most runs
+    # skip already-processed DMI assets, so a single freshly parsed asset is not
+    # proof that the restored regional shadow contains all 118 bound samples.
+    replay_targets.extend(regional_proxy_targets)
 
     if not replay_targets:
         result["diagnostics"]["currentFieldShadowCachedReplay"] = {
@@ -6627,6 +6713,7 @@ def main() -> int:
             current_shadow,
             generated,
             budget,
+            locked_production_reference,
         )
         result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
         research_run_metrics["cachedReplayAssetsThisRun"] = int(replay_summary.get("assetsCompleted") or 0)

@@ -38,6 +38,18 @@ from lib.copernicus_current import (
     utc_iso,
     validate_target_registry,
 )
+from lib.copernicus_current_source_stage import (
+    PINNED_PRODUCTS,
+    SPATIAL_SHARD_LATITUDE_DEGREES,
+    SPATIAL_SHARD_LONGITUDE_DEGREES,
+    SPATIAL_SHARD_MAX_TARGETS,
+    SPATIAL_SHARD_POLICY_ID,
+    atomic_write_source_stage,
+    build_source_stage,
+    eligible_target,
+    make_source_attempt,
+    safe_source_stage_summary,
+)
 from lib.copernicus_target_identity import target_fingerprint
 
 
@@ -45,40 +57,11 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TARGETS = ROOT / ".cache/copernicus-current-targets.json"
 DEFAULT_AUTHORITATIVE_TARGETS = ROOT / "data/live/coastal-parts-v2.json"
 DEFAULT_SHADOW = ROOT / ".cache/copernicus-current-shadow.json"
+DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/copernicus-current-pilot.json"
 DEFAULT_SUMMARY = ROOT / "data/diagnostics/copernicus-current-pilot.txt"
 
-PRODUCTS = [
-    {
-        "source": "copernicus-baltic-nemo",
-        "productId": "BALTICSEA_ANALYSISFORECAST_PHY_003_006",
-        "datasetId": "cmems_mod_bal_phy_anfc_PT1H-i",
-        "datasetVersion": "202411",
-        "minimumLongitude": 9.041582107543945,
-        "maximumLongitude": 30.208656311035156,
-        "minimumLatitude": 53.008296966552734,
-        "maximumLatitude": 65.8909912109375,
-        "targetMinimumLongitude": 8.94,
-        "targetMaximumLongitude": 16.0,
-    },
-    {
-        "source": "copernicus-nws-amm15",
-        "productId": "NWSHELF_ANALYSISFORECAST_PHY_004_013",
-        "datasetId": "cmems_mod_nws_phy-cur_anfc_1.5km-3D_PT1H-i",
-        "datasetVersion": "202511",
-        "minimumLongitude": -16.0,
-        "maximumLongitude": 13.0,
-        "minimumLatitude": 46.0,
-        "maximumLatitude": 62.74324035644531,
-        "targetMinimumLongitude": 7.5,
-        "targetMaximumLongitude": 9.5,
-    },
-]
-
-SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
-SPATIAL_SHARD_LATITUDE_DEGREES = 0.75
-SPATIAL_SHARD_MAX_TARGETS = 24
-SPATIAL_SHARD_POLICY_ID = "fixed-grid-1.25lon-0.75lat-max24-v1"
+PRODUCTS = [dict(row) for row in PINNED_PRODUCTS]
 
 
 def arguments() -> argparse.Namespace:
@@ -86,6 +69,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument("--authoritative-targets", type=Path, default=DEFAULT_AUTHORITATIVE_TARGETS)
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
+    parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--at", help="Locked productionReferenceAt; must match the target registry")
@@ -107,13 +91,6 @@ def selected_reference(value: str | None, registry: dict[str, Any]) -> datetime:
     if requested != registry_reference:
         raise RuntimeError("Copernicus production reference cannot be rebound after the DMI-gap matrix was built")
     return registry_reference
-
-
-def eligible_target(target: dict[str, Any], product: dict[str, Any]) -> bool:
-    return bool(
-        product["targetMinimumLongitude"] <= target["waterPoint"][0] <= product["targetMaximumLongitude"]
-        and product["minimumLatitude"] <= target["waterPoint"][1] <= product["maximumLatitude"]
-    )
 
 
 def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> list[dict[str, Any]]:
@@ -265,6 +242,7 @@ def main() -> int:
     temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-range-"))
     new_acquisitions: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
+    source_attempts: list[dict[str, Any]] = []
     product_reports: list[dict[str, Any]] = []
     try:
         for product in PRODUCTS:
@@ -319,6 +297,24 @@ def main() -> int:
                     request_contract_id=REQUEST_CONTRACT_ID,
                 )
                 records = [make_record(row, acquisition, target_identities[row["partId"]]) for row in raw_records]
+                source_attempts.append(make_source_attempt(
+                    production_reference_at=reference,
+                    acquisition_at=acquisition_at,
+                    product=product,
+                    shard_id=shard["shardId"],
+                    target_part_ids=[row["partId"] for row in shard_targets],
+                    requested_pairs=sorted(
+                        [
+                            {"partId": part_id, "validTime": utc_iso(valid_time)}
+                            for part_id, valid_times in times_by_part.items()
+                            for valid_time in valid_times
+                        ],
+                        key=lambda row: (row["validTime"], row["partId"]),
+                    ),
+                    subset_sha256=subset_sha256,
+                    acquisition_id=acquisition["acquisitionId"],
+                    parsed_record_count=len(records),
+                ))
                 if records:
                     new_acquisitions.append(acquisition)
                     new_records.extend(records)
@@ -371,6 +367,52 @@ def main() -> int:
     )
     record_refs, missing = select_required_records(required_pairs, acquisitions, records, reference)
     if missing:
+        if operational_contract:
+            checkpoint = atomic_write_shadow_checkpoint(
+                args.shadow,
+                acquisitions=acquisitions,
+                records=records,
+                updated_at=acquisition_at,
+                target_identities=target_identities,
+            )
+            checkpoint_sha256 = file_sha256(args.shadow)
+            source_stage = build_source_stage(
+                registry=registry,
+                shadow=checkpoint,
+                target_identities=target_identities,
+                shadow_sha256=checkpoint_sha256,
+                attempts=source_attempts,
+                sealed_at=acquisition_at,
+            )
+            atomic_write_source_stage(
+                args.source_stage,
+                source_stage,
+                registry=registry,
+                shadow=checkpoint,
+                target_identities=target_identities,
+                shadow_sha256=checkpoint_sha256,
+            )
+            safe_stage = safe_source_stage_summary(source_stage)
+            report = {
+                "schemaVersion": 1,
+                **safe_stage,
+            }
+            no_credentials_in_report(report)
+            atomic_write_text(
+                args.report,
+                json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+            )
+            lines = [
+                "RavRadar privat Copernicus-kildeled",
+                f"Produktionsreference: {registry['productionReferenceAt']}",
+                f"Valgte Copernicus-par: {safe_stage['selectedRecordRefCount']}/{safe_stage['requiredPairCount']}",
+                f"Rester efter alle relevante Copernicus-kilder: {safe_stage['missingPairCount']}",
+                "Kildeled: READY",
+                "Historiksyntese/interpolation/hold: nej",
+            ]
+            atomic_write_text(args.summary, "\n".join(lines) + "\n")
+            print("\n".join(lines))
+            return 0
         raise RuntimeError(
             "Copernicus operational acquisition is incomplete for "
             f"{len(missing)}/{len(required_pairs)} exact DMI-gap pairs in target..+117"

@@ -18,6 +18,7 @@ SCHEMA_VERSION = 1
 RETENTION_HOURS = 7 * 24
 DISTANCE_BANDS_KM = (0.0, 5.0, 15.0)
 FORECAST_LEAD_MAX_HOURS = 12.0
+REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS = 117.0
 MAX_GRID_DISTANCE_KM = 5.0
 REGIONAL_PROXY_POLICY_SCHEMA_VERSION = 1
 REGIONAL_PROXY_REQUIRED_COLLECTION = "dkss_lf"
@@ -30,6 +31,15 @@ def _epoch(value: Any) -> float:
         return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
     except (TypeError, ValueError):
         return 0.0
+
+
+def _valid_source_asset_sha256(value: Any) -> bool:
+    text = str(value or "")
+    return (
+        text.startswith("sha256:")
+        and len(text) == 71
+        and all(character in "0123456789abcdef" for character in text[7:])
+    )
 
 
 def destination_point(origin: list[float], bearing_deg: float, distance_km: float) -> list[float]:
@@ -215,6 +225,7 @@ def eligible_replay_assets(
     assets: list[dict[str, Any]],
     captured_at: str,
     max_assets: int = 5,
+    maximum_lead_hours: float = FORECAST_LEAD_MAX_HOURS,
 ) -> list[dict[str, Any]]:
     """Select cached forecast steps that can add useful research profiles.
 
@@ -227,7 +238,7 @@ def eligible_replay_assets(
     if not captured_epoch:
         return []
     lower = captured_epoch - 3600
-    upper = captured_epoch + FORECAST_LEAD_MAX_HOURS * 3600
+    upper = captured_epoch + float(maximum_lead_hours) * 3600
     eligible = [
         asset for asset in assets
         if lower <= _epoch(asset.get("valid")) <= upper
@@ -506,14 +517,29 @@ def record_profiles(
     model_run: str,
     valid_time: str,
     captured_at: str,
+    source_asset_sha256: str | None = None,
 ) -> int:
     if _epoch(valid_time) < _epoch(captured_at) - 3600:
-        return 0
-    if _epoch(valid_time) > _epoch(captured_at) + FORECAST_LEAD_MAX_HOURS * 3600:
         return 0
     written = 0
     anchors = document.setdefault("anchors", {})
     for target_id, target in target_by_id.items():
+        regional_operational_target = bool(
+            target.get("regionalProxyCandidate")
+            and target.get("requiredCollection") == collection
+        )
+        # The regional path can affect the controlled live runtime. Unlike the
+        # score-neutral transect research, every such sample must therefore be
+        # bound to the exact canonical DMI bytes that were processed.
+        if regional_operational_target and not _valid_source_asset_sha256(source_asset_sha256):
+            continue
+        maximum_lead_hours = (
+            REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS
+            if regional_operational_target
+            else FORECAST_LEAD_MAX_HOURS
+        )
+        if _epoch(valid_time) > _epoch(captured_at) + maximum_lead_hours * 3600:
+            continue
         maximum_distance = _target_maximum_distance_km(target, collection)
         if maximum_distance is None:
             continue
@@ -540,7 +566,12 @@ def record_profiles(
             anchors[target_id] = anchor
         else:
             anchor.update(identity)
-        sample_key = f"{collection}|{model_run}|{valid_time}"
+        source_binding = (
+            str(source_asset_sha256)
+            if _valid_source_asset_sha256(source_asset_sha256)
+            else "unbound-research"
+        )
+        sample_key = f"{collection}|{model_run}|{valid_time}|{source_binding}"
         samples = list(anchor.get("samples") or [])
         if any(row.get("sampleKey") == sample_key for row in samples):
             continue
@@ -550,6 +581,8 @@ def record_profiles(
             "collection": collection,
             "modelRun": model_run,
             "validTime": valid_time,
+            **({"sourceAssetSha256": source_binding}
+               if source_binding != "unbound-research" else {}),
             **profile,
         })
         anchor["samples"] = samples
