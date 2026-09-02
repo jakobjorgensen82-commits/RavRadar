@@ -901,7 +901,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             success_gate_binding,
         )
         final_return = source.index(
-            "return 0 if fresh_successes or fresh_partials",
+            "return 0 if producer_productive else 2",
             fail_closed_return,
         )
         self.assertLess(validator, operational_binding)
@@ -1024,10 +1024,22 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "print(f\"DMI bulk downloader failed safely: {safe_error_message(exc)}\"",
             source,
         )
-        self.assertIn(
-            'write_github_outputs("failed", error=safe_error_message(exc))',
-            source,
+        handler_start = source.index('if __name__ == "__main__":')
+        handler_end = source.index(
+            "# 4.0.29 diagnostics placeholders",
+            handler_start,
         )
+        handler = source[handler_start:handler_end]
+        output_start = handler.index("write_github_outputs(")
+        output_end = handler.index("write_failure_summary(exc)", output_start)
+        failure_output = handler[output_start:output_end]
+        self.assertIn('"failed"', failure_output)
+        self.assertIn("error=safe_error_message(exc)", failure_output)
+        self.assertIn(
+            'terminal_code="DMI_PRODUCER_EXCEPTION"',
+            failure_output,
+        )
+        self.assertIn("strict_current_anchor_ready=False", failure_output)
 
 
 class ConsumerSeamTests(unittest.TestCase):
