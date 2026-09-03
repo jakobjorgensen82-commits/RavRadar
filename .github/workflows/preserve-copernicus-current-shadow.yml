@@ -35,9 +35,12 @@ jobs:
         id: range-cache
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-range-v2-keepalive-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-progress-v3-keepalive-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-range-v2-
             copernicus-current-shadow-v1-
 

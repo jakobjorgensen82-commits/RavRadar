@@ -22,6 +22,8 @@ from lib.copernicus_current import (
 )
 from lib.copernicus_current_source_stage import (
     SOURCE_STAGE_CONTRACT_ID,
+    SOURCE_STAGE_PROGRESS_CONTRACT_ID,
+    SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_ORDER_ATTEMPTED_EXHAUSTED,
     SOURCE_ORDER_NOT_APPLICABLE,
     CopernicusSourceStageError,
@@ -29,6 +31,7 @@ from lib.copernicus_current_source_stage import (
     build_source_stage,
     safe_source_stage_summary,
     validate_source_stage,
+    validate_source_stage_progress,
 )
 from lib.copernicus_target_identity import target_fingerprint
 
@@ -165,6 +168,61 @@ def prepare(folder: Path, target: dict = TARGET) -> None:
         folder / "registry.json",
         registry(file_sha256(folder / "dmi.json"), target),
     )
+
+
+def prepare_multi(folder: Path, targets: list[dict]) -> None:
+    zones = {
+        "fixture-zone": [
+            {
+                "partId": target["partId"],
+                "sourceZoneId": target["parentZoneId"],
+                "name": target["name"],
+                "waterPoint": target["waterPoint"],
+            }
+            for target in targets
+        ],
+    }
+    write(folder / "targets.json", {"partCount": len(targets), "zones": zones})
+    write(folder / "dmi.json", {"fixture": "source-stage-multi"})
+    required = [
+        {
+            "partId": target["partId"],
+            "validTime": VALID_TIME.isoformat().replace("+00:00", "Z"),
+        }
+        for target in targets
+    ]
+    advisory_required = [
+        {
+            "partId": target["partId"],
+            "validTime": HISTORY_TIME.isoformat().replace("+00:00", "Z"),
+        }
+        for target in targets
+    ]
+    document = registry(file_sha256(folder / "dmi.json"), targets[0])
+    count = len(targets)
+    document.update({
+        "targetCount": count,
+        "sourcePartCount": count,
+        "partCount": count,
+        "operationalPartCount": count,
+        "advisoryHistoryPartCount": count,
+        "targetRegistrySha256": target_fingerprint(targets),
+        "operationalRequiredPairsSha256": required_pairs_sha256(required),
+        "operationalRequiredPairCount": count,
+        "operationalDmiVerifiedPairCount": (118 * count) - count,
+        "operationalTotalPairCount": 118 * count,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_required),
+        "advisoryHistoryRequiredPairCount": count,
+        "advisoryHistoryDmiVerifiedPairCount": (48 * count) - count,
+        "advisoryHistoryTotalPairCount": 48 * count,
+        "dmiVerifiedPairCount": (166 * count) - (2 * count),
+        "totalPairCount": 166 * count,
+        "targets": targets,
+        "operationalRequiredPairs": required,
+        "advisoryHistoryRequiredPairs": advisory_required,
+        "zones": zones,
+    })
+    write(folder / "registry.json", document)
 
 
 def run_runner(
@@ -450,8 +508,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert all(str(value) not in safe_text for value in TARGET["waterPoint"])
     assert not has_forbidden_safe_key(safe_source_stage_summary(stage))
 
-    # A missing second-product fixture models an interrupted traversal: the
-    # first successful attempt/checkpoint may survive, but READY must not.
+    # A missing second-product fixture models an interrupted traversal.  The
+    # completed zero-result Baltic shard survives as IN_PROGRESS, is reusable,
+    # and is never accepted as READY or as operational closure.
     unfinished = root / "unfinished"
     unfinished_fixtures = unfinished / "fixtures"
     unfinished_fixtures.mkdir(parents=True)
@@ -459,7 +518,195 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     dataset(unfinished_fixtures / "copernicus-baltic-nemo.nc", available=False)
     interrupted = run_runner(unfinished, unfinished_fixtures)
     assert interrupted.returncode != 0
-    assert not (unfinished / "source-stage.json").exists()
+    progress_document = json.loads(
+        (unfinished / "source-stage.json").read_text(encoding="utf-8")
+    )
+    progress_shadow = json.loads(
+        (unfinished / "shadow.json").read_text(encoding="utf-8")
+    )
+    progress = validate_source_stage_progress(
+        progress_document,
+        registry=json.loads(
+            (unfinished / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=progress_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(unfinished / "shadow.json"),
+    )
+    assert progress["status"] == SOURCE_STAGE_PROGRESS_STATUS
+    assert progress["contractId"] == SOURCE_STAGE_PROGRESS_CONTRACT_ID
+    assert len(progress["attempts"]) == 1
+    assert progress["attempts"][0]["parsedRecordCount"] == 0
+    assert progress["shadowSha256"] == file_sha256(unfinished / "shadow.json")
+    reusable = run_checker(unfinished)
+    assert reusable.returncode == 0 and "valid IN_PROGRESS" in reusable.stdout
+    not_ready = run_checker(unfinished, "--require-source-stage-ready")
+    assert not_ready.returncode != 0
+    github_output = unfinished / "github-output.txt"
+    reusable_output = run_checker(
+        unfinished,
+        "--github-output",
+        str(github_output),
+    )
+    assert reusable_output.returncode == 0
+    output_text = github_output.read_text(encoding="utf-8")
+    assert "source_stage_reusable=true" in output_text
+    assert "source_stage_ready=false" in output_text
+
+    # Any broken binding is invalid, not silently reusable.
+    write(
+        unfinished / "source-stage.json",
+        {**progress_document, "attemptsSha256": "sha256:" + ("0" * 64)},
+    )
+    invalid_output = unfinished / "invalid-github-output.txt"
+    invalid = run_checker(
+        unfinished,
+        "--allow-nonmatching-seal",
+        "--github-output",
+        str(invalid_output),
+    )
+    assert invalid.returncode == 0
+    assert "source_stage_reusable=false" in invalid_output.read_text(encoding="utf-8")
+    write(unfinished / "source-stage.json", progress_document)
+
+    # The next run has no Baltic fixture.  Success therefore proves that only
+    # the exact documented Baltic attempt was skipped before AMM15 continued.
+    (unfinished_fixtures / "copernicus-baltic-nemo.nc").unlink()
+    dataset(unfinished_fixtures / "copernicus-nws-amm15.nc", available=True)
+    stopped_environment = dict(os.environ)
+    stopped_environment["RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH"] = "1"
+    stopped_at_boundary = run_runner(
+        unfinished,
+        unfinished_fixtures,
+        env=stopped_environment,
+    )
+    assert stopped_at_boundary.returncode != 0
+    assert "stopped safely at a shard boundary" in stopped_at_boundary.stderr
+    assert json.loads(
+        (unfinished / "source-stage.json").read_text(encoding="utf-8")
+    ) == progress_document
+    resumed = run_runner(unfinished, unfinished_fixtures)
+    assert resumed.returncode == 0, resumed.stdout + resumed.stderr
+    resumed_stage = json.loads(
+        (unfinished / "source-stage.json").read_text(encoding="utf-8")
+    )
+    assert resumed_stage["status"] == "READY"
+    assert len(resumed_stage["attempts"]) == 2
+
+    # Two completed shards (one positive, one zero-result) must both survive
+    # an interruption before shard three.  The positive shadow is written and
+    # hash-bound before the journal; the zero attempt is equally resumable.
+    monotone = root / "monotone-positive-zero"
+    monotone_fixtures = monotone / "fixtures"
+    monotone_fixtures.mkdir(parents=True)
+    monotone_targets = [
+        {
+            **TARGET,
+            "partId": "fixture-private-monotone-a",
+            "waterPoint": [9.1, 57.2],
+        },
+        {
+            **TARGET,
+            "partId": "fixture-private-monotone-b",
+            "waterPoint": [10.4, 57.2],
+        },
+        {
+            **TARGET,
+            "partId": "fixture-private-monotone-c",
+            "waterPoint": [11.7, 57.2],
+        },
+    ]
+    prepare_multi(monotone, monotone_targets)
+    dataset(
+        monotone_fixtures / "copernicus-baltic-nemo-000.nc",
+        available=True,
+        target=monotone_targets[0],
+    )
+    dataset(
+        monotone_fixtures / "copernicus-baltic-nemo-001.nc",
+        available=False,
+        target=monotone_targets[1],
+    )
+    first_pass = run_runner(monotone, monotone_fixtures)
+    assert first_pass.returncode != 0
+    monotone_progress_document = json.loads(
+        (monotone / "source-stage.json").read_text(encoding="utf-8")
+    )
+    monotone_shadow = json.loads(
+        (monotone / "shadow.json").read_text(encoding="utf-8")
+    )
+    monotone_registry = json.loads(
+        (monotone / "registry.json").read_text(encoding="utf-8")
+    )
+    monotone_progress = validate_source_stage_progress(
+        monotone_progress_document,
+        registry=monotone_registry,
+        shadow=monotone_shadow,
+        target_identities={row["partId"]: row for row in monotone_targets},
+        shadow_sha256=file_sha256(monotone / "shadow.json"),
+    )
+    assert [row["parsedRecordCount"] for row in monotone_progress["attempts"]] == [1, 0]
+    assert len(monotone_shadow["records"]) == 1
+    assert monotone_progress["shadowSha256"] == file_sha256(monotone / "shadow.json")
+    assert monotone_progress["attempts"][0]["acquisitionId"] in {
+        row["acquisitionId"] for row in monotone_shadow["acquisitions"]
+    }
+
+    # A one-hour rollover may reuse the positive exact-time record under the
+    # existing freshness rule, but the old zero-result attempt cannot be
+    # relabelled to the new production reference.
+    rolled_reference = REFERENCE + timedelta(hours=1)
+    rolled_registry = {
+        **monotone_registry,
+        "productionReferenceAt": rolled_reference.isoformat().replace("+00:00", "Z"),
+        "targetHour": rolled_reference.isoformat().replace("+00:00", "Z"),
+        "rangeStartAt": (rolled_reference - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "rangeEndAt": (rolled_reference + timedelta(hours=117)).isoformat().replace("+00:00", "Z"),
+        "operationalRangeStartAt": rolled_reference.isoformat().replace("+00:00", "Z"),
+        "operationalRangeEndAt": (rolled_reference + timedelta(hours=117)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryStartAt": (rolled_reference - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryEndAt": (rolled_reference - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }
+    rolled_refs, _ = select_required_records(
+        [monotone_registry["operationalRequiredPairs"][0]],
+        monotone_shadow["acquisitions"],
+        monotone_shadow["records"],
+        rolled_reference,
+    )
+    assert len(rolled_refs) == 1
+    try:
+        validate_source_stage_progress(
+            monotone_progress_document,
+            registry=rolled_registry,
+            shadow=monotone_shadow,
+            target_identities={row["partId"]: row for row in monotone_targets},
+            shadow_sha256=file_sha256(monotone / "shadow.json"),
+        )
+    except CopernicusSourceStageError:
+        pass
+    else:
+        raise AssertionError(
+            "A zero-result attempt must not be relabelled across references"
+        )
+
+    # Remove both completed-shard fixtures.  The resumed run can succeed only
+    # by skipping those two exact attempts and executing shard three.
+    (monotone_fixtures / "copernicus-baltic-nemo-000.nc").unlink()
+    (monotone_fixtures / "copernicus-baltic-nemo-001.nc").unlink()
+    dataset(
+        monotone_fixtures / "copernicus-baltic-nemo-002.nc",
+        available=True,
+        target=monotone_targets[2],
+    )
+    monotone_resumed = run_runner(monotone, monotone_fixtures)
+    assert monotone_resumed.returncode == 0, (
+        monotone_resumed.stdout + monotone_resumed.stderr
+    )
+    monotone_ready = json.loads(
+        (monotone / "source-stage.json").read_text(encoding="utf-8")
+    )
+    assert monotone_ready["status"] == "READY"
+    assert len(monotone_ready["attempts"]) == 3
 
     # A real TimeoutError follows the same pre-sidecar exception path.
     timed_out = root / "timed-out"

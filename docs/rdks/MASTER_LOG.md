@@ -2755,3 +2755,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - Første backendrun `33729278888` stoppede i `validate:source` før migration, Supabase, D1, Edge eller Worker. Default depth-1-checkout manglede den autoritative Candidate G-sourcecommit `49dd4cb454656bdf629e5df760176705e38d2cb0`.
 - Den lokale afgrænsede rettelse genbruger den eksisterende produktionskontrakt: læs den pinnede head fra modulet, kræv 40 hex, hent præcis committen med `--depth=1` og attester `FETCH_HEAD` før sourcegaten. Workflowrækkefølge, diff og uændret RavScore-bundlehash er målrettet grønne; ny PR/exact-head og remote backend-readback udestår.
 - Ingen score, modelbinding, geometri, kystnormal, land-/vandpunkt, private payloads, observationer, koordinater eller rå U/V er ændret eller læst i rettelsen.
+
+## 2026-09-03 – Copernicus monotonic progress før exact-head
+
+- Operational preflight `33729216244` beviste DMI 70.904/79.414 og 8.510 eksakte Copernicus-restpar; 616 blev behandlet før bounded timeout.
+- Produktion `33729043877` gendannede denne generation, gjorde DMI READY og voksede progresscachen 48.015 → 62.228 byte. Progress-save var grøn; central write, artifact og deploy blev ikke kørt.
+- Kode-/cacheaudit fandt tre sammenhængende interne fejl: zero-result-attempts levede kun i RAM, parallelle writers skabte divergerende immutable cacher, og keepalive brugte en inkompatibel én-fils pathversion.
+- Den lokale rettelse journalfører hver komplet shard hashbundet som privat IN_PROGRESS, skriver shadow før journal, genoptager kun eksakte same-reference product/pair-attempts og lader kun READY lukke source-stage/release.
+- Writerne deler nu én produktionskø og én kanonisk to-fils cachefamilie. Keepalive og current-hour-gate følger samme paths. Kun isoleret 118-preflight får 2.700 sekunder; normal produktion er fortsat 1.200.
+- Måltests og begge modelbundlekontroller er grønne; score, modelbinding, geometri, punkter og public runtime er uændrede. Exact-head og frisk 673 × 118/Feggesund mangler.

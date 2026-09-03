@@ -25,7 +25,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: private-copernicus-current-pilot
+  group: ravradar-weather-production
+  queue: max
   cancel-in-progress: false
 
 jobs:
@@ -107,8 +108,9 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-pilot-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-range-v2-
             copernicus-current-shadow-v1-
 
@@ -126,7 +128,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid restored Copernicus source disposition
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_reusable != 'true'
         run: rm -f .cache/copernicus-current-source-stage.json
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
@@ -176,7 +178,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-range-v2-progress-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-pilot-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Prove the resulting exact Copernicus source stage
         if: steps.dmi-coverage.outputs.available == 'true'
@@ -197,7 +199,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-range-v2-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-pilot-ready-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Reject secret or raw-vector leakage from support report
         if: steps.acquisition.outcome == 'success'
@@ -353,8 +355,9 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-shadow-v1-
             copernicus-current-range-v2-
 
@@ -449,7 +452,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid operational Copernicus source disposition
-        if: steps.current-range.outputs.source_stage_ready != 'true'
+        if: steps.current-range.outputs.source_stage_reusable != 'true'
         run: rm -f .cache/copernicus-current-source-stage.json
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
@@ -474,7 +477,7 @@ jobs:
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
           --attempts 1
-          --timeout-seconds 1200
+          --timeout-seconds 2700
           --backoff-seconds 20
           --
           --targets .cache/copernicus-current-targets.json
@@ -488,7 +491,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-118-preflight-progress-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-118-preflight-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require completed Copernicus source stage
         run: >-
@@ -507,7 +510,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-118-preflight-ready-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build exact DMI-first target through target plus 117 current closure
         run: >-

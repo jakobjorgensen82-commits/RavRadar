@@ -3067,3 +3067,15 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Bestå én 4.0.321 exact-head-kildegate og rigtig Supabase dry-run/apply/readback; kør ikke en bred lokal kopi af samme kildegate uden konkret fejlevidens.
 - [ ] Bevis 673 × 118, Feggesund 3 × 118 og live Supabase før/efter-kapacitet med øvrig egress/lager og mindst 30 procent reserve.
 - [ ] Merge sikkert, følg frisk fuld produktion og udfør derefter kun den særskilte manuelle Fase B samt offentlig mobil-/desktopverifikation, når alle gates er grønne.
+
+# CHECKPOINT – 2026-09-03 – monoton Copernicus-restopfyldning klar til exact-head
+
+- [x] Bevis den faktiske DMI-first-matrix i operational preflight: 70.904 af 79.414 eksakte par kom direkte fra DMI; Copernicus-mållisten var de resterende 8.510, ikke en bred erstatning for DMI.
+- [x] Bevis reel cachefortsættelse: vejrproduktion `33729043877` gendannede 48.015-byte/616-par-generationen og gemte 62.228 byte efter den næste afgrænsede kørsel. DMI var READY; ingen central write, artifact eller Pages blev udført.
+- [x] Find rodårsagen til gentagelsen: nul-resultatforsøg blev ikke checkpointet, separate writer-concurrencygrupper skabte divergerende immutable cacher, og keepalive havde en anden path-afledt cacheversion.
+- [x] Implementér hashbundet privat `IN_PROGRESS` efter hver shard, shadow-før-journal, eksakt same-reference product/pair-resume og streng adskillelse mellem genbrugelig progress og terminal READY.
+- [x] Saml alle writers i `ravradar-weather-production`, alle cachetrin på samme to paths og nyt `copernicus-current-progress-v3`-prefix med legacy migrationsfallback. Bevar normal 1.200-sekundersgrænse; giv kun operational 118-preflight 2.700 sekunder.
+- [x] Bestå de korte måltests for source-stage, runner, checker, bounded retry, heartbeat, workflowrækkefølge, cachebevaring, reusable workflows og Candidate G-rollback. Integrated modelbinding er uændret.
+- [ ] Push og exact-head-kildegate.
+- [ ] Merge og bevis kanonisk cache-hit, monoton restudfyldning, DMI-first 673 × 118 samt Feggesund 3 × 118.
+- [ ] Luk backendrun, Supabase live før/efter-kapacitet, frisk fuld produktion, særskilt Fase B og offentlig desktop-/mobilkontrol.

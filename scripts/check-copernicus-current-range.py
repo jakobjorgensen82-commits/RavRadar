@@ -15,7 +15,11 @@ from lib.copernicus_current import (
     validate_shadow,
     validate_target_registry,
 )
-from lib.copernicus_current_source_stage import validate_source_stage
+from lib.copernicus_current_source_stage import (
+    SOURCE_STAGE_PROGRESS_STATUS,
+    SOURCE_STAGE_STATUS,
+    validate_reusable_source_stage,
+)
 from lib.copernicus_target_identity import target_fingerprint
 
 
@@ -81,6 +85,7 @@ def inspect(
             "completeRangePresent": False,
             "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
             "sourceStageReady": False,
+            "sourceStageReusable": False,
             "requiredPairCount": 0,
         }
     registry = validate_target_registry(json.loads(registry_path.read_text(encoding="utf-8")))
@@ -107,6 +112,7 @@ def inspect(
             "operationalSealPresent": False,
             "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
             "sourceStageReady": False,
+            "sourceStageReusable": False,
             "productionReferenceAt": reference,
             "requiredPairCount": required_pair_count,
         }
@@ -129,7 +135,7 @@ def inspect(
         validated_stage: dict[str, Any] | None = None
         if source_stage_present:
             try:
-                validated_stage = validate_source_stage(
+                validated_stage = validate_reusable_source_stage(
                     json.loads(source_stage_path.read_text(encoding="utf-8")),
                     registry=registry,
                     shadow=cache,
@@ -140,12 +146,15 @@ def inspect(
                 if not allow_nonmatching_seal:
                     raise
         if validated_stage is not None:
+            stage_ready = validated_stage["status"] == SOURCE_STAGE_STATUS
             return {
                 "cachePresent": True,
                 "completeRangePresent": False,
                 "operationalSealPresent": False,
                 "sourceStagePresent": True,
-                "sourceStageReady": True,
+                "sourceStageReady": stage_ready,
+                "sourceStageReusable": True,
+                "sourceStageStatus": validated_stage["status"],
                 "productionReferenceAt": reference,
                 "requiredPairCount": required_pair_count,
                 "selectedRecordRefCount": validated_stage["selectedRecordRefCount"],
@@ -158,6 +167,7 @@ def inspect(
                 "operationalSealPresent": False,
                 "sourceStagePresent": source_stage_present,
                 "sourceStageReady": False,
+                "sourceStageReusable": False,
                 "productionReferenceAt": reference,
                 "requiredPairCount": required_pair_count,
             }
@@ -207,7 +217,7 @@ def inspect(
     validated_stage: dict[str, Any] | None = None
     if operational_contract and source_stage_present:
         try:
-            validated_stage = validate_source_stage(
+            validated_stage = validate_reusable_source_stage(
                 json.loads(source_stage_path.read_text(encoding="utf-8")),
                 registry=registry,
                 shadow=cache,
@@ -218,7 +228,8 @@ def inspect(
             if not allow_nonmatching_seal:
                 raise
     if validated_stage is not None and (
-        validated_stage.get("missingPairCount") != 0
+        validated_stage.get("status") != SOURCE_STAGE_STATUS
+        or validated_stage.get("missingPairCount") != 0
         or validated_stage.get("selectedRecordRefCount") != required_pair_count
         or validated_stage.get("selectedRecordRefsSha256")
             != collection.get("operationalRecordRefsSha256")
@@ -234,7 +245,15 @@ def inspect(
         "operationalSealPresent": True,
         "sourceStagePresent": source_stage_present,
         "sourceStageReady": (
+            validated_stage is not None
+            and validated_stage.get("status") == SOURCE_STAGE_STATUS
+            if operational_contract else True
+        ),
+        "sourceStageReusable": (
             validated_stage is not None if operational_contract else True
+        ),
+        "sourceStageStatus": (
+            validated_stage.get("status") if validated_stage is not None else None
         ),
         "productionReferenceAt": reference,
         "requiredPairCount": (
@@ -269,6 +288,7 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
         handle.write(f"complete_range_present={'true' if state['completeRangePresent'] else 'false'}\n")
         handle.write(f"operational_seal_present={'true' if state.get('operationalSealPresent', state['completeRangePresent']) else 'false'}\n")
         handle.write(f"source_stage_ready={'true' if state.get('sourceStageReady') else 'false'}\n")
+        handle.write(f"source_stage_reusable={'true' if state.get('sourceStageReusable') else 'false'}\n")
         if state.get("productionReferenceAt"):
             handle.write(f"production_reference_at={state['productionReferenceAt']}\n")
         handle.write(f"required_pair_count={state['requiredPairCount']}\n")
@@ -311,6 +331,12 @@ def main() -> int:
             "Private Copernicus source stage is READY: "
             f"{state['selectedRecordRefCount']}/{state['requiredPairCount']} exact DMI-gap pairs selected; "
             f"{state['missingPairCount']} remain after every applicable pinned product."
+        )
+    elif state.get("sourceStageReusable") and state.get("sourceStageStatus") == SOURCE_STAGE_PROGRESS_STATUS:
+        print(
+            "Private Copernicus source stage is valid IN_PROGRESS evidence: "
+            f"{state['selectedRecordRefCount']}/{state['requiredPairCount']} exact DMI-gap pairs selected; "
+            f"{state['missingPairCount']} remain and only documented attempts may be skipped."
         )
     else:
         print("Private Copernicus range cache is absent, legacy or unsealed; a complete acquisition is required")

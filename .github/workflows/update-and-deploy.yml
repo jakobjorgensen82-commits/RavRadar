@@ -1236,10 +1236,14 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         uses: actions/cache/restore@v6
         with:
-          path: .cache/copernicus-current-shadow.json
-          key: copernicus-current-shadow-v1-production-gate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-progress-v3-production-gate-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-shadow-v1-
+            copernicus-current-range-v2-
 
       - name: Inspect timed UTC hour without exposing raw vectors
         if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)

@@ -35,6 +35,9 @@ SOURCE_STAGE_SCHEMA_VERSION = 2
 SOURCE_STAGE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_SOURCE_STAGE"
 SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v2"
 SOURCE_STAGE_STATUS = "READY"
+SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 1
+SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v1"
+SOURCE_STAGE_PROGRESS_STATUS = "IN_PROGRESS"
 SOURCE_ORDER_SELECTED_SOURCE = "copernicus-nws-amm15"
 SOURCE_ORDER_PREREQUISITE_SOURCE = "copernicus-baltic-nemo"
 SOURCE_ORDER_ATTEMPTED_EXHAUSTED = "ATTEMPTED_EXHAUSTED"
@@ -98,6 +101,17 @@ SOURCE_STAGE_FIELDS = {
     "sourceOrderEvidenceSha256",
     "shadowSha256", "scoreImpact", "publicRuntime",
     "coordinatesIncluded", "rawVectorsIncluded",
+}
+SOURCE_STAGE_PROGRESS_FIELDS = {
+    "schemaVersion", "kind", "contractId", "sourceStageId", "status",
+    "updatedAt", "productionReferenceAt", "targetRegistrySha256",
+    "dmiCurrentInputSha256", "dmiVerifierContractId",
+    "requiredPairCount", "requiredPairsSha256",
+    "selectedRecordRefCount", "selectedRecordRefsSha256",
+    "missingPairCount", "missingPairsSha256",
+    "attempts", "attemptsSha256", "shadowSha256",
+    "scoreImpact", "publicRuntime", "coordinatesIncluded",
+    "rawVectorsIncluded",
 }
 PAIR_FIELDS = {"partId", "validTime"}
 SOURCE_ORDER_EVIDENCE_FIELDS = {
@@ -418,6 +432,214 @@ def _source_stage_id(document: dict[str, Any]) -> str:
     return canonical_sha256({key: value for key, value in document.items() if key != "sourceStageId"})
 
 
+def _validate_attempts(
+    attempts_raw: Any,
+    *,
+    reference: datetime,
+    required_set: set[tuple[str, str]],
+    targets: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if not isinstance(attempts_raw, list):
+        raise CopernicusSourceStageError("Copernicus source-stage attempts are malformed")
+    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
+    attempts: list[dict[str, Any]] = []
+    for raw in attempts_raw:
+        product = product_by_source.get(str(raw.get("source") or "")) if isinstance(raw, dict) else None
+        if product is None:
+            raise CopernicusSourceStageError("Copernicus source-stage contains an unknown product")
+        attempts.append(_validate_attempt(
+            raw,
+            reference=reference,
+            required_set=required_set,
+            targets=targets,
+            product=product,
+        ))
+    source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
+    canonical_attempts = sorted(
+        attempts,
+        key=lambda row: (source_rank[row["source"]], row["shardId"]),
+    )
+    if attempts != canonical_attempts or len({row["attemptId"] for row in attempts}) != len(attempts):
+        raise CopernicusSourceStageError("Copernicus source-stage attempts are not canonical and unique")
+    attempted_pairs = [
+        (attempt["source"], pair["partId"], pair["validTime"])
+        for attempt in attempts
+        for pair in attempt["requestedPairs"]
+    ]
+    if len(set(attempted_pairs)) != len(attempted_pairs):
+        raise CopernicusSourceStageError("A Copernicus source attempted one pair more than once")
+    return attempts
+
+
+def validate_source_stage_progress(
+    document: Any,
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+) -> dict[str, Any]:
+    """Validate private resumable evidence without granting READY or closure."""
+    stage = _exact_dict(
+        document,
+        SOURCE_STAGE_PROGRESS_FIELDS,
+        "Copernicus source-stage progress",
+    )
+    registry = validate_target_registry(registry)
+    if registry.get("schemaVersion") != 3:
+        raise CopernicusSourceStageError(
+            "Source-stage IN_PROGRESS is only valid for schema-3 operation"
+        )
+    if not valid_sha256(shadow_sha256):
+        raise CopernicusSourceStageError("Copernicus shadow file identity is invalid")
+    targets = sorted(
+        target_identities.values(),
+        key=lambda row: (row["parentZoneId"], row["partId"]),
+    )
+    if target_fingerprint(targets) != registry["targetRegistrySha256"]:
+        raise CopernicusSourceStageError(
+            "Current central targets do not match the source-stage registry"
+        )
+    shadow = validate_shadow(shadow, target_identities, require_collection=False)
+    reference = _time(
+        registry["productionReferenceAt"],
+        "Registry reference",
+        exact_hour=True,
+    )
+    required_pairs = _canonical_pairs(
+        registry["operationalRequiredPairs"],
+        "Operational required pairs",
+    )
+    required_set = {(row["partId"], row["validTime"]) for row in required_pairs}
+    record_refs, missing_pairs = select_required_records(
+        required_pairs,
+        list(shadow.get("acquisitions") or []),
+        list(shadow.get("records") or []),
+        reference,
+    )
+    missing_pairs = sorted(
+        missing_pairs,
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    if (
+        stage.get("schemaVersion") != SOURCE_STAGE_PROGRESS_SCHEMA_VERSION
+        or stage.get("kind") != SOURCE_STAGE_KIND
+        or stage.get("contractId") != SOURCE_STAGE_PROGRESS_CONTRACT_ID
+        or stage.get("status") != SOURCE_STAGE_PROGRESS_STATUS
+        or stage.get("scoreImpact") is not False
+        or stage.get("publicRuntime") is not False
+        or stage.get("coordinatesIncluded") is not False
+        or stage.get("rawVectorsIncluded") is not False
+    ):
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress top-level contract is invalid"
+        )
+    updated_at = _time(stage.get("updatedAt"), "Source-stage progress time")
+    if abs((updated_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
+        raise CopernicusSourceStageError("Copernicus source-stage progress is stale")
+    expected_bindings = {
+        "productionReferenceAt": registry["productionReferenceAt"],
+        "targetRegistrySha256": registry["targetRegistrySha256"],
+        "dmiCurrentInputSha256": registry["dmiCurrentInputSha256"],
+        "dmiVerifierContractId": registry["dmiVerifierContractId"],
+        "requiredPairCount": len(required_pairs),
+        "requiredPairsSha256": required_pairs_sha256(required_pairs),
+        "selectedRecordRefCount": len(record_refs),
+        "selectedRecordRefsSha256": canonical_sha256(record_refs),
+        "missingPairCount": len(missing_pairs),
+        "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "shadowSha256": shadow_sha256,
+    }
+    if any(stage.get(key) != value for key, value in expected_bindings.items()):
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress registry/cache binding is invalid"
+        )
+    attempts = _validate_attempts(
+        stage.get("attempts"),
+        reference=reference,
+        required_set=required_set,
+        targets=targets,
+    )
+    if not attempts:
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress contains no completed shard"
+        )
+    if stage.get("attemptsSha256") != canonical_sha256(attempts):
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress attempt hash mismatch"
+        )
+    attempted_by_source = {
+        source: {
+            (pair["partId"], pair["validTime"])
+            for attempt in attempts if attempt["source"] == source
+            for pair in attempt["requestedPairs"]
+        }
+        for source in (row["source"] for row in PINNED_PRODUCTS)
+    }
+    target_by_id = {str(row["partId"]): row for row in targets}
+    baltic = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+    )
+    for part_id, valid_time in attempted_by_source[SOURCE_ORDER_SELECTED_SOURCE]:
+        if (
+            eligible_target(target_by_id[part_id], baltic)
+            and (part_id, valid_time)
+                not in attempted_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE]
+        ):
+            raise CopernicusSourceStageError(
+                "IN_PROGRESS AMM15 evidence lacks its exact Baltic prerequisite"
+            )
+    shadow_acquisition_ids = {
+        row["acquisitionId"] for row in shadow.get("acquisitions") or []
+    }
+    if any(
+        attempt["parsedRecordCount"] > 0
+        and attempt["acquisitionId"] not in shadow_acquisition_ids
+        for attempt in attempts
+    ):
+        raise CopernicusSourceStageError(
+            "A positive IN_PROGRESS attempt is absent from the bound shadow"
+        )
+    if stage.get("sourceStageId") != _source_stage_id(stage):
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress identity mismatch"
+        )
+    _assert_no_vector_or_coordinate_fields(stage)
+    return stage
+
+
+def validate_reusable_source_stage(
+    document: Any,
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+) -> dict[str, Any]:
+    """Validate either terminal READY evidence or resumable IN_PROGRESS evidence."""
+    status = document.get("status") if isinstance(document, dict) else None
+    if status == SOURCE_STAGE_STATUS:
+        return validate_source_stage(
+            document,
+            registry=registry,
+            shadow=shadow,
+            target_identities=target_identities,
+            shadow_sha256=shadow_sha256,
+        )
+    if status == SOURCE_STAGE_PROGRESS_STATUS:
+        return validate_source_stage_progress(
+            document,
+            registry=registry,
+            shadow=shadow,
+            target_identities=target_identities,
+            shadow_sha256=shadow_sha256,
+        )
+    raise CopernicusSourceStageError(
+        "Copernicus source-stage status is neither READY nor IN_PROGRESS"
+    )
+
+
 def validate_source_stage(
     document: Any,
     *,
@@ -476,28 +698,15 @@ def validate_source_stage(
     }
     if any(stage.get(key) != value for key, value in expected_bindings.items()):
         raise CopernicusSourceStageError("Copernicus source-stage registry/cache binding is invalid")
-    attempts_raw = stage.get("attempts")
-    if not isinstance(attempts_raw, list):
-        raise CopernicusSourceStageError("Copernicus source-stage attempts are malformed")
-    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
-    attempts: list[dict[str, Any]] = []
-    for raw in attempts_raw:
-        product = product_by_source.get(str(raw.get("source") or "")) if isinstance(raw, dict) else None
-        if product is None:
-            raise CopernicusSourceStageError("Copernicus source-stage contains an unknown product")
-        attempts.append(_validate_attempt(
-            raw,
-            reference=reference,
-            required_set=required_set,
-            targets=targets,
-            product=product,
-        ))
-    source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
-    canonical_attempts = sorted(attempts, key=lambda row: (source_rank[row["source"]], row["shardId"]))
-    if attempts != canonical_attempts or len({row["attemptId"] for row in attempts}) != len(attempts):
-        raise CopernicusSourceStageError("Copernicus source-stage attempts are not canonical and unique")
+    attempts = _validate_attempts(
+        stage.get("attempts"),
+        reference=reference,
+        required_set=required_set,
+        targets=targets,
+    )
     if stage.get("attemptsSha256") != canonical_sha256(attempts):
         raise CopernicusSourceStageError("Copernicus source-stage attempt hash mismatch")
+    product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
     expected_products = _derive_products(required_pairs, targets, attempts)
     if stage.get("products") != expected_products or stage.get("productsSha256") != canonical_sha256(expected_products):
         raise CopernicusSourceStageError("Copernicus source-stage product evidence mismatch")
@@ -630,6 +839,118 @@ def build_source_stage(
         target_identities=target_identities,
         shadow_sha256=shadow_sha256,
     )
+
+
+def build_source_stage_progress(
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+    attempts: list[dict[str, Any]],
+    updated_at: datetime,
+) -> dict[str, Any]:
+    """Build resumable private evidence after at least one completed shard."""
+    registry = validate_target_registry(registry)
+    reference = _time(
+        registry["productionReferenceAt"],
+        "Registry reference",
+        exact_hour=True,
+    )
+    required_pairs = registry["operationalRequiredPairs"]
+    record_refs, missing_pairs = select_required_records(
+        required_pairs,
+        list(shadow.get("acquisitions") or []),
+        list(shadow.get("records") or []),
+        reference,
+    )
+    source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
+    try:
+        canonical_attempts = sorted(
+            attempts,
+            key=lambda row: (source_rank[row["source"]], row["shardId"]),
+        )
+    except (KeyError, TypeError) as error:
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress contains an unknown attempt"
+        ) from error
+    value: dict[str, Any] = {
+        "schemaVersion": SOURCE_STAGE_PROGRESS_SCHEMA_VERSION,
+        "kind": SOURCE_STAGE_KIND,
+        "contractId": SOURCE_STAGE_PROGRESS_CONTRACT_ID,
+        "status": SOURCE_STAGE_PROGRESS_STATUS,
+        "updatedAt": utc_iso(updated_at),
+        "productionReferenceAt": registry["productionReferenceAt"],
+        "targetRegistrySha256": registry["targetRegistrySha256"],
+        "dmiCurrentInputSha256": registry["dmiCurrentInputSha256"],
+        "dmiVerifierContractId": registry["dmiVerifierContractId"],
+        "requiredPairCount": len(required_pairs),
+        "requiredPairsSha256": required_pairs_sha256(required_pairs),
+        "selectedRecordRefCount": len(record_refs),
+        "selectedRecordRefsSha256": canonical_sha256(record_refs),
+        "missingPairCount": len(missing_pairs),
+        "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "attempts": canonical_attempts,
+        "attemptsSha256": canonical_sha256(canonical_attempts),
+        "shadowSha256": shadow_sha256,
+        "scoreImpact": False,
+        "publicRuntime": False,
+        "coordinatesIncluded": False,
+        "rawVectorsIncluded": False,
+    }
+    value["sourceStageId"] = _source_stage_id(value)
+    return validate_source_stage_progress(
+        value,
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+    )
+
+
+def atomic_write_source_stage_progress(
+    path: Path,
+    document: dict[str, Any],
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+) -> dict[str, Any]:
+    validated = validate_source_stage_progress(
+        document,
+        registry=registry,
+        shadow=shadow,
+        target_identities=target_identities,
+        shadow_sha256=shadow_sha256,
+    )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(path.name + ".tmp")
+    try:
+        with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+            handle.write(
+                json.dumps(
+                    validated,
+                    ensure_ascii=False,
+                    indent=2,
+                    allow_nan=False,
+                ) + "\n"
+            )
+            handle.flush()
+            os.fsync(handle.fileno())
+        round_trip = json.loads(temporary.read_text(encoding="utf-8"))
+        validate_source_stage_progress(
+            round_trip,
+            registry=registry,
+            shadow=shadow,
+            target_identities=target_identities,
+            shadow_sha256=shadow_sha256,
+        )
+        os.replace(temporary, path)
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+    return validated
 
 
 def atomic_write_source_stage(
