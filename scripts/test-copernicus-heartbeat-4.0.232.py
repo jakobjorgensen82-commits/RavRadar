@@ -108,8 +108,10 @@ def main() -> None:
         'workflows: ["Update weather and deploy RavRadar"]',
         "types: [requested, completed]",
         "branches: [main]",
-        "copernicus-current-range-v2-keepalive-",
+        "copernicus-current-progress-v3-keepalive-",
+        "copernicus-current-progress-v3-",
         "copernicus-current-range-v2-",
+        ".cache/copernicus-current-source-stage.json",
         "Report cache keepalive without reading private payloads",
         "github.event_name != 'workflow_run' || github.event.action == 'requested'",
         "retry-failed-production:",
@@ -154,7 +156,7 @@ def main() -> None:
         "--source-stage .cache/copernicus-current-source-stage.json",
         "--allow-nonmatching-seal",
         "Remove only invalid restored Copernicus source disposition",
-        "steps.cache-state.outputs.source_stage_ready != 'true'",
+        "steps.cache-state.outputs.source_stage_reusable != 'true'",
         "rm -f .cache/copernicus-current-source-stage.json",
         "build-copernicus-target-registry.py",
         "full_coast:",
@@ -191,6 +193,9 @@ def main() -> None:
                  "Every scheduled shadow cache restore/save must carry its source-stage sidecar")
     preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  retry-failed-production:")]
     need("actions: write" not in preserve_section, "Read-only cache keepalive may not receive Actions write permission")
+    need(".cache/copernicus-current-shadow.json" in preserve_section
+         and ".cache/copernicus-current-source-stage.json" in preserve_section,
+         "Keepalive must refresh the canonical two-file Copernicus cache version")
 
     print("OK: GitHub-owned keepalive preserves range evidence without duplicate acquisition or private reads")
 

@@ -714,7 +714,15 @@ for(const marker of [
 for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 1200','--backoff-seconds 20']){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
-for(const marker of ['attempts > 3','timeout_seconds > 1200','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
+for(const marker of [
+  'attempts > 3',
+  'timeout_seconds > 2700',
+  'backoff_seconds > 120',
+  'SOFT_DEADLINE_EPOCH_ENV',
+  'completed = subprocess.run(',
+  'timeout=timeout_seconds',
+  'env=child_environment',
+]){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
 }
 for(const marker of ['atomic_write_shadow_checkpoint(','remainingOperationalPairs=']){
@@ -729,7 +737,7 @@ for(const marker of [
   "steps.copernicus-fill.outcome != 'skipped'",
   '.cache/copernicus-current-shadow.json',
   '.cache/copernicus-current-source-stage.json',
-  'copernicus-current-shadow-v1-production-progress-',
+  'copernicus-current-progress-v3-',
   'Remove only invalid production Copernicus source disposition',
   'rm -f .cache/copernicus-current-source-stage.json',
   'Require completed Copernicus source stage before combined current closure',

@@ -178,6 +178,15 @@ if (pullRequestValidation.includes('secrets.') || pullRequestValidation.includes
   throw new Error('PR-kildegaten maa ikke bruge hemmeligheder eller kunne deploye.');
 }
 const copernicusPilot = fs.readFileSync(`${workflowDirectory}/validate-copernicus-current-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
+const copernicusPilotConcurrency = copernicusPilot.slice(
+  copernicusPilot.indexOf('\nconcurrency:'),
+  copernicusPilot.indexOf('\njobs:'),
+);
+for (const marker of ['group: ravradar-weather-production', 'queue: max', 'cancel-in-progress: false']) {
+  if (!copernicusPilotConcurrency.includes(marker)) {
+    throw new Error(`Copernicus-writers skal dele den serielle produktionskø og mangler ${marker}`);
+  }
+}
 for (const marker of [
   'workflow_dispatch:',
   'schedule:',
@@ -191,7 +200,10 @@ for (const marker of [
   'dmi-zone-cache-v1-${{ runner.os }}-',
   'python scripts/run-copernicus-current-pilot-with-retry.py',
   'python scripts/check-copernicus-current-range.py',
+  'copernicus-current-progress-v3-',
   'copernicus-current-range-v2-',
+  'group: ravradar-weather-production',
+  'queue: max',
   'def raw_vector_present(value):',
   'data/diagnostics/copernicus-current-pilot.json',
   'retention-days: 7',
@@ -220,17 +232,17 @@ for (const marker of [
   '--allow-nonmatching-seal',
   '--attempts 1',
   'id: copernicus-fill',
-  '--timeout-seconds 1200',
+  '--timeout-seconds 2700',
   'name: Save non-cancelled private Copernicus source-stage progress',
   "steps.copernicus-fill.outcome != 'cancelled'",
   '.cache/copernicus-current-source-stage.json',
   '--require-source-stage-ready',
   'name: Remove only invalid operational Copernicus source disposition',
-  "steps.current-range.outputs.source_stage_ready != 'true'",
+  "steps.current-range.outputs.source_stage_reusable != 'true'",
   'rm -f .cache/copernicus-current-source-stage.json',
   'name: Save validated private Copernicus progress before downstream closure',
   'name: Build exact DMI-first target through target plus 117 current closure',
-  'copernicus-current-shadow-v1-118-preflight-progress-',
+  'copernicus-current-progress-v3-118-preflight-progress-',
   'test -z "$PREFLIGHT_SAMPLE_TIME"',
   'name: Hydrate current central admin configuration read-only',
   'SUPABASE_URL: ${{ secrets.SUPABASE_URL }}',
@@ -263,6 +275,11 @@ for (const block of operationalPreflight.split('\n      - name:')) {
     && block.includes('.cache/copernicus-current-shadow.json')
     && !block.includes('.cache/copernicus-current-source-stage.json')) {
     throw new Error('Hvert operationalt shadow-cachetrin skal også bære source-stage-sidecaren.');
+  }
+  if (block.includes('actions/cache/')
+    && block.includes('.cache/copernicus-current-shadow.json')
+    && !block.includes('copernicus-current-progress-v3-')) {
+    throw new Error('Hvert operationalt Copernicus-cachetrin skal bruge den kanoniske progress-v3-familie.');
   }
 }
 const operationalUserAgentVersions = [...operationalPreflight.matchAll(
@@ -361,7 +378,7 @@ if (copernicusProgressSaveStart < 0
   || !copernicusProgressSave.includes("hashFiles('.cache/copernicus-current-shadow.json') != ''")
   || !copernicusProgressSave.includes('.cache/copernicus-current-source-stage.json')
   || !copernicusProgressSave.includes('uses: actions/cache/save@v6')
-  || !copernicusProgressSave.includes('copernicus-current-shadow-v1-118-preflight-progress-')) {
+  || !copernicusProgressSave.includes('copernicus-current-progress-v3-118-preflight-progress-')) {
   throw new Error('Operational-118-preflight skal gemme privat Copernicus-shard/source-stage-progression efter ethvert ikke-annulleret fill.');
 }
 const operationalSourceInspection = operationalPreflight.slice(
@@ -464,7 +481,7 @@ for (const forbidden of [
   }
 }
 const copernicusKeepalive = fs.readFileSync(`${workflowDirectory}/preserve-copernicus-current-shadow.yml`, 'utf8');
-for (const marker of ['actions/cache/restore@v6', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs', 'runs?per_page=100', '--branch main', 'id: watchdog-recheck', "steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'"]) {
+for (const marker of ['actions/cache/restore@v6', 'copernicus-current-progress-v3-', 'copernicus-current-range-v2-', 'copernicus-current-shadow-v1-', '.cache/copernicus-current-source-stage.json', 'private-copernicus-current-pilot', 'workflow_run:', 'workflows: ["Update weather and deploy RavRadar"]', 'types: [requested, completed]', 'workflow_dispatch:', 'external_watchdog:', 'default: false', 'Report cache keepalive without reading private payloads', 'retry-failed-production:', 'production-watchdog:', "github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.external_watchdog == true)", "external_watchdog == true && '15' || '45'", '--maximum-silence-minutes "$MAXIMUM_SILENCE_MINUTES"', 'node scripts/check-production-watchdog.mjs', 'runs?per_page=100', '--branch main', 'id: watchdog-recheck', "steps.watchdog.outputs.dispatch == 'true' && steps.watchdog-recheck.outputs.dispatch == 'true'"]) {
   if (!copernicusKeepalive.includes(marker)) throw new Error(`Copernicus-keepalive mangler ${marker}`);
 }
 if ((copernicusKeepalive.match(/node scripts\/check-production-watchdog\.mjs/g) || []).length !== 2) throw new Error('Watchdoggen skal have præcis ét inspect og ét fail-closed recheck.');
@@ -482,6 +499,11 @@ for (const block of text.split('\n      - name:')) {
     && block.includes('.cache/copernicus-current-shadow.json')
     && !block.includes('.cache/copernicus-current-source-stage.json')) {
     throw new Error('Hvert produktions-shadow-cachetrin skal også bære source-stage-sidecaren.');
+  }
+  if (block.includes('actions/cache/')
+    && block.includes('.cache/copernicus-current-shadow.json')
+    && !block.includes('copernicus-current-progress-v3-')) {
+    throw new Error('Hvert produktions-Copernicus-cachetrin skal bruge den kanoniske progress-v3-familie.');
   }
 }
 const activeTripGateStart = text.indexOf('name: Verify active trip-storage Edge and D1 read contracts without creating data');
@@ -517,13 +539,25 @@ for (const marker of [
 ]) {
   if (!orchestratorWorkflow.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersorkestrator mangler ${marker}`);
 }
+const timedCopernicusRestoreStart = orchestratorWorkflow.indexOf('name: Restore private Copernicus current cache for timed gate');
+const timedCopernicusRestoreEnd = orchestratorWorkflow.indexOf('\n      - name:', timedCopernicusRestoreStart + 1);
+const timedCopernicusRestore = orchestratorWorkflow.slice(timedCopernicusRestoreStart, timedCopernicusRestoreEnd);
+for (const marker of [
+  '.cache/copernicus-current-shadow.json',
+  '.cache/copernicus-current-source-stage.json',
+  'copernicus-current-progress-v3-',
+]) {
+  if (!timedCopernicusRestore.includes(marker)) {
+    throw new Error(`Current-hour-gaten mangler den kanoniske Copernicus-cachemarkør ${marker}`);
+  }
+}
 for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}',
   'Select exact-hour DMI gaps for targeted Copernicus supplement',
   'Bind production to resolved DMI current hour',
   'Inspect target-bound Copernicus source stage after fresh DMI',
   'Remove only invalid production Copernicus source disposition',
-  "steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'",
+  "steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'",
   'rm -f .cache/copernicus-current-source-stage.json',
   'Fill only exact-hour DMI gaps from Copernicus',
   'Require completed Copernicus source stage before combined current closure',

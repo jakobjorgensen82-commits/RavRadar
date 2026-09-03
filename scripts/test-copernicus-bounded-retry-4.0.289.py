@@ -31,6 +31,22 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
     )
     assert retried == {"ok": True, "attempt": 2, "reason": "completed"}
 
+    deadline_marker = Path(raw) / "deadline"
+    deadline_code = (
+        "import os, sys, time; from pathlib import Path; "
+        "value=float(os.environ['RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH']); "
+        "assert time.time() < value < time.time()+2; "
+        "Path(sys.argv[1]).write_text(str(value), encoding='utf-8')"
+    )
+    deadline_result = module.run_bounded(
+        [sys.executable, "-c", deadline_code, str(deadline_marker)],
+        attempts=1,
+        timeout_seconds=2,
+        backoff_seconds=0,
+    )
+    assert deadline_result == {"ok": True, "attempt": 1, "reason": "completed"}
+    assert deadline_marker.exists()
+
 timed_out = module.run_bounded(
     [sys.executable, "-c", "import time; time.sleep(1)"],
     attempts=1,
@@ -39,7 +55,9 @@ timed_out = module.run_bounded(
 )
 assert timed_out == {"ok": False, "attempt": 1, "reason": "timeout"}
 
-for invalid in ((0, 1, 0), (4, 1, 0), (1, 1201, 0), (1, 1, 121)):
+module.validate_budget(1, 2700, 0)
+
+for invalid in ((0, 1, 0), (4, 1, 0), (1, 2701, 0), (1, 1, 121)):
     try:
         module.validate_budget(*invalid)
     except ValueError:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -12,6 +13,7 @@ from typing import Callable, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "scripts/run-copernicus-current-pilot.py"
+SOFT_DEADLINE_EPOCH_ENV = "RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH"
 
 
 def arguments() -> argparse.Namespace:
@@ -26,8 +28,8 @@ def arguments() -> argparse.Namespace:
 def validate_budget(attempts: int, timeout_seconds: float, backoff_seconds: float) -> None:
     if attempts < 1 or attempts > 3:
         raise ValueError("Copernicus retry attempts must be between 1 and 3")
-    if timeout_seconds <= 0 or timeout_seconds > 1200:
-        raise ValueError("Copernicus attempt timeout must be above 0 and at most 1200 seconds")
+    if timeout_seconds <= 0 or timeout_seconds > 2700:
+        raise ValueError("Copernicus attempt timeout must be above 0 and at most 2700 seconds")
     if backoff_seconds < 0 or backoff_seconds > 120:
         raise ValueError("Copernicus retry backoff must be between 0 and 120 seconds")
 
@@ -43,8 +45,20 @@ def run_bounded(
     validate_budget(attempts, timeout_seconds, backoff_seconds)
     for attempt in range(1, attempts + 1):
         print(f"Copernicus attempt {attempt}/{attempts} started with a {timeout_seconds:g}s hard timeout.")
+        reserve_seconds = min(120.0, max(0.05, timeout_seconds * 0.1))
+        soft_budget_seconds = max(0.01, timeout_seconds - reserve_seconds)
+        child_environment = dict(os.environ)
+        child_environment[SOFT_DEADLINE_EPOCH_ENV] = str(
+            time.time() + soft_budget_seconds
+        )
         try:
-            completed = subprocess.run(command, cwd=ROOT, check=False, timeout=timeout_seconds)
+            completed = subprocess.run(
+                command,
+                cwd=ROOT,
+                check=False,
+                timeout=timeout_seconds,
+                env=child_environment,
+            )
             if completed.returncode == 0:
                 return {"ok": True, "attempt": attempt, "reason": "completed"}
             reason = f"exit-{completed.returncode}"

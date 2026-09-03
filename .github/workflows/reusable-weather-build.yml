@@ -666,9 +666,11 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-pre-dmi-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-pre-dmi-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-shadow-v1-
+            copernicus-current-range-v2-
 
       - name: Report private Copernicus cache preservation
         if: steps.preflight.outputs.should_run == 'true'
@@ -863,9 +865,11 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-post-dmi-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-post-dmi-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
+            copernicus-current-progress-v3-
             copernicus-current-shadow-v1-
+            copernicus-current-range-v2-
 
       - name: Select exact-hour DMI gaps for targeted Copernicus supplement
         if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'
@@ -895,7 +899,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid production Copernicus source disposition
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'
         run: rm -f .cache/copernicus-current-source-stage.json
 
       - name: Install targeted Copernicus dependencies
@@ -936,7 +940,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-production-progress-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-production-progress-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require completed Copernicus source stage before combined current closure
         if: steps.preflight.outputs.should_run == 'true'
@@ -957,7 +961,7 @@ jobs:
           path: |
             .cache/copernicus-current-shadow.json
             .cache/copernicus-current-source-stage.json
-          key: copernicus-current-shadow-v1-production-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: copernicus-current-progress-v3-production-ready-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Build exact DMI-first current operational closure
         if: steps.preflight.outputs.should_run == 'true'
