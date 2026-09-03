@@ -1,3 +1,12 @@
+# NYESTE ROADMAP – 2026-09-03 – samlet 4.0.321 efter PR #249
+
+- [x] Merge den exact-head-grønne monotone Copernicus-progression som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`.
+- [x] Bind scheduled pilot til den gendannede, fuldt validerede DMI-ledgers eksakte reference og måltest neutral skip ved bounded continuation.
+- [x] Luk integrated bundle til `d5796289…`/55 og den uafhængige actual public closure til 78 moduler; synkronisér aktive bindingsforbrugere og håndbøger.
+- [ ] Commit/push den samlede lokale 4.0.321-head og bestå exact-head én gang.
+- [ ] Kør Supabase linked migrationsliste/dry-run og kun ved grønt planbevis apply/readback; stop ved authfejl uden passwordreset eller gæt.
+- [ ] Bevis 673 × 118, Feggesund 3 × 118, Supabase før/efter og mindst 30 procent reserve; gennemfør derefter særskilt Fase B, frisk produktion og offentlig mobil-/desktopkontrol.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 sidste lokale releasekant
 
 - [x] Normalisér continuation-kilden som `utf8-bomless-lf-v2` og bind current hash `35c45f8f…` på Windows og Linux.
@@ -1048,3 +1057,9 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [ ] Lad den eksisterende DMI-first-cachekæde arbejde uden parallel run; bevis derefter 673 × 118 og Feggesund 3 × 118.
 - [ ] Mål live Supabase før/efter samt øvrig egress, database og lager mod 70/30-grænsen; merge først når alle Phase-A-releasegates er grønne.
 - [ ] Følg frisk fuld produktion og udfør derefter særskilt manuel Fase B; verificér state 6, 210/673, begge modes, fem døgn, advarsler, PWA/Om og desktop/mobil offentligt.
+# AKTUEL TOPRÆKKE – reel modelbundle og backend-pre-write
+
+- [x] Luk de manglende direkte public entrypoints fra safe-fail backendrun `33736292211`: `rav-assistant.js` og `trip-evidence-public-adapter.js` er nu del af den transitive integrated-bundle.
+- [x] Regenerér/synkronisér integrated til `a226e7d1…`/`d5796289…` over 55 filer og bevis actual-source browserclosure over 78 offentlige moduler; bevar Candidate G `7c7f2b…`/56 uændret.
+- [x] Dokumentér remote read-only `false/false/false`: migrationsledger og begge nye RPC'er er fraværende, så migrationerne er ikke live.
+- [ ] Kør linked migration list/dry-run som definitiv pre-write-gate uden passwordreset/gæt; gennemfør derefter den låste data-, kapacitets-, merge-, Fase B-, produktions- og browserrækkefølge.

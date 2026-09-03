@@ -1,3 +1,10 @@
+## 2026-09-03 actual-source modelbundle og pre-write databasegrænse
+
+- `scripts/build-ravscore-model-bundle.mjs` binder nu de direkte public entrypoints `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`. Det blev nødvendigt, da backendrun `33736292211` stoppede sikkert ved public implementation seal før Supabase/Edge/database, artifact og Pages.
+- Integrated implementation er lokalt `d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 transitive filer under uændret contract `a226e7d1…`. `test-ravscore-public-browser-closure.mjs` bruger den faktiske genererede binding og closureberegning over 78 public modules; den tidligere syntetiske fixture var utilstrækkelig. Candidate G `7c7f2b…`/56 er uændret.
+- Remote read-only status er `false/false/false`: migration ledger og de nye trip-/checkpoint-RPC'er er fraværende. Derfor er linked migration history/list og dry-run fortsat den definitive pre-write-grænse. Secretet er kun kendt ved navn; authfejl skal stoppe før writes, ikke udløse passwordgæt eller automatisk reset.
+- `3192db…`/44 beskriver kun den supersederede ufuldstændige bundlelukning. Exact-head, remote migration/dry-run, 673 × 118/Feggesund, kapacitet, Fase B og offentlig state 6 er stadig åbne.
+
 # AI Architecture Map – RavRadar
 
 ## 2026-09-03 4.0.320 tofase-lås

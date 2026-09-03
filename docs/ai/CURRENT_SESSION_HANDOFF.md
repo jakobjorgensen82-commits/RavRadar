@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-03 – PR #249 på main; lokal 55-/78-lukning og pilotbinding
+
+- `origin/main` er `a331e0dbb08a9ab9ffff26632a708828574bdcd8` efter PR #249/exact-head `33743253873`. Den lokale branch `codex/ravscore-real-bundle-closure` er fast-forwardet til samme head uden tab af working-tree-arbejde.
+- Scheduled pilot `33766716934` stoppede sikkert før Copernicus-acquisition på DMI-ledger-startmismatch. Lokalt valideres den gendannede ledger, og ikke-full-coast-targetet bindes eksakt til dens `productionReferenceAt`; bounded incomplete ledger giver neutral skip.
+- Integrated er lokalt `a226e7d1…`/`d5796289…` over 55 filer med særskilt actual-source closure over 78 public moduler. De målrettede vejr-, bundle-, release-, checkpoint-, assistent-, RDKS-, sikkerheds- og håndbogstests er grønne.
+- `.cache` er fortsat untracked og må aldrig stages. Candidate G er offentlig. Næste trin er eksplicit staging, commit/push, exact-head, Supabase linked list/dry-run og derefter de resterende data-/kapacitets-/Fase B-/produktions-/browsergates.
+
+# NYESTE CHECKPOINT – 2026-09-03 – faktisk bundleclosure og Supabase-stopgrænse
+
+- `33736292211` stoppede før eksterne writes/artifact/Pages ved exact public implementation seal. Årsagen var to direkte public consumers uden for den gamle 44-filers modelbundle: `rav-assistant.js` og `trip-evidence-public-adapter.js`. Candidate G er fortsat offentlig.
+- Generatoren binder nu begge. Local integrated er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer; actual-source browserclosure attesterer den faktiske 78-modulers public closure. Bundle-/closure-måltests er grønne. Candidate G `7c7f2b…`/56 er uændret; `3192db…`/44 er historisk.
+- Remote Supabase read-only gav `false/false/false`: migrationsledger og de to nye RPC'er er ikke installeret. Linked list/dry-run er næste definitive pre-write-gate. `SUPABASE_DB_PASSWORD` er kun verificeret ved navn; værdien må ikke læses, gættes eller rutinemæssigt resettes. Authfejl stopper før writes.
+
 # NYESTE CHECKPOINT – 2026-09-03 – tofaseaktivering er lokal, ikke frigivet
 
 - Branch `codex/ravscore-history-incomplete-cutover` har nu en lokal aktiveringslås: merge/push må kun vedligeholde Candidate G; legacy-Candidate føres til current moderne Candidate G på samme head. Fase A må merge før 673 × 118, så cron bygger den korrigerede cache. Push/schedule/watchdog/almindelig manual kan ikke aktivere den integrerede model.

@@ -87,22 +87,124 @@ jobs:
             echo "No private DMI cache was restored; a checkout file alone is never treated as a cache hit."
           fi
 
+      - name: Bind the pilot to a ready restored DMI ledger
+        if: steps.dmi-coverage.outputs.available == 'true' && inputs.full_coast != true
+        id: dmi-operational-reference
+        shell: bash
+        env:
+          PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timedelta, timezone
+          from pathlib import Path
+
+          from scripts.lib.copernicus_target_identity import (
+              target_fingerprint,
+              targets_from_registry,
+          )
+          from scripts.lib.dmi_native_provenance import (
+              canonical_verified_part_current_attestation,
+              processed_source_assets_from_current_operational_ledger,
+              validate_current_operational_ledger,
+          )
+
+          dmi = json.loads(Path('data/live/dmi-bulk-cache.json').read_text(encoding='utf-8'))
+          ledger = ((dmi.get('diagnostics') or {}).get('currentOperationalLedger'))
+          if not isinstance(ledger, dict):
+              raise SystemExit('Restored DMI current operational ledger is missing or malformed')
+          if not isinstance(ledger.get('ready'), bool):
+              raise SystemExit('Restored DMI current operational ledger readiness is malformed')
+
+          def exact_hour(value, label):
+              if not isinstance(value, str) or not value.endswith('Z'):
+                  raise SystemExit(f'Restored DMI current operational ledger {label} is malformed')
+              try:
+                  parsed = datetime.fromisoformat(value.replace('Z', '+00:00'))
+              except ValueError:
+                  raise SystemExit(f'Restored DMI current operational ledger {label} is malformed') from None
+              if parsed.tzinfo is None:
+                  raise SystemExit(f'Restored DMI current operational ledger {label} lacks UTC')
+              parsed = parsed.astimezone(timezone.utc)
+              if parsed != parsed.replace(minute=0, second=0, microsecond=0):
+                  raise SystemExit(f'Restored DMI current operational ledger {label} is not an exact hour')
+              canonical = parsed.isoformat().replace('+00:00', 'Z')
+              if value != canonical:
+                  raise SystemExit(f'Restored DMI current operational ledger {label} is not canonical')
+              return parsed
+
+          reference = exact_hour(ledger.get('productionReferenceAt'), 'production reference')
+          targets_path = Path('data/live/coastal-parts-v2.json')
+          targets = targets_from_registry(targets_path)
+          range_end = reference + timedelta(hours=117)
+          allowed_source_assets = processed_source_assets_from_current_operational_ledger(ledger)
+          attestation = canonical_verified_part_current_attestation(
+              dmi,
+              targets,
+              reference,
+              range_end,
+              allowed_source_assets,
+          )
+          validation_error = None
+          try:
+              validate_current_operational_ledger(
+                  ledger,
+                  attestation,
+                  targets,
+                  reference,
+                  range_end,
+                  target_fingerprint(targets),
+              )
+          except (TypeError, ValueError) as error:
+              validation_error = str(error)
+
+          ready = ledger['ready']
+          if ready and validation_error is not None:
+              raise SystemExit(f'Restored ready DMI ledger is invalid: {validation_error}')
+          bounded_continuation_errors = {
+              'Current outcome contains unfinished local work',
+              'DMI current ledger contains unfinished local work',
+          }
+          if not ready and validation_error not in bounded_continuation_errors:
+              reason = validation_error or 'ledger unexpectedly validates as ready'
+              raise SystemExit(f'Restored non-ready DMI ledger is not a bounded continuation: {reason}')
+          requested = os.environ.get('PILOT_SAMPLE_TIME', '').strip()
+          if requested and exact_hour(requested, 'requested sample time') != reference:
+              raise SystemExit('Requested pilot sample time does not match the restored DMI ledger')
+
+          with Path(os.environ['GITHUB_OUTPUT']).open('a', encoding='utf-8') as handle:
+              handle.write(f"ready={'true' if ready else 'false'}\n")
+              if ready:
+                  handle.write(f"production_reference_at={ledger['productionReferenceAt']}\n")
+          if ready:
+              print('The scheduled pilot is bound to the ready restored DMI ledger reference.')
+          else:
+              print('The restored DMI ledger is incomplete; the optional pilot will skip neutrally.')
+          PY
+
       - name: Seal the exact target-48 through target+117 DMI gap matrix
-        if: steps.dmi-coverage.outputs.available == 'true'
+        if: steps.dmi-coverage.outputs.available == 'true' && (inputs.full_coast == true || steps.dmi-operational-reference.outputs.ready == 'true')
         id: target-registry
         env:
           PILOT_SAMPLE_TIME: ${{ inputs.sample_time }}
           PILOT_FULL_COAST: ${{ inputs.full_coast }}
+          DMI_LEDGER_REFERENCE: ${{ steps.dmi-operational-reference.outputs.production_reference_at }}
         shell: bash
         run: |
           args=()
-          if [ -n "$PILOT_SAMPLE_TIME" ]; then args+=(--at "$PILOT_SAMPLE_TIME"); fi
-          if [ "$PILOT_FULL_COAST" = "true" ]; then args+=(--full-coast); fi
+          if [ "$PILOT_FULL_COAST" = "true" ]; then
+            if [ -n "$PILOT_SAMPLE_TIME" ]; then args+=(--at "$PILOT_SAMPLE_TIME"); fi
+            args+=(--full-coast)
+          else
+            test -n "$DMI_LEDGER_REFERENCE"
+            args+=(--at "$DMI_LEDGER_REFERENCE")
+          fi
           args+=(--github-output "$GITHUB_OUTPUT")
           python scripts/build-copernicus-target-registry.py "${args[@]}"
 
       - name: Restore private sealed Copernicus range cache
-        if: steps.dmi-coverage.outputs.available == 'true'
+        if: steps.target-registry.outcome == 'success'
         uses: actions/cache/restore@v6
         with:
           path: |
@@ -115,7 +217,7 @@ jobs:
             copernicus-current-shadow-v1-
 
       - name: Inspect the exact sealed DMI-gap range
-        if: steps.dmi-coverage.outputs.available == 'true'
+        if: steps.target-registry.outcome == 'success'
         id: cache-state
         run: >-
           python scripts/check-copernicus-current-range.py
@@ -128,15 +230,15 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid restored Copernicus source disposition
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_reusable != 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_reusable != 'true'
         run: rm -f .cache/copernicus-current-source-stage.json
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready != 'true'
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Run deterministic pilot tests only before a new acquisition
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready != 'true'
         run: |
           python scripts/test-copernicus-current-pilot.py
           python scripts/test-copernicus-range-runner-v2.py
@@ -147,7 +249,7 @@ jobs:
           python scripts/test-current-regional-proxy-policy.py
 
       - name: Verify Copernicus secrets are configured
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -157,7 +259,7 @@ jobs:
 
       - name: Complete only the exact sealed DMI-gap range
         id: acquisition
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready != 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready != 'true'
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -172,7 +274,7 @@ jobs:
           --at "${{ steps.target-registry.outputs.target_hour }}"
 
       - name: Save non-cancelled Copernicus source-stage progress
-        if: always() && steps.dmi-coverage.outputs.available == 'true' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        if: always() && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
           path: |
@@ -181,7 +283,7 @@ jobs:
           key: copernicus-current-progress-v3-pilot-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Prove the resulting exact Copernicus source stage
-        if: steps.dmi-coverage.outputs.available == 'true'
+        if: steps.target-registry.outcome == 'success'
         run: >-
           python scripts/check-copernicus-current-range.py
           --at "${{ steps.target-registry.outputs.target_hour }}"
@@ -193,7 +295,7 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Save validated private Copernicus source stage
-        if: steps.dmi-coverage.outputs.available == 'true' && success()
+        if: steps.target-registry.outcome == 'success' && success()
         uses: actions/cache/save@v6
         with:
           path: |
@@ -238,8 +340,12 @@ jobs:
             data/diagnostics/copernicus-current-pilot.txt
 
       - name: Report safe duplicate suppression
-        if: steps.dmi-coverage.outputs.available == 'true' && steps.cache-state.outputs.source_stage_ready == 'true'
+        if: steps.target-registry.outcome == 'success' && steps.cache-state.outputs.source_stage_ready == 'true'
         run: echo "The exact target/DMI/shadow-bound Copernicus source stage is already valid; dependency installation, credentials and authenticated download were skipped."
+
+      - name: Report neutral incomplete-ledger skip
+        if: steps.dmi-coverage.outputs.available == 'true' && inputs.full_coast != true && steps.dmi-operational-reference.outputs.ready == 'false'
+        run: echo "Optional Copernicus pilot skipped because the restored DMI operational ledger is not ready yet; no acquisition or public write was attempted."
 
       - name: Report safe private-cache skip
         if: steps.dmi-coverage.outputs.available != 'true'

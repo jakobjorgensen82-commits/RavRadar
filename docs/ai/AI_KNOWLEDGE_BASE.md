@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-03 – reel integrated public closure
+
+- Backendrun `33736292211` stoppede sikkert før eksterne writes og offentlig ændring: 44-filers bundlen manglede de direkte public consumers `rav-assistant.js` og `trip-evidence-public-adapter.js`. Candidate G er fortsat den eneste offentlige model.
+- Begge er nu direkte bundleentrypoints. Integrated er lokalt `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer, og actual-source-testen attesterer den faktiske 78-modulers browserclosure. Måltests er grønne. Candidate G-rollback `7c7f2b…`/56 er uændret; `3192db…`/44 er historisk.
+- En læsende live Supabase-kontrol gav `false/false/false` for migration ledger og begge nye RPC'er. Migrationerne er ikke live. Linked migrationsliste/dry-run forbliver stopgate før writes. Secretværdien er ikke læst; passwordet må ikke gættes eller nulstilles uden konkret authfejl/ejerhandling.
+
 ## Nyeste sandhed 2026-09-03 – tofasede første aktivering
 
 - Fase A merger 4.0.320-koden med Candidate G fortsat som eneste offentlige model. Push, schedule, watchdog og almindelig manuel vejrdrift vedligeholder kun Candidate G; legacy føres gennem den eksisterende bro til current moderne Candidate G på samme head. Fase A må ske før 673 × 118-beviset, så cron kan opbygge den korrigerede cache på den mergede kode.

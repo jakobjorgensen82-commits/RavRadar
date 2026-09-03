@@ -1,3 +1,19 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-03 – næste samlede 4.0.321-head
+
+- [x] Merge PR #249 efter exact-head: `a331e0dbb08a9ab9ffff26632a708828574bdcd8`.
+- [x] Reproducer scheduled-pilot-fejlen uden rå payloads: restored DMI-ledger-start afveg fra implicit target i `33766716934`.
+- [x] Bind scheduled pilot til fuldt valideret ready-ledger-reference; neutral skip ved eksakt afgrænset continuation; målrettet workflowtest grøn.
+- [x] Luk modelbundle til 55 filer, actual public closure til 78 moduler og synkronisér alle aktive bindingsforbrugere; målmatrix og RDKS/håndbog grøn.
+- [ ] Commit/push samlet head, exact-head, Supabase linked list/dry-run/apply/readback, 673 × 118/Feggesund, kapacitet, Fase B, produktion og offentlig mobil/desktop.
+
+# NYESTE CHECKPOINT – 2026-09-03 – faktisk public-closure og remote migrationsstatus
+
+- [x] Klassificér backendrun `33736292211` korrekt: sikkert stop før enhver ekstern write/artifact/Pages, fordi den 44-filers integrated-bundle ikke dækkede de direkte public consumers `rav-assistant.js` og `trip-evidence-public-adapter.js`.
+- [x] Tilføj begge som generator-entrypoints og forsegl integrated som `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer. Actual-source closure-test attesterer den reelle genererede binding over 78 offentlige moduler; bundle- og browserclosure-måltests er grønne.
+- [x] Bevar Candidate G-rollback uændret `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer og klassificér `3192db…`/44 som historisk ufuldstændig integrated closure.
+- [x] Fastslå remote status skrivefrit: migration ledger + ny trip-RPC + ny checkpoint-RPC gav `false/false/false`; migrationerne er ikke live. Secretet er kun verificeret ved navn, aldrig ved værdi.
+- [ ] Bestå linked migration list/dry-run før første write; stop ved auth-/passwordfejl uden reset/gæt. Derefter exact-head, 673 × 118/Feggesund, live kapacitet, Fase B, frisk produktion og offentlig mobil/desktop.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 checkpoint/CAS-slutkant
 
 - [x] Gør continuation-hashen platformsuafhængig med `utf8-bomless-lf-v2`; aktuel hash er `35c45f8f1f701695923b3195d60a6b8931aad4d2d08b05c93900b88401eca95c` på både LF og CRLF.

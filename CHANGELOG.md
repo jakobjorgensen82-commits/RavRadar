@@ -1,3 +1,18 @@
+## 4.0.321-kandidat – PR #249 merged og pilotens tidsbinding lukket lokalt (2026-09-03)
+
+- PR #249 bestod exact-head-kildegaten `33743253873` på `5879f5fdd71a1db5a2895b4ac3acadeafb2865e8` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`. Dermed ligger den monotone, genoptagelige Copernicus-restopfyldning nu på `main`; Candidate G er fortsat offentlig.
+- Den planlagte pilot `33766716934` stoppede før acquisition og publicering, fordi en gendannet DMI-ledger havde en anden starttime end pilotens implicitte nye target. Den lokale rettelse validerer hele den gendannede ledger og binder targetregistry til dens eksakte `productionReferenceAt`; en legitim uafsluttet ledger springes neutralt over.
+- Målrettede workflow-, 55-filers bundle-, 78-modulers browserclosure-, releasebinding-, checkpoint-, assistent-, RDKS-, sikkerheds- og håndbogstests er grønne. Ingen scoreformel, state, geometri, kystnormal, land-/vandpunkt eller private data er ændret.
+- Post-merge-vejrkørsel `33775957133` er startet på den eksakte mergecommit. Den er runtimeevidens under opbygning, ikke endnu et terminalt 673 × 118-, produktions- eller deploybevis.
+
+## 4.0.321-kandidat – reel offentlig implementeringslukning (2026-09-03)
+
+- Backendrun `33736292211` nåede den eksakte integrerede public-implementation-seal og stoppede sikkert før Supabase-, Edge-, database-, artifact- eller Pages-skrivning. Årsagen var, at den hidtidige 44-filers bundle ikke bandt de to direkte offentlige forbrugere `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`. Candidate G forblev offentlig, og state 6 blev ikke aktiveret.
+- Bundlegeneratoren behandler nu begge filer som direkte entrypoints. Den uændrede parameterkontrakt `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` bindes til den reelle 55-filers implementeringsbundle `d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286`. Browserlukningstesten bruger nu den faktiske genererede binding og actual-source closure over 78 offentlige moduler i stedet for en syntetisk bundlefixture. Begge måltests er grønne.
+- Candidate G-rollback er uændret `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer. Den tidligere integrated-hash `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` bevares kun som revisionsspor for den ufuldstændige 44-filers lukning.
+- En læsende live Supabase-kontrol gav `false/false/false`: migration-ledgerrelationen fandtes ikke, og hverken den nye trip-binding-RPC eller checkpointets integrated-state-RPC var installeret. Migrationerne er derfor fortsat ikke live. Den linkede migrationsliste og dry-run er den definitive stopgate før første write; fraværet må ikke omgås med gæt eller manuel ommærkning.
+- GitHub-secretet `SUPABASE_DB_PASSWORD` er kun verificeret ved navn. Værdien er ikke læst, vist eller testet ved at gætte den, og Supabase-passwordet må ikke nulstilles som rutine. Hvis link/autentificering fejler, skal backend stoppe før writes og årsagen afklares.
+
 ## 4.0.321-kandidat – metadata-CAS og bounded RavScore-checkpoint (2026-09-03)
 
 - PR #248 bestod exact-head-kildegate `33732430804` på `bc80821257c4f3c374df3135d98360ca9b02e836` og blev merged som `771dc75cb05b0c65e13ce63d8e737b250e0dc17d`. Det rettede backendworkflow henter den pinnede Candidate G-sourcecommit før kildegaten; frisk backendrun `33736292211` afventer terminalt bevis.
