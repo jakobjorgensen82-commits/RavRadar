@@ -51,6 +51,14 @@ jobs:
         with:
           node-version: 22
 
+      - name: Fetch exact public Candidate G source commit before source validation
+        shell: bash
+        run: |
+          legacy_source_head="$(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD);")"
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
