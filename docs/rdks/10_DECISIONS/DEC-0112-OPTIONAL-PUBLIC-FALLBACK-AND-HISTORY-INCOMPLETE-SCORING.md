@@ -1,14 +1,20 @@
 # DEC-0112 – frisk primary må publiceres uden gyldig fallback; HISTORY_INCOMPLETE er en særskilt scorekvalitet
 
-**Status:** Ejerbesluttet og bindende. Publiceringsdelen ligger på den offentlige 4.0.316/Candidate G-baseline. Modeldelen er den bindende numeriske state-6-udvidelse af DEC-0102 og DEC-0110 og er operationelt præciseret af DEC-0114, men er endnu ikke frigivet eller offentligt verificeret.
+**Status:** Ejerbesluttet og bindende. Publiceringsdelen er aktiv for Candidate G, som fortsat er den eneste offentlige model. State-6-koden på sourcehead `cbc4639af411ee741be938980b2d7a8c08b6b79d` indgår nu i den mergede Fase A efter PR #246, grøn exact-head-kildegate `33706215425` og merge `7198b685f4bc9d86bd6432b049380f4279ab797c`, men state 6 er ikke aktiveret eller offentligt verificeret. Den lokale 4.0.321-checkpointlukning er heller ikke pushet, exact-head-verificeret, anvendt mod live Supabase eller merged.
 
 **Dato:** 2026-08-30
+
+## Operativ status 2026-09-03
+
+Fase A er afsluttet for den samlede modelkode, mens den offentlige profil bevidst forbliver Candidate G. Det lokale 4.0.321-delta reducerer checkpointets normale database-egress med version-only read efterfulgt af server-side CAS og højst 4 KiB metadataresponse; en fuld checkpointpayload på højst 16 MiB læses kun ved restore, når Actions-cachen mangler. Databasen validerer eksakt 673 integrerede states og 673 `READY` Candidate G-companionstates samt privacy/envelope/binding, men JavaScript er fortsat eneautoritet for replay og kanoniske hashes. Checkpointet skaber ingen nye historikrækker, og direkte læsning/funktionsudførelse er låst af RLS/ACL til den afgrænsede service-role-vej.
+
+Dette ændrer ikke `HISTORY_INCOMPLETE`-matematikken og gør ikke state 6 live. Den lokale deltas egen exact-head/merge, live kapacitetsmåling og cache-miss-rate samt 673 × 118, Feggesund 3 × 118, Fase B, frisk produktion og offentlig browserverifikation er fortsat åbne.
 
 ## Præcisering 2026-08-31 – fuld prognoseakse og forklaring
 
 Ved gyldige direkte obligatoriske input for hver time skal state 6 publicere den eksakte akse `productionTarget..productionTarget+117 h`: 118 timer, current og fem kalenderdage, også når ældre historik er ufuldstændig. Hver sådan time er `HISTORY_INCOMPLETE` med vist lower bound, upper bound, spænd, coverage/reasons, synlig DA/DE/EN-advarsel og `calibrationEligible=false`. Advarslen forsvinder automatisk ved `FULL_HISTORY`. Manglende eller ugyldigt direkte strøm-, bølge- eller jagtbarhedsinput gør kun den berørte time `UNAVAILABLE`/`null`; det må ikke maskeres af interpolation, hold/carry eller nabozonelån.
 
-Startup, detaljer, femdøgnsvisning, rangering/beste tidspunkt, admin/ekspert og lokal/Edge-baseret Spørg RavRadar skal skelne `HISTORY_INCOMPLETE` fra direkte inputmangel. Den offentlige DA/DE/EN-forklaring beskriver i almindeligt sprog, at nyere bølgeenergi vejer mest, at vægten halveres over fire timer, og at last-mile-leddet højst dæmper eksisterende leveringssignal 15 %. W/N/T/EWMA er intern notation og må ikke kræves af brugeren. De målrettede P2-tests er lokalt grønne; exact-head-, produktions- og offentlig verifikation af fladen udestår.
+Startup, detaljer, femdøgnsvisning, rangering/beste tidspunkt, admin/ekspert og lokal/Edge-baseret Spørg RavRadar skal skelne `HISTORY_INCOMPLETE` fra direkte inputmangel. Den offentlige DA/DE/EN-forklaring beskriver i almindeligt sprog, at nyere bølgeenergi vejer mest, at vægten halveres over fire timer, og at last-mile-leddet højst dæmper eksisterende leveringssignal 15 %. W/N/T/EWMA er intern notation og må ikke kræves af brugeren. De målrettede P2-tests og Fase A's exact-head-kildegate er grønne; state-6-produktion, aktivering og offentlig verifikation af fladen udestår.
 
 ## Hændelse og bevis
 

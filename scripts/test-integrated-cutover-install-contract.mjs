@@ -25,6 +25,10 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
   await fs.readFile(file, 'utf8'),
 ]));
 const documents = Object.fromEntries(entries);
+const checkpointMigration = await fs.readFile(
+  'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql',
+  'utf8',
+);
 const stableTripMigration = await fs.readFile(
   'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
   'utf8',
@@ -38,6 +42,86 @@ assert.equal(definitions.schema, definitions.migration,
   'historical schema reference drifted from the versioned cutover RPC');
 assert.equal(definitions.installer, definitions.migration,
   'security installer drifted from the versioned cutover RPC');
+
+const CHECKPOINT_FUNCTION_NAMES = Object.freeze([
+  'public.ravradar_ravscore_checkpoint_has_forbidden_key',
+  'public.ravradar_ravscore_checkpoint_integrated_state_valid',
+  'public.ravradar_ravscore_checkpoint_candidate_state_valid',
+  'public.ravradar_ravscore_checkpoint_payload_valid',
+  'public.ravradar_ravscore_checkpoint_predecessor_payload_valid',
+  'public.ravradar_ravscore_checkpoint_cas',
+  'public.ravradar_ravscore_checkpoint_contract',
+]);
+for (const functionName of CHECKPOINT_FUNCTION_NAMES) {
+  const canonicalDefinition = normalize(functionDefinition(
+    checkpointMigration,
+    'checkpoint migration',
+    functionName,
+  ));
+  assert.equal(normalize(functionDefinition(documents.schema, 'historical schema', functionName)),
+    canonicalDefinition, `${functionName} drifted in historical schema`);
+  assert.equal(normalize(functionDefinition(documents.installer, 'security installer', functionName)),
+    canonicalDefinition, `${functionName} drifted in security installer`);
+}
+
+const CHECKPOINT_BLOCK_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
+const CHECKPOINT_BLOCK_END = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_END';
+function checkpointGeneratedBlock(source, label) {
+  const start = source.indexOf(CHECKPOINT_BLOCK_BEGIN);
+  const secondStart = source.indexOf(CHECKPOINT_BLOCK_BEGIN, start + 1);
+  const end = source.indexOf(CHECKPOINT_BLOCK_END, start + CHECKPOINT_BLOCK_BEGIN.length);
+  assert.ok(start >= 0 && end > start && secondStart < 0,
+    `${label} must contain exactly one complete checkpoint generated block`);
+  assert.equal(source.indexOf(CHECKPOINT_BLOCK_END, end + 1), -1,
+    `${label} contains a duplicate checkpoint generated block end`);
+  return source.slice(start, end + CHECKPOINT_BLOCK_END.length).replaceAll('\r\n', '\n');
+}
+const checkpointBlock = checkpointGeneratedBlock(checkpointMigration, 'checkpoint migration');
+assert.equal(checkpointGeneratedBlock(documents.schema, 'historical schema'), checkpointBlock,
+  'historical schema checkpoint block drifted from the versioned migration');
+assert.equal(checkpointGeneratedBlock(documents.installer, 'security installer'), checkpointBlock,
+  'security installer checkpoint block drifted from the versioned migration');
+assert.match(checkpointBlock,
+  /create or replace function public\.version_admin_document\(\)[\s\S]*?'ravscore-continuation-checkpoint'/i,
+  'checkpoint installation must keep the high-frequency checkpoint out of admin document history');
+
+for (const [label, source] of Object.entries({
+  migration: checkpointMigration,
+  schema: documents.schema,
+  installer: documents.installer,
+})) {
+  for (const functionName of CHECKPOINT_FUNCTION_NAMES) {
+    assert.match(normalize(functionDefinition(source, label, functionName)),
+      /set search_path = pg_catalog, public/i,
+      `${label} does not lock ${functionName}'s search path`);
+  }
+  for (const functionName of [
+    'public.ravradar_ravscore_checkpoint_cas',
+    'public.ravradar_ravscore_checkpoint_contract',
+  ]) {
+    assert.match(normalize(functionDefinition(source, label, functionName)),
+      /security definer/i, `${label} must keep ${functionName} security definer`);
+  }
+  assert.match(source,
+    /revoke all on function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+from public, anon, authenticated;/i,
+    `${label} exposes the checkpoint CAS outside service_role`);
+  assert.match(source,
+    /grant execute on function public\.ravradar_ravscore_checkpoint_cas\(bigint,timestamptz,jsonb\)\s+to service_role;/i,
+    `${label} does not grant checkpoint CAS to service_role`);
+  assert.match(source,
+    /revoke all on function public\.ravradar_ravscore_checkpoint_contract\(\)\s+from public, anon, authenticated;/i,
+    `${label} exposes checkpoint metadata readback outside service_role`);
+  assert.doesNotMatch(functionDefinition(
+    source,
+    label,
+    'public.ravradar_ravscore_checkpoint_contract',
+  ), /\bfrom\s+public\.admin_documents\b/i,
+  `${label} checkpoint metadata readback must not read checkpoint payload rows`);
+}
+assert.match(checkpointMigration, /begin;[\s\S]*set local lock_timeout = '5s';/i,
+  'checkpoint migration must install transactionally with a bounded DDL lock wait');
+assert.match(checkpointMigration, /notify pgrst, 'reload schema';\s*commit;/i,
+  'checkpoint migration must reload PostgREST only before its transaction commits');
 
 const operationalMigration = await fs.readFile(
   'supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql',

@@ -1,3 +1,14 @@
+## 4.0.321-kandidat – metadata-CAS og bounded RavScore-checkpoint (2026-09-03)
+
+- PR #246 bestod exact-head `33706215425` og blev merged som `7198b685f4bc9d86bd6432b049380f4279ab797c`; det er Phase A-kodegrundlaget med Candidate G fortsat som eneste offentlige model.
+- Protected checkpointpublicering bruger nu service-role-only compare-and-swap med højst 16 MiB kanonisk checkpointpayload og højst 4 KiB metadatarespons. HTTP-wrapperen kan være lidt større. Normal post-write-verifikation læser ikke længere hele payloaden; fuld GET bruges kun ved reel restore/cache-miss.
+- Same-payload retry er idempotent. Stale version, targetregression, invalid central state eller binding/privacydrift stopper fail-closed. Andet indhold på samme target stoppes også, med én eksakt overgang: 4.0.320-hash `082a5187…` fra sourcehead `7198b685…` må genattesteres til den platformsnormaliserede `utf8-bomless-lf-v2`-hash `35c45f8f…`, når kun continuation-hash og top-/companion-generation ændres, og resten er identisk.
+- Checkpointet er føjet til den eksisterende no-history-trigger uden oprydning af gamle rækker. Restriktiv RLS afviser authenticated direkte læsning af current og historiske checkpointpayloads; CAS, validatorer og metadata-readback er service-role-only med låst `search_path`.
+- Migration `20260903010000`, `supabase/schema.sql` og sikkerhedsinstalleren deler én eksakt genereret kontrakt. Readiness attesterer migrationsversion, funktionskroppe, trigger, RLS, ACL og security mode uden payloadread.
+- Databasen validerer eksakt schema-6/Candidate G-envelope, 673 + 673 unikke dele, READY-paritet, kanoniske tider, bindinger, continuation-hash og privacy. JavaScript beholder replaymatematik og generationshash.
+- Måltests for checkpoint, protected storage, private runtime, readiness, installer, release metadata og workflowrækkefølge er grønne. Geodata ændrer kun topversion 4.0.320 → 4.0.321; ingen zone, geometri, kystnormal eller land-/vandpunkt er ændret.
+- Uafhængig read-only SQL-review fandt ingen P0/P1. Åbent før live state 6: remote Supabase dry-run/apply/readback, exact-head, 673 × 118, Feggesund 3 × 118, live Supabase før/efter-egress/database/lager med mindst 30 procent reserve, sikker merge, frisk fuld produktion, særskilt manuel Fase B og offentlig mobil-/desktopkontrol.
+
 ## 4.0.320-kandidat – deterministisk DMI-gridgenbrug (2026-09-02)
 
 - Første integrerede aktivering er nu adskilt fra kode-/Candidate G-merget. Fase A må merge før 673 × 118, så cron kan opbygge den korrigerede cache med Candidate G fortsat offentlig. Et merge/push, schedule, watchdog eller almindeligt manuelt vejrjob kan kun vedligeholde Candidate G; legacy-Candidate føres gennem den eksisterende bro til current moderne Candidate G på samme head.

@@ -64,10 +64,15 @@ for(const file of [...new Set(browserSources)]){
   await fs.writeFile(file,text);
 }
 
-// Aktive produktionsworkflows sender releaseversionen i deres User-Agent.
-// Hold den tæt koblet til package-versionen, så et versionsløft ikke først
-// opdages efter den dyre centrale datahydrering.
-for(const file of [...new Set(Object.values(PRODUCTION_WORKFLOW_SOURCES))]){
+// Aktive produktionsworkflows og den isolerede 118h-preflight sender
+// releaseversionen i deres User-Agent. Hold dem tæt koblet til
+// package-versionen, så et versionsløft ikke først opdages efter den dyre
+// centrale datahydrering.
+const versionedWeatherWorkflows=[
+ ...Object.values(PRODUCTION_WORKFLOW_SOURCES),
+ '.github/workflows/validate-copernicus-current-pilot.yml'
+];
+for(const file of [...new Set(versionedWeatherWorkflows)]){
   let text=await fs.readFile(file,'utf8');
   text=text.replace(/RavRadar\/\d+\.\d+\.\d+/g,`RavRadar/${version}`);
   await fs.writeFile(file,text);

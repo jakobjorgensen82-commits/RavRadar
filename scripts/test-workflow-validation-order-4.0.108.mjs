@@ -273,6 +273,12 @@ assert.deepEqual(
   [packageJson.version, packageJson.version, packageJson.version],
   'Alle tre operationelle 118h-user-agents skal følge package.json-versionen.',
 );
+const setVersionSource = fs.readFileSync('scripts/set-version.mjs', 'utf8');
+assert.match(
+  setVersionSource,
+  /['"]\.github\/workflows\/validate-copernicus-current-pilot\.yml['"]/,
+  'Versionsværktøjet skal også løfte den isolerede 118h-preflights User-Agent.',
+);
 if ((operationalPreflight.match(/--allow-nonmatching-seal/g) || []).length !== 1) {
   throw new Error('Kun den indledende cacheinspektion må klassificere en ikke-matchende seal som ufuldstændig.');
 }
@@ -794,10 +800,11 @@ for (const marker of [
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the three exact integrated cutover migrations',
+  'Require only the four exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
+  'test -f "$migrations_directory/20260903010000_ravscore_checkpoint_metadata_cas.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

@@ -18,6 +18,9 @@ export const RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES = Object.freeze([
   'scripts/ravscore-continuation-checkpoint.mjs',
 ]);
 
+export const RAVSCORE_CONTINUATION_IMPLEMENTATION_NORMALIZATION_ID =
+  'utf8-bomless-lf-v2';
+
 export const RAVSCORE_CONTINUATION_IMPLEMENTATION_REPOSITORY_ROOT = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../..',
@@ -25,6 +28,12 @@ export const RAVSCORE_CONTINUATION_IMPLEMENTATION_REPOSITORY_ROOT = path.resolve
 
 const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');
+
+export function normalizeRavScoreContinuationImplementationSource(value) {
+  return String(value)
+    .replace(/^\uFEFF/, '')
+    .replace(/\r\n?/g, '\n');
+}
 
 function insideOrEqual(parent, child) {
   const relative = path.relative(parent, child);
@@ -43,8 +52,10 @@ export async function ravScoreContinuationImplementationSha256({
     if (!insideOrEqual(root, absolute)) {
       throw new Error('RavScore continuation implementation path escapes repository');
     }
-    const bytes = await fs.readFile(absolute);
-    rows.push([relativePath, sha256(bytes)]);
+    const source = normalizeRavScoreContinuationImplementationSource(
+      await fs.readFile(absolute, 'utf8'),
+    );
+    rows.push([relativePath, sha256(source)]);
   }
   return sha256(JSON.stringify(rows));
 }

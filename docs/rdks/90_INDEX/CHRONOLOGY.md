@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-03 – PR #246 merged; 4.0.321 checkpoint-egress lokalt reduceret
+
+- PR #246 bestod exact-head `33706215425` og blev merged som `7198b685`; Candidate G forbliver offentlig under Phase A.
+- Den efterfølgende helhedskontrol erstattede normal fler-megabyte checkpoint-readback med service-role metadata-CAS, udelukkede ny checkpointversionshistorik og lukkede direkte authenticated payloadread. Migration, schema og installer er identiske, og måltests er grønne.
+- Appversion 4.0.321 og geodataversionerne er løftet med særskilt bevis for kun topversionsfelterne. Exact-head, data-/kapacitetsbeviser, merge, produktion, manuel Fase B og offentlig state-6-verifikation er endnu åbne.
+
 # NYESTE CHECKPOINT – 2026-09-02 – 4.0.320 DMI-flaskehalsen fjernet lokalt
 
 - Branch-preflights hentede officielle DKSS-assets, men high-level nearest-opslag genbyggede samme gridstruktur titusinder af gange; 47/118 trin på 2.852 sekunder var lokal beregningsfejl, ikke DMI-fravær. Den nye message-lokale low-level SAME_GRID-vej bevarer sampling-, lag-, 5 km-, missing- og provenienssemantik.

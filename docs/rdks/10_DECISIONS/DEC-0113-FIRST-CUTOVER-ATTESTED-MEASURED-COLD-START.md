@@ -1,6 +1,6 @@
 # DEC-0113 – første integrerede cutover bruger attesteret measured-only cold start, når Candidate G ikke er migrationsklar
 
-- **Status:** Ejerbesluttet og delvist erstattet operationelt af DEC-0114. Source-attestation, migrationens strenge WAM-gate, actionisolering, privacy og geodatagrænser består; non-READY Candidate G må ikke længere blokere selve den integrerede first-cutover, når DEC-0114's direct+118-h-gates er grønne. DEC-0114-deltaet er lokalt implementeret og måltestet; frisk 118-timers data-preflight, exact-head, merge, frisk produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilverifikation afventer
+- **Status:** Ejerbesluttet og delvist erstattet operationelt af DEC-0114. Source-attestation, migrationens strenge WAM-gate, actionisolering, privacy og geodatagrænser består. Den samlede Fase A-kode på sourcehead `cbc4639af411ee741be938980b2d7a8c08b6b79d` er exact-head-verificeret i `33706215425` og merged via PR #246 som `7198b685f4bc9d86bd6432b049380f4279ab797c`, mens Candidate G fortsat er offentlig. Den lokale 4.0.321-checkpointlukning samt 673 × 118, Feggesund 3 × 118, live Supabase-kapacitet, manuel Fase B, frisk state-6-produktion/deploy og offentlig desktop-/mobilverifikation afventer
 
 **Driftspræcisering 2026-09-01:** En genbrugt DMI-kystdelscache er kun producentmæssig succes, når dens aktive `PART::`-identitet er eksakt, og mindst ét finite U/V-par på samme time/række har fuld native provenance i den låste `target−48..target+117`-matrix. Den valgte cache skal være atomisk materialiseret til næste forbruger. Nul strict par stopper både normal og WAM-produktion, men reelt progressivt arbejde checkpointes fortsat. Testfixtures for relative prognosedage skal bruge den fælles danske forecastkalender og et fast klokkeslæt. Dette ændrer ingen score-, geometri-, punkt- eller private datakontrakter.
 
@@ -9,7 +9,7 @@
 - **Dato:** 2026-08-30
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0102, DEC-0110 og DEC-0112
-- **Offentlig model indtil sikker cutover:** Candidate G/4.0.316
+- **Offentlig model indtil sikker cutover:** Candidate G (modelbaseline 4.0.316; Fase A-appkode 4.0.320)
 
 ## Bindende aktiveringspræcisering 2026-09-03
 
@@ -20,7 +20,9 @@ Denne præcisering supersederer alene punkt 12's ord **“første cutover er for
 - Bekræftelsen kan ikke erstatte kapacitets-, data-, release- eller offentligt bevis. Manglende bool, forkert/forældreløs token, legacy source, gammel head eller closureafvigelse stopper før første cutover.
 - Allerede forseglede historiske planer og recovery/reconciliation bevares. Der oprettes ingen ny controllerstatus, transitionstype eller offentlig shadowmodel.
 
-Dette delta er lokalt implementeret og måltestet, men endnu ikke commit'et, pushet, merged eller live. Det ændrer ingen modelbundle/hash, score, state, DMI/Copernicus, geometri eller punkter.
+Historisk status før PR #246: dette delta var da kun lokalt implementeret og måltestet. Det er nu en del af den exact-head-verificerede og mergede Fase A-kode, men er ikke aktiveret som state 6. Det ændrer ingen modelbundle/hash, score, state, DMI/Copernicus, geometri eller punkter.
+
+Den efterfølgende lokale 4.0.321-checkpointlukning ændrer alene den beskyttede transport- og backendgrænse: publish bruger version-only read og service-role-only metadata-CAS med højst 16 MiB kanonisk checkpointpayload og højst 4 KiB response; HTTP-wrapperen kan være lidt større, og fuld payload læses kun ved cache-miss-restore. SQL validerer eksakt 673 integrerede plus 673 `READY` Candidate G-states og privacy/envelope/binding, mens replay og kanoniske hashes forbliver JavaScript-only. No-history samt restriktiv RLS/ACL forhindrer nye versionskopier og direkte læsning uden at slette eksisterende historik. Deltaet er endnu ikke pushet, exact-head-verificeret, anvendt live eller merged og er derfor ikke cutoverbevis.
 
 ## Hændelse og observeret bevis
 

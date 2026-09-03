@@ -14,6 +14,7 @@ import {
   checkIntegratedCutoverReadiness,
   checkSealedIntegratedCutoverReadiness,
   expectedAssistantBinding,
+  expectedCheckpointCasContract,
   expectedTripActiveAdmissionPolicy,
   expectedTripBindingPolicy,
   hydrateTemporaryRemoteMigrationHistory,
@@ -25,12 +26,17 @@ import {
   verifyIntegratedDatabaseReadback,
   verifyTripStorageEdgeBoundaries,
 } from './integrated-cutover-readiness.mjs';
+import {
+  ravScoreContinuationImplementationSha256,
+} from './lib/ravscore-continuation-implementation-contract.mjs';
 
 const SOURCE_HEAD = 'a'.repeat(40);
 const PUBLIC_IMPLEMENTATION_CLOSURE_SHA256 = 'c'.repeat(64);
 const URL = 'https://project.example';
 const SERVICE_KEY = 'sb_secret_test_only';
 const PUBLISHABLE_KEY = 'sb_publishable_test_only';
+const CHECKPOINT_CONTINUATION_HASH =
+  await ravScoreContinuationImplementationSha256();
 
 await inspectMigrationSources();
 
@@ -73,6 +79,82 @@ assert.doesNotMatch(rpcSql, /\bfrom\s+public\.observations\b/i,
   'integrated cutover RPC must not read observation rows');
 assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
+
+const checkpointMigration = await fs.readFile(
+  'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql',
+  'utf8',
+);
+for (const marker of [
+  'begin;',
+  "set local lock_timeout = '5s';",
+  'create or replace function public.ravradar_ravscore_checkpoint_canonical_time(',
+  'create or replace function public.ravradar_ravscore_checkpoint_has_forbidden_key(',
+  'create or replace function public.ravradar_ravscore_checkpoint_integrated_state_valid(',
+  'create or replace function public.ravradar_ravscore_checkpoint_candidate_state_valid(',
+  'create or replace function public.ravradar_ravscore_checkpoint_payload_valid(',
+  'create or replace function public.ravradar_ravscore_checkpoint_predecessor_payload_valid(',
+  'create or replace function public.ravradar_ravscore_checkpoint_cas(',
+  "v_key constant text := 'ravscore-continuation-checkpoint'",
+  "p_state ->> 'transportReferenceAt' is distinct from p_reference_text",
+  "p_state -> 'transportMemoryReady' is distinct from 'true'::jsonb",
+  "p_state ->> 'transportMemoryStatus' is distinct from 'READY'",
+  "p_state -> 'transportMemoryCoverageHours' is distinct from '48'::jsonb",
+  "p_payload ->> 'continuationStateContractSha256' is distinct from",
+  CHECKPOINT_CONTINUATION_HASH,
+  '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91',
+  'v_exact_predecessor_same_target_transition',
+  "#- '{continuationStateContractSha256}'",
+  "#- '{candidateGRollbackCompanion,generationSha256}'",
+  'create or replace function public.ravradar_ravscore_checkpoint_contract()',
+  "'schemaVersion', 'ravscore-checkpoint-db-v1'",
+  "'20260903010000'",
+  "'checkpointContractDefinitionPresent'",
+  "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
+  "'checkpointHistoryExclusionInstalled'",
+  "'checkpointDirectPayloadReadRestricted'",
+  'ravradar_ravscore_checkpoint_no_direct_read',
+  'ravradar_ravscore_checkpoint_versions_no_direct_read',
+  'from public, anon, authenticated;',
+  'to service_role;',
+  "notify pgrst, 'reload schema';",
+  'commit;',
+]) assert.ok(checkpointMigration.includes(marker),
+  `checkpoint metadata-CAS migration is missing ${marker}`);
+assert.equal(
+  (checkpointMigration.match(/082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91/g)
+    ?? []).length,
+  1,
+  'checkpoint migration must admit exactly one named predecessor implementation hash',
+);
+const checkpointCasInputSection = checkpointMigration.slice(
+  checkpointMigration.indexOf('create or replace function public.ravradar_ravscore_checkpoint_cas('),
+  checkpointMigration.indexOf('-- A separate service-role metadata RPC attests'),
+);
+assert.match(
+  checkpointCasInputSection,
+  /not public\.ravradar_ravscore_checkpoint_payload_valid\(\s*p_payload,\s*p_target_reference\s*\)/,
+  'new CAS payloads must remain bound to the current validator only',
+);
+const checkpointPolicyReplacementPattern =
+  /drop policy if exists ravradar_ravscore_checkpoint(?:_versions)?_no_direct_read\s+on public\.admin_document(?:_versions|s);/gi;
+const checkpointPolicyReplacements = checkpointMigration.match(
+  checkpointPolicyReplacementPattern,
+) ?? [];
+assert.equal(checkpointPolicyReplacements.length, 2,
+  'checkpoint migration must replace exactly its two restrictive read policies');
+assert.doesNotMatch(
+  checkpointMigration.replace(checkpointPolicyReplacementPattern, ''),
+  /\b(?:drop|truncate)\b/i,
+  'checkpoint metadata-CAS migration must otherwise remain additive',
+);
+const checkpointReadbackMarker =
+  '-- A separate service-role metadata RPC attests the additive checkpoint contract.';
+const checkpointReadbackStart = checkpointMigration.indexOf(checkpointReadbackMarker);
+assert.ok(checkpointReadbackStart >= 0,
+  'checkpoint migration is missing the separate metadata-readback boundary');
+const checkpointReadbackSql = checkpointMigration.slice(checkpointReadbackStart);
+assert.doesNotMatch(checkpointReadbackSql, /\bfrom\s+public\.admin_documents\b/i,
+  'cutover metadata readback must not read checkpoint payload rows');
 
 const workflow = await fs.readFile('.github/workflows/deploy-trip-storage.yml', 'utf8');
 for (const marker of [
@@ -127,21 +209,24 @@ const unicodeList = `
  20260826          │ 20260826         │ 2026-08-26 00:00:00
  20260829010000    │ 20260829010000   │ 2026-08-29 01:00:00
  20260829020000    │ 20260829020000   │ 2026-08-29 02:00:00
- 20260901010000    │                  │ 2026-09-01 01:00:00
+ 20260901010000    │ 20260901010000   │ 2026-09-01 01:00:00
+ 20260903010000    │                  │ 2026-09-03 01:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
   { local: '20260829010000', remote: '20260829010000' },
   { local: '20260829020000', remote: '20260829020000' },
-  { local: '20260901010000', remote: null },
+  { local: '20260901010000', remote: '20260901010000' },
+  { local: '20260903010000', remote: null },
 ]);
 
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: unicodeList,
-  dryRunText: 'DRY RUN: 20260901010000_integrated_trip_measured_warmup_admission.sql',
+  dryRunText: 'DRY RUN: 20260903010000_ravscore_checkpoint_metadata_cas.sql',
 });
-assert.deepEqual(plan.pendingVersions, ['20260901010000']);
-assert.deepEqual(plan.alreadyAppliedVersions, ['20260829010000', '20260829020000']);
+assert.deepEqual(plan.pendingVersions, ['20260903010000']);
+assert.deepEqual(plan.alreadyAppliedVersions,
+  ['20260829010000', '20260829020000', '20260901010000']);
 
 await assert.rejects(
   assertSupabaseMigrationPlan({
@@ -162,8 +247,9 @@ await assert.rejects(
     migrationListText: `
       LOCAL | REMOTE | TIME
       20260829010000 | | pending
-      20260829020000 | 20260829020000 | applied
-      20260901010000 | | pending
+       20260829020000 | 20260829020000 | applied
+       20260901010000 | | pending
+       20260903010000 | | pending
     `,
     dryRunText: 'DRY RUN: 20260829010000_ravscore_operational_documents_no_history.sql',
   }),
@@ -176,6 +262,7 @@ const appliedList = `
  20260829010000 | 20260829010000 | now
  20260829020000 | 20260829020000 | now
  20260901010000 | 20260901010000 | now
+ 20260903010000 | 20260903010000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -188,6 +275,7 @@ try {
     fs.writeFile(path.join(duplicateDirectory, '20260829010000_duplicate.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260829020000_integrated_trip_calibration_binding.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260901010000_integrated_trip_measured_warmup_admission.sql'), '-- test\n'),
+    fs.writeFile(path.join(duplicateDirectory, '20260903010000_ravscore_checkpoint_metadata_cas.sql'), '-- test\n'),
   ]);
   await assert.rejects(inspectMigrationSources({ migrationsDirectory: duplicateDirectory }), /duplicate Supabase migration version/);
 } finally {
@@ -205,6 +293,7 @@ try {
  20260829010000 │ │ pending
  20260829020000 │ │ pending
  20260901010000 │ │ pending
+ 20260903010000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -220,7 +309,8 @@ try {
       │ 20260830 │ future
       20260829010000 │ │ pending
       20260829020000 │ │ pending
- 20260901010000 │ │ pending
+  20260901010000 │ │ pending
+  20260903010000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {
@@ -281,6 +371,7 @@ await assert.rejects(buildIntegratedCutoverReadiness('short', {
 
 const expectedPolicy = await expectedTripBindingPolicy();
 const expectedActiveAdmissionPolicy = await expectedTripActiveAdmissionPolicy();
+const expectedCheckpointContract = await expectedCheckpointCasContract();
 assert.equal(expectedPolicy.definition, expectedPolicy.definition.trim());
 assert.equal(expectedActiveAdmissionPolicy.definition,
   expectedActiveAdmissionPolicy.definition.trim());
@@ -289,7 +380,7 @@ assert.equal(expectedActiveAdmissionPolicy.triggerFunctionDefinition,
 const databaseReadback = {
   schemaVersion: 'ravscore-integrated-cutover-db-v1',
   tripSchemaVersion: 3,
-  appliedMigrationVersions: REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version),
+  appliedMigrationVersions: REQUIRED_CUTOVER_MIGRATIONS.slice(0, 3).map(item => item.version),
   tripBindingPolicy: {
     id: expectedPolicy.id,
     definition: expectedPolicy.definition,
@@ -322,19 +413,46 @@ const databaseReadback = {
   },
 };
 
+const checkpointDatabaseReadback = {
+  schemaVersion: 'ravscore-checkpoint-db-v1',
+  appliedMigrationVersion: REQUIRED_CUTOVER_MIGRATIONS[3].version,
+  checkpointContract: {
+    id: expectedCheckpointContract.id,
+    definition: expectedCheckpointContract.definition,
+  },
+  checks: {
+    checkpointContractDefinitionPresent: true,
+    checkpointCanonicalTimeHelperStableSecurityInvoker: true,
+    checkpointHistoryExclusionInstalled: true,
+    checkpointDirectPayloadReadRestricted: true,
+    checkpointCasSecurityDefiner: true,
+    checkpointCasServiceRoleExecutable: true,
+    checkpointCasAnonymousExecutionRejected: true,
+    checkpointValidatorExecutionRestricted: true,
+    checkpointFunctionsSearchPathLocked: true,
+  },
+};
+
 let rpcRequestBody = null;
+let checkpointRpcCalls = 0;
 await verifyIntegratedDatabaseReadback({
   url: URL,
   serviceRoleKey: SERVICE_KEY,
   fetchImpl: async (requestUrl, options) => {
-    assert.equal(requestUrl, `${URL}/rest/v1/rpc/ravradar_integrated_cutover_contract`);
     assert.equal(options.method, 'POST');
     assert.equal(options.headers.apikey, SERVICE_KEY);
     assert.equal(options.headers.Authorization, undefined, 'sb_secret_ keys must not be translated to bearer JWTs');
-    rpcRequestBody = JSON.parse(options.body);
-    return new Response(JSON.stringify(databaseReadback), { status: 200 });
+    if (requestUrl === `${URL}/rest/v1/rpc/ravradar_integrated_cutover_contract`) {
+      rpcRequestBody = JSON.parse(options.body);
+      return new Response(JSON.stringify(databaseReadback), { status: 200 });
+    }
+    assert.equal(requestUrl, `${URL}/rest/v1/rpc/ravradar_ravscore_checkpoint_contract`);
+    assert.equal(options.body, '{}');
+    checkpointRpcCalls += 1;
+    return new Response(JSON.stringify(checkpointDatabaseReadback), { status: 200 });
   },
 });
+assert.equal(checkpointRpcCalls, 1);
 assert.deepEqual(Object.keys(rpcRequestBody).sort(), [
   'p_best_time_policy_id',
   'p_candidate_best_time_policy_id',
@@ -429,7 +547,26 @@ await assert.rejects(verifyIntegratedAssistantEdge({
   fetchImpl: assistantFetch({ mismatch: true }),
 }), /header mismatch/);
 
-function fullCutoverFetch({ existingReadiness = null, database = databaseReadback } = {}) {
+function databaseReadbackFetch(
+  database = databaseReadback,
+  checkpointDatabase = checkpointDatabaseReadback,
+) {
+  return async requestUrl => {
+    if (requestUrl.endsWith('/rest/v1/rpc/ravradar_integrated_cutover_contract')) {
+      return new Response(JSON.stringify(database), { status: 200 });
+    }
+    if (requestUrl.endsWith('/rest/v1/rpc/ravradar_ravscore_checkpoint_contract')) {
+      return new Response(JSON.stringify(checkpointDatabase), { status: 200 });
+    }
+    throw new Error(`unexpected database readback URL ${requestUrl}`);
+  };
+}
+
+function fullCutoverFetch({
+  existingReadiness = null,
+  database = databaseReadback,
+  checkpointDatabase = checkpointDatabaseReadback,
+} = {}) {
   const calls = [];
   let stored = existingReadiness;
   const fetchImpl = async (requestUrl, options = {}) => {
@@ -437,6 +574,9 @@ function fullCutoverFetch({ existingReadiness = null, database = databaseReadbac
     calls.push({ requestUrl, method });
     if (requestUrl.endsWith('/rest/v1/rpc/ravradar_integrated_cutover_contract')) {
       return new Response(JSON.stringify(database), { status: 200 });
+    }
+    if (requestUrl.endsWith('/rest/v1/rpc/ravradar_ravscore_checkpoint_contract')) {
+      return new Response(JSON.stringify(checkpointDatabase), { status: 200 });
     }
     if (requestUrl.includes('/functions/v1/trip-log') || requestUrl.includes('/functions/v1/submit-observation')) {
       if (method === 'OPTIONS') {
@@ -519,7 +659,7 @@ driftedPolicyDatabase.tripBindingPolicy.definition += '\nselect true;';
 await assert.rejects(verifyIntegratedDatabaseReadback({
   url: URL,
   serviceRoleKey: SERVICE_KEY,
-  fetchImpl: async () => new Response(JSON.stringify(driftedPolicyDatabase), { status: 200 }),
+  fetchImpl: databaseReadbackFetch(driftedPolicyDatabase),
 }), /policy definition hash drifted/);
 
 const driftedActiveAdmissionDatabase = structuredClone(databaseReadback);
@@ -527,7 +667,7 @@ driftedActiveAdmissionDatabase.tripActiveAdmissionPolicy.definition += '\nreturn
 await assert.rejects(verifyIntegratedDatabaseReadback({
   url: URL,
   serviceRoleKey: SERVICE_KEY,
-  fetchImpl: async () => new Response(JSON.stringify(driftedActiveAdmissionDatabase), { status: 200 }),
+  fetchImpl: databaseReadbackFetch(driftedActiveAdmissionDatabase),
 }), /active trip admission policy definition hash drifted/);
 
 const reducedActiveTriggerDatabase = structuredClone(databaseReadback);
@@ -536,8 +676,26 @@ reducedActiveTriggerDatabase.tripActiveAdmissionPolicy.triggerDefinition =
 await assert.rejects(verifyIntegratedDatabaseReadback({
   url: URL,
   serviceRoleKey: SERVICE_KEY,
-  fetchImpl: async () => new Response(JSON.stringify(reducedActiveTriggerDatabase), { status: 200 }),
+  fetchImpl: databaseReadbackFetch(reducedActiveTriggerDatabase),
 }), /active trip admission trigger definition is incompatible/);
+
+const driftedCheckpointDatabase = structuredClone(checkpointDatabaseReadback);
+driftedCheckpointDatabase.checkpointContract.definition += '\nreturn true;';
+await assert.rejects(verifyIntegratedDatabaseReadback({
+  url: URL,
+  serviceRoleKey: SERVICE_KEY,
+  fetchImpl: databaseReadbackFetch(databaseReadback, driftedCheckpointDatabase),
+}), /checkpoint CAS contract definition hash drifted/);
+
+for (const rejectedCheck of Object.keys(checkpointDatabaseReadback.checks)) {
+  const rejected = structuredClone(checkpointDatabaseReadback);
+  rejected.checks[rejectedCheck] = false;
+  await assert.rejects(verifyIntegratedDatabaseReadback({
+    url: URL,
+    serviceRoleKey: SERVICE_KEY,
+    fetchImpl: databaseReadbackFetch(databaseReadback, rejected),
+  }), new RegExp(rejectedCheck));
+}
 
 for (const rejectedCheck of [
   'bindingPolicyDefinitionPresent',
@@ -555,7 +713,7 @@ for (const rejectedCheck of [
   await assert.rejects(verifyIntegratedDatabaseReadback({
     url: URL,
     serviceRoleKey: SERVICE_KEY,
-    fetchImpl: async () => new Response(JSON.stringify(rejected), { status: 200 }),
+    fetchImpl: databaseReadbackFetch(rejected),
   }), new RegExp(rejectedCheck));
 }
 assert.equal(failedPublishMock.calls.some(call => call.requestUrl.includes('/admin_documents')), false,

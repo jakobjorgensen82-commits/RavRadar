@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 sidste lokale releasekant
+
+- [x] Normalisér continuation-kilden som `utf8-bomless-lf-v2` og bind current hash `35c45f8f…` på Windows og Linux.
+- [x] Luk den reelle 4.0.320-race med én exact `082a5187…`→current same-target-genattestering; bevar current-only inputvalidator og stop alle øvrige same-target-/predecessorafvigelser.
+- [x] Bevis lokalt fuld restore/CAS-sekvens, idempotent retry, negativ state-konflikt, SQL/schema/installerparitet og metadata-readbackkontrakt.
+- [ ] Commit/push og exact-head; derefter remote Supabase dry-run/apply/readback, 673 × 118, Feggesund 3 × 118 og live kapacitetsmåling med mindst 30 procent reserve.
+- [ ] Merge kun efter grønne gates; gennemfør derefter frisk produktion, særskilt manuel Phase B og offentlig desktop-/mobilkontrol af state 6.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.320 tofase-release
 
 - [x] Implementér og måltest aktiveringslåsen: push, schedule, watchdog og almindelig manuel vejrdrift kan kun vedligeholde current moderne Candidate G; første integrerede cutover kræver særskilt manuel Fase B med bool + eksakt token.
@@ -1029,3 +1037,14 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Før kode-/analysebaseline 4.0.253 gennem PR #62 og dokumentationscheckpointene gennem PR #64; fuld produktionsverifikation `32570223437` og snapshot `rr-20260822112859-210` er 210/673 grønne.
 - [ ] Verificér den endelige offentlige UI-/forklaringskobling efter ejerbeslutningen; ingen kobling er implementeret i 4.0.253.
 - [x] DEC-0053-ejerreviewet er gennemført og erstattet af ejerbeslutningen i DEC-0054: privat `20/50/30`, vindstyret waders-jagtbarhed og fortsat ingen offentlig aktivering.
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 lean slutvej efter Phase A
+
+- [x] Bevar PR #246/`7198b685` som færdigt Phase A-kodegrundlag med Candidate G offentlig og automatisk state-6-cutover umulig.
+- [x] Erstat normal fuld checkpoint-readback med bounded metadata-CAS; behold fuld payload kun til reel restore og bevar fail-closed invalid-state-adfærd.
+- [x] Luk checkpoint-history, direct-read, ACL/RLS/search-path, exact envelope/673+673/READY/privacy og migrations-/schema-/installerparitet målrettet.
+- [x] Løft 4.0.321 og bevis, at geodata kun ændrer versionsfeltet; bevar begge modelbundles uændret.
+- [x] Modtag uafhængig read-only SQL-review uden P0/P1; bekræft CAS, no-history, RLS/ACL/search path, exact 673+673 og metadata-only svar.
+- [ ] Opdater RDKS, Markdown-/webhåndbog og changelog; commit/push én samlet head og bestå én exact-head `validate:source`.
+- [ ] Lad den eksisterende DMI-first-cachekæde arbejde uden parallel run; bevis derefter 673 × 118 og Feggesund 3 × 118.
+- [ ] Mål live Supabase før/efter samt øvrig egress, database og lager mod 70/30-grænsen; merge først når alle Phase-A-releasegates er grønne.
+- [ ] Følg frisk fuld produktion og udfør derefter særskilt manuel Fase B; verificér state 6, 210/673, begge modes, fem døgn, advarsler, PWA/Om og desktop/mobil offentligt.

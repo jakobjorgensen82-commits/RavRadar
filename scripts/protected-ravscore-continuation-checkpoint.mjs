@@ -4,7 +4,11 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createSupabaseAdminRequester } from './lib/supabase-admin-rest.mjs';
+import {
+  buildSupabaseAdminHeaders,
+  isRetryableStatementTimeout,
+  isRetryableTranslatedSecretAuthError,
+} from './lib/supabase-admin-rest.mjs';
 import {
   loadRavScoreContinuationCheckpointForTarget,
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
@@ -17,6 +21,13 @@ export const PROTECTED_RAVSCORE_CHECKPOINT_PATH =
 export const PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST = Object.freeze([
   PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
 ]);
+export const PROTECTED_RAVSCORE_CHECKPOINT_RPC =
+  'ravradar_ravscore_checkpoint_cas';
+export const PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES = 4 * 1024;
+export const PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_RESPONSE_ENVELOPE_BYTES = 4 * 1024;
+export const PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES =
+  RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes
+  + PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_RESPONSE_ENVELOPE_BYTES;
 
 const isPlainObject = value => value !== null
   && typeof value === 'object'
@@ -157,8 +168,8 @@ async function readExactProtectedCheckpointRow(request, { allowMissing }) {
   const row = rows[0];
   if (!isPlainObject(row)
     || row.document_key !== key
-    || !Number.isSafeInteger(Number(row.version))
-    || Number(row.version) < 1
+    || !Number.isSafeInteger(row.version)
+    || row.version < 1
     || !PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST.includes(row.document_key)) {
     throw new Error('Protected RavScore checkpoint readback has an unexpected document key');
   }
@@ -168,15 +179,78 @@ async function readExactProtectedCheckpointRow(request, { allowMissing }) {
   return row;
 }
 
+async function readExactProtectedCheckpointVersion(request, { allowMissing }) {
+  const key = PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;
+  const rows = await invokeProtectedRequest(
+    request,
+    `?document_key=eq.${encodeURIComponent(key)}&select=document_key,version&limit=2`,
+    {},
+    'version read',
+  );
+  if (!Array.isArray(rows)) {
+    throw new Error('Protected RavScore checkpoint version readback is not a row set');
+  }
+  if (rows.length === 0) {
+    if (allowMissing) return null;
+    throw new Error('Protected RavScore checkpoint version readback is missing');
+  }
+  if (rows.length !== 1) {
+    throw new Error('Protected RavScore checkpoint version readback is not unique');
+  }
+  const row = rows[0];
+  if (!isPlainObject(row)
+    || Object.keys(row).sort().join(',') !== 'document_key,version'
+    || row.document_key !== key
+    || !Number.isSafeInteger(row.version)
+    || row.version < 1
+    || !PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST.includes(row.document_key)) {
+    throw new Error('Protected RavScore checkpoint version readback is invalid');
+  }
+  return { documentKey: key, version: row.version };
+}
+
 async function readLocalCheckpointPayload(checkpointPath) {
-  let text;
+  checkpointPath = assertProtectedCheckpointTarget(checkpointPath);
+  await assertNoSymlinkComponents(checkpointPath);
+  let handle;
   try {
-    text = await fs.readFile(checkpointPath, 'utf8');
+    handle = await fs.open(checkpointPath, 'r');
   } catch (error) {
     if (error?.code === 'ENOENT') {
       throw new Error('Local protected RavScore checkpoint is missing');
     }
     throw error;
+  }
+  let text;
+  try {
+    const maximumBytes =
+      RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes;
+    const [stat, currentPathStat] = await Promise.all([
+      handle.stat(),
+      fs.lstat(checkpointPath),
+    ]);
+    if (!stat.isFile()
+      || currentPathStat.isSymbolicLink()
+      || (Number.isSafeInteger(stat.ino)
+        && Number.isSafeInteger(currentPathStat.ino)
+        && (stat.ino !== currentPathStat.ino || stat.dev !== currentPathStat.dev))
+      || !Number.isSafeInteger(stat.size)
+      || stat.size > maximumBytes) {
+      throw new Error('Local protected RavScore checkpoint exceeds its serialized limit');
+    }
+    const bytes = Buffer.allocUnsafe(maximumBytes + 1);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const { bytesRead } = await handle.read(bytes, offset, bytes.length - offset, offset);
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    if (offset > maximumBytes) {
+      throw new Error('Local protected RavScore checkpoint exceeds its serialized limit');
+    }
+    text = bytes.subarray(0, offset).toString('utf8');
+  } finally {
+    await handle.close();
   }
   try {
     return JSON.parse(text);
@@ -185,14 +259,45 @@ async function readLocalCheckpointPayload(checkpointPath) {
   }
 }
 
-export function createProtectedRavScoreCheckpointRequester({
-  supabaseUrl = process.env.SUPABASE_URL,
-  serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
-  fetchImpl = globalThis.fetch,
-  delayImpl,
-  retryDelayMs,
-  logger,
-} = {}) {
+const parseRemoteJson = text => {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+};
+
+async function readResponseTextBounded(response, maximumBytes, label) {
+  const contentLength = Number(response?.headers?.get?.('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > maximumBytes) {
+    throw new Error(`${label} exceeds its response bound`);
+  }
+  const reader = response?.body?.getReader?.();
+  if (!reader) {
+    const text = await response.text();
+    if (Buffer.byteLength(text, 'utf8') > maximumBytes) {
+      throw new Error(`${label} exceeds its response bound`);
+    }
+    return text;
+  }
+  const chunks = [];
+  let total = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = Buffer.from(value);
+    total += chunk.length;
+    if (total > maximumBytes) {
+      await reader.cancel().catch(() => {});
+      throw new Error(`${label} exceeds its response bound`);
+    }
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks, total).toString('utf8');
+}
+
+function requiredProtectedSupabaseConnection({ supabaseUrl, serviceRoleKey }) {
   const url = typeof supabaseUrl === 'string' ? supabaseUrl.trim().replace(/\/$/, '') : '';
   const key = typeof serviceRoleKey === 'string' ? serviceRoleKey.trim() : '';
   if (!url || !key) {
@@ -210,22 +315,331 @@ export function createProtectedRavScoreCheckpointRequester({
     || parsed.search || parsed.hash) {
     throw new Error('SUPABASE_URL is invalid for the protected RavScore checkpoint');
   }
-  return createSupabaseAdminRequester({
-    endpoint: `${url}/rest/v1/admin_documents`,
-    key,
-    fetchImpl,
-    ...(delayImpl === undefined ? {} : { delayImpl }),
-    ...(retryDelayMs === undefined ? {} : { retryDelayMs }),
-    ...(logger === undefined ? {} : { logger }),
+  return { url, key };
+}
+
+export function createProtectedRavScoreCheckpointRequester({
+  supabaseUrl = process.env.SUPABASE_URL,
+  serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fetchImpl = globalThis.fetch,
+  delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  retryDelayMs = 1_000,
+  logger = message => console.warn(message),
+} = {}) {
+  const { url, key } = requiredProtectedSupabaseConnection({
+    supabaseUrl,
+    serviceRoleKey,
   });
+  if (typeof fetchImpl !== 'function' || typeof delayImpl !== 'function'
+    || !Number.isSafeInteger(retryDelayMs) || retryDelayMs < 0
+    || typeof logger !== 'function') {
+    throw new Error('Protected RavScore checkpoint restore requester configuration is invalid');
+  }
+  const expectedSuffix =
+    `?document_key=eq.${encodeURIComponent(PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY)}`
+    + '&select=document_key,payload,version&limit=2';
+  const endpoint = `${url}/rest/v1/admin_documents${expectedSuffix}`;
+  const headers = buildSupabaseAdminHeaders(key);
+  return async function request(suffix, options = {}, operation = 'read') {
+    if (suffix !== expectedSuffix
+      || (options.method !== undefined && options.method !== 'GET')
+      || options.body !== undefined
+      || (options.headers !== undefined && Object.keys(options.headers).length > 0)) {
+      throw new Error('Protected RavScore checkpoint restore requester rejected a non-read query');
+    }
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let response;
+      try {
+        response = await fetchImpl(endpoint, { method: 'GET', headers });
+      } catch {
+        if (attempt === 1) {
+          logger(`Protected RavScore checkpoint restore response was unavailable; retrying once after ${retryDelayMs} ms`);
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw new Error(`Protected RavScore checkpoint ${operation} could not be reached`);
+      }
+      const responseText = await readResponseTextBounded(
+        response,
+        PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES,
+        'Protected RavScore checkpoint restore response',
+      );
+      const parsedResponse = parseRemoteJson(responseText);
+      if (response.ok) {
+        if (!Array.isArray(parsedResponse)) {
+          throw new Error('Protected RavScore checkpoint restore query returned invalid JSON');
+        }
+        return parsedResponse;
+      }
+      const translatedSecretAuth = isRetryableTranslatedSecretAuthError({
+        key,
+        status: response.status,
+        body: responseText,
+      });
+      const statementTimeout = isRetryableStatementTimeout({
+        status: response.status,
+        body: responseText,
+      });
+      if (attempt === 1 && (translatedSecretAuth || statementTimeout)) {
+        const reason = translatedSecretAuth ? 'PGRST303' : 'statement-timeout 57014';
+        logger(`Protected RavScore checkpoint restore query received ${reason}; retrying once after ${retryDelayMs} ms`);
+        await delayImpl(retryDelayMs);
+        continue;
+      }
+      throw new Error(
+        `Protected RavScore checkpoint ${operation} failed: HTTP ${response.status}`
+        + `${parsedResponse?.code ? ` ${String(parsedResponse.code).slice(0, 32)}` : ''}`,
+      );
+    }
+    throw new Error('Protected RavScore checkpoint restore query failed after its bounded retry');
+  };
+}
+
+export function createProtectedRavScoreCheckpointVersionRequester({
+  supabaseUrl = process.env.SUPABASE_URL,
+  serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fetchImpl = globalThis.fetch,
+  delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  retryDelayMs = 1_000,
+  logger = message => console.warn(message),
+} = {}) {
+  const { url, key } = requiredProtectedSupabaseConnection({
+    supabaseUrl,
+    serviceRoleKey,
+  });
+  if (typeof fetchImpl !== 'function' || typeof delayImpl !== 'function'
+    || !Number.isSafeInteger(retryDelayMs) || retryDelayMs < 0
+    || typeof logger !== 'function') {
+    throw new Error('Protected RavScore checkpoint version requester configuration is invalid');
+  }
+  const expectedSuffix =
+    `?document_key=eq.${encodeURIComponent(PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY)}`
+    + '&select=document_key,version&limit=2';
+  const endpoint = `${url}/rest/v1/admin_documents${expectedSuffix}`;
+  const headers = buildSupabaseAdminHeaders(key);
+  return async function request(suffix, options = {}, operation = 'version read') {
+    if (suffix !== expectedSuffix
+      || (options.method !== undefined && options.method !== 'GET')
+      || options.body !== undefined
+      || (options.headers !== undefined && Object.keys(options.headers).length > 0)) {
+      throw new Error('Protected RavScore checkpoint version requester rejected a non-metadata query');
+    }
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let response;
+      try {
+        response = await fetchImpl(endpoint, { method: 'GET', headers });
+      } catch {
+        if (attempt === 1) {
+          logger(`Protected RavScore checkpoint version response was unavailable; retrying once after ${retryDelayMs} ms`);
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw new Error(`Protected RavScore checkpoint ${operation} could not be reached`);
+      }
+      const responseText = await readResponseTextBounded(
+        response,
+        PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+        'Protected RavScore checkpoint version response',
+      );
+      const parsedResponse = parseRemoteJson(responseText);
+      if (response.ok) {
+        if (!Array.isArray(parsedResponse)) {
+          throw new Error('Protected RavScore checkpoint version query returned invalid JSON');
+        }
+        return parsedResponse;
+      }
+      const translatedSecretAuth = isRetryableTranslatedSecretAuthError({
+        key,
+        status: response.status,
+        body: responseText,
+      });
+      const statementTimeout = isRetryableStatementTimeout({
+        status: response.status,
+        body: responseText,
+      });
+      if (attempt === 1 && (translatedSecretAuth || statementTimeout)) {
+        const reason = translatedSecretAuth ? 'PGRST303' : 'statement-timeout 57014';
+        logger(`Protected RavScore checkpoint version query received ${reason}; retrying once after ${retryDelayMs} ms`);
+        await delayImpl(retryDelayMs);
+        continue;
+      }
+      throw new Error(
+        `Protected RavScore checkpoint ${operation} failed: HTTP ${response.status}`
+        + `${parsedResponse?.code ? ` ${String(parsedResponse.code).slice(0, 32)}` : ''}`,
+      );
+    }
+    throw new Error('Protected RavScore checkpoint version query failed after its bounded retry');
+  };
+}
+
+export function createProtectedRavScoreCheckpointRpcRequester({
+  supabaseUrl = process.env.SUPABASE_URL,
+  serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY,
+  fetchImpl = globalThis.fetch,
+  delayImpl = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  retryDelayMs = 1_000,
+  logger = message => console.warn(message),
+} = {}) {
+  const { url, key } = requiredProtectedSupabaseConnection({
+    supabaseUrl,
+    serviceRoleKey,
+  });
+  if (typeof fetchImpl !== 'function' || typeof delayImpl !== 'function'
+    || !Number.isSafeInteger(retryDelayMs) || retryDelayMs < 0
+    || typeof logger !== 'function') {
+    throw new Error('Protected RavScore checkpoint RPC requester configuration is invalid');
+  }
+  const endpoint = `${url}/rest/v1/rpc/${PROTECTED_RAVSCORE_CHECKPOINT_RPC}`;
+  const headers = buildSupabaseAdminHeaders(key);
+  return async function request(body, operation = 'metadata compare-and-swap') {
+    const expectedBodyKeys = ['p_expected_version', 'p_payload', 'p_target_reference'];
+    if (!isPlainObject(body)
+      || JSON.stringify(Object.keys(body).sort()) !== JSON.stringify(expectedBodyKeys)
+      || !Number.isSafeInteger(body.p_expected_version)
+      || body.p_expected_version < 0
+      || typeof body.p_target_reference !== 'string'
+      || !isPlainObject(body.p_payload)
+      || body.p_payload.productionReferenceAt !== body.p_target_reference
+      || Buffer.byteLength(`${JSON.stringify(body.p_payload)}\n`, 'utf8')
+        > RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes) {
+      throw new Error('Protected RavScore checkpoint RPC body is invalid');
+    }
+    const serializedBody = JSON.stringify(body);
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      let response;
+      try {
+        response = await fetchImpl(endpoint, {
+          method: 'POST',
+          headers,
+          body: serializedBody,
+        });
+      } catch {
+        if (attempt === 1) {
+          logger(`Protected RavScore checkpoint RPC network response was unavailable; retrying once after ${retryDelayMs} ms`);
+          await delayImpl(retryDelayMs);
+          continue;
+        }
+        throw new Error('Protected RavScore checkpoint RPC could not be reached');
+      }
+      const responseText = await readResponseTextBounded(
+        response,
+        PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+        'Protected RavScore checkpoint RPC response',
+      );
+      const parsedResponse = parseRemoteJson(responseText);
+      if (response.ok) {
+        if (!isPlainObject(parsedResponse)) {
+          throw new Error('Protected RavScore checkpoint RPC returned invalid metadata JSON');
+        }
+        return parsedResponse;
+      }
+      const translatedSecretAuth = isRetryableTranslatedSecretAuthError({
+        key,
+        status: response.status,
+        body: responseText,
+      });
+      const statementTimeout = isRetryableStatementTimeout({
+        status: response.status,
+        body: responseText,
+      });
+      if (attempt === 1 && (translatedSecretAuth || statementTimeout)) {
+        const reason = translatedSecretAuth ? 'PGRST303' : 'statement-timeout 57014';
+        logger(`Protected RavScore checkpoint RPC received ${reason}; retrying once after ${retryDelayMs} ms`);
+        await delayImpl(retryDelayMs);
+        continue;
+      }
+      throw new Error(
+        `Protected RavScore checkpoint RPC ${operation} failed: HTTP ${response.status}`
+        + `${parsedResponse?.code ? ` ${String(parsedResponse.code).slice(0, 32)}` : ''}`,
+      );
+    }
+    throw new Error('Protected RavScore checkpoint RPC failed after its bounded retry');
+  };
+}
+
+function validateCheckpointRpcMetadata(value, { local, expectedVersion }) {
+  const expectedKeys = [
+    'candidatePartCount',
+    'centralVersion',
+    'disposition',
+    'documentKey',
+    'generationSha256',
+    'modelBundleSha256',
+    'modelContractSha256',
+    'modelId',
+    'partCount',
+    'productionReferenceAt',
+    'schemaVersion',
+    'stateSchemaVersion',
+  ];
+  if (!isPlainObject(value)
+    || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(expectedKeys)
+    || value.schemaVersion !== '1.0.0'
+    || value.documentKey !== PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY
+    || !['inserted', 'updated', 'unchanged'].includes(value.disposition)
+    || !Number.isSafeInteger(value.centralVersion)
+    || value.centralVersion < 1
+    || !Number.isSafeInteger(value.partCount)
+    || value.partCount !== RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount
+    || !Number.isSafeInteger(value.candidatePartCount)
+    || value.candidatePartCount
+      !== RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount
+    || value.productionReferenceAt !== local.checkpointAt
+    || value.modelId !== local.modelId
+    || value.stateSchemaVersion !== local.stateSchemaVersion
+    || value.modelContractSha256 !== local.modelContractSha256
+    || value.modelBundleSha256 !== local.modelBundleSha256
+    || value.generationSha256 !== local.generationSha256) {
+    throw new Error('Protected RavScore checkpoint RPC metadata is incompatible');
+  }
+  const centralVersion = value.centralVersion;
+  if (value.disposition === 'inserted'
+    && (expectedVersion !== 0 || centralVersion !== 1)) {
+    throw new Error('Protected RavScore checkpoint RPC insert metadata is inconsistent');
+  }
+  if (value.disposition === 'updated'
+    && (expectedVersion < 1 || centralVersion !== expectedVersion + 1)) {
+    throw new Error('Protected RavScore checkpoint RPC update metadata is inconsistent');
+  }
+  if (value.disposition === 'unchanged'
+    && centralVersion !== expectedVersion
+    && centralVersion !== expectedVersion + 1) {
+    throw new Error('Protected RavScore checkpoint RPC retry metadata is inconsistent');
+  }
+  return { ...value, centralVersion };
+}
+
+async function invokeProtectedCheckpointRpc(rpcRequest, body) {
+  if (typeof rpcRequest !== 'function') {
+    throw new Error('Protected RavScore checkpoint RPC requester is missing');
+  }
+  try {
+    return await rpcRequest(body, 'publish');
+  } catch (error) {
+    const wrapped = new Error('Protected RavScore checkpoint RPC publish failed closed');
+    wrapped.code = 'PROTECTED_RAVSCORE_CHECKPOINT_REMOTE_ERROR';
+    wrapped.cause = error;
+    throw wrapped;
+  }
 }
 
 export async function publishProtectedRavScoreContinuationCheckpoint({
   checkpointPath = PROTECTED_RAVSCORE_CHECKPOINT_PATH,
   targetReference,
   request,
+  rpcRequest,
   temporaryRoot,
 } = {}) {
+  checkpointPath = assertProtectedCheckpointTarget(checkpointPath);
+  await assertNoSymlinkComponents(checkpointPath);
+  const prevalidated = await loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath,
+    targetReference,
+    expectedPartCount: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount,
+  });
+  if (!prevalidated.loaded) {
+    throw new Error('Local protected RavScore checkpoint is missing');
+  }
   const payload = await readLocalCheckpointPayload(checkpointPath);
   const local = await validateCheckpointPayload({
     payload,
@@ -236,90 +650,31 @@ export async function publishProtectedRavScoreContinuationCheckpoint({
     throw new Error('Expired schema-6 continuation checkpoints cannot be published');
   }
   const key = PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY;
-  const existingRow = await readExactProtectedCheckpointRow(request, { allowMissing: true });
-  let expectedVersion;
-  let mutation;
-  if (!existingRow) {
-    const inserted = await invokeProtectedRequest(
-      request,
-      '?on_conflict=document_key&select=document_key,payload,version',
-      {
-        method: 'POST',
-        headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-        body: JSON.stringify({ document_key: key, payload, updated_by: null }),
-      },
-      'publish insert',
-    );
-    if (!Array.isArray(inserted) || inserted.length !== 1) {
-      throw new Error('Protected RavScore checkpoint insert lost a concurrent write');
-    }
-    expectedVersion = Number(inserted[0].version);
-    mutation = 'inserted';
-  } else {
-    const existing = await validateCheckpointPayload({
-      payload: existingRow.payload,
-      targetReference,
-      temporaryRoot,
-    });
-    const existingMs = Date.parse(existing.checkpointAt);
-    const localMs = Date.parse(local.checkpointAt);
-    if (existingMs > localMs) {
-      throw new Error('Protected RavScore checkpoint publish would regress central state');
-    }
-    if (existingMs === localMs) {
-      if (!checkpointsAreEquivalent(existingRow.payload, payload)) {
-        throw new Error(
-          'Local and protected RavScore checkpoints conflict at the same reference time',
-        );
-      }
-      return {
-        published: false,
-        reason: 'protected-checkpoint-already-current',
-        documentKey: key,
-        centralVersion: Number(existingRow.version),
-        ...safeMetadata(local),
-        payloadLogged: false,
-        historicalVersionsRetained: true,
-      };
-    }
-    const currentVersion = Number(existingRow.version);
-    const updated = await invokeProtectedRequest(
-      request,
-      `?document_key=eq.${encodeURIComponent(key)}&version=eq.${currentVersion}&select=document_key,payload,version`,
-      {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ payload, updated_by: null }),
-      },
-      'publish compare-and-swap',
-    );
-    if (!Array.isArray(updated)
-      || updated.length !== 1
-      || Number(updated[0].version) !== currentVersion + 1) {
-      throw new Error('Protected RavScore checkpoint compare-and-swap lost a concurrent write');
-    }
-    expectedVersion = currentVersion + 1;
-    mutation = 'updated';
-  }
-
-  const readbackRow = await readExactProtectedCheckpointRow(request, { allowMissing: false });
-  if (Number(readbackRow.version) !== expectedVersion
-    || !checkpointsAreEquivalent(readbackRow.payload, payload)) {
-    throw new Error('Protected RavScore checkpoint readback does not match the published state');
-  }
-  await validateCheckpointPayload({
-    payload: readbackRow.payload,
-    targetReference,
-    temporaryRoot,
-  });
+  const existingVersion = await readExactProtectedCheckpointVersion(
+    request,
+    { allowMissing: true },
+  );
+  const expectedVersion = existingVersion?.version ?? 0;
+  const metadata = validateCheckpointRpcMetadata(
+    await invokeProtectedCheckpointRpc(rpcRequest, {
+      p_expected_version: expectedVersion,
+      p_target_reference: local.checkpointAt,
+      p_payload: payload,
+    }),
+    { local, expectedVersion },
+  );
+  const changed = metadata.disposition !== 'unchanged';
   return {
-    published: true,
-    reason: `protected-checkpoint-${mutation}`,
+    published: changed,
+    reason: changed
+      ? `protected-checkpoint-${metadata.disposition}`
+      : 'protected-checkpoint-already-current',
     documentKey: key,
-    centralVersion: expectedVersion,
+    centralVersion: metadata.centralVersion,
     ...safeMetadata(local),
     payloadLogged: false,
-    historicalVersionsRetained: true,
+    preexistingHistoricalVersionsPreserved: true,
+    newHistoricalVersionsRetained: false,
   };
 }
 
@@ -357,21 +712,24 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
     if (!loaded.loaded) {
       throw new Error('Protected RavScore checkpoint restore produced no checkpoint');
     }
+    const normalizedRemotePayload = JSON.parse(
+      await fs.readFile(temporary, 'utf8'),
+    );
 
     let localPayload = null;
     let local = null;
-    try {
+    const localCandidate = await loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath,
+      targetReference,
+      expectedPartCount: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount,
+    });
+    if (localCandidate.loaded) {
+      local = localCandidate;
       localPayload = await readLocalCheckpointPayload(checkpointPath);
-      local = await loadRavScoreContinuationCheckpointForTarget({
-        checkpointPath,
-        targetReference,
-        expectedPartCount: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount,
-      });
-      if (!local.loaded) {
-        throw new Error('Local protected RavScore checkpoint validation produced no checkpoint');
-      }
-    } catch (error) {
-      if (error?.message !== 'Local protected RavScore checkpoint is missing') throw error;
+    } else if (localCandidate.reason !== 'checkpoint-not-found') {
+      throw new Error(
+        'Local protected RavScore checkpoint validation produced no checkpoint',
+      );
     }
 
     if (local) {
@@ -389,7 +747,7 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
         };
       }
       if (localMs === remoteMs) {
-        if (!checkpointsAreEquivalent(localPayload, row.payload)) {
+        if (!checkpointsAreEquivalent(localPayload, normalizedRemotePayload)) {
           throw new Error(
             'Local and protected RavScore checkpoints conflict at the same reference time',
           );
@@ -408,7 +766,9 @@ export async function restoreProtectedRavScoreContinuationCheckpoint({
     await fs.rename(temporary, checkpointPath);
     return {
       restored: true,
-      reason: 'protected-checkpoint-restored',
+      reason: loaded.continuationReattestedFromImplementationSha256
+        ? 'protected-checkpoint-restored-after-compatible-predecessor-reattest'
+        : 'protected-checkpoint-restored',
       documentKey: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
       ...safeMetadata(loaded),
       payloadLogged: false,
@@ -441,11 +801,17 @@ function parseArgs(argv) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const request = createProtectedRavScoreCheckpointRequester();
+  const request = options.mode === 'publish'
+    ? createProtectedRavScoreCheckpointVersionRequester()
+    : createProtectedRavScoreCheckpointRequester();
+  const rpcRequest = options.mode === 'publish'
+    ? createProtectedRavScoreCheckpointRpcRequester()
+    : null;
   const result = options.mode === 'publish'
     ? await publishProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,
       request,
+      rpcRequest,
     })
     : await restoreProtectedRavScoreContinuationCheckpoint({
       targetReference: options.targetReference,

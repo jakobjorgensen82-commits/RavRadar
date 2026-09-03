@@ -12,6 +12,9 @@ import {
   assertRavScoreModelBinding as assertCandidateGRollbackModelBinding,
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
+import {
+  ravScoreContinuationImplementationSha256,
+} from './lib/ravscore-continuation-implementation-contract.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const JSON_BINDING_FILES = Object.freeze([
@@ -21,9 +24,18 @@ const JSON_BINDING_FILES = Object.freeze([
 const VERSION_PATH = 'version.json';
 const EDGE_PATH = 'supabase/functions/_shared/rav-assistant-contract.ts';
 const SQL_BINDING_PATHS = Object.freeze([
-  'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
   'supabase/schema.sql',
   'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
+]);
+const CHECKPOINT_METADATA_CAS_MIGRATION_PATH =
+  'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql';
+const CHECKPOINT_METADATA_CAS_MARKER = 'RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED';
+const CHECKPOINT_METADATA_CAS_INNER_MARKERS = Object.freeze([
+  'RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED',
+  'RAVSCORE_CHECKPOINT_CANDIDATE_STATE_BINDING_GENERATED',
+  'RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED',
+  'RAVSCORE_CHECKPOINT_INTEGRATED_BINDING_GENERATED',
+  'RAVSCORE_CHECKPOINT_CANDIDATE_G_ROLLBACK_BINDING_GENERATED',
 ]);
 
 function renderEdgeBinding(binding) {
@@ -38,6 +50,155 @@ function replaceExactlyOnce(text, pattern, replacement, label) {
   const matches = [...text.matchAll(new RegExp(pattern.source, pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`))];
   if (matches.length !== 1) throw new Error(`${label}: expected exactly one binding field, found ${matches.length}`);
   return text.replace(pattern, replacement);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function exactGeneratedBlock(source, marker, label) {
+  const markerLine = suffix => new RegExp(
+    `^[\\t ]*-- ${escapeRegExp(marker)}_${suffix}[\\t ]*$`,
+    'gm',
+  );
+  const starts = [...source.matchAll(markerLine('BEGIN'))];
+  const ends = [...source.matchAll(markerLine('END'))];
+  if (starts.length !== 1 || ends.length !== 1) {
+    throw new Error(
+      `${label}: exact generated binding markers are missing or duplicated `
+      + `(BEGIN=${starts.length}, END=${ends.length})`,
+    );
+  }
+  const start = starts[0].index;
+  const end = ends[0].index + ends[0][0].length;
+  if (ends[0].index <= start) {
+    throw new Error(`${label}: generated binding markers are reversed or overlapping`);
+  }
+  return Object.freeze({ start, end, text: source.slice(start, end) });
+}
+
+function assertStateBindingBlock(block, expectedEntries, label) {
+  const matches = [...block.matchAll(
+    /p_state\s*->>\s*'([^']+)'\s*is\s*distinct\s*from\s*'([^']*)'/g,
+  )];
+  const actualEntries = matches.map(match => [match[1], match[2]]);
+  assert.deepEqual(
+    actualEntries,
+    expectedEntries,
+    `${label}: exact state binding fields or values drifted`,
+  );
+}
+
+function assertJsonBindingBlock(block, binding, assertion, label) {
+  const matches = [...block.matchAll(/\bis\s+distinct\s+from\s+'(\{[\s\S]*?\})'::jsonb\s+then\b/g)];
+  if (matches.length !== 1) {
+    throw new Error(`${label}: expected exactly one JSONB binding literal, found ${matches.length}`);
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(matches[0][1]);
+  } catch {
+    throw new Error(`${label}: JSONB binding literal is not valid JSON`);
+  }
+  assertion(parsed, label);
+  assert.deepEqual(parsed, binding, `${label}: exact model binding drifted`);
+}
+
+function checkpointMetadataCasBlock(source, binding, candidateBinding, continuationHash) {
+  const label = `${CHECKPOINT_METADATA_CAS_MIGRATION_PATH} checkpoint metadata CAS`;
+  const outer = exactGeneratedBlock(source, CHECKPOINT_METADATA_CAS_MARKER, label);
+  const innerBlocks = Object.fromEntries(CHECKPOINT_METADATA_CAS_INNER_MARKERS.map(marker => [
+    marker,
+    exactGeneratedBlock(source, marker, `${label} ${marker}`),
+  ]));
+  for (const [marker, block] of Object.entries(innerBlocks)) {
+    if (block.start <= outer.start || block.end >= outer.end) {
+      throw new Error(`${label}: ${marker} is not strictly contained by the outer generated block`);
+    }
+  }
+
+  const expectedMarkerNames = [CHECKPOINT_METADATA_CAS_MARKER, ...CHECKPOINT_METADATA_CAS_INNER_MARKERS]
+    .flatMap(marker => [`${marker}_BEGIN`, `${marker}_END`])
+    .sort();
+  const actualMarkerNames = [...source.matchAll(
+    /^[\t ]*-- (RAVSCORE_CHECKPOINT_[A-Z0-9_]+_GENERATED_(?:BEGIN|END))[\t ]*$/gm,
+  )].map(match => match[1]).sort();
+  assert.deepEqual(
+    actualMarkerNames,
+    expectedMarkerNames,
+    `${label}: exact generated marker inventory drifted`,
+  );
+
+  assertStateBindingBlock(
+    innerBlocks.RAVSCORE_CHECKPOINT_INTEGRATED_STATE_BINDING_GENERATED.text,
+    [
+      ['schemaVersion', binding.stateSchemaVersion],
+      ['modelId', binding.modelId],
+      ['variantId', binding.variantId],
+      ['profileId', binding.profileId],
+      ['componentSchemaId', binding.componentSchemaId],
+      ['explanationSchemaId', binding.explanationSchemaId],
+      ['rankingPolicyId', binding.rankingPolicyId],
+      ['bestTimePolicyId', binding.bestTimePolicyId],
+      ['presentationPolicyId', binding.presentationPolicyId],
+      ['modelContractSha256', binding.modelContractSha256],
+      ['modelBundleSha256', binding.modelBundleSha256],
+    ],
+    `${label} integrated-state binding`,
+  );
+  assertStateBindingBlock(
+    innerBlocks.RAVSCORE_CHECKPOINT_CANDIDATE_STATE_BINDING_GENERATED.text,
+    [
+      ['schemaVersion', candidateBinding.stateSchemaVersion],
+      ['modelId', candidateBinding.modelId],
+      ['variantId', candidateBinding.variantId],
+      ['profileId', candidateBinding.profileId],
+    ],
+    `${label} Candidate G state binding`,
+  );
+
+  const continuationBlock =
+    innerBlocks.RAVSCORE_CHECKPOINT_CONTINUATION_STATE_CONTRACT_GENERATED.text;
+  const continuationMatches = [...continuationBlock.matchAll(
+    /p_payload\s*->>\s*'continuationStateContractSha256'\s*is\s*distinct\s*from\s*'([^']*)'/g,
+  )];
+  if (continuationMatches.length !== 1) {
+    throw new Error(
+      `${label} continuation-state contract: expected exactly one hash binding, `
+      + `found ${continuationMatches.length}`,
+    );
+  }
+  assert.equal(
+    continuationMatches[0][1],
+    continuationHash,
+    `${label}: continuation-state contract hash drifted`,
+  );
+
+  assertJsonBindingBlock(
+    innerBlocks.RAVSCORE_CHECKPOINT_INTEGRATED_BINDING_GENERATED.text,
+    binding,
+    assertRavScoreModelBinding,
+    `${label} integrated payload binding`,
+  );
+  assertJsonBindingBlock(
+    innerBlocks.RAVSCORE_CHECKPOINT_CANDIDATE_G_ROLLBACK_BINDING_GENERATED.text,
+    candidateBinding,
+    assertCandidateGRollbackModelBinding,
+    `${label} Candidate G rollback payload binding`,
+  );
+  return outer.text;
+}
+
+function replaceGeneratedBlock(source, marker, replacement, label) {
+  const block = exactGeneratedBlock(source, marker, label);
+  return `${source.slice(0, block.start)}${replacement}${source.slice(block.end)}`;
+}
+
+function assertMutableSqlBindingPath(relative) {
+  const normalized = relative.replace(/\\/g, '/');
+  if (normalized.startsWith('supabase/migrations/')) {
+    throw new Error(`Historical migration cannot be a RavScore binding write target: ${relative}`);
+  }
 }
 
 function expectedMigrationBindingBlock(source, binding, marker, labelPrefix) {
@@ -89,6 +250,35 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
   assertRavScoreModelBinding(binding);
   const candidateBinding = candidateGRollbackModelBinding();
   assertCandidateGRollbackModelBinding(candidateBinding);
+  const continuationHash = await ravScoreContinuationImplementationSha256({ repositoryRoot: root });
+
+  // Historical migrations are immutable. The newest migration is a read-only,
+  // prevalidated anchor; only its exact outer generated block may flow forward
+  // into the mutable schema and installation copies.
+  const checkpointMigrationPath = path.join(root, CHECKPOINT_METADATA_CAS_MIGRATION_PATH);
+  const checkpointMigration = (await fs.readFile(checkpointMigrationPath, 'utf8'))
+    .replace(/\r\n?/g, '\n');
+  const checkpointBlock = checkpointMetadataCasBlock(
+    checkpointMigration,
+    binding,
+    candidateBinding,
+    continuationHash,
+  );
+  const sqlPlans = [];
+  for (const relative of SQL_BINDING_PATHS) {
+    assertMutableSqlBindingPath(relative);
+    const sqlPath = path.join(root, relative);
+    const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
+    const expectedTripBindings = expectedMigration(sql, binding, candidateBinding);
+    const expectedSql = replaceGeneratedBlock(
+      expectedTripBindings,
+      CHECKPOINT_METADATA_CAS_MARKER,
+      checkpointBlock,
+      `${relative} checkpoint metadata CAS`,
+    );
+    sqlPlans.push(Object.freeze({ relative, sqlPath, sql, expectedSql }));
+  }
+
   const changed = [];
   for (const relative of JSON_BINDING_FILES) {
     const absolute = path.join(root, relative);
@@ -178,10 +368,7 @@ export async function synchronizeRavScoreModelBinding({ write = false, root = RO
     assert.equal(edge, expectedEdge, `${EDGE_PATH} has a stale generated RavScore binding`);
   }
 
-  for (const relative of SQL_BINDING_PATHS) {
-    const sqlPath = path.join(root, relative);
-    const sql = (await fs.readFile(sqlPath, 'utf8')).replace(/\r\n?/g, '\n');
-    const expectedSql = expectedMigration(sql, binding, candidateBinding);
+  for (const { relative, sqlPath, sql, expectedSql } of sqlPlans) {
     if (write) {
       await fs.writeFile(sqlPath, expectedSql, 'utf8');
       changed.push(relative);
@@ -196,7 +383,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   try {
     const write = process.argv.includes('--write');
     const result = await synchronizeRavScoreModelBinding({ write });
-    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 3} consumers: ${result.binding.modelBundleSha256}.`);
+    console.log(`RavScore binding ${write ? 'synchronized' : 'verified'} for ${JSON_BINDING_FILES.length + SQL_BINDING_PATHS.length + 4} consumers: ${result.binding.modelBundleSha256}.`);
   } catch (error) {
     console.error(error instanceof Error ? error.message : 'RavScore binding synchronization failed');
     process.exitCode = 1;

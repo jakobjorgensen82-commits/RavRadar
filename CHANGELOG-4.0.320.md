@@ -1,7 +1,7 @@
 # RavRadar 4.0.320 – deterministisk DMI-gridgenbrug før integreret cutover
 
 **Dato:** 2026-09-02
-**Status:** Lokal kandidat. Candidate G er fortsat offentlig. Exact-head, én frisk isoleret 673 × 118-currentpreflight, det separate Feggesund 3 × 118-wavebevis, sikker merge, fuld produktion/releasegate/artifact/Pages, atomisk state-6-aktivering og offentlig desktop-/mobilverifikation afventer.
+**Status:** Phase A-koden bestod exact-head `33706215425` og blev merged gennem PR #246 som `7198b685f4bc9d86bd6432b049380f4279ab797c`. Candidate G er fortsat offentlig. Frisk komplet 673 × 118-currentpreflight, Feggesund 3 × 118-wavebevis, live Supabase-kapacitet, state-6-aktivering og offentlig desktop-/mobilverifikation afventer. Den efterfølgende lokale 4.0.321-lukning reducerer checkpoint-egress uden at ændre 4.0.320's model- eller vejrkontrakt.
 
 ## Tofaset første aktivering
 

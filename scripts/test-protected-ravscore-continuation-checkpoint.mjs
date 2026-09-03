@@ -14,14 +14,23 @@ import {
 import {
   PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST,
   PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+  PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES,
+  PROTECTED_RAVSCORE_CHECKPOINT_RPC,
+  PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
   createProtectedRavScoreCheckpointRequester,
+  createProtectedRavScoreCheckpointRpcRequester,
+  createProtectedRavScoreCheckpointVersionRequester,
   publishProtectedRavScoreContinuationCheckpoint,
   restoreProtectedRavScoreContinuationCheckpoint,
 } from './protected-ravscore-continuation-checkpoint.mjs';
 import {
+  RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS,
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
   saveRavScoreContinuationCheckpoint,
 } from './ravscore-continuation-checkpoint.mjs';
+import {
+  ravScoreContinuationImplementationSha256,
+} from './lib/ravscore-continuation-implementation-contract.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
 import { CANDIDATE_G_OPERATIONAL_ROLLBACK_ID } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
@@ -34,6 +43,11 @@ const START = Date.parse('2026-08-01T00:00:00.000Z');
 const atHour = hour => new Date(START + hour * 3_600_000).toISOString();
 const clone = value => JSON.parse(JSON.stringify(value));
 const contextFor = partId => `sha256:${crypto.createHash('sha256').update(partId).digest('hex')}`;
+const sha256 = value => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
+const CURRENT_CONTINUATION_IMPLEMENTATION_SHA256 =
+  await ravScoreContinuationImplementationSha256();
 
 const samples = Array.from({ length: 51 }, (_, hour) => ({
   time: atHour(hour),
@@ -126,54 +140,196 @@ const sourceDocumentAt = (
 };
 const sourceDocument = sourceDocumentAt(49, 'rr-protected-schema6-synthetic');
 
-function memoryRequester(initialRow = null) {
-  let row = initialRow ? clone(initialRow) : null;
-  const calls = [];
-  const request = async (suffix, options = {}, operation = '') => {
-    calls.push({ suffix, options: { ...options }, operation });
-    const method = options.method ?? 'GET';
-    if (method === 'POST') {
-      if (row) return [];
-      const body = JSON.parse(options.body);
-      row = {
-        document_key: body.document_key,
-        payload: clone(body.payload),
-        version: 1,
-      };
-      return [clone(row)];
-    }
-    if (method === 'PATCH') {
-      const expected = Number(suffix.match(/version=eq\.(\d+)/)?.[1]);
-      if (!row || Number(row.version) !== expected) return [];
-      const body = JSON.parse(options.body);
-      row = {
-        ...row,
-        payload: clone(body.payload),
-        version: Number(row.version) + 1,
-      };
-      return [clone(row)];
-    }
-    return row ? [clone(row)] : [];
-  };
-  return { request, calls, row: () => clone(row) };
-}
-
-const rowFor = payload => ({
-  document_key: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
-  payload: clone(payload),
-  version: 1,
-});
-
-const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-protected-checkpoint-'));
-const sourcePath = path.join(tempRoot, 'source.json');
-const localCheckpointPath = path.join(tempRoot, 'local', 'checkpoint.json');
-const restoredCheckpointPath = path.join(
+const checkpointPathFor = label => path.join(
   tempRoot,
-  'restore-root',
+  label,
   '.cache',
   'ravscore-continuation-checkpoint',
   'checkpoint.json',
 );
+
+const rowFor = (payload, version = 1) => ({
+  document_key: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+  payload: clone(payload),
+  version,
+});
+
+const payloadsAreEquivalent = (left, right) =>
+  JSON.stringify(left) === JSON.stringify(right);
+
+const payloadWithoutContinuationReattestationFields = payload => {
+  const result = clone(payload);
+  delete result.continuationStateContractSha256;
+  delete result.generationSha256;
+  delete result.candidateGRollbackCompanion.generationSha256;
+  return result;
+};
+
+const isExactPredecessorSameTargetTransition = (current, incoming) =>
+  current.continuationStateContractSha256
+    === RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS[0].implementationSha256
+  && incoming.continuationStateContractSha256
+    === CURRENT_CONTINUATION_IMPLEMENTATION_SHA256
+  && current.productionReferenceAt === incoming.productionReferenceAt
+  && payloadsAreEquivalent(
+    payloadWithoutContinuationReattestationFields(current),
+    payloadWithoutContinuationReattestationFields(incoming),
+  );
+
+const checkpointWithImplementation = (checkpoint, implementationSha256) => {
+  const result = clone(checkpoint);
+  result.continuationStateContractSha256 = implementationSha256;
+  result.generationSha256 = sha256({
+    schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
+    status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
+    datasetId: result.datasetId,
+    productionReferenceAt: result.productionReferenceAt,
+    modelBinding: result.modelBinding,
+    candidateModelBinding: result.candidateGRollbackCompanion.modelBinding,
+    continuationStateContractSha256: implementationSha256,
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    partCount: result.partCount,
+    stateSha256: result.stateSha256,
+    candidateStateSha256: result.candidateGRollbackCompanion.stateSha256,
+  });
+  result.candidateGRollbackCompanion.generationSha256 =
+    result.generationSha256;
+  return result;
+};
+
+function rpcMetadataFor(payload, disposition, centralVersion) {
+  return {
+    schemaVersion: '1.0.0',
+    disposition,
+    documentKey: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+    centralVersion,
+    productionReferenceAt: payload.productionReferenceAt,
+    modelId: payload.modelBinding.modelId,
+    stateSchemaVersion: payload.modelBinding.stateSchemaVersion,
+    modelContractSha256: payload.modelBinding.modelContractSha256,
+    modelBundleSha256: payload.modelBinding.modelBundleSha256,
+    generationSha256: payload.generationSha256,
+    partCount: payload.partCount,
+    candidatePartCount: payload.candidateGRollbackCompanion.partCount,
+  };
+}
+
+function memoryCentral(initialRow = null) {
+  let row = initialRow ? clone(initialRow) : null;
+  const calls = [];
+
+  const versionRequest = async (suffix, options = {}, operation = '') => {
+    calls.push({
+      channel: 'version',
+      suffix,
+      options: { ...options },
+      operation,
+    });
+    if (suffix !== '?document_key=eq.ravscore-continuation-checkpoint'
+        + '&select=document_key,version&limit=2'
+      || Object.keys(options).length !== 0
+      || operation !== 'version read') {
+      throw new Error('Synthetic version requester received a non-exact metadata GET');
+    }
+    return row
+      ? [{
+        document_key: row.document_key,
+        version: row.version,
+      }]
+      : [];
+  };
+
+  const rpcRequest = async (body, operation = '') => {
+    calls.push({
+      channel: 'rpc',
+      body: clone(body),
+      operation,
+    });
+    if (!body
+      || JSON.stringify(Object.keys(body).sort())
+        !== JSON.stringify([
+          'p_expected_version',
+          'p_payload',
+          'p_target_reference',
+        ])
+      || operation !== 'publish'
+      || body.p_target_reference !== body.p_payload?.productionReferenceAt) {
+      throw new Error('Synthetic checkpoint RPC received a non-exact request');
+    }
+    const incoming = body.p_payload;
+    const expectedVersion = body.p_expected_version;
+
+    // Equality is deliberately evaluated before version/time checks. This
+    // models a response-lost retry after the first call committed.
+    if (row && payloadsAreEquivalent(row.payload, incoming)) {
+      return rpcMetadataFor(incoming, 'unchanged', row.version);
+    }
+
+    if (!row) {
+      if (expectedVersion !== 0) {
+        throw new Error('Protected RavScore checkpoint compare-and-swap lost a concurrent write');
+      }
+      row = rowFor(incoming, 1);
+      return rpcMetadataFor(incoming, 'inserted', 1);
+    }
+
+    const incomingTime = Date.parse(incoming.productionReferenceAt);
+    const currentTime = Date.parse(row.payload.productionReferenceAt);
+    if (incomingTime < currentTime) {
+      throw new Error('Protected RavScore checkpoint would regress central state');
+    }
+    if (incomingTime === currentTime
+      && !isExactPredecessorSameTargetTransition(row.payload, incoming)) {
+      throw new Error(
+        'Protected RavScore checkpoint conflicts at the same reference time',
+      );
+    }
+    if (expectedVersion !== row.version) {
+      throw new Error('Protected RavScore checkpoint compare-and-swap lost a concurrent write');
+    }
+
+    row = rowFor(incoming, row.version + 1);
+    return rpcMetadataFor(incoming, 'updated', row.version);
+  };
+
+  const restoreRequest = async (suffix, options = {}, operation = '') => {
+    calls.push({
+      channel: 'restore',
+      suffix,
+      options: { ...options },
+      operation,
+    });
+    if (suffix !== '?document_key=eq.ravscore-continuation-checkpoint'
+        + '&select=document_key,payload,version&limit=2'
+      || Object.keys(options).length !== 0
+      || operation !== 'read') {
+      throw new Error('Synthetic restore requester received a non-exact full GET');
+    }
+    return row ? [clone(row)] : [];
+  };
+
+  return {
+    calls,
+    versionRequest,
+    rpcRequest,
+    restoreRequest,
+    row: () => clone(row),
+  };
+}
+
+const rpcFailureIncludes = pattern => error => {
+  assert.equal(error.code, 'PROTECTED_RAVSCORE_CHECKPOINT_REMOTE_ERROR');
+  assert.match(error.message, /RPC publish failed closed/);
+  assert.match(error.cause?.message ?? '', pattern);
+  return true;
+};
+
+const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'ravscore-protected-checkpoint-'));
+const sourcePath = path.join(tempRoot, 'source.json');
+const localCheckpointPath = checkpointPathFor('local');
+const restoredCheckpointPath = checkpointPathFor('restore-root');
+const predecessorRestoredCheckpointPath =
+  checkpointPathFor('predecessor-restore-root');
 
 try {
   await fs.writeFile(sourcePath, `${JSON.stringify(sourceDocument)}\n`);
@@ -184,10 +340,7 @@ try {
   const checkpoint = JSON.parse(await fs.readFile(localCheckpointPath, 'utf8'));
 
   const companionConflictSourcePath = path.join(tempRoot, 'companion-conflict-source.json');
-  const companionConflictCheckpointPath = path.join(
-    tempRoot,
-    'companion-conflict-checkpoint.json',
-  );
+  const companionConflictCheckpointPath = checkpointPathFor('companion-conflict');
   await fs.writeFile(
     companionConflictSourcePath,
     `${JSON.stringify(sourceDocumentAt(
@@ -215,11 +368,12 @@ try {
     PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
   ]);
 
-  const memory = memoryRequester();
+  const memory = memoryCentral();
   const published = await publishProtectedRavScoreContinuationCheckpoint({
     checkpointPath: localCheckpointPath,
     targetReference: atHour(50),
-    request: memory.request,
+    request: memory.versionRequest,
+    rpcRequest: memory.rpcRequest,
     temporaryRoot: tempRoot,
   });
   assert.equal(published.published, true);
@@ -234,26 +388,42 @@ try {
     checkpoint.continuationStateContractSha256,
   );
   assert.equal(published.payloadLogged, false);
-  assert.equal(published.historicalVersionsRetained, true);
+  assert.equal(published.preexistingHistoricalVersionsPreserved, true);
+  assert.equal(published.newHistoricalVersionsRetained, false);
   assert.equal('payload' in published, false);
   assert.equal('states' in published, false);
-  assert.equal(memory.calls.length, 3);
-  assert.match(memory.calls[0].suffix, /select=document_key,payload,version/);
-  assert.equal(memory.calls[1].suffix, '?on_conflict=document_key&select=document_key,payload,version');
-  assert.equal(memory.calls[1].options.method, 'POST');
+  assert.equal(memory.calls.length, 2);
+  assert.deepEqual(memory.calls.map(call => call.channel), ['version', 'rpc']);
   assert.equal(
-    memory.calls[1].options.headers.Prefer,
-    'resolution=ignore-duplicates,return=representation',
+    memory.calls[0].suffix,
+    '?document_key=eq.ravscore-continuation-checkpoint'
+      + '&select=document_key,version&limit=2',
   );
-  const publishedBody = JSON.parse(memory.calls[1].options.body);
-  assert.equal(publishedBody.document_key, PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY);
-  assert.deepEqual(publishedBody.payload, checkpoint);
-  assert.equal(publishedBody.updated_by, null);
+  assert.equal(memory.calls[0].operation, 'version read');
+  assert.deepEqual(memory.calls[0].options, {});
+  assert.equal(memory.calls[0].suffix.includes('payload'), false);
+  assert.equal(memory.calls[1].operation, 'publish');
+  assert.deepEqual(
+    Object.keys(memory.calls[1].body).sort(),
+    ['p_expected_version', 'p_payload', 'p_target_reference'],
+  );
+  assert.equal(memory.calls[1].body.p_expected_version, 0);
+  assert.equal(memory.calls[1].body.p_target_reference, checkpoint.productionReferenceAt);
+  assert.deepEqual(memory.calls[1].body.p_payload, checkpoint);
+  assert.deepEqual(memory.row(), rowFor(checkpoint, 1));
+  assert.equal(
+    memory.calls.some(call =>
+      call.channel === 'restore'
+      || call.options?.method === 'POST'
+      || call.options?.method === 'PATCH'),
+    false,
+    'publish must use only the metadata version GET and the fixed RPC',
+  );
   await fs.mkdir(path.dirname(restoredCheckpointPath), { recursive: true });
   const restored = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: restoredCheckpointPath,
     targetReference: atHour(50),
-    request: memory.request,
+    request: memory.restoreRequest,
   });
   assert.equal(restored.restored, true);
   assert.equal(restored.reason, 'protected-checkpoint-restored');
@@ -267,11 +437,14 @@ try {
     checkpoint.continuationStateContractSha256,
   );
   assert.equal(restored.payloadLogged, false);
-  assert.equal(memory.calls.length, 4);
+  assert.equal(memory.calls.length, 3);
   assert.match(
-    memory.calls[3].suffix,
+    memory.calls[2].suffix,
     /^\?document_key=eq\.ravscore-continuation-checkpoint&select=document_key,payload,version&limit=2$/,
   );
+  assert.equal(memory.calls[2].channel, 'restore');
+  assert.deepEqual(memory.calls[2].options, {});
+  assert.equal(memory.calls[2].operation, 'read');
   assert.deepEqual(
     JSON.parse(await fs.readFile(restoredCheckpointPath, 'utf8')),
     checkpoint,
@@ -282,8 +455,112 @@ try {
     'successful restore must not leave a remote temporary file',
   );
 
+  const predecessor = RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS[0];
+  const protectedPredecessorCheckpoint = checkpointWithImplementation(
+    checkpoint,
+    predecessor.implementationSha256,
+  );
+  const predecessorMemory = memoryCentral(
+    rowFor(protectedPredecessorCheckpoint, 7),
+  );
+  await fs.mkdir(path.dirname(predecessorRestoredCheckpointPath), {
+    recursive: true,
+  });
+  const predecessorRestored =
+    await restoreProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: predecessorRestoredCheckpointPath,
+      targetReference: atHour(50),
+      request: predecessorMemory.restoreRequest,
+    });
+  assert.equal(predecessorRestored.restored, true);
+  assert.equal(
+    predecessorRestored.reason,
+    'protected-checkpoint-restored-after-compatible-predecessor-reattest',
+  );
+  assert.equal(
+    predecessorRestored.continuationStateContractSha256,
+    checkpoint.continuationStateContractSha256,
+  );
+  const normalizedProtectedPredecessor = JSON.parse(
+    await fs.readFile(predecessorRestoredCheckpointPath, 'utf8'),
+  );
+  assert.equal(
+    normalizedProtectedPredecessor.continuationStateContractSha256,
+    checkpoint.continuationStateContractSha256,
+  );
+  assert.notEqual(
+    normalizedProtectedPredecessor.generationSha256,
+    protectedPredecessorCheckpoint.generationSha256,
+  );
+  assert.equal(
+    normalizedProtectedPredecessor.candidateGRollbackCompanion.generationSha256,
+    normalizedProtectedPredecessor.generationSha256,
+  );
+  assert.deepEqual(
+    normalizedProtectedPredecessor.states,
+    protectedPredecessorCheckpoint.states,
+  );
+  assert.deepEqual(
+    predecessorMemory.row(),
+    rowFor(protectedPredecessorCheckpoint, 7),
+    'protected predecessor restore must not mutate the fixed-key central row',
+  );
+  const predecessorSameTargetPublished =
+    await publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: predecessorRestoredCheckpointPath,
+      targetReference: atHour(50),
+      request: predecessorMemory.versionRequest,
+      rpcRequest: predecessorMemory.rpcRequest,
+      temporaryRoot: tempRoot,
+    });
+  assert.equal(predecessorSameTargetPublished.published, true);
+  assert.equal(
+    predecessorSameTargetPublished.reason,
+    'protected-checkpoint-updated',
+  );
+  assert.equal(predecessorSameTargetPublished.centralVersion, 8);
+  assert.deepEqual(
+    predecessorMemory.row(),
+    rowFor(normalizedProtectedPredecessor, 8),
+    'the exact predecessor must be replaced by its current reattestation at the same target',
+  );
+  const predecessorResponseLostRetry =
+    await publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: predecessorRestoredCheckpointPath,
+      targetReference: atHour(50),
+      request: predecessorMemory.versionRequest,
+      rpcRequest: predecessorMemory.rpcRequest,
+      temporaryRoot: tempRoot,
+    });
+  assert.equal(predecessorResponseLostRetry.published, false);
+  assert.equal(
+    predecessorResponseLostRetry.reason,
+    'protected-checkpoint-already-current',
+  );
+  assert.equal(predecessorResponseLostRetry.centralVersion, 8);
+
+  const predecessorConflictMemory = memoryCentral(
+    rowFor(protectedPredecessorCheckpoint, 11),
+  );
+  await assert.rejects(
+    publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: companionConflictCheckpointPath,
+      targetReference: atHour(50),
+      request: predecessorConflictMemory.versionRequest,
+      rpcRequest: predecessorConflictMemory.rpcRequest,
+      temporaryRoot: tempRoot,
+    }),
+    rpcFailureIncludes(/conflicts at the same reference time/),
+    'a predecessor row must not admit any same-target state change',
+  );
+  assert.deepEqual(
+    predecessorConflictMemory.row(),
+    rowFor(protectedPredecessorCheckpoint, 11),
+    'a rejected predecessor transition must preserve the central row',
+  );
+
   const newerSourcePath = path.join(tempRoot, 'source-newer.json');
-  const newerCheckpointPath = path.join(tempRoot, 'checkpoint-newer.json');
+  const newerCheckpointPath = checkpointPathFor('newer');
   await fs.writeFile(
     newerSourcePath,
     `${JSON.stringify(sourceDocumentAt(50))}\n`,
@@ -295,11 +572,12 @@ try {
   const newerCheckpointText = await fs.readFile(newerCheckpointPath, 'utf8');
   const newerCheckpoint = JSON.parse(newerCheckpointText);
 
-  const casMemory = memoryRequester(rowFor(checkpoint));
+  const casMemory = memoryCentral(rowFor(checkpoint));
   const casPublished = await publishProtectedRavScoreContinuationCheckpoint({
     checkpointPath: newerCheckpointPath,
     targetReference: atHour(51),
-    request: casMemory.request,
+    request: casMemory.versionRequest,
+    rpcRequest: casMemory.rpcRequest,
     temporaryRoot: tempRoot,
   });
   assert.equal(casPublished.published, true);
@@ -307,91 +585,127 @@ try {
   assert.equal(casPublished.centralVersion, 2);
   assert.equal(casMemory.row().version, 2);
   assert.deepEqual(casMemory.row().payload, newerCheckpoint);
-  assert.match(casMemory.calls[1].suffix, /version=eq\.1/);
-  assert.equal(casMemory.calls[1].options.method, 'PATCH');
+  assert.deepEqual(casMemory.calls.map(call => call.channel), ['version', 'rpc']);
+  assert.equal(casMemory.calls[1].body.p_expected_version, 1);
 
   const alreadyCurrent = await publishProtectedRavScoreContinuationCheckpoint({
     checkpointPath: newerCheckpointPath,
     targetReference: atHour(51),
-    request: casMemory.request,
+    request: casMemory.versionRequest,
+    rpcRequest: casMemory.rpcRequest,
     temporaryRoot: tempRoot,
   });
   assert.equal(alreadyCurrent.published, false);
   assert.equal(alreadyCurrent.reason, 'protected-checkpoint-already-current');
   assert.equal(alreadyCurrent.centralVersion, 2);
+  assert.deepEqual(
+    casMemory.calls.slice(2).map(call => call.channel),
+    ['version', 'rpc'],
+    'an unchanged publish still uses exactly metadata GET plus equality-first RPC',
+  );
 
-  const companionConflictPublishMemory = memoryRequester(rowFor(companionConflictCheckpoint));
+  const responseLossMemory = memoryCentral(rowFor(newerCheckpoint, 2));
+  const responseLossVersionRequest = async (suffix, options, operation) => {
+    const rows = await responseLossMemory.versionRequest(suffix, options, operation);
+    return rows.map(row => ({ ...row, version: 1 }));
+  };
+  const responseLossEquivalent = await publishProtectedRavScoreContinuationCheckpoint({
+    checkpointPath: newerCheckpointPath,
+    targetReference: atHour(51),
+    request: responseLossVersionRequest,
+    rpcRequest: responseLossMemory.rpcRequest,
+    temporaryRoot: tempRoot,
+  });
+  assert.equal(responseLossEquivalent.published, false);
+  assert.equal(responseLossEquivalent.centralVersion, 2);
+  assert.deepEqual(responseLossMemory.row(), rowFor(newerCheckpoint, 2));
+
+  const companionConflictPublishMemory =
+    memoryCentral(rowFor(companionConflictCheckpoint));
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: localCheckpointPath,
       targetReference: atHour(50),
-      request: companionConflictPublishMemory.request,
+      request: companionConflictPublishMemory.versionRequest,
+      rpcRequest: companionConflictPublishMemory.rpcRequest,
       temporaryRoot: tempRoot,
     }),
-    /conflict at the same reference time/,
+    rpcFailureIncludes(/conflicts at the same reference time/),
   );
   assert.equal(
     companionConflictPublishMemory.calls.length,
-    1,
-    'companion-divergent publish must fail before any protected mutation',
+    2,
+    'companion-divergent publish must stop inside the atomic RPC',
   );
   assert.deepEqual(
     companionConflictPublishMemory.row().payload,
     companionConflictCheckpoint,
   );
 
+  const regressionMemory = memoryCentral(rowFor(newerCheckpoint, 2));
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: localCheckpointPath,
       targetReference: atHour(51),
-      request: casMemory.request,
+      request: regressionMemory.versionRequest,
+      rpcRequest: regressionMemory.rpcRequest,
       temporaryRoot: tempRoot,
     }),
-    /would regress central state/,
+    rpcFailureIncludes(/would regress central state/),
   );
+  assert.deepEqual(regressionMemory.row(), rowFor(newerCheckpoint, 2));
 
-  const losingRaceBase = memoryRequester(rowFor(checkpoint));
-  const losingRaceRequest = async (suffix, options = {}, operation = '') => {
-    if (options.method === 'PATCH') return [];
-    return losingRaceBase.request(suffix, options, operation);
+  const losingRaceMemory = memoryCentral(rowFor(checkpoint, 2));
+  const staleVersionRequest = async (suffix, options, operation) => {
+    const rows = await losingRaceMemory.versionRequest(suffix, options, operation);
+    return rows.map(row => ({ ...row, version: 1 }));
   };
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: newerCheckpointPath,
       targetReference: atHour(51),
-      request: losingRaceRequest,
+      request: staleVersionRequest,
+      rpcRequest: losingRaceMemory.rpcRequest,
       temporaryRoot: tempRoot,
     }),
-    /compare-and-swap lost a concurrent write/,
+    rpcFailureIncludes(/compare-and-swap lost a concurrent write/),
   );
+  assert.deepEqual(losingRaceMemory.row(), rowFor(checkpoint, 2));
 
-  const changedReadbackBase = memoryRequester(rowFor(checkpoint));
-  let changedReadbackPatchSeen = false;
-  const changedReadbackRequest = async (suffix, options = {}, operation = '') => {
-    const result = await changedReadbackBase.request(suffix, options, operation);
-    if (options.method === 'PATCH') changedReadbackPatchSeen = true;
-    if (!options.method && changedReadbackPatchSeen && Array.isArray(result) && result[0]) {
-      const changed = clone(result);
-      changed[0].payload.datasetId = 'rr-protected-readback-changed';
-      return changed;
-    }
-    return result;
+  const assertRpcMetadataRejected = async mutate => {
+    const metadataMemory = memoryCentral();
+    const invalidRpc = async body => {
+      const value = rpcMetadataFor(body.p_payload, 'inserted', 1);
+      mutate(value);
+      return value;
+    };
+    await assert.rejects(
+      publishProtectedRavScoreContinuationCheckpoint({
+        checkpointPath: localCheckpointPath,
+        targetReference: atHour(50),
+        request: metadataMemory.versionRequest,
+        rpcRequest: invalidRpc,
+        temporaryRoot: tempRoot,
+      }),
+      /RPC metadata is incompatible/,
+    );
+    assert.equal(metadataMemory.row(), null);
   };
-  await assert.rejects(
-    publishProtectedRavScoreContinuationCheckpoint({
-      checkpointPath: newerCheckpointPath,
-      targetReference: atHour(51),
-      request: changedReadbackRequest,
-      temporaryRoot: tempRoot,
-    }),
-    /readback does not match/,
-  );
+  await assertRpcMetadataRejected(metadata => {
+    metadata.productionReferenceAt = atHour(48);
+  });
+  await assertRpcMetadataRejected(metadata => {
+    metadata.unexpected = true;
+  });
+  await assertRpcMetadataRejected(metadata => {
+    metadata.centralVersion = '1';
+  });
 
   await fs.writeFile(restoredCheckpointPath, newerCheckpointText);
   const localNewer = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: restoredCheckpointPath,
     targetReference: atHour(51),
-    request: memoryRequester(rowFor(checkpoint)).request,
+    request: memoryCentral(rowFor(checkpoint)).restoreRequest,
   });
   assert.equal(localNewer.restored, false);
   assert.equal(localNewer.reason, 'local-checkpoint-newer');
@@ -403,7 +717,7 @@ try {
   const remoteNewer = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: restoredCheckpointPath,
     targetReference: atHour(51),
-    request: memoryRequester(rowFor(newerCheckpoint)).request,
+    request: memoryCentral(rowFor(newerCheckpoint)).restoreRequest,
   });
   assert.equal(remoteNewer.restored, true);
   assert.equal(remoteNewer.checkpointAt, atHour(50));
@@ -413,7 +727,7 @@ try {
   const equivalent = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: restoredCheckpointPath,
     targetReference: atHour(50),
-    request: memoryRequester(rowFor(checkpoint)).request,
+    request: memoryCentral(rowFor(checkpoint)).restoreRequest,
   });
   assert.equal(equivalent.restored, false);
   assert.equal(equivalent.reason, 'protected-checkpoint-equivalent');
@@ -424,7 +738,7 @@ try {
     restoreProtectedRavScoreContinuationCheckpoint({
       checkpointPath: restoredCheckpointPath,
       targetReference: atHour(50),
-      request: memoryRequester(rowFor(companionConflictCheckpoint)).request,
+      request: memoryCentral(rowFor(companionConflictCheckpoint)).restoreRequest,
     }),
     /conflict at the same reference time/,
   );
@@ -435,7 +749,7 @@ try {
   );
 
   const conflictSourcePath = path.join(tempRoot, 'conflict-source.json');
-  const conflictCheckpointPath = path.join(tempRoot, 'conflict-checkpoint.json');
+  const conflictCheckpointPath = checkpointPathFor('conflict');
   await fs.writeFile(
     conflictSourcePath,
     `${JSON.stringify(sourceDocumentAt(49, 'rr-protected-schema6-conflict'))}\n`,
@@ -450,23 +764,17 @@ try {
     restoreProtectedRavScoreContinuationCheckpoint({
       checkpointPath: restoredCheckpointPath,
       targetReference: atHour(50),
-      request: memoryRequester(rowFor(sameTimeConflict)).request,
+      request: memoryCentral(rowFor(sameTimeConflict)).restoreRequest,
     }),
     /conflict at the same reference time/,
   );
   assert.equal(await fs.readFile(restoredCheckpointPath, 'utf8'), equivalentBefore);
 
-  const absentPath = path.join(
-    tempRoot,
-    'missing-remote',
-    '.cache',
-    'ravscore-continuation-checkpoint',
-    'checkpoint.json',
-  );
+  const absentPath = checkpointPathFor('missing-remote');
   const absent = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: absentPath,
     targetReference: atHour(50),
-    request: memoryRequester().request,
+    request: memoryCentral().restoreRequest,
   });
   assert.deepEqual(absent, {
     restored: false,
@@ -476,12 +784,12 @@ try {
   });
   await assert.rejects(fs.access(absentPath), /ENOENT/);
 
-  const outsideDedicatedCache = memoryRequester(rowFor(checkpoint));
+  const outsideDedicatedCache = memoryCentral(rowFor(checkpoint));
   await assert.rejects(
     restoreProtectedRavScoreContinuationCheckpoint({
       checkpointPath: path.join(tempRoot, 'arbitrary-output.json'),
       targetReference: atHour(50),
-      request: outsideDedicatedCache.request,
+      request: outsideDedicatedCache.restoreRequest,
     }),
     /dedicated \.cache path/,
   );
@@ -490,14 +798,24 @@ try {
     0,
     'an invalid restore target must be rejected before any protected fetch',
   );
-
-  const atomicTarget = path.join(
-    tempRoot,
-    'atomic',
-    '.cache',
-    'ravscore-continuation-checkpoint',
-    'checkpoint.json',
+  const outsidePublishCentral = memoryCentral();
+  await assert.rejects(
+    publishProtectedRavScoreContinuationCheckpoint({
+      checkpointPath: path.join(tempRoot, 'arbitrary-publish.json'),
+      targetReference: atHour(50),
+      request: outsidePublishCentral.versionRequest,
+      rpcRequest: outsidePublishCentral.rpcRequest,
+      temporaryRoot: tempRoot,
+    }),
+    /dedicated \.cache path/,
   );
+  assert.equal(
+    outsidePublishCentral.calls.length,
+    0,
+    'an invalid publish target must be rejected before metadata or RPC access',
+  );
+
+  const atomicTarget = checkpointPathFor('atomic');
   await fs.mkdir(path.dirname(atomicTarget), { recursive: true });
   const sentinel = 'known-safe-previous-checkpoint\n';
   const assertRemoteRejectsWithoutMutation = async ({
@@ -511,7 +829,7 @@ try {
       restoreProtectedRavScoreContinuationCheckpoint({
         checkpointPath: atomicTarget,
         targetReference,
-        request: request ?? memoryRequester(row).request,
+        request: request ?? memoryCentral(row).restoreRequest,
       }),
       match,
     );
@@ -531,6 +849,7 @@ try {
     row: {
       document_key: 'not-allowlisted',
       payload: checkpoint,
+      version: 1,
     },
     match: /unexpected document key/,
   });
@@ -562,19 +881,13 @@ try {
     match: /future relative to the bound target/,
   });
 
-  const expiredCompanionPath = path.join(
-    tempRoot,
-    'expired-companion',
-    '.cache',
-    'ravscore-continuation-checkpoint',
-    'checkpoint.json',
-  );
+  const expiredCompanionPath = checkpointPathFor('expired-companion');
   const expiredCompanionRestore = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: expiredCompanionPath,
     targetReference: atHour(
       50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
     ),
-    request: memoryRequester(rowFor(checkpoint)).request,
+    request: memoryCentral(rowFor(checkpoint)).restoreRequest,
   });
   assert.equal(expiredCompanionRestore.restored, true);
   assert.equal(expiredCompanionRestore.continuationAvailable, false);
@@ -583,34 +896,34 @@ try {
       .candidateGRollbackCompanion.status,
     'candidate-g-rollback-ready-companion',
   );
-  const expiredPublishMemory = memoryRequester();
+  const expiredPublishMemory = memoryCentral();
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: localCheckpointPath,
       targetReference: atHour(
         50 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
       ),
-      request: expiredPublishMemory.request,
+      request: expiredPublishMemory.versionRequest,
+      rpcRequest: expiredPublishMemory.rpcRequest,
       temporaryRoot: tempRoot,
     }),
     /Expired schema-6 continuation checkpoints cannot be published/,
   );
   assert.equal(expiredPublishMemory.row(), null,
     'companion-only expiry is restorable but must never be republished as fresh state');
-
-  const maximumAgePath = path.join(
-    tempRoot,
-    'maximum-age',
-    '.cache',
-    'ravscore-continuation-checkpoint',
-    'checkpoint.json',
+  assert.equal(
+    expiredPublishMemory.calls.length,
+    0,
+    'an expired local checkpoint must fail before metadata or RPC access',
   );
+
+  const maximumAgePath = checkpointPathFor('maximum-age');
   const maximumAgeRestore = await restoreProtectedRavScoreContinuationCheckpoint({
     checkpointPath: maximumAgePath,
     targetReference: atHour(
       49 + RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumAgeHours,
     ),
-    request: memoryRequester(rowFor(checkpoint)).request,
+    request: memoryCentral(rowFor(checkpoint)).restoreRequest,
   });
   assert.equal(maximumAgeRestore.restored, true);
   assert.equal(
@@ -635,20 +948,275 @@ try {
   );
   assert.equal(await fs.readFile(atomicTarget, 'utf8'), sentinel);
 
-  assert.throws(
-    () => createProtectedRavScoreCheckpointRequester({
-      supabaseUrl: '',
-      serviceRoleKey: '',
-    }),
-    /SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required/,
+  const syntheticSupabaseUrl = 'https://example.invalid';
+  const syntheticServiceRoleKey = 'synthetic-service-role-key';
+  const versionSuffix =
+    '?document_key=eq.ravscore-continuation-checkpoint'
+    + '&select=document_key,version&limit=2';
+  const restoreSuffix =
+    '?document_key=eq.ravscore-continuation-checkpoint'
+    + '&select=document_key,payload,version&limit=2';
+  const rpcBody = {
+    p_expected_version: 0,
+    p_target_reference: checkpoint.productionReferenceAt,
+    p_payload: checkpoint,
+  };
+
+  const versionFetchCalls = [];
+  const versionRequester = createProtectedRavScoreCheckpointVersionRequester({
+    supabaseUrl: `${syntheticSupabaseUrl}/`,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async (endpoint, options) => {
+      versionFetchCalls.push({ endpoint, options: clone(options) });
+      return new Response(JSON.stringify([{
+        document_key: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+        version: 7,
+      }]), { status: 200 });
+    },
+    logger: () => {},
+  });
+  assert.deepEqual(
+    await versionRequester(versionSuffix, {}, 'version read'),
+    [{
+      document_key: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+      version: 7,
+    }],
   );
-  assert.throws(
-    () => createProtectedRavScoreCheckpointRequester({
-      supabaseUrl: 'http://example.invalid',
-      serviceRoleKey: 'synthetic-key',
-    }),
-    /SUPABASE_URL is invalid/,
+  assert.equal(versionFetchCalls.length, 1);
+  assert.equal(
+    versionFetchCalls[0].endpoint,
+    `${syntheticSupabaseUrl}/rest/v1/admin_documents${versionSuffix}`,
   );
+  assert.deepEqual(Object.keys(versionFetchCalls[0].options).sort(), ['headers', 'method']);
+  assert.equal(versionFetchCalls[0].options.method, 'GET');
+  assert.equal('body' in versionFetchCalls[0].options, false);
+  assert.equal(versionFetchCalls[0].options.headers.apikey, syntheticServiceRoleKey);
+  assert.equal(
+    versionFetchCalls[0].options.headers.Authorization,
+    `Bearer ${syntheticServiceRoleKey}`,
+  );
+  assert.equal(versionFetchCalls[0].endpoint.includes('payload'), false);
+  await assert.rejects(
+    versionRequester(restoreSuffix, {}, 'version read'),
+    /rejected a non-metadata query/,
+  );
+  await assert.rejects(
+    versionRequester(versionSuffix, { method: 'POST' }, 'version read'),
+    /rejected a non-metadata query/,
+  );
+  await assert.rejects(
+    versionRequester(versionSuffix, { body: '{}' }, 'version read'),
+    /rejected a non-metadata query/,
+  );
+  assert.equal(versionFetchCalls.length, 1);
+
+  const exactRpcMetadata = rpcMetadataFor(checkpoint, 'inserted', 1);
+  const rpcMetadataJson = JSON.stringify(exactRpcMetadata);
+  assert.ok(
+    Buffer.byteLength(rpcMetadataJson, 'utf8')
+      < PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+  );
+  const exactBoundedRpcResponse = rpcMetadataJson.padEnd(
+    PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+    ' ',
+  );
+  assert.equal(
+    Buffer.byteLength(exactBoundedRpcResponse, 'utf8'),
+    PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,
+  );
+  const rpcFetchCalls = [];
+  const rpcRequester = createProtectedRavScoreCheckpointRpcRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async (endpoint, options) => {
+      rpcFetchCalls.push({ endpoint, options: clone(options) });
+      return new Response(exactBoundedRpcResponse, { status: 200 });
+    },
+    logger: () => {},
+  });
+  assert.deepEqual(
+    await rpcRequester(rpcBody, 'publish'),
+    exactRpcMetadata,
+    'an exact 4096-byte RPC metadata response is accepted',
+  );
+  assert.equal(rpcFetchCalls.length, 1);
+  assert.equal(
+    rpcFetchCalls[0].endpoint,
+    `${syntheticSupabaseUrl}/rest/v1/rpc/${PROTECTED_RAVSCORE_CHECKPOINT_RPC}`,
+  );
+  assert.deepEqual(Object.keys(rpcFetchCalls[0].options).sort(), [
+    'body',
+    'headers',
+    'method',
+  ]);
+  assert.equal(rpcFetchCalls[0].options.method, 'POST');
+  assert.deepEqual(JSON.parse(rpcFetchCalls[0].options.body), rpcBody);
+  assert.equal(rpcFetchCalls[0].options.headers.apikey, syntheticServiceRoleKey);
+  assert.equal(
+    rpcFetchCalls[0].options.headers.Authorization,
+    `Bearer ${syntheticServiceRoleKey}`,
+  );
+  await assert.rejects(
+    rpcRequester({ ...rpcBody, unexpected: true }, 'publish'),
+    /RPC body is invalid/,
+  );
+  assert.equal(rpcFetchCalls.length, 1);
+
+  const oversizedRpcRequester = createProtectedRavScoreCheckpointRpcRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async () => new Response(
+      rpcMetadataJson.padEnd(
+        PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES + 1,
+        ' ',
+      ),
+      { status: 200 },
+    ),
+    logger: () => {},
+  });
+  await assert.rejects(
+    oversizedRpcRequester(rpcBody, 'publish'),
+    /RPC response exceeds its response bound/,
+    'a 4097-byte RPC metadata response must fail closed',
+  );
+
+  const oversizedVersionRequester =
+    createProtectedRavScoreCheckpointVersionRequester({
+      supabaseUrl: syntheticSupabaseUrl,
+      serviceRoleKey: syntheticServiceRoleKey,
+      fetchImpl: async () => new Response(
+        JSON.stringify([{
+          document_key: PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_KEY,
+          version: 1,
+        }]).padEnd(
+          PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES + 1,
+          ' ',
+        ),
+        { status: 200 },
+      ),
+      logger: () => {},
+    });
+  await assert.rejects(
+    oversizedVersionRequester(versionSuffix, {}, 'version read'),
+    /version response exceeds its response bound/,
+  );
+
+  let responseLostRpcCalls = 0;
+  let responseLostCommittedPayload = null;
+  let responseLostDelayCalls = 0;
+  const responseLostLogs = [];
+  const responseLostRpcRequester = createProtectedRavScoreCheckpointRpcRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async (_endpoint, options) => {
+      responseLostRpcCalls += 1;
+      const body = JSON.parse(options.body);
+      if (!responseLostCommittedPayload) {
+        responseLostCommittedPayload = clone(body.p_payload);
+        throw new Error(secretErrorText);
+      }
+      assert.deepEqual(body.p_payload, responseLostCommittedPayload);
+      return new Response(JSON.stringify(
+        rpcMetadataFor(responseLostCommittedPayload, 'unchanged', 1),
+      ), { status: 200 });
+    },
+    retryDelayMs: 0,
+    delayImpl: async () => {
+      responseLostDelayCalls += 1;
+    },
+    logger: message => responseLostLogs.push(message),
+  });
+  const responseLostPublishMemory = memoryCentral();
+  const responseLostPublish = await publishProtectedRavScoreContinuationCheckpoint({
+    checkpointPath: localCheckpointPath,
+    targetReference: atHour(50),
+    request: responseLostPublishMemory.versionRequest,
+    rpcRequest: responseLostRpcRequester,
+    temporaryRoot: tempRoot,
+  });
+  assert.equal(responseLostPublish.published, false);
+  assert.equal(responseLostPublish.reason, 'protected-checkpoint-already-current');
+  assert.equal(responseLostPublish.centralVersion, 1);
+  assert.equal(responseLostRpcCalls, 2);
+  assert.equal(responseLostDelayCalls, 1);
+  assert.deepEqual(responseLostCommittedPayload, checkpoint);
+  assert.equal(responseLostLogs.length, 1);
+  assert.equal(responseLostLogs[0].includes(secretErrorText), false);
+  assert.equal(responseLostLogs[0].includes(checkpoint.datasetId), false);
+
+  const restoreFetchCalls = [];
+  const exactRestoreRequester = createProtectedRavScoreCheckpointRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async (endpoint, options) => {
+      restoreFetchCalls.push({ endpoint, options: clone(options) });
+      return new Response(JSON.stringify([rowFor(checkpoint)]), { status: 200 });
+    },
+    logger: () => {},
+  });
+  assert.deepEqual(
+    await exactRestoreRequester(restoreSuffix, {}, 'read'),
+    [rowFor(checkpoint)],
+  );
+  assert.equal(restoreFetchCalls.length, 1);
+  assert.equal(
+    restoreFetchCalls[0].endpoint,
+    `${syntheticSupabaseUrl}/rest/v1/admin_documents${restoreSuffix}`,
+  );
+  assert.deepEqual(Object.keys(restoreFetchCalls[0].options).sort(), [
+    'headers',
+    'method',
+  ]);
+  assert.equal(restoreFetchCalls[0].options.method, 'GET');
+  assert.equal('body' in restoreFetchCalls[0].options, false);
+  await assert.rejects(
+    exactRestoreRequester(versionSuffix, {}, 'read'),
+    /rejected a non-read query/,
+  );
+  assert.equal(restoreFetchCalls.length, 1);
+
+  const oversizedRestoreRequester = createProtectedRavScoreCheckpointRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: syntheticServiceRoleKey,
+    fetchImpl: async () => new Response('[]', {
+      status: 200,
+      headers: {
+        'content-length': String(
+          PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES + 1,
+        ),
+      },
+    }),
+    logger: () => {},
+  });
+  await assertRemoteRejectsWithoutMutation({
+    request: oversizedRestoreRequester,
+    match: error => {
+      assert.equal(error.code, 'PROTECTED_RAVSCORE_CHECKPOINT_REMOTE_ERROR');
+      assert.match(error.cause?.message ?? '', /restore response exceeds its response bound/);
+      return true;
+    },
+  });
+
+  for (const requesterFactory of [
+    createProtectedRavScoreCheckpointRequester,
+    createProtectedRavScoreCheckpointVersionRequester,
+    createProtectedRavScoreCheckpointRpcRequester,
+  ]) {
+    assert.throws(
+      () => requesterFactory({
+        supabaseUrl: '',
+        serviceRoleKey: '',
+      }),
+      /SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required/,
+    );
+    assert.throws(
+      () => requesterFactory({
+        supabaseUrl: 'http://example.invalid',
+        serviceRoleKey: 'synthetic-key',
+      }),
+      /SUPABASE_URL is invalid/,
+    );
+  }
 
   const rejectedCredentialRequest = createProtectedRavScoreCheckpointRequester({
     supabaseUrl: 'https://example.invalid',
@@ -674,15 +1242,78 @@ try {
     },
   });
 
-  const tamperedLocalPath = path.join(tempRoot, 'tampered-local', 'checkpoint.json');
+  const rejectedCredentialRpc = createProtectedRavScoreCheckpointRpcRequester({
+    supabaseUrl: syntheticSupabaseUrl,
+    serviceRoleKey: 'synthetic-wrong-key',
+    fetchImpl: async () => new Response(JSON.stringify({
+      code: 'AUTH_FAILED',
+      message: secretErrorText,
+    }), { status: 401 }),
+    retryDelayMs: 0,
+    delayImpl: async () => {},
+    logger: () => {},
+  });
+  await assert.rejects(
+    rejectedCredentialRpc(rpcBody, 'publish'),
+    error => {
+      assert.equal(error.message.includes(secretErrorText), false);
+      assert.match(error.message, /HTTP 401 AUTH_FAILED/);
+      return true;
+    },
+  );
+
+  const symlinkRealTarget = checkpointPathFor('symlink-real');
+  const symlinkExposedTarget = checkpointPathFor('symlink-exposed');
+  await fs.mkdir(path.dirname(symlinkRealTarget), { recursive: true });
+  await fs.writeFile(symlinkRealTarget, `${JSON.stringify(checkpoint)}\n`);
+  await fs.mkdir(
+    path.dirname(path.dirname(symlinkExposedTarget)),
+    { recursive: true },
+  );
+  let symlinkCreated = true;
+  try {
+    await fs.symlink(
+      path.dirname(symlinkRealTarget),
+      path.dirname(symlinkExposedTarget),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
+  } catch (error) {
+    if (process.platform !== 'win32' || !['EPERM', 'EACCES'].includes(error?.code)) {
+      throw error;
+    }
+    symlinkCreated = false;
+  }
+  if (symlinkCreated) {
+    const symlinkBefore = await fs.readFile(symlinkRealTarget, 'utf8');
+    const symlinkPublishMemory = memoryCentral();
+    await assert.rejects(
+      publishProtectedRavScoreContinuationCheckpoint({
+        checkpointPath: symlinkExposedTarget,
+        targetReference: atHour(50),
+        request: symlinkPublishMemory.versionRequest,
+        rpcRequest: symlinkPublishMemory.rpcRequest,
+        temporaryRoot: tempRoot,
+      }),
+      /must not traverse a symlink/,
+    );
+    assert.equal(symlinkPublishMemory.calls.length, 0);
+    assert.equal(
+      await fs.readFile(symlinkRealTarget, 'utf8'),
+      symlinkBefore,
+      'a rejected symlink publish must not mutate the underlying checkpoint',
+    );
+  }
+
+  const tamperedLocalPath = checkpointPathFor('tampered-local');
   await fs.mkdir(path.dirname(tamperedLocalPath), { recursive: true });
   await fs.writeFile(tamperedLocalPath, `${JSON.stringify(tampered)}\n`);
-  const unpublished = memoryRequester();
+  const unpublished = memoryCentral();
   await assert.rejects(
     publishProtectedRavScoreContinuationCheckpoint({
       checkpointPath: tamperedLocalPath,
       targetReference: atHour(50),
-      request: unpublished.request,
+      request: unpublished.versionRequest,
+      rpcRequest: unpublished.rpcRequest,
       temporaryRoot: tempRoot,
     }),
     /state integrity is invalid/,

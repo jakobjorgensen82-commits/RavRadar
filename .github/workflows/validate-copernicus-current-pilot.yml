@@ -322,7 +322,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.321 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -381,7 +381,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.321 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -536,7 +536,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.320 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.321 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
@@ -581,6 +581,7 @@ jobs:
           and $report.egress.scheduledFullBuildsPerMonth == 1860
           and $report.egress.normalObjectReadsPerFullBuild == 2
           and $report.egress.rollbackObjectReadsPerFullBuild == 3
+          and $report.egress.monthlyQuotaBytes == 5000000000
           and $report.egress.usableBudgetBytes
             == (($report.egress.monthlyQuotaBytes * 70 / 100) | floor)
           and $report.egress.normalPerFullBuildBytes
@@ -591,13 +592,47 @@ jobs:
             == ($report.measurements.archiveObjectBytes * 2 * 1860)
           and $report.egress.projectedMonthlyRollbackBytes
             == ($report.measurements.archiveObjectBytes * 3 * 1860)
+          and $report.egress.projectedMonthlyNormalWithCheckpointBytes
+            == ($report.egress.projectedMonthlyNormalBytes
+              + $report.checkpointDatabaseEgress.projectedMonthlyRpcMetadataBytes
+              + (($report.checkpointDatabaseEgress.projectedCheckpointBytes
+                + $report.checkpointDatabaseEgress.fullRestoreEnvelopeBytesPerRead) * 60))
+          and $report.egress.projectedMonthlyRollbackWithCheckpointBytes
+            == ($report.egress.projectedMonthlyRollbackBytes
+              + $report.checkpointDatabaseEgress.projectedMonthlyRpcMetadataBytes
+              + (($report.checkpointDatabaseEgress.projectedCheckpointBytes
+                + $report.checkpointDatabaseEgress.fullRestoreEnvelopeBytesPerRead) * 60))
+          and $report.egress.normalWithCheckpointWithinBudget == true
+          and $report.egress.rollbackWithCheckpointWithinBudget == true
           and $report.storage.reservePercent == 30
           and $report.storage.usableBudgetPercent == 70
           and $report.storage.retainedObjectGenerations == 2
+          and $report.storage.quotaBytes == 1000000000
           and $report.storage.usableBudgetBytes
             == (($report.storage.quotaBytes * 70 / 100) | floor)
           and $report.storage.retainedStorageBytes
             == ($report.measurements.archiveObjectBytes * 2)
+          and $report.database.quotaBytes == 500000000
+          and $report.database.usableBudgetBytes == 350000000
+          and $report.database.projectedCheckpointBytes > 0
+          and $report.database.projectedCheckpointBytes <= 16777216
+          and $report.database.withinIncrementalBound == true
+          and $report.database.currentDatabaseSizeIncluded == false
+          and $report.checkpointDatabaseEgress.maximumSerializedBytes == 16777216
+          and $report.checkpointDatabaseEgress.rpcMetadataResponsesPerFullBuild == 2
+          and $report.checkpointDatabaseEgress.rpcMetadataBytesPerResponse == 4096
+          and $report.checkpointDatabaseEgress.fullRestoreEnvelopeBytesPerRead == 4096
+          and $report.checkpointDatabaseEgress.rpcMetadataPerFullBuildBytes == 8192
+          and $report.checkpointDatabaseEgress.projectedMonthlyRpcMetadataBytes
+            == (8192 * 1860)
+          and $report.checkpointDatabaseEgress.bindingRestoresPerMonth == 60
+          and $report.checkpointDatabaseEgress.observedCacheMissRateRequired == true
+          and $report.checkpointDatabaseEgress.observedCacheMissRateIncluded == false
+          and ($report.checkpointDatabaseEgress.restoreScenarios
+            | map(.restoresPerMonth)) == [1,31,60,1860]
+          and ($report.checkpointDatabaseEgress.restoreScenarios
+            | map(.role)) == ["INFORMATIONAL_SCENARIO","INFORMATIONAL_SCENARIO",
+              "BINDING_PLANNING_LIMIT","NON_BINDING_ALL_BUILD_STRESS"]
           and (($report.measurements.checkpointAvailable == true
             and $report.measurements.checkpointSerializedBytes > 0
             and $report.measurements.checkpointDisposition == "CHECKPOINT_SIZE_MEASURED"
@@ -614,7 +649,12 @@ jobs:
           and $report.cutoverGate.liveSupabaseBeforeAfterMeasurementIncluded == false
           and $report.cutoverGate.otherUnifiedEgressProjectionRequired == true
           and $report.cutoverGate.otherUnifiedEgressProjectionIncluded == false
-          and $report.cutoverGate.checkpointDatabaseEgressIncluded == false
+          and $report.cutoverGate.liveDatabaseSizeMeasurementRequired == true
+          and $report.cutoverGate.liveDatabaseSizeMeasurementIncluded == false
+          and $report.cutoverGate.observedCheckpointRestoreRateRequired == true
+          and $report.cutoverGate.observedCheckpointRestoreRateIncluded == false
+          and $report.cutoverGate.checkpointDatabaseEgressIncluded == true
+          and $report.cutoverGate.checkpointDatabaseStorageIncluded == true
           and $report.controls.supabaseRequestAttempted == false
           and $report.controls.privatePayloadUploaded == false
           and $report.controls.privatePayloadArtifactUploaded == false
@@ -646,8 +686,12 @@ jobs:
               rollbackPerFullBuildBytes,
               projectedMonthlyNormalBytes,
               projectedMonthlyRollbackBytes,
+              projectedMonthlyNormalWithCheckpointBytes,
+              projectedMonthlyRollbackWithCheckpointBytes,
               normalWithinBudget,
-              rollbackWithinBudget
+              rollbackWithinBudget,
+              normalWithCheckpointWithinBudget,
+              rollbackWithCheckpointWithinBudget
             }),
             storage: (.storage | {
               quotaBytes,
@@ -658,10 +702,12 @@ jobs:
               retainedStorageBytes,
               withinBudget
             }),
+            database,
+            checkpointDatabaseEgress,
             cutoverGate,
             controls
           }' .geometry-v2-work/ravscore-private-runtime-incremental-size-safe.json
-          echo "Incremental private-runtime size is within its isolated bounds. Live Supabase before/after measurement and the billing-period projection after all other unified egress remain mandatory before cutover."
+          echo "Incremental private-runtime and protected-checkpoint size are within their isolated bounds. Live Supabase egress/database before-and-after measurements, observed checkpoint cache-miss rate and all other unified egress remain mandatory before cutover."
 
       - name: Report only privacy-safe 118-hour evidence
         shell: bash

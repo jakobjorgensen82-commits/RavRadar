@@ -43,8 +43,20 @@ export const RAVSCORE_CONTINUATION_CHECKPOINT_POLICY = Object.freeze({
   candidateGRollbackCompanionStatus: 'candidate-g-rollback-ready-companion',
   expectedPartCount: 673,
   maximumAgeHours: 72,
+  maximumSerializedBytes: 16 * 1024 * 1024,
+  maximumPartIdLength: 100,
   cacheNamespace: 'ravscore-continuation-schema6-v2',
 });
+
+export const RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS = Object.freeze([
+  Object.freeze({
+    sourceVersion: '4.0.320',
+    sourceHead: '7198b685f4bc9d86bd6432b049380f4279ab797c',
+    implementationSha256:
+      '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91',
+    compatibilityReason: 'CHECKPOINT_STORAGE_BOUNDARY_ONLY',
+  }),
+]);
 
 const CHECKPOINT_KEYS = Object.freeze([
   'schemaVersion',
@@ -149,6 +161,8 @@ const compareText = (left, right) => left < right ? -1 : left > right ? 1 : 0;
 const finiteTime = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
 const safeDatasetId = value => typeof value === 'string'
   && /^rr-[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value);
+const safePartId = value => typeof value === 'string'
+  && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$/.test(value);
 const close = (left, right) => Number.isFinite(left)
   && Number.isFinite(right)
   && Math.abs(left - right) <= 1e-9;
@@ -197,10 +211,67 @@ async function assertNoSymlinkComponents(file, {
   return resolved;
 }
 
-const readJson = async file => {
+function checkpointByteLimit(value) {
+  if (!Number.isSafeInteger(value)
+    || value < 1
+    || value > RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes) {
+    throw new Error('RavScore checkpoint byte limit is invalid');
+  }
+  return value;
+}
+
+const readJson = async (file, { maximumBytes } = {}) => {
   const resolved = await assertNoSymlinkComponents(file);
-  return JSON.parse(await fs.readFile(resolved, 'utf8'));
+  if (maximumBytes === undefined) {
+    return JSON.parse(await fs.readFile(resolved, 'utf8'));
+  }
+  const byteLimit = checkpointByteLimit(maximumBytes);
+  const handle = await fs.open(resolved, 'r');
+  try {
+    const [stat, currentPathStat] = await Promise.all([
+      handle.stat(),
+      fs.lstat(resolved),
+    ]);
+    if (!stat.isFile()
+      || currentPathStat.isSymbolicLink()
+      || (Number.isSafeInteger(stat.ino)
+        && Number.isSafeInteger(currentPathStat.ino)
+        && (stat.ino !== currentPathStat.ino || stat.dev !== currentPathStat.dev))
+      || !Number.isSafeInteger(stat.size)
+      || stat.size > byteLimit) {
+      throw new Error(`RavScore checkpoint exceeds the ${byteLimit}-byte serialized limit`);
+    }
+    // Read at most one byte beyond the limit. The pre-read stat rejects a
+    // known oversized file, while this bounded read also closes a grow-after-
+    // stat race before JSON.parse can observe the payload.
+    const bytes = Buffer.allocUnsafe(byteLimit + 1);
+    let offset = 0;
+    while (offset < bytes.length) {
+      const { bytesRead } = await handle.read(
+        bytes,
+        offset,
+        bytes.length - offset,
+        offset,
+      );
+      if (bytesRead === 0) break;
+      offset += bytesRead;
+    }
+    if (offset > byteLimit) {
+      throw new Error(`RavScore checkpoint exceeds the ${byteLimit}-byte serialized limit`);
+    }
+    return JSON.parse(bytes.subarray(0, offset).toString('utf8'));
+  } finally {
+    await handle.close();
+  }
 };
+
+function assertSafePartId(partId) {
+  if (!safePartId(partId)
+    || partId.length > RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumPartIdLength) {
+    throw new Error('RavScore checkpoint partId must be an ASCII token of at most 100 characters');
+  }
+  return partId;
+}
 
 function assertExactKeys(value, expected, label) {
   if (!isPlainObject(value)) throw new Error(`${label} must be an object`);
@@ -509,7 +580,8 @@ function rowsFromParts(document, expectedPartCount) {
   const rows = Object.entries(parts)
     .sort(([left], [right]) => compareText(left, right))
     .map(([partId, part]) => {
-      if (!partId || !isPlainObject(part)) throw new Error('RavScore checkpoint has an invalid part');
+      assertSafePartId(partId);
+      if (!isPlainObject(part)) throw new Error('RavScore checkpoint has an invalid part');
       const state = part?.ravScoreModel?.currentState;
       if (!state) {
         throw new Error(`RavScore checkpoint source has no schema-6 state for ${partId}`);
@@ -634,8 +706,10 @@ export async function saveRavScoreContinuationCheckpoint({
   sourcePath = 'data/live/conditions.json',
   checkpointPath = '.cache/ravscore-continuation-checkpoint/checkpoint.json',
   expectedPartCount = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.expectedPartCount,
+  maximumSerializedBytes = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
   repositoryRoot,
 } = {}) {
+  const byteLimit = checkpointByteLimit(maximumSerializedBytes);
   const source = await readJson(sourcePath);
   if (!safeDatasetId(source?.datasetId)) {
     throw new Error('RavScore checkpoint source is missing its dataset identity');
@@ -699,7 +773,12 @@ export async function saveRavScoreContinuationCheckpoint({
     },
     privacy,
   };
-  await atomicWrite(checkpointPath, `${JSON.stringify(checkpoint)}\n`);
+  const serializedCheckpoint = `${JSON.stringify(checkpoint)}\n`;
+  const checkpointSerializedBytes = Buffer.byteLength(serializedCheckpoint, 'utf8');
+  if (checkpointSerializedBytes > byteLimit) {
+    throw new Error(`RavScore checkpoint exceeds the ${byteLimit}-byte serialized limit`);
+  }
+  await atomicWrite(checkpointPath, serializedCheckpoint);
   return {
     saved: true,
     datasetId: checkpoint.datasetId,
@@ -713,6 +792,7 @@ export async function saveRavScoreContinuationCheckpoint({
     modelContractSha256: RAVSCORE_MODEL_CONTRACT_SHA256,
     modelBundleSha256: RAVSCORE_MODEL_BUNDLE_SHA256,
     continuationStateContractSha256,
+    checkpointSerializedBytes,
   };
 }
 
@@ -747,9 +827,12 @@ function validateCandidateGRollbackCompanion(
   }
   const rows = Object.entries(companion.states)
     .sort(([left], [right]) => compareText(left, right))
-    .map(([partId, state]) => [partId, compactCandidateGRollbackState(state, partId, {
-      productionReferenceAt,
-    })]);
+    .map(([partId, state]) => {
+      assertSafePartId(partId);
+      return [partId, compactCandidateGRollbackState(state, partId, {
+        productionReferenceAt,
+      })];
+    });
   if (rows.length !== expectedPartCount || sha256(rows) !== companion.stateSha256) {
     throw new Error('Candidate G rollback companion state integrity is invalid');
   }
@@ -772,7 +855,13 @@ function validateCheckpoint(checkpoint, expectedPartCount, expectedImplementatio
     || !/^[0-9a-f]{64}$/.test(checkpoint.continuationStateContractSha256)) {
     throw new Error('RavScore checkpoint descriptor is invalid');
   }
-  if (checkpoint.continuationStateContractSha256 !== expectedImplementationSha256) {
+  const compatiblePredecessor =
+    RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS.find(
+      predecessor => predecessor.implementationSha256
+        === checkpoint.continuationStateContractSha256,
+    ) ?? null;
+  if (checkpoint.continuationStateContractSha256 !== expectedImplementationSha256
+    && compatiblePredecessor === null) {
     throw new Error('RavScore checkpoint continuation implementation is incompatible');
   }
   const productionReferenceAt = canonicalTime(
@@ -784,7 +873,10 @@ function validateCheckpoint(checkpoint, expectedPartCount, expectedImplementatio
   if (!isPlainObject(checkpoint.states)) throw new Error('RavScore checkpoint states are invalid');
   const rows = Object.entries(checkpoint.states)
     .sort(([left], [right]) => compareText(left, right))
-    .map(([partId, state]) => [partId, compactState(state, partId)]);
+    .map(([partId, state]) => {
+      assertSafePartId(partId);
+      return [partId, compactState(state, partId)];
+    });
   if (rows.length !== expectedPartCount || sha256(rows) !== checkpoint.stateSha256) {
     throw new Error('RavScore checkpoint state integrity is invalid');
   }
@@ -828,6 +920,18 @@ function validateCheckpoint(checkpoint, expectedPartCount, expectedImplementatio
     companion,
     generationSha256: checkpoint.generationSha256,
     continuationStateContractSha256: checkpoint.continuationStateContractSha256,
+    continuationImplementationCompatibility:
+      checkpoint.continuationStateContractSha256 === expectedImplementationSha256
+        ? {
+            status: 'CURRENT',
+            reattestationRequired: false,
+            predecessor: null,
+          }
+        : {
+            status: 'EXACT_COMPATIBLE_PREDECESSOR',
+            reattestationRequired: true,
+            predecessor: compatiblePredecessor,
+          },
   };
 }
 
@@ -857,6 +961,76 @@ function validateCheckpointForTarget(validatedCheckpoint, targetReference) {
   };
 }
 
+async function validateAndReattestCheckpointForTarget({
+  checkpoint,
+  checkpointPath,
+  targetReference,
+  expectedPartCount,
+  repositoryRoot,
+}) {
+  const currentImplementationSha256 =
+    await ravScoreContinuationImplementationSha256({
+      ...(repositoryRoot === undefined ? {} : { repositoryRoot }),
+    });
+  let validatedCheckpoint = validateCheckpoint(
+    checkpoint,
+    expectedPartCount,
+    currentImplementationSha256,
+  );
+  let target = validateCheckpointForTarget(validatedCheckpoint, targetReference);
+  const predecessor =
+    validatedCheckpoint.continuationImplementationCompatibility.predecessor;
+  if (!validatedCheckpoint.continuationImplementationCompatibility.reattestationRequired) {
+    return {
+      checkpoint,
+      validatedCheckpoint,
+      target,
+      reattestedPredecessor: null,
+    };
+  }
+
+  const reattestedCheckpoint = structuredClone(checkpoint);
+  reattestedCheckpoint.continuationStateContractSha256 =
+    currentImplementationSha256;
+  const generationSha256 = checkpointGenerationSha256({
+    datasetId: reattestedCheckpoint.datasetId,
+    productionReferenceAt: validatedCheckpoint.productionReferenceAt,
+    modelBinding: validatedCheckpoint.binding,
+    candidateBinding: validatedCheckpoint.companion.binding,
+    continuationStateContractSha256: currentImplementationSha256,
+    partCount: validatedCheckpoint.rows.length,
+    stateSha256: reattestedCheckpoint.stateSha256,
+    candidateStateSha256: validatedCheckpoint.companion.stateSha256,
+  });
+  reattestedCheckpoint.generationSha256 = generationSha256;
+  reattestedCheckpoint.candidateGRollbackCompanion.generationSha256 =
+    generationSha256;
+
+  const reattestedValidatedCheckpoint = validateCheckpoint(
+    reattestedCheckpoint,
+    expectedPartCount,
+    currentImplementationSha256,
+  );
+  const reattestedTarget = validateCheckpointForTarget(
+    reattestedValidatedCheckpoint,
+    targetReference,
+  );
+  const serializedCheckpoint = `${JSON.stringify(reattestedCheckpoint)}\n`;
+  if (Buffer.byteLength(serializedCheckpoint, 'utf8')
+    > RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes) {
+    throw new Error(
+      'Reattested RavScore checkpoint exceeds its serialized limit',
+    );
+  }
+  await atomicWrite(checkpointPath, serializedCheckpoint);
+  return {
+    checkpoint: reattestedCheckpoint,
+    validatedCheckpoint: reattestedValidatedCheckpoint,
+    target: reattestedTarget,
+    reattestedPredecessor: predecessor,
+  };
+}
+
 export async function loadRavScoreContinuationCheckpointForTarget({
   checkpointPath = '.cache/ravscore-continuation-checkpoint/checkpoint.json',
   targetReference,
@@ -865,7 +1039,9 @@ export async function loadRavScoreContinuationCheckpointForTarget({
 } = {}) {
   let checkpoint;
   try {
-    checkpoint = await readJson(checkpointPath);
+    checkpoint = await readJson(checkpointPath, {
+      maximumBytes: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
+    });
   } catch (error) {
     if (error?.code === 'ENOENT') {
       return { loaded: false, reason: 'checkpoint-not-found' };
@@ -877,20 +1053,24 @@ export async function loadRavScoreContinuationCheckpointForTarget({
   // metadata or future state must stop the build. A structurally valid expired
   // continuation remains validated evidence for its rollback companion, but
   // contributes no schema-6 state and is explicitly absent for bounded cold start.
-  const expectedImplementationSha256 = await ravScoreContinuationImplementationSha256({
-    ...(repositoryRoot === undefined ? {} : { repositoryRoot }),
-  });
-  const validatedCheckpoint = validateCheckpoint(
+  const validated = await validateAndReattestCheckpointForTarget({
     checkpoint,
+    checkpointPath,
+    targetReference,
     expectedPartCount,
-    expectedImplementationSha256,
-  );
-  const target = validateCheckpointForTarget(validatedCheckpoint, targetReference);
+    repositoryRoot,
+  });
+  checkpoint = validated.checkpoint;
+  const { validatedCheckpoint, target, reattestedPredecessor } = validated;
   return {
     loaded: true,
-    reason: target.continuationAvailable
-      ? 'checkpoint-ready'
-      : 'checkpoint-continuation-expired-companion-ready',
+    reason: reattestedPredecessor
+      ? target.continuationAvailable
+        ? 'checkpoint-ready-after-compatible-predecessor-reattest'
+        : 'checkpoint-continuation-expired-companion-ready-after-compatible-predecessor-reattest'
+      : target.continuationAvailable
+        ? 'checkpoint-ready'
+        : 'checkpoint-continuation-expired-companion-ready',
     continuationAvailable: target.continuationAvailable,
     sourceDatasetId: checkpoint.datasetId,
     checkpointAt: validatedCheckpoint.productionReferenceAt,
@@ -903,6 +1083,10 @@ export async function loadRavScoreContinuationCheckpointForTarget({
     modelBundleSha256: validatedCheckpoint.binding.modelBundleSha256,
     continuationStateContractSha256:
       validatedCheckpoint.continuationStateContractSha256,
+    continuationReattestedFromImplementationSha256:
+      reattestedPredecessor?.implementationSha256 ?? null,
+    continuationReattestedFromSourceHead:
+      reattestedPredecessor?.sourceHead ?? null,
     generationSha256: validatedCheckpoint.generationSha256,
     states: target.continuationAvailable
       ? Object.fromEntries(validatedCheckpoint.rows)
@@ -927,7 +1111,9 @@ export async function restoreRavScoreContinuationCheckpoint({
 } = {}) {
   let checkpoint;
   try {
-    checkpoint = await readJson(checkpointPath);
+    checkpoint = await readJson(checkpointPath, {
+      maximumBytes: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
+    });
   } catch (error) {
     if (error?.code === 'ENOENT') {
       return { restored: false, reason: 'checkpoint-not-found', targetUnchanged: true };
@@ -937,15 +1123,19 @@ export async function restoreRavScoreContinuationCheckpoint({
 
   // Existing checkpoints are always validated before any freshness decision:
   // a corrupt cache is a fatal signal, never a silently ignored fallback.
-  const expectedImplementationSha256 = await ravScoreContinuationImplementationSha256({
-    ...(repositoryRoot === undefined ? {} : { repositoryRoot }),
-  });
-  const validatedCheckpoint = validateCheckpoint(
+  const validated = await validateAndReattestCheckpointForTarget({
     checkpoint,
+    checkpointPath,
+    targetReference,
     expectedPartCount,
-    expectedImplementationSha256,
-  );
-  const targetValidation = validateCheckpointForTarget(validatedCheckpoint, targetReference);
+    repositoryRoot,
+  });
+  checkpoint = validated.checkpoint;
+  const {
+    validatedCheckpoint,
+    target: targetValidation,
+    reattestedPredecessor,
+  } = validated;
   const requestedReferenceAt = targetValidation.requestedReferenceAt;
   if (!targetValidation.continuationAvailable) {
     return {
@@ -1042,6 +1232,10 @@ export async function restoreRavScoreContinuationCheckpoint({
     modelBundleSha256: validatedCheckpoint.binding.modelBundleSha256,
     continuationStateContractSha256:
       validatedCheckpoint.continuationStateContractSha256,
+    continuationReattestedFromImplementationSha256:
+      reattestedPredecessor?.implementationSha256 ?? null,
+    continuationReattestedFromSourceHead:
+      reattestedPredecessor?.sourceHead ?? null,
     generationSha256: validatedCheckpoint.generationSha256,
     candidateGRollbackPartCount: validatedCheckpoint.companion.rows.length,
     candidateGRollbackModelBinding: validatedCheckpoint.companion.binding,
