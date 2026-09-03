@@ -11,7 +11,9 @@ from pathlib import Path
 
 from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
+    OPERATIONAL_MATRIX_CONTRACT_ID,
     atomic_write_shadow,
+    atomic_write_shadow_checkpoint,
     canonical_sha256,
     file_sha256,
     make_acquisition,
@@ -39,6 +41,7 @@ def run(
     folder: Path,
     *,
     require_complete: bool = False,
+    allow_nonmatching_seal: bool = False,
     stdlib_only: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     command = [
@@ -51,6 +54,8 @@ def run(
     ]
     if require_complete:
         command.append("--require-complete")
+    if allow_nonmatching_seal:
+        command.append("--allow-nonmatching-seal")
     return subprocess.run(command, cwd=ROOT, capture_output=True, text=True, check=False)
 
 
@@ -191,6 +196,171 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-check-") as r
     atomic_write_shadow(
         folder / "cache.json", acquisitions=acquisitions, records=records, collection=collection,
         updated_at=acquisition_at, target_identities={"p1": TARGET},
+    )
+
+    # The schema-3 operation seal is green with the exact +117 operational
+    # record even when a declared -1h advisory pair is unavailable.
+    advisory_required = [{
+        "partId": "p1",
+        "validTime": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }]
+    operational_registry = {
+        "schemaVersion": 3,
+        "kind": "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_TARGET_REGISTRY",
+        "matrixContractId": OPERATIONAL_MATRIX_CONTRACT_ID,
+        "selectionMode": "dmi-gaps-only",
+        "productionReferenceAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "targetHour": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "rangeStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "rangeEndAt": valid_time.isoformat().replace("+00:00", "Z"),
+        "coldBridgeHours": 48, "publicHourCount": 118, "matrixHourCount": 166,
+        "operationalRangeStartAt": REFERENCE.isoformat().replace("+00:00", "Z"),
+        "operationalRangeEndAt": valid_time.isoformat().replace("+00:00", "Z"),
+        "operationalHourCount": 118,
+        "advisoryHistoryStartAt": (REFERENCE - timedelta(hours=48)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryEndAt": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+        "advisoryHistoryHourCount": 48,
+        "targetCount": 1, "sourcePartCount": 1, "partCount": 1,
+        "operationalPartCount": 1, "advisoryHistoryPartCount": 1,
+        "targetRegistrySha256": target_fingerprint([TARGET]),
+        "dmiCurrentInputSha256": file_sha256(folder / "dmi.json"),
+        "dmiVerifierContractId": DMI_VERIFIER_CONTRACT_ID,
+        "operationalRequiredPairsSha256": required_pairs_sha256(required),
+        "operationalRequiredPairCount": 1,
+        "operationalDmiVerifiedPairCount": 117,
+        "operationalTotalPairCount": 118,
+        "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(advisory_required),
+        "advisoryHistoryRequiredPairCount": 1,
+        "advisoryHistoryDmiVerifiedPairCount": 47,
+        "advisoryHistoryTotalPairCount": 48,
+        "dmiVerifiedPairCount": 164, "totalPairCount": 166,
+        "coordinatesChanged": False,
+        "targets": [TARGET], "operationalRequiredPairs": required,
+        "advisoryHistoryRequiredPairs": advisory_required,
+        "zones": {"z1": [{
+            "partId": "p1", "sourceZoneId": "z1", "name": "P1", "waterPoint": TARGET["waterPoint"],
+        }]},
+    }
+    operational_collection = make_coverage_collection(
+        production_reference_at=REFERENCE,
+        target_registry_sha256=operational_registry["targetRegistrySha256"],
+        dmi_current_input_sha256=operational_registry["dmiCurrentInputSha256"],
+        required_pairs=required,
+        record_refs=refs,
+        advisory_history_required_pairs=advisory_required,
+        advisory_history_record_refs=[],
+        sealed_at=acquisition_at,
+    )
+    write(folder / "registry.json", operational_registry)
+    atomic_write_shadow(
+        folder / "cache.json", acquisitions=acquisitions, records=records,
+        collection=operational_collection, updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
+    operational_good = run(folder, require_complete=True)
+    assert operational_good.returncode == 0, operational_good.stdout + operational_good.stderr
+    operational_current = run_current(folder)
+    assert operational_current.returncode == 0 and "already contains" in operational_current.stdout
+
+    # A valid unsealed per-shard checkpoint must be refreshable during the
+    # initial inspection, but it remains invalid for every terminal proof.
+    atomic_write_shadow_checkpoint(
+        folder / "cache.json",
+        acquisitions=acquisitions,
+        records=records,
+        updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
+    strict_partial = run(folder)
+    assert strict_partial.returncode != 0 and "no activation-complete" in strict_partial.stdout
+    refreshable_partial = run(folder, allow_nonmatching_seal=True)
+    assert refreshable_partial.returncode == 0 and "complete acquisition is required" in refreshable_partial.stdout
+    required_partial = run(folder, allow_nonmatching_seal=True, require_complete=True)
+    assert required_partial.returncode != 0 and "required but absent" in required_partial.stdout
+    atomic_write_shadow(
+        folder / "cache.json",
+        acquisitions=acquisitions,
+        records=records,
+        collection=operational_collection,
+        updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
+
+    # A valid cache restored from the preceding reference is useful retained
+    # evidence, but it is not the locked seal for this preflight.  The initial
+    # inspection may classify that precise miss as incomplete so the bounded
+    # acquisition can replace it; the terminal --require-complete check stays
+    # strict.
+    previous_reference = REFERENCE - timedelta(hours=1)
+    previous_valid_time = previous_reference + timedelta(hours=117)
+    previous_acquisition = make_acquisition(
+        source="copernicus-baltic-nemo",
+        acquisition_at=previous_reference + timedelta(minutes=10),
+        request_start_at=previous_valid_time,
+        request_end_at=previous_valid_time,
+        targets=[TARGET],
+        native_valid_times=[previous_valid_time],
+        subset_sha256=canonical_sha256({"fixture": "previous-reference"}),
+        record_count=1,
+    )
+    previous_record = make_record(
+        {
+            **raw_record,
+            "validTime": previous_valid_time.isoformat().replace("+00:00", "Z"),
+        },
+        previous_acquisition,
+        TARGET,
+    )
+    previous_required = [{
+        "partId": "p1",
+        "validTime": previous_valid_time.isoformat().replace("+00:00", "Z"),
+    }]
+    previous_collection = make_coverage_collection(
+        production_reference_at=previous_reference,
+        target_registry_sha256=operational_registry["targetRegistrySha256"],
+        dmi_current_input_sha256=operational_registry["dmiCurrentInputSha256"],
+        required_pairs=previous_required,
+        record_refs=[{
+            "partId": previous_record["partId"],
+            "validTime": previous_record["validTime"],
+            "recordId": previous_record["recordId"],
+            "acquisitionId": previous_record["acquisitionId"],
+            "source": previous_acquisition["source"],
+        }],
+        sealed_at=previous_reference + timedelta(minutes=10),
+    )
+    atomic_write_shadow(
+        folder / "cache.json",
+        acquisitions=[previous_acquisition],
+        records=[previous_record],
+        collection=previous_collection,
+        updated_at=previous_reference + timedelta(minutes=10),
+        target_identities={"p1": TARGET},
+    )
+    strict_previous = run(folder)
+    assert strict_previous.returncode != 0 and "exactly one" in strict_previous.stdout
+    refreshable_previous = run(folder, allow_nonmatching_seal=True)
+    assert refreshable_previous.returncode == 0 and "complete acquisition is required" in refreshable_previous.stdout
+    still_required = run(folder, allow_nonmatching_seal=True, require_complete=True)
+    assert still_required.returncode != 0 and "required but absent" in still_required.stdout
+    atomic_write_shadow(
+        folder / "cache.json",
+        acquisitions=acquisitions,
+        records=records,
+        collection=operational_collection,
+        updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
+    )
+
+    damaged_cache = json.loads((folder / "cache.json").read_text(encoding="utf-8"))
+    damaged_cache["collections"][0]["advisoryHistoryMissingPairCount"] = 0
+    write(folder / "cache.json", damaged_cache)
+    damaged = run(folder, require_complete=True)
+    assert damaged.returncode != 0, damaged.stdout + damaged.stderr
+    atomic_write_shadow(
+        folder / "cache.json", acquisitions=acquisitions, records=records,
+        collection=operational_collection, updated_at=acquisition_at,
+        target_identities={"p1": TARGET},
     )
 
     write(folder / "dmi.json", {"fixture": "changed"})

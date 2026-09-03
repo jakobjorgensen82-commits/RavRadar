@@ -71,6 +71,8 @@ export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG = 'ravscore-reconstructed-deriv
 export const PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG = 'public-emergency-last-complete';
 export const HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG = 'ravscore-history-incomplete';
 export const UNATTESTED_RAVSCORE_QUALITY_FLAG = 'ravscore-evidence-trust-unattested';
+export const GLOBAL_WARMUP_CALIBRATION_LOCK_REASON =
+  'ravscore-global-warmup-calibration-lock';
 export const TRIP_NON_CALIBRATION_QUALITY_FLAGS = Object.freeze([
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
@@ -403,7 +405,9 @@ function assertCalibrationFeatureContract(value, exact = false) {
       &&historyReasons.every(code=>/^[A-Z][A-Z0-9_]{0,127}$/.test(code));
     const candidateGRollback=value.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID;
     const full=value.scoreQuality==='FULL_HISTORY'
-      &&value.scoreCalibrationEligible===!candidateGRollback
+      &&(candidateGRollback
+        ? value.scoreCalibrationEligible===false
+        : typeof value.scoreCalibrationEligible==='boolean')
       &&value.historyCoverageHours===48&&historyReasons.length===0
       &&value.scoreBoundLower===value.scoreBoundUpper
       &&value.scoreBoundRawLower===value.scoreBoundRawUpper
@@ -555,6 +559,10 @@ export function assertExternalTripQualityBinding(payload) {
     throw new Error('TRIP_QUALITY_REASON_BINDING_INVALID');
   }
   const features=payload.calibration_features;
+  const globalWarmupReasonCount = reasonCodes.filter(reason =>
+    reason === GLOBAL_WARMUP_CALIBRATION_LOCK_REASON).length;
+  const sameForecastContext = payload.actual_zone_id === payload.forecast_zone_id
+    && payload.actual_coastal_part_id === payload.forecast_coastal_part_id;
   if(schemaVersion===3){
     const historyFlag=flags.includes(HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG);
     if((features?.scoreQuality==='HISTORY_INCOMPLETE')!==historyFlag
@@ -562,9 +570,21 @@ export function assertExternalTripQualityBinding(payload) {
       ||(!historyFlag&&features?.scoreQuality!=='FULL_HISTORY')){
       throw new Error('TRIP_SCORE_QUALITY_FLAG_BINDING_INVALID');
     }
+    if(globalWarmupReasonCount > 1
+      ||(globalWarmupReasonCount === 1 && (historyFlag
+        ||features?.modelVersion===CANDIDATE_G_ROLLBACK_MODEL_ID
+        ||features?.scoreQuality!=='FULL_HISTORY'
+        ||payload.calibration_eligible!==false))){
+      throw new Error('TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID');
+    }
+    if(!historyFlag
+      &&features?.scoreCalibrationEligible===true
+      &&flags.length===0
+      &&payload.calibration_eligible
+        !==(globalWarmupReasonCount===1?false:sameForecastContext)){
+      throw new Error('TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID');
+    }
   }
-  const sameForecastContext = payload.actual_zone_id === payload.forecast_zone_id
-    && payload.actual_coastal_part_id === payload.forecast_coastal_part_id;
   const eligibilityValid = schemaVersion === 3
     ? typeof payload.calibration_eligible === 'boolean'
       && (flags.length === 0 || payload.calibration_eligible === false)
@@ -654,6 +674,7 @@ export function externalTripPayload(payload) {
   const source = projectLegacyExternalTripPayload(cloned);
   const normalized = normalizeExternalTripQualityBinding(source);
   const schemaVersion = Number(normalized.schema_version ?? 1);
+  if (schemaVersion === 3) assertExternalTripQualityBinding(normalized);
   const clone = schemaVersion === 3
     ? { ...normalized, calibration_eligible: false, gps: null }
     : normalized;
@@ -669,7 +690,7 @@ export function externalTripPayload(payload) {
   assertNoDirectIdentity(external);
   assertNoPrivateLocation(external);
   assertExternalTripNestedContract(external);
-  assertExternalTripQualityBinding(external);
+  if (schemaVersion !== 3) assertExternalTripQualityBinding(external);
   return external;
 }
 

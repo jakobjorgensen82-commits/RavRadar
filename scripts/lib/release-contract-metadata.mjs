@@ -37,6 +37,10 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0113',
       path: 'docs/rdks/10_DECISIONS/DEC-0113-FIRST-CUTOVER-ATTESTED-MEASURED-COLD-START.md',
     }),
+    Object.freeze({
+      id: 'DEC-0114',
+      path: 'docs/rdks/10_DECISIONS/DEC-0114-INTEGRATED-FIRST-WITH-MEASURED-HISTORY-WARMUP.md',
+    }),
   ]),
 });
 

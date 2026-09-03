@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const sources = Object.freeze({
-  migration: 'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
+  migration: 'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
   schema: 'supabase/schema.sql',
   installer: 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 });
@@ -25,6 +25,10 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
   await fs.readFile(file, 'utf8'),
 ]));
 const documents = Object.fromEntries(entries);
+const stableTripMigration = await fs.readFile(
+  'supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
+  'utf8',
+);
 const definitions = Object.fromEntries(Object.entries(documents).map(([label, source]) => [
   label,
   normalize(functionDefinition(source, label)),
@@ -53,10 +57,11 @@ for (const [label, source] of Object.entries({
 }
 for (const [functionName, migrationSource] of [
   ['public.ravradar_trip_v3_score_quality_allowed', documents.migration],
+  ['public.ravradar_trip_v3_calibration_truth_allowed', documents.migration],
   ['public.ravradar_trip_v3_binding_allowed', documents.migration],
   ['public.ravradar_trip_v3_active_binding_admitted', documents.migration],
-  ['public.ravradar_observation_require_active_v3_binding', documents.migration],
-  ['public.ravradar_trip_payload_has_sensitive_key', documents.migration],
+  ['public.ravradar_observation_require_active_v3_binding', stableTripMigration],
+  ['public.ravradar_trip_payload_has_sensitive_key', stableTripMigration],
   ['public.ravradar_ravscore_operational_cas', operationalMigration],
 ]) {
   const canonicalDefinition = normalize(functionDefinition(
@@ -69,6 +74,78 @@ for (const [functionName, migrationSource] of [
   assert.equal(normalize(functionDefinition(documents.installer, 'security installer', functionName)),
     canonicalDefinition, `${functionName} drifted in security installer`);
 }
+for (const [label, source] of Object.entries(documents)) {
+  const scoreQuality = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_score_quality_allowed',
+  ));
+  assert.match(scoreQuality,/score_calibration_eligible in \(true, false\)/,
+    `${label} must treat FULL_HISTORY calibration eligibility as a ceiling`);
+  assert.match(scoreQuality,
+    /jsonb_typeof\(p_calibration_features -> 'scoreCalibrationEligible'\) is distinct from 'boolean'/,
+    `${label} must reject a missing scoreCalibrationEligible field`);
+  const calibrationTruth = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_calibration_truth_allowed',
+  ));
+  assert.match(calibrationTruth,
+    /jsonb_typeof\(p_calibration_features -> 'scoreCalibrationEligible'\) is distinct from 'boolean'/,
+    `${label} calibration truth must reject a missing scoreCalibrationEligible field`);
+  assert.match(calibrationTruth,
+    /scoreCalibrationEligible'\)::boolean and p_actual_zone_id = p_forecast_zone_id/,
+    `${label} must apply scoreCalibrationEligible as the trip calibration ceiling`);
+}
+
+for (const [label, source] of Object.entries(documents)) {
+  const activeAdmission = normalize(functionDefinition(
+    source,label,'public.ravradar_trip_v3_active_binding_admitted',
+  ));
+  assert.match(activeAdmission,
+    /'scoreCalibrationEligible', p_calibration_eligible/,
+    `${label} active admission must bind the synthetic score ceiling fail-closed`);
+  const readback = normalize(functionDefinition(source,label));
+  const trimmedDefinitions = [...readback.matchAll(
+    /select pg_catalog\.btrim\(p\.prosrc, E' \\n\\r\\t'\) into (trip_[a-z_]+_definition)/g,
+  )].map(match => match[1]);
+  assert.deepEqual(trimmedDefinitions, [
+    'trip_score_quality_definition',
+    'trip_calibration_truth_definition',
+    'trip_binding_gate_definition',
+    'trip_active_admission_definition',
+    'trip_active_trigger_function_definition',
+  ], `${label} must canonicalise all five pg_proc bodies before live hashing`);
+  assert.doesNotMatch(readback,/select p\.prosrc/,
+    `${label} must not hash a raw whitespace-sensitive pg_proc body`);
+  assert.match(readback,
+    /trip_score_quality_definition \|\| E'\\n-- calibration-truth-function --\\n' \|\| trip_calibration_truth_definition/,
+    `${label} live policy hash must include the score-quality validator`);
+  assert.match(readback,/'integratedProxyCeilingBindingPresent'/,
+    `${label} readback lacks the false-ceiling integrated probe`);
+  assert.match(readback,/'integratedMissingCalibrationCeilingRejected'/,
+    `${label} readback lacks the missing-ceiling negative probe`);
+}
+
+for (const [label, source] of Object.entries(documents)) {
+  const admission = functionDefinition(
+    source,
+    label,
+    'public.ravradar_trip_v3_active_binding_admitted',
+  );
+  const begin = admission.indexOf('RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_BEGIN');
+  const end = admission.indexOf('RAVSCORE_INTEGRATED_MEASURED_WARMUP_ADMISSION_END');
+  assert.ok(begin >= 0 && end > begin,
+    `${label} lacks the bounded integrated measured-warmup admission`);
+  const warmup = normalize(admission.slice(begin, end));
+  assert.match(warmup, /operational ->> 'calibrationEligible' = 'false'/,
+    `${label} does not bind warmup admission to the exact false controller`);
+  assert.match(warmup, /p_calibration_eligible = false/,
+    `${label} could admit calibration-eligible warmup evidence`);
+  assert.match(warmup, /ravscore-global-warmup-calibration-lock/,
+    `${label} does not admit immutable FULL_HISTORY evidence captured under the global lock`);
+  assert.match(warmup,
+    /p_reason_codes in \( '\["ravscore-history-incomplete"\]'::jsonb, '\["public-emergency-last-complete","ravscore-history-incomplete"\]'::jsonb \)/,
+    `${label} does not limit warmup admission to canonical HISTORY_INCOMPLETE evidence`);
+  assert.doesNotMatch(warmup, /RRS-CANDIDATE|unknown|reconstructed|unattested/i,
+    `${label} broadens warmup admission beyond the exact integrated history contract`);
+}
 
 function activeTriggerDefinition(source, label) {
   const match = source.match(
@@ -78,10 +155,10 @@ function activeTriggerDefinition(source, label) {
   return normalize(match[0]);
 }
 assert.equal(activeTriggerDefinition(documents.schema, 'historical schema'),
-  activeTriggerDefinition(documents.migration, 'versioned migration'),
+  activeTriggerDefinition(stableTripMigration, 'stable trip migration'),
   'active schema-3 binding trigger drifted in historical schema');
 assert.equal(activeTriggerDefinition(documents.installer, 'security installer'),
-  activeTriggerDefinition(documents.migration, 'versioned migration'),
+  activeTriggerDefinition(stableTripMigration, 'stable trip migration'),
   'active schema-3 binding trigger drifted in security installer');
 
 function tripConstraintContract(source, label) {
@@ -92,19 +169,42 @@ function tripConstraintContract(source, label) {
   return normalize(match[0]);
 }
 assert.equal(tripConstraintContract(documents.schema, 'historical schema'),
-  tripConstraintContract(documents.migration, 'versioned migration'),
+  tripConstraintContract(stableTripMigration, 'stable trip migration'),
   'schema-3 constraints drifted in historical schema');
 assert.equal(tripConstraintContract(documents.installer, 'security installer'),
-  tripConstraintContract(documents.migration, 'versioned migration'),
+  tripConstraintContract(stableTripMigration, 'stable trip migration'),
   'schema-3 constraints drifted in security installer');
+assert.match(documents.migration, /set local lock_timeout = '5s';/,
+  'additive migration must fail boundedly if required function DDL locks are unavailable');
+for (const forbidden of [
+  /\bdrop\s+(?:trigger|constraint|index)\b/i,
+  /\bcreate\s+(?:trigger|(?:unique\s+)?index)\b/i,
+  /\balter\s+table\b/i,
+  /\bnot\s+valid\b/i,
+  /\bvalidate\s+constraint\b/i,
+]) assert.doesNotMatch(documents.migration, forbidden,
+  `additive migration must preserve installed trigger, indexes and constraint validation: ${forbidden}`);
 
-for (const [label, source] of Object.entries(documents)) {
+for (const [label, source] of Object.entries({
+  migration: stableTripMigration,
+  schema: documents.schema,
+  installer: documents.installer,
+})) {
   assert.match(source,
     /revoke all on function public\.ravradar_trip_v3_score_quality_allowed\(\s*text, jsonb\s*\) from public, anon, authenticated;/i,
     `${label} exposes the immutable score-quality validator outside service_role`);
   assert.match(source,
     /grant execute on function public\.ravradar_trip_v3_score_quality_allowed\(\s*text, jsonb\s*\) to service_role;/i,
     `${label} does not grant the immutable score-quality validator to service_role`);
+}
+
+for (const [label, source] of Object.entries(documents)) {
+  assert.match(source,
+    /revoke all on function public\.ravradar_trip_v3_calibration_truth_allowed\(\s*text,\s*jsonb,\s*boolean,\s*text,\s*text,\s*text,\s*text\s*\) from public, anon, authenticated;/i,
+    `${label} exposes the immutable calibration truth validator outside service_role`);
+  assert.match(source,
+    /grant execute on function public\.ravradar_trip_v3_calibration_truth_allowed\(\s*text,\s*jsonb,\s*boolean,\s*text,\s*text,\s*text,\s*text\s*\) to service_role;/i,
+    `${label} does not grant the immutable calibration truth validator to service_role`);
   assert.match(source,
     /revoke all on function public\.ravradar_trip_v3_active_binding_admitted\([\s\S]*?from public, anon, authenticated;/i,
     `${label} exposes active schema-3 admission outside service_role`);
@@ -132,7 +232,9 @@ for (const [label, source] of Object.entries(documents)) {
 }
 
 assert.ok(documents.migration.indexOf("'20260829010000'")
-  < documents.migration.indexOf("'20260829020000'"),
-'metadata readback must preserve operational-runtime-before-trip-binding order');
+  < documents.migration.indexOf("'20260829020000'")
+  && documents.migration.indexOf("'20260829020000'")
+    < documents.migration.indexOf("'20260901010000'"),
+'metadata readback must preserve operational-runtime-before-trip-binding-before-warmup-admission order');
 
-console.log('Integrated cutover RPC, privacy function and schema-3 constraints are identical in migration, schema and installer.');
+console.log('Integrated additive truth/admission/readback functions match schema and installer; stable trigger/privacy/constraints remain unchanged.');

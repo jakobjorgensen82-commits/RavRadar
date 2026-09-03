@@ -23,6 +23,11 @@ import {
   selectPublicRavScoreResult,
 } from '../js/core/ravscore-public-model.js';
 import { auditIntegratedRavScorePublicRuntime } from './audit-ravscore-integrated-public-runtime.mjs';
+import {
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  buildFeggesundWaveCoverageProof,
+  buildFeggesundWaveInputProofEntry,
+} from './lib/feggesund-wave-proxy.mjs';
 import { compactIntegratedRavScoreMode } from './lib/ravscore-integrated-runtime.mjs';
 import { ravScoreSamplingContextKey } from './lib/ravscore-sampling-context.mjs';
 import { candidateGStateKey } from './lib/coastal-point-staging-contract.mjs';
@@ -116,6 +121,11 @@ const candidateStateTemplate = buildCandidateGDerivedStateSeries(
   { stateKey: `sha256:${'1'.repeat(64)}` },
 ).continuationState;
 assert.equal(candidateStateTemplate.transportMemoryReady, true);
+const candidateWarmupStateTemplate = buildCandidateGDerivedStateSeries(
+  baseSamples.slice(-13),
+  { stateKey: `sha256:${'2'.repeat(64)}` },
+).continuationState;
+assert.equal(candidateWarmupStateTemplate.transportMemoryReady, false);
 const historyIncompleteBaseSeries = buildIntegratedRavScoreStateSeries(
   baseSamples.map(sample => sample.time === time(-1)
     ? { ...sample, waveDirectionDeg:null }
@@ -158,6 +168,13 @@ function readyState(part, transition, series = baseSeries) {
 function candidateStateFor(part) {
   return {
     ...structuredClone(candidateStateTemplate),
+    stateKey: candidateGStateKey(part),
+  };
+}
+
+function candidateWarmupStateFor(part) {
+  return {
+    ...structuredClone(candidateWarmupStateTemplate),
     stateKey: candidateGStateKey(part),
   };
 }
@@ -317,8 +334,10 @@ function syntheticFull({
   partCounts,
   transition = 'continuation',
   historyIncomplete = false,
+  includeFeggesund = false,
 }) {
   assert.equal(partCounts.length, zoneCount);
+  if (includeFeggesund) assert.equal(partCounts.at(-1), 3);
   const runtimeSeries = historyIncomplete ? historyIncompleteBaseSeries : baseSeries;
   const selectedSeries = transition === 'cold' ? coldBaseSeries : runtimeSeries;
   const runtimeRow = transition === 'cold' ? coldBaseRow
@@ -333,7 +352,9 @@ function syntheticFull({
   const parts = {};
   let partNumber = 0;
   for (let zoneNumber = 0; zoneNumber < zoneCount; zoneNumber += 1) {
-    const zoneId = `synthetic-zone-${zoneNumber + 1}`;
+    const zoneId = includeFeggesund && zoneNumber === zoneCount - 1
+      ? FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID
+      : `synthetic-zone-${zoneNumber + 1}`;
     const partIds = [];
     let firstRuntime = null;
     for (let localPart = 0; localPart < partCounts[zoneNumber]; localPart += 1) {
@@ -454,6 +475,34 @@ function syntheticFull({
         currentState: candidateStateFor({ ...part, partId }),
       },
     }]));
+  const feggesundPartIds = Object.entries(parts)
+    .filter(([, part]) => part.zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID)
+    .map(([partId]) => partId);
+  const waveInputProofs = includeFeggesund ? {
+    feggesund: buildFeggesundWaveCoverageProof({
+      forecastStartAt: REFERENCE_AT,
+      forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,
+      partIds: feggesundPartIds,
+      entries: feggesundPartIds.flatMap(partId => publicForecastOffsets
+        .map(offsetHours => buildFeggesundWaveInputProofEntry({
+          partId,
+          time: time(offsetHours),
+          hour: {
+            waveHeightM: weather.waveHeightM,
+            wavePeriodS: weather.wavePeriodS,
+            waveDirectionDeg: weather.waveDirectionDeg,
+            waveInputSource: 'DIRECT_OFFICIAL',
+            waveInputNoticeId: null,
+            waveProvenance: {
+              status: 'verified',
+              provider: 'dmi',
+              collection: 'wam_dw',
+              component: 'wave',
+            },
+          },
+        }))),
+    }),
+  } : null;
   return {
     datasetId: `synthetic-integrated-${zoneCount}-${partNumber}`,
     generatedAt: REFERENCE_AT,
@@ -507,12 +556,48 @@ function syntheticFull({
         unavailableZones: [],
         historyIncompleteZones,
       },
+      ...(waveInputProofs ? { waveInputProofs } : {}),
       expectedPartCount: partNumber,
       scoredPartCount: partNumber,
       parts,
       zones: coastalZones,
     },
   };
+}
+
+function withCandidateGMeasuredWarmup(source, { clone = true } = {}) {
+  const full = clone ? structuredClone(source) : source;
+  const candidateBinding = candidateGRollbackModelBinding();
+  delete full.ravScoreCandidateGRollback;
+  const warmupParts = Object.fromEntries(Object.entries(full.coastalParts.parts)
+    .map(([partId, part]) => [partId, {
+      ravScoreModel: {
+        currentState: candidateWarmupStateFor({ ...part, partId }),
+      },
+    }]));
+  full.ravScoreCandidateGWarmup = {
+    schemaVersion: '1.0.0',
+    kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+    status: 'BUILDING_MEASURED_ONLY',
+    evidencePolicy: 'MEASURED_ONLY',
+    syntheticHistoryAllowed: false,
+    sourceModelBinding: binding,
+    candidateModelBinding: candidateBinding,
+    automaticActivationAllowed: false,
+    publicDuringNormalOperation: false,
+    runtime: {
+      schemaVersion: 1,
+      enabled: true,
+      status: 'BUILDING_MEASURED_ONLY',
+      generatedAt: full.productionReferenceAt,
+      modelBinding: candidateBinding,
+      expectedPartCount: Object.keys(warmupParts).length,
+      measuredPartCount: Object.keys(warmupParts).length,
+      parts: warmupParts,
+    },
+  };
+  return full;
 }
 
 function unitAuditManifest(full, startup, startupText, details, detailsText) {
@@ -586,15 +671,17 @@ function audit(full, package_, expectedZoneCount, expectedPartCount) {
   });
 }
 
-const national = syntheticFull({
+let national = syntheticFull({
   zoneCount: 210,
   partCounts: Array.from({ length: 210 }, (_, index) => index < 43 ? 4 : 3),
+  includeFeggesund: true,
 });
 assert.equal(Object.keys(national.coastalParts.parts).length, 673);
-const nationalPackage = publicPackage(national);
-const nationalReport = audit(national, nationalPackage, 210, 673);
+let nationalPackage = publicPackage(national);
+let nationalReport = audit(national, nationalPackage, 210, 673);
 assert.deepEqual(nationalReport.errors, []);
 assert.equal(nationalReport.status, 'passed');
+assert.equal(nationalReport.productionReferenceAt, REFERENCE_AT);
 assert.equal(nationalReport.coverage.zoneCount, 210);
 assert.equal(nationalReport.coverage.partCount, 673);
 assert.equal(nationalReport.coverage.publicForecastHours, RAVSCORE_PUBLIC_FORECAST_HOURS);
@@ -604,14 +691,80 @@ assert.equal(nationalReport.coverage.stateReplayCount, 673);
 assert.equal(nationalReport.coverage.reconstructedModeCount, 1_346);
 assert.equal(nationalReport.coverage.zoneModeCount,
   210 * RAVSCORE_PUBLIC_FORECAST_HOURS * 2);
+assert.deepEqual(
+  {
+    targetPartCount: nationalReport.coverage.feggesundWave.targetPartCount,
+    forecastHours: nationalReport.coverage.feggesundWave.forecastHours,
+    expectedEntries: nationalReport.coverage.feggesundWave.expectedEntries,
+    acceptedEntries: nationalReport.coverage.feggesundWave.acceptedEntries,
+    directEntries: nationalReport.coverage.feggesundWave.directEntries,
+    proxyEntries: nationalReport.coverage.feggesundWave.proxyEntries,
+    missingEntries: nationalReport.coverage.feggesundWave.missingEntries,
+  },
+  {
+    targetPartCount: 3,
+    forecastHours: 118,
+    expectedEntries: 354,
+    acceptedEntries: 354,
+    directEntries: 354,
+    proxyEntries: 0,
+    missingEntries: 0,
+  },
+  'the national audit must account for every Feggesund part and forecast hour',
+);
+assert.match(nationalReport.coverage.feggesundWave.policySha256, /^[0-9a-f]{64}$/);
+assert.match(nationalReport.coverage.feggesundWave.coverageSha256, /^[0-9a-f]{64}$/);
+for (const publicDestination of [
+  nationalPackage.startupText,
+  nationalPackage.detailsText,
+  nationalPackage.coastalPartsText,
+  JSON.stringify(nationalPackage.manifest),
+]) {
+  assert.doesNotMatch(
+    publicDestination.toLowerCase(),
+    /waveinputproofs|feggesundneighborwavesource|sourceevidencesha256/,
+    'the private Feggesund proof chain must not enter public payloads',
+  );
+}
+const savedFeggesundProof = national.coastalParts.waveInputProofs.feggesund;
+delete national.coastalParts.waveInputProofs;
+assert.ok(audit(national, nationalPackage, 210, 673).errors
+  .includes('FEGGESUND_WAVE_COVERAGE_INCOMPLETE'),
+'a national 210/673 runtime must fail without its exact Feggesund proof ledger');
+national.coastalParts.waveInputProofs = { feggesund: savedFeggesundProof };
 assert.equal(nationalReport.continuation.continuedStateCount, 673);
 assert.equal(nationalReport.continuation.uniqueSamplingContextCount, 673);
+assert.deepEqual(nationalReport.history, {
+  allCurrentScoresFullHistory: true,
+  currentFullHistoryModeCount: 420,
+  currentHistoryIncompleteModeCount: 0,
+});
+assert.equal(nationalReport.rollback.status, 'READY');
+assert.equal(nationalReport.rollback.activationReady, true);
 assert.equal(nationalReport.rollback.readyPartCount, 673);
 assert.equal(nationalReport.rollback.evidenceLimitExceededPartCount, 0);
 assert.equal(nationalReport.rollback.reconstructionFailurePartCount, 0);
 assert.equal(nationalReport.rollback.stateContractMismatchPartCount, 0);
 assert.equal(nationalReport.rollback.oracleMismatchPartCount, 0);
 assert.ok(nationalReport.payload.startupBytes < nationalReport.payload.detailsBytes);
+
+let nationalWarmup = withCandidateGMeasuredWarmup(national, { clone: false });
+let nationalWarmupReport = audit(nationalWarmup, nationalPackage, 210, 673);
+assert.deepEqual(nationalWarmupReport.errors, []);
+assert.equal(nationalWarmupReport.status, 'passed');
+assert.equal(nationalWarmupReport.rollback.status, 'BUILDING_MEASURED_ONLY');
+assert.equal(nationalWarmupReport.rollback.activationReady, false);
+assert.equal(nationalWarmupReport.rollback.companionPresent, false);
+assert.equal(nationalWarmupReport.rollback.warmupPresent, true);
+assert.equal(nationalWarmupReport.rollback.runtimePartCount, 673);
+assert.equal(nationalWarmupReport.rollback.readyPartCount, 0);
+assert.equal(nationalWarmupReport.rollback.stateContractMismatchPartCount, 0);
+assert.equal(nationalWarmupReport.rollback.oracleMismatchPartCount, 0);
+nationalReport = null;
+nationalWarmupReport = null;
+nationalPackage = null;
+nationalWarmup = null;
+national = null;
 
 const small = syntheticFull({ zoneCount: 1, partCounts: [1] });
 assert.throws(
@@ -655,7 +808,24 @@ for (const result of [
   };
 }
 const smallPackage = publicPackage(small);
-assert.equal(audit(small, smallPackage, 1, 1).status, 'passed');
+const smallReport = audit(small, smallPackage, 1, 1);
+assert.equal(smallReport.status, 'passed');
+assert.deepEqual(smallReport.coverage.feggesundWave, {
+  targetPartCount: 0,
+  forecastHours: 0,
+  expectedEntries: 0,
+  acceptedEntries: 0,
+  directEntries: 0,
+  proxyEntries: 0,
+  missingEntries: 0,
+  policySha256: null,
+  coverageSha256: null,
+}, 'small fixtures without Feggesund must not require a national proof ledger');
+const publicProofLeak = structuredClone(smallPackage);
+publicProofLeak.manifest.waveInputProofs = { forbidden: true };
+assert.ok(audit(small, publicProofLeak, 1, 1).errors
+  .includes('PUBLIC_FEGGESUND_PRIVATE_PROOF_PRESENT'),
+'any private Feggesund proof marker in a public destination must fail closed');
 
 const historyIncompleteSmall = syntheticFull({
   zoneCount: 1,
@@ -684,6 +854,12 @@ const historyIncompleteReport = audit(
 );
 assert.deepEqual(historyIncompleteReport.errors, [],
   'canonical wave/last-mile HISTORY_INCOMPLETE must pass without weakening rollback');
+assert.deepEqual(historyIncompleteReport.history, {
+  allCurrentScoresFullHistory: false,
+  currentFullHistoryModeCount: 0,
+  currentHistoryIncompleteModeCount: 2,
+});
+assert.equal(historyIncompleteReport.rollback.activationReady, true);
 assert.equal(historyIncompleteReport.rollback.readyPartCount, 1);
 
 const mismatchedHistorySummary = structuredClone(historyIncompleteSmall);
@@ -1060,8 +1236,9 @@ assert.equal(companionRollbackLimitReport.rollback.evidenceLimitExceededPartCoun
 const missingCompanion = structuredClone(small);
 delete missingCompanion.ravScoreCandidateGRollback;
 const missingCompanionReport = audit(missingCompanion, smallPackage, 1, 1);
-assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_DESCRIPTOR_INVALID'));
-assert.ok(missingCompanionReport.errors.includes('ROLLBACK_COMPANION_PART_COVERAGE_MISMATCH'));
+assert.ok(missingCompanionReport.errors
+  .includes('CANDIDATE_G_PRIVATE_RUNTIME_ROOT_INVALID'));
+assert.equal(missingCompanionReport.rollback.activationReady, false);
 
 const incompleteCompanion = structuredClone(small);
 delete incompleteCompanion.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1'];
@@ -1082,6 +1259,85 @@ crossBindingCompanion.ravScoreCandidateGRollback.rollbackModelBinding.modelId = 
 assert.ok(audit(crossBindingCompanion, smallPackage, 1, 1).errors
   .includes('ROLLBACK_COMPANION_BINDING_MISMATCH'));
 
+const validSmallWarmup = withCandidateGMeasuredWarmup(small);
+const validSmallWarmupPackage = publicPackage(validSmallWarmup);
+const validSmallWarmupReport = audit(
+  validSmallWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.deepEqual(validSmallWarmupReport.errors, []);
+assert.equal(validSmallWarmupReport.rollback.status, 'BUILDING_MEASURED_ONLY');
+assert.equal(validSmallWarmupReport.rollback.activationReady, false);
+assert.equal(validSmallWarmupReport.rollback.readyPartCount, 0);
+
+const ambiguousCandidateGRoots = structuredClone(validSmallWarmup);
+ambiguousCandidateGRoots.ravScoreCandidateGRollback =
+  structuredClone(small.ravScoreCandidateGRollback);
+const ambiguousCandidateGRootsReport = audit(
+  ambiguousCandidateGRoots,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(ambiguousCandidateGRootsReport.errors
+  .includes('CANDIDATE_G_PRIVATE_RUNTIME_ROOT_INVALID'));
+assert.equal(ambiguousCandidateGRootsReport.rollback.activationReady, false);
+
+const malformedWarmupDescriptor = structuredClone(validSmallWarmup);
+malformedWarmupDescriptor.ravScoreCandidateGWarmup.syntheticHistoryAllowed = true;
+assert.ok(audit(
+  malformedWarmupDescriptor,
+  validSmallWarmupPackage,
+  1,
+  1,
+).errors.includes('CANDIDATE_G_WARMUP_DESCRIPTOR_INVALID'));
+
+const incompleteWarmup = structuredClone(validSmallWarmup);
+delete incompleteWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1'];
+incompleteWarmup.ravScoreCandidateGWarmup.runtime.measuredPartCount = 0;
+const incompleteWarmupReport = audit(
+  incompleteWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(incompleteWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_RUNTIME_INVALID'));
+assert.ok(incompleteWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_PART_COVERAGE_MISMATCH'));
+
+const tamperedWarmup = structuredClone(validSmallWarmup);
+tamperedWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState.transportPotential += 1;
+const tamperedWarmupReport = audit(
+  tamperedWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(tamperedWarmupReport.errors
+  .some(code => code.startsWith('CANDIDATE_G_WARMUP_')),
+'a tampered measured warmup continuation must fail its private warmup contract');
+assert.equal(tamperedWarmupReport.rollback.activationReady, false);
+
+const mislabeledReadyWarmup = structuredClone(validSmallWarmup);
+mislabeledReadyWarmup.ravScoreCandidateGWarmup.runtime.parts['synthetic-part-1']
+  .ravScoreModel.currentState = structuredClone(
+    small.ravScoreCandidateGRollback.runtime.parts['synthetic-part-1']
+      .ravScoreModel.currentState,
+  );
+const mislabeledReadyWarmupReport = audit(
+  mislabeledReadyWarmup,
+  validSmallWarmupPackage,
+  1,
+  1,
+);
+assert.ok(mislabeledReadyWarmupReport.errors
+  .includes('CANDIDATE_G_WARMUP_ALREADY_READY'));
+assert.equal(mislabeledReadyWarmupReport.rollback.activationReady, false);
+
 const scoreMismatch = structuredClone(small);
 scoreMismatch.coastalParts.parts['synthetic-part-1']
   .ravScoreModel.modes.waders.score += 1;
@@ -1101,6 +1357,15 @@ for (const [field, value] of [
     `${field} must be rejected from the public details payload`);
   assert.ok(leaked.errors.includes('PUBLIC_DETAILS_NOT_CANONICAL'));
 }
+
+const publicWarmupLeak = structuredClone(smallPackage);
+publicWarmupLeak.details.ravScoreCandidateGWarmup = {
+  status: 'BUILDING_MEASURED_ONLY',
+};
+publicWarmupLeak.detailsText = compactJson(publicWarmupLeak.details);
+assert.ok(audit(small, publicWarmupLeak, 1, 1).errors
+  .includes('PUBLIC_PRIVACY_CONTRACT_FAILED'),
+'The private measured warmup root must never enter a public payload.');
 
 const staleManifest = structuredClone(smallPackage);
 staleManifest.manifest.publicConditionsSha256 = '0'.repeat(64);

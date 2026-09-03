@@ -43,7 +43,7 @@ const EXPECTED_PARTS = 673;
 const MODES = Object.freeze(['waders', 'beach']);
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
 const SAFE_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/;
-const FORBIDDEN_PUBLIC_KEY = /^(?:candidateG|ravScoreModel|ravScoreState|currentState|continuationState|stateKey|samplingContextKey|transportEvidence|currentEvidence|waveEvidence|rawPayload|privatePayload|privateDiagnostic|ravScoreOperationalActivation|ravScoreCandidateGRollback)$/i;
+const FORBIDDEN_PUBLIC_KEY = /^(?:candidateG|ravScoreModel|ravScoreState|currentState|continuationState|stateKey|samplingContextKey|transportEvidence|currentEvidence|waveEvidence|rawPayload|privatePayload|privateDiagnostic|ravScoreOperationalActivation|ravScoreCandidateGRollback|ravScoreCandidateGWarmup)$/i;
 const FORBIDDEN_VECTOR_KEY = /^(?:current)?[uv](?:mps)?$/i;
 const PLAN_FIELDS = Object.freeze([
   'schemaVersion', 'kind', 'mode', 'sourceHead', 'datasetId', 'productionReferenceAt',
@@ -218,6 +218,7 @@ function assertSealedStageInput(candidateFull, plan, {
     'candidateFullSha256', 'privatePayloadLogged', 'candidateTargetProfile',
   ].includes(key));
   if (!candidateFull || candidateFull.ravScoreCandidateGRollback !== undefined
+    || candidateFull.ravScoreCandidateGWarmup !== undefined
     || candidateFull.datasetId !== plan.datasetId
     || candidateFull.productionReferenceAt !== plan.productionReferenceAt
     || !exactKeys(candidateFull.ravScoreOperationalActivation, embeddedFields)

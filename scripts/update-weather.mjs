@@ -45,6 +45,7 @@ import { resolveProductionReferenceTime } from './lib/production-reference-time.
 import { OPEN_METEO_FUTURE_HOURS, openMeteoPastHours, trimOpenMeteoForecast } from './lib/open-meteo-forecast-window.mjs';
 import {
   CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+  assertCandidateGRollbackContinuation,
   candidateGRollbackReferenceReadiness,
   candidateGRollbackScoreProfile,
 } from './lib/ravscore-candidate-g-rollback-runtime.mjs';
@@ -63,10 +64,19 @@ import {
   buildIntegratedPartPublicProjection,
   buildIntegratedZoneHourlyProjection,
   dmiExpectedIdentityForPart,
+  verifiedDmiForecastComponentSource,
   verifiedDmiNativeComponentSource,
   verifiedBulkCurrent,
   verifiedIntegratedPartHourly,
 } from './lib/ravscore-production-adapters.mjs';
+import {
+  FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
+  FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+  bindVerifiedFeggesundWaveSource,
+  buildFeggesundWaveCoverageProof,
+  buildFeggesundWaveInputProofEntry,
+  buildFeggesundWaveProxy,
+} from './lib/feggesund-wave-proxy.mjs';
 import {
   buildRavScoreProductionPartSeries,
   selectRavScoreProductionInitialState,
@@ -79,6 +89,8 @@ import {
   CANDIDATE_G_RECONSTRUCTED_STATE_SCHEMA_VERSION,
 } from '../js/core/ravscore-candidate-g-state-pipeline.js';
 import {
+  buildBoundedCurrentTransportMemory,
+  CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
   RECONSTRUCTED_TRANSPORT_EVIDENCE_TRUST_STATUS,
   isReconstructedTransportEvidence,
 } from '../js/core/ravscore-regime-memory.js';
@@ -94,6 +106,8 @@ const DMI_BULK_CACHE_PATH = 'data/live/dmi-bulk-cache.json';
 const DEPLOYED_DMI_BULK_CACHE_PATH = '.cache/deployed-dmi-bulk-cache.json';
 const LIVE_CURRENT_PILOT_PATH = 'data/live/current-pilot-history.json';
 const RUNTIME_DIAGNOSTICS_PATH = 'data/live/ravradar-runtime-diagnostics.json';
+const CANDIDATE_G_MEASURED_WARMUP_STATUS = 'BUILDING_MEASURED_ONLY';
+const CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY = 'MEASURED_ONLY';
 const WATER_STATION_ROUTING_PATH = 'data/water-level-station-routing.json';
 const WATER_STATION_INVENTORY_PATH = 'data/live/dmi-water-stations.json';
 const OFFICIAL_WATER_STATION_SUPPLEMENT_PATH = 'data/dmi-official-water-stations.json';
@@ -136,8 +150,18 @@ const RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE =
     ?? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.automatic;
 const RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED =
   process.env.RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED === 'true';
+const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =
+  process.env.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true';
+const RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE =
+  RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
+    ? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery
+    : RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE;
+const RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED =
+  RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED
+    ? false
+    : RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED;
 if (!Object.values(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES)
-  .includes(RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE)) {
+  .includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)) {
   throw new Error('Unknown RavScore first-cutover bootstrap mode');
 }
 
@@ -1066,7 +1090,26 @@ function bulkZoneToForecastRecord(
     && ravScoreNumber(item['dominant-wave-period']) !== null);
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
   if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
-  const mergedHourly = mergeHourlyPreferDmi(built.hourly, compatiblePrevious?.hourly ?? [], { generatedAt });
+  const mergedDmiHourly = mergeHourlyPreferDmi(
+    built.hourly,
+    compatiblePrevious?.hourly ?? [],
+    { generatedAt },
+  );
+  const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
+    ? mergedDmiHourly.map(hour => {
+      const {
+        feggesundNeighborWaveSource: discardedAttestation,
+        ...withoutAttestation
+      } = hour;
+      const attestation = verifiedFeggesundNeighborSource(
+        withoutAttestation,
+        dmiIdentity,
+      );
+      return attestation
+        ? { ...withoutAttestation, feggesundNeighborWaveSource: attestation }
+        : withoutAttestation;
+    })
+    : mergedDmiHourly;
   const oldCompleteness = compatiblePrevious?.model?.completeness ?? {};
   return createDmiForecastRecord({
     zoneId,
@@ -1105,6 +1148,91 @@ function bulkZoneToForecastRecord(
       }
     }
   });
+}
+
+function verifiedFeggesundNeighborSource(hour, expectedIdentity) {
+  const source = verifiedDmiForecastComponentSource(
+    hour?.sources?.wave,
+    hour?.time,
+    'wave',
+    expectedIdentity,
+  );
+  const height = ravScoreNumber(hour?.waveHeightM);
+  const period = ravScoreNumber(hour?.wavePeriodS);
+  const direction = source?.optionalFieldSet?.includes('mean-wave-dir')
+    ? ravScoreNumber(hour?.waveDirectionDeg)
+    : null;
+  if (!source || height === null || height < 0 || period === null || period <= 0
+    || (height > 0 && (direction === null || direction < 0 || direction >= 360))) {
+    return null;
+  }
+  return bindVerifiedFeggesundWaveSource({
+    parentZoneId: expectedIdentity.parentZoneId,
+    time: hour.time,
+    waveHeightM: height,
+    wavePeriodS: period,
+    waveDirectionDeg: direction,
+    verifiedDmiSource: source,
+  });
+}
+
+function feggesundNeighborSourcesByTime(parentForecastStore, forecastStartAt) {
+  const startMs = Date.parse(forecastStartAt);
+  const endMs = startMs + (DMI_FORECAST_HOURS - 1) * 3_600_000;
+  const byZone = new Map(FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.map(zoneId => {
+    const hourly = parentForecastStore?.zones?.[zoneId]?.hourly ?? [];
+    return [zoneId, new Map(hourly
+      .filter(hour => Date.parse(hour?.time) >= startMs && Date.parse(hour?.time) <= endMs)
+      .filter(hour => hour?.feggesundNeighborWaveSource)
+      .map(hour => [hour.time, hour.feggesundNeighborWaveSource]))];
+  }));
+  const byTime = new Map();
+  for (let index = 0; index < DMI_FORECAST_HOURS; index += 1) {
+    const time = new Date(startMs + index * 3_600_000).toISOString();
+    const sources = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS
+      .map(zoneId => byZone.get(zoneId)?.get(time))
+      .filter(Boolean);
+    if (sources.length === FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.length) {
+      byTime.set(time, sources);
+    }
+  }
+  return byTime;
+}
+
+function applyFeggesundOperationalWaveProxy(record, part, sourcesByTime) {
+  if (part?.zoneId !== FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) return record;
+  const targetEntityId = `PART::${part.partId}`;
+  const hourly = (record?.hourly ?? []).map(hour => {
+    const height = ravScoreNumber(hour?.waveHeightM);
+    const period = ravScoreNumber(hour?.wavePeriodS);
+    const direction = ravScoreNumber(hour?.waveDirectionDeg);
+    const source = hour?.sources?.wave;
+    const entireDirectTupleMissing = height === null
+      && period === null
+      && direction === null
+      && (!source || source.provider === 'missing');
+    if (!entireDirectTupleMissing) return hour;
+    const sources = sourcesByTime.get(hour.time);
+    if (!sources) return hour;
+    try {
+      const projection = buildFeggesundWaveProxy({
+        targetEntityId,
+        targetParentZoneId: FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+        time: hour.time,
+        sources,
+      });
+      return {
+        ...hour,
+        waveHeightM: projection.waveHeightM,
+        wavePeriodS: projection.wavePeriodS,
+        waveDirectionDeg: projection.waveDirectionDeg,
+        sources: { ...(hour.sources ?? {}), wave: projection.proxy },
+      };
+    } catch {
+      return hour;
+    }
+  });
+  return { ...record, hourly };
 }
 
 function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt) {
@@ -1425,9 +1553,271 @@ function buildPrivateCandidateGRollbackRuntime({
   };
 }
 
+function privateCandidateGRollbackRuntimeReady(runtime) {
+  return runtime?.schemaVersion === 1
+    && runtime?.enabled === true
+    && Number.isSafeInteger(runtime?.expectedPartCount)
+    && runtime.expectedPartCount > 0
+    && runtime?.scoredPartCount === runtime.expectedPartCount
+    && Object.keys(runtime?.parts ?? {}).length === runtime.expectedPartCount
+    && runtime?.scoreProfile?.modelCoverageReady === true
+    && runtime?.scoreProfile?.modelMemoryReady === true
+    && runtime?.scoreProfile?.modelMigrationReady === true;
+}
+
+const exactObjectKeys = (value, keys) => value
+  && typeof value === 'object'
+  && !Array.isArray(value)
+  && scoreDigest(Object.keys(value).sort()) === scoreDigest([...keys].sort());
+
+const exactScalarContract = (value, expected) => expected
+  && typeof expected === 'object'
+  && !Array.isArray(expected)
+  && exactObjectKeys(value, Object.keys(expected))
+  && Object.entries(expected).every(([key, expectedValue]) =>
+    value[key] === expectedValue);
+
+function assertPrivateCandidateGContinuation(state, part, label) {
+  assertCandidateGRollbackContinuation(state, part, label);
+  const replay = buildBoundedCurrentTransportMemory(state.transportEvidence, {
+    ...CURRENT_TRANSPORT_POTENTIAL_RECOMMENDED_RESEARCH_PROFILE,
+    referenceTime: state.transportReferenceAt,
+    restartAfterVerifiedTimeGap: true,
+  });
+  const compactReplayMatches = replay.memoryReady === state.transportMemoryReady
+    && replay.status === state.transportMemoryStatus
+    && replay.windowHours === state.transportMemoryWindowHours
+    && Math.abs(replay.coverageHours - state.transportMemoryCoverageHours) <= 1e-6
+    && scoreDigest(replay.evidence) === scoreDigest(state.transportEvidence);
+  const derivedReplayMatches = replay.result === null
+    || (Math.abs(replay.result.transportPotential - state.transportPotential) <= 1e-6
+      && Math.abs(
+        replay.result.outboundEpisodeEffectiveHours
+          - state.outboundEpisodeEffectiveHours,
+      ) <= 1e-6);
+  if (!compactReplayMatches || !derivedReplayMatches) {
+    throw new Error(`${label} does not match its bounded measured replay`);
+  }
+  return true;
+}
+
+function buildPrivateCandidateGWarmupRuntime(candidateRuntime) {
+  const expectedPartCount = candidateRuntime?.expectedPartCount;
+  const candidateParts = candidateRuntime?.parts;
+  if (!Number.isSafeInteger(expectedPartCount)
+    || expectedPartCount <= 0
+    || !candidateParts
+    || typeof candidateParts !== 'object'
+    || Array.isArray(candidateParts)
+    || Object.keys(candidateParts).length !== expectedPartCount) {
+    throw new Error('Candidate G measured warmup requires complete canonical part coverage');
+  }
+  const parts = Object.fromEntries(Object.entries(candidateParts).map(([partId, part]) => {
+    const currentState = part?.ravScoreModel?.currentState;
+    assertPrivateCandidateGContinuation(
+      currentState,
+      { ...part, partId },
+      'Measured Candidate G warmup continuation',
+    );
+    return [partId, {
+      ravScoreModel: {
+        currentState: structuredClone(currentState),
+      },
+    }];
+  }));
+  const readyPartCount = Object.values(parts).filter(part => {
+    const state = part.ravScoreModel.currentState;
+    return state.transportMemoryReady === true
+      && state.transportMemoryStatus === 'READY'
+      && state.transportMemoryWindowHours === 48
+      && state.transportMemoryCoverageHours === 48;
+  }).length;
+  if (readyPartCount === expectedPartCount) {
+    throw new Error('Candidate G measured warmup must not relabel a READY runtime');
+  }
+  return {
+    schemaVersion: 1,
+    enabled: true,
+    status: CANDIDATE_G_MEASURED_WARMUP_STATUS,
+    generatedAt: candidateRuntime.generatedAt,
+    modelBinding: candidateGRollbackModelBinding(),
+    expectedPartCount,
+    measuredPartCount: expectedPartCount,
+    parts,
+  };
+}
+
+function selectPreviousPrivateCandidateGRuntime(previous) {
+  const rollbackDescriptor = previous?.ravScoreCandidateGRollback;
+  const warmupDescriptor = previous?.ravScoreCandidateGWarmup;
+  const rollbackPresent = rollbackDescriptor !== null
+    && rollbackDescriptor !== undefined;
+  const warmupPresent = warmupDescriptor !== null
+    && warmupDescriptor !== undefined;
+  if (rollbackPresent && warmupPresent) {
+    throw new Error('Previous private Candidate G runtime has ambiguous roots');
+  }
+  const previousBinding = previous?.coastalParts?.modelBinding;
+  const currentBinding = ravScoreModelBinding();
+  const previousIsIntegrated = previous?.coastalParts?.enabled === true
+    && previousBinding?.modelId === currentBinding.modelId
+    && previousBinding?.stateSchemaVersion === currentBinding.stateSchemaVersion;
+  if (previousIsIntegrated && rollbackPresent === warmupPresent) {
+    throw new Error('Previous integrated runtime requires exactly one private Candidate G root');
+  }
+  if (!rollbackPresent && !warmupPresent) return null;
+
+  const expectedParts = previous?.coastalParts?.parts;
+  const expectedPartIds = expectedParts
+    && typeof expectedParts === 'object'
+    && !Array.isArray(expectedParts)
+    ? Object.keys(expectedParts).sort() : [];
+  const expectedPartCount = Number(previous?.coastalParts?.expectedPartCount);
+  const candidateBinding = candidateGRollbackModelBinding();
+  const sourceBindingValid = exactScalarContract(
+    rollbackPresent
+      ? rollbackDescriptor.sourceModelBinding
+      : warmupDescriptor.sourceModelBinding,
+    previousBinding,
+  );
+
+  if (rollbackPresent) {
+    const runtime = rollbackDescriptor.runtime;
+    const descriptorValid = exactObjectKeys(rollbackDescriptor, [
+      'schemaVersion',
+      'kind',
+      'privacyClass',
+      'sourceModelBinding',
+      'rollbackModelBinding',
+      'rollbackId',
+      'automaticActivationAllowed',
+      'publicDuringNormalOperation',
+      'runtime',
+    ])
+      && rollbackDescriptor.schemaVersion === '1.0.0'
+      && rollbackDescriptor.kind
+        === 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME'
+      && rollbackDescriptor.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+      && rollbackDescriptor.rollbackId === CANDIDATE_G_OPERATIONAL_ROLLBACK_ID
+      && rollbackDescriptor.automaticActivationAllowed === false
+      && rollbackDescriptor.publicDuringNormalOperation === false
+      && sourceBindingValid
+      && exactScalarContract(
+        rollbackDescriptor.rollbackModelBinding,
+        candidateBinding,
+      );
+    const runtimePartIds = runtime?.parts
+      && typeof runtime.parts === 'object'
+      && !Array.isArray(runtime.parts)
+      ? Object.keys(runtime.parts).sort() : [];
+    const runtimeValid = descriptorValid
+      && privateCandidateGRollbackRuntimeReady(runtime)
+      && runtime.generatedAt === previous?.productionReferenceAt
+      && runtime.expectedPartCount === expectedPartCount
+      && exactScalarContract(runtime.modelBinding, candidateBinding)
+      && scoreDigest(runtimePartIds) === scoreDigest(expectedPartIds);
+    if (!runtimeValid) {
+      throw new Error('Previous private Candidate G READY descriptor is invalid');
+    }
+    for (const partId of expectedPartIds) {
+      const state = runtime.parts?.[partId]?.ravScoreModel?.currentState;
+      assertPrivateCandidateGContinuation(
+        state,
+        { ...expectedParts[partId], partId },
+        'Previous private Candidate G READY continuation',
+      );
+      if (state.transportMemoryReady !== true
+        || state.transportMemoryStatus !== 'READY'
+        || state.transportMemoryWindowHours !== 48
+        || Math.abs(state.transportMemoryCoverageHours - 48) > 1e-6) {
+        throw new Error('Previous private Candidate G READY state is not ready');
+      }
+    }
+    return runtime;
+  }
+
+  const runtime = warmupDescriptor.runtime;
+  const descriptorValid = exactObjectKeys(warmupDescriptor, [
+    'schemaVersion',
+    'kind',
+    'privacyClass',
+    'status',
+    'evidencePolicy',
+    'syntheticHistoryAllowed',
+    'sourceModelBinding',
+    'candidateModelBinding',
+    'automaticActivationAllowed',
+    'publicDuringNormalOperation',
+    'runtime',
+  ])
+    && warmupDescriptor.schemaVersion === '1.0.0'
+    && warmupDescriptor.kind === 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME'
+    && warmupDescriptor.privacyClass === 'PRIVATE_PRODUCTION_RUNTIME'
+    && warmupDescriptor.status === CANDIDATE_G_MEASURED_WARMUP_STATUS
+    && warmupDescriptor.evidencePolicy
+      === CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY
+    && warmupDescriptor.syntheticHistoryAllowed === false
+    && warmupDescriptor.automaticActivationAllowed === false
+    && warmupDescriptor.publicDuringNormalOperation === false
+    && sourceBindingValid
+    && exactScalarContract(warmupDescriptor.candidateModelBinding, candidateBinding);
+  const runtimePartIds = runtime?.parts
+    && typeof runtime.parts === 'object'
+    && !Array.isArray(runtime.parts)
+    ? Object.keys(runtime.parts).sort() : [];
+  const runtimeValid = descriptorValid
+    && exactObjectKeys(runtime, [
+      'schemaVersion',
+      'enabled',
+      'status',
+      'generatedAt',
+      'modelBinding',
+      'expectedPartCount',
+      'measuredPartCount',
+      'parts',
+    ])
+    && runtime.schemaVersion === 1
+    && runtime.enabled === true
+    && runtime.status === CANDIDATE_G_MEASURED_WARMUP_STATUS
+    && runtime.generatedAt === previous?.productionReferenceAt
+    && Number.isSafeInteger(runtime.expectedPartCount)
+    && runtime.expectedPartCount === expectedPartCount
+    && runtime.measuredPartCount === expectedPartCount
+    && exactScalarContract(runtime.modelBinding, candidateBinding)
+    && scoreDigest(runtimePartIds) === scoreDigest(expectedPartIds);
+  if (!runtimeValid) {
+    throw new Error('Previous private Candidate G warmup descriptor is invalid');
+  }
+  let readyPartCount = 0;
+  for (const partId of expectedPartIds) {
+    const wrapper = runtime.parts[partId];
+    if (!exactObjectKeys(wrapper, ['ravScoreModel'])
+      || !exactObjectKeys(wrapper.ravScoreModel, ['currentState'])) {
+      throw new Error('Previous private Candidate G warmup part is invalid');
+    }
+    const state = wrapper.ravScoreModel.currentState;
+    assertPrivateCandidateGContinuation(
+      state,
+      { ...expectedParts[partId], partId },
+      'Previous private Candidate G warmup continuation',
+    );
+    if (state.transportMemoryReady === true
+      && state.transportMemoryStatus === 'READY'
+      && state.transportMemoryWindowHours === 48
+      && Math.abs(state.transportMemoryCoverageHours - 48) <= 1e-6) {
+      readyPartCount += 1;
+    }
+  }
+  if (readyPartCount === expectedPartCount) {
+    throw new Error('Previous Candidate G warmup may not contain an all-READY runtime');
+  }
+  return runtime;
+}
+
 function scoreCoastalPartsRuntime(
   contract,
   parentFeatures,
+  parentForecastStore,
   bulkCache,
   deployedBulkCache,
   liveCurrentPilot,
@@ -1453,6 +1843,11 @@ function scoreCoastalPartsRuntime(
   const expectedByZone = new Map();
   const partRows = [];
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
+  const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
+    parentForecastStore,
+    partForecastStartAt,
+  );
+  const feggesundWaveProofEntries = [];
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
     expectedByZone.set(zoneId, parts.length);
@@ -1497,8 +1892,8 @@ function scoreCoastalPartsRuntime(
         existingPart,
         checkpointStates,
         targetReferenceAt: generatedAt,
-        candidateGBootstrapMode: RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE,
-        candidateGSourceValidated: RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED,
+        candidateGBootstrapMode: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE,
+        candidateGSourceValidated: RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED,
       });
       let previousCandidateGContinuation = null;
       let legacyCandidateGMigrationState = null;
@@ -1512,8 +1907,10 @@ function scoreCoastalPartsRuntime(
         legacyCandidateGMigrationState = publicCandidateGMigrationState;
       } else if (
         initialSelection.source === 'COLD_START'
-        && RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE
-          === RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart
+        && [
+          RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.genuineColdStart,
+          RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery,
+        ].includes(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE)
       ) {
         candidateGRollbackMeasuredColdStart = true;
       } else {
@@ -1536,7 +1933,12 @@ function scoreCoastalPartsRuntime(
         expectedIdentity: partDmiIdentity,
       });
       if (!dmiRecord) continue;
-      const record = mergeLiveCurrentPilotIntoRecord(dmiRecord, { ...part, zoneId }, liveCurrentPilot, {
+      const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
+        dmiRecord,
+        { ...part, zoneId },
+        feggesundSourcesByTime,
+      );
+      const record = mergeLiveCurrentPilotIntoRecord(operationalDmiRecord, { ...part, zoneId }, liveCurrentPilot, {
         primaryCurrentVerified: hour => Boolean(verifiedBulkCurrent(
           bulkCache,
           bulkCache?.zones?.[bulkId],
@@ -1547,6 +1949,20 @@ function scoreCoastalPartsRuntime(
         )),
       });
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
+      if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
+        const endMs = Date.parse(partForecastStartAt)
+          + (RAVSCORE_PUBLIC_FORECAST_HOURS - 1) * 3_600_000;
+        for (const hour of hourly.filter(candidate => (
+          Date.parse(candidate.time) >= Date.parse(partForecastStartAt)
+          && Date.parse(candidate.time) <= endMs
+        ))) {
+          feggesundWaveProofEntries.push(buildFeggesundWaveInputProofEntry({
+            partId: part.partId,
+            time: hour.time,
+            hour,
+          }));
+        }
+      }
       const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
       const replayStartAt = ravScoreRecoverySourceStartAt(
@@ -1647,17 +2063,17 @@ function scoreCoastalPartsRuntime(
         recoverySources,
         publicHourly: hourly,
         nativeCadenceHoldHours,
-        resolveNativeCadenceReferenceSample: replayStartTime =>
+        resolveNativeCadenceReferenceSample: sourceValidTime =>
           latestVerifiedNativeCadenceSampleForPart(
             { ...part, zoneId },
             liveCurrentPilot,
-            replayStartTime,
+            sourceValidTime,
           ),
-        resolveCandidateGNativeCadenceReferenceSample: replayStartTime =>
+        resolveCandidateGNativeCadenceReferenceSample: sourceValidTime =>
           latestVerifiedNativeCadenceSampleForPart(
             { ...part, zoneId },
             liveCurrentPilot,
-            replayStartTime,
+            sourceValidTime,
             { projection: 'candidate-g-legacy-quantized' },
           ),
       });
@@ -1754,7 +2170,7 @@ function scoreCoastalPartsRuntime(
       const result = current?.[mode];
       if (result?.available !== true || !Number.isFinite(result.score)) continue;
       if (result.scoreQuality === 'FULL_HISTORY') {
-        if (result.calibrationEligible !== true
+        if (typeof result.calibrationEligible !== 'boolean'
           || result.historyCoverageHours !== RAVSCORE_CURRENT_SUPPLY_POLICY.windowHours
           || !Array.isArray(result.historyReasonCodes)
           || result.historyReasonCodes.length !== 0) {
@@ -1809,6 +2225,14 @@ function scoreCoastalPartsRuntime(
     unavailableZones,
     historyIncompleteZones,
   };
+  const feggesundWaveCoverage = buildFeggesundWaveCoverageProof({
+    forecastStartAt: partForecastStartAt,
+    forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,
+    partIds: (contract?.zones?.[FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID] ?? [])
+      .map(part => part?.partId)
+      .filter(Boolean),
+    entries: feggesundWaveProofEntries,
+  });
   const integratedRuntime = {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     modelBinding: ravScoreModelBinding(),
@@ -1818,6 +2242,7 @@ function scoreCoastalPartsRuntime(
     currentPilotMode: liveCurrentPilot?.mode ?? 'unavailable',
     currentPilotEnabled: liveCurrentPilot?.mode === 'controlled-live' && liveCurrentPilot?.enabled === true,
     scoreAvailability,
+    waveInputProofs: { feggesund: feggesundWaveCoverage },
     parts, zones
   };
   const candidateGRollbackRuntime = buildPrivateCandidateGRollbackRuntime({
@@ -1828,7 +2253,16 @@ function scoreCoastalPartsRuntime(
     generatedAt,
     liveCurrentPilot,
   });
-  return { integratedRuntime, candidateGRollbackRuntime };
+  const rollbackReady = privateCandidateGRollbackRuntimeReady(
+    candidateGRollbackRuntime,
+  );
+  return {
+    integratedRuntime,
+    candidateGRollbackRuntime: rollbackReady ? candidateGRollbackRuntime : null,
+    candidateGWarmupRuntime: rollbackReady
+      ? null
+      : buildPrivateCandidateGWarmupRuntime(candidateGRollbackRuntime),
+  };
 }
 
 function dmiCollections(coastType) {
@@ -2992,16 +3426,20 @@ output.controlledLiveCurrentPilot = {
   credentialsIncluded: false,
   generatedAt: liveCurrentPilot?.generatedAt ?? null,
 };
+const previousPrivateCandidateGRuntime = selectPreviousPrivateCandidateGRuntime(
+  previous,
+);
 const coastalPartScoreBuild = coastalPartsContract.enabled
   ? scoreCoastalPartsRuntime(
     coastalPartsContract,
     features,
+    nextDmiForecastStore,
     dmiBulkCache,
     deployedDmiBulkCache,
     liveCurrentPilot,
     generatedAt,
     previous?.coastalParts ?? null,
-    previous?.ravScoreCandidateGRollback?.runtime ?? null,
+    previousPrivateCandidateGRuntime,
     coastalPointStateInjections,
     ravScoreCheckpoint.loaded && ravScoreCheckpoint.continuationAvailable
       ? ravScoreCheckpoint.states
@@ -3011,8 +3449,8 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
   : null;
 output.coastalParts = coastalPartScoreBuild?.integratedRuntime
   ?? { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
-output.ravScoreCandidateGRollback = coastalPartScoreBuild?.candidateGRollbackRuntime
-  ? {
+if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
+  output.ravScoreCandidateGRollback = {
     schemaVersion: '1.0.0',
     kind: 'PRIVATE_CANDIDATE_G_OPERATIONAL_ROLLBACK_RUNTIME',
     privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
@@ -3022,8 +3460,22 @@ output.ravScoreCandidateGRollback = coastalPartScoreBuild?.candidateGRollbackRun
     automaticActivationAllowed: false,
     publicDuringNormalOperation: false,
     runtime: coastalPartScoreBuild.candidateGRollbackRuntime,
-  }
-  : null;
+  };
+} else if (coastalPartScoreBuild?.candidateGWarmupRuntime) {
+  output.ravScoreCandidateGWarmup = {
+    schemaVersion: '1.0.0',
+    kind: 'PRIVATE_CANDIDATE_G_MEASURED_WARMUP_RUNTIME',
+    privacyClass: 'PRIVATE_PRODUCTION_RUNTIME',
+    status: CANDIDATE_G_MEASURED_WARMUP_STATUS,
+    evidencePolicy: CANDIDATE_G_MEASURED_WARMUP_EVIDENCE_POLICY,
+    syntheticHistoryAllowed: false,
+    sourceModelBinding: ravScoreModelBinding(),
+    candidateModelBinding: candidateGRollbackModelBinding(),
+    automaticActivationAllowed: false,
+    publicDuringNormalOperation: false,
+    runtime: coastalPartScoreBuild.candidateGWarmupRuntime,
+  };
+}
 // Conditions skrives først. Den offentlige runtime og manifestet bygges derefter af én fælles, deterministisk funktion.
 await fs.writeFile(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`);
 await writePublicRuntimeFromFull(output);

@@ -1,7 +1,7 @@
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from './ravscore-model-contract.js?v=4.0.318';
+} from './ravscore-model-contract.js?v=4.0.320';
 
 const INTEGRATED_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
 const CANDIDATE_G_MODEL_ID = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';
@@ -155,7 +155,7 @@ const SCORE_BOUND_FIELDS = Object.freeze([
 ]);
 
 function exactPublicScoreQuality(result, {
-  fullCalibrationEligible = true,
+  fullCalibrationEligible = null,
   historyIncompleteAllowed = true,
   tailResetAllowed = true,
 } = {}) {
@@ -175,7 +175,8 @@ function exactPublicScoreQuality(result, {
     || reasons.some(code=>typeof code!=='string'||!/^[A-Z][A-Z0-9_]{0,127}$/.test(code))
     || new Set(reasons).size!==reasons.length
     || typeof result.conservativeTailResetApplied!=='boolean')return false;
-  if(result.scoreQuality==='FULL_HISTORY')return result.calibrationEligible===fullCalibrationEligible
+  if(result.scoreQuality==='FULL_HISTORY')return typeof result.calibrationEligible==='boolean'
+    &&(fullCalibrationEligible===null||result.calibrationEligible===fullCalibrationEligible)
     &&coverage===48&&reasons.length===0
     &&bounds.lower===bounds.upper&&bounds.rawLower===bounds.rawUpper
     &&(result.scoreSemantics==='EXACT_POINT_SCORE'

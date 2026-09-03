@@ -250,6 +250,7 @@ assert record_profiles(
     now_iso,
     valid_iso,
     now_iso,
+    "sha256:" + "a" * 64,
 ) == 1
 regional_anchor = regional_document["anchors"][regional_target["id"]]
 assert regional_anchor["regionalProxyCandidate"] is True
@@ -267,6 +268,7 @@ assert record_profiles(
     now_iso,
     valid_iso,
     now_iso,
+    "sha256:" + "a" * 64,
 ) == 0
 over_cap_document = empty_document()
 over_cap_choices = [choice(regional_lon + 0.3, regional_lat, 20.0, "depthbelowsea:20", 20, 0.4, 0.5)]
@@ -278,6 +280,7 @@ assert record_profiles(
     now_iso,
     valid_iso,
     now_iso,
+    "sha256:" + "a" * 64,
 ) == 0
 assert regional_target["id"] in over_cap_document["coverageAudits"]
 
@@ -412,6 +415,7 @@ assert "regional_proxy_targets" in bulk_source
 # bounded private-only bootstrap when an older cache has no stable-key file.
 if "eccodes" not in sys.modules:
     fake_eccodes = types.ModuleType("eccodes")
+    fake_eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
     for function_name in (
         "codes_get", "codes_get_array", "codes_get_elements", "codes_grib_find_nearest",
         "codes_grib_new_from_file", "codes_release",
@@ -461,10 +465,24 @@ with tempfile.TemporaryDirectory() as directory:
         assert metadata["collection"] == "dkss_idw"
         return private_path, False
 
-    def fake_process(path, collection, model_run, valid_time, zones, output, diagnostics, shadow):
+    def fake_process(
+        path,
+        collection,
+        model_run,
+        valid_time,
+        zones,
+        output,
+        diagnostics,
+        shadow,
+        private_stage_output=None,
+        current_part_outcomes=None,
+        allowed_parameters=None,
+    ):
         assert path == private_path and collection == "dkss_idw"
         assert zones and all(zone.get("researchCurrent") for zone in zones)
         assert output == {"generatedAt": captured_iso, "zones": {}}
+        assert private_stage_output is None and current_part_outcomes is None
+        assert allowed_parameters is None
         diagnostics["currentFieldShadowSamplesWritten"] = 1
         return {"current-u", "current-v"}, set(), False, 2, len(zones)
 
@@ -490,27 +508,135 @@ with tempfile.TemporaryDirectory() as directory:
         bulk.CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = original_limit
         bulk.RAW_DIR = original_raw_dir
 
+# Ordinary rotating research remains bounded at +12 hours; a cached +13 asset
+# must not be inspected even when both are otherwise reusable.
+original_process = bulk.process_grib
+with tempfile.TemporaryDirectory() as directory:
+    original_raw_dir = bulk.RAW_DIR
+    bulk.RAW_DIR = pathlib.Path(directory)
+    seen_ordinary_times: list[str] = []
+    try:
+        ordinary_assets = []
+        for offset in (12, 13):
+            valid = (captured + timedelta(hours=offset)).isoformat().replace("+00:00", "Z")
+            href = f"https://example.test/ordinary-{offset}.grib"
+            item_id = f"ordinary-{offset}"
+            path = bulk.cached_asset_path(href)
+            path.write_bytes(str(offset).encode("utf-8"))
+            bulk.register_raw_cache_asset(
+                path,
+                href,
+                "dkss_idw",
+                captured_iso,
+                valid,
+                item_id=item_id,
+                acquired_at=captured_iso,
+                expected_size=len(str(offset)),
+                content_sha256=bulk.file_content_sha256(path),
+            )
+            ordinary_assets.append({
+                "valid": valid,
+                "href": href,
+                "size": len(str(offset)),
+                "id": item_id,
+            })
+
+        def fake_ordinary_process(
+            path,
+            collection,
+            model_run,
+            valid_time,
+            zones,
+            output,
+            diagnostics,
+            shadow,
+            private_stage_output=None,
+            current_part_outcomes=None,
+            allowed_parameters=None,
+        ):
+            seen_ordinary_times.append(valid_time)
+            assert collection == "dkss_idw" and zones == targets
+            assert private_stage_output is None and current_part_outcomes is None
+            assert allowed_parameters is None
+            return {"current-u", "current-v"}, set(), False, 2, len(zones)
+
+        bulk.process_grib = fake_ordinary_process
+        ordinary_replay = bulk.replay_current_field_shadow_from_cache(
+            {"dkss_idw": {"modelRun": captured_iso, "assets": ordinary_assets}},
+            targets,
+            empty_document(),
+            captured_iso,
+            {"bytes": 0},
+        )
+        assert ordinary_replay["assetsCompleted"] == 1
+        assert seen_ordinary_times == [
+            (captured + timedelta(hours=12)).isoformat().replace("+00:00", "Z")
+        ]
+    finally:
+        bulk.process_grib = original_process
+        bulk.RAW_DIR = original_raw_dir
+
 # A proxy-only replay must not even inspect/process IDW or NSBS vector files.
+# Its operational exception reaches +117, while +118 remains outside the exact
+# public matrix and must be rejected.
 original_process = bulk.process_grib
 with tempfile.TemporaryDirectory() as directory:
     original_raw_dir = bulk.RAW_DIR
     bulk.RAW_DIR = pathlib.Path(directory)
     seen_collections: list[str] = []
+    seen_proxy_times: list[str] = []
     try:
-        valid = (captured + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
         catalog = {}
         for collection in ("dkss_idw", "dkss_lf"):
-            href = f"https://example.test/{collection}.grib"
-            bulk.cached_asset_path(href).write_bytes(collection.encode("utf-8"))
+            offsets = (1,) if collection == "dkss_idw" else (117, 118)
+            assets = []
+            for offset in offsets:
+                valid = (captured + timedelta(hours=offset)).isoformat().replace("+00:00", "Z")
+                href = f"https://example.test/{collection}-{offset}.grib"
+                item_id = f"{collection}-{offset}"
+                path = bulk.cached_asset_path(href)
+                path.write_bytes(collection.encode("utf-8"))
+                bulk.register_raw_cache_asset(
+                    path,
+                    href,
+                    collection,
+                    captured_iso,
+                    valid,
+                    item_id=item_id,
+                    acquired_at=captured_iso,
+                    expected_size=len(collection),
+                    content_sha256=bulk.file_content_sha256(path),
+                )
+                assets.append({
+                    "valid": valid,
+                    "href": href,
+                    "size": len(collection),
+                    "id": item_id,
+                })
             catalog[collection] = {
                 "modelRun": captured_iso,
-                "assets": [{"valid": valid, "href": href, "size": len(collection)}],
+                "assets": assets,
             }
 
-        def fake_proxy_process(path, collection, model_run, valid_time, zones, output, diagnostics, shadow):
+        def fake_proxy_process(
+            path,
+            collection,
+            model_run,
+            valid_time,
+            zones,
+            output,
+            diagnostics,
+            shadow,
+            private_stage_output=None,
+            current_part_outcomes=None,
+            allowed_parameters=None,
+        ):
             seen_collections.append(collection)
+            seen_proxy_times.append(valid_time)
             assert collection == "dkss_lf"
             assert zones == [regional_target]
+            assert private_stage_output is None and current_part_outcomes is None
+            assert allowed_parameters is None
             return {"current-u", "current-v"}, set(), False, 2, len(zones)
 
         bulk.process_grib = fake_proxy_process
@@ -523,6 +649,9 @@ with tempfile.TemporaryDirectory() as directory:
         )
         assert replay["assetsCompleted"] == 1
         assert seen_collections == ["dkss_lf"]
+        assert seen_proxy_times == [
+            (captured + timedelta(hours=117)).isoformat().replace("+00:00", "Z")
+        ]
     finally:
         bulk.process_grib = original_process
         bulk.RAW_DIR = original_raw_dir

@@ -14,6 +14,8 @@ import { buildCandidateGRollbackPartScoreSeries } from './lib/ravscore-candidate
 import { buildRavScoreProductionPartSeries } from './lib/ravscore-production-part-pipeline.mjs';
 import {
   buildRavScoreRecoveryReplay,
+  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES,
+  RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
   ravScoreCandidateMigrationWaveBootstrapTargetAt,
   ravScoreRecoverySourceStartAt,
   selectRavScoreInitialState,
@@ -44,6 +46,7 @@ const liveIdentityPayload = JSON.stringify({
 const liveIdentityFingerprint = `sha256:${crypto.createHash('sha256')
   .update(liveIdentityPayload).digest('hex')}`;
 const sha = value => crypto.createHash('sha256').update(String(value)).digest('hex');
+const HOLD_SHA = `sha256:${'b'.repeat(64)}`;
 const dmiContracts = {
   current: {
     collection: 'dkss_idw',
@@ -251,7 +254,10 @@ function regionalWeather(hour, { rawU = 0.09, rawV = 0, ...weatherOverrides } = 
       parentZoneId: part.parentZoneId,
       targetIdentityFingerprint: liveIdentityFingerprint,
       validTime: at,
+      sourceValidTime: at,
+      classification: 'REGIONAL_DMI_NATIVE',
       capturedAt: new Date(Date.parse(at) + 20 * 60_000).toISOString(),
+      productionReferenceAt: at,
       modelRun: time(-54),
       samplingPoint: [...part.waterPoint],
       gridPoint: [...regionalGridPoint],
@@ -286,6 +292,39 @@ function nativeBoundaryReference(row) {
       collection: row.currentProvenance.collection,
       distanceKm: row.currentProvenance.distanceKm,
     },
+  };
+}
+
+function stateOnlyCurrentHold(validHour, sourceHour) {
+  return {
+    contractId: 'regional-dmi-exact-state-only-hold-v1',
+    status: 'verified-derived-state-only',
+    classification: 'REGIONAL_DMI_DERIVED_HOLD',
+    stateOnly: true,
+    partId: part.partId,
+    parentZoneId: part.parentZoneId,
+    targetIdentityFingerprint: liveIdentityFingerprint,
+    validTime: time(validHour),
+    sourceValidTime: time(sourceHour),
+    holdAgeHours: validHour - sourceHour,
+    provider: 'dmi',
+    sourceClass: 'owner-approved-regional-proxy',
+    source: 'dmi-dkss-lf-regional-proxy',
+    collection: 'dkss_lf',
+    modelRun: time(-54),
+    closureContractId: 'current-operational-673x118-closure-ready-v1',
+    closureId: HOLD_SHA,
+    closureAssignmentSha256: HOLD_SHA,
+    sourceAssetSha256: HOLD_SHA,
+    sourceProofSha256: HOLD_SHA,
+    vectorCommitmentSha256: HOLD_SHA,
+  };
+}
+
+function stateOnlyHoldWeather(validHour, sourceHour) {
+  return {
+    ...withoutCurrent(regionalWeather(validHour)),
+    currentStateOnlyHold: stateOnlyCurrentHold(validHour, sourceHour),
   };
 }
 
@@ -634,7 +673,7 @@ assert.equal(revokedHoldRecovery.hourly[2].currentProvenance.reason,
 
 const regionalRows = [
   regionalWeather(1),
-  withoutCurrent(regionalWeather(2)),
+  stateOnlyHoldWeather(2, 1),
   regionalWeather(3),
 ];
 const nativeRecovery = buildRavScoreRecoveryReplay({
@@ -647,9 +686,27 @@ const nativeRecovery = buildRavScoreRecoveryReplay({
 });
 assert.equal(nativeRecovery.replayedHourCount, 3);
 assert.equal(nativeRecovery.hourly[1].currentSpeedMps, null,
-  'a bounded native hold must remain missing rather than inventing a current sample');
+  'a historical state-only marker must remain missing rather than inventing a current sample');
+assert.equal(nativeRecovery.hourly[1].currentProvenance.reason,
+  'bounded-unknown-history-interval',
+  'target−48..target−1 must never become hold, even if a marker is injected');
+assert.equal(Object.hasOwn(nativeRecovery.hourly[1], 'currentStateOnlyHold'), false,
+  'recovery must strip state-only markers from historical rows');
 assert.equal(nativeRecovery.hourly[0].currentProvenance.distanceKm, regionalDistanceKm,
   'the data-minimised replay row must preserve the exact regional distance authorization');
+assert.throws(() => buildRavScoreRecoveryReplay({
+  part,
+  initialState,
+  targetReferenceAt: time(4),
+  sourceRecords: [],
+  publicHourly: [
+    withoutCurrent(weather(4)),
+    stateOnlyHoldWeather(5, 4),
+  ],
+  nativeCadenceHoldHours: 3,
+  nativeCadenceReferenceSample: nativeBoundaryReference(regionalWeather(4)),
+}), error => error?.code === 'RAVSCORE_RECOVERY_REPLAY_NATIVE_REFERENCE_INVALID',
+'a neighbouring public hold marker must not authorize a reference at the replay boundary');
 const nativeBuild = buildIntegratedPartScoreSeries({
   part,
   zone,
@@ -659,7 +716,12 @@ const nativeBuild = buildIntegratedPartScoreSeries({
   scoreStartAt: nativeRecovery.scoreStartAt,
 });
 assert.equal(nativeBuild.scores[0].time, time(4));
-assert.equal(nativeBuild.scores[0].ravScoreModel.currentMemoryReady, true);
+assert.equal(nativeBuild.scores[0].ravScoreModel.currentMemoryReady, false,
+  'one real historical current gap must remain visible instead of being held');
+assert.equal(nativeBuild.scores[0].ravScoreModel.modes.waders.available, true,
+  'historical incompleteness must not remove a score with valid target inputs');
+assert.equal(nativeBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+  'HISTORY_INCOMPLETE');
 assert.throws(() => buildRavScoreRecoveryReplay({
   part,
   initialState,
@@ -733,10 +795,8 @@ function candidateStateWithCurrentReferenceLag(lagHours) {
   return held.continuationState;
 }
 
-function candidateLagMigrationFixture(lagHours, boundaryReference) {
-  const laggedState = candidateStateWithCurrentReferenceLag(lagHours);
-  const targetRow = withoutCurrent(regionalWeather(lagHours));
-  const waveHistory = Array.from(
+function candidateLagWaveHistory(lagHours) {
+  return Array.from(
     { length: RAVSCORE_RECOVERY_POLICY.candidateMigrationWaveApproachReplayHours },
     (_, index) => weather(
       lagHours
@@ -744,6 +804,12 @@ function candidateLagMigrationFixture(lagHours, boundaryReference) {
         + index,
     ),
   );
+}
+
+function candidateLagMigrationFixture(lagHours, boundaryReference) {
+  const laggedState = candidateStateWithCurrentReferenceLag(lagHours);
+  const targetRow = stateOnlyHoldWeather(lagHours, 0);
+  const waveHistory = candidateLagWaveHistory(lagHours);
   const recovery = buildRavScoreRecoveryReplay({
     part,
     initialState: laggedState,
@@ -827,6 +893,85 @@ for (const lagHours of [1, 2, 3]) {
     /requires exact regional boundary proof/,
     `${lagHours}h lagged Candidate G hold without exact regional proof must fail closed`,
   );
+}
+
+for (const lagHours of [1, 2, 3]) {
+  const laggedState = candidateStateWithCurrentReferenceLag(lagHours);
+  const boundaryReference = nativeBoundaryReference(regionalWeather(0));
+  const integratedResolverCalls = [];
+  const candidateResolverCalls = [];
+  const production = buildRavScoreProductionPartSeries({
+    part,
+    zone,
+    initialSelection: {
+      state: laggedState,
+      source: 'CANDIDATE_G_MIGRATION',
+      rejectedSources: [],
+    },
+    legacyCandidateGMigrationState: laggedState,
+    targetReferenceAt: time(lagHours),
+    recoverySources: [{
+      source: `candidate-lag-${lagHours}-production-wave-history`,
+      record: record(candidateLagWaveHistory(lagHours)),
+    }],
+    publicHourly: [stateOnlyHoldWeather(lagHours, 0)],
+    nativeCadenceHoldHours: 3,
+    resolveNativeCadenceReferenceSample: (sourceValidTime, context) => {
+      integratedResolverCalls.push({ sourceValidTime, context });
+      return boundaryReference;
+    },
+    resolveCandidateGNativeCadenceReferenceSample: (sourceValidTime, context) => {
+      candidateResolverCalls.push({ sourceValidTime, context });
+      return boundaryReference;
+    },
+  });
+  const expectedCall = {
+    sourceValidTime: time(0),
+    context: {
+      partId: part.partId,
+      replayStartAt: time(lagHours),
+      validTime: time(lagHours),
+      sourceValidTime: time(0),
+      holdAgeHours: lagHours,
+    },
+  };
+  assert.deepEqual(integratedResolverCalls, [expectedCall],
+    `${lagHours}h integrated resolver must receive only the marker's exact source time`);
+  assert.deepEqual(candidateResolverCalls, [expectedCall],
+    `${lagHours}h Candidate G resolver must receive only the marker's exact source time`);
+  assert.equal(production.recovery.replayedHourCount, 0);
+  assert.equal(production.ravScoreState.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+  assert.equal(production.candidateGState.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+}
+
+{
+  const lagHours = 2;
+  const laggedState = candidateStateWithCurrentReferenceLag(lagHours);
+  let resolverSourceTime = null;
+  assert.throws(() => buildRavScoreProductionPartSeries({
+    part,
+    zone,
+    initialSelection: {
+      state: laggedState,
+      source: 'CANDIDATE_G_MIGRATION',
+      rejectedSources: [],
+    },
+    legacyCandidateGMigrationState: laggedState,
+    targetReferenceAt: time(lagHours),
+    recoverySources: [{
+      source: 'candidate-lag-production-missing-boundary-source',
+      record: record(candidateLagWaveHistory(lagHours)),
+    }],
+    publicHourly: [stateOnlyHoldWeather(lagHours, 0)],
+    nativeCadenceHoldHours: 3,
+    resolveNativeCadenceReferenceSample: sourceValidTime => {
+      resolverSourceTime = sourceValidTime;
+      return null;
+    },
+  }), /requires exact regional boundary proof/,
+  'a missing independently verified source row must fail closed, never reconstruct from hashes');
+  assert.equal(resolverSourceTime, time(0),
+    'even a missing boundary source lookup must use marker.sourceValidTime');
 }
 
 {
@@ -1035,6 +1180,106 @@ assert.equal(selectRavScoreInitialState({
 assert.equal(selectRavScoreInitialState({
   part, existingPart: { candidateG: existingPart.candidateG }, checkpointStates: {},
 }).source, 'CANDIDATE_G_MIGRATION');
+const integratedStateLessRecoveryMode =
+  RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES.integratedStateLessRecovery;
+const stateLessRecoveryFromExisting = selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates,
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.equal(stateLessRecoveryFromExisting.source, 'EXISTING_INTEGRATED');
+assert.equal(stateLessRecoveryFromExisting.state, initialState,
+  'state-less recovery mode must still prefer a fresh exact integrated continuation');
+const stateLessRecoveryFromAbsence = selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates: {},
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromAbsence, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: [],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'explicit integrated state-less recovery must attest only measured cold replay');
+assert.equal(
+  Object.keys(stateLessRecoveryFromAbsence)
+    .some(key => /synthetic|interpolat|reconstruct/i.test(key)),
+  false,
+  'state-less recovery selection must not authorize synthesis, interpolation or reconstruction',
+);
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: { candidateG: existingPart.candidateG },
+  checkpointStates: {},
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code
+  === 'RAVSCORE_INTEGRATED_STATE_LESS_RECOVERY_CANDIDATE_ONLY',
+'integrated state-less recovery must never accept or migrate Candidate G-only state');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: {
+    ...existingPart,
+    ravScoreModel: {
+      currentState: { ...initialState, modelBundleSha256: 'invalid' },
+    },
+  },
+  checkpointStates,
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code === 'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+'state-less recovery must not mask an invalid present integrated state with a valid checkpoint');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates: {
+    [part.partId]: { ...initialState, samplingContextKey: 'sha256:invalid' },
+  },
+  targetReferenceAt: time(4),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+}), error => error?.code === 'RAVSCORE_INITIAL_STATE_SOURCES_INVALID',
+'state-less recovery must fail when any present integrated checkpoint is invalid');
+const stateLessRecoveryFromExpiredIntegrated = selectRavScoreInitialState({
+  part,
+  existingPart,
+  checkpointStates: {},
+  targetReferenceAt: time(73),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromExpiredIntegrated, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: ['EXISTING_INTEGRATED_EXPIRED'],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'a legitimate expired integrated state must become measured-only cold replay');
+const stateLessRecoveryFromExpiredCheckpoint = selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates,
+  targetReferenceAt: time(73),
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+});
+assert.deepEqual(stateLessRecoveryFromExpiredCheckpoint, {
+  state: null,
+  source: 'COLD_START',
+  rejectedSources: [],
+  expiredSources: ['INTEGRATED_CHECKPOINT_EXPIRED'],
+  candidateGSourceDisposition: RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
+}, 'a legitimate expired integrated checkpoint must become measured-only cold replay');
+assert.throws(() => selectRavScoreInitialState({
+  part,
+  existingPart: null,
+  checkpointStates: {},
+  candidateGBootstrapMode: integratedStateLessRecoveryMode,
+  candidateGSourceValidated: true,
+}), error => error?.code === 'RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_INVALID',
+'state-less recovery must not reuse the aggregate Candidate G first-cutover attestation');
 const warmupCandidateState = buildCandidateGDerivedStateSeries(
   Array.from({ length: 6 }, (_, index) => ({
     time: time(index - 5),
@@ -1500,6 +1745,74 @@ const coldFirstPublicHour = buildRavScoreProductionPartSeries({
   publicHourly: [weather(4)],
   previousCandidateGContinuation: coldRollbackCompanion,
 });
+let neighborResolverCallCount = 0;
+const exactNeighborHold = buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: coldFirstPublicHour.ravScoreState.continuationState,
+    source: 'EXISTING_PART',
+    rejectedSources: [],
+  },
+  targetReferenceAt: time(5),
+  recoverySources: [],
+  publicHourly: [regionalWeather(5), stateOnlyHoldWeather(6, 5)],
+  previousCandidateGContinuation: coldFirstPublicHour.candidateGState.continuationState,
+  nativeCadenceHoldHours: 3,
+  resolveNativeCadenceReferenceSample: () => {
+    neighborResolverCallCount += 1;
+    throw new Error('a neighbouring hold must not authorize the replay boundary');
+  },
+  resolveCandidateGNativeCadenceReferenceSample: () => {
+    neighborResolverCallCount += 1;
+    throw new Error('a neighbouring hold must not authorize the Candidate boundary');
+  },
+});
+assert.equal(neighborResolverCallCount, 0,
+  'a marker on a neighbouring forecast hour must not invoke either boundary resolver');
+assert.equal(exactNeighborHold.ravScoreState.rows[1].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(exactNeighborHold.candidateGState.rows[1].currentTransition, 'NATIVE_CADENCE_HOLD');
+
+let historicalResolverCallCount = 0;
+const historicalMarkerRows = [
+  stateOnlyHoldWeather(5, 4),
+  ...Array.from({ length: 48 }, (_, index) => regionalWeather(index + 6)),
+];
+const historicalMarkerProduction = buildRavScoreProductionPartSeries({
+  part,
+  zone,
+  initialSelection: {
+    state: coldFirstPublicHour.ravScoreState.continuationState,
+    source: 'EXISTING_PART',
+    rejectedSources: [],
+  },
+  targetReferenceAt: time(54),
+  recoverySources: [{
+    source: 'historical-marker-must-remain-unknown',
+    record: record(historicalMarkerRows),
+  }],
+  publicHourly: [regionalWeather(54)],
+  previousCandidateGContinuation: coldFirstPublicHour.candidateGState.continuationState,
+  nativeCadenceHoldHours: 3,
+  resolveNativeCadenceReferenceSample: () => {
+    historicalResolverCallCount += 1;
+    throw new Error('historical marker must not authorize the production boundary');
+  },
+  resolveCandidateGNativeCadenceReferenceSample: () => {
+    historicalResolverCallCount += 1;
+    throw new Error('historical marker must not authorize the Candidate boundary');
+  },
+});
+assert.equal(historicalResolverCallCount, 0,
+  'a marker in target-48..target-1 history must not invoke either boundary resolver');
+assert.equal(historicalMarkerProduction.recovery.hourly[0].time, time(5));
+assert.equal(historicalMarkerProduction.recovery.hourly[0].currentProvenance.reason,
+  'bounded-unknown-history-interval');
+assert.equal(
+  Object.hasOwn(historicalMarkerProduction.recovery.hourly[0], 'currentStateOnlyHold'),
+  false,
+  'historical replay must strip the marker rather than converting it to hold',
+);
 const warmAfterCold = buildRavScoreProductionPartSeries({
   part,
   zone,
@@ -1543,20 +1856,22 @@ assert.equal(
 for (const nativePhase of [0, 1, 2]) {
   const nativeTargetHour = 64;
   const nativeStartHour = nativeTargetHour - 48;
-  const cadenceRow = (hour, index) => index >= nativePhase
-    && (index - nativePhase) % 3 === 0
-    ? regionalWeather(hour)
-    : withoutCurrent(regionalWeather(hour));
+  const cadenceRow = (hour, index, { operational = false } = {}) => {
+    const sinceNative = index >= nativePhase
+      ? (index - nativePhase) % 3
+      : 3 - (nativePhase - index);
+    if (sinceNative === 0) return regionalWeather(hour);
+    return operational
+      ? stateOnlyHoldWeather(hour, hour - sinceNative)
+      : withoutCurrent(regionalWeather(hour));
+  };
   const privateRows = Array.from(
     { length: 48 },
     (_, index) => cadenceRow(nativeStartHour + index, index),
   );
   const publicCadenceRows = Array.from(
     { length: 3 },
-    (_, index) => cadenceRow(nativeTargetHour + index, 48 + index),
-  );
-  const boundaryReference = nativeBoundaryReference(
-    regionalWeather(nativeStartHour + nativePhase - 3),
+    (_, index) => cadenceRow(nativeTargetHour + index, 48 + index, { operational: true }),
   );
   const phaseRecovery = buildRavScoreRecoveryReplay({
     part,
@@ -1568,7 +1883,6 @@ for (const nativePhase of [0, 1, 2]) {
     }],
     publicHourly: publicCadenceRows,
     nativeCadenceHoldHours: 3,
-    nativeCadenceReferenceSample: boundaryReference,
   });
   assert.equal(phaseRecovery.replayedHourCount, 48);
   const phaseBuild = buildIntegratedPartScoreSeries({
@@ -1577,13 +1891,40 @@ for (const nativePhase of [0, 1, 2]) {
     hourly: phaseRecovery.hourly,
     initialState: null,
     nativeCadenceHoldHours: 3,
-    nativeCadenceReferenceSample: boundaryReference,
     scoreStartAt: phaseRecovery.scoreStartAt,
     coldReplayBootstrap: phaseRecovery.coldStartHistoryLineage,
   });
   assert.equal(phaseBuild.scores[0].time, time(nativeTargetHour));
-  assert.equal(phaseBuild.scores[0].ravScoreModel.currentMemoryReady, true,
-    `native three-hour phase ${nativePhase} must be current-ready at first public target`);
+  assert.equal(phaseBuild.scores[0].ravScoreModel.currentMemoryReady, false,
+    `native three-hour phase ${nativePhase} must expose incomplete measured history`);
+  const historicalMissingRows = phaseBuild.ravScoreState.rows
+    .slice(0, 48)
+    .filter(row => row.currentVerified !== true);
+  assert.ok(historicalMissingRows.length > 0,
+    `native three-hour phase ${nativePhase} must exercise historical gaps`);
+  assert.ok(historicalMissingRows.every(row => row.currentTransition === 'UNVERIFIED_MISSING'),
+    `native three-hour phase ${nativePhase} must never convert history gaps into holds`);
+  if (nativePhase === 0) {
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.available, true);
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+      'HISTORY_INCOMPLETE');
+  } else if (nativePhase === 1) {
+    assert.equal(phaseBuild.ravScoreState.rows[47].currentTransition, 'UNVERIFIED_MISSING',
+      'an unmarked neighbouring missing hour must remain bounded unknown');
+    assert.equal(phaseBuild.ravScoreState.rows[48].currentTransition, 'UNVERIFIED_MISSING',
+      'a later hold marker must not revive authorization across an unmarked neighbour');
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.available, false);
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+      'UNAVAILABLE');
+  } else {
+    assert.equal(phaseBuild.ravScoreState.rows[47].currentTransition, 'VERIFIED_REPLAY',
+      'the direct native source immediately before target must remain verified');
+    assert.equal(phaseBuild.ravScoreState.rows[48].currentTransition, 'NATIVE_CADENCE_HOLD',
+      'an exact operational marker may hold only its own target hour');
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.available, true);
+    assert.equal(phaseBuild.scores[0].ravScoreModel.modes.waders.scoreQuality,
+      'HISTORY_INCOMPLETE');
+  }
 }
 
 assert.throws(() => buildRavScoreRecoveryReplay({

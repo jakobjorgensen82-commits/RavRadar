@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title description">
+  <title id="title">RavRadar</title>
+  <desc id="description">Et ravstykke i centrum af et stiliseret radarsignal.</desc>
+  <rect width="512" height="512" fill="#073b4c"/>
+  <g fill="none" stroke="#69aebb" stroke-width="16" opacity=".72">
+    <circle cx="256" cy="256" r="178"/>
+    <circle cx="256" cy="256" r="122"/>
+  </g>
+  <path d="M256 256 390 164" fill="none" stroke="#b9e0e5" stroke-linecap="round" stroke-width="15" opacity=".9"/>
+  <circle cx="390" cy="164" r="12" fill="#fff2d7"/>
+  <path d="M189 281c-10-43 5-95 44-116 42-23 94-2 110 43 15 43-2 96-42 121-38 24-99 1-112-48Z" fill="#e39a31" stroke="#fff2d7" stroke-linejoin="round" stroke-width="12"/>
+  <path d="M231 202c20-17 48-20 69-7" fill="none" stroke="#ffd986" stroke-linecap="round" stroke-width="13" opacity=".92"/>
+  <circle cx="256" cy="256" r="9" fill="#fff"/>
+</svg>

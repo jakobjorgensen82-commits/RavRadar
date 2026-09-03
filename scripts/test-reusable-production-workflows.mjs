@@ -87,7 +87,7 @@ const contracts = [
   ['build', build, PRODUCTION_WORKFLOW_INTERFACES.build],
   ['deploy', deploy, PRODUCTION_WORKFLOW_INTERFACES.deploy],
 ];
-assert.equal(PRODUCTION_WORKFLOW_INTERFACES.build.outputs.length, 21, 'exact 21 build outputs');
+assert.equal(PRODUCTION_WORKFLOW_INTERFACES.build.outputs.length, 28, 'exact 28 build outputs');
 assert.equal(PRODUCTION_WORKFLOW_INTERFACES.deploy.outputs.length, 3, 'exact 3 deploy outputs');
 
 for (const [role, sourceText, contract] of contracts) {
@@ -193,7 +193,11 @@ for (const secret of buildContract.secrets) {
     'build caller secret mapping: ' + secret,
   );
 }
-for (const input of ['force', 'ravscore_integrated_return']) {
+for (const input of [
+  'force',
+  'ravscore_integrated_first_cutover',
+  'ravscore_integrated_return',
+]) {
   assert.equal(
     buildCaller.includes(input + ': ' + gh("needs.validate-dispatch.outputs." + input + " == 'true'")),
     true,
@@ -229,6 +233,8 @@ const dispatchOutputs = [
   'geometry_v2_national',
   'ravscore_candidate_g_rollback_mode',
   'ravscore_candidate_g_rollback_confirmation',
+  'ravscore_integrated_first_cutover',
+  'ravscore_integrated_first_cutover_confirmation',
   'ravscore_integrated_return',
   'ravscore_integrated_return_confirmation',
 ];
@@ -254,6 +260,8 @@ for (const literal of [
   'geometry_v2_national=false',
   'ravscore_candidate_g_rollback_mode=none',
   'ravscore_candidate_g_rollback_confirmation=',
+  'ravscore_integrated_first_cutover=false',
+  'ravscore_integrated_first_cutover_confirmation=',
   'ravscore_integrated_return=false',
   'ravscore_integrated_return_confirmation=',
 ]) {
@@ -300,6 +308,13 @@ for (const output of [
   'pages_build_outcome',
   'pages_privacy_outcome',
   'handoff_upload_outcome',
+  'checkpoint_disposition',
+  'checkpoint_disposition_sha256',
+  'checkpoint_dataset_id',
+  'checkpoint_runtime_audit_sha256',
+  'checkpoint_build_outcome',
+  'checkpoint_save_outcome',
+  'checkpoint_publish_outcome',
   'pages_configure_outcome',
   'pages_upload_outcome',
   'artifact_built',

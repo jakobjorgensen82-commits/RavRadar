@@ -94,7 +94,7 @@ assert '"entityId": entity_id' in provenance_source
 assert '"parentZoneId": parent_zone_id' in provenance_source
 assert '"fieldSet": list(COMPONENT_FIELD_SET[component])' in bulk_source
 assert 'previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))' in bulk_source
-assert 'else iso(acquired_at) if acquired_at else None' in bulk_source
+assert 'if acquired_at and normalized_content_sha256' in bulk_source
 assert 'PRIVATE_REPLAY_RETENTION_HOURS = max(' in bulk_source
 assert 'rejectedNonSurfaceWaterTemperatureMessages' in bulk_source
 assert 'water_temperature_surface_layer' in bulk_source

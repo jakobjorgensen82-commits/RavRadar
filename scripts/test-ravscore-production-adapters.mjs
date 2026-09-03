@@ -13,6 +13,11 @@ import {
 } from './lib/ravscore-production-adapters.mjs';
 import { copernicusLiveRecordProjectionSha256 } from './lib/live-current-pilot.mjs';
 import {
+  FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
+  FEGGESUND_WAVE_PROXY_NOTICE_ID,
+  buildFeggesundWaveProxy,
+} from './lib/feggesund-wave-proxy.mjs';
+import {
   ravScoreModelBinding,
   RAVSCORE_MODEL_ID,
   RAVSCORE_STATE_SCHEMA_VERSION,
@@ -421,6 +426,71 @@ assert.deepEqual({
   water: 10,
   trend: 6,
 }, 'all score-relevant physical components require exact DMI time proof and water trend is recomputed');
+assert.deepEqual({
+  source: physical[0].waveInputSource,
+  uncertainty: physical[0].waveInputUncertainty,
+  notice: physical[0].waveInputNoticeId,
+}, {
+  source: 'DIRECT_OFFICIAL',
+  uncertainty: 'LOW',
+  notice: null,
+}, 'a direct official wave must remain unlabelled as a proxy');
+
+const feggesundPartContext = {
+  ...partContext,
+  zoneId: 'DK-B05-11',
+};
+const feggesundProxy = buildFeggesundWaveProxy({
+  targetEntityId: bulkId,
+  time: physicalRows[0].time,
+  sources: ['DK-B05-10', 'DK-B05-12'].map((parentZoneId, index) => ({
+    parentZoneId,
+    validTime: physicalRows[0].time,
+    provider: 'dmi',
+    collection: 'wam_dw',
+    component: 'wave',
+    fallback: false,
+    modelRun,
+    waveHeightM: 1 + index,
+    wavePeriodS: 6 + index,
+    waveDirectionDeg: index ? 20 : 350,
+    evidenceSha256: sha(parentZoneId),
+  })),
+});
+const feggesundProxyHour = verifiedIntegratedPartHourly({
+  hourly: [{
+    ...physicalRows[0],
+    waveHeightM: feggesundProxy.waveHeightM,
+    wavePeriodS: feggesundProxy.wavePeriodS,
+    waveDirectionDeg: feggesundProxy.waveDirectionDeg,
+    sources: { ...physicalRows[0].sources, wave: feggesundProxy.proxy },
+  }],
+}, bulkCache, bulkId, feggesundPartContext)[0];
+assert.deepEqual({
+  source: feggesundProxyHour.waveInputSource,
+  uncertainty: feggesundProxyHour.waveInputUncertainty,
+  notice: feggesundProxyHour.waveInputNoticeId,
+  status: feggesundProxyHour.waveProvenance.status,
+}, {
+  source: FEGGESUND_WAVE_PROXY_INPUT_SOURCE,
+  uncertainty: feggesundProxy.proxy.disagreementClass,
+  notice: FEGGESUND_WAVE_PROXY_NOTICE_ID,
+  status: 'verified-derived',
+}, 'the exact two-neighbour proxy must remain visibly derived');
+
+const tamperedFeggesundProxy = structuredClone(feggesundProxy);
+tamperedFeggesundProxy.waveHeightM += 0.01;
+const rejectedFeggesundProxy = verifiedIntegratedPartHourly({
+  hourly: [{
+    ...physicalRows[0],
+    waveHeightM: tamperedFeggesundProxy.waveHeightM,
+    wavePeriodS: tamperedFeggesundProxy.wavePeriodS,
+    waveDirectionDeg: tamperedFeggesundProxy.waveDirectionDeg,
+    sources: { ...physicalRows[0].sources, wave: tamperedFeggesundProxy.proxy },
+  }],
+}, bulkCache, bulkId, feggesundPartContext)[0];
+assert.equal(rejectedFeggesundProxy.waveProvenance.status, 'unverified',
+  'a modified proxy tuple must fail closed');
 
 assert.deepEqual(
   RAVSCORE_WAM_MAX_DISTANCE_KM,
@@ -591,6 +661,12 @@ const scoreRow = (score, available = true, scoreQuality = 'FULL_HISTORY', {
   historyCoverageHours = scoreQuality === 'FULL_HISTORY' ? 48 : 24,
   historyReasonCodes = scoreQuality === 'FULL_HISTORY' ? [] : ['CURRENT_HISTORY_INCOMPLETE'],
   conservativeTailResetApplied = false,
+  calibrationEligible = scoreQuality === 'FULL_HISTORY',
+  waveInputQuality = {
+    waveInputSource:'DIRECT_OFFICIAL',
+    waveInputUncertainty:'LOW',
+    waveInputNoticeId:null,
+  },
 } = {}) => ({
   time,
   weather: {
@@ -598,13 +674,14 @@ const scoreRow = (score, available = true, scoreQuality = 'FULL_HISTORY', {
     wavePeriodS: 8,
     currentSpeedMps: 0.08,
     currentProvenance: { status: 'verified' },
+    ...waveInputQuality,
   },
   ravScoreModel: {
     modes: Object.fromEntries(['waders', 'beach'].map(mode => [mode, available ? {
       available: true,
       score,
       scoreQuality,
-      calibrationEligible: scoreQuality === 'FULL_HISTORY',
+      calibrationEligible,
       scoreSemantics: scoreQuality === 'FULL_HISTORY'
         ? conservativeTailResetApplied
           ? 'CONSERVATIVE_TAIL_RESET_POINT_SCORE'
@@ -676,6 +753,67 @@ assert.deepEqual(several[0].waders.parts.map(item=>({
     lower:73,upper:73,modelUncertaintyPoints:0,rawLower:73,rawUpper:73,
   },historyCoverageHours:48,historyReasonCodes:[]},
 ], 'FULL_HISTORY comparison parts must retain collapsed bounds without changing their scores');
+
+const proxyLocked = buildIntegratedZoneHourlyProjection({
+  rows: [
+    {partId:'A',name:'A',scores:[scoreRow(80,true,'FULL_HISTORY',{
+      calibrationEligible:false,
+      waveInputQuality:{
+        waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+        waveInputUncertainty:'MODERATE',
+        waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+      },
+    })]},
+    {partId:'B',name:'B',scores:[scoreRow(73)]},
+  ],
+  expectedPartCount:2,
+  selectedMode,
+});
+assert.equal(proxyLocked[0].waders.scoreQuality,'FULL_HISTORY');
+assert.equal(proxyLocked[0].waders.calibrationEligible,false,
+  'a FULL_HISTORY zone depending on a proxy part must remain calibration ineligible');
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field=>[field,proxyLocked[0].waders.weather[field]])),
+  {
+    waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty:'MODERATE',
+    waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+  'the winning coastal-part hour must carry the exact compact tuple into zone weather',
+);
+
+const nonWinningProxyScore = scoreRow(73,true,'FULL_HISTORY',{
+  calibrationEligible:false,
+  waveInputQuality:{
+    waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty:'HIGH',
+    waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+});
+nonWinningProxyScore.weather.waveHeightM = 2.4;
+const proxyLockedByNonWinner = buildIntegratedZoneHourlyProjection({
+  rows: [
+    {partId:'A',name:'A',scores:[scoreRow(80)]},
+    {partId:'B',name:'B',scores:[nonWinningProxyScore]},
+  ],
+  expectedPartCount:2,
+  selectedMode,
+});
+assert.equal(proxyLockedByNonWinner[0].waders.winningPartId,'A');
+assert.equal(proxyLockedByNonWinner[0].waders.weather.waveHeightM,1.2,
+  'aggregate proxy warning must not replace the direct winner weather values');
+assert.equal(proxyLockedByNonWinner[0].waders.calibrationEligible,false);
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field=>[field,proxyLockedByNonWinner[0].waders.weather[field]])),
+  {
+    waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty:'HIGH',
+    waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+  'a non-winning proxy contribution must remain visible on the downstream zone score',
+);
 
 const exactWinnerWithResetLoser = buildIntegratedZoneHourlyProjection({
   rows: [

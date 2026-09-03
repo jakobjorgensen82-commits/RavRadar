@@ -1,10 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.318';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.320';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.318';
+} from '../core/ravscore-model-contract.js?v=4.0.320';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -19,15 +19,15 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.318';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.320';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.318';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.320';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.318';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.320';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.318';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.320';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -360,7 +360,8 @@ function assertPublicScoreQuality(value, label, { ranked = false } = {}) {
     }
   }
   if (value.scoreQuality === 'FULL_HISTORY') {
-    if (value.calibrationEligible !== RAVSCORE_CALIBRATION_ELIGIBLE) {
+    if (RAVSCORE_CALIBRATION_ELIGIBLE !== true
+      && value.calibrationEligible !== false) {
       throw new Error(label + ' har en forkert kalibreringsstatus for den aktive model.');
     }
   } else if (value.calibrationEligible !== false) {

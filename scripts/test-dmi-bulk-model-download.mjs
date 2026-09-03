@@ -3,14 +3,15 @@ import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
-const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson] = await Promise.all([
+const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson, smoke] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
   fs.readFile('scripts/lib/dmi_native_provenance.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
   readProductionWorkflowSources(),
   fs.readFile('scripts/hydrate-deployed-weather.py', 'utf8'),
   fs.readFile('scripts/check-weather-update.py', 'utf8'),
-  fs.readFile('package.json', 'utf8')
+  fs.readFile('package.json', 'utf8'),
+  fs.readFile('scripts/smoke-test-eccodes.py', 'utf8')
 ]);
 const { orchestrator, build } = workflows;
 const { version: appVersion } = JSON.parse(packageJson);
@@ -58,8 +59,193 @@ assert.match(bulk, /build_ocean_diagnostics/);
 assert.match(bulk, /select_common_vector_candidate/);
 assert.match(bulk, /water_source_parameter_allowed/);
 assert.match(bulk, /invalidatedMismatchedVectors/);
-assert.match(bulk, /PARSER_VERSION = 19/);
+assert.match(bulk, /PARSER_VERSION = 20/);
+assert.match(bulk, /GRID_LOOKUP_VERSION = 9/);
+assert.match(bulk, /md5GridSection/);
+assert.match(bulk, /grid_cache_signature/);
+assert.match(bulk, /grid_definition_signature_from_cache/);
+assert.match(bulk, /codes_grib_nearest_new/);
+assert.match(bulk, /codes_grib_nearest_find/);
+assert.match(bulk, /CODES_GRIB_NEAREST_SAME_GRID/);
+assert.match(bulk, /codes_grib_nearest_delete/);
+assert.match(bulk, /ECCODES_API_VERSION/);
+assert.match(bulk, /ECCODES_BINDING_VERSION/);
+assert.match(bulk, /bindings_version/);
+assert.match(bulk, /operational_asset_parameter_filter/);
+assert.match(bulk, /progress_checkpoint_due/);
+assert.match(
+  bulk,
+  /CHECKPOINT_MAX_ASSETS = max\(1, int\(os\.getenv\("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8"\)\)\)/,
+  'Progress-checkpointcadencen skal som default være højst otte committed assets.',
+);
+assert.match(
+  bulk,
+  /CHECKPOINT_MAX_SECONDS = max\(10, int\(os\.getenv\("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60"\)\)\)/,
+  'Progress-checkpointcadencen skal som default være højst 60 sekunder.',
+);
+const bulkMainStart = bulk.indexOf('def main()');
+const processingSignatureStart = bulk.indexOf('processing_signature = (', bulkMainStart);
+const processingSignatureEnd = bulk.indexOf('required_asset_provenance = {', processingSignatureStart);
+assert.ok(
+  bulkMainStart >= 0
+    && processingSignatureStart > bulkMainStart
+    && processingSignatureEnd > processingSignatureStart,
+  'DMI-producentens aktive processing-signatur skal kunne afgrænses i main.'
+);
+const processingSignatureBlock = bulk.slice(processingSignatureStart, processingSignatureEnd);
+const processingGridVersion = processingSignatureBlock.indexOf('|grid:{GRID_LOOKUP_VERSION}');
+const processingApiVersion = processingSignatureBlock.indexOf('|eccodes-api:{ECCODES_API_VERSION}');
+const processingBindingVersion = processingSignatureBlock.indexOf('|eccodes-binding:{ECCODES_BINDING_VERSION}');
+assert.ok(
+  processingGridVersion >= 0
+    && processingGridVersion < processingApiVersion
+    && processingApiVersion < processingBindingVersion,
+  'Processing-signaturen skal binde grid-, ecCodes API- og Python-bindingsversion i den rækkefølge.'
+);
+
+const progressWriterStart = bulk.indexOf('def write_checkpoint(');
+const finalWriterStart = bulk.indexOf('def write_finalized_cache(', progressWriterStart);
+const finalWriterEnd = bulk.indexOf('def percentile_95(', finalWriterStart);
+assert.ok(
+  progressWriterStart >= 0
+    && finalWriterStart > progressWriterStart
+    && finalWriterEnd > finalWriterStart,
+  'Progress- og final-cachewriterne skal kunne afgrænses separat.',
+);
+const progressWriter = bulk.slice(progressWriterStart, finalWriterStart);
+const finalWriter = bulk.slice(finalWriterStart, finalWriterEnd);
+assert.match(progressWriter, /atomic_write_bulk_cache\(result, pretty=False\)/);
+assert.match(progressWriter, /"validation": "pending-finalization"/);
+assert.doesNotMatch(
+  progressWriter,
+  /clean_and_summarize|write_ocean_diagnostics|build_ocean_diagnostics/,
+  'Et progress-checkpoint må ikke køre fuld clean eller ocean-diagnostik.',
+);
+assert.match(finalWriter, /atomic_write_bulk_cache\(result, pretty=True\)/);
+assert.match(finalWriter, /write_ocean_diagnostics\(result\)/);
+assert.match(
+  bulk,
+  /def atomic_write_bulk_cache\([\s\S]*?pretty: bool = True,[\s\S]*?temporary\.replace\(OUTPUT_PATH\)/,
+  'Den atomiske cachewriter skal bevare pretty=True som API-default og afslutte med replace.',
+);
+
+const checkpointControllerStart = bulk.indexOf('class ProgressCheckpointController:', finalWriterEnd);
+const checkpointControllerEnd = bulk.indexOf('def scrub_private_stage_diagnostics(', checkpointControllerStart);
+assert.ok(
+  checkpointControllerStart > finalWriterEnd && checkpointControllerEnd > checkpointControllerStart,
+  'Den fælles ProgressCheckpointController skal kunne afgrænses.',
+);
+const checkpointController = bulk.slice(checkpointControllerStart, checkpointControllerEnd);
+assert.match(
+  checkpointController,
+  /def note_committed_asset\([\s\S]*?self\.committed_assets_since_write \+= 1[\s\S]*?self\.bulk_dirty = True[\s\S]*?return self\.flush_if_due\(\)/,
+  'Kun et committed asset må flytte den fælles checkpointcadence.',
+);
+assert.match(
+  checkpointController,
+  /def flush_if_due\([\s\S]*?if force and \(self\.bulk_dirty or self\.sidecars_dirty\):[\s\S]*?write_checkpoint\([\s\S]*?if self\.sidecars_dirty and self\.sidecar_flush is not None:/,
+  'Forced flush skal gemme både dirty bulk og private sidecars gennem samme controller.',
+);
+
+const controllerInit = bulk.indexOf('checkpoint_controller = ProgressCheckpointController(', bulkMainStart);
+const collectionLoopStart = bulk.indexOf('for collection in scheduled:', controllerInit);
+const replayStart = bulk.indexOf('replay_targets: list[dict[str, Any]] = []', collectionLoopStart);
+assert.ok(
+  controllerInit > bulkMainStart
+    && collectionLoopStart > controllerInit
+    && replayStart > collectionLoopStart,
+  'Main skal oprette én controller før bootstrap og collection-loop.',
+);
+const replayMarkerEnd = replayStart + 'replay_targets: list[dict[str, Any]] = []'.length;
+const mainCheckpointScope = bulk.slice(controllerInit, replayMarkerEnd);
+assert.match(
+  mainCheckpointScope,
+  /checkpoint_controller=checkpoint_controller/,
+  'WAM-bootstrap skal dele main-controlleren i stedet for at eje en separat cadence.',
+);
+assert.doesNotMatch(
+  mainCheckpointScope,
+  /checkpoint_assets_since_write|checkpoint_last_write_monotonic/,
+  'Collection-lokale checkpointtællere må ikke genindføres.',
+);
+const assetCommit = mainCheckpointScope.indexOf('checkpoint_controller.note_committed_asset(');
+const budgetGuard = mainCheckpointScope.indexOf('if not checkpoint_controller.can_start_asset():');
+const budgetFlush = mainCheckpointScope.indexOf('checkpoint_controller.flush_if_due(force=True)', budgetGuard);
+const transactionFailureFlush = mainCheckpointScope.indexOf(
+  'failure_flush=lambda: checkpoint_controller.flush_if_due(force=True)',
+  budgetFlush,
+);
+const collectionException = mainCheckpointScope.lastIndexOf('except Exception as exc:');
+const exceptionFlush = mainCheckpointScope.indexOf(
+  'checkpoint_controller.flush_if_due(force=True)',
+  collectionException,
+);
+assert.ok(assetCommit >= 0, 'Et fuldført asset skal registreres hos controlleren.');
+assert.ok(
+  budgetGuard >= 0 && budgetFlush > budgetGuard,
+  'Budgetstop før et nyt asset skal tvinge dirty progression til disk.',
+);
+assert.ok(
+  transactionFailureFlush > budgetFlush,
+  'Interruption/asset-exception skal tvinge den senest committed progression til disk.',
+);
+assert.ok(
+  collectionException >= 0 && exceptionFlush > collectionException,
+  'Collectionens exception-vej skal tvinge en controllerflush.',
+);
+assert.match(
+  mainCheckpointScope,
+  /\n    checkpoint_controller\.flush_if_due\(force=True\)\n\n    replay_targets:/,
+  'Collection-loopet skal afsluttes med præcis én fælles forced flush.',
+);
+assert.equal(
+  (mainCheckpointScope.match(/\n    checkpoint_controller\.flush_if_due\(force=True\)\n\n    replay_targets:/g) || []).length,
+  1,
+  'Den afsluttende forced flush må ikke duplikeres.',
+);
+
+const completionGateStart = mainCheckpointScope.indexOf('selected_valid_time_values = [');
+const completionGateEnd = mainCheckpointScope.indexOf('if made_progress:', completionGateStart);
+assert.ok(
+  completionGateStart >= 0 && completionGateEnd > completionGateStart,
+  'Collectionens komplette assetmængde skal klassificeres eksplicit.',
+);
+const completionGate = mainCheckpointScope.slice(completionGateStart, completionGateEnd);
+assert.match(
+  completionGate,
+  /collection_assets_complete = \(\s*bool\(selected_valid_time_values\)\s*and len\(selected_valid_times\) == len\(selected_valid_time_values\)\s*and selected_valid_times <= completed_or_locked\s*\)/,
+  'Tom, blank eller duplikeret selected-valid-time-liste må aldrig klassificeres som komplet.',
+);
+assert.match(
+  completionGate,
+  /if not made_progress and collection_assets_complete and recognized >= required/,
+  'En genbrugt collection må kun blive unchanged/success-lignende, når alle valgte assets er komplette.',
+);
+assert.match(
+  completionGate,
+  /elif collection_assets_complete and recognized >= required and run_info\["assetsProcessed"\]:/,
+  'En collection med delvist behandlede assets må ikke registreres som success.',
+);
+assert.match(
+  completionGate,
+  /elif recognized:[\s\S]*?collectionsPartial/,
+  'Genkendte felter uden komplet assetmængde skal forblive partial progression.',
+);
+
+const finalClean = bulk.indexOf('clean_and_summarize(result, fresh_zone_ids, budget)', replayStart);
+const finalizedWrite = bulk.indexOf('write_finalized_cache(result, result["refreshStatus"])', finalClean);
+assert.ok(
+  finalClean > replayStart && finalizedWrite > finalClean,
+  'Den ene terminale cachewrite skal ligge efter fuld clean/summarize.',
+);
+assert.equal(
+  (bulk.slice(bulkMainStart).match(/write_finalized_cache\(result, result\["refreshStatus"\]\)/g) || []).length,
+  1,
+  'Main må kun udføre én terminal finalized cachewrite.',
+);
 assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
+assert.match(nativeProvenance, /CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4/);
+assert.match(nativeProvenance, /dmi-official-dkss-operational-current-ledger-v4/);
 assert.match(bulk, /PRIVATE_REPLAY_RETENTION_HOURS = max\(\s*54,/);
 assert.match(bulk, /previous\.get\("spatialProvenanceVersion"\) == SPATIAL_PROVENANCE_VERSION/,
   'legacy bulkcache uden eksakt spatial proveniens må ikke ramme fresh-cache genvejen');
@@ -80,6 +266,17 @@ assert.match(bulk, /CLOSER_CURRENT_COLUMN_SELECTED_FOR_NATIVE_TIME/);
 assert.match(nativeProvenance, /CURRENT_MAX_DISTANCE_KM = 5\.0/);
 assert.match(bulk, /prefer_vector_choice/);
 assert.match(bulk, /currentFieldShadow/);
+const regionalProxyBuilder = bulk.indexOf('regional_proxy_targets: list[dict[str, Any]] = []');
+const regionalProxyConsumer = bulk.indexOf('research_targets = rotating_research_targets + regional_proxy_targets');
+assert.ok(regionalProxyBuilder >= 0 && regionalProxyConsumer > regionalProxyBuilder,
+  'Den private regionale proxy skal bygges i et afgrænset fail-closed blok');
+const regionalProxyBlock = bulk.slice(regionalProxyBuilder, regionalProxyConsumer);
+assert.match(regionalProxyBlock, /try:/);
+assert.match(regionalProxyBlock, /except \(OSError, ValueError, TypeError, KeyError\):/);
+assert.match(regionalProxyBlock, /regional_proxy_configuration_status = "FAILED_CLOSED"/);
+assert.match(regionalProxyBlock, /operationel DMI-produktion fortsætter/);
+assert.doesNotMatch(regionalProxyBlock, /raise\b|safe_error_message/,
+  'En privat proxyfejl må hverken abortere DMI-producenten eller logge policypayload');
 assert.match(bulk, /prune_previous_sampling_mismatches/);
 assert.match(bulk, /removedSamplingPointMismatches/);
 assert.match(bulk, /sanitize_water_temperature_surface_integrity/);
@@ -96,9 +293,29 @@ assert.match(bulk, /HINT_ALIASES\.get\(canonical, \(\)\)/);
 assert.match(bulk, /parser-exception/);
 assert.match(bulk, /marine_cache_healthy/);
 assert.match(bulk, /and coastal_part_current_cache_healthy/);
-assert.match(bulk, /strict_verified_part_current_pair_count/);
+assert.match(bulk, /current_operational_cache_ready/);
+assert.match(bulk, /build_current_operational_ledger/);
+assert.match(bulk, /LOCALLY_SKIPPED_DKSS_ASSET/);
+assert.match(bulk, /SYSTEMIC_CURRENT_TIME_COLLAPSE/);
+assert.match(bulk, /def backfill_compatible_cache_data\(/);
+assert.match(bulk, /strict_donors = \[/);
+assert.match(bulk, /coastal_part_targets=coastal_part_targets/);
+assert.match(bulk, /production_reference=locked_production_reference/);
 assert.match(bulk, /atomic_write_bulk_cache\(previous\)/);
 assert.match(bulk, /not strict_current_anchor_available/);
+assert.match(bulk, /def producer_terminal_code\(/);
+for (const code of [
+  'DMI_READY',
+  'DMI_CATALOG_SCHEDULE_STALE',
+  'DMI_CURRENT_LEDGER_INCOMPLETE',
+  'DMI_WAVE_BOOTSTRAP_INCOMPLETE',
+  'DMI_PRODUCER_EXCEPTION',
+]) {
+  assert.match(bulk, new RegExp(code));
+}
+assert.match(bulk, /terminal_code=\{bounded_code\}/);
+assert.match(bulk, /collection_failure_codes=\{bounded_failure_csv\}/);
+assert.match(bulk, /strict_current_anchor_ready=/);
 assert.match(updater, /DMI_OCEAN_REQUEST_TIMEOUT_MS/);
 assert.match(updater, /lastObservationSuccessMs/);
 assert.match(updater, /repairWaterLevelContinuity/);
@@ -110,6 +327,16 @@ assert.match(build, /DMI_BULK_FINALIZE_RESERVE_SECONDS/);
 assert.match(
   build,
   /- name: Update DMI bulk model cache[\s\S]*?timeout-minutes: 55[\s\S]*?DMI_BULK_MAX_RUNTIME_SECONDS: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '3000' \|\| '900' \}\}/,
+);
+assert.match(
+  build,
+  /DMI_BULK_MAX_DOWNLOAD_MB: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '4096' \|\| '2048' \}\}/,
+  'Første integrerede cutover skal kunne hente den målte fulde bootstrapmængde; normale vejrkørsler beholder 2048 MB-grænsen.',
+);
+assert.match(
+  build,
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '2' \}\}/,
+  'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normale vejrkørsler forbliver afgrænset til to collections.',
 );
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
@@ -133,6 +360,15 @@ assert.match(build, /node scripts\/build-public-coastal-parts-v2\.mjs/);
 assert.ok(build.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < build.indexOf('python -u scripts/update-dmi-bulk.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
 assert.match(build, /eccodes/);
 assert.match(build, /smoke-test-eccodes\.py/);
+assert.match(smoke, /codes_grib_nearest_new/);
+assert.match(smoke, /codes_grib_nearest_find/);
+assert.match(smoke, /codes_grib_nearest_delete/);
+assert.match(smoke, /CODES_GRIB_NEAREST_SAME_GRID/);
+assert.match(smoke, /getattr\(eccodes_module, "__version__", None\)/);
+assert.match(smoke, /getattr\(eccodes_module, "bindings_version", None\)/);
+assert.match(smoke, /invalid_versions/);
+assert.match(smoke, /f"\{name\}=\{value\}"/);
+assert.doesNotMatch(smoke, /", "\.join\(version_fields\)/);
 assert.match(build, /DMI bulk error/);
 assert.match(build, /DMI_BULK_FORCE_REFRESH/);
 assert.match(build, /actions\/cache\/restore@v6/);
@@ -141,6 +377,37 @@ assert.match(build, /\.cache\/dmi-grib/);
 for (const source of Object.values(workflows)) assert.doesNotMatch(source, /schedule-test\.yml/);
 assert.match(build, /DMI_API_KEY/);
 assert.match(build, /Report DMI bulk result/);
+const dmiProducer = build.indexOf('name: Update DMI bulk model cache');
+const dmiGribSave = build.indexOf('name: Save progressed DMI GRIB download cache');
+const dmiZoneSave = build.indexOf('name: Save progressive private DMI zone cache');
+const dmiShadowSave = build.indexOf('name: Save private seven-day current-field research cache');
+const dmiTerminalGate = build.indexOf('name: Require successful DMI producer before current supplement');
+const copernicusSelector = build.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement');
+assert.ok(
+  dmiProducer < dmiGribSave
+    && dmiGribSave < dmiZoneSave
+    && dmiZoneSave < dmiShadowSave
+    && dmiShadowSave < dmiTerminalGate
+    && dmiTerminalGate < copernicusSelector,
+  'DMI-progression skal gemmes før den hårde terminalgate og gapselector',
+);
+const terminalGateBlock = build.slice(dmiTerminalGate, copernicusSelector);
+for (const marker of [
+  'id: dmi-terminal-gate',
+  'steps.dmi-bulk.outputs.terminal_code',
+  'steps.dmi-bulk.outputs.strict_current_anchor_ready',
+  'test "$code" = "DMI_READY"',
+  'echo "ready=$ready" >> "$GITHUB_OUTPUT"',
+]) {
+  assert.ok(terminalGateBlock.includes(marker), `DMI-terminalgaten mangler ${marker}`);
+}
+assert.doesNotMatch(terminalGateBlock, /continue-on-error/);
+const selectorBlock = build.slice(
+  copernicusSelector,
+  build.indexOf('name: Bind production to resolved DMI current hour'),
+);
+assert.match(selectorBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.doesNotMatch(selectorBlock, /--nearest-dmi-hour|--full-coast/);
 assert.match(hydrator, /data\/live\/dmi-bulk-cache\.json/);
 assert.match(hydrator, /ravradar-runtime-diagnostics\.json/);
 assert.match(hydrator, /data\/diagnostics\/dmi-ocean-diagnostics\.json/);

@@ -69,14 +69,30 @@ def inspect(
         except (TypeError, ValueError) as error:
             raise RuntimeError(f"Private Copernicus schema-2 cache is invalid: {error}") from None
         target_text = target_hour.isoformat().replace("+00:00", "Z")
+        operational_contract = bool(range_registry and range_registry.get("schemaVersion") == 3)
+        expected_status = "OPERATIONAL_COMPLETE" if operational_contract else "COMPLETE"
         matches = [
             row for row in cache["collections"]
-            if row["status"] == "COMPLETE" and row["productionReferenceAt"] == target_text
+            if row["status"] == expected_status and row["productionReferenceAt"] == target_text
         ]
         exact_match = len(matches) == 1
         if exact_match and range_registry is not None:
             collection = matches[0]
-            expected = {
+            expected = ({
+                "operationalRangeStartAt": range_registry["operationalRangeStartAt"],
+                "operationalRangeEndAt": range_registry["operationalRangeEndAt"],
+                "operationalHourCount": range_registry["operationalHourCount"],
+                "advisoryHistoryStartAt": range_registry["advisoryHistoryStartAt"],
+                "advisoryHistoryEndAt": range_registry["advisoryHistoryEndAt"],
+                "advisoryHistoryHourCount": range_registry["advisoryHistoryHourCount"],
+                "targetRegistrySha256": range_registry["targetRegistrySha256"],
+                "dmiCurrentInputSha256": range_registry["dmiCurrentInputSha256"],
+                "dmiVerifierContractId": range_registry["dmiVerifierContractId"],
+                "operationalRequiredPairsSha256": range_registry["operationalRequiredPairsSha256"],
+                "operationalRequiredPairCount": range_registry["operationalRequiredPairCount"],
+                "advisoryHistoryRequiredPairsSha256": range_registry["advisoryHistoryRequiredPairsSha256"],
+                "advisoryHistoryRequiredPairCount": range_registry["advisoryHistoryRequiredPairCount"],
+            } if operational_contract else {
                 "rangeStartAt": range_registry["rangeStartAt"],
                 "rangeEndAt": range_registry["rangeEndAt"],
                 "coldBridgeHours": range_registry["coldBridgeHours"],
@@ -86,7 +102,7 @@ def inspect(
                 "dmiVerifierContractId": range_registry["dmiVerifierContractId"],
                 "requiredPairsSha256": range_registry["requiredPairsSha256"],
                 "requiredPairCount": range_registry["requiredPairCount"],
-            }
+            })
             exact_match = all(collection.get(key) == value for key, value in expected.items())
         elif exact_match and expected_fingerprint is not None:
             exact_match = matches[0].get("targetRegistrySha256") == expected_fingerprint

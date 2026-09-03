@@ -107,7 +107,11 @@ function observations(...manifests) {
   }));
 }
 
-function integratedAudit(binding = integratedModelBinding()) {
+function integratedAudit(binding = integratedModelBinding(), {
+  rollbackStatus = 'READY',
+  allCurrentScoresFullHistory = true,
+} = {}) {
+  const rollbackActivationReady = rollbackStatus === 'READY';
   return Object.freeze({
     schemaVersion: 1,
     status: 'passed',
@@ -123,7 +127,20 @@ function integratedAudit(binding = integratedModelBinding()) {
       expectedPartCount: 673,
       partCount: 673,
     }),
-    rollback: Object.freeze({ readyPartCount: 673 }),
+    history: Object.freeze({
+      allCurrentScoresFullHistory,
+      currentFullHistoryModeCount: allCurrentScoresFullHistory ? 420 : 0,
+      currentHistoryIncompleteModeCount: allCurrentScoresFullHistory ? 0 : 420,
+    }),
+    rollback: Object.freeze({
+      status: rollbackStatus,
+      activationReady: rollbackActivationReady,
+      descriptorValid: true,
+      generationReferenceBound: true,
+      runtimePartCount: 673,
+      readyPartCount: rollbackActivationReady ? 673 : 0,
+      reconstructedFromIntegratedState: false,
+    }),
     payload: Object.freeze({
       privacyContractPassed: true,
       publicStateOrEvidenceIncluded: false,
@@ -134,6 +151,45 @@ function integratedAudit(binding = integratedModelBinding()) {
     errors: Object.freeze([]),
     errorCounts: Object.freeze({}),
   });
+}
+
+function sealedHistoricalInitialPlan({
+  currentRow = null,
+  currentProfileRow,
+  sourceModelBinding,
+  publicManifest,
+  publicAudit,
+  sourceImplementationClosureSha256,
+  requestedImplementationClosureSha256 = defaultImplementationClosureSha256,
+  legacySourceRequired,
+} = {}) {
+  const unsealed = {
+    schemaVersion: RAVSCORE_INTEGRATED_RETURN_POLICY.schemaVersion,
+    kind: RAVSCORE_INTEGRATED_RETURN_POLICY.kind,
+    mode: RAVSCORE_INTEGRATED_RETURN_POLICY.mode,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+    sourceHead,
+    datasetId: publicManifest.datasetId,
+    productionReferenceAt: publicManifest.productionReferenceAt,
+    centralExpectedVersion: Number(currentRow?.version ?? 0),
+    sourceModelBinding: structuredClone(sourceModelBinding),
+    activeModelBinding: integratedModelBinding(),
+    legacySourceRequired,
+    sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256,
+    candidateActivationDocumentSha256: sha256(
+      currentRow?.payload ?? currentProfileRow.payload,
+    ),
+    integratedReadinessSha256: sha256(readiness),
+    integratedPublicAuditSha256: sha256(publicAudit),
+    integratedManifestSha256: sha256(publicManifest),
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligibleAfterVerifiedActivation:
+      publicAudit.history.allCurrentScoresFullHistory,
+    privatePayloadLogged: false,
+  };
+  return Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
 }
 
 function candidatePlan({
@@ -457,6 +513,10 @@ assert.deepEqual(crossRunRefreshAbort.document.activeModelBinding, candidateMode
 const integratedH1 = manifest(integratedModelBinding(),
   'rr-20260829130000-210', '2026-08-29T13:00:00.000Z');
 const integratedH1Audit = integratedAudit();
+const integratedWarmupAudit = integratedAudit(integratedModelBinding(), {
+  rollbackStatus: 'BUILDING_MEASURED_ONLY',
+  allCurrentScoresFullHistory: false,
+});
 const integratedH1Verification = verification('integrated', integratedModelBinding(), integratedH1);
 const returnPlan = prepareIntegratedOperationalReturn({
   currentRow: candidateActiveRow,
@@ -472,6 +532,21 @@ const returnPlan = prepareIntegratedOperationalReturn({
   githubSha: sourceHead,
   confirmation: RAVSCORE_INTEGRATED_RETURN_POLICY.confirmation,
 });
+assert.throws(() => prepareIntegratedOperationalReturn({
+  currentRow: candidateActiveRow,
+  currentProfileRow: candidateProfileRow,
+  sourceHead,
+  publicManifest: integratedH1,
+  publicAudit: integratedWarmupAudit,
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
+  ref: RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef,
+  githubSha: sourceHead,
+  confirmation: RAVSCORE_INTEGRATED_RETURN_POLICY.confirmation,
+}), /requires a READY Candidate G rollback companion/,
+'manual return from Candidate G must remain READY-only');
 const returnBegin = operationalIntegratedReturnTransition({
   action: 'return-begin',
   currentRow: candidateActiveRow,
@@ -523,6 +598,18 @@ const maintenance = operationalIntegratedMaintenanceTransition({
   readiness,
   deploymentId: 'pages-integrated-h2',
 });
+assert.throws(() => operationalIntegratedMaintenanceTransition({
+  currentRow: integratedActiveRow,
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 4,
+  sourceHead,
+  publicManifest: integratedH2,
+  publicAudit: integratedWarmupAudit,
+  publicVerification: integratedH2Verification,
+  readiness,
+  deploymentId: 'pages-integrated-h2-warmup-regression',
+}), /requires a READY Candidate G rollback companion/,
+'a calibrated ACTIVE integrated release must not silently lose its READY rollback companion');
 assert.equal(maintenance.document.publicManifestSha256, sha256(integratedH2));
 assert.equal(maintenance.document.sourceDeploymentId, 'pages-integrated-h2');
 const resolvedMaintainedIntegrated = resolveOperationalRavScoreModel({
@@ -609,6 +696,7 @@ const historicalIntegratedSourceDocument = Object.freeze({
   deploymentId: 'pages-historical-integrated-h0',
   requestedAt: '2026-08-29T12:31:00.000Z',
   activatedAt: '2026-08-29T12:31:00.000Z',
+  calibrationEligible: false,
   failureCode: null,
   integratedManifestSha256: sha256(historicalIntegratedSource),
 });
@@ -637,6 +725,82 @@ const integratedH3 = manifest(integratedModelBinding(),
   'rr-20260829134500-210', '2026-08-29T13:45:00.000Z');
 const integratedH3Audit = integratedAudit();
 const integratedH3Verification = verification('integrated', integratedModelBinding(), integratedH3);
+const historicalIntegratedWarmupPlan = prepareIntegratedHistoricalMaintenance({
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  sourceHead,
+  publicManifest: integratedH3,
+  publicAudit: integratedWarmupAudit,
+  readiness,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
+  eventName: 'schedule',
+  ref: 'refs/heads/main',
+  githubSha: sourceHead,
+});
+assert.equal(
+  historicalIntegratedWarmupPlan.calibrationEligibleAfterVerifiedActivation,
+  false,
+);
+assert.doesNotThrow(() => assertIntegratedHistoricalMaintenancePlan(
+  historicalIntegratedWarmupPlan,
+  {
+    expectedSourceHead: sourceHead,
+    expectedCentralVersion: 40,
+    currentRow: historicalIntegratedSourceRow,
+    currentProfileRow: historicalIntegratedSourceProfileRow,
+    readiness,
+    publicManifest: integratedH3,
+    publicAudit: integratedWarmupAudit,
+  },
+));
+const historicalWarmupBegin = operationalIntegratedHistoricalMaintenanceTransition({
+  action: 'integrated-historical-maintenance-begin',
+  currentRow: historicalIntegratedSourceRow,
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 40,
+  plan: historicalIntegratedWarmupPlan,
+  readiness,
+  publicManifest: integratedH3,
+  publicAudit: integratedWarmupAudit,
+  sourceManifest: historicalIntegratedSource,
+  sourceVerification: historicalIntegratedSourceVerification,
+  deploymentId: 'run-historical-integrated-h1-warmup',
+});
+const historicalWarmupComplete = operationalIntegratedHistoricalMaintenanceTransition({
+  action: 'integrated-historical-maintenance-complete',
+  currentRow: Object.freeze({ version: 41, payload: historicalWarmupBegin.document }),
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 41,
+  plan: historicalIntegratedWarmupPlan,
+  readiness,
+  publicManifest: integratedH3,
+  publicAudit: integratedWarmupAudit,
+  publicVerification: integratedH3Verification,
+  deploymentId: 'pages-historical-integrated-h1-warmup',
+});
+assert.equal(historicalWarmupComplete.document.calibrationEligible, false);
+const historicalWarmupReconciled = operationalPendingReconciliationTransition({
+  currentRow: Object.freeze({ version: 41, payload: historicalWarmupBegin.document }),
+  currentProfileRow: historicalIntegratedSourceProfileRow,
+  expectedVersion: 41,
+  publicManifest: integratedH3,
+  observations: observations(
+    historicalIntegratedSource,
+    integratedH3,
+    integratedH3,
+  ),
+  publicVerification: integratedH3Verification,
+  readiness,
+  publicAudit: integratedWarmupAudit,
+  integratedPlan: historicalIntegratedWarmupPlan,
+  deploymentId: 'pages-historical-integrated-h1-warmup-reconciled',
+});
+assert.equal(
+  historicalWarmupReconciled.document.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integrated,
+);
+assert.equal(historicalWarmupReconciled.document.calibrationEligible, false);
 const historicalIntegratedPlan = prepareIntegratedHistoricalMaintenance({
   currentRow: historicalIntegratedSourceRow,
   currentProfileRow: historicalIntegratedSourceProfileRow,
@@ -652,6 +816,7 @@ const historicalIntegratedPlan = prepareIntegratedHistoricalMaintenance({
 });
 assert.equal(historicalIntegratedPlan.sourceProfileSha256,
   sha256(oldIntegratedProfile));
+assert.equal(historicalIntegratedPlan.sourceCalibrationEligible, false);
 assert.doesNotThrow(() => assertIntegratedHistoricalMaintenancePlan(
   historicalIntegratedPlan,
   {
@@ -742,6 +907,7 @@ const historicalIntegratedComplete =
   });
 assert.deepEqual(historicalIntegratedComplete.document.activeModelBinding,
   integratedModelBinding());
+assert.equal(historicalIntegratedComplete.document.calibrationEligible, true);
 assert.deepEqual(historicalIntegratedComplete.centralTargetProfile,
   readiness.centralProfile);
 assert.equal(operationalResolvedBindingCurrent(resolveOperationalRavScoreModel({
@@ -781,6 +947,7 @@ const historicalIntegratedAbort =
   });
 assert.deepEqual(historicalIntegratedAbort.document.activeModelBinding,
   oldIntegratedBinding);
+assert.equal(historicalIntegratedAbort.document.calibrationEligible, false);
 assert.equal(historicalIntegratedAbort.document.deploymentId,
   'pages-historical-integrated-h0');
 assert.deepEqual(operationalCentralProfileForTransition({
@@ -833,6 +1000,7 @@ const historicalIntegratedReconciledTarget =
   });
 assert.deepEqual(historicalIntegratedReconciledTarget.centralTargetProfile,
   readiness.centralProfile);
+assert.equal(historicalIntegratedReconciledTarget.document.calibrationEligible, true);
 
 const historicalIntegratedSourceObservations = observations(
   historicalIntegratedSource,
@@ -873,6 +1041,7 @@ const historicalIntegratedReconciledSource =
   });
 assert.deepEqual(historicalIntegratedReconciledSource.document.activeModelBinding,
   oldIntegratedBinding);
+assert.equal(historicalIntegratedReconciledSource.document.calibrationEligible, false);
 assert.deepEqual(operationalCentralProfileForTransition({
   transition: historicalIntegratedReconciledSource,
   currentProfile: oldIntegratedProfile,
@@ -1605,9 +1774,8 @@ assert.throws(() => operationalPendingReconciliationTransition({
   observations: observations(historicalBridgeThird, historicalBridgeThird),
 }), /third.*no CAS/i);
 
-// The same sealed H0 marker may cut directly to the current integrated model.
-// It is an initial-cutover retry, but no longer a schema-2 legacy source.
-const historicalCandidateIntegratedPlan = prepareIntegratedOperationalReturn({
+// New first-cutover plans may not be created from a historical H0 binding.
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: historicalMarkerRow,
   currentProfileRow: historicalMarkerProfileRow,
   sourceHead,
@@ -1616,9 +1784,23 @@ const historicalCandidateIntegratedPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /current same-head Candidate G source closure parity/);
+
+// Previously sealed historical plans remain valid for transition recovery.
+const historicalCandidateIntegratedPlan = sealedHistoricalInitialPlan({
+  currentRow: historicalMarkerRow,
+  currentProfileRow: historicalMarkerProfileRow,
+  sourceModelBinding: oldCandidateBinding,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  legacySourceRequired: false,
 });
 assert.equal(historicalCandidateIntegratedPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
@@ -1894,9 +2076,12 @@ const bridgeIntegratedPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
 });
 assert.equal(bridgeIntegratedPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
@@ -2041,7 +2226,7 @@ for (const field of ['returnPlanSha256', 'integratedReadinessSha256',
     `ordinary pre-cutover maintenance must retain genuine ${field}`);
 }
 
-const initialPlan = prepareIntegratedOperationalReturn({
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: null,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2050,40 +2235,191 @@ const initialPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: legacyImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /centrally active modern Candidate G source/);
+
+// These plans represent immutable pre-lock artifacts. Their transition and
+// reconciliation paths must remain usable even though new legacy creation is closed.
+const initialPlan = sealedHistoricalInitialPlan({
+  currentProfileRow: legacyProfileRow,
+  sourceModelBinding: legacyCandidateGControllerBinding(),
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  legacySourceRequired: true,
 });
 assert.equal(initialPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
 assert.deepEqual(initialPlan.sourceModelBinding, legacyCandidateGControllerBinding());
-assert.throws(() => prepareIntegratedOperationalReturn({
+const initialWarmupPlan = sealedHistoricalInitialPlan({
+  currentProfileRow: legacyProfileRow,
+  sourceModelBinding: legacyCandidateGControllerBinding(),
+  publicManifest: integratedH1,
+  publicAudit: integratedWarmupAudit,
+  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  legacySourceRequired: true,
+});
+assert.equal(initialWarmupPlan.transitionKind,
+  RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
+assert.equal(initialWarmupPlan.calibrationEligibleAfterVerifiedActivation, false);
+const initialWarmupBegin = operationalIntegratedReturnTransition({
+  action: 'return-begin',
   currentRow: null,
   currentProfileRow: legacyProfileRow,
+  expectedVersion: 0,
+  plan: initialWarmupPlan,
+  readiness,
+  publicManifest: integratedH1,
+  publicAudit: integratedWarmupAudit,
+  sourceManifest: legacyManifest,
+  sourceAttestation: legacyAttestation,
+  sourceVerification: legacyVerification,
+  sourceDeploymentId: 'pages-legacy-4308',
+  deploymentId: 'run-initial-integrated-warmup',
+});
+const initialWarmupPendingRow = Object.freeze({
+  version: 1,
+  payload: initialWarmupBegin.document,
+});
+const initialWarmupComplete = operationalIntegratedReturnTransition({
+  action: 'return-complete',
+  currentRow: initialWarmupPendingRow,
+  expectedVersion: 1,
+  plan: initialWarmupPlan,
+  readiness,
+  publicManifest: integratedH1,
+  publicAudit: integratedWarmupAudit,
+  publicVerification: integratedH1Verification,
+  deploymentId: 'pages-initial-integrated-warmup',
+});
+assert.equal(initialWarmupComplete.document.status,
+  RAVSCORE_OPERATIONAL_STATUSES.integrated);
+assert.equal(initialWarmupComplete.document.calibrationEligible, false);
+assertOperationalActivationDocument(initialWarmupComplete.document, {
+  allowSealedHistoricalBindings: true,
+});
+const initialWarmupReconciledComplete = operationalPendingReconciliationTransition({
+  currentRow: initialWarmupPendingRow,
+  expectedVersion: 1,
+  publicManifest: integratedH1,
+  observations: observations(legacyManifest, integratedH1, integratedH1),
+  publicVerification: integratedH1Verification,
+  readiness,
+  publicAudit: integratedWarmupAudit,
+  integratedPlan: initialWarmupPlan,
+  deploymentId: 'pages-initial-integrated-warmup-reconciled',
+});
+assert.equal(initialWarmupReconciledComplete.document.calibrationEligible, false,
+  'reconciliation must use the sealed warmup target disposition, not model kind');
+const warmupMaintenance = operationalIntegratedMaintenanceTransition({
+  currentRow: Object.freeze({
+    version: 2,
+    payload: initialWarmupComplete.document,
+  }),
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 2,
+  sourceHead,
+  publicManifest: integratedH1,
+  publicAudit: integratedWarmupAudit,
+  publicVerification: integratedH1Verification,
+  readiness,
+  deploymentId: 'pages-initial-integrated-warmup-maintenance',
+});
+assert.equal(warmupMaintenance.document.calibrationEligible, false);
+const warmupActiveRow = Object.freeze({
+  version: 2,
+  payload: initialWarmupComplete.document,
+});
+const warmupRollbackPlan = candidatePlan({
+  centralExpectedVersion: 2,
+  sourceBinding: integratedModelBinding(),
+  datasetId: candidateH0.datasetId,
+  productionReferenceAt: candidateH0.productionReferenceAt,
+  salt: '6',
+});
+const warmupRollbackBegin = operationalActivationTransition({
+  action: 'begin',
+  currentRow: warmupActiveRow,
+  currentProfileRow: integratedProfileRow,
+  expectedVersion: 2,
+  plan: warmupRollbackPlan,
+  sourceManifest: integratedH1,
+  sourceVerification: integratedH1Verification,
+  requestedManifest: candidateH0,
+  deploymentId: 'run-warmup-candidate-rollback',
+  now: '2026-08-29T13:02:00.000Z',
+});
+const warmupRollbackPendingRow = Object.freeze({
+  version: 3,
+  payload: warmupRollbackBegin.document,
+});
+assert.equal(warmupRollbackBegin.document.calibrationEligible, false);
+for (const field of ['returnPlanSha256', 'integratedReadinessSha256',
+  'integratedPublicAuditSha256', 'integratedManifestSha256']) {
+  assert.equal(warmupRollbackBegin.document[field], initialWarmupComplete.document[field],
+    `warmup rollback must retain sealed source ${field}`);
+}
+const warmupRollbackAbort = operationalActivationTransition({
+  action: 'abort',
+  currentRow: warmupRollbackPendingRow,
+  expectedVersion: 3,
+  plan: warmupRollbackPlan,
+  sourceManifest: integratedH1,
+  sourceVerification: integratedH1Verification,
+  terminalEvidence: terminalEvidence(warmupRollbackPendingRow, integratedH1),
+  failureCode: 'WARMUP_ROLLBACK_NOT_STARTED',
+});
+assert.equal(warmupRollbackAbort.document.calibrationEligible, false);
+const warmupRollbackReconciledSource = operationalPendingReconciliationTransition({
+  currentRow: warmupRollbackPendingRow,
+  expectedVersion: 3,
+  publicManifest: integratedH1,
+  observations: observations(integratedH1, integratedH1),
+  publicVerification: integratedH1Verification,
+  candidatePlan: warmupRollbackPlan,
+  terminalEvidence: terminalEvidence(warmupRollbackPendingRow, integratedH1),
+  failureCode: 'WARMUP_ROLLBACK_SOURCE_RECONCILED',
+});
+assert.equal(warmupRollbackReconciledSource.document.calibrationEligible, false);
+assert.throws(() => prepareIntegratedOperationalReturn({
+  currentRow: legacyRefreshCompleteRow,
+  currentProfileRow: candidateProfileRow,
   sourceHead,
   publicManifest: integratedH1,
   publicAudit: integratedH1Audit,
   readiness,
-  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
   eventName: 'schedule',
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}), /Initial integrated cutover requires the exact main push/,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /exact manual-dispatch authorization/,
 'the scheduler must never initiate the first integrated cutover');
 assert.throws(() => prepareIntegratedOperationalReturn({
-  currentRow: null,
-  currentProfileRow: { ...legacyProfileRow, payload: { ...legacyProfile, sourceVersion: '4.0.307' } },
+  currentRow: legacyRefreshCompleteRow,
+  currentProfileRow: candidateProfileRow,
   sourceHead,
   publicManifest: integratedH1,
   publicAudit: integratedH1Audit,
   readiness,
-  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}), /exact production-verified/);
+  initialCutoverRequested: false,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /exact manual-dispatch authorization/,
+'the exact first-cutover token must remain inert without the explicit boolean');
 const initialBegin = operationalIntegratedReturnTransition({
   action: 'return-begin',
   currentRow: null,
@@ -2133,7 +2469,7 @@ assert.equal(resolvedLegacyActive.initialCutoverRequired, true);
 assert.equal(resolvedLegacyActive.legacySourceRequired, true);
 assert.equal(Object.hasOwn(resolvedLegacyActive, 'normalizationRequired'), false,
   'the removed normalization protocol must not survive as a resolver output');
-assert.doesNotThrow(() => prepareIntegratedOperationalReturn({
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: legacyActiveRow,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2142,10 +2478,13 @@ assert.doesNotThrow(() => prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: legacyImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}));
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /active modern Candidate G/);
 
 // A normal schema-4 Candidate G weather refresh may run while the first
 // integrated cutover is still pending, but it must preserve that durable
@@ -2279,7 +2618,7 @@ assert.equal(resolveOperationalRavScoreModel({
   payload: preCutoverRefreshReconciledAbort.document,
 }, { profileRow: candidateProfileRow }).initialCutoverRequired, true);
 
-const modernInitialPlan = prepareIntegratedOperationalReturn({
+const modernFirstCutoverRequest = {
   currentRow: preCutoverRefreshCompleteRow,
   currentProfileRow: candidateProfileRow,
   sourceHead,
@@ -2288,10 +2627,47 @@ const modernInitialPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-});
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+};
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  eventName: 'push',
+}), /exact manual-dispatch authorization/,
+'a push may never create the initial integrated cutover plan');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  initialCutoverConfirmation: 'NOT-EXACT',
+}), /exact manual-dispatch authorization/,
+'the first cutover token must be exact');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  currentRow: {
+    ...preCutoverRefreshCompleteRow,
+    payload: { ...preCutoverRefreshCompleteRow.payload, sourceHead: laterHead },
+  },
+}), /current same-head Candidate G source closure parity/,
+'the centrally active Candidate G source must belong to the dispatched head');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  sourceImplementationClosureSha256: 'b'.repeat(64),
+}), /current same-head Candidate G source closure parity/,
+'the supplied source closure must equal the centrally active source closure');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  ref: 'refs/heads/feature',
+}), /exact manual-dispatch authorization/,
+'first cutover may only be created on main');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  githubSha: laterHead,
+}), /exact manual-dispatch authorization/,
+'the checked-out head must equal the requested source head');
+const modernInitialPlan = prepareIntegratedOperationalReturn(modernFirstCutoverRequest);
 assert.equal(modernInitialPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
 assert.equal(modernInitialPlan.legacySourceRequired, false);

@@ -7,7 +7,12 @@ import {
   PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY,
   PRIVATE_RUNTIME_REPOSITORY_ROOT,
   canonicalPrivateRuntimeJson,
+  createPrivateProductionRuntimeBundle,
 } from './private-production-runtime-bundle.mjs';
+import {
+  PROTECTED_PRIVATE_RUNTIME_POLICY,
+  buildProtectedPrivateRuntimeArchive,
+} from './protected-private-production-runtime.mjs';
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
@@ -39,12 +44,15 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/build-copernicus-target-registry.py',
     'scripts/run-copernicus-current-pilot.py',
     'scripts/check-copernicus-current-range.py',
+    'scripts/build-current-operational-closure.py',
     'scripts/build-live-current-pilot.py',
     'scripts/private-production-runtime-bundle.mjs',
     'scripts/private-production-runtime-workflow.mjs',
     'scripts/protected-private-production-runtime.mjs',
     'scripts/lib/coastal_point_staging.py',
     'scripts/lib/copernicus_current.py',
+    'scripts/lib/copernicus_current_source_stage.py',
+    'scripts/lib/current_operational_closure.py',
     'scripts/lib/current_field_shadow.py',
     'scripts/lib/dmi_cache_migration.py',
     'scripts/lib/dmi_grid_vector.py',
@@ -55,8 +63,10 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
     'scripts/lib/ravscore-sampling-context.mjs',
     'scripts/lib/dmi-forecast-store.mjs',
     'scripts/lib/current-transport-history.mjs',
+    'scripts/lib/feggesund-wave-proxy.mjs',
     'scripts/lib/live-current-pilot.mjs',
     'scripts/lib/production-reference-time.mjs',
+    'scripts/lib/regional_current_operational.py',
     'data/current-live-pilot-control.json',
     'data/current-regional-proxy-policy.json',
   ]),
@@ -76,6 +86,32 @@ export const PRIVATE_RUNTIME_PREFLIGHT_POLICY = Object.freeze({
   maximumStateBytes: 64 * 1024,
   expectedZoneCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedZoneCount,
   expectedPartCount: PRIVATE_PRODUCTION_RUNTIME_BUNDLE_POLICY.expectedPartCount,
+});
+
+export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
+  schemaVersion: '1.0.0',
+  kind: 'RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN',
+  privacyClass: 'AGGREGATE_PRIVATE_RUNTIME_CAPACITY',
+  capacityScope: 'INCREMENTAL_PRIVATE_RUNTIME_ONLY',
+  // Supabase documents a 5 GB uncached unified-egress quota and 1 GB Storage
+  // quota for Free organizations. Decimal GB is deliberately used here; it is
+  // slightly more conservative than interpreting the published quota as GiB.
+  quotaDocumentationUrl: 'https://supabase.com/docs/guides/platform/manage-your-usage/egress',
+  storageDocumentationUrl: 'https://supabase.com/docs/guides/storage/pricing',
+  monthlyUncachedEgressQuotaBytes: 5_000_000_000,
+  storageQuotaBytes: 1_000_000_000,
+  reservePercent: 30,
+  usableBudgetPercent: 70,
+  conservativeMonthDays: 31,
+  // Read-only Actions metadata audit for the current native-GitHub regime found
+  // 27.69 full builds/day on average and 57 at the observed peak. Sixty covers
+  // schedule, release, manual and watchdog bursts without carrying forward the
+  // retired external-dispatch flood.
+  scheduledFullBuildsPerDay: 60,
+  scheduledFullBuildsPerMonth: 1_860,
+  normalObjectReadsPerFullBuild: 2,
+  rollbackObjectReadsPerFullBuild: 3,
+  retainedObjectGenerations: 2,
 });
 
 const PREFLIGHT_COLLECTIONS = Object.freeze([
@@ -294,6 +330,287 @@ export async function buildPrivateRuntimeExpectation({
     minimumReferenceAt: minimum,
     minimumGeneratedAt: minimum,
     now: currentTime,
+  };
+}
+
+function validateCapacityPolicy(policy) {
+  if (!isPlainObject(policy)
+    || policy.schemaVersion !== '1.0.0'
+    || policy.kind !== 'RAVRADAR_PRIVATE_RUNTIME_INCREMENTAL_SIZE_DRY_RUN'
+    || policy.privacyClass !== 'AGGREGATE_PRIVATE_RUNTIME_CAPACITY'
+    || policy.capacityScope !== 'INCREMENTAL_PRIVATE_RUNTIME_ONLY'
+    || !Number.isSafeInteger(policy.monthlyUncachedEgressQuotaBytes)
+    || policy.monthlyUncachedEgressQuotaBytes < 1
+    || !Number.isSafeInteger(policy.storageQuotaBytes)
+    || policy.storageQuotaBytes < 1
+    || !Number.isSafeInteger(policy.reservePercent)
+    || policy.reservePercent !== 30
+    || !Number.isSafeInteger(policy.usableBudgetPercent)
+    || policy.usableBudgetPercent !== 70
+    || policy.reservePercent + policy.usableBudgetPercent !== 100
+    || !Number.isSafeInteger(policy.conservativeMonthDays)
+    || policy.conservativeMonthDays !== 31
+    || !Number.isSafeInteger(policy.scheduledFullBuildsPerDay)
+    || policy.scheduledFullBuildsPerDay !== 60
+    || !Number.isSafeInteger(policy.scheduledFullBuildsPerMonth)
+    || policy.scheduledFullBuildsPerMonth !== 1_860
+    || policy.scheduledFullBuildsPerMonth
+      !== policy.scheduledFullBuildsPerDay * policy.conservativeMonthDays
+    || policy.normalObjectReadsPerFullBuild !== 2
+    || policy.rollbackObjectReadsPerFullBuild !== 3
+    || policy.retainedObjectGenerations !== 2
+    || typeof policy.quotaDocumentationUrl !== 'string'
+    || typeof policy.storageDocumentationUrl !== 'string') {
+    throw new Error('Private runtime capacity policy is invalid');
+  }
+  return policy;
+}
+
+function safeIntegerProduct(values, label) {
+  let product = 1n;
+  for (const value of values) {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new Error(`${label} contains an invalid integer`);
+    }
+    product *= BigInt(value);
+  }
+  if (product > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error(`${label} exceeds the safe integer bound`);
+  }
+  return Number(product);
+}
+
+function safePercentageFloor(value, percent, label) {
+  const numerator = safeIntegerProduct([value, percent], label);
+  return Math.floor(numerator / 100);
+}
+
+export function buildPrivateRuntimeIncrementalSizeProjection({
+  archiveObjectBytes,
+  policy = PRIVATE_RUNTIME_CAPACITY_POLICY,
+} = {}) {
+  const capacityPolicy = validateCapacityPolicy(policy);
+  if (!Number.isSafeInteger(archiveObjectBytes)
+    || archiveObjectBytes < 1
+    || archiveObjectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes) {
+    throw new Error('Private runtime incremental projection object size is invalid');
+  }
+  const buildsPerMonth = capacityPolicy.scheduledFullBuildsPerDay
+    * capacityPolicy.conservativeMonthDays;
+  if (buildsPerMonth !== capacityPolicy.scheduledFullBuildsPerMonth) {
+    throw new Error('Private runtime incremental projection build frequency is inconsistent');
+  }
+  const usableEgressBudgetBytes = safePercentageFloor(
+    capacityPolicy.monthlyUncachedEgressQuotaBytes,
+    capacityPolicy.usableBudgetPercent,
+    'Private runtime incremental egress budget',
+  );
+  const usableStorageBudgetBytes = safePercentageFloor(
+    capacityPolicy.storageQuotaBytes,
+    capacityPolicy.usableBudgetPercent,
+    'Private runtime incremental storage budget',
+  );
+  const normalPerFullBuildBytes = safeIntegerProduct([
+    archiveObjectBytes,
+    capacityPolicy.normalObjectReadsPerFullBuild,
+  ], 'Private runtime normal per-build projection');
+  const rollbackPerFullBuildBytes = safeIntegerProduct([
+    archiveObjectBytes,
+    capacityPolicy.rollbackObjectReadsPerFullBuild,
+  ], 'Private runtime rollback per-build projection');
+  const projectedMonthlyNormalBytes = safeIntegerProduct([
+    normalPerFullBuildBytes,
+    buildsPerMonth,
+  ], 'Private runtime normal monthly projection');
+  const projectedMonthlyRollbackBytes = safeIntegerProduct([
+    rollbackPerFullBuildBytes,
+    buildsPerMonth,
+  ], 'Private runtime rollback monthly projection');
+  const retainedStorageBytes = safeIntegerProduct([
+    archiveObjectBytes,
+    capacityPolicy.retainedObjectGenerations,
+  ], 'Private runtime retained-object projection');
+  const normalWithinBudget = projectedMonthlyNormalBytes <= usableEgressBudgetBytes;
+  const rollbackWithinBudget = projectedMonthlyRollbackBytes <= usableEgressBudgetBytes;
+  const storageWithinBudget = retainedStorageBytes <= usableStorageBudgetBytes;
+  const withinIncrementalBounds = normalWithinBudget
+    && rollbackWithinBudget
+    && storageWithinBudget;
+  return {
+    incrementalGate: {
+      scope: capacityPolicy.capacityScope,
+      status: withinIncrementalBounds
+        ? 'WITHIN_INCREMENTAL_SIZE_BOUNDS'
+        : 'EXCEEDS_INCREMENTAL_SIZE_BOUNDS',
+      fullCutoverCapacityEvaluated: false,
+    },
+    egress: {
+      quotaDocumentationUrl: capacityPolicy.quotaDocumentationUrl,
+      quotaScope: 'ORGANIZATION_UNCACHED_UNIFIED_EGRESS',
+      projectionScope: 'PRIVATE_RUNTIME_OBJECT_ONLY',
+      monthlyQuotaBytes: capacityPolicy.monthlyUncachedEgressQuotaBytes,
+      reservePercent: capacityPolicy.reservePercent,
+      usableBudgetPercent: capacityPolicy.usableBudgetPercent,
+      usableBudgetBytes: usableEgressBudgetBytes,
+      conservativeMonthDays: capacityPolicy.conservativeMonthDays,
+      scheduledFullBuildsPerDay: capacityPolicy.scheduledFullBuildsPerDay,
+      scheduledFullBuildsPerMonth: buildsPerMonth,
+      normalObjectReadsPerFullBuild: capacityPolicy.normalObjectReadsPerFullBuild,
+      rollbackObjectReadsPerFullBuild: capacityPolicy.rollbackObjectReadsPerFullBuild,
+      normalPerFullBuildBytes,
+      rollbackPerFullBuildBytes,
+      projectedMonthlyNormalBytes,
+      projectedMonthlyRollbackBytes,
+      normalWithinBudget,
+      rollbackWithinBudget,
+    },
+    storage: {
+      quotaDocumentationUrl: capacityPolicy.storageDocumentationUrl,
+      projectionScope: 'STORAGE_BUCKET_CURRENT_AND_PREVIOUS_ONLY',
+      quotaBytes: capacityPolicy.storageQuotaBytes,
+      reservePercent: capacityPolicy.reservePercent,
+      usableBudgetPercent: capacityPolicy.usableBudgetPercent,
+      usableBudgetBytes: usableStorageBudgetBytes,
+      retainedObjectGenerations: capacityPolicy.retainedObjectGenerations,
+      retainedStorageBytes,
+      withinBudget: storageWithinBudget,
+    },
+    cutoverGate: {
+      status: 'BLOCKED_PENDING_LIVE_BEFORE_AFTER_AND_OTHER_EGRESS',
+      cutoverEligible: false,
+      liveSupabaseBeforeAfterMeasurementRequired: true,
+      liveSupabaseBeforeAfterMeasurementIncluded: false,
+      otherUnifiedEgressProjectionRequired: true,
+      otherUnifiedEgressProjectionIncluded: false,
+      checkpointDatabaseEgressIncluded: false,
+    },
+  };
+}
+
+async function optionalCheckpointSerializedBytes(repositoryRoot, checkpointPath) {
+  const root = path.resolve(repositoryRoot);
+  const resolved = path.resolve(root, checkpointPath);
+  if (!inside(root, resolved)) throw new Error('Private runtime capacity checkpoint escapes repository');
+  const stat = await fs.lstat(resolved).catch(error => {
+    if (error?.code === 'ENOENT') return null;
+    throw error;
+  });
+  if (stat === null) return null;
+  if (!stat.isFile() || stat.isSymbolicLink() || !Number.isSafeInteger(stat.size) || stat.size < 1) {
+    throw new Error('Private runtime capacity checkpoint is not a regular serialized file');
+  }
+  return stat.size;
+}
+
+async function attestMeasuredWarmupCheckpointAbsence(repositoryRoot, runtimeAuditPath) {
+  if (typeof runtimeAuditPath !== 'string' || runtimeAuditPath.trim() === '') {
+    throw new Error('Missing checkpoint requires the measured-warmup runtime audit');
+  }
+  const audit = await readJsonFile(
+    path.resolve(repositoryRoot),
+    runtimeAuditPath,
+    'Private runtime capacity measured-warmup audit',
+    16 * 1024 * 1024,
+  );
+  if (audit?.status !== 'passed'
+    || audit?.rollback?.status !== 'BUILDING_MEASURED_ONLY'
+    || audit?.rollback?.activationReady !== false) {
+    throw new Error('Missing checkpoint lacks the explicit measured-warmup N/A attestation');
+  }
+  return 'NOT_APPLICABLE_DURING_MEASURED_WARMUP';
+}
+
+export async function buildPrivateRuntimeIncrementalSizeDryRun({
+  privateRoot,
+  bundlePath,
+  repositoryRoot = PRIVATE_RUNTIME_REPOSITORY_ROOT,
+  sourceHead,
+  checkpointPath = '.cache/ravscore-continuation-checkpoint/checkpoint.json',
+  runtimeAuditPath,
+  policy = PRIVATE_RUNTIME_CAPACITY_POLICY,
+  now = new Date().toISOString(),
+} = {}) {
+  const capacityPolicy = validateCapacityPolicy(policy);
+  const root = path.resolve(repositoryRoot);
+  const spec = await buildPrivateRuntimeCreateSpec({ repositoryRoot: root });
+  const expected = {
+    datasetId: spec.metadata.datasetId,
+    generationId: spec.metadata.generationId,
+    productionReferenceAt: spec.metadata.productionReferenceAt,
+    generatedAt: spec.metadata.generatedAt,
+    modelBinding: spec.metadata.modelBinding,
+    contractHashes: spec.metadata.contractHashes,
+  };
+  let archiveMetrics;
+  let bundleCreated = false;
+  try {
+    await createPrivateProductionRuntimeBundle({
+      privateRoot,
+      bundlePath,
+      repositoryRoot: root,
+      metadata: spec.metadata,
+      files: spec.files,
+    });
+    bundleCreated = true;
+    const packed = await buildProtectedPrivateRuntimeArchive({
+      privateRoot,
+      bundlePath,
+      repositoryRoot: root,
+      expected,
+      now,
+      sourceHead,
+    });
+    archiveMetrics = packed.archiveMetrics;
+  } finally {
+    // The dry-run is intentionally incapable of retaining or uploading the
+    // production-equivalent private payload. Only the caller's safe aggregate
+    // report survives.
+    if (bundleCreated) {
+      await fs.rm(bundlePath, { recursive: true, force: true });
+    }
+  }
+  if (!archiveMetrics
+    || archiveMetrics.objectBytes < 1
+    || archiveMetrics.objectBytes > PROTECTED_PRIVATE_RUNTIME_POLICY.maximumArchiveBytes
+    || archiveMetrics.rawPayloadBytes < 1
+    || archiveMetrics.envelopeBytes < archiveMetrics.rawPayloadBytes) {
+    throw new Error('Private runtime capacity archive metrics are invalid');
+  }
+  const checkpointSerializedBytes = await optionalCheckpointSerializedBytes(
+    root,
+    checkpointPath,
+  );
+  const checkpointDisposition = checkpointSerializedBytes === null
+    ? await attestMeasuredWarmupCheckpointAbsence(root, runtimeAuditPath)
+    : 'CHECKPOINT_SIZE_MEASURED';
+  const projection = buildPrivateRuntimeIncrementalSizeProjection({
+    archiveObjectBytes: archiveMetrics.objectBytes,
+    policy: capacityPolicy,
+  });
+  return {
+    schemaVersion: capacityPolicy.schemaVersion,
+    kind: capacityPolicy.kind,
+    privacyClass: capacityPolicy.privacyClass,
+    measurements: {
+      rawPayloadBytes: archiveMetrics.rawPayloadBytes,
+      archiveEnvelopeBytes: archiveMetrics.envelopeBytes,
+      archiveObjectBytes: archiveMetrics.objectBytes,
+      compressionBasisPoints: Math.ceil(
+        archiveMetrics.objectBytes * 10_000 / archiveMetrics.rawPayloadBytes,
+      ),
+      checkpointAvailable: checkpointSerializedBytes !== null,
+      checkpointSerializedBytes,
+      checkpointDisposition,
+      checkpointAbsenceAttestedByRuntimeAudit: checkpointSerializedBytes === null,
+    },
+    ...projection,
+    controls: {
+      supabaseRequestAttempted: false,
+      privatePayloadUploaded: false,
+      privatePayloadArtifactUploaded: false,
+      archivePersisted: false,
+      temporaryBundleRemoved: true,
+    },
   };
 }
 
@@ -710,6 +1027,26 @@ async function main() {
       outputRoot: argument(argv, '--output-root'),
     });
     console.log(JSON.stringify(result));
+  } else if (mode === 'incremental-size-dry-run') {
+    const output = argument(argv, '--output');
+    const result = await buildPrivateRuntimeIncrementalSizeDryRun({
+      repositoryRoot,
+      privateRoot: argument(argv, '--private-root'),
+      bundlePath: argument(argv, '--bundle'),
+      sourceHead: argument(argv, '--source-head'),
+      checkpointPath: argument(
+        argv,
+        '--checkpoint',
+        false,
+      ) ?? '.cache/ravscore-continuation-checkpoint/checkpoint.json',
+      runtimeAuditPath: argument(argv, '--runtime-audit', false),
+    });
+    await atomicWriteJson(output, result);
+    console.log(JSON.stringify({
+      status: 'incremental-size-dry-run-complete',
+      aggregateReportWrittenLocally: true,
+      privatePayloadUploaded: false,
+    }));
   } else if (mode === 'install') {
     const result = await installRestoredPrivateRuntime({
       repositoryRoot,
@@ -717,7 +1054,7 @@ async function main() {
     });
     console.log(JSON.stringify(result));
   } else {
-    throw new Error('Use create-spec, expected, create-preflight, materialize-preflight or install');
+    throw new Error('Use create-spec, expected, create-preflight, materialize-preflight, incremental-size-dry-run or install');
   }
 }
 

@@ -36,7 +36,12 @@ const weather=(zoneIndex,dayIndex,modeIndex)=>({
   currentSpeedMps:.1+modeIndex/10,
   currentDirectionDeg:(zoneIndex*19+dayIndex*23+modeIndex*31)%360,
   waterTemperatureC:12+zoneIndex/100+dayIndex/10,
-  currentProvenance:{status:'verified',provider:'synthetic-safe-metadata'}
+  currentProvenance:{status:'verified',provider:'synthetic-safe-metadata'},
+  ...(zoneIndex===0&&dayIndex===0&&modeIndex===0?{
+    waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty:'MODERATE',
+    waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  }:{})
 });
 
 const explanation=(time,score)=>({
@@ -97,6 +102,7 @@ for(let zoneIndex=0;zoneIndex<zoneCount;zoneIndex+=1){
       const localWeather=weather(zoneIndex,dayIndex,modeIndex);
       const score=60+dayIndex+modeIndex;
       const quality=fullHistoryQuality(score);
+      if(zoneIndex===0&&dayIndex===0&&modeIndex===0)quality.calibrationEligible=false;
       row[mode]={
         available:true,modelBinding,...quality,status:'only-part',score,winningPartId,winningPartName:parts[winningPartId].name,
         winningPartUncertain:false,possibleWinningPartCount:1,
@@ -147,6 +153,18 @@ assert.equal(checkedTabs,2100,'Regressionen skal kontrollere 210 zoner × 5 dage
 
 const first=buildLocalZoneScore({coastalParts:merged.coastalParts,zoneId:'Z000',mode:'waders',time:generatedAt});
 assert.equal(first.localWeather.currentDirectionDeg,zones.Z000.hourly[0].waders.weather.currentDirectionDeg,'Den aktuelle visning blander hovedzonevejr ind i lokal score.');
+assert.deepEqual(
+  Object.fromEntries(['waveInputSource','waveInputUncertainty','waveInputNoticeId']
+    .map(field=>[field,first.localWeather[field]])),
+  {
+    waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty:'MODERATE',
+    waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+  'Den valgte kystdelstime skal bevare den kompakte proxyadvarsel gennem safeWeather.',
+);
+assert.equal(first.calibrationEligible,false,
+  'Den valgte FULL_HISTORY-proxytime må ikke blive kalibreringsberettiget i lokalprojektionen.');
 
 const app=fs.readFileSync('app.js','utf8');
 const ui=fs.readFileSync('js/ui/info-panel.js','utf8');

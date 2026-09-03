@@ -11,8 +11,8 @@ export const RAV_ASSISTANT_RAVSCORE_MODEL_BINDING = Object.freeze({
   rankingPolicyId: "direction-broad-19-history-tie-v2",
   bestTimePolicyId: "score-history-water-tie-earliest-v3",
   presentationPolicyId: "score-bands-35-55-75-exceptional90-v1",
-  modelContractSha256: "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
-  modelBundleSha256: "978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9",
+  modelContractSha256: "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
+  modelBundleSha256: "3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3",
 });
 
 export const RAV_ASSISTANT_KNOWLEDGE_SCHEMA = "rav-assistant-public-knowledge-v1";
@@ -134,7 +134,9 @@ function publicScoreQuality(result, available) {
   };
   if (available
     && result.scoreQuality === "FULL_HISTORY"
-    && result.calibrationEligible === ASSISTANT_FULL_HISTORY_CALIBRATION_ELIGIBLE
+    && typeof result.calibrationEligible === 'boolean'
+    && (ASSISTANT_FULL_HISTORY_CALIBRATION_ELIGIBLE === true
+      || result.calibrationEligible === false)
     && coverage === ASSISTANT_HISTORY_HOURS
     && reasonCodes?.length === 0
     && ["EXACT_POINT_SCORE", "CONSERVATIVE_TAIL_RESET_POINT_SCORE"]
@@ -144,7 +146,7 @@ function publicScoreQuality(result, available) {
       === (result.scoreSemantics === "CONSERVATIVE_TAIL_RESET_POINT_SCORE")) {
     return {
       scoreQuality:"FULL_HISTORY",
-      calibrationEligible:ASSISTANT_FULL_HISTORY_CALIBRATION_ELIGIBLE,
+      calibrationEligible:result.calibrationEligible,
       scoreSemantics:result.scoreSemantics,
       conservativeTailResetApplied:result.conservativeTailResetApplied,
       scoreBounds, historyCoverageHours:coverage, historyReasonCodes:[],

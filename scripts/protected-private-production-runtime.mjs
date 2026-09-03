@@ -259,7 +259,19 @@ export async function buildProtectedPrivateRuntimeArchive({
     modelBinding: verified.modelBinding,
     contractHashes: verified.contractHashes,
   }, { policy });
-  return { archive, descriptor, verified };
+  return {
+    archive,
+    descriptor,
+    verified,
+    // Aggregate-only capacity evidence. These counts contain no payload bytes,
+    // identifiers, coordinates or vector values and let an offline dry-run use
+    // the exact production packer without decoding or persisting the archive.
+    archiveMetrics: Object.freeze({
+      rawPayloadBytes,
+      envelopeBytes: envelopeBytes.length,
+      objectBytes: archive.length,
+    }),
+  };
 }
 
 function validateBinding(value) {
@@ -494,6 +506,30 @@ async function verifyStoredObject(storage, descriptor) {
   return bytes;
 }
 
+async function removeCreatedRuntimeIfUnreferenced({
+  request,
+  storage,
+  descriptor,
+  policy,
+}) {
+  let latest;
+  try {
+    latest = await readPointerRow(request, { allowMissing: true, policy });
+  } catch {
+    // A failed pointer reread leaves the reference state unknown. Keeping the
+    // immutable object is safer than deleting something a concurrent writer
+    // may already have made current or previous.
+    return false;
+  }
+  const referencedPaths = new Set([
+    latest?.payload?.current?.objectPath,
+    latest?.payload?.previous?.objectPath,
+  ].filter(Boolean));
+  if (referencedPaths.has(descriptor.objectPath)) return false;
+  await storage.removeExact(descriptor.objectPath);
+  return true;
+}
+
 export async function publishProtectedPrivateProductionRuntime({
   privateRoot,
   bundlePath,
@@ -543,11 +579,7 @@ export async function publishProtectedPrivateProductionRuntime({
   }
 
   await storage.ensurePrivateBucket();
-  await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
-  // One byte-exact readback is required before the pointer can expose the
-  // immutable object. The later pointer CAS/readback proves metadata; a second
-  // full object download would add egress without strengthening that proof.
-  await verifyStoredObject(storage, built.descriptor);
+  const upload = await storage.uploadImmutable(built.descriptor.objectPath, built.archive);
 
   const pointer = {
     schemaVersion: policy.schemaVersion,
@@ -556,42 +588,64 @@ export async function publishProtectedPrivateProductionRuntime({
     previous: existing?.payload.current ?? null,
   };
   let expectedVersion;
-  if (!existing) {
-    const inserted = await invokeDocumentRequest(
-      request,
-      '?on_conflict=document_key&select=document_key,payload,version',
-      {
-        method: 'POST',
-        headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
-        body: JSON.stringify({ document_key: policy.documentKey, payload: pointer, updated_by: null }),
-      },
-      'insert',
-    );
-    if (!Array.isArray(inserted) || inserted.length !== 1 || Number(inserted[0].version) !== 1) {
-      throw new Error('Private runtime pointer insert lost a concurrent write');
+  let readback;
+  try {
+    // One byte-exact readback is required before the pointer can expose the
+    // immutable object. The later pointer CAS/readback proves metadata; a
+    // second full object download would add egress without strengthening it.
+    await verifyStoredObject(storage, built.descriptor);
+    if (!existing) {
+      const inserted = await invokeDocumentRequest(
+        request,
+        '?on_conflict=document_key&select=document_key,payload,version',
+        {
+          method: 'POST',
+          headers: { Prefer: 'resolution=ignore-duplicates,return=representation' },
+          body: JSON.stringify({ document_key: policy.documentKey, payload: pointer, updated_by: null }),
+        },
+        'insert',
+      );
+      if (!Array.isArray(inserted) || inserted.length !== 1 || Number(inserted[0].version) !== 1) {
+        throw new Error('Private runtime pointer insert lost a concurrent write');
+      }
+      expectedVersion = 1;
+    } else {
+      const updated = await invokeDocumentRequest(
+        request,
+        `?document_key=eq.${encodeURIComponent(policy.documentKey)}&version=eq.${existing.version}&select=document_key,payload,version`,
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({ payload: pointer, updated_by: null }),
+        },
+        'compare-and-swap',
+      );
+      if (!Array.isArray(updated)
+        || updated.length !== 1
+        || Number(updated[0].version) !== existing.version + 1) {
+        throw new Error('Private runtime pointer compare-and-swap lost a concurrent write');
+      }
+      expectedVersion = existing.version + 1;
     }
-    expectedVersion = 1;
-  } else {
-    const updated = await invokeDocumentRequest(
-      request,
-      `?document_key=eq.${encodeURIComponent(policy.documentKey)}&version=eq.${existing.version}&select=document_key,payload,version`,
-      {
-        method: 'PATCH',
-        headers: { Prefer: 'return=representation' },
-        body: JSON.stringify({ payload: pointer, updated_by: null }),
-      },
-      'compare-and-swap',
-    );
-    if (!Array.isArray(updated)
-      || updated.length !== 1
-      || Number(updated[0].version) !== existing.version + 1) {
-      throw new Error('Private runtime pointer compare-and-swap lost a concurrent write');
+    readback = await readPointerRow(request, { allowMissing: false, policy });
+    if (readback.version !== expectedVersion || !same(readback.payload, pointer)) {
+      throw new Error('Private runtime pointer readback does not match the publication');
     }
-    expectedVersion = existing.version + 1;
-  }
-  const readback = await readPointerRow(request, { allowMissing: false, policy });
-  if (readback.version !== expectedVersion || !same(readback.payload, pointer)) {
-    throw new Error('Private runtime pointer readback does not match the publication');
+  } catch (error) {
+    if (upload?.created === true) {
+      try {
+        await removeCreatedRuntimeIfUnreferenced({
+          request,
+          storage,
+          descriptor: built.descriptor,
+          policy,
+        });
+      } catch {
+        // Preserve the publication failure. Cleanup is intentionally best
+        // effort and may only target this attempt's newly-created object.
+      }
+    }
+    throw error;
   }
 
   const retired = existing?.payload.previous ?? null;

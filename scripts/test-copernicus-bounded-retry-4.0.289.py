@@ -39,7 +39,7 @@ timed_out = module.run_bounded(
 )
 assert timed_out == {"ok": False, "attempt": 1, "reason": "timeout"}
 
-for invalid in ((0, 1, 0), (4, 1, 0), (1, 601, 0), (1, 1, 121)):
+for invalid in ((0, 1, 0), (4, 1, 0), (1, 1201, 0), (1, 1, 121)):
     try:
         module.validate_budget(*invalid)
     except ValueError:

@@ -646,6 +646,8 @@ ok(!(packageScripts['test:coastal-geometry-v2']??'').includes('test-ravscore-act
 const targetRegistry=await read('scripts/build-copernicus-target-registry.py');
 const dmiNativeProvenance=await read('scripts/lib/dmi_native_provenance.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
+const copernicusRangeRunner=await read('scripts/run-copernicus-current-pilot.py');
+const copernicusCurrentLib=await read('scripts/lib/copernicus_current.py');
 const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
 const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
 const privateRuntimeBundle=await read('scripts/private-production-runtime-bundle.mjs');
@@ -678,14 +680,24 @@ const heartbeatWorkflow=await read('.github/workflows/preserve-copernicus-curren
 for(const marker of [
   'hours = matrix_hours(reference)',
   'return verified_part_current_pair(document, target, valid_time)',
+  '"schemaVersion": 3',
   '"rangeEndAt": utc_iso(hours[-1])',
-  '"requiredPairsSha256": required_pairs_sha256(required_pairs)',
+  '"operationalRangeStartAt": utc_iso(reference)',
+  '"operationalRangeEndAt": utc_iso(hours[-1])',
+  '"operationalRequiredPairsSha256": required_pairs_sha256(operational_required_pairs)',
+  '"advisoryHistoryRequiredPairsSha256": required_pairs_sha256(',
 ]){
-  ok(targetRegistry.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler native-timebindingen: ${marker}`);
+  ok(targetRegistry.includes(marker),`Copernicus' eksakte operationelle DMI-gapmatrix mangler native-timebindingen: ${marker}`);
 }
 for(const marker of [
+  'def _matching_verified_part_current_rows(',
+  'key_time = canonical_time(key)',
+  'row_time = canonical_time(row.get("time"))',
+  'key_time is None or row_time is None or key_time != row_time or row_time in seen',
+  'or parsed < start',
+  'or parsed > end',
+  'or not _verified_part_current_row(row, target, row_time)',
   'def verified_part_current_pair(',
-  'canonical_time(row.get("time") or key) != expected_time',
   'complete_native_source_for_hour(',
 ]){
   ok(dmiNativeProvenance.includes(marker),`Den delte DMI-provenienshelper mangler strict native-timebindingen: ${marker}`);
@@ -698,11 +710,32 @@ for(const marker of [
 ]){
   ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
 }
-for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 2','--timeout-seconds 360','--backoff-seconds 20']){
+for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 1200','--backoff-seconds 20']){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
-for(const marker of ['attempts > 3','timeout_seconds > 600','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
+for(const marker of ['attempts > 3','timeout_seconds > 1200','backoff_seconds > 120','subprocess.run(command','timeout=timeout_seconds']){
   ok(boundedCopernicusRetry.includes(marker),`Copernicus-wrapperen mangler hard bound: ${marker}`);
+}
+for(const marker of ['atomic_write_shadow_checkpoint(','remainingOperationalPairs=']){
+  ok(copernicusRangeRunner.includes(marker),`Copernicus-rangeproducenten mangler resumérbart shard-checkpoint: ${marker}`);
+}
+for(const marker of ['collections=[]','require_collection=False']){
+  ok(copernicusCurrentLib.includes(marker),`Copernicus-cachelageret mangler uforseglet partial state: ${marker}`);
+}
+for(const marker of [
+  'Save non-cancelled private Copernicus source-stage progress',
+  "steps.copernicus-fill.outcome != 'cancelled'",
+  "steps.copernicus-fill.outcome != 'skipped'",
+  '.cache/copernicus-current-shadow.json',
+  '.cache/copernicus-current-source-stage.json',
+  'copernicus-current-shadow-v1-production-progress-',
+  'Remove only invalid production Copernicus source disposition',
+  'rm -f .cache/copernicus-current-source-stage.json',
+  'Require completed Copernicus source stage before combined current closure',
+  '--require-source-stage-ready',
+  'Save validated private Copernicus progress before downstream closure',
+]){
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler privat Copernicus-progressave: ${marker}`);
 }
 for(const marker of [
   "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",
@@ -924,6 +957,7 @@ const workflowPositions={
   weather:buildWorkflow.indexOf('name: Update central weather cache'),
   runtime:buildWorkflow.indexOf('name: Rebuild deterministic public weather runtime before validation and deploy'),
   runtimeAudit:buildWorkflow.indexOf('name: Audit actual integrated RavScore public runtime before deploy'),
+  checkpointDisposition:buildWorkflow.indexOf('name: Create and validate exactly one checkpoint disposition before release gate'),
   validate:buildWorkflow.indexOf('name: Validate full project after fresh weather and current provenance'),
   releaseGate:buildWorkflow.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData:buildWorkflow.indexOf('name: Validate updated weather cache'),
@@ -947,7 +981,7 @@ const workflowOrder=[
   'preflightCache','publicPreflightManifest','preflight','checkpointRestore','protectedCheckpointRestore',
   'privateRuntimeExpected','privateRuntimeRestore','privateRuntimeVerify','privateRuntimeInstall',
   'legacyBootstrapGate','legacyBootstrapImport',
-  'resolvedTarget','weather','runtime','runtimeAudit','validate','releaseGate','validateData',
+  'resolvedTarget','weather','runtime','runtimeAudit','checkpointDisposition','validate','releaseGate','validateData',
   'checkpointBuild','checkpointSave','protectedCheckpointPublish','preflightStateBuild','preflightStateSave',
   'privateRuntimeSpec','privateRuntimeCreate','privateRuntimeSave','privateRuntimeAnonAudit','artifact','pagesPrivacyAudit','pagesUpload',
 ];
@@ -1036,13 +1070,33 @@ const legacyBootstrapSection=buildWorkflow.slice(workflowPositions.legacyBootstr
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true'",
   'PRIVATE_RUNTIME_AVAILABLE: ${{ steps.private-runtime-state.outputs.available }}',
+  'OPERATIONAL_ACTION: ${{ steps.operational-action.outputs.action }}',
   'test -f .cache/ravscore-continuation-checkpoint/checkpoint.json',
+  'elif test "$OPERATIONAL_ACTION" = "integrated-cutover"; then',
+  'echo "required=true" >> "$GITHUB_OUTPUT"',
+  'elif test "$OPERATIONAL_ACTION" = "integrated"; then',
+  'echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"',
+  'No protected continuation exists; active integrated scoring will use measured state-less recovery.',
+  'No protected continuation exists; this non-integrated action remains fail-closed.',
   "if: steps.legacy-bootstrap.outputs.required == 'true'",
   'python scripts/hydrate-deployed-weather.py --legacy-candidate-g-bootstrap',
   'RAVRADAR_DEPLOYED_BASE_URL:',
 ]){
   ok(legacyBootstrapSection.includes(marker),`Candidate G-engangsbootstrap mangler ${marker}`);
 }
+ok((legacyBootstrapSection.match(/stateless_integrated_recovery=true/g)||[]).length===1
+  &&(legacyBootstrapSection.match(/stateless_integrated_recovery=false/g)||[]).length===3
+  &&(legacyBootstrapSection.match(/required=true/g)||[]).length===1
+  &&(legacyBootstrapSection.match(/required=false/g)||[]).length===3,
+'Legacy-bootstrap skal have præcis én first-cutover-gren og én exact-integrated state-less recoverygren');
+const activeIntegratedRecoveryBranch=legacyBootstrapSection.slice(
+  legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then'),
+  legacyBootstrapSection.indexOf('\n          else',legacyBootstrapSection.indexOf('elif test "$OPERATIONAL_ACTION" = "integrated"; then')),
+);
+ok(activeIntegratedRecoveryBranch.includes('echo "required=false" >> "$GITHUB_OUTPUT"')
+  &&activeIntegratedRecoveryBranch.includes('echo "stateless_integrated_recovery=true" >> "$GITHUB_OUTPUT"')
+  &&!activeIntegratedRecoveryBranch.includes('required=true'),
+'Kun exact active integrated må vælge measured state-less recovery uden legacy bootstrap');
 const firstCutoverGuard="steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
 const waveResolverStart=buildWorkflow.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target');
 const dmiBulkStart=buildWorkflow.indexOf('name: Update DMI bulk model cache');
@@ -1053,6 +1107,7 @@ ok(waveResolverStart>=0&&dmiBulkStart>waveResolverStart
   && waveResolverSection.includes(`if: ${firstCutoverGuard}`),
 'Candidate G-maintenance må aldrig starte den integrerede WAM-resolver');
 for(const marker of [
+  `DMI_BULK_MAX_DOWNLOAD_MB: \${{ ${firstCutoverGuard} && '4096' || '2048' }}`,
   `DMI_BULK_MAX_RUNTIME_SECONDS: \${{ ${firstCutoverGuard} && '3000' || '900' }}`,
   `DMI_BULK_FINALIZE_RESERVE_SECONDS: \${{ ${firstCutoverGuard} && '180' || '120' }}`,
   `DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}`,
@@ -1062,16 +1117,26 @@ for(const marker of [
 for(const marker of [
   `RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}`,
   `RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: \${{ ${firstCutoverGuard} && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}`,
+  "RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}",
 ]){
   ok(weatherSection.includes(marker),`Vejrgeneratoren mangler actionbundet first-cutover-attestering: ${marker}`);
 }
 for(const marker of [
   'def reset_private_part_wave_cache(',
   'reset_rows = reset_private_part_wave_cache(result, parts)',
-  '"resetWaveRowCount": reset_rows',
-  'write_checkpoint(result, fresh_zone_ids, budget, "partial")',
+  'aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows',
+  'def process_grib_transactionally(',
+  'restore_mapping(diagnostics, diagnostics_snapshot)',
+  'commit_asset_stage_document(output, output_stage)',
+  'def write_checkpoint(',
+  '"validation": "pending-finalization"',
+  'atomic_write_bulk_cache(result, pretty=False)',
+  'def write_finalized_cache(',
+  'atomic_write_bulk_cache(result, pretty=True)',
+  'write_ocean_diagnostics(result)',
+  'class ProgressCheckpointController:',
 ]){
-  ok(dmiBulkProducer.includes(marker),`DMI cold-cache-overgangen mangler målt rebuildkontrakt: ${marker}`);
+  ok(dmiBulkProducer.includes(marker),`DMI asset-/checkpointkæden mangler atomisk progression: ${marker}`);
 }
 ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).length===2
   && legacyBootstrapSection.includes('--root "$RAVRADAR_LEGACY_SOURCE_ROOT"')
@@ -1079,13 +1144,59 @@ ok((buildWorkflow.match(/python scripts\/hydrate-deployed-weather\.py/g)||[]).le
 'Generisk offentlig hydration skal være pensioneret; kun Candidate G-engangsbootstrap og den isolerede attesterede legacy-kilde må findes');
 const runtimeAuditSection=buildWorkflow.slice(workflowPositions.runtimeAudit,workflowPositions.validate);
 for(const marker of [
+  'id: ravscore-integrated-runtime-audit',
   "if: steps.preflight.outputs.should_run == 'true'",
+  'audit_path=.geometry-v2-work/ravscore-integrated-public-runtime-audit.json',
   'node scripts/audit-ravscore-integrated-public-runtime.mjs',
   '--input data/live/conditions.json',
+  '--output "$audit_path"',
+  '.rollback.status | select(. == "READY" or . == "BUILDING_MEASURED_ONLY")',
+  '.rollback.activationReady | select(type == "boolean")',
+  '.history.allCurrentScoresFullHistory | select(type == "boolean")',
+  'echo "rollback_status=$rollback_status" >> "$GITHUB_OUTPUT"',
+  'echo "rollback_activation_ready=$rollback_activation_ready" >> "$GITHUB_OUTPUT"',
+  'echo "all_current_scores_full_history=$all_current_scores_full_history" >> "$GITHUB_OUTPUT"',
 ]){
   ok(runtimeAuditSection.includes(marker),`Den integrerede public runtimeaudit mangler ${marker}`);
 }
 ok(!runtimeAuditSection.includes('continue-on-error'),'Den integrerede public runtimeaudit må ikke være vejledende');
+const checkpointDispositionSection=buildWorkflow.slice(
+  workflowPositions.checkpointDisposition,
+  workflowPositions.validate,
+);
+for(const marker of [
+  'id: checkpoint-disposition',
+  "if: steps.preflight.outputs.should_run == 'true'",
+  'disposition_path=.geometry-v2-work/ravscore-continuation-checkpoint-disposition.json',
+  'READY_PUBLISHED',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+  'checkpoint_required="true"',
+  'checkpoint_required="false"',
+  'dataset_id="$(jq -er \'.datasetId | select(type == "string" and length > 0)\' data/live/manifest.json)"',
+  'runtime_audit_sha256=',
+  'sha256CanonicalJson',
+  'ravscore-continuation-checkpoint-disposition-v1',
+  'sourceHead:$sourceHead',
+  'datasetId:$datasetId',
+  'runtimeAuditSha256:$runtimeAuditSha256',
+  'rollbackStatus:$rollbackStatus',
+  'rollbackActivationReady:$rollbackActivationReady',
+  'checkpointRequired:$checkpointRequired',
+  'privatePayloadIncluded:false',
+  'bindingSha256',
+  'Unexpected checkpoint disposition fields',
+  'Checkpoint disposition binding mismatch',
+  'echo "disposition=$disposition" >> "$GITHUB_OUTPUT"',
+  'echo "disposition_sha256=$disposition_sha256" >> "$GITHUB_OUTPUT"',
+  'echo "dataset_id=$dataset_id" >> "$GITHUB_OUTPUT"',
+  'echo "runtime_audit_sha256=$runtime_audit_sha256" >> "$GITHUB_OUTPUT"',
+]){
+  ok(checkpointDispositionSection.includes(marker),`Den obligatoriske hashbundne checkpointdisposition mangler ${marker}`);
+}
+ok(!checkpointDispositionSection.includes('continue-on-error'),
+  'Checkpointdispositionen må ikke skjule en kontraktfejl');
+ok(!buildWorkflow.includes('ravscore-continuation-checkpoint-applicability'),
+  'Den valgfri applicability-ghostfil må ikke længere findes i produktionsworkflowet');
 const checkpointSaveSection=buildWorkflow.slice(workflowPositions.checkpointBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success'",
@@ -1103,6 +1214,18 @@ for(const marker of [
   ok(checkpointSaveSection.includes(marker),`Schema-4 RavScore-checkpointbevaringen mangler ${marker}`);
 }
 ok(!checkpointSaveSection.includes('continue-on-error'),'Protected checkpoint-publicering må ikke skjule fejl');
+for(const name of [
+  'Build atomic schema-6 and Candidate G rollback checkpoint after final gates',
+  'Save atomic schema-6 and Candidate G rollback checkpoint after final gates',
+  'Reconfirm current main before protected RavScore write',
+  'Publish atomic RavScore checkpoint to protected admin storage',
+]){
+  const start=buildWorkflow.indexOf(`name: ${name}`);
+  const end=buildWorkflow.indexOf('\n      - name:',start+1);
+  const block=buildWorkflow.slice(start,end<0?buildWorkflow.length:end);
+  ok(block.includes("steps.ravscore-integrated-runtime-audit.outputs.rollback_activation_ready == 'true'"),
+    `${name} må kun køre med attesteret READY rollback-aktivering`);
+}
 const preflightStateSaveSection=buildWorkflow.slice(workflowPositions.preflightStateBuild,workflowPositions.privateRuntimeSpec);
 for(const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.weather.outcome == 'success' && steps.operational-action.outputs.action != 'candidate-dry-run'",
@@ -1140,6 +1263,51 @@ for(const marker of [
 }
 ok(!buildWorkflow.slice(workflowPositions.privateRuntimeSpec,workflowPositions.privateRuntimeSave).includes('continue-on-error'),
 'Det private runtimebundle skal bygges fail-closed');
+for(const name of [
+  'Build private production runtime bundle specification',
+  'Create the next private production runtime bundle atomically',
+  'Reconfirm current main before protected private-runtime write',
+  'Publish bounded private runtime with one protected rollback generation',
+  'Prove the private runtime object is not anonymously readable',
+]){
+  const start=buildWorkflow.indexOf(`name: ${name}`);
+  const end=buildWorkflow.indexOf('\n      - name:',start+1);
+  const block=buildWorkflow.slice(start,end<0?buildWorkflow.length:end);
+  ok(!block.includes('rollback_activation_ready'),
+    `${name} skal bevare measured-only warmup uafhængigt af checkpoint-readiness`);
+}
+const operationalHandoffSection=buildWorkflow.slice(
+  buildWorkflow.indexOf('name: Seal privacy-safe operational deploy handoff'),
+  buildWorkflow.indexOf('name: Decide whether this sealed artifact may deploy'),
+);
+for(const marker of [
+  'cp .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-disposition.json"',
+  'cp .geometry-v2-work/ravscore-integrated-public-runtime-audit.json "$RAVRADAR_OPERATIONAL_HANDOFF/checkpoint-runtime-audit.json"',
+  'checkpoint_disposition="${{ steps.checkpoint-disposition.outputs.disposition }}"',
+  'checkpoint_disposition_sha256="${{ steps.checkpoint-disposition.outputs.disposition_sha256 }}"',
+  'checkpoint_build_outcome="${{ steps.checkpoint-build.outcome }}"',
+  'checkpoint_save_outcome="${{ steps.checkpoint-save.outcome }}"',
+  'checkpoint_publish_outcome="${{ steps.checkpoint-publish.outcome }}"',
+  'ravscore-continuation-checkpoint-disposition-v1',
+  'recomputed_runtime_audit_sha256=',
+  'Checkpoint disposition binding mismatch',
+  'READY_PUBLISHED)',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP)',
+  'test "$checkpoint_build_outcome" = "success"',
+  'test "$checkpoint_save_outcome" = "success"',
+  'test "$checkpoint_publish_outcome" = "success"',
+  'checkpointDisposition:$checkpointDisposition',
+  'checkpointDispositionSha256:$checkpointDispositionSha256',
+  'checkpointDatasetId:$checkpointDatasetId',
+  'checkpointRuntimeAuditSha256:$checkpointRuntimeAuditSha256',
+  'checkpointBuildOutcome:$checkpointBuildOutcome',
+  'checkpointSaveOutcome:$checkpointSaveOutcome',
+  'checkpointPublishOutcome:$checkpointPublishOutcome',
+]){
+  ok(operationalHandoffSection.includes(marker),`Det privacy-sikre handoff mangler obligatorisk checkpointdisposition: ${marker}`);
+}
+ok(!operationalHandoffSection.includes('if [ -f .geometry-v2-work/ravscore-continuation-checkpoint-disposition.json ]; then'),
+  'Checkpointdispositionen må ikke være et valgfrit ghost proof i handoffet');
 for(const forbidden of [
   'ravscore_active_shadow',
   'ravscore-active-shadow:',
@@ -1194,22 +1362,42 @@ for(const marker of [
   "'FAILED'",
   "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2'",
   'privatePayloadIncluded: false',
+  "'READY_PUBLISHED'",
+  "'NOT_APPLICABLE_DURING_MEASURED_WARMUP'",
+  'checkpointProofIsDeploymentReady',
+  "CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT",
   "return result('DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED')",
   "return result('FAILED', 'DEPLOYMENT_NOT_VERIFIED')",
 ]){
   ok(productionWorkflowOutcome.includes(marker),`Produktionsslutstatuskontrakten mangler ${marker}`);
 }
 const deployWorkflowPositions={
+  checkpointBegin:deployWorkflow.indexOf('name: Validate checkpoint disposition before any Pages begin CAS'),
   deploy:deployWorkflow.indexOf('name: Deploy to GitHub Pages'),
   verify:deployWorkflow.indexOf('name: Verify deployed exact model, implementation and 210/673 artifact'),
+  checkpointComplete:deployWorkflow.indexOf('name: Revalidate checkpoint disposition before Pages completion CAS'),
   terminal:deployWorkflow.indexOf('name: Seal exact verified deployment terminal'),
 };
 for(const [step,position] of Object.entries(deployWorkflowPositions)){
   ok(position>=0,`Deploy-workflowet mangler terminaltrin: ${step}`);
 }
-ok(deployWorkflowPositions.deploy<deployWorkflowPositions.verify
-  && deployWorkflowPositions.verify<deployWorkflowPositions.terminal,
-'DEPLOYED må først forsegles efter Pages og offentlig exact model/210/673-verifikation');
+ok(deployWorkflowPositions.checkpointBegin<deployWorkflowPositions.deploy
+  && deployWorkflowPositions.deploy<deployWorkflowPositions.verify
+  && deployWorkflowPositions.verify<deployWorkflowPositions.checkpointComplete
+  && deployWorkflowPositions.checkpointComplete<deployWorkflowPositions.terminal,
+'DEPLOYED må først forsegles efter checkpointvalidering ved begin/complete samt offentlig exact model/210/673-verifikation');
+for(const marker of [
+  'id: checkpoint-disposition-begin',
+  'id: checkpoint-disposition-complete',
+  "read('checkpoint-disposition.json')",
+  "read('checkpoint-runtime-audit.json')",
+  'sha256CanonicalJson(binding)',
+  'sha256CanonicalJson(runtimeAudit)',
+  "handoff.checkpointBuildOutcome !== 'success'",
+  "handoff.checkpointPublishOutcome !== 'skipped'",
+]){
+  ok(deployWorkflow.includes(marker),`Pages-workflowets obligatoriske checkpointvalidering mangler ${marker}`);
+}
 const orchestratorDeployJob=orchestratorWorkflow.indexOf('\n  deploy-pages:');
 const outcomeJob=orchestratorWorkflow.indexOf('\n  production-outcome:');
 ok(orchestratorDeployJob>=0&&outcomeJob>orchestratorDeployJob,
@@ -1220,6 +1408,13 @@ for(const marker of [
   'node scripts/production-workflow-outcome.mjs',
   'name: ravradar-production-outcome-${{ github.run_id }}-${{ github.run_attempt }}',
   'path: .workflow-outcome/production-outcome.json',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_DATASET_ID:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_RUNTIME_AUDIT_SHA256:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_BUILD:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_SAVE:',
+  'RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH:',
   "if: always() && steps.classify.outputs.status == 'FAILED'",
   'exit 1',
 ]){
@@ -1264,6 +1459,12 @@ for(const [role,source] of Object.entries(productionWorkflows)){
 }
 const manifest=await readJson('manifest.webmanifest',{});
 ok(String(manifest.start_url||'').startsWith('.'),'Manifest start_url skal være relativ for domæneskift');
+ok(manifest.display==='standalone'&&manifest.scope==='.'+'/'&&manifest.id==='.'+'/',
+'Manifestet skal installere RavRadar som en afgrænset standalone-webapp');
+ok(Array.isArray(manifest.icons)
+  && manifest.icons.some(icon=>icon?.src==='assets/icons/ravradar-192.png'&&icon?.sizes==='192x192'&&icon?.type==='image/png')
+  && manifest.icons.some(icon=>icon?.src==='assets/icons/ravradar-512.png'&&icon?.sizes==='512x512'&&icon?.type==='image/png'),
+'Manifestet mangler de installerbare 192- og 512-pixels appikoner');
 ok(!await exists('CNAME'),'CNAME må først aktiveres, når DNS og Supabase redirects er klar');
 const decision=await read('docs/rdks/10_DECISIONS/DEC-0013-RELEASE-GOVERNANCE.md');
 ok(decision.includes('Obligatorisk Release Governance'),'RDKS release-governance mangler');

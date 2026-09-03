@@ -19,6 +19,10 @@ export function validateRavScoreDispatchContract(input = {}, { githubRef = 'refs
   const force = booleanText(input.force, 'force');
   const geometryPilot = booleanText(input.geometryPilot, 'geometryPilot');
   const geometryNational = booleanText(input.geometryNational, 'geometryNational');
+  const firstCutoverRequested = booleanText(
+    input.firstCutoverRequested,
+    'firstCutoverRequested',
+  );
   const returnRequested = booleanText(input.returnRequested, 'returnRequested');
   const rollbackMode = text(input.rollbackMode || 'none');
   if (!ROLLBACK_MODES.has(rollbackMode)) throw new Error('Unsupported Candidate G rollback mode');
@@ -40,13 +44,16 @@ export function validateRavScoreDispatchContract(input = {}, { githubRef = 'refs
     geometryPilot === 'true' && 'geometry-pilot',
     geometryNational === 'true' && 'geometry-national',
     rollbackMode !== 'none' && 'candidate-rollback',
+    firstCutoverRequested === 'true' && 'integrated-first-cutover',
     returnRequested === 'true' && 'integrated-return',
   ].filter(Boolean);
   if (operations.length > 1) {
-    throw new Error('Exactly one force, geometry, rollback or return operation may be dispatched');
+    throw new Error('Exactly one force, geometry, rollback, first cutover or return operation may be dispatched');
   }
 
-  if ((rollbackMode !== 'none' || returnRequested === 'true')
+  if ((rollbackMode !== 'none'
+      || firstCutoverRequested === 'true'
+      || returnRequested === 'true')
     && githubRef !== 'refs/heads/main') {
     throw new Error('RavScore transitions are allowed only on main');
   }
@@ -57,6 +64,18 @@ export function validateRavScoreDispatchContract(input = {}, { githubRef = 'refs
     }
   } else {
     requireEmpty(input.rollbackConfirmation, 'Candidate G execute confirmation is accepted only by execute mode');
+  }
+
+  if (firstCutoverRequested === 'true') {
+    if (text(input.firstCutoverConfirmation)
+      !== 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE') {
+      throw new Error('Integrated first cutover confirmation is not exact');
+    }
+  } else {
+    requireEmpty(
+      input.firstCutoverConfirmation,
+      'Integrated first cutover confirmation is accepted only by an integrated first cutover',
+    );
   }
 
   if (returnRequested === 'true') {

@@ -43,6 +43,30 @@ const part = {
   onshoreDirectionDeg: 90,
 };
 const zone = { id: 'SYNTHETIC-ZONE-1', onshoreDirectionDeg: 90 };
+const HOLD_SHA = `sha256:${'a'.repeat(64)}`;
+const stateOnlyCurrentHold = (validOffset, sourceOffset) => ({
+  contractId: 'regional-dmi-exact-state-only-hold-v1',
+  status: 'verified-derived-state-only',
+  classification: 'REGIONAL_DMI_DERIVED_HOLD',
+  stateOnly: true,
+  partId: part.partId,
+  parentZoneId: zone.id,
+  targetIdentityFingerprint: HOLD_SHA,
+  validTime: time(validOffset),
+  sourceValidTime: time(sourceOffset),
+  holdAgeHours: validOffset - sourceOffset,
+  provider: 'dmi',
+  sourceClass: 'owner-approved-regional-proxy',
+  source: 'dmi-dkss-lf-regional-proxy',
+  collection: 'dkss_lf',
+  modelRun: time(-48),
+  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureId: HOLD_SHA,
+  closureAssignmentSha256: HOLD_SHA,
+  sourceAssetSha256: HOLD_SHA,
+  sourceProofSha256: HOLD_SHA,
+  vectorCommitmentSha256: HOLD_SHA,
+});
 assert.throws(
   () => compactIntegratedRavScoreMode({ available: false, score: null }),
   /model binding is missing/,
@@ -82,6 +106,9 @@ const weather = {
   waveHeightM: 1,
   wavePeriodS: 6,
   waveDirectionDeg: 270,
+  waveInputSource: 'DIRECT_OFFICIAL',
+  waveInputUncertainty: 'LOW',
+  waveInputNoticeId: null,
   waterLevelCm: 12,
   waterLevelTrendCm3h: -2,
   waterTemperatureC: 15,
@@ -151,6 +178,65 @@ assert.ok(migrated.scores[0].ravScoreModel.modes.beach.available);
 assert.ok(migrated.scores[0].ravScoreModel.modes.waders.available);
 assert.equal(Object.hasOwn(migrated.scores[0], 'candidateG'), false,
   'the production row must not contain a Candidate G shadow result');
+assert.deepEqual(
+  {
+    waveInputSource: migrated.scores[0].weather.waveInputSource,
+    waveInputUncertainty: migrated.scores[0].weather.waveInputUncertainty,
+    waveInputNoticeId: migrated.scores[0].weather.waveInputNoticeId,
+  },
+  {
+    waveInputSource: 'DIRECT_OFFICIAL',
+    waveInputUncertainty: 'LOW',
+    waveInputNoticeId: null,
+  },
+  'the integrated score row must retain only the compact direct-wave quality tuple',
+);
+for (const mode of ['waders','beach']) {
+  assert.equal(migrated.scores[0].ravScoreModel.modes[mode].scoreQuality, 'FULL_HISTORY');
+  assert.equal(migrated.scores[0].ravScoreModel.modes[mode].calibrationEligible, true,
+    'a direct FULL_HISTORY hour must retain normal calibration eligibility');
+}
+
+const proxiedWaveInput = buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: [{
+    ...weather,
+    waveInputSource: 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty: 'MODERATE',
+    waveInputNoticeId: 'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  }],
+  initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
+});
+assert.deepEqual(
+  {
+    waveInputSource: proxiedWaveInput.scores[0].weather.waveInputSource,
+    waveInputUncertainty: proxiedWaveInput.scores[0].weather.waveInputUncertainty,
+    waveInputNoticeId: proxiedWaveInput.scores[0].weather.waveInputNoticeId,
+  },
+  {
+    waveInputSource: 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+    waveInputUncertainty: 'MODERATE',
+    waveInputNoticeId: 'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+  },
+  'the integrated score row must retain the bounded public Feggesund quality tuple',
+);
+for (const mode of ['waders','beach']) {
+  assert.equal(proxiedWaveInput.scores[0].ravScoreModel.modes[mode].scoreQuality, 'FULL_HISTORY');
+  assert.equal(proxiedWaveInput.scores[0].ravScoreModel.modes[mode].calibrationEligible, false,
+    'a proxy FULL_HISTORY hour must remain calibration ineligible');
+}
+assert.throws(() => buildIntegratedPartScoreSeries({
+  part,
+  zone,
+  hourly: [{ ...weather, waveInputUncertainty: 'UNKNOWN' }],
+  initialState: legacyState,
+  candidateGCurrentBootstrap,
+  candidateGWaveApproachBootstrap,
+}), /wave input quality contract is invalid/,
+'an unknown wave-quality combination must fail closed at the integrated projection');
 
 const missingWind = buildIntegratedPartScoreSeries({
   part,
@@ -220,15 +306,27 @@ const regionalSeed = buildIntegratedPartScoreSeries({
 const regionalHold = buildIntegratedPartScoreSeries({
   part,
   zone,
-  hourly: [{
-    ...weather,
-    time: time(1),
-    currentSpeedMps: null,
-    currentDirectionDeg: null,
-    currentUMps: null,
-    currentVMps: null,
-    currentProvenance: null,
-  }],
+  hourly: [
+    {
+      ...weather,
+      time: time(1),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+      currentStateOnlyHold: stateOnlyCurrentHold(1, 0),
+    },
+    {
+      ...weather,
+      time: time(2),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+    },
+  ],
   initialState: regionalSeed.ravScoreState.continuationState,
   nativeCadenceHoldHours: 3,
   nativeCadenceReferenceSample: {
@@ -240,6 +338,35 @@ const regionalHold = buildIntegratedPartScoreSeries({
   },
 });
 assert.equal(regionalHold.ravScoreState.rows[0].currentTransition, 'NATIVE_CADENCE_HOLD');
+assert.equal(regionalHold.ravScoreState.rows[1].currentTransition, 'UNVERIFIED_MISSING',
+  'an adjacent missing forecast hour without its own closure marker must not inherit a global hold');
+assert.equal(regionalHold.ravScoreState.rows[1].currentDirectInputAvailable, false);
+for (const [field, value] of [
+  ['rawU', 0.1],
+  ['currentVerified', false],
+  ['currentGridCell', { id: 'stale' }],
+  ['coastNormalSpeedMps', 0.1],
+  ['flowArrow', { directionDeg: 90 }],
+]) {
+  assert.throws(() => buildIntegratedPartScoreSeries({
+    part,
+    zone,
+    hourly: [{
+      ...weather,
+      time: time(1),
+      currentSpeedMps: null,
+      currentDirectionDeg: null,
+      currentUMps: null,
+      currentVMps: null,
+      currentProvenance: null,
+      currentStateOnlyHold: stateOnlyCurrentHold(1, 0),
+      [field]: value,
+    }],
+    initialState: regionalSeed.ravScoreState.continuationState,
+    nativeCadenceHoldHours: 3,
+  }), /not bound to the exact part\/hour/,
+  `integrated runtime must reject state-only hold field ${field}`);
+}
 const expectedRegionalReferenceKeys = [
   'collection',
   'distanceKm',
@@ -439,15 +566,23 @@ const pendingCandidateCase = operationalActionStep.block.slice(
   candidateCaseStart,
   legacyCaseStart,
 );
-assert.match(
-  pendingCandidateCase,
-  /if \[ "\$INITIAL_CUTOVER_REQUIRED" = "true" \]; then[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*\[\[ "\$CENTRAL_VERSION" =~ \^\[1-9\]\[0-9\]\*\$ \]\][\s\S]*\[\[ "\$ACTIVE_DEPLOYMENT_ID" =~ \^pages\(-recovery\)\?-\[0-9\]\+-\[0-9\]\+\$ \]\][\s\S]*\[\[ "\$ACTIVE_IMPLEMENTATION_CLOSURE_SHA256" =~ \^\[a-f0-9\]\{64\}\$ \]\][\s\S]*if \[ "\$BINDING_CURRENT" = "true" \]; then[\s\S]*action="candidate-maintenance"[\s\S]*else[\s\S]*test "\$BINDING_CURRENT" = "false"[\s\S]*action="candidate-historical-maintenance"/,
-  'Et afventende første cutover skal kun ske på push; bot/schedule skal fortsat kunne vedligeholde den aktive Candidate G uden at aktivere modellen.',
-);
+for (const marker of [
+  'if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then',
+  'if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then',
+  'test "$BINDING_CURRENT" = "true"',
+  'test "$LEGACY_SOURCE_REQUIRED" = "false"',
+  'test "$ACTIVE_SOURCE_HEAD" = "$GITHUB_SHA"',
+  'action="integrated-cutover"',
+  'action="candidate-maintenance"',
+  'action="candidate-historical-maintenance"',
+]) {
+  assert.equal(pendingCandidateCase.includes(marker), true,
+    'two-phase pending Candidate action marker: ' + marker);
+}
 assert.doesNotMatch(
   pendingCandidateCase,
-  /test "\$GITHUB_EVENT_NAME" = "push"/,
-  'Afventende cutover må ikke blokere normal Candidate G-vedligeholdelse efter et sikkert cutoverstop.',
+  /if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then/,
+  'an ordinary push may never auto-select the initial integrated cutover',
 );
 const legacyCaseEnd = operationalActionStep.block.indexOf(
   '            *) echo "Unknown operational RavScore model; refusing production."',
@@ -460,13 +595,26 @@ const legacyCandidateCase = operationalActionStep.block.slice(
 );
 assert.match(
   legacyCandidateCase,
-  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*action="candidate-legacy-maintenance"/,
-  'rowless legacy Candidate G must cut over only on push and use the distinct Candidate maintenance bridge on schedule/manual weather',
+  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*test "\$FIRST_CUTOVER_REQUESTED" != "true"[\s\S]*action="candidate-legacy-maintenance"/,
+  'rowless legacy Candidate G must always use the distinct Candidate maintenance bridge',
+);
+assert.doesNotMatch(legacyCandidateCase, /action="integrated-cutover"/,
+  'legacy Candidate G may never bypass the modern same-head Candidate phase');
+assert.match(
+  operationalActionStep.block,
+  /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_SOURCE_HEAD: \$\{\{ steps\.operational-model\.outputs\.active_source_head \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
+  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
 );
 assert.match(
   operationalActionStep.block,
-  /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
-  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
+  /FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation[\s\S]*EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE/,
+  'first cutover must require its separate manual boolean and exact confirmation token',
+);
+const supabasePersistenceStep = workflowStep('Test Supabase persistence roundtrip');
+assert.match(
+  supabasePersistenceStep.block,
+  /if: github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'/,
+  'an explicit integrated first cutover must retain the production Supabase persistence roundtrip',
 );
 
 const legacySourceImportStep = workflowStep(
@@ -501,6 +649,26 @@ assert.match(
   cutoverPlanStep.block,
   /if \[ "\$\{\{ steps\.operational-model\.outputs\.legacy_source_required \}\}" = "true" \]; then[\s\S]*legacy-source\.outputs\.implementation_closure_sha256/,
   'the return plan must use legacy implementation closure only for a legacy-attested source',
+);
+assert.match(
+  cutoverPlanStep.block,
+  /RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation/,
+  'plan creation must receive both normalized first-cutover authorization values',
+);
+assert.match(
+  operationalActivationSource,
+  /\['schedule', 'push', 'workflow_dispatch'\]\.includes\(process\.env\.GITHUB_EVENT_NAME\)/,
+  'legacy Candidate refresh CLI must permit the phase-one main push',
+);
+assert.match(
+  operationalActivationSource,
+  /RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED;[\s\S]*\['true', 'false'\]\.includes\(initialCutoverRequested\)/,
+  'first-cutover plan CLI must parse an explicitly present exact boolean',
+);
+assert.match(
+  operationalActivationSource,
+  /initialCutover[\s\S]*\['push', 'workflow_dispatch'\]\.includes\(process\.env\.GITHUB_EVENT_NAME\)/,
+  'already sealed initial plans must retain manual execution and compatible push recovery',
 );
 const operationalHandoffStep = workflowStep('Seal privacy-safe operational deploy handoff');
 assert.match(
@@ -669,13 +837,53 @@ assert.ok(
 );
 assert.match(
   updater,
-  /candidateGBootstrapMode:\s*RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
-  'update-weather must pass the exact workflow mode into initial-state selection',
+  /const RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED =\s*process\.env\.RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED === 'true'/,
+  'update-weather must require the explicit stateless integrated cold-start environment attestation',
 );
 assert.match(
   updater,
-  /candidateGSourceValidated:\s*RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED/,
-  'update-weather must pass the exact workflow source attestation into initial-state selection',
+  /RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED\s*\? RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODES\.integratedStateLessRecovery\s*:\s*RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
+  'the explicit stateless attestation must override only the effective selector mode',
+);
+assert.match(
+  updater,
+  /RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED\s*\? false\s*:\s*RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED/,
+  'stateless integrated recovery must never inherit Candidate G source validation',
+);
+assert.match(
+  updater,
+  /candidateGBootstrapMode:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE/,
+  'update-weather must pass the effective workflow mode into initial-state selection',
+);
+assert.match(
+  updater,
+  /candidateGSourceValidated:\s*RAVSCORE_EFFECTIVE_FIRST_CUTOVER_SOURCE_VALIDATED/,
+  'update-weather must pass the mode-bound source attestation into initial-state selection',
+);
+assert.match(
+  updater,
+  /initialSelection\.source === 'COLD_START'[\s\S]*?genuineColdStart,[\s\S]*?integratedStateLessRecovery,[\s\S]*?\.includes\(RAVSCORE_EFFECTIVE_FIRST_CUTOVER_BOOTSTRAP_MODE\)[\s\S]*?candidateGRollbackMeasuredColdStart = true/,
+  'both attested cold-start modes must rebuild Candidate G rollback state from measured history',
+);
+assert.match(
+  updater,
+  /function selectPreviousPrivateCandidateGRuntime\(previous\)[\s\S]*?rollbackPresent && warmupPresent[\s\S]*?Previous private Candidate G runtime has ambiguous roots/,
+  'previous integrated continuation must fail closed when both private Candidate G roots are present',
+);
+assert.match(
+  updater,
+  /Previous private Candidate G READY descriptor is invalid[\s\S]*?assertPrivateCandidateGContinuation\([\s\S]*?Previous private Candidate G READY continuation/,
+  'the READY root must validate its exact descriptor and every bounded continuation before reuse',
+);
+assert.match(
+  updater,
+  /Previous private Candidate G warmup descriptor is invalid[\s\S]*?exactObjectKeys\(wrapper, \['ravScoreModel'\]\)[\s\S]*?Previous private Candidate G warmup continuation/,
+  'the measured warmup root must remain minimal and validate every bounded continuation before reuse',
+);
+assert.match(
+  updater,
+  /const previousPrivateCandidateGRuntime = selectPreviousPrivateCandidateGRuntime\(\s*previous,?\s*\)[\s\S]*?previousPrivateCandidateGRuntime,/,
+  'update-weather must route exactly the validated private root into Candidate G continuation',
 );
 
 assert.ok(
@@ -691,17 +899,19 @@ assert.ok(
   'the WAM producer must receive the aggregate resolver target hour',
 );
 const wamGateStep = workflowStep(
-  'Require complete private WAM history before first integrated cutover',
+  'Require complete operational WAM handoff before first integrated cutover',
 );
 assert.ok(
   wamGateStep.block.includes('id: wam-bootstrap-readiness')
     && wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
     && wamGateStep.block.includes('validator_status=$?')
     && wamGateStep.block.includes('wam_code="DMI_BULK_FAILED"')
+    && wamGateStep.block.includes('history_incomplete="false"')
     && wamGateStep.block.includes('validator_status=1')
     && wamGateStep.block.includes('echo "code=$wam_code" >> "$GITHUB_OUTPUT"')
+    && wamGateStep.block.includes('echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('exit "$validator_status"'),
-  'the hard WAM gate must expose only a bounded safe code while preserving its exit status',
+  'the operational WAM gate must expose bounded status while preserving producer failure and exit status',
 );
 assert.ok(
   wamGateStep.block.includes(

@@ -151,13 +151,44 @@ def main() -> None:
         "--registry .cache/copernicus-current-targets.json",
         "--dmi data/live/dmi-bulk-cache.json",
         "--targets data/live/coastal-parts-v2.json",
+        "--source-stage .cache/copernicus-current-source-stage.json",
+        "--allow-nonmatching-seal",
+        "Remove only invalid restored Copernicus source disposition",
+        "steps.cache-state.outputs.source_stage_ready != 'true'",
+        "rm -f .cache/copernicus-current-source-stage.json",
         "build-copernicus-target-registry.py",
         "full_coast:",
-        "steps.cache-state.outputs.complete_range_present != 'true'",
-        "--timeout-seconds 600",
+        "steps.cache-state.outputs.source_stage_ready != 'true'",
+        "--attempts 1",
+        "--timeout-seconds 1200",
+        "--require-source-stage-ready",
+        "Save non-cancelled Copernicus source-stage progress",
+        "steps.acquisition.outcome != 'cancelled'",
         "Report safe duplicate suppression",
     ):
         need(marker in pilot_workflow, f"Pilot workflow is missing geometry-aware duplicate control: {marker}")
+    scheduled_pilot = pilot_workflow[:pilot_workflow.index("\n  operational-118-preflight:")]
+    for obsolete in ("--attempts 2", "--timeout-seconds 600", "--require-complete"):
+        need(obsolete not in scheduled_pilot, f"Scheduled pilot must not retain obsolete acquisition contract: {obsolete}")
+    need(scheduled_pilot.count(".cache/copernicus-current-source-stage.json") >= 4,
+         "Scheduled pilot must restore, inspect, prove and save the source-stage sidecar")
+    inspection_position = scheduled_pilot.index("Inspect the exact sealed DMI-gap range")
+    normalization_position = scheduled_pilot.index("Remove only invalid restored Copernicus source disposition")
+    need("complete_range_present == 'true' ||" not in scheduled_pilot,
+         "A complete seal must not delete its source-stage evidence")
+    install_position = scheduled_pilot.index("Install Copernicus acquisition dependency only when source stage is absent")
+    test_position = scheduled_pilot.index("Run deterministic pilot tests only before a new acquisition")
+    acquisition_position = scheduled_pilot.index("Complete only the exact sealed DMI-gap range")
+    progress_position = scheduled_pilot.index("Save non-cancelled Copernicus source-stage progress")
+    need(inspection_position < normalization_position < install_position < test_position < acquisition_position,
+         "Stage inspection/normalization and Copernicus-dependent tests must precede acquisition in order")
+    acquisition_section = scheduled_pilot[install_position:progress_position]
+    need(acquisition_section.count("steps.cache-state.outputs.source_stage_ready != 'true'") == 4,
+         "Install, deterministic tests, credentials and acquisition must share the validated stage skip")
+    for block in scheduled_pilot.split("\n      - name:"):
+        if "actions/cache/" in block and ".cache/copernicus-current-shadow.json" in block:
+            need(".cache/copernicus-current-source-stage.json" in block,
+                 "Every scheduled shadow cache restore/save must carry its source-stage sidecar")
     preserve_section = workflow[workflow.index("  preserve:"):workflow.index("  retry-failed-production:")]
     need("actions: write" not in preserve_section, "Read-only cache keepalive may not receive Actions write permission")
 

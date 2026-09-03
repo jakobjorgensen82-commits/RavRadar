@@ -36,6 +36,16 @@ on:
         required: false
         default: ""
         type: string
+      ravscore_integrated_first_cutover:
+        description: "Første integrerede cutover efter kapacitetsgate (kun eksplicit manual)"
+        required: false
+        default: false
+        type: boolean
+      ravscore_integrated_first_cutover_confirmation:
+        description: "Kun første cutover: skriv EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE"
+        required: false
+        default: ""
+        type: string
       ravscore_integrated_return:
         description: "Eksplicit samlet retur fra aktiv Candidate G til integreret RavScore"
         required: false
@@ -86,6 +96,8 @@ jobs:
       geometry_v2_national: ${{ steps.validated-dispatch.outputs.geometry_v2_national || steps.dispatch-defaults.outputs.geometry_v2_national }}
       ravscore_candidate_g_rollback_mode: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_mode || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_confirmation || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_confirmation }}
+      ravscore_integrated_first_cutover: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover }}
+      ravscore_integrated_first_cutover_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover_confirmation }}
       ravscore_integrated_return: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return || steps.dispatch-defaults.outputs.ravscore_integrated_return }}
       ravscore_integrated_return_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_return_confirmation }}
     steps:
@@ -98,6 +110,8 @@ jobs:
           echo "geometry_v2_national=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_candidate_g_rollback_mode=none" >> "$GITHUB_OUTPUT"
           echo "ravscore_candidate_g_rollback_confirmation=" >> "$GITHUB_OUTPUT"
+          echo "ravscore_integrated_first_cutover=false" >> "$GITHUB_OUTPUT"
+          echo "ravscore_integrated_first_cutover_confirmation=" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return_confirmation=" >> "$GITHUB_OUTPUT"
 
@@ -118,6 +132,8 @@ jobs:
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
+          FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -131,12 +147,13 @@ jobs:
           if [ "$GEOMETRY_PILOT" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$GEOMETRY_NATIONAL" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$ROLLBACK_MODE" != "none" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$RETURN_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$operation_count" -gt 1 ]; then
-            echo "Exactly one force, geometry, rollback or return operation may be dispatched." >&2
+            echo "Exactly one force, geometry, rollback, first cutover or return operation may be dispatched." >&2
             exit 1
           fi
-          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$FIRST_CUTOVER_REQUESTED" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
             echo "RavScore transitions are allowed only on main." >&2
             exit 1
           fi
@@ -146,6 +163,14 @@ jobs:
           fi
           if [ "$ROLLBACK_MODE" != "execute" ] && [ -n "$ROLLBACK_CONFIRMATION" ]; then
             echo "Candidate G execute confirmation is accepted only by execute mode." >&2
+            exit 1
+          fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ] && [ "$FIRST_CUTOVER_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE" ]; then
+            echo "Integrated first cutover confirmation is not exact."
+            exit 1
+          fi
+          if [ "$FIRST_CUTOVER_REQUESTED" != "true" ] && [ -n "$FIRST_CUTOVER_CONFIRMATION" ]; then
+            echo "Integrated first cutover confirmation is accepted only by an integrated first cutover." >&2
             exit 1
           fi
           if [ "$RETURN_REQUESTED" = "true" ] && [ "$RETURN_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-RETURN" ]; then
@@ -167,6 +192,8 @@ jobs:
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
+          FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -175,6 +202,8 @@ jobs:
           printf '%s\n' "geometry_v2_national=$GEOMETRY_NATIONAL" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_candidate_g_rollback_mode=$ROLLBACK_MODE" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_candidate_g_rollback_confirmation=$ROLLBACK_CONFIRMATION" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "ravscore_integrated_first_cutover=$FIRST_CUTOVER_REQUESTED" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "ravscore_integrated_first_cutover_confirmation=$FIRST_CUTOVER_CONFIRMATION" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return=$RETURN_REQUESTED" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return_confirmation=$RETURN_CONFIRMATION" >> "$GITHUB_OUTPUT"
 
@@ -190,6 +219,13 @@ jobs:
     outputs:
       recovery_action: ${{ steps.reconcile.outputs.recovery_action }}
       recovery_bundle_name: ${{ steps.reconcile.outputs.recovery_bundle_name }}
+      checkpoint_disposition: ${{ steps.reconcile.outputs.checkpoint_disposition }}
+      checkpoint_disposition_sha256: ${{ steps.reconcile.outputs.checkpoint_disposition_sha256 }}
+      checkpoint_dataset_id: ${{ steps.reconcile.outputs.checkpoint_dataset_id }}
+      checkpoint_runtime_audit_sha256: ${{ steps.reconcile.outputs.checkpoint_runtime_audit_sha256 }}
+      checkpoint_build_outcome: ${{ steps.reconcile.outputs.checkpoint_build_outcome }}
+      checkpoint_save_outcome: ${{ steps.reconcile.outputs.checkpoint_save_outcome }}
+      checkpoint_publish_outcome: ${{ steps.reconcile.outputs.checkpoint_publish_outcome }}
     env:
       RAVRADAR_OPERATIONAL_WORK: /tmp/ravradar-operational-reconcile
       RAVRADAR_PUBLIC_BASE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
@@ -454,6 +490,46 @@ jobs:
           activation_action="$(jq -r '.action' "$RAVRADAR_OPERATIONAL_WORK/activation-classification.json")"
           model="$(jq -r '.model' "$RAVRADAR_OPERATIONAL_WORK/activation-classification.json")"
 
+          validate_checkpoint_disposition() {
+            CHECKPOINT_HANDOFF_ROOT="$RAVRADAR_OPERATIONAL_WORK/handoff" CHECKPOINT_EXPECTED_HEAD="$pending_head" CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/target-manifest.json" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+
+          const root = process.env.CHECKPOINT_HANDOFF_ROOT;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const handoffManifest = read('manifest.json');
+          const targetManifest = JSON.parse(fs.readFileSync(process.env.CHECKPOINT_TARGET_MANIFEST, 'utf8'));
+          const disposition = read('checkpoint-disposition.json');
+          const runtimeAudit = read('checkpoint-runtime-audit.json');
+          const expectedKeys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
+          const fail = (message) => { throw new Error(`Historical checkpoint disposition validation failed: ${message}`); };
+          if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedKeys)) fail('unexpected disposition fields');
+          if (disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== handoffManifest.datasetId || disposition.datasetId !== targetManifest.datasetId || disposition.datasetId !== runtimeAudit.datasetId) fail('dataset binding');
+          if (disposition.privatePayloadIncluded !== false || handoff.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(runtimeAudit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (handoff.checkpointDisposition !== disposition.disposition || handoff.checkpointDispositionSha256 !== bindingSha256 || handoff.checkpointDatasetId !== disposition.datasetId || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else {
+            fail('unsupported disposition');
+          }
+          NODE
+          }
+
+          case "$recovery_action" in
+            EXACT_TARGET_REDEPLOY|TARGET_RECONCILE) validate_checkpoint_disposition ;;
+          esac
+
           if [ "$recovery_action" = "EXACT_TARGET_REDEPLOY" ]; then
             test "$activation_action" = "wait"
             mkdir -p "$RAVRADAR_OPERATIONAL_WORK/redeploy-bundle"
@@ -474,6 +550,13 @@ jobs:
               "$RAVRADAR_OPERATIONAL_WORK/redeploy-bundle/target-manifest.json"
             cp -R "$RAVRADAR_OPERATIONAL_WORK/handoff" \
               "$RAVRADAR_OPERATIONAL_WORK/redeploy-bundle/handoff"
+            echo "checkpoint_disposition=$(jq -er '.checkpointDisposition' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_disposition_sha256=$(jq -er '.checkpointDispositionSha256' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_dataset_id=$(jq -er '.checkpointDatasetId' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_runtime_audit_sha256=$(jq -er '.checkpointRuntimeAuditSha256' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_build_outcome=$(jq -er '.checkpointBuildOutcome' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_save_outcome=$(jq -er '.checkpointSaveOutcome' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
+            echo "checkpoint_publish_outcome=$(jq -er '.checkpointPublishOutcome' "$RAVRADAR_OPERATIONAL_WORK/handoff/handoff.json")" >> "$GITHUB_OUTPUT"
             echo "recovery_action=EXACT_TARGET_REDEPLOY" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -650,6 +733,39 @@ jobs:
           attempt_number="$(jq -r '.runAttempt' "$bundle/pending-identity.json")"
           pending_head="$(jq -r '.headSha' "$bundle/pending-identity.json")"
           attempt_id="$(jq -r '.attemptId' "$bundle/pending-identity.json")"
+          CHECKPOINT_HANDOFF_ROOT="$bundle/handoff"
+          CHECKPOINT_EXPECTED_HEAD="$pending_head"
+          CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/target-site/data/live/manifest.json"
+          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          const root = process.env.CHECKPOINT_HANDOFF_ROOT;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const manifest = read('manifest.json');
+          const targetManifest = JSON.parse(fs.readFileSync(process.env.CHECKPOINT_TARGET_MANIFEST, 'utf8'));
+          const disposition = read('checkpoint-disposition.json');
+          const audit = read('checkpoint-runtime-audit.json');
+          const keys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
+          const fail = (message) => { throw new Error(`Recovery checkpoint disposition validation failed: ${message}`); };
+          if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(keys)) fail('unexpected disposition fields');
+          if (handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== manifest.datasetId || disposition.datasetId !== targetManifest.datasetId || disposition.datasetId !== audit.datasetId) fail('dataset binding');
+          if (handoff.privatePayloadIncluded !== false || disposition.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(audit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (handoff.checkpointDisposition !== disposition.disposition || handoff.checkpointDispositionSha256 !== bindingSha256 || handoff.checkpointDatasetId !== disposition.datasetId || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else fail('unsupported disposition');
+          NODE
           for observation_number in 1 2; do
             curl --fail --silent --show-error --location --retry 3 \
               --header 'Cache-Control: no-cache' \
@@ -989,6 +1105,39 @@ jobs:
             > "$RAVRADAR_OPERATIONAL_WORK/current-before-cas-identity.json"
           test "$(jq -S -c . "$RAVRADAR_OPERATIONAL_WORK/current-before-cas-identity.json")" = \
             "$(jq -S -c . "$bundle/pending-identity.json")"
+          CHECKPOINT_HANDOFF_ROOT="$handoff"
+          CHECKPOINT_EXPECTED_HEAD="$pending_head"
+          CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_WORK/public-manifest.json"
+          CHECKPOINT_HANDOFF_ROOT="$CHECKPOINT_HANDOFF_ROOT" CHECKPOINT_EXPECTED_HEAD="$CHECKPOINT_EXPECTED_HEAD" CHECKPOINT_TARGET_MANIFEST="$CHECKPOINT_TARGET_MANIFEST" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+          const root = process.env.CHECKPOINT_HANDOFF_ROOT;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const manifest = read('manifest.json');
+          const targetManifest = JSON.parse(fs.readFileSync(process.env.CHECKPOINT_TARGET_MANIFEST, 'utf8'));
+          const disposition = read('checkpoint-disposition.json');
+          const audit = read('checkpoint-runtime-audit.json');
+          const keys = ['bindingSha256','checkpointRequired','datasetId','disposition','privatePayloadIncluded','rollbackActivationReady','rollbackStatus','runtimeAuditSha256','schemaVersion','sourceHead'].sort();
+          const fail = (message) => { throw new Error(`Recovery checkpoint disposition validation failed: ${message}`); };
+          if (handoff.schemaVersion !== 'ravscore-operational-deploy-handoff-v2' || disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(keys)) fail('unexpected disposition fields');
+          if (handoff.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD || disposition.sourceHead !== process.env.CHECKPOINT_EXPECTED_HEAD) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== manifest.datasetId || disposition.datasetId !== targetManifest.datasetId || disposition.datasetId !== audit.datasetId) fail('dataset binding');
+          if (handoff.privatePayloadIncluded !== false || disposition.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(audit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (handoff.checkpointDisposition !== disposition.disposition || handoff.checkpointDispositionSha256 !== bindingSha256 || handoff.checkpointDatasetId !== disposition.datasetId || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else fail('unsupported disposition');
+          NODE
           pending_version="$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_WORK/current-before-cas.json")"
           completion_args=()
           if [ "$model" = "candidate-g" ]; then
@@ -1196,6 +1345,8 @@ jobs:
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_confirmation }}
+      ravscore_integrated_first_cutover: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover == 'true' }}
+      ravscore_integrated_first_cutover_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover_confirmation }}
       ravscore_integrated_return: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return == 'true' }}
       ravscore_integrated_return_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return_confirmation }}
     secrets:
@@ -1713,6 +1864,13 @@ jobs:
           RAVRADAR_OUTCOME_PAGES_BUILD: ${{ needs.build-and-prepare.outputs.pages_build_outcome }}
           RAVRADAR_OUTCOME_PAGES_PRIVACY: ${{ needs.build-and-prepare.outputs.pages_privacy_outcome }}
           RAVRADAR_OUTCOME_HANDOFF_UPLOAD: ${{ needs.build-and-prepare.outputs.handoff_upload_outcome }}
+          RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION: ${{ needs.build-and-prepare.outputs.checkpoint_disposition || needs.reconcile-operational-pending.outputs.checkpoint_disposition }}
+          RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256: ${{ needs.build-and-prepare.outputs.checkpoint_disposition_sha256 || needs.reconcile-operational-pending.outputs.checkpoint_disposition_sha256 }}
+          RAVRADAR_OUTCOME_CHECKPOINT_DATASET_ID: ${{ needs.build-and-prepare.outputs.checkpoint_dataset_id || needs.reconcile-operational-pending.outputs.checkpoint_dataset_id }}
+          RAVRADAR_OUTCOME_CHECKPOINT_RUNTIME_AUDIT_SHA256: ${{ needs.build-and-prepare.outputs.checkpoint_runtime_audit_sha256 || needs.reconcile-operational-pending.outputs.checkpoint_runtime_audit_sha256 }}
+          RAVRADAR_OUTCOME_CHECKPOINT_BUILD: ${{ needs.build-and-prepare.outputs.checkpoint_build_outcome || needs.reconcile-operational-pending.outputs.checkpoint_build_outcome }}
+          RAVRADAR_OUTCOME_CHECKPOINT_SAVE: ${{ needs.build-and-prepare.outputs.checkpoint_save_outcome || needs.reconcile-operational-pending.outputs.checkpoint_save_outcome }}
+          RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH: ${{ needs.build-and-prepare.outputs.checkpoint_publish_outcome || needs.reconcile-operational-pending.outputs.checkpoint_publish_outcome }}
           RAVRADAR_OUTCOME_PAGES_CONFIGURE: ${{ needs.build-and-prepare.outputs.pages_configure_outcome }}
           RAVRADAR_OUTCOME_PAGES_UPLOAD: ${{ needs.build-and-prepare.outputs.pages_upload_outcome }}
           RAVRADAR_OUTCOME_ARTIFACT_BUILT: ${{ needs.build-and-prepare.outputs.artifact_built }}

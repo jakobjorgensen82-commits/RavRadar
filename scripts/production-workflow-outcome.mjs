@@ -38,6 +38,13 @@ const PROOF_KEYS = Object.freeze([
   'pagesBuildOutcome',
   'pagesPrivacyOutcome',
   'handoffUploadOutcome',
+  'checkpointDisposition',
+  'checkpointDispositionSha256',
+  'checkpointDatasetId',
+  'checkpointRuntimeAuditSha256',
+  'checkpointBuildOutcome',
+  'checkpointSaveOutcome',
+  'checkpointPublishOutcome',
   'pagesConfigureOutcome',
   'pagesUploadOutcome',
   'artifactBuilt',
@@ -48,6 +55,10 @@ const PROOF_KEYS = Object.freeze([
 
 const JOB_RESULTS = new Set(['success', 'failure', 'cancelled', 'skipped']);
 const STEP_OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped']);
+const CHECKPOINT_DISPOSITIONS = new Set([
+  'READY_PUBLISHED',
+  'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+]);
 const EVENTS = new Set(['push', 'schedule', 'workflow_dispatch']);
 const RECOVERY_ACTIONS = new Set([
   'NONE',
@@ -95,6 +106,30 @@ function normalizeAction(value, errors) {
   if (!normalized) return null;
   if (OPERATIONAL_ACTIONS.has(normalized)) return normalized;
   errors.push('INVALID_OPERATIONAL_ACTION');
+  return null;
+}
+
+function normalizeCheckpointDisposition(value, errors) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return null;
+  if (CHECKPOINT_DISPOSITIONS.has(normalized)) return normalized;
+  errors.push('INVALID_CHECKPOINT_DISPOSITION');
+  return null;
+}
+
+function normalizeSha256(value, errors, key) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return null;
+  if (/^[a-f0-9]{64}$/.test(normalized)) return normalized;
+  errors.push(`INVALID_SHA256_${key}`);
+  return null;
+}
+
+function normalizeDatasetId(value, errors) {
+  const normalized = String(value ?? '').trim();
+  if (!normalized) return null;
+  if (/^[a-z0-9][a-z0-9._-]{0,127}$/.test(normalized)) return normalized;
+  errors.push('INVALID_CHECKPOINT_DATASET_ID');
   return null;
 }
 
@@ -146,6 +181,33 @@ function normalizeEvidence(input) {
     pagesBuildOutcome: normalizeStepOutcome(input.proof?.pagesBuildOutcome, errors, 'pagesBuildOutcome'),
     pagesPrivacyOutcome: normalizeStepOutcome(input.proof?.pagesPrivacyOutcome, errors, 'pagesPrivacyOutcome'),
     handoffUploadOutcome: normalizeStepOutcome(input.proof?.handoffUploadOutcome, errors, 'handoffUploadOutcome'),
+    checkpointDisposition: normalizeCheckpointDisposition(input.proof?.checkpointDisposition, errors),
+    checkpointDispositionSha256: normalizeSha256(
+      input.proof?.checkpointDispositionSha256,
+      errors,
+      'checkpointDispositionSha256',
+    ),
+    checkpointDatasetId: normalizeDatasetId(input.proof?.checkpointDatasetId, errors),
+    checkpointRuntimeAuditSha256: normalizeSha256(
+      input.proof?.checkpointRuntimeAuditSha256,
+      errors,
+      'checkpointRuntimeAuditSha256',
+    ),
+    checkpointBuildOutcome: normalizeStepOutcome(
+      input.proof?.checkpointBuildOutcome,
+      errors,
+      'checkpointBuildOutcome',
+    ),
+    checkpointSaveOutcome: normalizeStepOutcome(
+      input.proof?.checkpointSaveOutcome,
+      errors,
+      'checkpointSaveOutcome',
+    ),
+    checkpointPublishOutcome: normalizeStepOutcome(
+      input.proof?.checkpointPublishOutcome,
+      errors,
+      'checkpointPublishOutcome',
+    ),
     pagesConfigureOutcome: normalizeStepOutcome(input.proof?.pagesConfigureOutcome, errors, 'pagesConfigureOutcome'),
     pagesUploadOutcome: normalizeStepOutcome(input.proof?.pagesUploadOutcome, errors, 'pagesUploadOutcome'),
     artifactBuilt: normalizeBoolean(input.proof?.artifactBuilt, errors, 'artifactBuilt'),
@@ -164,7 +226,50 @@ function result(status, reasonCode) {
   return { status, reasonCode };
 }
 
-function noUnexpectedProduction(evidence) {
+function noCheckpointProof(proof) {
+  return proof.checkpointDisposition == null
+    && proof.checkpointDispositionSha256 == null
+    && proof.checkpointDatasetId == null
+    && proof.checkpointRuntimeAuditSha256 == null
+    && proof.checkpointBuildOutcome === 'unknown'
+    && proof.checkpointSaveOutcome === 'unknown'
+    && proof.checkpointPublishOutcome === 'unknown';
+}
+
+function checkpointProofHasExactBinding(proof) {
+  return CHECKPOINT_DISPOSITIONS.has(proof.checkpointDisposition)
+    && /^[a-f0-9]{64}$/.test(proof.checkpointDispositionSha256 ?? '')
+    && /^[a-z0-9][a-z0-9._-]{0,127}$/.test(proof.checkpointDatasetId ?? '')
+    && /^[a-f0-9]{64}$/.test(proof.checkpointRuntimeAuditSha256 ?? '');
+}
+
+function checkpointProofIsDeploymentReady(proof) {
+  if (!checkpointProofHasExactBinding(proof)) return false;
+  if (proof.checkpointDisposition === 'READY_PUBLISHED') {
+    return proof.checkpointBuildOutcome === 'success'
+      && proof.checkpointSaveOutcome === 'success'
+      && proof.checkpointPublishOutcome === 'success';
+  }
+  return proof.checkpointDisposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP'
+    && proof.checkpointBuildOutcome === 'skipped'
+    && proof.checkpointSaveOutcome === 'skipped'
+    && proof.checkpointPublishOutcome === 'skipped';
+}
+
+function checkpointProofIsDryRunComplete(proof) {
+  if (!checkpointProofHasExactBinding(proof)) return false;
+  if (proof.checkpointDisposition === 'READY_PUBLISHED') {
+    return proof.checkpointBuildOutcome === 'success'
+      && proof.checkpointSaveOutcome === 'skipped'
+      && proof.checkpointPublishOutcome === 'skipped';
+  }
+  return proof.checkpointDisposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP'
+    && proof.checkpointBuildOutcome === 'skipped'
+    && proof.checkpointSaveOutcome === 'skipped'
+    && proof.checkpointPublishOutcome === 'skipped';
+}
+
+function noFreshProduction(evidence) {
   const { jobs, proof } = evidence;
   return jobs.buildAndPrepare === 'skipped'
     && jobs.deployPages === 'skipped'
@@ -173,8 +278,12 @@ function noUnexpectedProduction(evidence) {
     && proof.shouldDeploy !== true
     && proof.artifactBuilt !== true
     && proof.deployedVerified !== true
-    && PROOF_KEYS.filter((key) => key.endsWith('Outcome'))
+    && PROOF_KEYS.filter((key) => key.endsWith('Outcome') && !key.startsWith('checkpoint'))
       .every((key) => proof[key] !== 'success');
+}
+
+function noUnexpectedProduction(evidence) {
+  return noFreshProduction(evidence) && noCheckpointProof(evidence.proof);
 }
 
 function recoveryContract(evidence) {
@@ -244,10 +353,14 @@ function classifyNormalized(evidence) {
     return result('FAILED', 'INCONSISTENT_RECOVERY_EVIDENCE');
   }
   if (proof.currentReady === false) {
-    if (jobs.tripStorageReadiness === 'skipped' && noUnexpectedProduction(evidence)) {
+    if (jobs.tripStorageReadiness === 'skipped' && noFreshProduction(evidence)) {
       if (recovery.exactTargetRedeployed) {
+        if (!checkpointProofIsDeploymentReady(proof)) {
+          return result('FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+        }
         return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
       }
+      if (!noCheckpointProof(proof)) return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
       return result('DEFERRED', 'CURRENT_INPUT_DEFERRED');
     }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
@@ -256,10 +369,14 @@ function classifyNormalized(evidence) {
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
   }
   if (proof.tripStorageReady === false) {
-    if (noUnexpectedProduction(evidence)) {
+    if (noFreshProduction(evidence)) {
       if (recovery.exactTargetRedeployed) {
+        if (!checkpointProofIsDeploymentReady(proof)) {
+          return result('FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+        }
         return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
       }
+      if (!noCheckpointProof(proof)) return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
       return result('DEFERRED', 'TRIP_STORAGE_DEFERRED');
     }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
@@ -286,8 +403,12 @@ function classifyNormalized(evidence) {
         proof.publicVerificationOutcome,
       ].every((value) => value !== 'success')) {
       if (recovery.exactTargetRedeployed) {
+        if (!checkpointProofIsDeploymentReady(proof)) {
+          return result('FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+        }
         return result('DEPLOYED', 'RECOVERED_PUBLIC_DEPLOYMENT_VERIFIED');
       }
+      if (!noCheckpointProof(proof)) return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
       return result('NOOP', 'FRESH_WEATHER_NO_UPDATE_REQUIRED');
     }
     return result('FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
@@ -310,6 +431,7 @@ function classifyNormalized(evidence) {
   }
   if (proof.shouldDeploy === false) {
     if (proof.operationalAction === 'candidate-dry-run'
+      && checkpointProofIsDryRunComplete(proof)
       && jobs.deployPages === 'skipped'
       && proof.pagesConfigureOutcome !== 'success'
       && proof.pagesUploadOutcome !== 'success'
@@ -325,6 +447,9 @@ function classifyNormalized(evidence) {
     || proof.pagesConfigureOutcome !== 'success'
     || proof.pagesUploadOutcome !== 'success') {
     return result('FAILED', 'INCOMPLETE_BUILD_GATES');
+  }
+  if (!checkpointProofIsDeploymentReady(proof)) {
+    return result('FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
   }
   if (jobs.deployPages === 'success'
     && proof.deploymentOutcome === 'success'
@@ -398,6 +523,19 @@ export function validateProductionWorkflowOutcome(report) {
   }
   if (!(report.proof.recoveryAction == null || RECOVERY_ACTIONS.has(report.proof.recoveryAction))) {
     throw new Error('Unexpected recovery action');
+  }
+  if (!(report.proof.checkpointDisposition == null
+    || CHECKPOINT_DISPOSITIONS.has(report.proof.checkpointDisposition))) {
+    throw new Error('Unexpected checkpoint disposition');
+  }
+  for (const key of ['checkpointDispositionSha256', 'checkpointRuntimeAuditSha256']) {
+    if (!(report.proof[key] == null || /^[a-f0-9]{64}$/.test(report.proof[key]))) {
+      throw new Error(`Unexpected checkpoint proof ${key}`);
+    }
+  }
+  if (!(report.proof.checkpointDatasetId == null
+    || /^[a-z0-9][a-z0-9._-]{0,127}$/.test(report.proof.checkpointDatasetId))) {
+    throw new Error('Unexpected checkpoint dataset id');
   }
   if (report.reasonCode === 'INVALID_OUTCOME_EVIDENCE') {
     if (report.status !== 'FAILED') throw new Error('Invalid evidence must remain FAILED');
@@ -477,6 +615,13 @@ function environmentEvidence(env) {
       pagesBuildOutcome: env.RAVRADAR_OUTCOME_PAGES_BUILD,
       pagesPrivacyOutcome: env.RAVRADAR_OUTCOME_PAGES_PRIVACY,
       handoffUploadOutcome: env.RAVRADAR_OUTCOME_HANDOFF_UPLOAD,
+      checkpointDisposition: env.RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION,
+      checkpointDispositionSha256: env.RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256,
+      checkpointDatasetId: env.RAVRADAR_OUTCOME_CHECKPOINT_DATASET_ID,
+      checkpointRuntimeAuditSha256: env.RAVRADAR_OUTCOME_CHECKPOINT_RUNTIME_AUDIT_SHA256,
+      checkpointBuildOutcome: env.RAVRADAR_OUTCOME_CHECKPOINT_BUILD,
+      checkpointSaveOutcome: env.RAVRADAR_OUTCOME_CHECKPOINT_SAVE,
+      checkpointPublishOutcome: env.RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH,
       pagesConfigureOutcome: env.RAVRADAR_OUTCOME_PAGES_CONFIGURE,
       pagesUploadOutcome: env.RAVRADAR_OUTCOME_PAGES_UPLOAD,
       artifactBuilt: env.RAVRADAR_OUTCOME_ARTIFACT_BUILT,

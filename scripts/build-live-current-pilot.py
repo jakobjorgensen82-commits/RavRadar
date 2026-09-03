@@ -12,26 +12,49 @@ import argparse
 import json
 import math
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 from lib.copernicus_current import (
     COPERNICUS_SOURCE_CONTRACTS,
     DMI_VERIFIER_CONTRACT_ID,
+    FUTURE_ACQUISITION_FRESHNESS_HOURS,
+    OPERATIONAL_SEAL_CONTRACT_ID,
+    PUBLIC_END_OFFSET_HOURS,
     RECORD_PROJECTION_CONTRACT_ID,
+    SELECTION_POLICY_ID,
+    canonical_sha256,
     file_sha256,
     live_record_projection_sha256,
     validate_shadow,
 )
 from lib.copernicus_target_identity import target_fingerprint, targets_from_registry
-from lib.dmi_native_provenance import complete_native_source_for_hour
+from lib.current_operational_closure import (
+    CONTRACT_ID as CLOSURE_CONTRACT_ID,
+    COPERNICUS_AMM15,
+    COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
+    COPERNICUS_BALTIC,
+    REGIONAL_DMI_DERIVED_HOLD,
+    REGIONAL_DMI_NATIVE,
+    safe_current_operational_closure,
+    validate_current_operational_closure,
+)
+from lib.dmi_native_provenance import (
+    canonical_verified_part_current_attestation,
+    complete_native_source_for_hour,
+    processed_source_assets_from_current_operational_ledger,
+)
+from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
 
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TARGETS = ROOT / "data/live/coastal-parts-v2.json"
 DEFAULT_DMI = ROOT / "data/live/dmi-bulk-cache.json"
+DEFAULT_REGISTRY = ROOT / ".cache/copernicus-current-targets.json"
 DEFAULT_COPERNICUS = ROOT / ".cache/copernicus-current-shadow.json"
+DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
+DEFAULT_CLOSURE = ROOT / ".cache/current-operational-closure.json"
 DEFAULT_REGIONAL = ROOT / ".cache/current-field-shadow.json"
 DEFAULT_POLICY = ROOT / "data/current-regional-proxy-policy.json"
 DEFAULT_CONTROL = ROOT / "data/current-live-pilot-control.json"
@@ -49,7 +72,10 @@ def arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument("--dmi", type=Path, default=DEFAULT_DMI)
+    parser.add_argument("--registry", type=Path, default=DEFAULT_REGISTRY)
     parser.add_argument("--copernicus", type=Path, default=DEFAULT_COPERNICUS)
+    parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
+    parser.add_argument("--closure", type=Path, default=DEFAULT_CLOSURE)
     parser.add_argument("--regional", type=Path, default=DEFAULT_REGIONAL)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--control", type=Path, default=DEFAULT_CONTROL)
@@ -137,6 +163,24 @@ def capture_matches_valid_time(captured_value: Any, valid_value: Any, maximum_ho
     return abs((valid - captured).total_seconds()) <= maximum_hours * 3600
 
 
+def regional_sample_time_valid(sample: dict[str, Any], reference: datetime) -> bool:
+    try:
+        captured = parse_time(sample.get("capturedAt"))
+        valid = parse_time(sample.get("validTime"))
+        model_run = parse_time(sample.get("modelRun"))
+    except Exception:
+        return False
+    if model_run > valid or not in_capture_window(sample.get("capturedAt"), reference):
+        return False
+    if valid >= reference:
+        return (
+            valid <= reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+            and abs((captured - reference).total_seconds())
+                <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
+        )
+    return abs((valid - captured).total_seconds()) <= REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS * 3600
+
+
 def valid_dmi_parts(document: dict[str, Any], targets: dict[str, dict[str, Any]]) -> tuple[set[str], dict[str, set[str]]]:
     covered: set[str] = set()
     times: dict[str, set[str]] = {}
@@ -192,45 +236,61 @@ def runtime_times_by_part(
 def copernicus_entries(
     document: dict[str, Any],
     targets: dict[str, dict[str, Any]],
-    fingerprint: str,
-    production_reference: datetime,
-    dmi_current_input_sha256: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
-    if not document:
-        return [], None
+    assignments: list[dict[str, Any]],
+    closure_proof: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any] | None, list[dict[str, Any]]]:
     try:
-        cache = validate_shadow(document, targets, require_collection=True)
-    except (TypeError, ValueError) as error:
-        raise RuntimeError(f"Copernicus range cache is invalid: {error}") from None
-    reference_text = utc_iso(production_reference)
+        cache = validate_shadow(document, targets, require_collection=False)
+    except (TypeError, ValueError):
+        raise RuntimeError("COPERNICUS_CLOSURE_CACHE_INVALID") from None
+    reference_text = closure_proof["productionReferenceAt"]
     collections = [
         row for row in cache["collections"]
-        if row.get("status") == "COMPLETE" and row.get("productionReferenceAt") == reference_text
+        if row.get("status") in {"COMPLETE", "OPERATIONAL_COMPLETE"}
+        and row.get("productionReferenceAt") == reference_text
     ]
-    if len(collections) != 1:
-        raise RuntimeError("Copernicus projection requires exactly one COMPLETE seal for productionReferenceAt")
-    collection = collections[0]
-    if (
-        collection.get("targetRegistrySha256") != fingerprint
-        or collection.get("dmiCurrentInputSha256") != dmi_current_input_sha256
-        or collection.get("dmiVerifierContractId") != DMI_VERIFIER_CONTRACT_ID
-    ):
-        raise RuntimeError("Copernicus COMPLETE seal does not match current target/DMI input identity")
-    seal_fields = (
-        "collectionId", "status", "productionReferenceAt", "rangeStartAt", "rangeEndAt",
-        "coldBridgeHours", "publicHourCount", "targetRegistrySha256", "dmiCurrentInputSha256",
-        "dmiVerifierContractId", "requiredPairsSha256", "requiredPairCount", "selectionPolicyId",
-        "recordRefsSha256", "sealedAt",
-    )
-    range_seal = {field: collection[field] for field in seal_fields}
+    range_seal = None
+    collection = None
+    if len(collections) == 1:
+        collection = collections[0]
+        operational_contract = collection.get("status") == "OPERATIONAL_COMPLETE"
+        seal_fields = ((
+            "collectionId", "status", "sealContractId", "productionReferenceAt",
+            "operationalRangeStartAt", "operationalRangeEndAt", "operationalHourCount",
+            "advisoryHistoryStartAt", "advisoryHistoryEndAt", "advisoryHistoryHourCount",
+            "targetRegistrySha256", "dmiCurrentInputSha256", "dmiVerifierContractId",
+            "operationalRequiredPairsSha256", "operationalRequiredPairCount",
+            "operationalRecordRefsSha256", "advisoryHistoryRequiredPairsSha256",
+            "advisoryHistoryRequiredPairCount", "advisoryHistoryRecordRefsSha256",
+            "advisoryHistoryAvailablePairCount", "advisoryHistoryMissingPairCount",
+            "advisoryHistoryComplete", "selectionPolicyId", "sealedAt",
+        ) if operational_contract else (
+            "collectionId", "status", "productionReferenceAt", "rangeStartAt", "rangeEndAt",
+            "coldBridgeHours", "publicHourCount", "targetRegistrySha256", "dmiCurrentInputSha256",
+            "dmiVerifierContractId", "requiredPairsSha256", "requiredPairCount", "selectionPolicyId",
+            "recordRefsSha256", "sealedAt",
+        ))
+        range_seal = {field: collection[field] for field in seal_fields}
     acquisition_by_id = {row["acquisitionId"]: row for row in cache["acquisitions"]}
     record_by_id = {row["recordId"]: row for row in cache["records"]}
     selected: list[dict[str, Any]] = []
-    for ref in collection["recordRefs"]:
-        row = record_by_id[ref["recordId"]]
-        acquisition = acquisition_by_id[ref["acquisitionId"]]
+    for assignment in assignments:
+        row = record_by_id.get(assignment.get("recordId"))
+        acquisition = acquisition_by_id.get(assignment.get("acquisitionId"))
+        if (
+            not isinstance(row, dict)
+            or not isinstance(acquisition, dict)
+            or row.get("acquisitionId") != assignment.get("acquisitionId")
+            or row.get("partId") != assignment.get("partId")
+            or row.get("validTime") != assignment.get("validTime")
+            or acquisition.get("source") != assignment.get("source")
+            or assignment.get("classification") not in {COPERNICUS_BALTIC, COPERNICUS_AMM15}
+        ):
+            raise RuntimeError("COPERNICUS_CLOSURE_RECORD_INVALID")
         part_id = row["partId"]
-        target = targets[part_id]
+        target = targets.get(part_id)
+        if target is None:
+            raise RuntimeError("COPERNICUS_CLOSURE_RECORD_INVALID")
         source = acquisition["source"]
         product_id, dataset_id, dataset_version = COPERNICUS_SOURCE_CONTRACTS[source]
         grid = canonical_point(row["gridPoint"])
@@ -240,8 +300,8 @@ def copernicus_entries(
             "recordProjectionContractId": RECORD_PROJECTION_CONTRACT_ID,
             "recordId": row["recordId"],
             "acquisitionId": acquisition["acquisitionId"],
-            "collectionId": collection["collectionId"],
-            "productionReferenceAt": collection["productionReferenceAt"],
+            "collectionId": closure_proof["closureId"],
+            "productionReferenceAt": reference_text,
             "partId": part_id,
             "parentZoneId": target["parentZoneId"],
             "targetIdentityFingerprint": target_fingerprint([target]),
@@ -250,7 +310,7 @@ def copernicus_entries(
             "acquisitionAt": acquisition["acquisitionAt"],
             "acquisitionStatus": acquisition["status"],
             "requestContractId": acquisition["requestContractId"],
-            "selectionPolicyId": collection["selectionPolicyId"],
+            "selectionPolicyId": SELECTION_POLICY_ID,
             "samplingPoint": canonical_point(target["waterPoint"]),
             "provider": "copernicus",
             "sourceClass": "supplemental-local-current",
@@ -270,112 +330,189 @@ def copernicus_entries(
             "vectorSemanticsVersion": 4,
             "uMps": round(float(row["uMps"]), 5),
             "vMps": round(float(row["vMps"]), 5),
+            "closureContractId": CLOSURE_CONTRACT_ID,
+            "closureId": closure_proof["closureId"],
+            "closureAssignmentSha256": assignment["assignmentSha256"],
+            "classification": assignment["classification"],
+            "recordRefSha256": assignment["recordRefSha256"],
         }
         entry["recordProjectionSha256"] = live_record_projection_sha256(entry)
         selected.append(entry)
-    return selected, range_seal
+    advisory: list[dict[str, Any]] = []
+    for assignment in closure_proof.get("advisoryHistoryAssignments") or []:
+            row = record_by_id.get(assignment.get("recordId"))
+            acquisition = acquisition_by_id.get(assignment.get("acquisitionId"))
+            if (
+                not isinstance(row, dict)
+                or not isinstance(acquisition, dict)
+                or row.get("partId") != assignment.get("partId")
+                or row.get("validTime") != assignment.get("validTime")
+                or row.get("acquisitionId") != assignment.get("acquisitionId")
+                or acquisition.get("source") != assignment.get("source")
+                or assignment.get("classification")
+                    != COPERNICUS_ADVISORY_PAST_MODEL_FIELD
+            ):
+                raise RuntimeError("COPERNICUS_ADVISORY_RECORD_INVALID")
+            target = targets.get(row["partId"])
+            if target is None:
+                raise RuntimeError("COPERNICUS_ADVISORY_RECORD_INVALID")
+            source = acquisition["source"]
+            product_id, dataset_id, dataset_version = COPERNICUS_SOURCE_CONTRACTS[source]
+            depth = float(row["verticalLayerM"])
+            entry = {
+                "recordProjectionContractId": RECORD_PROJECTION_CONTRACT_ID,
+                "recordId": row["recordId"],
+                "acquisitionId": acquisition["acquisitionId"],
+                "collectionId": closure_proof["closureId"],
+                "productionReferenceAt": reference_text,
+                "partId": row["partId"],
+                "parentZoneId": target["parentZoneId"],
+                "targetIdentityFingerprint": target_fingerprint([target]),
+                "validTime": row["validTime"],
+                "capturedAt": acquisition["acquisitionAt"],
+                "acquisitionAt": acquisition["acquisitionAt"],
+                "acquisitionStatus": acquisition["status"],
+                "requestContractId": acquisition["requestContractId"],
+                "selectionPolicyId": SELECTION_POLICY_ID,
+                "samplingPoint": canonical_point(target["waterPoint"]),
+                "provider": "copernicus",
+                "sourceClass": "supplemental-local-current",
+                "source": source,
+                "productId": product_id,
+                "datasetId": dataset_id,
+                "datasetVersion": dataset_version,
+                "gridPoint": canonical_point(row["gridPoint"]),
+                "distanceKm": round(float(row["distanceKm"]), 5),
+                "verticalLayer": f"depth:{depth:g}",
+                "verticalLayerM": depth,
+                "verticalLayerRankM": depth,
+                "layerQuality": row["layerQuality"],
+                "sharedLayerCount": row["sharedLayerCount"],
+                "componentPair": "same-time-cell-layer",
+                "interpolation": False,
+                "vectorSemanticsVersion": 4,
+                "uMps": round(float(row["uMps"]), 5),
+                "vMps": round(float(row["vMps"]), 5),
+                "closureContractId": CLOSURE_CONTRACT_ID,
+                "closureId": closure_proof["closureId"],
+                "closureAssignmentSha256": assignment["assignmentSha256"],
+                "classification": COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
+                "recordRefSha256": assignment["recordRefSha256"],
+            }
+            entry["recordProjectionSha256"] = live_record_projection_sha256(entry)
+            advisory.append(entry)
+    advisory.sort(key=lambda row: (row["validTime"], row["partId"]))
+    return selected, range_seal, advisory
 
 
 def regional_entries(
     document: dict[str, Any],
-    policy: dict[str, Any],
     targets: dict[str, dict[str, Any]],
+    assignments: list[dict[str, Any]],
+    closure_proof: dict[str, Any],
     now: datetime,
 ) -> list[dict[str, Any]]:
-    if not document:
-        return []
     if document.get("scoreImpact") is not False or document.get("publicRuntime") is not False:
-        raise RuntimeError("Regional raw cache lost its private/score-neutral contract")
-    if policy.get("controlledLivePilotAllowed") is not True:
-        raise RuntimeError("Regional policy does not permit the controlled live projection")
-    policy_rows = list(policy.get("parts") or [])
-    if len(policy_rows) != 8 or len({str(row.get("partId") or "") for row in policy_rows}) != 8:
-        raise RuntimeError("Regional policy must contain exactly eight unique parts")
-    selected: dict[tuple[str, str], tuple[datetime, dict[str, Any]]] = {}
-    for policy_row in policy_rows:
-        part_id = str(policy_row.get("partId") or "")
+        raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
+    anchors = document.get("anchors")
+    if not isinstance(anchors, dict):
+        raise RuntimeError("REGIONAL_CLOSURE_CACHE_INVALID")
+    selected: list[dict[str, Any]] = []
+    for assignment in assignments:
+        classification = assignment.get("classification")
+        if classification not in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}:
+            raise RuntimeError("REGIONAL_CLOSURE_ASSIGNMENT_INVALID")
+        part_id = assignment.get("partId")
         target = targets.get(part_id)
-        approved = canonical_point(policy_row.get("approvedSamplingPoint"))
-        if target is None or not same_point(approved, target["waterPoint"]):
-            raise RuntimeError(f"Regional proxy point requires renewed owner approval: {part_id}")
-        anchor = (document.get("anchors") or {}).get(f"{REGIONAL_PREFIX}{part_id}") or {}
+        anchor = anchors.get(f"{REGIONAL_PREFIX}{part_id}")
+        if target is None or not isinstance(anchor, dict):
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        matches = [
+            sample for sample in anchor.get("samples") or []
+            if isinstance(sample, dict)
+            and sample.get("collection") == "dkss_lf"
+            and sample.get("validTime") == assignment.get("sourceValidTime")
+            and sample.get("modelRun") == assignment.get("sourceModelRun")
+            and sample.get("sourceAssetSha256") == assignment.get("sourceAssetSha256")
+        ]
+        if len(matches) != 1 or not regional_sample_time_valid(matches[0], now):
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        sample = matches[0]
+        grid = canonical_point(sample.get("gridPoint"))
+        distance = finite(sample.get("distanceKm"))
+        bottom = ((sample.get("layers") or {}).get("bottom") or {})
+        u_value, v_value = finite(bottom.get("uMps")), finite(bottom.get("vMps"))
+        layer_rank = finite(bottom.get("verticalLayerRankM"))
+        captured_at = utc_iso(parse_time(sample.get("capturedAt")))
         if (
-            not anchor.get("regionalProxyCandidate")
-            or anchor.get("requiredCollection") != "dkss_lf"
-            or not same_point(anchor.get("targetPoint"), approved)
-            or not same_point(anchor.get("sourceWaterPoint"), approved)
-            or anchor.get("partId") != part_id
-            or anchor.get("parentZoneId") != target["parentZoneId"]
-            or anchor.get("researchClass") != "owner-approved-regional-proxy"
-            or anchor.get("sameConnectedWaterBody") != "Limfjorden"
-            or finite(anchor.get("maximumDistanceKm")) != REGIONAL_MAX_KM
+            grid is None
+            or distance is None
+            or u_value is None
+            or v_value is None
+            or not isinstance(bottom.get("verticalLayer"), str)
+            or not bottom.get("verticalLayer")
+            or layer_rank is None
         ):
-            continue
-        for sample in anchor.get("samples") or []:
-            if (
-                sample.get("collection") != "dkss_lf"
-                or not in_capture_window(sample.get("capturedAt"), now)
-                or not capture_matches_valid_time(
-                    sample.get("capturedAt"),
-                    sample.get("validTime"),
-                    REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS,
-                )
-            ):
-                continue
-            grid = canonical_point(sample.get("gridPoint"))
-            distance = finite(sample.get("distanceKm"))
-            bottom = ((sample.get("layers") or {}).get("bottom") or {})
-            u_value, v_value = finite(bottom.get("uMps")), finite(bottom.get("vMps"))
-            layer_rank = finite(bottom.get("verticalLayerRankM"))
-            try:
-                valid_time = utc_iso(parse_time(sample.get("validTime")))
-                captured_at = parse_time(sample.get("capturedAt"))
-                model_run = parse_time(sample.get("modelRun"))
-            except Exception:
-                continue
-            physical_distance = haversine_km(approved, grid) if grid is not None else math.inf
-            if (
-                grid is None
-                or distance is None
-                or distance <= COPERNICUS_MAX_KM
-                or distance > REGIONAL_MAX_KM
-                or physical_distance > REGIONAL_MAX_KM + 0.01
-                or abs(physical_distance - distance) > 0.02
-                or u_value is None
-                or v_value is None
-                or not bottom.get("verticalLayer")
-                or layer_rank is None
-                or model_run > parse_time(valid_time)
-            ):
-                continue
-            entry = {
-                "partId": part_id,
-                "parentZoneId": target["parentZoneId"],
-                "targetIdentityFingerprint": target_fingerprint([target]),
-                "validTime": valid_time,
-                "capturedAt": utc_iso(captured_at),
-                "samplingPoint": approved,
-                "provider": "dmi",
-                "sourceClass": "owner-approved-regional-proxy",
-                "source": "dmi-dkss-lf-regional-proxy",
-                "collection": "dkss_lf",
-                "modelRun": utc_iso(model_run),
+            raise RuntimeError("REGIONAL_CLOSURE_SAMPLE_INVALID")
+        vector_commitment = canonical_sha256({
+            "schemaVersion": 1,
+            "contractId": VECTOR_COMMITMENT_CONTRACT_ID,
+            "partId": part_id,
+            "collection": "dkss_lf",
+            "modelRun": assignment["sourceModelRun"],
+            "validTime": assignment["sourceValidTime"],
+            "sourceAssetSha256": assignment["sourceAssetSha256"],
+            "verticalLayer": bottom["verticalLayer"],
+            "verticalLayerRankM": f"{layer_rank:.3f}",
+            "uMps": f"{u_value:.5f}",
+            "vMps": f"{v_value:.5f}",
+        })
+        if vector_commitment != assignment.get("vectorCommitmentSha256"):
+            raise RuntimeError("REGIONAL_CLOSURE_VECTOR_INVALID")
+        entry = {
+            "partId": part_id,
+            "parentZoneId": target["parentZoneId"],
+            "targetIdentityFingerprint": target_fingerprint([target]),
+            "validTime": assignment["validTime"],
+            "sourceValidTime": assignment["sourceValidTime"],
+            "capturedAt": captured_at,
+            "productionReferenceAt": closure_proof["productionReferenceAt"],
+            "provider": "dmi",
+            "sourceClass": "owner-approved-regional-proxy",
+            "source": "dmi-dkss-lf-regional-proxy",
+            "collection": "dkss_lf",
+            "modelRun": assignment["sourceModelRun"],
+            "closureContractId": CLOSURE_CONTRACT_ID,
+            "closureId": closure_proof["closureId"],
+            "closureAssignmentSha256": assignment["assignmentSha256"],
+            "classification": classification,
+            "sourceAssetSha256": assignment["sourceAssetSha256"],
+            "sourceProofSha256": assignment["sourceProofSha256"],
+            "vectorCommitmentSha256": assignment["vectorCommitmentSha256"],
+        }
+        if classification == REGIONAL_DMI_DERIVED_HOLD:
+            entry.update({
+                "holdAgeHours": assignment["holdAgeHours"],
+                "stateOnly": True,
+                "currentVectorAvailable": False,
+                "arrowAvailable": False,
+            })
+        else:
+            entry.update({
+                "samplingPoint": canonical_point(target["waterPoint"]),
                 "gridPoint": grid,
-                "distanceKm": round(distance, 5),
-                "verticalLayer": bottom.get("verticalLayer"),
+                "distanceKm": distance,
+                "verticalLayer": bottom["verticalLayer"],
                 "verticalLayerRankM": layer_rank,
                 "layerQuality": "regional-proxy-bottom-layer",
                 "componentPair": "same-time-cell-layer",
                 "interpolation": False,
                 "vectorSemanticsVersion": 4,
-                "uMps": round(u_value, 5),
-                "vMps": round(v_value, 5),
-            }
-            key = (part_id, valid_time)
-            previous = selected.get(key)
-            if previous is None or captured_at > previous[0]:
-                selected[key] = (captured_at, entry)
-    return [row[1] for row in selected.values()]
+                "uMps": u_value,
+                "vMps": v_value,
+            })
+        selected.append(entry)
+    return selected
 
 
 def write_json(path: Path, value: dict[str, Any]) -> None:
@@ -403,88 +540,105 @@ def main() -> int:
     fingerprint = target_fingerprint(targets_list)
     dmi = read_json(args.dmi)
     dmi_current_input_sha256 = file_sha256(args.dmi)
-    dmi_parts, dmi_times = valid_dmi_parts(dmi, targets)
+    _dmi_parts, dmi_times = valid_dmi_parts(dmi, targets)
     coverage_reference = now.replace(minute=0, second=0, microsecond=0)
-    runtime_times = runtime_times_by_part(dmi, targets, coverage_reference)
-
-    # The history remains available for live diagnosis in rollback mode.  Only
-    # its use in score and arrows is disabled by ``enabled`` below.
-    copernicus, copernicus_range_seal = copernicus_entries(
-        read_json(args.copernicus, optional=True),
-        targets,
-        fingerprint,
-        coverage_reference,
-        dmi_current_input_sha256,
-    )
-    if enabled and copernicus_range_seal is None:
-        raise RuntimeError(
-            "Controlled-live current requires an exact COMPLETE Copernicus range seal, "
-            "including when the sealed DMI-gap matrix is empty"
-        )
-    policy = read_json(args.policy)
-    regional = regional_entries(read_json(args.regional, optional=True), policy, targets, now)
-    entries = sorted(copernicus + regional, key=lambda row: (row["validTime"], row["partId"], row["sourceClass"]))
-
-    historical_supplemental_parts = {row["partId"] for row in copernicus}
-    historical_regional_parts = {row["partId"] for row in regional}
     coverage_reference_iso = utc_iso(coverage_reference)
-    parts_with_reference_row = {
-        part_id for part_id, times in runtime_times.items()
-        if coverage_reference_iso in times
-    }
-    supplemental_parts = {
-        row["partId"] for row in copernicus
-        if row["partId"] in parts_with_reference_row
-        and row["validTime"] == coverage_reference_iso
-    }
-    regional_latest_at_or_before: dict[str, datetime] = {}
-    for row in regional:
-        valid_time = parse_time(row["validTime"])
-        part_id = row["partId"]
-        if valid_time > coverage_reference or part_id not in parts_with_reference_row:
-            continue
-        previous = regional_latest_at_or_before.get(part_id)
-        if previous is None or valid_time > previous:
-            regional_latest_at_or_before[part_id] = valid_time
-    regional_age_hours = {
-        part_id: (coverage_reference - valid_time).total_seconds() / 3600
-        for part_id, valid_time in regional_latest_at_or_before.items()
-    }
-    regional_parts = {
-        part_id for part_id, age_hours in regional_age_hours.items()
-        if 0 <= age_hours <= 3
-    }
-    regional_held_parts = {
-        part_id for part_id in regional_parts
-        if regional_age_hours[part_id] > 0
-    }
+    closure_proof = None
+    closure_safe = None
+    copernicus: list[dict[str, Any]] = []
+    advisory: list[dict[str, Any]] = []
+    regional: list[dict[str, Any]] = []
+    copernicus_range_seal = None
+    if enabled:
+        registry = read_json(args.registry)
+        copernicus_cache = read_json(args.copernicus)
+        source_stage = read_json(args.source_stage, optional=True)
+        regional_cache = read_json(args.regional)
+        policy = read_json(args.policy)
+        candidate_closure = read_json(args.closure)
+        ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
+        if not isinstance(ledger, dict):
+            raise RuntimeError("DMI_LEDGER_MISSING")
+        try:
+            attestation = canonical_verified_part_current_attestation(
+                dmi,
+                targets_list,
+                coverage_reference_iso,
+                registry.get("operationalRangeEndAt"),
+                processed_source_assets_from_current_operational_ledger(ledger),
+            )
+        except (TypeError, ValueError):
+            raise RuntimeError("DMI_ATTESTATION_INVALID") from None
+        closure_proof = validate_current_operational_closure(
+            candidate_closure,
+            targets=targets_list,
+            dmi_ledger=ledger,
+            dmi_attestation=attestation,
+            dmi_current_input_sha256=dmi_current_input_sha256,
+            copernicus_registry=registry,
+            copernicus_shadow=copernicus_cache,
+            copernicus_shadow_sha256=file_sha256(args.copernicus),
+            copernicus_source_stage=source_stage or None,
+            regional_shadow=regional_cache,
+            regional_policy=policy,
+            locked_reference=coverage_reference_iso,
+        )
+        closure_safe = safe_current_operational_closure(closure_proof)
+        cop_assignments = [
+            row for row in closure_proof["assignments"]
+            if row["classification"] in {COPERNICUS_BALTIC, COPERNICUS_AMM15}
+        ]
+        regional_assignments = [
+            row for row in closure_proof["assignments"]
+            if row["classification"] in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}
+        ]
+        copernicus, copernicus_range_seal, advisory = copernicus_entries(
+            copernicus_cache, targets, cop_assignments, closure_proof,
+        )
+        regional = regional_entries(
+            regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
+        )
+    entries = sorted(
+        [*copernicus, *regional],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    if enabled and (
+        len(entries) != closure_proof["supplementalAssignmentCount"]
+        or canonical_sha256([row["closureAssignmentSha256"] for row in entries])
+            != closure_proof["supplementalAssignmentsSha256"]
+        or len(advisory) != closure_proof["advisoryHistoryAssignmentCount"]
+        or canonical_sha256([
+            row["closureAssignmentSha256"] for row in advisory
+        ]) != closure_proof["advisoryHistoryAssignmentsSha256"]
+    ):
+        raise RuntimeError("CLOSURE_ADAPTER_CARDINALITY_INVALID")
+
+    reference_assignments = [
+        row for row in (closure_proof or {}).get("assignments", [])
+        if row["validTime"] == coverage_reference_iso
+    ]
     score_ready_dmi_parts = {
         part_id for part_id, times in dmi_times.items()
-        if part_id in parts_with_reference_row and coverage_reference_iso in times
+        if coverage_reference_iso in times
     }
-    history_source_by_part: dict[str, str] = {}
-    for part_id in targets:
-        if part_id in dmi_parts:
-            history_source_by_part[part_id] = "dmi-local"
-        elif part_id in historical_supplemental_parts:
-            history_source_by_part[part_id] = "copernicus-local"
-        elif part_id in historical_regional_parts:
-            history_source_by_part[part_id] = "dmi-regional-proxy"
-    source_by_part: dict[str, str] = {}
-    for part_id in targets:
-        if part_id in score_ready_dmi_parts:
-            source_by_part[part_id] = "dmi-local"
-        elif part_id in supplemental_parts:
-            source_by_part[part_id] = "copernicus-local"
-        elif part_id in regional_parts:
-            source_by_part[part_id] = "dmi-regional-proxy"
-    counts = {source: sum(value == source for value in source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
-    selected_regional_held_parts = {
-        part_id for part_id in regional_held_parts
-        if source_by_part.get(part_id) == "dmi-regional-proxy"
+    selected_by_source = {
+        "dmi-local": len(score_ready_dmi_parts) if not enabled else sum(
+            row["classification"] == "DMI_VERIFIED" for row in reference_assignments
+        ),
+        "copernicus-local": sum(
+            row["classification"] in {COPERNICUS_BALTIC, COPERNICUS_AMM15}
+            for row in reference_assignments
+        ),
+        "dmi-regional-proxy": sum(
+            row["classification"] in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}
+            for row in reference_assignments
+        ),
     }
-    history_counts = {source: sum(value == source for value in history_source_by_part.values()) for source in ("dmi-local", "copernicus-local", "dmi-regional-proxy")}
-    missing = sorted(set(targets) - set(source_by_part))
+    verified_part_count = sum(selected_by_source.values())
+    held_at_reference = sum(
+        row["classification"] == REGIONAL_DMI_DERIVED_HOLD
+        for row in reference_assignments
+    )
 
     raw_projection = {
         "schemaVersion": 1,
@@ -499,8 +653,10 @@ def main() -> int:
         "targetFingerprint": fingerprint,
         "expectedPartCount": len(targets),
         "sourceOrder": ["dmi-local", "copernicus-baltic-nemo", "copernicus-nws-amm15", "dmi-dkss-lf-regional-proxy"],
+        "operationalClosure": closure_safe,
         "copernicusRangeSeal": copernicus_range_seal,
         "entries": entries,
+        "advisoryEntries": advisory,
     }
     safe_report = {
         "schemaVersion": 1,
@@ -515,35 +671,36 @@ def main() -> int:
         "targetFingerprint": fingerprint,
         "expectedPartCount": len(targets),
         "coverageReferenceAt": utc_iso(coverage_reference),
-        "verifiedPartCount": len(source_by_part),
-        "exactVerifiedPartCount": len(source_by_part) - len(selected_regional_held_parts),
-        "nativeCadenceHeldPartCount": len(selected_regional_held_parts),
+        "verifiedPartCount": verified_part_count,
+        "exactVerifiedPartCount": verified_part_count - held_at_reference,
+        "nativeCadenceHeldPartCount": held_at_reference,
         "nativeCadenceMaximumAgeHours": max(
-            (regional_age_hours[part_id] for part_id in selected_regional_held_parts),
-            default=0,
+            (row.get("holdAgeHours", 0) for row in reference_assignments), default=0,
         ),
-        "missingPartCount": len(missing),
-        "partsBySelectedSource": counts,
-        "retainedHistoryPartCount": len(history_source_by_part),
-        "historyPartsBySelectedSource": history_counts,
+        "missingPartCount": len(targets) - verified_part_count,
+        "partsBySelectedSource": selected_by_source,
+        "retainedHistoryPartCount": len({row["partId"] for row in entries}),
+        "historyPartsBySelectedSource": selected_by_source,
         "supplementalRecordCount": len(entries),
         "copernicusRecordCount": len(copernicus),
+        "copernicusAdvisoryRecordCount": len(advisory),
         "copernicusCompleteRangeSealPresent": copernicus_range_seal is not None,
         "regionalProxyRecordCount": len(regional),
+        "operationalClosure": closure_safe,
         "sourceOrder": raw_projection["sourceOrder"],
         "coverageRequirement": len(targets),
-        "coverageRequirementMet": len(source_by_part) == len(targets),
-        "missingPartIds": missing,
+        "coverageRequirementMet": verified_part_count == len(targets),
         "rollbackBehavior": control.get("rollbackBehavior"),
     }
     write_json(args.output, raw_projection)
     write_json(args.report, safe_report)
     print(
         f"Kontrolleret live-strømhistorik ({mode}): "
-        f"{len(source_by_part)}/{len(targets)} scoreklare dele fra {utc_iso(coverage_reference)}; "
-        f"DMI {counts['dmi-local']}, Copernicus {counts['copernicus-local']}, "
-        f"regionalproxy {counts['dmi-regional-proxy']} "
-        f"({len(selected_regional_held_parts)} med dokumenteret native-cadence-fastholdelse)."
+        f"{verified_part_count}/{len(targets)} scoreklare dele; "
+        f"DMI {selected_by_source['dmi-local']}, "
+        f"Copernicus {selected_by_source['copernicus-local']}, "
+        f"regionalproxy {selected_by_source['dmi-regional-proxy']} "
+        f"({held_at_reference} med closure-bundet native-cadence-fastholdelse)."
     )
     return 0
 

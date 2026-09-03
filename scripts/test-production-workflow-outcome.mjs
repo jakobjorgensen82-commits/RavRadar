@@ -44,6 +44,13 @@ const base = () => ({
     pagesBuildOutcome: 'success',
     pagesPrivacyOutcome: 'success',
     handoffUploadOutcome: 'success',
+    checkpointDisposition: 'READY_PUBLISHED',
+    checkpointDispositionSha256: 'c'.repeat(64),
+    checkpointDatasetId: 'rr-test-210',
+    checkpointRuntimeAuditSha256: 'd'.repeat(64),
+    checkpointBuildOutcome: 'success',
+    checkpointSaveOutcome: 'success',
+    checkpointPublishOutcome: 'success',
     pagesConfigureOutcome: 'success',
     pagesUploadOutcome: 'success',
     artifactBuilt: true,
@@ -83,6 +90,31 @@ function expectStatus(input, status, reasonCode) {
 assert.equal(PRODUCTION_WORKFLOW_OUTCOME_SCHEMA, 'ravradar-production-workflow-outcome-v2');
 assert.deepEqual(PRODUCTION_WORKFLOW_OUTCOME_STATUSES, ['NOOP', 'DEFERRED', 'BUILT', 'DEPLOYED', 'FAILED']);
 expectStatus(base(), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+expectStatus(withPatch(base(), {
+  proof: {
+    checkpointDisposition: 'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+    checkpointBuildOutcome: 'skipped',
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
+  },
+}), 'DEPLOYED', 'PUBLIC_DEPLOYMENT_VERIFIED');
+expectStatus(withPatch(base(), {
+  proof: { checkpointDisposition: null },
+}), 'FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+expectStatus(withPatch(base(), {
+  proof: { checkpointDispositionSha256: null },
+}), 'FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+expectStatus(withPatch(base(), {
+  proof: { checkpointPublishOutcome: 'skipped' },
+}), 'FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
+expectStatus(withPatch(base(), {
+  proof: {
+    checkpointDisposition: 'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
+    checkpointBuildOutcome: 'success',
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
+  },
+}), 'FAILED', 'CHECKPOINT_DISPOSITION_MISSING_OR_INCONSISTENT');
 for (const recoveryAction of ['SAFE_SOURCE_ABORT', 'TARGET_RECONCILE']) {
   expectStatus(withPatch(base(), {
     proof: { recoveryAction },
@@ -188,6 +220,13 @@ expectStatus(withPatch(base(), {
     pagesBuildOutcome: null,
     pagesPrivacyOutcome: null,
     handoffUploadOutcome: null,
+    checkpointDisposition: null,
+    checkpointDispositionSha256: null,
+    checkpointDatasetId: null,
+    checkpointRuntimeAuditSha256: null,
+    checkpointBuildOutcome: null,
+    checkpointSaveOutcome: null,
+    checkpointPublishOutcome: null,
     pagesConfigureOutcome: null,
     pagesUploadOutcome: null,
     artifactBuilt: null,
@@ -225,6 +264,8 @@ expectStatus(withPatch(base(), {
   proof: {
     operationalAction: 'candidate-dry-run',
     shouldDeploy: false,
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
     pagesConfigureOutcome: null,
     pagesUploadOutcome: null,
     deploymentOutcome: null,
@@ -237,6 +278,8 @@ expectStatus(withPatch(base(), {
   proof: {
     operationalAction: 'candidate-dry-run',
     shouldDeploy: false,
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
     pagesConfigureOutcome: null,
     pagesUploadOutcome: null,
     deploymentOutcome: null,
@@ -269,7 +312,11 @@ expectStatus(withPatch(base(), {
 }), 'FAILED', 'INCONSISTENT_PRODUCTION_EVIDENCE');
 
 expectStatus(withPatch(base(), {
-  proof: { operationalAction: 'candidate-dry-run' },
+  proof: {
+    operationalAction: 'candidate-dry-run',
+    checkpointSaveOutcome: 'skipped',
+    checkpointPublishOutcome: 'skipped',
+  },
 }), 'FAILED', 'INCOMPLETE_BUILD_GATES');
 
 expectStatus(withPatch(base(), {
@@ -403,6 +450,13 @@ const cli = spawnSync(process.execPath, [
     RAVRADAR_OUTCOME_PAGES_BUILD: 'success',
     RAVRADAR_OUTCOME_PAGES_PRIVACY: 'success',
     RAVRADAR_OUTCOME_HANDOFF_UPLOAD: 'success',
+    RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION: 'READY_PUBLISHED',
+    RAVRADAR_OUTCOME_CHECKPOINT_DISPOSITION_SHA256: 'e'.repeat(64),
+    RAVRADAR_OUTCOME_CHECKPOINT_DATASET_ID: 'rr-cli-test-210',
+    RAVRADAR_OUTCOME_CHECKPOINT_RUNTIME_AUDIT_SHA256: 'f'.repeat(64),
+    RAVRADAR_OUTCOME_CHECKPOINT_BUILD: 'success',
+    RAVRADAR_OUTCOME_CHECKPOINT_SAVE: 'success',
+    RAVRADAR_OUTCOME_CHECKPOINT_PUBLISH: 'success',
     RAVRADAR_OUTCOME_PAGES_CONFIGURE: 'success',
     RAVRADAR_OUTCOME_PAGES_UPLOAD: 'success',
     RAVRADAR_OUTCOME_ARTIFACT_BUILT: 'true',

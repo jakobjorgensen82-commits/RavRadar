@@ -1,5 +1,8 @@
 import { evaluateRavScoreIntegrated } from '../../js/core/ravscore-integrated.js';
-import { buildIntegratedRavScoreStateSeries } from '../../js/core/ravscore-integrated-state-pipeline.js';
+import {
+  buildIntegratedRavScoreStateSeries,
+  canonicalRavScoreStateOnlyCurrentHold,
+} from '../../js/core/ravscore-integrated-state-pipeline.js';
 import {
   RAVSCORE_MODEL_BUNDLE_SHA256,
   RAVSCORE_MODEL_CONTRACT_SHA256,
@@ -8,6 +11,7 @@ import {
   ravScoreModelBinding,
 } from '../../js/core/ravscore-model-contract.js';
 import { candidateGStateKey } from './coastal-point-staging-contract.mjs';
+import { stateOnlyCurrentRowForbiddenFields } from './live-current-pilot.mjs';
 import { ravScoreSamplingContextKey } from './ravscore-sampling-context.mjs';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
@@ -18,6 +22,40 @@ const FULL_SCORE_SEMANTICS = new Set([
 const SCORE_BOUND_FIELDS = Object.freeze([
   'lower', 'upper', 'modelUncertaintyPoints', 'rawLower', 'rawUpper',
 ]);
+const WAVE_INPUT_QUALITY_FIELDS = Object.freeze([
+  'waveInputSource', 'waveInputUncertainty', 'waveInputNoticeId',
+]);
+const FEGGESUND_WAVE_PROXY_SOURCE = 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION';
+const FEGGESUND_WAVE_PROXY_NOTICE_ID = 'FEGGESUND_NEIGHBOR_WAVE_PROXY';
+
+function compactWaveInputQuality(weather = {}) {
+  const present = WAVE_INPUT_QUALITY_FIELDS
+    .filter(field => Object.hasOwn(weather, field));
+  if (present.length === 0) return {};
+  if (present.length !== WAVE_INPUT_QUALITY_FIELDS.length) {
+    throw new Error('Integrated wave input quality contract is incomplete');
+  }
+  const compact = Object.fromEntries(WAVE_INPUT_QUALITY_FIELDS
+    .map(field => [field, weather[field]]));
+  const nullQuality = compact.waveInputSource === null
+    && compact.waveInputUncertainty === null
+    && compact.waveInputNoticeId === null;
+  const directQuality = compact.waveInputSource === 'DIRECT_OFFICIAL'
+    && compact.waveInputUncertainty === 'LOW'
+    && compact.waveInputNoticeId === null;
+  const proxyQuality = compact.waveInputSource === FEGGESUND_WAVE_PROXY_SOURCE
+    && ['LOW', 'MODERATE', 'HIGH'].includes(compact.waveInputUncertainty)
+    && compact.waveInputNoticeId === FEGGESUND_WAVE_PROXY_NOTICE_ID;
+  if (!nullQuality && !directQuality && !proxyQuality) {
+    throw new Error('Integrated wave input quality contract is invalid');
+  }
+  return compact;
+}
+
+export function integratedInputCalibrationEligible(weather = {}) {
+  const quality = compactWaveInputQuality(weather);
+  return quality.waveInputSource !== FEGGESUND_WAVE_PROXY_SOURCE;
+}
 
 function compactScoreBounds(result = {}) {
   if (result.available !== true) {
@@ -76,8 +114,7 @@ function compactScoreQuality(result = {}) {
     throw new Error('Integrated RavScore quality contract is invalid');
   }
   if (scoreQuality === 'FULL_HISTORY'
-    && (calibrationEligible !== true
-      || historyCoverageHours !== 48
+    && (historyCoverageHours !== 48
       || compactReasonCodes.length !== 0
       || !FULL_SCORE_SEMANTICS.has(result.scoreSemantics)
       || result.conservativeTailResetApplied
@@ -142,33 +179,44 @@ function compactCurrentProvenance(provenance) {
   return Object.keys(compact).length ? compact : null;
 }
 
-export function compactIntegratedRavScoreMode(result) {
+export function compactIntegratedRavScoreMode(result, {
+  inputCalibrationEligible = true,
+} = {}) {
   assertRavScoreModelBinding(result?.modelBinding, 'Integrated evaluator model binding');
   const modelBinding = result.modelBinding;
   const modelVersion = result?.modelVersion ?? RAVSCORE_MODEL_ID;
+  if (typeof inputCalibrationEligible !== 'boolean') {
+    throw new Error('Integrated RavScore input calibration ceiling must be boolean');
+  }
+  const effectiveResult = {
+    ...result,
+    calibrationEligible: result?.calibrationEligible === true
+      && inputCalibrationEligible,
+  };
   const base = {
-    available: result?.available === true && finite(result?.score),
-    score: result?.available === true && finite(result?.score) ? Number(result.score) : null,
+    available: effectiveResult.available === true && finite(effectiveResult.score),
+    score: effectiveResult.available === true && finite(effectiveResult.score)
+      ? Number(effectiveResult.score) : null,
     modelVersion,
     modelId: modelVersion,
     modelContractSha256: modelBinding.modelContractSha256,
     modelBundleSha256: modelBinding.modelBundleSha256,
     modelBinding,
-    ...compactScoreQuality(result),
-    scoreBounds: compactScoreBounds(result),
+    ...compactScoreQuality(effectiveResult),
+    scoreBounds: compactScoreBounds(effectiveResult),
   };
   if (!base.available) return {
     ...base,
-    reason: result?.reason ?? 'INTEGRATED_RAVSCORE_NOT_AVAILABLE',
-    readiness: result?.readiness ?? null,
+    reason: effectiveResult.reason ?? 'INTEGRATED_RAVSCORE_NOT_AVAILABLE',
+    readiness: effectiveResult.readiness ?? null,
   };
   return {
     ...base,
-    components: result.components,
-    scoreCalculation: result.scoreCalculation,
-    diagnostics: result.diagnostics,
-    explanation: result.explanation,
-    confidence: result.confidence,
+    components: effectiveResult.components,
+    scoreCalculation: effectiveResult.scoreCalculation,
+    diagnostics: effectiveResult.diagnostics,
+    explanation: effectiveResult.explanation,
+    confidence: effectiveResult.confidence,
   };
 }
 
@@ -184,8 +232,26 @@ function scoreWeatherProjection(weather = {}) {
     waterTemperatureC: weather.waterTemperatureC,
     currentSpeedMps: weather.currentSpeedMps,
     currentDirectionDeg: weather.currentDirectionDeg,
+    ...compactWaveInputQuality(weather),
     currentProvenance: compactCurrentProvenance(weather.currentProvenance),
   };
+}
+
+function stateOnlyCurrentHoldForPart(weather, part, zone) {
+  const marker = canonicalRavScoreStateOnlyCurrentHold(
+    weather?.currentStateOnlyHold,
+    weather?.time,
+  );
+  if (marker === null) return null;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? zone?.id ?? null;
+  if (marker.partId !== part?.partId
+    || typeof parentZoneId !== 'string'
+    || marker.parentZoneId !== parentZoneId
+    || stateOnlyCurrentRowForbiddenFields(weather)
+      .some(field => weather[field] !== null && weather[field] !== undefined)) {
+    throw new Error('Integrated state-only current hold is not bound to the exact part/hour');
+  }
+  return marker;
 }
 
 /**
@@ -221,6 +287,7 @@ export function buildIntegratedPartScoreSeries({
       : null,
     currentVerified: weather.currentProvenance?.status === 'verified',
     currentProvenance: weather.currentProvenance ?? null,
+    currentStateOnlyHold: stateOnlyCurrentHoldForPart(weather, part, zone),
     waveHeightM: weather.waveHeightM,
     wavePeriodS: weather.wavePeriodS,
     waveDirectionDeg: weather.waveDirectionDeg,
@@ -276,12 +343,13 @@ export function buildIntegratedPartScoreSeries({
       lastMileMemoryStatus: modelState.lastMileMemoryStatus,
       lastMileTransition: modelState.lastMileTransition,
     };
+    const inputCalibrationEligible = integratedInputCalibrationEligible(weather);
     const modes = Object.fromEntries(['waders', 'beach'].map(mode => [
       mode,
       compactIntegratedRavScoreMode(evaluateRavScoreIntegrated(
         { mode, zone, weather },
         { state: modelState },
-      )),
+      ), { inputCalibrationEligible }),
     ]));
     return [{
       time: weather.time,

@@ -2,24 +2,25 @@ import {
   createCalibrationFeatureSnapshot,
   createForecastSnapshotReference,
   createTripStartRecord,
+  GLOBAL_WARMUP_CALIBRATION_LOCK_REASON,
   HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG,
   PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG,
   RECONSTRUCTED_RAVSCORE_QUALITY_FLAG,
-} from './trip-evidence-contract.js?v=4.0.318';
+} from './trip-evidence-contract.js?v=4.0.320';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.318';
+} from '../core/ravscore-model-contract.js?v=4.0.320';
 import {
   RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY,
   assertPublicRuntimeAvailability,
   canonicalPublicRuntimeJson,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.318';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.320';
 import {
   assertRavScoreEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.318';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.320';
 
 const TRUST_FIELDS = Object.freeze([
   'schemaVersion', 'status', 'incidentId', 'decisionId', 'method', 'evidenceClassification',
@@ -164,10 +165,24 @@ export function createTripStartFromPublicState({
   if (historyIncomplete && reconstructed) {
     throw new Error('Historikufuldstændig og rekonstrueret score må ikke bindes som samme turgrundlag.');
   }
+  const manifestScoreAvailability = manifest?.ravScoreAvailability;
+  const conditionsScoreAvailability = conditions?.coastalParts?.scoreAvailability;
+  if (!manifestScoreAvailability || !conditionsScoreAvailability
+    || typeof manifestScoreAvailability.allCurrentScoresFullHistory !== 'boolean'
+    || canonicalPublicRuntimeJson(manifestScoreAvailability)
+      !== canonicalPublicRuntimeJson(conditionsScoreAvailability)) {
+    throw new Error('Turens globale RavScore-historikkvalitet er ikke eksakt manifestbundet.');
+  }
+  const globalWarmupLocked = !historyIncomplete
+    && manifestScoreAvailability.allCurrentScoresFullHistory === false;
   const dataQualityFlags = [
     ...(publicEmergency ? [PUBLIC_EMERGENCY_LAST_COMPLETE_QUALITY_FLAG] : []),
     ...(historyIncomplete ? [HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG] : []),
     ...(reconstructed ? [RECONSTRUCTED_RAVSCORE_QUALITY_FLAG] : []),
+  ];
+  const calibrationReasonCodes = [
+    ...dataQualityFlags,
+    ...(globalWarmupLocked ? [GLOBAL_WARMUP_CALIBRATION_LOCK_REASON] : []),
   ];
 
   const history = zone?.history || {};
@@ -208,7 +223,7 @@ export function createTripStartFromPublicState({
     maxWaveHeight24hM: finiteOrNull(history.maxWave24hM),
     hoursSinceEnergyPeak: finiteOrNull(history.hoursSinceHighEnergy),
     sustainedOnshoreHours: null,
-    reasonCodes: dataQualityFlags
+    reasonCodes: calibrationReasonCodes
   });
 
   return createTripStartRecord({
@@ -220,7 +235,9 @@ export function createTripStartFromPublicState({
     forecastSnapshot,
     calibrationFeatures,
     forecastCalibrationEligible: RAVSCORE_CALIBRATION_ELIGIBLE === true
-      && dataQualityFlags.length === 0,
+      && modeState.calibrationEligible === true
+      && dataQualityFlags.length === 0
+      && !globalWarmupLocked,
     dataQualityFlags
   });
 }

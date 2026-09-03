@@ -5,13 +5,14 @@ export const TRIP_SEARCH_MODES = Object.freeze(['waders', 'beach']);
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.318';
+} from '../core/ravscore-model-contract.js?v=4.0.320';
 import {
   CALIBRATION_NUMERIC_RANGES,
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE,
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY,
   CALIBRATION_INELIGIBLE_REASON_RECONSTRUCTED,
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED,
+  CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK,
   CURRENT_TRIP_EVIDENCE_SCHEMA_VERSION,
   TRIP_NON_CALIBRATION_QUALITY_FLAGS,
   assertCalibrationScoreQualityContract,
@@ -23,7 +24,7 @@ import {
   isExactCalibrationModelBinding,
   sameCalibrationModelBinding,
   tripEvidenceIntegrityIssues,
-} from './calibration-eligibility.js?v=4.0.318';
+} from './calibration-eligibility.js?v=4.0.320';
 
 export const LEGACY_TRIP_EVIDENCE_SCHEMA_VERSION = 2;
 export const RECONSTRUCTED_RAVSCORE_QUALITY_FLAG =
@@ -34,6 +35,8 @@ export const HISTORY_INCOMPLETE_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_HISTORY_INCOMPLETE;
 export const UNATTESTED_RAVSCORE_QUALITY_FLAG =
   CALIBRATION_INELIGIBLE_REASON_UNATTESTED;
+export const GLOBAL_WARMUP_CALIBRATION_LOCK_REASON =
+  CALIBRATION_INELIGIBLE_REASON_GLOBAL_WARMUP_LOCK;
 export const TRIP_INELIGIBLE_REASON_PUBLIC_EMERGENCY =
   CALIBRATION_INELIGIBLE_REASON_PUBLIC_EMERGENCY;
 
@@ -107,18 +110,25 @@ function assertTripQualityReasonBinding(flags, reasonCodes) {
 export function assertTripForecastQualityBinding({
   dataQualityFlags,
   reasonCodes,
-  forecastCalibrationEligible
+  forecastCalibrationEligible,
+  scoreCalibrationEligible,
 } = {}) {
   const flags = normalizeTripQualityFlags(dataQualityFlags);
   assertTripQualityReasonBinding(flags, reasonCodes);
-  if (typeof forecastCalibrationEligible !== 'boolean') {
+  if (typeof forecastCalibrationEligible !== 'boolean'
+    || typeof scoreCalibrationEligible !== 'boolean') {
     throw new Error('Prognosen mangler eksplicit kalibreringsstatus.');
+  }
+  if (forecastCalibrationEligible === true && scoreCalibrationEligible !== true) {
+    throw new Error('En inputlåst RavScore må ikke åbne turen for kalibrering.');
   }
   if (flags.length > 0 && forecastCalibrationEligible !== false) {
     throw new Error('Nød-, historikufuldstændig, rekonstrueret eller uattesteret RavScore skal være udelukket fra kalibrering.');
   }
   if (flags.length === 0 && RAVSCORE_CALIBRATION_ELIGIBLE === true
-    && forecastCalibrationEligible === false) {
+    && forecastCalibrationEligible === false
+    && scoreCalibrationEligible === true
+    && !reasonCodes.includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON)) {
     throw new Error('En verificeret aktiv RavScore-prognose må ikke være udelukket fra kalibrering uden en årsag.');
   }
   return flags;
@@ -305,7 +315,8 @@ export function migrateLegacyUnattestedTripStart(record) {
     assertTripForecastQualityBinding({
       dataQualityFlags: record.dataQualityFlags,
       reasonCodes: record.calibrationFeatures?.reasonCodes,
-      forecastCalibrationEligible: record.forecastCalibrationEligible
+      forecastCalibrationEligible: record.forecastCalibrationEligible,
+      scoreCalibrationEligible: record.calibrationFeatures?.scoreCalibrationEligible,
     });
     return record;
   }
@@ -364,9 +375,15 @@ export function createTripStartRecord(input = {}) {
   const dataQualityFlags = assertTripForecastQualityBinding({
     dataQualityFlags: input.dataQualityFlags,
     reasonCodes: calibrationFeatures.reasonCodes,
-    forecastCalibrationEligible: input.forecastCalibrationEligible
+    forecastCalibrationEligible: input.forecastCalibrationEligible,
+    scoreCalibrationEligible: calibrationFeatures.scoreCalibrationEligible,
   });
-  const expectedForecastEligibility = bindingEligible && dataQualityFlags.length === 0;
+  const globalWarmupLocked = calibrationFeatures.reasonCodes
+    .includes(GLOBAL_WARMUP_CALIBRATION_LOCK_REASON);
+  const expectedForecastEligibility = bindingEligible
+    && calibrationFeatures.scoreCalibrationEligible === true
+    && dataQualityFlags.length === 0
+    && !globalWarmupLocked;
   if (input.forecastCalibrationEligible !== expectedForecastEligibility) {
     throw new Error('Turstartens kalibreringsstatus matcher ikke den eksakte RavScore-modelbinding.');
   }
@@ -471,7 +488,8 @@ export function buildTripEvidence(input = {}) {
   const dataQualityFlags = assertTripForecastQualityBinding({
     dataQualityFlags: input.dataQualityFlags,
     reasonCodes: calibrationFeatures.reasonCodes,
-    forecastCalibrationEligible: input.forecastCalibrationEligible
+    forecastCalibrationEligible: input.forecastCalibrationEligible,
+    scoreCalibrationEligible: calibrationFeatures.scoreCalibrationEligible,
   });
   const modelEligible = sameCalibrationModelBinding(
     calibrationFeatureBinding(calibrationFeatures),
@@ -492,6 +510,7 @@ export function buildTripEvidence(input = {}) {
     forecastCoastalPartId,
     calibrationEligible: input.forecastCalibrationEligible === true
       && RAVSCORE_CALIBRATION_ELIGIBLE === true
+      && calibrationFeatures.scoreCalibrationEligible === true
       && modelEligible
       && dataQualityFlags.length === 0
       && zoneId === forecastZoneId

@@ -1,31 +1,31 @@
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.318';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.318';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.318';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.318';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.318';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.318';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.318';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.318';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.318';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.318';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.318';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.318';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.318';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.318';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.318';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.318';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.318';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.320';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.320';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.320';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.320';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.320';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.320';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.320';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.320';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.320';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.320';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.320';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.320';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.320';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.320';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.320';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.320';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.320';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.318';
+} from './admin-active-ravscore.js?v=4.0.320';
 import {
  loadConditions,
  loadDataManifest,
  loadZones,
-} from '../services/data-service.js?v=4.0.318';
+} from '../services/data-service.js?v=4.0.320';
 
-const VERSION='4.0.318';
+const VERSION='4.0.320';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';
@@ -529,7 +529,7 @@ function renderLearning(){
  const snapshotShare=analysis.sampleSize?Math.round((analysis.snapshotLinkCount/analysis.sampleSize)*100):0;
  const calibrationNotice=active.value.observationCalibrationEligible
   ? 'Datagrundlaget kan først indgå efter den særskilte repræsentativitets- og valideringsgate.'
-  : 'Observationer fra den manuelle Candidate G-driftsrollback er udtrykkeligt ikke kalibreringsegnede.';
+  : 'Den aktive offentlige modeltilstand er udtrykkeligt ikke kalibreringsegnet.';
  content.innerHTML=`<div class="admin-grid"><article class="admin-card"><h2>Registrerede ture</h2><div class="metric">${analysis.sampleSize||0}</div><p class="muted">Kun dækningskontrol</p></article><article class="admin-card"><h2>Dækkede zoner</h2><div class="metric">${analysis.zoneCount||0}</div><p class="muted">Geografisk spredning skal vurderes før kalibrering</p></article><article class="admin-card"><h2>Reelle nul-fund</h2><div class="metric">${analysis.noFindCount||0}</div><p class="muted">Tæller kun sammen med dokumenteret søgeindsats</p></article></div><article class="admin-card"><h2>Kan data bruges til scorekalibrering?</h2><p><strong>Ikke endnu.</strong> Aktiv offentlig model: ${esc(active.value.labelDa)}. Denne side ændrer ikke modellen, den offentlige RavScore eller nogen lokal model. ${esc(calibrationNotice)}</p><ul><li>${effortShare}% af turene har registreret søgetid.</li><li>${snapshotShare}% har et uforanderligt link til det gemte vejrbillede.</li><li>${analysis.modes?.beach||0} strandture og ${analysis.modes?.waders||0} wadersture indgår.</li></ul><p class="hint">En senere scoreændring kræver repræsentative ture, reelle nul-fund, tidsmæssig test, geografisk hold-out, en eksplicit RDKS-beslutning, kildekodeændring, målrettede tests og offentlig produktionskontrol. Den kan ikke vedtages eller aktiveres på denne side.</p></article>`;
 }
 

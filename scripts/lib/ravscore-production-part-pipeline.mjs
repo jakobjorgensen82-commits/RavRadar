@@ -3,11 +3,72 @@ import {
 } from './ravscore-candidate-g-rollback-runtime.mjs';
 import { buildIntegratedPartScoreSeries } from './ravscore-integrated-runtime.mjs';
 import {
+  canonicalRavScoreStateOnlyCurrentHold,
+} from '../../js/core/ravscore-integrated-state-pipeline.js';
+import {
   buildRavScoreRecoveryReplay,
   RAVSCORE_MEASURED_COLD_ROLLBACK_DISPOSITION,
   ravScoreRecoveryReplayStartAt,
   selectRavScoreInitialState,
 } from './ravscore-recovery-replay.mjs';
+
+function exactReplayStartStateOnlyHold(publicHourly, replayStartAt, part) {
+  const replayRows = publicHourly.filter(row => {
+    const parsed = Date.parse(row?.time ?? '');
+    return Number.isFinite(parsed) && parsed === Date.parse(replayStartAt);
+  });
+  if (replayRows.length > 1) {
+    throw new Error('RavScore production has duplicate rows at the replay boundary');
+  }
+  if (!replayRows.length) return null;
+  const rawMarker = replayRows[0].currentStateOnlyHold;
+  const marker = canonicalRavScoreStateOnlyCurrentHold(
+    rawMarker,
+    replayStartAt,
+  );
+  if (rawMarker !== null && rawMarker !== undefined && marker === null) {
+    throw new Error('RavScore production replay-boundary hold marker is invalid');
+  }
+  if (marker === null) return null;
+  const parentZoneId = part?.zoneId ?? part?.parentZoneId ?? part?.sourceZoneId ?? null;
+  if (marker.partId !== part?.partId || marker.parentZoneId !== parentZoneId) {
+    throw new Error('RavScore production replay-boundary hold has a different part context');
+  }
+  return marker;
+}
+
+function exactReplayBoundaryReference({
+  marker,
+  resolver,
+  provided,
+  replayStartAt,
+  label,
+}) {
+  if (marker === null) {
+    if (provided !== null && provided !== undefined) {
+      throw new Error(`${label} cannot exist without an exact replay-boundary hold marker`);
+    }
+    return null;
+  }
+  const reference = resolver
+    ? resolver(marker.sourceValidTime, {
+      partId: marker.partId,
+      replayStartAt,
+      validTime: marker.validTime,
+      sourceValidTime: marker.sourceValidTime,
+      holdAgeHours: marker.holdAgeHours,
+    })
+    : provided;
+  if (reference === null || reference === undefined) return null;
+  const referenceTime = typeof reference?.time === 'string'
+    && Number.isFinite(Date.parse(reference.time))
+    ? new Date(reference.time).toISOString()
+    : null;
+  if (referenceTime !== marker.sourceValidTime) {
+    throw new Error(`${label} did not resolve the exact hold source time`);
+  }
+  return reference;
+}
 
 /**
  * Model-bundled producer priority. Point activation is exact-context only;
@@ -72,9 +133,18 @@ export function buildRavScoreProductionPartSeries({
     initialSelection.state,
     targetReferenceAt,
   );
-  const resolvedNativeCadenceReferenceSample = resolveNativeCadenceReferenceSample
-    ? resolveNativeCadenceReferenceSample(replayStartAt)
-    : nativeCadenceReferenceSample;
+  const replayStartHold = exactReplayStartStateOnlyHold(
+    publicHourly,
+    replayStartAt,
+    part,
+  );
+  const resolvedNativeCadenceReferenceSample = exactReplayBoundaryReference({
+    marker: replayStartHold,
+    resolver: resolveNativeCadenceReferenceSample,
+    provided: nativeCadenceReferenceSample,
+    replayStartAt,
+    label: 'RavScore native-cadence reference',
+  });
   const recovery = buildRavScoreRecoveryReplay({
     part,
     initialState: initialSelection.state,
@@ -100,11 +170,13 @@ export function buildRavScoreProductionPartSeries({
     scoreStartAt: recovery.scoreStartAt,
   });
   const resolvedCandidateGNativeCadenceReferenceSample =
-    resolveCandidateGNativeCadenceReferenceSample
-      ? resolveCandidateGNativeCadenceReferenceSample(
-        replayStartAt,
-      )
-      : candidateGNativeCadenceReferenceSample;
+    exactReplayBoundaryReference({
+      marker: replayStartHold,
+      resolver: resolveCandidateGNativeCadenceReferenceSample,
+      provided: candidateGNativeCadenceReferenceSample,
+      replayStartAt,
+      label: 'Candidate G native-cadence reference',
+    });
   const {
     candidateGState,
     scores: candidateGRollbackScores,

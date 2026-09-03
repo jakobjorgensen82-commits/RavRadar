@@ -1,10 +1,10 @@
 {
-  "version": "4.0.318",
-  "releasedAt": "2026-08-31T00:19:01.032Z",
-  "minimumSupportedVersion": "4.0.318",
+  "version": "4.0.320",
+  "releasedAt": "2026-09-02T05:52:49.486Z",
+  "minimumSupportedVersion": "4.0.320",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.318",
+    "releaseVersion": "4.0.320",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -16,8 +16,8 @@
         "rankingPolicyId": "direction-broad-19-history-tie-v2",
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
-        "modelContractSha256": "778db7aa3946f925607a8304daa42ed17dd30294e4a51bf6d895d7293e84c4e7",
-        "modelBundleSha256": "978415fd2b0a739b80b71c78134a79101113481817212811644b24262b6ddbd9"
+        "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
+        "modelBundleSha256": "3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96"
+        "modelBundleSha256": "7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d"
       }
     },
     "publicManifestAuthority": {
@@ -75,6 +75,10 @@
         {
           "id": "DEC-0113",
           "path": "docs/rdks/10_DECISIONS/DEC-0113-FIRST-CUTOVER-ATTESTED-MEASURED-COLD-START.md"
+        },
+        {
+          "id": "DEC-0114",
+          "path": "docs/rdks/10_DECISIONS/DEC-0114-INTEGRATED-FIRST-WITH-MEASURED-HISTORY-WARMUP.md"
         }
       ]
     },

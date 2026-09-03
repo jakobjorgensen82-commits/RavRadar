@@ -79,6 +79,32 @@ const NATIVE_HOLD_AUTHORIZATION_KEYS = Object.freeze([
   'collection',
   'distanceKm',
 ]);
+export const RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID =
+  'regional-dmi-exact-state-only-hold-v1';
+const STATE_ONLY_CURRENT_HOLD_KEYS = Object.freeze([
+  'contractId',
+  'status',
+  'classification',
+  'stateOnly',
+  'partId',
+  'parentZoneId',
+  'targetIdentityFingerprint',
+  'validTime',
+  'sourceValidTime',
+  'holdAgeHours',
+  'provider',
+  'sourceClass',
+  'source',
+  'collection',
+  'modelRun',
+  'closureContractId',
+  'closureId',
+  'closureAssignmentSha256',
+  'sourceAssetSha256',
+  'sourceProofSha256',
+  'vectorCommitmentSha256',
+]);
+const STATE_ONLY_CURRENT_HOLD_SHA256 = /^sha256:[0-9a-f]{64}$/;
 const CANDIDATE_G_CONTINUATION_KEYS = Object.freeze([
   'schemaVersion',
   'modelId',
@@ -756,6 +782,63 @@ function canonicalNativeHoldAuthorization(value) {
     source: value.source,
     collection: value.collection,
     distanceKm: value.distanceKm,
+  };
+}
+
+/**
+ * Validates the private, data-minimised marker for one closure-authorized
+ * operational state hold. It deliberately cannot represent a vector, speed,
+ * direction, coordinate or arrow because its field set is exact.
+ */
+export function canonicalRavScoreStateOnlyCurrentHold(value, sampleTime = null) {
+  if (value === null || value === undefined) return null;
+  const validTime = canonicalTime(value?.validTime);
+  const sourceValidTime = canonicalTime(value?.sourceValidTime);
+  const modelRun = canonicalTime(value?.modelRun);
+  const expectedSampleTime = sampleTime === null || sampleTime === undefined
+    ? validTime
+    : canonicalTime(sampleTime);
+  const exactHour = time => {
+    if (!time) return false;
+    const date = new Date(time);
+    return date.getUTCMinutes() === 0
+      && date.getUTCSeconds() === 0
+      && date.getUTCMilliseconds() === 0;
+  };
+  if (!hasExactKeys(value, STATE_ONLY_CURRENT_HOLD_KEYS)
+    || value.contractId !== RAVSCORE_STATE_ONLY_CURRENT_HOLD_CONTRACT_ID
+    || value.status !== 'verified-derived-state-only'
+    || value.classification !== 'REGIONAL_DMI_DERIVED_HOLD'
+    || value.stateOnly !== true
+    || typeof value.partId !== 'string' || value.partId.length === 0
+    || typeof value.parentZoneId !== 'string' || value.parentZoneId.length === 0
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.targetIdentityFingerprint ?? '')
+    || !validTime || !sourceValidTime || !modelRun || !expectedSampleTime
+    || !exactHour(validTime) || !exactHour(sourceValidTime) || !exactHour(modelRun)
+    || validTime !== expectedSampleTime
+    || !Number.isInteger(value.holdAgeHours)
+    || value.holdAgeHours < 1
+    || value.holdAgeHours > CURRENT_SUPPLY_MEMORY_POLICY.maximumGapHours
+    || Date.parse(validTime) - Date.parse(sourceValidTime)
+      !== value.holdAgeHours * HOUR_MS
+    || Date.parse(modelRun) > Date.parse(sourceValidTime)
+    || value.provider !== 'dmi'
+    || value.sourceClass !== 'owner-approved-regional-proxy'
+    || value.source !== 'dmi-dkss-lf-regional-proxy'
+    || value.collection !== 'dkss_lf'
+    || value.closureContractId !== 'current-operational-673x118-closure-ready-v1'
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.closureId ?? '')
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.closureAssignmentSha256 ?? '')
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.sourceAssetSha256 ?? '')
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.sourceProofSha256 ?? '')
+    || !STATE_ONLY_CURRENT_HOLD_SHA256.test(value.vectorCommitmentSha256 ?? '')) {
+    throw new Error('Integrated RavScore state-only current hold marker is invalid');
+  }
+  return {
+    ...value,
+    validTime,
+    sourceValidTime,
+    modelRun,
   };
 }
 
@@ -1485,11 +1568,18 @@ export function buildIntegratedRavScoreStateSeries(
     throw new Error('Integrated RavScore native cadence hold is outside the bounded policy');
   }
   const ordered = [...(Array.isArray(samples) ? samples : [])]
-    .map((sample, index) => ({
-      ...sample,
-      time: canonicalTime(sample?.time)
-        ?? (() => { throw new Error(`Integrated RavScore sample ${index} has an invalid time`); })(),
-    }))
+    .map((sample, index) => {
+      const time = canonicalTime(sample?.time)
+        ?? (() => { throw new Error(`Integrated RavScore sample ${index} has an invalid time`); })();
+      return {
+        ...sample,
+        time,
+        currentStateOnlyHold: canonicalRavScoreStateOnlyCurrentHold(
+          sample?.currentStateOnlyHold,
+          time,
+        ),
+      };
+    })
     .sort((left, right) => Date.parse(left.time) - Date.parse(right.time));
   for (let index = 1; index < ordered.length; index += 1) {
     if (ordered[index].time === ordered[index - 1].time) {
@@ -1706,6 +1796,15 @@ export function buildIntegratedRavScoreStateSeries(
     if (sample.currentVerified === true && !verifiedEvidence) {
       throw new Error('Integrated RavScore verified current sample lacks exact signed evidence');
     }
+    const explicitStateOnlyHold = sample.currentStateOnlyHold;
+    if (verifiedEvidence && explicitStateOnlyHold !== null) {
+      throw new Error('Integrated RavScore current cannot be both verified and state-only held');
+    }
+    if (explicitStateOnlyHold !== null
+      && (Number(nativeCadenceHoldHours) <= 0
+        || explicitStateOnlyHold.holdAgeHours > Number(nativeCadenceHoldHours))) {
+      throw new Error('Integrated RavScore state-only hold exceeds its closure-declared bound');
+    }
     const sampleNativeHoldAuthorization = verifiedEvidence
       ? nativeHoldAuthorizationFromProvenance(sample.currentProvenance)
       : null;
@@ -1746,11 +1845,20 @@ export function buildIntegratedRavScoreStateSeries(
       }
     }
     const sameTimeHold = evidenceAlreadyAtTime;
-    const nativeHold = !verifiedEvidence
-      && Number(nativeCadenceHoldHours) > 0
+    const exactHoldSourceMatches = explicitStateOnlyHold !== null
+      && lastVerified !== null
+      && explicitStateOnlyHold.sourceValidTime === lastVerified.time
+      && close(ageHours, explicitStateOnlyHold.holdAgeHours)
       && currentNativeHoldAuthorization !== null
+      && explicitStateOnlyHold.sourceClass === currentNativeHoldAuthorization.sourceClass
+      && explicitStateOnlyHold.source === currentNativeHoldAuthorization.source
+      && explicitStateOnlyHold.collection === currentNativeHoldAuthorization.collection;
+    const nativeHold = !verifiedEvidence
+      && explicitStateOnlyHold !== null
+      && Number(nativeCadenceHoldHours) > 0
       && ageHours > 0
-      && ageHours <= Number(nativeCadenceHoldHours) + EPSILON;
+      && ageHours <= Number(nativeCadenceHoldHours) + EPSILON
+      && exactHoldSourceMatches;
     const nativeCadenceIntervalAttested = !sameTimeHold
       && verifiedEvidence
       && lastVerified !== null
@@ -1780,6 +1888,12 @@ export function buildIntegratedRavScoreStateSeries(
         : null;
     } else if (nativeHold) {
       currentNativeHoldCoveredThroughAt = sample.time;
+    } else if (!sameTimeHold && !verifiedEvidence) {
+      // A missing operational hour without its own exact hold marker breaks the
+      // regional continuation chain. Never let a later marker revive an older
+      // authorization across that unproven hour.
+      currentNativeHoldAuthorization = null;
+      currentNativeHoldCoveredThroughAt = null;
     } else if (sameTimeHold
       && verifiedEvidence
       && currentNativeHoldAuthorization !== null) {

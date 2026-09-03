@@ -1,16 +1,16 @@
-import { PUBLIC_CONFIG } from "../../config.js?v=4.0.318";
-import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.318";
-import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.318";
-import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.318";
-import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.318";
+import { PUBLIC_CONFIG } from "../../config.js?v=4.0.320";
+import { localRavKnowledgeAnswer, matchLocalRavKnowledge } from "../../knowledge/rav-assistant-local-v2.js?v=4.0.320";
+import { buildLocalZoneScore, selectLocalBestForDay } from "../core/local-zone-score.js?v=4.0.320";
+import { addNationalRanking, compareNationalRankingRows } from "../core/zone-ranking.js?v=4.0.320";
+import { forecastDateKeyForDayOffset } from "../core/forecast-calendar.js?v=4.0.320";
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   ravScoreModelBinding,
-} from "../core/ravscore-model-contract.js?v=4.0.318";
-import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.318";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.318";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.318";
-import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.318";
+} from "../core/ravscore-model-contract.js?v=4.0.320";
+import { sameRavScoreModelBinding } from "../core/ravscore-public-runtime-contract.js?v=4.0.320";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.320";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.320";
+import { formatDateTime, formatNumber, getLanguage, normaliseLanguage, t } from "../i18n.js?v=4.0.320";
 
 // Compatibility name for existing source-contract tests. The implementation
 // now selects the only adapter matching the artifact's exact active binding.
@@ -108,7 +108,9 @@ function publicScoreQuality(result, available) {
   };
   if (available
     && result.scoreQuality === 'FULL_HISTORY'
-    && result.calibrationEligible === RAVSCORE_CALIBRATION_ELIGIBLE
+    && typeof result.calibrationEligible === 'boolean'
+    && (RAVSCORE_CALIBRATION_ELIGIBLE === true
+      || result.calibrationEligible === false)
     && coverage === ASSISTANT_HISTORY_HOURS
     && reasonCodes?.length === 0
     && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
@@ -118,7 +120,7 @@ function publicScoreQuality(result, available) {
       ===(result.scoreSemantics==='CONSERVATIVE_TAIL_RESET_POINT_SCORE')) {
     return {
       scoreQuality:'FULL_HISTORY',
-      calibrationEligible:RAVSCORE_CALIBRATION_ELIGIBLE,
+      calibrationEligible:result.calibrationEligible,
       scoreSemantics:result.scoreSemantics,
       conservativeTailResetApplied:result.conservativeTailResetApplied,
       scoreBounds,historyCoverageHours:coverage, historyReasonCodes:[],

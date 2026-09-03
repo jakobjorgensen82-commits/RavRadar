@@ -10,6 +10,7 @@ import os
 import shutil
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -24,6 +25,7 @@ from lib.copernicus_current import (
     REQUEST_CONTRACT_ID,
     SELECTION_POLICY_ID,
     atomic_write_shadow,
+    atomic_write_shadow_checkpoint,
     file_sha256,
     load_shadow,
     load_targets,
@@ -37,6 +39,18 @@ from lib.copernicus_current import (
     utc_iso,
     validate_target_registry,
 )
+from lib.copernicus_current_source_stage import (
+    PINNED_PRODUCTS,
+    SPATIAL_SHARD_LATITUDE_DEGREES,
+    SPATIAL_SHARD_LONGITUDE_DEGREES,
+    SPATIAL_SHARD_MAX_TARGETS,
+    SPATIAL_SHARD_POLICY_ID,
+    atomic_write_source_stage,
+    build_source_stage,
+    eligible_target,
+    make_source_attempt,
+    safe_source_stage_summary,
+)
 from lib.copernicus_target_identity import target_fingerprint
 
 
@@ -44,40 +58,19 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TARGETS = ROOT / ".cache/copernicus-current-targets.json"
 DEFAULT_AUTHORITATIVE_TARGETS = ROOT / "data/live/coastal-parts-v2.json"
 DEFAULT_SHADOW = ROOT / ".cache/copernicus-current-shadow.json"
+DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/copernicus-current-pilot.json"
 DEFAULT_SUMMARY = ROOT / "data/diagnostics/copernicus-current-pilot.txt"
 
-PRODUCTS = [
-    {
-        "source": "copernicus-baltic-nemo",
-        "productId": "BALTICSEA_ANALYSISFORECAST_PHY_003_006",
-        "datasetId": "cmems_mod_bal_phy_anfc_PT1H-i",
-        "datasetVersion": "202411",
-        "minimumLongitude": 9.041582107543945,
-        "maximumLongitude": 30.208656311035156,
-        "minimumLatitude": 53.008296966552734,
-        "maximumLatitude": 65.8909912109375,
-        "targetMinimumLongitude": 8.94,
-        "targetMaximumLongitude": 16.0,
-    },
-    {
-        "source": "copernicus-nws-amm15",
-        "productId": "NWSHELF_ANALYSISFORECAST_PHY_004_013",
-        "datasetId": "cmems_mod_nws_phy-cur_anfc_1.5km-3D_PT1H-i",
-        "datasetVersion": "202511",
-        "minimumLongitude": -16.0,
-        "maximumLongitude": 13.0,
-        "minimumLatitude": 46.0,
-        "maximumLatitude": 62.74324035644531,
-        "targetMinimumLongitude": 7.5,
-        "targetMaximumLongitude": 9.5,
-    },
-]
-
-SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
-SPATIAL_SHARD_LATITUDE_DEGREES = 0.75
-SPATIAL_SHARD_MAX_TARGETS = 24
-SPATIAL_SHARD_POLICY_ID = "fixed-grid-1.25lon-0.75lat-max24-v1"
+PRODUCTS = [dict(row) for row in PINNED_PRODUCTS]
+ADVISORY_HISTORY_MAX_SHARDS_PER_PRODUCT = max(
+    1,
+    int(os.getenv("COPERNICUS_ADVISORY_HISTORY_MAX_SHARDS_PER_PRODUCT", "1")),
+)
+ADVISORY_HISTORY_MAX_SECONDS = max(
+    30,
+    int(os.getenv("COPERNICUS_ADVISORY_HISTORY_MAX_SECONDS", "180")),
+)
 
 
 def arguments() -> argparse.Namespace:
@@ -85,6 +78,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--targets", type=Path, default=DEFAULT_TARGETS)
     parser.add_argument("--authoritative-targets", type=Path, default=DEFAULT_AUTHORITATIVE_TARGETS)
     parser.add_argument("--shadow", type=Path, default=DEFAULT_SHADOW)
+    parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--summary", type=Path, default=DEFAULT_SUMMARY)
     parser.add_argument("--at", help="Locked productionReferenceAt; must match the target registry")
@@ -106,13 +100,6 @@ def selected_reference(value: str | None, registry: dict[str, Any]) -> datetime:
     if requested != registry_reference:
         raise RuntimeError("Copernicus production reference cannot be rebound after the DMI-gap matrix was built")
     return registry_reference
-
-
-def eligible_target(target: dict[str, Any], product: dict[str, Any]) -> bool:
-    return bool(
-        product["targetMinimumLongitude"] <= target["waterPoint"][0] <= product["targetMaximumLongitude"]
-        and product["minimumLatitude"] <= target["waterPoint"][1] <= product["maximumLatitude"]
-    )
 
 
 def spatial_shards(targets: list[dict[str, Any]], product: dict[str, Any]) -> list[dict[str, Any]]:
@@ -221,6 +208,173 @@ def atomic_write_text(path: Path, text: str) -> None:
             temporary.unlink()
 
 
+def fill_bounded_advisory_history(
+    *,
+    required_pairs: list[dict[str, Any]],
+    registry_targets: list[dict[str, Any]],
+    target_identities: dict[str, dict[str, Any]],
+    existing: dict[str, Any],
+    acquisitions: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    reference: datetime,
+    acquisition_at: datetime,
+    fixture_directory: Path | None,
+    shadow_path: Path,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    dict[str, Any],
+]:
+    """Fill past exact DMI gaps without making history a deployment gate.
+
+    Operational target..+117 acquisition has already completed before this
+    helper is called. Work is deliberately bounded and checkpointed after each
+    successful shard. A failed, timed-out or unstarted shard remains missing;
+    this stage never emits exhaustion evidence and never borrows another part,
+    hour or regional source.
+    """
+    selected_refs, missing = select_required_records(
+        required_pairs, acquisitions, records, reference,
+    )
+    initial_available = len(selected_refs)
+    remaining = {(row["partId"], row["validTime"]) for row in missing}
+    started = time.monotonic()
+    attempted_shards = 0
+    completed_shards = 0
+    failed_shards = 0
+    budget_reached = False
+    new_acquisition_count = 0
+    temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-history-"))
+    try:
+        for product in PRODUCTS:
+            product_shards = 0
+            source_targets = [
+                row for row in registry_targets if eligible_target(row, product)
+            ]
+            for shard_index, shard in enumerate(spatial_shards(source_targets, product)):
+                times_by_part: dict[str, list[datetime]] = {}
+                for target in shard["targets"]:
+                    target_times = sorted(
+                        parse_time(valid_time, "advisory history pair time")
+                        for part_id, valid_time in remaining
+                        if part_id == target["partId"]
+                    )
+                    if target_times:
+                        times_by_part[target["partId"]] = target_times
+                if not times_by_part:
+                    continue
+                if product_shards >= ADVISORY_HISTORY_MAX_SHARDS_PER_PRODUCT \
+                        or time.monotonic() - started >= ADVISORY_HISTORY_MAX_SECONDS:
+                    budget_reached = True
+                    break
+                product_shards += 1
+                attempted_shards += 1
+                shard_targets = [
+                    row for row in shard["targets"] if row["partId"] in times_by_part
+                ]
+                native_times = sorted({
+                    value for values in times_by_part.values() for value in values
+                })
+                try:
+                    path = (
+                        fixture_path(fixture_directory, product, shard_index)
+                        if fixture_directory
+                        else download_subset(
+                            product,
+                            shard_targets,
+                            native_times[0],
+                            native_times[-1],
+                            temporary,
+                            shard_index,
+                        )
+                    )
+                    subset_sha256 = file_sha256(path)
+                    raw_records: list[dict[str, Any]] = []
+                    with xr.open_dataset(path) as dataset:
+                        for target in shard_targets:
+                            raw_records.extend(nearest_shared_uv_times(
+                                dataset,
+                                target,
+                                source=product["source"],
+                                product_id=product["productId"],
+                                dataset_id=product["datasetId"],
+                                dataset_version=product["datasetVersion"],
+                                expected_times=times_by_part[target["partId"]],
+                            ))
+                    acquisition = make_acquisition(
+                        source=product["source"],
+                        acquisition_at=acquisition_at,
+                        request_start_at=native_times[0],
+                        request_end_at=native_times[-1],
+                        targets=shard_targets,
+                        native_valid_times=native_times,
+                        subset_sha256=subset_sha256,
+                        record_count=len(raw_records),
+                        request_contract_id=REQUEST_CONTRACT_ID,
+                    )
+                    acquired = [
+                        make_record(row, acquisition, target_identities[row["partId"]])
+                        for row in raw_records
+                    ]
+                except Exception:
+                    # Advisory history is never a deploy gate. Incomplete work
+                    # remains visibly missing and is eligible for a later run;
+                    # it is not converted into an exhaustion attestation.
+                    failed_shards += 1
+                    continue
+                completed_shards += 1
+                if acquired:
+                    acquisitions, records = merge_cache_evidence(
+                        existing,
+                        acquisitions + [acquisition],
+                        records + acquired,
+                        reference,
+                        target_identities,
+                    )
+                    new_acquisition_count += 1
+                    selected_refs, missing = select_required_records(
+                        required_pairs, acquisitions, records, reference,
+                    )
+                    remaining = {(row["partId"], row["validTime"]) for row in missing}
+                    atomic_write_shadow_checkpoint(
+                        shadow_path,
+                        acquisitions=acquisitions,
+                        records=records,
+                        updated_at=acquisition_at,
+                        target_identities=target_identities,
+                    )
+                if not remaining:
+                    break
+            if not remaining:
+                break
+    finally:
+        shutil.rmtree(temporary, ignore_errors=True)
+
+    selected_refs, missing = select_required_records(
+        required_pairs, acquisitions, records, reference,
+    )
+    summary = {
+        "status": "COMPLETE" if not missing else "BOUNDED_INCOMPLETE",
+        "requiredPairCount": len(required_pairs),
+        "initialAvailablePairCount": initial_available,
+        "acquiredPairCount": len(selected_refs) - initial_available,
+        "availablePairCount": len(selected_refs),
+        "missingPairCount": len(missing),
+        "attemptedShardCount": attempted_shards,
+        "completedShardCount": completed_shards,
+        "failedShardCount": failed_shards,
+        "boundedWorkRemaining": bool(missing),
+        "budgetReached": budget_reached,
+        "exhaustionAttested": False,
+        "regionalHistoryUsed": False,
+        "interpolationCarryOrLoanUsed": False,
+        "newAcquisitionCount": new_acquisition_count,
+    }
+    return acquisitions, records, selected_refs, missing, summary
+
+
 def main() -> int:
     args = arguments()
     registry = validate_target_registry(json.loads(args.targets.read_text(encoding="utf-8")))
@@ -239,7 +393,15 @@ def main() -> int:
         if authoritative is None or target_fingerprint([target]) != target_fingerprint([authoritative]):
             raise RuntimeError("Copernicus target registry contains a changed central target identity")
     target_identities = {row["partId"]: row for row in authoritative_targets}
-    required_pairs = registry["requiredPairs"]
+    operational_contract = registry["schemaVersion"] == 3
+    required_pairs = (
+        registry["operationalRequiredPairs"]
+        if operational_contract
+        else registry["requiredPairs"]
+    )
+    advisory_history_required_pairs = (
+        registry["advisoryHistoryRequiredPairs"] if operational_contract else []
+    )
 
     existing = load_shadow(args.shadow, reference, target_identities)
     existing_acquisitions, existing_records = merge_cache_evidence(existing, [], [], reference, target_identities)
@@ -249,13 +411,30 @@ def main() -> int:
     initial_missing_keys = {(row["partId"], row["validTime"]) for row in initial_missing}
     remaining = set(initial_missing_keys)
 
-    if remaining and not args.fixture_directory:
+    # A selected AMM15 record is not sufficient source-order evidence on its
+    # own.  If Baltic is applicable to that exact target/pair, a completed
+    # Baltic request must also be present in the source-stage sidecar.  This
+    # small evidence-only set repairs old/partially checkpointed caches without
+    # discarding their already verified AMM15 records.
+    target_by_id = {str(row["partId"]): row for row in registry_targets}
+    baltic_product = next(
+        row for row in PRODUCTS if row["source"] == "copernicus-baltic-nemo"
+    )
+    baltic_prerequisite_pairs = {
+        (row["partId"], row["validTime"])
+        for row in existing_refs
+        if row.get("source") == "copernicus-nws-amm15"
+        and eligible_target(target_by_id[row["partId"]], baltic_product)
+    }
+
+    if (remaining or baltic_prerequisite_pairs) and not args.fixture_directory:
         if not os.getenv("COPERNICUSMARINE_SERVICE_USERNAME") or not os.getenv("COPERNICUSMARINE_SERVICE_PASSWORD"):
             raise RuntimeError("Copernicus credentials are required through environment secrets")
 
     temporary = Path(tempfile.mkdtemp(prefix="ravradar-copernicus-range-"))
     new_acquisitions: list[dict[str, Any]] = []
     new_records: list[dict[str, Any]] = []
+    source_attempts: list[dict[str, Any]] = []
     product_reports: list[dict[str, Any]] = []
     try:
         for product in PRODUCTS:
@@ -265,11 +444,17 @@ def main() -> int:
             executed_shards = 0
             surface_count = 0
             for shard_index, shard in enumerate(source_shards):
+                source_required_pairs = (
+                    remaining | baltic_prerequisite_pairs
+                    if product["source"] == "copernicus-baltic-nemo"
+                    else remaining
+                )
                 times_by_part: dict[str, list[datetime]] = {}
                 for target in shard["targets"]:
                     times = sorted(
                         parse_time(valid_time, "required pair time")
-                        for part_id, valid_time in remaining if part_id == target["partId"]
+                        for part_id, valid_time in source_required_pairs
+                        if part_id == target["partId"]
                     )
                     if times:
                         times_by_part[target["partId"]] = times
@@ -310,11 +495,62 @@ def main() -> int:
                     request_contract_id=REQUEST_CONTRACT_ID,
                 )
                 records = [make_record(row, acquisition, target_identities[row["partId"]]) for row in raw_records]
+                source_attempts.append(make_source_attempt(
+                    production_reference_at=reference,
+                    acquisition_at=acquisition_at,
+                    product=product,
+                    shard_id=shard["shardId"],
+                    target_part_ids=[row["partId"] for row in shard_targets],
+                    requested_pairs=sorted(
+                        [
+                            {"partId": part_id, "validTime": utc_iso(valid_time)}
+                            for part_id, valid_times in times_by_part.items()
+                            for valid_time in valid_times
+                        ],
+                        key=lambda row: (row["validTime"], row["partId"]),
+                    ),
+                    subset_sha256=subset_sha256,
+                    acquisition_id=acquisition["acquisitionId"],
+                    parsed_record_count=len(records),
+                ))
+                if product["source"] == "copernicus-baltic-nemo":
+                    baltic_prerequisite_pairs.difference_update({
+                        (part_id, utc_iso(valid_time))
+                        for part_id, valid_times in times_by_part.items()
+                        for valid_time in valid_times
+                    })
                 if records:
                     new_acquisitions.append(acquisition)
                     new_records.extend(records)
-                for row in records:
-                    remaining.discard((row["partId"], row["validTime"]))
+                    checkpoint_acquisitions, checkpoint_records = merge_cache_evidence(
+                        existing,
+                        new_acquisitions,
+                        new_records,
+                        reference,
+                        target_identities,
+                    )
+                    _, checkpoint_missing = select_required_records(
+                        required_pairs,
+                        checkpoint_acquisitions,
+                        checkpoint_records,
+                        reference,
+                    )
+                    atomic_write_shadow_checkpoint(
+                        args.shadow,
+                        acquisitions=checkpoint_acquisitions,
+                        records=checkpoint_records,
+                        updated_at=acquisition_at,
+                        target_identities=target_identities,
+                    )
+                    remaining = {
+                        (row["partId"], row["validTime"])
+                        for row in checkpoint_missing
+                    }
+                    print(
+                        "Copernicus shard checkpoint: "
+                        f"verifiedOperationalPairs={len(required_pairs) - len(remaining)}, "
+                        f"remainingOperationalPairs={len(remaining)}."
+                    )
                 product_record_count += len(records)
                 surface_count += sum(row["layerQuality"] == "surface-only" for row in records)
             product_reports.append({
@@ -335,9 +571,119 @@ def main() -> int:
     )
     record_refs, missing = select_required_records(required_pairs, acquisitions, records, reference)
     if missing:
+        if operational_contract:
+            (
+                acquisitions,
+                records,
+                advisory_history_record_refs,
+                advisory_history_missing,
+                advisory_history_fill,
+            ) = fill_bounded_advisory_history(
+                required_pairs=advisory_history_required_pairs,
+                registry_targets=registry_targets,
+                target_identities=target_identities,
+                existing=existing,
+                acquisitions=acquisitions,
+                records=records,
+                reference=reference,
+                acquisition_at=acquisition_at,
+                fixture_directory=args.fixture_directory,
+                shadow_path=args.shadow,
+            )
+            checkpoint = atomic_write_shadow_checkpoint(
+                args.shadow,
+                acquisitions=acquisitions,
+                records=records,
+                updated_at=acquisition_at,
+                target_identities=target_identities,
+            )
+            checkpoint_sha256 = file_sha256(args.shadow)
+            source_stage = build_source_stage(
+                registry=registry,
+                shadow=checkpoint,
+                target_identities=target_identities,
+                shadow_sha256=checkpoint_sha256,
+                attempts=source_attempts,
+                sealed_at=acquisition_at,
+            )
+            atomic_write_source_stage(
+                args.source_stage,
+                source_stage,
+                registry=registry,
+                shadow=checkpoint,
+                target_identities=target_identities,
+                shadow_sha256=checkpoint_sha256,
+            )
+            safe_stage = safe_source_stage_summary(source_stage)
+            report = {
+                "schemaVersion": 1,
+                **safe_stage,
+                "advisoryHistoryFill": advisory_history_fill,
+            }
+            no_credentials_in_report(report)
+            atomic_write_text(
+                args.report,
+                json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+            )
+            lines = [
+                "RavRadar privat Copernicus-kildeled",
+                f"Produktionsreference: {registry['productionReferenceAt']}",
+                f"Valgte Copernicus-par: {safe_stage['selectedRecordRefCount']}/{safe_stage['requiredPairCount']}",
+                f"Rester efter alle relevante Copernicus-kilder: {safe_stage['missingPairCount']}",
+                "Afgrænset historikopfyldning: "
+                f"{advisory_history_fill['status']} · "
+                f"nye par {advisory_history_fill['acquiredPairCount']} · "
+                f"rester {advisory_history_fill['missingPairCount']}",
+                "Kildeled: READY",
+                "Historiksyntese/interpolation/hold: nej",
+            ]
+            atomic_write_text(args.summary, "\n".join(lines) + "\n")
+            print("\n".join(lines))
+            return 0
         raise RuntimeError(
-            f"Copernicus range acquisition is incomplete for {len(missing)}/{len(required_pairs)} exact DMI-gap pairs"
+            "Copernicus operational acquisition is incomplete for "
+            f"{len(missing)}/{len(required_pairs)} exact DMI-gap pairs in target..+117"
         )
+    if operational_contract:
+        (
+            acquisitions,
+            records,
+            advisory_history_record_refs,
+            advisory_history_missing,
+            advisory_history_fill,
+        ) = fill_bounded_advisory_history(
+            required_pairs=advisory_history_required_pairs,
+            registry_targets=registry_targets,
+            target_identities=target_identities,
+            existing=existing,
+            acquisitions=acquisitions,
+            records=records,
+            reference=reference,
+            acquisition_at=acquisition_at,
+            fixture_directory=args.fixture_directory,
+            shadow_path=args.shadow,
+        )
+    else:
+        advisory_history_record_refs, advisory_history_missing = select_required_records(
+            advisory_history_required_pairs, acquisitions, records, reference,
+        )
+        advisory_history_fill = {
+            "status": "NOT_APPLICABLE",
+            "requiredPairCount": 0,
+            "initialAvailablePairCount": 0,
+            "acquiredPairCount": 0,
+            "availablePairCount": 0,
+            "missingPairCount": 0,
+            "attemptedShardCount": 0,
+            "completedShardCount": 0,
+            "failedShardCount": 0,
+            "boundedWorkRemaining": False,
+            "budgetReached": False,
+            "exhaustionAttested": False,
+            "regionalHistoryUsed": False,
+            "interpolationCarryOrLoanUsed": False,
+            "newAcquisitionCount": 0,
+        }
     collection = make_coverage_collection(
         production_reference_at=reference,
         target_registry_sha256=registry["targetRegistrySha256"],
@@ -345,6 +691,12 @@ def main() -> int:
         required_pairs=required_pairs,
         record_refs=record_refs,
         sealed_at=acquisition_at,
+        advisory_history_required_pairs=(
+            advisory_history_required_pairs if operational_contract else None
+        ),
+        advisory_history_record_refs=(
+            advisory_history_record_refs if operational_contract else None
+        ),
     )
     shadow = atomic_write_shadow(
         args.shadow,
@@ -354,17 +706,37 @@ def main() -> int:
         updated_at=acquisition_at,
         target_identities=target_identities,
     )
+    if operational_contract:
+        source_stage = build_source_stage(
+            registry=registry,
+            shadow=shadow,
+            target_identities=target_identities,
+            shadow_sha256=file_sha256(args.shadow),
+            attempts=source_attempts,
+            sealed_at=acquisition_at,
+        )
+        atomic_write_source_stage(
+            args.source_stage,
+            source_stage,
+            registry=registry,
+            shadow=shadow,
+            target_identities=target_identities,
+            shadow_sha256=file_sha256(args.shadow),
+        )
 
     source_by_acquisition = {row["acquisitionId"]: row["source"] for row in acquisitions}
     selected_by_source = {source: 0 for source in source_by_acquisition.values()}
-    for ref in record_refs:
+    selected_refs = [*record_refs, *advisory_history_record_refs]
+    for ref in selected_refs:
         source = source_by_acquisition[ref["acquisitionId"]]
         selected_by_source[source] = selected_by_source.get(source, 0) + 1
     existing_ids = {row["recordId"] for row in existing_records}
-    reused_history_count = sum(
-        ref["recordId"] in existing_ids and parse_time(ref["validTime"], "ref time") < reference
-        for ref in record_refs
-    )
+    reused_history_count = sum(ref["recordId"] in existing_ids for ref in advisory_history_record_refs)
+    if not operational_contract:
+        reused_history_count = sum(
+            ref["recordId"] in existing_ids and parse_time(ref["validTime"], "ref time") < reference
+            for ref in record_refs
+        )
     report = {
         "schemaVersion": 2,
         "generatedAt": utc_iso(acquisition_at),
@@ -386,8 +758,17 @@ def main() -> int:
         "requiredPairCount": len(required_pairs),
         "verifiedPairCount": len(record_refs),
         "missingPairCount": 0,
+        "operationalSealComplete": True,
+        "advisoryHistoryRequiredPairCount": len(advisory_history_required_pairs),
+        "advisoryHistoryAvailablePairCount": len(advisory_history_record_refs),
+        "advisoryHistoryMissingPairCount": len(advisory_history_missing),
+        "advisoryHistoryComplete": len(advisory_history_missing) == 0,
+        "historySyntheticPairCount": 0,
         "reusedHistoricalPairCount": reused_history_count,
-        "newAcquisitionCount": len(new_acquisitions),
+        "newAcquisitionCount": (
+            len(new_acquisitions) + advisory_history_fill["newAcquisitionCount"]
+        ),
+        "advisoryHistoryFill": advisory_history_fill,
         "selectedPairsBySource": dict(sorted(selected_by_source.items())),
         "cacheRecordCount": len(records),
         "cacheAcquisitionCount": len(acquisitions),
@@ -400,11 +781,18 @@ def main() -> int:
     lines = [
         "RavRadar privat Copernicus-strømrange",
         f"Produktionsreference: {report['productionReferenceAt']}",
-        f"Eksakte DMI-gappar: {report['verifiedPairCount']}/{report['requiredPairCount']}",
-        f"Genbrugte historiske par: {report['reusedHistoricalPairCount']}",
+        f"Eksakte operationelle DMI-gappar: {report['verifiedPairCount']}/{report['requiredPairCount']}",
+        "Målt rådgivende historik: "
+        f"{report['advisoryHistoryAvailablePairCount']}/"
+        f"{report['advisoryHistoryRequiredPairCount']}",
+        f"Genbrugte målte historiske par: {report['reusedHistoricalPairCount']}",
+        "Afgrænset historikopfyldning: "
+        f"{report['advisoryHistoryFill']['status']} · "
+        f"nye par {report['advisoryHistoryFill']['acquiredPairCount']} · "
+        f"rester {report['advisoryHistoryFill']['missingPairCount']}",
         f"Nye komplette acquisitions: {report['newAcquisitionCount']}",
-        "Coverage-seal: COMPLETE",
-        "Interpolation/hold: nej",
+        "Coverage-seal: OPERATIONAL_COMPLETE" if operational_contract else "Coverage-seal: COMPLETE",
+        "Historiksyntese/interpolation/hold: nej",
     ]
     atomic_write_text(args.summary, "\n".join(lines) + "\n")
     print("\n".join(lines))

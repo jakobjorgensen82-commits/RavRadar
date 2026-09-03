@@ -496,7 +496,7 @@ assert.match(injectedTodayAnswer, /RavScore 60|score 60/i,
   'assistentens ISO-injicerede ur skal frasortere dagens allerede passerede højere score');
 assert.doesNotMatch(injectedTodayAnswer, /RavScore 99|score 99/i);
 
-function renderSecondaryScoreLists(language,{coverageKind='several-parts'}={}) {
+function renderSecondaryScoreLists(language,{coverageKind='several-parts',waveProxy=true}={}) {
   setLanguage(language);
   const selected=historyIncompleteResult('CURRENT_HISTORY_INCOMPLETE',{
     coverage:24,currentGap:true,
@@ -520,9 +520,23 @@ function renderSecondaryScoreLists(language,{coverageKind='several-parts'}={}) {
     ],
   };
   const summaries=[{
-    date:'2026-03-30',hours:[],best:{
+    date:'2026-03-30',hours:[{
+      time:'2026-03-30T08:00:00.000Z',
+      waveInputSource:null,waveInputUncertainty:null,waveInputNoticeId:null,
+    }],best:{
       recommended:true,isNow:false,displayScope:'local',
-      hour:{time:'2026-03-30T08:00:00.000Z'},result:selected,
+      hour:{
+        time:'2026-03-30T08:00:00.000Z',
+        ...(waveProxy ? {
+        waveInputSource:'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION',
+        waveInputUncertainty:'MODERATE',
+        waveInputNoticeId:'FEGGESUND_NEIGHBOR_WAVE_PROXY',
+      } : {
+        waveInputSource:'DIRECT_OFFICIAL',
+        waveInputUncertainty:'LOW',
+        waveInputNoticeId:null,
+      }),
+      },result:selected,
       candidates:[
         {time:'2026-03-30T08:00:00.000Z',score:64,scoreQuality:'HISTORY_INCOMPLETE',
           scoreBounds:{lower:64,upper:78,modelUncertaintyPoints:14,rawLower:64,rawUpper:78},
@@ -569,6 +583,14 @@ for(const language of ['da','de','en']){
     `${language}: FULL_HISTORY-alternativet skal beholde sin hidtidige punktvisning`);
   assert.match(html,new RegExp(t('score.historyIncomplete.short',{},language)),
     `${language}: den kompakte advarsel skal være lokaliseret`);
+  assert.equal((html.match(/class="display-context warning wave-input-warning"/g)||[]).length,1,
+    `${language}: den valgte proxied time skal vise præcis én bølgeadvarsel`);
+  assert.ok(html.includes(t('weather.waveProxy.title',{},language)),
+    `${language}: bølgeadvarslens overskrift skal være lokaliseret`);
+  assert.ok(html.includes(t('weather.waveProxy.body',{},language)),
+    `${language}: bølgeadvarslens forklaring skal være lokaliseret`);
+  assert.doesNotMatch(renderSecondaryScoreLists(language,{waveProxy:false}),/wave-input-warning/,
+    `${language}: en direkte officiel bølgetime må ikke vise proxyadvarslen`);
   assert.match(html,new RegExp(t('score.unavailable',{},language)),
     `${language}: UNAVAILABLE skal vises som utilgængelig`);
   assert.doesNotMatch(html,/RavScore 0/,

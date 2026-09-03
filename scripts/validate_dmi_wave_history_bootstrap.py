@@ -30,6 +30,11 @@ DEFAULT_REGISTRY = ROOT / "data" / "live" / "coastal-parts-v2.json"
 # rejecting the expected provenance-rich document.
 MAX_CACHE_BYTES = 256 * 1024 * 1024
 MAX_REGISTRY_BYTES = 16 * 1024 * 1024
+HISTORY_INCOMPLETE_CODES = frozenset({
+    "INTERPOLATION_GAP",
+    "MISSING_HOUR",
+    "NO_COHERENT_RUN",
+})
 
 
 def _reject_non_finite_json(_value: str) -> None:
@@ -71,6 +76,56 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_attestation(
+    cache_document: Any,
+    registry_document: Any,
+    *,
+    mode: str,
+    target_hour: str,
+    production_target_hour: str,
+    forecast_hour_count: int,
+) -> dict[str, Any]:
+    """Validate direct operational WAM first, then classify older history.
+
+    Only bounded absence inside a genuine cold-start history window may become
+    HISTORY_INCOMPLETE.  Migration and every provenance, tuple, cell, run,
+    registry or tamper error remain fail-closed.  The returned document is
+    aggregate-only and contains no private rows or identifiers.
+    """
+    registry = load_coastal_part_registry(registry_document)
+    operational = validate_wave_operational_handoff_cache(
+        cache_document,
+        registry,
+        bootstrap_target_hour=target_hour,
+        production_target_hour=production_target_hour,
+        forecast_hour_count=forecast_hour_count,
+    )
+    policy = policy_for_mode(mode)
+    try:
+        summary = validate_wave_history_cache(
+            cache_document,
+            registry,
+            target_hour=target_hour,
+            policy=policy,
+        )
+    except WaveBootstrapError as exc:
+        if mode != COLD_START_MODE or exc.code not in HISTORY_INCOMPLETE_CODES:
+            raise
+        attestation: dict[str, Any] = {
+            "status": "ok",
+            "schemaVersion": operational.sanitized_attestation()["schemaVersion"],
+            "mode": mode,
+            "registryPartCount": registry.part_count,
+            "historyIncomplete": True,
+            "historyIncompleteCode": exc.code,
+        }
+    else:
+        attestation = summary.sanitized_attestation()
+        attestation["historyIncomplete"] = False
+    attestation["operationalHandoff"] = operational.sanitized_attestation()
+    return attestation
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
@@ -84,23 +139,14 @@ def main(argv: list[str] | None = None) -> int:
             MAX_CACHE_BYTES,
             "CACHE_INVALID",
         )
-        policy = policy_for_mode(args.mode)
-        registry = load_coastal_part_registry(registry_document)
-        summary = validate_wave_history_cache(
+        attestation = build_attestation(
             cache_document,
-            registry,
+            registry_document,
+            mode=args.mode,
             target_hour=args.target_hour,
-            policy=policy,
-        )
-        operational = validate_wave_operational_handoff_cache(
-            cache_document,
-            registry,
-            bootstrap_target_hour=args.target_hour,
             production_target_hour=args.production_target_hour,
             forecast_hour_count=args.forecast_hour_count,
         )
-        attestation = summary.sanitized_attestation()
-        attestation["operationalHandoff"] = operational.sanitized_attestation()
         print(json.dumps(
             attestation,
             ensure_ascii=True,

@@ -95,6 +95,62 @@ jobs:
           test "$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "${{ inputs.legacy_source_required }}"
           test "$(jq -r '.privatePayloadIncluded' "$RAVRADAR_OPERATIONAL_HANDOFF/handoff.json")" = "false"
 
+      - name: Validate checkpoint disposition before any Pages begin CAS
+        id: checkpoint-disposition-begin
+        shell: bash
+        env:
+          CHECKPOINT_VALIDATION_PHASE: begin
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+
+          const root = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const manifest = read('manifest.json');
+          const disposition = read('checkpoint-disposition.json');
+          const runtimeAudit = read('checkpoint-runtime-audit.json');
+          const expectedDispositionKeys = [
+            'bindingSha256',
+            'checkpointRequired',
+            'datasetId',
+            'disposition',
+            'privatePayloadIncluded',
+            'rollbackActivationReady',
+            'rollbackStatus',
+            'runtimeAuditSha256',
+            'schemaVersion',
+            'sourceHead',
+          ].sort();
+          const fail = (message) => { throw new Error(`Checkpoint disposition ${process.env.CHECKPOINT_VALIDATION_PHASE} validation failed: ${message}`); };
+          if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
+          if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== manifest.datasetId || disposition.datasetId !== runtimeAudit.datasetId) fail('dataset binding');
+          if (disposition.privatePayloadIncluded !== false || handoff.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(runtimeAudit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (
+            handoff.checkpointDisposition !== disposition.disposition
+            || handoff.checkpointDispositionSha256 !== bindingSha256
+            || handoff.checkpointDatasetId !== disposition.datasetId
+            || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256
+          ) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY disposition state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up disposition state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else {
+            fail('unsupported disposition');
+          }
+          NODE
+
       - name: Reconfirm prepared SHA before any activation CAS
         env:
           GH_TOKEN: ${{ github.token }}
@@ -363,6 +419,62 @@ jobs:
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
           test "$GITHUB_SHA" = "$current_main"
 
+      - name: Revalidate checkpoint disposition before Pages completion CAS
+        id: checkpoint-disposition-complete
+        shell: bash
+        env:
+          CHECKPOINT_VALIDATION_PHASE: complete
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+
+          const root = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const manifest = read('manifest.json');
+          const disposition = read('checkpoint-disposition.json');
+          const runtimeAudit = read('checkpoint-runtime-audit.json');
+          const expectedDispositionKeys = [
+            'bindingSha256',
+            'checkpointRequired',
+            'datasetId',
+            'disposition',
+            'privatePayloadIncluded',
+            'rollbackActivationReady',
+            'rollbackStatus',
+            'runtimeAuditSha256',
+            'schemaVersion',
+            'sourceHead',
+          ].sort();
+          const fail = (message) => { throw new Error(`Checkpoint disposition ${process.env.CHECKPOINT_VALIDATION_PHASE} validation failed: ${message}`); };
+          if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
+          if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== manifest.datasetId || disposition.datasetId !== runtimeAudit.datasetId) fail('dataset binding');
+          if (disposition.privatePayloadIncluded !== false || handoff.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(runtimeAudit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (
+            handoff.checkpointDisposition !== disposition.disposition
+            || handoff.checkpointDispositionSha256 !== bindingSha256
+            || handoff.checkpointDatasetId !== disposition.datasetId
+            || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256
+          ) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY disposition state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up disposition state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else {
+            fail('unsupported disposition');
+          }
+          NODE
+
       - name: Complete Candidate G rollback only after public verification
         if: inputs.operational_action == 'candidate-execute'
         shell: bash
@@ -559,6 +671,55 @@ jobs:
               test "$model" = "candidate-g"
               completion_args=(--plan "$RAVRADAR_OPERATIONAL_HANDOFF/plan.json")
             fi
+            CHECKPOINT_TARGET_MANIFEST="$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { sha256CanonicalJson } from './scripts/ravscore-operational-pages-recovery.mjs';
+
+          const root = process.env.RAVRADAR_OPERATIONAL_HANDOFF;
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));
+          const handoff = read('handoff.json');
+          const manifest = read('manifest.json');
+          const observedManifest = JSON.parse(fs.readFileSync(process.env.CHECKPOINT_TARGET_MANIFEST, 'utf8'));
+          const disposition = read('checkpoint-disposition.json');
+          const runtimeAudit = read('checkpoint-runtime-audit.json');
+          const expectedDispositionKeys = [
+            'bindingSha256',
+            'checkpointRequired',
+            'datasetId',
+            'disposition',
+            'privatePayloadIncluded',
+            'rollbackActivationReady',
+            'rollbackStatus',
+            'runtimeAuditSha256',
+            'schemaVersion',
+            'sourceHead',
+          ].sort();
+          const fail = (message) => { throw new Error(`Failure reconciliation checkpoint disposition validation failed: ${message}`); };
+          if (disposition.schemaVersion !== 'ravscore-continuation-checkpoint-disposition-v1') fail('schema');
+          if (JSON.stringify(Object.keys(disposition).sort()) !== JSON.stringify(expectedDispositionKeys)) fail('unexpected fields');
+          if (disposition.sourceHead !== process.env.GITHUB_SHA || handoff.sourceHead !== process.env.GITHUB_SHA) fail('source head');
+          if (!disposition.datasetId || disposition.datasetId !== manifest.datasetId || disposition.datasetId !== observedManifest.datasetId || disposition.datasetId !== runtimeAudit.datasetId) fail('dataset binding');
+          if (disposition.privatePayloadIncluded !== false || handoff.privatePayloadIncluded !== false) fail('privacy marker');
+          const { bindingSha256, ...binding } = disposition;
+          if (!/^[a-f0-9]{64}$/.test(bindingSha256) || sha256CanonicalJson(binding) !== bindingSha256) fail('canonical binding');
+          if (!/^[a-f0-9]{64}$/.test(disposition.runtimeAuditSha256) || sha256CanonicalJson(runtimeAudit) !== disposition.runtimeAuditSha256) fail('runtime audit binding');
+          if (
+            handoff.checkpointDisposition !== disposition.disposition
+            || handoff.checkpointDispositionSha256 !== bindingSha256
+            || handoff.checkpointDatasetId !== disposition.datasetId
+            || handoff.checkpointRuntimeAuditSha256 !== disposition.runtimeAuditSha256
+          ) fail('handoff binding');
+          if (disposition.disposition === 'READY_PUBLISHED') {
+            if (disposition.rollbackStatus !== 'READY' || disposition.rollbackActivationReady !== true || disposition.checkpointRequired !== true) fail('READY disposition state');
+            if (handoff.checkpointBuildOutcome !== 'success' || handoff.checkpointSaveOutcome !== 'success' || handoff.checkpointPublishOutcome !== 'success') fail('READY result proof');
+          } else if (disposition.disposition === 'NOT_APPLICABLE_DURING_MEASURED_WARMUP') {
+            if (disposition.rollbackStatus !== 'BUILDING_MEASURED_ONLY' || disposition.rollbackActivationReady !== false || disposition.checkpointRequired !== false) fail('warm-up disposition state');
+            if (handoff.checkpointBuildOutcome !== 'skipped' || handoff.checkpointSaveOutcome !== 'skipped' || handoff.checkpointPublishOutcome !== 'skipped') fail('warm-up result proof');
+          } else {
+            fail('unsupported disposition');
+          }
+          NODE
             node scripts/ravscore-operational-activation.mjs reconcile \
               --expected-version "$pending_version" \
               --manifest "$RAVRADAR_OPERATIONAL_HANDOFF/observed-manifest.json" \

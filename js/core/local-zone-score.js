@@ -1,11 +1,11 @@
-import { scoreRating } from './score-presentation.js?v=4.0.318';
+import { scoreRating } from './score-presentation.js?v=4.0.320';
 import {
   RAVSCORE_BEST_TIME_POLICY,
   compareRavScoreBestTimeCandidates,
   ravScoreBestTimeSelectionReason,
-} from './best-time-policy.js?v=4.0.318';
-import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.318';
-import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.318';
+} from './best-time-policy.js?v=4.0.320';
+import { forecastDateKeyInTimeZone } from './forecast-calendar.js?v=4.0.320';
+import { RAVSCORE_CALIBRATION_ELIGIBLE } from './ravscore-model-contract.js?v=4.0.320';
 
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 const safeCount = value => Number.isSafeInteger(value) && value >= 0;
@@ -91,7 +91,9 @@ function strictScoreQuality(value, { available } = {}) {
     || value.historyCoverageHours > HISTORY_COVERAGE_HOURS) return null;
   if (available === true
     && value.scoreQuality === 'FULL_HISTORY'
-    && value.calibrationEligible === RAVSCORE_CALIBRATION_ELIGIBLE
+    && typeof value.calibrationEligible === 'boolean'
+    && (RAVSCORE_CALIBRATION_ELIGIBLE === true
+      || value.calibrationEligible === false)
     && value.historyCoverageHours === HISTORY_COVERAGE_HOURS
     && historyReasonCodes.length === 0
     && ['EXACT_POINT_SCORE','CONSERVATIVE_TAIL_RESET_POINT_SCORE']
@@ -101,7 +103,7 @@ function strictScoreQuality(value, { available } = {}) {
       === (value.scoreSemantics === 'CONSERVATIVE_TAIL_RESET_POINT_SCORE')) {
     return {
       scoreQuality: value.scoreQuality,
-      calibrationEligible: RAVSCORE_CALIBRATION_ELIGIBLE,
+      calibrationEligible: value.calibrationEligible,
       scoreSemantics: value.scoreSemantics,
       conservativeTailResetApplied: value.conservativeTailResetApplied,
       historyCoverageHours: value.historyCoverageHours,
@@ -143,6 +145,25 @@ const PROVENANCE_FIELDS = Object.freeze([
   'temporalResolution','verticalLayer','vectorSelection','vectorSemanticsVersion','method',
   'fallback','distanceKm',
 ]);
+const WAVE_INPUT_QUALITY_FIELDS = Object.freeze([
+  'waveInputSource','waveInputUncertainty','waveInputNoticeId',
+]);
+const FEGGESUND_WAVE_PROXY_SOURCE = 'FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION';
+const FEGGESUND_WAVE_PROXY_NOTICE_ID = 'FEGGESUND_NEIGHBOR_WAVE_PROXY';
+function safeWaveInputQuality(value) {
+  const present=WAVE_INPUT_QUALITY_FIELDS.filter(field=>Object.hasOwn(value,field));
+  if(present.length===0)return {};
+  if(present.length!==WAVE_INPUT_QUALITY_FIELDS.length)return null;
+  const projected=Object.fromEntries(WAVE_INPUT_QUALITY_FIELDS.map(field=>[field,value[field]]));
+  const nullQuality=projected.waveInputSource===null
+    &&projected.waveInputUncertainty===null&&projected.waveInputNoticeId===null;
+  const directQuality=projected.waveInputSource==='DIRECT_OFFICIAL'
+    &&projected.waveInputUncertainty==='LOW'&&projected.waveInputNoticeId===null;
+  const proxyQuality=projected.waveInputSource===FEGGESUND_WAVE_PROXY_SOURCE
+    &&['LOW','MODERATE','HIGH'].includes(projected.waveInputUncertainty)
+    &&projected.waveInputNoticeId===FEGGESUND_WAVE_PROXY_NOTICE_ID;
+  return nullQuality||directQuality||proxyQuality?projected:null;
+}
 const strictComponents = value => {
   if (!plain(value)) return null;
   const projected=Object.fromEntries(['huntability','transport','release'].map(key=>[key,value[key]]));
@@ -152,6 +173,8 @@ const safePoint = value => Array.isArray(value) && value.length === 2 && value.e
   ? [...value] : null;
 function safeWeather(value,time){
   if(!plain(value))return null;
+  const waveInputQuality=safeWaveInputQuality(value);
+  if(waveInputQuality===null)return null;
   const result={time};
   for(const field of ['provider','providerLabel'])if(typeof value[field]==='string')result[field]=value[field];
   for(const [field,[minimum,maximum]] of Object.entries(WEATHER_NUMBER_RULES)){
@@ -166,7 +189,7 @@ function safeWeather(value,time){
     if(!Number.isSafeInteger(provenance.vectorSemanticsVersion)||provenance.vectorSemanticsVersion<1)delete provenance.vectorSemanticsVersion;
     result.currentProvenance=provenance;
   }
-  return result;
+  return Object.assign(result,waveInputQuality);
 }
 const coverageReason = value => value?.comparisonPartCount <= 1
   ? 'Der er kun beregnet én kystdel. Derfor kan forskelle inden for zonen endnu ikke sammenlignes.'

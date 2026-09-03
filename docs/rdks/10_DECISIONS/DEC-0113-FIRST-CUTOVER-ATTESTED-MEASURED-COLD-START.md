@@ -1,6 +1,6 @@
 # DEC-0113 – første integrerede cutover bruger attesteret measured-only cold start, når Candidate G ikke er migrationsklar
 
-- **Status:** Ejerbesluttet og implementeret i lokal 4.0.318-kandidat. PR #244 bestod opdateret exact-head `33452730102` og blev merged som `27906d7d83883622d87d66b141869302b016d6c6`; den efterfølgende legacy WAM-cache-, actionisolations- og watchdogremediation er lokal. Dens egen exact-head, merge, friske produktion/deploy, Feggesund 3 × 118 og offentlige desktop-/mobilverifikation afventer
+- **Status:** Ejerbesluttet og delvist erstattet operationelt af DEC-0114. Source-attestation, migrationens strenge WAM-gate, actionisolering, privacy og geodatagrænser består; non-READY Candidate G må ikke længere blokere selve den integrerede first-cutover, når DEC-0114's direct+118-h-gates er grønne. DEC-0114-deltaet er lokalt implementeret og måltestet; frisk 118-timers data-preflight, exact-head, merge, frisk produktion/deploy, Feggesund 3 × 118 og offentlig desktop-/mobilverifikation afventer
 
 **Driftspræcisering 2026-09-01:** En genbrugt DMI-kystdelscache er kun producentmæssig succes, når dens aktive `PART::`-identitet er eksakt, og mindst ét finite U/V-par på samme time/række har fuld native provenance i den låste `target−48..target+117`-matrix. Den valgte cache skal være atomisk materialiseret til næste forbruger. Nul strict par stopper både normal og WAM-produktion, men reelt progressivt arbejde checkpointes fortsat. Testfixtures for relative prognosedage skal bruge den fælles danske forecastkalender og et fast klokkeslæt. Dette ændrer ingen score-, geometri-, punkt- eller private datakontrakter.
 
@@ -11,6 +11,17 @@
 - **Supplerer:** DEC-0102, DEC-0110 og DEC-0112
 - **Offentlig model indtil sikker cutover:** Candidate G/4.0.316
 
+## Bindende aktiveringspræcisering 2026-09-03
+
+Denne præcisering supersederer alene punkt 12's ord **“første cutover er fortsat push-only”** og enhver tilsvarende ældre formulering i beslutningen. Candidate G skal stadig være den eneste offentlige model, indtil den integrerede aktivering er fuldt verificeret, men rækkefølgen er nu bevidst todelt:
+
+- Et merge/push må kun etablere eller vedligeholde den moderne Candidate G-kilde på samme eksakte `main`-head. Legacy-Candidate føres gennem den eksisterende `candidate-legacy-maintenance`/`legacy-refresh-*`-bro; schedule, watchdog og almindelig manuel drift forbliver Candidate G-vedligeholdelse. Fase A må merge før 673 × 118-beviset, så cron kan opbygge den korrigerede cache uden offentligt modelskift.
+- Selve første aktivering er manual-only og kræver samtidig `ravscore_integrated_first_cutover=true` og `EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE`. Før DMI vælges action alene ud fra den forseglede centrale Fase-A-identitet: current moderne Candidate G på samme head med eksakt version, deployment-id, `sourceHead`, implementation closure og profil/binding samt DEC-0114's allerede grønne Supabase-kapacitetsbevis. Den faktiske live public source/manifest/implementation genverificeres i deployleddet før første begin-CAS eller central modelmutation.
+- Bekræftelsen kan ikke erstatte kapacitets-, data-, release- eller offentligt bevis. Manglende bool, forkert/forældreløs token, legacy source, gammel head eller closureafvigelse stopper før første cutover.
+- Allerede forseglede historiske planer og recovery/reconciliation bevares. Der oprettes ingen ny controllerstatus, transitionstype eller offentlig shadowmodel.
+
+Dette delta er lokalt implementeret og måltestet, men endnu ikke commit'et, pushet, merged eller live. Det ændrer ingen modelbundle/hash, score, state, DMI/Copernicus, geometri eller punkter.
+
 ## Hændelse og observeret bevis
 
 PR #235 bestod exact-head-kildegaten `33332106627` på source head `30306a51c4e360c5054368f1b0167e3aaa3862ee` og blev merged som main `a584d1cf1a53692b10b0f01244eab4fb91ca89b1`. Den første normale push-produktion `33333490853` stoppede sikkert i **Resolve one aggregate Candidate G wave-bootstrap target**. Den offentlige Candidate G-kilde var komplet som 210 zoner/673 kystdele, men alle 673 states var kanonisk warmup og 0 var `READY`. Den gamle resolver behandlede fejlagtigt migrationsegnethed som et krav for overhovedet at anerkende kilden.
@@ -19,7 +30,7 @@ Stoppet skete før DMI-/Copernicus-opdatering, scorebygning, fælles eller besky
 
 Tre kontraktfejl blev identificeret samlet:
 
-1. En komplet, kanonisk Candidate G-warmupkilde er et gyldigt attesterbart rollbackgrundlag, men ikke en `READY` migrationsstate.
+1. En komplet, kanonisk Candidate G-warmupkilde er et gyldigt attesterbart source-/cold-startgrundlag, men hverken en `READY` migrationsstate eller et rollbackgrundlag.
 2. Den offentlige Candidate G-state skal valideres mod sit eget eksakte historiske kystdelsregister. Den aktuelt centralt godkendte runtimekontekst skal valideres separat; den må ikke bruges til at omskrive eller fejltolke den historiske source-state.
 3. Node-resolveren udsendte UTC-timen med `.000Z`, mens den produktionskritiske Python-parser kun accepterede den kanoniske hele-timeform uden millisekunder.
 
@@ -53,9 +64,9 @@ Det betyder ikke, at et ugyldigt Candidate G-grundlag accepteres. Det betyder, a
 7. Resolveren må kun udstede de payloadfri felter `mode`, kanonisk `target_hour`, `part_count=673` og `source_validated=true`. UTC-formatet er eksakt `YYYY-MM-DDTHH:00:00Z`; samme tekst skal kunne roundtrippe gennem produktionsparseren i Python.
 8. `genuine-cold-start` må kun accepteres af statevælgeren, når aggregate-resolveren udtrykkeligt har attesteret source med `source_validated=true`, en Candidate G-source-state findes, og ingen tidligere integreret continuation-/checkpointkilde er blevet afvist som invalid. Standard/`auto` forbliver fail-closed ved en tilstedeværende ugyldig kilde.
 9. Den integrerede state genafspiller kun de faktisk tilgængelige 0–48 private, verificerede timer plus den virkelige targettime. Historikmissing forbliver numerisk `HISTORY_INCOMPLETE` efter DEC-0112; der indsættes ingen syntetisk, interpoleret, lånt eller carry-forwardet historik.
-10. Candidate G-rollback-oraklet initialiseres ad en separat, eksklusiv vej. Ved `genuine-cold-start` skal det bygges fra sine egne faktiske measured-only timer og må ikke hybridiseres med en continuation. En READY rollback-companion må først forsegles, når Candidate G's egen fulde 48-timers-/memoryReady-kontrakt faktisk består; ellers stopper checkpoint/release fail-closed.
+10. Candidate G-rollback-oraklet initialiseres ad en separat, eksklusiv vej. Ved `genuine-cold-start` skal det bygges fra sine egne faktiske measured-only timer og må ikke hybridiseres med en continuation. En READY rollback-companion må først forsegles, når Candidate G's egen fulde 48-timers-/memoryReady-kontrakt faktisk består. Efter DEC-0114 stopper non-READY fortsat checkpointforsegling og manuel Candidate G-rollback, men ikke selve `INITIAL_INTEGRATED_CUTOVER`, når den private `BUILDING_MEASURED_ONLY`-runtime, checkpoint-N/A-attestation og alle integrerede direct+118-h-gates består.
 11. Allerede hentede, gyldige DMI-/Copernicus- og beskyttede cachedata genbruges under deres eksisterende provenance-, alder-, target- og hashgrænser. En virkelig delvis DMI-cache gemmes efter et ikke-annulleret producentforsøg, også når forsøget senere fejler, så næste run kan fortsætte uden at genstarte alt arbejde. Når en attesteret legacy Candidate G-WAM-cache i den strikte same-cell-verifikator giver `MISSING_CELL`, er kun dens private `PART::`-bølgedel et genopbyggeligt cold-cache-miss: bølgefelter og tilhørende source/summary fjernes, den øvrige cache bevares og checkpointes, og officielle målte DMI-bølger genhentes. Validatoren må ikke lempes, fejlen må ikke konverteres til success, og ingen syntetisk, interpoleret eller infereret bølge må dannes. Dette gør ikke deldata offentlige og lemper ikke slutgaterne.
-12. Første cutover er fortsat push-only. Mens Candidate G er offentlig og ingen integreret continuation findes, skal schedule-/watchdog-/manuel vejrdrift vælge Candidate G-maintenance og må ikke køre integreret resolver, cold-start-reserver, force-refresh/WAM-mode eller first-cutover-miljø. Kun den eksplicitte `integrated-cutover`-action og controllerens fuldt verificerede atomiske cutover må skifte den offentlige profil.
+12. **Supersederet 2026-09-03 alene for initiatoren:** Første cutover er ikke længere push-initieret. Mens Candidate G er offentlig, skal push, schedule, watchdog og almindelig manuel vejrdrift vælge Candidate G-maintenance og må ikke køre integreret resolver, cold-start-reserver, force-refresh/WAM-mode eller first-cutover-miljø. Kun den særskilte manuelle Fase B må vælge den interne `integrated-cutover`-action; controllerens fuldt verificerede atomiske cutover er fortsat den eneste vej til at skifte den offentlige profil.
 13. En bootstrap-/resolverfejl skal stoppe før dyr vejrhentning, scorebygning, protected state/cache/checkpoint/adminmutation, artifact, Pages, deploy og activation. Lokal materialisering af den allerede centralt godkendte inputkontekst og isoleret read-only sourcehydrering er tilladt; de må ikke ændre offentlig eller beskyttet state.
 14. Hovedworkflowets concurrency skal bevare pending main-produktioner som en kø. Den eksterne watchdog skal læse en tilstrækkeligt bred, ufiltreret runhistorik, filtrere main lokalt, stoppe fail-closed ved manglende eller malformed historik og rechecke umiddelbart før dispatch. En aktiv eller queued produktion er et stopbevis mod ekstra dispatch.
 
@@ -63,7 +74,7 @@ Det betyder ikke, at et ugyldigt Candidate G-grundlag accepteres. Det betyder, a
 
 PR #244's exact-head `33452730102` og merge `27906d7d83883622d87d66b141869302b016d6c6` er afsluttede kildebeviser, mens produktion `33471276238` kun beviser et sikkert stop uden offentlig mutation. 4.0.318 er derfor ikke livebevist af denne beslutning. Før release kræves den aktuelle remediations egen målrettede aggregate/source-registry/UTC/cold-start/rollback/cache/action-/watchdogtests, RDKS- og kildegate, endelig modelbinding, exact-head på egen PR, sikker merge, frisk fuld produktion med validate/releasegate/artifact/Pages samt offentlig 210/673/current/femdøgns- og desktop-/mobilkontrol. Candidate G forbliver offentlig ved enhver fejl.
 
-Offline-replay og kontrakttests kan dokumentere determinisme, fysisk sammenhæng og teknisk forbedring. Uden repræsentativt fund-/nul-fundgrundlag må 4.0.318 ikke omtales som empirisk mere fundpræcis.
+Offline-replay og kontrakttests kan dokumentere determinisme, fysisk sammenhæng og teknisk forbedring. Uden repræsentativt fund-/nul-fundgrundlag må 4.0.319 ikke omtales som empirisk mere fundpræcis.
 
 ## Uændrede grænser
 

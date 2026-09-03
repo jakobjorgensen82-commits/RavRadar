@@ -39,6 +39,21 @@ const verifiedEvidenceTrust = Object.freeze({
   syntheticSampleCount: 0,
   activeUntil: null,
 });
+const candidateScoreAvailability = Object.freeze({
+  schemaVersion: 2,
+  policy: 'candidate-g-local-fail-closed',
+  allZonesActive: true,
+  activeZoneCount: 210,
+  unavailableZoneCount: 0,
+  totalZoneCount: 210,
+  allCurrentScoresFullHistory: true,
+  fullHistoryModeCount: 420,
+  historyIncompleteModeCount: 0,
+  historyIncompleteZoneCount: 0,
+  evaluatedAt: '2026-08-29T11:05:00.000Z',
+  unavailableZones: [],
+  historyIncompleteZones: [],
+});
 
 try {
   await fs.mkdir(stagedRoot, { recursive: true });
@@ -85,6 +100,7 @@ try {
     coastalPartCount: 673,
     ravScoreModelBinding: candidateBinding,
     ravScoreEvidenceTrust: verifiedEvidenceTrust,
+    ravScoreAvailability: candidateScoreAvailability,
     publicConditionsSha256: 'a'.repeat(64),
     publicConditionsBytes: 1,
     publicConditionDetailsSha256: 'b'.repeat(64),
@@ -151,6 +167,7 @@ try {
       coastalParts: {
         modelBinding: candidateBinding,
         evidenceTrust: verifiedEvidenceTrust,
+        scoreAvailability: candidateScoreAvailability,
       },
       publicRuntimeAvailability: stagedPublicRuntime.selectPublicRuntimeAvailability(
         candidateManifest,
@@ -342,6 +359,46 @@ try {
       calibrationFeatures: integratedFeatures,
     },
   };
+  const integratedLockedFeatures = {
+    ...integratedFeatures,
+    scoreCalibrationEligible:false,
+  };
+  const integratedLockedPayload = {
+    ...integratedEligiblePayload,
+    calibration_eligible:false,
+    calibration_features:integratedLockedFeatures,
+    weather_snapshot:{
+      ...integratedEligiblePayload.weather_snapshot,
+      calibrationFeatures:integratedLockedFeatures,
+    },
+  };
+  assert.equal(externalTripPayload(integratedLockedPayload).calibration_eligible,false,
+    'Edge must accept exact integrated FULL_HISTORY evidence under a false input ceiling');
+  assert.throws(() => externalTripPayload({
+    ...integratedLockedPayload,
+    calibration_eligible:true,
+  }), /TRIP_CALIBRATION_ELIGIBILITY_INVALID/,
+  'Edge must reject calibration=true when scoreCalibrationEligible is false');
+  const integratedWarmupLockedFeatures = {
+    ...integratedLockedFeatures,
+    reasonCodes: [
+      ...integratedLockedFeatures.reasonCodes,
+      'ravscore-global-warmup-calibration-lock',
+    ],
+  };
+  const integratedWarmupAndInputLockedPayload = {
+    ...integratedLockedPayload,
+    calibration_features: integratedWarmupLockedFeatures,
+    weather_snapshot: {
+      ...integratedLockedPayload.weather_snapshot,
+      calibrationFeatures: integratedWarmupLockedFeatures,
+    },
+  };
+  assert.equal(
+    externalTripPayload(integratedWarmupAndInputLockedPayload).calibration_eligible,
+    false,
+    'Edge must accept FULL_HISTORY with both the input ceiling and global warmup lock',
+  );
   for (const historicalMigration of [false, true]) {
     const d1FailSafe = externalTripPayload(integratedEligiblePayload, { historicalMigration });
     assert.equal(d1FailSafe.calibration_eligible, false,
@@ -513,6 +570,87 @@ try {
     [historyIncompleteReason],
     'Edge admission must pass the exact HISTORY_INCOMPLETE reason to SQL',
   );
+
+  const globalWarmupReason = 'ravscore-global-warmup-calibration-lock';
+  const globalWarmupFeatures = {
+    ...integratedFeatures,
+    reasonCodes: [globalWarmupReason],
+  };
+  const integratedGlobalWarmupPayload = {
+    ...integratedEligiblePayload,
+    calibration_eligible: false,
+    data_quality_flags: [],
+    calibration_features: globalWarmupFeatures,
+    weather_snapshot: {
+      ...integratedEligiblePayload.weather_snapshot,
+      calibrationFeatures: globalWarmupFeatures,
+    },
+  };
+  assert.deepEqual(tripEvidenceIntegrityIssues(integratedGlobalWarmupPayload), []);
+  assert.equal(externalTripPayload(integratedGlobalWarmupPayload).calibration_eligible, false);
+  assert.equal(submittedCalibrationEligibilityMatches(
+    integratedGlobalWarmupPayload,
+    integratedBinding,
+    { ineligibleBindings: [candidateBinding] },
+  ), true, 'Integrated FULL_HISTORY captured under the global lock remains storable as false');
+  assert.deepEqual(
+    activeRavScoreTripAdmissionBody(integratedGlobalWarmupPayload).p_reason_codes,
+    [globalWarmupReason],
+    'Edge admission must pass the immutable global warmup reason to SQL',
+  );
+  assert.throws(() => externalTripPayload({
+    ...integratedGlobalWarmupPayload,
+    calibration_eligible: true,
+  }), /TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID/);
+  assert.throws(() => externalTripPayload({
+    ...integratedEligiblePayload,
+    calibration_eligible: false,
+  }), /TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID/,
+  'Integrated FULL_HISTORY false without the immutable lock reason must fail closed');
+  const movedLocationPayload = {
+    ...integratedEligiblePayload,
+    actual_coastal_part_id: 'part-other-than-forecast',
+    calibration_eligible: false,
+  };
+  assert.equal(externalTripPayload(movedLocationPayload).calibration_eligible, false,
+    'FULL_HISTORY without a warmup reason must retain SQL location-parity false');
+  const duplicateWarmupFeatures = {
+    ...globalWarmupFeatures,
+    reasonCodes: [globalWarmupReason, globalWarmupReason],
+  };
+  assert.throws(() => externalTripPayload({
+    ...integratedGlobalWarmupPayload,
+    calibration_features: duplicateWarmupFeatures,
+    weather_snapshot: {
+      ...integratedGlobalWarmupPayload.weather_snapshot,
+      calibrationFeatures: duplicateWarmupFeatures,
+    },
+  }), /TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID/);
+  const historyWarmupFeatures = {
+    ...historyIncompleteFeatures,
+    reasonCodes: [historyIncompleteReason, globalWarmupReason],
+  };
+  assert.throws(() => externalTripPayload({
+    ...integratedHistoryIncompletePayload,
+    calibration_features: historyWarmupFeatures,
+    weather_snapshot: {
+      ...integratedHistoryIncompletePayload.weather_snapshot,
+      calibrationFeatures: historyWarmupFeatures,
+    },
+  }), /TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID/);
+  const candidateWarmupFeatures = {
+    ...payload.calibration_features,
+    reasonCodes: [globalWarmupReason],
+  };
+  assert.throws(() => externalTripPayload({
+    ...payload,
+    calibration_features: candidateWarmupFeatures,
+    weather_snapshot: {
+      ...payload.weather_snapshot,
+      calibrationFeatures: candidateWarmupFeatures,
+    },
+  }), /TRIP_GLOBAL_WARMUP_LOCK_BINDING_INVALID/);
+
   const forgedEmergencyPayload = {
     ...forgedPayload,
     calibration_features: {
@@ -534,10 +672,12 @@ try {
   ), false, 'The emergency reason must not admit a forged exact model binding');
 
   const [submitSource, tripStoreSource, observationServiceSource, migrationSql,
-    operationalMigrationSql] = await Promise.all([
+    stableTripMigrationSql, operationalMigrationSql] = await Promise.all([
     fs.readFile('supabase/functions/submit-observation/index.ts', 'utf8'),
     fs.readFile('supabase/functions/_shared/trip-store.ts', 'utf8'),
     fs.readFile('js/services/observation-service.js', 'utf8'),
+    fs.readFile('supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql',
+      'utf8'),
     fs.readFile('supabase/migrations/20260829020000_integrated_trip_calibration_binding.sql',
       'utf8'),
     fs.readFile('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql',
@@ -564,8 +704,10 @@ try {
   assert.match(observationServiceSource,
     /for\(const row of queue\)[\s\S]*catch\(error\)\{remaining\.push\([\s\S]*write\(OUTBOX_KEY,remaining\)/,
     'A 409 transition rejection must leave the immutable observation in the retry outbox');
+  assert.ok(stableTripMigrationSql.includes("'modelVersion'"),
+    'Stable schema-3 constraint must retain the modelVersion field');
   for (const key of [
-    'modelVersion', 'modelStateVersion', 'modelVariantId', 'modelProfileId',
+    'modelStateVersion', 'modelVariantId', 'modelProfileId',
     'modelComponentSchemaId', 'modelExplanationSchemaId', 'modelRankingPolicyId',
     'modelBestTimePolicyId', 'modelPresentationPolicyId', 'modelContractSha256',
     'modelBundleSha256',
@@ -585,18 +727,21 @@ try {
     'Unknown operational keys must fail closed');
   assert.match(migrationSql, /sourceImplementationClosureSha256' ~ '\^\[a-f0-9\]\{64\}\$'/);
   assert.match(migrationSql, /requestedImplementationClosureSha256' ~ '\^\[a-f0-9\]\{64\}\$'/);
-  assert.match(migrationSql,
+  assert.match(stableTripMigrationSql,
     /normalized ~ '\(lat\(itude\)\?\|lon\(gitude\)\?\|lng\|gps\|coord\|position\|route\|track\|location\)'/,
     'SQL nested privacy must reject the same location aliases as browser and Edge');
   assert.match(migrationSql,
-    /RAVSCORE_INTEGRATED_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1\.1\.0'[\s\S]*RAVSCORE_INTEGRATED_BINDING_END[\s\S]*p_calibration_eligible = \([\s\S]*p_actual_zone_id = p_forecast_zone_id/,
-    'SQL must allow exact integrated trips and derive their eligibility from location parity');
+    /RAVSCORE_INTEGRATED_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-COASTAL-PROCESS-INTEGRATED-1\.1\.0'[\s\S]*RAVSCORE_INTEGRATED_BINDING_END[\s\S]*then public\.ravradar_trip_v3_calibration_truth_allowed/,
+    'SQL exact integrated binding must delegate to the immutable truth table');
   assert.match(migrationSql,
-    /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,800}public-emergency-last-complete[\s\S]{0,800}p_calibration_eligible = false/,
-    'SQL must allow only the exact integrated emergency reason as an ineligible same-model override');
+    /quality_reasons not in \([\s\S]{0,800}public-emergency-last-complete[\s\S]{0,800}return p_calibration_eligible = false/,
+    'SQL truth must retain bounded public emergency evidence as false');
   assert.match(migrationSql,
-    /RAVSCORE_INTEGRATED_BINDING_END[\s\S]{0,1000}ravscore-history-incomplete[\s\S]{0,1000}p_calibration_eligible = false/,
-    'SQL must allow HISTORY_INCOMPLETE only as an ineligible integrated-model reason');
+    /ravscore-history-incomplete[\s\S]{0,400}return warmup_reason_count = 0 and p_calibration_eligible = false/,
+    'SQL truth must retain HISTORY_INCOMPLETE as false and forbid the redundant warmup marker');
+  assert.match(migrationSql,
+    /warmup_reason_count = 1 or quality_reasons <> '\[\]'::jsonb[\s\S]{0,120}return p_calibration_eligible = false/,
+    'SQL truth must retain FULL_HISTORY captured under global warmup as false');
   const candidateReasonBlock = migrationSql.slice(
     migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END'),
     migrationSql.indexOf('else false\n  end;', migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END')),
@@ -606,15 +751,18 @@ try {
   assert.match(migrationSql,
     /ravradar_trip_v3_active_binding_admitted\([\s\S]{0,900}p_reason_codes jsonb[\s\S]{0,5000}'reasonCodes', p_reason_codes/,
     'The active SQL admission gate must receive and validate the exact reason array');
-  assert.match(migrationSql,
+  assert.match(stableTripMigrationSql,
     /new\.calibration_features -> 'reasonCodes',[\s\S]{0,200}new\.calibration_eligible/,
     'The database trigger must pass immutable trip reason codes to the active gate');
-  assert.match(migrationSql,
+  assert.match(stableTripMigrationSql,
     /ravradar_trip_v3_score_quality_allowed\([\s\S]*scoreBoundModelUncertaintyPoints[\s\S]*FULL_HISTORY[\s\S]*HISTORY_INCOMPLETE[\s\S]*CONSERVATIVE_ENCLOSING_LOWER_BOUND/i,
     'SQL must revalidate immutable score bounds and quality semantics');
   assert.match(migrationSql,
-    /RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'[\s\S]*modelContractSha256' = '[a-f0-9]{64}'[\s\S]*modelBundleSha256' = '[a-f0-9]{64}'[\s\S]*RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END[\s\S]*p_calibration_eligible = false/,
-    'SQL must allow only the exact sealed Candidate G binding and force it ineligible');
+    /RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_BEGIN[\s\S]*p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'[\s\S]*modelContractSha256' = '[a-f0-9]{64}'[\s\S]*modelBundleSha256' = '[a-f0-9]{64}'[\s\S]*RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END[\s\S]*then public\.ravradar_trip_v3_calibration_truth_allowed/,
+    'SQL must allow only the exact sealed Candidate G binding and delegate to truth');
+  assert.match(migrationSql,
+    /if p_model_version = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3'[\s\S]{0,200}return warmup_reason_count = 0[\s\S]{0,120}p_calibration_eligible = false/,
+    'Candidate G truth must remain false and must reject the integrated warmup marker');
   assert.doesNotMatch(migrationSql, /RRS-FORGED-STRUCTURALLY-VALID-1/,
     'The SQL allowlist must not contain the forged structurally valid binding');
   assert.match(migrationSql,
@@ -627,10 +775,10 @@ try {
     ),
     /(?:INTEGRATED_PENDING|CANDIDATE_G_PENDING)/,
     'No PENDING operational status may admit a schema-3 write');
-  assert.match(migrationSql,
+  assert.match(stableTripMigrationSql,
     /create trigger ravradar_observations_active_v3_binding_trigger[\s\S]*before insert or update[\s\S]*ravradar_observation_require_active_v3_binding\(\)/i,
     'The database must close the Edge preflight/write race with a row trigger');
-  assert.match(migrationSql,
+  assert.match(stableTripMigrationSql,
     /message = 'RAVSCORE_MODEL_NOT_ACTIVE'/,
     'The database race gate must return only the bounded transition sentinel');
   const activeAdmissionSql = migrationSql.slice(

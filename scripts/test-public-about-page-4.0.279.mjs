@@ -10,6 +10,13 @@ const aboutI18n = read('js/ui/about-i18n.js');
 const aboutCss = read('about.css');
 const style = read('style.css');
 const worker = read('service-worker.js');
+const manifest = JSON.parse(read('manifest.webmanifest'));
+
+function pngDimensions(relativePath) {
+  const bytes = fs.readFileSync(path.join(root, relativePath));
+  assert.equal(bytes.toString('ascii', 1, 4), 'PNG', `${relativePath} er ikke en PNG-fil`);
+  return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
+}
 
 function jpegDimensions(relativePath) {
   const bytes = fs.readFileSync(path.join(root, relativePath));
@@ -51,6 +58,18 @@ for (const expected of [
 for (const expected of ['An RavRadar schreiben', 'Write to RavRadar']) {
   assert.ok(aboutI18n.includes(expected), `Om-sidens oversættelser mangler: ${expected}`);
 }
+for (const expected of [
+  'Brug RavRadar som en app',
+  'Føj til hjemmeskærm',
+  'Installér og opret genvej',
+]) assert.ok(about.includes(expected), `Om-sidens installationsvejledning mangler: ${expected}`);
+assert.ok(about.includes('id="installer"'), 'Installationsafsnittet skal kunne åbnes direkte på Om-siden');
+for (const expected of [
+  'RavRadar wie eine App verwenden',
+  'Use RavRadar like an app',
+  'Zum Home-Bildschirm',
+  'Add to Home Screen',
+]) assert.ok(aboutI18n.includes(expected), `Om-sidens oversatte installationsvejledning mangler: ${expected}`);
 const allAboutSources = `${about}\n${aboutI18n}`;
 assert.equal((allAboutSources.match(/mailto:RavRadar@outlook\.dk/g) || []).length, 3, 'DA/DE/EN skal bruge RavRadars fælles mailadresse');
 for (const removed of ['jakob.jorgensen82@gmail.com', 'Skriv til Jakob', 'Jakob schreiben', 'Write to Jakob']) {
@@ -67,6 +86,19 @@ assert.match(aboutCss, /\.family-photo\s*\{[^}]*grid-template-columns:\s*minmax\
 assert.match(aboutCss, /@media \(max-width: 860px\)[\s\S]*?\.family-photo\s*\{\s*grid-template-columns:\s*1fr;/);
 assert.match(style, /grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.ok(worker.includes('"./about.html"') && worker.includes('`./about.css?v=${APP_VERSION}`'), 'Om-sidens lille HTML/CSS-skal skal være del af app-skallen');
+assert.equal(manifest.display, 'standalone', 'RavRadar skal åbne som en selvstændig webapp');
+assert.equal(manifest.start_url, './', 'Webappen skal altid starte på RavRadars forside');
+assert.equal(manifest.scope, './', 'Webappen skal være afgrænset til RavRadar');
+assert.ok(index.includes('rel="apple-touch-icon"') && about.includes('rel="apple-touch-icon"'), 'Forsiden og Om-siden skal pege på iPhone-ikonet');
+assert.ok(index.includes('apple-mobile-web-app-capable') && about.includes('apple-mobile-web-app-capable'), 'iPhone-webappen mangler standalone-markøren');
+assert.deepEqual(pngDimensions('assets/icons/ravradar-192.png'), { width: 192, height: 192 });
+assert.deepEqual(pngDimensions('assets/icons/ravradar-512.png'), { width: 512, height: 512 });
+assert.deepEqual(pngDimensions('assets/icons/apple-touch-icon.png'), { width: 180, height: 180 });
+assert.deepEqual(manifest.icons.map(icon => [icon.src, icon.sizes, icon.type]), [
+  ['assets/icons/ravradar-192.png', '192x192', 'image/png'],
+  ['assets/icons/ravradar-512.png', '512x512', 'image/png'],
+]);
+assert.ok(manifest.icons.some(icon => icon.sizes === '512x512' && String(icon.purpose).includes('maskable')), '512-pixels ikonet skal være sikkert til Android-maskering');
 
 for (const asset of [
   'assets/about/jakob-480.webp',
@@ -93,4 +125,4 @@ assert.deepEqual(jpegDimensions('assets/about/ravjagt-med-boern-1800.jpg'), { wi
 assert.equal(about.includes('ravjagt-med-boern-1200.webp'), false, 'Om-siden må ikke bruge den tidligere sidevendte billedvariant');
 assert.equal(worker.includes('ravjagt-med-boern-1200.webp'), false, 'Offline-appskallen må ikke cache den tidligere sidevendte billedvariant');
 
-console.log('Om RavRadar: indhold, topmenu, MobilePay og responsivt layout er kontraktkontrolleret.');
+console.log('Om RavRadar: indhold, hjemmeskærmswebapp, MobilePay og responsivt layout er kontraktkontrolleret.');

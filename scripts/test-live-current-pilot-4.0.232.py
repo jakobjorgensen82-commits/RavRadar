@@ -47,7 +47,9 @@ def dmi_source(part: dict) -> dict:
         "samplingPoint": part["waterPoint"], "gridPoint": part["waterPoint"],
         "gridDefinitionSha256": "a" * 64, "distanceKm": 0.0,
         "spatialSemanticsVersion": 1, "spatialSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
-        "itemId": f"item-{part['partId']}", "assetIdentitySha256": "b" * 64, "acquiredAt": AT,
+        "itemId": f"item-{part['partId']}", "assetIdentitySha256": "b" * 64,
+        "assetSizeBytes": 1024, "acquiredAt": AT,
+        "contentLengthBytes": 1024, "contentSha256": "d" * 64,
         "verticalLayer": "depthbelowsea:5", "verticalLayerRankM": 5.0,
         "vectorSelection": "nearest-shared-uv-column-across-dmi-collections-then-deepest-valid-layer",
         "vectorSemanticsVersion": 3,
@@ -188,6 +190,42 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-range-") as raw_f
     assert report["verifiedPartCount"] == 10 and report["coverageRequirementMet"] is True
     assert report["partsBySelectedSource"] == {"dmi-local": 9, "copernicus-local": 1, "dmi-regional-proxy": 0}
 
+    # The live projection must expose the operation seal while keeping absent
+    # advisory history explicit and publishing no invented entry.
+    legacy_cache = json.loads((folder / "copernicus.json").read_text(encoding="utf-8"))
+    advisory_required = [{
+        "partId": "part-9",
+        "validTime": (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+    }]
+    operational_collection = make_coverage_collection(
+        production_reference_at=REFERENCE,
+        target_registry_sha256=target_fingerprint(target_rows),
+        dmi_current_input_sha256=dmi_sha,
+        required_pairs=required,
+        record_refs=refs,
+        advisory_history_required_pairs=advisory_required,
+        advisory_history_record_refs=[],
+        sealed_at=acquisition_at,
+    )
+    atomic_write_shadow(
+        folder / "copernicus.json", acquisitions=acquisitions, records=retained,
+        collection=operational_collection, updated_at=acquisition_at,
+        target_identities=target_by_id,
+    )
+    operational_projection = run_builder(folder)
+    assert operational_projection.returncode == 0, (
+        operational_projection.stdout + operational_projection.stderr
+    )
+    operational_output = json.loads((folder / "output.json").read_text(encoding="utf-8"))
+    operational_seal = operational_output["copernicusRangeSeal"]
+    assert operational_seal["status"] == "OPERATIONAL_COMPLETE"
+    assert operational_seal["operationalRequiredPairCount"] == 2
+    assert operational_seal["advisoryHistoryAvailablePairCount"] == 0
+    assert operational_seal["advisoryHistoryMissingPairCount"] == 1
+    assert operational_seal["advisoryHistoryComplete"] is False
+    assert len(operational_output["entries"]) == 2
+    write(folder / "copernicus.json", legacy_cache)
+
     # Controlled-live remains fail-closed even if DMI currently covers every
     # part: the exact range seal is the proof that the full public horizon was
     # checked, including the possible empty-gap case.  Rollback deliberately
@@ -197,7 +235,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-live-current-range-") as raw_f
     missing_seal = run_builder(folder)
     assert (
         missing_seal.returncode != 0
-        and "requires an exact COMPLETE Copernicus range seal" in missing_seal.stderr
+        and "requires an exact activation-complete Copernicus seal" in missing_seal.stderr
     )
     write(folder / "control.json", {
         "schemaVersion": 1, "mode": "dmi-only-rollback", "credentialsPublic": False,

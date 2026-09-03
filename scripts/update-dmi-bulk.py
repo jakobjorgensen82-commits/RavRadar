@@ -8,6 +8,7 @@ and collection rotation are persisted across runs.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import math
@@ -19,6 +20,7 @@ import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urljoin, urlparse
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
 from lib.current_field_shadow import (
@@ -34,27 +36,44 @@ from lib.current_field_shadow import (
     save_document as save_current_field_shadow,
     status as current_field_shadow_status,
 )
-from lib.dmi_cache_migration import prune_previous_sampling_mismatches
+from lib.dmi_cache_migration import prune_previous_sampling_mismatches, same_sampling_point
 from lib.copernicus_current import (
     COLD_BRIDGE_HOURS,
     PUBLIC_END_OFFSET_HOURS,
     load_targets as load_coastal_part_targets,
 )
+from lib.copernicus_target_identity import target_fingerprint
 from lib.dmi_native_provenance import (
     COLLECTION_FAMILY,
     COMPONENT_FIELD_SET,
     COMPONENT_KIND,
     COMPONENT_SPATIAL_SELECTION,
     CURRENT_MAX_DISTANCE_KM,
+    CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
+    CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
+    CURRENT_OPERATIONAL_LEDGER_STATES,
     CURRENT_PREFERRED_DISTANCE_KM,
     CURRENT_VECTOR_SELECTION,
     CURRENT_VECTOR_SEMANTICS_VERSION,
+    DKSS_MAX_FORECAST_LEAD_HOURS,
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
+    build_current_part_outcome_proof,
+    canonical_time,
+    canonical_current_source_asset,
+    canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
     component_collection_allowed,
+    current_official_assets_sha256,
+    current_source_asset_sha256,
+    current_operational_ledger_ready,
+    derive_current_part_outcome_partition,
+    part_time_pairs_sha256,
+    processed_source_assets_from_current_operational_ledger,
     sampling_identity,
-    strict_verified_part_current_pair_count,
+    sanitized_current_attestation,
+    validate_current_part_outcome_proof,
+    valid_times_sha256,
     wave_distance_allowed,
 )
 from lib.coastal_point_staging import (
@@ -84,8 +103,9 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 try:
+    import eccodes as eccodes_module
     from eccodes import (
-        codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
+        OutOfAreaError, codes_get, codes_get_array, codes_get_elements, codes_grib_find_nearest,
         codes_grib_new_from_file, codes_release,
     )
 except ImportError as exc:
@@ -93,6 +113,30 @@ except ImportError as exc:
         "ecCodes Python API er ikke kompatibelt: codes_get_elements mangler. "
         "Installer requirements-dmi.txt igen."
     ) from exc
+
+# The public high-level nearest helper constructs and destroys an ecCodes
+# nearest object for every call. The low-level API lets a cold grid warm one
+# object and reuse its geometry for the exact same probe sequence. Keep this
+# optional at import time so provenance-only tests and older local bindings can
+# still exercise the fail-closed high-level path.
+codes_grib_nearest_new = getattr(eccodes_module, "codes_grib_nearest_new", None)
+codes_grib_nearest_find = getattr(eccodes_module, "codes_grib_nearest_find", None)
+codes_grib_nearest_delete = getattr(eccodes_module, "codes_grib_nearest_delete", None)
+CODES_GRIB_NEAREST_SAME_GRID = getattr(
+    eccodes_module,
+    "CODES_GRIB_NEAREST_SAME_GRID",
+    None,
+)
+ECCODES_API_VERSION = re.sub(
+    r"[^A-Za-z0-9._+-]",
+    "_",
+    str(getattr(eccodes_module, "__version__", "unknown")),
+)[:48]
+ECCODES_BINDING_VERSION = re.sub(
+    r"[^A-Za-z0-9._+-]",
+    "_",
+    str(getattr(eccodes_module, "bindings_version", "unknown")),
+)[:48]
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
@@ -104,6 +148,7 @@ DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
 RAW_DIR = pathlib.Path(os.getenv("DMI_BULK_RAW_DIR", str(ROOT / ".cache/dmi-grib")))
 CACHE_MANIFEST_NAME = "asset-manifest.json"
+RAW_CACHE_MANIFEST_SCHEMA_VERSION = 2
 CACHE_AUDIT_PATH = ROOT / "data/diagnostics/dmi-cache-audit.json"
 CURRENT_FIELD_SHADOW_PATH = pathlib.Path(os.getenv("CURRENT_FIELD_SHADOW_PATH", str(ROOT / ".cache/current-field-shadow.json")))
 CURRENT_FIELD_SHADOW_STATUS_PATH = ROOT / "data/diagnostics/current-field-shadow-status.json"
@@ -122,6 +167,14 @@ MAX_DOWNLOAD_BYTES = max(1, int(float(os.getenv("DMI_BULK_MAX_DOWNLOAD_MB", "204
 MAX_RUNTIME_SECONDS = max(60, int(os.getenv("DMI_BULK_MAX_RUNTIME_SECONDS", "780")))
 REQUEST_TIMEOUT = max(10, int(os.getenv("DMI_BULK_REQUEST_TIMEOUT_SECONDS", "90")))
 MAX_ASSETS_PER_COLLECTION = max(1, int(os.getenv("DMI_BULK_MAX_ASSETS_PER_COLLECTION", "130")))
+CHECKPOINT_MAX_ASSETS = max(1, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_ASSETS", "8")))
+CHECKPOINT_MAX_SECONDS = max(10, int(os.getenv("DMI_BULK_CHECKPOINT_MAX_SECONDS", "60")))
+STAC_PAGE_LIMIT = max(1, min(1000, int(os.getenv("DMI_STAC_PAGE_LIMIT", "1000"))))
+STAC_MAX_PAGES = max(1, min(100, int(os.getenv("DMI_STAC_MAX_PAGES", "20"))))
+STAC_MAX_INVENTORY_ITEMS = max(
+    STAC_PAGE_LIMIT,
+    min(100_000, int(os.getenv("DMI_STAC_MAX_INVENTORY_ITEMS", "20000"))),
+)
 TIME_STRIDE_HOURS = max(1, int(os.getenv("DMI_BULK_TIME_STRIDE_HOURS", "3")))
 COLLECTIONS_PER_RUN = max(1, int(os.getenv("DMI_BULK_COLLECTIONS_PER_RUN", "2")))
 WAM_MAX_FORECAST_LEAD_HOURS = 132
@@ -151,9 +204,9 @@ for _session in (STAC_SESSION, DOWNLOAD_SESSION):
 STAC_SESSION.headers.update({"Accept": "application/geo+json, application/json"})
 DOWNLOAD_SESSION.headers.update({"Accept": "application/x-grib, application/octet-stream, */*"})
 
-PARSER_VERSION = 19
+PARSER_VERSION = 20
 PARAMETER_MAP_VERSION = 4
-GRID_LOOKUP_VERSION = 7
+GRID_LOOKUP_VERSION = 9
 # The integrated model can replay at most 48 hours before its first public
 # target. Keep a bounded private buffer with one full native-cadence safety
 # margin; this cache is never part of the Pages artifact.
@@ -239,6 +292,16 @@ HINT_ALIASES = {
 }
 
 
+class DmiGridLookupError(RuntimeError):
+    """An ecCodes/grid failure that must never masquerade as spatial absence."""
+
+    def __init__(self, message: str, failure_code: str) -> None:
+        super().__init__(message)
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", failure_code):
+            raise ValueError("DMI grid failure code must be bounded and payload-free")
+        self.failure_code = failure_code
+
+
 def iso(value: Any) -> str | None:
     if not value:
         return None
@@ -264,6 +327,52 @@ def safe_error_message(error: Any, maximum: int = 500) -> str:
     return text[:maximum] or type(error).__name__
 
 
+def collection_failure_code(error: Exception) -> str:
+    """Classify one collection failure without exposing exception payloads."""
+    if isinstance(error, DmiGridLookupError):
+        return error.failure_code
+    message = safe_error_message(error)
+    fixed_prefix_codes = (
+        ("DMI metadata request failed", "STAC_REQUEST_FAILED"),
+        ("DMI metadata response is not valid JSON", "STAC_RESPONSE_INVALID_JSON"),
+        ("DMI metadata response is not a JSON object", "STAC_RESPONSE_INVALID_OBJECT"),
+        ("DMI bulk asset has an invalid declared size", "ASSET_DECLARED_SIZE_INVALID"),
+        ("DMI bulk asset has an invalid Content-Length", "ASSET_CONTENT_LENGTH_INVALID"),
+        ("DMI bulk asset length conflicts with STAC metadata", "ASSET_LENGTH_CONFLICT"),
+        ("DMI bulk asset download is incomplete", "ASSET_DOWNLOAD_INCOMPLETE"),
+        ("DMI bulk asset request failed", "ASSET_REQUEST_FAILED"),
+        ("DMI bulk download budget", "DOWNLOAD_BUDGET_EXCEEDED"),
+        ("no forecast-step GRIB assets found", "STAC_NO_FORECAST_ASSETS"),
+        ("GRIB downloaded but no required RavRadar parameters were recognized", "GRIB_PARAMETERS_UNRECOGNIZED"),
+    )
+    for prefix, code in fixed_prefix_codes:
+        if message.startswith(prefix):
+            return code
+    parser_codes = {
+        KeyError: "PARSER_KEY_ERROR",
+        TypeError: "PARSER_TYPE_ERROR",
+        IndexError: "PARSER_INDEX_ERROR",
+        AttributeError: "PARSER_ATTRIBUTE_ERROR",
+        ValueError: "PARSER_VALUE_ERROR",
+    }
+    for error_type, code in parser_codes.items():
+        if isinstance(error, error_type):
+            return code
+    return "COLLECTION_RUNTIME_FAILURE"
+
+
+def diagnostic_collection_failure_codes(diagnostics: dict[str, Any]) -> list[str]:
+    """Return at most three deterministic, payload-free marine failure codes."""
+    observed = {
+        str(error.get("failureCode"))
+        for error in (diagnostics.get("errors") or [])
+        if isinstance(error, dict)
+        and str(error.get("collection") or "") in MARINE_COLLECTIONS
+        and re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", str(error.get("failureCode") or ""))
+    }
+    return sorted(observed)[:3]
+
+
 def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
     query = dict(params or {})
     if API_KEY and url.startswith(STAC_ROOT):
@@ -284,30 +393,75 @@ def request_json(url: str, params: dict[str, Any] | None = None) -> dict[str, An
     return document
 
 
+STAC_RUN_TIME_ALIASES = (
+    "forecast:reference_datetime", "reference_datetime", "modelRun", "model_run",
+)
+STAC_VALID_TIME_ALIASES = (
+    "datetime", "forecast:valid_time", "valid_time", "end_datetime", "start_datetime",
+)
+
+
+def _canonical_stac_time_aliases(
+    item: Any,
+    aliases: tuple[str, ...],
+    *,
+    required: bool,
+) -> tuple[str | None, bool]:
+    """Parse every present alias and reject malformed or conflicting claims."""
+    if not isinstance(item, dict) or not isinstance(item.get("properties"), dict):
+        return None, False
+    properties = item["properties"]
+    parsed: list[str] = []
+    for key in aliases:
+        if key not in properties:
+            continue
+        raw = properties.get(key)
+        if (
+            not isinstance(raw, str)
+            or raw != raw.strip()
+            or not re.fullmatch(
+                r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}"
+                r"(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})",
+                raw,
+            )
+        ):
+            return None, False
+        try:
+            parsed_time = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None, False
+        if parsed_time.tzinfo is None or parsed_time.utcoffset() is None:
+            return None, False
+        value = parsed_time.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+        parsed.append(value)
+    if not parsed:
+        return None, not required
+    if len(set(parsed)) != 1:
+        return None, False
+    return parsed[0], True
+
+
 def item_run(item: dict[str, Any]) -> str | None:
-    props = item.get("properties") or {}
-    for key in ("forecast:reference_datetime", "reference_datetime", "modelRun", "model_run"):
-        value = iso(props.get(key))
-        if value:
-            return value
+    value, valid = _canonical_stac_time_aliases(
+        item, STAC_RUN_TIME_ALIASES, required=True,
+    )
     # Publication and valid-time metadata are not model-run identity.  If DMI
     # omits every explicit run field, this item is unusable rather than guessed
     # from `created`, the item id or the forecast-valid timestamp.
-    return None
+    return value if valid else None
 
 
 def item_valid(item: dict[str, Any]) -> str | None:
-    props = item.get("properties") or {}
-    for key in ("datetime", "forecast:valid_time", "valid_time", "end_datetime", "start_datetime"):
-        value = iso(props.get(key))
-        if value:
-            return value
-    return None
+    value, valid = _canonical_stac_time_aliases(
+        item, STAC_VALID_TIME_ALIASES, required=True,
+    )
+    return value if valid else None
 
 
 def item_timestamp(item: dict[str, Any], key: str) -> str | None:
-    """Return only an explicit STAC timestamp; never infer publication time."""
-    return iso((item.get("properties") or {}).get(key))
+    """Return one canonical explicit STAC timestamp; never infer it."""
+    value, valid = _canonical_stac_time_aliases(item, (key,), required=False)
+    return value if valid else None
 
 
 def observed_run_cadence_hours(runs: dict[str, list[dict[str, Any]]]) -> float | None:
@@ -360,8 +514,30 @@ def asset_map(item: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return merged
 
 
+def _canonical_stac_asset_size(asset: Any) -> tuple[int | None, bool]:
+    if not isinstance(asset, dict):
+        return None, False
+    parsed: list[int] = []
+    for key in ("file:size", "size", "content_length"):
+        if key not in asset:
+            continue
+        raw = asset.get(key)
+        if isinstance(raw, int) and not isinstance(raw, bool):
+            value = raw
+        else:
+            return None, False
+        if value <= 0:
+            return None, False
+        parsed.append(value)
+    if not parsed:
+        return None, True
+    if len(set(parsed)) != 1:
+        return None, False
+    return parsed[0], True
+
+
 def grib_asset(item: dict[str, Any]) -> tuple[str, int | None, str] | None:
-    ranked: list[tuple[int, str, int | None, str]] = []
+    ranked: list[tuple[int, str, str, dict[str, Any]]] = []
     for key, asset in asset_map(item).items():
         href = asset.get("href")
         if not isinstance(href, str) or not href.strip():
@@ -372,18 +548,63 @@ def grib_asset(item: dict[str, Any]) -> tuple[str, int | None, str] | None:
         haystack = f"{key} {title} {roles} {href}".lower()
         if "grib" not in media and "grib" not in haystack and not re.search(r"\.(grib2?|grb2?|bin)(\?|$)", haystack):
             continue
-        size = asset.get("file:size") or asset.get("size") or asset.get("content_length")
-        try:
-            size = int(size) if size is not None else None
-        except (TypeError, ValueError):
-            size = None
         preferred = key.lower() in {"data", "grib", "download"} or "data" in roles
-        ranked.append((0 if preferred else 1, href.strip(), size, f"{key} {title}"))
+        ranked.append((0 if preferred else 1, href.strip(), f"{key} {title}", asset))
     if not ranked:
         return None
     ranked.sort(key=lambda row: (row[0], row[1]))
-    _, href, size, description = ranked[0]
+    _, href, description, selected_asset = ranked[0]
+    size, size_valid = _canonical_stac_asset_size(selected_asset)
+    if not size_valid:
+        return None
     return href, size, description
+
+
+def canonical_stac_item_identity(item: Any) -> dict[str, Any] | None:
+    """Return one fail-closed item/run/time/asset revision identity."""
+    if not isinstance(item, dict):
+        return None
+    raw_item_id = item.get("id")
+    if (
+        not isinstance(raw_item_id, str)
+        or not raw_item_id
+        or raw_item_id != raw_item_id.strip()
+    ):
+        return None
+    run, run_valid = _canonical_stac_time_aliases(
+        item, STAC_RUN_TIME_ALIASES, required=True,
+    )
+    valid_time, valid_time_valid = _canonical_stac_time_aliases(
+        item, STAC_VALID_TIME_ALIASES, required=True,
+    )
+    created_at, created_valid = _canonical_stac_time_aliases(
+        item, ("created",), required=False,
+    )
+    updated_at, updated_valid = _canonical_stac_time_aliases(
+        item, ("updated",), required=False,
+    )
+    asset = grib_asset(item)
+    if not (
+        run_valid
+        and valid_time_valid
+        and created_valid
+        and updated_valid
+        and run
+        and valid_time
+        and asset is not None
+    ):
+        return None
+    href, size, description = asset
+    return {
+        "itemId": raw_item_id,
+        "modelRun": run,
+        "validTime": valid_time,
+        "itemCreatedAt": created_at,
+        "itemUpdatedAt": updated_at,
+        "href": href,
+        "size": size,
+        "description": description,
+    }
 
 
 def metadata_text(item: dict[str, Any], asset_description: str = "") -> str:
@@ -416,6 +637,28 @@ def stride_selected(valid: str, run: str) -> bool:
     return offset_hours <= 6 or offset_hours % TIME_STRIDE_HOURS == 0 or offset_hours >= HOURS - 1
 
 
+def operational_asset_parameter_filter(
+    collection: str,
+    valid_time: str,
+    model_run: str,
+    required_current_valid_times: set[str],
+) -> set[str] | None:
+    """Keep exact hourly current proof without oversampling optional fields.
+
+    The official DKSS ledger requires every native +0..+117 asset, but the
+    established non-ledger capacity contract samples optional marine fields at
+    ``TIME_STRIDE_HOURS``. Exact required hours between those stride positions
+    therefore decode only sea level and the shared-cell U/V pair.
+    """
+    if (
+        collection in MARINE_COLLECTIONS
+        and valid_time in required_current_valid_times
+        and not stride_selected(valid_time, model_run)
+    ):
+        return set(REQUIRED_TARGETS["marine"])
+    return None
+
+
 def select_forecast_run(
     runs: dict[str, list[dict[str, Any]]],
     preferred_run: str | None = None,
@@ -429,13 +672,30 @@ def select_forecast_run(
         for run, rows in runs.items() if rows
     }
     mature = [run for run, hours in future_horizon.items() if hours >= retention_horizon_hours]
-    if preferred_run in mature:
+    latest = max(future_horizon, key=epoch)
+    cadence_hours = observed_run_cadence_hours(runs)
+    preferred_lag_hours = (
+        max(0.0, (epoch(latest) - epoch(preferred_run)) / 3600.0)
+        if preferred_run in mature
+        else 0.0
+    )
+    preferred_still_scheduled = (
+        preferred_run in mature
+        and (
+            preferred_run == latest
+            or (
+                cadence_hours is not None
+                and preferred_lag_hours <= cadence_hours + 1e-6
+            )
+        )
+    )
+    stale_preferred_discarded = preferred_run in mature and not preferred_still_scheduled
+    if preferred_still_scheduled:
         selected = preferred_run
     elif mature:
         selected = max(mature, key=epoch)
     else:
         selected = max(future_horizon, key=lambda run: (future_horizon[run], epoch(run)))
-    latest = max(future_horizon, key=epoch)
     return selected, {
         "latestRun": latest,
         "selectedRun": selected,
@@ -443,7 +703,331 @@ def select_forecast_run(
         "selectedRunFutureHorizonHours": round(future_horizon[selected], 1),
         "runRetentionHorizonHours": retention_horizon_hours,
         "preferredProgressiveRunRetained": selected == preferred_run,
+        "preferredProgressiveRunDiscardedAsStale": stale_preferred_discarded,
         "incompleteLatestRunDeferred": selected != latest,
+    }
+
+
+def prioritize_strict_current_recovery(
+    scheduled: list[str],
+    strict_current_anchor_available: bool,
+) -> list[str]:
+    """Put DKSS first only while the exact coastal-part current anchor is absent."""
+    if strict_current_anchor_available:
+        return list(scheduled)
+    return [
+        *[collection for collection in scheduled if collection in MARINE_COLLECTIONS],
+        *[collection for collection in scheduled if collection not in MARINE_COLLECTIONS],
+    ]
+
+
+def prioritize_first_cutover_collections(
+    scheduled: list[str],
+    strict_current_anchor_available: bool,
+) -> list[str]:
+    """Order the bounded first-cutover loop without starving strict DKSS recovery."""
+    wam = [collection for collection in scheduled if collection in WAVE_BOOTSTRAP_COLLECTIONS]
+    remainder = [collection for collection in scheduled if collection not in WAVE_BOOTSTRAP_COLLECTIONS]
+    if strict_current_anchor_available:
+        return [*wam, *remainder]
+    return [
+        *[collection for collection in remainder if collection in MARINE_COLLECTIONS],
+        *wam,
+        *[collection for collection in remainder if collection not in MARINE_COLLECTIONS],
+    ]
+
+
+def asset_identity_sha256(href: Any) -> str | None:
+    text = str(href or "").strip()
+    if not text:
+        return None
+    canonical_href = text.split("?", 1)[0].split("#", 1)[0]
+    return hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
+
+
+def official_current_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: Any,
+) -> dict[str, Any] | None:
+    if collection not in MARINE_COLLECTIONS or not isinstance(asset, dict):
+        return None
+    run = canonical_time(model_run)
+    valid_time = canonical_time(asset.get("valid") or asset.get("validTime"))
+    item_id = str(asset.get("id") or asset.get("itemId") or "").strip()
+    identity = str(asset.get("assetIdentitySha256") or "")
+    asset_size = (
+        asset.get("assetSizeBytes")
+        if "assetSizeBytes" in asset
+        else asset.get("size")
+    )
+    item_created_at = canonical_time(asset.get("itemCreatedAt"))
+    item_updated_at = canonical_time(asset.get("itemUpdatedAt"))
+    if not identity:
+        identity = str(asset_identity_sha256(asset.get("href")) or "")
+    if not (
+        run
+        and valid_time
+        and item_id
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and (
+            asset_size is None
+            or isinstance(asset_size, int) and not isinstance(asset_size, bool)
+            and asset_size > 0
+        )
+        and (asset.get("itemCreatedAt") is None or item_created_at)
+        and (asset.get("itemUpdatedAt") is None or item_updated_at)
+    ):
+        return None
+    return {
+        "collection": collection,
+        "modelRun": run,
+        "validTime": valid_time,
+        "itemId": item_id,
+        "assetIdentitySha256": identity,
+        "assetSizeBytes": asset_size,
+        "itemCreatedAt": item_created_at,
+        "itemUpdatedAt": item_updated_at,
+    }
+
+
+def processed_step_source_for_official_asset(
+    step: Any,
+    *,
+    collection: str,
+    model_run: Any,
+    valid_time: Any,
+    processing_signature: Any,
+    official_asset: Any,
+) -> dict[str, Any] | None:
+    if not isinstance(step, dict) or not isinstance(official_asset, dict):
+        return None
+    if (
+        step.get("complete") is not True
+        or step.get("parserVersion") != PARSER_VERSION
+        or not isinstance(processing_signature, str)
+        or not processing_signature
+        or step.get("processingSignature") != processing_signature
+        or not {"current-u", "current-v"}
+            <= set(step.get("recognizedParameters") or [])
+        or int(step.get("zonesTouched") or 0) <= 0
+    ):
+        return None
+    source = canonical_current_source_asset(step.get("sourceAsset"))
+    expected = official_current_asset_identity(collection, model_run, official_asset)
+    expected_valid_time = canonical_time(valid_time)
+    if source is None or expected is None or expected["validTime"] != expected_valid_time:
+        return None
+    if (
+        source["collection"] != expected["collection"]
+        or source["modelRun"] != expected["modelRun"]
+        or source["validTime"] != expected["validTime"]
+        or source["itemId"] != expected["itemId"]
+        or source["assetIdentitySha256"] != expected["assetIdentitySha256"]
+        or source["assetSizeBytes"] != expected["assetSizeBytes"]
+        or source["itemCreatedAt"] != expected["itemCreatedAt"]
+        or source["itemUpdatedAt"] != expected["itemUpdatedAt"]
+    ):
+        return None
+    return source
+
+
+def reusable_processed_steps(
+    previous_run: dict[str, Any],
+    *,
+    collection: str,
+    same_processing: bool,
+    same_run: bool,
+    strict_current_anchor_available: bool,
+    required_valid_times: set[str] | None = None,
+    required_asset_provenance: dict[str, dict[str, Any]] | None = None,
+    current_target_ids: list[str] | None = None,
+    current_target_registry_sha256: str | None = None,
+) -> dict[str, Any]:
+    """Reuse only current-parser checkpoints bound to the selected STAC asset."""
+    if not same_processing or not same_run:
+        return {}
+    processing_signature = previous_run.get("processingSignature")
+    if not isinstance(processing_signature, str) or not processing_signature:
+        return {}
+    steps = previous_run.get("processedSteps") or {}
+    if not isinstance(steps, dict):
+        return {}
+    if collection not in MARINE_COLLECTIONS:
+        return {
+            valid_time: step
+            for valid_time, step in steps.items()
+            if isinstance(step, dict)
+            and step.get("parserVersion") == PARSER_VERSION
+            and step.get("processingSignature") == processing_signature
+        }
+    if (
+        required_valid_times is None
+        or not isinstance(required_asset_provenance, dict)
+        or not isinstance(current_target_ids, list)
+        or not current_target_registry_sha256
+    ):
+        return {}
+    required = {
+        canonical_time(value) for value in required_valid_times
+        if canonical_time(value)
+    }
+    reusable: dict[str, Any] = {}
+    for raw_valid_time, step in steps.items():
+        valid_time = canonical_time(raw_valid_time)
+        if valid_time not in required:
+            continue
+        official_asset = required_asset_provenance.get(valid_time)
+        source = processed_step_source_for_official_asset(
+            step,
+            collection=collection,
+            model_run=previous_run.get("referenceTime"),
+            valid_time=valid_time,
+            processing_signature=processing_signature,
+            official_asset=official_asset,
+        )
+        if source is None:
+            continue
+        try:
+            validate_current_part_outcome_proof(
+                step.get("currentPartOutcomeProof"),
+                current_target_ids,
+                current_target_registry_sha256,
+                processing_signature,
+                source,
+            )
+        except ValueError:
+            continue
+        reusable[valid_time] = step
+    _ = strict_current_anchor_available
+    return reusable
+
+
+def _bounded_stac_inventory(
+    collection: str,
+    minimum_valid_time: str,
+    maximum_valid_time: str,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Follow one same-origin STAC item chain to documented exhaustion."""
+    endpoint = f"{STAC_ROOT.rstrip('/')}/collections/{collection}/items"
+    endpoint_parts = urlparse(endpoint)
+    next_url: str | None = endpoint
+    next_params: dict[str, Any] | None = {
+        "limit": STAC_PAGE_LIMIT,
+        "bbox": "7,54,16,58",
+        "datetime": f"{minimum_valid_time}/{maximum_valid_time}",
+        "sortorder": "datetime,DESC",
+    }
+    items: list[dict[str, Any]] = []
+    raw_items_fetched = 0
+    seen_item_ids: set[str] = set()
+    seen_urls: set[str] = set()
+    number_matched: int | None = None
+    failure_codes: set[str] = set()
+    pages = 0
+    exhausted = False
+    while next_url is not None:
+        if pages >= STAC_MAX_PAGES:
+            failure_codes.add("STAC_PAGINATION_PAGE_LIMIT")
+            break
+        canonical_request = next_url
+        if next_params:
+            canonical_request += "?initial-page"
+        if canonical_request in seen_urls:
+            failure_codes.add("STAC_PAGINATION_CYCLE")
+            break
+        seen_urls.add(canonical_request)
+        data = request_json(next_url, next_params)
+        pages += 1
+        features = data.get("features")
+        if not isinstance(features, list) or any(not isinstance(item, dict) for item in features):
+            failure_codes.add("STAC_FEATURES_MALFORMED")
+            break
+        returned = data.get("numberReturned")
+        if returned is not None:
+            if isinstance(returned, bool) or not isinstance(returned, int) or returned < 0 or returned != len(features):
+                failure_codes.add("STAC_NUMBER_RETURNED_MISMATCH")
+                break
+        matched = data.get("numberMatched")
+        if matched is not None:
+            if isinstance(matched, bool) or not isinstance(matched, int) or matched < 0:
+                failure_codes.add("STAC_NUMBER_MATCHED_INVALID")
+                break
+            if number_matched is not None and matched != number_matched:
+                failure_codes.add("STAC_NUMBER_MATCHED_CHANGED")
+                break
+            number_matched = matched
+        if raw_items_fetched + len(features) > STAC_MAX_INVENTORY_ITEMS:
+            failure_codes.add("STAC_INVENTORY_ITEM_LIMIT")
+            break
+        raw_items_fetched += len(features)
+        unique_features: list[dict[str, Any]] = []
+        for item in features:
+            raw_item_id = item.get("id")
+            if raw_item_id is None or raw_item_id == "":
+                failure_codes.add("STAC_ITEM_IDENTITY_MISSING")
+                continue
+            if (
+                not isinstance(raw_item_id, str)
+                or raw_item_id != raw_item_id.strip()
+                or not raw_item_id.strip()
+            ):
+                failure_codes.add("STAC_ITEM_IDENTITY_INVALID")
+                continue
+            item_id = raw_item_id
+            if item_id in seen_item_ids:
+                failure_codes.add("STAC_DUPLICATE_ITEM_IDENTITY")
+                continue
+            seen_item_ids.add(item_id)
+            unique_features.append(item)
+        items.extend(unique_features)
+        links = data.get("links") or []
+        if not isinstance(links, list):
+            failure_codes.add("STAC_LINKS_MALFORMED")
+            break
+        raw_next = [
+            str(link.get("href") or "").strip()
+            for link in links
+            if isinstance(link, dict) and str(link.get("rel") or "").lower() == "next"
+        ]
+        raw_next = [value for value in raw_next if value]
+        if len(raw_next) > 1:
+            failure_codes.add("STAC_MULTIPLE_NEXT_LINKS")
+            break
+        if raw_next:
+            candidate = urljoin(next_url, raw_next[0])
+            candidate_parts = urlparse(candidate)
+            if (
+                candidate_parts.scheme != endpoint_parts.scheme
+                or candidate_parts.netloc != endpoint_parts.netloc
+                or candidate_parts.path.rstrip("/") != endpoint_parts.path.rstrip("/")
+                or candidate_parts.fragment
+            ):
+                failure_codes.add("STAC_UNSAFE_NEXT_LINK")
+                break
+            next_url = candidate
+            next_params = None
+            continue
+        if number_matched is not None:
+            if len(items) == number_matched:
+                exhausted = True
+            else:
+                failure_codes.add("STAC_NUMBER_MATCHED_NOT_EXHAUSTED")
+        elif len(features) < STAC_PAGE_LIMIT:
+            # A terminal short page with no next relation exhausts the bounded
+            # collection query even when the server omits aggregate counts.
+            exhausted = True
+        else:
+            failure_codes.add("STAC_PAGINATION_UNPROVEN")
+        next_url = None
+    return items, {
+        "paginationPagesFetched": pages,
+        "paginationItemsFetched": raw_items_fetched,
+        "paginationUniqueItems": len(items),
+        "paginationNumberMatched": number_matched,
+        "paginationExhausted": exhausted,
+        "catalogInventoryComplete": exhausted and not failure_codes,
+        "catalogInventoryFailureCodes": sorted(failure_codes),
     }
 
 
@@ -454,53 +1038,103 @@ def list_latest_assets(
     minimum_valid_time: str | None = None,
     required_valid_times: set[str] | None = None,
     required_horizon_end_time: str | None = None,
+    allow_documented_required_gaps: bool = False,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
-    data = request_json(f"{STAC_ROOT}/collections/{collection}/items",
-                        {"limit": 1000, "bbox": "7,54,16,58", "sortorder": "datetime,DESC"})
-    items = data.get("features") or []
+    required = {
+        iso(value) for value in (required_valid_times or set())
+        if iso(value)
+    }
+    inventory_start = (
+        min(required, key=epoch)
+        if required
+        else iso(minimum_valid_time)
+        or datetime.fromtimestamp(time.time() - 3600, timezone.utc)
+            .isoformat().replace("+00:00", "Z")
+    )
+    inventory_end = (
+        iso(required_horizon_end_time)
+        or (max(required, key=epoch) if required else None)
+        or datetime.fromtimestamp(
+            time.time() + (
+                WAM_MAX_FORECAST_LEAD_HOURS
+                if collection in WAVE_BOOTSTRAP_COLLECTIONS
+                else HOURS + 6
+            ) * 3600,
+            timezone.utc,
+        ).isoformat().replace("+00:00", "Z")
+    )
+    if epoch(inventory_end) < epoch(inventory_start):
+        inventory_end = inventory_start
+    items, inventory_stats = _bounded_stac_inventory(
+        collection,
+        inventory_start,
+        inventory_end,
+    )
     runs: dict[str, list[dict[str, Any]]] = {}
     stats = {
+        **inventory_stats,
         "itemsSeen": len(items),
         "itemsWithoutGrib": 0,
+        "unparseableItems": 0,
         "forecastStepAssets": 0,
         "duplicateValidTimes": 0,
         "sampleItems": [],
     }
+    seen_run_valid_times: set[tuple[str, str]] = set()
     for item in items:
-        run, valid, asset = item_run(item), item_valid(item), grib_asset(item)
-        if not run or not valid or not asset:
+        identity = canonical_stac_item_identity(item)
+        if identity is None:
             stats["itemsWithoutGrib"] += 1
+            stats["unparseableItems"] += 1
             continue
-        href, size, _description = asset
+        run = identity["modelRun"]
+        valid = identity["validTime"]
         maximum_lead_hours = (
             WAM_MAX_FORECAST_LEAD_HOURS
             if collection in WAVE_BOOTSTRAP_COLLECTIONS
             else HOURS + 6
         )
+        run_valid_time = (run, valid)
+        if run_valid_time in seen_run_valid_times:
+            stats["duplicateValidTimes"] += 1
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            })
+            continue
+        seen_run_valid_times.add(run_valid_time)
         if epoch(valid) < epoch(run) - 3600 or epoch(valid) > epoch(run) + maximum_lead_hours * 3600:
             continue
-        item_id = str(item.get("id") or "").strip()
-        if not item_id:
+        href = identity["href"]
+        size = identity["size"]
+        item_id = identity["itemId"]
+        asset_identity = asset_identity_sha256(href)
+        if asset_identity is None:
             stats["itemsWithoutGrib"] += 1
+            stats["unparseableItems"] += 1
             continue
         row = {
             "valid": valid,
             "href": href,
             "size": size,
             "id": item_id,
-            "itemCreatedAt": item_timestamp(item, "created"),
-            "itemUpdatedAt": item_timestamp(item, "updated"),
+            "assetIdentitySha256": asset_identity,
+            "itemCreatedAt": identity["itemCreatedAt"],
+            "itemUpdatedAt": identity["itemUpdatedAt"],
         }
         runs.setdefault(run, []).append(row)
         stats["forecastStepAssets"] += 1
         if len(stats["sampleItems"]) < 5:
             stats["sampleItems"].append({"id": item.get("id"), "run": run, "valid": valid})
+    if stats["unparseableItems"]:
+        stats["catalogInventoryComplete"] = False
+        stats["catalogInventoryFailureCodes"] = sorted({
+            *(stats.get("catalogInventoryFailureCodes") or []),
+            "UNPARSEABLE_STAC_ITEM",
+        })
     if not runs:
         return None, [], stats
-    required = {
-        iso(value) for value in (required_valid_times or set())
-        if iso(value)
-    }
     selection_runs = runs
     required_horizon_end = iso(required_horizon_end_time)
     if required or required_horizon_end:
@@ -509,21 +1143,51 @@ def list_latest_assets(
             if required
             else epoch(minimum_valid_time)
         )
-        selection_runs = {
+        causal_runs = {
             candidate_run: rows
             for candidate_run, rows in runs.items()
             if epoch(candidate_run) <= first_required_epoch
-            and required <= {iso(row.get("valid")) for row in rows}
+        }
+        exact_covering_runs = {
+            candidate_run: rows
+            for candidate_run, rows in causal_runs.items()
+            if required <= {iso(row.get("valid")) for row in rows}
             and (
                 required_horizon_end is None
                 or max(epoch(row.get("valid")) for row in rows)
                     >= epoch(required_horizon_end)
             )
         }
+        if allow_documented_required_gaps and collection in MARINE_COLLECTIONS:
+            # DKSS is a native five-day product.  At a production target that
+            # falls between its 00/06/12/18 UTC run anchors, the newest fully
+            # published run legitimately ends before target+117.  Prove that
+            # the selected run itself reached its documented +120 h terminal
+            # lead; only then may the exhaustively inventoried remainder of the
+            # public axis become exact upstream absence for Copernicus.
+            selection_runs = {
+                candidate_run: rows
+                for candidate_run, rows in causal_runs.items()
+                if any(
+                    epoch(row.get("valid"))
+                        == epoch(candidate_run)
+                            + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+                    for row in rows
+                )
+            }
+            stats["nativeRunTerminalLeadHoursRequired"] = (
+                DKSS_MAX_FORECAST_LEAD_HOURS
+            )
+            stats["nativeCompleteRunCount"] = len(selection_runs)
+        else:
+            selection_runs = exact_covering_runs
         stats["requiredExactValidTimeCount"] = len(required)
-        stats["runsCoveringRequiredExactTimes"] = len(selection_runs)
-        stats["requiredHorizonEndCovered"] = bool(selection_runs) if required_horizon_end else None
+        stats["runsCoveringRequiredExactTimes"] = len(exact_covering_runs)
+        stats["documentedRequiredGapsAllowed"] = allow_documented_required_gaps
         if not selection_runs:
+            stats["selectedNativeRunComplete"] = False
+            stats["requiredHorizonEndCovered"] = False if required_horizon_end else None
+            stats["requiredWindowInventoryComplete"] = False
             stats["missingRequiredExactTimes"] = True
             return None, [], stats
     retention_horizon_hours = (
@@ -531,8 +1195,49 @@ def list_latest_assets(
     )
     run, run_selection = select_forecast_run(
         selection_runs,
-        preferred_run if preferred_run in selection_runs else None,
+        (
+            None
+            if allow_documented_required_gaps
+                and collection in MARINE_COLLECTIONS
+            else preferred_run if preferred_run in selection_runs else None
+        ),
         retention_horizon_hours=retention_horizon_hours,
+    )
+    selected_valid_times = {
+        iso(row.get("valid")) for row in runs[run] if iso(row.get("valid"))
+    }
+    selected_horizon_end_covered = (
+        max(epoch(value) for value in selected_valid_times)
+            >= epoch(required_horizon_end)
+        if required_horizon_end and selected_valid_times
+        else None
+    )
+    selected_native_run_complete = (
+        collection in MARINE_COLLECTIONS
+        and any(
+            epoch(value)
+                == epoch(run) + DKSS_MAX_FORECAST_LEAD_HOURS * 3600
+            for value in selected_valid_times
+        )
+    )
+    stats["selectedNativeRunComplete"] = selected_native_run_complete
+    stats["requiredHorizonEndCovered"] = selected_horizon_end_covered
+    stats["requiredWindowInventoryComplete"] = bool(
+        stats.get("catalogInventoryComplete") is True
+        and (
+            (
+                allow_documented_required_gaps
+                and collection in MARINE_COLLECTIONS
+                and selected_native_run_complete
+            )
+            or (
+                required <= selected_valid_times
+                and (
+                    required_horizon_end is None
+                    or selected_horizon_end_covered is True
+                )
+            )
+        )
     )
     eligible_latest_run = str(run_selection["latestRun"])
     latest_run = max(runs, key=epoch)
@@ -576,13 +1281,53 @@ def list_latest_assets(
         stats["rejectedStaleRun"] = True
         return None, [], stats
     stats.update(run_selection)
+    selected_official_required = sorted({
+        str(iso(row.get("valid")))
+        for row in runs[run]
+        if iso(row.get("valid")) in required
+    }, key=epoch)
+    stats["officialRequiredValidTimeCount"] = len(selected_official_required)
+    stats["officialRequiredValidTimes"] = selected_official_required
+    official_by_time: dict[str, dict[str, Any]] = {}
+    for row in sorted(
+        runs[run],
+        key=lambda value: (
+            epoch(value["valid"]),
+            str(value["id"]),
+            str(value.get("assetIdentitySha256") or ""),
+        ),
+    ):
+        if row["valid"] not in required or row["valid"] in official_by_time:
+            continue
+        identity = official_current_asset_identity(collection, run, row)
+        if identity is None:
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "UNPARSEABLE_SELECTED_STAC_ASSET",
+            })
+            continue
+        official_by_time[row["valid"]] = identity
+    stats["officialRequiredAssets"] = [
+        official_by_time[valid_time]
+        for valid_time in sorted(official_by_time, key=epoch)
+    ]
+    stats["officialRequiredGapCount"] = max(0, len(required) - len(selected_official_required))
+    stats["officialNativeCadenceHours"] = 1 if collection in MARINE_COLLECTIONS else None
     unique: dict[str, dict[str, Any]] = {}
     minimum_valid_epoch = (
         epoch(minimum_valid_time)
         if minimum_valid_time is not None
         else time.time() - 3600
     )
-    for row in sorted(runs[run], key=lambda r: (epoch(r["valid"]), str(r["id"]))):
+    for row in sorted(
+        runs[run],
+        key=lambda r: (
+            epoch(r["valid"]),
+            str(r["id"]),
+            str(r.get("assetIdentitySha256") or ""),
+        ),
+    ):
         if epoch(row["valid"]) < minimum_valid_epoch:
             stats["expiredForecastStepsSkipped"] = int(stats.get("expiredForecastStepsSkipped") or 0) + 1
             continue
@@ -590,6 +1335,11 @@ def list_latest_assets(
             continue
         if row["valid"] in unique:
             stats["duplicateValidTimes"] += 1
+            stats["catalogInventoryComplete"] = False
+            stats["catalogInventoryFailureCodes"] = sorted({
+                *(stats.get("catalogInventoryFailureCodes") or []),
+                "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            })
             continue
         unique[row["valid"]] = {
             **row,
@@ -599,9 +1349,21 @@ def list_latest_assets(
             "latestRun": latest_run,
             "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
         }
-    rows = sorted(unique.values(), key=lambda r: epoch(r["valid"]))
-    stats["selectedForecastSteps"] = min(len(rows), MAX_ASSETS_PER_COLLECTION)
-    return run, rows[:MAX_ASSETS_PER_COLLECTION], stats
+    rows = sorted(
+        unique.values(),
+        key=lambda row: (
+            0 if row["valid"] in required else 1,
+            epoch(row["valid"]),
+        ),
+    )
+    selected_rows = rows[:MAX_ASSETS_PER_COLLECTION]
+    selected_required = sum(row["valid"] in required for row in selected_rows)
+    stats["requiredRowsTruncatedByAssetLimit"] = max(
+        0,
+        len(selected_official_required) - selected_required,
+    )
+    stats["selectedForecastSteps"] = len(selected_rows)
+    return run, selected_rows, stats
 
 
 def private_wave_bootstrap_configuration() -> dict[str, Any] | None:
@@ -722,9 +1484,12 @@ def load_raw_cache_manifest() -> dict[str, Any]:
     try:
         document = json.loads(raw_cache_manifest_path().read_text("utf-8"))
     except Exception:
-        return {"schemaVersion": 1, "assets": {}}
-    if document.get("schemaVersion") != 1 or not isinstance(document.get("assets"), dict):
-        return {"schemaVersion": 1, "assets": {}}
+        return {"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION, "assets": {}}
+    if (
+        document.get("schemaVersion") != RAW_CACHE_MANIFEST_SCHEMA_VERSION
+        or not isinstance(document.get("assets"), dict)
+    ):
+        return {"schemaVersion": RAW_CACHE_MANIFEST_SCHEMA_VERSION, "assets": {}}
     return document
 
 
@@ -747,6 +1512,8 @@ def register_raw_cache_asset(
     item_created_at: str | None = None,
     item_updated_at: str | None = None,
     acquired_at: str | None = None,
+    expected_size: int | None = None,
+    content_sha256: str | None = None,
 ) -> None:
     if not collection or not model_run or not valid_time:
         return
@@ -754,15 +1521,45 @@ def register_raw_cache_asset(
     assets = document.setdefault("assets", {})
     registered_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     previous = assets.get(path.name) or {}
+    actual_size = path.stat().st_size
     canonical_href = href.split("?", 1)[0].split("#", 1)[0]
     asset_identity_sha256 = hashlib.sha256(canonical_href.encode("utf-8")).hexdigest()
     normalized_item_id = str(item_id or "").strip() or None
+    normalized_created_at = iso(item_created_at) if item_created_at else None
+    normalized_updated_at = iso(item_updated_at) if item_updated_at else None
+    declared_size = (
+        expected_size
+        if isinstance(expected_size, int)
+        and not isinstance(expected_size, bool)
+        and expected_size > 0
+        else None
+    )
+    normalized_content_sha256 = str(content_sha256 or "")
+    if not re.fullmatch(r"[0-9a-f]{64}", normalized_content_sha256):
+        normalized_content_sha256 = ""
     same_capture_identity = bool(
         previous.get("collection") == collection
         and iso(previous.get("modelRun")) == iso(model_run)
         and iso(previous.get("validTime")) == iso(valid_time)
         and previous.get("itemId") == normalized_item_id
         and previous.get("assetIdentitySha256") == asset_identity_sha256
+        and previous.get("itemCreatedAt") == normalized_created_at
+        and previous.get("itemUpdatedAt") == normalized_updated_at
+        and previous.get("assetSizeBytes") == declared_size
+        and previous.get("contentLengthBytes") == actual_size
+        and re.fullmatch(r"[0-9a-f]{64}", str(previous.get("contentSha256") or ""))
+    )
+    captured_content_sha256 = (
+        normalized_content_sha256
+        if normalized_content_sha256
+        else str(previous.get("contentSha256") or "") if same_capture_identity
+        else None
+    )
+    captured_at = (
+        iso(acquired_at)
+        if acquired_at and normalized_content_sha256
+        else previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))
+        else None
     )
     assets[path.name] = {
         "canonicalHref": canonical_href,
@@ -771,22 +1568,16 @@ def register_raw_cache_asset(
         "modelRun": model_run,
         "validTime": valid_time,
         "itemId": normalized_item_id,
-        "itemCreatedAt": (
-            iso(item_created_at) if item_created_at
-            else previous.get("itemCreatedAt") if same_capture_identity else None
-        ),
-        "itemUpdatedAt": (
-            iso(item_updated_at) if item_updated_at
-            else previous.get("itemUpdatedAt") if same_capture_identity else None
-        ),
+        "itemCreatedAt": normalized_created_at,
+        "itemUpdatedAt": normalized_updated_at,
+        "assetSizeBytes": declared_size,
         # Registration/last-use time is not acquisition time.  Preserve an
         # already proven capture only for the exact same item identity, or use
         # a timestamp supplied by the code path that actually downloaded it.
-        "acquiredAt": (
-            previous.get("acquiredAt") if same_capture_identity and iso(previous.get("acquiredAt"))
-            else iso(acquired_at) if acquired_at else None
-        ),
-        "bytes": path.stat().st_size,
+        "acquiredAt": captured_at,
+        "contentLengthBytes": actual_size,
+        "contentSha256": captured_content_sha256,
+        "bytes": actual_size,
         "lastUsedAt": registered_at,
     }
     save_raw_cache_manifest(document)
@@ -852,6 +1643,48 @@ def cached_asset_path(href: str) -> pathlib.Path:
     return RAW_DIR / f"{hashlib.sha256(canonical_href.encode()).hexdigest()[:24]}{suffix}"
 
 
+def file_content_sha256(path: pathlib.Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def cached_capture_matches_official(
+    capture: Any,
+    *,
+    href: str,
+    item_id: str | None,
+    item_created_at: str | None,
+    item_updated_at: str | None,
+    expected_size: int | None,
+) -> bool:
+    """Bind cached bytes to the exact STAC revision and optional declared size."""
+    declared_size_valid = (
+        expected_size is None
+        or isinstance(expected_size, int)
+        and not isinstance(expected_size, bool)
+        and expected_size > 0
+    )
+    content_length = capture.get("contentLengthBytes") if isinstance(capture, dict) else None
+    return bool(
+        isinstance(capture, dict)
+        and declared_size_valid
+        and capture.get("itemId") == str(item_id or "").strip()
+        and capture.get("assetIdentitySha256") == asset_identity_sha256(href)
+        and capture.get("itemCreatedAt") == (iso(item_created_at) if item_created_at else None)
+        and capture.get("itemUpdatedAt") == (iso(item_updated_at) if item_updated_at else None)
+        and capture.get("assetSizeBytes") == expected_size
+        and isinstance(content_length, int)
+        and not isinstance(content_length, bool)
+        and content_length > 0
+        and (expected_size is None or content_length == expected_size)
+        and iso(capture.get("acquiredAt")) is not None
+        and re.fullmatch(r"[0-9a-f]{64}", str(capture.get("contentSha256") or ""))
+    )
+
+
 def download_asset(
     href: str,
     expected_size: int | None,
@@ -873,21 +1706,18 @@ def download_asset(
         raise RuntimeError("DMI bulk asset has an invalid declared size")
     path = cached_asset_path(href)
     cached_size = path.stat().st_size if path.exists() else 0
-    if (
-        cached_size > 0
-        and (expected_size is None or cached_size == expected_size)
-    ):
+    if cached_size > 0:
         capture = (
             raw_cache_source_capture(path, collection, model_run, valid_time)
             if collection and model_run and valid_time else None
         )
-        expected_asset_identity = hashlib.sha256(
-            href.split("?", 1)[0].split("#", 1)[0].encode("utf-8")
-        ).hexdigest()
-        if (
-            capture
-            and capture.get("itemId") == str(item_id or "").strip()
-            and capture.get("assetIdentitySha256") == expected_asset_identity
+        if cached_capture_matches_official(
+            capture,
+            href=href,
+            item_id=item_id,
+            item_created_at=item_created_at,
+            item_updated_at=item_updated_at,
+            expected_size=expected_size,
         ):
             try:
                 os.utime(path, None)
@@ -896,6 +1726,7 @@ def download_asset(
             register_raw_cache_asset(
                 path, href, collection, model_run, valid_time,
                 item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
+                expected_size=expected_size,
             )
             return path, True
     if expected_size and budget["bytes"] + expected_size > MAX_DOWNLOAD_BYTES:
@@ -914,6 +1745,7 @@ def download_asset(
             if budget["bytes"] + content_length > MAX_DOWNLOAD_BYTES:
                 raise RuntimeError("DMI bulk download budget exceeded before next asset")
             tmp_path: pathlib.Path | None = None
+            content_digest = hashlib.sha256()
             try:
                 with tempfile.NamedTemporaryFile(dir=RAW_DIR, delete=False) as tmp:
                     tmp_path = pathlib.Path(tmp.name)
@@ -923,6 +1755,7 @@ def download_asset(
                         budget["bytes"] += len(chunk)
                         if budget["bytes"] > MAX_DOWNLOAD_BYTES:
                             raise RuntimeError("DMI bulk download budget exceeded during asset download")
+                        content_digest.update(chunk)
                         tmp.write(chunk)
                 actual_size = tmp_path.stat().st_size
                 if (
@@ -943,6 +1776,8 @@ def download_asset(
         path, href, collection, model_run, valid_time,
         item_id=item_id, item_created_at=item_created_at, item_updated_at=item_updated_at,
         acquired_at=acquired_at,
+        expected_size=expected_size,
+        content_sha256=content_digest.hexdigest(),
     )
     return path, False
 
@@ -955,6 +1790,11 @@ def raw_cache_source_capture(
 ) -> dict[str, Any] | None:
     """Resolve an exact local capture without inventing STAC/acquisition facts."""
     row = (load_raw_cache_manifest().get("assets") or {}).get(path.name) or {}
+    try:
+        actual_size = path.stat().st_size
+        actual_content_sha256 = file_content_sha256(path)
+    except OSError:
+        return None
     if not (
         row.get("collection") == collection
         and iso(row.get("modelRun")) == iso(model_run)
@@ -962,18 +1802,63 @@ def raw_cache_source_capture(
         and str(row.get("itemId") or "").strip()
         and iso(row.get("acquiredAt"))
         and re.fullmatch(r"[0-9a-f]{64}", str(row.get("assetIdentitySha256") or ""))
+        and (
+            row.get("assetSizeBytes") is None
+            or isinstance(row.get("assetSizeBytes"), int)
+            and not isinstance(row.get("assetSizeBytes"), bool)
+            and row.get("assetSizeBytes") > 0
+        )
+        and isinstance(row.get("contentLengthBytes"), int)
+        and not isinstance(row.get("contentLengthBytes"), bool)
+        and row.get("contentLengthBytes") == actual_size
+        and (
+            row.get("assetSizeBytes") is None
+            or row.get("assetSizeBytes") == actual_size
+        )
+        and re.fullmatch(r"[0-9a-f]{64}", str(row.get("contentSha256") or ""))
+        and row.get("contentSha256") == actual_content_sha256
     ):
         return None
     capture = {
         "itemId": str(row["itemId"]),
         "assetIdentitySha256": str(row["assetIdentitySha256"]),
+        "assetSizeBytes": row.get("assetSizeBytes"),
         "acquiredAt": iso(row["acquiredAt"]),
+        "contentLengthBytes": actual_size,
+        "contentSha256": actual_content_sha256,
+        "itemCreatedAt": iso(row.get("itemCreatedAt")),
+        "itemUpdatedAt": iso(row.get("itemUpdatedAt")),
     }
-    if iso(row.get("itemCreatedAt")):
-        capture["itemCreatedAt"] = iso(row["itemCreatedAt"])
-    if iso(row.get("itemUpdatedAt")):
-        capture["itemUpdatedAt"] = iso(row["itemUpdatedAt"])
     return capture
+
+
+def reusable_cached_asset_path(
+    asset: Any,
+    collection: str,
+    model_run: str,
+) -> pathlib.Path | None:
+    """Return a cached GRIB only when its bytes prove this STAC revision."""
+    if not isinstance(asset, dict):
+        return None
+    path = cached_asset_path(str(asset.get("href") or ""))
+    if not path.is_file():
+        return None
+    capture = raw_cache_source_capture(
+        path,
+        collection,
+        model_run,
+        str(asset.get("valid") or ""),
+    )
+    if not cached_capture_matches_official(
+        capture,
+        href=str(asset.get("href") or ""),
+        item_id=str(asset.get("id") or "") or None,
+        item_created_at=asset.get("itemCreatedAt"),
+        item_updated_at=asset.get("itemUpdatedAt"),
+        expected_size=asset.get("size"),
+    ):
+        return None
+    return path
 
 
 def safe_get(gid: int, key: str) -> Any:
@@ -1068,24 +1953,112 @@ def should_stop_work() -> bool:
     return runtime_remaining() <= 0
 
 
+def progress_checkpoint_due(
+    completed_assets_since_write: int,
+    last_write_monotonic: float,
+    *,
+    force: bool = False,
+    now_monotonic: float | None = None,
+) -> bool:
+    if completed_assets_since_write <= 0:
+        return False
+    now_value = time.monotonic() if now_monotonic is None else now_monotonic
+    return bool(
+        force
+        or completed_assets_since_write >= CHECKPOINT_MAX_ASSETS
+        or now_value - last_write_monotonic >= CHECKPOINT_MAX_SECONDS
+    )
+
+
 def progress(message: str) -> None:
     elapsed = time.monotonic() - STARTED
     print(f"[DMI bulk +{elapsed:6.1f}s] {message}", flush=True)
 
+class AssetStagedZone(dict):
+    """Copy-on-write view of one zone while a single GRIB asset is parsed.
+
+    Most assets only replace one native valid-time row. Copying the complete
+    673 x 118 cache for every asset would be prohibitively expensive, while a
+    plain shallow copy could leak mutations into the durable cache. Keep the
+    hourly mapping shallow, own the active row and the small point metadata,
+    and detach every row only if a marine-owner change needs cross-time
+    deletion.
+    """
+
+    def __init__(self, source: dict[str, Any], valid_time: str) -> None:
+        super().__init__(source)
+        hourly = dict(source.get("hourly") or {})
+        if valid_time in hourly:
+            hourly[valid_time] = copy.deepcopy(hourly[valid_time])
+        self["hourly"] = hourly
+        for key in ("gridPoints", "collections", "marineSelection"):
+            value = source.get(key)
+            self[key] = copy.deepcopy(value) if isinstance(value, dict) else {}
+        self._all_hourly_rows_owned = False
+
+    def detach_all_hourly_rows(self) -> None:
+        if self._all_hourly_rows_owned:
+            return
+        self["hourly"] = {
+            valid_time: copy.deepcopy(hour)
+            for valid_time, hour in (self.get("hourly") or {}).items()
+        }
+        self._all_hourly_rows_owned = True
+
+    def committed_copy(self) -> dict[str, Any]:
+        return dict(self)
+
+
+
+GRID_DEFINITION_KEYS = (
+    "gridType", "Ni", "Nj", "numberOfPoints",
+    "latitudeOfFirstGridPointInDegrees", "longitudeOfFirstGridPointInDegrees",
+    "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
+    "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
+)
+
+
+def grid_cache_signature(gid: int) -> tuple[Any, ...]:
+    """Read one order-sensitive cache identity without changing public hashes."""
+    keys = (
+        "md5GridSection",
+        *GRID_DEFINITION_KEYS,
+    )
+    values: list[Any] = []
+    for key in keys:
+        try:
+            values.append(codes_get(gid, key))
+        except Exception as exc:
+            raise DmiGridLookupError(
+                "DMI grid identity could not be read completely",
+                "GRID_IDENTITY_READ_FAILED",
+            ) from exc
+    return tuple(values)
+
+
+def grid_definition_signature_from_cache(
+    cache_signature: tuple[Any, ...],
+) -> tuple[Any, ...]:
+    if len(cache_signature) != len(GRID_DEFINITION_KEYS) + 1:
+        raise DmiGridLookupError(
+            "DMI grid cache identity has an unexpected shape",
+            "GRID_IDENTITY_READ_FAILED",
+        )
+    return tuple(cache_signature[1:])
+
 
 def grid_signature(gid: int) -> tuple[Any, ...]:
-    keys = (
-        "gridType", "Ni", "Nj", "numberOfPoints",
-        "latitudeOfFirstGridPointInDegrees", "longitudeOfFirstGridPointInDegrees",
-        "latitudeOfLastGridPointInDegrees", "longitudeOfLastGridPointInDegrees",
-        "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
-    )
-    return tuple(safe_get(gid, key) for key in keys)
+    """Return the legacy public/state grid definition identity unchanged."""
+    return grid_definition_signature_from_cache(grid_cache_signature(gid))
+
+
+def grid_definition_sha256_from_signature(signature: tuple[Any, ...]) -> str:
+    canonical = json.dumps(signature, ensure_ascii=False, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def grid_definition_sha256(gid: int) -> str:
-    canonical = json.dumps(grid_signature(gid), ensure_ascii=False, separators=(",", ":"), default=str)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    return grid_definition_sha256_from_signature(grid_signature(gid))
 
 
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -1097,7 +2070,23 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return radius * 2 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1 - a)))
 
 
-def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[dict[str, Any]]:
+def grid_candidate_target(collection: str, zone: dict[str, Any]) -> int:
+    if collection in MARINE_COLLECTIONS:
+        return (
+            LIMFJORD_GRID_CANDIDATE_TARGET
+            if zone.get("coastType") == "limfjord"
+            else GRID_CANDIDATE_TARGET
+        )
+    return ATMOSPHERIC_GRID_CANDIDATE_TARGET
+
+
+def nearest_candidates(
+    gid: int,
+    collection: str,
+    zone: dict[str, Any],
+    signature: tuple[Any, ...] | None = None,
+    nearest_lookup: Any = None,
+) -> list[dict[str, Any]]:
     """Find flere mulige havpunkter uden at antage, at de fire nærmeste er gyldige.
 
     ecCodes returnerer højst fire punkter pr. opslag på flere grids. Derfor probes
@@ -1108,11 +2097,9 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     # Atmosfæriske grids (HARMONIE) er komplette land/hav-grids og kræver ikke
     # den dyre marine kyst-probing. Ét nearest-opslag pr. zone/grid er nok og
     # genbruges på tværs af alle forecast-tider via GRID_INDEX_CACHE.
-    if collection in MARINE_COLLECTIONS:
-        candidate_target = LIMFJORD_GRID_CANDIDATE_TARGET if zone.get("coastType") == "limfjord" else GRID_CANDIDATE_TARGET
-    else:
-        candidate_target = ATMOSPHERIC_GRID_CANDIDATE_TARGET
-    cache_key = (collection, grid_signature(gid), zone["id"], candidate_target)
+    candidate_target = grid_candidate_target(collection, zone)
+    resolved_signature = signature if signature is not None else grid_signature(gid)
+    cache_key = (collection, resolved_signature, zone["id"], candidate_target)
     cached = GRID_INDEX_CACHE.get(cache_key)
     if cached is not None:
         return cached
@@ -1120,9 +2107,18 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
         try:
             candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], npoints=4)
         except TypeError:
-            candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
-        except Exception:
-            candidates = []
+            try:
+                candidates = codes_grib_find_nearest(gid, zone["lat"], zone["lon"], False, 4)
+            except Exception as exc:
+                raise DmiGridLookupError(
+                    "DMI nearest-grid lookup failed",
+                    "NEAREST_GRID_LOOKUP_FAILED",
+                ) from exc
+        except Exception as exc:
+            raise DmiGridLookupError(
+                "DMI nearest-grid lookup failed",
+                "NEAREST_GRID_LOOKUP_FAILED",
+            ) from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         direct = []
@@ -1156,11 +2152,38 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     by_index: dict[int, dict[str, Any]] = {}
     for dlat, dlon in probes:
         try:
-            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, npoints=4)
-        except TypeError:
-            candidates = codes_grib_find_nearest(gid, zone["lat"] + dlat, zone["lon"] + dlon, False, 4)
-        except Exception:
-            candidates = []
+            if nearest_lookup is not None:
+                candidates = nearest_lookup(zone["lat"] + dlat, zone["lon"] + dlon)
+            else:
+                try:
+                    candidates = codes_grib_find_nearest(
+                        gid,
+                        zone["lat"] + dlat,
+                        zone["lon"] + dlon,
+                        npoints=4,
+                    )
+                except TypeError:
+                    candidates = codes_grib_find_nearest(
+                        gid,
+                        zone["lat"] + dlat,
+                        zone["lon"] + dlon,
+                        False,
+                        4,
+                    )
+        except OutOfAreaError as exc:
+            # Only ecCodes' explicit out-of-domain result is recoverable. Every
+            # unknown grid failure remains fatal and can never authorize fallback.
+            if collection in MARINE_COLLECTIONS:
+                continue
+            raise DmiGridLookupError(
+                "DMI nearest-grid lookup failed (OutOfAreaError)",
+                "NEAREST_GRID_OUT_OF_AREA",
+            ) from exc
+        except Exception as exc:
+            raise DmiGridLookupError(
+                f"DMI nearest-grid lookup failed ({type(exc).__name__})",
+                "NEAREST_GRID_LOOKUP_FAILED",
+            ) from exc
         if isinstance(candidates, dict):
             candidates = [candidates]
         for candidate in candidates or []:
@@ -1179,7 +2202,85 @@ def nearest_candidates(gid: int, collection: str, zone: dict[str, Any]) -> list[
     return normalized
 
 
-def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str, Any]]) -> None:
+def warm_marine_grid_cache(
+    gid: int,
+    collection: str,
+    zones: list[dict[str, Any]],
+    signature: tuple[Any, ...],
+) -> None:
+    """Warm the unchanged marine probe union with one ecCodes nearest object."""
+    if collection not in MARINE_COLLECTIONS or not zones:
+        return
+    pending = [
+        zone
+        for zone in zones
+        if (
+            collection,
+            signature,
+            zone["id"],
+            grid_candidate_target(collection, zone),
+        ) not in GRID_INDEX_CACHE
+    ]
+    if not pending:
+        return
+    if not (
+        callable(codes_grib_nearest_new)
+        and callable(codes_grib_nearest_find)
+        and callable(codes_grib_nearest_delete)
+        and isinstance(CODES_GRIB_NEAREST_SAME_GRID, int)
+    ):
+        return
+
+    nearest_id = None
+    first_lookup = True
+    pending_keys = [
+        (collection, signature, zone["id"], grid_candidate_target(collection, zone))
+        for zone in pending
+    ]
+    try:
+        nearest_id = codes_grib_nearest_new(gid)
+
+        def lookup(latitude: float, longitude: float) -> Any:
+            nonlocal first_lookup
+            flags = 0 if first_lookup else CODES_GRIB_NEAREST_SAME_GRID
+            candidates = codes_grib_nearest_find(
+                nearest_id,
+                gid,
+                latitude,
+                longitude,
+                flags,
+                False,
+                4,
+            )
+            # A bounded DKSS grid may reject the first probe. SAME_GRID is only
+            # safe after one successful lookup has actually initialized the
+            # reusable ecCodes geometry on this nearest object.
+            first_lookup = False
+            return candidates
+
+        for zone in pending:
+            nearest_candidates(
+                gid,
+                collection,
+                zone,
+                signature=signature,
+                nearest_lookup=lookup,
+            )
+    except Exception:
+        for key in pending_keys:
+            GRID_INDEX_CACHE.pop(key, None)
+        raise
+    finally:
+        if nearest_id is not None:
+            codes_grib_nearest_delete(nearest_id)
+
+
+def warm_atmospheric_grid_cache(
+    gid: int,
+    collection: str,
+    zones: list[dict[str, Any]],
+    signature: tuple[Any, ...] | None = None,
+) -> None:
     """Resolve every HARMONIE point from one grid-coordinate scan.
 
     HARMONIE is a complete atmospheric grid, so one nearest cell is sufficient.
@@ -1192,8 +2293,8 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
     """
     if collection != "harmonie_dini_sf" or not zones:
         return
-    signature = grid_signature(gid)
-    warm_key = (collection, signature, ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+    resolved_signature = signature if signature is not None else grid_signature(gid)
+    warm_key = (collection, resolved_signature, ATMOSPHERIC_GRID_CANDIDATE_TARGET)
     if warm_key in GRID_BATCH_WARMED:
         return
     try:
@@ -1232,7 +2333,7 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
             nearby,
             key=lambda item: haversine_km(zone_lat, zone_lon, item[1], item[2]),
         )[:ATMOSPHERIC_GRID_CANDIDATE_TARGET]
-        cache_key = (collection, signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
+        cache_key = (collection, resolved_signature, zone["id"], ATMOSPHERIC_GRID_CANDIDATE_TARGET)
         GRID_INDEX_CACHE[cache_key] = [
             {
                 "index": index,
@@ -1244,6 +2345,42 @@ def warm_atmospheric_grid_cache(gid: int, collection: str, zones: list[dict[str,
         ]
     GRID_BATCH_WARMED.add(warm_key)
 
+def batched_element_values(gid: int, indices: list[int], context: str) -> list[Any]:
+    """Normalize only ordered ecCodes list/tuple or documented 1-D ndarray results."""
+    context_code = "VECTOR" if context == "vector" else "SCALAR" if context == "scalar" else "UNKNOWN"
+    try:
+        raw_values = codes_get_elements(gid, "values", indices)
+    except Exception as exc:
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup failed",
+            f"BATCHED_{context_code}_LOOKUP_FAILED",
+        ) from exc
+    try:
+        if isinstance(raw_values, (list, tuple)):
+            values = list(raw_values)
+        elif (
+            type(raw_values).__module__.split(".", 1)[0] == "numpy"
+            and getattr(raw_values, "ndim", None) == 1
+            and callable(getattr(raw_values, "tolist", None))
+        ):
+            values = raw_values.tolist()
+            if not isinstance(values, list):
+                raise TypeError("non-list ndarray conversion")
+        else:
+            raise TypeError("non-array result")
+    except (TypeError, ValueError) as exc:
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup returned an invalid result",
+            f"BATCHED_{context_code}_RESULT_INVALID",
+        ) from exc
+    if len(values) != len(indices):
+        raise DmiGridLookupError(
+            f"DMI batched {context} lookup returned an invalid result",
+            f"BATCHED_{context_code}_RESULT_INVALID",
+        )
+    return values
+
+
 def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]]) -> dict[str, list[dict[str, float]]]:
     """Returner alle gyldige kandidater pr. zone for et GRIB-felt.
 
@@ -1251,13 +2388,23 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
     Denne funktion bevarer kandidatlisten, så U og V efterfølgende kan vælge det
     nærmeste *fælles* fysiske gitterpunkt.
     """
-    warm_atmospheric_grid_cache(gid, collection, zones)
+    cache_signature = grid_cache_signature(gid)
+    definition_sha256 = grid_definition_sha256_from_signature(
+        grid_definition_signature_from_cache(cache_signature)
+    )
+    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(gid, collection, zone)
+        candidates = nearest_candidates(
+            gid,
+            collection,
+            zone,
+            signature=cache_signature,
+        )
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
@@ -1266,12 +2413,8 @@ def valid_candidates_batch(gid: int, collection: str, zones: list[dict[str, Any]
                 unique_indices.append(index)
     if not unique_indices:
         return {}
-    try:
-        raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception:
-        return {}
+    raw_values = batched_element_values(gid, unique_indices, "vector")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
-    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, list[dict[str, float]]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         rows = []
@@ -1299,12 +2442,23 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
     processing signature. Moving a land/data point therefore forces a rebuild,
     while repeated forecast steps on the same grid reuse the nearest-index map.
     """
+    cache_signature = grid_cache_signature(gid)
+    definition_sha256 = grid_definition_sha256_from_signature(
+        grid_definition_signature_from_cache(cache_signature)
+    )
+    warm_marine_grid_cache(gid, collection, zones, cache_signature)
+    warm_atmospheric_grid_cache(gid, collection, zones, cache_signature)
     missing = safe_get(gid, "missingValue")
     candidates_by_zone: dict[str, list[dict[str, Any]]] = {}
     unique_indices: list[int] = []
     seen: set[int] = set()
     for zone in zones:
-        candidates = nearest_candidates(gid, collection, zone)
+        candidates = nearest_candidates(
+            gid,
+            collection,
+            zone,
+            signature=cache_signature,
+        )
         candidates_by_zone[zone["id"]] = candidates
         for candidate in candidates:
             index = int(candidate["index"])
@@ -1313,12 +2467,8 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                 unique_indices.append(index)
     if not unique_indices:
         return {}
-    try:
-        raw_values = codes_get_elements(gid, "values", unique_indices)
-    except Exception:
-        return {}
+    raw_values = batched_element_values(gid, unique_indices, "scalar")
     values = {index: raw_values[pos] for pos, index in enumerate(unique_indices)}
-    definition_sha256 = grid_definition_sha256(gid)
     resolved: dict[str, dict[str, float]] = {}
     for zone_id, candidates in candidates_by_zone.items():
         for candidate in candidates:
@@ -1331,6 +2481,7 @@ def nearest_valid_batch(gid: int, collection: str, zones: list[dict[str, Any]]) 
                     "distanceKm": candidate["distanceKm"],
                     "index": int(candidate["index"]),
                     "gridDefinitionSha256": definition_sha256,
+                    "_candidateCount": len(candidates),
                 }
                 break
     return resolved
@@ -1462,6 +2613,8 @@ def accept_marine_collection(
     if current_score is not None and float(current_score) <= score and selection.get("collection") != collection:
         return False
     if selection.get("collection") != collection:
+        if isinstance(point, AssetStagedZone):
+            point.detach_all_hourly_rows()
         for hour in (point.get("hourly") or {}).values():
             for key in MARINE_SCALAR_PARAMETERS:
                 hour.pop(key, None)
@@ -1510,6 +2663,22 @@ def candidate_cell_key(candidate: dict[str, Any]) -> tuple[str, float, float] | 
     ):
         return None
     return definition, round(float(latitude), 7), round(float(longitude), 7)
+
+
+def grid_point_metadata(
+    candidate: dict[str, Any],
+    excluded_keys: tuple[str, ...],
+) -> dict[str, Any]:
+    """Copy grid metadata while rounding only numeric values."""
+    return {
+        key: (
+            round(value, 5)
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+            else value
+        )
+        for key, value in candidate.items()
+        if key not in excluded_keys
+    }
 
 
 def select_common_grid_tuple(
@@ -1562,7 +2731,10 @@ def native_component_source(
     optional_fields = tuple(optional_field_set)
     item_id = str((capture or {}).get("itemId") or "").strip()
     asset_identity = str((capture or {}).get("assetIdentitySha256") or "")
+    asset_size = (capture or {}).get("assetSizeBytes")
     acquired_at = iso((capture or {}).get("acquiredAt"))
+    content_length = (capture or {}).get("contentLengthBytes")
+    content_sha256 = str((capture or {}).get("contentSha256") or "")
     item_created_at = iso((capture or {}).get("itemCreatedAt"))
     item_updated_at = iso((capture or {}).get("itemUpdatedAt"))
     physical_distance = (
@@ -1592,7 +2764,18 @@ def native_component_source(
         and math.isclose(float(grid_candidate["distanceKm"]), physical_distance, rel_tol=0, abs_tol=0.02)
         and item_id
         and re.fullmatch(r"[0-9a-f]{64}", asset_identity)
+        and (
+            asset_size is None
+            or isinstance(asset_size, int)
+            and not isinstance(asset_size, bool)
+            and asset_size > 0
+        )
         and acquired_at
+        and isinstance(content_length, int)
+        and not isinstance(content_length, bool)
+        and content_length > 0
+        and re.fullmatch(r"[0-9a-f]{64}", content_sha256)
+        and (asset_size is None or asset_size == content_length)
         and ((capture or {}).get("itemCreatedAt") is None or item_created_at)
         and ((capture or {}).get("itemUpdatedAt") is None or item_updated_at)
     ):
@@ -1618,7 +2801,10 @@ def native_component_source(
         "spatialSemanticsVersion": SPATIAL_PROVENANCE_VERSION,
         "itemId": item_id,
         "assetIdentitySha256": asset_identity,
+        "assetSizeBytes": asset_size,
         "acquiredAt": acquired_at,
+        "contentLengthBytes": content_length,
+        "contentSha256": content_sha256,
         **({"itemCreatedAt": item_created_at} if item_created_at else {}),
         **({"itemUpdatedAt": item_updated_at} if item_updated_at else {}),
         **extra,
@@ -1628,7 +2814,9 @@ def native_component_source(
 def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time: str,
                  zones: list[dict[str, Any]], output: dict[str, Any], diagnostics: dict[str, Any],
                  current_shadow: dict[str, Any] | None = None,
-                 private_stage_output: dict[str, Any] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 private_stage_output: dict[str, Any] | None = None,
+                 current_part_outcomes: dict[str, Any] | None = None,
+                 allowed_parameters: set[str] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -1640,7 +2828,29 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         and (not zone.get("requiredCollection") or zone.get("requiredCollection") == collection)
     }
     zone_by_id = {str(zone.get("id")): zone for zone in zones if zone.get("id")}
+    operational_part_zone_ids = {
+        str(zone.get("id"))
+        for zone in zones
+        if zone.get("coastalPart")
+        and not zone.get("privateStage")
+        and not zone.get("researchCurrent")
+        and str(zone.get("id") or "").startswith("PART::")
+    }
+    current_candidate_available_part_zone_ids: set[str] = set()
+    if current_part_outcomes is not None:
+        current_part_outcomes.clear()
     source_capture = raw_cache_source_capture(path, collection, model_run, valid_time)
+    shadow_source_asset = canonical_current_source_asset({
+        "collection": collection,
+        "modelRun": model_run,
+        "validTime": valid_time,
+        **(source_capture or {}),
+    }) if source_capture is not None and collection in MARINE_COLLECTIONS else None
+    shadow_source_asset_sha256 = (
+        current_source_asset_sha256(shadow_source_asset)
+        if shadow_source_asset is not None
+        else None
+    )
     inventory = diagnostics.setdefault("gribFieldInventory", {}).setdefault(collection, {})
     persistent_inventory = diagnostics.setdefault("persistentFieldInventory", {}).setdefault(collection, {
         "capturedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -1675,6 +2885,8 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     persistent_fields[sig_key]["messagesSeen"] = int(persistent_fields[sig_key].get("messagesSeen") or 0) + 1
                 parameter = classify_parameter(gid, collection)
                 if not parameter:
+                    continue
+                if allowed_parameters is not None and parameter not in allowed_parameters:
                     continue
                 scalar_layer = None
                 if parameter == "water-temperature":
@@ -1743,6 +2955,14 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             if distance > CURRENT_MAX_DISTANCE_KM:
                                 search["rejectedReason"] = "CURRENT_POINT_OVER_5KM"
                                 continue
+                            if zone["id"] in operational_part_zone_ids:
+                                # Outcome proof is collection-local. A valid DMI
+                                # candidate remains spatially available even if a
+                                # closer candidate from another DMI collection is
+                                # already the global public winner for this hour.
+                                current_candidate_available_part_zone_ids.add(
+                                    str(zone["id"])
+                                )
                             if not prefer_current_hour_candidate(
                                 point,
                                 valid_time,
@@ -1789,7 +3009,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         for key, candidate in ((first_key, first), (second_key, second)):
                             hour[key] = candidate["value"]
                             point["gridPoints"][key] = {
-                                **{k: round(v, 5) for k, v in candidate.items() if k not in {"value", "index"}},
+                                **grid_point_metadata(candidate, ("value", "index")),
                                 "verticalLayer": layer_key,
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
@@ -1846,7 +3066,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         search = diagnostics.setdefault("marineGridSearch", {}).setdefault(zone["id"], {}).setdefault(collection, {
                             "candidatesExamined": 0, "nearestValidDistanceKm": None, "parametersFound": []
                         })
-                        search["candidatesExamined"] = max(int(search.get("candidatesExamined") or 0), len(nearest_candidates(gid, collection, zone)))
+                        search["candidatesExamined"] = max(
+                            int(search.get("candidatesExamined") or 0),
+                            int(nearest.get("_candidateCount") or 0),
+                        )
                         old_distance = search.get("nearestValidDistanceKm")
                         distance = float(nearest["distanceKm"])
                         search["nearestValidDistanceKm"] = round(distance if old_distance is None else min(float(old_distance), distance), 3)
@@ -1892,7 +3115,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     else:
                         (hour.get("sources") or {}).pop(component, None)
                     point["gridPoints"][parameter] = {
-                        **{k: round(v, 5) for k, v in nearest.items() if k != "value"},
+                        **grid_point_metadata(nearest, ("value", "_candidateCount")),
                         **point_extra,
                     }
                     point["collections"][parameter] = collection
@@ -1983,11 +3206,195 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
             model_run,
             valid_time,
             str(output.get("generatedAt") or datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")),
+            shadow_source_asset_sha256,
         )
         diagnostics["currentFieldShadowSamplesWritten"] = int(
             diagnostics.get("currentFieldShadowSamplesWritten") or 0
         ) + written
+    if (
+        current_part_outcomes is not None
+        and collection in MARINE_COLLECTIONS
+        and not interrupted
+        and operational_part_zone_ids
+        and {"current-u", "current-v"} <= found
+    ):
+        current_part_outcomes.update({
+            "complete": True,
+            "targetPartIds": sorted(
+                zone_id.removeprefix("PART::")
+                for zone_id in operational_part_zone_ids
+            ),
+            "spatialUnavailablePartIds": sorted(
+                zone_id.removeprefix("PART::")
+                for zone_id in (
+                    operational_part_zone_ids
+                    - current_candidate_available_part_zone_ids
+                )
+            ),
+        })
     return found, touched, interrupted, messages_seen, zone_lookups
+
+
+def build_asset_stage_document(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    valid_time: str,
+    *,
+    private_stage: bool,
+) -> dict[str, Any]:
+    source_zones = document.get("zones") or {}
+    staged_zones: dict[str, AssetStagedZone] = {}
+    for zone in zones:
+        if bool(zone.get("privateStage")) != private_stage:
+            continue
+        zone_id = str(zone.get("id") or "")
+        if not zone_id:
+            continue
+        source = source_zones.get(zone_id)
+        if isinstance(source, dict):
+            staged_zones[zone_id] = AssetStagedZone(
+                source,
+                valid_time,
+            )
+    return {
+        "generatedAt": document.get("generatedAt"),
+        "zones": staged_zones,
+    }
+
+
+def commit_asset_stage_document(
+    document: dict[str, Any],
+    staged: dict[str, Any],
+) -> None:
+    committed_zones = dict(document.get("zones") or {})
+    for zone_id, zone in (staged.get("zones") or {}).items():
+        committed_zones[zone_id] = (
+            zone.committed_copy()
+            if isinstance(zone, AssetStagedZone)
+            else dict(zone)
+        )
+    document["zones"] = committed_zones
+
+
+def restore_mapping(target: dict[str, Any], snapshot: dict[str, Any]) -> None:
+    target.clear()
+    target.update(snapshot)
+
+
+def build_current_shadow_stage(
+    document: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+) -> dict[str, Any]:
+    """Copy only research targets that one asset may mutate."""
+    stage = dict(document)
+    target_ids = {
+        str(zone.get("id") or "")
+        for zone in zones
+        if zone.get("researchCurrent")
+        and (
+            not zone.get("requiredCollection")
+            or zone.get("requiredCollection") == collection
+        )
+    }
+    for key in ("anchors", "coverageAudits"):
+        values = dict(document.get(key) or {})
+        for target_id in target_ids:
+            if target_id in values:
+                values[target_id] = copy.deepcopy(values[target_id])
+        stage[key] = values
+    return stage
+
+
+def process_grib_transactionally(
+    path: pathlib.Path,
+    collection: str,
+    model_run: str,
+    valid_time: str,
+    zones: list[dict[str, Any]],
+    output: dict[str, Any],
+    diagnostics: dict[str, Any],
+    current_shadow: dict[str, Any] | None = None,
+    private_stage_output: dict[str, Any] | None = None,
+    current_part_outcomes: dict[str, Any] | None = None,
+    allowed_parameters: set[str] | None = None,
+    *,
+    prepare_stage: Any | None = None,
+    failure_flush: Any | None = None,
+    stage_validator: Any | None = None,
+    validation_error: str = "GRIB asset stage validation failed",
+) -> tuple[set[str], set[str], bool, int, int]:
+    """Parse one asset against copy-on-write state and commit only at EOF.
+
+    Diagnostics are restored on interruption/exception. Data, private coastal
+    staging and research-shadow state remain isolated until the complete asset
+    and any caller-supplied invariant have passed.
+    """
+    output_stage = build_asset_stage_document(
+        output,
+        zones,
+        valid_time,
+        private_stage=False,
+    )
+    private_output_stage = (
+        build_asset_stage_document(
+            private_stage_output,
+            zones,
+            valid_time,
+            private_stage=True,
+        )
+        if private_stage_output is not None
+        else None
+    )
+    diagnostics_snapshot = copy.deepcopy(diagnostics)
+    shadow_stage = (
+        build_current_shadow_stage(current_shadow, zones, collection)
+        if current_shadow is not None
+        else None
+    )
+    part_outcomes_stage = {} if current_part_outcomes is not None else None
+    try:
+        if prepare_stage is not None:
+            prepare_stage(output_stage, private_output_stage)
+        outcome = process_grib(
+            path,
+            collection,
+            model_run,
+            valid_time,
+            zones,
+            output_stage,
+            diagnostics,
+            shadow_stage,
+            private_output_stage,
+            part_outcomes_stage,
+            allowed_parameters=allowed_parameters,
+        )
+        found, touched, interrupted, messages_seen, zone_lookups = outcome
+        if interrupted:
+            restore_mapping(diagnostics, diagnostics_snapshot)
+            if failure_flush is not None:
+                failure_flush()
+            return set(), set(), True, 0, 0
+        if stage_validator is not None and not stage_validator(
+            output_stage,
+            private_output_stage,
+            outcome,
+        ):
+            raise RuntimeError(validation_error)
+    except Exception:
+        restore_mapping(diagnostics, diagnostics_snapshot)
+        if failure_flush is not None:
+            failure_flush()
+        raise
+    commit_asset_stage_document(output, output_stage)
+    if private_stage_output is not None and private_output_stage is not None:
+        commit_asset_stage_document(private_stage_output, private_output_stage)
+    if current_shadow is not None and shadow_stage is not None:
+        restore_mapping(current_shadow, shadow_stage)
+    if current_part_outcomes is not None and part_outcomes_stage is not None:
+        current_part_outcomes.clear()
+        current_part_outcomes.update(part_outcomes_stage)
+    return found, touched, False, messages_seen, zone_lookups
 
 
 def private_wave_bootstrap_hour_complete(
@@ -2039,6 +3446,18 @@ def private_wave_bootstrap_hour_complete(
         point,
         asset.valid_time,
     )
+
+
+class MappingWaveAsset:
+    """Attribute view of a normal STAC asset for exact wave provenance checks."""
+
+    def __init__(self, asset: dict[str, Any], model_run: str) -> None:
+        self.valid_time = str(asset.get("valid") or "")
+        self.model_run = model_run
+        self.item_id = str(asset.get("id") or "")
+        self.asset_identity_sha256 = str(
+            asset.get("assetIdentitySha256") or ""
+        )
 
 
 def reset_private_part_wave_cache(
@@ -2102,6 +3521,7 @@ def execute_private_wave_history_bootstrap(
     configuration: dict[str, Any],
     *,
     registry: Any | None = None,
+    checkpoint_controller: Any | None = None,
 ) -> dict[str, set[str]]:
     """Acquire and checkpoint the one bounded private WAM bridge.
 
@@ -2133,6 +3553,12 @@ def execute_private_wave_history_bootstrap(
         "collections": {},
     }
     result.setdefault("diagnostics", {})["privateWaveHistoryBootstrap"] = aggregate
+    owns_controller = checkpoint_controller is None
+    controller = checkpoint_controller or ProgressCheckpointController(
+        result,
+        fresh_zone_ids,
+        budget,
+    )
     if configuration["mode"] == WAVE_BOOTSTRAP_COLD_START_MODE:
         if registry is None:
             raise RuntimeError("private WAM cold bootstrap registry is missing")
@@ -2145,17 +3571,19 @@ def execute_private_wave_history_bootstrap(
             )
         except WaveBootstrapError as exc:
             # Cache-first is an optimisation, never a permission to infer the
-            # new same-cell provenance from legacy zone summaries.  A rejected
-            # private PART wave cache is checkpointed without its wave rows and
-            # rebuilt only through the normal measured DMI path below.  The
-            # validator itself remains strict, and absent live WAM still fails.
-            reset_rows = reset_private_part_wave_cache(result, parts)
+            # new same-cell provenance from legacy zone summaries.  Only the
+            # documented legacy MISSING_CELL shape is destructive-rebuildable.
+            # A valid partial history (for example MISSING_HOUR) is preserved
+            # so the integrated cold start can replay every verified real hour.
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
                 "failureCode": exc.code,
-                "resetWaveRowCount": reset_rows,
             }
-            write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            if exc.code == "MISSING_CELL":
+                reset_rows = reset_private_part_wave_cache(result, parts)
+                aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows
+                controller.mark_bulk_dirty()
+                controller.flush_if_due(force=True)
         else:
             expected_exact = (
                 registry.part_count * len(configuration["requiredHours"])
@@ -2201,7 +3629,8 @@ def execute_private_wave_history_bootstrap(
                 aggregate["lockedHourCount"] = sum(
                     len(hours) for hours in locked.values()
                 )
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+                controller.mark_bulk_dirty()
+                controller.flush_if_due(force=True)
                 return locked
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
@@ -2212,8 +3641,40 @@ def execute_private_wave_history_bootstrap(
         if not relevant:
             continue
         if should_stop_work():
+            controller.flush_if_due(force=True)
             raise RuntimeError("private WAM bootstrap runtime budget reached before STAC selection")
-        plan, assets = list_private_wave_bootstrap_assets(collection, configuration)
+        try:
+            plan, assets = list_private_wave_bootstrap_assets(
+                collection,
+                configuration,
+            )
+        except WaveBootstrapError as exc:
+            if (
+                configuration["mode"] != WAVE_BOOTSTRAP_COLD_START_MODE
+                or exc.code != "NO_COHERENT_RUN"
+            ):
+                controller.flush_if_due(force=True)
+                raise
+            # A genuine cold start may continue without a complete 49-hour WAM
+            # suffix.  This records only aggregate absence and returns to the
+            # normal WAM loop, whose exact bridge and coherent 118-hour horizon
+            # remain mandatory.  No row is synthesized, borrowed or carried.
+            aggregate["collections"][collection] = {
+                "status": "history-incomplete",
+                "failureCode": exc.code,
+                "partCount": len(relevant),
+                "selectedAssetCount": 0,
+                "processedAssetCount": 0,
+            }
+            aggregate["status"] = "history-incomplete"
+            aggregate["historyIncomplete"] = True
+            aggregate["historyIncompleteCode"] = exc.code
+            aggregate["lockedHourCount"] = sum(
+                len(hours) for hours in locked.values()
+            )
+            controller.mark_bulk_dirty()
+            controller.flush_if_due(force=True)
+            return locked
         plan_attestation = plan.sanitized_attestation()
         collection_summary = {
             "selectionMode": plan_attestation["selectionMode"],
@@ -2233,7 +3694,8 @@ def execute_private_wave_history_bootstrap(
             if epoch(asset.valid_time) < epoch(configuration["targetHour"])
         }
         for asset_number, asset in enumerate(assets, start=1):
-            if should_stop_work():
+            if not controller.can_start_asset():
+                controller.flush_if_due(force=True)
                 raise RuntimeError("private WAM bootstrap runtime budget reached")
             already_complete = all(
                 private_wave_bootstrap_hour_complete(result, zone, collection, asset)
@@ -2244,17 +3706,21 @@ def execute_private_wave_history_bootstrap(
                 if asset.valid_time in expected_locked_hours:
                     locked[collection].add(asset.valid_time)
                 continue
-            path, reused = download_asset(
-                asset.href,
-                asset.size_bytes,
-                budget,
-                collection=collection,
-                model_run=asset.model_run,
-                valid_time=asset.valid_time,
-                item_id=asset.item_id,
-                item_created_at=asset.item_created_at,
-                item_updated_at=asset.item_updated_at,
-            )
+            try:
+                path, reused = download_asset(
+                    asset.href,
+                    asset.size_bytes,
+                    budget,
+                    collection=collection,
+                    model_run=asset.model_run,
+                    valid_time=asset.valid_time,
+                    item_id=asset.item_id,
+                    item_created_at=asset.item_created_at,
+                    item_updated_at=asset.item_updated_at,
+                )
+            except Exception:
+                controller.flush_if_due(force=True)
+                raise
             if reused:
                 result["diagnostics"]["reusedAssets"] = int(
                     result["diagnostics"].get("reusedAssets") or 0
@@ -2263,22 +3729,44 @@ def execute_private_wave_history_bootstrap(
                 f"{collection}: privat WAM-bootstrap {asset_number}/{len(assets)} "
                 f"({'genbrugt' if reused else 'downloadet'})"
             )
-            found, touched, interrupted, messages_seen, zone_lookups = process_grib(
-                path,
-                collection,
-                asset.model_run,
-                asset.valid_time,
-                relevant,
-                result,
-                result["diagnostics"],
+            asset_processing_started = time.monotonic()
+
+            def bootstrap_stage_complete(
+                staged_result: dict[str, Any],
+                _private_stage: dict[str, Any] | None,
+                outcome: tuple[set[str], set[str], bool, int, int],
+            ) -> bool:
+                return (
+                    {"significant-wave-height", "dominant-wave-period"}
+                    <= outcome[0]
+                    and all(
+                        private_wave_bootstrap_hour_complete(
+                            staged_result,
+                            zone,
+                            collection,
+                            asset,
+                        )
+                        for zone in relevant
+                    )
+                )
+
+            found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                path, collection, asset.model_run, asset.valid_time, relevant,
+                result, result["diagnostics"],
+                failure_flush=lambda: controller.flush_if_due(force=True),
+                stage_validator=bootstrap_stage_complete,
+                validation_error="private WAM bootstrap GRIB tuple is incomplete",
             )
+            asset_processing_seconds = time.monotonic() - asset_processing_started
             result["diagnostics"]["messagesSeen"] = int(
                 result["diagnostics"].get("messagesSeen") or 0
             ) + messages_seen
             result["diagnostics"]["zoneLookups"] = int(
                 result["diagnostics"].get("zoneLookups") or 0
             ) + zone_lookups
-            if interrupted or not {"significant-wave-height", "dominant-wave-period"} <= found:
+            if interrupted:
+                raise RuntimeError("private WAM bootstrap runtime budget reached inside GRIB processing")
+            if not {"significant-wave-height", "dominant-wave-period"} <= found:
                 raise RuntimeError("private WAM bootstrap GRIB tuple is incomplete")
             if not all(
                 private_wave_bootstrap_hour_complete(result, zone, collection, asset)
@@ -2289,17 +3777,25 @@ def execute_private_wave_history_bootstrap(
             collection_summary["processedAssetCount"] += 1
             if asset.valid_time in expected_locked_hours:
                 locked[collection].add(asset.valid_time)
-            if asset_number % 4 == 0:
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
+            checkpoint_written = controller.note_committed_asset(
+                seconds=asset_processing_seconds,
+            )
+            if checkpoint_written:
+                progress(
+                    f"{collection}: fælles progress-checkpoint gemt"
+                )
         if locked[collection] != expected_locked_hours:
+            controller.flush_if_due(force=True)
             raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
     if set(locked) != set(WAVE_BOOTSTRAP_COLLECTIONS):
+        controller.flush_if_due(force=True)
         raise RuntimeError("private WAM bootstrap lacks one required collection")
     aggregate["status"] = "history-complete"
     aggregate["lockedHourCount"] = sum(len(hours) for hours in locked.values())
-    write_checkpoint(result, fresh_zone_ids, budget, "partial")
+    controller.mark_bulk_dirty()
+    if owns_controller:
+        controller.flush_if_due(force=True)
     return locked
-
 
 def clear_operational_wave_window(
     result: dict[str, Any],
@@ -2356,6 +3852,55 @@ def clear_operational_wave_window(
             (point.get("collections") or {}).pop(key, None)
     return cleared
 
+def clear_staged_operational_wave_hour(
+    staged_result: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    valid_time: str,
+) -> int:
+    """Clear one WAM-owned hour inside an uncommitted asset stage only."""
+    cleared = 0
+    public_targets = [
+        zone for zone in zones
+        if not zone.get("waterSource")
+        and not zone.get("researchCurrent")
+        and not zone.get("privateStage")
+    ]
+    for zone in relevant_zones(collection, public_targets):
+        point = (staged_result.get("zones") or {}).get(
+            str(zone.get("id") or "")
+        )
+        if not isinstance(point, dict):
+            continue
+        hour = (point.get("hourly") or {}).get(valid_time)
+        if not isinstance(hour, dict):
+            continue
+        sources = hour.get("sources")
+        had_wave = any(
+            key in hour
+            for key in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            )
+        ) or (isinstance(sources, dict) and "wave" in sources)
+        for key in (
+            "significant-wave-height",
+            "dominant-wave-period",
+            "mean-wave-dir",
+        ):
+            hour.pop(key, None)
+            (point.get("gridPoints") or {}).pop(key, None)
+            (point.get("collections") or {}).pop(key, None)
+        if isinstance(sources, dict):
+            sources.pop("wave", None)
+            if not sources:
+                hour.pop("sources", None)
+        if had_wave:
+            cleared += 1
+    return cleared
+
+
 def wind_from_uv(hour: dict[str, Any]) -> None:
     u, v = hour.get("wind-u-10m"), hour.get("wind-v-10m")
     if isinstance(u, (int, float)) and isinstance(v, (int, float)):
@@ -2401,6 +3946,86 @@ def cache_progress_time(document: dict[str, Any]) -> float:
         document.get("sourceUpdatedAt"),
     ]
     return max((epoch(value) for value in timestamps), default=0.0)
+
+
+def backfill_compatible_cache_data(
+    primary: dict[str, Any],
+    donor: dict[str, Any],
+) -> None:
+    """Backfill missing cache data without replacing newer progress metadata.
+
+    Both documents have already been bound to the same sampling-registry
+    signature by load_previous. The newest progressive cache therefore remains
+    authoritative for collection rotation and processed-step state, while an
+    older strict cache may restore only values that are absent. All normal
+    provenance and component sanitizers still run before reuse.
+    """
+    for key in (
+        "schemaVersion",
+        "sourceUpdatedAt",
+        "method",
+        "hours",
+        "timeStrideHours",
+        "currentVectorSemanticsVersion",
+        "currentVectorSelection",
+        "currentPreferredDistanceKm",
+        "currentMaxDistanceKm",
+        "spatialProvenanceVersion",
+        "privateReplayRetentionHours",
+    ):
+        if key in donor:
+            primary.setdefault(key, copy.deepcopy(donor[key]))
+    for container_name in ("collectionState", "runs"):
+        primary_container = primary.setdefault(container_name, {})
+        donor_container = donor.get(container_name) or {}
+        if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
+            continue
+        for key, value in donor_container.items():
+            primary_container.setdefault(key, copy.deepcopy(value))
+    primary_zones = primary.setdefault("zones", {})
+    donor_zones = donor.get("zones") or {}
+    if not isinstance(primary_zones, dict) or not isinstance(donor_zones, dict):
+        return
+    for zone_id, donor_zone in donor_zones.items():
+        if not isinstance(donor_zone, dict):
+            continue
+        primary_zone = primary_zones.setdefault(zone_id, {})
+        if not isinstance(primary_zone, dict):
+            continue
+        for key in (
+            "samplingPoint",
+            "parentZoneId",
+            "entityType",
+            "samplingContext",
+            "coastalPart",
+            "marineSelection",
+        ):
+            if key in donor_zone:
+                primary_zone.setdefault(key, copy.deepcopy(donor_zone[key]))
+        for container_name in ("gridPoints", "collections"):
+            primary_container = primary_zone.setdefault(container_name, {})
+            donor_container = donor_zone.get(container_name) or {}
+            if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
+                continue
+            for key, value in donor_container.items():
+                primary_container.setdefault(key, copy.deepcopy(value))
+        primary_hourly = primary_zone.setdefault("hourly", {})
+        donor_hourly = donor_zone.get("hourly") or {}
+        if not isinstance(primary_hourly, dict) or not isinstance(donor_hourly, dict):
+            continue
+        for valid_time, donor_row in donor_hourly.items():
+            if not isinstance(donor_row, dict):
+                continue
+            primary_row = primary_hourly.get(valid_time)
+            structurally_empty = (
+                isinstance(primary_row, dict)
+                and set(primary_row) <= {"time"}
+            )
+            if primary_row is None or structurally_empty:
+                # A weather row is one atomic acquisition/provenance unit.
+                # Never compose complementary vector or wave fields across
+                # caches, model runs or source attestations.
+                primary_hourly[valid_time] = copy.deepcopy(donor_row)
 
 
 def sampling_registry_signature() -> str:
@@ -2459,11 +4084,38 @@ def sampling_registry_signature() -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
-def load_previous(expected_signature: str) -> dict[str, Any]:
+def load_previous(
+    expected_signature: str,
+    *,
+    coastal_part_targets: list[dict[str, Any]] | None = None,
+    production_reference: datetime | None = None,
+) -> dict[str, Any]:
     candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
-        return max(compatible, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+        primary = max(
+            compatible,
+            key=lambda document: (cache_progress_time(document), cache_quality(document)),
+        )
+        merged = copy.deepcopy(primary)
+        if coastal_part_targets is not None and production_reference is not None:
+            strict_donors = [
+                document
+                for document in compatible
+                if document is not primary
+                and coastal_part_current_cache_reusable(
+                    document,
+                    coastal_part_targets,
+                    production_reference,
+                )
+            ]
+            for donor in sorted(
+                strict_donors,
+                key=lambda document: (cache_quality(document), cache_progress_time(document)),
+                reverse=True,
+            ):
+                backfill_compatible_cache_data(merged, donor)
+        return merged
     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
     # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
     # er bygget, fjernes kun de zoner/kystdele hvis eget samplingPoint er ændret.
@@ -2829,37 +4481,422 @@ def production_reference_hour(value: Any = None) -> datetime:
     return exact
 
 
+def operational_current_valid_times(reference: datetime) -> list[str]:
+    return [
+        (reference + timedelta(hours=offset)).isoformat().replace("+00:00", "Z")
+        for offset in range(PUBLIC_END_OFFSET_HOURS + 1)
+    ]
+
+
+def coastal_part_current_attestation(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    range_start: datetime,
+    range_end: datetime,
+    allowed_source_assets: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Attest the same structurally sanitized view before and after merge."""
+    zones = document.get("zones") if isinstance(document, dict) else None
+    expected_ids = {
+        f"PART::{str(target.get('partId') or '').strip()}"
+        for target in targets
+        if isinstance(target, dict) and str(target.get("partId") or "").strip()
+    }
+    actual_ids = {
+        str(zone_id)
+        for zone_id in (zones or {})
+        if str(zone_id).startswith("PART::")
+    } if isinstance(zones, dict) else set()
+    eligible: dict[str, Any] = {}
+    if expected_ids and len(expected_ids) == len(targets) and actual_ids == expected_ids:
+        for target in targets:
+            part_id = str(target.get("partId") or "").strip()
+            zone_id = f"PART::{part_id}"
+            zone = zones.get(zone_id)
+            if not isinstance(zone, dict) or not same_sampling_point(
+                zone.get("samplingPoint"),
+                target.get("waterPoint"),
+            ):
+                continue
+            grid_points = zone.get("gridPoints")
+            if grid_points is None:
+                grid_points = {}
+            if not isinstance(grid_points, dict):
+                continue
+            current_u_point = grid_points.get("current-u")
+            current_v_point = grid_points.get("current-v")
+            if (
+                current_u_point is not None
+                or current_v_point is not None
+            ) and not same_grid_point(current_u_point, current_v_point):
+                continue
+            eligible[zone_id] = zone
+    return canonical_verified_part_current_attestation(
+        {"zones": eligible},
+        targets,
+        range_start,
+        range_end,
+        allowed_source_assets,
+    )
+
+
+def current_operational_attestation(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    allowed_source_assets: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    return coastal_part_current_attestation(
+        document,
+        targets,
+        reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        allowed_source_assets,
+    )
+
+
+def build_current_operational_ledger(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    official_catalogs: dict[
+        str,
+        tuple[str | None, list[dict[str, Any]], dict[str, Any]],
+    ],
+) -> dict[str, Any]:
+    """Close every official DKSS asset/hour without inventing fallback gaps."""
+    valid_times = operational_current_valid_times(reference)
+    valid_time_set = set(valid_times)
+    range_end = reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    part_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
+    registry_sha256 = target_fingerprint(targets)
+    provisional_collections: list[dict[str, Any]] = []
+    failure_codes: set[str] = set()
+    for collection in sorted(MARINE_COLLECTIONS):
+        catalog = official_catalogs.get(collection)
+        if catalog is None:
+            run, assets, stats = None, [], {}
+        else:
+            run, assets, stats = catalog
+        model_run = canonical_time(run)
+        raw_official_assets = (
+            stats.get("officialRequiredAssets")
+            if isinstance(stats, dict)
+            and isinstance(stats.get("officialRequiredAssets"), list)
+            else []
+        )
+        official_by_time: dict[str, dict[str, Any]] = {}
+        official_assets_valid = True
+        for raw_asset in raw_official_assets:
+            identity = official_current_asset_identity(collection, model_run, raw_asset)
+            if (
+                identity is None
+                or identity["validTime"] not in valid_time_set
+                or identity["validTime"] in official_by_time
+            ):
+                official_assets_valid = False
+                continue
+            official_by_time[identity["validTime"]] = identity
+        declared_times = {
+            str(canonical_time(value))
+            for value in (
+                stats.get("officialRequiredValidTimes")
+                if isinstance(stats, dict)
+                and isinstance(stats.get("officialRequiredValidTimes"), list)
+                else []
+            )
+            if canonical_time(value) in valid_time_set
+        }
+        if declared_times != set(official_by_time):
+            official_assets_valid = False
+        selected_by_time: dict[str, dict[str, Any]] = {}
+        selected_assets_valid = True
+        for raw_asset in assets if isinstance(assets, list) else []:
+            identity = official_current_asset_identity(collection, model_run, raw_asset)
+            if identity is None:
+                selected_assets_valid = False
+                continue
+            if identity["validTime"] not in valid_time_set:
+                continue
+            if identity["validTime"] in selected_by_time:
+                selected_assets_valid = False
+                continue
+            selected_by_time[identity["validTime"]] = identity
+        if selected_by_time != official_by_time:
+            selected_assets_valid = False
+        catalog_complete = bool(
+            model_run
+            and isinstance(stats, dict)
+            and stats.get("catalogInventoryComplete") is True
+            and (
+                stats.get("requiredHorizonEndCovered") is True
+                or (
+                    stats.get("documentedRequiredGapsAllowed") is True
+                    and stats.get("selectedNativeRunComplete") is True
+                    and stats.get("requiredWindowInventoryComplete") is True
+                )
+            )
+            and stats.get("rejectedStaleRun") is not True
+            and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
+            and official_assets_valid
+            and selected_assets_valid
+            and stats.get("officialRequiredValidTimeCount") == len(official_by_time)
+        )
+        run_info = ((document.get("runs") or {}).get(collection) or {})
+        processing_signature = run_info.get("processingSignature")
+        run_matches = (
+            isinstance(run_info, dict)
+            and canonical_time(run_info.get("referenceTime")) == model_run
+            and run_info.get("parserVersion") == PARSER_VERSION
+            and run_info.get("parameterMapVersion") == PARAMETER_MAP_VERSION
+            and run_info.get("gridLookupVersion") == GRID_LOOKUP_VERSION
+            and isinstance(processing_signature, str)
+            and bool(processing_signature)
+        )
+        processed_steps = run_info.get("processedSteps") if run_matches else {}
+        if not isinstance(processed_steps, dict):
+            processed_steps = {}
+        rows: list[dict[str, Any]] = []
+        for valid_time in valid_times:
+            official_asset = official_by_time.get(valid_time)
+            source_asset = None
+            part_outcome_proof = None
+            if not catalog_complete:
+                state = "LOCALLY_SKIPPED"
+            elif official_asset is None:
+                state = "UPSTREAM_ABSENT"
+            else:
+                step = processed_steps.get(valid_time)
+                source_asset = processed_step_source_for_official_asset(
+                    step,
+                    collection=collection,
+                    model_run=model_run,
+                    valid_time=valid_time,
+                    processing_signature=processing_signature,
+                    official_asset=official_asset,
+                )
+                if source_asset is None:
+                    state = "LOCALLY_SKIPPED"
+                else:
+                    try:
+                        part_outcome_proof = validate_current_part_outcome_proof(
+                            step.get("currentPartOutcomeProof"),
+                            part_ids,
+                            registry_sha256,
+                            processing_signature,
+                            source_asset,
+                        )
+                    except (TypeError, ValueError):
+                        part_outcome_proof = None
+                    if part_outcome_proof is None:
+                        state = "LOCALLY_SKIPPED"
+                        source_asset = None
+                    else:
+                        state = "PROCESSED"
+            rows.append({
+                "validTime": valid_time,
+                "state": state,
+                "officialAsset": official_asset,
+                "sourceAsset": source_asset,
+                "partOutcomeProof": part_outcome_proof,
+            })
+        provisional_collections.append({
+            "collection": collection,
+            "modelRun": model_run,
+            "processingSignature": processing_signature,
+            "validTimes": rows,
+        })
+        if not catalog_complete:
+            failure_codes.add("OFFICIAL_DKSS_CATALOG_INCOMPLETE")
+
+    processed_assets = [
+        row["sourceAsset"]
+        for collection_row in provisional_collections
+        for row in collection_row["validTimes"]
+        if row["state"] == "PROCESSED" and row["sourceAsset"] is not None
+    ]
+    attestation = current_operational_attestation(
+        document,
+        targets,
+        reference,
+        processed_assets,
+    )
+    attested_source_keys = {
+        json.dumps(source, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+        for raw in attestation.get("verifiedPairSources") or []
+        if isinstance(raw, dict)
+        for source in [canonical_current_source_asset(raw.get("source"))]
+        if source is not None
+    }
+    collection_ledgers: list[dict[str, Any]] = []
+    states_by_time: dict[str, list[str]] = {valid_time: [] for valid_time in valid_times}
+    for collection_row in provisional_collections:
+        for row in collection_row["validTimes"]:
+            source_asset = row["sourceAsset"]
+            if (
+                row["state"] == "PROCESSED"
+                and source_asset is not None
+                and json.dumps(
+                    source_asset,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ) in attested_source_keys
+            ):
+                row["state"] = "VERIFIED"
+            states_by_time[row["validTime"]].append(row["state"])
+        official_assets = [
+            row["officialAsset"]
+            for row in collection_row["validTimes"]
+            if row["officialAsset"] is not None
+        ]
+        official_times = sorted(asset["validTime"] for asset in official_assets)
+        counts = {
+            state: sum(row["state"] == state for row in collection_row["validTimes"])
+            for state in CURRENT_OPERATIONAL_LEDGER_STATES
+        }
+        collection_row.update({
+            "officialValidTimeCount": len(official_assets),
+            "officialValidTimesSha256": valid_times_sha256(official_times),
+            "officialAssetsSha256": current_official_assets_sha256(official_assets),
+            "stateCounts": counts,
+        })
+        collection_ledgers.append(collection_row)
+        if counts["LOCALLY_SKIPPED"]:
+            failure_codes.add("LOCALLY_SKIPPED_DKSS_ASSET")
+
+    if not targets:
+        failure_codes.add("ACTIVE_CURRENT_REGISTRY_EMPTY")
+    if sum(row["officialValidTimeCount"] for row in collection_ledgers) == 0:
+        failure_codes.add("OFFICIAL_DKSS_CATALOG_COLLAPSE")
+    for states in states_by_time.values():
+        if len(states) != len(MARINE_COLLECTIONS):
+            failure_codes.add("OFFICIAL_DKSS_LEDGER_INCOMPLETE")
+        elif any(state in {"EXPECTED", "LOCALLY_SKIPPED"} for state in states):
+            failure_codes.add("LOCALLY_SKIPPED_DKSS_ASSET")
+
+    try:
+        partition = derive_current_part_outcome_partition(
+            collection_ledgers,
+            part_ids,
+            valid_times,
+        )
+    except (TypeError, ValueError):
+        partition = {
+            "verifiedPairs": [],
+            "upstreamAbsencePairs": [],
+            "spatialUnavailablePairs": [],
+            "operationalComplementPairs": [],
+        }
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+
+    if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+
+    verified_times = {
+        row["validTime"] for row in partition["verifiedPairs"]
+    }
+    for valid_time, states in states_by_time.items():
+        if (
+            len(states) == len(MARINE_COLLECTIONS)
+            and not all(state == "UPSTREAM_ABSENT" for state in states)
+            and valid_time not in verified_times
+        ):
+            # An official asset may legitimately miss individual coastal parts,
+            # but not silently turn the whole national matrix into Copernicus.
+            failure_codes.add("SYSTEMIC_CURRENT_TIME_COLLAPSE")
+
+    upstream_absence_pairs = partition["upstreamAbsencePairs"]
+    spatial_unavailable_pairs = partition["spatialUnavailablePairs"]
+    authorized_complement = (
+        partition["operationalComplementPairs"] if not failure_codes else []
+    )
+    ledger = {
+        "schemaVersion": CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
+        "contractId": CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
+        "productionReferenceAt": canonical_time(reference),
+        "operationalRangeEndAt": canonical_time(range_end),
+        "hourCount": len(valid_times),
+        "targetCount": len(targets),
+        "targetRegistrySha256": registry_sha256,
+        "attestation": sanitized_current_attestation(attestation),
+        "collections": collection_ledgers,
+        "upstreamAbsencePairCount": len(upstream_absence_pairs),
+        "upstreamAbsencePairsSha256": part_time_pairs_sha256(
+            upstream_absence_pairs
+        ),
+        "upstreamAbsencePairs": upstream_absence_pairs,
+        "spatialUnavailablePairCount": len(spatial_unavailable_pairs),
+        "spatialUnavailablePairsSha256": part_time_pairs_sha256(
+            spatial_unavailable_pairs
+        ),
+        "spatialUnavailablePairs": spatial_unavailable_pairs,
+        "operationalComplementPairCount": len(authorized_complement),
+        "operationalComplementPairsSha256": part_time_pairs_sha256(
+            authorized_complement
+        ),
+        "operationalComplementPairs": authorized_complement,
+        "ready": not failure_codes,
+        "failureCodes": sorted(failure_codes),
+    }
+    if ledger["ready"] and not current_operational_ledger_ready(
+        ledger,
+        attestation,
+        targets,
+        reference,
+        range_end,
+        registry_sha256,
+    ):
+        ledger["ready"] = False
+        ledger["failureCodes"] = ["CURRENT_LEDGER_CONTRACT_INVALID"]
+    return ledger
+
+
+def current_operational_cache_ready(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+) -> bool:
+    try:
+        ledger = ((document.get("diagnostics") or {}).get("currentOperationalLedger"))
+        allowed_source_assets = processed_source_assets_from_current_operational_ledger(ledger)
+        attestation = current_operational_attestation(
+            document,
+            targets,
+            reference,
+            allowed_source_assets,
+        )
+        registry_sha256 = target_fingerprint(targets)
+    except (TypeError, ValueError):
+        return False
+    return current_operational_ledger_ready(
+        ledger,
+        attestation,
+        targets,
+        reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        registry_sha256,
+    )
+
+
 def coastal_part_current_cache_reusable(
     document: dict[str, Any],
     targets: list[dict[str, Any]],
     reference: datetime,
 ) -> bool:
-    """Require exact active PART identity and one strict pair in the matrix."""
+    """Require one strict pair that survives the later cache sanitizers."""
     if not isinstance(document, dict) or not isinstance(targets, list):
         return False
-    zones = document.get("zones")
-    if not isinstance(zones, dict) or any(
-        not isinstance(target, dict) for target in targets
-    ):
+    try:
+        attestation = coastal_part_current_attestation(
+            document,
+            targets,
+            reference - timedelta(hours=COLD_BRIDGE_HOURS),
+            reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        )
+    except (TypeError, ValueError):
         return False
-    expected_ids = {
-        f"PART::{str(target.get('partId') or '').strip()}"
-        for target in targets
-        if str(target.get("partId") or "").strip()
-    }
-    actual_ids = {
-        str(zone_id)
-        for zone_id in zones
-        if str(zone_id).startswith("PART::")
-    }
-    if not expected_ids or len(expected_ids) != len(targets) or actual_ids != expected_ids:
-        return False
-    return strict_verified_part_current_pair_count(
-        document,
-        targets,
-        reference - timedelta(hours=COLD_BRIDGE_HOURS),
-        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
-    ) > 0
+    return int(attestation.get("verifiedPairCount") or 0) > 0
 
 
 def producer_success_blocked(
@@ -2867,11 +4904,112 @@ def producer_success_blocked(
     wave_bootstrap_requested: bool,
     bootstrap_complete: bool,
 ) -> bool:
-    """Fail closed when current anchoring or requested WAM bootstrap is absent."""
+    """Fail closed when the current ledger or requested WAM bootstrap is absent."""
     return (
         not strict_current_anchor_available
         or (wave_bootstrap_requested and not bootstrap_complete)
     )
+
+
+def producer_terminal_code(
+    *,
+    strict_current_anchor_available: bool,
+    wave_bootstrap_requested: bool,
+    bootstrap_complete: bool,
+    productive: bool,
+    diagnostics: dict[str, Any],
+) -> str:
+    """Return one bounded, payload-free terminal classification for CI."""
+    if not strict_current_anchor_available:
+        attempted = [
+            str(collection)
+            for collection in (diagnostics.get("collectionsAttempted") or [])
+            if str(collection) in MARINE_COLLECTIONS
+        ]
+        stac = diagnostics.get("stacByCollection") or {}
+        if (
+            attempted
+            and isinstance(stac, dict)
+            and all(
+                isinstance(stac.get(collection), dict)
+                and stac[collection].get("rejectedStaleRun") is True
+                for collection in attempted
+            )
+        ):
+            return "DMI_CATALOG_SCHEDULE_STALE"
+        if isinstance(stac, dict) and any(
+            isinstance(stac.get(collection), dict)
+            and stac[collection].get("prefetchFailed") is True
+            for collection in MARINE_COLLECTIONS
+        ):
+            return "DMI_DKSS_PREFETCH_FAILED"
+        safe_stac_codes = (
+            "STAC_DUPLICATE_COLLECTION_RUN_VALID_TIME",
+            "STAC_DUPLICATE_ITEM_IDENTITY",
+            "STAC_FEATURES_MALFORMED",
+            "STAC_INVENTORY_ITEM_LIMIT",
+            "STAC_ITEM_IDENTITY_INVALID",
+            "STAC_ITEM_IDENTITY_MISSING",
+            "STAC_LINKS_MALFORMED",
+            "STAC_MULTIPLE_NEXT_LINKS",
+            "STAC_NUMBER_MATCHED_CHANGED",
+            "STAC_NUMBER_MATCHED_INVALID",
+            "STAC_NUMBER_MATCHED_NOT_EXHAUSTED",
+            "STAC_NUMBER_RETURNED_MISMATCH",
+            "STAC_PAGINATION_CYCLE",
+            "STAC_PAGINATION_PAGE_LIMIT",
+            "STAC_PAGINATION_UNPROVEN",
+            "STAC_UNSAFE_NEXT_LINK",
+            "UNPARSEABLE_SELECTED_STAC_ASSET",
+            "UNPARSEABLE_STAC_ITEM",
+        )
+        observed_stac_codes = {
+            str(code)
+            for collection in MARINE_COLLECTIONS
+            for details in [stac.get(collection) if isinstance(stac, dict) else None]
+            if isinstance(details, dict)
+            for code in (details.get("catalogInventoryFailureCodes") or [])
+        }
+        for code in safe_stac_codes:
+            if code in observed_stac_codes:
+                return f"DMI_{code}"
+        ledger = diagnostics.get("currentOperationalLedger") or {}
+        safe_ledger_codes = (
+            "ACTIVE_CURRENT_REGISTRY_EMPTY",
+            "OFFICIAL_DKSS_CATALOG_INCOMPLETE",
+            "OFFICIAL_DKSS_CATALOG_COLLAPSE",
+            "OFFICIAL_DKSS_LEDGER_INCOMPLETE",
+            "LOCALLY_SKIPPED_DKSS_ASSET",
+            "SYSTEMIC_CURRENT_TIME_COLLAPSE",
+            "UNATTESTED_CURRENT_PART_TIME",
+            "CURRENT_LEDGER_CONTRACT_INVALID",
+        )
+        observed_ledger_codes = {
+            str(code) for code in (
+                ledger.get("failureCodes")
+                if isinstance(ledger, dict)
+                and isinstance(ledger.get("failureCodes"), list)
+                else []
+            )
+        }
+        for code in safe_ledger_codes:
+            if code in observed_ledger_codes:
+                return f"DMI_{code}"
+        if not attempted:
+            return "DMI_DKSS_NOT_ATTEMPTED"
+        if any(
+            isinstance(error, dict)
+            and str(error.get("collection") or "") in MARINE_COLLECTIONS
+            for error in (diagnostics.get("errors") or [])
+        ):
+            return "DMI_DKSS_COLLECTION_FAILED"
+        return "DMI_CURRENT_LEDGER_INCOMPLETE"
+    if wave_bootstrap_requested and not bootstrap_complete:
+        return "DMI_WAVE_BOOTSTRAP_INCOMPLETE"
+    # The exact ledger is itself the productivity proof. HARMONIE success may
+    # neither manufacture nor be required for DMI current readiness.
+    _ = productive
+    return "DMI_READY"
 
 
 def sanitize_vector_integrity(zone: dict[str, Any]) -> list[str]:
@@ -3183,22 +5321,129 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
     DIAGNOSTICS_TEXT_PATH.write_text("\n".join(lines) + "\n", "utf-8")
 
 
-def atomic_write_bulk_cache(document: dict[str, Any]) -> None:
+def atomic_write_bulk_cache(
+    document: dict[str, Any],
+    *,
+    pretty: bool = True,
+) -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     temporary = OUTPUT_PATH.with_suffix(".json.tmp")
-    temporary.write_text(
-        json.dumps(document, ensure_ascii=False, indent=2) + "\n",
-        "utf-8",
+    payload = json.dumps(
+        document,
+        ensure_ascii=False,
+        indent=2 if pretty else None,
+        separators=None if pretty else (",", ":"),
     )
+    temporary.write_text(payload + "\n", "utf-8")
     temporary.replace(OUTPUT_PATH)
 
 
 def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
+    """Persist committed progress without global cleanup or diagnostics."""
     result["refreshStatus"] = status
     result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-    clean_and_summarize(result, fresh_zone_ids, budget)
-    atomic_write_bulk_cache(result)
+    result.setdefault("diagnostics", {})["progressCheckpoint"] = {
+        "schemaVersion": 1,
+        "validation": "pending-finalization",
+    }
+    atomic_write_bulk_cache(result, pretty=False)
+
+
+def write_finalized_cache(result: dict[str, Any], status: str) -> None:
+    """Persist the already-cleaned terminal cache and diagnostics exactly once."""
+    result["refreshStatus"] = status
+    result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    result.setdefault("diagnostics", {}).pop("progressCheckpoint", None)
+    atomic_write_bulk_cache(result, pretty=True)
     write_ocean_diagnostics(result)
+
+
+def percentile_95(values: list[float], default: float) -> float:
+    finite = sorted(
+        float(value)
+        for value in values
+        if isinstance(value, (int, float)) and math.isfinite(float(value))
+    )
+    if not finite:
+        return float(default)
+    index = max(0, math.ceil(len(finite) * 0.95) - 1)
+    return finite[index]
+
+
+class ProgressCheckpointController:
+    """One shared cadence for committed bulk and dirty private sidecars."""
+
+    def __init__(
+        self,
+        result: dict[str, Any],
+        fresh_zone_ids: set[str],
+        budget: dict[str, int],
+        sidecar_flush: Any | None = None,
+    ) -> None:
+        self.result = result
+        self.fresh_zone_ids = fresh_zone_ids
+        self.budget = budget
+        self.sidecar_flush = sidecar_flush
+        self.committed_assets_since_write = 0
+        self.last_write_monotonic = time.monotonic()
+        self.bulk_dirty = False
+        self.sidecars_dirty = False
+        self.asset_seconds: list[float] = []
+        self.progress_write_seconds: list[float] = []
+
+    def can_start_asset(self) -> bool:
+        expected_asset = percentile_95(self.asset_seconds, 75.0)
+        expected_write = percentile_95(self.progress_write_seconds, 10.0)
+        return runtime_remaining() > max(
+            30.0,
+            expected_asset + expected_write + 10.0,
+        )
+
+    def note_committed_asset(
+        self,
+        *,
+        seconds: float | None = None,
+        sidecars_dirty: bool = False,
+    ) -> bool:
+        self.committed_assets_since_write += 1
+        self.bulk_dirty = True
+        self.sidecars_dirty = self.sidecars_dirty or sidecars_dirty
+        if seconds is not None and math.isfinite(float(seconds)):
+            self.asset_seconds.append(float(seconds))
+        return self.flush_if_due()
+
+    def mark_bulk_dirty(self) -> None:
+        self.bulk_dirty = True
+
+    def mark_sidecars_dirty(self) -> None:
+        self.sidecars_dirty = True
+
+    def flush_if_due(self, *, force: bool = False) -> bool:
+        due = progress_checkpoint_due(
+            self.committed_assets_since_write,
+            self.last_write_monotonic,
+            force=force,
+        )
+        if force and (self.bulk_dirty or self.sidecars_dirty):
+            due = True
+        if not due:
+            return False
+        if self.bulk_dirty:
+            started = time.monotonic()
+            write_checkpoint(
+                self.result,
+                self.fresh_zone_ids,
+                self.budget,
+                "partial",
+            )
+            self.progress_write_seconds.append(time.monotonic() - started)
+            self.bulk_dirty = False
+            self.committed_assets_since_write = 0
+            self.last_write_monotonic = time.monotonic()
+        if self.sidecars_dirty and self.sidecar_flush is not None:
+            self.sidecar_flush()
+            self.sidecars_dirty = False
+        return True
 
 
 def scrub_private_stage_diagnostics(diagnostics: dict[str, Any]) -> None:
@@ -3266,6 +5511,7 @@ def replay_current_field_shadow_from_cache(
     current_shadow: dict[str, Any],
     generated: str,
     budget: dict[str, int],
+    locked_production_reference: datetime | None = None,
 ) -> dict[str, Any]:
     """Advance the private rotation without public output mutation.
 
@@ -3313,17 +5559,93 @@ def replay_current_field_shadow_from_cache(
     for collection in sorted(replay_collections, key=COLLECTION_ORDER.index):
         entry = catalog.get(collection) or {}
         model_run = str(entry.get("modelRun") or "")
-        candidates = eligible_replay_assets(
-            list(entry.get("assets") or []),
-            generated,
-            CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+        regional_operational_replay = (
+            collection == REGIONAL_PROXY_REQUIRED_COLLECTION
+            and any(
+                target.get("regionalProxyCandidate")
+                and target.get("requiredCollection") == collection
+                for target in research_targets
+            )
         )
+        if regional_operational_replay:
+            replay_reference = locked_production_reference or datetime.fromtimestamp(
+                epoch(generated),
+                timezone.utc,
+            )
+            required_times = operational_current_valid_times(replay_reference)
+            required_time_set = set(required_times)
+            assets_by_time = {
+                iso(asset.get("valid")): asset
+                for asset in list(entry.get("assets") or [])
+                if iso(asset.get("valid")) in required_time_set
+            }
+            candidates = [assets_by_time[value] for value in required_times if value in assets_by_time]
+        else:
+            candidates = eligible_replay_assets(
+                list(entry.get("assets") or []),
+                generated,
+                CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION,
+                12,
+            )
         resolved: list[tuple[dict[str, Any], pathlib.Path]] = [
-            (asset, cached_asset_path(str(asset.get("href") or "")))
+            (asset, path)
             for asset in candidates
-            if cached_asset_path(str(asset.get("href") or "")).is_file()
+            for path in [reusable_cached_asset_path(asset, collection, model_run)]
+            if path is not None
         ]
-        if model_run and not resolved and candidates and bootstrap_remaining > 0 and not should_stop_work():
+        fully_bound_cached = False
+        if regional_operational_replay and resolved:
+            regional_target_ids = {
+                str(target.get("id") or "")
+                for target in research_targets
+                if target.get("regionalProxyCandidate")
+                and target.get("requiredCollection") == collection
+            }
+            unresolved: list[tuple[dict[str, Any], pathlib.Path]] = []
+            for asset, path in resolved:
+                capture = raw_cache_source_capture(
+                    path,
+                    collection,
+                    model_run,
+                    str(asset.get("valid") or ""),
+                )
+                source_asset = canonical_current_source_asset({
+                    "collection": collection,
+                    "modelRun": model_run,
+                    "validTime": str(asset.get("valid") or ""),
+                    **(capture or {}),
+                }) if capture is not None else None
+                source_hash = (
+                    current_source_asset_sha256(source_asset)
+                    if source_asset is not None
+                    else None
+                )
+                valid_time = iso(asset.get("valid"))
+                covered = source_hash is not None and all(
+                    any(
+                        sample.get("collection") == collection
+                        and iso(sample.get("modelRun")) == iso(model_run)
+                        and iso(sample.get("validTime")) == valid_time
+                        and sample.get("sourceAssetSha256") == source_hash
+                        for sample in (
+                            ((current_shadow.get("anchors") or {}).get(target_id) or {}).get("samples")
+                            or []
+                        )
+                    )
+                    for target_id in regional_target_ids
+                )
+                if not covered:
+                    unresolved.append((asset, path))
+            fully_bound_cached = len(resolved) == len(candidates) and not unresolved
+            resolved = unresolved
+        if (
+            model_run
+            and not resolved
+            and candidates
+            and not fully_bound_cached
+            and bootstrap_remaining > 0
+            and not should_stop_work()
+        ):
             # Prefer the far edge of the accepted +12 h research window.  It
             # remains eligible for many subsequent 15-minute rotations, so a
             # legacy-cache bootstrap cannot turn into repeated downloads.
@@ -3373,13 +5695,14 @@ def replay_current_field_shadow_from_cache(
                 item_id=str(asset.get("id") or "") or None,
                 item_created_at=asset.get("itemCreatedAt"),
                 item_updated_at=asset.get("itemUpdatedAt"),
+                expected_size=asset.get("size"),
             )
             replay_diagnostics: dict[str, Any] = {
                 "batchedGridReads": 0,
                 "messagesSeen": 0,
                 "zoneLookups": 0,
             }
-            found, _touched, interrupted, messages_seen, zone_lookups = process_grib(
+            found, _touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
                 path,
                 collection,
                 model_run,
@@ -3410,16 +5733,43 @@ def replay_current_field_shadow_from_cache(
     return summary
 
 
-def write_github_outputs(status: str, fresh_collections: int = 0, partial_collections: int = 0,
-                         zone_count: int = 0, downloaded_bytes: int = 0, error: str | None = None) -> None:
+def write_github_outputs(
+    status: str,
+    fresh_collections: int = 0,
+    partial_collections: int = 0,
+    zone_count: int = 0,
+    downloaded_bytes: int = 0,
+    error: str | None = None,
+    *,
+    terminal_code: str = "DMI_UNCLASSIFIED",
+    strict_current_anchor_ready: bool = False,
+    collection_failure_codes: list[str] | None = None,
+) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
     if output_path:
+        bounded_code = (
+            terminal_code
+            if re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", terminal_code or "")
+            else "DMI_UNCLASSIFIED"
+        )
+        bounded_failure_codes = sorted({
+            str(code)
+            for code in (collection_failure_codes or [])
+            if re.fullmatch(r"[A-Z][A-Z0-9_]{2,55}", str(code))
+        })[:3]
+        bounded_failure_csv = ",".join(bounded_failure_codes) or "NONE"
         with open(output_path, "a", encoding="utf-8") as handle:
             handle.write(f"status={status}\n")
             handle.write(f"fresh_collections={fresh_collections}\n")
             handle.write(f"partial_collections={partial_collections}\n")
             handle.write(f"zone_count={zone_count}\n")
             handle.write(f"downloaded_bytes={downloaded_bytes}\n")
+            handle.write(f"terminal_code={bounded_code}\n")
+            handle.write(f"collection_failure_codes={bounded_failure_csv}\n")
+            handle.write(
+                "strict_current_anchor_ready="
+                f"{'true' if strict_current_anchor_ready else 'false'}\n"
+            )
             if error:
                 safe_error = safe_error_message(error)
                 handle.write(f"error={safe_error}\n")
@@ -3466,18 +5816,41 @@ def main() -> int:
     progress(f"starter; arbejdsbudget={MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS}s, afslutningsreserve={FINALIZE_RESERVE_SECONDS}s")
     cache_before = raw_cache_inventory()
     current_zone_registry_signature = sampling_registry_signature()
-    previous = load_previous(current_zone_registry_signature)
     zones_geo = json.loads(ZONES_PATH.read_text("utf-8"))
     part_doc: dict[str, Any] = {"zones": {}}
     if COASTAL_PART_POINTS_PATH.exists():
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
     locked_production_reference = production_reference_hour()
+    previous = load_previous(
+        current_zone_registry_signature,
+        coastal_part_targets=coastal_part_targets,
+        production_reference=locked_production_reference,
+    )
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
         for feature in zones_geo.get("features", [])
         if (feature.get("properties") or {}).get("id")
     }
+    regional_proxy_targets: list[dict[str, Any]] = []
+    regional_proxy_configuration_status = "FAILED_CLOSED"
+    try:
+        regional_proxy_policy = json.loads(
+            CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8")
+        )
+        regional_proxy_targets = build_regional_proxy_targets(
+            regional_proxy_policy,
+            part_doc,
+            zone_coast_types,
+        )
+        regional_proxy_configuration_status = (
+            "CONFIGURED" if regional_proxy_targets else "NOT_CONFIGURED"
+        )
+    except (OSError, ValueError, TypeError, KeyError):
+        progress(
+            "privat regional proxykandidat blev fail-closed; "
+            "operationel DMI-produktion fortsætter"
+        )
     direction_document = load_document(COASTAL_POINT_STAGE_REVIEWS_PATH)
     coastal_point_stage_targets = build_coastal_point_stage_targets(
         direction_document,
@@ -3497,7 +5870,7 @@ def main() -> int:
         error for error in (previous_diag.get("errors") or [])
         if str(error.get("collection", "")).startswith("dkss_")
     ]
-    coastal_part_current_cache_healthy = coastal_part_current_cache_reusable(
+    coastal_part_current_cache_healthy = current_operational_cache_ready(
         previous,
         coastal_part_targets,
         locked_production_reference,
@@ -3541,6 +5914,8 @@ def main() -> int:
             "fresh-bulk-cache",
             zone_count=len(previous.get("zones") or {}),
             downloaded_bytes=0,
+            terminal_code="DMI_READY",
+            strict_current_anchor_ready=True,
         )
         if os.getenv("GITHUB_STEP_SUMMARY"):
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as h:
@@ -3598,11 +5973,9 @@ def main() -> int:
     zones.extend(coastal_point_stage_targets)
     coastal_point_stage = load_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage_targets)
 
-    # Privat, score-neutral forskningsopsamling. Det roterende udsnit belyser det
-    # ydre felt. De otte ejer-godkendte Limfjordsdele tilføjes samtidig som en
-    # separat fail-closed allowlist, så kun dkss_lf-værdier op til 15 km kan
-    # gemmes i den private syvdøgnscache. Ingen research-id'er skrives til den
-    # offentlige bulk-cache eller schedulerens dækningsmål.
+    # Privat forskningsopsamling plus den allerede godkendte operationelle
+    # Limfjordsproxy. Kun den strengt validerede otte-dels allowlist må bruge
+    # dkss_lf op til 15 km; roterende forskning forbliver score-neutral.
     current_shadow = load_current_field_shadow(CURRENT_FIELD_SHADOW_PATH)
     rotating_research_targets, next_research_cursor, selected_research_part_ids = build_rotating_targets(
         part_doc,
@@ -3610,17 +5983,12 @@ def main() -> int:
         int(current_shadow.get("cursor") or 0),
         CURRENT_FIELD_SHADOW_PARTS_PER_RUN,
     )
-    regional_proxy_policy = json.loads(CURRENT_REGIONAL_PROXY_POLICY_PATH.read_text("utf-8"))
-    regional_proxy_targets = build_regional_proxy_targets(
-        regional_proxy_policy,
-        part_doc,
-        zone_coast_types,
-    )
     research_targets = rotating_research_targets + regional_proxy_targets
     research_run_metrics: dict[str, Any] = {
         "rotationAdvancedThisRun": False,
         "samplesWrittenThisRun": 0,
         "cachedReplayAssetsThisRun": 0,
+        "regionalProxyConfigurationStatus": regional_proxy_configuration_status,
         "regionalProxyConfiguredThisRun": len(regional_proxy_targets),
     }
     zones.extend(research_targets)
@@ -3669,8 +6037,9 @@ def main() -> int:
     }
     result = {"schemaVersion": 2, "generatedAt": generated,
               "sourceUpdatedAt": previous.get("sourceUpdatedAt") or previous.get("generatedAt"),
-              "method": f"DMI STAC forecast-step GRIB inventory; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h model stride; no spatial interpolation",
+              "method": f"DMI STAC forecast-step GRIB inventory; hourly official DKSS current ledger; collection-specific field extraction; multi-candidate nearest valid grid point with shared-grid U/V vector pairing and marine collection overlap; {TIME_STRIDE_HOURS}h non-ledger stride; no spatial interpolation",
               "hours": HOURS, "timeStrideHours": TIME_STRIDE_HOURS, "zoneRegistrySignature": current_zone_registry_signature,
+              "currentOperationalCadenceHours": 1,
               "currentVectorSemanticsVersion": CURRENT_VECTOR_SEMANTICS_VERSION,
               "currentVectorSelection": CURRENT_VECTOR_SELECTION,
               "currentPreferredDistanceKm": CURRENT_PREFERRED_DISTANCE_KM,
@@ -3700,6 +6069,11 @@ def main() -> int:
     merge_previous(result, previous, active_output_ids)
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
     budget = {"bytes": 0}
+    # Validate and normalize the hydrated cache once before delayed progress
+    # checkpoints. This prevents stale provenance or mismatched vectors from
+    # influencing a later candidate while avoiding a full-cache rescan after
+    # every single hourly asset.
+    clean_and_summarize(result, set(), budget)
     # Local coastal parts use the same downloaded GRIB fields as parent zones.
     # They must remain in the coverage denominator; excluding them allowed the
     # scheduler to stop while most public local scores still lacked current.
@@ -3708,38 +6082,73 @@ def main() -> int:
         if not zone.get("waterSource") and not zone.get("researchCurrent") and not zone.get("privateStage")
     ]
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
+    scheduled = prioritize_strict_current_recovery(
+        scheduled,
+        coastal_part_current_cache_healthy,
+    )
+    schedule_coverage["strictCurrentRecoveryActive"] = not coastal_part_current_cache_healthy
     if wave_bootstrap_configuration is not None:
         # The first integrated cutover has one bounded exception to ordinary
-        # deficit scheduling: both WAM collections must establish the same-run
-        # operational bridge before unrelated productive collections can use
-        # the two normal processing slots.
-        wam_first = sorted(WAVE_BOOTSTRAP_COLLECTIONS, key=COLLECTION_ORDER.index)
-        scheduled = wam_first + [
-            collection for collection in scheduled
-            if collection not in WAVE_BOOTSTRAP_COLLECTIONS
-        ]
-        schedule_coverage["privateWaveBootstrapWamFirst"] = True
+        # deficit scheduling. Both WAM collections remain in the six-slot loop,
+        # but a missing strict current anchor keeps all DKSS collections ahead
+        # of them; the separately checkpointed history bootstrap still runs
+        # before this loop and may resume over more than one cutover attempt.
+        scheduled = prioritize_first_cutover_collections(
+            scheduled,
+            coastal_part_current_cache_healthy,
+        )
+        schedule_coverage["privateWaveBootstrapWamFirst"] = coastal_part_current_cache_healthy
+        schedule_coverage["privateWaveBootstrapDkssFirst"] = not coastal_part_current_cache_healthy
+    schedule_coverage["strictCurrentRecoveryDkssFirst"] = (
+        not coastal_part_current_cache_healthy
+        and bool(scheduled)
+        and scheduled[0] in MARINE_COLLECTIONS
+    )
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
-    # Prefetch the small STAC inventories once, but leave all GRIB download/time
-    # capacity to the public builder first.  If no fresh marine asset covers the
-    # private selection, the isolated replay may use only the budget left over at
-    # the end of the normal build.  Research must never starve public weather.
+    # Prefetch every official DKSS inventory once against the exact +0..+117
+    # current axis. DKSS publishes hourly assets; the global three-hour stride
+    # is only a local capacity optimization and must never manufacture a
+    # Copernicus gap. A mature run may have an internal, explicitly observed
+    # STAC hole, but a latest run whose tail is still publishing is deferred.
     prefetched_marine: dict[str, tuple[str | None, list[dict[str, Any]], dict[str, Any]]] = {}
     research_replay_catalog: dict[str, dict[str, Any]] = {}
-    if research_targets:
-        for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
-            try:
-                previous_run = (previous.get("runs") or {}).get(collection) or {}
-                run, assets, stac_stats = list_latest_assets(collection, previous_run.get("referenceTime"))
-                prefetched_marine[collection] = (run, assets, stac_stats)
-                research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
-            except Exception as exc:
-                result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
-                    "collection": collection,
-                    "message": safe_error_message(exc),
-                })
+    required_current_valid_times = set(
+        operational_current_valid_times(locked_production_reference)
+    )
+    required_current_horizon_end = max(required_current_valid_times, key=epoch)
+    current_target_ids = sorted(
+        str(target.get("partId") or "").strip()
+        for target in coastal_part_targets
+    )
+    current_target_registry_sha256 = target_fingerprint(coastal_part_targets)
+    for collection in sorted(MARINE_COLLECTIONS, key=COLLECTION_ORDER.index):
+        try:
+            previous_run = (previous.get("runs") or {}).get(collection) or {}
+            run, assets, stac_stats = list_latest_assets(
+                collection,
+                previous_run.get("referenceTime"),
+                minimum_valid_time=canonical_time(locked_production_reference),
+                required_valid_times=required_current_valid_times,
+                required_horizon_end_time=required_current_horizon_end,
+                allow_documented_required_gaps=True,
+            )
+            prefetched_marine[collection] = (run, assets, stac_stats)
+            result["diagnostics"]["stacByCollection"][collection] = stac_stats
+            research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
+        except Exception as exc:
+            safe_message = safe_error_message(exc)
+            failed_stats = {
+                "requiredHorizonEndCovered": False,
+                "prefetchFailed": True,
+            }
+            prefetched_marine[collection] = (None, [], failed_stats)
+            result["diagnostics"]["stacByCollection"][collection] = failed_stats
+            result["diagnostics"].setdefault("currentFieldShadowPrefetchErrors", []).append({
+                "collection": collection,
+                "message": safe_message,
+            })
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
     regional_proxy_collection_completed = False
@@ -3748,27 +6157,59 @@ def main() -> int:
     fresh_marine_zone_ids: set[str] = set()
     productive_collections = 0
     bootstrap_locked_hours: dict[str, set[str]] = {}
-    if wave_bootstrap_configuration is not None:
-        bootstrap_locked_hours = execute_private_wave_history_bootstrap(
-            result,
-            zones,
-            budget,
-            fresh_zone_ids,
-            wave_bootstrap_configuration,
-            registry=load_wave_bootstrap_registry(part_doc),
+
+    def flush_private_progress_sidecars() -> None:
+        result["diagnostics"]["currentFieldShadow"] = (
+            write_current_field_shadow_checkpoint(
+                current_shadow,
+                generated,
+                selected_research_part_ids,
+                research_run_metrics,
+                regional_proxy_targets,
+            )
         )
+        if coastal_point_stage_targets:
+            prune_coastal_point_stage_hours(coastal_point_stage, generated)
+            save_coastal_point_stage(
+                COASTAL_POINT_STAGE_PATH,
+                coastal_point_stage,
+            )
+
+    checkpoint_controller = ProgressCheckpointController(
+        result, fresh_zone_ids, budget, flush_private_progress_sidecars,
+    )
+    if wave_bootstrap_configuration is not None:
+        try:
+            bootstrap_locked_hours = execute_private_wave_history_bootstrap(
+                result,
+                zones,
+                budget,
+                fresh_zone_ids,
+                wave_bootstrap_configuration,
+                registry=load_wave_bootstrap_registry(part_doc),
+                checkpoint_controller=checkpoint_controller,
+            )
+        except Exception:
+            checkpoint_controller.flush_if_due(force=True)
+            raise
 
     for collection in scheduled:
         if productive_collections >= COLLECTIONS_PER_RUN:
             break
         if should_stop_work():
-            result["diagnostics"]["errors"].append({"collection": collection, "message": "bulk runtime budget reached"})
+            result["diagnostics"]["errors"].append({
+                "collection": collection,
+                "message": "bulk runtime budget reached",
+                "failureCode": "RUNTIME_BUDGET_REACHED",
+            })
             break
         result["diagnostics"]["collectionsAttempted"].append(collection)
         collection_start_bytes = budget["bytes"]
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
+        # Progress cadence is shared across collections by checkpoint_controller.
+        # No collection-local checkpoint clock is maintained.
         try:
             previous_run = (previous.get("runs") or {}).get(collection) or {}
             if collection in prefetched_marine:
@@ -3800,25 +6241,71 @@ def main() -> int:
                 and collection in WAVE_BOOTSTRAP_COLLECTIONS
             )
             if bootstrap_operational_wam:
-                cleared = clear_operational_wave_window(
-                    result,
-                    zones,
-                    collection,
-                    wave_bootstrap_configuration["targetHour"],
+                result["diagnostics"]["operationalWaveStageMode"] = (
+                    "per-asset-atomic"
                 )
-                result["diagnostics"]["operationalWaveRowsCleared"] = int(
-                    result["diagnostics"].get("operationalWaveRowsCleared") or 0
-                ) + cleared
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
-            processing_signature = f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}|grid:{GRID_LOOKUP_VERSION}|zones:{zone_registry_signature}"
+            processing_signature = (
+                f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}"
+                f"|grid:{GRID_LOOKUP_VERSION}|eccodes-api:{ECCODES_API_VERSION}"
+                f"|eccodes-binding:{ECCODES_BINDING_VERSION}"
+                f"|zones:{zone_registry_signature}"
+            )
+            required_asset_provenance = {
+                str(identity["validTime"]): identity
+                for asset in assets
+                for identity in [official_current_asset_identity(collection, run, asset)]
+                if collection in MARINE_COLLECTIONS
+                and identity is not None
+                and identity["validTime"] in required_current_valid_times
+            }
             same_processing = (
                 not bootstrap_operational_wam
                 and previous_run.get("processingSignature") == processing_signature
             )
             same_run = previous_run.get("referenceTime") == run
-            previous_steps = dict(previous_run.get("processedSteps") or {}) if same_processing and same_run else {}
+            previous_steps = reusable_processed_steps(
+                previous_run,
+                collection=collection,
+                same_processing=same_processing,
+                same_run=same_run,
+                strict_current_anchor_available=coastal_part_current_cache_healthy,
+                required_valid_times=(
+                    required_current_valid_times
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                required_asset_provenance=(
+                    required_asset_provenance
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                current_target_ids=(
+                    current_target_ids
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                current_target_registry_sha256=(
+                    current_target_registry_sha256
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+            )
+            if (
+                collection in MARINE_COLLECTIONS
+                and not coastal_part_current_cache_healthy
+                and same_processing
+                and same_run
+            ):
+                result["diagnostics"]["strictCurrentRecoveryProcessedStepsDiscarded"] = (
+                    int(result["diagnostics"].get("strictCurrentRecoveryProcessedStepsDiscarded") or 0)
+                    + max(
+                        0,
+                        len(previous_run.get("processedSteps") or {}) - len(previous_steps),
+                    )
+                )
             required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
             previously_processed = {
                 valid for valid, step in previous_steps.items()
@@ -3855,8 +6342,8 @@ def main() -> int:
                         and not stage_asset_complete(coastal_point_stage, coastal_point_stage_targets, collection, asset["valid"])
                         and not should_stop_work()
                     ):
-                        cached_path = cached_asset_path(str(asset.get("href") or ""))
-                        if cached_path.is_file():
+                        cached_path = reusable_cached_asset_path(asset, collection, run)
+                        if cached_path is not None:
                             register_raw_cache_asset(
                                 cached_path,
                                 str(asset.get("href") or ""),
@@ -3866,6 +6353,7 @@ def main() -> int:
                                 item_id=str(asset.get("id") or "") or None,
                                 item_created_at=asset.get("itemCreatedAt"),
                                 item_updated_at=asset.get("itemUpdatedAt"),
+                                expected_size=asset.get("size"),
                             )
                             private_diagnostics: dict[str, Any] = {
                                 "gribFieldInventory": {},
@@ -3873,7 +6361,13 @@ def main() -> int:
                                 "marineGridSearch": {},
                                 "batchedGridReads": 0,
                             }
-                            process_grib(
+                            (
+                                _stage_found,
+                                _stage_touched,
+                                staged_interrupted,
+                                _stage_messages,
+                                _stage_lookups,
+                            ) = process_grib_transactionally(
                                 cached_path,
                                 collection,
                                 run,
@@ -3883,11 +6377,13 @@ def main() -> int:
                                 private_diagnostics,
                                 None,
                                 coastal_point_stage,
+                                failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
                             )
-                            prune_coastal_point_stage_hours(coastal_point_stage, generated)
-                            save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
+                            if not staged_interrupted:
+                                checkpoint_controller.mark_sidecars_dirty()
                     continue
-                if should_stop_work():
+                if not checkpoint_controller.can_start_asset():
+                    checkpoint_controller.flush_if_due(force=True)
                     budget_stop = "bulk runtime budget reached"
                     break
                 try:
@@ -3911,7 +6407,69 @@ def main() -> int:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib(
+                asset_processing_started = time.monotonic()
+                current_part_outcome_observation: dict[str, Any] = {}
+                allowed_parameters = operational_asset_parameter_filter(
+                    collection,
+                    asset["valid"],
+                    run,
+                    required_current_valid_times,
+                )
+                operational_wave_asset = (
+                    MappingWaveAsset(asset, run)
+                    if bootstrap_operational_wam
+                    else None
+                )
+                operational_wave_zones = (
+                    relevant_zones(
+                        collection,
+                        [
+                            zone for zone in zones
+                            if not zone.get("waterSource")
+                            and not zone.get("researchCurrent")
+                            and not zone.get("privateStage")
+                        ],
+                    )
+                    if bootstrap_operational_wam
+                    else []
+                )
+                staged_wave_clear = {"rows": 0}
+
+                def prepare_operational_wave_stage(
+                    staged_result: dict[str, Any],
+                    _private_stage: dict[str, Any] | None,
+                ) -> None:
+                    if bootstrap_operational_wam:
+                        staged_wave_clear["rows"] = (
+                            clear_staged_operational_wave_hour(
+                                staged_result,
+                                zones,
+                                collection,
+                                asset["valid"],
+                            )
+                        )
+
+                def validate_operational_wave_stage(
+                    staged_result: dict[str, Any],
+                    _private_stage: dict[str, Any] | None,
+                    outcome: tuple[set[str], set[str], bool, int, int],
+                ) -> bool:
+                    if not bootstrap_operational_wam:
+                        return True
+                    return (
+                        operational_wave_asset is not None
+                        and {"significant-wave-height", "dominant-wave-period"}
+                            <= outcome[0]
+                        and all(
+                            private_wave_bootstrap_hour_complete(
+                                staged_result, zone, collection,
+                                operational_wave_asset,
+                            )
+                            for zone in operational_wave_zones
+                        )
+                    )
+
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
                     path,
                     collection,
                     run,
@@ -3921,11 +6479,21 @@ def main() -> int:
                     result["diagnostics"],
                     current_shadow,
                     coastal_point_stage,
+                    current_part_outcome_observation,
+                    allowed_parameters=allowed_parameters,
+                    prepare_stage=prepare_operational_wave_stage,
+                    failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                    stage_validator=validate_operational_wave_stage,
+                    validation_error="operational WAM asset is not exact and complete",
                 )
+                if bootstrap_operational_wam and not interrupted:
+                    result["diagnostics"]["operationalWaveRowsCleared"] = int(
+                        result["diagnostics"].get("operationalWaveRowsCleared") or 0
+                    ) + staged_wave_clear["rows"]
+                asset_processing_seconds = time.monotonic() - asset_processing_started
                 scrub_private_stage_diagnostics(result["diagnostics"])
-                if coastal_point_stage_targets:
-                    prune_coastal_point_stage_hours(coastal_point_stage, generated)
-                    save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
+                if coastal_point_stage_targets and not interrupted:
+                    checkpoint_controller.mark_sidecars_dirty()
                 research_run_metrics["samplesWrittenThisRun"] = (
                     int(replay_summary.get("samplesWritten") or 0)
                     + int(result["diagnostics"].get("currentFieldShadowSamplesWritten") or 0)
@@ -3940,13 +6508,7 @@ def main() -> int:
                     current_shadow["lastSelectedPartIds"] = selected_research_part_ids
                     research_rotation_completed = True
                     research_run_metrics["rotationAdvancedThisRun"] = True
-                    result["diagnostics"]["currentFieldShadow"] = write_current_field_shadow_checkpoint(
-                        current_shadow,
-                        generated,
-                        selected_research_part_ids,
-                        research_run_metrics,
-                        regional_proxy_targets,
-                    )
+                    checkpoint_controller.mark_sidecars_dirty()
                 if (
                     collection == REGIONAL_PROXY_REQUIRED_COLLECTION
                     and regional_proxy_targets
@@ -3959,7 +6521,43 @@ def main() -> int:
                 result["diagnostics"]["zoneLookups"] += zone_lookups
                 required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
                 step_recognized = sorted(set(found) & set(TARGETS[COLLECTION_FAMILY[collection]]))
-                step_complete = set(step_recognized) >= required_for_family and len(touched) > 0
+                source_capture = (
+                    raw_cache_source_capture(path, collection, run, asset["valid"])
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                )
+                step_source_asset = canonical_current_source_asset({
+                    "collection": collection,
+                    "modelRun": run,
+                    "validTime": asset["valid"],
+                    **(source_capture or {}),
+                }) if source_capture is not None else None
+                step_part_outcome_proof = None
+                if (
+                    collection in MARINE_COLLECTIONS
+                    and step_source_asset is not None
+                    and current_part_outcome_observation.get("complete") is True
+                    and current_part_outcome_observation.get("targetPartIds")
+                        == current_target_ids
+                ):
+                    step_part_outcome_proof = build_current_part_outcome_proof(
+                        current_part_outcome_observation.get(
+                            "spatialUnavailablePartIds"
+                        ),
+                        current_target_ids,
+                        current_target_registry_sha256,
+                        processing_signature,
+                        step_source_asset,
+                    )
+                step_complete = bool(
+                    set(step_recognized) >= required_for_family
+                    and len(touched) > 0
+                    and (
+                        collection not in MARINE_COLLECTIONS
+                        or step_source_asset is not None
+                        and step_part_outcome_proof is not None
+                    )
+                )
                 if not interrupted and step_complete:
                     run_info["assetsProcessed"] += 1
                     previously_processed.add(asset["valid"])
@@ -3975,28 +6573,66 @@ def main() -> int:
                         "zonesTouched": len(touched),
                         "complete": step_complete,
                         "parserVersion": PARSER_VERSION,
-                        "processingSignature": processing_signature
+                        "processingSignature": processing_signature,
+                        **({"sourceAsset": step_source_asset}
+                           if collection in MARINE_COLLECTIONS else {}),
+                        **({"currentPartOutcomeProof": step_part_outcome_proof}
+                           if collection in MARINE_COLLECTIONS else {}),
                     }
                 fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
-                write_checkpoint(result, fresh_zone_ids, budget, "partial")
-                progress(f"{collection}: checkpoint gemt; steps={run_info['assetsProcessed']}, felter={sorted(recognized)}, resterende={runtime_remaining():.0f}s")
+                if interrupted:
+                    checkpoint_status = "afbrudt asset kasseret"
+                else:
+                    checkpoint_written = (
+                        checkpoint_controller.note_committed_asset(
+                            seconds=asset_processing_seconds,
+                        )
+                    )
+                    checkpoint_status = (
+                        "checkpoint gemt"
+                        if checkpoint_written
+                        else "checkpoint samler "
+                            f"{checkpoint_controller.committed_assets_since_write} assets"
+                    )
+                progress(
+                    f"{collection}: forecast-step behandlet på "
+                    f"{asset_processing_seconds:.1f}s; {checkpoint_status}; "
+                    f"steps={run_info['assetsProcessed']}, "
+                    f"felter={sorted(recognized)}, "
+                    f"resterende={runtime_remaining():.0f}s"
+                )
                 if interrupted:
                     budget_stop = "bulk runtime budget reached inside GRIB processing"
                     break
             result["diagnostics"]["parametersByCollection"][collection] = sorted(recognized)
             run_info["recognizedParameters"] = sorted(recognized)
             required = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
+            selected_valid_time_values = [
+                str(asset.get("valid") or "") for asset in assets
+            ]
+            selected_valid_times = {
+                valid_time for valid_time in selected_valid_time_values
+                if valid_time
+            }
+            completed_or_locked = previously_processed | set(
+                bootstrap_locked_hours.get(collection, set())
+            )
+            collection_assets_complete = (
+                bool(selected_valid_time_values)
+                and len(selected_valid_times) == len(selected_valid_time_values)
+                and selected_valid_times <= completed_or_locked
+            )
             made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
-            if not made_progress and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
+            if not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
                 state["lastCheckedAt"] = generated
                 state["referenceTime"] = run
                 state["lastError"] = None
                 state["lastBudgetInterruptedAt"] = None
                 result["diagnostics"]["collectionsUnchanged"].append(collection)
                 result["diagnostics"]["zeroProgressCollections"].append(collection)
-            elif recognized >= required and run_info["assetsProcessed"]:
+            elif collection_assets_complete and recognized >= required and run_info["assetsProcessed"]:
                 state["lastSuccessfulAt"] = generated
                 state["referenceTime"] = run
                 state["consecutiveFailures"] = 0
@@ -4010,15 +6646,28 @@ def main() -> int:
                 state["consecutiveFailures"] = 0
                 state["nextEligibleAt"] = None
                 result["diagnostics"]["collectionsPartial"].append(collection)
+            elif budget_stop:
+                state["lastBudgetInterruptedAt"] = generated
+                state["referenceTime"] = run
+                state["lastError"] = None
+                state["nextEligibleAt"] = None
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
             if made_progress:
                 productive_collections += 1
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
-                result["diagnostics"]["errors"].append({"collection": collection, "message": budget_stop, "partialProgressPreserved": True})
+                result["diagnostics"]["errors"].append({
+                    "collection": collection,
+                    "message": budget_stop,
+                    "failureCode": "RUNTIME_BUDGET_REACHED",
+                    "partialProgressPreserved": True,
+                })
+            if budget_stop:
+                checkpoint_controller.flush_if_due(force=True)
         except Exception as exc:
             message = safe_error_message(exc)
+            failure_code = collection_failure_code(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1
             parser_blocked = "no required RavRadar parameters" in message
             parser_exception = isinstance(exc, (KeyError, TypeError, IndexError, AttributeError))
@@ -4029,13 +6678,24 @@ def main() -> int:
             state["failureClass"] = failure_class
             state["blockedParserVersion"] = PARSER_VERSION if (parser_blocked or parser_exception) else None
             state["nextEligibleAt"] = datetime.fromtimestamp(time.time() + delay_minutes * 60, timezone.utc).isoformat().replace("+00:00", "Z")
-            result["diagnostics"]["errors"].append({"collection": collection, "message": message, "failureClass": state["failureClass"], "retryAfterMinutes": delay_minutes})
+            result["diagnostics"]["errors"].append({
+                "collection": collection,
+                "message": message,
+                "failureCode": failure_code,
+                "failureClass": state["failureClass"],
+                "retryAfterMinutes": delay_minutes,
+            })
+            checkpoint_controller.flush_if_due(force=True)
+
+    checkpoint_controller.flush_if_due(force=True)
 
     replay_targets: list[dict[str, Any]] = []
     if not research_rotation_completed:
         replay_targets.extend(rotating_research_targets)
-    if not regional_proxy_collection_completed:
-        replay_targets.extend(regional_proxy_targets)
+    # Always audit the complete locked regional target..+117 axis. Most runs
+    # skip already-processed DMI assets, so a single freshly parsed asset is not
+    # proof that the restored regional shadow contains all 118 bound samples.
+    replay_targets.extend(regional_proxy_targets)
 
     if not replay_targets:
         result["diagnostics"]["currentFieldShadowCachedReplay"] = {
@@ -4053,6 +6713,7 @@ def main() -> int:
             current_shadow,
             generated,
             budget,
+            locked_production_reference,
         )
         result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
         research_run_metrics["cachedReplayAssetsThisRun"] = int(replay_summary.get("assetsCompleted") or 0)
@@ -4083,7 +6744,17 @@ def main() -> int:
         prune_coastal_point_stage_hours(coastal_point_stage, generated)
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     clean_and_summarize(result, fresh_zone_ids, budget)
-    strict_current_anchor_available = coastal_part_current_cache_reusable(
+    current_operational_ledger = build_current_operational_ledger(
+        result,
+        coastal_part_targets,
+        locked_production_reference,
+        prefetched_marine,
+    )
+    result["diagnostics"]["currentOperationalLedger"] = current_operational_ledger
+    result["diagnostics"]["currentOperationalAttestation"] = (
+        current_operational_ledger["attestation"]
+    )
+    strict_current_anchor_available = current_operational_cache_ready(
         result,
         coastal_part_targets,
         locked_production_reference,
@@ -4093,12 +6764,15 @@ def main() -> int:
     )
     if not strict_current_anchor_available:
         result["diagnostics"]["errors"].append({
-            "collection": "dmi-current-anchor-gate",
+            "collection": "dmi-current-ledger-gate",
             "message": (
-                "No strict coastal-part current pair exists in the locked "
-                "production matrix"
+                "The official DKSS asset/valid-time ledger is not complete "
+                "for the locked operational matrix"
             ),
             "failureClass": "producer-success-gate",
+            "failureCodes": result["diagnostics"]["currentOperationalLedger"].get(
+                "failureCodes"
+            ),
         })
     bootstrap_operational_complete = False
     if wave_bootstrap_configuration is not None:
@@ -4137,6 +6811,12 @@ def main() -> int:
     diag = result["diagnostics"]
     fresh_successes, fresh_partials = len(diag["collectionsSucceeded"]), len(diag["collectionsPartial"])
     bootstrap_complete = wave_bootstrap_configuration is not None and bootstrap_operational_complete
+    producer_productive = bool(
+        strict_current_anchor_available
+        or fresh_successes
+        or fresh_partials
+        or bootstrap_complete
+    )
     producer_success_is_blocked = producer_success_blocked(
         strict_current_anchor_available,
         wave_bootstrap_configuration is not None,
@@ -4149,24 +6829,37 @@ def main() -> int:
     if producer_success_is_blocked:
         result["refreshStatus"] = "failed"
     else:
-        result["refreshStatus"] = "ok" if productive_collections >= COLLECTIONS_PER_RUN and fresh_successes else ("partial" if fresh_successes or fresh_partials or bootstrap_complete or result["diagnostics"]["zeroProgressCollections"] else "failed")
+        result["refreshStatus"] = "ok" if strict_current_anchor_available else (
+            "partial" if fresh_successes or fresh_partials or bootstrap_complete
+            or result["diagnostics"]["zeroProgressCollections"] else "failed"
+        )
 
-    write_checkpoint(result, fresh_zone_ids, budget, result["refreshStatus"])
     prune_stats = prune_raw_cache()
     cache_after = raw_cache_inventory()
     write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
+    write_finalized_cache(result, result["refreshStatus"])
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
+    terminal_code = producer_terminal_code(
+        strict_current_anchor_available=strict_current_anchor_available,
+        wave_bootstrap_requested=wave_bootstrap_configuration is not None,
+        bootstrap_complete=bootstrap_complete,
+        productive=producer_productive,
+        diagnostics=diag,
+    )
     write_github_outputs(
         result["refreshStatus"], fresh_successes, fresh_partials,
-        len(result["zones"]), budget["bytes"]
+        len(result["zones"]), budget["bytes"],
+        terminal_code=terminal_code,
+        strict_current_anchor_ready=strict_current_anchor_available,
+        collection_failure_codes=diagnostic_collection_failure_codes(diag),
     )
     write_step_summary(result, scheduled, diag, budget, fresh_successes, fresh_partials)
     print(json.dumps(summary, ensure_ascii=False))
     if producer_success_is_blocked:
         return 2
-    return 0 if fresh_successes or fresh_partials or bootstrap_complete else 2
+    return 0 if producer_productive else 2
 
 
 if __name__ == "__main__":
@@ -4174,7 +6867,12 @@ if __name__ == "__main__":
         raise SystemExit(main())
     except Exception as exc:
         print(f"DMI bulk downloader failed safely: {safe_error_message(exc)}", file=sys.stderr, flush=True)
-        write_github_outputs("failed", error=safe_error_message(exc))
+        write_github_outputs(
+            "failed",
+            error=safe_error_message(exc),
+            terminal_code="DMI_PRODUCER_EXCEPTION",
+            strict_current_anchor_ready=False,
+        )
         write_failure_summary(exc)
         raise SystemExit(2)
 

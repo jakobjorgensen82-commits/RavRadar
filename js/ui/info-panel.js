@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.318";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.318";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.318";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.318";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.318";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.320";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.320";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.320";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.320";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.320";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');
@@ -121,6 +121,16 @@ function historyQualityWarning(result, { compact = false } = {}) {
     + '<p>' + escapeHtml(body) + '</p>'
     + (rangeText ? '<p>' + escapeHtml(rangeText) + '.</p>' : '')
     + coverage + '</section>';
+}
+
+const FEGGESUND_WAVE_PROXY_NOTICE_ID = 'FEGGESUND_NEIGHBOR_WAVE_PROXY';
+
+function waveInputWarning(weather) {
+  if (weather?.waveInputNoticeId !== FEGGESUND_WAVE_PROXY_NOTICE_ID) return '';
+  return '<section class="display-context warning wave-input-warning" role="status">'
+    + '<p><b>' + escapeHtml(t('weather.waveProxy.title')) + '</b></p>'
+    + '<p>' + escapeHtml(t('weather.waveProxy.body')) + '</p>'
+    + '</section>';
 }
 
 function secondaryScoreText(result) {
@@ -290,10 +300,15 @@ export function bindZoneInfoInteractions(element, zone, mode, history, options =
     const detail = forecastSection.querySelector("[data-forecast-detail]");
     const render = index => {
       const day = summaries[index], best = day.best, h = best.hour || {}, r = best.result || {};
+      const selectedHourWeather = {
+        ...(day.hours?.find(hour => hour?.time === h.time) || {}),
+        ...h,
+      };
       forecastSection.querySelectorAll(".forecast-score-day").forEach((button,i) => { button.classList.toggle("active",i===index); button.setAttribute("aria-selected",String(i===index)); });
       detail.innerHTML = `<div class="forecast-selected"><div><h4>${capitalize(dayLabel(`${day.date}T12:00:00`))} ${dateLabel(`${day.date}T12:00:00`)}</h4>${best.recommended?`<p>${t('score.bestTime')} <b>${best.isNow?t('common.now'):hourLabel(h.time)}</b></p><p class="muted" data-best-time-selection-reason="${escapeHtml(best.selectionReason?.code || 'UNKNOWN')}">${bestTimeReasonText(best)}</p>${best.candidates?.length>1?`<details class="best-time-comparison"><summary>${t('score.compare')}</summary><ol>${best.candidates.slice(0,5).map(candidate=>`<li><span>${candidate.isNow?t('common.now'):hourLabel(candidate.time)}</span>${secondaryScoreMarkup(candidate)}</li>`).join("")}</ol></details>`:""}`:`<p>${t('score.noBestTime')}</p>`}</div><div class="score-badge ${r.level}"><strong>${r.available?r.score:"–"}</strong><span>RavScore</span></div></div>
         ${displayContextPanel(r,{scope:best.displayScope,partName:r.localPartName,time:h.time})}
         ${historyQualityWarning(r)}
+        ${waveInputWarning(selectedHourWeather)}
         ${localCoveragePanel(r,{showMapButton:false})}
         <div class="component-list compact metric-sized">${componentDetails(t('score.huntability'),"huntability",r,t('score.huntabilityDefinition'))}${componentDetails(t('score.transport'),"transport",r,t('score.transportDefinition'))}${componentDetails(t('score.mobilisation'),"release",r,MOBILISATION_DEFINITION)}</div>${r.available ? integratedExplanationPanel(r) : ""}
         <div class="metric-grid weather-grid"><div class="metric"><span>${t('weather.wind')}</span><strong>${directionMetric("wind",h.windSpeedMps,"m/s",h.windDirectionDeg)}</strong></div><div class="metric"><span>${t('weather.waves')}</span><strong>${formatMetric(h.waveHeightM,"m")}</strong></div><div class="metric"><span>${t('weather.waterLevel')}</span><strong>${formatMetric(h.waterLevelCm,"cm",0)}</strong></div><div class="metric"><span>${t('weather.current')}</span><strong>${directionMetric("current",h.currentSpeedMps,"m/s",h.currentDirectionDeg,2)}</strong></div><div class="metric"><span>${t('weather.waterTrend')}</span><strong>${formatMetric(h.waterLevelTrendCm3h,"cm",0)}</strong></div><div class="metric"><span>${t('weather.waterTemperature')}</span><strong>${formatMetric(h.waterTemperatureC,"°C")}</strong></div></div>`;
@@ -322,6 +337,7 @@ export function showZoneInfo(element, zone, result, condition, mode, options = {
     ${localCoveragePanel(result)}
     ${displayContextPanel(result,options.displayContext)}
     ${historyQualityWarning(result)}
+    ${waveInputWarning(condition)}
     ${componentHtml}
     ${result.available ? integratedExplanationPanel(result) : ""}
     ${result.available ? debugPanel(zone,result,condition) : ""}
