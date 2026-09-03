@@ -29,6 +29,7 @@ import {
   ravScoreModelBinding as candidateGRollbackModelBinding,
 } from './rollback-assets/ravscore-model-contract.js';
 import {
+  RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS,
   loadRavScoreContinuationCheckpointForTarget,
   RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
   restoreRavScoreContinuationCheckpoint,
@@ -36,6 +37,7 @@ import {
 } from './ravscore-continuation-checkpoint.mjs';
 import {
   RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
+  RAVSCORE_CONTINUATION_IMPLEMENTATION_NORMALIZATION_ID,
   RAVSCORE_CONTINUATION_IMPLEMENTATION_REPOSITORY_ROOT,
   ravScoreContinuationImplementationSha256,
 } from './lib/ravscore-continuation-implementation-contract.mjs';
@@ -46,6 +48,9 @@ const atHour = hour => new Date(START + hour * 3_600_000).toISOString();
 const contextFor = partId => `sha256:${crypto.createHash('sha256').update(partId).digest('hex')}`;
 const clone = value => JSON.parse(JSON.stringify(value));
 const writeJson = (file, value) => fs.writeFile(file, `${JSON.stringify(value, null, 2)}\n`);
+const sha256 = value => crypto.createHash('sha256')
+  .update(JSON.stringify(value))
+  .digest('hex');
 
 const samples = Array.from({ length: 53 }, (_, hour) => ({
   time: atHour(hour),
@@ -193,7 +198,35 @@ const targetPath = path.join(tempRoot, 'target.json');
 const checkpointPath = path.join(tempRoot, 'checkpoint.json');
 const alternateCheckpointPath = path.join(tempRoot, 'checkpoint-alternate.json');
 const lineageCheckpointPath = path.join(tempRoot, 'checkpoint-lineage.json');
+const boundedCheckpointPath = path.join(tempRoot, 'checkpoint-bounded.json');
+const oversizedCheckpointPath = path.join(tempRoot, 'checkpoint-oversized.json');
+const predecessorCheckpointPath = path.join(tempRoot, 'checkpoint-predecessor.json');
+const invalidPredecessorCheckpointPath =
+  path.join(tempRoot, 'checkpoint-predecessor-invalid.json');
+const unknownImplementationCheckpointPath =
+  path.join(tempRoot, 'checkpoint-unknown-implementation.json');
 const missingCheckpointPath = path.join(tempRoot, 'missing', 'checkpoint.json');
+
+const checkpointWithImplementation = (checkpoint, implementationSha256) => {
+  const result = clone(checkpoint);
+  result.continuationStateContractSha256 = implementationSha256;
+  result.generationSha256 = sha256({
+    schemaVersion: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.schemaVersion,
+    status: RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.status,
+    datasetId: result.datasetId,
+    productionReferenceAt: result.productionReferenceAt,
+    modelBinding: result.modelBinding,
+    candidateModelBinding: result.candidateGRollbackCompanion.modelBinding,
+    continuationStateContractSha256: implementationSha256,
+    rollbackId: CANDIDATE_G_OPERATIONAL_ROLLBACK_ID,
+    partCount: result.partCount,
+    stateSha256: result.stateSha256,
+    candidateStateSha256: result.candidateGRollbackCompanion.stateSha256,
+  });
+  result.candidateGRollbackCompanion.generationSha256 =
+    result.generationSha256;
+  return result;
+};
 
 async function assertRestoreRejectsWithoutMutation({
   target,
@@ -230,6 +263,11 @@ try {
   assert.equal(saved.modelId, RAVSCORE_MODEL_ID);
   assert.equal(saved.stateSchemaVersion, RAVSCORE_STATE_SCHEMA_VERSION);
   assert.equal(saved.modelContractSha256, RAVSCORE_MODEL_CONTRACT_SHA256);
+  assert.equal(
+    RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
+    16 * 1024 * 1024,
+  );
+  assert.equal(RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumPartIdLength, 100);
   assert.equal(saved.modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
   assert.equal(saved.continuationStateContractSha256, continuationStateContractSha256);
   assert.match(saved.generationSha256, /^[0-9a-f]{64}$/);
@@ -237,6 +275,35 @@ try {
 
   const checkpointText = await fs.readFile(checkpointPath, 'utf8');
   const checkpoint = JSON.parse(checkpointText);
+  assert.equal(saved.checkpointSerializedBytes, Buffer.byteLength(checkpointText, 'utf8'));
+  await fs.writeFile(boundedCheckpointPath, 'preserve-existing-checkpoint\n');
+  const boundedBefore = await fs.readFile(boundedCheckpointPath, 'utf8');
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({
+      sourcePath,
+      checkpointPath: boundedCheckpointPath,
+      maximumSerializedBytes: saved.checkpointSerializedBytes - 1,
+    }),
+    /serialized limit/,
+    'a checkpoint one byte above its configured cap must fail before replacement',
+  );
+  assert.equal(
+    await fs.readFile(boundedCheckpointPath, 'utf8'),
+    boundedBefore,
+    'an over-cap checkpoint must not overwrite the prior target',
+  );
+  await fs.writeFile(
+    oversizedCheckpointPath,
+    Buffer.alloc(RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes + 1),
+  );
+  await assert.rejects(
+    loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath: oversizedCheckpointPath,
+      targetReference: atHour(50),
+    }),
+    /serialized limit/,
+    'an oversized protected restore input must fail before JSON parsing',
+  );
   assert.equal(checkpoint.schemaVersion, 4);
   assert.equal(checkpoint.status, 'ravscore-schema6-with-candidate-g-rollback-companion');
   assert.equal(
@@ -274,6 +341,125 @@ try {
     assert.equal(state.modelBundleSha256, RAVSCORE_MODEL_BUNDLE_SHA256);
     assert.equal(state.samplingContextKey, contextFor(partId));
   }
+
+  assert.deepEqual(RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS, [{
+    sourceVersion: '4.0.320',
+    sourceHead: '7198b685f4bc9d86bd6432b049380f4279ab797c',
+    implementationSha256:
+      '082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91',
+    compatibilityReason: 'CHECKPOINT_STORAGE_BOUNDARY_ONLY',
+  }]);
+  const predecessor = RAVSCORE_CONTINUATION_COMPATIBLE_PREDECESSORS[0];
+  const predecessorCheckpoint = checkpointWithImplementation(
+    checkpoint,
+    predecessor.implementationSha256,
+  );
+  await writeJson(predecessorCheckpointPath, predecessorCheckpoint);
+  const futureRejectedPredecessor =
+    await fs.readFile(predecessorCheckpointPath, 'utf8');
+  await assert.rejects(
+    loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath: predecessorCheckpointPath,
+      targetReference: atHour(48),
+    }),
+    /future relative to the bound target/,
+    'a compatible predecessor must pass target validation before reattestation',
+  );
+  assert.equal(
+    await fs.readFile(predecessorCheckpointPath, 'utf8'),
+    futureRejectedPredecessor,
+    'a future predecessor checkpoint must remain byte-unchanged',
+  );
+  const predecessorLoaded = await loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath: predecessorCheckpointPath,
+    targetReference: atHour(50),
+  });
+  assert.equal(predecessorLoaded.loaded, true);
+  assert.equal(
+    predecessorLoaded.reason,
+    'checkpoint-ready-after-compatible-predecessor-reattest',
+  );
+  assert.equal(
+    predecessorLoaded.continuationReattestedFromImplementationSha256,
+    predecessor.implementationSha256,
+  );
+  assert.equal(
+    predecessorLoaded.continuationReattestedFromSourceHead,
+    predecessor.sourceHead,
+  );
+  assert.equal(
+    predecessorLoaded.continuationStateContractSha256,
+    continuationStateContractSha256,
+  );
+  const reattestedPredecessor = JSON.parse(
+    await fs.readFile(predecessorCheckpointPath, 'utf8'),
+  );
+  assert.equal(
+    reattestedPredecessor.continuationStateContractSha256,
+    continuationStateContractSha256,
+  );
+  assert.notEqual(
+    reattestedPredecessor.generationSha256,
+    predecessorCheckpoint.generationSha256,
+  );
+  assert.equal(
+    reattestedPredecessor.candidateGRollbackCompanion.generationSha256,
+    reattestedPredecessor.generationSha256,
+  );
+  assert.deepEqual(reattestedPredecessor.states, predecessorCheckpoint.states);
+  assert.deepEqual(
+    reattestedPredecessor.candidateGRollbackCompanion.states,
+    predecessorCheckpoint.candidateGRollbackCompanion.states,
+  );
+  assert.deepEqual(reattestedPredecessor.privacy, predecessorCheckpoint.privacy);
+  assertNoPrivateCheckpointFields(reattestedPredecessor);
+  const predecessorReloaded = await loadRavScoreContinuationCheckpointForTarget({
+    checkpointPath: predecessorCheckpointPath,
+    targetReference: atHour(50),
+  });
+  assert.equal(predecessorReloaded.reason, 'checkpoint-ready');
+  assert.equal(
+    predecessorReloaded.continuationReattestedFromImplementationSha256,
+    null,
+  );
+
+  const invalidPredecessorCheckpoint = checkpointWithImplementation(
+    checkpoint,
+    predecessor.implementationSha256,
+  );
+  invalidPredecessorCheckpoint.privacy.weatherIncluded = true;
+  await writeJson(invalidPredecessorCheckpointPath, invalidPredecessorCheckpoint);
+  await assert.rejects(
+    loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath: invalidPredecessorCheckpointPath,
+      targetReference: atHour(50),
+    }),
+    /privacy declaration is invalid/,
+    'a predecessor hash must not bypass current privacy validation',
+  );
+  assert.equal(
+    JSON.parse(await fs.readFile(invalidPredecessorCheckpointPath, 'utf8'))
+      .continuationStateContractSha256,
+    predecessor.implementationSha256,
+    'an invalid predecessor must not be reattested',
+  );
+
+  const unknownImplementationCheckpoint = checkpointWithImplementation(
+    checkpoint,
+    'f'.repeat(64),
+  );
+  await writeJson(
+    unknownImplementationCheckpointPath,
+    unknownImplementationCheckpoint,
+  );
+  await assert.rejects(
+    loadRavScoreContinuationCheckpointForTarget({
+      checkpointPath: unknownImplementationCheckpointPath,
+      targetReference: atHour(50),
+    }),
+    /continuation implementation is incompatible/,
+    'only the one exact predecessor implementation may be reattested',
+  );
 
   const lineagePartId = 'lineage-part';
   const lineageDocument = lineage => {
@@ -452,6 +638,42 @@ try {
   );
 
   // Model metadata alone cannot make changed continuation code compatible.
+  assert.equal(
+    RAVSCORE_CONTINUATION_IMPLEMENTATION_NORMALIZATION_ID,
+    'utf8-bomless-lf-v2',
+  );
+  const lineEndingRepositoryRoots = {
+    lf: path.join(tempRoot, 'line-ending-repository-lf'),
+    crlf: path.join(tempRoot, 'line-ending-repository-crlf'),
+  };
+  for (const [lineEnding, repositoryRoot] of
+    Object.entries(lineEndingRepositoryRoots)) {
+    for (const relativePath of RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES) {
+      const sourceImplementationPath = path.join(
+        RAVSCORE_CONTINUATION_IMPLEMENTATION_REPOSITORY_ROOT,
+        relativePath,
+      );
+      const implementationPath = path.join(repositoryRoot, relativePath);
+      await fs.mkdir(path.dirname(implementationPath), { recursive: true });
+      const normalizedSource = (await fs.readFile(sourceImplementationPath, 'utf8'))
+        .replace(/^\uFEFF/, '')
+        .replace(/\r\n?/g, '\n');
+      await fs.writeFile(
+        implementationPath,
+        lineEnding === 'crlf' ? normalizedSource.replace(/\n/g, '\r\n') : normalizedSource,
+      );
+    }
+  }
+  assert.equal(
+    await ravScoreContinuationImplementationSha256({
+      repositoryRoot: lineEndingRepositoryRoots.lf,
+    }),
+    await ravScoreContinuationImplementationSha256({
+      repositoryRoot: lineEndingRepositoryRoots.crlf,
+    }),
+    'continuation implementation hash must be identical on Linux and Windows checkouts',
+  );
+
   for (const [driftIndex, driftedRelativePath] of
     RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES.entries()) {
     const driftedRepositoryRoot = path.join(tempRoot, `drifted-repository-${driftIndex}`);
@@ -713,6 +935,20 @@ try {
   await assert.rejects(
     saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath }),
     /requires 673 parts/,
+  );
+
+  const unsafePartIdSource = documentFor({
+    datasetId: 'rr-schema6-unsafe-part-id',
+    productionReferenceAt: atHour(49),
+    template: checkpointStateTemplate,
+  });
+  unsafePartIdSource.coastalParts.parts['unsafe part id'] =
+    unsafePartIdSource.coastalParts.parts[partIds[0]];
+  delete unsafePartIdSource.coastalParts.parts[partIds[0]];
+  await writeJson(sourcePath, unsafePartIdSource);
+  await assert.rejects(
+    saveRavScoreContinuationCheckpoint({ sourcePath, checkpointPath }),
+    /ASCII token of at most 100 characters/,
   );
 
   const incompleteCompanionSource = documentFor({

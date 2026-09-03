@@ -29,6 +29,8 @@ const MIGRATION_VERSION_PATTERN = /^\d{8,14}$/;
 const READINESS_DOCUMENT_KEY = 'ravscore-integrated-cutover-readiness';
 const READINESS_SCHEMA = 'ravscore-integrated-cutover-readiness-v1';
 const DATABASE_READBACK_SCHEMA = 'ravscore-integrated-cutover-db-v1';
+const CHECKPOINT_DATABASE_READBACK_SCHEMA = 'ravscore-checkpoint-db-v1';
+export const CHECKPOINT_CAS_CONTRACT_ID = 'ravscore-checkpoint-metadata-cas-v1';
 const MODEL_BINDING_FIELDS = Object.freeze([
   'modelId', 'stateSchemaVersion', 'variantId', 'profileId', 'componentSchemaId',
   'explanationSchemaId', 'rankingPolicyId', 'bestTimePolicyId',
@@ -56,6 +58,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     version: '20260901010000',
     id: '20260901010000_integrated_trip_measured_warmup_admission',
     filename: '20260901010000_integrated_trip_measured_warmup_admission.sql',
+  }),
+  Object.freeze({
+    version: '20260903010000',
+    id: '20260903010000_ravscore_checkpoint_metadata_cas',
+    filename: '20260903010000_ravscore_checkpoint_metadata_cas.sql',
   }),
 ]);
 
@@ -108,6 +115,39 @@ function sqlFunctionBody(source, functionName, label) {
   ));
   assert.ok(match && match[1], `${label} definition is missing from the migration`);
   return normaliseTripBindingPolicyDefinition(match[1]);
+}
+
+export async function expectedCheckpointCasContract({
+  migrationsDirectory = MIGRATIONS_DIRECTORY,
+} = {}) {
+  const migration = await fs.readFile(path.join(
+    migrationsDirectory,
+    REQUIRED_CUTOVER_MIGRATIONS[3].filename,
+  ), 'utf8');
+  const definitions = [
+    ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
+    ['public.ravradar_ravscore_checkpoint_has_forbidden_key', 'forbidden-key validator'],
+    ['public.ravradar_ravscore_checkpoint_integrated_state_valid', 'integrated-state validator'],
+    ['public.ravradar_ravscore_checkpoint_candidate_state_valid', 'Candidate-state validator'],
+    ['public.ravradar_ravscore_checkpoint_payload_valid', 'checkpoint payload validator'],
+    ['public.ravradar_ravscore_checkpoint_predecessor_payload_valid',
+      'exact predecessor payload validator'],
+    ['public.ravradar_ravscore_checkpoint_cas', 'checkpoint CAS'],
+    ['public.version_admin_document', 'checkpoint history-exclusion trigger'],
+  ].map(([functionName, label]) => sqlFunctionBody(migration, functionName, label));
+  const definition = definitions[0]
+    + `\n-- forbidden-key-validator --\n${definitions[1]}`
+    + `\n-- integrated-state-validator --\n${definitions[2]}`
+    + `\n-- candidate-state-validator --\n${definitions[3]}`
+    + `\n-- payload-validator --\n${definitions[4]}`
+    + `\n-- predecessor-payload-validator --\n${definitions[5]}`
+    + `\n-- cas-function --\n${definitions[6]}`
+    + `\n-- checkpoint-history-exclusion --\n${definitions[7]}`;
+  return Object.freeze({
+    id: CHECKPOINT_CAS_CONTRACT_ID,
+    sha256: sha256(definition),
+    definition,
+  });
 }
 
 export async function expectedTripActiveAdmissionPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
@@ -235,7 +275,7 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       // RavRadar's historical repository used date-only migration names and
       // therefore contains pre-cutover duplicates. They are never passed to db
       // push: the workflow builds a temporary normalized view from remote
-      // applied history plus the three exact cutover migrations. New duplicates are
+      // applied history plus the four exact cutover migrations. New duplicates are
       // still a hard error.
       assert.ok(version.length === 8 && version <= '20260828',
         `duplicate Supabase migration version ${version}: ${versionToFilename.get(version)} and ${filename}`);
@@ -429,7 +469,11 @@ function expectedRpcBody(binding, candidate) {
   };
 }
 
-function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPolicy) {
+function assertDatabaseReadback(
+  value,
+  expectedPolicy,
+  expectedActiveAdmissionPolicy,
+) {
   assertExactKeys(value, [
     'schemaVersion', 'tripSchemaVersion', 'appliedMigrationVersions',
     'tripBindingPolicy', 'tripActiveAdmissionPolicy', 'checks',
@@ -437,8 +481,8 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
   assert.equal(value.schemaVersion, DATABASE_READBACK_SCHEMA);
   assert.equal(value.tripSchemaVersion, 3);
   assert.deepEqual(value.appliedMigrationVersions,
-    REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version),
-    'database readback is missing required applied migrations');
+    REQUIRED_CUTOVER_MIGRATIONS.slice(0, 3).map(item => item.version),
+    'trip database readback is missing its exact applied migrations');
   assertExactKeys(value.tripBindingPolicy, ['id', 'definition'],
     'database trip binding policy readback');
   assert.equal(value.tripBindingPolicy.id, expectedPolicy.id,
@@ -507,6 +551,40 @@ function assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPo
   return true;
 }
 
+function assertCheckpointDatabaseReadback(value, expectedCheckpointContract) {
+  assertExactKeys(value, [
+    'schemaVersion', 'appliedMigrationVersion', 'checkpointContract', 'checks',
+  ], 'checkpoint database readback');
+  assert.equal(value.schemaVersion, CHECKPOINT_DATABASE_READBACK_SCHEMA);
+  assert.equal(value.appliedMigrationVersion, REQUIRED_CUTOVER_MIGRATIONS[3].version,
+    'checkpoint database readback is missing its applied migration');
+  assertExactKeys(value.checkpointContract, ['id', 'definition'],
+    'database checkpoint CAS contract readback');
+  assert.equal(value.checkpointContract.id, expectedCheckpointContract.id,
+    'database checkpoint CAS contract id is incompatible');
+  assert.equal(
+    sha256(normaliseTripBindingPolicyDefinition(value.checkpointContract.definition)),
+    expectedCheckpointContract.sha256,
+    'database checkpoint CAS contract definition hash drifted',
+  );
+  const expectedChecks = [
+    'checkpointContractDefinitionPresent',
+    'checkpointCanonicalTimeHelperStableSecurityInvoker',
+    'checkpointHistoryExclusionInstalled',
+    'checkpointDirectPayloadReadRestricted',
+    'checkpointCasSecurityDefiner',
+    'checkpointCasServiceRoleExecutable',
+    'checkpointCasAnonymousExecutionRejected',
+    'checkpointValidatorExecutionRestricted',
+    'checkpointFunctionsSearchPathLocked',
+  ];
+  assertExactKeys(value.checks, expectedChecks, 'checkpoint database checks');
+  for (const key of expectedChecks) {
+    assert.equal(value.checks[key], true, `checkpoint database check failed: ${key}`);
+  }
+  return true;
+}
+
 function requiredSupabaseConfiguration({ requireServiceRole = true } = {}) {
   const url = String(process.env.SUPABASE_URL || PUBLIC_CONFIG.supabaseUrl || '').trim().replace(/\/$/, '');
   const serviceRoleKey = String(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
@@ -544,7 +622,8 @@ export async function verifyIntegratedDatabaseReadback({
   const candidate = candidateModelBinding ?? candidateGRollbackModelBinding();
   assertExactKeys(binding, MODEL_BINDING_FIELDS, 'database expected integrated binding');
   assertExactKeys(candidate, MODEL_BINDING_FIELDS, 'database expected Candidate binding');
-  const response = await fetchImpl(`${String(url).replace(/\/$/, '')}/rest/v1/rpc/ravradar_integrated_cutover_contract`, {
+  const baseUrl = String(url).replace(/\/$/, '');
+  const response = await fetchImpl(`${baseUrl}/rest/v1/rpc/ravradar_integrated_cutover_contract`, {
     method: 'POST',
     headers: buildSupabaseAdminHeaders(serviceRoleKey),
     body: JSON.stringify(expectedRpcBody(binding, candidate)),
@@ -553,7 +632,21 @@ export async function verifyIntegratedDatabaseReadback({
   const expectedPolicy = tripBindingPolicy ?? await expectedTripBindingPolicy();
   const expectedActiveAdmissionPolicy = tripActiveAdmissionPolicy
     ?? await expectedTripActiveAdmissionPolicy();
+  const expectedCheckpointContract = await expectedCheckpointCasContract();
   assertDatabaseReadback(value, expectedPolicy, expectedActiveAdmissionPolicy);
+  const checkpointResponse = await fetchImpl(
+    `${baseUrl}/rest/v1/rpc/ravradar_ravscore_checkpoint_contract`,
+    {
+      method: 'POST',
+      headers: buildSupabaseAdminHeaders(serviceRoleKey),
+      body: '{}',
+    },
+  );
+  const checkpointValue = await readJsonResponse(
+    checkpointResponse,
+    'checkpoint database metadata readback',
+  );
+  assertCheckpointDatabaseReadback(checkpointValue, expectedCheckpointContract);
   return value;
 }
 

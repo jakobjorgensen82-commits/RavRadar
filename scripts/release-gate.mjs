@@ -247,6 +247,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -762,9 +763,27 @@ for(const marker of [
   "'ravscore-continuation-checkpoint'",
   "'.cache/ravscore-continuation-checkpoint/checkpoint.json'",
   'PROTECTED_RAVSCORE_CHECKPOINT_DOCUMENT_ALLOWLIST',
-  'createSupabaseAdminRequester',
+  'buildSupabaseAdminHeaders',
   'loadRavScoreContinuationCheckpointForTarget',
-  '?document_key=eq.${encodeURIComponent(key)}&select=document_key,payload,version&limit=2',
+  'PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES',
+  'PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES',
+  'createProtectedRavScoreCheckpointVersionRequester',
+  'createProtectedRavScoreCheckpointRpcRequester',
+  'serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY',
+  'const endpoint = `${url}/rest/v1/rpc/${PROTECTED_RAVSCORE_CHECKPOINT_RPC}`',
+  '`?document_key=eq.${encodeURIComponent(key)}&select=document_key,version&limit=2`',
+  'await invokeProtectedCheckpointRpc(rpcRequest, {',
+  'p_expected_version: expectedVersion',
+  'p_target_reference: local.checkpointAt',
+  'p_payload: payload',
+  'createProtectedRavScoreCheckpointRequester',
+  '`?document_key=eq.${encodeURIComponent(key)}&select=document_key,payload,version&limit=2`',
+  "const request = options.mode === 'publish'",
+  '? createProtectedRavScoreCheckpointVersionRequester()',
+  ': createProtectedRavScoreCheckpointRequester()',
+  "const rpcRequest = options.mode === 'publish'",
+  '? createProtectedRavScoreCheckpointRpcRequester()',
+  ': null',
   "reason: 'protected-checkpoint-not-found'",
   'targetUnchanged: true',
   'await fs.rename(temporary, checkpointPath)',
@@ -772,6 +791,76 @@ for(const marker of [
 ]){
   ok(protectedContinuationCheckpoint.includes(marker),`Protected checkpoint-kontrakten mangler ${marker}`);
 }
+ok(/readResponseTextBounded\(\s*response,\s*PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,/s.test(protectedContinuationCheckpoint)
+  && /readResponseTextBounded\(\s*response,\s*PROTECTED_RAVSCORE_CHECKPOINT_RESTORE_MAXIMUM_RESPONSE_BYTES,/s.test(protectedContinuationCheckpoint),
+'Protected checkpoint-klienten mangler separate response bounds for metadata/RPC og restore-payload');
+const protectedCheckpointPublishSource=protectedContinuationCheckpoint.slice(
+  protectedContinuationCheckpoint.indexOf('export async function publishProtectedRavScoreContinuationCheckpoint('),
+  protectedContinuationCheckpoint.indexOf('export async function restoreProtectedRavScoreContinuationCheckpoint('),
+);
+const protectedCheckpointRestoreSource=protectedContinuationCheckpoint.slice(
+  protectedContinuationCheckpoint.indexOf('export async function restoreProtectedRavScoreContinuationCheckpoint('),
+  protectedContinuationCheckpoint.indexOf('function parseArgs('),
+);
+ok(protectedCheckpointPublishSource.includes('readExactProtectedCheckpointVersion(')
+  && protectedCheckpointPublishSource.includes('invokeProtectedCheckpointRpc(rpcRequest, {')
+  && !protectedCheckpointPublishSource.includes('readExactProtectedCheckpointRow('),
+'Protected checkpoint-publish skal bruge version-only metadata-GET efterfulgt af RPC-CAS');
+ok(protectedCheckpointRestoreSource.includes('readExactProtectedCheckpointRow(')
+  && !protectedCheckpointRestoreSource.includes('readExactProtectedCheckpointVersion(')
+  && !protectedCheckpointRestoreSource.includes('invokeProtectedCheckpointRpc('),
+'Fuld protected checkpoint-payload-GET må kun bruges af restore-vejen');
+ok((protectedContinuationCheckpoint.match(/readResponseTextBounded\(\s*response,\s*PROTECTED_RAVSCORE_CHECKPOINT_RPC_MAXIMUM_RESPONSE_BYTES,/gs)??[]).length===2,
+'Protected checkpoint version-GET og RPC-CAS skal begge have metadata-response bound');
+for(const marker of [
+  'begin;',
+  "set local lock_timeout = '5s';",
+  'create or replace function public.ravradar_ravscore_checkpoint_cas(',
+  'create or replace function public.ravradar_ravscore_checkpoint_contract()',
+  'p_expected_version bigint',
+  'p_target_reference timestamptz',
+  'p_payload jsonb',
+  'returns jsonb',
+  'security definer',
+  "v_key constant text := 'ravscore-continuation-checkpoint';",
+  "if auth.role() is distinct from 'service_role' then",
+  "where document_key = v_key",
+  "'centralVersion', v_version",
+  "'productionReferenceAt', p_payload ->> 'productionReferenceAt'",
+  'v_result := pg_catalog.jsonb_build_object(',
+  "pg_catalog.octet_length(pg_catalog.convert_to(v_result::text, 'UTF8')) > 4096",
+  'return v_result;',
+  'revoke all on function public.ravradar_ravscore_checkpoint_cas(bigint,timestamptz,jsonb)',
+  'from public, anon, authenticated;',
+  'grant execute on function public.ravradar_ravscore_checkpoint_cas(bigint,timestamptz,jsonb)',
+  'to service_role;',
+  "notify pgrst, 'reload schema';",
+  'commit;',
+]){
+  ok(checkpointMetadataCasMigration.includes(marker),`Checkpoint metadata-CAS-migrationen mangler ${marker}`);
+}
+ok(/\bbegin;\s*set local lock_timeout = '5s';/i.test(checkpointMetadataCasMigration)
+  && /notify pgrst, 'reload schema';\s*commit;\s*$/i.test(checkpointMetadataCasMigration),
+'Checkpoint metadata-CAS-migrationen skal være transaktionel med bounded lock og afsluttende PostgREST-reload');
+const checkpointCasStart=checkpointMetadataCasMigration.indexOf(
+  'create or replace function public.ravradar_ravscore_checkpoint_cas(',
+);
+const checkpointCasEnd=checkpointMetadataCasMigration.indexOf(
+  'create or replace function public.ravradar_ravscore_checkpoint_contract()',
+);
+const checkpointCasSql=checkpointMetadataCasMigration.slice(checkpointCasStart,checkpointCasEnd);
+const checkpointCasResultSql=checkpointCasSql.slice(
+  checkpointCasSql.indexOf('v_result := pg_catalog.jsonb_build_object('),
+  checkpointCasSql.indexOf("raise exception 'protected RavScore checkpoint CAS metadata exceeds response bound'"),
+);
+ok(checkpointCasStart>=0
+  && checkpointCasEnd>checkpointCasStart
+  && checkpointCasSql.includes('return v_result;')
+  && !/\breturn\s+(?:p_payload|v_payload)\s*;/i.test(checkpointCasSql)
+  && !/[\"']payload[\"']\s*,/i.test(checkpointCasResultSql)
+  && !/\bv_payload\b/i.test(checkpointCasResultSql)
+  && !/[\"'][^\"']+[\"']\s*,\s*p_payload\s*[,)]/i.test(checkpointCasResultSql),
+'Checkpoint metadata-CAS-RPC må kun returnere bounded metadata, aldrig hele checkpoint-payloaden');
 for(const marker of ['expectedPartCount: 673','bundleContentSha256','modelBinding']){
   ok(privateRuntimeBundle.includes(marker),`Det private runtimebundle mangler ${marker}`);
 }

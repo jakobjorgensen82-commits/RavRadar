@@ -74,7 +74,7 @@ forbidMarkers('Den historiske 4.0.318-driftsevidens', operational318?.body || ''
 const activeBinding = byId('ravscore-final-bindings-4-0-320');
 requireMarkers(`Den aktive ${pkg.version}-binding`, `${activeBinding?.title || ''}\n${activeBinding?.body || ''}`, [
   `RavScore ${pkg.version}`,
-  'Candidate G/4.0.316 er fortsat offentlig',
+  'Candidate G er fortsat offentlig',
   `<code>modelContractSha256=${integratedReleaseBinding.modelContractSha256}</code>`,
   `<code>modelBundleSha256=${integratedReleaseBinding.modelBundleSha256}</code>`,
   `over ${integratedBundleFileCount} kanonisk normaliserede transitive implementeringsfiler`,
@@ -84,6 +84,23 @@ requireMarkers(`Den aktive ${pkg.version}-binding`, `${activeBinding?.title || '
   `over ${candidateGRollbackBundleFileCount} transitive filer`,
   '<code>version.json.releaseContract.modelBindings</code>',
 ]);
+
+const checkpointMetadataCas = byId('ravscore-checkpoint-metadata-cas-4-0-321');
+requireMarkers('Det aktive metadata-CAS-kapitel',
+  `${checkpointMetadataCas?.title || ''}\n${checkpointMetadataCas?.body || ''}`, [
+    'Candidate G er fortsat den eneste offentlige model',
+    'højst 4 KiB metadata',
+    'højst 16 MiB',
+    'kun ved reel restore',
+    '673 integrerede dele',
+    '673 READY Candidate G-rollbackdele',
+    'JavaScript ejer fortsat replaymatematik og generationshash',
+    'ingen stateposter, koordinater, vejrpayloads eller rå U/V',
+    '<code>082a5187…</code>',
+    '<code>utf8-bomless-lf-v2</code>',
+    '<code>35c45f8f…</code>',
+    'Det er ikke en generel fallback',
+  ]);
 
 const state6 = byId('integrated-ravscore-state6-history-bounds-2026-08-30');
 requireMarkers('Det historiske state-6-kapitel', `${state6?.title || ''}\n${state6?.body || ''}`, [

@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 checkpoint/CAS-slutkant
+
+- [x] Gør continuation-hashen platformsuafhængig med `utf8-bomless-lf-v2`; aktuel hash er `35c45f8f1f701695923b3195d60a6b8931aad4d2d08b05c93900b88401eca95c` på både LF og CRLF.
+- [x] Tillad kun exact predecessor `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` fra `7198b685f4bc9d86bd6432b049380f4279ab797c`; same-target-overgangen må kun ændre continuation-hash og top-/companion-generation, mens alle andre afvigelser er fatal.
+- [x] Bind migration, schema, installer, metadata-readback, ACL og testharness til samme kontrakt; continuation/protected/readiness/installer/sync/release-metadata er måltestet grønne.
+- [ ] Commit/push 4.0.321, bestå exact-head, remote Supabase dry-run/apply/readback og data-/kapacitetsgates; merge derefter sikkert og gennemfør frisk produktion, særskilt Phase B og offentlig mobil/desktop.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.320 slutbinding
 
 - [x] Regenerér Candidate G-rollback i egen proces: kontrakt `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`, bundle `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d`, 56 filer.
@@ -3046,3 +3053,15 @@ Den eksisterende private nationale shadow-validator beregner nu A, B og C på sa
 - [ ] Mål live Supabase-forbrug før/efter én kontrolleret fuld produktion, fastslå virkelig fuld buildfrekvens og dokumentér mindst 30 procent reserve over hele billingperioden.
 - [ ] Hvis budgettet ikke består: fjern unødvendig normal full-object-restore/readback eller formindsk/opdel bundlen uden at svække rollback, checkpoint, hashes, privacy eller recovery.
 - [ ] Hold integrated cutover blokeret, indtil alle ovenstående målinger og eventuel remediation er grønne.
+# NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 beskyttet checkpoint og kapacitetsbinding
+
+- [x] Bevar PR #246/merge `7198b685` som Phase A: Candidate G forbliver offentlig, og almindelig push/schedule/watchdog kan ikke aktivere state 6.
+- [x] Implementér bounded service-role metadata-CAS med idempotent retry, monotont target, 16 MiB loft for den kanonisk serialiserede checkpointpayload og højst 4 KiB svar; fuld checkpointpayload læses kun ved reel restore/cache-miss.
+- [x] Udeluk checkpointet fra fremtidig adminhistorik uden at slette eksisterende historik, og luk direkte authenticated payload-/versionslæsning med restriktiv RLS.
+- [x] Bind samme eksakte SQL-kontrakt til migration, frisk schema og sikkerhedsinstaller; attestér migration, funktioner, trigger, RLS, ACL og `search_path` gennem separat metadata-readback.
+- [x] Bevar eksakt 673/state-6/Candidate G READY-/binding-/privacyvalidering i både JavaScript og database uden SQL-genberegning af model eller generationshash.
+- [x] Bestå de målrettede checkpoint-, private-runtime-, readiness-, installer-, release-metadata- og workflowtests; bevis særskilt, at geodata kun ændrer topversion 4.0.320 → 4.0.321.
+- [x] Luk uafhængig read-only SQL-review uden P0/P1; bekræft CAS, RLS/ACL/search path, installerparitet og 673+673-kontrakt.
+- [ ] Bestå én 4.0.321 exact-head-kildegate og rigtig Supabase dry-run/apply/readback; kør ikke en bred lokal kopi af samme kildegate uden konkret fejlevidens.
+- [ ] Bevis 673 × 118, Feggesund 3 × 118 og live Supabase før/efter-kapacitet med øvrig egress/lager og mindst 30 procent reserve.
+- [ ] Merge sikkert, følg frisk fuld produktion og udfør derefter kun den særskilte manuelle Fase B samt offentlig mobil-/desktopverifikation, når alle gates er grønne.

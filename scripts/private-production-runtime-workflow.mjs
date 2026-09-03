@@ -20,6 +20,9 @@ import {
 import {
   RAVSCORE_CONTINUATION_IMPLEMENTATION_FILES,
 } from './lib/ravscore-continuation-implementation-contract.mjs';
+import {
+  RAVSCORE_CONTINUATION_CHECKPOINT_POLICY,
+} from './ravscore-continuation-checkpoint.mjs';
 
 export const PRIVATE_RUNTIME_FILES = Object.freeze([
   Object.freeze({ id: 'full-conditions', relativePath: 'data/live/conditions.json' }),
@@ -98,8 +101,10 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
   // slightly more conservative than interpreting the published quota as GiB.
   quotaDocumentationUrl: 'https://supabase.com/docs/guides/platform/manage-your-usage/egress',
   storageDocumentationUrl: 'https://supabase.com/docs/guides/storage/pricing',
+  databaseQuotaDocumentationUrl: 'https://supabase.com/docs/guides/platform/database-size',
   monthlyUncachedEgressQuotaBytes: 5_000_000_000,
   storageQuotaBytes: 1_000_000_000,
+  databaseSizeQuotaBytes: 500_000_000,
   reservePercent: 30,
   usableBudgetPercent: 70,
   conservativeMonthDays: 31,
@@ -112,6 +117,13 @@ export const PRIVATE_RUNTIME_CAPACITY_POLICY = Object.freeze({
   normalObjectReadsPerFullBuild: 2,
   rollbackObjectReadsPerFullBuild: 3,
   retainedObjectGenerations: 2,
+  checkpointMaximumSerializedBytes:
+    RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
+  checkpointRpcMetadataResponsesPerFullBuild: 2,
+  checkpointRpcMetadataBytesPerResponse: 4 * 1024,
+  checkpointFullRestoreEnvelopeBytesPerRead: 4 * 1024,
+  checkpointBindingRestoresPerMonth: 60,
+  checkpointRestoreScenariosPerMonth: Object.freeze([1, 31, 60, 1_860]),
 });
 
 const PREFLIGHT_COLLECTIONS = Object.freeze([
@@ -343,6 +355,8 @@ function validateCapacityPolicy(policy) {
     || policy.monthlyUncachedEgressQuotaBytes < 1
     || !Number.isSafeInteger(policy.storageQuotaBytes)
     || policy.storageQuotaBytes < 1
+    || !Number.isSafeInteger(policy.databaseSizeQuotaBytes)
+    || policy.databaseSizeQuotaBytes !== 500_000_000
     || !Number.isSafeInteger(policy.reservePercent)
     || policy.reservePercent !== 30
     || !Number.isSafeInteger(policy.usableBudgetPercent)
@@ -359,8 +373,18 @@ function validateCapacityPolicy(policy) {
     || policy.normalObjectReadsPerFullBuild !== 2
     || policy.rollbackObjectReadsPerFullBuild !== 3
     || policy.retainedObjectGenerations !== 2
+    || policy.checkpointMaximumSerializedBytes
+      !== RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes
+    || policy.checkpointRpcMetadataResponsesPerFullBuild !== 2
+    || policy.checkpointRpcMetadataBytesPerResponse !== 4 * 1024
+    || policy.checkpointFullRestoreEnvelopeBytesPerRead !== 4 * 1024
+    || policy.checkpointBindingRestoresPerMonth !== 60
+    || !Array.isArray(policy.checkpointRestoreScenariosPerMonth)
+    || JSON.stringify(policy.checkpointRestoreScenariosPerMonth)
+      !== JSON.stringify([1, 31, 60, 1_860])
     || typeof policy.quotaDocumentationUrl !== 'string'
-    || typeof policy.storageDocumentationUrl !== 'string') {
+    || typeof policy.storageDocumentationUrl !== 'string'
+    || typeof policy.databaseQuotaDocumentationUrl !== 'string') {
     throw new Error('Private runtime capacity policy is invalid');
   }
   return policy;
@@ -385,8 +409,23 @@ function safePercentageFloor(value, percent, label) {
   return Math.floor(numerator / 100);
 }
 
+function safeIntegerSum(values, label) {
+  let total = 0n;
+  for (const value of values) {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new Error(`${label} contains an invalid integer`);
+    }
+    total += BigInt(value);
+  }
+  if (total > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error(`${label} exceeds the safe integer bound`);
+  }
+  return Number(total);
+}
+
 export function buildPrivateRuntimeIncrementalSizeProjection({
   archiveObjectBytes,
+  checkpointSerializedBytes,
   policy = PRIVATE_RUNTIME_CAPACITY_POLICY,
 } = {}) {
   const capacityPolicy = validateCapacityPolicy(policy);
@@ -400,6 +439,17 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
   if (buildsPerMonth !== capacityPolicy.scheduledFullBuildsPerMonth) {
     throw new Error('Private runtime incremental projection build frequency is inconsistent');
   }
+  const checkpointProjectionBasis = checkpointSerializedBytes === undefined
+    ? 'POLICY_MAXIMUM_SERIALIZED_BYTES'
+    : 'MEASURED_SERIALIZED_BYTES';
+  const projectedCheckpointBytes = checkpointSerializedBytes === undefined
+    ? capacityPolicy.checkpointMaximumSerializedBytes
+    : checkpointSerializedBytes;
+  if (!Number.isSafeInteger(projectedCheckpointBytes)
+    || projectedCheckpointBytes < 1
+    || projectedCheckpointBytes > capacityPolicy.checkpointMaximumSerializedBytes) {
+    throw new Error('RavScore checkpoint capacity projection size is invalid');
+  }
   const usableEgressBudgetBytes = safePercentageFloor(
     capacityPolicy.monthlyUncachedEgressQuotaBytes,
     capacityPolicy.usableBudgetPercent,
@@ -409,6 +459,11 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
     capacityPolicy.storageQuotaBytes,
     capacityPolicy.usableBudgetPercent,
     'Private runtime incremental storage budget',
+  );
+  const usableDatabaseBudgetBytes = safePercentageFloor(
+    capacityPolicy.databaseSizeQuotaBytes,
+    capacityPolicy.usableBudgetPercent,
+    'RavScore checkpoint incremental database budget',
   );
   const normalPerFullBuildBytes = safeIntegerProduct([
     archiveObjectBytes,
@@ -430,12 +485,72 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
     archiveObjectBytes,
     capacityPolicy.retainedObjectGenerations,
   ], 'Private runtime retained-object projection');
+  const checkpointRpcMetadataPerFullBuildBytes = safeIntegerProduct([
+    capacityPolicy.checkpointRpcMetadataResponsesPerFullBuild,
+    capacityPolicy.checkpointRpcMetadataBytesPerResponse,
+  ], 'RavScore checkpoint RPC metadata per-build projection');
+  const projectedMonthlyCheckpointRpcMetadataBytes = safeIntegerProduct([
+    checkpointRpcMetadataPerFullBuildBytes,
+    buildsPerMonth,
+  ], 'RavScore checkpoint RPC metadata monthly projection');
+  const checkpointRestoreScenarios = capacityPolicy.checkpointRestoreScenariosPerMonth
+    .map(restoresPerMonth => {
+      const fullPayloadReadBytes = safeIntegerProduct([
+        safeIntegerSum([
+          projectedCheckpointBytes,
+          capacityPolicy.checkpointFullRestoreEnvelopeBytesPerRead,
+        ], 'RavScore checkpoint protected-restore response size'),
+        restoresPerMonth,
+      ], 'RavScore checkpoint protected-restore projection');
+      const projectedMonthlyCheckpointBytes = safeIntegerSum([
+        projectedMonthlyCheckpointRpcMetadataBytes,
+        fullPayloadReadBytes,
+      ], 'RavScore checkpoint total monthly projection');
+      const projectedMonthlyNormalCombinedBytes = safeIntegerSum([
+        projectedMonthlyNormalBytes,
+        projectedMonthlyCheckpointBytes,
+      ], 'Private runtime and checkpoint normal monthly projection');
+      const projectedMonthlyRollbackCombinedBytes = safeIntegerSum([
+        projectedMonthlyRollbackBytes,
+        projectedMonthlyCheckpointBytes,
+      ], 'Private runtime and checkpoint rollback monthly projection');
+      return {
+        restoresPerMonth,
+        role: restoresPerMonth === capacityPolicy.checkpointBindingRestoresPerMonth
+          ? 'BINDING_PLANNING_LIMIT'
+          : restoresPerMonth === buildsPerMonth
+            ? 'NON_BINDING_ALL_BUILD_STRESS'
+            : 'INFORMATIONAL_SCENARIO',
+        payloadBytesPerRestore: projectedCheckpointBytes,
+        responseEnvelopeBytesPerRestore:
+          capacityPolicy.checkpointFullRestoreEnvelopeBytesPerRead,
+        fullPayloadReadBytes,
+        projectedMonthlyCheckpointBytes,
+        projectedMonthlyNormalCombinedBytes,
+        projectedMonthlyRollbackCombinedBytes,
+        normalWithinUsableUnifiedEgressBudget:
+          projectedMonthlyNormalCombinedBytes <= usableEgressBudgetBytes,
+        rollbackWithinUsableUnifiedEgressBudget:
+          projectedMonthlyRollbackCombinedBytes <= usableEgressBudgetBytes,
+      };
+    });
+  const bindingCheckpointRestoreScenario = checkpointRestoreScenarios.find(
+    scenario => scenario.restoresPerMonth
+      === capacityPolicy.checkpointBindingRestoresPerMonth,
+  );
+  if (!bindingCheckpointRestoreScenario) {
+    throw new Error('RavScore checkpoint binding restore scenario is missing');
+  }
   const normalWithinBudget = projectedMonthlyNormalBytes <= usableEgressBudgetBytes;
   const rollbackWithinBudget = projectedMonthlyRollbackBytes <= usableEgressBudgetBytes;
   const storageWithinBudget = retainedStorageBytes <= usableStorageBudgetBytes;
-  const withinIncrementalBounds = normalWithinBudget
-    && rollbackWithinBudget
-    && storageWithinBudget;
+  const checkpointDatabaseWithinIncrementalBound =
+    projectedCheckpointBytes <= usableDatabaseBudgetBytes;
+  const withinIncrementalBounds =
+    bindingCheckpointRestoreScenario.normalWithinUsableUnifiedEgressBudget
+    && bindingCheckpointRestoreScenario.rollbackWithinUsableUnifiedEgressBudget
+    && storageWithinBudget
+    && checkpointDatabaseWithinIncrementalBound;
   return {
     incrementalGate: {
       scope: capacityPolicy.capacityScope,
@@ -463,6 +578,14 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
       projectedMonthlyRollbackBytes,
       normalWithinBudget,
       rollbackWithinBudget,
+      projectedMonthlyNormalWithCheckpointBytes:
+        bindingCheckpointRestoreScenario.projectedMonthlyNormalCombinedBytes,
+      projectedMonthlyRollbackWithCheckpointBytes:
+        bindingCheckpointRestoreScenario.projectedMonthlyRollbackCombinedBytes,
+      normalWithCheckpointWithinBudget:
+        bindingCheckpointRestoreScenario.normalWithinUsableUnifiedEgressBudget,
+      rollbackWithCheckpointWithinBudget:
+        bindingCheckpointRestoreScenario.rollbackWithinUsableUnifiedEgressBudget,
     },
     storage: {
       quotaDocumentationUrl: capacityPolicy.storageDocumentationUrl,
@@ -475,6 +598,37 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
       retainedStorageBytes,
       withinBudget: storageWithinBudget,
     },
+    database: {
+      quotaDocumentationUrl: capacityPolicy.databaseQuotaDocumentationUrl,
+      quotaScope: 'PROJECT_DATABASE_SIZE',
+      projectionScope: 'RAVSCORE_CHECKPOINT_INCREMENT_ONLY',
+      quotaBytes: capacityPolicy.databaseSizeQuotaBytes,
+      reservePercent: capacityPolicy.reservePercent,
+      usableBudgetPercent: capacityPolicy.usableBudgetPercent,
+      usableBudgetBytes: usableDatabaseBudgetBytes,
+      checkpointProjectionBasis,
+      projectedCheckpointBytes,
+      withinIncrementalBound: checkpointDatabaseWithinIncrementalBound,
+      currentDatabaseSizeIncluded: false,
+    },
+    checkpointDatabaseEgress: {
+      quotaScope: 'ORGANIZATION_UNCACHED_UNIFIED_EGRESS',
+      checkpointProjectionBasis,
+      projectedCheckpointBytes,
+      maximumSerializedBytes: capacityPolicy.checkpointMaximumSerializedBytes,
+      rpcMetadataResponsesPerFullBuild:
+        capacityPolicy.checkpointRpcMetadataResponsesPerFullBuild,
+      rpcMetadataBytesPerResponse: capacityPolicy.checkpointRpcMetadataBytesPerResponse,
+      fullRestoreEnvelopeBytesPerRead:
+        capacityPolicy.checkpointFullRestoreEnvelopeBytesPerRead,
+      rpcMetadataPerFullBuildBytes: checkpointRpcMetadataPerFullBuildBytes,
+      projectedMonthlyRpcMetadataBytes:
+        projectedMonthlyCheckpointRpcMetadataBytes,
+      bindingRestoresPerMonth: capacityPolicy.checkpointBindingRestoresPerMonth,
+      observedCacheMissRateRequired: true,
+      observedCacheMissRateIncluded: false,
+      restoreScenarios: checkpointRestoreScenarios,
+    },
     cutoverGate: {
       status: 'BLOCKED_PENDING_LIVE_BEFORE_AFTER_AND_OTHER_EGRESS',
       cutoverEligible: false,
@@ -482,12 +636,21 @@ export function buildPrivateRuntimeIncrementalSizeProjection({
       liveSupabaseBeforeAfterMeasurementIncluded: false,
       otherUnifiedEgressProjectionRequired: true,
       otherUnifiedEgressProjectionIncluded: false,
-      checkpointDatabaseEgressIncluded: false,
+      liveDatabaseSizeMeasurementRequired: true,
+      liveDatabaseSizeMeasurementIncluded: false,
+      observedCheckpointRestoreRateRequired: true,
+      observedCheckpointRestoreRateIncluded: false,
+      checkpointDatabaseEgressIncluded: true,
+      checkpointDatabaseStorageIncluded: true,
     },
   };
 }
 
-async function optionalCheckpointSerializedBytes(repositoryRoot, checkpointPath) {
+async function optionalCheckpointSerializedBytes(
+  repositoryRoot,
+  checkpointPath,
+  maximumBytes = RAVSCORE_CONTINUATION_CHECKPOINT_POLICY.maximumSerializedBytes,
+) {
   const root = path.resolve(repositoryRoot);
   const resolved = path.resolve(root, checkpointPath);
   if (!inside(root, resolved)) throw new Error('Private runtime capacity checkpoint escapes repository');
@@ -496,7 +659,11 @@ async function optionalCheckpointSerializedBytes(repositoryRoot, checkpointPath)
     throw error;
   });
   if (stat === null) return null;
-  if (!stat.isFile() || stat.isSymbolicLink() || !Number.isSafeInteger(stat.size) || stat.size < 1) {
+  if (!stat.isFile()
+    || stat.isSymbolicLink()
+    || !Number.isSafeInteger(stat.size)
+    || stat.size < 1
+    || stat.size > maximumBytes) {
     throw new Error('Private runtime capacity checkpoint is not a regular serialized file');
   }
   return stat.size;
@@ -579,12 +746,14 @@ export async function buildPrivateRuntimeIncrementalSizeDryRun({
   const checkpointSerializedBytes = await optionalCheckpointSerializedBytes(
     root,
     checkpointPath,
+    capacityPolicy.checkpointMaximumSerializedBytes,
   );
   const checkpointDisposition = checkpointSerializedBytes === null
     ? await attestMeasuredWarmupCheckpointAbsence(root, runtimeAuditPath)
     : 'CHECKPOINT_SIZE_MEASURED';
   const projection = buildPrivateRuntimeIncrementalSizeProjection({
     archiveObjectBytes: archiveMetrics.objectBytes,
+    ...(checkpointSerializedBytes === null ? {} : { checkpointSerializedBytes }),
     policy: capacityPolicy,
   });
   return {

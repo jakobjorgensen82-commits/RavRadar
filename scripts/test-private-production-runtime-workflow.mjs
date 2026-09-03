@@ -147,6 +147,24 @@ try {
   assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.rollbackObjectReadsPerFullBuild, 3);
   assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.retainedObjectGenerations, 2);
   assert.equal(
+    PRIVATE_RUNTIME_CAPACITY_POLICY.monthlyUncachedEgressQuotaBytes,
+    5_000_000_000,
+  );
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.storageQuotaBytes, 1_000_000_000);
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.databaseSizeQuotaBytes, 500_000_000);
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointMaximumSerializedBytes, 16 * 1024 * 1024);
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointRpcMetadataResponsesPerFullBuild, 2);
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointRpcMetadataBytesPerResponse, 4 * 1024);
+  assert.equal(
+    PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointFullRestoreEnvelopeBytesPerRead,
+    4 * 1024,
+  );
+  assert.equal(PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointBindingRestoresPerMonth, 60);
+  assert.deepEqual(
+    PRIVATE_RUNTIME_CAPACITY_POLICY.checkpointRestoreScenariosPerMonth,
+    [1, 31, 60, 1_860],
+  );
+  assert.equal(
     PRIVATE_RUNTIME_CAPACITY_POLICY.scheduledFullBuildsPerDay
       * PRIVATE_RUNTIME_CAPACITY_POLICY.conservativeMonthDays,
     PRIVATE_RUNTIME_CAPACITY_POLICY.scheduledFullBuildsPerMonth,
@@ -206,6 +224,33 @@ try {
   assert.equal(capacity.storage.usableBudgetBytes, 700_000_000);
   assert.equal(capacity.storage.retainedObjectGenerations, 2);
   assert.equal(capacity.storage.retainedStorageBytes, archiveObjectBytes * 2);
+  assert.equal(capacity.database.usableBudgetBytes, 350_000_000);
+  assert.equal(capacity.database.checkpointProjectionBasis, 'MEASURED_SERIALIZED_BYTES');
+  assert.equal(capacity.database.projectedCheckpointBytes, Buffer.byteLength(checkpointText));
+  assert.equal(capacity.database.withinIncrementalBound, true);
+  assert.equal(capacity.database.currentDatabaseSizeIncluded, false);
+  assert.equal(
+    capacity.checkpointDatabaseEgress.projectedCheckpointBytes,
+    Buffer.byteLength(checkpointText),
+  );
+  assert.equal(capacity.checkpointDatabaseEgress.rpcMetadataResponsesPerFullBuild, 2);
+  assert.equal(capacity.checkpointDatabaseEgress.rpcMetadataBytesPerResponse, 4 * 1024);
+  assert.equal(capacity.checkpointDatabaseEgress.rpcMetadataPerFullBuildBytes, 8 * 1024);
+  assert.equal(
+    capacity.checkpointDatabaseEgress.projectedMonthlyRpcMetadataBytes,
+    8 * 1024 * 1_860,
+  );
+  assert.deepEqual(
+    capacity.checkpointDatabaseEgress.restoreScenarios.map(
+      scenario => [scenario.restoresPerMonth, scenario.role],
+    ),
+    [
+      [1, 'INFORMATIONAL_SCENARIO'],
+      [31, 'INFORMATIONAL_SCENARIO'],
+      [60, 'BINDING_PLANNING_LIMIT'],
+      [1_860, 'NON_BINDING_ALL_BUILD_STRESS'],
+    ],
+  );
   assert.deepEqual(capacity.cutoverGate, {
     status: 'BLOCKED_PENDING_LIVE_BEFORE_AFTER_AND_OTHER_EGRESS',
     cutoverEligible: false,
@@ -213,7 +258,12 @@ try {
     liveSupabaseBeforeAfterMeasurementIncluded: false,
     otherUnifiedEgressProjectionRequired: true,
     otherUnifiedEgressProjectionIncluded: false,
-    checkpointDatabaseEgressIncluded: false,
+    liveDatabaseSizeMeasurementRequired: true,
+    liveDatabaseSizeMeasurementIncluded: false,
+    observedCheckpointRestoreRateRequired: true,
+    observedCheckpointRestoreRateIncluded: false,
+    checkpointDatabaseEgressIncluded: true,
+    checkpointDatabaseStorageIncluded: true,
   });
   assert.equal(capacity.controls.supabaseRequestAttempted, false);
   assert.equal(capacity.controls.privatePayloadArtifactUploaded, false);
@@ -227,6 +277,7 @@ try {
     storageUsableBytes = 700_000_000,
   }) => buildPrivateRuntimeIncrementalSizeProjection({
     archiveObjectBytes,
+    checkpointSerializedBytes: Buffer.byteLength(checkpointText),
     policy: {
       ...PRIVATE_RUNTIME_CAPACITY_POLICY,
       monthlyUncachedEgressQuotaBytes: quotaForUsableBytes(egressUsableBytes),
@@ -235,23 +286,33 @@ try {
   });
   const normalMonthlyBytes = archiveObjectBytes * 2 * 1_860;
   const rollbackMonthlyBytes = archiveObjectBytes * 3 * 1_860;
+  const checkpointMonthlyBytes = 8 * 1024 * 1_860
+    + (Buffer.byteLength(checkpointText) + 4 * 1024) * 60;
+  const normalCombinedMonthlyBytes = normalMonthlyBytes + checkpointMonthlyBytes;
+  const rollbackCombinedMonthlyBytes = rollbackMonthlyBytes + checkpointMonthlyBytes;
   const retainedStorageBytes = archiveObjectBytes * 2;
   const normalBoundary = projectionWithUsableBudgets({
-    egressUsableBytes: normalMonthlyBytes,
+    egressUsableBytes: normalCombinedMonthlyBytes,
   });
-  assert.equal(normalBoundary.egress.usableBudgetBytes, normalMonthlyBytes);
+  assert.equal(normalBoundary.egress.usableBudgetBytes, normalCombinedMonthlyBytes);
   assert.equal(normalBoundary.egress.normalWithinBudget, true);
-  assert.equal(normalBoundary.egress.rollbackWithinBudget, false);
+  assert.equal(
+    normalBoundary.egress.rollbackWithinBudget,
+    rollbackMonthlyBytes <= normalCombinedMonthlyBytes,
+  );
+  assert.equal(normalBoundary.egress.normalWithCheckpointWithinBudget, true);
+  assert.equal(normalBoundary.egress.rollbackWithCheckpointWithinBudget, false);
   const normalOneByteOver = projectionWithUsableBudgets({
-    egressUsableBytes: normalMonthlyBytes - 1,
+    egressUsableBytes: normalCombinedMonthlyBytes - 1,
   });
-  assert.equal(normalOneByteOver.egress.normalWithinBudget, false);
+  assert.equal(normalOneByteOver.egress.normalWithCheckpointWithinBudget, false);
   const rollbackBoundary = projectionWithUsableBudgets({
-    egressUsableBytes: rollbackMonthlyBytes,
+    egressUsableBytes: rollbackCombinedMonthlyBytes,
     storageUsableBytes: retainedStorageBytes,
   });
-  assert.equal(rollbackBoundary.egress.usableBudgetBytes, rollbackMonthlyBytes);
+  assert.equal(rollbackBoundary.egress.usableBudgetBytes, rollbackCombinedMonthlyBytes);
   assert.equal(rollbackBoundary.egress.rollbackWithinBudget, true);
+  assert.equal(rollbackBoundary.egress.rollbackWithCheckpointWithinBudget, true);
   assert.equal(rollbackBoundary.storage.usableBudgetBytes, retainedStorageBytes);
   assert.equal(rollbackBoundary.storage.withinBudget, true);
   assert.equal(
@@ -259,22 +320,55 @@ try {
     'WITHIN_INCREMENTAL_SIZE_BOUNDS',
   );
   const rollbackOneByteOver = projectionWithUsableBudgets({
-    egressUsableBytes: rollbackMonthlyBytes - 1,
+    egressUsableBytes: rollbackCombinedMonthlyBytes - 1,
     storageUsableBytes: retainedStorageBytes,
   });
-  assert.equal(rollbackOneByteOver.egress.rollbackWithinBudget, false);
+  assert.equal(rollbackOneByteOver.egress.rollbackWithCheckpointWithinBudget, false);
   assert.equal(
     rollbackOneByteOver.incrementalGate.status,
     'EXCEEDS_INCREMENTAL_SIZE_BOUNDS',
   );
   const storageOneByteOver = projectionWithUsableBudgets({
-    egressUsableBytes: rollbackMonthlyBytes,
+    egressUsableBytes: rollbackCombinedMonthlyBytes,
     storageUsableBytes: retainedStorageBytes - 1,
   });
   assert.equal(storageOneByteOver.storage.withinBudget, false);
   assert.equal(
     storageOneByteOver.incrementalGate.status,
     'EXCEEDS_INCREMENTAL_SIZE_BOUNDS',
+  );
+  const conservativeCheckpointProjection =
+    buildPrivateRuntimeIncrementalSizeProjection({ archiveObjectBytes: 1 });
+  assert.equal(
+    conservativeCheckpointProjection.checkpointDatabaseEgress.checkpointProjectionBasis,
+    'POLICY_MAXIMUM_SERIALIZED_BYTES',
+  );
+  assert.equal(
+    conservativeCheckpointProjection.checkpointDatabaseEgress.projectedCheckpointBytes,
+    16 * 1024 * 1024,
+  );
+  const bindingRestore = conservativeCheckpointProjection
+    .checkpointDatabaseEgress.restoreScenarios
+    .find(scenario => scenario.role === 'BINDING_PLANNING_LIMIT');
+  const allBuildStress = conservativeCheckpointProjection
+    .checkpointDatabaseEgress.restoreScenarios
+    .find(scenario => scenario.role === 'NON_BINDING_ALL_BUILD_STRESS');
+  assert.equal(bindingRestore.restoresPerMonth, 60);
+  assert.equal(bindingRestore.normalWithinUsableUnifiedEgressBudget, true);
+  assert.equal(allBuildStress.restoresPerMonth, 1_860);
+  assert.equal(allBuildStress.normalWithinUsableUnifiedEgressBudget, false);
+  assert.equal(
+    conservativeCheckpointProjection.incrementalGate.status,
+    'WITHIN_INCREMENTAL_SIZE_BOUNDS',
+    'the explicit 60-restore planning limit is binding; all-build is a visible stress case',
+  );
+  assert.equal(conservativeCheckpointProjection.cutoverGate.cutoverEligible, false);
+  assert.throws(
+    () => buildPrivateRuntimeIncrementalSizeProjection({
+      archiveObjectBytes: 1,
+      checkpointSerializedBytes: 16 * 1024 * 1024 + 1,
+    }),
+    /checkpoint capacity projection size is invalid/,
   );
   for (const [field, invalidValue] of Object.entries({
     reservePercent: 29,
@@ -285,6 +379,13 @@ try {
     normalObjectReadsPerFullBuild: 1,
     rollbackObjectReadsPerFullBuild: 2,
     retainedObjectGenerations: 1,
+    databaseSizeQuotaBytes: 499_999_999,
+    checkpointMaximumSerializedBytes: 16 * 1024 * 1024 - 1,
+    checkpointRpcMetadataResponsesPerFullBuild: 1,
+    checkpointRpcMetadataBytesPerResponse: 4 * 1024 - 1,
+    checkpointFullRestoreEnvelopeBytesPerRead: 4 * 1024 - 1,
+    checkpointBindingRestoresPerMonth: 59,
+    checkpointRestoreScenariosPerMonth: [1, 31, 60],
   })) {
     assert.throws(
       () => buildPrivateRuntimeIncrementalSizeProjection({
@@ -342,6 +443,15 @@ try {
     measuredWarmupCapacity.measurements.checkpointAbsenceAttestedByRuntimeAudit,
     true,
   );
+  assert.equal(
+    measuredWarmupCapacity.checkpointDatabaseEgress.checkpointProjectionBasis,
+    'POLICY_MAXIMUM_SERIALIZED_BYTES',
+  );
+  assert.equal(
+    measuredWarmupCapacity.checkpointDatabaseEgress.projectedCheckpointBytes,
+    16 * 1024 * 1024,
+  );
+  assert.equal(measuredWarmupCapacity.cutoverGate.cutoverEligible, false);
   await fs.writeFile(
     capacityRuntimeAudit,
     JSON.stringify({
@@ -567,19 +677,34 @@ try {
     '$report.egress.normalObjectReadsPerFullBuild == 2',
     '$report.egress.rollbackObjectReadsPerFullBuild == 3',
     '$report.storage.retainedObjectGenerations == 2',
+    '$report.database.quotaBytes == 500000000',
+    '$report.database.usableBudgetBytes == 350000000',
+    '$report.checkpointDatabaseEgress.maximumSerializedBytes == 16777216',
+    '$report.egress.monthlyQuotaBytes == 5000000000',
+    '$report.storage.quotaBytes == 1000000000',
+    '$report.checkpointDatabaseEgress.rpcMetadataResponsesPerFullBuild == 2',
+    '$report.checkpointDatabaseEgress.rpcMetadataBytesPerResponse == 4096',
+    '$report.checkpointDatabaseEgress.bindingRestoresPerMonth == 60',
+    'NON_BINDING_ALL_BUILD_STRESS',
     'NOT_APPLICABLE_DURING_MEASURED_WARMUP',
     'BLOCKED_PENDING_LIVE_BEFORE_AFTER_AND_OTHER_EGRESS',
     '$report.cutoverGate.cutoverEligible == false',
     '$report.cutoverGate.liveSupabaseBeforeAfterMeasurementRequired == true',
     '$report.cutoverGate.otherUnifiedEgressProjectionRequired == true',
+    '$report.cutoverGate.liveDatabaseSizeMeasurementRequired == true',
+    '$report.cutoverGate.observedCheckpointRestoreRateRequired == true',
+    '$report.cutoverGate.checkpointDatabaseEgressIncluded == true',
+    '$report.cutoverGate.checkpointDatabaseStorageIncluded == true',
     '$report.controls.supabaseRequestAttempted == false',
     '$report.controls.privatePayloadArtifactUploaded == false',
     'Report only aggregate incremental private runtime size evidence',
     'egress: (.egress | {',
     'storage: (.storage | {',
+    'database,',
+    'checkpointDatabaseEgress,',
     'projectedMonthlyNormalBytes',
     'projectedMonthlyRollbackBytes',
-    'Live Supabase before/after measurement',
+    'Live Supabase egress/database before-and-after measurements',
     'all other unified egress remain mandatory before cutover',
   ]) {
     assert.equal(capacityWorkflowSection.includes(required), true,
