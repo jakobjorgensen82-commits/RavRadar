@@ -2746,3 +2746,12 @@ PR #52 bestod exact-head-gaten og blev merged som `ad70fbca`. Exact-commit-produ
 - JavaScript og SQL validerer begge envelope, 673 + 673 dele, READY-rollback, tider, bindinger og privacy. Replaymatematik og generationshash forbliver i JavaScript; SQL returnerer ingen stateposter, koordinater eller rå U/V.
 - Måltests for checkpoint, protected storage, private runtime, readiness, installer, release metadata og workflowrækkefølge er grønne. En stale regressionstest, som ikke ramte sin påståede Candidate G-blok, er rettet til en markerafgrænset mutation og beviser nu fail-closed-adfærden.
 - Uafhængig read-only SQL-review fandt ingen P0/P1 og bekræftede installerparitet, CAS-race/idempotens, no-history, RLS/ACL/search path, 673+673 og metadata-only svar. Geodatadiffen er særskilt verificeret til kun topversion 4.0.320 → 4.0.321. Åbent er remote Supabase dry-run/apply/readback, exact-head, 673 × 118/Feggesund, live kapacitetsmåling, merge, fuld produktion, manuel Fase B og offentlig browserkontrol.
+
+# CHECKPOINT – 2026-09-03 – 4.0.321 merged; DMI-ready og backend-checkoutrettelse
+
+- PR #247 bestod exact-head-kildegate `33725769649` på `88dab9f9db02132a92538ebf0f8fae7206ae0d5c` og blev merged som `1c05c03939083c635f7acc02690ee5d741f08df5`. Candidate G er fortsat eneste offentlige model; merge aktiverede ikke state 6.
+- Vejrrun `33725034368` gendannede samme progressive generation, gjorde DMI terminalt klar og gemte zonecachen 19.917.938 → 21.060.806 byte. Den målrettede Copernicus-restudfyldning nåede sin 1.200-sekundersgrænse; operational closure, central write, artifact og deploy blev ikke nået.
+- Operational 118-preflight `33729216244` kører på eksakt mergehead og har allerede gemt begge DMI-caches med terminal `DMI_READY`; 673 × 118/Feggesund- og størrelsesbevis afventer.
+- Første backendrun `33729278888` stoppede i `validate:source` før migration, Supabase, D1, Edge eller Worker. Default depth-1-checkout manglede den autoritative Candidate G-sourcecommit `49dd4cb454656bdf629e5df760176705e38d2cb0`.
+- Den lokale afgrænsede rettelse genbruger den eksisterende produktionskontrakt: læs den pinnede head fra modulet, kræv 40 hex, hent præcis committen med `--depth=1` og attester `FETCH_HEAD` før sourcegaten. Workflowrækkefølge, diff og uændret RavScore-bundlehash er målrettet grønne; ny PR/exact-head og remote backend-readback udestår.
+- Ingen score, modelbinding, geometri, kystnormal, land-/vandpunkt, private payloads, observationer, koordinater eller rå U/V er ændret eller læst i rettelsen.

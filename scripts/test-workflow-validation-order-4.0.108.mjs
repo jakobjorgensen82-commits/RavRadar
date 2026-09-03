@@ -798,6 +798,9 @@ for (const marker of [
   'workflow_dispatch:',
   'permissions:\n  contents: read',
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
+  'Fetch exact public Candidate G source commit before source validation',
+  'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
+  'test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"',
   'npm run validate:source',
   'Validate exact source head before external writes',
   'Require only the four exact integrated cutover migrations',
@@ -829,6 +832,13 @@ if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.incl
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
 const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
+const legacySourceFetchBeforeValidation = tripStorageDeployment.indexOf(
+  'name: Fetch exact public Candidate G source commit before source validation',
+);
+if (!(legacySourceFetchBeforeValidation >= 0 && legacySourceFetchBeforeValidation < exactSourceValidation)
+  || tripStorageDeployment.split('git fetch --no-tags --depth=1 origin "$legacy_source_head"').length - 1 !== 1) {
+  throw new Error('Turlager-deploymentet skal hente præcis den pinnede Candidate G-sourcecommit før validate:source.');
+}
 const tripQualityCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before the Candidate G database contract');
 const tripQualityWrite = tripStorageDeployment.indexOf('name: Atomically apply and verify the Candidate G trip-quality contract');
 const d1SchemaCas = tripStorageDeployment.indexOf('name: Reconfirm current origin/main before D1 schema and phase inspection');

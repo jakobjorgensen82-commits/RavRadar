@@ -3,7 +3,9 @@
 - [x] Gør continuation-hashen platformsuafhængig med `utf8-bomless-lf-v2`; aktuel hash er `35c45f8f1f701695923b3195d60a6b8931aad4d2d08b05c93900b88401eca95c` på både LF og CRLF.
 - [x] Tillad kun exact predecessor `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` fra `7198b685f4bc9d86bd6432b049380f4279ab797c`; same-target-overgangen må kun ændre continuation-hash og top-/companion-generation, mens alle andre afvigelser er fatal.
 - [x] Bind migration, schema, installer, metadata-readback, ACL og testharness til samme kontrakt; continuation/protected/readiness/installer/sync/release-metadata er måltestet grønne.
-- [ ] Commit/push 4.0.321, bestå exact-head, remote Supabase dry-run/apply/readback og data-/kapacitetsgates; merge derefter sikkert og gennemfør frisk produktion, særskilt Phase B og offentlig mobil/desktop.
+- [x] Push 4.0.321, bestå PR #247 exact-head `33725769649` på `88dab9f9db02132a92538ebf0f8fae7206ae0d5c` og merge som `1c05c03939083c635f7acc02690ee5d741f08df5`.
+- [x] Bevis DMI-ready og progressiv cachegemning i run `33725034368`; Copernicus-restudfyldningen nåede den afgrænsede 1.200-sekundersgrænse, så intet artifact eller deploy blev gennemført.
+- [ ] Push den målrettede pinned-source-fetch til turlagerworkflowet, bestå ny exact-head og gentag remote Supabase dry-run/apply/readback. Luk derefter 673 × 118/Feggesund, live kapacitet, frisk produktion, særskilt Phase B og offentlig mobil/desktop.
 
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.320 slutbinding
 
