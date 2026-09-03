@@ -153,6 +153,45 @@ function integratedAudit(binding = integratedModelBinding(), {
   });
 }
 
+function sealedHistoricalInitialPlan({
+  currentRow = null,
+  currentProfileRow,
+  sourceModelBinding,
+  publicManifest,
+  publicAudit,
+  sourceImplementationClosureSha256,
+  requestedImplementationClosureSha256 = defaultImplementationClosureSha256,
+  legacySourceRequired,
+} = {}) {
+  const unsealed = {
+    schemaVersion: RAVSCORE_INTEGRATED_RETURN_POLICY.schemaVersion,
+    kind: RAVSCORE_INTEGRATED_RETURN_POLICY.kind,
+    mode: RAVSCORE_INTEGRATED_RETURN_POLICY.mode,
+    transitionKind: RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover,
+    sourceHead,
+    datasetId: publicManifest.datasetId,
+    productionReferenceAt: publicManifest.productionReferenceAt,
+    centralExpectedVersion: Number(currentRow?.version ?? 0),
+    sourceModelBinding: structuredClone(sourceModelBinding),
+    activeModelBinding: integratedModelBinding(),
+    legacySourceRequired,
+    sourceImplementationClosureSha256,
+    requestedImplementationClosureSha256,
+    candidateActivationDocumentSha256: sha256(
+      currentRow?.payload ?? currentProfileRow.payload,
+    ),
+    integratedReadinessSha256: sha256(readiness),
+    integratedPublicAuditSha256: sha256(publicAudit),
+    integratedManifestSha256: sha256(publicManifest),
+    automaticActivationAllowed: false,
+    schedulerActivationAllowed: false,
+    calibrationEligibleAfterVerifiedActivation:
+      publicAudit.history.allCurrentScoresFullHistory,
+    privatePayloadLogged: false,
+  };
+  return Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
+}
+
 function candidatePlan({
   mode = 'execute',
   centralExpectedVersion,
@@ -1735,9 +1774,8 @@ assert.throws(() => operationalPendingReconciliationTransition({
   observations: observations(historicalBridgeThird, historicalBridgeThird),
 }), /third.*no CAS/i);
 
-// The same sealed H0 marker may cut directly to the current integrated model.
-// It is an initial-cutover retry, but no longer a schema-2 legacy source.
-const historicalCandidateIntegratedPlan = prepareIntegratedOperationalReturn({
+// New first-cutover plans may not be created from a historical H0 binding.
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: historicalMarkerRow,
   currentProfileRow: historicalMarkerProfileRow,
   sourceHead,
@@ -1746,9 +1784,23 @@ const historicalCandidateIntegratedPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /current same-head Candidate G source closure parity/);
+
+// Previously sealed historical plans remain valid for transition recovery.
+const historicalCandidateIntegratedPlan = sealedHistoricalInitialPlan({
+  currentRow: historicalMarkerRow,
+  currentProfileRow: historicalMarkerProfileRow,
+  sourceModelBinding: oldCandidateBinding,
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
+  legacySourceRequired: false,
 });
 assert.equal(historicalCandidateIntegratedPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
@@ -2024,9 +2076,12 @@ const bridgeIntegratedPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
 });
 assert.equal(bridgeIntegratedPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
@@ -2171,7 +2226,7 @@ for (const field of ['returnPlanSha256', 'integratedReadinessSha256',
     `ordinary pre-cutover maintenance must retain genuine ${field}`);
 }
 
-const initialPlan = prepareIntegratedOperationalReturn({
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: null,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2180,25 +2235,34 @@ const initialPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: legacyImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /centrally active modern Candidate G source/);
+
+// These plans represent immutable pre-lock artifacts. Their transition and
+// reconciliation paths must remain usable even though new legacy creation is closed.
+const initialPlan = sealedHistoricalInitialPlan({
+  currentProfileRow: legacyProfileRow,
+  sourceModelBinding: legacyCandidateGControllerBinding(),
+  publicManifest: integratedH1,
+  publicAudit: integratedH1Audit,
+  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  legacySourceRequired: true,
 });
 assert.equal(initialPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
 assert.deepEqual(initialPlan.sourceModelBinding, legacyCandidateGControllerBinding());
-const initialWarmupPlan = prepareIntegratedOperationalReturn({
-  currentRow: null,
+const initialWarmupPlan = sealedHistoricalInitialPlan({
   currentProfileRow: legacyProfileRow,
-  sourceHead,
+  sourceModelBinding: legacyCandidateGControllerBinding(),
   publicManifest: integratedH1,
   publicAudit: integratedWarmupAudit,
-  readiness,
   sourceImplementationClosureSha256: legacyImplementationClosureSha256,
-  requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
-  ref: 'refs/heads/main',
-  githubSha: sourceHead,
+  legacySourceRequired: true,
 });
 assert.equal(initialWarmupPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
@@ -2323,32 +2387,39 @@ const warmupRollbackReconciledSource = operationalPendingReconciliationTransitio
 });
 assert.equal(warmupRollbackReconciledSource.document.calibrationEligible, false);
 assert.throws(() => prepareIntegratedOperationalReturn({
-  currentRow: null,
-  currentProfileRow: legacyProfileRow,
+  currentRow: legacyRefreshCompleteRow,
+  currentProfileRow: candidateProfileRow,
   sourceHead,
   publicManifest: integratedH1,
   publicAudit: integratedH1Audit,
   readiness,
-  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
   eventName: 'schedule',
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}), /Initial integrated cutover requires the exact main push/,
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /exact manual-dispatch authorization/,
 'the scheduler must never initiate the first integrated cutover');
 assert.throws(() => prepareIntegratedOperationalReturn({
-  currentRow: null,
-  currentProfileRow: { ...legacyProfileRow, payload: { ...legacyProfile, sourceVersion: '4.0.307' } },
+  currentRow: legacyRefreshCompleteRow,
+  currentProfileRow: candidateProfileRow,
   sourceHead,
   publicManifest: integratedH1,
   publicAudit: integratedH1Audit,
   readiness,
-  sourceImplementationClosureSha256: legacyImplementationClosureSha256,
+  sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}), /exact production-verified/);
+  initialCutoverRequested: false,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /exact manual-dispatch authorization/,
+'the exact first-cutover token must remain inert without the explicit boolean');
 const initialBegin = operationalIntegratedReturnTransition({
   action: 'return-begin',
   currentRow: null,
@@ -2398,7 +2469,7 @@ assert.equal(resolvedLegacyActive.initialCutoverRequired, true);
 assert.equal(resolvedLegacyActive.legacySourceRequired, true);
 assert.equal(Object.hasOwn(resolvedLegacyActive, 'normalizationRequired'), false,
   'the removed normalization protocol must not survive as a resolver output');
-assert.doesNotThrow(() => prepareIntegratedOperationalReturn({
+assert.throws(() => prepareIntegratedOperationalReturn({
   currentRow: legacyActiveRow,
   currentProfileRow: legacyProfileRow,
   sourceHead,
@@ -2407,10 +2478,13 @@ assert.doesNotThrow(() => prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: legacyImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-}));
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+}), /active modern Candidate G/);
 
 // A normal schema-4 Candidate G weather refresh may run while the first
 // integrated cutover is still pending, but it must preserve that durable
@@ -2544,7 +2618,7 @@ assert.equal(resolveOperationalRavScoreModel({
   payload: preCutoverRefreshReconciledAbort.document,
 }, { profileRow: candidateProfileRow }).initialCutoverRequired, true);
 
-const modernInitialPlan = prepareIntegratedOperationalReturn({
+const modernFirstCutoverRequest = {
   currentRow: preCutoverRefreshCompleteRow,
   currentProfileRow: candidateProfileRow,
   sourceHead,
@@ -2553,10 +2627,47 @@ const modernInitialPlan = prepareIntegratedOperationalReturn({
   readiness,
   sourceImplementationClosureSha256: defaultImplementationClosureSha256,
   requestedImplementationClosureSha256: defaultImplementationClosureSha256,
-  eventName: 'push',
+  eventName: RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName,
   ref: 'refs/heads/main',
   githubSha: sourceHead,
-});
+  initialCutoverRequested: true,
+  initialCutoverConfirmation:
+    RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation,
+};
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  eventName: 'push',
+}), /exact manual-dispatch authorization/,
+'a push may never create the initial integrated cutover plan');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  initialCutoverConfirmation: 'NOT-EXACT',
+}), /exact manual-dispatch authorization/,
+'the first cutover token must be exact');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  currentRow: {
+    ...preCutoverRefreshCompleteRow,
+    payload: { ...preCutoverRefreshCompleteRow.payload, sourceHead: laterHead },
+  },
+}), /current same-head Candidate G source closure parity/,
+'the centrally active Candidate G source must belong to the dispatched head');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  sourceImplementationClosureSha256: 'b'.repeat(64),
+}), /current same-head Candidate G source closure parity/,
+'the supplied source closure must equal the centrally active source closure');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  ref: 'refs/heads/feature',
+}), /exact manual-dispatch authorization/,
+'first cutover may only be created on main');
+assert.throws(() => prepareIntegratedOperationalReturn({
+  ...modernFirstCutoverRequest,
+  githubSha: laterHead,
+}), /exact manual-dispatch authorization/,
+'the checked-out head must equal the requested source head');
+const modernInitialPlan = prepareIntegratedOperationalReturn(modernFirstCutoverRequest);
 assert.equal(modernInitialPlan.transitionKind,
   RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover);
 assert.equal(modernInitialPlan.legacySourceRequired, false);

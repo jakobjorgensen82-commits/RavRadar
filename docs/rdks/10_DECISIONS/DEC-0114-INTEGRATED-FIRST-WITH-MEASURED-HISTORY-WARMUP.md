@@ -7,6 +7,18 @@
 - **Erstatter snævert:** DEC-0113 punkt 10's krav om, at en non-READY Candidate G-rollback-companion stopper selve første integrerede release; DEC-0110's eventuelle læsning af 40 timers coherent historisk WAM som krav til `genuine-cold-start`
 - **Ejerpræcisering 2026-09-02:** Den tidligere pensionering af Feggesund-nabozonehypotesen i denne beslutnings første udgave er supersederet alene af den faste bølgeundtagelse nedenfor. Alle generelle forbud mod nabolån består.
 
+## Bindende releasepræcisering 2026-09-03 – kapacitetsbevis før særskilt manuel aktivering
+
+Første cutover deles i to kontrollerede runtimefaser. Denne præcisering supersederer alene ældre push-only-/automatisk first-cutover-formuleringer; direct-input-, 118-timers-, historik-, warmup-, checkpoint-, Feggesund-, privacy- og releasekravene nedenfor består.
+
+1. **Fase A:** Den samlede kode merges og kører på `main`, mens Candidate G fortsat er den ene offentlige model. Legacy-Candidate må gennem den eksisterende bro blive current moderne Candidate G på samme eksakte head. Fase A må gennemføres før 673 × 118-beviset, netop så cron kan akkumulere den korrigerede cache på den mergede kode. Fasen leverer den same-head-kilde, som data- og kapacitetsmålingen samt et senere cutover kan bindes til; den aktiverer ikke state 6.
+2. Live Supabase-forbrug måles før og efter den kontrollerede, produktionsækvivalente Fase-A-kørsel. Sammen med den sikre objekt-/checkpointstørrelse og faktisk øvrig egress/lager skal fremskrivningen dokumentere mindst 30 procent reserve efter denne beslutnings kapacitetsregel. Ukendt eller utilstrækkelig kapacitet holder Fase B blokeret.
+3. **Fase B:** Først efter grøn Fase A, øvrige data-/releasegates og kapacitetsbevis må et separat manuelt `workflow_dispatch` sætte `ravscore_integrated_first_cutover=true` og den eksakte token `EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE`. Tokenen er operationsautorisation, ikke kapacitetsbevis.
+4. Før Fase B kan vælge den interne action `integrated-cutover`, skal den forseglede centrale Fase-A-identitet være current moderne Candidate G på samme `GITHUB_SHA`, `initialCutoverRequired=true`, `legacySourceRequired=false`, med eksakt aktiv version, deployment-id, `sourceHead`, implementation closure og central profil/binding. Actionvalget påstår ikke live Pages-readback før DMI. Den faktiske offentlige Candidate G-kilde, manifest og implementation closure skal genverificeres i deployleddet før første begin-CAS eller central modelmutation. Push, schedule, watchdog, almindelig manuel drift, forkert/forældreløs token og blandede transitioner kan aldrig autoaktivere.
+5. Controllerens eksisterende forseglede planer og `PENDING`-recovery består, men en ny direkte rowless/legacy→integrated-plan må ikke oprettes. Der tilføjes ingen ny controllerstatus, transitionstype, persistent felt, modelbundle eller geodataændring.
+
+Tofaselåsen er lokalt implementeret og de direkte kontrakttests er grønne. Den er ikke commit'et, pushet, exact-head-verificeret, merged, kørt mod live Supabase eller aktiveret. Candidate G er fortsat offentlig.
+
 ## Ejerbeslutning og formål
 
 Den nye integrerede model skal frigives, når dens egne direkte input, operationelle prognoseakse og samlede releasekontrakter er grønne. Den skal ikke vente på, at en fuld historisk WAM-matrix eller Candidate G's 48-timers rollbackhukommelse først er blevet naturligt komplet.

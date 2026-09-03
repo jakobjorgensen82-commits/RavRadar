@@ -66,6 +66,8 @@ export const RAVSCORE_INTEGRATED_RETURN_POLICY = Object.freeze({
   kind: 'RAVSCORE_INTEGRATED_OPERATIONAL_RETURN_PLAN',
   mode: 'execute',
   confirmation: 'EXECUTE-INTEGRATED-RAVSCORE-RETURN',
+  initialCutoverConfirmation:
+    'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
   manualEventName: 'workflow_dispatch',
   mainRef: 'refs/heads/main',
   expectedZoneCount: 210,
@@ -1271,35 +1273,55 @@ export function prepareIntegratedOperationalReturn({
   ref,
   githubSha,
   confirmation,
+  initialCutoverRequested = false,
+  initialCutoverConfirmation,
 } = {}) {
-  const currentResolved = currentRow !== null
-    ? resolveOperationalRavScoreModel(currentRow, {
-      profileRow: currentProfileRow,
-    }) : null;
-  const initialRetry = currentResolved?.initialCutoverRequired === true;
-  const initialCutover = currentRow === null || initialRetry;
-  if (ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef || githubSha !== sourceHead
+  if (currentRow === null || currentRow === undefined) {
+    throw new Error(
+      'Initial integrated cutover requires a centrally active modern Candidate G source',
+    );
+  }
+  const currentResolved = resolveOperationalRavScoreModel(currentRow, {
+    profileRow: currentProfileRow,
+  });
+  const initialCutover = currentResolved.initialCutoverRequired === true;
+  if (typeof initialCutoverRequested !== 'boolean') {
+    throw new Error('Integrated first cutover request must be an exact boolean');
+  }
+  const regularConfirmation = String(confirmation ?? '');
+  const firstConfirmation = String(initialCutoverConfirmation ?? '');
+  if (ref !== RAVSCORE_INTEGRATED_RETURN_POLICY.mainRef
+    || githubSha !== sourceHead
+    || eventName !== RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName
     || (initialCutover
-      ? eventName !== 'push'
-      : eventName !== RAVSCORE_INTEGRATED_RETURN_POLICY.manualEventName
-        || confirmation !== RAVSCORE_INTEGRATED_RETURN_POLICY.confirmation)) {
+      ? initialCutoverRequested !== true
+        || firstConfirmation !== RAVSCORE_INTEGRATED_RETURN_POLICY.initialCutoverConfirmation
+        || regularConfirmation !== ''
+      : regularConfirmation !== RAVSCORE_INTEGRATED_RETURN_POLICY.confirmation
+        || initialCutoverRequested !== false
+        || firstConfirmation !== '')) {
     throw new Error(initialCutover
-      ? 'Initial integrated cutover requires the exact main push'
+      ? 'Initial integrated cutover requires exact manual-dispatch authorization'
       : 'Integrated return requires exact manual-dispatch authorization');
   }
-  if (currentRow === null) {
-    const profileModel = operationalProfileModel(currentProfileRow?.payload);
-    if (!['candidate-g', 'legacy-candidate-g'].includes(profileModel)) {
-      throw new Error('Initial integrated cutover requires an exact Candidate G source profile');
-    }
-  } else {
-    if (!Number.isSafeInteger(Number(currentRow.version))) {
-      throw new Error('Integrated return requires the exact active central version');
-    }
-    const current = currentResolved;
-    if (!['candidate-g', 'legacy-candidate-g'].includes(current.model)) {
-      throw new Error('Integrated return may only be prepared from active Candidate G');
-    }
+  if (!Number.isSafeInteger(Number(currentRow.version)) || Number(currentRow.version) < 1) {
+    throw new Error('Integrated return requires the exact active central version');
+  }
+  if (currentResolved.model !== 'candidate-g') {
+    throw new Error('Integrated return may only be prepared from active modern Candidate G');
+  }
+  if (initialCutover
+    && (!sameBinding(currentResolved.modelBinding, candidateModelBinding())
+      || currentResolved.legacySourceRequired !== false
+      || currentResolved.sourceHead !== sourceHead
+      || !SHA256_PATTERN.test(
+        String(currentResolved.activeImplementationClosureSha256 ?? ''),
+      )
+      || currentResolved.activeImplementationClosureSha256
+        !== sourceImplementationClosureSha256)) {
+    throw new Error(
+      'Initial integrated cutover requires current same-head Candidate G source closure parity',
+    );
   }
   assertIntegratedReadiness(readiness, sourceHead);
   if (!SHA256_PATTERN.test(String(sourceImplementationClosureSha256 ?? ''))
@@ -1323,20 +1345,13 @@ export function prepareIntegratedOperationalReturn({
     sourceHead,
     datasetId: publicManifest.datasetId,
     productionReferenceAt: publicManifest.productionReferenceAt,
-    centralExpectedVersion: Number(currentRow?.version ?? 0),
-    sourceModelBinding: currentRow === null
-      ? (operationalProfileModel(currentProfileRow.payload) === 'legacy-candidate-g'
-        ? legacyCandidateGControllerBinding() : candidateModelBinding())
-      : structuredClone(currentResolved.modelBinding),
+    centralExpectedVersion: Number(currentRow.version),
+    sourceModelBinding: structuredClone(currentResolved.modelBinding),
     activeModelBinding: integratedModelBinding(),
-    legacySourceRequired: currentRow === null
-      ? operationalProfileModel(currentProfileRow.payload) === 'legacy-candidate-g'
-      : currentResolved.legacySourceRequired,
+    legacySourceRequired: false,
     sourceImplementationClosureSha256,
     requestedImplementationClosureSha256,
-    candidateActivationDocumentSha256: sha256(
-      currentRow?.payload ?? currentProfileRow.payload,
-    ),
+    candidateActivationDocumentSha256: sha256(currentRow.payload),
     integratedReadinessSha256: sha256(readiness),
     integratedPublicAuditSha256: sha256(publicAudit),
     integratedManifestSha256: sha256(publicManifest),
@@ -1349,7 +1364,7 @@ export function prepareIntegratedOperationalReturn({
   const plan = Object.freeze({ ...unsealed, planSha256: sha256(unsealed) });
   assertIntegratedReturnPlan(plan, {
     expectedSourceHead: sourceHead,
-    expectedCentralVersion: Number(currentRow?.version ?? 0),
+    expectedCentralVersion: Number(currentRow.version),
     currentRow,
     currentProfileRow,
     readiness,
@@ -2412,7 +2427,7 @@ export function operationalCandidateRefreshTransition({
 }
 
 // The production baseline may still be the exact schema-2 Candidate G source
-// without an operational row. A non-push weather run must first seal that
+// without an operational row. A production weather run must first seal that
 // legacy endpoint, then expose only an exact current Candidate G 210/673
 // artifact. This distinct marker is intentionally not an ordinary refresh:
 // it is the durable, reconcilable bridge from rowless legacy state while the
@@ -3764,6 +3779,11 @@ async function main() {
     return;
   }
   if (options.command === 'prepare-integrated-return') {
+    const initialCutoverRequested =
+      process.env.RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED;
+    if (!['true', 'false'].includes(initialCutoverRequested)) {
+      throw new Error('Integrated first cutover request environment must be true or false');
+    }
     const [publicManifest, publicAudit, readiness] = await Promise.all([
       readJsonOption(options, 'manifest', 'Integrated return public manifest'),
       readJsonOption(options, 'audit', 'Integrated return public audit'),
@@ -3787,6 +3807,9 @@ async function main() {
       ref: process.env.GITHUB_REF,
       githubSha: process.env.GITHUB_SHA,
       confirmation: process.env.RAVRADAR_INTEGRATED_RETURN_CONFIRMATION,
+      initialCutoverRequested: initialCutoverRequested === 'true',
+      initialCutoverConfirmation:
+        process.env.RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION,
     });
     if (!options.output) throw new Error('Integrated return plan output is required');
     await atomicWriteJson(options.output, plan);
@@ -3945,8 +3968,8 @@ async function main() {
             : null,
       });
     } else if (legacyCandidateRefresh) {
-      if (!['schedule', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME)) {
-        throw new Error('Legacy Candidate G pre-cutover refresh may only run on a non-push production event');
+      if (!['schedule', 'push', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME)) {
+        throw new Error('Legacy Candidate G pre-cutover refresh requires a production event');
       }
       assertLegacyCandidateRefreshPlan(plan, {
         expectedSourceHead: process.env.GITHUB_SHA,
@@ -4041,9 +4064,11 @@ async function main() {
       assertIntegratedReturnPlan(plan, { expectedSourceHead: process.env.GITHUB_SHA });
       const initialCutover = plan.transitionKind
         === RAVSCORE_OPERATIONAL_TRANSITION_KINDS.initialIntegratedCutover;
-      if (process.env.GITHUB_EVENT_NAME !== (initialCutover ? 'push' : 'workflow_dispatch')) {
+      if ((initialCutover
+          && !['push', 'workflow_dispatch'].includes(process.env.GITHUB_EVENT_NAME))
+        || (!initialCutover && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch')) {
         throw new Error(initialCutover
-          ? 'Initial integrated cutover may only run on its exact main push'
+          ? 'A sealed initial integrated cutover requires manual dispatch or compatible push recovery'
           : 'Integrated return may only run after explicit manual dispatch');
       }
       let readiness = null;

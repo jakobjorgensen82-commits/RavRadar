@@ -19,6 +19,7 @@ assert.match(dispatchJob, /actions\/setup-node@v7[\s\S]*?node-version: '24'/,
 const base = {
   force: 'false', geometryPilot: 'false', geometryNational: 'false',
   rollbackMode: 'none', rollbackConfirmation: '',
+  firstCutoverRequested: 'false', firstCutoverConfirmation: '',
   returnRequested: 'false', returnConfirmation: '',
 };
 const operations = [
@@ -27,6 +28,7 @@ const operations = [
   { name: 'geometry-national', patch: { geometryNational: 'true' } },
   { name: 'candidate-dry-run', patch: { rollbackMode: 'dry-run' } },
   { name: 'candidate-execute', patch: { rollbackMode: 'execute', rollbackConfirmation: 'EXECUTE-CANDIDATE-G-ROLLBACK' } },
+  { name: 'integrated-first-cutover', patch: { firstCutoverRequested: 'true', firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' } },
   { name: 'integrated-return', patch: { returnRequested: 'true', returnConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-RETURN' } },
 ];
 
@@ -45,6 +47,8 @@ for (let left = 0; left < operations.length; left += 1) {
 
 assert.throws(() => validateRavScoreDispatchContract({ ...base, rollbackMode: 'execute' }), /confirmation is not exact/);
 assert.throws(() => validateRavScoreDispatchContract({ ...base, rollbackConfirmation: 'EXTRA' }), /accepted only by execute/);
+assert.throws(() => validateRavScoreDispatchContract({ ...base, firstCutoverRequested: 'true' }), /confirmation is not exact/);
+assert.throws(() => validateRavScoreDispatchContract({ ...base, firstCutoverConfirmation: 'EXTRA' }), /accepted only by an integrated first cutover/);
 assert.throws(() => validateRavScoreDispatchContract({ ...base, returnConfirmation: 'EXTRA' }), /accepted only by an integrated return/);
 for (const retiredInput of [
   { reconstructionMode: 'none' },
@@ -65,5 +69,10 @@ for (const retiredInput of [
   );
 }
 assert.throws(() => validateRavScoreDispatchContract({ ...base, rollbackMode: 'dry-run' }, { githubRef: 'refs/heads/feature' }), /only on main/);
+assert.throws(() => validateRavScoreDispatchContract({
+  ...base,
+  firstCutoverRequested: 'true',
+  firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
+}, { githubRef: 'refs/heads/feature' }), /only on main/);
 
 console.log('RavScore manual dispatch matrix: passed.');

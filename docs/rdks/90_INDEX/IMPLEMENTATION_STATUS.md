@@ -43,7 +43,7 @@
 - [x] Afgræns proxyen til bølgehøjde, periode og FROM-retning. Den må aldrig levere strøm, currenthistorik, recovery-backfill, kunstig historik eller ændre geometri, land-/vandpunkter eller kystnormal.
 - [x] Bind usikkerhed som `LOW`/`MODERATE`/`HIGH`, synligt DA/DE/EN-brugervarsel og `calibrationEligible=false` gennem mode, zone, offentlig payload, tur og observation for enhver proxytimes afledte score – også ved ellers `FULL_HISTORY`. En direkte DMI-time følger den normale historikregel.
 - [x] Bind releasegaten til privacy-sikkert bevis for præcis 3 × 118 timeudfald (`DIRECT`, `FEGGESUND_TWO_NEIGHBOR_WAVE_INTERPOLATION` eller `MISSING`), hvor direct + proxy = 354 og missing = 0, uden koordinater, rå U/V eller private payloads.
-- [x] Forsegl og måltest slutbundles: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 filer/8 deklarerede forbrugere; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`ea22921e298a03ed1ef8787a4dbd79fd4fdf1a9b8e188d3c4b44e03f16fdceb0` over 56 filer.
+- [x] Forsegl og måltest 4.0.320-slutbundles: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 filer/8 deklarerede forbrugere; Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 filer.
 - [x] Klassificér exact-head `33577887262` som sikkert Candidate G-rollback-stop på calibration-ceiling; gør de fem validatorer symmetriske og bestå de fire måltests.
 - [x] Klassificér exact-head `33580532775` som et test-only stop efter grøn model-/rollbackkæde; opdatér de to forældede DMI-kildeassertions til den korrekte producentsemantik og bestå 21/21 måltests uden runtimeændring.
 - [x] Kør kun den hidtil uafviklede sourcegate-rest: ret den ene syntetiske live-current-fixture med producentens gældende indholdsbinding og bevar validatorens fail-closed-adfærd; afvis hydreringstestens lokale WindowsApps-Python-fejl med en grøn bundled-Python-genkørsel. Ingen runtimeændring.
@@ -115,7 +115,22 @@
 - Nuværende lokale remediation er PR #241: kun kanonisering af afrundet `360` til `0`, uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring. Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer.
 - Lokale bundle-hashes er nu integrated `e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 - Offentlig status er uændret: Candidate G er stadig offentlig. Exact-head, merge, frisk produktion og offentlig browserverifikation af PR #241 udestår.
-# Implementeringsstatus – 4.0.319 first-cutover-hærdning; Candidate G er fortsat offentlig
+# NYESTE CHECKPOINT – 2026-09-03 – tofaseaktivering før state 6
+
+- [x] Adskil kode-/Candidate G-merge fra selve første integrerede aktivering: push/schedule/watchdog/almindelig manual vælger aldrig automatisk cutover.
+- [x] Bevar legacy→current Candidate G-broen, så Fase A kan etablere moderne Candidate G på samme `main`-head uden modelskift. Fase A må merge før 673 × 118, så cron kan opbygge den korrigerede cache.
+- [x] Kræv i Fase B manuelt `workflow_dispatch`, boolsk `ravscore_integrated_first_cutover=true` og eksakt `EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE`; afvis wrong/orphan token og samtidige rollback-/returnoperationer.
+- [x] Kræv før DMI en forseglede central Phase-A-complete current same-head Candidate G-identitet med `bindingCurrent=true`, `initialCutoverRequired=true`, `legacySourceRequired=false` samt eksakt binding/manifesthash, dataset/reference, version/deployment-id, `sourceHead`, implementation closure og profil. Live public source/manifest/implementation genverificeres i deployleddet før begin-CAS eller central mutation.
+- [x] Bevar gamle forseglede historical-/`PENDING`-planer og reconciliation; opret ingen ny status, transitionstype, persistent felt eller direkte rowless/legacy→integrated-plan.
+- [x] Bestå de direkte lokale dispatch-, workflow-, integrated-generator-, activation- og validation-order-tests samt begge uændrede modelbundlechecks.
+- [ ] Commit/push dette delta og bestå én ny exact-head-kildegate på den nye head.
+- [ ] Gennemfør Fase A på `main` med Candidate G fortsat offentlig. Preflight `33695730459` attempt 2 beviste grøn DMI-terminal og 71.526/79.414 DMI-direct samt gemt Copernicus-progression på 364, men timeout gav intet 673 × 118-artifact; attempt 3 var endnu ikke terminal.
+- [ ] Lad cron fortsætte den korrigerede cache på Fase-A-headen; bevis 673 × 118 og Feggesund, og dokumentér live Supabase før/efter, øvrig egress/lager og mindst 30 procent reserve.
+- [ ] Bestil først derefter Fase B manuelt; gennemfør frisk fuld produktion/releasegate/artifact/Pages/atomisk activation og offentlig mobil-/desktopkontrol.
+
+**Statusgrænse:** Implementeringen er lokal og ucommittet. Candidate G er fortsat offentlig; state 6 er ikke merged, aktiveret eller live. Model-/bundlehashes, score, state, geometri og punkter er uændrede af denne lås.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 4.0.319 first-cutover-hærdning; Candidate G er fortsat offentlig
 
 ## P0/P2 – operationel head-move og exact-target recovery 2026-08-31
 
@@ -142,7 +157,7 @@
 - [x] Bind explicit `source_validated=true` gennem workflow og statevælger, bevar default fail-closed, og normalisér resolverens UTC-target til `YYYY-MM-DDTHH:00:00Z` med direkte Node→Python-roundtriptest.
 - [x] Implementér separat eksklusiv Candidate G measured-only cold rollback, som først kan blive READY companion efter egen reelle 48-timersreplay og aldrig hybridiseres med continuation eller rekonstrueres fra state-6-bounds. DEC-0114 præciserer, at non-READY stopper checkpoint/manuel rollback, ikke first cutover; runtime-warmup-deltaet er lokalt måltestet, mens exact-head og produktion fortsat er åbne.
 - [x] Bevar reelt ikke-annulleret progressivt DMI-cachearbejde efter en senere producentfejl og gør den operationelle WAM-slutgate afhængig af succesfuld aggregate resolver. DEC-0114 lemper ikke WAM-/scoregaterne, men gør checkpointet betinget N/A og fjerner fuld historik som selvstændig releaseforudsætning ved genuine cold start.
-- [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover; bevar selve integreret activation som push-only. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
+- [x] Lad schedule/watchdog/manual drift vælge Candidate G-maintenance under uafsluttet første cutover. **Initiatorleddet er supersederet 2026-09-03:** push udfører også kun Candidate G/Fase A; særskilt manuel Fase B alene må initiere integreret aktivering. Registrér botrun `33334709027` og pilotrun `33335078275` som sikre røde stop uden Pages/public mutation.
 - [x] Opret DEC-0113 samt de fem aktive krav for source-attested cold start, source/active registry-separation, measured rollback, UTC-paritet og pre-mutation-stop.
 - [x] Bestå de endelige målrettede aggregate/hydration/recovery/rollback/DMI/workflowtests og RDKS-validering samlet efter alle rettelser.
 - [x] Regenerér og bind endelig modelkontrakt/bundle efter de transitive first-cutover-ændringer: integrated `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`db475a1bbb1b85fe3e0277b8687d6f1edd6dd8d74e0d6fb4df748f955d5bafe1` over 44 filer/8 consumers og Candidate G-rollback `c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8`/`ea22921e298a03ed1ef8787a4dbd79fd4fdf1a9b8e188d3c4b44e03f16fdceb0` over 56 filer. Version 4.0.319/docs/geodatabevis lukkes i slutpasset.

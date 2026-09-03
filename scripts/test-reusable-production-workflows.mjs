@@ -193,7 +193,11 @@ for (const secret of buildContract.secrets) {
     'build caller secret mapping: ' + secret,
   );
 }
-for (const input of ['force', 'ravscore_integrated_return']) {
+for (const input of [
+  'force',
+  'ravscore_integrated_first_cutover',
+  'ravscore_integrated_return',
+]) {
   assert.equal(
     buildCaller.includes(input + ': ' + gh("needs.validate-dispatch.outputs." + input + " == 'true'")),
     true,
@@ -229,6 +233,8 @@ const dispatchOutputs = [
   'geometry_v2_national',
   'ravscore_candidate_g_rollback_mode',
   'ravscore_candidate_g_rollback_confirmation',
+  'ravscore_integrated_first_cutover',
+  'ravscore_integrated_first_cutover_confirmation',
   'ravscore_integrated_return',
   'ravscore_integrated_return_confirmation',
 ];
@@ -254,6 +260,8 @@ for (const literal of [
   'geometry_v2_national=false',
   'ravscore_candidate_g_rollback_mode=none',
   'ravscore_candidate_g_rollback_confirmation=',
+  'ravscore_integrated_first_cutover=false',
+  'ravscore_integrated_first_cutover_confirmation=',
   'ravscore_integrated_return=false',
   'ravscore_integrated_return_confirmation=',
 ]) {

@@ -36,6 +36,16 @@ on:
         required: false
         default: ""
         type: string
+      ravscore_integrated_first_cutover:
+        description: "Første integrerede cutover efter kapacitetsgate (kun eksplicit manual)"
+        required: false
+        default: false
+        type: boolean
+      ravscore_integrated_first_cutover_confirmation:
+        description: "Kun første cutover: skriv EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE"
+        required: false
+        default: ""
+        type: string
       ravscore_integrated_return:
         description: "Eksplicit samlet retur fra aktiv Candidate G til integreret RavScore"
         required: false
@@ -86,6 +96,8 @@ jobs:
       geometry_v2_national: ${{ steps.validated-dispatch.outputs.geometry_v2_national || steps.dispatch-defaults.outputs.geometry_v2_national }}
       ravscore_candidate_g_rollback_mode: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_mode || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_confirmation || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_confirmation }}
+      ravscore_integrated_first_cutover: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover }}
+      ravscore_integrated_first_cutover_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover_confirmation }}
       ravscore_integrated_return: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return || steps.dispatch-defaults.outputs.ravscore_integrated_return }}
       ravscore_integrated_return_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_return_confirmation }}
     steps:
@@ -98,6 +110,8 @@ jobs:
           echo "geometry_v2_national=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_candidate_g_rollback_mode=none" >> "$GITHUB_OUTPUT"
           echo "ravscore_candidate_g_rollback_confirmation=" >> "$GITHUB_OUTPUT"
+          echo "ravscore_integrated_first_cutover=false" >> "$GITHUB_OUTPUT"
+          echo "ravscore_integrated_first_cutover_confirmation=" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return_confirmation=" >> "$GITHUB_OUTPUT"
 
@@ -118,6 +132,8 @@ jobs:
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
+          FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -131,12 +147,13 @@ jobs:
           if [ "$GEOMETRY_PILOT" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$GEOMETRY_NATIONAL" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$ROLLBACK_MODE" != "none" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$RETURN_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$operation_count" -gt 1 ]; then
-            echo "Exactly one force, geometry, rollback or return operation may be dispatched." >&2
+            echo "Exactly one force, geometry, rollback, first cutover or return operation may be dispatched." >&2
             exit 1
           fi
-          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$FIRST_CUTOVER_REQUESTED" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
             echo "RavScore transitions are allowed only on main." >&2
             exit 1
           fi
@@ -146,6 +163,14 @@ jobs:
           fi
           if [ "$ROLLBACK_MODE" != "execute" ] && [ -n "$ROLLBACK_CONFIRMATION" ]; then
             echo "Candidate G execute confirmation is accepted only by execute mode." >&2
+            exit 1
+          fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ] && [ "$FIRST_CUTOVER_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE" ]; then
+            echo "Integrated first cutover confirmation is not exact."
+            exit 1
+          fi
+          if [ "$FIRST_CUTOVER_REQUESTED" != "true" ] && [ -n "$FIRST_CUTOVER_CONFIRMATION" ]; then
+            echo "Integrated first cutover confirmation is accepted only by an integrated first cutover." >&2
             exit 1
           fi
           if [ "$RETURN_REQUESTED" = "true" ] && [ "$RETURN_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-RETURN" ]; then
@@ -167,6 +192,8 @@ jobs:
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
+          FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -175,6 +202,8 @@ jobs:
           printf '%s\n' "geometry_v2_national=$GEOMETRY_NATIONAL" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_candidate_g_rollback_mode=$ROLLBACK_MODE" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_candidate_g_rollback_confirmation=$ROLLBACK_CONFIRMATION" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "ravscore_integrated_first_cutover=$FIRST_CUTOVER_REQUESTED" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "ravscore_integrated_first_cutover_confirmation=$FIRST_CUTOVER_CONFIRMATION" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return=$RETURN_REQUESTED" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return_confirmation=$RETURN_CONFIRMATION" >> "$GITHUB_OUTPUT"
 
@@ -1316,6 +1345,8 @@ jobs:
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_confirmation }}
+      ravscore_integrated_first_cutover: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover == 'true' }}
+      ravscore_integrated_first_cutover_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover_confirmation }}
       ravscore_integrated_return: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return == 'true' }}
       ravscore_integrated_return_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return_confirmation }}
     secrets:

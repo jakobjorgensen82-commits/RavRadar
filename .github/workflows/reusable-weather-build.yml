@@ -15,6 +15,12 @@ on:
       ravscore_candidate_g_rollback_confirmation:
         required: true
         type: string
+      ravscore_integrated_first_cutover:
+        required: true
+        type: boolean
+      ravscore_integrated_first_cutover_confirmation:
+        required: true
+        type: string
       ravscore_integrated_return:
         required: true
         type: boolean
@@ -208,6 +214,7 @@ jobs:
           echo "central_version=$(jq -r '.centralVersion' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "initial_cutover_required=$(jq -r '.initialCutoverRequired' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "legacy_source_required=$(jq -r '.legacySourceRequired' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
+          echo "active_source_head=$(jq -r '.sourceHead // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "active_implementation_closure_sha256=$(jq -r '.activeImplementationClosureSha256 // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
           echo "active_deployment_id=$(jq -r '.deploymentId // ""' "$RAVRADAR_OPERATIONAL_WORK/current.json")" >> "$GITHUB_OUTPUT"
         env:
@@ -224,18 +231,37 @@ jobs:
           LEGACY_SOURCE_REQUIRED: ${{ steps.operational-model.outputs.legacy_source_required }}
           CENTRAL_VERSION: ${{ steps.operational-model.outputs.central_version }}
           ACTIVE_DEPLOYMENT_ID: ${{ steps.operational-model.outputs.active_deployment_id }}
+          ACTIVE_SOURCE_HEAD: ${{ steps.operational-model.outputs.active_source_head }}
           ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: ${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}
           ROLLBACK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_mode || 'none' }}
           ROLLBACK_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_confirmation || '' }}
+          FIRST_CUTOVER_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_first_cutover || false }}
+          FIRST_CUTOVER_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_first_cutover_confirmation || '' }}
           RETURN_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_return || false }}
           RETURN_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_return_confirmation || '' }}
         run: |
-          if [ "$ROLLBACK_MODE" != "none" ] && [ "$RETURN_REQUESTED" = "true" ]; then
-            echo "Candidate G-rollback and integrated return are mutually exclusive."
+          transition_count=0
+          if [ "$ROLLBACK_MODE" != "none" ]; then transition_count=$((transition_count + 1)); fi
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then transition_count=$((transition_count + 1)); fi
+          if [ "$RETURN_REQUESTED" = "true" ]; then transition_count=$((transition_count + 1)); fi
+          if [ "$transition_count" -gt 1 ]; then
+            echo "Candidate G-rollback, integrated first cutover and integrated return are mutually exclusive."
+            exit 1
+          fi
+          case "$FIRST_CUTOVER_REQUESTED" in true|false) ;; *) echo "Unknown integrated first cutover flag."; exit 1 ;; esac
+          if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
+            test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+            test "$FIRST_CUTOVER_CONFIRMATION" = "EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE"
+          elif [ -n "$FIRST_CUTOVER_CONFIRMATION" ]; then
+            echo "Integrated first cutover confirmation requires its explicit manual flag."
             exit 1
           fi
           case "$ACTIVE_MODEL" in
             integrated)
+              if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
+                echo "Integrated first cutover requires Candidate G to be active."
+                exit 1
+              fi
               if [ "$RETURN_REQUESTED" = "true" ]; then
                 echo "Integrated return requires Candidate G to be active already."
                 exit 1
@@ -264,18 +290,20 @@ jobs:
               if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then
                 test "$ROLLBACK_MODE" = "none"
                 test "$RETURN_REQUESTED" != "true"
-                if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+                [[ "$CENTRAL_VERSION" =~ ^[1-9][0-9]*$ ]]
+                [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages(-recovery)?-[0-9]+-[0-9]+$ ]]
+                [[ "$ACTIVE_IMPLEMENTATION_CLOSURE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+                if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
+                  test "$BINDING_CURRENT" = "true"
+                  test "$LEGACY_SOURCE_REQUIRED" = "false"
+                  [[ "$ACTIVE_SOURCE_HEAD" =~ ^[a-f0-9]{40}$ ]]
+                  test "$ACTIVE_SOURCE_HEAD" = "$GITHUB_SHA"
                   action="integrated-cutover"
+                elif [ "$BINDING_CURRENT" = "true" ]; then
+                  action="candidate-maintenance"
                 else
-                  [[ "$CENTRAL_VERSION" =~ ^[1-9][0-9]*$ ]]
-                  [[ "$ACTIVE_DEPLOYMENT_ID" =~ ^pages(-recovery)?-[0-9]+-[0-9]+$ ]]
-                  [[ "$ACTIVE_IMPLEMENTATION_CLOSURE_SHA256" =~ ^[a-f0-9]{64}$ ]]
-                  if [ "$BINDING_CURRENT" = "true" ]; then
-                    action="candidate-maintenance"
-                  else
-                    test "$BINDING_CURRENT" = "false"
-                    action="candidate-historical-maintenance"
-                  fi
+                  test "$BINDING_CURRENT" = "false"
+                  action="candidate-historical-maintenance"
                 fi
                 echo "action=$action" >> "$GITHUB_OUTPUT"
                 echo "Operational action: $action."
@@ -283,6 +311,10 @@ jobs:
               fi
               if [ "$ROLLBACK_MODE" != "none" ]; then
                 echo "Candidate G is already active; a new rollback may not be initiated."
+                exit 1
+              fi
+              if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then
+                echo "Integrated first cutover is accepted only while the initial cutover remains required."
                 exit 1
               fi
               if [ "$RETURN_REQUESTED" = "true" ]; then
@@ -301,11 +333,8 @@ jobs:
               test "$LEGACY_SOURCE_REQUIRED" = "true"
               test "$ROLLBACK_MODE" = "none"
               test "$RETURN_REQUESTED" != "true"
-              if [ "$GITHUB_EVENT_NAME" = "push" ]; then
-                action="integrated-cutover"
-              else
-                action="candidate-legacy-maintenance"
-              fi
+              test "$FIRST_CUTOVER_REQUESTED" != "true"
+              action="candidate-legacy-maintenance"
               ;;
             *) echo "Unknown operational RavScore model; refusing production."; exit 1 ;;
           esac
@@ -575,7 +604,7 @@ jobs:
           fi
 
       - name: Test Supabase persistence roundtrip
-        if: github.event_name == 'push' || inputs.force == true
+        if: github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action == 'integrated-cutover'
         run: node scripts/test-supabase-persistence.mjs
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -1318,6 +1347,8 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+          RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
+          RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
           RAVRADAR_INTEGRATED_RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
 
       - name: Generate implementation and coverage audit

@@ -3,6 +3,13 @@
 **Dato:** 2026-09-02
 **Status:** Lokal kandidat. Candidate G er fortsat offentlig. Exact-head, én frisk isoleret 673 × 118-currentpreflight, det separate Feggesund 3 × 118-wavebevis, sikker merge, fuld produktion/releasegate/artifact/Pages, atomisk state-6-aktivering og offentlig desktop-/mobilverifikation afventer.
 
+## Tofaset første aktivering
+
+- Fase A merger/pusher koden, men holder Candidate G som den ene offentlige model. Legacy-Candidate føres gennem `candidate-legacy-maintenance`/`legacy-refresh-*` til current moderne Candidate G på samme eksakte head. Fase A må ske før 673 × 118, så cron opbygger korrigeret cache på den mergede kode. Push, schedule, watchdog og almindelig manuel vejrdrift kan ikke vælge første integrerede cutover.
+- Fase B er en særskilt manuel `workflow_dispatch` med både `ravscore_integrated_first_cutover=true` og `EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE`. Før DMI kræves den forseglede centrale Phase-A-complete current Candidate G-identitet med eksakt binding/manifesthash, dataset/reference, version/deployment-id, sourceHead, implementation closure og profil; live public source/manifest/implementation genverificeres i deployleddet før begin-CAS.
+- Tokenen er kun operationsautorisation. DEC-0114's live Supabase før/efter-måling, øvrige egress/lager og mindst 30 procent reserve skal være grønne før Fase B. 673 × 118, Feggesund og øvrige releasegates er uændrede.
+- Gamle forseglede planer og recovery/reconciliation bevares; ingen nye direkte rowless-planer, controllerfelter/statusser/kinds, modelbundles, hashes eller geodata tilføjes. Preflight `33695730459` attempt 2 nåede grøn DMI-terminal med 71.526/79.414 DMI-direct og gemte 364 Copernicus-par, men timeout gav intet 673 × 118-artifact; attempt 3 var endnu ikke terminal. Implementeringen og de direkte tests er lokale; deltaet er ikke commit'et, pushet, merged eller live.
+
 ## Installerbar hjemmeskærmswebapp
 
 - RavRadars eksisterende service worker og `display: standalone` er færdiggjort med relative appgrænser samt ikke-transparente 192 × 192- og 512 × 512-ikoner og et særskilt 180 × 180 Apple-touch-ikon. Forsiden og den eksisterende **Om RavRadar**-side linker begge manifest og iPhone-ikon; ingen installationspopup eller ny runtime er tilføjet.

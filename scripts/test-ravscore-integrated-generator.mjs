@@ -566,15 +566,23 @@ const pendingCandidateCase = operationalActionStep.block.slice(
   candidateCaseStart,
   legacyCaseStart,
 );
-assert.match(
-  pendingCandidateCase,
-  /if \[ "\$INITIAL_CUTOVER_REQUIRED" = "true" \]; then[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*\[\[ "\$CENTRAL_VERSION" =~ \^\[1-9\]\[0-9\]\*\$ \]\][\s\S]*\[\[ "\$ACTIVE_DEPLOYMENT_ID" =~ \^pages\(-recovery\)\?-\[0-9\]\+-\[0-9\]\+\$ \]\][\s\S]*\[\[ "\$ACTIVE_IMPLEMENTATION_CLOSURE_SHA256" =~ \^\[a-f0-9\]\{64\}\$ \]\][\s\S]*if \[ "\$BINDING_CURRENT" = "true" \]; then[\s\S]*action="candidate-maintenance"[\s\S]*else[\s\S]*test "\$BINDING_CURRENT" = "false"[\s\S]*action="candidate-historical-maintenance"/,
-  'Et afventende første cutover skal kun ske på push; bot/schedule skal fortsat kunne vedligeholde den aktive Candidate G uden at aktivere modellen.',
-);
+for (const marker of [
+  'if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then',
+  'if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then',
+  'test "$BINDING_CURRENT" = "true"',
+  'test "$LEGACY_SOURCE_REQUIRED" = "false"',
+  'test "$ACTIVE_SOURCE_HEAD" = "$GITHUB_SHA"',
+  'action="integrated-cutover"',
+  'action="candidate-maintenance"',
+  'action="candidate-historical-maintenance"',
+]) {
+  assert.equal(pendingCandidateCase.includes(marker), true,
+    'two-phase pending Candidate action marker: ' + marker);
+}
 assert.doesNotMatch(
   pendingCandidateCase,
-  /test "\$GITHUB_EVENT_NAME" = "push"/,
-  'Afventende cutover må ikke blokere normal Candidate G-vedligeholdelse efter et sikkert cutoverstop.',
+  /if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then/,
+  'an ordinary push may never auto-select the initial integrated cutover',
 );
 const legacyCaseEnd = operationalActionStep.block.indexOf(
   '            *) echo "Unknown operational RavScore model; refusing production."',
@@ -587,13 +595,26 @@ const legacyCandidateCase = operationalActionStep.block.slice(
 );
 assert.match(
   legacyCandidateCase,
-  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*if \[ "\$GITHUB_EVENT_NAME" = "push" \]; then[\s\S]*action="integrated-cutover"[\s\S]*else[\s\S]*action="candidate-legacy-maintenance"/,
-  'rowless legacy Candidate G must cut over only on push and use the distinct Candidate maintenance bridge on schedule/manual weather',
+  /test "\$INITIAL_CUTOVER_REQUIRED" = "true"[\s\S]*test "\$LEGACY_SOURCE_REQUIRED" = "true"[\s\S]*test "\$ROLLBACK_MODE" = "none"[\s\S]*test "\$RETURN_REQUESTED" != "true"[\s\S]*test "\$FIRST_CUTOVER_REQUESTED" != "true"[\s\S]*action="candidate-legacy-maintenance"/,
+  'rowless legacy Candidate G must always use the distinct Candidate maintenance bridge',
+);
+assert.doesNotMatch(legacyCandidateCase, /action="integrated-cutover"/,
+  'legacy Candidate G may never bypass the modern same-head Candidate phase');
+assert.match(
+  operationalActionStep.block,
+  /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_SOURCE_HEAD: \$\{\{ steps\.operational-model\.outputs\.active_source_head \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
+  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
 );
 assert.match(
   operationalActionStep.block,
-  /CENTRAL_VERSION: \$\{\{ steps\.operational-model\.outputs\.central_version \}\}[\s\S]*ACTIVE_DEPLOYMENT_ID: \$\{\{ steps\.operational-model\.outputs\.active_deployment_id \}\}[\s\S]*ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: \$\{\{ steps\.operational-model\.outputs\.active_implementation_closure_sha256 \}\}/,
-  'profile-only Candidate G version 0 must fail before maintenance unless a sealed operational row, deployment and implementation closure exist',
+  /FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation[\s\S]*EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE/,
+  'first cutover must require its separate manual boolean and exact confirmation token',
+);
+const supabasePersistenceStep = workflowStep('Test Supabase persistence roundtrip');
+assert.match(
+  supabasePersistenceStep.block,
+  /if: github\.event_name == 'push' \|\| inputs\.force == true \|\| steps\.operational-action\.outputs\.action == 'integrated-cutover'/,
+  'an explicit integrated first cutover must retain the production Supabase persistence roundtrip',
 );
 
 const legacySourceImportStep = workflowStep(
@@ -628,6 +649,26 @@ assert.match(
   cutoverPlanStep.block,
   /if \[ "\$\{\{ steps\.operational-model\.outputs\.legacy_source_required \}\}" = "true" \]; then[\s\S]*legacy-source\.outputs\.implementation_closure_sha256/,
   'the return plan must use legacy implementation closure only for a legacy-attested source',
+);
+assert.match(
+  cutoverPlanStep.block,
+  /RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED:[\s\S]*ravscore_integrated_first_cutover[\s\S]*RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION:[\s\S]*ravscore_integrated_first_cutover_confirmation/,
+  'plan creation must receive both normalized first-cutover authorization values',
+);
+assert.match(
+  operationalActivationSource,
+  /\['schedule', 'push', 'workflow_dispatch'\]\.includes\(process\.env\.GITHUB_EVENT_NAME\)/,
+  'legacy Candidate refresh CLI must permit the phase-one main push',
+);
+assert.match(
+  operationalActivationSource,
+  /RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED;[\s\S]*\['true', 'false'\]\.includes\(initialCutoverRequested\)/,
+  'first-cutover plan CLI must parse an explicitly present exact boolean',
+);
+assert.match(
+  operationalActivationSource,
+  /initialCutover[\s\S]*\['push', 'workflow_dispatch'\]\.includes\(process\.env\.GITHUB_EVENT_NAME\)/,
+  'already sealed initial plans must retain manual execution and compatible push recovery',
 );
 const operationalHandoffStep = workflowStep('Seal privacy-safe operational deploy handoff');
 assert.match(

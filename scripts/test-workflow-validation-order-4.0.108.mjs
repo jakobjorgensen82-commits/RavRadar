@@ -1251,15 +1251,14 @@ for (const marker of [
   'legacy-candidate-g)',
   'test "$INITIAL_CUTOVER_REQUIRED" = "true"',
   'test "$LEGACY_SOURCE_REQUIRED" = "true"',
-  'if [ "$GITHUB_EVENT_NAME" = "push" ]; then',
-  'action="integrated-cutover"',
+  'test "$FIRST_CUTOVER_REQUESTED" != "true"',
   'action="candidate-legacy-maintenance"',
   "steps.operational-action.outputs.action == 'candidate-legacy-maintenance'",
   'node scripts/verify-legacy-candidate-g-source.mjs attest',
   '--source-implementation-closure-sha256 "$source_closure_sha256"',
   '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
 ]) {
-  if (!buildWorkflow.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER-build mangler ${marker}`);
+  if (!buildWorkflow.includes(marker)) throw new Error(`Tofaset legacy→current Candidate G-build mangler ${marker}`);
 }
 for (const marker of [
   'node scripts/verify-legacy-candidate-g-source.mjs verify',
@@ -1267,7 +1266,7 @@ for (const marker of [
   'node scripts/ravscore-operational-activation.mjs return-begin',
   '"${source_attestation[@]}"',
 ]) {
-  if (!deployWorkflow.includes(marker)) throw new Error(`Direkte legacy→INITIAL_INTEGRATED_CUTOVER-deploy mangler ${marker}`);
+  if (!deployWorkflow.includes(marker)) throw new Error(`Forseglet legacy first-cutover-recovery mangler ${marker}`);
 }
 for (const marker of [
   'candidate_g_gap_reconstruction_mode',
@@ -1359,9 +1358,12 @@ const operationalReadBlock = text.slice(
 );
 const bindingCurrentReadMarker =
   'binding_current=$(jq -r \'.bindingCurrent\' "$RAVRADAR_OPERATIONAL_WORK/current.json")';
+const activeSourceHeadReadMarker =
+  'active_source_head=$(jq -r \'.sourceHead // ""\' "$RAVRADAR_OPERATIONAL_WORK/current.json")';
 if (!operationalReadBlock.includes(bindingCurrentReadMarker)
+  || !operationalReadBlock.includes(activeSourceHeadReadMarker)
   || !text.includes('operational_binding_current: ${{ steps.operational-model.outputs.binding_current }}')) {
-  throw new Error('Operational read/output mangler privacy-safe bindingCurrent.');
+  throw new Error('Operational read/output mangler privacy-safe bindingCurrent/sourceHead.');
 }
 const operationalResolverBlock = text.slice(
   text.indexOf('name: Resolve one fail-closed operational model action'),
@@ -1369,6 +1371,10 @@ const operationalResolverBlock = text.slice(
 );
 for (const marker of [
   'BINDING_CURRENT: ${{ steps.operational-model.outputs.binding_current }}',
+  'ACTIVE_SOURCE_HEAD: ${{ steps.operational-model.outputs.active_source_head }}',
+  'FIRST_CUTOVER_REQUESTED: ${{ github.event_name == \'workflow_dispatch\' && inputs.ravscore_integrated_first_cutover || false }}',
+  'FIRST_CUTOVER_CONFIRMATION: ${{ github.event_name == \'workflow_dispatch\' && inputs.ravscore_integrated_first_cutover_confirmation || \'\' }}',
+  'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
   'action="candidate-historical-maintenance"',
   'action="integrated-historical-maintenance"',
   'Historical integrated binding must be upgraded before Candidate G rollback planning.',
@@ -1385,11 +1391,22 @@ const initialCandidateResolver = operationalResolverBlock.slice(
   operationalResolverBlock.indexOf('if [ "$ROLLBACK_MODE" != "none" ]; then',
     operationalResolverBlock.indexOf('if [ "$INITIAL_CUTOVER_REQUIRED" = "true" ]; then')),
 );
-if (!(initialCandidateResolver.indexOf('if [ "$GITHUB_EVENT_NAME" = "push" ]; then')
-  < initialCandidateResolver.indexOf('action="integrated-cutover"')
-  && initialCandidateResolver.indexOf('action="integrated-cutover"')
-    < initialCandidateResolver.indexOf('action="candidate-historical-maintenance"'))) {
-  throw new Error('Historical Candidate H0 skal fortsat kunne gå direkte til current integrated ved exact push-cutover.');
+for (const marker of [
+  'if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then',
+  'test "$BINDING_CURRENT" = "true"',
+  'test "$LEGACY_SOURCE_REQUIRED" = "false"',
+  '[[ "$ACTIVE_SOURCE_HEAD" =~ ^[a-f0-9]{40}$ ]]',
+  'test "$ACTIVE_SOURCE_HEAD" = "$GITHUB_SHA"',
+  'action="integrated-cutover"',
+  'action="candidate-maintenance"',
+  'action="candidate-historical-maintenance"',
+]) {
+  if (!initialCandidateResolver.includes(marker)) {
+    throw new Error('Tofaset first-cutover-resolver mangler ' + marker);
+  }
+}
+if (initialCandidateResolver.includes('if [ "$GITHUB_EVENT_NAME" = "push" ]; then')) {
+  throw new Error('Et almindeligt push må aldrig vælge initial integrated cutover.');
 }
 const integratedHistoricalPlanBlock = text.slice(
   text.indexOf('name: Seal integrated return, initial cutover or historical maintenance plan after backend and public gates'),
@@ -1401,6 +1418,8 @@ for (const marker of [
   'ravscore-operational-activation.mjs "$prepare_command"',
   '--source-implementation-closure-sha256 "$source_closure_sha256"',
   '--requested-implementation-closure-sha256 "${{ steps.integrated-implementation.outputs.closure_sha256 }}"',
+  'RAVRADAR_INTEGRATED_FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}',
+  'RAVRADAR_INTEGRATED_FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}',
 ]) {
   if (!integratedHistoricalPlanBlock.includes(marker)) {
     throw new Error(`Historical integrated immutable plan mangler ${marker}`);
