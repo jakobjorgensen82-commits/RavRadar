@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-04",
   "sections": [
     {
+      "id": "source-validation-once-2026-09-04",
+      "chapter": "88.21",
+      "title": "Kodekontrol uden gentagne tests",
+      "summary": "Samme kontrol af koden med færre gentagne testkørsler.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En test, der netop har bestået i den samme kodekontrol, behøver ikke køres igen.</div><p>Den fulde releasekontrol køres først. Derefter følger resten af kildekontrollen, hvor kun helt identiske allerede beståede tests undlades. Den aktuelle plan sparer 33 gentagne teststarter og bevarer alle nødvendige kontroller. En fejl stopper fortsat hele kørslen.</p><p>Genbruget gælder kun den igangværende kørsel. Friske produktionsdata gennemgår fortsat deres fulde validering og releasekontrol før offentliggørelse. Planen er måltestet lokalt; den faktiske tidsbesparelse måles i næste GitHub-kørsel.</p>"
+    },
+    {
       "id": "harmonie-geographic-wind-reference-2026-09-04",
       "chapter": "88.20",
       "title": "DMI-vind skal kunne læses og pege rigtigt",

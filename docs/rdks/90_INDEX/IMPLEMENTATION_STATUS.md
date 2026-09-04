@@ -1,5 +1,9 @@
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
 
+- [x] Ret #252's samlede releasefejl om gammel testkommando; begge metadata-/migrationstests kræves og køres.
+- [x] Implementer ejerbestilt kildekontrol uden gentagelser: fuld releasegate først, derefter alle øvrige tests. Bevis 134 bevarede oprindelige kommandoer, 33 undgåede gentagelser og blokering ved enhver fejl/manglende test.
+- [ ] Bestå ny samlet GitHub-kontrol og mål faktisk gennemløbstid før sikker merge og stor engangsopfyldning.
+
 - [x] PR #251 exact-head og merge `bd47dc9f`; engangsrun og automatisk normal overtagelse er bevist. Copernicus gemte progression; fuld opfyldning er ikke bevist.
 - [x] Reproducer Lambert-key-fejlen med rigtig ecCodes på syntetisk data; implementer samme-celle geografisk vindrotation, strict sourceadmission og HARMONIE-only cachemarkør.
 - [x] Måltest fysisk retning, uafhængig PROJ-paritet, producent/forbrugere og bevarede marine kontrakter. Regenerer begge bundles og closurebindinger.

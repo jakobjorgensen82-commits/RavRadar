@@ -1,3 +1,8 @@
+## 4.0.321 – kildekontrol uden dubletter og rettet testregistrering (2026-09-04, lokalt)
+
+- Fuld releasegate køres først i kildekontrollen; efterfølgende identiske tests gentages ikke. Alle oprindelige kontroller bevares, 33 gentagne starter undgås, og enhver fejl stopper stadig. Standalone produktionsgate er fortsat fuld.
+- Releasekontrollens gamle forventning til testkommandoen er opdateret til både metadata- og append-only-migrationskontrol. Begge udføres også i standalone gate. Plan-, fejlstop-, workflow-, bindings- og migrationsmåltests er grønne; faktisk CI-tid afventer.
+
 ## 4.0.321 – HARMONIE-filformat og korrekt geografisk vind (2026-09-04, lokalt)
 
 - PR #252-opfølgning: rollbackens backendtest kontrollerer nu den gældende migration fra produktionskædens liste. Den gamle historiske fil bevares; eksisterende assertions består. Dette lukker den konkrete kildekontrolfejl uden ændring af runtime eller SQL.

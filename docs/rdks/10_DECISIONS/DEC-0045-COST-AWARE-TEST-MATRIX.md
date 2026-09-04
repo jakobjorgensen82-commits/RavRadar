@@ -10,6 +10,14 @@ RavRadar brugte for meget tid på at gentage den samme kildekodekontrol lokalt, 
 
 ## Beslutning
 
+### Tillæg 2026-09-04 – samme test kun én gang inden for kildekørslen
+
+Ejeren bad om en hurtigere PR-kontrol efter `33886631073`, som brugte cirka 23 minutter før en næsten 16-minutters releasegate. Den nye lokale plan bevarer alle 134 oprindelige kildekommandoer i deklarationen `validate:source:checks` og tilføjer kun en test af selve planen. `validate:source` kalder en fælles runner, der først kører hele releasegaten. Kun når denne er grøn, undlades identiske testinvokationer fra resten af den samme igangværende kørsel. Forskellige argumenter regnes ikke som samme kontrol.
+
+Releasegaten og runneren bruger samme obligatoriske liste med 34 tests. Planen undgår 33 gentagne starter og har derefter 101 øvrige kommandoer. Enhver fejlet gate/test, manglende script, rekursiv scriptkæde, ukendt kommandosyntaks eller manglende fuld releasegate stopper. Der findes ingen gemt markør eller miljøvariabel, som kan godkende springet. Alle eksisterende workflowkald bruger fortsat `npm run validate:source`.
+
+Frisk produktion kører stadig sin fulde datavalidering og selvstændige releasegate efter hydrering/vejr. Dette tillæg ændrer alene dubletter inden for en kildekørsel. Lokal plan-/fejltest er grøn; faktisk tidsgevinst og ny komplet GitHub-kontrol skal måles på rettet head. Det er ikke et løfte om et bestemt minuttal.
+
 ### Bindende præcisering 2026-09-04 – samme kode må ikke udsulte vejrindsamlingen
 
 Ejeren har bedt om at fjerne gentaget kildekontrol, når den ikke giver ny evidens. Målt på uændret main tog kontrollen 36–40 minutter før en DMI-arbejdsramme på 13 minutter. Dette tillæg erstatter punkt 3 nedenfor, ikke PR-gaten eller produktionsdatagates.

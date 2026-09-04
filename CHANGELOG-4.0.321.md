@@ -5,6 +5,8 @@
 
 ## Ændret
 
+- 2026-09-04: kildekontrollen kører fuld releasegate først og undgår 33 identiske gentagelser bagefter. Alle 134 oprindelige kildekommandoer er bevaret i deklarationen; plan-/fejlstopstest tilføjet. Den konkrete gamle releasekommando-kontrol er rettet, så både metadata og migrationsfremføring kræves. Ny CI-tid og samlet bestået kørsel afventer.
+
 ### HARMONIE-reference 2026-09-04 – lokalt, ny runtime afventer
 
 - #252-kontrollens oversete backendtest er ført fra historisk migration til produktionskædens seneste kontrakt; hele testen består lokalt. Ingen ændring af vejrkode, modelbinding eller SQL i denne testopfølgning.

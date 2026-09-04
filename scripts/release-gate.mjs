@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 import { createRequiredFileReader } from './lib/release-gate-required-files.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
@@ -49,42 +50,7 @@ const packageScripts=pkg&&typeof pkg.scripts==='object'&&pkg.scripts!==null?pkg.
 const version=typeof pkg.version==='string'?pkg.version:'';
 ok(Boolean(version),'package.json mangler en gyldig releaseversion');
 
-const publicLearningTest=spawnSync(process.execPath,['scripts/test-public-learning-module-4.0.268.mjs'],{cwd:root,stdio:'inherit'});
-ok(publicLearningTest.status===0,'Det offentlige læringsmodul eller sproggaten fejlede');
-const publicScoreExplanationTest=spawnSync(process.execPath,['scripts/test-public-score-explanations-4.0.269.mjs'],{cwd:root,stdio:'inherit'});
-ok(publicScoreExplanationTest.status===0,'De offentlige RavScore-forklaringer eller den forenklede zonevisning fejlede');
-for(const rel of [
-  'scripts/build-ravscore-model-bundle.mjs',
-  'scripts/test-ravscore-model-bundle.mjs',
-  'scripts/test-candidate-g-rollback-bundle.mjs',
-  'scripts/test-ravscore-candidate-g-operational-rollback.mjs',
-  'scripts/test-prepare-candidate-g-operational-rollback.mjs',
-  'scripts/test-candidate-g-rollback-public-stage.mjs',
-  'scripts/test-candidate-g-rollback-trip-backend.mjs',
-  'scripts/test-candidate-g-rollback-assistant-local.mjs',
-  'scripts/test-ravscore-operational-pages-deployment.mjs',
-  'scripts/test-ravscore-operational-pages-recovery.mjs',
-  'scripts/test-ravscore-active-explanation-presenter.mjs',
-  'scripts/test-ravscore-operational-activation.mjs',
-  'scripts/sync-ravscore-model-binding.mjs',
-  'scripts/test-ravscore-integrated-model.mjs',
-  'scripts/test-ravscore-integrated-state-pipeline.mjs',
-  'scripts/test-ravscore-integrated-generator.mjs',
-  'scripts/test-ravscore-public-model.mjs',
-  'scripts/test-ravscore-public-runtime-contract.mjs',
-  'scripts/test-ravscore-public-data-service-binding.mjs',
-  'scripts/test-ravscore-profile-transition.mjs',
-  'scripts/test-ravscore-continuation-checkpoint.mjs',
-  'scripts/test-protected-ravscore-continuation-checkpoint.mjs',
-  'scripts/test-private-production-runtime-bundle.mjs',
-  'scripts/test-private-production-runtime-workflow.mjs',
-  'scripts/test-pages-artifact-privacy.mjs',
-  'scripts/test-production-workflow-outcome.mjs',
-  'scripts/test-release-contract-metadata.mjs',
-  'scripts/test-reusable-production-workflows.mjs',
-  'scripts/test-hydrated-atomic-dataset-4.0.67.mjs',
-  'scripts/test-hydrate-deployed-weather-fail-closed-4.0.272.mjs',
-]){
+for(const rel of RELEASE_GATE_TEST_FILES){
   const result=spawnSync(process.execPath,[rel],{cwd:root,stdio:'inherit'});
   ok(result.status===0,`Den integrerede RavScore-releasekontrakt fejlede: ${rel}`);
 }
@@ -539,7 +505,7 @@ for(const marker of [
 for(const [scriptName,required] of [
   ['test:score',['test:ravscore-integrated','test:ravscore-rollback-oracle']],
   ['validate',['test:score','test:hydrated-atomic-dataset','test:production-runtime-privacy','test:candidate-g-gap-retirement']],
-  ['validate:source',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
+  ['validate:source:checks',['test:ravscore-integrated','test:ravscore-rollback-oracle','test:legacy-bootstrap-hydration','test:production-runtime-privacy','test:workflow-action-contracts','release:gate']],
 ]){
   const chain=packageScripts[scriptName]??'';
   for(const marker of required)ok(chain.includes(marker),`${scriptName} mangler ${marker}`);
@@ -600,6 +566,8 @@ for(const forbidden of ['central-runtime','profile-switch','public-shadow','publ
 ok(!(packageScripts['test:workflow-action-contracts']??'').includes('test-ravscore-active-shadow-workflow'),
 'Workflowkontrakten må ikke bevare Candidate G som aktiv shadowmodel');
 const workflowActionChain=packageScripts['test:workflow-action-contracts']??'';
+ok(workflowActionChain.includes('node scripts/test-source-validation-once.mjs'),
+'Kildeplanens fulde dækning og fejlstop skal indgå i workflowtesten');
 ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test:candidate-g-gap-retirement')
   && workflowActionChain.includes('test:reusable-production-workflows')
@@ -610,8 +578,8 @@ ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
 'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs',
-'Release metadata mangler sin isolerede kontrakttest');
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs',
+'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
   'test:candidate-g-gap-workflow',
@@ -621,7 +589,9 @@ for(const retiredScript of [
 }
 ok((packageScripts['test:candidate-g-gap-retirement']??'').includes('test-candidate-g-gap-reconstruction-retired.mjs'),
 'DEC-0109 skal være beskyttet af den negative pensionsgate');
-ok((packageScripts['validate:source']??'').includes('test:workflow-action-contracts'),
+ok(packageScripts['validate:source']==='node scripts/validate-source-once.mjs',
+'Kildekontrollen skal bruge den fælles plan, som altid kører fuld releasegate først');
+ok((packageScripts['validate:source:checks']??'').includes('test:workflow-action-contracts'),
 'Kildegaten skal nå DEC-0109-pensionsgaten gennem workflowkontrakten');
 const tripEvidenceChain=packageScripts['test:trip-evidence-contract']??'';
 ok(tripEvidenceChain.includes('test-trip-evidence-contract.mjs')

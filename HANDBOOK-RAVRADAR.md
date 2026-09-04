@@ -2,6 +2,12 @@
 
 **Håndbogsversion:** 4.0.321
 
+## Hurtigere kodekontrol med samme dækning – 2026-09-04
+
+Kildekontrollen gentog tidligere mange model- og sikkerhedstests i den afsluttende releasekontrol. Den nye plan kører hele releasekontrollen først. Derefter køres alle øvrige kildekontroller, mens identiske tests, som lige har bestået, ikke gentages. Det sparer 33 teststarter i den aktuelle plan. En fejl stopper stadig kørslen, og resultatet genbruges kun inden for den samme kørsel. Friske produktionsdata kontrolleres fortsat særskilt før offentliggørelse.
+
+Ændringen er måltestet lokalt; den faktiske tidsbesparelse måles i næste GitHub-kørsel. Samtidig er releasekontrollens gamle forventning til testkommandoen opdateret, så både modelbindingen og den nye migrationskontrol er obligatoriske.
+
 ## DMI-vind skal både kunne læses og pege rigtigt – 2026-09-04
 
 Aktuel teknisk rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195` over 56 transitive filer. Tidligere 4.0.320-bindingsafsnit er historiske.

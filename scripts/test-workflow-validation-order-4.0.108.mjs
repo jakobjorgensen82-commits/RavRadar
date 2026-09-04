@@ -107,7 +107,10 @@ for (const marker of [
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
+if (packageJson?.scripts?.['validate:source'] !== 'node scripts/validate-source-once.mjs') {
+  throw new Error('validate:source skal bruge den fælles release-first testplan.');
+}
+const sourceValidation = packageJson?.scripts?.['validate:source:checks'] || '';
 const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-contracts'] || '';
 if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery')) {
   throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');

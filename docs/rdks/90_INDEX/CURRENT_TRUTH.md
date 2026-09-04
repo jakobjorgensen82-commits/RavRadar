@@ -1,5 +1,7 @@
 # NYESTE SANDHED – 2026-09-04 – HARMONIE-formatfejl og geografisk vindreference
 
+- **Seneste #252-opfølgning:** `33886631073` på `7265ac29` nåede alle kildetests og afsluttede releasegaten med præcis én samlet fejl: dens gamle eksakte testkommando manglede den nytilføjede migrationstest. Kontrollen er nu rettet, og migrationstesten køres også i standalone releasegate. Ejeren bad samtidig om hurtigere CI. Ny lokal release-first-plan fjerner 33 gentagne teststarter; alle 134 oprindelige kildekommandoer er bevaret i deklarationen, og fejlstop/kommandodækning er måltestet. Se DEC-0045's nyeste tillæg. Ingen modelhash, SQL, vejrkode eller datakrav ændres i denne opfølgning. Ny GitHub-kontrol og målt tidsgevinst afventer.
+
 - **PR #252-opfølgning:** Head `42feb046` fejlede kildekontrol `33883271078` kl. 14:40:59Z i `test-candidate-g-rollback-trip-backend.mjs:716`: testen krævede den aktuelle bundlehash i den uændrede historiske migration `20260901010000`. Den læser nu seneste kontrakt fra produktionskædens `REQUIRED_CUTOVER_MIGRATIONS`; samme eksisterende assertions består. Den komplette berørte test og den mekaniske SQL-fremføring er grønne lokalt. Ingen runtime-, SQL-, hash- eller vejrændring i denne opfølgning. Ny PR-kontrol udestår.
 
 - PR #251 er merged som `bd47dc9f`. Engangsrun `33871205875` gemte Copernicus-fremgang 4.373 → 6.246/7.890 og stoppede kontrolleret ved soft-budget; 1.644 restpar. DMI-current-terminalen var grøn, men primær vind var 0/210 og 0/673 med `GRID_IDENTITY_READ_FAILED`. Det tidligere chatsvar om komplet DMI var forkert.
