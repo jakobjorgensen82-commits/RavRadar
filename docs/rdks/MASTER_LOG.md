@@ -1,4 +1,11 @@
-# NYESTE EJERDELTA – 2026-09-04 – hel engangsopfyldning før eventuel balancering
+# NYESTE EJERDELTA – 2026-09-04 – vindrettelse gælder både engangsrun og normal drift
+
+- Ejeren bekræfter Sol/Ekstra høj til fejlafklaring; Ultra er ikke aktuelt nødvendigt. Ved ren overvågning anbefales Terra/Høj, og Sol kræves igen før kritiske ændringer.
+- Efter test/exact-head/merge bestilles ny stor engangsopfyldning på rettet main med genbrug af gemt progression. Samme rettelse skal gælde almindelig indsamling; begge kalder den fælles DMI-producent. Der ændres ikke cron-ordre eller kildeprioritet.
+- Tidligere besked om komplet DMI er korrigeret: current-terminalen var grøn, mens HARMONIE-vind fejlede. Copernicus-budgetstop med gemt fremgang er ikke komplet 210/673/118. Ingen ny færdiggaranti, gammel synteseordre eller punktændring er autoriseret.
+- Den lokale vindrettelse og dens nødvendige hash-only forward-migration er dokumenteret i HARMONIE-rapporten. Gamle migrations og brugerdata bevares. Ny GitHub-/runtimeverifikation afventer.
+
+# TIDLIGERE EJERDELTA – 2026-09-04 – hel engangsopfyldning før eventuel balancering
 
 - Ejeren bestiller en samlet engangsopfyldning af alle nødvendige vejrfamilier, derefter målrettet Copernicus og tilladt regional Limfjordsfallback. Først efter komplet cache måles vedligeholdelsen; en balanceringsrettelse udføres kun ved konkret behov. Dette supersederer den foreløbige plan om at ændre balancering før opfyldning.
 - Ejeren accepterer ikke risiko for at kassere en lang indsamlingsfase på grund af et kendt for kort samlet jobloft. Run `33866679219` på main `61575559` blev annulleret i pending med nul jobs. Normal vejrkørsel `33866210163` blev ikke annulleret.

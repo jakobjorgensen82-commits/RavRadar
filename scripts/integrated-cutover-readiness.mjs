@@ -64,6 +64,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260903010000_ravscore_checkpoint_metadata_cas',
     filename: '20260903010000_ravscore_checkpoint_metadata_cas.sql',
   }),
+  Object.freeze({
+    version: '20260904140000',
+    id: '20260904140000_harmonie_wind_reference_binding',
+    filename: '20260904140000_harmonie_wind_reference_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -86,7 +91,7 @@ function normaliseTripBindingPolicyDefinition(value) {
 export async function expectedTripBindingPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS[2].filename,
+    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
   ), 'utf8');
   const scoreQualityMatch = migration.match(
     /create or replace function public\.ravradar_trip_v3_score_quality_allowed\([\s\S]*?\)\s*returns boolean[\s\S]*?as \$\$([\s\S]*?)\$\$;/i,
@@ -122,7 +127,7 @@ export async function expectedCheckpointCasContract({
 } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS[3].filename,
+    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
   ), 'utf8');
   const definitions = [
     ['public.ravradar_ravscore_checkpoint_canonical_time', 'canonical-time validator'],
@@ -153,7 +158,7 @@ export async function expectedCheckpointCasContract({
 export async function expectedTripActiveAdmissionPolicy({ migrationsDirectory = MIGRATIONS_DIRECTORY } = {}) {
   const migration = await fs.readFile(path.join(
     migrationsDirectory,
-    REQUIRED_CUTOVER_MIGRATIONS[2].filename,
+    REQUIRED_CUTOVER_MIGRATIONS.at(-1).filename,
   ), 'utf8');
   const triggerMigration = await fs.readFile(path.join(
     migrationsDirectory,
@@ -275,7 +280,7 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       // RavRadar's historical repository used date-only migration names and
       // therefore contains pre-cutover duplicates. They are never passed to db
       // push: the workflow builds a temporary normalized view from remote
-      // applied history plus the four exact cutover migrations. New duplicates are
+      // applied history plus the five exact cutover migrations. New duplicates are
       // still a hard error.
       assert.ok(version.length === 8 && version <= '20260828',
         `duplicate Supabase migration version ${version}: ${versionToFilename.get(version)} and ${filename}`);
@@ -556,7 +561,7 @@ function assertCheckpointDatabaseReadback(value, expectedCheckpointContract) {
     'schemaVersion', 'appliedMigrationVersion', 'checkpointContract', 'checks',
   ], 'checkpoint database readback');
   assert.equal(value.schemaVersion, CHECKPOINT_DATABASE_READBACK_SCHEMA);
-  assert.equal(value.appliedMigrationVersion, REQUIRED_CUTOVER_MIGRATIONS[3].version,
+  assert.equal(value.appliedMigrationVersion, REQUIRED_CUTOVER_MIGRATIONS.at(-1).version,
     'checkpoint database readback is missing its applied migration');
   assertExactKeys(value.checkpointContract, ['id', 'definition'],
     'database checkpoint CAS contract readback');

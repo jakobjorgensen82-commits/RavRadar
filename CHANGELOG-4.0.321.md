@@ -5,6 +5,11 @@
 
 ## Ændret
 
+### HARMONIE-reference 2026-09-04 – lokalt, ny runtime afventer
+
+- Lambert-formatfejlen og manglende geografisk vindomregning er rettet samlet i fælles producent. HARMONIE-only cachemarkør bevarer marinearbejdet; primær kilde v2 og DKSS-vindhale v1 valideres separat.
+- Reelle model-/rollback-/continuation-bindinger føres frem med ny migration `20260904140000`; alle gamle migrations bevares. Den nye SQL-krop er måltestet til kun at ændre eksakte bindinger/readbackversion. Se HARMONIE-rapporten for fulde hashes og beviser. Ingen ny produktion, modelaktivering eller 210/673/118-bevis endnu.
+
 ### Driftslukning 2026-09-04 – lokal, afventer ny exact-head og produktion
 
 - Friske DMI-snapshots må ikke kassere dokumenterede Copernicus-forsøg alene på filhash eller et bounded referenceskift. Originale acquisitiontider og identiteter bevares, aktuelle par tælles igen, og frigivelse kræver ny streng READY.

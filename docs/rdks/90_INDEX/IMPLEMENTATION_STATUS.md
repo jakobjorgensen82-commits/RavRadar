@@ -1,4 +1,14 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – hel engangsopfyldning med reserve
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
+
+- [x] PR #251 exact-head og merge `bd47dc9f`; engangsrun og automatisk normal overtagelse er bevist. Copernicus gemte progression; fuld opfyldning er ikke bevist.
+- [x] Reproducer Lambert-key-fejlen med rigtig ecCodes på syntetisk data; implementer samme-celle geografisk vindrotation, strict sourceadmission og HARMONIE-only cachemarkør.
+- [x] Måltest fysisk retning, uafhængig PROJ-paritet, producent/forbrugere og bevarede marine kontrakter. Regenerer begge bundles og closurebindinger.
+- [x] Tilføj ny hash-only migration `20260904140000`; bevar alle gamle migrations og før eksisterende installations-/readinesskæde frem til fem eksakte migrations. Metadata-/installationsadmission er lokalt kontrolleret.
+- [x] Luk dokumentations-/releasebindingstest, håndbogssync og transaktionel cachemåltest. RDKS/version/diff er grønne; geodata og gamle migrations er urørte.
+- [ ] Bestå PR-exact-head, merge og start ny samlet main-opfyldning. Ingen lokal SQL-apply eller modelaktivering er udført.
+- [ ] Bevis fuld 210/673/118/Feggesund, normal vedligeholdelse, live Supabase-kapacitet, Fase B og offentlig model. Se den nye HARMONIE-reparationsrapport.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 2026-09-04 – hel engangsopfyldning med reserve
 
 - [x] Annulér `33866679219` før nogen jobs startede; GitHub bekræfter cancelled og total_count=0. Bevar normal indsamling `33866210163`.
 - [x] Ret kun den manuelle engangsvejs samlede tidsramme til 180 minutter, eksplicit 47-minutters Copernicus-trinloft og regional restore/save med normal drifts cachefamilie.

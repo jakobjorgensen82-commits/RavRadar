@@ -1,4 +1,11 @@
-# NYESTE SANDHED – 2026-09-04 – sikker samlet opfyldning før balanceændring
+# NYESTE SANDHED – 2026-09-04 – HARMONIE-formatfejl og geografisk vindreference
+
+- PR #251 er merged som `bd47dc9f`. Engangsrun `33871205875` gemte Copernicus-fremgang 4.373 → 6.246/7.890 og stoppede kontrolleret ved soft-budget; 1.644 restpar. DMI-current-terminalen var grøn, men primær vind var 0/210 og 0/673 med `GRID_IDENTITY_READ_FAILED`. Det tidligere chatsvar om komplet DMI var forkert.
+- Lokal fælles rettelse til normal drift og engangsrun: Lambert læses med præcis fire ikke-anvendelige angular keys; geografisk vind beregnes fra samme GRIB-celles faktiske reference. HARMONIE source v2 og Python-/JS-admission følger hinanden. Kun HARMONIE får ny processing-markør; marine-/Copernicus-cache, geometri, punkter, scoreformel og stateversion bevares.
+- Begge reelle bundles er opdateret: integrated `5c523675…`/55, rollback `dd3845b1…`/56, continuation `80cb9d92…`. Ny append-only migration `20260904140000` ændrer kun de tilhørende bindinger/readbackversion; gamle migrationer og brugerdata ændres ikke. Se `docs/research/HARMONIE_WIND_REFERENCE_REPAIR_2026-09-04.md` for fulde hashes, årsager og måltestbevis.
+- Dette er lokal kode og verifikation, ikke nyt publiceringsbevis. Ejeren kræver ny stor opfyldning på rettet main efter exact-head/merge, derefter målt normal vedligeholdelse. Cron bruger allerede samme producent. Candidate G er fortsat offentlig; hele 210/673/118-, kapacitets-, Fase B- og browserkæden er åben.
+
+# TIDLIGERE SANDHED – 2026-09-04 – sikker samlet opfyldning før balanceændring
 
 - Ejeren kræver hele vejrdatakæden opfyldt først og målt normal vedligeholdelse bagefter. Balance ændres kun ved dokumenteret behov. Engangsrun `33866679219` på main `61575559` er annulleret før jobstart; nul jobs betyder intet tabt dataarbejde.
 - Kun engangsworkflowet er rettet lokalt: samlet loft 180 minutter, heavy-step-lofter 55/47/17 og mindst 60 minutters øvrig reserve. DMI-/Copernicus-workbudgets og fulde slutgates er uændrede. Den regionale sidecache får normal drifts restore/save-familie; eksisterende DMI/Copernicus-cacher gemmes fortsat før senere gates.

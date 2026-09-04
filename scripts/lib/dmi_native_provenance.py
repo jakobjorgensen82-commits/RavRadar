@@ -13,6 +13,8 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from .dmi_wind_reference import WIND_VECTOR_VERSION, WIND_VECTOR_REFERENCE, WIND_VECTOR_TRANSFORMS
+
 
 SPATIAL_PROVENANCE_VERSION = 1
 CURRENT_VECTOR_SEMANTICS_VERSION = 3
@@ -640,7 +642,12 @@ def complete_native_source_for_hour(
     if component in {"wind", "windTail"}:
         return bool(
             source.get("vectorSelection") == "nearest-shared-grid-cell-no-spatial-interpolation"
-            and source.get("vectorSemanticsVersion") == 1
+            and source.get("vectorSemanticsVersion") == (WIND_VECTOR_VERSION if component == "wind" else 1)
+            and (component != "wind" or (
+                source.get("vectorReference") == WIND_VECTOR_REFERENCE
+                and isinstance(source.get("vectorTransform"), str)
+                and source.get("vectorTransform") in WIND_VECTOR_TRANSFORMS
+            ))
         )
     if component == "wave":
         return wave_distance_allowed(collection, distance)

@@ -1,5 +1,18 @@
 # Integreret RavScore — producent-/forbrugermatrix
 
+## Nyeste tillæg 2026-09-04: fælles HARMONIE-vind og fremført binding
+
+Dette tillæg erstatter tidligere lokale status-/hashangivelser nedenfor. Main er `bd47dc9f` (PR #251); Candidate G er fortsat offentlig. Vindrettelsen er lokal, ikke merged eller produktionsbevist. Se `HARMONIE_WIND_REFERENCE_REPAIR_2026-09-04.md` for årsag og evidens.
+
+| Producent | Forbrugere | Samlet kontrakt og kontrol |
+| --- | --- | --- |
+| Fælles `update-dmi-bulk.py` | Normal vejrproduktion og engangsopfyldning | Lambert-identitet, fælles cellepar og geografisk vindreference v2; kun HARMONIE processing-signature ændres. Cron, geometri og øvrige cachefamilier bevares. |
+| Native vindkilde v2 | Python-provenance, JS forecast store, staging og modeladaptere | Reference/transform kræves; DKSS-vindhale beholder v1. Ukendt eller gammel uattesteret primærvind afvises. |
+| Fælles forecast store | Integreret modelbundle, Candidate G-rollback, offentlige/Edge-/konto-/turforbrugere | Integrated bundle `5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1`; rollback `dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195`. Generatorstyret sync; modelkontrakt/id/formel/state uændret. |
+| Append-only migration `20260904140000` | Trip admission, checkpoint CAS/readback, installationskopier, deploy-/readiness-/releasekontrol | Kun seks hashforekomster og to readback-versioner fremføres fra to uændrede tidligere SQL-kroppe. Hele den mekaniske transformation testes. Intet live databasearbejde udført. |
+
+Normal run `33871347088` genbrugte engangsrun `33871205875`'s DMI-råcache, processed cache, regional cache og Copernicus-journal. Ved ændret hulmatrix nåede Copernicus 6.703 af 8.512 par og 84 afsluttede forsøg; 1.809 restpar. Nyt kontrolleret budgetstop gemte fremgangen. Det er hverken cache-nulstilling eller fuldt 673 × 118-bevis. Kapacitet, Feggesund, Fase B og offentlig validering er stadig åbne.
+
 - **Dato:** 2026-08-29
 - **Status:** Candidate G er fortsat den eneste offentlige model. Den samlede Fase A-kode på sourcehead `cbc4639af411ee741be938980b2d7a8c08b6b79d` bestod PR #246's exact-head-kildegate `33706215425` og er merged som `7198b685f4bc9d86bd6432b049380f4279ab797c`. Den lokale 4.0.321 checkpoint-metadata-CAS/no-history/RLS-/kapacitetslukning er endnu ikke pushet, exact-head-verificeret, anvendt live eller merged. 673 × 118, Feggesunds policybundne 3 × 118, live Supabase-kapacitet, manuel Fase B, frisk state-6-produktion/releasegate/artifact/Pages og offentlig desktop-/mobilvalidering er fortsat afventende. Tidligere Candidate G-runs og safe-fail-runs nedenfor er revisionsspor, ikke bevis for at state 6 er live.
 - **Princip:** Den integrerede model må ikke udgives, før alle dens producenter, adapters og offentlige forbrugere er bundet til samme model, den direkte og operationelle 118-timersakse er komplet, og de åbne slutgates er grønne. En privat, komplet measured-only Candidate G-warmup må ledsage første cutover uden at være rollbackklar; det er ikke en offentlig model og må ikke omfortolkes som checkpoint- eller rollbackbevis.

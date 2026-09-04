@@ -247,7 +247,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');

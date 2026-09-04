@@ -1,3 +1,9 @@
+## 4.0.321 – HARMONIE-filformat og korrekt geografisk vind (2026-09-04, lokalt)
+
+- Fælles normal/engangs-DMI-læser håndterer Lambert-formatets fire ikke-anvendelige angular keys og omregner den faktiske samme-celle vindreference korrekt. Ukendte/mismatchede referencer afvises; HARMONIE source v2 følger gennem Python/JS.
+- Kun HARMONIE får ny processing-markør; gemt DKSS/WAM/Copernicus/regional progression bevares. Scoreformel, model-id/stateversion, cron, geometri og punkter ændres ikke.
+- Begge reelle modelbundles, continuation og forbrugere er synkroniseret via append-only hashmigration `20260904140000`; gamle migrationer er urørte. Syntetisk ecCodes-, uafhængig PROJ- og kontraktmåltest er grønne. Exact-head, merge, ny stor opfyldning og produktion afventer.
+
 ## 4.0.321 – sikker tidsramme og fuld cacheoverdragelse i engangsopfyldning (2026-09-04)
 
 - Kun den manuelle, ikke-deployerende 118-timers engangsvej ændres. Samlet loft 110 → 180 minutter, eksplicit Copernicus-trinloft 47 minutter over wrapperens eksisterende 45 minutter, og mindst 60 minutters reserve ud over 55 + 47 + 17 minutters tunge trin. Normal indsamling, balance, kildeorden, score og datakrav er uændrede.

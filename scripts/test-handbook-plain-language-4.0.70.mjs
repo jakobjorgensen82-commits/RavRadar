@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
 import {
   GENERATED_RAVSCORE_MODEL_BUNDLE_MANIFEST as integratedBundleManifest,
 } from '../js/core/ravscore-model-bundle.generated.js';
@@ -98,7 +99,7 @@ requireMarkers('Det aktive metadata-CAS-kapitel',
     'ingen stateposter, koordinater, vejrpayloads eller rå U/V',
     '<code>082a5187…</code>',
     '<code>utf8-bomless-lf-v2</code>',
-    '<code>35c45f8f…</code>',
+    `<code>${(await ravScoreContinuationImplementationSha256()).slice(0, 8)}…</code>`,
     'Det er ikke en generel fallback',
   ]);
 
