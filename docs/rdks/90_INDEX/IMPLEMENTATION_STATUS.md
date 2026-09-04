@@ -1,4 +1,13 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-03 – næste samlede 4.0.321-head
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – driftens gentagelsesfejl
+
+- [x] Sammenhold gammel fungerende `8c03e25d`, ny kode og filtrerede produktionslogs; reproducer samme-hul/ny-DMI-hash-fejlen.
+- [x] Implementer bounded genvalidering af Copernicus-attempts, uændret faktisk acquisition og fuldt centralt register til stabil shardinddeling. Ny matrix får nye counts/hashes og må ikke arve READY.
+- [x] Måltest same-hour, timeskift, nye/delvist lukkede huller, nul/positive resultater, Baltic→AMM15, legacy-journal, stale/tampered evidens og afbrudt fortsættelse.
+- [x] Implementer og måltest live-verificeret exact-main-sourcegenbrug inklusive senere fejl og reruns af ældre runs. Opdater DEC-0045; full artifact-/releasegates er bevaret.
+- [ ] Push det nye samlede head til PR #250, bestå ny exact-head, merge sikkert og bevis faktisk genbrug/fortsættelse. Gammel CI-grøn status er ikke bevis for denne rettelse.
+- [ ] Luk fuld operationel dataakse/Feggesund, remote backend og live kapacitet, Fase B, frisk produktion og offentlig mobil/desktop. Ingen 48-timers ventegate eller fiktiv genopretning.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 2026-09-03 – næste samlede 4.0.321-head
 
 - [x] Merge PR #249 efter exact-head: `a331e0dbb08a9ab9ffff26632a708828574bdcd8`.
 - [x] Reproducer scheduled-pilot-fejlen uden rå payloads: restored DMI-ledger-start afveg fra implicit target i `33766716934`.

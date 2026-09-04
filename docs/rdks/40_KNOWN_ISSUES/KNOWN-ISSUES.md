@@ -1,4 +1,10 @@
-# NYESTE CHECKPOINT – 2026-09-03 – PR #249 merged; eksakt DMI-ledgertime i pilot
+# NYESTE CHECKPOINT – 2026-09-04 – frisk snapshot må ikke nulstille afsluttet arbejde
+
+- **ISSUE-COPERNICUS-SNAPSHOT-JOURNAL-RESET – LOKALT MÅLTESTET / DRIFTSBEVIS ÅBENT P0:** #3942/#3943 havde samme target/DMI-huller, men kasserede begge source-stage på frisk DMI-filhash. Positive records overlevede, afsluttede nul-resultatforsøg blev gentaget. Ny genvalidering bevarer uændrede immutable acquisitions, beregner matrixbindinger igen og kræver ny READY. Timeskift er bounded af oprindelig reference og faktisk firetimersfriskhed; nye huller og stale/ændrede kildeidentiteter dækkes ikke af gammel evidens.
+- **ISSUE-WATCHDOG-REPEATED-SOURCE-GATE – LOKALT MÅLTESTET / DRIFTSBEVIS ÅBENT P0:** Watchdog er workflow_dispatch og gentog 36–40 minutters sourcegate på uændret main. Ny exact-main-proof verificeres live inklusive senere failures/reruns; cache alene kan ikke åbne gaten. Ukendt evidens giver full source, og frisk data/full/release forbliver obligatorisk.
+- **RELEASESTATUS:** #3948 stoppede i Copernicus efter DMI-ready; 3.855 af det runs 7.889 restpar manglede ved sidste shardcheckpoint. Intet terminalt fuldkompletheds-/deploybevis. Fase B, backend og kapacitetskrav er uændrede.
+
+# TIDLIGERE CHECKPOINT – 2026-09-03 – PR #249 merged; eksakt DMI-ledgertime i pilot
 
 - **ISSUE-COPERNICUS-MONOTONIC-PROGRESS – MERGED / RUNTIMEBEVIS ÅBENT P0:** PR #249 bestod exact-head `33743253873` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`. Den kanoniske tofil-cache, serielle vejrproduktionskø og per-shard-journal med nul-resultatforsøg er nu på `main`. Frisk terminal 673 × 118 og Feggesund 3 × 118 er fortsat åbne.
 - **ISSUE-COPERNICUS-PILOT-DMI-LEDGER-START-MISMATCH – LØST LOKALT / EXACT-HEAD ÅBEN P0:** Scheduled pilot `33766716934` gendannede en gyldig DMI-cache, men byggede gapmatrixen mod en ny implicit time og stoppede med `DMI current operational ledger start mismatch`. Piloten validerer nu den gendannede ledger og bruger dens eksakte `productionReferenceAt`; kun en ready ledger må skabe targetregistry, mens de to dokumenterede bounded continuation-fejl springes neutralt over.

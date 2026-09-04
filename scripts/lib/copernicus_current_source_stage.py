@@ -31,12 +31,12 @@ from .copernicus_current import (
 from .copernicus_target_identity import target_fingerprint
 
 
-SOURCE_STAGE_SCHEMA_VERSION = 2
+SOURCE_STAGE_SCHEMA_VERSION = 3
 SOURCE_STAGE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_SOURCE_STAGE"
-SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v2"
+SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v3"
 SOURCE_STAGE_STATUS = "READY"
-SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 1
-SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v1"
+SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 2
+SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v2"
 SOURCE_STAGE_PROGRESS_STATUS = "IN_PROGRESS"
 SOURCE_ORDER_SELECTED_SOURCE = "copernicus-nws-amm15"
 SOURCE_ORDER_PREREQUISITE_SOURCE = "copernicus-baltic-nemo"
@@ -258,16 +258,25 @@ def _validate_attempt(
     contract = _product_contract(product)
     if attempt.get("status") != "COMPLETE" or any(attempt.get(key) != value for key, value in contract.items()):
         raise CopernicusSourceStageError("Copernicus source attempt contract is not pinned")
-    if utc_iso(_time(attempt.get("productionReferenceAt"), "Attempt reference", exact_hour=True)) != utc_iso(reference):
+    original_reference = _time(attempt.get("productionReferenceAt"), "Attempt reference", exact_hour=True)
+    if not 0 <= (reference - original_reference).total_seconds() <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
         raise CopernicusSourceStageError("Copernicus source attempt reference mismatch")
     acquisition_at = _time(attempt.get("acquisitionAt"), "Attempt acquisition time")
-    if abs((acquisition_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
+    if any(abs((acquisition_at - at).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
+           for at in (reference, original_reference)):
         raise CopernicusSourceStageError("Copernicus source attempt is stale")
     pairs = _canonical_pairs(attempt.get("requestedPairs"), "Attempt requested pairs")
     if not pairs:
         raise CopernicusSourceStageError("Copernicus source attempt is empty")
     pair_set = {(row["partId"], row["validTime"]) for row in pairs}
-    if not pair_set.issubset(required_set):
+    # Preserve the immutable original request; only its intersection with the
+    # newly verified DMI gap matrix counts in this snapshot. New pairs are not
+    # covered by an old attempt, and actual acquisition times are never renewed.
+    if not pair_set.intersection(required_set) or any(
+        not 0 <= (_time(row["validTime"], "Attempt valid time", exact_hour=True)
+                  - original_reference).total_seconds() <= 117 * 3600
+        for row in pairs
+    ):
         raise CopernicusSourceStageError("Copernicus source attempt lies outside the DMI-gap matrix")
     if (
         attempt.get("requestedPairCount") != len(pairs)
@@ -328,12 +337,14 @@ def _derive_products(
     attempts: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
+    required_set = {(row["partId"], row["validTime"]) for row in required_pairs}
     for product in PINNED_PRODUCTS:
         eligible_ids = {str(row["partId"]) for row in targets if eligible_target(row, product)}
         domain_pairs = [row for row in required_pairs if row["partId"] in eligible_ids]
         source_attempts = [row for row in attempts if row["source"] == product["source"]]
         attempted_pairs = sorted(
-            [pair for attempt in source_attempts for pair in attempt["requestedPairs"]],
+            [pair for attempt in source_attempts for pair in attempt["requestedPairs"]
+             if (pair["partId"], pair["validTime"]) in required_set],
             key=lambda row: (row["validTime"], row["partId"]),
         )
         if len({(row["partId"], row["validTime"]) for row in attempted_pairs}) != len(attempted_pairs):
@@ -583,7 +594,8 @@ def validate_source_stage_progress(
     )
     for part_id, valid_time in attempted_by_source[SOURCE_ORDER_SELECTED_SOURCE]:
         if (
-            eligible_target(target_by_id[part_id], baltic)
+            (part_id, valid_time) in required_set
+            and eligible_target(target_by_id[part_id], baltic)
             and (part_id, valid_time)
                 not in attempted_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE]
         ):
@@ -616,8 +628,20 @@ def validate_reusable_source_stage(
     shadow: dict[str, Any],
     target_identities: dict[str, dict[str, Any]],
     shadow_sha256: str,
+    allow_rebase: bool = False,
 ) -> dict[str, Any]:
     """Validate either terminal READY evidence or resumable IN_PROGRESS evidence."""
+    if allow_rebase:
+        try:
+            return validate_reusable_source_stage(
+                document, registry=registry, shadow=shadow,
+                target_identities=target_identities, shadow_sha256=shadow_sha256,
+            )
+        except (KeyError, TypeError, ValueError, RuntimeError):
+            return rebase_source_stage_progress(
+                document, registry=registry, shadow=shadow,
+                target_identities=target_identities, shadow_sha256=shadow_sha256,
+            )
     status = document.get("status") if isinstance(document, dict) else None
     if status == SOURCE_STAGE_STATUS:
         return validate_source_stage(
@@ -637,6 +661,84 @@ def validate_reusable_source_stage(
         )
     raise CopernicusSourceStageError(
         "Copernicus source-stage status is neither READY nor IN_PROGRESS"
+    )
+
+
+def rebase_source_stage_progress(
+    document: Any,
+    *,
+    registry: dict[str, Any],
+    shadow: dict[str, Any],
+    target_identities: dict[str, dict[str, Any]],
+    shadow_sha256: str,
+) -> dict[str, Any]:
+    """Revalidate completed acquisitions, never carry an old READY seal forward.
+
+    Legacy v2/v1 journals are admitted by their original envelope and immutable
+    attempt/acquisition identities. Old matrix counts are not release evidence.
+    Every current count and hash is recomputed against the fresh DMI registry.
+    """
+    registry = validate_target_registry(registry)
+    if not isinstance(document, dict):
+        raise CopernicusSourceStageError("Source journal is malformed")
+    ready = document.get("status") == SOURCE_STAGE_STATUS
+    fields = SOURCE_STAGE_FIELDS if ready else SOURCE_STAGE_PROGRESS_FIELDS
+    stage = _exact_dict(document, fields, "Original source journal")
+    supported = (
+        {(2, "copernicus-current-source-stage-ready-v2"),
+         (SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID)} if ready else
+        {(1, "copernicus-current-source-stage-in-progress-v1"),
+         (SOURCE_STAGE_PROGRESS_SCHEMA_VERSION, SOURCE_STAGE_PROGRESS_CONTRACT_ID)}
+    )
+    if ((stage.get("schemaVersion"), stage.get("contractId")) not in supported
+        or stage.get("status") not in (SOURCE_STAGE_STATUS, SOURCE_STAGE_PROGRESS_STATUS)
+        or stage.get("kind") != SOURCE_STAGE_KIND
+        or stage.get("sourceStageId") != _source_stage_id(stage)
+        or stage.get("shadowSha256") != shadow_sha256
+        or not valid_sha256(shadow_sha256)
+        or not valid_sha256(stage.get("dmiCurrentInputSha256"))
+        or stage.get("targetRegistrySha256") != registry["targetRegistrySha256"]
+        or stage.get("dmiVerifierContractId") != registry["dmiVerifierContractId"]
+        or any(stage.get(key) is not False for key in (
+            "scoreImpact", "publicRuntime", "coordinatesIncluded", "rawVectorsIncluded"))):
+        raise CopernicusSourceStageError("Original source journal integrity/binding mismatch")
+    _assert_no_vector_or_coordinate_fields(stage)
+    original_reference = _time(stage["productionReferenceAt"], "Original journal reference", exact_hour=True)
+    reference = _time(registry["productionReferenceAt"], "New journal reference", exact_hour=True)
+    if not 0 <= (reference - original_reference).total_seconds() <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
+        raise CopernicusSourceStageError("Original source journal is outside the reuse window")
+    targets = sorted(target_identities.values(), key=lambda row: (row["parentZoneId"], row["partId"]))
+    raw_attempts = stage.get("attempts")
+    if not isinstance(raw_attempts, list) or stage.get("attemptsSha256") != canonical_sha256(raw_attempts):
+        raise CopernicusSourceStageError("Original journal attempt hash mismatch")
+    original_pairs = {
+        (pair["partId"], pair["validTime"])
+        for attempt in raw_attempts for pair in attempt["requestedPairs"]
+    }
+    # First verify every original attempt; corruption is not silently filtered.
+    attempts = _validate_attempts(raw_attempts, reference=original_reference,
+                                  required_set=original_pairs, targets=targets)
+    current_pairs = {(row["partId"], row["validTime"])
+                     for row in registry["operationalRequiredPairs"]}
+    retained = [attempt for attempt in attempts if
+        any((pair["partId"], pair["validTime"]) in current_pairs for pair in attempt["requestedPairs"])
+        and 0 <= (reference - _time(attempt["productionReferenceAt"], "Attempt reference")).total_seconds()
+            <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
+        and abs((reference - _time(attempt["acquisitionAt"], "Actual acquisition")).total_seconds())
+            <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600]
+    # An AMM15 attempt may not survive the expiry of its Baltic prerequisite.
+    baltic = next(row for row in PINNED_PRODUCTS if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE)
+    baltic_pairs = {(pair["partId"], pair["validTime"]) for attempt in retained
+                    if attempt["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+                    for pair in attempt["requestedPairs"]}
+    retained = [attempt for attempt in retained if attempt["source"] != SOURCE_ORDER_SELECTED_SOURCE
+        or all((pair["partId"], pair["validTime"]) not in current_pairs
+               or not eligible_target(target_identities[pair["partId"]], baltic)
+               or (pair["partId"], pair["validTime"]) in baltic_pairs for pair in attempt["requestedPairs"])]
+    return build_source_stage_progress(
+        registry=registry, shadow=shadow, target_identities=target_identities,
+        shadow_sha256=shadow_sha256, attempts=retained,
+        updated_at=_time(stage["sealedAt" if ready else "updatedAt"], "Original evidence time"),
     )
 
 

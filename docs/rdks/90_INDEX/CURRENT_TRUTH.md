@@ -1,4 +1,12 @@
-# NYESTE SANDHED – 2026-09-03 – vejrprogression på main og lokal public-closure
+# NYESTE SANDHED – 2026-09-04 – fortsættelse uden gentaget kildearbejde
+
+- Main er fortsat `a331e0db`; PR #250 på `13e082a6` har grøn exact-head `33779352790`. Nye lokale driftsrettelser er endnu ikke CI-/produktionsbevist og kan ikke arve dette grønne resultat.
+- Konkret rodårsag: ny hel-DMI-filhash kasserede Copernicus' journal selv ved identiske huller. v3 READY/v2 IN_PROGRESS genvaliderer nu immutable afsluttede forsøg mod ny matrix, også ved op til fire timers referenceskift. Faktiske acquisitiontider, pinned produkter, central targetidentitet og friskhed ændres ikke. Nye/forældede huller genhentes; gammel READY omdannes kun til IN_PROGRESS, aldrig direkte til ny frigivelse.
+- Kildekontrol gentages ikke på en live-verificeret identisk main, også ved watchdog-dispatch. Senere source-failure/rerun, ukendt evidens eller manglende proof kræver kontrol. PR-exact-head og alle friske produktionsdatagates består. Se DEC-0045's tillæg.
+- Gammel fungerende baseline `8c03e25d` udvalgte tre-timers-trin langt fremme, mens operationel current nu kræver eksakte timer. #3947 målte 39 IDW-assets med samlet 536 sekunders behandling; download/øvrig overhead er ikke med i dette tal. Mere arbejde pr. snapshot retfærdiggør ikke gentagne nulstillinger eller dage uden closure.
+- #3948 / `33843883868` passerede DMI, men stoppede i Copernicus; sidste checkpoint viste 4.034 af 7.889 restpar dækket og 3.855 tilbage. Ingen ny produktion/modelaktivering er dermed bevist. Supabase/migration, fuld 673 × 118/Feggesund, kapacitet og Fase B er fortsat åbne. Ingen kunstig historik eller punktændring.
+
+# TIDLIGERE SANDHED – 2026-09-03 – vejrprogression på main og lokal public-closure
 
 - PR #249 er merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8` efter grøn exact-head `33743253873`. Den monotone Copernicus-progression er dermed på `main`; Candidate G er fortsat den eneste offentlige model.
 - Scheduled pilot `33766716934` afdækkede ét særskilt lokalt targetvalg: restored DMI-ledger og implicit pilot-time var forskellige. Den lokale 4.0.321-rettelse binder piloten til ledgerens validerede eksakte reference og springer en dokumenteret uafsluttet ledger neutralt over før acquisition.

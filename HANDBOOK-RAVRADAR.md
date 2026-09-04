@@ -2,6 +2,14 @@
 
 **Håndbogsversion:** 4.0.321
 
+## Vejrindsamlingen skal fortsætte fra det udførte arbejde – 2026-09-04
+
+En ny DMI-fil ændrer også sit tekniske filaftryk, når strømdataenes huller er de samme. Det må ikke få RavRadar til at glemme Copernicus-forsøg, som allerede er hentet og undersøgt. Den lokale driftsrettelse bevarer derfor dokumenterede forsøg med deres oprindelige tid og kilde og kontrollerer dem mod de huller, der stadig findes. Nye timer skal stadig hentes. Forældede, beskadigede eller forkert bundne forsøg kan ikke bruges. En gammel færdigmelding bliver aldrig automatisk en færdigmelding for nye data.
+
+Inddelingen af forespørgsler følger hele det centrale kystregister, så den ikke flytter sig, blot fordi nogle DMI-huller lukkes. Der flyttes ingen kyst-, land- eller vandpunkter. DMI er fortsat førstevalg; Copernicus supplerer kun verificerede rester.
+
+Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
+
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
 
 PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den eneste offentlige model. 4.0.321 ændrer ikke RavScore-formlen. Den lukker den sidste store kapacitetsrisiko i den private recoverykæde, før den integrerede model må aktiveres.
@@ -711,7 +719,7 @@ Rapporten kan ikke ændre produktionen. Gammel mod nuværende måles på de virk
 
 ## Vi tester det rigtige på det rigtige tidspunkt - 4.0.247
 
-RavRadar gentager ikke længere hele kildekodekontrollen ved hver planlagt vejropdatering, når koden på main allerede er kontrolleret. Push og manuelle produktionsbyg kontrollerer fortsat kildekoden før de dyre datatrin. En Pull Request skal desuden have en grøn kontrol på præcis den commit, der ønskes merged.
+RavRadar kontrollerer ny eller ukendt kildekode før de dyre datatrin. Den samme præcise main-commit kan derefter genbruge sit grønne kildebevis ved almindelige vejropdateringer, også fra cron, vagthund eller manuel genkørsel. GitHub skal bekræfte det faktisk gennemførte testtrin, og senere fejl eller genkørsler må ikke skjules af et gammelt cachehit. Mangler sikkert bevis, køres kontrollen igen. En Pull Request skal fortsat have en grøn kontrol på præcis den commit, der ønskes merged. Hvert nyt produktionsdatasæt skal desuden bestå sine fulde data- og releasekontroller.
 
 Det vigtigste sikkerhedsnet er uændret: Hver gang der bygges et nyt produktionsdatasæt, køres den fulde validering efter frisk DMI/Copernicus, beregninger og proveniens. Derefter skal releasegaten være grøn, før artifact, Supabase og Pages kan fortsætte. En kendt fejl eller reel usikkerhed kan aldrig tilsidesættes med henvisning til den hurtigere testplan.
 

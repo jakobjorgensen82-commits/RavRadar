@@ -2,8 +2,15 @@
   "schemaVersion": "2.0",
   "handbookVersion": "4.0.321",
   "title": "RavRadar Håndbog",
-  "updatedAt": "2026-09-03",
+  "updatedAt": "2026-09-04",
   "sections": [
+    {
+      "id": "weather-continuation-source-proof-2026-09-04",
+      "chapter": "88.18",
+      "title": "Vejrindsamlingen skal bevare det udførte arbejde",
+      "summary": "Lokal driftsrettelse: genbrug dokumenterede kildeforsøg og allerede kontrolleret kode, men kontrollér altid de friske vejrdata.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> RavRadar skal fortsætte fra det arbejde, der allerede er udført, men stadig kontrollere nye vejrdata.</div><p>En ny DMI-fil må ikke få RavRadar til at glemme afsluttede Copernicus-forsøg, blot fordi filaftrykket eller den aktuelle time ændres. Forsøg genkontrolleres med deres oprindelige indsamlingstid, kilde og kystdel. Nye huller skal hentes; forældede eller beskadigede forsøg afvises. En gammel færdigmelding giver aldrig automatisk grønt lys til nye data.</p><p>Forespørgslernes inddeling følger hele det centrale register. Kun de konkrete DMI-huller hentes; ingen kyst-, land- eller vandpunkter flyttes.</p><p>Kildekoden behøver ikke samme lange kontrol ved hver vejropdatering, når GitHub kan bevise, at præcis samme main-commit har bestået. Senere fejl og genkørsler kontrolleres særskilt. Manglende sikkert bevis udløser ny kildekontrol. Alle friske produktionsdata skal stadig bestå fuld validering og releasekontrol.</p><p>Status: måltestet lokalt, endnu ikke produktionsverificeret. DMI er fortsat førstevalg, historikhuller må ikke fjerne en ellers gyldig prognose, og den nye model aktiveres først efter sine samlede releasekrav.</p>"
+    },
     {
       "id": "ravscore-public-implementation-closure-4-0-321",
       "chapter": "88.17",
