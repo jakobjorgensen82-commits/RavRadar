@@ -51,7 +51,9 @@ const componentContract = {
     componentKind: 'atmospheric-wind-vector',
     fieldSet: ['wind-u-10m', 'wind-v-10m'],
     spatialSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
-    vectorSemanticsVersion: 1,
+    vectorSemanticsVersion: 2,
+    vectorReference: 'earth-relative-east-north',
+    vectorTransform: 'lambert-conformal-to-earth-relative',
     vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
   },
   wave: {

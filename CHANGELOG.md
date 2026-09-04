@@ -1,3 +1,19 @@
+## 4.0.321 – kildekontrol uden dubletter og rettet testregistrering (2026-09-04, lokalt)
+
+- Fælles current-closure får sikker restoptælling efter prognosetime og mangelstype, uden private id-lister/værdier eller ændret fejlstop. Præcis runtime-restfordeling afventer; fem måltests og eksisterende closure-test er grønne.
+- Outcome-testen kontrollerer sin registrering i den fælles udførelsesliste, ikke en flyttet tekstmarkør i gatefilen; øvrige krav bevares.
+- Fuld releasegate køres først i kildekontrollen; efterfølgende identiske tests gentages ikke. Alle oprindelige kontroller bevares, 33 gentagne starter undgås, og enhver fejl stopper stadig. Standalone produktionsgate er fortsat fuld.
+- Releasekontrollens gamle forventning til testkommandoen er opdateret til både metadata- og append-only-migrationskontrol. Begge udføres også i standalone gate. Plan-, fejlstop-, workflow-, bindings- og migrationsmåltests er grønne; faktisk CI-tid afventer.
+
+## 4.0.321 – HARMONIE-filformat og korrekt geografisk vind (2026-09-04, lokalt)
+
+- PR #252-opfølgning: rollbackens backendtest kontrollerer nu den gældende migration fra produktionskædens liste. Den gamle historiske fil bevares; eksisterende assertions består. Dette lukker den konkrete kildekontrolfejl uden ændring af runtime eller SQL.
+- Alle beslægtede migrations-, rollback-, installations-, release- og workflowtests er gennemgået og bestået samlet; øvrige gamle migrationsreferencer er bevidste historikkontroller.
+
+- Fælles normal/engangs-DMI-læser håndterer Lambert-formatets fire ikke-anvendelige angular keys og omregner den faktiske samme-celle vindreference korrekt. Ukendte/mismatchede referencer afvises; HARMONIE source v2 følger gennem Python/JS.
+- Kun HARMONIE får ny processing-markør; gemt DKSS/WAM/Copernicus/regional progression bevares. Scoreformel, model-id/stateversion, cron, geometri og punkter ændres ikke.
+- Begge reelle modelbundles, continuation og forbrugere er synkroniseret via append-only hashmigration `20260904140000`; gamle migrationer er urørte. Syntetisk ecCodes-, uafhængig PROJ- og kontraktmåltest er grønne. Exact-head, merge, ny stor opfyldning og produktion afventer.
+
 ## 4.0.321 – sikker tidsramme og fuld cacheoverdragelse i engangsopfyldning (2026-09-04)
 
 - Kun den manuelle, ikke-deployerende 118-timers engangsvej ændres. Samlet loft 110 → 180 minutter, eksplicit Copernicus-trinloft 47 minutter over wrapperens eksisterende 45 minutter, og mindst 60 minutters reserve ud over 55 + 47 + 17 minutters tunge trin. Normal indsamling, balance, kildeorden, score og datakrav er uændrede.

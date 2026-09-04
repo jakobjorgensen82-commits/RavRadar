@@ -107,7 +107,10 @@ for (const marker of [
   if (!pullRequestValidation.includes(marker)) throw new Error(`PR-kildegaten mangler ${marker}`);
 }
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-const sourceValidation = packageJson?.scripts?.['validate:source'] || '';
+if (packageJson?.scripts?.['validate:source'] !== 'node scripts/validate-source-once.mjs') {
+  throw new Error('validate:source skal bruge den fælles release-first testplan.');
+}
+const sourceValidation = packageJson?.scripts?.['validate:source:checks'] || '';
 const workflowActionContracts = packageJson?.scripts?.['test:workflow-action-contracts'] || '';
 if (!workflowActionContracts.includes('npm run test:dmi-marine-first-recovery')) {
   throw new Error('test:workflow-action-contracts mangler npm run test:dmi-marine-first-recovery');
@@ -886,11 +889,12 @@ for (const marker of [
   'test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the four exact integrated cutover migrations',
+  'Require only the five exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
   'test -f "$migrations_directory/20260903010000_ravscore_checkpoint_metadata_cas.sql"',
+  'test -f "$migrations_directory/20260904140000_harmonie_wind_reference_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

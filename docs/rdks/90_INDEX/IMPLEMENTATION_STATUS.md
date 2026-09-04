@@ -1,4 +1,26 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – hel engangsopfyldning med reserve
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
+
+- [ ] Efter stor opfyldning: mål almindelige kørselsprioriteter på tværs af alle vejrtyper, cachegenbrug og tid pr. led; vurder derefter tidsbudgetter/intervaller. Ny ejerpræcisering 2026-09-04; ingen forudgående blind schedulerændring.
+- [x] Klassificer de kendte CI-, vind-, native-hale-, processingbudget- og isolerede stagingfejl samlet; implementer og måltest sikker restdiagnostik uden lempet datagate. Den eksakte runtime-restfordeling er stadig åben.
+
+- [x] Ret outcome-testens reference til den fælles, faktisk udførte release-testliste efter `33892021429`; øvrige krav bevares, lignende referencer gennemgået.
+- [ ] Afklar `DMI_GAP_NOT_FALLBACK_ELIGIBLE` efter gennemført Copernicus-trin i normal `33888805489`; 1.184 restpar kan ikke alle være i otte-delspolitikken. Ingen politikudvidelse eller fuldkomplethed påstås.
+
+- [x] Ret #252's samlede releasefejl om gammel testkommando; begge metadata-/migrationstests kræves og køres.
+- [x] Implementer ejerbestilt kildekontrol uden gentagelser: fuld releasegate først, derefter alle øvrige tests. Bevis 134 bevarede oprindelige kommandoer, 33 undgåede gentagelser og blokering ved enhver fejl/manglende test.
+- [ ] Bestå ny samlet GitHub-kontrol og mål faktisk gennemløbstid før sikker merge og stor engangsopfyldning.
+
+- [x] PR #251 exact-head og merge `bd47dc9f`; engangsrun og automatisk normal overtagelse er bevist. Copernicus gemte progression; fuld opfyldning er ikke bevist.
+- [x] Reproducer Lambert-key-fejlen med rigtig ecCodes på syntetisk data; implementer samme-celle geografisk vindrotation, strict sourceadmission og HARMONIE-only cachemarkør.
+- [x] Måltest fysisk retning, uafhængig PROJ-paritet, producent/forbrugere og bevarede marine kontrakter. Regenerer begge bundles og closurebindinger.
+- [x] Tilføj ny hash-only migration `20260904140000`; bevar alle gamle migrations og før eksisterende installations-/readinesskæde frem til fem eksakte migrations. Metadata-/installationsadmission er lokalt kontrolleret.
+- [x] Luk dokumentations-/releasebindingstest, håndbogssync og transaktionel cachemåltest. RDKS/version/diff er grønne; geodata og gamle migrations er urørte.
+- [x] Ret #252-kildekontrollens oversete rollbacktest: vælg den aktuelle migration fra samme liste som produktionen. Hele rollback-trip-backend-testen og hash-only SQL-kontrollen er grønne; ingen runtimeændring.
+- [x] Gennemgå alle tests for samme historisk/current-forveksling og kør de seks relaterede suites samlet; ingen yderligere fejl fundet.
+- [ ] Bestå PR-exact-head, merge og start ny samlet main-opfyldning. Ingen lokal SQL-apply eller modelaktivering er udført.
+- [ ] Bevis fuld 210/673/118/Feggesund, normal vedligeholdelse, live Supabase-kapacitet, Fase B og offentlig model. Se den nye HARMONIE-reparationsrapport.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 2026-09-04 – hel engangsopfyldning med reserve
 
 - [x] Annulér `33866679219` før nogen jobs startede; GitHub bekræfter cancelled og total_count=0. Bevar normal indsamling `33866210163`.
 - [x] Ret kun den manuelle engangsvejs samlede tidsramme til 180 minutter, eksplicit 47-minutters Copernicus-trinloft og regional restore/save med normal drifts cachefamilie.

@@ -40,7 +40,11 @@ const native = (component, collection, step, modelRun = generatedAt, overrides =
         : 'nearest-shared-grid-cell-no-spatial-interpolation',
     spatialSemanticsVersion: 1,
     ...(['wind', 'windTail'].includes(component) ? {
-      vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation', vectorSemanticsVersion: 1
+      vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
+      vectorSemanticsVersion: component === 'wind' ? 2 : 1,
+      ...(component === 'wind' ? {
+        vectorReference: 'earth-relative-east-north', vectorTransform: 'lambert-conformal-to-earth-relative'
+      } : {})
     } : {}),
     itemId: `item-${component}-${step}`, assetIdentitySha256: 'b'.repeat(64), acquiredAt: generatedAt,
     ...(component === 'current' ? {
@@ -50,6 +54,18 @@ const native = (component, collection, step, modelRun = generatedAt, overrides =
     ...overrides
   }
 });
+{
+  const windSource = native('wind', 'harmonie_dini_sf', generatedAt).wind;
+  assert.equal(verifiedDmiNativeSource(windSource, 'wind', generatedAt), windSource);
+  for (const delta of [
+    { vectorSemanticsVersion: 1 }, { vectorReference: undefined },
+    { vectorReference: 'grid-relative' }, { vectorTransform: 'unknown' },
+  ]) {
+    assert.equal(verifiedDmiNativeSource({ ...windSource, ...delta }, 'wind', generatedAt), null);
+  }
+  const tail = native('windTail', 'dkss_idw', generatedAt).windTail;
+  assert.equal(verifiedDmiNativeSource(tail, 'windTail', generatedAt), tail);
+}
 {
   const exact = native('current', 'dkss_idw', generatedAt).current;
   assert.equal(verifiedDmiNativeSource(exact, 'current', generatedAt), exact);

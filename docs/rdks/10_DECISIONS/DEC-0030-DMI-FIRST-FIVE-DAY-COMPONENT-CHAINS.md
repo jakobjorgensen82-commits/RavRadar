@@ -1,5 +1,9 @@
 # DEC-0030 – DMI-first femdøgnskæder pr. komponent
 
+## Teknisk præcisering 2026-09-04 – HARMONIE-retning
+
+DMI's native HARMONIE-vind skal omregnes fra den faktisk deklarerede GRIB-reference til geografisk øst/nord før fart/FROM-retning og scoring. Samme fælles celle bevares; intet land-/vandpunkt flyttes. Primærkildens reference attesteres og valideres af begge runtime-læsere. DKSS-vindhalen og ekstern sidste fallback ændres ikke. Den lokale rettelse bruger HARMONIE-only processing-markør og har endnu ikke nyt produktionsbevis; se `docs/research/HARMONIE_WIND_REFERENCE_REPAIR_2026-09-04.md`.
+
 **Status:** AKTIV / vindkæde implementeret lokalt, afventer produktionsbevis
 **Dato:** 2026-08-08
 

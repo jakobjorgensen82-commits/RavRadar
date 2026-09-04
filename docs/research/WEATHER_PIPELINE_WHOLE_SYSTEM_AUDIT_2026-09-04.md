@@ -1,5 +1,9 @@
 # Helhedsrevision af vejropbygningen – 2026-09-04
 
+## Nyeste opfølgning: reproduceret vindfejl, 2026-09-04
+
+Den historiske analyse nedenfor er siden fulgt af PR #251's mergede engangssikkerhed og den lokale fælles HARMONIE-vindrettelse. Se `HARMONIE_WIND_REFERENCE_REPAIR_2026-09-04.md` for reproduceret ecCodes-rodårsag, geografisk vindreference, afgrænset cachegenbehandling, forbrugere og append-only binding. Normal efterfølger `33871347088` genbrugte faktisk alle fire cachefamilier fra engangsrun `33871205875` og gemte ny fremgang ved samme kontrollerede Copernicus-budgetstop. Dette er ikke fuldt vejrbevis. Den tidligere formulering om ingen runtimeændring beskriver selve den oprindelige analyse, ikke den efterfølgende lokale rettelse.
+
 Status: skrivefri drifts-/kodeanalyse og én syntetisk prioriteringsprøve; ingen runtimeændring, dispatch, cancellation, databaseoperation, cache-/punktændring eller ny release. Denne analyse supplerer og præciserer `WEATHER_PIPELINE_ROOT_CAUSE_2026-09-04.md`.
 
 ## Ejerens korrektion og konklusion

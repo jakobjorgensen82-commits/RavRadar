@@ -137,7 +137,11 @@ try {
     acquiredAt: modelRun,
     ...(['wind', 'windTail'].includes(component) ? {
       vectorSelection: 'nearest-shared-grid-cell-no-spatial-interpolation',
-      vectorSemanticsVersion: 1,
+      vectorSemanticsVersion: component === 'wind' ? 2 : 1,
+      ...(component === 'wind' ? {
+        vectorReference: 'earth-relative-east-north',
+        vectorTransform: 'lambert-conformal-to-earth-relative',
+      } : {}),
     } : {}),
     ...(component === 'current' ? {
       verticalLayer: 'depthBelowSea:1',

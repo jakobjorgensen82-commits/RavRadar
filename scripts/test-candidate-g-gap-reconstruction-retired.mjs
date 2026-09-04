@@ -72,7 +72,8 @@ assert.equal(pkg.scripts['test:candidate-g-gap-reconstruction'], undefined);
 assert.equal(pkg.scripts['test:candidate-g-gap-workflow'], undefined);
 assert.equal(pkg.scripts['test:candidate-g-gap-contract'], undefined);
 assert.match(pkg.scripts['test:workflow-action-contracts'] ?? '', /test:candidate-g-gap-retirement/);
-assert.match(pkg.scripts['validate:source'] ?? '', /test:workflow-action-contracts/);
+assert.equal(pkg.scripts['validate:source'], 'node scripts/validate-source-once.mjs');
+assert.match(pkg.scripts['validate:source:checks'] ?? '', /test:workflow-action-contracts/);
 assert.match(releaseGate, /test:candidate-g-gap-retirement/);
 
 // Historical read/quality compatibility remains intentionally available. It

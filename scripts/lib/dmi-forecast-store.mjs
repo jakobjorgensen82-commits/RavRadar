@@ -205,8 +205,12 @@ export function verifiedDmiNativeSource(source, component, nativeTime) {
     && typeof source.verticalLayerRankM === 'number' && Number.isFinite(source.verticalLayerRankM)
   )) return null;
   if (['wind', 'windTail'].includes(component) && !(
-    source.vectorSemanticsVersion === 1
+    source.vectorSemanticsVersion === (component === 'wind' ? 2 : 1)
     && source.vectorSelection === 'nearest-shared-grid-cell-no-spatial-interpolation'
+    && (component !== 'wind' || (
+      source.vectorReference === 'earth-relative-east-north'
+      && ['identity-earth-relative', 'lambert-conformal-to-earth-relative'].includes(source.vectorTransform)
+    ))
   )) return null;
   if (component === 'wave' && source.optionalFieldSet.some(value => value !== 'mean-wave-dir')) return null;
   return source;
@@ -236,6 +240,10 @@ function sameNativeIdentity(before, after, component) {
     && before.spatialSemanticsVersion === after.spatialSemanticsVersion
     && before.vectorSelection === after.vectorSelection
     && before.vectorSemanticsVersion === after.vectorSemanticsVersion
+    && (component !== 'wind' || (
+      before.vectorReference === after.vectorReference
+      && before.vectorTransform === after.vectorTransform
+    ))
     && exactStringArray(before.fieldSet, COMPONENT_FIELD_SET[component])
     && exactStringArray(after.fieldSet, COMPONENT_FIELD_SET[component])
     && samePoint(before.gridPoint, after.gridPoint)

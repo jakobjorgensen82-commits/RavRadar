@@ -1,5 +1,11 @@
 # Aktive krav – samlet register
 
+## HARMONIE-vind og fælles indsamling – 2026-09-04
+
+- **REQ-HARMONIE-GEOGRAPHIC-WIND-REFERENCE-001 – BINDENDE / LOKALT IMPLEMENTERET:** DMI-vind skal have geografisk retning efter verificeret samme-celle GRIB-reference. Lambert-non-applicable keys er ikke manglende vejr; nødvendige metadata må ikke defaultes. Ukendt eller uens vektorreference afvises. Primær HARMONIE v2 og marine vindhale v1 holdes adskilt; kun HARMONIE-processing må invalidere for denne rettelse.
+- **REQ-WEATHER-SHARED-ONE-OFF-NORMAL-REPAIR-001 – BINDENDE:** Rettelsen skal bruges af både stor main-engangsopfyldning og normal cron/watchdog-drift. Gemte marine-/Copernicus-data og kildeorden bevares. Efter exact-head og sikker merge bestilles ny samlet opfyldning; kun fuld 210/673/118-kontrol er færdigbevis. Ingen kunstig historik, geometri- eller punktændring.
+- **REQ-HARMONIE-BINDING-FORWARD-001 – BINDENDE:** Ændrede faktiske model-/rollback-/continuation-hashes føres til alle forbrugere med append-only migration `20260904140000`. De gamle migrations omskrives ikke. Ny migration må kun fremføre eksakte bindinger/readbackversion, ikke rækker, scoreformel eller bredere stateadmission.
+
 ## 4.0.321 – beskyttet RavScore-checkpoint uden normal fuld-payload roundtrip (2026-09-03)
 
 - **REQ-RAVSCORE-CHECKPOINT-METADATA-CAS-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / BACKEND- OG RELEASEBEVIS ÅBENT:** Normal checkpointpublicering skal bruge en service-role-only, monoton compare-and-swap og må kun returnere bounded metadata på højst 4 KiB. Den kanonisk serialiserede checkpointpayload må højst være 16 MiB og må kun læses ved reel restore/cache-miss, ikke som normal post-write-verifikation; HTTP-wrapperen kan være lidt større. Samme payloadretry efter tabt svar skal være idempotent; samme target med andet indhold, stale version eller targetregression skal stoppe. Eneste same-target-undtagelse er exact 4.0.320-hash `082a5187…` fra sourcehead `7198b685…` til current `35c45f8f…`, hvor kun continuation-hash og top-/companion-generation ændres, og resten er identisk.

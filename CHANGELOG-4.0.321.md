@@ -5,6 +5,19 @@
 
 ## Ændret
 
+- 2026-09-04: fælles current-closure bevarer fejlstop og giver en payloadfri restoptælling efter prognosetime, DMI-mangelstype, regionalt scope og Feggesund. Diagnostikken kan ikke udstede READY eller ændre data. Syntetiske måltests og eksisterende closure-test består; aktuel restfordeling måles i næste runtime.
+
+- 2026-09-04: outcome-testens statiske registreringskrav følger nu den fælles release-testliste. Ingen runtime-, hash- eller vejrændring; øvrige assertions består.
+
+- 2026-09-04: kildekontrollen kører fuld releasegate først og undgår 33 identiske gentagelser bagefter. Alle 134 oprindelige kildekommandoer er bevaret i deklarationen; plan-/fejlstopstest tilføjet. Den konkrete gamle releasekommando-kontrol er rettet, så både metadata og migrationsfremføring kræves. Ny CI-tid og samlet bestået kørsel afventer.
+
+### HARMONIE-reference 2026-09-04 – lokalt, ny runtime afventer
+
+- #252-kontrollens oversete backendtest er ført fra historisk migration til produktionskædens seneste kontrakt; hele testen består lokalt. Ingen ændring af vejrkode, modelbinding eller SQL i denne testopfølgning.
+
+- Lambert-formatfejlen og manglende geografisk vindomregning er rettet samlet i fælles producent. HARMONIE-only cachemarkør bevarer marinearbejdet; primær kilde v2 og DKSS-vindhale v1 valideres separat.
+- Reelle model-/rollback-/continuation-bindinger føres frem med ny migration `20260904140000`; alle gamle migrations bevares. Den nye SQL-krop er måltestet til kun at ændre eksakte bindinger/readbackversion. Se HARMONIE-rapporten for fulde hashes og beviser. Ingen ny produktion, modelaktivering eller 210/673/118-bevis endnu.
+
 ### Driftslukning 2026-09-04 – lokal, afventer ny exact-head og produktion
 
 - Friske DMI-snapshots må ikke kassere dokumenterede Copernicus-forsøg alene på filhash eller et bounded referenceskift. Originale acquisitiontider og identiteter bevares, aktuelle par tælles igen, og frigivelse kræver ny streng READY.

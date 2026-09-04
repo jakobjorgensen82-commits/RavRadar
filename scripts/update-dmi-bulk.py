@@ -23,6 +23,7 @@ from typing import Any
 from urllib.parse import urljoin, urlparse
 
 from lib.dmi_grid_vector import select_common_vector_candidate, same_grid_point, water_source_parameter_allowed, water_temperature_surface_layer, vector_vertical_layer, vector_choice, prefer_vector_choice
+from lib.dmi_wind_reference import WIND_VECTOR_VERSION, read_wind_reference, earth_relative_wind_pair
 from lib.current_field_shadow import (
     REGIONAL_PROXY_REQUIRED_COLLECTION,
     build_regional_proxy_targets,
@@ -2017,6 +2018,11 @@ GRID_DEFINITION_KEYS = (
     "iDirectionIncrementInDegrees", "jDirectionIncrementInDegrees",
 )
 
+# GRIB2 template 3.30 is a projected metre grid, not an angular lat/lon grid.
+# The legacy public digest stays stable; md5GridSection binds the full internal
+# projection/scan-order identity. Only these known non-applicable keys are null.
+LAMBERT_ABSENT_ANGULAR_KEYS = frozenset(GRID_DEFINITION_KEYS[-4:])
+
 
 def grid_cache_signature(gid: int) -> tuple[Any, ...]:
     """Read one order-sensitive cache identity without changing public hashes."""
@@ -2026,6 +2032,9 @@ def grid_cache_signature(gid: int) -> tuple[Any, ...]:
     )
     values: list[Any] = []
     for key in keys:
+        if len(values) >= 2 and values[1] == "lambert" and key in LAMBERT_ABSENT_ANGULAR_KEYS:
+            values.append(None)
+            continue
         try:
             values.append(codes_get(gid, key))
         except Exception as exc:
@@ -2905,11 +2914,23 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     candidates = valid_candidates_batch(gid, collection, wanted)
                     diagnostics["batchedGridReads"] = int(diagnostics.get("batchedGridReads") or 0) + 1
                     family, first_key, second_key = VECTOR_PAIRS[parameter]
+                    wind_reference = None
+                    if family == "wind":
+                        try:
+                            wind_reference = read_wind_reference(gid, codes_get)
+                        except Exception as exc:
+                            raise DmiGridLookupError(
+                                "DMI wind reference could not be verified",
+                                "WIND_REFERENCE_READ_FAILED",
+                            ) from exc
                     layer_key, layer_rank = vector_vertical_layer(family, safe_get(gid, "typeOfLevel"), safe_get(gid, "level"))
                     for zone in wanted:
                         zone_candidates = candidates.get(zone["id"]) or []
                         cache = vector_candidates.setdefault((family, zone["id"], layer_key), {})
-                        cache[parameter] = zone_candidates
+                        cache[parameter] = [
+                            {**candidate, "_windReference": wind_reference}
+                            for candidate in zone_candidates
+                        ] if family == "wind" else zone_candidates
                         if first_key not in cache or second_key not in cache:
                             continue
                         grid_tuple = select_common_grid_tuple(cache, (first_key, second_key))
@@ -2927,6 +2948,14 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                     search["rejectedReason"] = "NO_SHARED_UV_GRID_POINT"
                             continue
                         first, second = grid_tuple[first_key], grid_tuple[second_key]
+                        if family == "wind":
+                            try:
+                                first, second = earth_relative_wind_pair(first, second)
+                            except ValueError as exc:
+                                raise DmiGridLookupError(
+                                    "DMI wind components do not share a verified reference",
+                                    "WIND_REFERENCE_PAIR_INVALID",
+                                ) from exc
                         selection_key = (family, zone["id"])
                         candidate_choice = vector_choice(first, second, layer_key, layer_rank)
                         if family == "current" and zone.get("researchCurrent"):
@@ -3009,7 +3038,7 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                         for key, candidate in ((first_key, first), (second_key, second)):
                             hour[key] = candidate["value"]
                             point["gridPoints"][key] = {
-                                **grid_point_metadata(candidate, ("value", "index")),
+                                **grid_point_metadata(candidate, ("value", "index", "_windReference")),
                                 "verticalLayer": layer_key,
                                 "verticalLayerRankM": round(layer_rank, 3),
                             }
@@ -3018,6 +3047,12 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                             "vectorSelection": "nearest-shared-grid-cell-no-spatial-interpolation",
                             "vectorSemanticsVersion": 1,
                         }
+                        if family == "wind":
+                            source_extra.update({
+                                "vectorSemanticsVersion": WIND_VECTOR_VERSION,
+                                "vectorReference": "earth-relative-east-north",
+                                "vectorTransform": first["_windReference"][0],
+                            })
                         if family == "current":
                             source_extra = {
                                 "verticalLayer": layer_key,
@@ -6253,6 +6288,8 @@ def main() -> int:
                 f"|eccodes-binding:{ECCODES_BINDING_VERSION}"
                 f"|zones:{zone_registry_signature}"
             )
+            if collection == "harmonie_dini_sf":
+                processing_signature += f"|wind-reference:{WIND_VECTOR_VERSION}"
             required_asset_provenance = {
                 str(identity["validTime"]): identity
                 for asset in assets
