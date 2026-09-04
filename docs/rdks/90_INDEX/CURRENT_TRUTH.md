@@ -1,4 +1,21 @@
-# NYESTE SANDHED – 2026-09-04 – fortsættelse uden gentaget kildearbejde
+# NYESTE SANDHED – 2026-09-04 – sikker samlet opfyldning før balanceændring
+
+- Ejeren kræver hele vejrdatakæden opfyldt først og målt normal vedligeholdelse bagefter. Balance ændres kun ved dokumenteret behov. Engangsrun `33866679219` på main `61575559` er annulleret før jobstart; nul jobs betyder intet tabt dataarbejde.
+- Kun engangsworkflowet er rettet lokalt: samlet loft 180 minutter, heavy-step-lofter 55/47/17 og mindst 60 minutters øvrig reserve. DMI-/Copernicus-workbudgets og fulde slutgates er uændrede. Den regionale sidecache får normal drifts restore/save-familie; eksisterende DMI/Copernicus-cacher gemmes fortsat før senere gates.
+- Workflowmåltest er grøn; exact-head, merge og ny main-opfyldning afventer. Ingen kodeændring i normal produktion, balance, model, geometri eller punkter. Ingen garanti om komplet data eller færdigklokkeslæt før frisk 210/673/118-evidens.
+
+# TIDLIGERE SANDHED – 2026-09-04 – gennemløb måles, samlet ETA er ikke dokumenteret
+
+- Ejerens korrektion: omfordeling alene forklarer ikke samlet langsomhed, og gammel opstart fra nul var hurtig. Schedulerfundet er et delproblem, ikke tilstrækkeligt løsningsbevis. Før/efter med reelt download viser omkring 13 minutters DMI-arbejde også før modellen; ny native-hour-kontrakt har mere arbejde end gammel kontrolleret tidsinterpolation. Det præcise oprindelige cold-start-run er endnu ikke fundet.
+- `33863878600` på `61575559` sluttede rødt 10:51:59Z: current 59.053/79.414; 57 lokalt ubehandlede tilgængelige DKSS-filer. De svarer betinget til ca. 10 minutters aktivt looparbejde, ikke til komplet vejr/aktivering. 246 færdige assets blev bevaret; ingen overlap i normal processing på de fire nye 06Z-jobs. Hele vejr-/fallbackkædens resttid er endnu ikke målt. Tidligere 1–2-timers samlet estimat var ikke underbygget.
+- Ingen runtimeændring eller ekstra kørsel i analysen. Den nye præcisering i `docs/research/WEATHER_PIPELINE_WHOLE_SYSTEM_AUDIT_2026-09-04.md` har forrang for den foreløbige schedulerrettevej. Bevar PR #250, modellen og alle dataintegritetskrav.
+
+# TIDLIGERE SANDHED – 2026-09-04 – hele vejrsættet udsultes under strømgenopbygning
+
+- PR #250 er merged som `61575559`; kildegenbrug er live-bevist i `33857274983`, men Copernicus-genbrug/fuld modelaktivering er ikke bevist. Samme run gav dokumenterede budgetstop for DKSS, WAM og HARMONIE. Primær vind har 0/210 brugbar horisont; en særskilt DMI-vindreserve findes stadig. Bølgehøjde har 671/673 med mindst 96 timer, men ikke fuld 118-timers tuple. Currentfremgang er ikke et komplet vejrbevis.
+- Helhedsrevisionen har påvist, at fuld exact-target current-readiness også styrer indsamlingens prioritet og skubber alle DKSS foran vind/bølger, mens den gamle korte arbejdsramme består. Den afgrænsede rettevej er all-family-fremgang og eksisterende samlet dataopbygning med uændrede slutgates. Se `docs/research/WEATHER_PIPELINE_WHOLE_SYSTEM_AUDIT_2026-09-04.md`; runtime er endnu ikke ændret for dette fund.
+
+# TIDLIGERE SANDHED – 2026-09-04 – fortsættelse uden gentaget kildearbejde
 
 - Main er fortsat `a331e0db`; PR #250 på `13e082a6` har grøn exact-head `33779352790`. Nye lokale driftsrettelser er endnu ikke CI-/produktionsbevist og kan ikke arve dette grønne resultat.
 - Konkret rodårsag: ny hel-DMI-filhash kasserede Copernicus' journal selv ved identiske huller. v3 READY/v2 IN_PROGRESS genvaliderer nu immutable afsluttede forsøg mod ny matrix, også ved op til fire timers referenceskift. Faktiske acquisitiontider, pinned produkter, central targetidentitet og friskhed ændres ikke. Nye/forældede huller genhentes; gammel READY omdannes kun til IN_PROGRESS, aldrig direkte til ny frigivelse.

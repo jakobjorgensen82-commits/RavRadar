@@ -2,6 +2,14 @@
 
 **Håndbogsversion:** 4.0.321
 
+## Samlet engangsopfyldning med plads til at gemme – 2026-09-04
+
+Engangskørslen skal opbygge hele prognosegrundlaget: DMI-vind, bølger, strøm, vandstand og temperatur, derefter Copernicus på dokumenterede huller og den tilladte regionale Limfjordsfallback. Den bruger og gemmer de samme private cachefamilier som den normale drift. De to DMI-cacher og det regionale grundlag gemmes før DMI-slutkontrollen; Copernicus-data og journal gemmes før den samlede vejrbygning og slutkontrol. Den regionale cache var tidligere ikke koblet til restore/save i engangsvejen; dette er nu rettet lokalt.
+
+Det samlede jobloft er hævet fra 110 til 180 minutter. De tunge trin har uændret DMI-arbejdsbudget på 50 minutter under et 55-minutters trinloft, Copernicus-arbejdsbudget på 45 minutter under et 47-minutters trinloft og højst 17 minutter til vejrbygning. Summen er 119 minutter, så mindst 60 minutter er reserveret til øvrig opstart, cachegemning og afslutning. Det er en sikkerhedsramme, ikke et løfte om tre timers køretid eller garanti mod en fejl hos en ekstern udbyder.
+
+Der køres ingen lang kildegate i selve engangsopfyldningen, og den publicerer ikke den nye model. Kodeændringen skal fortsat bestå sin egen PR-kontrol. Ny opfyldning startes på main, så den normale main-drift kan genbruge resultatet. Efter komplet 210/673/118-bevis måles normal vedligeholdelse; balanceringen ændres kun, hvis målingen viser et behov. Der opfindes ingen manglende data, og geometri samt land-/vandpunkter ændres ikke. Status: lokal workflowmåltest bestået; exact-head, merge og frisk engangsresultat afventer.
+
 ## Vejrindsamlingen skal fortsætte fra det udførte arbejde – 2026-09-04
 
 En ny DMI-fil ændrer også sit tekniske filaftryk, når strømdataenes huller er de samme. Det må ikke få RavRadar til at glemme Copernicus-forsøg, som allerede er hentet og undersøgt. Den lokale driftsrettelse bevarer derfor dokumenterede forsøg med deres oprindelige tid og kilde og kontrollerer dem mod de huller, der stadig findes. Nye timer skal stadig hentes. Forældede, beskadigede eller forkert bundne forsøg kan ikke bruges. En gammel færdigmelding bliver aldrig automatisk en færdigmelding for nye data.

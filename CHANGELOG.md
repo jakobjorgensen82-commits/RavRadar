@@ -1,3 +1,10 @@
+## 4.0.321 – sikker tidsramme og fuld cacheoverdragelse i engangsopfyldning (2026-09-04)
+
+- Kun den manuelle, ikke-deployerende 118-timers engangsvej ændres. Samlet loft 110 → 180 minutter, eksplicit Copernicus-trinloft 47 minutter over wrapperens eksisterende 45 minutter, og mindst 60 minutters reserve ud over 55 + 47 + 17 minutters tunge trin. Normal indsamling, balance, kildeorden, score og datakrav er uændrede.
+- Den regionale DMI-sidecache får samme restore/save-familie som normal drift. DMI-råfiler, behandlede DMI-data og regionalt grundlag gemmes før terminalkontrol; Copernicus' eksisterende tofil-progression gemmes fortsat før samlet closure og vejrbygning.
+- Den målrettede workflowtest kontrollerer både budgetregnestykket, soft/hard-reserve, den regionale cachebinding og hele gemme-/kontrolrækkefølgen. Markdown-/webhåndbog og RDKS opdateres. Ingen model-/state-/geometri-/punktændring eller kildegate i engangsjobbet.
+- Ejerens første engangsrun `33866679219` blev annulleret, mens det stod i kø: GitHub bekræfter cancelled og nul jobs, derfor intet dataarbejde tabt. Ny start sker først på rettet main. Lokal kontrol er ikke et nyt data-/releasebevis; fuld opfyldning og derefter målt vedligeholdelse afventer.
+
 ## 4.0.321-kandidat – PR #249 merged og pilotens tidsbinding lukket lokalt (2026-09-03)
 
 - PR #249 bestod exact-head-kildegaten `33743253873` på `5879f5fdd71a1db5a2895b4ac3acadeafb2865e8` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`. Dermed ligger den monotone, genoptagelige Copernicus-restopfyldning nu på `main`; Candidate G er fortsat offentlig.

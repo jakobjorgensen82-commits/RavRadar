@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-03 – PR #249 merged; næste samlede releasehead
+# NYESTE EJERDELTA – 2026-09-04 – hel engangsopfyldning før eventuel balancering
+
+- Ejeren bestiller en samlet engangsopfyldning af alle nødvendige vejrfamilier, derefter målrettet Copernicus og tilladt regional Limfjordsfallback. Først efter komplet cache måles vedligeholdelsen; en balanceringsrettelse udføres kun ved konkret behov. Dette supersederer den foreløbige plan om at ændre balancering før opfyldning.
+- Ejeren accepterer ikke risiko for at kassere en lang indsamlingsfase på grund af et kendt for kort samlet jobloft. Run `33866679219` på main `61575559` blev annulleret i pending med nul jobs. Normal vejrkørsel `33866210163` blev ikke annulleret.
+- Lokal rettelse: 180 minutters samlet jobloft mod 55 + 47 + 17 minutters tunge trin, mindst 60 minutters øvrig reserve; DMI- og Copernicus-arbejdsbudgetter ændres ikke. Regional sidecache genbruges og gemmes med normal drifts key-familie. Eksisterende DMI-/Copernicus-gemninger, strict source/data checks og ingen deploy bevares.
+- Workflowmåltesten er grøn. Ingen bred lokal kildegentagelse; ny exact-head-kontrol, sikker merge og én ny main-opfyldning afventer. Fuldkomplethed eller en garanteret sluttid påstås ikke. Hele vejrkæden er scope, ikke kun Limfjorden.
+
+# TIDLIGERE CHECKPOINT – 2026-09-03 – PR #249 merged; næste samlede releasehead
 
 - PR #249 bestod exact-head `33743253873` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`; den monotone Copernicus-progression og fælles cache-/køkontrakt er nu på `main`.
 - Scheduled pilot `33766716934` dokumenterede en separat targetfejl: dens implicitte nye time matchede ikke den gendannede DMI-ledgers start. Den lokale rettelse validerer ledgeren og binder gapmatrixen til dens eksakte reference; bounded uafsluttet ledger springes neutralt over.

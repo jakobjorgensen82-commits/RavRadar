@@ -669,3 +669,6 @@ Den daværende private nationale shadow-validator beregnede A, B og C på samme 
 - En komplet privat DKSS-familie skal have vandstand og faelles U/V-stroem fra samme DMI-collection; U/V skal ogsaa dele fysisk gitterpunkt.
 - Komponenter fra forskellige collections maa ikke samles til falsk fuld dækning.
 - Deldaekning maa bevares synligt, men maa ikke gaa videre som fuld state- eller scoreevidens.
+# Samlet sikker engangsopfyldning – ejerbeslutning 2026-09-04
+
+- **REQ-WEATHER-ONE-OFF-FULL-FILL-SAFE-001 – BINDENDE / LOKALT MÅLTESTET:** Hele DMI-/Copernicus-/regional-kæden skal opfyldes og bevise 210/673/118 før opgaven kaldes komplet. Det samlede jobbudget skal rumme alle tunge trin plus mindst 60 minutters øvrig reserve; hver acquisition skal have intern afslutningsreserve under sit hard timeout. DMI-råfiler, behandlede DMI-data og regional evidens skal gemmes før DMI-terminalkontrol; Copernicus-data og journal før samlet closure/vejrbygning. Cachefamilier skal kunne genbruges af normal main-drift. Selve engangskørslen må ikke køre den lange kildegate eller deploye. Efter komplet opfyldning måles normal vedligeholdelse; balance ændres kun ved dokumenteret behov. Ingen synthetic history, lempet kildeorden, datagate eller geometri-/punktændring.

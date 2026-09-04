@@ -1,4 +1,13 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – driftens gentagelsesfejl
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – hel engangsopfyldning med reserve
+
+- [x] Annulér `33866679219` før nogen jobs startede; GitHub bekræfter cancelled og total_count=0. Bevar normal indsamling `33866210163`.
+- [x] Ret kun den manuelle engangsvejs samlede tidsramme til 180 minutter, eksplicit 47-minutters Copernicus-trinloft og regional restore/save med normal drifts cachefamilie.
+- [x] Bestå måltest for budgetsum plus 60 minutters reserve, acquisition-headroom, cachefamilier og gemning før gates. Ingen balance-, parser-, score-, data- eller punktændring.
+- [ ] Bestå ny PR-exact-head, merge sikkert og start én ny engangsopfyldning på main, ikke på en branch med isoleret cache.
+- [ ] Bevis hele DMI/Copernicus/regional/input/210/673/118-kæden; mål derefter normal vedligeholdelse og ret kun balancering ved behov.
+- PR #250 er allerede merged som `61575559`; den ældre åbne push/merge-checkbox nedenfor er historisk.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 2026-09-04 – driftens gentagelsesfejl
 
 - [x] Sammenhold gammel fungerende `8c03e25d`, ny kode og filtrerede produktionslogs; reproducer samme-hul/ny-DMI-hash-fejlen.
 - [x] Implementer bounded genvalidering af Copernicus-attempts, uændret faktisk acquisition og fuldt centralt register til stabil shardinddeling. Ny matrix får nye counts/hashes og må ikke arve READY.
