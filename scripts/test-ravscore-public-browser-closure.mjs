@@ -4,9 +4,26 @@ import {
   assertRavScorePublicBrowserClosure,
   computeRavScorePublicBrowserClosure,
 } from './lib/ravscore-public-browser-closure.mjs';
+import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
+import {
+  computeSealedPublicImplementationClosureIdentity,
+} from './verify-ravscore-operational-pages-deployment.mjs';
 
 const baseline = await computeRavScorePublicBrowserClosure();
 assertRavScorePublicBrowserClosure(baseline.manifest);
+const [integratedContractText, integratedBundleText] = await Promise.all([
+  fs.readFile('js/core/ravscore-model-contract.js', 'utf8'),
+  fs.readFile('js/core/ravscore-model-bundle.generated.js', 'utf8'),
+]);
+const integratedIdentity = computeSealedPublicImplementationClosureIdentity({
+  expectedModel: 'integrated',
+  expectedBinding: ravScoreModelBinding(),
+  expectedContractText: integratedContractText,
+  expectedBundleText: integratedBundleText,
+  expectedPublicClosure: baseline.manifest,
+});
+assert.match(integratedIdentity.implementationClosureSha256, /^[a-f0-9]{64}$/,
+  'the actual integrated bundle must seal against the actual public browser closure');
 for (const file of [
   'app.js',
   'bootstrap.js',

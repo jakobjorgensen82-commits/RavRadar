@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import copy
 import os
 import subprocess
 import sys
@@ -19,6 +20,8 @@ from lib.copernicus_current import (
     file_sha256,
     required_pairs_sha256,
     select_required_records,
+    canonical_sha256,
+    make_acquisition,
 )
 from lib.copernicus_current_source_stage import (
     SOURCE_STAGE_CONTRACT_ID,
@@ -32,6 +35,10 @@ from lib.copernicus_current_source_stage import (
     safe_source_stage_summary,
     validate_source_stage,
     validate_source_stage_progress,
+    validate_reusable_source_stage,
+    build_source_stage_progress,
+    make_source_attempt,
+    PINNED_PRODUCTS,
 )
 from lib.copernicus_target_identity import target_fingerprint
 
@@ -568,6 +575,95 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert invalid.returncode == 0
     assert "source_stage_reusable=false" in invalid_output.read_text(encoding="utf-8")
     write(unfinished / "source-stage.json", progress_document)
+
+    # A fresh DMI file with unchanged current gaps must retain completed work.
+    write(unfinished / "dmi.json", {"fixture": "fresh-build-same-currents"})
+    fresh_registry = registry(file_sha256(unfinished / "dmi.json"))
+    write(unfinished / "registry.json", fresh_registry)
+    fresh_output = unfinished / "fresh-github-output.txt"
+    fresh_check = run_checker(unfinished, "--allow-nonmatching-seal", "--github-output", str(fresh_output))
+    assert fresh_check.returncode == 0
+    assert "source_stage_reusable=true" in fresh_output.read_text(encoding="utf-8")
+    assert run_checker(unfinished, "--require-source-stage-ready").returncode != 0
+
+    def rebase(doc, matrix=fresh_registry, identities=None):
+        return validate_reusable_source_stage(
+            doc, registry=matrix, shadow=progress_shadow,
+            target_identities=identities or {TARGET["partId"]: TARGET},
+            shadow_sha256=file_sha256(unfinished / "shadow.json"), allow_rebase=True,
+        )
+
+    rebound = rebase(progress_document)
+    assert rebound["status"] == "IN_PROGRESS"
+    assert rebound["attempts"] == progress_document["attempts"]
+    assert rebound["dmiCurrentInputSha256"] == fresh_registry["dmiCurrentInputSha256"]
+    legacy = {**progress_document, "schemaVersion": 1, "contractId": "copernicus-current-source-stage-in-progress-v1"}
+    legacy["sourceStageId"] = canonical_sha256({k: v for k, v in legacy.items() if k != "sourceStageId"})
+    assert rebase(legacy)["attempts"] == progress_document["attempts"]
+
+    def shifted_matrix(hours):
+        shifted = copy.deepcopy(fresh_registry)
+        for key in ("productionReferenceAt", "targetHour", "rangeStartAt", "rangeEndAt",
+                    "operationalRangeStartAt", "operationalRangeEndAt", "advisoryHistoryStartAt", "advisoryHistoryEndAt"):
+            shifted[key] = (datetime.fromisoformat(shifted[key].replace("Z", "+00:00"))
+                            + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
+        return shifted
+
+    next_matrix = shifted_matrix(1)
+    advanced = rebase(rebound, next_matrix)
+    assert advanced["attempts"] == progress_document["attempts"]
+    assert advanced["productionReferenceAt"] != advanced["attempts"][0]["productionReferenceAt"]
+    assert advanced["attempts"][0]["acquisitionAt"] == progress_document["attempts"][0]["acquisitionAt"]
+    new_pair = {"partId": TARGET["partId"], "validTime": next_matrix["operationalRangeEndAt"]}
+    next_matrix["operationalRequiredPairs"].append(new_pair)
+    next_matrix["operationalRequiredPairCount"] += 1
+    next_matrix["operationalDmiVerifiedPairCount"] -= 1
+    next_matrix["dmiVerifiedPairCount"] -= 1
+    next_matrix["operationalRequiredPairsSha256"] = required_pairs_sha256(next_matrix["operationalRequiredPairs"])
+    extended = rebase(rebound, next_matrix)
+    assert extended["missingPairCount"] == 2
+    assert extended["attempts"][0]["requestedPairCount"] == 1
+    # A two-hour completed request remains immutable when DMI closes one of
+    # its holes. Only the still-required hour counts in the new product matrix.
+    product = PINNED_PRODUCTS[0]
+    times = [VALID_TIME - timedelta(hours=1), VALID_TIME]
+    pairs = [{"partId": TARGET["partId"], "validTime": at.isoformat().replace("+00:00", "Z")} for at in times]
+    wide = copy.deepcopy(fresh_registry)
+    wide.update(operationalRequiredPairs=pairs, operationalRequiredPairCount=2,
+                operationalDmiVerifiedPairCount=116, dmiVerifiedPairCount=163,
+                operationalRequiredPairsSha256=required_pairs_sha256(pairs))
+    acq = make_acquisition(source=product["source"], acquisition_at=REFERENCE + timedelta(minutes=10),
+        request_start_at=times[0], request_end_at=times[-1], targets=[TARGET], native_valid_times=times,
+        subset_sha256="sha256:" + "a" * 64, record_count=0)
+    attempt = make_source_attempt(production_reference_at=REFERENCE,
+        acquisition_at=REFERENCE + timedelta(minutes=10), product=product,
+        shard_id=progress_document["attempts"][0]["shardId"], target_part_ids=[TARGET["partId"]],
+        requested_pairs=pairs, subset_sha256=acq["subsetSha256"], acquisition_id=acq["acquisitionId"], parsed_record_count=0)
+    wide_stage = build_source_stage_progress(registry=wide, shadow=progress_shadow,
+        target_identities={TARGET["partId"]: TARGET}, shadow_sha256=file_sha256(unfinished / "shadow.json"),
+        attempts=[attempt], updated_at=REFERENCE + timedelta(minutes=10))
+    narrowed = rebase(wide_stage)
+    assert narrowed["requiredPairCount"] == 1 and narrowed["attempts"][0]["requestedPairCount"] == 2
+    assert narrowed["attempts"][0]["attemptId"] == attempt["attemptId"]
+    # Positive AMM15 records and their completed Baltic prerequisite survive
+    # a new DMI snapshot, but READY must be rebuilt from the current bindings.
+    positive_rebased = validate_reusable_source_stage(amm15_stage, registry=fresh_registry,
+        shadow=amm15_shadow_document, target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15 / "shadow.json"), allow_rebase=True)
+    assert positive_rebased["status"] == "IN_PROGRESS"
+    assert positive_rebased["attempts"] == amm15_stage["attempts"]
+    assert positive_rebased["missingPairCount"] == 0
+    for bad_document, bad_matrix in [
+        ({**progress_document, "attemptsSha256": "sha256:" + "0" * 64}, fresh_registry),
+        ({**progress_document, "shadowSha256": "sha256:" + "0" * 64}, fresh_registry),
+        (progress_document, shifted_matrix(5)),
+    ]:
+        try:
+            rebase(bad_document, bad_matrix)
+        except (ValueError, RuntimeError):
+            pass
+        else:
+            raise AssertionError("Tampered/stale source evidence must not survive refresh")
 
     # The next run has no Baltic fixture.  Success therefore proves that only
     # the exact documented Baltic attempt was skipped before AMM15 continued.

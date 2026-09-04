@@ -227,7 +227,7 @@ as $$
       and p_calibration_features ->> 'modelBestTimePolicyId' = 'score-history-water-tie-earliest-v3'
       and p_calibration_features ->> 'modelPresentationPolicyId' = 'score-bands-35-55-75-exceptional90-v1'
       and p_calibration_features ->> 'modelContractSha256' = 'a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b'
-      and p_calibration_features ->> 'modelBundleSha256' = '3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3'
+      and p_calibration_features ->> 'modelBundleSha256' = 'd5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286'
     -- RAVSCORE_INTEGRATED_BINDING_END
     then public.ravradar_trip_v3_calibration_truth_allowed(
       p_model_version,p_calibration_features,p_calibration_eligible,

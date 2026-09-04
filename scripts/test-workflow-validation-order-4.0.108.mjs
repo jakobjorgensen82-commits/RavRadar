@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import './test-weather-source-gate.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
   readProductionWorkflowSources,
@@ -2201,9 +2202,19 @@ if (beforeWeather.includes('npm run build:current-provenance')) {
 }
 const sourceGateBlockEnd = text.indexOf('\n\n', positions.sourceGate);
 const sourceGateBlock = text.slice(positions.sourceGate, sourceGateBlockEnd < 0 ? text.length : sourceGateBlockEnd);
-if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'") || !sourceGateBlock.includes('run: npm run validate:source')) {
-  throw new Error('Den hurtige kildekodegate skal køre før DMI på push/manuelle builds, mens planlagte same-source kørsler må genbruge PR-/pushbeviset.');
+if (!sourceGateBlock.includes("if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'") || !sourceGateBlock.includes('run: npm run validate:source')) {
+  throw new Error('Kildegaten må kun genbruges efter live-verificeret exact-main-bevis; ukendt evidens kræver kontrol før DMI.');
 }
+for (const marker of [
+  'name: Verify previous exact-main source validation with GitHub',
+  'run: node scripts/weather-source-gate.mjs check',
+  'GITHUB_TOKEN: ${{ github.token }}',
+  'name: Record actual source validation outcome',
+  'SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}',
+  "steps.source-gate.outcome == 'failure'",
+  "if: always() && steps.source-record.outcome == 'success'",
+  'weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-',
+]) assert.ok(buildWorkflow.includes(marker), `Exact-main source proof lacks ${marker}`);
 
 for (const step of ['validate', 'gate']) {
   const blockEnd = text.indexOf('\n\n', positions[step]);

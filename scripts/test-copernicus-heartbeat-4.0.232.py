@@ -148,6 +148,21 @@ def main() -> None:
          "Keepalive must not start a duplicate acquisition before the DMI gap matrix exists")
     pilot_workflow = (ROOT / ".github/workflows/validate-copernicus-current-pilot.yml").read_text(encoding="utf-8")
     for marker in (
+        "Bind the pilot to a ready restored DMI ledger",
+        "canonical_verified_part_current_attestation",
+        "processed_source_assets_from_current_operational_ledger",
+        "validate_current_operational_ledger(",
+        "not isinstance(ledger.get('ready'), bool)",
+        "target_fingerprint(targets)",
+        "bounded_continuation_errors = {",
+        "'Current outcome contains unfinished local work'",
+        "'DMI current ledger contains unfinished local work'",
+        "validation_error not in bounded_continuation_errors",
+        "Requested pilot sample time does not match the restored DMI ledger",
+        "steps.dmi-operational-reference.outputs.ready == 'true'",
+        'args+=(--at "$DMI_LEDGER_REFERENCE")',
+        "steps.target-registry.outcome == 'success'",
+        "Report neutral incomplete-ledger skip",
         "Inspect the exact sealed DMI-gap range",
         "scripts/check-copernicus-current-range.py",
         "--registry .cache/copernicus-current-targets.json",
@@ -170,6 +185,12 @@ def main() -> None:
     ):
         need(marker in pilot_workflow, f"Pilot workflow is missing geometry-aware duplicate control: {marker}")
     scheduled_pilot = pilot_workflow[:pilot_workflow.index("\n  operational-118-preflight:")]
+    reference_position = scheduled_pilot.index("Bind the pilot to a ready restored DMI ledger")
+    registry_position = scheduled_pilot.index("Seal the exact target-48 through target+117 DMI gap matrix")
+    need(reference_position < registry_position,
+         "The scheduled pilot must validate and bind the restored ledger before target selection")
+    need(scheduled_pilot.count("steps.target-registry.outcome == 'success'") >= 10,
+         "All scheduled acquisition consumers must remain behind successful ledger-bound target selection")
     for obsolete in ("--attempts 2", "--timeout-seconds 600", "--require-complete"):
         need(obsolete not in scheduled_pilot, f"Scheduled pilot must not retain obsolete acquisition contract: {obsolete}")
     need(scheduled_pilot.count(".cache/copernicus-current-source-stage.json") >= 4,

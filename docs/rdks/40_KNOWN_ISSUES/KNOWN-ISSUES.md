@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-04 – frisk snapshot må ikke nulstille afsluttet arbejde
+
+- **ISSUE-COPERNICUS-SNAPSHOT-JOURNAL-RESET – LOKALT MÅLTESTET / DRIFTSBEVIS ÅBENT P0:** #3942/#3943 havde samme target/DMI-huller, men kasserede begge source-stage på frisk DMI-filhash. Positive records overlevede, afsluttede nul-resultatforsøg blev gentaget. Ny genvalidering bevarer uændrede immutable acquisitions, beregner matrixbindinger igen og kræver ny READY. Timeskift er bounded af oprindelig reference og faktisk firetimersfriskhed; nye huller og stale/ændrede kildeidentiteter dækkes ikke af gammel evidens.
+- **ISSUE-WATCHDOG-REPEATED-SOURCE-GATE – LOKALT MÅLTESTET / DRIFTSBEVIS ÅBENT P0:** Watchdog er workflow_dispatch og gentog 36–40 minutters sourcegate på uændret main. Ny exact-main-proof verificeres live inklusive senere failures/reruns; cache alene kan ikke åbne gaten. Ukendt evidens giver full source, og frisk data/full/release forbliver obligatorisk.
+- **RELEASESTATUS:** #3948 stoppede i Copernicus efter DMI-ready; 3.855 af det runs 7.889 restpar manglede ved sidste shardcheckpoint. Intet terminalt fuldkompletheds-/deploybevis. Fase B, backend og kapacitetskrav er uændrede.
+
+# TIDLIGERE CHECKPOINT – 2026-09-03 – PR #249 merged; eksakt DMI-ledgertime i pilot
+
+- **ISSUE-COPERNICUS-MONOTONIC-PROGRESS – MERGED / RUNTIMEBEVIS ÅBENT P0:** PR #249 bestod exact-head `33743253873` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`. Den kanoniske tofil-cache, serielle vejrproduktionskø og per-shard-journal med nul-resultatforsøg er nu på `main`. Frisk terminal 673 × 118 og Feggesund 3 × 118 er fortsat åbne.
+- **ISSUE-COPERNICUS-PILOT-DMI-LEDGER-START-MISMATCH – LØST LOKALT / EXACT-HEAD ÅBEN P0:** Scheduled pilot `33766716934` gendannede en gyldig DMI-cache, men byggede gapmatrixen mod en ny implicit time og stoppede med `DMI current operational ledger start mismatch`. Piloten validerer nu den gendannede ledger og bruger dens eksakte `productionReferenceAt`; kun en ready ledger må skabe targetregistry, mens de to dokumenterede bounded continuation-fejl springes neutralt over.
+- **MODELIDENTITET:** Den samlede lokale kandidat er fortsat `a226e7d1…`/`d5796289…` over 55 filer med uafhængig 78-modulers browserlukning. Candidate G-rollback er uændret. Der er ingen ny historiksyntese, fallbackudvidelse, geometri- eller punktændring.
+- **RUNSTATUS:** Post-merge-vejrkørsel `33775957133` kører på `a331e0db…`; den må først klassificeres efter terminalstatus og er ikke endnu releasebevis.
+
 # NYESTE CHECKPOINT – 2026-09-03 – Copernicus-progressionsspiral rodrettet lokalt
 
 - **ISSUE-COPERNICUS-ZERO-ATTEMPT-PROGRESS-LOSS – LØST LOKALT / EXACT-HEAD OG RUNBEVIS ÅBENT P0:** Per-shard-checkpointet gemte positive records, men source-attempts inklusive legitime nul-resultater først efter hele produktløkken. Hard timeout tabte derfor udtømningsevidensen og tvang senere runs til at gentage shards. En privat hashbundet `IN_PROGRESS`-journal skrives nu atomisk efter hver færdig download/hashkontrol/parsing, også ved nul records. Nye records valideres og skrives til shadow før journalen. Kun eksakte dokumenterede product/pair-forsøg på samme reference må springes over; READY forbliver den eneste closure-/releaseautorisation.
@@ -89,6 +102,12 @@
 - Smal lokal remediation findes i PR #241: kun normalisering af afrundet `360` til `0`, uden geometri-, zone-, land-/vandpunkt- eller kystnormalændring.
 - Første CI `33394343851` stoppede ved stale bundle-/binding-consumers; senere gates blev derfor ikke bevist. Bundle-/binding-consumerne er nu regenereret og målrettet lokalt verificeret; opdateret exact-head afventer. Lokale bundle-hashes er nu integrated `e880d5425e6f7b93d8afc99cddf491e58ad5a4a2ab055f8e4455193609c90a73` og rollback `4ccc2081982677aadbb47a5ee7d6f2b99fdcb7e42113e73029d5c60323a5ee96`.
 - Candidate G er fortsat offentlig, indtil den opdaterede exact-head/merge/prod/browser-kæde er bevist.
+# NYESTE CHECKPOINT – 2026-09-03 – integrated public closure og migrationsstatus
+
+- **ISSUE-RAVSCORE-REAL-PUBLIC-BUNDLE-CLOSURE – LØST LOKALT / EXACT-HEAD ÅBEN P0:** Backendrun `33736292211` stoppede sikkert før eksterne writes, fordi `rav-assistant.js` og `trip-evidence-public-adapter.js` var direkte public consumers uden for den gamle 44-filers bundle. De er nu entrypoints i en 55-filers actual-source-lukning med integrated-hash `d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286`; den faktiske 78-modulers public browserclosure og bundlecheck er grønne. `3192db…` er kun historisk ufuldstændig closure. Candidate G `7c7f2b…`/56 er uændret.
+- **ISSUE-RAVSCORE-REMOTE-MIGRATIONS-NOT-INSTALLED – BEVIST / PRE-WRITE-REMEDIATION ÅBEN P0:** En skrivefri livekontrol gav `false/false/false` for migration-ledgerrelationen og de to nye trip-/checkpoint-RPC'er. De nye migrationer er ikke live. Backendens linked migration list/dry-run skal være definitiv stopgate før første write; der må ikke omgås, ommærkes eller antages installeret.
+- **ISSUE-SUPABASE-DB-PASSWORD-UNVERIFIED-VALUE – SIKKER HÅNDTERING:** GitHub-secretet findes ved navn, men værdien er ikke læst. Det må ikke nulstilles eller gættes uden en konkret authfejl og ny ejerhandling; en sådan fejl skal stoppe backend før writes.
+
 # Kendte åbne og overvågede forhold
 
 ## 4.0.319 first-cutover-hærdning efter sikker 4.0.317-produktionsstop

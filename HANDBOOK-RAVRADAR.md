@@ -2,6 +2,14 @@
 
 **Håndbogsversion:** 4.0.321
 
+## Vejrindsamlingen skal fortsætte fra det udførte arbejde – 2026-09-04
+
+En ny DMI-fil ændrer også sit tekniske filaftryk, når strømdataenes huller er de samme. Det må ikke få RavRadar til at glemme Copernicus-forsøg, som allerede er hentet og undersøgt. Den lokale driftsrettelse bevarer derfor dokumenterede forsøg med deres oprindelige tid og kilde og kontrollerer dem mod de huller, der stadig findes. Nye timer skal stadig hentes. Forældede, beskadigede eller forkert bundne forsøg kan ikke bruges. En gammel færdigmelding bliver aldrig automatisk en færdigmelding for nye data.
+
+Inddelingen af forespørgsler følger hele det centrale kystregister, så den ikke flytter sig, blot fordi nogle DMI-huller lukkes. Der flyttes ingen kyst-, land- eller vandpunkter. DMI er fortsat førstevalg; Copernicus supplerer kun verificerede rester.
+
+Rettelsen er måltestet lokalt, men ikke endnu bevist i produktion. Den fjerner ikke den afsluttende kontrol af alle nødvendige vejrinput og aktiverer ikke i sig selv den nye scoremodel. Fuld historik er fortsat ikke et krav for at vise en prognose med gyldige direkte input.
+
 ## Beskyttet modelcheckpoint uden unødvendig dataflytning – lokal 4.0.321
 
 PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den eneste offentlige model. 4.0.321 ændrer ikke RavScore-formlen. Den lukker den sidste store kapacitetsrisiko i den private recoverykæde, før den integrerede model må aktiveres.
@@ -711,7 +719,7 @@ Rapporten kan ikke ændre produktionen. Gammel mod nuværende måles på de virk
 
 ## Vi tester det rigtige på det rigtige tidspunkt - 4.0.247
 
-RavRadar gentager ikke længere hele kildekodekontrollen ved hver planlagt vejropdatering, når koden på main allerede er kontrolleret. Push og manuelle produktionsbyg kontrollerer fortsat kildekoden før de dyre datatrin. En Pull Request skal desuden have en grøn kontrol på præcis den commit, der ønskes merged.
+RavRadar kontrollerer ny eller ukendt kildekode før de dyre datatrin. Den samme præcise main-commit kan derefter genbruge sit grønne kildebevis ved almindelige vejropdateringer, også fra cron, vagthund eller manuel genkørsel. GitHub skal bekræfte det faktisk gennemførte testtrin, og senere fejl eller genkørsler må ikke skjules af et gammelt cachehit. Mangler sikkert bevis, køres kontrollen igen. En Pull Request skal fortsat have en grøn kontrol på præcis den commit, der ønskes merged. Hvert nyt produktionsdatasæt skal desuden bestå sine fulde data- og releasekontroller.
 
 Det vigtigste sikkerhedsnet er uændret: Hver gang der bygges et nyt produktionsdatasæt, køres den fulde validering efter frisk DMI/Copernicus, beregninger og proveniens. Derefter skal releasegaten være grøn, før artifact, Supabase og Pages kan fortsætte. En kendt fejl eller reel usikkerhed kan aldrig tilsidesættes med henvisning til den hurtigere testplan.
 
@@ -1350,7 +1358,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 Den implementerede lokale 4.0.321-cutoverkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Fase A-appkoden blev exact-head-valideret og merged med Candidate G fortsat offentlig; indtil 4.0.321 selv har bestået de resterende data-, kapacitets-, produktions- og offentlige kontroller, er Candidate G fortsat eneste offentlige model.
 
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.321 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
+Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.321 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
 
 ### 18.1 Hovedformel
 
@@ -2193,7 +2201,7 @@ Modellen er mekanisk regressionstestet og fysisk motiveret og gennemgået. Den m
 
 Den lokale 4.0.320-cutoverkandidat bygger én fuld produktionsruntime og projekterer derfra præcis fire offentlige livefiler: manifest, kompakt startpakke, detaljer og kystdele. Manifestet binder dataset-id, model-id, stateformat, kontrakter, størrelser og kryptografiske fingeraftryk. Browseren accepterer kun filer fra samme bundne datasæt. Candidate G forbliver offentlig, indtil hele cutoverkæden er bevist.
 
-Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.320's regenererede slutbinding er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` over 44 filer og otte deklarerede forbrugere og skal matche kode, checkpoint, payload og releasegate.
+Modelbindingen bruger to forskellige fingeraftryk. `modelContractSha256` binder parameterkontrakten, mens `modelBundleSha256` binder de kanonisk normaliserede, transitive implementeringsfiler. Dermed kan en ændring i en evaluator, adapter eller policy ikke gemme sig bag en uændret parameterfil. 4.0.321's korrigerede slutbinding er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer og otte deklarerede forbrugere og skal matche kode, checkpoint, payload og releasegate. Derudover skal den uafhængige 78-modulers public-browserlukning matche den faktiske deploykilde.
 
 Den fulde conditions-fil, DMI-caches, den forseglede Copernicus-current-range-cache, strømhistorik, sundhedsdata, runtime-diagnostik og vandstandsstationsdata ligger i en privat, eksakt otte-fils runtimebundle. Copernicus-cachen gør allerede indsamlet historik og acquisition-/coveragebeviser genbrugelige. Bundlen kan også indeholde den varme Candidate G-rollbackprojektion under feltet `ravScoreCandidateGRollback`. Ved checkpoint-only recovery indeholder det atomiske checkpointschema 4/status `ravscore-schema6-with-candidate-g-rollback-companion` både 673 schema-6-states og den parrede beskyttede READY Candidate G-companion schema 1/status `candidate-g-rollback-ready-companion`; cache-navnerummet er `ravscore-continuation-schema6-v2`. Generation, target, 673/673, fuld binding og hashes skal være ens, og companionen må aldrig rekonstrueres fra `HISTORY_INCOMPLETE`. Ingen af delene er offentlige filer. Bundlen kontrolleres for eksakt dækning/binding/hashes/stier og installeres atomisk i den ikke-offentlige Supabase Storage-bucket; anonym adgang afvises.
 

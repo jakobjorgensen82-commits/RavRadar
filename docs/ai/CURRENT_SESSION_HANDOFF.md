@@ -1,3 +1,38 @@
+# NYESTE IMPLEMENTERINGSCHECKPOINT – 2026-09-04 – kildegenbrug og frisk Copernicus-journal
+
+- Ejeren har nu udtrykkeligt bestilt driftsrettelsen: årsagsanalyse alene er ikke leverancen. Retningen er uændret DMI-først, samlet ny model, ingen syntetisk historik/punktændring, fulde friske produktionsgates.
+- Fetch-checkpoint: `origin/main a331e0db` er uændret. Branch er `codex/ravscore-real-bundle-closure`, PR #250; forrige pushede head `13e082a6` har grøn exact-head `33779352790`. Nye lokale filer må ikke kaldes CI-grønne på dette grundlag.
+- Implementeret: source-stage READY v3 / IN_PROGRESS v2 genvaliderer udførte forsøg mod nyt DMI-snapshot. Oprindelige acquisition-/forsøgs-id'er og tider bevares; hele det centrale register giver stabil shardinddeling. Gammel READY kan kun blive IN_PROGRESS før ny fuld matrixforsegling. Legacy v2/v1 er kun en integrity-valideret indgang. Firetimersgrænse, produkt-/celle-/lag-/kildeorden, strict targets og privacy består.
+- Implementeret: exact-main-sourcegenbrug med live GitHub-verifikation af step og nyere failures/reruns. Cache er kun locator; fallback til ældre grøn cache kan ikke skjule en senere kildefejl. En første lokal udgave blev afvist af den automatiske sikkerhedskontrol på denne risiko; live-historiekontrollen og negative rerun-tests lukker den. Ny/ukendt kode testes stadig før DMI. Frisk full validate/releasegate består. Ingen ny workflow/scheduler.
+- Grøn målmatrix: source-stage inkl. nyt DMI-hash, timeskift, nye/delvist lukkede huller, nul/positive forsøg, Baltic→AMM15, legacy/stale/tampered, atomisk stop/resume; current operational live builder; exact-main-proof; workflowrækkefølge; Copernicus-cache; modelbundle og release metadata; RDKS/sikkerhed; beskyttet håndbog efter mekanisk sync af statisk installationskopi. Ingen fuld lokal sourcegentagelse.
+- Read-only GitHub-prøve af proofhelperen brugte fire metadataforespørgsler og afviste korrekt en nyere uafsluttet sourcekontrol. Der blev ikke skrevet locator, private data eller startet jobs. Live cache-genbrug er først bevist efter merge.
+- #3948 / `33843883868` fejlede i Copernicus-fill efter DMI-ready. Sidste tællere var 4.034 dækkede / 3.855 rester / 7 afsluttede forsøg. Tidligere positiv cache og journal blev igen nulstillet forskelligt. Den præcise exception er ikke udledt; fejlsteppet er verificeret. Ingen ny offentlig model/fuldkomplethed påstås.
+- Næste handling: explicit stage uden `.cache`, diff-/privacykontrol, commit/push PR #250, ny exact-head. Derefter sikker merge og eksisterende seriel 118-data-preflight/normal vejrkørsel; verificer bevarede attempts og faktisk source-proof-skip. Ingen gentagne blinde dispatches. Backend/migration, Feggesund, kapacitet, Fase B og offentlig kontrol er fortsat åbne.
+- Seneste ejerordre: Når rettelserne er grønne gennem GitHub, må der startes ekstra kørsler og følges aktivt for hurtigere cacheopbygning. Start målrettet én ad gangen i eksisterende seriel kø efter grøn exact-head/sikker merge; mål faktisk restdækning og bevaret progression. En allerede queued/aktiv ækvivalent kørsel tæller som næste forsøg. Opret ikke en ekstra scheduler.
+- Modelkrav: Sol/Ekstra høj ved review, fejl og merge/slutvalidering. Når kun CI-ventetid/status er tilbage, stop og bed ejeren skifte til Spark/Let som aftalt. Arbejdet må ikke reduceres pga. kvote.
+
+# TIDLIGERE ANALYSECHECKPOINT – 2026-09-04 – DMI-budget og tabt Copernicus-fortsættelsesbevis
+
+- Læs `docs/research/WEATHER_PIPELINE_ROOT_CAUSE_2026-09-04.md` før næste rettelse. Ingen runtime, workflows, caches, private data, credentials eller geodata er ændret i analysen; ingen jobs er startet.
+- Main er `a331e0db`; branch `codex/ravscore-real-bundle-closure` er pushet på `13e082a6`. PR #250/exact-head `33779352790` er grøn og åben, ikke kun lokal. Den retter ikke nedenstående journalproblem.
+- #3947 / `33839881412` har `DMI_LOCALLY_SKIPPED_DKSS_ASSET`: 18 IDW- og 26 NSBS-assets var uafsluttede ved tidsbudgettet; LF havde alle 116 officielle timer. Caches blev gemt, men Copernicus/deploy blev ikke nået. DMI gjorde faktisk fremgang gennem 00Z-runskiftet.
+- #3942 og #3943 havde samme target og samme 70.903 DMI-par/8.511 restpar, men begge kasserede kildejournalen. Positiv cache overlevede; tidligere forsøg blev ikke genbrugt. Den syntetiske prøve beviser, at blot ændret hel-DMI-filhash afviser journalen; timeskift er en særskilt barriere. Bevar releaseforseglingen streng og ret genvalidering af udført indsamlingsarbejde, ikke kildeorden eller datagrundlag.
+- Næste trin: afgrænset fortsættelsesrettelse, få måltests, exact-head og eksisterende data-only 118-preflight; derefter komponent-/kapacitets-/aktiveringsgates. Ingen kunstig historik, cache-reset, ny watchdog eller gatebypass. Sol/Ekstra høj.
+- Afsluttende livekontrol: #3948 / `33843883868` passerede DMI-terminalgaten og arbejder nu i Copernicus-fill. Det er ikke endnu et 673 × 118-/deploybevis. Analysecheckpointet bestod RDKS og diffkontrol.
+
+# TIDLIGERE CHECKPOINT – 2026-09-03 – PR #249 på main; lokal 55-/78-lukning og pilotbinding
+
+- `origin/main` er `a331e0dbb08a9ab9ffff26632a708828574bdcd8` efter PR #249/exact-head `33743253873`. Den lokale branch `codex/ravscore-real-bundle-closure` er fast-forwardet til samme head uden tab af working-tree-arbejde.
+- Scheduled pilot `33766716934` stoppede sikkert før Copernicus-acquisition på DMI-ledger-startmismatch. Lokalt valideres den gendannede ledger, og ikke-full-coast-targetet bindes eksakt til dens `productionReferenceAt`; bounded incomplete ledger giver neutral skip.
+- Integrated er lokalt `a226e7d1…`/`d5796289…` over 55 filer med særskilt actual-source closure over 78 public moduler. De målrettede vejr-, bundle-, release-, checkpoint-, assistent-, RDKS-, sikkerheds- og håndbogstests er grønne.
+- `.cache` er fortsat untracked og må aldrig stages. Candidate G er offentlig. Næste trin er eksplicit staging, commit/push, exact-head, Supabase linked list/dry-run og derefter de resterende data-/kapacitets-/Fase B-/produktions-/browsergates.
+
+# NYESTE CHECKPOINT – 2026-09-03 – faktisk bundleclosure og Supabase-stopgrænse
+
+- `33736292211` stoppede før eksterne writes/artifact/Pages ved exact public implementation seal. Årsagen var to direkte public consumers uden for den gamle 44-filers modelbundle: `rav-assistant.js` og `trip-evidence-public-adapter.js`. Candidate G er fortsat offentlig.
+- Generatoren binder nu begge. Local integrated er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer; actual-source browserclosure attesterer den faktiske 78-modulers public closure. Bundle-/closure-måltests er grønne. Candidate G `7c7f2b…`/56 er uændret; `3192db…`/44 er historisk.
+- Remote Supabase read-only gav `false/false/false`: migrationsledger og de to nye RPC'er er ikke installeret. Linked list/dry-run er næste definitive pre-write-gate. `SUPABASE_DB_PASSWORD` er kun verificeret ved navn; værdien må ikke læses, gættes eller rutinemæssigt resettes. Authfejl stopper før writes.
+
 # NYESTE CHECKPOINT – 2026-09-03 – tofaseaktivering er lokal, ikke frigivet
 
 - Branch `codex/ravscore-history-incomplete-cutover` har nu en lokal aktiveringslås: merge/push må kun vedligeholde Candidate G; legacy-Candidate føres til current moderne Candidate G på samme head. Fase A må merge før 673 × 118, så cron bygger den korrigerede cache. Push/schedule/watchdog/almindelig manual kan ikke aktivere den integrerede model.

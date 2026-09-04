@@ -610,8 +610,24 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: Restore exact-main source validation locator
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Verify previous exact-main source validation with GitHub
+        id: source-proof
+        if: steps.preflight.outputs.should_run == 'true'
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Install source-gate dependencies
-        if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'
+        if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
         run: >-
           python -m pip install --disable-pip-version-check
           -r requirements-dmi.txt
@@ -619,8 +635,23 @@ jobs:
           -r requirements-copernicus.txt
 
       - name: Run fast source gate before expensive data refresh
-        if: steps.preflight.outputs.should_run == 'true' && github.event_name != 'schedule'
+        id: source-gate
+        if: steps.preflight.outputs.should_run == 'true' && steps.source-proof.outputs.required != 'false'
         run: npm run validate:source
+
+      - name: Record actual source validation outcome
+        id: source-record
+        if: always() && github.ref == 'refs/heads/main' && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+
+      - name: Preserve latest exact-main source validation outcome
+        if: always() && steps.source-record.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Restore private staged coastal-point cache
         if: steps.preflight.outputs.should_run == 'true'

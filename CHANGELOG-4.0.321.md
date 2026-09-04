@@ -5,6 +5,15 @@
 
 ## Ændret
 
+### Driftslukning 2026-09-04 – lokal, afventer ny exact-head og produktion
+
+- Friske DMI-snapshots må ikke kassere dokumenterede Copernicus-forsøg alene på filhash eller et bounded referenceskift. Originale acquisitiontider og identiteter bevares, aktuelle par tælles igen, og frigivelse kræver ny streng READY.
+- Shardinddeling beregnes fra hele det centrale register; kun konkrete DMI-huller hentes. Ingen land-/vandpunkter eller geometri ændres.
+- Kildekontrol kan genbruges for eksakt samme main efter live GitHub-verifikation, inklusive senere fejl/reruns. Ukendt/fejlet evidens kræver kontrol. PR-gate samt frisk fuld produktionsvalidering/releasegate består.
+- Den gamle tre-timers DMI-stride forklarer en del af forskellen til den nye exact-hour-arbejdsmængde; der ændres ikke DMI-first, datafriskhed eller modelkrav for at skjule langsom fremdrift.
+
+### Oprindelig checkpointændring
+
 - Normal checkpointpublicering bruger en fixed-key, service-role-only compare-and-swap og returnerer højst 4 KiB metadata i stedet for en fuld fler-megabyte payload.
 - Selve checkpointpayloaden er bounded til højst 16 MiB i sin kanoniske serialisering. Fuld payload hentes kun ved reel restore/cache-miss; den samlede HTTP-wrapper påstås ikke at have samme loft.
 - Retry af samme payload er idempotent. Version-, target-, same-target-content- og central-state-konflikter stopper fail-closed, bortset fra én eksakt 4.0.320→4.0.321-genattestering ved samme target.

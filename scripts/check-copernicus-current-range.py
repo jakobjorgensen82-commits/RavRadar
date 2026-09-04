@@ -125,6 +125,8 @@ def inspect(
     matches = [
         row for row in cache["collections"]
         if row["productionReferenceAt"] == reference and row["status"] == expected_status
+        and (not allow_nonmatching_seal
+             or row.get("dmiCurrentInputSha256") == registry["dmiCurrentInputSha256"])
     ]
     if not matches:
         source_stage_present = bool(
@@ -141,6 +143,7 @@ def inspect(
                     shadow=cache,
                     target_identities=target_identities,
                     shadow_sha256=file_sha256(shadow_path),
+                    allow_rebase=allow_nonmatching_seal,
                 )
             except (KeyError, TypeError, ValueError, RuntimeError):
                 if not allow_nonmatching_seal:
@@ -223,6 +226,7 @@ def inspect(
                 shadow=cache,
                 target_identities=target_identities,
                 shadow_sha256=file_sha256(shadow_path),
+                allow_rebase=allow_nonmatching_seal,
             )
         except (KeyError, TypeError, ValueError, RuntimeError):
             if not allow_nonmatching_seal:

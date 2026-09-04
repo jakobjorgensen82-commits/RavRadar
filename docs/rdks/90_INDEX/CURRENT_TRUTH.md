@@ -1,3 +1,24 @@
+# NYESTE SANDHED – 2026-09-04 – fortsættelse uden gentaget kildearbejde
+
+- Main er fortsat `a331e0db`; PR #250 på `13e082a6` har grøn exact-head `33779352790`. Nye lokale driftsrettelser er endnu ikke CI-/produktionsbevist og kan ikke arve dette grønne resultat.
+- Konkret rodårsag: ny hel-DMI-filhash kasserede Copernicus' journal selv ved identiske huller. v3 READY/v2 IN_PROGRESS genvaliderer nu immutable afsluttede forsøg mod ny matrix, også ved op til fire timers referenceskift. Faktiske acquisitiontider, pinned produkter, central targetidentitet og friskhed ændres ikke. Nye/forældede huller genhentes; gammel READY omdannes kun til IN_PROGRESS, aldrig direkte til ny frigivelse.
+- Kildekontrol gentages ikke på en live-verificeret identisk main, også ved watchdog-dispatch. Senere source-failure/rerun, ukendt evidens eller manglende proof kræver kontrol. PR-exact-head og alle friske produktionsdatagates består. Se DEC-0045's tillæg.
+- Gammel fungerende baseline `8c03e25d` udvalgte tre-timers-trin langt fremme, mens operationel current nu kræver eksakte timer. #3947 målte 39 IDW-assets med samlet 536 sekunders behandling; download/øvrig overhead er ikke med i dette tal. Mere arbejde pr. snapshot retfærdiggør ikke gentagne nulstillinger eller dage uden closure.
+- #3948 / `33843883868` passerede DMI, men stoppede i Copernicus; sidste checkpoint viste 4.034 af 7.889 restpar dækket og 3.855 tilbage. Ingen ny produktion/modelaktivering er dermed bevist. Supabase/migration, fuld 673 × 118/Feggesund, kapacitet og Fase B er fortsat åbne. Ingen kunstig historik eller punktændring.
+
+# TIDLIGERE SANDHED – 2026-09-03 – vejrprogression på main og lokal public-closure
+
+- PR #249 er merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8` efter grøn exact-head `33743253873`. Den monotone Copernicus-progression er dermed på `main`; Candidate G er fortsat den eneste offentlige model.
+- Scheduled pilot `33766716934` afdækkede ét særskilt lokalt targetvalg: restored DMI-ledger og implicit pilot-time var forskellige. Den lokale 4.0.321-rettelse binder piloten til ledgerens validerede eksakte reference og springer en dokumenteret uafsluttet ledger neutralt over før acquisition.
+- Den samme lokale leverance lukker den integrerede bundle til `a226e7d1…`/`d5796289…` over 55 filer og attesterer faktisk offentlig browserclosure over 78 moduler. Måltests er grønne; exact-head, migration, 673 × 118/Feggesund, kapacitet, Fase B, frisk produktion og browser er åbne.
+
+# NYESTE CHECKPOINT – 2026-09-03 – reel public-bundle-lukning; remote migrations mangler
+
+- Backendrun `33736292211` stoppede sikkert ved forseglingen af den eksakte integrerede offentlige implementering, før eksterne writes, artifact eller Pages. Den 44-filers bundle udelod to direkte public consumers: `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`. Derfor blev state 6 ikke aktiveret, og Candidate G er fortsat offentlig.
+- Generatoren binder nu begge entrypoints. Aktuel lokal integrated-binding er kontrakt `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` plus bundle `d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 transitive filer. Actual-source closure-test kontrollerer den faktiske genererede binding over 78 offentlige moduler; de to måltests er grønne. Candidate G-rollback forbliver `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d`/56.
+- Den tidligere integrated-hash `3192db304a6e613059cd66d1ae983583c3aaff832293bda978cdc03991bb49c3` er supersederet som aktuel binding og bevares alene som revisionsspor for den ufuldstændige 44-filers lukning.
+- En remote read-only Supabase-kontrol gav `false/false/false`: migration-ledgerrelationen var fraværende, og begge nye trip-/checkpoint-RPC'er var fraværende. Migrationerne er ikke live. Den linkede migrationsliste og dry-run skal fortsat stoppe definitivt før første write ved afvigelse. GitHub-secretet `SUPABASE_DB_PASSWORD` er kun verificeret ved navn; værdien er aldrig læst og må ikke nulstilles eller gættes. Authfejl er et pre-write-stop.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 checkpointovergang platformslåst
 
 - Phase A er merged på `origin/main 7198b685f4bc9d86bd6432b049380f4279ab797c`, og Candidate G er fortsat eneste offentlige model. Den lokale 4.0.321-kandidat tilføjer metadata-only CAS/checkpointkapacitetsgrænsen før Phase B; den er endnu ikke commit'et, exact-head-verificeret, merged eller live.

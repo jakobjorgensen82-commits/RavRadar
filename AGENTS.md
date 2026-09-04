@@ -27,7 +27,7 @@ Ved konflikt gælder: brugerens aktuelle instruktion > aktiv RDKS-beslutning > v
 ## Omkostningsbevidst testmatrix
 - Under udvikling køres kun målrettede tests for den berørte kontrakt samt nødvendige versions- og RDKS-kontroller.
 - Den fulde validate:source skal bestå én gang på PR'ens eksakte head i GitHub. Lokal gentagelse er kun nødvendig ved bred/tværgående risiko, manglende CI eller konkret fejlevidens.
-- Push og manuelle produktionsbyg beholder den tidlige kildekodegate. Planlagte vejropdateringer på den allerede kontrollerede main-kode gentager den ikke.
+- Den tidlige kildekodegate køres på ny eller uverificeret main-kode. Vejropdateringer, også cron-/watchdog-dispatch og manuelle genkørsler, må genbruge et live-verificeret grønt source-step på præcis samme main-commit. Senere fejl, ændret run-attempt eller ukendt evidens kræver ny kontrol; en cachemarkør alene er aldrig bevis. Se DEC-0045's tillæg 2026-09-04.
 - Hvert nyt produktionsartifact skal fortsat bestå fuld validering og releasegate efter central hydrering og frisk vejr/proveniens.
 - Fuld 210/673-browserkontrol køres ugentligt eller efter relevante ændringer i UI, score eller offentlig datakontrakt. Små afgrænsede ændringer får målrettet kontrol.
 - Ingen kontrol må springes over ved en kendt fejl, væsentlig usikkerhed eller konkret modstridende evidens. Se DEC-0045.

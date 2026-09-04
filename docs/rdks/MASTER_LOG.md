@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-03 – PR #249 merged; næste samlede releasehead
+
+- PR #249 bestod exact-head `33743253873` og blev merged som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`; den monotone Copernicus-progression og fælles cache-/køkontrakt er nu på `main`.
+- Scheduled pilot `33766716934` dokumenterede en separat targetfejl: dens implicitte nye time matchede ikke den gendannede DMI-ledgers start. Den lokale rettelse validerer ledgeren og binder gapmatrixen til dens eksakte reference; bounded uafsluttet ledger springes neutralt over.
+- Samme lokale 4.0.321-head lukker integrated til 55 filer og actual public closure til 78 moduler. De relevante måltests er grønne; `.cache` er urørt og må ikke stages. Candidate G er stadig offentlig.
+- Post-merge-run `33775957133` kører på `a331e0db…`. Næste sikre sekvens er commit/push, exact-head, linked migration list/dry-run og derefter data-, kapacitets-, Fase B-, produktions- og browserbevis.
+
+# NYESTE CHECKPOINT – 2026-09-03 – reel public implementation closure
+
+- Backendrun `33736292211` stoppede fail-closed før Supabase/Edge/database, artifact og Pages, fordi den forseglede 44-filers modelbundle ikke omfattede de direkte offentlige consumers `rav-assistant.js` og `trip-evidence-public-adapter.js`. Ingen modelaktivering skete; Candidate G er fortsat offentlig.
+- Begge consumers er nu bundlegenerator-entrypoints. Den lokale integrated-binding er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer. Actual-source browserclosure kontrollerer den reelle genererede binding over 78 offentlige moduler, og begge måltests er grønne. Candidate G-rollback `7c7f2b…`/56 er uændret; `3192db…`/44 er historisk revisionsspor.
+- Remote read-only Supabase gav `false/false/false` for migration ledger og de to nye RPC-beviser. Migrationsættet er ikke live, og linked list/dry-run forbliver definitiv pre-write-gate. `SUPABASE_DB_PASSWORD` er kun verificeret ved navn; værdien er ikke læst, nulstillet eller gættet.
+
 # NYESTE CHECKPOINT – 2026-09-03 – 4.0.321 platformsikker checkpointtransition
 
 - En slutrevision fandt to sammenhængende releasekanter: rå filbytes gav forskellig continuation-hash på Windows og Linux, og et samtidigt 4.0.320-run på merged Phase A kunne skrive et centralt predecessor-checkpoint, som current-only CAS ellers ikke kunne erstatte ved samme target.

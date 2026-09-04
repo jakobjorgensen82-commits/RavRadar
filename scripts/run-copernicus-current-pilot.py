@@ -497,6 +497,7 @@ def main() -> int:
             shadow=existing,
             target_identities=target_identities,
             shadow_sha256=file_sha256(args.shadow),
+            allow_rebase=True,
         )
         source_attempts = list(reusable_stage["attempts"])
     attempted_pairs_by_source = {
@@ -538,7 +539,9 @@ def main() -> int:
     product_reports: list[dict[str, Any]] = []
     try:
         for product in PRODUCTS:
-            source_targets = [row for row in registry_targets if eligible_target(row, product)]
+            # Stable shard membership belongs to the full authoritative register,
+            # not to this hour's changing subset of DMI gaps. Query only gaps below.
+            source_targets = [row for row in authoritative_targets if eligible_target(row, product)]
             source_shards = spatial_shards(source_targets, product)
             product_record_count = 0
             executed_shards = 0

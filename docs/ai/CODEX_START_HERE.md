@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-03 – PR #249 merged; modelclosure klar til exact-head
+
+- `origin/main a331e0dbb08a9ab9ffff26632a708828574bdcd8` indeholder nu den exact-head-grønne monotone Copernicus-progression. Post-merge-vejrkørsel `33775957133` er startet og er ikke endnu terminalt releasebevis.
+- Scheduled pilot `33766716934` stoppede sikkert på mismatch mellem restored DMI-ledger-start og implicit ny pilot-time. Lokalt bindes targetregistry nu til den fuldt validerede ready-ledgers eksakte reference; en bounded uafsluttet ledger springes neutralt over.
+- Den lokale samlede kandidat binder integrated `a226e7d1…`/`d5796289…` over 55 filer og attesterer den faktiske 78-modulers public closure. Alle nødvendige måltests er grønne. Candidate G er fortsat offentlig; migration, 673 × 118/Feggesund, kapacitet, Fase B, produktion og browser mangler.
+
+# NYESTE CHECKPOINT – 2026-09-03 – reel public-bundle og Supabase pre-write-status
+
+- Backendrun `33736292211` stoppede fail-closed i den eksakte integrerede public-implementation-seal, før Supabase/Edge/database, artifact eller Pages kunne ændres. Den daværende 44-filers bundle manglede de direkte offentlige entrypoints `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`; Candidate G er derfor fortsat offentlig.
+- Begge entrypoints indgår nu i generatorens reelle transitive lukning. Integrated er lokalt `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer. Actual-source browserlukningen attesterer den virkelige genererede binding over 78 offentlige moduler; bundle- og closure-måltest er grønne. Candidate G-rollback er uændret `7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d`/56.
+- Live Supabase read-only gav `false/false/false`: `supabase_migrations.schema_migrations` findes ikke som læsbar relation, og de to nye trip-/checkpoint-RPC-beviser findes ikke. De nye migrations er dermed ikke installeret. Linked migration list + dry-run forbliver den definitive stopgate før første write.
+- `SUPABASE_DB_PASSWORD` er kun verificeret som eksisterende GitHub-secret-navn; værdien er ikke læst. Nulstil eller gæt ikke passwordet. Ved link-/authfejl stoppes før writes. Den gamle integrated-hash `3192db…` er nu kun historisk revisionsspor; exact-head, migration/dry-run, 673 × 118, kapacitet, Fase B, frisk produktion og offentlig mobil/desktop er stadig åbne.
+
 # NYESTE CHECKPOINT – 2026-09-03 – første modelaktivering er adskilt fra merge
 
 - Den lokale 4.0.320-implementering bruger nu to faser. Fase A merger/pusher koden, men holder Candidate G som eneste offentlige model og fører om nødvendigt legacy-Candidate til current moderne Candidate G på samme `main`-head. Fase A må ske før 673 × 118, så cron opbygger den korrigerede cache. Push, schedule, watchdog og almindelig manuel vejrdrift kan ikke aktivere state 6.

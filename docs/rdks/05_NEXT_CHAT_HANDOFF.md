@@ -709,3 +709,9 @@ Kandidaten ligger i draft-PR `#1`. Featuregrenen har ingen automatiske PR-checks
 
 Produktionskoersel `#3237` er maelt read-only. Nye WAM 18Z- og DKSS 12Z-cyklusser er dokumenteret; HARMONIE 12Z er kun delvist indfaset. 4.0.232's kompatible `controlled-live`-historik har 28,903 timer og maa fortsat opbygges naturligt til 72 timer. Ingen kilde-, fallback-, score- eller geometriaendring er godkendt. Se `docs/research/P1_COMPONENT_TRANSITIONS_4.0.237_RUN3237.md`.
 
+# NYESTE HANDOFF – 2026-09-03 – public-bundle-lukning og remote Supabase
+
+- Backendrun `33736292211` stoppede sikkert før alle eksterne writes/artifact/Pages, fordi den tidligere 44-filers integrated-bundle manglede de direkte public consumers `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`. Candidate G er stadig offentlig.
+- De to entrypoints er nu bundet. Aktuel lokal integrated er `a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b`/`d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 filer; actual-source closure-test dækker den faktiske 78-modulers public closure. Måltests er grønne. Candidate G-rollback er uændret `7c7f2b…`/56; `3192db…`/44 er supersederet revisionsspor.
+- Remote read-only SQL gav `false/false/false`: migration ledger og begge nye RPC'er findes ikke. Migrations er ikke live. Kør linked migrationsliste og dry-run som definitiv pre-write-stopgate. GitHub-secretet er kun bekræftet ved navn; læs, gæt eller nulstil ikke passwordet. Stop ved authfejl.
+- Fortsæt derefter exact-head → 673 × 118/Feggesund → Supabase før/efter/30 % reserve → Fase B → frisk produktion → offentlig mobil/desktop. Ingen private payloads, koordinater, rå U/V, geometri eller punkter må røres.
