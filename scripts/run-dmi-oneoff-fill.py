@@ -95,7 +95,7 @@ def main():
         nonlocal latest_cache_stamp
         latest_cache_stamp = CACHE.stat().st_mtime_ns if CACHE.exists() else None
         return subprocess.run(
-            [sys.executable, "-u", str(ROOT / "scripts/update-dmi-bulk.py")],
+            [sys.executable, "-u", str(ROOT / "scripts/run-dmi-bulk-supervised.py")],
             cwd=ROOT, env=environment, check=False,
         ).returncode
 

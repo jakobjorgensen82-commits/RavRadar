@@ -1,6 +1,12 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.321
+**Håndbogsversion:** 4.0.322
+
+## Fastlåst HARMONIE-fil stoppes efter tre minutter – 2026-09-05
+
+En enkelt downloadet HARMONIE-vindfil sad fast i den interne behandling i mere end 52 minutter og fik GitHub til at stoppe hele DMI-trinnet efter 55 minutter. Det var ikke normal downloadtid. RavRadar overvåger nu kun tiden inde i behandlingen af hvert HARMONIE-forecasttrin. Et trin, som ikke afsluttes inden tre minutter, stoppes, mens alle tidligere atomisk gemte vejrdata bevares.
+
+Efter stoppet genåbner den eksisterende DMI-producent den gemte cache, validerer og afslutter den. Copernicus og resten af kæden må kun fortsætte, hvis den normale strenge DMI-kontrol stadig er grøn; ellers vises en præcis fejl i GitHub. Det gælder både engangsopfyldningen og de normale cron-kørsler. Der opfindes ingen data, og kildeorden, prognosekrav, scoremodel, geometri samt land-/vandpunkter ændres ikke. Status: måltestet lokalt; ny GitHub- og runtimekontrol afventer.
 
 ## Hurtigere kodekontrol med samme dækning – 2026-09-04
 
@@ -178,9 +184,9 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.321 first-cutover-kandidat
+## Aktuel status – RavScore 4.0.322 first-cutover-kandidat
 
-Candidate G er fortsat den eneste offentlige model. PR #246 samlede Fase A-appkoden på sourcehead `cbc4639af411ee741be938980b2d7a8c08b6b79d`, bestod exact-head-kildegaten `33706215425` og blev merged som `7198b685f4bc9d86bd6432b049380f4279ab797c`. Den lokale 4.0.321-kandidat tilføjer det afgrænsede metadata-CAS til den private checkpointkæde, men er endnu ikke selv exact-head-valideret, merged eller deployet. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy- og rollbacktests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
+Candidate G er fortsat den eneste offentlige model. Den samlede first-cutover-kode ligger på main, men den lokale 4.0.322-driftspakke med HARMONIE-assetwatchdog er endnu ikke exact-head-valideret, merged eller kørt i frisk produktion. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy-, rollback- og watchdogtests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
 
 Det sikre første modelskift har to grene. Hvis alle 673 Candidate G-states er kanoniske `READY`, deler ét target og er bundet til samme samplingkontekst som den aktuelle centrale kystdelskonfiguration, migreres de eksakt. Hvis kilden stadig er samlet og dybt attesteret, men mindst én state er i legitim warmup/missing-status, eller den historiske og aktuelle samplingkontekst legitimt er forskellig, starter state 6 i stedet ærligt fra de faktiske målte timer, der allerede findes. Den anden gren hedder `genuine-cold-start`; den opfinder ikke historik og viser `HISTORY_INCOMPLETE` med konservativ score, når direkte input er gyldige. Dens WAM-timer skal alle være eksakte native timer med maksimal interpolation 0. En interpoleret cold-start-time stopper med `INTERPOLATED_COLD_START`; den højst fire timers same-run-regel gælder kun migration/generisk acquisition.
 
@@ -276,7 +282,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.321-cutoverkandidat, ikke produktion
+## Status for det aktuelle modelarbejde – lokal 4.0.322-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver state 6 og den lokale 4.0.321-cutoverkandidat. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig; den additive checkpointmigration og de resterende data-, kapacitets- og produktionsbeviser er endnu ikke lukket.
 
@@ -1382,7 +1388,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 Den implementerede lokale 4.0.321-cutoverkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Fase A-appkoden blev exact-head-valideret og merged med Candidate G fortsat offentlig; indtil 4.0.321 selv har bestået de resterende data-, kapacitets-, produktions- og offentlige kontroller, er Candidate G fortsat eneste offentlige model.
 
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.321 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
+Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.322 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
 
 ### 18.1 Hovedformel
 

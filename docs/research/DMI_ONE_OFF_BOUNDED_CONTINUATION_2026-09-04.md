@@ -1,5 +1,11 @@
 # Afgrænset fortsættelse af engangsopfyldning
 
+## Tillæg 2026-09-05
+
+Run `33918250039` viste en anden fejlklasse end downloadbudget: ét HARMONIE-asset hang over 52 minutter i ecCodes, til GitHub dræbte DMI-trinnet efter 55 minutter. Derfor går oneoff-wrapperens producentkald nu gennem den samme bounded supervisor som normal drift. Downloadbudgetfortsættelsens højst tre passeringer, fælles deadline, 4-GiB-grænser og øvrige adgangskrav er uændrede. Se `DMI_HARMONIE_ASSET_WATCHDOG_2026-09-05.md`.
+
+Den nedenstående status beskriver det historiske 2026-09-04-checkpoint før denne opfølgning.
+
 Status: lokal og måltestet oven på main `bc9c52e6`; endnu ikke pushet eller kørt i GitHub. Den igangværende engangskørsel `33899069301` bruger den mergede kode uden denne opfølgning.
 
 ## Målt årsag

@@ -1,3 +1,9 @@
+# NYESTE SANDHED – 2026-09-05 – HARMONIE-hard-hang afgrænset lokalt
+
+- `origin/main` er `ce93cebc` (PR #253). Første store run `33907599084` gjorde DMI READY og gemte 6.766 af 8.512 Copernicus-restpar. Fortsættelsen `33918250039` nåede ikke Copernicus: ét downloadet HARMONIE-asset hang over 52 minutter, og GitHub dræbte DMI-trinnet ved 55 minutter. Alle tre cache-save-trin bestod.
+- Lokal 4.0.322 beskytter både normal og engangsvej med 180-sekunders assetwatchdog og 420-sekunders fail-closed finalisering gennem den eksisterende producent. Atomisk progression bevares; strict DMI-ledger genbygges; downstream åbnes kun ved reel DMI_READY. Supervisoren indgår i runtimehashen. Måltests er grønne; exact-head, merge og frisk run afventer.
+- Dette ændrer ikke DMI-first, Copernicus exact-gap, regionalpolitikken, 673 × 118, historik, scoremodel, model-id/state, geometri eller punkter. Candidate G er fortsat offentlig; integreret Fase B, Supabase-kapacitet, frisk produktion og browserbevis er åbne.
+
 # NYESTE SANDHED – 2026-09-04 – HARMONIE-formatfejl og geografisk vindreference
 
 - PR #252 er nu exact-head-godkendt (`33896807037`, 23m43s) og merged som `bc9c52e6`. Stor engang `33899069301` bestod DMI og cachegemning; primær vind kan nu læses på alle 673 dele. Den blev kun fyldt til cirka 13 timer, fordi 4-GiB-downloadloftet stoppede efter seks af 20 officielle vindfiler; officiel horisont var cirka 55 timer. Copernicus arbejder fortsat på 7.268 præcise DMI-restpar. Lokal måltestet fortsættelse kan gentage kun bevarede downloadbudgetpasseringer højst tre gange under samme samlede tid og cacheloft; endnu ingen ny push. Se engangsfortsættelsesrapporten 2026-09-04. Normal prioritering/intervaller vurderes efter opfyldning.

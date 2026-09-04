@@ -355,9 +355,11 @@ assert.match(updater, /resolveProductionReferenceTime\(process\.env\.RAVRADAR_PR
 assert.doesNotMatch(orchestrator, /cron-job\.org/);
 assert.match(build, /python scripts\/hydrate-deployed-weather\.py/);
 assert.match(build, /python scripts\/check-weather-update\.py/);
-assert.match(build, /python -u scripts\/update-dmi-bulk\.py/);
+assert.match(build, /python -u scripts\/run-dmi-bulk-supervised\.py/);
+assert.match(build, /DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180/);
+assert.match(build, /DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420/);
 assert.match(build, /node scripts\/build-public-coastal-parts-v2\.mjs/);
-assert.ok(build.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < build.indexOf('python -u scripts/update-dmi-bulk.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
+assert.ok(build.indexOf('node scripts/build-public-coastal-parts-v2.mjs') < build.indexOf('python -u scripts/run-dmi-bulk-supervised.py'), 'Centralt reviewede kystdelspunkter skal bygges før DMI-sampling.');
 assert.match(build, /eccodes/);
 assert.match(build, /smoke-test-eccodes\.py/);
 assert.match(smoke, /codes_grib_nearest_new/);

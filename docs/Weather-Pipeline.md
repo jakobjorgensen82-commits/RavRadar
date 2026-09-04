@@ -1,5 +1,11 @@
 # Weather Pipeline 1.0
 
+## 4.0.322 – bounded HARMONIE-assetbehandling, 2026-09-05
+
+Run `33918250039` blev hard-stoppet efter 55 minutter, mens ét allerede downloadet `harmonie_dini_sf`-trin havde hængt i ecCodes-behandling i over 52 minutter. Tidligere trin i `33907599084` tog cirka 5,8–7,7 sekunder. Færdige DMI-assets og alle tre cache-save-trin blev bevaret, men downstream blev ikke nået.
+
+Normal produktion og engangsopfyldning går nu gennem samme supervisor. Watchdoggen starter kun ved producentens HARMONIE-asset-startmarkør og nulstilles ved dens afslutningsmarkør. Efter 180 sekunder stoppes processen og den eksisterende producent køres i `FINALIZE_ONLY`: ingen nye assets, men genindlæsning, validering, oprydning, terminal cache og strict current-ledger. Denne finalisering er selv bounded til 420 sekunder. Kun producentens eksisterende terminalgate kan returnere READY; ellers stopper workflowet med en kort, ikke-tom fejlkode. Se `research/DMI_HARMONIE_ASSET_WATCHDOG_2026-09-05.md`.
+
 ## Lokal engangsfortsættelse efter downloadloft, 2026-09-04
 
 En afsluttet DMI-passering kan have gemt gyldig fremgang uden at nå alle vindfiler. Kun engangsjobbet får derfor en begrænset wrapper: højst tre passeringer, én samlet 3000s-ramme, fortsat 4 GiB download pr. passering og 4 GiB råcache efter hver afslutning. Samlet nyt download er højst 12 GiB, ikke større varig cache. Næste passering kræver bekræftet gemning/oprydning, fremgang, samme reference, alene downloadbudgetstop, tilstrækkelig tid og mindst 5 GiB fri disk. Øvrige fejl gentages ikke. Den uændrede producent genbruger færdige assets; fulde downstream-gates afgør fortsat datakomplethed. Almindelig scheduler og intervaller ændres ikke. Se `research/DMI_ONE_OFF_BOUNDED_CONTINUATION_2026-09-04.md`.

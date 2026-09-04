@@ -128,7 +128,7 @@ class FillTests(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(ValueError, "ONEOFF_FINALIZED_REPORT_MISSING"):
                         oneoff.main()
-            self.assertEqual(child.call_args.args[0], [oneoff.sys.executable, "-u", str(oneoff.ROOT / "scripts/update-dmi-bulk.py")])
+            self.assertEqual(child.call_args.args[0], [oneoff.sys.executable, "-u", str(oneoff.ROOT / "scripts/run-dmi-bulk-supervised.py")])
             self.assertEqual(child.call_args.kwargs["env"]["RAVRADAR_PRODUCTION_TARGET_HOUR"], REFERENCE)
             self.assertNotIn("never-print", output.getvalue())
 

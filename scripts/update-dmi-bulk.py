@@ -189,6 +189,9 @@ API_KEY = os.getenv("DMI_API_KEY")
 STARTED = time.monotonic()
 FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECONDS", "180")))
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
+FINALIZE_ONLY = os.getenv("DMI_BULK_FINALIZE_ONLY", "").strip().lower() == "true"
+FINALIZE_REASON = os.getenv("DMI_BULK_FINALIZE_REASON", "").strip()
+ALLOWED_FINALIZE_REASONS = frozenset({"HARMONIE_ASSET_WATCHDOG_TIMEOUT"})
 GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 GRID_BATCH_WARMED: set[tuple[Any, ...]] = set()
 PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH: float | None = None
@@ -5928,6 +5931,7 @@ def main() -> int:
     )
     if (
         wave_bootstrap_configuration is None
+        and not FINALIZE_ONLY
         and not FORCE_REFRESH
         and previous_generated
         and previous.get("zones")
@@ -6102,6 +6106,19 @@ def main() -> int:
     if coastal_point_stage_targets:
         save_coastal_point_stage(COASTAL_POINT_STAGE_PATH, coastal_point_stage)
     merge_previous(result, previous, active_output_ids)
+    if FINALIZE_ONLY:
+        if FINALIZE_REASON not in ALLOWED_FINALIZE_REASONS:
+            raise RuntimeError("unsupported supervised DMI finalization reason")
+        result["diagnostics"]["supervisedFinalization"] = {
+            "reason": FINALIZE_REASON,
+            "partialProgressPreserved": True,
+        }
+        result["diagnostics"]["errors"].append({
+            "collection": "harmonie_dini_sf",
+            "message": "stalled HARMONIE asset stopped by bounded supervisor",
+            "failureCode": FINALIZE_REASON,
+            "partialProgressPreserved": True,
+        })
     result["diagnostics"]["restoredMarineSelections"] = restore_marine_selections(result, zones)
     budget = {"bytes": 0}
     # Validate and normalize the hydrated cache once before delayed progress
@@ -6139,6 +6156,9 @@ def main() -> int:
         and bool(scheduled)
         and scheduled[0] in MARINE_COLLECTIONS
     )
+    if FINALIZE_ONLY:
+        scheduled = []
+        schedule_coverage["supervisedFinalizeOnly"] = True
     result["diagnostics"]["scheduledCollections"] = scheduled
     result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
 
@@ -6734,7 +6754,16 @@ def main() -> int:
     # proof that the restored regional shadow contains all 118 bound samples.
     replay_targets.extend(regional_proxy_targets)
 
-    if not replay_targets:
+    if FINALIZE_ONLY:
+        result["diagnostics"]["currentFieldShadowCachedReplay"] = {
+            "attempted": False,
+            "reason": "supervised-finalize-only",
+            "assetsCompleted": 0,
+            "samplesWritten": 0,
+            "bootstrapDownloads": 0,
+            "bootstrapDownloadedBytes": 0,
+        }
+    elif not replay_targets:
         result["diagnostics"]["currentFieldShadowCachedReplay"] = {
             "attempted": False,
             "reason": "fresh-marine-assets-covered-private-targets",

@@ -1,3 +1,9 @@
+## 4.0.322 – et fastlåst HARMONIE-asset kan ikke blokere hele vejrjobbet (2026-09-05, lokalt)
+
+- Engangsrun `33918250039` blev dræbt ved DMI-trinnets 55-minuttersgrænse, mens ét downloadet HARMONIE-forecasttrin havde været i ecCodes-behandling i mere end 52 minutter. De tre cache-save-trin bestod; færdige assets blev bevaret, men Copernicus blev ikke nået.
+- Normal drift og engangsopfyldning bruger nu samme supervisor. Kun et igangværende HARMONIE-asset får en 180-sekunders watchdog; efter stop genvaliderer og finaliserer den eksisterende producent den atomiske cache inden for yderligere 420 sekunder. Downstream åbnes kun ved den eksisterende strenge DMI-terminalgate.
+- Supervisoren er med i runtimehashen. Fem nye syntetiske tests samt de berørte oneoff-, workflow- og runtimekontrakter er grønne. DMI-first, Copernicus exact-gap, 673 × 118, historik, score, model-id/state, geometri og punkter er uændrede. Exact-head, merge og frisk main-kørsel afventer.
+
 ## 4.0.321 – bounded fortsættelse af engangsopfyldning (2026-09-04, lokalt)
 
 - Gemte downloadbudgetstop kan fortsættes i højst tre DMI-blokke under samme samlede tidsramme og råcacheloft. Kun engangsjobbet ændres; normal produktion og scheduler er urørte. Ni måltests og workflowkontrakten består; ny CI/runtime afventer.

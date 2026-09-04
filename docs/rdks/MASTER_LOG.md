@@ -1,3 +1,8 @@
+# NYESTE EJERDELTA – 2026-09-05 – fastlåst HARMONIE-asset må ikke hænge
+
+- Ejeren kræver, at et enkelt HARMONIE-asset ikke må kunne hænge til GitHubs 55-minuttersgrænse. Lokal 4.0.322 stopper kun den aktive HARMONIE-behandling efter 180 sekunder og bruger derefter den eksisterende producent til bounded, fail-closed finalisering. Rettelsen gælder både normal cron/watchdog-drift og stor engangsopfyldning.
+- Engangsrun `33918250039` er fejlevidens: ét downloadet asset hang over 52 minutter i ecCodes; alle tre cache-save-trin bestod, men Copernicus blev ikke nået. DMI-first, exact-gap, fuld 673 × 118-gate, model/state, historik og geometri bevares. Exact-head, merge og frisk main-run afventer.
+
 # NYESTE EJERDELTA – 2026-09-04 – vindrettelse gælder både engangsrun og normal drift
 
 - Ejeren bestiller hurtigere PR-kontrol efter endnu en rød kørsel. Samlet releasefejlliste viste alene forældet testkommando. Denne er rettet, og en fælles release-first-testplan fjerner 33 gentagne starter uden at fjerne nogen af de 134 oprindelige kildekommandoer. Testplanen tillader kun node/python-literalinvokationer og genbrug efter en fuld grøn releasegate i samme procesforløb. DEC-0045, håndbøger og status følger ændringen. Ingen ændret retning for model, vejr eller engangsopfyldning.

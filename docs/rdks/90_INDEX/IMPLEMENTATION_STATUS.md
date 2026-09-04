@@ -1,3 +1,10 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – bounded HARMONIE-asset
+
+- [x] Klassificer `33918250039`: ét HARMONIE-asset hang over 52 minutter i ecCodes; det var ikke normal download eller manglende cache. Tre cache-save-trin bestod.
+- [x] Implementer fælles normal/oneoff-supervisor med 180-sekunders HARMONIE-assetwatchdog, 420-sekunders fail-closed producentfinalisering, bounded outputs og runtimehashbinding.
+- [x] Bestå de fem nye supervisortests samt berørte oneoff-, DMI-workflow-, rækkefølge- og private-runtimemåltests.
+- [ ] Bestå version/RDKS/diff, exact-head, merge og frisk main-run. Fuld 210/673/118, Supabase-kapacitet, Fase B, produktion og offentlig validering forbliver åbne.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
 
 - [x] PR #252 bestod exact-head og blev merged `bc9c52e6`; stor engang `33899069301` er startet og har gemt DMI-fremgang. Primær vind virker på alle 673 dele, men downloadbudgettet efterlod 14 af 20 vindfiler.
