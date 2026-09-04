@@ -1,5 +1,9 @@
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
 
+- [x] PR #252 bestod exact-head og blev merged `bc9c52e6`; stor engang `33899069301` er startet og har gemt DMI-fremgang. Primær vind virker på alle 673 dele, men downloadbudgettet efterlod 14 af 20 vindfiler.
+- [x] Lokal bounded one-off-fortsættelse er implementeret og måltestet; højst tre passeringer, samme samlede tid og råcacheloft, ingen normal scheduler-/modelændring.
+- [ ] Afvent og klassificer engangskørslens Copernicus-/regionale slutresultat; luk dokumentation, review og eventuel ny PR samlet. Fuld vejrakse og modelaktivering er ikke bevist.
+
 - [ ] Efter stor opfyldning: mål almindelige kørselsprioriteter på tværs af alle vejrtyper, cachegenbrug og tid pr. led; vurder derefter tidsbudgetter/intervaller. Ny ejerpræcisering 2026-09-04; ingen forudgående blind schedulerændring.
 - [x] Klassificer de kendte CI-, vind-, native-hale-, processingbudget- og isolerede stagingfejl samlet; implementer og måltest sikker restdiagnostik uden lempet datagate. Den eksakte runtime-restfordeling er stadig åben.
 

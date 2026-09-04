@@ -1,5 +1,9 @@
 # Weather Pipeline 1.0
 
+## Lokal engangsfortsættelse efter downloadloft, 2026-09-04
+
+En afsluttet DMI-passering kan have gemt gyldig fremgang uden at nå alle vindfiler. Kun engangsjobbet får derfor en begrænset wrapper: højst tre passeringer, én samlet 3000s-ramme, fortsat 4 GiB download pr. passering og 4 GiB råcache efter hver afslutning. Samlet nyt download er højst 12 GiB, ikke større varig cache. Næste passering kræver bekræftet gemning/oprydning, fremgang, samme reference, alene downloadbudgetstop, tilstrækkelig tid og mindst 5 GiB fri disk. Øvrige fejl gentages ikke. Den uændrede producent genbruger færdige assets; fulde downstream-gates afgør fortsat datakomplethed. Almindelig scheduler og intervaller ændres ikke. Se `research/DMI_ONE_OFF_BOUNDED_CONTINUATION_2026-09-04.md`.
+
 Kildeprioriteten er komponentvis, ikke én fælles kæde. DMI er førstevalg. For strøm bruges derefter kun den kontrollerede Copernicus-/regionalproxykontrakt ved eksakte DMI-huller; Open-Meteo/MET-strøm må ikke blive scoregrundlag. For andre tilladte komponenthaler undersøges relevante DMI-produkter før den dokumenterede eksterne fallback. Cache og privat runtime bevarer allerede valideret kontinuitet, men er ikke en selvstændig kilde, der må overtrumfe frisk provenance.
 
 ## 4.0.321 – forståelig restdiagnose uden ændret datakrav

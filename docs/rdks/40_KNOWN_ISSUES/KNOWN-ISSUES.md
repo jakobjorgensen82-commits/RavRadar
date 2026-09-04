@@ -1,5 +1,7 @@
 # NYESTE HELHEDSFUND – 2026-09-04 – primær vind fejlede lokalt i GRIB-læseren
 
+- **ISSUE-ONEOFF-DOWNLOAD-CEILING – BEVIST / LOKAL OPFØLGNING:** Efter merged #252 fik `33899069301` vind på alle 673 dele, men kun seks af 20 officielle vindfiler inden 4-GiB-downloadloftet. Faktisk besked er downloadbudget; den gamle fælles kode misnavngiver det som runtimebudget. Ingen data blev nulstillet. Ny lokal wrapper genbruger eksisterende finalisering/oprydning højst tre gange under én 3000s-deadline med uændret 4-GiB-cache og diskreserve. Otte måltests og workflowkontrakten er grønne; ingen ny CI/runtime endnu. Almindelig drift ændres ikke.
+
 - **RESTDIAGNOSTIK – LOKALT RETTET / RUNTIME ÅBEN:** Regional-stop beholder sin fejl, men den fælles closure-CLI viser nu en strengt afgrænset oversigt uden private id-lister eller værdier: restpar pr. prognoseoffset, DMI-mangelstype, regionalt scope og Feggesund. Fem syntetiske måltests og den eksisterende closure-test er grønne. `33894480067` nåede LF/NSBS 117 og IDW 10 native timer, gemte caches og stoppede på resten af IDW; én upstream-hale var tilbage ved ny 16Z-reference. Dette er ikke fuld datalukning. Modeller, geodata, cacheindhold og regional allowlist ændres ikke.
 
 - **ISSUE-RELEASE-OUTCOME-INVENTORY – LOKALT RETTET:** `33892021429` fandt én fejl i outcome-testens tekstsøgning efter eget filnavn i gammel gatefil. Den kontrollerer nu samme importerede testliste som gateudførelsen; resterende statiske krav bevares. Hele referenceklassen er gennemgået; ny CI afventer.

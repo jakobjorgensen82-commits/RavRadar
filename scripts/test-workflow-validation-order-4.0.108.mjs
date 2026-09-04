@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import './test-weather-source-gate.mjs';
 import {
   PRODUCTION_WORKFLOW_SOURCES,
@@ -229,6 +230,7 @@ for (const marker of [
   'operational-118-preflight:',
   "if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true",
   'timeout-minutes: 180',
+  'run: python -u scripts/run-dmi-oneoff-fill.py',
   'DMI_BULK_MAX_DOWNLOAD_MB: 4096',
   'DMI_BULK_COMPLETE_HORIZON_HOURS: 118',
   'name: Smoke-test the required low-level ecCodes API',
@@ -2525,4 +2527,5 @@ for (const forbidden of ['secrets.', 'SUPABASE_', 'data/live/', 'currentUMps', '
   if (outcomeSection.includes(forbidden)) throw new Error(`Det payloadfri outcomejob må ikke indeholde ${forbidden}`);
 }
 
+execFileSync('python', ['scripts/test-dmi-oneoff-fill.py'], { stdio: 'inherit' });
 console.log('Workflowinventar, rækkefølge, deployisolering og progressiv DMI-cache består.');
