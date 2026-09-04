@@ -1,4 +1,20 @@
-# NYESTE ARBEJDSCHECKPOINT – 2026-09-04 – vindrettelse og append-only binding samlet lokalt
+# NYESTE FEJLRETNINGS-CHECKPOINT – 2026-09-04 – #252 gammel testreference rettet
+
+- Ejeren har bekræftet Sol/Ekstra høj. #252/head `42feb046` fejlede `33883271078`/job `101056816572` 14:40:59Z i rollback-trip-backend-testens linje 716: current integrated hash blev søgt i den historiske `20260901010000`-migration. De tidligere integrerede model-, checkpoint-, bindings- og migrationskontroller havde passeret samme CI før denne fejl.
+- Årsag og rettelse: testen skal validere den gældende SQL-kontrakt. Den importerer nu `REQUIRED_CUTOVER_MIGRATIONS` fra produktionskædens eksisterende readinessmodul og læser `.at(-1).filename`. Alle eksisterende assertions bevares. Øvrige gamle migrationsreferencer er gennemgået; de bruges til historisk uforanderlighed eller stabile uændrede funktioner. Ingen runtime-, SQL-, cache- eller modelhashændring.
+- Hele `test-candidate-g-rollback-trip-backend.mjs` og `test-harmonie-binding-migration.mjs` er grønne lokalt. Dokumentation følger årsagen. Næste er én samlet opfølgende commit/push på samme PR, ny GitHub-kontrol og Terra/Høj ved ren venten. Sol før merge/fejl. Ingen ny stor engangsdispatch før sikker merge.
+- Lignende-fejlkontrol afsluttet: alle tests med både aktuelle modelbindinger og migrationsfiler er krydset. De to øvrige historiske referencer er afgrænset til immutable fixture-/historikkontrol. Seks samlede måltests er grønne i samme gennemløb: candidate rollback-trip-backend, cutover readiness, cutover install, release metadata, HARMONIE hash-only migration og workflowrækkefølge. Ingen anden rettelse nødvendig.
+- Fetch bekræfter main `bd47dc9f`; ny almindelig run `33883060046` er in_progress på samme main, og workflow `318363965` er ACTIVE. Ingen afbrydelse, pause eller dispatch er udført i denne opfølgning. Privat `.cache/`, geodata og øvrige worktrees er urørte.
+
+# TIDLIGERE PUSH-CHECKPOINT – 2026-09-04 – PR #252, afvent exact-head
+
+- Den fælles vindrettelse, forbrugere, append-only binding, måltests og dokumentation er committed og pushet som `42feb046f1a560c9582f7b6c33eb6bb5c76bf238` på `codex/ravscore-real-bundle-closure`. PR #252: https://github.com/jakobjorgensen82-commits/RavRadar/pull/252.
+- Exact-head run `33883271078` / job `101056816572` er startet 14:21:40Z og er IN_PROGRESS ved checkpoint. Ingen merge eller ny stor engangsdispatch endnu. De 9 vindtests er til sidst genkørt med reel ecCodes og alle grønne; 12 transaktionelle cachetests og dokumentations-/bindingsmålmatrix er også grønne.
+- Main er fetched/verificeret uændret `bd47dc9f`. Workflow `318363965` / almindelig vejrhentning er live-bekræftet ACTIVE efter push. Eksisterende 15-minutters read-only overvågning er opdateret til #252 og afsluttede gamle kørsler; ingen dublet eller ny pause.
+- Næste: kun overvåg exact-head. STOP og bed ejeren skifte til Terra/Høj for kvotebesparelse. Ved fejl eller grøn kontrol kræves Sol/Ekstra høj før henholdsvis fejlanalyse eller endeligt review/sikker merge. Efter merge bestilles ejerens nye store engangsopfyldning på main med genbrug af gyldige caches. Fælles rettelse gælder også normal drift; ingen cronændring.
+- Denne statusnote er kun lokal og permanent gemt; lav ikke en status-only commit, som genstarter CI på nyt head. Alt implementeret arbejde er sikret på GitHub. `.cache/` er fortsat urørt og untracked. De tidligere formuleringer om ikke-committed arbejde nedenfor er nu historiske. Candidate G er stadig offentlig; samlet 673 × 118, kapacitet, backend/Fase B og ny offentlig model er ikke bevist.
+
+# TIDLIGERE ARBEJDSCHECKPOINT – 2026-09-04 – vindrettelse og append-only binding samlet lokalt
 
 - Fortsæt med Sol/Ekstra høj. Ejeren har bestilt en ny samlet engangsopfyldning efter rettelse/CI/merge og kræver samme rettelse i normal drift. Begge bruger den fælles DMI-producent; cron ændres ikke. Ingen retning ændres, ingen kunstig historik eller geodataændring.
 - Den åbne bindingsfejl i det tidligere checkpoint nedenfor er LØST lokalt. Ny migration `20260904140000_harmonie_wind_reference_binding.sql` fremfører alene tre integrated-hashforekomster, to rollback-hashforekomster, én continuation-hash og to versions-readbacks i de to gamle SQL-kroppe. Gamle migrations er urørte. Hele transformationen er testet. Ingen SQL er kørt live.

@@ -5,6 +5,8 @@
 - [x] Måltest fysisk retning, uafhængig PROJ-paritet, producent/forbrugere og bevarede marine kontrakter. Regenerer begge bundles og closurebindinger.
 - [x] Tilføj ny hash-only migration `20260904140000`; bevar alle gamle migrations og før eksisterende installations-/readinesskæde frem til fem eksakte migrations. Metadata-/installationsadmission er lokalt kontrolleret.
 - [x] Luk dokumentations-/releasebindingstest, håndbogssync og transaktionel cachemåltest. RDKS/version/diff er grønne; geodata og gamle migrations er urørte.
+- [x] Ret #252-kildekontrollens oversete rollbacktest: vælg den aktuelle migration fra samme liste som produktionen. Hele rollback-trip-backend-testen og hash-only SQL-kontrollen er grønne; ingen runtimeændring.
+- [x] Gennemgå alle tests for samme historisk/current-forveksling og kør de seks relaterede suites samlet; ingen yderligere fejl fundet.
 - [ ] Bestå PR-exact-head, merge og start ny samlet main-opfyldning. Ingen lokal SQL-apply eller modelaktivering er udført.
 - [ ] Bevis fuld 210/673/118/Feggesund, normal vedligeholdelse, live Supabase-kapacitet, Fase B og offentlig model. Se den nye HARMONIE-reparationsrapport.
 

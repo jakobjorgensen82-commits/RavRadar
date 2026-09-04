@@ -1,5 +1,8 @@
 ## 4.0.321 – HARMONIE-filformat og korrekt geografisk vind (2026-09-04, lokalt)
 
+- PR #252-opfølgning: rollbackens backendtest kontrollerer nu den gældende migration fra produktionskædens liste. Den gamle historiske fil bevares; eksisterende assertions består. Dette lukker den konkrete kildekontrolfejl uden ændring af runtime eller SQL.
+- Alle beslægtede migrations-, rollback-, installations-, release- og workflowtests er gennemgået og bestået samlet; øvrige gamle migrationsreferencer er bevidste historikkontroller.
+
 - Fælles normal/engangs-DMI-læser håndterer Lambert-formatets fire ikke-anvendelige angular keys og omregner den faktiske samme-celle vindreference korrekt. Ukendte/mismatchede referencer afvises; HARMONIE source v2 følger gennem Python/JS.
 - Kun HARMONIE får ny processing-markør; gemt DKSS/WAM/Copernicus/regional progression bevares. Scoreformel, model-id/stateversion, cron, geometri og punkter ændres ikke.
 - Begge reelle modelbundles, continuation og forbrugere er synkroniseret via append-only hashmigration `20260904140000`; gamle migrationer er urørte. Syntetisk ecCodes-, uafhængig PROJ- og kontraktmåltest er grønne. Exact-head, merge, ny stor opfyldning og produktion afventer.

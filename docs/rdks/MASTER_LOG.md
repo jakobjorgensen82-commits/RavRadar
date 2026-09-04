@@ -1,5 +1,7 @@
 # NYESTE EJERDELTA – 2026-09-04 – vindrettelse gælder både engangsrun og normal drift
 
+- Ejeren har igen valgt Sol/Ekstra høj efter #252-fejl. Fejlen er identificeret som en overset historisk migrationsreference i rollbacktesten; den berørte test vælger nu den samme gældende migration som produktionskæden og består. Ingen ny retning, datahentningsmetode eller runtimeændring. Fortsæt med ny kontrol af samme PR, sikker merge og allerede bestilt samlet opfyldning. Terra/Høj ved ren venten.
+
 - Ejeren bekræfter Sol/Ekstra høj til fejlafklaring; Ultra er ikke aktuelt nødvendigt. Ved ren overvågning anbefales Terra/Høj, og Sol kræves igen før kritiske ændringer.
 - Efter test/exact-head/merge bestilles ny stor engangsopfyldning på rettet main med genbrug af gemt progression. Samme rettelse skal gælde almindelig indsamling; begge kalder den fælles DMI-producent. Der ændres ikke cron-ordre eller kildeprioritet.
 - Tidligere besked om komplet DMI er korrigeret: current-terminalen var grøn, mens HARMONIE-vind fejlede. Copernicus-budgetstop med gemt fremgang er ikke komplet 210/673/118. Ingen ny færdiggaranti, gammel synteseordre eller punktændring er autoriseret.

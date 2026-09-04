@@ -7,6 +7,8 @@
 
 ### HARMONIE-reference 2026-09-04 – lokalt, ny runtime afventer
 
+- #252-kontrollens oversete backendtest er ført fra historisk migration til produktionskædens seneste kontrakt; hele testen består lokalt. Ingen ændring af vejrkode, modelbinding eller SQL i denne testopfølgning.
+
 - Lambert-formatfejlen og manglende geografisk vindomregning er rettet samlet i fælles producent. HARMONIE-only cachemarkør bevarer marinearbejdet; primær kilde v2 og DKSS-vindhale v1 valideres separat.
 - Reelle model-/rollback-/continuation-bindinger føres frem med ny migration `20260904140000`; alle gamle migrations bevares. Den nye SQL-krop er måltestet til kun at ændre eksakte bindinger/readbackversion. Se HARMONIE-rapporten for fulde hashes og beviser. Ingen ny produktion, modelaktivering eller 210/673/118-bevis endnu.
 
