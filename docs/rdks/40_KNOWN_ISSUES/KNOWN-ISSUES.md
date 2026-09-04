@@ -1,3 +1,7 @@
+# NYESTE DRIFTSFUND – 2026-09-05 – ét HARMONIE-asset hang til jobgrænsen
+
+- **ISSUE-DMI-HARMONIE-ASSET-HARD-HANG – P0 / LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** `33918250039` brugte hele DMI-trinnets 55 minutter, fordi ét downloadet HARMONIE-asset sad over 52 minutter i ecCodes. Tidligere assets tog sekunder. Caches blev gemt, men Copernicus blev ikke nået. Fælles normal/oneoff-supervisor stopper kun det igangværende HARMONIE-asset efter 180 sekunder og lader den eksisterende producent genvalidere/finalisere inden for 420 sekunder. READY opfindes ikke. Se watchdograpporten 2026-09-05.
+
 # NYESTE HELHEDSFUND – 2026-09-04 – primær vind fejlede lokalt i GRIB-læseren
 
 - **ISSUE-ONEOFF-DOWNLOAD-CEILING – BEVIST / LOKAL OPFØLGNING:** Efter merged #252 fik `33899069301` vind på alle 673 dele, men kun seks af 20 officielle vindfiler inden 4-GiB-downloadloftet. Faktisk besked er downloadbudget; den gamle fælles kode misnavngiver det som runtimebudget. Ingen data blev nulstillet. Ny lokal wrapper genbruger eksisterende finalisering/oprydning højst tre gange under én 3000s-deadline med uændret 4-GiB-cache og diskreserve. Otte måltests og workflowkontrakten er grønne; ingen ny CI/runtime endnu. Almindelig drift ændres ikke.

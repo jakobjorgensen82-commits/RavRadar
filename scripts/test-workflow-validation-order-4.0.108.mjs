@@ -232,6 +232,8 @@ for (const marker of [
   'timeout-minutes: 180',
   'run: python -u scripts/run-dmi-oneoff-fill.py',
   'DMI_BULK_MAX_DOWNLOAD_MB: 4096',
+  'DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180',
+  'DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420',
   'DMI_BULK_COMPLETE_HORIZON_HOURS: 118',
   'name: Smoke-test the required low-level ecCodes API',
   'python scripts/smoke-test-eccodes.py',

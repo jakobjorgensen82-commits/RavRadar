@@ -1,5 +1,14 @@
 # Integreret RavScore — producent-/forbrugermatrix
 
+## Nyeste tillæg 2026-09-05: bounded fælles DMI-indgang
+
+| Producent | Forbrugere | Samlet kontrakt og kontrol |
+| --- | --- | --- |
+| `run-dmi-bulk-supervised.py` → eksisterende `update-dmi-bulk.py` | Normal cron/watchdog-produktion og stor engangsopfyldning | Kun igangværende HARMONIE-asset er bounded til 180 sekunder; ved stop genvalideres/finaliseres senest atomiske cache uden nye assets inden for 420 sekunder. Begge workflowveje bruger samme indgang. |
+| Finaliseret DMI-cache og strict current-ledger | DMI-terminalgate, Copernicus exact-gap, regional closure, vejrbygning og modeladaptere | Downstream åbnes kun ved reel eksisterende DMI_READY. Watchdog/finalizer må ikke opfinde data, READY, historik eller kildebevis. Supervisoren indgår i private-runtimehashen. |
+
+Runbevis er åbent. Modellen, rollback, score, state, payloads, geometri og punkter ændres ikke af dette tillæg.
+
 ## Nyeste tillæg 2026-09-04: fælles HARMONIE-vind og fremført binding
 
 Dette tillæg erstatter tidligere lokale status-/hashangivelser nedenfor. Main er `bd47dc9f` (PR #251); Candidate G er fortsat offentlig. Vindrettelsen er lokal, ikke merged eller produktionsbevist. Se `HARMONIE_WIND_REFERENCE_REPAIR_2026-09-04.md` for årsag og evidens.

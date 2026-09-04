@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-05 – HARMONIE-assetwatchdog 4.0.322
+
+- Run `33918250039` på main `ce93cebc` blev dræbt ved 55 minutter, fordi ét downloadet HARMONIE-asset sad over 52 minutter i ecCodes. Cachesave bestod; downstream blev ikke nået.
+- Lokal 4.0.322 fører både normal drift og engangsopfyldning gennem `run-dmi-bulk-supervised.py`: 180 sekunder pr. igangværende HARMONIE-asset og højst 420 sekunders fail-closed finalisering gennem den eksisterende producent. Gemte data, DMI-first, exact-gap, model/state og geometri bevares.
+- Måltests er grønne; exact-head, merge og frisk main-run mangler. Se `../research/DMI_HARMONIE_ASSET_WATCHDOG_2026-09-05.md`.
+
 # NYESTE CHECKPOINT – 2026-09-03 – PR #249 merged; modelclosure klar til exact-head
 
 - `origin/main a331e0dbb08a9ab9ffff26632a708828574bdcd8` indeholder nu den exact-head-grønne monotone Copernicus-progression. Post-merge-vejrkørsel `33775957133` er startet og er ikke endnu terminalt releasebevis.

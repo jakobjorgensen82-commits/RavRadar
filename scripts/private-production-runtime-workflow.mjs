@@ -42,6 +42,7 @@ export const PRIVATE_RUNTIME_CONTRACT_FILES = Object.freeze({
   fullRuntimeContractSha256: Object.freeze([
     'js/core/ravscore-model-contract.js',
     'scripts/update-dmi-bulk.py',
+    'scripts/run-dmi-bulk-supervised.py',
     'scripts/update-weather.mjs',
     'scripts/check-weather-update.py',
     'scripts/build-copernicus-target-registry.py',

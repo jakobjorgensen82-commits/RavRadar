@@ -1,5 +1,10 @@
 # Aktive krav – samlet register
 
+## 4.0.322 – bounded HARMONIE-asset og fail-closed finalisering (2026-09-05)
+
+- **REQ-DMI-HARMONIE-ASSET-WATCHDOG-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Både normal drift og engangsopfyldning skal stoppe ét HARMONIE-asset, som ikke når producentens eksisterende afslutningsmarkør inden 180 sekunder. Watchdoggen må ikke gælde download, andre collections eller hele DMI-jobbet.
+- **REQ-DMI-SUPERVISED-FINALIZATION-001 – BINDENDE:** Et watchdogstop skal bevare senest atomisk committede assets og bruge den eksisterende producent til validering/finalisering uden nyt acquisitionarbejde. Finaliseringen er bounded til 420 sekunder. Downstream kræver uændret strict DMI_READY; manglende/forkert finalisering skal stoppe med bounded, ikke-tomme outputs. Ingen syntetiske data eller lempet 673 × 118-gate.
+
 ## HARMONIE-vind og fælles indsamling – 2026-09-04
 
 - **REQ-HARMONIE-GEOGRAPHIC-WIND-REFERENCE-001 – BINDENDE / LOKALT IMPLEMENTERET:** DMI-vind skal have geografisk retning efter verificeret samme-celle GRIB-reference. Lambert-non-applicable keys er ikke manglende vejr; nødvendige metadata må ikke defaultes. Ukendt eller uens vektorreference afvises. Primær HARMONIE v2 og marine vindhale v1 holdes adskilt; kun HARMONIE-processing må invalidere for denne rettelse.
