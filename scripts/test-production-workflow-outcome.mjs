@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { RELEASE_GATE_TEST_FILES } from './lib/release-gate-test-plan.mjs';
 import {
   classifyProductionWorkflowOutcome,
   PRODUCTION_WORKFLOW_OUTCOME_SCHEMA,
@@ -474,8 +475,9 @@ const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 assert.equal(packageJson.scripts['test:production-workflow-outcome'], 'node scripts/test-production-workflow-outcome.mjs');
 assert.match(packageJson.scripts['test:workflow-action-contracts'], /npm run test:production-workflow-outcome/);
 const releaseGate = fs.readFileSync('scripts/release-gate.mjs', 'utf8');
+assert.ok(RELEASE_GATE_TEST_FILES.includes('scripts/test-production-workflow-outcome.mjs'),
+  'Release gate must execute the production outcome test through its shared inventory');
 for (const marker of [
-  "'scripts/test-production-workflow-outcome.mjs'",
   "const productionWorkflowOutcome=await read('scripts/production-workflow-outcome.mjs')",
   "PRODUCTION_WORKFLOW_OUTCOME_SCHEMA = 'ravradar-production-workflow-outcome-v2'",
   'productionWorkflowOutcome:true',

@@ -5,6 +5,10 @@
 
 ## Ændret
 
+- 2026-09-04: fælles current-closure bevarer fejlstop og giver en payloadfri restoptælling efter prognosetime, DMI-mangelstype, regionalt scope og Feggesund. Diagnostikken kan ikke udstede READY eller ændre data. Syntetiske måltests og eksisterende closure-test består; aktuel restfordeling måles i næste runtime.
+
+- 2026-09-04: outcome-testens statiske registreringskrav følger nu den fælles release-testliste. Ingen runtime-, hash- eller vejrændring; øvrige assertions består.
+
 - 2026-09-04: kildekontrollen kører fuld releasegate først og undgår 33 identiske gentagelser bagefter. Alle 134 oprindelige kildekommandoer er bevaret i deklarationen; plan-/fejlstopstest tilføjet. Den konkrete gamle releasekommando-kontrol er rettet, så både metadata og migrationsfremføring kræves. Ny CI-tid og samlet bestået kørsel afventer.
 
 ### HARMONIE-reference 2026-09-04 – lokalt, ny runtime afventer

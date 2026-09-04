@@ -2,6 +2,12 @@
 
 Kildeprioriteten er komponentvis, ikke én fælles kæde. DMI er førstevalg. For strøm bruges derefter kun den kontrollerede Copernicus-/regionalproxykontrakt ved eksakte DMI-huller; Open-Meteo/MET-strøm må ikke blive scoregrundlag. For andre tilladte komponenthaler undersøges relevante DMI-produkter før den dokumenterede eksterne fallback. Cache og privat runtime bevarer allerede valideret kontinuitet, men er ikke en selvstændig kilde, der må overtrumfe frisk provenance.
 
+## 4.0.321 – forståelig restdiagnose uden ændret datakrav
+
+Efter den strenge DMI-/Copernicus-validering kan current-closure stadig stoppe på rester uden for den regionale otte-delspolitik eller manglende regional kilde. Den fælles CLI viser nu kun antal restpar pr. prognosetime, fordelt på DMI-upstream-mangel/spatial mangel/uklassificeret, inden/uden for regionalpolitik samt Feggesund. Der vises ingen private id-lister, koordinater eller rå U/V. Oversigten er diagnostik, aldrig et READY-bevis; oprindeligt fejlstop, kildeprioritet og 673 × 118-krav er uændret. Samme kode bruges i normal drift og stor engangskørsel. Kan diagnosen ikke dannes sikkert, bevares den oprindelige fejl uden private fejltekster.
+
+Den aktuelle DMI-fremgang må ikke forveksles med fuld vejrcache: et færdigt kildeforsøg kan stadig efterlade ægte huller, og en ny officiel modeludgivelse skal også behandles. Feggesunds eksisterende B05-10/B05-12-proxy gælder bølger, ikke automatisk strøm. Manglende rådgivende historik er fortsat ikke adgangsbillet til prognosen.
+
 ## 4.0.320 – deterministisk DKSS-gridgenbrug og atomisk progression
 
 Den operationelle currentakse er præcis 673 dele × 118 timer, fra target til +117. Den seneste sikre DMI-optælling gav 72.769/79.414 direkte par og 6.645 restpar; 673 af restparrene var den fælles +117-hale. Det er ikke evidens for et landsdækkende DMI-sammenbrud. Efter grøn DMI-terminalgate forbliver alle eksakte restpar i Copernicus-targetdomænet: Baltic prøves først og AMM15 bagefter. Source-stage v2 kræver, at hvert valgt recordpar ligger i det valgte pinned produkts eget domæne. AMM15 kræver for samme eksakte par et komplet resultatløst Baltic-forsøg eller et deterministisk target-/registry-/hashbundet `NOT_APPLICABLE`; timeout, fejl eller uafsluttet shard er ikke udtømning. De præcist otte policybundne dkss_lf-dele markeres kun som regionalt fallback-berettigede; de udtages ikke af Copernicus-targetdomænet.
@@ -28,7 +34,7 @@ Controller-v4 har fortsat præcis 30 felter, fire statusser og seks transitionst
 
 4.0.319's payloadfri produktions-outcome er `ravradar-production-workflow-outcome-v2` og inkluderer historical actions samt recovery writer/finalizer/gate i nested exact-key-resultatet. Kode, releasegate og måltests er lokalt synkroniseret med schemaet; exact-head-, produktions- og offentligt slutbevis er fortsat åbent.
 
-Den aktuelle lokale 4.0.321 state-6-binding er `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=d5796289f645f1bcab6b4fe822c5ed6b0e919321013687302feb2139e814a286` over 55 transitive filer og otte deklarerede forbrugere. Den faktiske offentlige browserlukning attesterer desuden 78 transitive deploymoduler. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=7c7f2b4950b4ce7a04d560dde15dd93e408e045ca5e9ed4f9be33eac0255e89d` over 56 transitive filer. Begge digests skal matche alle producenter, forbrugere, checkpoints, overlays og releasegates.
+Den aktuelle lokale 4.0.321 state-6-binding er `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1` over 55 transitive filer og otte deklarerede forbrugere. Den faktiske offentlige browserlukning attesterer desuden 78 transitive deploymoduler. Den separate Candidate G-rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195` over 56 transitive filer. Begge digests skal matche alle producenter, forbrugere, checkpoints, overlays og releasegates.
 
 ## Integreret RavScore state 6 og genbrug af allerede hentet vejr (lokal releasekandidat 2026-08-30)
 

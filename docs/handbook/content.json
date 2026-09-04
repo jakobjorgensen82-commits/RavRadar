@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-04",
   "sections": [
     {
+      "id": "current-residual-diagnostic-2026-09-04",
+      "chapter": "88.22",
+      "title": "Hvad mangler der efter vejrhentningen?",
+      "summary": "En sikker fejloversigt skelner datamangler uden at ændre kravene til en komplet prognose.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> En afsluttet hentning betyder ikke nødvendigvis, at alle data findes.</div><p>Hvis strømkontrollen stopper efter DMI og Copernicus, viser driftsloggen nu antal rester pr. prognosetime. Den skelner mellem manglende officielle DMI-timer og manglende lokal dækning samt rester inden og uden for den godkendte regionale undtagelse. Feggesund tælles særskilt. Ingen private punkter, id-lister eller rå strømværdier vises.</p><p>Oversigten ændrer hverken data, kildevalg eller kravene til offentliggørelse. En fejl stopper stadig. Feggesunds eksisterende nabozoneløsning gælder bølger og er ikke automatisk en strømløsning. Manglende historik må fortsat ikke fjerne en ellers gyldig prognose.</p><p>Status: måltestet lokalt; den præcise restfordeling skal måles i en ny vejrkørsel. Den samme kontrol bruges ved engangsopfyldning og normal drift.</p>"
+    },
+    {
       "id": "source-validation-once-2026-09-04",
       "chapter": "88.21",
       "title": "Kodekontrol uden gentagne tests",

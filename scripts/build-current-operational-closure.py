@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -109,7 +110,7 @@ def main() -> int:
         registry.get("operationalRangeEndAt"),
         allowed_assets,
     )
-    result = build_current_operational_closure(
+    result = build_with_residual_diagnostic(
         targets=targets,
         dmi_ledger=ledger,
         dmi_attestation=attestation,
@@ -135,10 +136,104 @@ def main() -> int:
     return 0
 
 
+def residual_diagnostic(*, ledger, source_stage, policy, targets, reference) -> dict:
+    """Aggregate already-validated residual identities; never emit private rows.
+
+    This is a diagnostic, not a source disposition or a readiness certificate.
+    It is used only after the closure reached its regional residual checks.
+    """
+    reference = exact_reference(reference)
+    reference_dt = datetime.fromisoformat(reference.replace("Z", "+00:00"))
+    if (source_stage.get("status") != "READY"
+            or source_stage.get("productionReferenceAt") != reference
+            or ledger.get("productionReferenceAt") != reference):
+        raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+
+    def pairs(rows):
+        if not isinstance(rows, list) or len(rows) > 673 * 118:
+            raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+        result = set()
+        for row in rows:
+            part_id = row.get("partId")
+            valid_time = exact_reference(row.get("validTime"))
+            if not isinstance(part_id, str) or not part_id:
+                raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+            result.add((part_id, valid_time))
+        if len(result) != len(rows):
+            raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+        return result
+
+    missing = pairs(source_stage.get("missingPairs"))
+    complement = pairs(ledger.get("operationalComplementPairs"))
+    upstream = pairs(ledger.get("upstreamAbsencePairs"))
+    spatial = pairs(ledger.get("spatialUnavailablePairs"))
+    if not missing <= complement or upstream & spatial:
+        raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+    regional_ids = {row["partId"] for row in policy["parts"]}
+    target_zones = {row["partId"]: row["parentZoneId"] for row in targets}
+    if len(regional_ids) != 8:
+        raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+    counts = {}
+    for identity in sorted(missing):
+        part_id, valid_time = identity
+        if part_id not in target_zones:
+            raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+        offset = int((datetime.fromisoformat(valid_time.replace("Z", "+00:00"))
+                      - reference_dt).total_seconds() // 3600)
+        if not 0 <= offset < 118:
+            raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")
+        row = counts.setdefault(offset, {
+            "forecastOffsetHours": offset, "missingPairCount": 0,
+            "dmiUpstreamAbsentPairCount": 0, "dmiSpatialUnavailablePairCount": 0,
+            "dmiUnclassifiedPairCount": 0, "regionalPolicyPairCount": 0,
+            "outsideRegionalPolicyPairCount": 0, "feggesundPairCount": 0,
+        })
+        row["missingPairCount"] += 1
+        row[("dmiUpstreamAbsentPairCount" if identity in upstream else
+             "dmiSpatialUnavailablePairCount" if identity in spatial else
+             "dmiUnclassifiedPairCount")] += 1
+        row["regionalPolicyPairCount" if part_id in regional_ids
+            else "outsideRegionalPolicyPairCount"] += 1
+        row["feggesundPairCount"] += int(target_zones[part_id] == "B05-11")
+    return {
+        "schemaVersion": 1, "kind": "CURRENT_RESIDUAL_DIAGNOSTIC_ONLY",
+        "productionReferenceAt": reference, "missingPairCount": len(missing),
+        "byForecastOffset": [counts[key] for key in sorted(counts)],
+        "coordinatesIncluded": False, "rawVectorsIncluded": False,
+        "partIdsIncluded": False, "pairRefsIncluded": False,
+    }
+
+
+def build_with_residual_diagnostic(**kwargs):
+    try:
+        return build_current_operational_closure(**kwargs)
+    except Exception as error:
+        if getattr(error, "code", None) in {
+            "DMI_GAP_NOT_FALLBACK_ELIGIBLE", "REGIONAL_RESIDUAL_MISSING",
+        }:
+            try:
+                report = residual_diagnostic(
+                    ledger=kwargs["dmi_ledger"],
+                    source_stage=kwargs["copernicus_source_stage"],
+                    policy=kwargs["regional_policy"], targets=kwargs["targets"],
+                    reference=kwargs["locked_reference"],
+                )
+                print("Current operational residual summary: " + json.dumps(
+                    report, separators=(",", ":"), allow_nan=False,
+                ))
+            except Exception:
+                print("Current operational residual summary: UNAVAILABLE")
+        raise  # A diagnostic must never convert missing data into readiness.
+
+
+def safe_error_code(error: Exception) -> str:
+    code = getattr(error, "code", str(error))
+    return code if isinstance(code, str) and re.fullmatch(r"[A-Z][A-Z0-9_]{1,79}", code) else "UNEXPECTED_CLOSURE_ERROR"
+
+
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except Exception as error:
-        code = getattr(error, "code", str(error))
-        print(f"Current operational closure failed: {code}")
+        print(f"Current operational closure failed: {safe_error_code(error)}")
         raise SystemExit(1)

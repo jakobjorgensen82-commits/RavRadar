@@ -1,5 +1,7 @@
 ## 4.0.321 – kildekontrol uden dubletter og rettet testregistrering (2026-09-04, lokalt)
 
+- Fælles current-closure får sikker restoptælling efter prognosetime og mangelstype, uden private id-lister/værdier eller ændret fejlstop. Præcis runtime-restfordeling afventer; fem måltests og eksisterende closure-test er grønne.
+- Outcome-testen kontrollerer sin registrering i den fælles udførelsesliste, ikke en flyttet tekstmarkør i gatefilen; øvrige krav bevares.
 - Fuld releasegate køres først i kildekontrollen; efterfølgende identiske tests gentages ikke. Alle oprindelige kontroller bevares, 33 gentagne starter undgås, og enhver fejl stopper stadig. Standalone produktionsgate er fortsat fuld.
 - Releasekontrollens gamle forventning til testkommandoen er opdateret til både metadata- og append-only-migrationskontrol. Begge udføres også i standalone gate. Plan-, fejlstop-, workflow-, bindings- og migrationsmåltests er grønne; faktisk CI-tid afventer.
 

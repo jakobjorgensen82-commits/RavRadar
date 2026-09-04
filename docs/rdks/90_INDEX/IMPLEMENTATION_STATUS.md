@@ -1,5 +1,11 @@
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-04 – HARMONIE-vind og bindingslukning
 
+- [ ] Efter stor opfyldning: mål almindelige kørselsprioriteter på tværs af alle vejrtyper, cachegenbrug og tid pr. led; vurder derefter tidsbudgetter/intervaller. Ny ejerpræcisering 2026-09-04; ingen forudgående blind schedulerændring.
+- [x] Klassificer de kendte CI-, vind-, native-hale-, processingbudget- og isolerede stagingfejl samlet; implementer og måltest sikker restdiagnostik uden lempet datagate. Den eksakte runtime-restfordeling er stadig åben.
+
+- [x] Ret outcome-testens reference til den fælles, faktisk udførte release-testliste efter `33892021429`; øvrige krav bevares, lignende referencer gennemgået.
+- [ ] Afklar `DMI_GAP_NOT_FALLBACK_ELIGIBLE` efter gennemført Copernicus-trin i normal `33888805489`; 1.184 restpar kan ikke alle være i otte-delspolitikken. Ingen politikudvidelse eller fuldkomplethed påstås.
+
 - [x] Ret #252's samlede releasefejl om gammel testkommando; begge metadata-/migrationstests kræves og køres.
 - [x] Implementer ejerbestilt kildekontrol uden gentagelser: fuld releasegate først, derefter alle øvrige tests. Bevis 134 bevarede oprindelige kommandoer, 33 undgåede gentagelser og blokering ved enhver fejl/manglende test.
 - [ ] Bestå ny samlet GitHub-kontrol og mål faktisk gennemløbstid før sikker merge og stor engangsopfyldning.

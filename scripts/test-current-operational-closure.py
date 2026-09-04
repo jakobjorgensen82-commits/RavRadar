@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import copy
 import json
+import runpy
+import unittest
+from pathlib import Path
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
@@ -425,4 +428,11 @@ assert_error(
     ),
 )
 
+# Keep the CLI diagnostic's focused checks in this existing CI entry point.
+# It is also independently runnable while developing the diagnostic only.
+diagnostic_tests = runpy.run_path(str(Path(__file__).with_name("test-current-closure-diagnostics.py")))
+diagnostic_result = unittest.TextTestRunner().run(
+    unittest.defaultTestLoader.loadTestsFromTestCase(diagnostic_tests["DiagnosticTests"])
+)
+assert diagnostic_result.wasSuccessful(), "Current closure diagnostic checks failed"
 print("Current operational closure targeted tests passed")
