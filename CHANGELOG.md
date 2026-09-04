@@ -1,4 +1,8 @@
-## 4.0.321 – kildekontrol uden dubletter og rettet testregistrering (2026-09-04, lokalt)
+## 4.0.321 – bounded fortsættelse af engangsopfyldning (2026-09-04, lokalt)
+
+- Gemte downloadbudgetstop kan fortsættes i højst tre DMI-blokke under samme samlede tidsramme og råcacheloft. Kun engangsjobbet ændres; normal produktion og scheduler er urørte. Ni måltests og workflowkontrakten består; ny CI/runtime afventer.
+
+## 4.0.321 – kildekontrol uden dubletter og rettet testregistrering (2026-09-04, merged PR #252)
 
 - Fælles current-closure får sikker restoptælling efter prognosetime og mangelstype, uden private id-lister/værdier eller ændret fejlstop. Præcis runtime-restfordeling afventer; fem måltests og eksisterende closure-test er grønne.
 - Outcome-testen kontrollerer sin registrering i den fælles udførelsesliste, ikke en flyttet tekstmarkør i gatefilen; øvrige krav bevares.

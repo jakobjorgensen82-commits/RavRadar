@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-04",
   "sections": [
     {
+      "id": "oneoff-bounded-download-continuation-2026-09-04",
+      "chapter": "88.23",
+      "title": "Engangsopfyldning i gemte blokke",
+      "summary": "Downloadgrænsen behøver ikke afslutte hele opfyldningsforsøget.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Den store engangskørsel kan fortsætte i op til tre blokke, når downloadgrænsen er nået, og arbejdet er gemt.</div><p>Hver blok bruger den samme DMI-henter, gemmer færdige data og rydder de midlertidige råfiler som hidtil. Næste blok springer færdige filer over. Den fælles tidsramme forlænges ikke, og den gemte råcache må stadig højst fylde 4 GiB. Der kontrolleres ledig disk og tid før en ny blok.</p><p>Det gælder kun et dokumenteret downloadstop med gemt fremgang. Andre fejl gentages ikke automatisk. Op til tre blokke kan højst hente 12 GiB tilsammen, men de deler samme samlede tid og samme cacheloft. Det er ikke et løfte om data, som kilderne ikke har offentliggjort. De afsluttende kontroller afgør stadig, om prognosen er komplet.</p><p>Status: lokal og måltestet opfølgning. De almindelige vejrkørsler og deres intervaller ændres ikke her; de analyseres efter opfyldningen.</p>"
+    },
+    {
       "id": "current-residual-diagnostic-2026-09-04",
       "chapter": "88.22",
       "title": "Hvad mangler der efter vejrhentningen?",

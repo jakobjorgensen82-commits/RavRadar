@@ -482,7 +482,7 @@ jobs:
         id: dmi-bulk
         continue-on-error: true
         timeout-minutes: 55
-        run: python -u scripts/update-dmi-bulk.py
+        run: python -u scripts/run-dmi-oneoff-fill.py
         env:
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 4096

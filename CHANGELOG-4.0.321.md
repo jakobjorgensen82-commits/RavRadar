@@ -5,6 +5,8 @@
 
 ## Ændret
 
+- 2026-09-04, lokal opfølgning: kun engangsopfyldningen kan fortsætte efter et gemt downloadbudgetstop i højst tre blokke med én fælles tidsramme og uændret 4-GiB-cache. Andre fejl gentages ikke. Måltestet; aktuel engang bruger endnu ikke wrapperen, og fuld cache er ikke bevist.
+
 - 2026-09-04: fælles current-closure bevarer fejlstop og giver en payloadfri restoptælling efter prognosetime, DMI-mangelstype, regionalt scope og Feggesund. Diagnostikken kan ikke udstede READY eller ændre data. Syntetiske måltests og eksisterende closure-test består; aktuel restfordeling måles i næste runtime.
 
 - 2026-09-04: outcome-testens statiske registreringskrav følger nu den fælles release-testliste. Ingen runtime-, hash- eller vejrændring; øvrige assertions består.
