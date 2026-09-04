@@ -5,6 +5,13 @@
   "updatedAt": "2026-09-04",
   "sections": [
     {
+      "id": "weather-one-off-full-fill-safety-2026-09-04",
+      "chapter": "88.19",
+      "title": "Samlet vejrindsamling med plads til at gemme",
+      "summary": "Engangsopfyldningen dækker hele prognosegrundlaget og bevarer fremgangen til den normale drift.",
+      "body": "<div class=\"reader-guide\"><strong>Kort fortalt:</strong> Først fyldes hele vejrcachen op. Derefter kontrolleres, om normale kørsler kan holde den komplet.</div><p>Kæden behandler DMI-vind, bølger, strøm, vandstand og temperatur, derefter Copernicus på dokumenterede huller og til sidst den tilladte regionale Limfjordsfallback. DMI-data og det regionale grundlag gemmes før næste fase. Copernicus-data og journal gemmes før den afsluttende vejrbygning og kontrol. De private cachefamilier deles med normal drift.</p><p>Engangsjobbet får et samlet loft på 180 minutter. De tunge trin har tilsammen højst 119 minutter, så der er mindst 60 minutters reserve til øvrig opstart, gemning og afslutning. Det er en sikkerhedsramme, ikke en forventet køretid eller garanti mod eksterne fejl.</p><p>Selve opfyldningen kører ikke den lange kildegate og publicerer ikke den nye model. Kodeændringer kontrolleres særskilt. Opfyldningen køres på main, så efterfølgende normale kørsler kan genbruge cachen. Færdig kræver det samlede bevis for 210 zoner, 673 kystdele og 118 prognosetimer. Balancering ændres kun ved et målt behov bagefter.</p><p>Status: rettelsen er måltestet lokalt; GitHub-kontrol, merge og frisk opfyldning afventer. Ingen kunstige data, flyttede punkter eller ændret geometri.</p>"
+    },
+    {
       "id": "weather-continuation-source-proof-2026-09-04",
       "chapter": "88.18",
       "title": "Vejrindsamlingen skal bevare det udførte arbejde",

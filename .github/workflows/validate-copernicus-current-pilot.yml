@@ -354,7 +354,10 @@ jobs:
   operational-118-preflight:
     if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    # 55m DMI + 47m Copernicus + 17m runtime + at least 60m for
+    # setup, cache restore/save and closure. Acquisition soft deadlines remain
+    # below their step limits so progress can be saved before terminal gates.
+    timeout-minutes: 180
     env:
       RAVRADAR_PRIVATE_PREFLIGHT_REPORT: .geometry-v2-work/ravscore-integrated-118h-preflight.json
     steps:
@@ -455,6 +458,14 @@ jobs:
             dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
             dmi-zone-cache-v1-${{ runner.os }}-
 
+      - name: Restore private regional current evidence for normal maintenance
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-${{ runner.os }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            current-field-shadow-v1-${{ runner.os }}-
+
       - name: Restore private Copernicus operational range cache
         uses: actions/cache/restore@v6
         with:
@@ -506,6 +517,13 @@ jobs:
         with:
           path: data/live/dmi-bulk-cache.json
           key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save private regional current evidence before any terminal decision
+        if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/current-field-shadow.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/current-field-shadow.json
+          key: current-field-shadow-v1-${{ runner.os }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"
         id: dmi-terminal-gate
@@ -577,6 +595,7 @@ jobs:
       - name: Fill only the exact operational DMI gap seal
         id: copernicus-fill
         if: steps.current-range.outputs.source_stage_ready != 'true'
+        timeout-minutes: 47
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}

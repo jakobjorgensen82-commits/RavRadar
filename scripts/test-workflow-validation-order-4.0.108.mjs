@@ -225,7 +225,7 @@ for (const marker of [
   'default: false',
   'operational-118-preflight:',
   "if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true",
-  'timeout-minutes: 110',
+  'timeout-minutes: 180',
   'DMI_BULK_MAX_DOWNLOAD_MB: 4096',
   'DMI_BULK_COMPLETE_HORIZON_HOURS: 118',
   'name: Smoke-test the required low-level ecCodes API',
@@ -271,6 +271,51 @@ for (const marker of [
   }
 }
 const operationalPreflight = copernicusPilot.slice(operationalPreflightStart);
+const operationalStep = (name) => {
+  const start = operationalPreflight.indexOf(`name: ${name}`);
+  assert.ok(start >= 0, `Missing operational step: ${name}`);
+  const end = operationalPreflight.indexOf('\n      - name:', start + 1);
+  return operationalPreflight.slice(start, end < 0 ? undefined : end);
+};
+const timeoutMinutes = (block) => {
+  const match = block.match(/^\s+timeout-minutes:\s*(\d+)\s*$/m);
+  assert.ok(match, 'A bounded operational stage must declare its timeout.');
+  return Number(match[1]);
+};
+const operationalJobMinutes = timeoutMinutes(operationalPreflight.slice(0, operationalPreflight.indexOf('    steps:')));
+const dmiAcquisitionStep = operationalStep('Refresh all bounded official DMI collections for the proof');
+const copernicusAcquisitionStep = operationalStep('Fill only the exact operational DMI gap seal');
+const runtimeBuildStep = operationalStep('Build the integrated runtime without release or deploy');
+assert.ok(
+  operationalJobMinutes >= timeoutMinutes(dmiAcquisitionStep)
+    + timeoutMinutes(copernicusAcquisitionStep) + timeoutMinutes(runtimeBuildStep) + 60,
+  'The one-off job must cover every heavy step limit plus 60 minutes for setup, durable saves and closure.',
+);
+assert.ok(
+  timeoutMinutes(dmiAcquisitionStep) * 60
+    >= Number(dmiAcquisitionStep.match(/DMI_BULK_MAX_RUNTIME_SECONDS:\s*(\d+)/)[1]) + 180,
+  'DMI must retain shutdown headroom below its hard step timeout.',
+);
+assert.ok(
+  timeoutMinutes(copernicusAcquisitionStep) * 60
+    >= Number(copernicusAcquisitionStep.match(/--timeout-seconds\s+(\d+)/)[1]) + 120,
+  'The Copernicus wrapper must finish before the hard step timeout, leaving progress-save reachable.',
+);
+const regionalRestore = operationalStep('Restore private regional current evidence for normal maintenance');
+const regionalSave = operationalStep('Save private regional current evidence before any terminal decision');
+for (const block of [regionalRestore, regionalSave]) {
+  assert.ok(block.includes('path: .cache/current-field-shadow.json'));
+  assert.ok(block.includes('current-field-shadow-v1-${{ runner.os }}-118-preflight-'));
+  assert.ok(!block.includes('.cache/copernicus-current-shadow.json'), 'Regional DMI evidence is not the Copernicus cache.');
+}
+assert.ok(regionalRestore.includes('uses: actions/cache/restore@v6'));
+assert.ok(regionalRestore.includes('restore-keys: |\n            current-field-shadow-v1-${{ runner.os }}-'));
+assert.ok(regionalSave.includes('uses: actions/cache/save@v6'));
+assert.ok(regionalSave.includes('if: always()'));
+assert.ok(regionalSave.includes("steps.dmi-bulk.outcome != 'cancelled'"));
+assert.ok(regionalSave.includes("steps.dmi-bulk.outcome != 'skipped'"));
+assert.ok(regionalSave.includes("hashFiles('.cache/current-field-shadow.json') != ''"));
+assert.ok(buildWorkflow.includes('current-field-shadow-v1-${{ runner.os }}-'), 'Normal maintenance must restore the same regional cache family.');
 for (const block of operationalPreflight.split('\n      - name:')) {
   if (block.includes('actions/cache/')
     && block.includes('.cache/copernicus-current-shadow.json')
@@ -310,9 +355,11 @@ const operationalPositions = [
   operationalPreflight.indexOf('--root "$donor_root"'),
   operationalPreflight.indexOf('cp "$donor_root/data/live/dmi-bulk-cache.json" .cache/deployed-dmi-bulk-cache.json'),
   operationalPreflight.indexOf('name: Restore progressive private DMI zone cache'),
+  operationalPreflight.indexOf('name: Restore private regional current evidence for normal maintenance'),
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
   operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
+  operationalPreflight.indexOf('name: Save private regional current evidence before any terminal decision'),
   operationalPreflight.indexOf('name: "Require DMI production ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
@@ -359,6 +406,7 @@ if (operationalPreflight.includes('test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAV
 for (const saveName of [
   'Save progressed DMI GRIB cache before any terminal decision',
   'Save progressive DMI zone cache before any terminal decision',
+  'Save private regional current evidence before any terminal decision',
 ]) {
   const start = operationalPreflight.indexOf(`name: ${saveName}`);
   const end = operationalPreflight.indexOf('\n      - name:', start + 1);
