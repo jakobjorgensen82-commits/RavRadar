@@ -26,6 +26,7 @@ DEFAULT_COPERNICUS = ROOT / ".cache/copernicus-current-shadow.json"
 DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_REGIONAL = ROOT / ".cache/current-field-shadow.json"
 DEFAULT_POLICY = ROOT / "data/current-regional-proxy-policy.json"
+DEFAULT_OPEN_METEO = ROOT / ".cache/open-meteo-current-fallback.json"
 DEFAULT_OUTPUT = ROOT / ".cache/current-operational-closure.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/current-operational-closure.json"
 
@@ -39,6 +40,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
     parser.add_argument("--regional", type=Path, default=DEFAULT_REGIONAL)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
+    parser.add_argument("--open-meteo", type=Path, default=DEFAULT_OPEN_METEO)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--at", help="Locked exact UTC production reference")
@@ -98,6 +100,7 @@ def main() -> int:
     source_stage = read_object(args.source_stage, optional=True)
     regional = read_object(args.regional)
     policy = read_object(args.policy)
+    open_meteo = read_object(args.open_meteo)
     reference = exact_reference(args.at or registry.get("productionReferenceAt"))
     ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
     if not isinstance(ledger, dict):
@@ -121,6 +124,7 @@ def main() -> int:
         copernicus_source_stage=source_stage or None,
         regional_shadow=regional,
         regional_policy=policy,
+        open_meteo_fallback=open_meteo,
         locked_reference=reference,
     )
     atomic_write(args.output, result["privateProof"])
@@ -130,7 +134,8 @@ def main() -> int:
         "Current operational closure READY: "
         f"pairs={safe['totalPairCount']}; dmi={safe['dmiVerifiedPairCount']}; "
         f"copernicus={safe['copernicusBalticPairCount'] + safe['copernicusAmm15PairCount']}; "
-        f"regional={safe['regionalResidualPairCount']}; missing={safe['missingPairCount']}; "
+        f"regional={safe['regionalResidualPairCount']}; "
+        f"openMeteo={safe['openMeteoPairCount']}; missing={safe['missingPairCount']}; "
         f"closure={safe['closureId']}."
     )
     return 0

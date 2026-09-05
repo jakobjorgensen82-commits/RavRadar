@@ -22,7 +22,7 @@ import { synchronizeReleaseContractMetadata } from './sync-release-contract-meta
 
 const REPOSITORY_ROOT = path.resolve('.');
 const CHECKPOINT_MIGRATION_PATH =
-  'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql';
+  'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql';
 const HISTORICAL_TRIP_MIGRATION_PATH =
   'supabase/migrations/20260901010000_integrated_trip_measured_warmup_admission.sql';
 const CHECKPOINT_OUTER_BEGIN = '-- RAVSCORE_CHECKPOINT_METADATA_CAS_GENERATED_BEGIN';
@@ -41,6 +41,7 @@ const SYNC_WRITABLE_PATHS = Object.freeze([
 const SYNC_MIGRATION_PATHS = Object.freeze([
   HISTORICAL_TRIP_MIGRATION_PATH,
   'supabase/migrations/20260903010000_ravscore_checkpoint_metadata_cas.sql',
+  'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql',
   CHECKPOINT_MIGRATION_PATH,
 ]);
 
@@ -172,7 +173,7 @@ for (const [label, binding] of Object.entries(expected.modelBindings)) {
 }
 assert.equal(
   expected.modelBindings.candidateGRollback.modelBundleSha256,
-  'dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195',
+  '7f5f6c93649b93f6a61892b31811c57603ff6c3a0a47cc218deae39c87960484',
 );
 
 const documentationPaths = [

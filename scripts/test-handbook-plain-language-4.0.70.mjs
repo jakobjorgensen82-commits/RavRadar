@@ -693,8 +693,8 @@ forbidMarkers('Regelværkstedspecifikationen', ruleEngineSpecification, [
 requireMarkers('Vejrpipelinespecifikationen', weatherPipelineSpecification, [
   'Kildeprioriteten er komponentvis, ikke én fælles kæde',
   'DMI er førstevalg',
-  'kontrollerede Copernicus-/regionalproxykontrakt',
-  'Open-Meteo/MET-strøm må ikke blive scoregrundlag',
+  "DEC-0115's DMI → Baltic → AMM15 → policybundet regional DMI → Open-Meteo-orden",
+  'ikke-kalibreringsegnet sidste reserve',
   'Cache og privat runtime',
   'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0',
   'candidate-g-schema2-signed-current-reweight-bounded40h-wave-approach-to-integrated-schema6-v5',

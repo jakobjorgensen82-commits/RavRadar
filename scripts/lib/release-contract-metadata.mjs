@@ -41,6 +41,10 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0114',
       path: 'docs/rdks/10_DECISIONS/DEC-0114-INTEGRATED-FIRST-WITH-MEASURED-HISTORY-WARMUP.md',
     }),
+    Object.freeze({
+      id: 'DEC-0115',
+      path: 'docs/rdks/10_DECISIONS/DEC-0115-OPEN-METEO-OPERATIONAL-CURRENT-FALLBACK.md',
+    }),
   ]),
 });
 

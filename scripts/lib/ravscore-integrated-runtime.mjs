@@ -54,7 +54,20 @@ function compactWaveInputQuality(weather = {}) {
 
 export function integratedInputCalibrationEligible(weather = {}) {
   const quality = compactWaveInputQuality(weather);
-  return quality.waveInputSource !== FEGGESUND_WAVE_PROXY_SOURCE;
+  const current = weather?.currentProvenance;
+  const openMeteoCurrent = current?.source === 'open-meteo-meteofrance-currents';
+  if (openMeteoCurrent && (
+    current.provider !== 'open-meteo'
+    || current.physicalScope !== 'eulerian-waves-and-tides-combined-surface-current'
+    || current.scoreInputPolicyId
+      !== 'combined-current-single-channel-no-wave-or-tide-reprojection-v1'
+    || current.calibrationEligible !== false
+  )) {
+    throw new Error('Open-Meteo combined-current calibration contract is invalid');
+  }
+  return quality.waveInputSource !== FEGGESUND_WAVE_PROXY_SOURCE
+    && current?.calibrationEligible !== false
+    && !openMeteoCurrent;
 }
 
 function compactScoreBounds(result = {}) {
@@ -164,6 +177,9 @@ const CURRENT_PROVENANCE_FIELDS = Object.freeze([
   'distanceKm',
   'componentPair',
   'interpolation',
+  'physicalScope',
+  'scoreInputPolicyId',
+  'calibrationEligible',
 ]);
 
 function compactCurrentProvenance(provenance) {

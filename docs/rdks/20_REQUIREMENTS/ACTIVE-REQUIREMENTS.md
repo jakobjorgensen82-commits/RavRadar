@@ -1,5 +1,13 @@
 # Aktive krav – samlet register
 
+## 4.0.323 – sidste operationelle currentfallback og friskhed (2026-09-05)
+
+- **REQ-OPEN-METEO-CURRENT-LAST-RESORT-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Den eksakte operationelle rækkefølge er DMI DKSS → Copernicus Baltic → AMM15 → den eksisterende otte-dels regionale DMI-politik → Open-Meteo `meteofrance_currents` for alle rester. Open-Meteo må kun åbnes efter terminalt `READY`, må kun udfylde target..+117 og må aldrig udfylde historik, interpolere, carry-forwarde eller låne nabodel/-time. Timeout, fejl, budgetstop og `IN_PROGRESS` er ikke udtømning.
+- **REQ-OPEN-METEO-CURRENT-PHYSICAL-SCOPE-001 – BINDENDE:** Open-Meteo-records bindes som kombineret Eulerian+bølge+tidevands-overfladestrøm og bruges alene som én currentkanal. Ingen bølge-/tidevandsreprojektion eller dobbeltregning er tilladt. Maksimal afstand er 15 km, og alle afhængige outputs har `calibrationEligible=false`. Intern provenance bevares uden ny offentlig leverandøretiket, koordinater, rå U/V eller private id-lister.
+- **REQ-CURRENT-EXACT-RESIDUAL-PARTITION-001 – BINDENDE:** Kun rester inden for regionalpolitikken må sendes til regionalbyggeren. Udenforrester og regionalt ulukkede eksakte par går til Open-Meteo. Slutgaten kræver fortsat én klasse pr. celle, nul overlap og nul missing i 79.414 positioner. Fejl/null/ufuldstændige batches bevarer seneste komplette artifact.
+- **REQ-WEATHER-TARGET-FRESHNESS-001 – BINDENDE:** Normal drift har Copernicus/Open-Meteo-budget 360/240 sekunder og friskhed højst 90 minutter efter leverandørled samt 150 minutter før write/artifact. Engangsopfyldning har 3.300/900 sekunder, 200 minutters samlet loft og 240 minutters friskhedsgrænse. Samme kilde-/sikkerhedslogik bruges begge steder. Schedulerinterval vurderes først efter målt komplet opfyldning.
+- **REQ-OPEN-METEO-BINDING-FORWARD-001 – BINDENDE:** Integrated `b7ac1e2b…`, rollback `7f5f6c93…` og continuation `08f0a635…` føres frem med append-only migration `20260905090000`. Ældre migrationer må ikke ændres.
+
 ## 4.0.322 – bounded HARMONIE-asset og fail-closed finalisering (2026-09-05)
 
 - **REQ-DMI-HARMONIE-ASSET-WATCHDOG-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Både normal drift og engangsopfyldning skal stoppe ét HARMONIE-asset, som ikke når producentens eksisterende afslutningsmarkør inden 180 sekunder. Watchdoggen må ikke gælde download, andre collections eller hele DMI-jobbet.

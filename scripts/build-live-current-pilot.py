@@ -35,6 +35,7 @@ from lib.current_operational_closure import (
     COPERNICUS_AMM15,
     COPERNICUS_ADVISORY_PAST_MODEL_FIELD,
     COPERNICUS_BALTIC,
+    OPEN_METEO_COMBINED_CURRENT,
     REGIONAL_DMI_DERIVED_HOLD,
     REGIONAL_DMI_NATIVE,
     safe_current_operational_closure,
@@ -46,6 +47,18 @@ from lib.dmi_native_provenance import (
     processed_source_assets_from_current_operational_ledger,
 )
 from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
+from lib.open_meteo_current_fallback import (
+    LIVE_RECORD_PROJECTION_CONTRACT_ID as OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID,
+    REQUEST_CONTRACT_ID as OPEN_METEO_REQUEST_CONTRACT_ID,
+    SELECTION_POLICY_ID as OPEN_METEO_SELECTION_POLICY_ID,
+    SOURCE as OPEN_METEO_SOURCE,
+    MODEL as OPEN_METEO_MODEL,
+    PHYSICAL_SCOPE as OPEN_METEO_PHYSICAL_SCOPE,
+    SCORE_INPUT_POLICY_ID as OPEN_METEO_SCORE_INPUT_POLICY_ID,
+    live_record_projection_sha256 as open_meteo_live_record_projection_sha256,
+    record_ref_sha256 as open_meteo_record_ref_sha256,
+    validate_document as validate_open_meteo_document,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +69,7 @@ DEFAULT_COPERNICUS = ROOT / ".cache/copernicus-current-shadow.json"
 DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_CLOSURE = ROOT / ".cache/current-operational-closure.json"
 DEFAULT_REGIONAL = ROOT / ".cache/current-field-shadow.json"
+DEFAULT_OPEN_METEO = ROOT / ".cache/open-meteo-current-fallback.json"
 DEFAULT_POLICY = ROOT / "data/current-regional-proxy-policy.json"
 DEFAULT_CONTROL = ROOT / "data/current-live-pilot-control.json"
 DEFAULT_OUTPUT = ROOT / "data/live/current-pilot-history.json"
@@ -77,6 +91,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--source-stage", type=Path, default=DEFAULT_SOURCE_STAGE)
     parser.add_argument("--closure", type=Path, default=DEFAULT_CLOSURE)
     parser.add_argument("--regional", type=Path, default=DEFAULT_REGIONAL)
+    parser.add_argument("--open-meteo", type=Path, default=DEFAULT_OPEN_METEO)
     parser.add_argument("--policy", type=Path, default=DEFAULT_POLICY)
     parser.add_argument("--control", type=Path, default=DEFAULT_CONTROL)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
@@ -515,6 +530,94 @@ def regional_entries(
     return selected
 
 
+def open_meteo_entries(
+    document: dict[str, Any],
+    targets_list: list[dict[str, Any]],
+    targets: dict[str, dict[str, Any]],
+    assignments: list[dict[str, Any]],
+    closure_proof: dict[str, Any],
+) -> list[dict[str, Any]]:
+    required_pairs = [
+        {"partId": row["partId"], "validTime": row["validTime"]}
+        for row in assignments
+    ]
+    try:
+        validated = validate_open_meteo_document(
+            document,
+            targets=targets_list,
+            required_pairs=required_pairs,
+            production_reference_at=closure_proof["productionReferenceAt"],
+            copernicus_source_stage_status=closure_proof["copernicusSourceStageStatus"],
+            copernicus_source_stage_sha256=closure_proof["copernicusSourceStageSha256"],
+            copernicus_bounded_progress_accepted=closure_proof["copernicusBoundedProgressAccepted"],
+            regional_evidence_sha256=closure_proof["regionalEvidenceSha256"],
+            require_complete=True,
+        )
+    except (TypeError, ValueError):
+        raise RuntimeError("OPEN_METEO_CLOSURE_CACHE_INVALID") from None
+    records = {row["recordId"]: row for row in validated["records"]}
+    selected: list[dict[str, Any]] = []
+    for assignment in assignments:
+        row = records.get(assignment.get("recordId"))
+        target = targets.get(assignment.get("partId"))
+        ref = {
+            "partId": assignment.get("partId"),
+            "validTime": assignment.get("validTime"),
+            "recordId": assignment.get("recordId"),
+            "source": assignment.get("source"),
+        }
+        if (
+            not isinstance(row, dict)
+            or target is None
+            or assignment.get("classification") != OPEN_METEO_COMBINED_CURRENT
+            or row.get("partId") != assignment.get("partId")
+            or row.get("validTime") != assignment.get("validTime")
+            or row.get("acquiredAt") != assignment.get("acquiredAt")
+            or assignment.get("recordRefSha256") != open_meteo_record_ref_sha256(ref)
+        ):
+            raise RuntimeError("OPEN_METEO_CLOSURE_RECORD_INVALID")
+        entry = {
+            "recordProjectionContractId": OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID,
+            "recordId": row["recordId"],
+            "collectionId": closure_proof["closureId"],
+            "productionReferenceAt": closure_proof["productionReferenceAt"],
+            "partId": row["partId"],
+            "parentZoneId": target["parentZoneId"],
+            "targetIdentityFingerprint": target_fingerprint([target]),
+            "validTime": row["validTime"],
+            "capturedAt": row["acquiredAt"],
+            "acquisitionAt": row["acquiredAt"],
+            "acquiredAt": row["acquiredAt"],
+            "requestContractId": OPEN_METEO_REQUEST_CONTRACT_ID,
+            "selectionPolicyId": OPEN_METEO_SELECTION_POLICY_ID,
+            "samplingPoint": canonical_point(row["samplingPoint"]),
+            "provider": "open-meteo",
+            "sourceClass": "external-combined-surface-current",
+            "source": OPEN_METEO_SOURCE,
+            "model": OPEN_METEO_MODEL,
+            "physicalScope": OPEN_METEO_PHYSICAL_SCOPE,
+            "scoreInputPolicyId": OPEN_METEO_SCORE_INPUT_POLICY_ID,
+            "calibrationEligible": False,
+            "gridPoint": canonical_point(row["gridPoint"]),
+            "distanceKm": round(float(row["distanceKm"]), 5),
+            "verticalLayer": "surface",
+            "layerQuality": "combined-surface-current",
+            "componentPair": "derived-speed-toward-direction-same-hour",
+            "interpolation": False,
+            "vectorSemanticsVersion": 4,
+            "uMps": round(float(row["uMps"]), 5),
+            "vMps": round(float(row["vMps"]), 5),
+            "closureContractId": CLOSURE_CONTRACT_ID,
+            "closureId": closure_proof["closureId"],
+            "closureAssignmentSha256": assignment["assignmentSha256"],
+            "classification": OPEN_METEO_COMBINED_CURRENT,
+            "recordRefSha256": assignment["recordRefSha256"],
+        }
+        entry["recordProjectionSha256"] = open_meteo_live_record_projection_sha256(entry)
+        selected.append(entry)
+    return selected
+
+
 def write_json(path: Path, value: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -548,12 +651,14 @@ def main() -> int:
     copernicus: list[dict[str, Any]] = []
     advisory: list[dict[str, Any]] = []
     regional: list[dict[str, Any]] = []
+    open_meteo: list[dict[str, Any]] = []
     copernicus_range_seal = None
     if enabled:
         registry = read_json(args.registry)
         copernicus_cache = read_json(args.copernicus)
         source_stage = read_json(args.source_stage, optional=True)
         regional_cache = read_json(args.regional)
+        open_meteo_cache = read_json(args.open_meteo)
         policy = read_json(args.policy)
         candidate_closure = read_json(args.closure)
         ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
@@ -581,6 +686,7 @@ def main() -> int:
             copernicus_source_stage=source_stage or None,
             regional_shadow=regional_cache,
             regional_policy=policy,
+            open_meteo_fallback=open_meteo_cache,
             locked_reference=coverage_reference_iso,
         )
         closure_safe = safe_current_operational_closure(closure_proof)
@@ -592,14 +698,21 @@ def main() -> int:
             row for row in closure_proof["assignments"]
             if row["classification"] in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}
         ]
+        open_meteo_assignments = [
+            row for row in closure_proof["assignments"]
+            if row["classification"] == OPEN_METEO_COMBINED_CURRENT
+        ]
         copernicus, copernicus_range_seal, advisory = copernicus_entries(
             copernicus_cache, targets, cop_assignments, closure_proof,
         )
         regional = regional_entries(
             regional_cache, targets, regional_assignments, closure_proof, coverage_reference,
         )
+        open_meteo = open_meteo_entries(
+            open_meteo_cache, targets_list, targets, open_meteo_assignments, closure_proof,
+        )
     entries = sorted(
-        [*copernicus, *regional],
+        [*copernicus, *regional, *open_meteo],
         key=lambda row: (row["validTime"], row["partId"]),
     )
     if enabled and (
@@ -633,6 +746,10 @@ def main() -> int:
             row["classification"] in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}
             for row in reference_assignments
         ),
+        "open-meteo-combined-current": sum(
+            row["classification"] == OPEN_METEO_COMBINED_CURRENT
+            for row in reference_assignments
+        ),
     }
     verified_part_count = sum(selected_by_source.values())
     held_at_reference = sum(
@@ -652,7 +769,7 @@ def main() -> int:
         "vectorSemanticsVersion": 4,
         "targetFingerprint": fingerprint,
         "expectedPartCount": len(targets),
-        "sourceOrder": ["dmi-local", "copernicus-baltic-nemo", "copernicus-nws-amm15", "dmi-dkss-lf-regional-proxy"],
+        "sourceOrder": ["dmi-local", "copernicus-baltic-nemo", "copernicus-nws-amm15", "dmi-dkss-lf-regional-proxy", "open-meteo-meteofrance-currents"],
         "operationalClosure": closure_safe,
         "copernicusRangeSeal": copernicus_range_seal,
         "entries": entries,
@@ -686,6 +803,7 @@ def main() -> int:
         "copernicusAdvisoryRecordCount": len(advisory),
         "copernicusCompleteRangeSealPresent": copernicus_range_seal is not None,
         "regionalProxyRecordCount": len(regional),
+        "openMeteoRecordCount": len(open_meteo),
         "operationalClosure": closure_safe,
         "sourceOrder": raw_projection["sourceOrder"],
         "coverageRequirement": len(targets),
@@ -700,6 +818,7 @@ def main() -> int:
         f"DMI {selected_by_source['dmi-local']}, "
         f"Copernicus {selected_by_source['copernicus-local']}, "
         f"regionalproxy {selected_by_source['dmi-regional-proxy']} "
+        f"og Open-Meteo {selected_by_source['open-meteo-combined-current']} "
         f"({held_at_reference} med closure-bundet native-cadence-fastholdelse)."
     )
     return 0

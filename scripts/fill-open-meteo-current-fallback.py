@@ -21,7 +21,11 @@ from lib.copernicus_current import (
     validate_shadow,
     validate_target_registry,
 )
-from lib.copernicus_current_source_stage import validate_source_stage
+from lib.copernicus_current_source_stage import (
+    SOURCE_STAGE_STATUS,
+    validate_reusable_source_stage,
+)
+from lib.current_operational_closure import build_regional_residual_plan
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
     processed_source_assets_from_current_operational_ledger,
@@ -33,10 +37,7 @@ from lib.open_meteo_current_fallback import (
     build_record,
     safe_projection,
 )
-from lib.regional_current_operational import (
-    MISSING,
-    build_regional_current_operational_evidence,
-)
+
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -66,6 +67,7 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--at", required=True)
     parser.add_argument("--timeout-seconds", type=int, default=45)
+    parser.add_argument("--runtime-seconds", type=int, default=240)
     return parser.parse_args()
 
 
@@ -124,12 +126,15 @@ def haversine_km(first: list[float], second: list[float]) -> float:
     return 6371.0088 * 2 * math.atan2(math.sqrt(term), math.sqrt(max(0.0, 1 - term)))
 
 
-def request_json(url: str, timeout_seconds: int) -> Any:
+def request_json(url: str, timeout_seconds: int, deadline: float) -> Any:
     last_error: Exception | None = None
     for attempt in range(3):
         try:
+            remaining = deadline - time.monotonic()
+            if remaining <= 1:
+                raise RuntimeError("OPEN_METEO_RUNTIME_BUDGET_REACHED")
             request = Request(url, headers={"User-Agent": "RavRadar/4 Open-Meteo current fallback"})
-            with urlopen(request, timeout=timeout_seconds) as response:
+            with urlopen(request, timeout=min(timeout_seconds, max(1, remaining))) as response:
                 if response.status != 200:
                     raise RuntimeError("OPEN_METEO_HTTP_INVALID")
                 return json.loads(response.read().decode("utf-8"))
@@ -140,21 +145,26 @@ def request_json(url: str, timeout_seconds: int) -> Any:
     raise RuntimeError("OPEN_METEO_REQUEST_FAILED") from last_error
 
 
-def residual_pairs(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
+def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
                    registry: dict[str, Any], copernicus: dict[str, Any],
                    source_stage: dict[str, Any], regional: dict[str, Any],
                    policy: dict[str, Any], reference: str,
-                   copernicus_path: Path, dmi_path: Path) -> list[dict[str, str]]:
+                   copernicus_path: Path, dmi_path: Path) -> dict[str, Any]:
     target_map = {row["partId"]: row for row in targets}
     registry = validate_target_registry(registry)
+    if file_sha256(dmi_path) != registry.get("dmiCurrentInputSha256"):
+        raise RuntimeError("OPEN_METEO_DMI_BINDING_INVALID")
     cache = validate_shadow(copernicus, target_map, require_collection=False)
-    stage = validate_source_stage(
+    stage = validate_reusable_source_stage(
         source_stage,
         registry=registry,
         shadow=cache,
         target_identities=target_map,
         shadow_sha256=file_sha256(copernicus_path),
+        allow_rebase=False,
     )
+    if stage.get("status") != SOURCE_STAGE_STATUS:
+        raise RuntimeError("OPEN_METEO_SOURCE_STAGE_INVALID")
     if stage.get("productionReferenceAt") != reference:
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_TARGET_MISMATCH")
     ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
@@ -164,42 +174,43 @@ def residual_pairs(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
     attestation = canonical_verified_part_current_attestation(
         dmi, targets, reference, registry.get("operationalRangeEndAt"), allowed_assets,
     )
-    policy_rows = policy.get("parts")
-    if not isinstance(policy_rows, list):
-        raise RuntimeError("OPEN_METEO_REGIONAL_POLICY_INVALID")
-    regional_ids = {row.get("partId") for row in policy_rows if isinstance(row, dict)}
     copernicus_residual = stage.get("missingPairs")
     if not isinstance(copernicus_residual, list):
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_INVALID")
-    regional_candidates = [row for row in copernicus_residual if row.get("partId") in regional_ids]
-    outside_regional = [row for row in copernicus_residual if row.get("partId") not in regional_ids]
-    regional_result = build_regional_current_operational_evidence(
-        policy=policy,
-        targets=targets,
-        current_shadow=regional,
-        dmi_ledger=ledger,
-        dmi_attestation=attestation,
-        locked_reference=reference,
-        dmi_gap_pairs=regional_candidates,
-    )
-    unresolved_regional = [
-        {"partId": row["partId"], "validTime": row["validTime"]}
-        for row in regional_result["privateProof"]["pairRefs"]
-        if row.get("classification") == MISSING
-    ]
-    result = sorted(
-        [*outside_regional, *unresolved_regional],
-        key=lambda row: (row["validTime"], row["partId"]),
-    )
+    try:
+        plan = build_regional_residual_plan(
+            residual_pairs=copernicus_residual,
+            regional_policy=policy,
+            targets=targets,
+            regional_shadow=regional,
+            dmi_ledger=ledger,
+            dmi_attestation=attestation,
+            locked_reference=reference,
+        )
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        raise RuntimeError("OPEN_METEO_RESIDUAL_PLAN_INVALID") from None
+    result = plan["openMeteoRequiredPairs"]
     if len({(row["partId"], row["validTime"]) for row in result}) != len(result):
         raise RuntimeError("OPEN_METEO_RESIDUAL_DUPLICATE")
-    return result
+    return {
+        "requiredPairs": result,
+        "sourceStageStatus": stage["status"],
+        "sourceStageSha256": canonical_sha256(stage),
+        "boundedProgressAccepted": False,
+        "regionalEvidenceSha256": canonical_sha256(plan["regionalPrivate"]),
+    }
 
 
 def fetch_records(required: list[dict[str, str]], targets: dict[str, dict[str, Any]],
-                  acquired_at: str, timeout_seconds: int) -> list[dict[str, Any]]:
+                  acquired_at: str, timeout_seconds: int,
+                  runtime_seconds: int) -> list[dict[str, Any]]:
     if not required:
         return []
+    if timeout_seconds < 1 or timeout_seconds > 120:
+        raise RuntimeError("OPEN_METEO_TIMEOUT_BUDGET_INVALID")
+    if runtime_seconds < 15 or runtime_seconds > 900:
+        raise RuntimeError("OPEN_METEO_RUNTIME_BUDGET_INVALID")
+    deadline = time.monotonic() + runtime_seconds
     base_url = os.environ.get("OPEN_METEO_MARINE_BASE_URL", DEFAULT_BASE_URL).strip()
     api_key = os.environ.get("OPEN_METEO_API_KEY", "").strip()
     required_by_part: dict[str, set[str]] = {}
@@ -210,6 +221,8 @@ def fetch_records(required: list[dict[str, str]], targets: dict[str, dict[str, A
     end_hour = max(row["validTime"] for row in required).replace("Z", "")
     records: list[dict[str, Any]] = []
     for start in range(0, len(part_ids), BATCH_SIZE):
+        if deadline - time.monotonic() <= 1:
+            raise RuntimeError("OPEN_METEO_RUNTIME_BUDGET_REACHED")
         batch_ids = part_ids[start:start + BATCH_SIZE]
         sampling_points = [point(targets[part_id].get("waterPoint")) for part_id in batch_ids]
         if any(item is None for item in sampling_points):
@@ -227,7 +240,9 @@ def fetch_records(required: list[dict[str, str]], targets: dict[str, dict[str, A
         }
         if api_key:
             query["apikey"] = api_key
-        response = request_json(f"{base_url}?{urlencode(query)}", timeout_seconds)
+        response = request_json(
+            f"{base_url}?{urlencode(query)}", timeout_seconds, deadline,
+        )
         payloads = response if isinstance(response, list) else [response]
         if len(payloads) != len(batch_ids):
             raise RuntimeError("OPEN_METEO_RESPONSE_CARDINALITY_INVALID")
@@ -284,7 +299,7 @@ def main() -> int:
     source_stage = read_object(args.source_stage)
     regional = read_object(args.regional)
     policy = read_object(args.policy)
-    required = residual_pairs(
+    plan = residual_plan(
         targets=targets,
         dmi=dmi,
         registry=registry,
@@ -296,14 +311,21 @@ def main() -> int:
         copernicus_path=args.copernicus,
         dmi_path=args.dmi,
     )
+    required = plan["requiredPairs"]
     acquired_at = canonical_now()
-    records = fetch_records(required, target_map, acquired_at, args.timeout_seconds)
+    records = fetch_records(
+        required, target_map, acquired_at, args.timeout_seconds, args.runtime_seconds,
+    )
     document = build_document(
         targets=targets,
         required_pairs=required,
         records=records,
         acquired_at=acquired_at,
         production_reference_at=reference,
+        copernicus_source_stage_status=plan["sourceStageStatus"],
+        copernicus_source_stage_sha256=plan["sourceStageSha256"],
+        copernicus_bounded_progress_accepted=plan["boundedProgressAccepted"],
+        regional_evidence_sha256=plan["regionalEvidenceSha256"],
     )
     atomic_write(args.output, document)
     atomic_write(args.report, safe_projection(document))

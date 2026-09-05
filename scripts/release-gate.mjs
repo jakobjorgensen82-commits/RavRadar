@@ -213,7 +213,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -578,7 +578,7 @@ ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
 'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
-ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs',
+ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs',
 'Release metadata mangler sin kontrakttest eller kontrollen af den uforanderlige migrationsfremføring');
 for(const retiredScript of [
   'test:candidate-g-gap-reconstruction',
@@ -619,6 +619,12 @@ const dmiNativeProvenance=await read('scripts/lib/dmi_native_provenance.py');
 const boundedCopernicusRetry=await read('scripts/run-copernicus-current-pilot-with-retry.py');
 const copernicusRangeRunner=await read('scripts/run-copernicus-current-pilot.py');
 const copernicusCurrentLib=await read('scripts/lib/copernicus_current.py');
+const currentOperationalClosure=await read('scripts/lib/current_operational_closure.py');
+const openMeteoFallback=await read('scripts/lib/open_meteo_current_fallback.py');
+const openMeteoFill=await read('scripts/fill-open-meteo-current-fallback.py');
+const liveCurrentPilot=await read('scripts/lib/live-current-pilot.mjs');
+const integratedRavScore=await read('scripts/lib/ravscore-integrated-runtime.mjs');
+const productionTargetFreshness=await read('scripts/check-production-target-freshness.mjs');
 const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
 const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
 const privateRuntimeBundle=await read('scripts/private-production-runtime-bundle.mjs');
@@ -678,17 +684,20 @@ for(const marker of [
   'test-copernicus-target-registry-4.0.244.py',
   'test-copernicus-range-runner-v2.py',
   'test-copernicus-range-checker-v2.py',
+  'test-open-meteo-current-fallback.py',
 ]){
   ok(targetRegistryTestChain.includes(marker),`Copernicus' eksakte DMI-gapmatrix mangler måltesten: ${marker}`);
 }
-for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 1200','--backoff-seconds 20']){
+for(const marker of ['python scripts/run-copernicus-current-pilot-with-retry.py','--attempts 1','--timeout-seconds 360','--backoff-seconds 20']){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowets build-rolle mangler den bundne Copernicus-kontrakt: ${marker}`);
 }
 for(const marker of [
   'attempts > 3',
-  'timeout_seconds > 2700',
+  'timeout_seconds > 3300',
   'backoff_seconds > 120',
   'SOFT_DEADLINE_EPOCH_ENV',
+  'BOUNDED_PROGRESS_EXIT_CODE = 75',
+  '"reason": "bounded-progress"',
   'completed = subprocess.run(',
   'timeout=timeout_seconds',
   'env=child_environment',
@@ -716,6 +725,62 @@ for(const marker of [
 ]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler privat Copernicus-progressave: ${marker}`);
 }
+for(const marker of [
+  'Fill only the exact remaining current gaps from Open-Meteo',
+  '--runtime-seconds 240',
+  'Refuse a stale target after the bounded supplier chain',
+  '--maximum-age-minutes 90',
+  'Refuse stale weather before protected writes and Pages artifact',
+  '--maximum-age-minutes 150',
+]){
+  ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler bounded fallback/friskhed: ${marker}`);
+}
+for(const marker of [
+  'regional_candidates = [row for row in residual if row["partId"] in regional_ids]',
+  'outside_regional = [row for row in residual if row["partId"] not in regional_ids]',
+  '[*outside_regional, *regional_missing]',
+  'OPEN_METEO_COMBINED_CURRENT',
+  'calibrationEligible": False',
+]){
+  ok(currentOperationalClosure.includes(marker),`Den operationelle current-closure mangler Open-Meteo-partitionen: ${marker}`);
+}
+for(const marker of [
+  'MODEL = "meteofrance_currents"',
+  'PHYSICAL_SCOPE = "eulerian-waves-and-tides-combined-surface-current"',
+  'SCORE_INPUT_POLICY_ID = "combined-current-single-channel-no-wave-or-tide-reprojection-v1"',
+  'copernicus_source_stage_status not in {"READY", "NOT_APPLICABLE"}',
+  'copernicus_bounded_progress_accepted is not False',
+]){
+  ok(openMeteoFallback.includes(marker),`Open-Meteo-kontrakten mangler fysisk/READY-only binding: ${marker}`);
+}
+for(const marker of [
+  'stage.get("status") != SOURCE_STAGE_STATUS',
+  'plan = build_regional_residual_plan(',
+  '"boundedProgressAccepted": False',
+]){
+  ok(openMeteoFill.includes(marker),`Open-Meteo-fyldningen mangler eksakt residual/READY-only gate: ${marker}`);
+}
+for(const marker of [
+  'OPEN_METEO_SCORE_INPUT_POLICY_ID',
+  'entry.calibrationEligible !== false',
+  'SOURCE_ORDER.get(candidate.entry.source)',
+]){
+  ok(liveCurrentPilot.includes(marker),`Live-current-runtime mangler Open-Meteo-prioritet eller scopeværn: ${marker}`);
+}
+for(const marker of [
+  "current.physicalScope !== 'eulerian-waves-and-tides-combined-surface-current'",
+  'current.calibrationEligible !== false',
+]){
+  ok(integratedRavScore.includes(marker),`RavScore mangler Open-Meteo-kalibreringsværnet: ${marker}`);
+}
+for(const marker of [
+  "throw new Error('PRODUCTION_TARGET_STALE')",
+  'maximumAgeMinutes < 15 || maximumAgeMinutes > 360',
+]){
+  ok(productionTargetFreshness.includes(marker),`Produktionsfriskhedsgaten mangler ${marker}`);
+}
+ok((packageScripts['test:live-current-pilot']??'').includes('test-open-meteo-live-runtime.mjs'),
+'Live-current-testkæden mangler Open-Meteo-runtimeværnet');
 for(const marker of [
   "status: 'ravscore-schema6-with-candidate-g-rollback-companion'",
   'expectedPartCount: 673',

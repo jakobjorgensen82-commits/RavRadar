@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-05 – 4.0.323 currentclosure
+
+- DEC-0115 og lokal kode bruger eksakt DMI → Baltic → AMM15 → regional DMI → Open-Meteo efter READY. Open-Meteo er kun operationel target..+117, combined-surface-current, højst 15 km, ingen historik/nabolån og altid `calibrationEligible=false`.
+- Kendt safe status: 78.430/79.414 dækket; 984 rest, heraf 944 policyregionale og 40 udenfor ved +117. Exact-head, merge og ny måling afventer.
+- Fortsæt docs/version → fuld sourcegate → PR exact-head/merge → rapportér frisk status → dispatch den autoriserede main-oneoff → mål leverandører og vurder normal drift. Gammel Open-Meteo-udelukkelse længere nede er historisk og supersederet af DEC-0115.
+
 # NYESTE CHECKPOINT – 2026-09-03 – fortsæt med tofasede modelrelease
 
 - Aktiv branch er fortsat `codex/ravscore-history-incomplete-cutover`. Den nye aktiveringslås findes lokalt og er endnu ikke commit'et eller pushet.

@@ -14,6 +14,14 @@ const COPERNICUS_SOURCE_CONTRACTS = new Map([
   })],
 ]);
 const REGIONAL_SOURCE = 'dmi-dkss-lf-regional-proxy';
+const OPEN_METEO_SOURCE = 'open-meteo-meteofrance-currents';
+const OPEN_METEO_MODEL = 'meteofrance_currents';
+const OPEN_METEO_REQUEST_CONTRACT_ID = 'open-meteo-marine-exact-residual-multilocation-v1';
+const OPEN_METEO_SELECTION_POLICY_ID = 'explicit-meteofrance-currents-sea-cell-v1';
+const OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID = 'open-meteo-live-current-record-fixed-decimal-v1';
+const OPEN_METEO_RECORD_REF_CONTRACT_ID = 'open-meteo-current-record-ref-v1';
+const OPEN_METEO_PHYSICAL_SCOPE = 'eulerian-waves-and-tides-combined-surface-current';
+const OPEN_METEO_SCORE_INPUT_POLICY_ID = 'combined-current-single-channel-no-wave-or-tide-reprojection-v1';
 const REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS = 12;
 const COPERNICUS_COLD_BRIDGE_HOURS = 48;
 const COPERNICUS_PUBLIC_HOUR_COUNT = 118;
@@ -26,12 +34,12 @@ const COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID = 'copernicus-current-schema
 const COPERNICUS_RECORD_PROJECTION_CONTRACT_ID = 'copernicus-live-current-record-fixed-decimal-v1';
 const COPERNICUS_REQUIRED_PAIRS_CONTRACT_ID = 'copernicus-required-part-time-pairs-v1';
 const COPERNICUS_OPERATIONAL_SEAL_CONTRACT_ID = 'copernicus-current-operational118-advisory-history48-seal-v1';
-const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID = 'current-operational-673x118-closure-ready-v1';
-const CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID = 'current-operational-673x118-closure-safe-v1';
-const CURRENT_OPERATIONAL_ASSIGNMENT_CONTRACT_ID = 'current-operational-source-assignment-v1';
+const CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID = 'current-operational-673x118-closure-ready-v2';
+const CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID = 'current-operational-673x118-closure-safe-v2';
+const CURRENT_OPERATIONAL_ASSIGNMENT_CONTRACT_ID = 'current-operational-source-assignment-v2';
 const CURRENT_ADVISORY_ASSIGNMENT_CONTRACT_ID = 'current-advisory-past-model-field-source-assignment-v1';
 const CURRENT_ADVISORY_RECORD_REF_CONTRACT_ID = 'current-advisory-copernicus-record-ref-v1';
-const CURRENT_OPERATIONAL_SOURCE_ORDER_CONTRACT_ID = 'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-v1';
+const CURRENT_OPERATIONAL_SOURCE_ORDER_CONTRACT_ID = 'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2';
 const REGIONAL_VECTOR_COMMITMENT_CONTRACT_ID = 'regional-dmi-private-vector-commitment-v1';
 const CURRENT_OPERATIONAL_TARGET_COUNT = 673;
 const CURRENT_OPERATIONAL_TOTAL_PAIR_COUNT = 673 * 118;
@@ -40,6 +48,7 @@ const COPERNICUS_AMM15_CLASSIFICATION = 'COPERNICUS_AMM15';
 const COPERNICUS_ADVISORY_CLASSIFICATION = 'COPERNICUS_ADVISORY_PAST_MODEL_FIELD';
 const REGIONAL_NATIVE_CLASSIFICATION = 'REGIONAL_DMI_NATIVE';
 const REGIONAL_HOLD_CLASSIFICATION = 'REGIONAL_DMI_DERIVED_HOLD';
+const OPEN_METEO_CLASSIFICATION = 'OPEN_METEO_COMBINED_CURRENT';
 export const REGIONAL_STATE_ONLY_HOLD_MARKER_CONTRACT_ID =
   'regional-dmi-exact-state-only-hold-v1';
 const SHA256_PATTERN = /^sha256:[0-9a-f]{64}$/;
@@ -180,12 +189,17 @@ const CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS = Object.freeze([
   'sourceOrderContractId', 'dmiVerifiedPairCount', 'copernicusBalticPairCount',
   'copernicusAmm15PairCount', 'regionalNativePairCount',
   'regionalDerivedHoldPairCount', 'regionalResidualPairCount',
+  'openMeteoRequiredPairCount', 'openMeteoPairCount',
   'supplementalAssignmentCount', 'missingPairCount',
-  'copernicusCompleteWithoutSourceStage', 'targetRegistrySha256',
+  'copernicusCompleteWithoutSourceStage', 'copernicusSourceStageStatus',
+  'copernicusBoundedProgressAccepted', 'targetRegistrySha256',
   'dmiCurrentInputSha256', 'dmiLedgerSha256', 'dmiAttestationSha256',
   'copernicusRegistrySha256', 'copernicusShadowSha256',
   'copernicusSourceStageSha256', 'copernicusRecordRefsSha256',
   'regionalEvidenceSha256', 'regionalPolicySha256', 'regionalPairRefsSha256',
+  'openMeteoDocumentSha256', 'openMeteoRecordRefsSha256',
+  'openMeteoPhysicalScope', 'openMeteoScoreInputPolicyId',
+  'openMeteoCalibrationEligible',
   'advisoryHistoryRequiredPairCount', 'advisoryHistoryRequiredPairsSha256',
   'advisoryHistoryAvailablePairCount', 'advisoryHistoryMissingPairCount',
   'advisoryHistoryRecordRefsSha256', 'advisoryHistoryAssignmentCount',
@@ -197,6 +211,7 @@ const SOURCE_ORDER = new Map([
   ['copernicus-baltic-nemo', 0],
   ['copernicus-nws-amm15', 1],
   [REGIONAL_SOURCE, 2],
+  [OPEN_METEO_SOURCE, 3],
 ]);
 
 // This module is a model-input trust boundary. JSON numbers are accepted;
@@ -336,6 +351,77 @@ export function copernicusLiveRecordProjectionSha256(entry) {
 function verifiedCopernicusRecordProjection(entry) {
   if (!SHA256_PATTERN.test(entry?.recordProjectionSha256 ?? '')) return false;
   return copernicusLiveRecordProjectionSha256(entry) === entry.recordProjectionSha256;
+}
+
+function openMeteoRecordProjectionPayload(entry) {
+  if (!entry || entry.recordProjectionContractId !== OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID) return null;
+  const samplingPoint = exactPoint(entry.samplingPoint);
+  const gridPoint = exactPoint(entry.gridPoint);
+  if (!samplingPoint || !gridPoint) return null;
+  const decimalValues = {
+    samplingLongitude: fixedDecimal(samplingPoint[0], 7),
+    samplingLatitude: fixedDecimal(samplingPoint[1], 7),
+    gridLongitude: fixedDecimal(gridPoint[0], 7),
+    gridLatitude: fixedDecimal(gridPoint[1], 7),
+    distanceKm: fixedDecimal(entry.distanceKm, 5),
+    uMps: fixedDecimal(entry.uMps, 5),
+    vMps: fixedDecimal(entry.vMps, 5),
+  };
+  if (Object.values(decimalValues).some(value => value === null)) return null;
+  const stringFields = [
+    'recordId', 'collectionId', 'productionReferenceAt', 'partId', 'parentZoneId',
+    'targetIdentityFingerprint', 'validTime', 'acquisitionAt', 'requestContractId',
+    'selectionPolicyId', 'provider', 'sourceClass', 'source', 'model',
+    'physicalScope', 'scoreInputPolicyId', 'verticalLayer', 'layerQuality',
+    'componentPair',
+  ];
+  if (stringFields.some(field => exactString(entry[field]) === null)
+    || !SHA256_PATTERN.test(entry.recordId)
+    || !SHA256_PATTERN.test(entry.collectionId)
+    || !SHA256_PATTERN.test(entry.targetIdentityFingerprint)
+    || entry.calibrationEligible !== false
+    || entry.interpolation !== false
+    || entry.vectorSemanticsVersion !== 4) return null;
+  return {
+    contractId: OPEN_METEO_RECORD_PROJECTION_CONTRACT_ID,
+    recordId: entry.recordId,
+    collectionId: entry.collectionId,
+    productionReferenceAt: entry.productionReferenceAt,
+    partId: entry.partId,
+    parentZoneId: entry.parentZoneId,
+    targetIdentityFingerprint: entry.targetIdentityFingerprint,
+    validTime: entry.validTime,
+    acquisitionAt: entry.acquisitionAt,
+    requestContractId: entry.requestContractId,
+    selectionPolicyId: entry.selectionPolicyId,
+    provider: entry.provider,
+    sourceClass: entry.sourceClass,
+    source: entry.source,
+    model: entry.model,
+    physicalScope: entry.physicalScope,
+    scoreInputPolicyId: entry.scoreInputPolicyId,
+    calibrationEligible: entry.calibrationEligible,
+    samplingPoint: [decimalValues.samplingLongitude, decimalValues.samplingLatitude],
+    gridPoint: [decimalValues.gridLongitude, decimalValues.gridLatitude],
+    distanceKm: decimalValues.distanceKm,
+    verticalLayer: entry.verticalLayer,
+    layerQuality: entry.layerQuality,
+    componentPair: entry.componentPair,
+    interpolation: entry.interpolation,
+    vectorSemanticsVersion: String(entry.vectorSemanticsVersion),
+    uMps: decimalValues.uMps,
+    vMps: decimalValues.vMps,
+  };
+}
+
+export function openMeteoLiveRecordProjectionSha256(entry) {
+  const payload = openMeteoRecordProjectionPayload(entry);
+  return payload === null ? null : canonicalSha256(payload);
+}
+
+function verifiedOpenMeteoRecordProjection(entry) {
+  return SHA256_PATTERN.test(entry?.recordProjectionSha256 ?? '')
+    && openMeteoLiveRecordProjectionSha256(entry) === entry.recordProjectionSha256;
 }
 
 function exactObjectFields(value, expected) {
@@ -582,6 +668,18 @@ function verifiedCopernicusDocumentEntry(document, entry) {
   }
 }
 
+function verifiedOpenMeteoDocumentEntry(document, entry) {
+  const proof = operationalClosureDocumentProof(document);
+  if (!proof?.entryMembership.has(entry)) return false;
+  try {
+    return proof.entrySha256ByObject.get(entry) === canonicalSha256(entry)
+      && proof.assignmentShaByObject.get(entry) === entry.closureAssignmentSha256
+      && verifiedOpenMeteoRecordProjection(entry);
+  } catch {
+    return false;
+  }
+}
+
 function closureAssignmentIdentity(entry) {
   const validTime = exactUtcHour(entry?.validTime);
   if (!validTime || entry.validTime !== validTime || exactString(entry.partId) === null) return null;
@@ -605,6 +703,36 @@ function closureAssignmentIdentity(entry) {
         contractId: 'current-operational-copernicus-record-ref-v1', recordRef: ref,
       })) return null;
     return { ...ref, classification: entry.classification, recordRefSha256: entry.recordRefSha256 };
+  }
+  if (entry.classification === OPEN_METEO_CLASSIFICATION) {
+    const acquiredAt = canonicalTime(entry.acquiredAt);
+    const ref = {
+      partId: entry.partId,
+      validTime,
+      recordId: entry.recordId,
+      source: entry.source,
+    };
+    if (!acquiredAt
+      || entry.source !== OPEN_METEO_SOURCE
+      || entry.model !== OPEN_METEO_MODEL
+      || entry.physicalScope !== OPEN_METEO_PHYSICAL_SCOPE
+      || entry.scoreInputPolicyId !== OPEN_METEO_SCORE_INPUT_POLICY_ID
+      || entry.calibrationEligible !== false
+      || !SHA256_PATTERN.test(entry.recordId ?? '')
+      || !SHA256_PATTERN.test(entry.recordRefSha256 ?? '')
+      || entry.recordRefSha256 !== canonicalSha256({
+        contractId: OPEN_METEO_RECORD_REF_CONTRACT_ID, recordRef: ref,
+      })) return null;
+    return {
+      ...ref,
+      classification: OPEN_METEO_CLASSIFICATION,
+      model: entry.model,
+      acquiredAt: entry.acquiredAt,
+      recordRefSha256: entry.recordRefSha256,
+      physicalScope: entry.physicalScope,
+      scoreInputPolicyId: entry.scoreInputPolicyId,
+      calibrationEligible: false,
+    };
   }
   if (![REGIONAL_NATIVE_CLASSIFICATION, REGIONAL_HOLD_CLASSIFICATION]
     .includes(entry.classification)) return null;
@@ -662,7 +790,7 @@ function buildOperationalClosureDocumentProof(document) {
   if (!basicControlledLiveDocument(document)) return null;
   const value = document.operationalClosure;
   if (!exactObjectFields(value, CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS)
-    || value.schemaVersion !== 1
+    || value.schemaVersion !== 2
     || value.contractId !== CURRENT_OPERATIONAL_CLOSURE_SAFE_CONTRACT_ID
     || value.status !== 'READY'
     || value.targetCount !== CURRENT_OPERATIONAL_TARGET_COUNT
@@ -688,6 +816,7 @@ function buildOperationalClosureDocumentProof(document) {
     value.dmiVerifiedPairCount, value.copernicusBalticPairCount,
     value.copernicusAmm15PairCount, value.regionalNativePairCount,
     value.regionalDerivedHoldPairCount, value.regionalResidualPairCount,
+    value.openMeteoRequiredPairCount, value.openMeteoPairCount,
     value.supplementalAssignmentCount, value.missingPairCount,
     value.advisoryHistoryRequiredPairCount, value.advisoryHistoryAvailablePairCount,
     value.advisoryHistoryMissingPairCount, value.advisoryHistoryAssignmentCount,
@@ -695,8 +824,10 @@ function buildOperationalClosureDocumentProof(document) {
   if (counts.some(count => !Number.isInteger(count) || count < 0)
     || value.regionalResidualPairCount
       !== value.regionalNativePairCount + value.regionalDerivedHoldPairCount
+    || value.openMeteoRequiredPairCount !== value.openMeteoPairCount
     || value.supplementalAssignmentCount !== value.copernicusBalticPairCount
       + value.copernicusAmm15PairCount + value.regionalResidualPairCount
+      + value.openMeteoPairCount
     || value.dmiVerifiedPairCount + value.supplementalAssignmentCount
       !== CURRENT_OPERATIONAL_TOTAL_PAIR_COUNT
     || value.advisoryHistoryAvailablePairCount + value.advisoryHistoryMissingPairCount
@@ -708,14 +839,26 @@ function buildOperationalClosureDocumentProof(document) {
     'dmiAttestationSha256', 'copernicusRegistrySha256', 'copernicusShadowSha256',
     'copernicusRecordRefsSha256', 'regionalEvidenceSha256', 'regionalPolicySha256',
     'regionalPairRefsSha256', 'supplementalAssignmentsSha256', 'assignmentsSha256',
+    'openMeteoDocumentSha256', 'openMeteoRecordRefsSha256',
     'advisoryHistoryRequiredPairsSha256', 'advisoryHistoryRecordRefsSha256',
     'advisoryHistoryAssignmentsSha256',
   ];
   if (requiredHashes.some(field => !SHA256_PATTERN.test(value[field] ?? ''))) return null;
+  if (value.openMeteoPhysicalScope !== OPEN_METEO_PHYSICAL_SCOPE
+    || value.openMeteoScoreInputPolicyId !== OPEN_METEO_SCORE_INPUT_POLICY_ID
+    || value.openMeteoCalibrationEligible !== false) return null;
   if (value.copernicusCompleteWithoutSourceStage === true) {
-    if (value.copernicusSourceStageSha256 !== null || value.regionalResidualPairCount !== 0) return null;
+    if (value.copernicusSourceStageSha256 !== null
+      || value.copernicusSourceStageStatus !== 'NOT_APPLICABLE'
+      || value.copernicusBoundedProgressAccepted !== false
+      || value.regionalResidualPairCount !== 0
+      || value.openMeteoPairCount !== 0
+      || value.copernicusBalticPairCount !== 0
+      || value.copernicusAmm15PairCount !== 0) return null;
   } else if (value.copernicusCompleteWithoutSourceStage !== false
-    || !SHA256_PATTERN.test(value.copernicusSourceStageSha256 ?? '')) return null;
+    || !SHA256_PATTERN.test(value.copernicusSourceStageSha256 ?? '')
+    || value.copernicusSourceStageStatus !== 'READY'
+    || value.copernicusBoundedProgressAccepted !== false) return null;
 
   const entryMembership = new Set();
   const entrySha256ByObject = new Map();
@@ -727,6 +870,7 @@ function buildOperationalClosureDocumentProof(document) {
     [COPERNICUS_AMM15_CLASSIFICATION, 0],
     [REGIONAL_NATIVE_CLASSIFICATION, 0],
     [REGIONAL_HOLD_CLASSIFICATION, 0],
+    [OPEN_METEO_CLASSIFICATION, 0],
   ]);
   let previousKey = null;
   for (const entry of document.entries) {
@@ -757,6 +901,7 @@ function buildOperationalClosureDocumentProof(document) {
     || classCounts.get(COPERNICUS_AMM15_CLASSIFICATION) !== value.copernicusAmm15PairCount
     || classCounts.get(REGIONAL_NATIVE_CLASSIFICATION) !== value.regionalNativePairCount
     || classCounts.get(REGIONAL_HOLD_CLASSIFICATION) !== value.regionalDerivedHoldPairCount
+    || classCounts.get(OPEN_METEO_CLASSIFICATION) !== value.openMeteoPairCount
     || canonicalSha256(assignmentHashes) !== value.supplementalAssignmentsSha256) return null;
   return Object.freeze({
     entries: document.entries,
@@ -1041,7 +1186,7 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
     || source.parentZoneId !== parentZoneId
     || source.targetIdentityFingerprint !== identityFingerprint) return null;
   if (source.controlledLivePilot !== true || source.vectorSemanticsVersion !== 4) return null;
-  if (source.componentPair !== 'same-time-cell-layer'
+  if (exactString(source.componentPair) === null
     || source.interpolation !== false
     || typeof source.verticalLayer !== 'string'
     || source.verticalLayer.length === 0) return null;
@@ -1063,6 +1208,7 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
       || source.datasetId !== contract.datasetId
       || source.datasetVersion !== contract.datasetVersion
       || source.acquisitionStatus !== 'COMPLETE'
+      || source.componentPair !== 'same-time-cell-layer'
       || source.selectionPolicyId !== COPERNICUS_SELECTION_POLICY_ID
       || source.capturedAt !== source.acquisitionAt
       || finite(source.verticalLayerM) === null
@@ -1086,6 +1232,34 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
     maximumDistanceKm = 5;
     arrowSource = 'copernicus-current-grid';
   } else if (
+    source.sourceClass === 'external-combined-surface-current'
+    && String(source.provider ?? '').toLowerCase() === 'open-meteo'
+    && source.source === OPEN_METEO_SOURCE
+  ) {
+    const productionReferenceAt = exactUtcHour(source.productionReferenceAt);
+    const validTime = exactUtcHour(source.validTime);
+    const acquisitionAt = canonicalTime(source.acquisitionAt);
+    if (source.model !== OPEN_METEO_MODEL
+      || source.requestContractId !== OPEN_METEO_REQUEST_CONTRACT_ID
+      || source.selectionPolicyId !== OPEN_METEO_SELECTION_POLICY_ID
+      || source.physicalScope !== OPEN_METEO_PHYSICAL_SCOPE
+      || source.scoreInputPolicyId !== OPEN_METEO_SCORE_INPUT_POLICY_ID
+      || source.calibrationEligible !== false
+      || source.capturedAt !== source.acquisitionAt
+      || source.verticalLayer !== 'surface'
+      || source.layerQuality !== 'combined-surface-current'
+      || source.componentPair !== 'derived-speed-toward-direction-same-hour'
+      || !verifiedOpenMeteoRecordProjection(source)
+      || !productionReferenceAt || !validTime || !acquisitionAt
+      || Date.parse(validTime) < Date.parse(productionReferenceAt)
+      || Date.parse(validTime) > Date.parse(shiftedHour(
+        productionReferenceAt, COPERNICUS_PUBLIC_END_OFFSET_HOURS,
+      ))
+      || Math.abs(Date.parse(acquisitionAt) - Date.parse(productionReferenceAt))
+        > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000) return null;
+    maximumDistanceKm = 15;
+    arrowSource = 'supplemental-current-grid';
+  } else if (
     source.sourceClass === 'owner-approved-regional-proxy'
     && String(source.provider ?? '').toLowerCase() === 'dmi'
     && source.source === REGIONAL_SOURCE
@@ -1097,6 +1271,7 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
     if (!modelRun || !validTime || !sourceValidTime
       || Date.parse(modelRun) > Date.parse(sourceValidTime)
       || source.classification !== REGIONAL_NATIVE_CLASSIFICATION
+      || source.componentPair !== 'same-time-cell-layer'
       || sourceValidTime !== validTime
       || !regionalSampleTimeValid({ ...source, validTime: source.sourceValidTime })) return null;
     maximumDistanceKm = 15;
@@ -1158,7 +1333,8 @@ function verifiedEntry(entry, part, document) {
   const vMps = finite(entry?.vMps);
   if (!validTime || uMps === null || vMps === null
     || entry?.vectorSemanticsVersion !== 4
-    || entry?.componentPair !== 'same-time-cell-layer'
+    || !['same-time-cell-layer', 'derived-speed-toward-direction-same-hour']
+      .includes(entry?.componentPair)
     || entry?.interpolation !== false) return null;
   const provider = String(entry?.provider ?? '').toLowerCase();
   if (provider === 'copernicus') {
@@ -1171,6 +1347,10 @@ function verifiedEntry(entry, part, document) {
     const sourceValidTime = canonicalTime(entry?.sourceValidTime);
     if (!modelRun || !sourceValidTime
       || Date.parse(modelRun) > Date.parse(sourceValidTime)) return null;
+  } else if (provider === 'open-meteo') {
+    if (!closureMember
+      || entry?.classification !== OPEN_METEO_CLASSIFICATION
+      || !verifiedOpenMeteoDocumentEntry(document, entry)) return null;
   } else {
     return null;
   }
@@ -1180,10 +1360,10 @@ function verifiedEntry(entry, part, document) {
       ?? document?.copernicusRangeSeal?.productionReferenceAt,
     status: 'verified',
     controlledLivePilot: true,
-    vectorSelection: 'dmi-local-then-copernicus-local-then-owner-approved-regional-proxy',
+    vectorSelection: 'dmi-local-then-copernicus-local-then-owner-approved-regional-proxy-then-open-meteo-combined-current',
     temporalResolution: 'native',
     nativeValidTimes: [entry.sourceValidTime ?? validTime],
-    fallback: false,
+    fallback: provider === 'open-meteo',
   };
   const proof = verifiedLivePilotSource(source, part, { requireStatus: true });
   return proof ? { entry, source, validTime, uMps, vMps, proof } : null;

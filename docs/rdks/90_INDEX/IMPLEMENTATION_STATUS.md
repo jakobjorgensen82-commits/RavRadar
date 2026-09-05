@@ -1,3 +1,16 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.323 operationel currentclosure
+
+- [x] Partitionér de 984 kendte rester: 944 policypositioner til regional DMI, 40 udenfor direkte videre; bind efterfølgende regionale missing til samme Open-Meteo-plan.
+- [x] Implementér READY-only Open-Meteo `meteofrance_currents`, eksakt target..+117, 15 km, komplet speed/direction, U/V-konvertering, fysisk scope, `calibrationEligible=false`, privacy og DMI/Copernicus-supersession.
+- [x] Bevar Copernicus-shards ved dokumenteret budgetstop, men lad timeout/fejl/`IN_PROGRESS` blokere fallback og publicering.
+- [x] Tilføj normal/oneoff-budgetter og target-friskhedsgater samt måltests for closure, liveprojektion, RavScore, workflowrækkefølge, migration og releasekontrakt.
+- [x] Regenerér integrated/rollback/continuation og fremfør dem i append-only migration `20260905090000`; tidligere migrationer er byte-urørte.
+-- [x] Synkronisér 4.0.323-dokumentation/version, RDKS, håndbog, bundles, releasekontrakt og geodata-version-only-bevis; bestå fuld lokal releasegate.
+- [x] Ret source-wrapperens efterfølgende ene fund: range-checker refererede til fjernet `require_closure_source_stage`; READY-only énlinjerettelse og dens måltest er grøn.
+- [ ] Commit/push/PR og bestå den ene obligatoriske fulde sourcegate på GitHubs eksakte head; merge derefter sikkert. En lokal fuld gentagelse blev stoppet efter ejerens tidsprioritet.
+- [ ] Mål friske hentede/manglende antal, start derefter den allerede ejerbestilte store main-engangskørsel og følg 673 × 118-resultatet.
+- [ ] Efter komplet opfyldning: mål DMI, Baltic, AMM15, regional DMI og Open-Meteo hver for sig; justér kun normal rækkefølge/budget/interval ved konkret evidens. Supabase-kapacitet, Fase B og offentlig state-6-verifikation forbliver åbne.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – bounded HARMONIE-asset
 
 - [x] Klassificer `33918250039`: ét HARMONIE-asset hang over 52 minutter i ecCodes; det var ikke normal download eller manglende cache. Tre cache-save-trin bestod.

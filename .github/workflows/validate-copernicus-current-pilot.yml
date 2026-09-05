@@ -354,10 +354,10 @@ jobs:
   operational-118-preflight:
     if: github.event_name == 'workflow_dispatch' && inputs.operational_118_preflight == true
     runs-on: ubuntu-latest
-    # 55m DMI + 47m Copernicus + 17m runtime + at least 60m for
+    # 55m DMI + 57m Copernicus + 17m runtime + at least 60m for
     # setup, cache restore/save and closure. Acquisition soft deadlines remain
     # below their step limits so progress can be saved before terminal gates.
-    timeout-minutes: 180
+    timeout-minutes: 200
     env:
       RAVRADAR_PRIVATE_PREFLIGHT_REPORT: .geometry-v2-work/ravscore-integrated-118h-preflight.json
     steps:
@@ -433,7 +433,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.322 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -503,7 +503,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.322 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -597,14 +597,14 @@ jobs:
       - name: Fill only the exact operational DMI gap seal
         id: copernicus-fill
         if: steps.current-range.outputs.source_stage_ready != 'true'
-        timeout-minutes: 47
+        timeout-minutes: 57
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: >-
           python scripts/run-copernicus-current-pilot-with-retry.py
           --attempts 1
-          --timeout-seconds 2700
+          --timeout-seconds 3300
           --backoff-seconds 20
           --
           --targets .cache/copernicus-current-targets.json
@@ -639,6 +639,19 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-118-preflight-ready-${{ github.run_id }}-${{ github.run_attempt }}
 
+      - name: Fill only the exact remaining current gaps from Open-Meteo
+        run: >-
+          python scripts/fill-open-meteo-current-fallback.py
+          --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --timeout-seconds 45
+          --runtime-seconds 900
+
+      - name: Refuse a stale one-off target after the extended supplier chain
+        run: >-
+          node scripts/check-production-target-freshness.mjs
+          --target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --maximum-age-minutes 240
+
       - name: Build exact DMI-first target through target plus 117 current closure
         run: >-
           python scripts/build-current-operational-closure.py
@@ -666,7 +679,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.322 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

@@ -7,6 +7,11 @@
 
 # AI Architecture Map – RavRadar
 
+## 2026-09-05 4.0.323 currentfallback
+
+- Fælles currentclosure partitionerer eksakte rester efter DMI → Baltic → AMM15. Kun otte policydele går til regional DMI; resten og konkrete regional-missing går til Open-Meteo efter terminalt READY.
+- Open-Meteo er privat/provenancebundet target..+117-only combined surface current, højst 15 km og altid `calibrationEligible=false`. Ingen historik eller bølge-/tidevandsreprojektion. Normal/oneoff bruger samme closure med egne bounded budgetter og friskhedsgater.
+
 ## 2026-09-03 4.0.320 tofase-lås
 
 - `.github/workflows/update-and-deploy.yml` skelner mellem Fase A og Fase B. Fase A kan merge før 673 × 118 og producerer kun moderne Candidate G, så cron kan fortsætte cacheopbygningen på samme `main`-head. Push, schedule, watchdog og almindelig manuel drift kan aldrig auto-cutover.

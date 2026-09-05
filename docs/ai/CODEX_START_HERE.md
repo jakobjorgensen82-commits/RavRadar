@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-05 – 4.0.323 operationel Open-Meteo-current
+
+- DEC-0115 supersederer alene det tidligere ubetingede forbud mod Open-Meteo-current. Kildeordenen er DMI → Baltic → AMM15 → otte policydele regional DMI → Open-Meteo for eksakte rester, kun efter terminalt READY og kun target..+117. Kilden er combined surface current, højst 15 km, aldrig bølge-/tidevandsreprojektion og altid `calibrationEligible=false`.
+- Seneste sikre status: 78.430/79.414 dækket, 984 rest; 944 policyregionalt og 40 udenfor ved +117. Lokal partition, filler, provenance, RavScore-, workflow-, freshness-, bundle- og append-only migrationskæde er måltestet. Exact-head, merge og frisk runtime afventer.
+- Næste sikre rækkefølge er docs/version 4.0.323, fuld sourcegate, exact-head/merge, ny safe status til ejeren og derefter den allerede autoriserede store main-oneoff. Mål leverandørtid og justér normal drift kun efter komplet opfyldning. Candidate G er offentlig; gammel migration må ikke omskrives.
+
 # NYESTE CHECKPOINT – 2026-09-05 – HARMONIE-assetwatchdog 4.0.322
 
 - Run `33918250039` på main `ce93cebc` blev dræbt ved 55 minutter, fordi ét downloadet HARMONIE-asset sad over 52 minutter i ecCodes. Cachesave bestod; downstream blev ikke nået.

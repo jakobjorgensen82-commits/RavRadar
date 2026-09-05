@@ -224,6 +224,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-controlled-cli-") as r
     source_stage_file = folder / "source-stage.json"
     closure_file = folder / "closure.json"
     regional_file = folder / "regional.json"
+    open_meteo_file = folder / "open-meteo.json"
     policy_file = folder / "policy.json"
     control_file = folder / "control.json"
     output_file = folder / "output.json"
@@ -251,6 +252,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-controlled-cli-") as r
         (copernicus_file, {}),
         (source_stage_file, {}),
         (regional_file, {}),
+        (open_meteo_file, {}),
         (policy_file, {}),
         (control_file, {
             "schemaVersion": 1,
@@ -289,6 +291,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-controlled-cli-") as r
         "--source-stage", str(source_stage_file),
         "--closure", str(closure_file),
         "--regional", str(regional_file),
+        "--open-meteo", str(open_meteo_file),
         "--policy", str(policy_file),
         "--control", str(control_file),
         "--output", str(output_file),
@@ -335,6 +338,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-controlled-cli-") as r
                 return_value=([], None, []),
             ),
             patch.object(builder, "regional_entries", return_value=[]),
+            patch.object(builder, "open_meteo_entries", return_value=[]),
             patch.object(
                 builder,
                 "valid_dmi_parts",

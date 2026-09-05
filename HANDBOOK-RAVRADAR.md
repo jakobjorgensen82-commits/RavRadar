@@ -1,6 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.322
+**Håndbogsversion:** 4.0.323
+
+## Open-Meteo lukker kun de sidste præcise strømhuller – 2026-09-05
+
+RavRadar prøver strøm i denne rækkefølge: DMI, Copernicus Baltic, Copernicus AMM15, den godkendte regionale DMI-vej for otte Limfjordsdele og til sidst Open-Meteo. Sidste reserve bruges kun, når de forudgående kilder er fuldt og sikkert afsluttet. En timeout eller leverandørfejl tæller ikke som “ingen data” og kan ikke sende et ufuldstændigt resultat videre.
+
+Open-Meteo må kun udfylde de 118 aktuelle prognosetimer, aldrig manglende fortid. Der kopieres ikke fra andre timer eller kystdele. Feltet er en kombineret overfladestrøm og bruges kun som strøm; det må ikke tælles igen som bølge eller tidevand. Timerne er ikke kalibreringsegnede. Når DMI eller Copernicus senere kan levere samme time, vinder den kilde automatisk. Brugeren får ikke en ekstra leverandøretiket, men systemet beholder intern provenance og stopper før publicering ved fejl eller for gammelt forecasttarget.
+
+Normal drift får korte, faste leverandørrammer og to friskhedskontroller. Den store engangskørsel får mere tid, men samme sikkerhedsregler. Efter den første komplette opfyldning måles rækkefølge og tid hos hver leverandør, før den normale plan eventuelt justeres. Seneste sikre status før ny kørsel var 78.430 af 79.414 dækket og 984 rester; den nye løsning er lokalt måltestet, men endnu ikke bevist i en frisk mainkørsel.
 
 ## Fastlåst HARMONIE-fil stoppes efter tre minutter – 2026-09-05
 
@@ -16,7 +24,7 @@ Kildekontrollen gentog tidligere mange model- og sikkerhedstests i den afslutten
 
 ## DMI-vind skal både kunne læses og pege rigtigt – 2026-09-04
 
-Aktuel teknisk rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195` over 56 transitive filer. Tidligere 4.0.320-bindingsafsnit er historiske.
+Aktuel teknisk rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=7f5f6c93649b93f6a61892b31811c57603ff6c3a0a47cc218deae39c87960484` over 56 transitive filer. Integrated er `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=b7ac1e2b180ede66c25fcc764b344390969a772dcfbc846194166290b2430147` over 55 filer. Tidligere bindingsafsnit er historiske.
 
 En konkret læsefejl afviste DMI's primære HARMONIE-vind, selv om vindfilerne var hentet. Filtypen bruger et Lambert-kortnet, hvor fire felter fra en anden nettype ikke findes. Rettelsen accepterer kun denne dokumenterede forskel; øvrige identitetskontroller består. Vindretningen omregnes samtidig fra kortnettets retning til geografisk øst/nord efter filens egen beskrivelse. Vindhastigheden og alle land-/vandpunkter bevares.
 
@@ -46,7 +54,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må genattesteres til den aktuelle hash `80cb9d926a5096fe29139c2c7599692b5d97bd011de417fb4e42f4d648353926`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Overgangen må kun ændre continuation-hash og de to matchende generationsfelter; alle states, bindinger, target, privacy og øvrige felter skal være identiske. Det er en engangsbro, ikke en generel fallback.
+Der er én snæver overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må genattesteres til den aktuelle hash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Overgangen må kun ændre continuation-hash og de to matchende generationsfelter; alle states, bindinger, target, privacy og øvrige felter skal være identiske. Det er en engangsbro, ikke en generel fallback.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 
@@ -184,7 +192,7 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.322 first-cutover-kandidat
+## Aktuel status – RavScore 4.0.323 first-cutover-kandidat
 
 Candidate G er fortsat den eneste offentlige model. Den samlede first-cutover-kode ligger på main, men den lokale 4.0.322-driftspakke med HARMONIE-assetwatchdog er endnu ikke exact-head-valideret, merged eller kørt i frisk produktion. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy-, rollback- og watchdogtests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
 
@@ -282,7 +290,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.322-cutoverkandidat, ikke produktion
+## Status for det aktuelle modelarbejde – lokal 4.0.323-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver state 6 og den lokale 4.0.321-cutoverkandidat. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig; den additive checkpointmigration og de resterende data-, kapacitets- og produktionsbeviser er endnu ikke lukket.
 
@@ -973,7 +981,7 @@ Den nationale kontrol bruger uafhængig 10-meter landdækning ved flere afstande
 
 ## Strømsted, bundnært lag og syvdøgnsforskning – 4.0.229
 
-Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar prøver først den nærmeste DMI-vandkolonne med et komplet U/V-par og vælger derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km går kæden videre til de godkendte supplementer. Baltic og AMM15 må højst ligge 5 km væk; kun de otte udtrykkeligt godkendte Limfjordsproxyer må ligge op til 15 km væk. Gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis, Open-Meteos overfladestrøm og andre ikke-godkendte fallbacks lukkes ude før historik, score og kort.
+Det blå vandpunkt er samplinganker for både den viste strømpil og den strøm, som den aktive score må bruge. RavRadar prøver først den nærmeste DMI-vandkolonne med et komplet U/V-par og vælger derefter det dybeste gyldige lag i præcis den kolonne. Op til 3 km foretrækkes, 3–5 km kan accepteres, og over 5 km går kæden videre til de godkendte supplementer. Baltic og AMM15 må højst ligge 5 km væk; de otte udtrykkeligt godkendte Limfjordsproxyer og DEC-0115's sidste Open-Meteo-reserve må ligge op til 15 km væk. Open-Meteo kræver komplet samme-celle speed/direction efter fuldt READY fra de tidligere kilder, gælder kun target..+117, bruges alene som combined-surface-current og er aldrig kalibreringsegnet. Gamle cacher, direkte ForecastEDR-strøm uden fælles kolonne- og lagbevis og andre ikke-godkendte fallbacks lukkes fortsat ude.
 
 DMI kan have forskellige dybeste tilgængelige lag på forskellige forecasttidspunkter. Derfor foretages lagvalget for hver native tid. RavRadar må kun beregne mellemtimer, når begge native tider har samme lag, vandcelle og modelkørsel; ellers vises strøm som manglende mellem tiderne. Pilen står altid på den valgte times egen dokumenterede celle. For en lokal del vælges den viste scoretime først, så pilen ikke kan falde tilbage til byggetidens vandpunkt, mens tallet kommer fra en senere DMI-time. Centralt flyttede kystdelspunkter bygges før næste DMI-sampling, og kun cachen for det flyttede punkt nulstilles.
 
@@ -1388,7 +1396,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 Den implementerede lokale 4.0.321-cutoverkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Fase A-appkoden blev exact-head-valideret og merged med Candidate G fortsat offentlig; indtil 4.0.321 selv har bestået de resterende data-, kapacitets-, produktions- og offentlige kontroller, er Candidate G fortsat eneste offentlige model.
 
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.322 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
+Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.323 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=b7ac1e2b180ede66c25fcc764b344390969a772dcfbc846194166290b2430147` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
 
 ### 18.1 Hovedformel
 

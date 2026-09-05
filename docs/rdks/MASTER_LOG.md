@@ -1,3 +1,10 @@
+# NYESTE EJERDELTA – 2026-09-05 – Open-Meteo som sidste currentfallback og efterfølgende driftsmåling
+
+- Ejeren beslutter, at de eksakte operationelle huller, som DMI, Baltic, AMM15 og den godkendte regionale DMI-vej ikke kan lukke, udfyldes med Open-Meteo. Efter rettelsen skal almindelige vejrkørsler vurderes for rækkefølge og tidsforbrug, så gamle targets ikke giver manglende prognosedata.
+- Lokal 4.0.323 implementerer DEC-0115 med READY-only admission, target..+117, fysisk combined-surface-current-scope, 15 km, ingen historiksyntese og altid `calibrationEligible=false`. Leverandørfejl/null/stale target stopper før artifact og bevarer seneste komplette offentlighed.
+- Seneste sikre optælling var 78.430/79.414 dækket og 984 rester, heraf 944 i regionalpolitik og 40 udenfor ved +117. Før den autoriserede engangskørsel genmåles og rapporteres fetched/missing. Kørsel starter først på merged, exact-head-grøn main.
+- Normal scheduler ændres ikke blindt. De nye 360/240s-budgetter og 90/150-minutters friskhedsgater beskytter nu; endelig balance afgøres efter per-leverandørmåling fra den komplette opfyldning.
+
 # NYESTE EJERDELTA – 2026-09-05 – fastlåst HARMONIE-asset må ikke hænge
 
 - Ejeren kræver, at et enkelt HARMONIE-asset ikke må kunne hænge til GitHubs 55-minuttersgrænse. Lokal 4.0.322 stopper kun den aktive HARMONIE-behandling efter 180 sekunder og bruger derefter den eksisterende producent til bounded, fail-closed finalisering. Rettelsen gælder både normal cron/watchdog-drift og stor engangsopfyldning.

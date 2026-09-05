@@ -1,7 +1,7 @@
 import {
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from './ravscore-model-contract.js?v=4.0.322';
+} from './ravscore-model-contract.js?v=4.0.323';
 
 const INTEGRATED_MODEL_ID = 'RRS-COASTAL-PROCESS-INTEGRATED-1.1.0';
 const CANDIDATE_G_MODEL_ID = 'RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3';

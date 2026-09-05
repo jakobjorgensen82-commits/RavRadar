@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-05 – DEC-0115 operationel currentclosure
+
+- Eksakt kildeorden: DMI → Baltic → AMM15 → otte policydele regional DMI → Open-Meteo. Sidste led kræver terminalt READY, udfylder kun target..+117 og er combined-surface-current, højst 15 km og altid ikke-kalibreringsegnet. Ingen historik, interpolation, nabolån eller bølge-/tidevandsreprojektion.
+- Seneste sikre optælling er 78.430/79.414 dækket og 984 rest, heraf 944 policyregionalt og 40 udenfor ved +117. Lokal kode/måltests er grønne; exact-head, merge og frisk 673 × 118-mainbevis afventer.
+- Normal/oneoff deler logik, men har separate bounded budgetter og targetfriskhed. Schedulerinterval ændres først efter komplet opfyldning og målt leverandørtid.
+
 ## Nyeste sandhed 2026-09-03 – reel integrated public closure
 
 - Backendrun `33736292211` stoppede sikkert før eksterne writes og offentlig ændring: 44-filers bundlen manglede de direkte public consumers `rav-assistant.js` og `trip-evidence-public-adapter.js`. Candidate G er fortsat den eneste offentlige model.
