@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 
 const sources = Object.freeze({
-  migration: 'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql',
+  migration: 'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql',
   schema: 'supabase/schema.sql',
   installer: 'supabase/INSTALL-RAVRADAR-4.0.56-SECURITY.sql',
 });
@@ -26,7 +26,7 @@ const entries = await Promise.all(Object.entries(sources).map(async ([label, fil
 ]));
 const documents = Object.fromEntries(entries);
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql',
+  'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql',
   'utf8',
 );
 const stableTripMigration = await fs.readFile(

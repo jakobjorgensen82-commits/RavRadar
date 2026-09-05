@@ -293,6 +293,10 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
         handle.write(f"operational_seal_present={'true' if state.get('operationalSealPresent', state['completeRangePresent']) else 'false'}\n")
         handle.write(f"source_stage_ready={'true' if state.get('sourceStageReady') else 'false'}\n")
         handle.write(f"source_stage_reusable={'true' if state.get('sourceStageReusable') else 'false'}\n")
+        handle.write(
+            "source_stage_status="
+            f"{state.get('sourceStageStatus') or 'ABSENT'}\n"
+        )
         if state.get("productionReferenceAt"):
             handle.write(f"production_reference_at={state['productionReferenceAt']}\n")
         handle.write(f"required_pair_count={state['requiredPairCount']}\n")

@@ -30,7 +30,7 @@ const TARGET_REGISTRY_SHA = sha256({ fixture: 'targets' });
 const SOURCE_ASSET_SHA = sha256({ fixture: 'source-asset' });
 const SOURCE_PROOF_SHA = sha256({ fixture: 'source-proof' });
 const MODEL_RUN = '2026-09-02T05:00:00Z';
-const ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v1';
+const ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v2';
 const ADVISORY_ASSIGNMENT_CONTRACT = 'current-advisory-past-model-field-source-assignment-v1';
 
 const fingerprint = part => sha256({
@@ -103,7 +103,7 @@ const copEntry = {
   verticalLayerM: 5, verticalLayerRankM: 5, layerQuality: 'deepest-common-layer',
   sharedLayerCount: 1, componentPair: 'same-time-cell-layer', interpolation: false,
   vectorSemanticsVersion: 4, uMps: 0.3, vMps: -0.4,
-  closureContractId: 'current-operational-673x118-closure-ready-v1',
+  closureContractId: 'current-operational-673x118-closure-ready-v2',
   closureId: CLOSURE_ID, closureAssignmentSha256: assignmentSha(copIdentity),
   classification: copIdentity.classification, recordRefSha256: copIdentity.recordRefSha256,
 };
@@ -133,7 +133,7 @@ const regionalEntry = ({ validTime, sourceValidTime, classification, holdAgeHour
     provider: 'dmi',
     sourceClass: 'owner-approved-regional-proxy', source: 'dmi-dkss-lf-regional-proxy',
     collection: 'dkss_lf', modelRun: MODEL_RUN,
-    closureContractId: 'current-operational-673x118-closure-ready-v1',
+    closureContractId: 'current-operational-673x118-closure-ready-v2',
     closureId: CLOSURE_ID, classification,
     closureAssignmentSha256: assignmentSha(identity), sourceAssetSha256: SOURCE_ASSET_SHA,
     sourceProofSha256: SOURCE_PROOF_SHA, vectorCommitmentSha256,
@@ -164,17 +164,19 @@ const entries = [copEntry, heldEntry, nativeEntry]
   .sort((left, right) => left.validTime.localeCompare(right.validTime)
     || left.partId.localeCompare(right.partId));
 const safeClosure = {
-  schemaVersion: 1,
-  contractId: 'current-operational-673x118-closure-safe-v1',
+  schemaVersion: 2,
+  contractId: 'current-operational-673x118-closure-safe-v2',
   closureId: CLOSURE_ID,
   status: 'READY', productionReferenceAt: REFERENCE, operationalRangeEndAt: END,
   targetCount: 673, operationalHourCount: 118, totalPairCount: 673 * 118,
-  sourceOrderContractId: 'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-v1',
+  sourceOrderContractId: 'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2',
   dmiVerifiedPairCount: 673 * 118 - 3, copernicusBalticPairCount: 1,
   copernicusAmm15PairCount: 0, regionalNativePairCount: 1,
   regionalDerivedHoldPairCount: 1, regionalResidualPairCount: 2,
+  openMeteoRequiredPairCount: 0, openMeteoPairCount: 0,
   supplementalAssignmentCount: 3, missingPairCount: 0,
   copernicusCompleteWithoutSourceStage: false,
+  copernicusSourceStageStatus: 'READY', copernicusBoundedProgressAccepted: false,
   targetRegistrySha256: TARGET_REGISTRY_SHA, dmiCurrentInputSha256: sha256({ fixture: 'dmi' }),
   dmiLedgerSha256: sha256({ fixture: 'ledger' }), dmiAttestationSha256: sha256({ fixture: 'attestation' }),
   copernicusRegistrySha256: sha256({ fixture: 'registry' }),
@@ -184,6 +186,11 @@ const safeClosure = {
   regionalEvidenceSha256: sha256({ fixture: 'regional-evidence' }),
   regionalPolicySha256: sha256({ fixture: 'regional-policy' }),
   regionalPairRefsSha256: sha256({ fixture: 'regional-refs' }),
+  openMeteoDocumentSha256: sha256({ fixture: 'open-meteo-document' }),
+  openMeteoRecordRefsSha256: sha256([]),
+  openMeteoPhysicalScope: 'eulerian-waves-and-tides-combined-surface-current',
+  openMeteoScoreInputPolicyId: 'combined-current-single-channel-no-wave-or-tide-reprojection-v1',
+  openMeteoCalibrationEligible: false,
   advisoryHistoryRequiredPairCount: 1,
   advisoryHistoryRequiredPairsSha256: sha256({
     contractId: 'copernicus-required-part-time-pairs-v1',
@@ -222,8 +229,11 @@ const pureDmiSafeClosure = {
   regionalNativePairCount: 0,
   regionalDerivedHoldPairCount: 0,
   regionalResidualPairCount: 0,
+  openMeteoRequiredPairCount: 0,
+  openMeteoPairCount: 0,
   supplementalAssignmentCount: 0,
   copernicusCompleteWithoutSourceStage: true,
+  copernicusSourceStageStatus: 'NOT_APPLICABLE',
   copernicusSourceStageSha256: null,
   copernicusRecordRefsSha256: sha256([]),
   advisoryHistoryRequiredPairCount: 0,
@@ -431,8 +441,7 @@ const pureClosure = {
   regionalDerivedHoldPairCount: 0,
   regionalResidualPairCount: 0,
   supplementalAssignmentCount: 1,
-  copernicusCompleteWithoutSourceStage: true,
-  copernicusSourceStageSha256: null,
+  copernicusCompleteWithoutSourceStage: false,
   advisoryHistoryAvailablePairCount: 1,
   advisoryHistoryMissingPairCount: 0,
   advisoryHistoryRecordRefsSha256: sha256([advisoryRef]),

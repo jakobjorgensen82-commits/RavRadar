@@ -676,8 +676,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         unfinished_fixtures,
         env=stopped_environment,
     )
-    assert stopped_at_boundary.returncode != 0
-    assert "stopped safely at a shard boundary" in stopped_at_boundary.stderr
+    assert stopped_at_boundary.returncode == 75
+    assert "bounded progress was saved at a shard boundary" in stopped_at_boundary.stderr
     assert json.loads(
         (unfinished / "source-stage.json").read_text(encoding="utf-8")
     ) == progress_document

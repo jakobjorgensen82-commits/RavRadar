@@ -1,10 +1,10 @@
 {
-  "version": "4.0.322",
-  "releasedAt": "2026-09-04T22:30:54.790Z",
-  "minimumSupportedVersion": "4.0.322",
+  "version": "4.0.323",
+  "releasedAt": "2026-09-05T09:37:59.424Z",
+  "minimumSupportedVersion": "4.0.323",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.322",
+    "releaseVersion": "4.0.323",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -17,7 +17,7 @@
         "bestTimePolicyId": "score-history-water-tie-earliest-v3",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b",
-        "modelBundleSha256": "5c523675393981cea770b8bec62e8287130206f5c4560afddbff5eb39f0582a1"
+        "modelBundleSha256": "b7ac1e2b180ede66c25fcc764b344390969a772dcfbc846194166290b2430147"
       },
       "candidateGRollback": {
         "modelId": "RRS-CANDIDATE-G-CURRENT-LED-WAVE-MOBILISATION-RESEARCH-3",
@@ -30,7 +30,7 @@
         "bestTimePolicyId": "score-water-tie-earliest-v2",
         "presentationPolicyId": "score-bands-35-55-75-exceptional90-v1",
         "modelContractSha256": "c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8",
-        "modelBundleSha256": "dd3845b10dafefa70c664c3c1c8f3cb3e5576b4f24d16bc0505b048f28faa195"
+        "modelBundleSha256": "7f5f6c93649b93f6a61892b31811c57603ff6c3a0a47cc218deae39c87960484"
       }
     },
     "publicManifestAuthority": {
@@ -79,6 +79,10 @@
         {
           "id": "DEC-0114",
           "path": "docs/rdks/10_DECISIONS/DEC-0114-INTEGRATED-FIRST-WITH-MEASURED-HISTORY-WARMUP.md"
+        },
+        {
+          "id": "DEC-0115",
+          "path": "docs/rdks/10_DECISIONS/DEC-0115-OPEN-METEO-OPERATIONAL-CURRENT-FALLBACK.md"
         }
       ]
     },

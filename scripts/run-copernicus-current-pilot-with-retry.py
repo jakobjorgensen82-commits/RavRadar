@@ -10,10 +10,10 @@ import time
 from pathlib import Path
 from typing import Callable, Sequence
 
-
 ROOT = Path(__file__).resolve().parents[1]
 PILOT = ROOT / "scripts/run-copernicus-current-pilot.py"
 SOFT_DEADLINE_EPOCH_ENV = "RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH"
+BOUNDED_PROGRESS_EXIT_CODE = 75
 
 
 def arguments() -> argparse.Namespace:
@@ -28,8 +28,8 @@ def arguments() -> argparse.Namespace:
 def validate_budget(attempts: int, timeout_seconds: float, backoff_seconds: float) -> None:
     if attempts < 1 or attempts > 3:
         raise ValueError("Copernicus retry attempts must be between 1 and 3")
-    if timeout_seconds <= 0 or timeout_seconds > 2700:
-        raise ValueError("Copernicus attempt timeout must be above 0 and at most 2700 seconds")
+    if timeout_seconds <= 0 or timeout_seconds > 3300:
+        raise ValueError("Copernicus attempt timeout must be above 0 and at most 3300 seconds")
     if backoff_seconds < 0 or backoff_seconds > 120:
         raise ValueError("Copernicus retry backoff must be between 0 and 120 seconds")
 
@@ -60,14 +60,43 @@ def run_bounded(
                 env=child_environment,
             )
             if completed.returncode == 0:
-                return {"ok": True, "attempt": attempt, "reason": "completed"}
-            reason = f"exit-{completed.returncode}"
+                return {
+                    "ok": True,
+                    "attempt": attempt,
+                    "reason": "completed",
+                    "boundedProgress": False,
+                }
+            if completed.returncode == BOUNDED_PROGRESS_EXIT_CODE:
+                if attempt == attempts:
+                    return {
+                        "ok": True,
+                        "attempt": attempt,
+                        "reason": "bounded-progress",
+                        "boundedProgress": True,
+                    }
+                reason = "bounded-progress"
+            else:
+                reason = f"exit-{completed.returncode}"
         except subprocess.TimeoutExpired:
             reason = "timeout"
         print(f"Copernicus attempt {attempt}/{attempts} ended safely ({reason}).", file=sys.stderr)
         if attempt < attempts:
             sleep(backoff_seconds)
     return {"ok": False, "attempt": attempts, "reason": reason}
+
+
+def write_github_outputs(result: dict[str, int | bool | str]) -> None:
+    output_path = os.getenv("GITHUB_OUTPUT")
+    if not output_path:
+        return
+    bounded_progress = bool(result.get("boundedProgress"))
+    with Path(output_path).open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(f"bounded_progress={'true' if bounded_progress else 'false'}\n")
+        handle.write(
+            "source_stage_disposition="
+            f"{'IN_PROGRESS' if bounded_progress else 'READY'}\n"
+        )
+
 
 
 def main() -> int:
@@ -84,7 +113,14 @@ def main() -> int:
         backoff_seconds=args.backoff_seconds,
     )
     if result["ok"]:
-        print(f"Copernicus pilot completed on attempt {result['attempt']}.")
+        write_github_outputs(result)
+        if result.get("boundedProgress"):
+            print(
+                "Copernicus pilot reached its controlled work budget after saving "
+                f"validated progress on attempt {result['attempt']}."
+            )
+        else:
+            print(f"Copernicus pilot completed on attempt {result['attempt']}.")
         return 0
     print(
         f"Copernicus pilot exhausted {result['attempt']} bounded attempts ({result['reason']}).",

@@ -130,6 +130,9 @@ const CURRENT_PROVENANCE_FIELDS = Object.freeze([
   'distanceKm',
   'componentPair',
   'interpolation',
+  'physicalScope',
+  'scoreInputPolicyId',
+  'calibrationEligible',
 ]);
 
 function compactCurrentProvenance(provenance) {

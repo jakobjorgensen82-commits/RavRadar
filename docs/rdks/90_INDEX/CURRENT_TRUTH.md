@@ -1,3 +1,10 @@
+# NYESTE SANDHED – 2026-09-05 – 4.0.323 Open-Meteo-current lukket lokalt
+
+- DEC-0115 er bindende: operationel current følger eksakt DMI → Baltic → AMM15 → policybundet regional DMI → Open-Meteo. Open-Meteo åbnes kun efter komplet `READY`, udfylder kun target..+117, har højst 15 km, kombineret overfladestrømsscope og altid `calibrationEligible=false`. Ingen historik, interpolation, carry-forward, nabolån, ekstra bølge/tidevandsled eller offentlig leverandøretiket.
+- Seneste sikre dataevidens er 78.430/79.414 dækket og 984 rester: 944 policyregionale og 40 udenfor ved +117. Den lokale partition retter, at alle 984 før blev sendt til en builder, der kun accepterer otte policydele. Komplet 673 × 118 er endnu ikke runtimebevist.
+- Normal/oneoff deler kildelogik. Normal Copernicus/Open-Meteo er bounded 360/240s med targetfriskhed 90/150 min; oneoff er 3300/900s, samlet 200 min og 240 min. Normal interval ændres først efter målt fuld opfyldning.
+- Måltests, version/docs, RDKS, model-/migrationstests og den fulde releasegate er grønne. Lokal source-wrapper fandt én forældet namespace-reference; måltesten er grøn. PR #255 exact-head `33960023127` bekræftede også range-checkeren, men næste source-stage-test forventede den gamle interne exceptionstekst i stedet for den nye eksakte exit-75-terminalbesked. Testen kræver nu både exit 75 og `bounded progress was saved at a shard boundary`; den korte måltest er grøn. Ny exact-head, merge og frisk engangskørsel afventer. Aktuelle hashes er integrated `b7ac1e2b…`, rollback `7f5f6c93…`, continuation `08f0a635…`; migration `20260905090000`. Candidate G er fortsat offentlig.
+
 # NYESTE SANDHED – 2026-09-05 – HARMONIE-hard-hang afgrænset lokalt
 
 - `origin/main` er `ce93cebc` (PR #253). Første store run `33907599084` gjorde DMI READY og gemte 6.766 af 8.512 Copernicus-restpar. Fortsættelsen `33918250039` nåede ikke Copernicus: ét downloadet HARMONIE-asset hang over 52 minutter, og GitHub dræbte DMI-trinnet ved 55 minutter. Alle tre cache-save-trin bestod.

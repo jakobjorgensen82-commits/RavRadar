@@ -1,8 +1,9 @@
 """Exact private closure for the 673 x 118 operational current matrix.
 
 The source order is fixed and non-negotiable: verified local DMI, Baltic
-Copernicus, AMM15 Copernicus, and finally one of the two explicitly evidenced
-regional DMI dispositions.  This module neither downloads data nor changes
+Copernicus, AMM15 Copernicus, one of the explicitly evidenced regional DMI
+dispositions when available, and Open-Meteo for the exact final residual.
+This module neither downloads data nor changes
 geometry.  It only validates existing evidence and emits reference-only
 assignments; coordinates and raw U/V never enter the closure document.
 """
@@ -19,7 +20,10 @@ from .copernicus_current import (
     validate_target_registry,
     valid_sha256,
 )
-from .copernicus_current_source_stage import validate_source_stage
+from .copernicus_current_source_stage import (
+    SOURCE_STAGE_STATUS,
+    validate_reusable_source_stage,
+)
 from .copernicus_target_identity import target_fingerprint
 from .dmi_native_provenance import (
     canonical_time,
@@ -32,13 +36,22 @@ from .regional_current_operational import (
     REGIONAL_DMI_NATIVE,
     build_regional_current_operational_evidence,
 )
+from .open_meteo_current_fallback import (
+    MODEL as OPEN_METEO_MODEL,
+    PHYSICAL_SCOPE as OPEN_METEO_PHYSICAL_SCOPE,
+    SCORE_INPUT_POLICY_ID as OPEN_METEO_SCORE_INPUT_POLICY_ID,
+    SOURCE as OPEN_METEO_SOURCE,
+    record_ref as open_meteo_record_ref,
+    record_ref_sha256 as open_meteo_record_ref_sha256,
+    validate_document as validate_open_meteo_document,
+)
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 KIND = "RAVRADAR_PRIVATE_CURRENT_OPERATIONAL_CLOSURE"
-CONTRACT_ID = "current-operational-673x118-closure-ready-v1"
-SAFE_CONTRACT_ID = "current-operational-673x118-closure-safe-v1"
-ASSIGNMENT_CONTRACT_ID = "current-operational-source-assignment-v1"
+CONTRACT_ID = "current-operational-673x118-closure-ready-v2"
+SAFE_CONTRACT_ID = "current-operational-673x118-closure-safe-v2"
+ASSIGNMENT_CONTRACT_ID = "current-operational-source-assignment-v2"
 ADVISORY_ASSIGNMENT_CONTRACT_ID = (
     "current-advisory-past-model-field-source-assignment-v1"
 )
@@ -52,6 +65,7 @@ EXPECTED_TOTAL_PAIR_COUNT = EXPECTED_TARGET_COUNT * OPERATIONAL_HOUR_COUNT
 DMI_VERIFIED = "DMI_VERIFIED"
 COPERNICUS_BALTIC = "COPERNICUS_BALTIC"
 COPERNICUS_AMM15 = "COPERNICUS_AMM15"
+OPEN_METEO_COMBINED_CURRENT = "OPEN_METEO_COMBINED_CURRENT"
 COPERNICUS_ADVISORY_PAST_MODEL_FIELD = (
     "COPERNICUS_ADVISORY_PAST_MODEL_FIELD"
 )
@@ -60,7 +74,7 @@ SOURCE_TO_CLASSIFICATION = {
     "copernicus-nws-amm15": COPERNICUS_AMM15,
 }
 SOURCE_ORDER_CONTRACT_ID = (
-    "dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-v1"
+    "dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2"
 )
 
 _DMI_FIELDS = {
@@ -79,6 +93,11 @@ _REGIONAL_NATIVE_FIELDS = {
     "vectorCommitmentSha256", "assignmentSha256",
 }
 _REGIONAL_HOLD_FIELDS = _REGIONAL_NATIVE_FIELDS | {"holdAgeHours"}
+_OPEN_METEO_FIELDS = {
+    "partId", "validTime", "classification", "source", "model", "recordId",
+    "acquiredAt", "recordRefSha256", "physicalScope", "scoreInputPolicyId",
+    "calibrationEligible", "assignmentSha256",
+}
 
 PRIVATE_FIELDS = {
     "schemaVersion", "kind", "contractId", "closureId", "status",
@@ -87,14 +106,19 @@ PRIVATE_FIELDS = {
     "dmiVerifiedPairCount", "copernicusBalticPairCount",
     "copernicusAmm15PairCount", "regionalNativePairCount",
     "regionalDerivedHoldPairCount", "regionalResidualPairCount",
+    "openMeteoRequiredPairCount", "openMeteoPairCount",
     "supplementalAssignmentCount", "supplementalAssignmentsSha256",
     "missingPairCount", "copernicusCompleteWithoutSourceStage",
+    "copernicusSourceStageStatus", "copernicusBoundedProgressAccepted",
     "targetRegistrySha256", "dmiCurrentInputSha256", "dmiLedgerSha256",
     "dmiAttestationSha256", "copernicusRegistrySha256",
     "copernicusShadowSha256", "copernicusSourceStageId",
     "copernicusSourceStageSha256", "copernicusRecordRefsSha256",
     "regionalEvidenceSha256", "regionalPolicySha256",
-    "regionalPairRefsSha256", "assignmentsSha256", "assignments",
+    "regionalPairRefsSha256", "openMeteoDocumentSha256",
+    "openMeteoRecordRefsSha256", "openMeteoPhysicalScope",
+    "openMeteoScoreInputPolicyId", "openMeteoCalibrationEligible",
+    "assignmentsSha256", "assignments",
     "advisoryHistoryRequiredPairCount", "advisoryHistoryRequiredPairsSha256",
     "advisoryHistoryAvailablePairCount", "advisoryHistoryMissingPairCount",
     "advisoryHistoryRecordRefsSha256", "advisoryHistoryAssignmentCount",
@@ -109,13 +133,18 @@ SAFE_FIELDS = {
     "dmiVerifiedPairCount", "copernicusBalticPairCount",
     "copernicusAmm15PairCount", "regionalNativePairCount",
     "regionalDerivedHoldPairCount", "regionalResidualPairCount",
+    "openMeteoRequiredPairCount", "openMeteoPairCount",
     "supplementalAssignmentCount", "supplementalAssignmentsSha256",
     "missingPairCount", "copernicusCompleteWithoutSourceStage",
+    "copernicusSourceStageStatus", "copernicusBoundedProgressAccepted",
     "targetRegistrySha256", "dmiCurrentInputSha256", "dmiLedgerSha256",
     "dmiAttestationSha256", "copernicusRegistrySha256",
     "copernicusShadowSha256", "copernicusSourceStageSha256",
     "copernicusRecordRefsSha256", "regionalEvidenceSha256",
     "regionalPolicySha256", "regionalPairRefsSha256", "assignmentsSha256",
+    "openMeteoDocumentSha256", "openMeteoRecordRefsSha256",
+    "openMeteoPhysicalScope", "openMeteoScoreInputPolicyId",
+    "openMeteoCalibrationEligible",
     "advisoryHistoryRequiredPairCount", "advisoryHistoryRequiredPairsSha256",
     "advisoryHistoryAvailablePairCount", "advisoryHistoryMissingPairCount",
     "advisoryHistoryRecordRefsSha256", "advisoryHistoryAssignmentCount",
@@ -317,6 +346,25 @@ def _copernicus_state(
         advisory_missing_pairs,
         key=lambda row: (row["validTime"], row["partId"]),
     )
+
+    def reusable_stage() -> dict[str, Any]:
+        if not isinstance(source_stage, dict) or not source_stage:
+            _fail("SOURCE_STAGE_REQUIRED")
+        try:
+            validated = validate_reusable_source_stage(
+                source_stage,
+                registry=registry,
+                shadow=cache,
+                target_identities=target_by_id,
+                shadow_sha256=shadow_sha256,
+                allow_rebase=False,
+            )
+        except (KeyError, TypeError, ValueError, RuntimeError):
+            _fail("SOURCE_STAGE_INVALID")
+        if validated.get("status") != SOURCE_STAGE_STATUS:
+            _fail("SOURCE_STAGE_INVALID")
+        return validated
+
     if not missing_pairs:
         if not registry["operationalRequiredPairs"]:
             if source_stage in (None, {}):
@@ -328,18 +376,7 @@ def _copernicus_state(
                     None,
                     True,
                 )
-        if not isinstance(source_stage, dict) or not source_stage:
-            _fail("SOURCE_STAGE_REQUIRED")
-        try:
-            validated_stage = validate_source_stage(
-                source_stage,
-                registry=registry,
-                shadow=cache,
-                target_identities=target_by_id,
-                shadow_sha256=shadow_sha256,
-            )
-        except (TypeError, ValueError):
-            _fail("SOURCE_STAGE_INVALID")
+        validated_stage = reusable_stage()
         if validated_stage.get("missingPairs") != missing_pairs:
             _fail("SOURCE_STAGE_RESIDUAL_INVALID")
         if (
@@ -348,23 +385,24 @@ def _copernicus_state(
                 != canonical_sha256(record_refs)
         ):
             _fail("SOURCE_STAGE_COPERNICUS_REFS_INVALID")
-        try:
-            validate_shadow(shadow, target_by_id, require_collection=True)
-        except (TypeError, ValueError):
-            _fail("COPERNICUS_COMPLETE_SEAL_INVALID")
-        seals = [
-            row for row in cache.get("collections") or []
-            if row.get("status") == "OPERATIONAL_COMPLETE"
-            and row.get("productionReferenceAt") == registry["productionReferenceAt"]
-        ]
-        if (
-            len(seals) != 1
-            or seals[0].get("operationalRecordRefs") != record_refs
-            or seals[0].get("advisoryHistoryRecordRefs") != advisory_refs
-            or seals[0].get("advisoryHistoryAvailablePairCount") != len(advisory_refs)
-            or seals[0].get("advisoryHistoryMissingPairCount") != len(advisory_missing_pairs)
-        ):
-            _fail("COPERNICUS_COMPLETE_SEAL_INVALID")
+        if validated_stage.get("status") == SOURCE_STAGE_STATUS:
+            try:
+                validate_shadow(shadow, target_by_id, require_collection=True)
+            except (TypeError, ValueError):
+                _fail("COPERNICUS_COMPLETE_SEAL_INVALID")
+            seals = [
+                row for row in cache.get("collections") or []
+                if row.get("status") == "OPERATIONAL_COMPLETE"
+                and row.get("productionReferenceAt") == registry["productionReferenceAt"]
+            ]
+            if (
+                len(seals) != 1
+                or seals[0].get("operationalRecordRefs") != record_refs
+                or seals[0].get("advisoryHistoryRecordRefs") != advisory_refs
+                or seals[0].get("advisoryHistoryAvailablePairCount") != len(advisory_refs)
+                or seals[0].get("advisoryHistoryMissingPairCount") != len(advisory_missing_pairs)
+            ):
+                _fail("COPERNICUS_COMPLETE_SEAL_INVALID")
         return (
             record_refs,
             missing_pairs,
@@ -373,18 +411,7 @@ def _copernicus_state(
             validated_stage,
             False,
         )
-    if not isinstance(source_stage, dict) or not source_stage:
-        _fail("SOURCE_STAGE_REQUIRED")
-    try:
-        validated_stage = validate_source_stage(
-            source_stage,
-            registry=registry,
-            shadow=cache,
-            target_identities=target_by_id,
-            shadow_sha256=shadow_sha256,
-        )
-    except (TypeError, ValueError):
-        _fail("SOURCE_STAGE_INVALID")
+    validated_stage = reusable_stage()
     if validated_stage.get("missingPairs") != missing_pairs:
         _fail("SOURCE_STAGE_RESIDUAL_INVALID")
     if (
@@ -466,13 +493,106 @@ def _regional_assignments(private_proof: dict[str, Any]) -> list[dict[str, Any]]
             _fail("REGIONAL_EVIDENCE_INVALID")
         classification = row.get("classification")
         if classification == MISSING:
-            _fail("REGIONAL_RESIDUAL_MISSING")
+            continue
         if classification not in {REGIONAL_DMI_NATIVE, REGIONAL_DMI_DERIVED_HOLD}:
             _fail("REGIONAL_EVIDENCE_INVALID")
         fields = _REGIONAL_HOLD_FIELDS if classification == REGIONAL_DMI_DERIVED_HOLD else _REGIONAL_NATIVE_FIELDS
         identity = {key: row[key] for key in fields if key != "assignmentSha256"}
         if set(identity) != fields - {"assignmentSha256"}:
             _fail("REGIONAL_EVIDENCE_INVALID")
+        assignments.append({**identity, "assignmentSha256": _assignment_sha256(identity)})
+    return assignments
+
+
+def build_regional_residual_plan(
+    *,
+    residual_pairs: list[dict[str, str]],
+    regional_policy: dict[str, Any],
+    targets: list[dict[str, Any]],
+    regional_shadow: dict[str, Any],
+    dmi_ledger: dict[str, Any],
+    dmi_attestation: dict[str, Any],
+    locked_reference: str,
+) -> dict[str, Any]:
+    """Apply regional DMI only to its allowlist and return the exact final residual."""
+    residual = _canonical_pair_rows(residual_pairs, "SUPPLEMENTAL_RESIDUAL_INVALID")
+    policy_rows = regional_policy.get("parts") if isinstance(regional_policy, dict) else None
+    if not isinstance(policy_rows, list):
+        _fail("REGIONAL_POLICY_INVALID")
+    regional_ids = {
+        str(row.get("partId") or "").strip()
+        for row in policy_rows
+        if isinstance(row, dict) and str(row.get("partId") or "").strip()
+    }
+    regional_candidates = [row for row in residual if row["partId"] in regional_ids]
+    outside_regional = [row for row in residual if row["partId"] not in regional_ids]
+    try:
+        regional_result = build_regional_current_operational_evidence(
+            policy=regional_policy,
+            targets=targets,
+            current_shadow=regional_shadow,
+            dmi_ledger=dmi_ledger,
+            dmi_attestation=dmi_attestation,
+            locked_reference=locked_reference,
+            dmi_gap_pairs=regional_candidates,
+        )
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        _fail("REGIONAL_EVIDENCE_INVALID")
+    regional_private = regional_result.get("privateProof")
+    if not isinstance(regional_private, dict):
+        _fail("REGIONAL_EVIDENCE_INVALID")
+    regional_assignments = _regional_assignments(regional_private)
+    pair_refs = regional_private.get("pairRefs")
+    if not isinstance(pair_refs, list):
+        _fail("REGIONAL_EVIDENCE_INVALID")
+    regional_missing = sorted([
+        {"partId": row.get("partId"), "validTime": row.get("validTime")}
+        for row in pair_refs
+        if isinstance(row, dict) and row.get("classification") == MISSING
+    ], key=lambda row: (str(row.get("validTime") or ""), str(row.get("partId") or "")))
+    regional_missing = _canonical_pair_rows(
+        regional_missing, "REGIONAL_EVIDENCE_INVALID"
+    )
+    candidate_keys = {(row["partId"], row["validTime"]) for row in regional_candidates}
+    assigned_keys = {(row["partId"], row["validTime"]) for row in regional_assignments}
+    missing_keys = {(row["partId"], row["validTime"]) for row in regional_missing}
+    if assigned_keys & missing_keys or assigned_keys | missing_keys != candidate_keys:
+        _fail("REGIONAL_PARTITION_INVALID")
+    open_meteo_required = sorted(
+        [*outside_regional, *regional_missing],
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    if len({(row["partId"], row["validTime"]) for row in open_meteo_required}) != len(open_meteo_required):
+        _fail("OPEN_METEO_REQUIRED_PARTITION_INVALID")
+    return {
+        "regionalPrivate": regional_private,
+        "regionalAssignments": regional_assignments,
+        "openMeteoRequiredPairs": open_meteo_required,
+    }
+
+
+def _open_meteo_assignments(document: dict[str, Any]) -> list[dict[str, Any]]:
+    records = document.get("records")
+    if not isinstance(records, list):
+        _fail("OPEN_METEO_EVIDENCE_INVALID")
+    assignments: list[dict[str, Any]] = []
+    for record in records:
+        if not isinstance(record, dict):
+            _fail("OPEN_METEO_EVIDENCE_INVALID")
+        ref = open_meteo_record_ref(record)
+        identity = {
+            "partId": ref["partId"],
+            "validTime": ref["validTime"],
+            "classification": OPEN_METEO_COMBINED_CURRENT,
+            "source": OPEN_METEO_SOURCE,
+            "model": OPEN_METEO_MODEL,
+            "recordId": ref["recordId"],
+            "acquiredAt": record["acquiredAt"],
+            "recordRefSha256": open_meteo_record_ref_sha256(ref),
+            "physicalScope": OPEN_METEO_PHYSICAL_SCOPE,
+            "scoreInputPolicyId": OPEN_METEO_SCORE_INPUT_POLICY_ID,
+            "calibrationEligible": False,
+        }
         assignments.append({**identity, "assignmentSha256": _assignment_sha256(identity)})
     return assignments
 
@@ -487,6 +607,7 @@ def _validate_assignment_shape(assignment: Any) -> tuple[str, str]:
         COPERNICUS_AMM15: _COP_FIELDS,
         REGIONAL_DMI_NATIVE: _REGIONAL_NATIVE_FIELDS,
         REGIONAL_DMI_DERIVED_HOLD: _REGIONAL_HOLD_FIELDS,
+        OPEN_METEO_COMBINED_CURRENT: _OPEN_METEO_FIELDS,
     }.get(classification)
     if expected_fields is None or set(assignment) != expected_fields:
         _fail("ASSIGNMENT_INVALID")
@@ -540,6 +661,27 @@ def _validate_assignment_shape(assignment: Any) -> tuple[str, str]:
             "contractId": "current-operational-copernicus-record-ref-v1",
             "recordRef": ref,
         }):
+            _fail("ASSIGNMENT_INVALID")
+    if classification == OPEN_METEO_COMBINED_CURRENT:
+        acquired_at = canonical_time(assignment.get("acquiredAt"))
+        ref = {
+            "partId": part_id,
+            "validTime": valid_time,
+            "recordId": assignment.get("recordId"),
+            "source": assignment.get("source"),
+        }
+        if (
+            assignment.get("source") != OPEN_METEO_SOURCE
+            or assignment.get("model") != OPEN_METEO_MODEL
+            or assignment.get("physicalScope") != OPEN_METEO_PHYSICAL_SCOPE
+            or assignment.get("scoreInputPolicyId") != OPEN_METEO_SCORE_INPUT_POLICY_ID
+            or assignment.get("calibrationEligible") is not False
+            or acquired_at is None
+            or assignment.get("acquiredAt") != acquired_at
+            or not valid_sha256(assignment.get("recordId"))
+            or not valid_sha256(assignment.get("recordRefSha256"))
+            or assignment.get("recordRefSha256") != open_meteo_record_ref_sha256(ref)
+        ):
             _fail("ASSIGNMENT_INVALID")
     if classification == REGIONAL_DMI_NATIVE:
         source_time, source_dt = _exact_hour(
@@ -639,6 +781,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         "dmiVerifiedPairCount", "copernicusBalticPairCount",
         "copernicusAmm15PairCount", "regionalNativePairCount",
         "regionalDerivedHoldPairCount", "regionalResidualPairCount",
+        "openMeteoRequiredPairCount", "openMeteoPairCount",
         "supplementalAssignmentCount", "missingPairCount",
         "advisoryHistoryRequiredPairCount", "advisoryHistoryAvailablePairCount",
         "advisoryHistoryMissingPairCount", "advisoryHistoryAssignmentCount",
@@ -653,11 +796,17 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
     if (
         value["regionalResidualPairCount"]
         != value["regionalNativePairCount"] + value["regionalDerivedHoldPairCount"]
+        or value["openMeteoRequiredPairCount"] != value["openMeteoPairCount"]
         or sum(value[key] for key in (
             "dmiVerifiedPairCount", "copernicusBalticPairCount",
             "copernicusAmm15PairCount", "regionalNativePairCount",
-            "regionalDerivedHoldPairCount", "missingPairCount",
+            "regionalDerivedHoldPairCount", "openMeteoPairCount", "missingPairCount",
         )) != EXPECTED_TOTAL_PAIR_COUNT
+        or value["supplementalAssignmentCount"] != sum(value[key] for key in (
+            "copernicusBalticPairCount", "copernicusAmm15PairCount",
+            "regionalNativePairCount", "regionalDerivedHoldPairCount",
+            "openMeteoPairCount",
+        ))
         or value["advisoryHistoryAvailablePairCount"]
             + value["advisoryHistoryMissingPairCount"]
             != value["advisoryHistoryRequiredPairCount"]
@@ -671,6 +820,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         "copernicusRegistrySha256", "copernicusShadowSha256",
         "copernicusRecordRefsSha256", "regionalEvidenceSha256",
         "regionalPolicySha256", "regionalPairRefsSha256",
+        "openMeteoDocumentSha256", "openMeteoRecordRefsSha256",
         "supplementalAssignmentsSha256", "assignmentsSha256",
         "advisoryHistoryRequiredPairsSha256",
         "advisoryHistoryRecordRefsSha256",
@@ -684,7 +834,10 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         if (
             stage_id is not None
             or stage_sha is not None
+            or value.get("copernicusSourceStageStatus") != "NOT_APPLICABLE"
+            or value.get("copernicusBoundedProgressAccepted") is not False
             or value["regionalResidualPairCount"] != 0
+            or value["openMeteoPairCount"] != 0
             or value["copernicusBalticPairCount"] != 0
             or value["copernicusAmm15PairCount"] != 0
         ):
@@ -693,6 +846,14 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         value.get("copernicusCompleteWithoutSourceStage") is not False
         or not valid_sha256(stage_id)
         or not valid_sha256(stage_sha)
+        or value.get("copernicusSourceStageStatus") != SOURCE_STAGE_STATUS
+        or value.get("copernicusBoundedProgressAccepted") is not False
+    ):
+        _fail("CLOSURE_BINDING_INVALID")
+    if (
+        value.get("openMeteoPhysicalScope") != OPEN_METEO_PHYSICAL_SCOPE
+        or value.get("openMeteoScoreInputPolicyId") != OPEN_METEO_SCORE_INPUT_POLICY_ID
+        or value.get("openMeteoCalibrationEligible") is not False
     ):
         _fail("CLOSURE_BINDING_INVALID")
     assignments = value.get("assignments")
@@ -707,6 +868,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         COPERNICUS_AMM15: 0,
         REGIONAL_DMI_NATIVE: 0,
         REGIONAL_DMI_DERIVED_HOLD: 0,
+        OPEN_METEO_COMBINED_CURRENT: 0,
     }
     for assignment in assignments:
         part_id, valid_time = _validate_assignment_shape(assignment)
@@ -732,6 +894,7 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         or counts[COPERNICUS_AMM15] != value["copernicusAmm15PairCount"]
         or counts[REGIONAL_DMI_NATIVE] != value["regionalNativePairCount"]
         or counts[REGIONAL_DMI_DERIVED_HOLD] != value["regionalDerivedHoldPairCount"]
+        or counts[OPEN_METEO_COMBINED_CURRENT] != value["openMeteoPairCount"]
         or value["supplementalAssignmentCount"] != len(assignments) - counts[DMI_VERIFIED]
         or canonical_sha256([
             row["assignmentSha256"]
@@ -813,6 +976,7 @@ def build_current_operational_closure(
     copernicus_source_stage: dict[str, Any] | None,
     regional_shadow: dict[str, Any],
     regional_policy: dict[str, Any],
+    open_meteo_fallback: dict[str, Any],
     locked_reference: Any,
 ) -> dict[str, dict[str, Any]]:
     reference_text, reference = _exact_hour(locked_reference, "LOCKED_REFERENCE_INVALID")
@@ -891,22 +1055,47 @@ def build_current_operational_closure(
     )
     cop_assignments = _copernicus_assignments(cop_refs)
     advisory_assignments = _advisory_assignments(advisory_refs)
-    regional_result = build_regional_current_operational_evidence(
-        policy=regional_policy,
+    residual_plan = build_regional_residual_plan(
+        residual_pairs=residual_pairs,
+        regional_policy=regional_policy,
         targets=targets,
-        current_shadow=regional_shadow,
+        regional_shadow=regional_shadow,
         dmi_ledger=ledger,
         dmi_attestation=dmi_attestation,
         locked_reference=reference_text,
-        dmi_gap_pairs=residual_pairs,
     )
-    regional_private = regional_result["privateProof"]
-    if regional_private.get("missingPairCount") != 0:
-        _fail("REGIONAL_RESIDUAL_MISSING")
-    regional_assignments = _regional_assignments(regional_private)
+    regional_private = residual_plan["regionalPrivate"]
+    regional_assignments = residual_plan["regionalAssignments"]
+    open_meteo_required = residual_plan["openMeteoRequiredPairs"]
+    source_stage_status = (
+        source_stage.get("status") if source_stage else "NOT_APPLICABLE"
+    )
+    source_stage_sha256 = canonical_sha256(source_stage) if source_stage else None
+    bounded_progress_accepted = False
+    try:
+        open_meteo = validate_open_meteo_document(
+            open_meteo_fallback,
+            targets=targets,
+            required_pairs=open_meteo_required,
+            production_reference_at=reference_text,
+            copernicus_source_stage_status=source_stage_status,
+            copernicus_source_stage_sha256=source_stage_sha256,
+            copernicus_bounded_progress_accepted=bounded_progress_accepted,
+            regional_evidence_sha256=canonical_sha256(regional_private),
+            require_complete=True,
+        )
+    except (KeyError, TypeError, ValueError, RuntimeError):
+        _fail("OPEN_METEO_EVIDENCE_INVALID")
+    open_meteo_assignments = _open_meteo_assignments(open_meteo)
 
     cop_keys = {(row["partId"], row["validTime"]) for row in cop_assignments}
     regional_keys = {(row["partId"], row["validTime"]) for row in regional_assignments}
+    open_meteo_keys = {
+        (row["partId"], row["validTime"]) for row in open_meteo_assignments
+    }
+    open_meteo_required_keys = {
+        (row["partId"], row["validTime"]) for row in open_meteo_required
+    }
     residual_keys = {(row["partId"], row["validTime"]) for row in residual_pairs}
     advisory_required_keys = {
         (row["partId"], row["validTime"]) for row in advisory_required
@@ -919,8 +1108,11 @@ def build_current_operational_closure(
     }
     if (
         cop_keys & regional_keys
-        or cop_keys | regional_keys != complement_keys
-        or regional_keys != residual_keys
+        or cop_keys & open_meteo_keys
+        or regional_keys & open_meteo_keys
+        or cop_keys | regional_keys | open_meteo_keys != complement_keys
+        or regional_keys | open_meteo_keys != residual_keys
+        or open_meteo_keys != open_meteo_required_keys
     ):
         _fail("SUPPLEMENTAL_PARTITION_INVALID")
     if (
@@ -930,7 +1122,12 @@ def build_current_operational_closure(
     ):
         _fail("ADVISORY_PARTITION_INVALID")
     assignments = sorted(
-        [*dmi_assignments, *cop_assignments, *regional_assignments],
+        [
+            *dmi_assignments,
+            *cop_assignments,
+            *regional_assignments,
+            *open_meteo_assignments,
+        ],
         key=lambda row: (row["validTime"], row["partId"]),
     )
     if len(assignments) != EXPECTED_TOTAL_PAIR_COUNT:
@@ -944,6 +1141,7 @@ def build_current_operational_closure(
             COPERNICUS_AMM15,
             REGIONAL_DMI_NATIVE,
             REGIONAL_DMI_DERIVED_HOLD,
+            OPEN_METEO_COMBINED_CURRENT,
         )
     }
     proof: dict[str, Any] = {
@@ -963,9 +1161,16 @@ def build_current_operational_closure(
         "regionalNativePairCount": counts[REGIONAL_DMI_NATIVE],
         "regionalDerivedHoldPairCount": counts[REGIONAL_DMI_DERIVED_HOLD],
         "regionalResidualPairCount": len(regional_assignments),
-        "supplementalAssignmentCount": len(cop_assignments) + len(regional_assignments),
+        "openMeteoRequiredPairCount": len(open_meteo_required),
+        "openMeteoPairCount": counts[OPEN_METEO_COMBINED_CURRENT],
+        "supplementalAssignmentCount": (
+            len(cop_assignments) + len(regional_assignments)
+            + len(open_meteo_assignments)
+        ),
         "missingPairCount": 0,
         "copernicusCompleteWithoutSourceStage": complete_without_stage,
+        "copernicusSourceStageStatus": source_stage_status,
+        "copernicusBoundedProgressAccepted": bounded_progress_accepted,
         "targetRegistrySha256": target_sha256,
         "dmiCurrentInputSha256": dmi_current_input_sha256,
         "dmiLedgerSha256": canonical_sha256(ledger),
@@ -978,6 +1183,11 @@ def build_current_operational_closure(
         "regionalEvidenceSha256": canonical_sha256(regional_private),
         "regionalPolicySha256": regional_private["policySha256"],
         "regionalPairRefsSha256": regional_private["pairRefsSha256"],
+        "openMeteoDocumentSha256": canonical_sha256(open_meteo),
+        "openMeteoRecordRefsSha256": open_meteo["recordRefsSha256"],
+        "openMeteoPhysicalScope": OPEN_METEO_PHYSICAL_SCOPE,
+        "openMeteoScoreInputPolicyId": OPEN_METEO_SCORE_INPUT_POLICY_ID,
+        "openMeteoCalibrationEligible": False,
         "advisoryHistoryRequiredPairCount": len(advisory_required),
         "advisoryHistoryRequiredPairsSha256": required_pairs_sha256(
             advisory_required
@@ -1028,8 +1238,14 @@ __all__ = [
     "CONTRACT_ID",
     "CurrentOperationalClosureError",
     "COPERNICUS_ADVISORY_PAST_MODEL_FIELD",
+    "COPERNICUS_AMM15",
+    "COPERNICUS_BALTIC",
+    "OPEN_METEO_COMBINED_CURRENT",
+    "REGIONAL_DMI_DERIVED_HOLD",
+    "REGIONAL_DMI_NATIVE",
     "SAFE_CONTRACT_ID",
     "assignment_identity_sha256",
+    "build_regional_residual_plan",
     "build_current_operational_closure",
     "safe_current_operational_closure",
     "validate_current_operational_closure",

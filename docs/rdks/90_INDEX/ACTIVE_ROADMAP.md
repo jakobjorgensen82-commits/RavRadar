@@ -1,3 +1,11 @@
+# NYESTE ROADMAP – 2026-09-05 – 4.0.323 currentclosure og friskhed
+
+- [x] Implementér og måltest DEC-0115's eksakte DMI → Baltic → AMM15 → regional DMI → Open-Meteo-kæde uden historiksyntese eller kalibreringsadmission.
+- [x] Bind normal/oneoff til bounded leverandørtid, stale-target-stop og samme fail-closed artifactgrænse.
+- [ ] Luk docs/version, fuld sourcegate og exact-head; merge kun ved grøn eksakt PR-head.
+- [ ] Genmål safe fetched/missing på main, rapportér tallene til ejeren og start den autoriserede store engangskørsel.
+- [ ] Følg hver leverandørs varighed og closure. Efter komplet cache vurderes normal rækkefølge, budget og scheduler på målt evidens.
+
 # NYESTE ROADMAP – 2026-09-03 – samlet 4.0.321 efter PR #249
 
 - [x] Merge den exact-head-grønne monotone Copernicus-progression som `a331e0dbb08a9ab9ffff26632a708828574bdcd8`.

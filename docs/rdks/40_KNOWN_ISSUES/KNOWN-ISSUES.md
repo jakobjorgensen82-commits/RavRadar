@@ -1,3 +1,9 @@
+# NYESTE DRIFTSFUND – 2026-09-05 – operationel currentrest og targetfriskhed
+
+- **ISSUE-CURRENT-RESIDUAL-OUTSIDE-POLICY – LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** Seneste sikre status var 78.430/79.414 DMI+Copernicus-dækkede positioner og 984 rester. 944 var i otte-delspolitikken; 40 lå udenfor ved +117. Regionalbyggeren modtog fejlagtigt hele restmængden. Den nye partition sender kun policyrester regionalt og lader Open-Meteo lukke de derefter resterende eksakte operationelle par. Exact-head og frisk 673 × 118-mainkørsel mangler.
+- **ISSUE-WEATHER-END-TO-END-THROUGHPUT – DELVIST AFSKÆRMET / MÅLING ÅBEN:** Sidste engangsevidens var cirka 25m51s DMI og 44m51s Copernicus. Normal drift kunne tidligere arbejde så længe, at target var gammelt ved afslutning. Bounded leverandørbudgetter og to friskhedsgater stopper stale publicering. Rækkefølge, faktisk per-leverandørtid og schedulerbalance måles efter den komplette rettede engangskørsel; intervallet er endnu ikke ændret.
+- **ISSUE-OPEN-METEO-CURRENT-RUNTIME-PROOF – ÅBEN:** READY-only, fysisk scope, 15 km, ingen historik, kalibreringslås, privacy og null/failure-stop er måltestet lokalt. Der findes endnu intet frisk mainbevis for faktisk Open-Meteo-antal, samlet 79.414/79.414 closure eller efterfølgende DMI/Copernicus-supersession.
+
 # NYESTE DRIFTSFUND – 2026-09-05 – ét HARMONIE-asset hang til jobgrænsen
 
 - **ISSUE-DMI-HARMONIE-ASSET-HARD-HANG – P0 / LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** `33918250039` brugte hele DMI-trinnets 55 minutter, fordi ét downloadet HARMONIE-asset sad over 52 minutter i ecCodes. Tidligere assets tog sekunder. Caches blev gemt, men Copernicus blev ikke nået. Fælles normal/oneoff-supervisor stopper kun det igangværende HARMONIE-asset efter 180 sekunder og lader den eksisterende producent genvalidere/finalisere inden for 420 sekunder. READY opfindes ikke. Se watchdograpporten 2026-09-05.

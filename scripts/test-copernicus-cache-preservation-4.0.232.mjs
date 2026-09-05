@@ -17,6 +17,8 @@ const targetRunStart = buildWorkflow.indexOf('- name: Fill only exact-hour DMI g
 const targetProgressSaveStart = buildWorkflow.indexOf('- name: Save non-cancelled private Copernicus source-stage progress');
 const sourceStageGateStart = buildWorkflow.indexOf('- name: Require completed Copernicus source stage before combined current closure');
 const targetSaveStart = buildWorkflow.indexOf('- name: Save validated private Copernicus progress before downstream closure');
+const openMeteoStart = buildWorkflow.indexOf('- name: Fill only the exact remaining current gaps from Open-Meteo');
+const freshnessStart = buildWorkflow.indexOf('- name: Refuse a stale target after the bounded supplier chain');
 const closureStart = buildWorkflow.indexOf('- name: Build exact DMI-first current operational closure');
 const historyBuildStart = buildWorkflow.indexOf('- name: Build public seven-day current history and controlled live selection');
 
@@ -31,7 +33,9 @@ assert.ok(dmiUpdateStart < postDmiRefreshStart &&
   targetRunStart < targetProgressSaveStart &&
   targetProgressSaveStart < sourceStageGateStart &&
   sourceStageGateStart < targetSaveStart &&
-  targetSaveStart < closureStart &&
+  targetSaveStart < openMeteoStart &&
+  openMeteoStart < freshnessStart &&
+  freshnessStart < closureStart &&
   closureStart < historyBuildStart,
   'Production must derive, reuse/fill and save the target-bound source stage before current closure and live history');
 
@@ -56,6 +60,8 @@ assert.match(postDmiRefreshBlock, /--allow-nonmatching-seal/);
 assert.match(postDmiRefreshBlock, /source_stage_reusable != 'true'/);
 assert.match(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-source-stage\.json/);
 assert.match(postDmiRefreshBlock, /--require-source-stage-ready/);
+assert.match(postDmiRefreshBlock, /fill-open-meteo-current-fallback\.py/);
+assert.match(postDmiRefreshBlock, /--runtime-seconds 240/);
 assert.match(postDmiRefreshBlock, /--at "\$RAVRADAR_PRODUCTION_TARGET_HOUR"/);
 assert.match(postDmiRefreshBlock, /--targets \.cache\/copernicus-current-targets\.json/);
 assert.match(postDmiRefreshBlock, /--authoritative-targets data\/live\/coastal-parts-v2\.json/);

@@ -66,6 +66,11 @@ DEFAULT_SOURCE_STAGE = ROOT / ".cache/copernicus-current-source-stage.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/copernicus-current-pilot.json"
 DEFAULT_SUMMARY = ROOT / "data/diagnostics/copernicus-current-pilot.txt"
 SOFT_DEADLINE_EPOCH_ENV = "RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH"
+BOUNDED_PROGRESS_EXIT_CODE = 75
+
+
+class CopernicusOperationalBudgetReached(RuntimeError):
+    """Signal that validated progress was saved before the wrapper deadline."""
 
 PRODUCTS = [dict(row) for row in PINNED_PRODUCTS]
 ADVISORY_HISTORY_MAX_SHARDS_PER_PRODUCT = max(
@@ -225,7 +230,7 @@ def require_operational_time_budget() -> None:
     if not math.isfinite(deadline) or deadline <= 0:
         raise RuntimeError("Copernicus soft deadline is invalid")
     if time.time() >= deadline:
-        raise RuntimeError(
+        raise CopernicusOperationalBudgetReached(
             "Copernicus bounded work stopped safely at a shard boundary; "
             "validated progress is available for the next run"
         )
@@ -930,6 +935,12 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except CopernicusOperationalBudgetReached:
+        print(
+            "Copernicus bounded progress was saved at a shard boundary.",
+            file=sys.stderr,
+        )
+        raise SystemExit(BOUNDED_PROGRESS_EXIT_CODE)
     except Exception as error:
         print(f"Copernicus pilot failed: {error}", file=sys.stderr)
         raise SystemExit(1)

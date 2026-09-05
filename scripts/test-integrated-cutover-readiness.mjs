@@ -81,7 +81,7 @@ assert.doesNotMatch(rpcSql, /\bselect\s+\*\b/i,
   'integrated cutover RPC must not expose broad table data');
 
 const checkpointMigration = await fs.readFile(
-  'supabase/migrations/20260904140000_harmonie_wind_reference_binding.sql',
+  'supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql',
   'utf8',
 );
 for (const marker of [
@@ -107,7 +107,7 @@ for (const marker of [
   "#- '{candidateGRollbackCompanion,generationSha256}'",
   'create or replace function public.ravradar_ravscore_checkpoint_contract()',
   "'schemaVersion', 'ravscore-checkpoint-db-v1'",
-  "'20260904140000'",
+  "'20260905090000'",
   "'checkpointContractDefinitionPresent'",
   "'checkpointCanonicalTimeHelperStableSecurityInvoker'",
   "'checkpointHistoryExclusionInstalled'",
@@ -212,6 +212,7 @@ const unicodeList = `
  20260901010000    │ 20260901010000   │ 2026-09-01 01:00:00
  20260903010000    │                  │ 2026-09-03 01:00:00
  20260904140000    │                  │ 2026-09-04 14:00:00
+ 20260905090000    │                  │ 2026-09-05 09:00:00
 `;
 assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260826', remote: '20260826' },
@@ -220,13 +221,14 @@ assert.deepEqual(parseSupabaseMigrationList(unicodeList), [
   { local: '20260901010000', remote: '20260901010000' },
   { local: '20260903010000', remote: null },
   { local: '20260904140000', remote: null },
+  { local: '20260905090000', remote: null },
 ]);
 
 const plan = await assertSupabaseMigrationPlan({
   migrationListText: unicodeList,
-  dryRunText: 'DRY RUN: 20260903010000_ravscore_checkpoint_metadata_cas.sql 20260904140000_harmonie_wind_reference_binding.sql',
+  dryRunText: 'DRY RUN: 20260903010000_ravscore_checkpoint_metadata_cas.sql 20260904140000_harmonie_wind_reference_binding.sql 20260905090000_open_meteo_current_fallback_binding.sql',
 });
-assert.deepEqual(plan.pendingVersions, ['20260903010000', '20260904140000']);
+assert.deepEqual(plan.pendingVersions, ['20260903010000', '20260904140000', '20260905090000']);
 assert.deepEqual(plan.alreadyAppliedVersions,
   ['20260829010000', '20260829020000', '20260901010000']);
 
@@ -253,6 +255,7 @@ await assert.rejects(
        20260901010000 | | pending
        20260903010000 | | pending
        20260904140000 | | pending
+       20260905090000 | | pending
     `,
     dryRunText: 'DRY RUN: 20260829010000_ravscore_operational_documents_no_history.sql',
   }),
@@ -267,6 +270,7 @@ const appliedList = `
  20260901010000 | 20260901010000 | now
  20260903010000 | 20260903010000 | now
  20260904140000 | 20260904140000 | now
+ 20260905090000 | 20260905090000 | now
 `;
 assert.deepEqual(assertSupabaseMigrationsApplied(appliedList).appliedVersions,
   REQUIRED_CUTOVER_MIGRATIONS.map(item => item.version));
@@ -281,6 +285,7 @@ try {
     fs.writeFile(path.join(duplicateDirectory, '20260901010000_integrated_trip_measured_warmup_admission.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260903010000_ravscore_checkpoint_metadata_cas.sql'), '-- test\n'),
     fs.writeFile(path.join(duplicateDirectory, '20260904140000_harmonie_wind_reference_binding.sql'), '-- test\n'),
+    fs.writeFile(path.join(duplicateDirectory, '20260905090000_open_meteo_current_fallback_binding.sql'), '-- test\n'),
   ]);
   await assert.rejects(inspectMigrationSources({ migrationsDirectory: duplicateDirectory }), /duplicate Supabase migration version/);
 } finally {
@@ -300,6 +305,7 @@ try {
  20260901010000 │ │ pending
  20260903010000 │ │ pending
  20260904140000 │ │ pending
+ 20260905090000 │ │ pending
  `;
   const hydrated = await hydrateTemporaryRemoteMigrationHistory({
     workdir: isolatedWorkdir,
@@ -318,6 +324,7 @@ try {
   20260901010000 │ │ pending
   20260903010000 │ │ pending
   20260904140000 │ │ pending
+  20260905090000 │ │ pending
     `,
   }), /unknown post-cutover migration 20260830/);
 } finally {

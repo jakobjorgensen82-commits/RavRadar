@@ -52,7 +52,7 @@ def pair(part_index: int, offset: int) -> dict[str, str]:
 
 
 COMPLEMENT = sorted(
-    [pair(0, 0), pair(1, 0), pair(2, 0), pair(3, 1)],
+    [pair(0, 0), pair(1, 0), pair(2, 0), pair(3, 1), pair(4, 1)],
     key=lambda row: (row["validTime"], row["partId"]),
 )
 COMPLEMENT_KEYS = {(row["partId"], row["validTime"]) for row in COMPLEMENT}
@@ -178,6 +178,7 @@ def build_fixture(
         selected.extend([
             cop_ref("copernicus-baltic-nemo", COMPLEMENT[2], "baltic-two"),
             cop_ref("copernicus-nws-amm15", COMPLEMENT[3], "amm15-two"),
+            cop_ref("copernicus-baltic-nemo", COMPLEMENT[4], "baltic-three"),
         ])
         residual = []
         if omit_source_stage:
@@ -196,6 +197,25 @@ def build_fixture(
             "pairRefsSha256": canonical_sha256(refs),
             "pairRefs": refs,
         }}
+
+    open_meteo_record = None if (pure_copernicus or pure_dmi) else {
+        "partId": residual[2]["partId"],
+        "validTime": residual[2]["validTime"],
+        "recordId": HASH_C,
+        "acquiredAt": REFERENCE_TEXT,
+    }
+    open_meteo_records = [] if open_meteo_record is None else [open_meteo_record]
+    open_meteo_refs = [] if open_meteo_record is None else [{
+        "partId": open_meteo_record["partId"],
+        "validTime": open_meteo_record["validTime"],
+        "recordId": open_meteo_record["recordId"],
+        "source": closure.OPEN_METEO_SOURCE,
+    }]
+    open_meteo_document = {
+        "records": open_meteo_records,
+        "recordRefsSha256": canonical_sha256(open_meteo_refs),
+        "copernicusBoundedProgressAccepted": False,
+    }
 
     operational_required = [] if pure_dmi else COMPLEMENT
     advisory_required = [] if pure_dmi else ADVISORY_REQUIRED
@@ -229,6 +249,11 @@ def build_fixture(
             "build_regional_current_operational_evidence",
             side_effect=regional_builder,
         ),
+        patch.object(
+            closure,
+            "validate_open_meteo_document",
+            return_value=open_meteo_document,
+        ),
     ):
         result = closure.build_current_operational_closure(
             targets=TARGETS,
@@ -240,7 +265,11 @@ def build_fixture(
             copernicus_shadow_sha256=HASH_B,
             copernicus_source_stage=stage,
             regional_shadow={"fixture": "regional"},
-            regional_policy={"fixture": "policy"},
+            regional_policy={"parts": [
+                {"partId": COMPLEMENT[2]["partId"]},
+                {"partId": COMPLEMENT[3]["partId"]},
+            ]},
+            open_meteo_fallback=open_meteo_document,
             locked_reference=REFERENCE_TEXT,
         )
     return result, captured
@@ -260,11 +289,13 @@ mixed, captured = build_fixture()
 private = mixed["privateProof"]
 safe = mixed["safeProjection"]
 assert private["totalPairCount"] == 673 * 118 == len(private["assignments"])
-assert private["dmiVerifiedPairCount"] == 673 * 118 - 4
+assert private["dmiVerifiedPairCount"] == 673 * 118 - 5
 assert private["copernicusBalticPairCount"] == 1
 assert private["copernicusAmm15PairCount"] == 1
 assert private["regionalNativePairCount"] == 1
 assert private["regionalDerivedHoldPairCount"] == 1
+assert private["openMeteoRequiredPairCount"] == 1
+assert private["openMeteoPairCount"] == 1
 assert private["missingPairCount"] == 0
 assert private["advisoryHistoryRequiredPairCount"] == 2
 assert private["advisoryHistoryAvailablePairCount"] == 1
@@ -272,7 +303,7 @@ assert private["advisoryHistoryMissingPairCount"] == 1
 assert private["advisoryHistoryAssignmentCount"] == 1
 assert len(private["advisoryHistoryAssignments"]) == 1
 assert private["totalPairCount"] == len(private["assignments"])
-assert captured["regionalPairs"] == COMPLEMENT[2:]
+assert captured["regionalPairs"] == COMPLEMENT[2:4]
 assert {row["validTime"] for row in private["assignments"]} == {
     (REFERENCE + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")
     for offset in range(118)

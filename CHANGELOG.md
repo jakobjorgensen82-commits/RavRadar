@@ -1,3 +1,9 @@
+## 4.0.323 – sidste operationelle currentfallback og friskhed (2026-09-05)
+
+- DMI → Baltic → AMM15 → regional DMI → Open-Meteo lukker nu eksakte target..+117-currenthuller efter terminalt READY.
+- Open-Meteo er combined-surface-current-only, højst 15 km, uden historiksyntese og altid `calibrationEligible=false`; fejl/null/stale target stopper før artifact.
+- Regional residualpartition, bounded normal/oneoff-budgetter, targetfriskhed og append-only modelbinding `20260905090000` er tilføjet. Exact-head og frisk runtime afventer.
+
 ## 4.0.322 – et fastlåst HARMONIE-asset kan ikke blokere hele vejrjobbet (2026-09-05, lokalt)
 
 - Engangsrun `33918250039` blev dræbt ved DMI-trinnets 55-minuttersgrænse, mens ét downloadet HARMONIE-forecasttrin havde været i ecCodes-behandling i mere end 52 minutter. De tre cache-save-trin bestod; færdige assets blev bevaret, men Copernicus blev ikke nået.
