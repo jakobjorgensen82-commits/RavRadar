@@ -7,8 +7,8 @@
 - [x] Bevar DMI-/Copernicus-historik og de integrerede forbrugeres 48-timers mobiliserings-/transportvindue; bevar ekstern cron som primær dispatcher og GitHub schedules som reserve.
 - [x] Luk den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
 - [x] Klassificér exact-head-run `33986893042`: alle kode-/kontrakttests bestod, men releasegaten fejlede alene, fordi `CHANGELOG-4.0.324.md` manglede. Det røde run er ikke exact-head-bevis.
-- [x] Målvalidér changelog/status-only-opfølgningscommitten lokalt og registrér ejerens eksplicitte ordre 2026-09-05 om admin-merge uden ny exact-head. 4.0.324 må ikke kaldes exact-head-grøn.
-- [ ] Gennemfør den ejerbeordrede admin-merge uden grønt exact-head-bevis, mål fetched/missing, verificér bootstrap/runtime og fuld produktionsgate, og start én stor main-oneoff. Kræv kandidatcheckpoint ved afbrydelse og READY-promotion før aktiv erstatning.
+- [x] Registrér at ejerens ordre om admin-bypass blev afvist af Codex-sikkerhedslaget, så ingen bypass eller merge skete; run `33988058582` bestod releasegaten, men stoppede senere alene på håndbogs-/installationspariteten. Ret den ene genererede SQL-payloadlinje med den officielle synk.
+- [ ] Bestå ny exact-head, merge sikkert, mål fetched/missing, verificér bootstrap/runtime og fuld produktionsgate, og start én stor main-oneoff. Kræv kandidatcheckpoint ved afbrydelse og READY-promotion før aktiv erstatning.
 - [ ] Lad normal drift indhente den nye hale, bevis frisk komplet leverandørclosure og fuld produktions-/releasegate, og fortsæt derefter den allerede dokumenterede modelrelease. Vurder først senere større pipelineparallelisering ud fra målte leverandørtider.
 
 # NYESTE ROADMAP – 2026-09-05 – 4.0.323 currentclosure og friskhed

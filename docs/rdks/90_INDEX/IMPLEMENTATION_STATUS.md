@@ -11,8 +11,8 @@
 - [x] Bevar ekstern cron/watchdog, GitHub-reserveschedules og fælles production-concurrency uændret.
 - [x] Bestå den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
 - [x] Registrér exact-head-forsøg `33986893042`: alle kode- og kontrakttests var grønne, men releasegaten fejlede alene på manglende rootfil `CHANGELOG-4.0.324.md`. Runnet er rødt og er ikke sourcebevis.
-- [x] Målvalidér den rene changelog/status-only-opfølgningscommit lokalt. Ejeren har 2026-09-05 eksplicit beordret admin-merge uden at afvente en ny exact-head. 4.0.324 får derfor ikke et grønt exact-head-bevis og må aldrig omtales som exact-head-grøn.
-- [ ] Gennemfør den ejerbeordrede admin-merge uden nyt exact-head-bevis; verificér derefter første active-bootstrap/runtime, fuld produktionsgate og normal catch-up, og kør én stor kandidatopfyldning ad gangen til komplet 210/673/118.
+- [x] Registrér at den ejerbeordrede admin-bypass blev afvist af Codex-sikkerhedslaget, så ingen bypass eller merge skete. Run `33988058582` bestod releasegaten, men stoppede senere alene på håndbogs-/installationspariteten; den officielle synk retter én genereret SQL-payloadlinje.
+- [ ] Bestå ny exact-head og merge sikkert; verificér derefter første active-bootstrap/runtime, fuld produktionsgate og normal catch-up, og kør én stor kandidatopfyldning ad gangen til komplet 210/673/118.
 - [ ] Mål leverandørrækkefølge og tidsforbrug efter komplet opfyldning. Større pipeline-/kadenceændringer og modelaktivering forbliver efterfølgende arbejde.
 
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.323 operationel currentclosure
