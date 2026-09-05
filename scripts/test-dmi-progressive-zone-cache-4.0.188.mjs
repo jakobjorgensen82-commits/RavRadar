@@ -8,7 +8,12 @@ const [buildWorkflow, oneoffWorkflow, builder] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
 ]);
 
-const LEGACY_READY_CACHE_KEY = 'dmi-zone-cache-v1-Linux-2026-W36-33984291027-1';
+assert.match(buildWorkflow, /permissions:\r?\n  contents: read\r?\n  actions: read/);
+assert.match(
+  buildWorkflow,
+  /build-and-prepare:[\s\S]*?permissions:\r?\n      contents: read\r?\n      actions: read/,
+);
+assert.match(oneoffWorkflow, /permissions:\r?\n  contents: read\r?\n  actions: read/);
 
 function stepIndex(source, name) {
   const index = source.indexOf(`- name: ${name}`);
@@ -23,7 +28,9 @@ function stepBlock(source, name) {
 }
 
 const normalRestore = stepIndex(buildWorkflow, 'Restore last complete active DMI generation');
-const normalLegacyBootstrap = stepIndex(buildWorkflow, 'Bootstrap the exact known READY legacy DMI generation');
+const normalNodeSetup = stepIndex(buildWorkflow, 'Set up Node.js');
+const normalLegacyResolve = stepIndex(buildWorkflow, 'Resolve newest terminal-proven exact-main legacy DMI generation');
+const normalLegacyBootstrap = stepIndex(buildWorkflow, 'Bootstrap the terminal-proven exact legacy DMI generation');
 const normalMaterialize = stepIndex(buildWorkflow, 'Strictly bind and materialize the active DMI generation');
 const normalCandidateRestore = stepIndex(buildWorkflow, 'Restore isolated DMI candidate progress for normal maintenance');
 const normalCandidateState = stepIndex(buildWorkflow, 'Inspect isolated DMI candidate progress for normal maintenance');
@@ -37,7 +44,10 @@ const normalActiveSave = stepIndex(buildWorkflow, 'Save the maintained complete 
 const validate = stepIndex(buildWorkflow, 'Validate full project after fresh weather and current provenance');
 
 assert.ok(
-  normalRestore < normalLegacyBootstrap
+  normalNodeSetup < normalLegacyResolve
+    && normalRestore < normalLegacyBootstrap
+    && normalRestore < normalLegacyResolve
+    && normalLegacyResolve < normalLegacyBootstrap
     && normalLegacyBootstrap < normalMaterialize
     && normalMaterialize < normalCandidateRestore
     && normalCandidateRestore < normalCandidateState
@@ -57,14 +67,17 @@ assert.match(normalRestoreBlock, /path: \.cache\/dmi-active-complete\.json/);
 assert.match(normalRestoreBlock, /key: dmi-zone-active-v1-/);
 assert.match(normalRestoreBlock, /restore-keys:[\s\S]*dmi-zone-active-v1-/);
 
-const normalBootstrapBlock = stepBlock(buildWorkflow, 'Bootstrap the exact known READY legacy DMI generation');
+const normalResolverBlock = stepBlock(buildWorkflow, 'Resolve newest terminal-proven exact-main legacy DMI generation');
+assert.match(normalResolverBlock, /id: dmi-active-legacy-key/);
+assert.match(normalResolverBlock, /node scripts\/resolve-terminal-dmi-cache\.mjs/);
+assert.match(normalResolverBlock, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+const normalBootstrapBlock = stepBlock(buildWorkflow, 'Bootstrap the terminal-proven exact legacy DMI generation');
 assert.match(normalBootstrapBlock, /steps\.dmi-active-restore\.outputs\.cache-matched-key == ''/);
+assert.match(normalBootstrapBlock, /steps\.dmi-active-legacy-key\.outputs\.available == 'true'/);
 assert.match(normalBootstrapBlock, /path: data\/live\/dmi-bulk-cache\.json/);
-assert.ok(
-  normalBootstrapBlock.includes(`key: ${LEGACY_READY_CACHE_KEY}`),
-  'Kun den eksakte kendte READY-legacygeneration må bootstrappe den aktive cache.',
-);
+assert.match(normalBootstrapBlock, /key: \$\{\{ steps\.dmi-active-legacy-key\.outputs\.key \}\}/);
 assert.match(normalBootstrapBlock, /fail-on-cache-miss: true/);
+assert.doesNotMatch(normalBootstrapBlock, /restore-keys:/);
 
 const normalMaterializeBlock = stepBlock(buildWorkflow, 'Strictly bind and materialize the active DMI generation');
 assert.match(normalMaterializeBlock, /\.diagnostics\.currentOperationalLedger\.ready/);
@@ -95,13 +108,24 @@ assert.match(
 );
 assert.match(normalUpdateBlock, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/dmi-active-complete\.json/);
 
+const normalGribSaveBlock = stepBlock(buildWorkflow, 'Save progressed DMI GRIB download cache');
+assert.match(normalGribSaveBlock, /always\(\)/);
+assert.match(normalGribSaveBlock, /steps\.dmi-bulk\.outcome != 'cancelled'/);
+assert.match(normalGribSaveBlock, /steps\.dmi-bulk\.outcome != 'skipped'/);
+
 const normalCandidateSaveBlock = stepBlock(buildWorkflow, 'Save isolated DMI candidate progress before any terminal decision');
 assert.match(normalCandidateSaveBlock, /always\(\)/);
 assert.match(normalCandidateSaveBlock, /steps\.dmi-bulk\.outcome != 'cancelled'/);
+assert.match(normalCandidateSaveBlock, /steps\.dmi-bulk\.outcome != 'skipped'/);
 assert.match(normalCandidateSaveBlock, /hashFiles\('\.cache\/dmi-candidate-progress\.json'\) != ''/);
 assert.match(normalCandidateSaveBlock, /path: \.cache\/dmi-candidate-progress\.json/);
 assert.match(normalCandidateSaveBlock, /key: dmi-zone-candidate-v1-.*-normal-/);
 assert.ok(normalCandidateSave < normalTerminal, 'Partial normal kandidatprogression skal gemmes før terminalgaten.');
+
+const normalShadowSaveBlock = stepBlock(buildWorkflow, 'Save private seven-day current-field research cache');
+assert.match(normalShadowSaveBlock, /always\(\)/);
+assert.match(normalShadowSaveBlock, /steps\.dmi-bulk\.outcome != 'cancelled'/);
+assert.match(normalShadowSaveBlock, /steps\.dmi-bulk\.outcome != 'skipped'/);
 
 const normalSnapshotBlock = stepBlock(buildWorkflow, 'Strictly snapshot the maintained READY active DMI generation');
 assert.match(normalSnapshotBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
@@ -123,7 +147,8 @@ assert.doesNotMatch(
 assert.doesNotMatch(buildWorkflow, /Save progressive private DMI zone cache/);
 
 const oneoffActiveRestore = stepIndex(oneoffWorkflow, 'Restore last complete active DMI generation');
-const oneoffLegacyBootstrap = stepIndex(oneoffWorkflow, 'Bootstrap the exact known READY legacy DMI generation');
+const oneoffLegacyResolve = stepIndex(oneoffWorkflow, 'Resolve newest terminal-proven exact-main legacy DMI generation');
+const oneoffLegacyBootstrap = stepIndex(oneoffWorkflow, 'Bootstrap the terminal-proven exact legacy DMI generation');
 const oneoffMaterialize = stepIndex(oneoffWorkflow, 'Strictly bind and materialize the active DMI generation');
 const candidateRestore = stepIndex(oneoffWorkflow, 'Restore isolated DMI candidate progress');
 const candidateState = stepIndex(oneoffWorkflow, 'Isolate restored candidate and restore active working copy');
@@ -132,9 +157,13 @@ const candidateSave = stepIndex(oneoffWorkflow, 'Save isolated DMI candidate pro
 const promotedSnapshot = stepIndex(oneoffWorkflow, 'Strictly snapshot only a promoted READY DMI generation');
 const promotedActiveSave = stepIndex(oneoffWorkflow, 'Save the promoted complete active DMI generation');
 const oneoffTerminal = stepIndex(oneoffWorkflow, '"Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"');
+const oneoffNodeSetup = oneoffWorkflow.lastIndexOf('- name: Set up Node.js', oneoffLegacyResolve);
 
 assert.ok(
-  oneoffActiveRestore < oneoffLegacyBootstrap
+  oneoffNodeSetup >= 0
+    && oneoffNodeSetup < oneoffLegacyResolve
+    && oneoffActiveRestore < oneoffLegacyResolve
+    && oneoffLegacyResolve < oneoffLegacyBootstrap
     && oneoffLegacyBootstrap < oneoffMaterialize
     && oneoffMaterialize < candidateRestore
     && candidateRestore < candidateState
@@ -149,9 +178,54 @@ assert.ok(
 const oneoffActiveRestoreBlock = stepBlock(oneoffWorkflow, 'Restore last complete active DMI generation');
 assert.match(oneoffActiveRestoreBlock, /path: \.cache\/dmi-active-complete\.json/);
 assert.match(oneoffActiveRestoreBlock, /key: dmi-zone-active-v1-/);
-const oneoffBootstrapBlock = stepBlock(oneoffWorkflow, 'Bootstrap the exact known READY legacy DMI generation');
-assert.ok(oneoffBootstrapBlock.includes(`key: ${LEGACY_READY_CACHE_KEY}`));
+const oneoffResolverBlock = stepBlock(oneoffWorkflow, 'Resolve newest terminal-proven exact-main legacy DMI generation');
+assert.match(oneoffResolverBlock, /id: dmi-active-legacy-key/);
+assert.match(oneoffResolverBlock, /node scripts\/resolve-terminal-dmi-cache\.mjs/);
+assert.match(oneoffResolverBlock, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+const oneoffBootstrapBlock = stepBlock(oneoffWorkflow, 'Bootstrap the terminal-proven exact legacy DMI generation');
+assert.match(oneoffBootstrapBlock, /steps\.dmi-active-legacy-key\.outputs\.available == 'true'/);
+assert.match(oneoffBootstrapBlock, /key: \$\{\{ steps\.dmi-active-legacy-key\.outputs\.key \}\}/);
 assert.match(oneoffBootstrapBlock, /fail-on-cache-miss: true/);
+assert.doesNotMatch(oneoffBootstrapBlock, /restore-keys:/);
+
+const pilotResolverBlock = stepBlock(oneoffWorkflow, 'Resolve terminal-proven legacy DMI coverage for pilot selection');
+assert.match(pilotResolverBlock, /id: dmi-coverage-legacy-key/);
+assert.match(pilotResolverBlock, /steps\.dmi-coverage-cache\.outputs\.cache-matched-key == ''/);
+assert.match(pilotResolverBlock, /resolve-terminal-dmi-cache\.mjs --allow-missing/);
+assert.match(pilotResolverBlock, /GITHUB_TOKEN: \$\{\{ github\.token \}\}/);
+const pilotBootstrapBlock = stepBlock(
+  oneoffWorkflow,
+  'Bootstrap pilot selection from the terminal-proven exact legacy DMI generation',
+);
+assert.match(pilotBootstrapBlock, /steps\.dmi-coverage-legacy-key\.outputs\.available == 'true'/);
+assert.match(pilotBootstrapBlock, /key: \$\{\{ steps\.dmi-coverage-legacy-key\.outputs\.key \}\}/);
+assert.match(pilotBootstrapBlock, /fail-on-cache-miss: true/);
+assert.doesNotMatch(pilotBootstrapBlock, /restore-keys:/);
+const pilotNodeSetup = oneoffWorkflow.indexOf('- name: Set up Node.js');
+const pilotMainGate = stepIndex(oneoffWorkflow, 'Require exact main before private DMI cache selection');
+const pilotResolve = stepIndex(oneoffWorkflow, 'Resolve terminal-proven legacy DMI coverage for pilot selection');
+const pilotBootstrap = stepIndex(
+  oneoffWorkflow,
+  'Bootstrap pilot selection from the terminal-proven exact legacy DMI generation',
+);
+const pilotInspect = stepIndex(oneoffWorkflow, 'Inspect private DMI coverage availability');
+const pilotLedger = stepIndex(oneoffWorkflow, 'Bind the pilot to a ready restored DMI ledger');
+assert.ok(
+  pilotNodeSetup >= 0
+    && pilotMainGate < pilotNodeSetup
+    && pilotNodeSetup < pilotResolve
+    && pilotResolve < pilotBootstrap
+    && pilotBootstrap < pilotInspect
+    && pilotInspect < pilotLedger,
+  'Piloten skal resolve og exact-restore før strict ledgerkontrol.',
+);
+const oneoffTargetBlock = stepBlock(oneoffWorkflow, 'Validate the operational request and bind the exact target hour');
+assert.match(oneoffTargetBlock, /test "\$GITHUB_REF" = "refs\/heads\/main"/);
+assert.doesNotMatch(
+  `${buildWorkflow}\n${oneoffWorkflow}`,
+  /key: dmi-zone-cache-v1-Linux-\d{4}-W\d{2}-\d+-\d+/,
+  'En kortlivet legacycache må ikke hardkodes i workflowet.',
+);
 
 const candidateRestoreBlock = stepBlock(oneoffWorkflow, 'Restore isolated DMI candidate progress');
 assert.match(candidateRestoreBlock, /path: \.cache\/dmi-candidate-progress\.json/);

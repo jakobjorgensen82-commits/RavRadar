@@ -1,4 +1,15 @@
-# NYESTE ROADMAP – 2026-09-05 – 4.0.324 cachegenbrug og komplet vejrvindue
+# NYESTE ROADMAP – 2026-09-05 – 4.0.325 robust første active-bootstrap
+
+- [x] Registrér PR #257 exact-head `33989875253` og merge `948ba60b`; annullér den kendt fejlagtige ventende post-merge-kørsel `33991028274` før DMI eller writes.
+- [x] Erstat den kortlivede hardkodede legacykey med livevalg af entydig main-key/version og eksakt immutable-attempt-bevis for producent, tilhørende save og terminaltrin.
+- [x] Bevar exact-only main-restore uden `restore-keys`, strict READY/registry og candidate-isolation; kandidat-404 må falde videre, mens øvrig API-/inventar-/evidensusikkerhed stopper fail-closed.
+- [x] Kræv main før private pilot-/118h-restores, og stop skipped DMI-trin fra at re-save store GRIB-, kandidat- eller researchcacher. `33991952081` beviste både den gamle cachemiss og 2.778.397.542-byte churnen.
+- [x] Bestå korte unit-/workflowkontrakter og live read-only resolverprøve mod cache-id `7369179233`, `33990516150` attempt 1.
+- [x] Luk 4.0.325 version, changelog, RDKS, Markdown-/webhåndbog, installationsparitet, YAML/JSON og geodata-version-only; målrettede kontroller er grønne.
+- [ ] Bestå én fuld exact-head sourcegate og merge. Den lange lokale generelle releasegate gentages ikke; dens uberørte Candidate G-audit blev standset uden fejl efter de relevante grønne kontroller.
+- [ ] Verificér første main active-save, mål fetched/missing og start én stor main-oneoff. Fortsæt kun til modelrelease efter komplet 210/673/118, fuld produktionsgate og øvrige eksisterende readinesskrav.
+
+# TIDLIGERE ROADMAP – 2026-09-05 – 4.0.324 cachegenbrug og komplet vejrvindue
 
 - [x] Bind normal og 118h-oneoff til samme serialiserede active/candidate-kontrakt: materialisér strict READY-active som donor, men før alt nyt DMI-arbejde gennem fælles `dmi-zone-candidate-v1`. Normalen er updateren; oneoffen accelererer kun.
 - [x] Gem ikke-annulleret partial kandidat før terminalen, og kræv producer-success, allowlistet status, `DMI_READY`, strict anchor, `candidate_promoted=true` og eksakt registrybevis før active eller deploykæden må fortsætte.

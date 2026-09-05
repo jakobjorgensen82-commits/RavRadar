@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: ravradar-weather-production
@@ -37,6 +38,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+
+      - name: Require exact main before private DMI cache selection
+        shell: bash
+        run: test "$GITHUB_REF" = "refs/heads/main"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -73,13 +78,21 @@ jobs:
           restore-keys: |
             dmi-zone-active-v1-${{ runner.os }}-
 
-      - name: Bootstrap pilot selection from the exact known READY legacy DMI generation
-        id: dmi-coverage-legacy-bootstrap
+      - name: Resolve terminal-proven legacy DMI coverage for pilot selection
+        id: dmi-coverage-legacy-key
         if: steps.dmi-coverage-cache.outputs.cache-matched-key == ''
+        run: node scripts/resolve-terminal-dmi-cache.mjs --allow-missing
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Bootstrap pilot selection from the terminal-proven exact legacy DMI generation
+        id: dmi-coverage-legacy-bootstrap
+        if: steps.dmi-coverage-cache.outputs.cache-matched-key == '' && steps.dmi-coverage-legacy-key.outputs.available == 'true'
         uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1
+          key: ${{ steps.dmi-coverage-legacy-key.outputs.key }}
+          fail-on-cache-miss: true
 
       - name: Materialize restored active DMI coverage
         if: steps.dmi-coverage-cache.outputs.cache-matched-key != ''
@@ -401,6 +414,7 @@ jobs:
           PREFLIGHT_SAMPLE_TIME: ${{ inputs.sample_time }}
           PILOT_FULL_COAST: ${{ inputs.full_coast }}
         run: |
+          test "$GITHUB_REF" = "refs/heads/main"
           test "$PILOT_FULL_COAST" != "true"
           test -z "$PREFLIGHT_SAMPLE_TIME"
           target_hour="$(date -u +%Y-%m-%dT%H:00:00Z)"
@@ -449,7 +463,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.325 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -475,13 +489,20 @@ jobs:
             dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
             dmi-zone-active-v1-${{ runner.os }}-
 
-      - name: Bootstrap the exact known READY legacy DMI generation
-        id: dmi-active-legacy-bootstrap
+      - name: Resolve newest terminal-proven exact-main legacy DMI generation
+        id: dmi-active-legacy-key
         if: steps.dmi-active-restore.outputs.cache-matched-key == ''
+        run: node scripts/resolve-terminal-dmi-cache.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Bootstrap the terminal-proven exact legacy DMI generation
+        id: dmi-active-legacy-bootstrap
+        if: steps.dmi-active-restore.outputs.cache-matched-key == '' && steps.dmi-active-legacy-key.outputs.available == 'true'
         uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1
+          key: ${{ steps.dmi-active-legacy-key.outputs.key }}
           fail-on-cache-miss: true
 
       - name: Strictly bind and materialize the active DMI generation
@@ -597,18 +618,18 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.325 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
-        if: always() && steps.dmi-bulk.outcome != 'cancelled'
+        if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save isolated DMI candidate progress before any terminal decision
-        if: always() && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('.cache/dmi-candidate-progress.json') != ''
+        if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/dmi-candidate-progress.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-candidate-progress.json
@@ -795,7 +816,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.325 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
