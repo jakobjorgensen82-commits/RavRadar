@@ -1,10 +1,10 @@
 {
-  "version": "4.0.323",
-  "releasedAt": "2026-09-05T09:37:59.424Z",
-  "minimumSupportedVersion": "4.0.323",
+  "version": "4.0.324",
+  "releasedAt": "2026-09-05T18:41:38.090Z",
+  "minimumSupportedVersion": "4.0.324",
   "releaseContract": {
     "schemaVersion": "ravradar-release-contract-v1",
-    "releaseVersion": "4.0.323",
+    "releaseVersion": "4.0.324",
     "modelBindings": {
       "integrated": {
         "modelId": "RRS-COASTAL-PROCESS-INTEGRATED-1.1.0",
@@ -83,6 +83,10 @@
         {
           "id": "DEC-0115",
           "path": "docs/rdks/10_DECISIONS/DEC-0115-OPEN-METEO-OPERATIONAL-CURRENT-FALLBACK.md"
+        },
+        {
+          "id": "DEC-0116",
+          "path": "docs/rdks/10_DECISIONS/DEC-0116-ACTIVE-CANDIDATE-WEATHER-CACHE-GENERATIONS.md"
         }
       ]
     },

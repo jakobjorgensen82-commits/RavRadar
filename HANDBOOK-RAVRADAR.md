@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.323
+**Håndbogsversion:** 4.0.324
+
+## Vejrcachen fortsætter gennem timeskift og nye modelkørsler – 2026-09-05
+
+RavRadar holder sidste fuldt kontrollerede DMI-cache adskilt fra den næste cache, der stadig er under opbygning. Både den almindelige vejrhentning og den store 118-timersopfyldning lægger først den aktive READY-cache frem som sikker donor. Alt nyt DMI-arbejde fortsætter derefter i den samme kandidatcache. Den fælles produktionskø tillader kun én skriver ad gangen, så normal drift og engangskørsel kan genbruge samme kandidat uden at skrive parallelt.
+
+Efter et ikke-annulleret forsøg gemmes kandidatens reelle delarbejde før slutkontrollen. Den aktive cache bliver stående, og publiceringskæden må først fortsætte, når producenten er lykkedes, `DMI_READY` og det strenge currentanker består, kandidaten faktisk er promoveret, og et nyt eksakt registerbevis dækker alle mål. En fejl eller partial kandidat kan derfor ikke erstatte det brugbare aktive grundlag.
+
+En partial kandidat må holde fast i sit native modelrun over det normale seks timers modelskift, men kun mens det stadig har mindst den krævede modne og komplette fremtidshorisont, normalt 96 timer, og leverandørens samlede katalog ikke er dokumenteret forældet. Findes ingen kandidat, eller er den allerede READY, vælges den nyeste komplette native run. Reglen kan derfor ikke holde et run fast til cirka +120 timers alder.
+
+Den almindelige vejrhentning genbruger alle gyldige timer og kontrollerer hele target..+117 — ikke kun den nyeste hale. Manglende timer midt i vinduet, ufuldstændige komponenter samt ugyldige eller udløbne trin hentes igen målrettet. Tre DKSS-havsamlinger kan behandles i samme normale kørsel. Den store opfyldning accelererer den samme kandidatmekanisme; den er ikke den fremtidige updater, for det er de normale kørsler.
+
+Historikken beskæres ikke ved modelrunskifte eller promotion. Den private DMI-cache beholder normalt 60 timer og mindst 54 timer, rå zonehistorik mindst 72 timer og Copernicus-cachen 168 timer. Den nye model bruger højst 48 timers verificeret forløb til mobilisering og transport. Manglende fortid opfindes ikke. Kildeordenen er fortsat DMI, Baltic, AMM15, den godkendte regionale DMI-vej og Open-Meteo. Ekstern cron/watchdog og GitHubs reservetider er uændrede. Den målrettede lokale producer-, provenance-, rollover-, active/candidate-, workflow-, downstream-, atomic-/history-matrix samt kode-, format-, RDKS-/security- og releaseversion/geodatakontroller er grøn. Fuld lokal sourcegate er bevidst ikke kørt; GitHubs exact-head `validate:source`, merge, cachebootstrap/runtime og frisk 210/673/118-kørsel afventer.
 
 ## Open-Meteo lukker kun de sidste præcise strømhuller – 2026-09-05
 
@@ -100,11 +112,12 @@ De isolerede runs `33510636195` og `33512163102` behandlede HARMONIE og WAM, men
 
 Run `33520738058` viste derefter en anden lokal kant: den tidlige kontrol kunne kalde cachen sund, selv om den afsluttende oprydning ville fjerne strømparret på grund af et forældet samplingpunkt eller et delt/afvigende U/V-gridresumé. Begge faser bruger nu samme regel. Et korrekt cachepar genbruges hurtigt; en cache, som ikke kan overleve oprydningen, sender DKSS først. Det gælder både den nuværende drift og den nye model.
 
-Rettelsen binder én eksakt targettime før DMI og genbruger samme jobafgrænsede snapshot, selv om væguret krydser en UTC-time under kørslen. En ældre foretrukken run beholdes kun foran en nyere moden run, når systemet kender den observerede cadence, og den højst er én cadence bagud. Er cadence ukendt, vælges den nyere modne run. Mangler et strict current anchor, behandles de tre DKSS-familier først i den normale collection-loop, og deres gamle stepmarkører genbruges ikke.
+Rettelsen binder én eksakt targettime før DMI og genbruger samme jobafgrænsede snapshot, selv om væguret krydser en UTC-time under kørslen. nn ældre foretrukken run beholdes kun foran en nyere moden run, når systemet kender den observerede cadence, og den højst er én cadence bagud. nr cadence ukendt, vælges den nyere modne run. Mangler et strict current anchor, behandles de tre DKSS-familier først i den normale collection-loop, og deres gamle stepmarkører genbruges ikke.
 
 Preflighten forsøger valgfrit at hente en uafhængig offentlig Candidate G-DMI-donor i en isoleret midlertidig mappe. Kun en donor, der består den fulde strenge kompatibilitetskontrol, må bruges. Kan den ikke hentes eller valideres, fortsætter RavRadar med at hente frisk officiel DMI uden denne reserve.
 
-Ved den nye models første cutover ligger den særskilt checkpointede WAM-historikbootstrap fortsat før den normale collection-loop og kan fortsætte over flere forsøg. Den efterfølgende loop har plads til seks collections. Mangler strict current anchor, står DKSS foran WAM i denne loop; findes anchor, kan WAM stå først. Normal drift bevarer loftet på to. Det er derfor ikke en ubetinget global DKSS-first-regel.
+Ved den nye models første cutover ligger den særskilt checkpointede WAM-historikbootstrap fortsat før den normale collection-loop og kan fortsætte over flere forsøg. Den efterfølgende loop har plads til seks collections. Mangler strict current anchor, står DKSS foran WAM i denne loop; findes anchor, kan WAM stå først. oormal drift bevarer loftet på to. Det er derfor ikke en ubetinget global DKSS-first-regel.
+Denne historiske preferred-run-/to-collection-beskrivelse er supersederet af DEC-0116 og afsnittet “Vejrcachen fortsætter gennem timeskift og nye modelkørsler” ovenfor. Gældende drift deler én serialiseret kandidat mellem normal og oneoff, fastholder kun et partial run ved mindst normalt 96 timers moden/komplet fremtidshorisont og ikke-stale katalog og kan behandle tre normale DKSS-collections.
 
 DMI er stadig førstevalg. Først efter en grøn DMI-terminalkontrol må Copernicus udfylde de eksakte kystdels- og timehuller, som DMI faktisk ikke leverede. Der hentes ikke landsdækkende Copernicus som erstatning for fungerende DMI-data.
 

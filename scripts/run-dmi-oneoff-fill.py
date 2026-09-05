@@ -16,7 +16,10 @@ import time
 from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parents[1]
-CACHE = ROOT / "data/live/dmi-bulk-cache.json"
+CACHE = Path(os.getenv(
+    "DMI_BULK_OUTPUT_PATH",
+    str(ROOT / "data/live/dmi-bulk-cache.json"),
+))
 MAX_PASSES = 3
 GIB = 1024 ** 3
 COLLECTIONS = {"dkss_idw", "dkss_nsbs", "dkss_lf", "harmonie_dini_sf", "wam_dw", "wam_nsb"}

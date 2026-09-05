@@ -988,25 +988,177 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         )
 
     def test_private_point_candidate_cannot_hide_or_block_dmi_progress(self) -> None:
+        def workflow_step(source: str, name: str) -> tuple[int, str]:
+            start = source.index(f"- name: {name}")
+            end = source.index("\n      - name:", start + 1)
+            return start, source[start:end]
+
         workflow = (
             ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
-        point_start = workflow.index(
-            "- name: Advance private point-candidate readiness without public score impact"
+        _, point = workflow_step(
+            workflow,
+            "Advance private point-candidate readiness without public score impact",
         )
-        point_end = workflow.index("- name: Save private staged coastal-point cache", point_start)
-        point = workflow[point_start:point_end]
         self.assertIn("id: point-candidate-readiness", point)
         self.assertIn("steps.dmi-bulk.outcome == 'success'", point)
         self.assertIn("continue-on-error: true", point)
         for step_name in (
             "Save progressed DMI GRIB download cache",
-            "Save progressive private DMI zone cache",
             "Save private seven-day current-field research cache",
         ):
             start = workflow.index(f"- name: {step_name}")
             end = workflow.index("\n      - name:", start + 1)
             self.assertIn("if: always()", workflow[start:end])
+
+        self.assertNotIn("- name: Save progressive private DMI zone cache", workflow)
+        self.assertNotIn("dmi-zone-cache-v1-${{ runner.os }}", workflow)
+        normal_names = (
+            "Restore last complete active DMI generation",
+            "Strictly bind and materialize the active DMI generation",
+            "Restore isolated DMI candidate progress for normal maintenance",
+            "Inspect isolated DMI candidate progress for normal maintenance",
+            "Update DMI bulk model cache",
+            "Save isolated DMI candidate progress before any terminal decision",
+            "Require successful DMI producer before current supplement",
+            "Strictly snapshot the maintained READY active DMI generation",
+            "Save the maintained complete active DMI generation",
+        )
+        normal = {name: workflow_step(workflow, name) for name in normal_names}
+        normal_positions = [normal[name][0] for name in normal_names]
+        self.assertEqual(normal_positions, sorted(normal_positions))
+
+        active_restore = normal[normal_names[0]][1]
+        self.assertIn("path: .cache/dmi-active-complete.json", active_restore)
+        self.assertIn("key: dmi-zone-active-v1-", active_restore)
+
+        active_materialize = normal[normal_names[1]][1]
+        self.assertIn(".diagnostics.currentOperationalLedger.ready", active_materialize)
+        self.assertIn("python scripts/build-copernicus-target-registry.py", active_materialize)
+        self.assertIn(
+            "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
+            active_materialize,
+        )
+
+        candidate_restore = normal[normal_names[2]][1]
+        self.assertIn("path: .cache/dmi-candidate-progress.json", candidate_restore)
+        self.assertIn("key: dmi-zone-candidate-v1-", candidate_restore)
+        self.assertIn("restore-keys:", candidate_restore)
+
+        candidate_state = normal[normal_names[3]][1]
+        self.assertIn("id: dmi-candidate-state", candidate_state)
+        self.assertIn("currentOperationalLedger.ready == true", candidate_state)
+        self.assertIn('echo "retain_preferred=true"', candidate_state)
+        self.assertIn('echo "retain_preferred=false"', candidate_state)
+
+        dmi = normal[normal_names[4]][1]
+        for marker in (
+            "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
+            "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
+            "DMI_BULK_PREFER_OUTPUT_CACHE: true",
+            "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}",
+            "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json",
+        ):
+            self.assertIn(marker, dmi)
+
+        candidate = normal[normal_names[5]][1]
+        self.assertIn("if: always()", candidate)
+        self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", candidate)
+        self.assertIn("path: .cache/dmi-candidate-progress.json", candidate)
+        self.assertIn("key: dmi-zone-candidate-v1-", candidate)
+        self.assertNotIn("dmi-zone-cache-v1-", candidate)
+
+        terminal = normal[normal_names[6]][1]
+        self.assertIn('test "$code" = "DMI_READY"', terminal)
+        self.assertIn('test "$STRICT_CURRENT_ANCHOR_READY" = "true"', terminal)
+
+        snapshot = normal[normal_names[7]][1]
+        self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", snapshot)
+        self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", snapshot)
+        self.assertIn(".diagnostics.currentOperationalLedger.ready", snapshot)
+        self.assertIn("python scripts/build-copernicus-target-registry.py", snapshot)
+        self.assertIn("--at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"", snapshot)
+
+        active = normal[normal_names[8]][1]
+        self.assertNotIn("if: always()", active)
+        self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", active)
+        self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", active)
+        self.assertIn("path: .cache/dmi-active-complete.json", active)
+        self.assertIn("key: dmi-zone-active-v1-", active)
+        self.assertNotIn("dmi-zone-cache-v1-", active)
+
+        oneoff = (
+            ROOT
+            / ".github"
+            / "workflows"
+            / "validate-copernicus-current-pilot.yml"
+        ).read_text("utf-8")
+        oneoff_names = (
+            "Restore last complete active DMI generation",
+            "Strictly bind and materialize the active DMI generation",
+            "Restore isolated DMI candidate progress",
+            "Isolate restored candidate and restore active working copy",
+            "Refresh all bounded official DMI collections for the proof",
+            "Save isolated DMI candidate progress before any terminal decision",
+            "Strictly snapshot only a promoted READY DMI generation",
+            "Save the promoted complete active DMI generation",
+        )
+        oneoff_steps = {name: workflow_step(oneoff, name) for name in oneoff_names}
+        oneoff_positions = [oneoff_steps[name][0] for name in oneoff_names]
+        self.assertEqual(oneoff_positions, sorted(oneoff_positions))
+
+        oneoff_active_restore = oneoff_steps[oneoff_names[0]][1]
+        self.assertIn("path: .cache/dmi-active-complete.json", oneoff_active_restore)
+        self.assertIn("key: dmi-zone-active-v1-", oneoff_active_restore)
+
+        oneoff_materialize = oneoff_steps[oneoff_names[1]][1]
+        self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_materialize)
+        self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_materialize)
+
+        oneoff_candidate_restore = oneoff_steps[oneoff_names[2]][1]
+        self.assertIn("path: .cache/dmi-candidate-progress.json", oneoff_candidate_restore)
+        self.assertIn("key: dmi-zone-candidate-v1-", oneoff_candidate_restore)
+
+        oneoff_candidate_state = oneoff_steps[oneoff_names[3]][1]
+        self.assertIn(
+            "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
+            oneoff_candidate_state,
+        )
+        self.assertIn("retain_preferred", oneoff_candidate_state)
+
+        dmi = oneoff_steps[oneoff_names[4]][1]
+        for marker in (
+            "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
+            "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
+            "DMI_BULK_PREFER_OUTPUT_CACHE: true",
+            "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json",
+        ):
+            self.assertIn(marker, dmi)
+
+        oneoff_candidate = oneoff_steps[oneoff_names[5]][1]
+        self.assertIn("if: always()", oneoff_candidate)
+        self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", oneoff_candidate)
+        self.assertIn("path: .cache/dmi-candidate-progress.json", oneoff_candidate)
+        self.assertIn("key: dmi-zone-candidate-v1-", oneoff_candidate)
+        self.assertNotIn("dmi-zone-cache-v1-", oneoff_candidate)
+
+        oneoff_snapshot = oneoff_steps[oneoff_names[6]][1]
+        self.assertIn("steps.dmi-bulk.outcome == 'success'", oneoff_snapshot)
+        self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", oneoff_snapshot)
+        self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_snapshot)
+        self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_snapshot)
+        self.assertIn(
+            '--at "${{ steps.operational-target.outputs.target_hour }}"',
+            oneoff_snapshot,
+        )
+
+        promoted = oneoff_steps[oneoff_names[7]][1]
+        self.assertNotIn("if: always()", promoted)
+        self.assertIn("steps.dmi-bulk.outcome == 'success'", promoted)
+        self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", promoted)
+        self.assertIn("path: .cache/dmi-active-complete.json", promoted)
+        self.assertIn("key: dmi-zone-active-v1-", promoted)
+        self.assertNotIn("dmi-zone-cache-v1-", promoted)
 
     def test_diagnostic_errors_redact_credentials_and_url_queries(self) -> None:
         secret = "synthetic-private-key"

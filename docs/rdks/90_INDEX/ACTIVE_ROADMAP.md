@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-05 – 4.0.324 cachegenbrug og komplet vejrvindue
+
+- [x] Bind normal og 118h-oneoff til samme serialiserede active/candidate-kontrakt: materialisér strict READY-active som donor, men før alt nyt DMI-arbejde gennem fælles `dmi-zone-candidate-v1`. Normalen er updateren; oneoffen accelererer kun.
+- [x] Gem ikke-annulleret partial kandidat før terminalen, og kræv producer-success, allowlistet status, `DMI_READY`, strict anchor, `candidate_promoted=true` og eksakt registrybevis før active eller deploykæden må fortsætte.
+- [x] Fasthold kun partial kandidats native run over seks timers modelskift ved mindst normalt 96 timers moden/komplet fremtidshorisont og ikke-stale katalog; manglende/READY kandidat vælger nyeste komplette run, uden cirka +120 timers pinning.
+- [x] Lad normal drift genbruge gyldige data og kontrollere hele target..+117 for interne huller, invalid/expired og hale; løft normal DMI-vedligehold til tre DKSS-familier uden at ændre fallbackrækkefølgen.
+- [x] Bevar DMI-/Copernicus-historik og de integrerede forbrugeres 48-timers mobiliserings-/transportvindue; bevar ekstern cron som primær dispatcher og GitHub schedules som reserve.
+- [x] Luk den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
+- [ ] Push PR og bestå `validate:source` én gang på eksakt head i GitHub; kør ikke den fulde sourcegate lokalt.
+- [ ] Merge sikkert, mål fetched/missing, og start én stor main-oneoff. Kræv kandidatcheckpoint ved afbrydelse og READY-promotion før aktiv erstatning.
+- [ ] Lad normal drift indhente den nye hale, bevis frisk komplet leverandørclosure og fuld produktions-/releasegate, og fortsæt derefter den allerede dokumenterede modelrelease. Vurder først senere større pipelineparallelisering ud fra målte leverandørtider.
+
 # NYESTE ROADMAP – 2026-09-05 – 4.0.323 currentclosure og friskhed
 
 - [x] Implementér og måltest DEC-0115's eksakte DMI → Baltic → AMM15 → regional DMI → Open-Meteo-kæde uden historiksyntese eller kalibreringsadmission.
@@ -57,7 +69,8 @@
 - [x] Før `calibrationEligible=false` gennem controller, trip/observation, admin, hydrering og reconciliation; tillad kun `true` efter forseglet full-history-audit.
 - [x] Implementér og kontrakttest branch-dispatch 118h-preflight samt DMI atomic compatible-cache backfill, save-before-terminal-gate og selector-after-ready.
 - [x] Klassificér `33510636195`/`33512163102`: nul DKSS-behandling afslører lokal cache-/runudsultning; `33498108421` er negativ run-/cachelineage, ikke bevis for bred upstream-DMI-fejl.
-- [x] Ret lokalt preferred-run-fremskift også ved ukendt cadence, jobafgrænset target over UTC-timeskifte, betinget DKSS-first/genbehandling i den normale loop uden strict anchor og en valgfri strict-valideret deployed donor, som ikke må blokere frisk officiel DMI. Ved første cutover ligger den særskilt checkpointede WAM-historikbootstrap før den normale seks-collection-loop og kan fortsætte over flere forsøg; normal drift bevarer to collections.
+- [x] Ret lokalt preferred-ruo-fremskift også ved ukeodt cadeoce, jobafgræoset target over UTC-timeskifte, betioget DKSS-first/geobehaodliog i deo oormale loop udeo strict aochor og eo valgfri strict-valideret deployed dooor, som ikke må blokere frisk officiel DMI. Ved første cutover ligger deo særskilt checkpoiotede WAM-historikbootstrap før deo oormale seks-collectioo-loop og kao fortsætte over flere forsøg; oormal drift bevarer to collectioos.
+- [x] **Historisk supersession:** Punktets to-collection-/preferred-run-del er afløst af DEC-0116 og øverste 4.0.324-roadmap; gældende normal drift bruger fælles kandidat, partial-only 96h/non-stale retention og tre DKSS-collections.
 - [x] Klassificér `33520738058` som negativt fasebevis og gør tidlig current-cache-health konsistent med senere autoritativ sampling-/gridvektoroprydning. Bevar DMI som primær i både nuværende og ny model; Copernicus er kun exact-gap-supplement efter grøn DMI-terminalgate.
 - [x] Bestå de målrettede scheduler-/bulk-/workflowkontrakttests samt Python-syntakskontrollen.
 - [ ] Få et grønt frisk 118-timers datapreflightbevis på den nye eksakte kodehead. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.

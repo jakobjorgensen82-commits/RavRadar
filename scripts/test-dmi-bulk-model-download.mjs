@@ -125,8 +125,13 @@ assert.match(finalWriter, /atomic_write_bulk_cache\(result, pretty=True\)/);
 assert.match(finalWriter, /write_ocean_diagnostics\(result\)/);
 assert.match(
   bulk,
-  /def atomic_write_bulk_cache\([\s\S]*?pretty: bool = True,[\s\S]*?temporary\.replace\(OUTPUT_PATH\)/,
+  /def atomic_write_bulk_cache\([\s\S]*?pretty: bool = True,[\s\S]*?path: pathlib\.Path \| None = None,[\s\S]*?temporary\.replace\(destination\)/,
   'Den atomiske cachewriter skal bevare pretty=True som API-default og afslutte med replace.',
+);
+assert.match(
+  bulk,
+  /def promote_ready_candidate\([\s\S]*?producer_success_is_blocked[\s\S]*?strict_current_anchor_available[\s\S]*?atomic_write_bulk_cache\(result, pretty=True, path=PROMOTION_PATH\)/,
+  'En kandidat må kun promoveres atomisk efter den strenge READY-gate.',
 );
 
 const checkpointControllerStart = bulk.indexOf('class ProgressCheckpointController:', finalWriterEnd);
@@ -246,7 +251,11 @@ assert.equal(
 assert.match(nativeProvenance, /SPATIAL_PROVENANCE_VERSION = 1/);
 assert.match(nativeProvenance, /CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4/);
 assert.match(nativeProvenance, /dmi-official-dkss-operational-current-ledger-v4/);
-assert.match(bulk, /PRIVATE_REPLAY_RETENTION_HOURS = max\(\s*54,/);
+assert.match(
+  bulk,
+  /PRIVATE_REPLAY_RETENTION_HOURS = max\(\s*54,\s*int\(os\.getenv\("DMI_BULK_PRIVATE_REPLAY_RETENTION_HOURS", "60"\)\)\s*\)/,
+  'Producenten skal bevare mindst 54 timer og fortsat bruge 60 timer som standard for den private 48-timers replaybro.',
+);
 assert.match(bulk, /previous\.get\("spatialProvenanceVersion"\) == SPATIAL_PROVENANCE_VERSION/,
   'legacy bulkcache uden eksakt spatial proveniens må ikke ramme fresh-cache genvejen');
 assert.match(bulk, /int\(previous\.get\("privateReplayRetentionHours"\) or 0\) >= 54/,
@@ -335,8 +344,8 @@ assert.match(
 );
 assert.match(
   build,
-  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '2' \}\}/,
-  'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normale vejrkørsler forbliver afgrænset til to collections.',
+  /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
+  'Første integrerede cutover skal have plads til både WAM-bootstrap og alle officielle DKSS-familier; normal vedligeholdelse behandler tre collections.',
 );
 assert.doesNotMatch(bulk, /unique = \{row\["valid"\]/);
 assert.match(updater, /\[1, 2\]\.includes\(parsed\?\.schemaVersion\)/);
@@ -381,18 +390,40 @@ assert.match(build, /DMI_API_KEY/);
 assert.match(build, /Report DMI bulk result/);
 const dmiProducer = build.indexOf('name: Update DMI bulk model cache');
 const dmiGribSave = build.indexOf('name: Save progressed DMI GRIB download cache');
-const dmiZoneSave = build.indexOf('name: Save progressive private DMI zone cache');
+const dmiCandidateSave = build.indexOf('name: Save isolated DMI candidate progress before any terminal decision');
 const dmiShadowSave = build.indexOf('name: Save private seven-day current-field research cache');
 const dmiTerminalGate = build.indexOf('name: Require successful DMI producer before current supplement');
+const dmiActiveSnapshot = build.indexOf('name: Strictly snapshot the maintained READY active DMI generation');
+const dmiActiveSave = build.indexOf('name: Save the maintained complete active DMI generation');
 const copernicusSelector = build.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement');
 assert.ok(
   dmiProducer < dmiGribSave
-    && dmiGribSave < dmiZoneSave
-    && dmiZoneSave < dmiShadowSave
+    && dmiGribSave < dmiCandidateSave
+    && dmiCandidateSave < dmiShadowSave
     && dmiShadowSave < dmiTerminalGate
+    && dmiTerminalGate < dmiActiveSnapshot
+    && dmiActiveSnapshot < dmiActiveSave
+    && dmiActiveSave < copernicusSelector
     && dmiTerminalGate < copernicusSelector,
-  'DMI-progression skal gemmes før den hårde terminalgate og gapselector',
+  'Rå/private sidecaches og partial kandidat skal gemmes før terminalgaten, mens active først må gemmes efter READY-promotion.',
 );
+const dmiCandidateSaveEnd = build.indexOf('\n      - name:', dmiCandidateSave + 1);
+const dmiCandidateSaveBlock = build.slice(dmiCandidateSave, dmiCandidateSaveEnd);
+assert.match(dmiCandidateSaveBlock, /always\(\)/);
+assert.match(dmiCandidateSaveBlock, /steps\.dmi-bulk\.outcome != 'cancelled'/);
+assert.match(dmiCandidateSaveBlock, /path: \.cache\/dmi-candidate-progress\.json/);
+assert.match(dmiCandidateSaveBlock, /key: dmi-zone-candidate-v1-/);
+const dmiActiveSnapshotEnd = build.indexOf('\n      - name:', dmiActiveSnapshot + 1);
+const dmiActiveSnapshotBlock = build.slice(dmiActiveSnapshot, dmiActiveSnapshotEnd);
+assert.match(dmiActiveSnapshotBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.match(dmiActiveSnapshotBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
+const dmiActiveSaveEnd = build.indexOf('\n      - name:', dmiActiveSave + 1);
+const dmiActiveSaveBlock = build.slice(dmiActiveSave, dmiActiveSaveEnd);
+assert.match(dmiActiveSaveBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.match(dmiActiveSaveBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted == 'true'/);
+assert.match(dmiActiveSaveBlock, /path: \.cache\/dmi-active-complete\.json/);
+assert.match(dmiActiveSaveBlock, /key: dmi-zone-active-v1-/);
+assert.doesNotMatch(dmiActiveSaveBlock, /always\(\)|outcome != 'cancelled'/);
 const terminalGateBlock = build.slice(dmiTerminalGate, copernicusSelector);
 for (const marker of [
   'id: dmi-terminal-gate',

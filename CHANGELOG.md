@@ -1,3 +1,11 @@
+## 4.0.324 – active/candidate-cache uden modelrun-nulstart (2026-09-05, lokalt)
+
+- Normal vejrhentning og 118h-oneoff materialiserer begge seneste strict READY-active som donor, men skriver alt nyt DMI-arbejde til den samme `dmi-zone-candidate-v1`-familie. Fælles production-concurrency serialiserer writers; normalen er den fremtidige updater, mens oneoffen kun accelererer samme kandidat.
+- Ikke-annulleret partial kandidat gemmes før terminalen. Active og deploykæden fortsætter først efter producer-success, allowlistet status, `DMI_READY`, strict current-anchor, `candidate_promoted=true` og eksakt registryvalidering.
+- Partial kandidat kan beholde sit native run over seks timers modelskift alene med mindst normalt 96 timers moden/komplet fremtidshorisont og ikke-stale katalog. Manglende eller READY kandidat vælger nyeste komplette run, så retention ikke kan pinne til cirka +120 timers alder.
+- Hele target..+117 scannes for interne huller, ugyldige/udløbne trin og hale; normal DKSS-ramme er tre collections. Historikvinduer, DMI → Baltic → AMM15 → regional DMI → Open-Meteo, ekstern cron/watchdog og GitHub-reserveschedules bevares.
+- Den målrettede lokale producer/provenance/rollover/active-candidate/workflow/downstream/atomic/history-matrix, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata er grøn. Fuld lokal sourcegate er ikke kørt og skal ikke køres; GitHubs exact-head `validate:source` er næste sourcebevis. Exact-head, merge, cachebootstrap/runtime og komplet 210/673/118 afventer.
+
 ## 4.0.323 – sidste operationelle currentfallback og friskhed (2026-09-05)
 
 - DMI → Baltic → AMM15 → regional DMI → Open-Meteo lukker nu eksakte target..+117-currenthuller efter terminalt READY.

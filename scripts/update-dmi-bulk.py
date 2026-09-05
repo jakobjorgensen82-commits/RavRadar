@@ -143,7 +143,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 ZONES_PATH = ROOT / "data/zones.geojson"
 COASTAL_PART_POINTS_PATH = ROOT / "data/live/coastal-parts-v2.json"
 WATER_SOURCES_PATH = ROOT / "data/live/dmi-water-stations.json"
-OUTPUT_PATH = ROOT / "data/live/dmi-bulk-cache.json"
+OUTPUT_PATH = pathlib.Path(os.getenv(
+    "DMI_BULK_OUTPUT_PATH",
+    str(ROOT / "data/live/dmi-bulk-cache.json"),
+))
+PROMOTION_PATH = (
+    pathlib.Path(os.environ["DMI_BULK_PROMOTION_PATH"])
+    if os.getenv("DMI_BULK_PROMOTION_PATH")
+    else None
+)
 DEPLOYED_FALLBACK_PATH = pathlib.Path(os.getenv("DMI_BULK_DEPLOYED_FALLBACK_PATH", str(ROOT / ".cache/deployed-dmi-bulk-cache.json")))
 DIAGNOSTICS_JSON_PATH = ROOT / "data/diagnostics/dmi-ocean-diagnostics.json"
 DIAGNOSTICS_TEXT_PATH = ROOT / "data/diagnostics/dmi-ocean-summary.txt"
@@ -182,8 +190,17 @@ WAM_MAX_FORECAST_LEAD_HOURS = 132
 MARINE_FOUNDATION_BALANCE_RATIO = 0.95
 REFRESH_MINUTES = max(1, int(os.getenv("DMI_BULK_REFRESH_MINUTES", "60")))
 COMPLETE_HORIZON_HOURS = max(24, int(os.getenv("DMI_BULK_COMPLETE_HORIZON_HOURS", "96")))
+PREFERRED_RUN_MIN_FUTURE_HOURS = max(
+    24, int(os.getenv("DMI_BULK_PREFERRED_RUN_MIN_FUTURE_HOURS", "96"))
+)
 HARMONIE_RUN_RETENTION_HOURS = max(24, int(os.getenv("DMI_HARMONIE_RUN_RETENTION_HOURS", "48")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
+RETAIN_PREFERRED_NATIVE_RUN = os.getenv(
+    "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN", "false"
+).lower() in {"1", "true", "yes", "on"}
+PREFER_OUTPUT_CACHE = os.getenv(
+    "DMI_BULK_PREFER_OUTPUT_CACHE", "false"
+).lower() in {"1", "true", "yes", "on"}
 USER_AGENT = os.getenv("WEATHER_USER_AGENT", "RavRadar DMI bulk downloader")
 API_KEY = os.getenv("DMI_API_KEY")
 STARTED = time.monotonic()
@@ -668,6 +685,7 @@ def select_forecast_run(
     preferred_run: str | None = None,
     now_epoch: float | None = None,
     retention_horizon_hours: float = COMPLETE_HORIZON_HOURS,
+    retain_preferred_run: bool = False,
 ) -> tuple[str, dict[str, Any]]:
     """Keep a usable progressive run instead of chasing each partial publication."""
     now_value = time.time() if now_epoch is None else now_epoch
@@ -683,17 +701,29 @@ def select_forecast_run(
         if preferred_run in mature
         else 0.0
     )
+    preferred_has_minimum_future_horizon = bool(
+        preferred_run in future_horizon
+        and future_horizon[preferred_run] >= PREFERRED_RUN_MIN_FUTURE_HOURS
+    )
+    bounded_preferred_pin = bool(
+        retain_preferred_run and preferred_has_minimum_future_horizon
+    )
     preferred_still_scheduled = (
-        preferred_run in mature
+        preferred_run in future_horizon
         and (
-            preferred_run == latest
+            bounded_preferred_pin
+            or preferred_run == latest
             or (
+                preferred_run in mature
+                and
                 cadence_hours is not None
                 and preferred_lag_hours <= cadence_hours + 1e-6
             )
         )
     )
-    stale_preferred_discarded = preferred_run in mature and not preferred_still_scheduled
+    stale_preferred_discarded = (
+        preferred_run in future_horizon and not preferred_still_scheduled
+    )
     if preferred_still_scheduled:
         selected = preferred_run
     elif mature:
@@ -707,6 +737,9 @@ def select_forecast_run(
         "selectedRunFutureHorizonHours": round(future_horizon[selected], 1),
         "runRetentionHorizonHours": retention_horizon_hours,
         "preferredProgressiveRunRetained": selected == preferred_run,
+        "preferredProgressiveRunPinned": bool(
+            bounded_preferred_pin and selected == preferred_run
+        ),
         "preferredProgressiveRunDiscardedAsStale": stale_preferred_discarded,
         "incompleteLatestRunDeferred": selected != latest,
     }
@@ -1043,6 +1076,7 @@ def list_latest_assets(
     required_valid_times: set[str] | None = None,
     required_horizon_end_time: str | None = None,
     allow_documented_required_gaps: bool = False,
+    retain_preferred_native_run: bool = False,
 ) -> tuple[str | None, list[dict[str, Any]], dict[str, Any]]:
     required = {
         iso(value) for value in (required_valid_times or set())
@@ -1200,12 +1234,17 @@ def list_latest_assets(
     run, run_selection = select_forecast_run(
         selection_runs,
         (
-            None
-            if allow_documented_required_gaps
-                and collection in MARINE_COLLECTIONS
-            else preferred_run if preferred_run in selection_runs else None
+            preferred_run if preferred_run in selection_runs
+            and (
+                retain_preferred_native_run
+                or not (
+                    allow_documented_required_gaps
+                    and collection in MARINE_COLLECTIONS
+                )
+            ) else None
         ),
         retention_horizon_hours=retention_horizon_hours,
+        retain_preferred_run=retain_preferred_native_run,
     )
     selected_valid_times = {
         iso(row.get("valid")) for row in runs[run] if iso(row.get("valid"))
@@ -1259,13 +1298,19 @@ def list_latest_assets(
     publication_lag_hours = observed_publication_lag_hours(runs)
     latest_run_age_hours = max(0.0, (time.time() - epoch(latest_run)) / 3600.0)
     selected_run_lag_hours = max(0.0, (epoch(latest_run) - epoch(run)) / 3600.0)
-    # A retained progressive run may trail the latest partial generation by at
-    # most one cadence observed in this exact STAC response. Entire-catalog
-    # freshness is checked only when both cadence and explicit STAC creation lag
-    # exist; absent metadata remains unknown instead of being fabricated.
+    # A partial preferred run may trail the latest generation by multiple
+    # observed cadences, but only while it retains the bounded minimum future
+    # horizon. Entire-catalog freshness remains mandatory when cadence and
+    # explicit STAC creation lag are observable; absent metadata stays unknown.
+    preferred_native_run_pinned = bool(
+        run_selection.get("preferredProgressiveRunPinned") is True
+        and run == preferred_run
+        and selected_native_run_complete
+    )
     selected_within_observed_schedule = (
         run == latest_run
         or cadence_hours is not None and selected_run_lag_hours <= cadence_hours + 1e-6
+        or preferred_native_run_pinned
     )
     catalog_schedule_fresh = (
         cadence_hours is not None
@@ -1279,8 +1324,12 @@ def list_latest_assets(
         "selectedRunLagBehindLatestHours": round(selected_run_lag_hours, 3),
         "selectedWithinObservedSchedule": selected_within_observed_schedule,
         "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
+        "preferredNativeRunPinned": preferred_native_run_pinned,
     })
-    if not selected_within_observed_schedule or catalog_schedule_fresh is False:
+    if (
+        not selected_within_observed_schedule
+        or catalog_schedule_fresh is False
+    ):
         stats.update(run_selection)
         stats["rejectedStaleRun"] = True
         return None, [], stats
@@ -4128,12 +4177,19 @@ def load_previous(
     coastal_part_targets: list[dict[str, Any]] | None = None,
     production_reference: datetime | None = None,
 ) -> dict[str, Any]:
-    candidates = [load_document(OUTPUT_PATH), load_document(DEPLOYED_FALLBACK_PATH)]
+    output_document = load_document(OUTPUT_PATH)
+    candidates = [output_document, load_document(DEPLOYED_FALLBACK_PATH)]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
-        primary = max(
-            compatible,
-            key=lambda document: (cache_progress_time(document), cache_quality(document)),
+        primary = (
+            output_document
+            if PREFER_OUTPUT_CACHE and output_document in compatible
+            else max(
+                compatible,
+                key=lambda document: (
+                    cache_progress_time(document), cache_quality(document)
+                ),
+            )
         )
         merged = copy.deepcopy(primary)
         if coastal_part_targets is not None and production_reference is not None:
@@ -5363,9 +5419,11 @@ def atomic_write_bulk_cache(
     document: dict[str, Any],
     *,
     pretty: bool = True,
+    path: pathlib.Path | None = None,
 ) -> None:
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temporary = OUTPUT_PATH.with_suffix(".json.tmp")
+    destination = OUTPUT_PATH if path is None else path
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".tmp")
     payload = json.dumps(
         document,
         ensure_ascii=False,
@@ -5373,7 +5431,16 @@ def atomic_write_bulk_cache(
         separators=None if pretty else (",", ":"),
     )
     temporary.write_text(payload + "\n", "utf-8")
-    temporary.replace(OUTPUT_PATH)
+    temporary.replace(destination)
+
+
+def write_sticky_github_output(name: str, value: str) -> None:
+    """Append success-only output without erasing an earlier successful pass."""
+    output_path = os.getenv("GITHUB_OUTPUT")
+    if not output_path:
+        return
+    with open(output_path, "a", encoding="utf-8") as handle:
+        handle.write(f"{name}={value}\n")
 
 
 def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: dict[str, int], status: str = "partial") -> None:
@@ -5394,6 +5461,25 @@ def write_finalized_cache(result: dict[str, Any], status: str) -> None:
     result.setdefault("diagnostics", {}).pop("progressCheckpoint", None)
     atomic_write_bulk_cache(result, pretty=True)
     write_ocean_diagnostics(result)
+
+
+def promote_ready_candidate(
+    result: dict[str, Any],
+    *,
+    strict_current_anchor_available: bool,
+    producer_success_is_blocked: bool,
+) -> bool:
+    """Atomically promote only a finalized, exact-ledger READY candidate."""
+    if (
+        PROMOTION_PATH is None
+        or PROMOTION_PATH.resolve() == OUTPUT_PATH.resolve()
+        or producer_success_is_blocked
+        or not strict_current_anchor_available
+    ):
+        return False
+    atomic_write_bulk_cache(result, pretty=True, path=PROMOTION_PATH)
+    write_sticky_github_output("candidate_promoted", "true")
+    return True
 
 
 def percentile_95(values: list[float], default: float) -> float:
@@ -5948,6 +6034,11 @@ def main() -> int:
         previous.setdefault("diagnostics", {})
         atomic_write_bulk_cache(previous)
         write_ocean_diagnostics(previous)
+        promote_ready_candidate(
+            previous,
+            strict_current_anchor_available=True,
+            producer_success_is_blocked=False,
+        )
         ocean = build_ocean_diagnostics(previous)["summary"]
         write_github_outputs(
             "fresh-bulk-cache",
@@ -6188,6 +6279,7 @@ def main() -> int:
                 required_valid_times=required_current_valid_times,
                 required_horizon_end_time=required_current_horizon_end,
                 allow_documented_required_gaps=True,
+                retain_preferred_native_run=RETAIN_PREFERRED_NATIVE_RUN,
             )
             prefetched_marine[collection] = (run, assets, stac_stats)
             result["diagnostics"]["stacByCollection"][collection] = stac_stats
@@ -6905,6 +6997,11 @@ def main() -> int:
     write_cache_audit(cache_before, cache_after, prune_stats["removedFiles"], prune_stats["removedBytes"])
     result["diagnostics"]["rawCache"] = {"before": cache_before, "after": cache_after, **prune_stats, "maxBytes": RAW_CACHE_MAX_BYTES}
     write_finalized_cache(result, result["refreshStatus"])
+    promote_ready_candidate(
+        result,
+        strict_current_anchor_available=strict_current_anchor_available,
+        producer_success_is_blocked=producer_success_is_blocked,
+    )
     summary = {**diag, "refreshStatus": result["refreshStatus"], "sourceUpdatedAt": result.get("sourceUpdatedAt"),
                "preservedPreviousZones": max(0, len(result["zones"]) - len(fresh_zone_ids))}
     terminal_code = producer_terminal_code(

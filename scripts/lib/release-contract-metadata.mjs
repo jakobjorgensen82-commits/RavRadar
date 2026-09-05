@@ -45,6 +45,10 @@ export const RELEASE_CONTRACT_DOCUMENTATION = Object.freeze({
       id: 'DEC-0115',
       path: 'docs/rdks/10_DECISIONS/DEC-0115-OPEN-METEO-OPERATIONAL-CURRENT-FALLBACK.md',
     }),
+    Object.freeze({
+      id: 'DEC-0116',
+      path: 'docs/rdks/10_DECISIONS/DEC-0116-ACTIVE-CANDIDATE-WEATHER-CACHE-GENERATIONS.md',
+    }),
   ]),
 });
 

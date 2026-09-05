@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-05 – 4.0.324 sikker cachegenbrug
+
+- Ejerens udtrykkelige produktionsgodkendelse er bindende i DEC-0116: behold alle gyldige data, kontrollér hele target..+117-vinduet i hver normal vejrkørsel, og hent kun interne huller, ugyldige/forældede rækker og ny hale.
+- Både normal drift og 118h-oneoff materialiserer `.cache/dmi-active-complete.json` som strict READY-donor og fører alt nyt DMI-arbejde gennem den samme `.cache/dmi-candidate-progress.json`/`dmi-zone-candidate-v1`-familie. Fælles production-concurrency serialiserer writers. Normalen er updateren; oneoffen accelererer kun samme kandidat.
+- Gem ikke-annulleret partial kandidat før terminalen. Active og deploy må først ændres eller fortsætte efter producer-success, allowlistet status, `DMI_READY`, strict anchor, `candidate_promoted=true` og eksakt targetregistrybevis.
+- Fasthold kun en partial kandidats native run over seks timers modelskift, mens den stadig har mindst normalt 96 timers moden/komplet fremtidshorisont og kataloget ikke er stale. Manglende eller READY kandidat vælger nyeste komplette run; circa +120 timers pinning er forbudt.
+- Den dokumenterede leverandørorden er uændret: DMI → Baltic → AMM15 → policyregional DMI → Open-Meteo exact residual. Normal DMI-kørsel kan behandle tre DKSS-familier. DMI-historik er mindst 54 timer/standard 60; Copernicus bevarer 48 timers bridge og 168 timers retention; mobilisering/transport har fortsat op til 48 timers verificeret historik.
+- Bevar ekstern cron som primær dispatcher og eksisterende GitHub schedules som reserve; ændr ikke cadence. Den målrettede lokale producer/provenance/rollover/active-candidate/workflow/downstream/atomic/history-matrix, `py_compile`, YAML-/JSON-parse, RDKS/security og releaseversion/geodata er grøn. Kør ikke fuld sourcegate lokalt. Derefter PR, én exact-head `validate:source` i GitHub, merge, mål safe fetched/missing, verificér bootstrap/runtime, start én stor main-oneoff og overvåg candidate-save, promotion, fallbackclosure og normal catch-up. Komplet 210/673/118 er fortsat åbent.
+- Candidate G er fortsat offentlig. Den nye model må først aktiveres efter komplet vejr-/proveniensbevis, de eksisterende kapacitets-/Feggesund-/Supabase-gates og frisk fuld releasegate.
+
 # NYESTE CHECKPOINT – 2026-09-05 – 4.0.323 currentclosure
 
 - DEC-0115 og lokal kode bruger eksakt DMI → Baltic → AMM15 → regional DMI → Open-Meteo efter READY. Open-Meteo er kun operationel target..+117, combined-surface-current, højst 15 km, ingen historik/nabolån og altid `calibrationEligible=false`.
