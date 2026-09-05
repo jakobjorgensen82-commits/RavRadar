@@ -187,6 +187,9 @@ def build_fixture(
 
     def regional_builder(**kwargs):
         captured["regionalPairs"] = copy.deepcopy(kwargs["dmi_gap_pairs"])
+        captured["allowTargetRebindingAsMissing"] = kwargs.get(
+            "allow_target_rebinding_as_missing"
+        )
         refs = [] if (pure_copernicus or pure_dmi) else [
             regional_ref(residual[0], REGIONAL_DMI_NATIVE),
             regional_ref(residual[1], REGIONAL_DMI_DERIVED_HOLD),
@@ -304,6 +307,7 @@ assert private["advisoryHistoryAssignmentCount"] == 1
 assert len(private["advisoryHistoryAssignments"]) == 1
 assert private["totalPairCount"] == len(private["assignments"])
 assert captured["regionalPairs"] == COMPLEMENT[2:4]
+assert captured["allowTargetRebindingAsMissing"] is True
 assert {row["validTime"] for row in private["assignments"]} == {
     (REFERENCE + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")
     for offset in range(118)
