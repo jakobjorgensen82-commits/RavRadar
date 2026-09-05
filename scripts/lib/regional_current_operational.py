@@ -220,6 +220,8 @@ def _haversine_km(first: tuple[float, float], second: tuple[float, float]) -> fl
 def _policy_and_target_binding(
     policy: Any,
     targets: Any,
+    *,
+    allow_target_rebinding_as_missing: bool = False,
 ) -> tuple[dict[str, dict[str, Any]], str, str]:
     if not isinstance(policy, dict) or not isinstance(targets, list):
         _fail("POLICY_SCOPE_INVALID")
@@ -287,13 +289,17 @@ def _policy_and_target_binding(
             _fail("POLICY_TARGET_BINDING_INVALID")
         target_point_identity = _point_identity(target.get("waterPoint"))
         parent_zone_id = str(target.get("parentZoneId") or "").strip()
-        if not parent_zone_id or target_point_identity != approved_identity:
+        target_matches_policy = target_point_identity == approved_identity
+        if not parent_zone_id or (
+            not target_matches_policy and not allow_target_rebinding_as_missing
+        ):
             _fail("POLICY_TARGET_BINDING_INVALID")
         bound[part_id] = {
             "target": target,
             "targetPoint": _point(target.get("waterPoint")),
             "targetPointIdentity": target_point_identity,
             "parentZoneId": parent_zone_id,
+            "regionalEvidenceEligible": target_matches_policy,
         }
         normalized_rows.append({
             "partId": part_id,
@@ -589,6 +595,12 @@ def _samples_by_part(
     anchors = shadow["anchors"]
     result: dict[str, dict[str, Any]] = {}
     for part_id, part in bound_parts.items():
+        if part.get("regionalEvidenceEligible") is False:
+            result[part_id] = {
+                "validated": [],
+                "sourceMismatchTimes": set(),
+            }
+            continue
         anchor = anchors.get(f"{TARGET_PREFIX}{part_id}")
         raw_samples = _validate_anchor(anchor, part, part_id)
         validated: list[dict[str, Any]] = []
@@ -936,6 +948,7 @@ def build_regional_current_operational_evidence(
     dmi_attestation: dict[str, Any],
     locked_reference: Any,
     dmi_gap_pairs: list[dict[str, Any]],
+    allow_target_rebinding_as_missing: bool = False,
 ) -> dict[str, dict[str, Any]]:
     """Build private dispositions and a separate privacy-safe projection.
 
@@ -950,7 +963,9 @@ def build_regional_current_operational_evidence(
     range_end_dt = reference_dt + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
     range_end_text = range_end_dt.strftime("%Y-%m-%dT%H:00:00Z")
     bound_parts, policy_sha256, target_registry_sha256 = _policy_and_target_binding(
-        policy, targets
+        policy,
+        targets,
+        allow_target_rebinding_as_missing=allow_target_rebinding_as_missing,
     )
     if not isinstance(dmi_ledger, dict) or not isinstance(dmi_attestation, dict):
         _fail("LEDGER_ATTESTATION_INVALID")

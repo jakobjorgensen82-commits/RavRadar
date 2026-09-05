@@ -535,6 +535,7 @@ def build_regional_residual_plan(
             dmi_attestation=dmi_attestation,
             locked_reference=locked_reference,
             dmi_gap_pairs=regional_candidates,
+            allow_target_rebinding_as_missing=True,
         )
     except (KeyError, TypeError, ValueError, RuntimeError):
         _fail("REGIONAL_EVIDENCE_INVALID")

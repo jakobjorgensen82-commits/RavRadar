@@ -296,6 +296,25 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     moved_policy["policy"]["parts"][0]["approvedSamplingPoint"][0] += 0.0001
     expect_error(moved_policy, "POLICY_TARGET_BINDING_INVALID")
 
+    moved_runtime_target = fixture()
+    moved_runtime_target["targets"][0]["waterPoint"][0] += 0.0001
+    expect_error(moved_runtime_target, "POLICY_TARGET_BINDING_INVALID")
+    ledger = moved_runtime_target["dmi_ledger"]
+    with patch.object(evidence, "validate_current_operational_ledger", return_value=ledger):
+        fallback_result = evidence.build_regional_current_operational_evidence(
+            **moved_runtime_target,
+            allow_target_rebinding_as_missing=True,
+        )
+    moved_refs = [
+        row for row in fallback_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(len(moved_refs) == 5, "Every moved-target gap needs a disposition")
+    need(
+        all(row["classification"] == evidence.MISSING for row in moved_refs),
+        "A centrally moved target must bypass stale regional evidence",
+    )
+
     moved_anchor = fixture()
     moved_anchor["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["targetPoint"][0] += 0.0001
     expect_error(moved_anchor, "SHADOW_TARGET_BINDING_INVALID")
