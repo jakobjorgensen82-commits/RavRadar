@@ -1574,6 +1574,107 @@ try:
     )
     assert preferred_selected_run == middle_run.isoformat().replace("+00:00", "Z")
     assert preferred_stats["nativeCompleteRunCount"] == 2
+
+    pinned_selected_run, _, pinned_stats = producer.list_latest_assets(
+        "dkss_idw",
+        older_run.isoformat().replace("+00:00", "Z"),
+        minimum_valid_time=preferred_reference.isoformat().replace("+00:00", "Z"),
+        required_valid_times=preferred_hours,
+        required_horizon_end_time=preferred_end,
+        allow_documented_required_gaps=True,
+        retain_preferred_native_run=True,
+    )
+    assert pinned_selected_run == older_run.isoformat().replace("+00:00", "Z")
+    assert pinned_stats["preferredNativeRunPinned"] is True
+    assert pinned_stats.get("rejectedStaleRun") is not True
+
+    # Candidate retention has its own 96-hour bound.  Tightening ordinary
+    # run maturity to 118 hours must not reset a partially processed preferred
+    # candidate that still has 107 valid future hours.
+    stricter_selected_run, stricter_stats = producer.select_forecast_run(
+        {
+            older_run.isoformat().replace("+00:00", "Z"): [{
+                "valid": (older_run + timedelta(hours=120))
+                .isoformat().replace("+00:00", "Z"),
+            }],
+            middle_run.isoformat().replace("+00:00", "Z"): [{
+                "valid": (middle_run + timedelta(hours=120))
+                .isoformat().replace("+00:00", "Z"),
+            }],
+            newest_run.isoformat().replace("+00:00", "Z"): [{
+                "valid": (newest_run + timedelta(hours=30))
+                .isoformat().replace("+00:00", "Z"),
+            }],
+        },
+        older_run.isoformat().replace("+00:00", "Z"),
+        now_epoch=preferred_reference.timestamp(),
+        retention_horizon_hours=118,
+        retain_preferred_run=True,
+    )
+    assert stricter_selected_run == older_run.isoformat().replace("+00:00", "Z")
+    assert stricter_stats["runRetentionHorizonHours"] == 118
+    assert stricter_stats["selectedRunFutureHorizonHours"] == 107.0
+    assert stricter_stats["preferredProgressiveRunPinned"] is True
+
+    # A bounded candidate pin may exceed one observed cadence, but it must
+    # never overrule explicit evidence that the complete STAC catalog is stale.
+    stale_catalog_reference = older_run + timedelta(hours=20)
+    producer.time.time = lambda: stale_catalog_reference.timestamp()
+    stale_catalog_hours = set(
+        producer.operational_current_valid_times(stale_catalog_reference)
+    )
+    stale_catalog_end = max(stale_catalog_hours, key=producer.epoch)
+    stale_selected_run, stale_assets, stale_stats = producer.list_latest_assets(
+        "dkss_idw",
+        older_run.isoformat().replace("+00:00", "Z"),
+        minimum_valid_time=stale_catalog_reference.isoformat().replace(
+            "+00:00", "Z"
+        ),
+        required_valid_times=stale_catalog_hours,
+        required_horizon_end_time=stale_catalog_end,
+        allow_documented_required_gaps=True,
+        retain_preferred_native_run=True,
+    )
+    assert stale_selected_run is None
+    assert stale_assets == []
+    assert stale_stats["preferredNativeRunPinned"] is True
+    assert stale_stats["catalogScheduleFresh"] is False
+    assert stale_stats["rejectedStaleRun"] is True
+
+    # Retention is bounded by the configured complete horizon.  A preferred
+    # native run can still expose its exact +120 endpoint while having less
+    # than 96 future hours left; it must then yield to a newer mature run.
+    expired_preferred_reference = older_run + timedelta(hours=25)
+    newer_mature_run = older_run + timedelta(hours=18)
+    newer_mature_items = [
+        stac_item(newer_mature_run, lead) for lead in range(121)
+    ]
+    producer.time.time = lambda: expired_preferred_reference.timestamp()
+    producer.request_json = lambda *_args, **_kwargs: {
+        "features": [*newer_mature_items, *older_items],
+    }
+    expired_preferred_hours = set(
+        producer.operational_current_valid_times(expired_preferred_reference)
+    )
+    expired_preferred_end = max(expired_preferred_hours, key=producer.epoch)
+    bounded_selected_run, _, bounded_stats = producer.list_latest_assets(
+        "dkss_idw",
+        older_run.isoformat().replace("+00:00", "Z"),
+        minimum_valid_time=expired_preferred_reference.isoformat().replace(
+            "+00:00", "Z"
+        ),
+        required_valid_times=expired_preferred_hours,
+        required_horizon_end_time=expired_preferred_end,
+        allow_documented_required_gaps=True,
+        retain_preferred_native_run=True,
+    )
+    assert bounded_selected_run == newer_mature_run.isoformat().replace(
+        "+00:00", "Z"
+    )
+    assert bounded_stats["selectedRunFutureHorizonHours"] == 113.0
+    assert bounded_stats["preferredProgressiveRunPinned"] is False
+    assert bounded_stats["preferredProgressiveRunDiscardedAsStale"] is True
+    assert bounded_stats["preferredNativeRunPinned"] is False
 finally:
     producer.request_json = original_request_json
     producer.time.time = original_time

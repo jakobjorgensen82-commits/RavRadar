@@ -532,8 +532,16 @@ assert.match(updater, /const DEPLOYED_DMI_BULK_CACHE_PATH = '\.cache\/deployed-d
   'the immutable deployed DMI lineage must use its own private path');
 assert.match(updater, /readDmiBulkCache\(DEPLOYED_DMI_BULK_CACHE_PATH\)/,
   'the immutable deployed cache must be read separately from progressive output');
-assert.match(bulkUpdater, /OUTPUT_PATH = ROOT \/ "data\/live\/dmi-bulk-cache\.json"/,
-  'the DMI producer must continue writing only the progressive cache');
+assert.match(
+  bulkUpdater,
+  /OUTPUT_PATH = pathlib\.Path\(os\.getenv\([\s\S]{0,120}"DMI_BULK_OUTPUT_PATH"[\s\S]{0,120}data\/live\/dmi-bulk-cache\.json/,
+  'the DMI producer must default to the active working cache while permitting an isolated candidate output path',
+);
+assert.match(
+  bulkUpdater,
+  /PROMOTION_PATH = \([\s\S]{0,160}"DMI_BULK_PROMOTION_PATH"/,
+  'the DMI producer must keep READY promotion separate from candidate progress output',
+);
 assert.match(bulkUpdater, /DMI_BULK_DEPLOYED_FALLBACK_PATH/,
   'the DMI producer must consume the immutable deployed cache through its explicit fallback path');
 assert.doesNotMatch(updater, /evaluateRavScoreCandidateG|buildCandidateGDerivedStateSeries|calculateRavScore/,
@@ -798,7 +806,7 @@ const dmiBulkStep = workflowStep('Update DMI bulk model cache');
 const firstCutoverGuard = "steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'";
 assert.ok(
   dmiBulkStep.block.includes('continue-on-error: true'),
-  'the DMI producer must yield control after a real failure so its progressive cache can be saved before the cutover gate fails closed',
+  'the DMI producer must yield control after a real failure so bounded side-cache progress can be saved before the cutover gate fails closed',
 );
 assert.ok(
   centralApplyStep.start < activeRegistryStep.start
@@ -926,24 +934,129 @@ assert.ok(
   'the WAM completion gate must validate the same resolver target as the producer',
 );
 
-const progressiveDmiSaveStep = workflowStep(
-  'Save progressive private DMI zone cache',
+const activeDmiRestoreStep = workflowStep(
+  'Restore last complete active DMI generation',
+);
+const activeDmiMaterializeStep = workflowStep(
+  'Strictly bind and materialize the active DMI generation',
+);
+const candidateDmiRestoreStep = workflowStep(
+  'Restore isolated DMI candidate progress for normal maintenance',
+);
+const candidateDmiStateStep = workflowStep(
+  'Inspect isolated DMI candidate progress for normal maintenance',
+);
+const candidateDmiSaveStep = workflowStep(
+  'Save isolated DMI candidate progress before any terminal decision',
+);
+const dmiTerminalGateStep = workflowStep(
+  'Require successful DMI producer before current supplement',
+);
+const activeDmiSnapshotStep = workflowStep(
+  'Strictly snapshot the maintained READY active DMI generation',
+);
+const activeDmiSaveStep = workflowStep(
+  'Save the maintained complete active DMI generation',
 );
 assert.ok(
-  dmiBulkStep.start < progressiveDmiSaveStep.start
-    && progressiveDmiSaveStep.start < wamGateStep.start,
-  'the progressive cache must be saved after DMI work and before the fail-closed WAM completion gate',
+  activeDmiRestoreStep.start < activeDmiMaterializeStep.start
+    && activeDmiMaterializeStep.start < candidateDmiRestoreStep.start
+    && candidateDmiRestoreStep.start < candidateDmiStateStep.start
+    && candidateDmiStateStep.start < dmiBulkStep.start
+    && dmiBulkStep.start < candidateDmiSaveStep.start
+    && candidateDmiSaveStep.start < dmiTerminalGateStep.start
+    && dmiTerminalGateStep.start < activeDmiSnapshotStep.start
+    && activeDmiSnapshotStep.start < activeDmiSaveStep.start
+    && activeDmiSaveStep.start < wamGateStep.start,
+  'normal maintenance must restore strict active, continue isolated candidate progress, then promote and save only READY active state',
+);
+assert.match(
+  activeDmiRestoreStep.block,
+  /path: \.cache\/dmi-active-complete\.json[\s\S]*key: dmi-zone-active-v1-/,
+  'normal maintenance must restore only the strict active family as its donor',
 );
 assert.ok(
-  progressiveDmiSaveStep.block.includes(
-    "if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''",
-  ),
-  'a real partial DMI cache must be saved after a failed producer so the next run can continue',
+  activeDmiMaterializeStep.block.includes(
+    "test \"$(jq -r '.diagnostics.currentOperationalLedger.ready' \"$source_path\")\" = true",
+  )
+    && activeDmiMaterializeStep.block.includes(
+      'python scripts/build-copernicus-target-registry.py',
+    )
+    && activeDmiMaterializeStep.block.includes(
+      'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
+    ),
+  'the active donor must be READY, registry-valid and materialized as the working fallback before candidate continuation',
+);
+assert.match(
+  candidateDmiRestoreStep.block,
+  /path: \.cache\/dmi-candidate-progress\.json[\s\S]*key: dmi-zone-candidate-v1-[\s\S]*restore-keys:[\s\S]*dmi-zone-candidate-v1-/,
+  'normal maintenance must restore the shared isolated candidate-v1 family',
+);
+assert.ok(
+  candidateDmiStateStep.block.includes("jq -r '.diagnostics.currentOperationalLedger.ready == true'")
+    && candidateDmiStateStep.block.includes('echo "retain_preferred=true"')
+    && candidateDmiStateStep.block.includes('echo "retain_preferred=false"'),
+  'normal maintenance must retain only an unfinished candidate run and permit a READY candidate to roll forward',
+);
+for (const marker of [
+  'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
+  'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
+  'DMI_BULK_PREFER_OUTPUT_CACHE: true',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
+]) {
+  assert.ok(
+    dmiBulkStep.block.includes(marker),
+    `normal candidate producer contract marker: ${marker}`,
+  );
+}
+assert.ok(
+  candidateDmiSaveStep.block.includes('if: always()')
+    && candidateDmiSaveStep.block.includes("steps.dmi-bulk.outcome != 'cancelled'")
+    && candidateDmiSaveStep.block.includes("hashFiles('.cache/dmi-candidate-progress.json') != ''"),
+  'normal maintenance must persist every non-cancelled candidate checkpoint before its terminal gate',
+);
+assert.match(
+  candidateDmiSaveStep.block,
+  /path: \.cache\/dmi-candidate-progress\.json[\s\S]*key: dmi-zone-candidate-v1-/,
+  'normal partial progress must stay in the shared candidate-v1 family',
+);
+assert.ok(
+  dmiTerminalGateStep.block.includes('test "$code" = "DMI_READY"')
+    && dmiTerminalGateStep.block.includes('test "$STRICT_CURRENT_ANCHOR_READY" = "true"'),
+  'normal active promotion must remain downstream of an exact DMI_READY terminal decision',
+);
+assert.ok(
+  activeDmiSnapshotStep.block.includes(
+    "steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
+  )
+    && activeDmiSnapshotStep.block.includes(
+      "test \"$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)\" = true",
+    )
+    && activeDmiSnapshotStep.block.includes(
+      'python scripts/build-copernicus-target-registry.py',
+    )
+    && activeDmiSnapshotStep.block.includes(
+      'cp data/live/dmi-bulk-cache.json .cache/dmi-active-complete.json.tmp',
+    ),
+  'normal maintenance must snapshot active only after READY candidate promotion and exact registry validation',
+);
+assert.ok(
+  activeDmiSaveStep.block.includes(
+    "steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
+  )
+    && !activeDmiSaveStep.block.includes('if: always()'),
+  'normal maintenance must save active only after both DMI_READY and candidate promotion',
+);
+assert.match(
+  activeDmiSaveStep.block,
+  /path: \.cache\/dmi-active-complete\.json[\s\S]*key: dmi-zone-active-v1-/,
+  'normal maintenance must publish only the validated READY snapshot under the active family',
 );
 assert.doesNotMatch(
-  progressiveDmiSaveStep.block,
-  /success\(\)|dmi-bulk\.outcome\s*(?:==|!=)\s*'failure'|dmi-bulk\.outcome\s*==\s*'success'/,
-  'progressive DMI cache persistence must not be restricted to a fully successful producer',
+  productionWorkflows.build,
+  /Save progressive private DMI zone cache|dmi-zone-cache-v1-\$\{\{\s*runner\.os\s*\}\}/,
+  'the old dynamic partial-active cache family must remain forbidden in normal maintenance',
 );
 
 const pointCandidateStep = workflowStep(

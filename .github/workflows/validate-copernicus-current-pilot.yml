@@ -64,20 +64,36 @@ jobs:
           python scripts/apply-central-zone-reviews.py
           node scripts/build-public-coastal-parts-v2.mjs
 
-      - name: Restore latest progressive private DMI coverage for target selection
+      - name: Restore complete active DMI coverage for target selection
         id: dmi-coverage-cache
         uses: actions/cache/restore@v6
         with:
-          path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-${{ runner.os }}-copernicus-pilot-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-copernicus-pilot-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            dmi-zone-cache-v1-${{ runner.os }}-
+            dmi-zone-active-v1-${{ runner.os }}-
+
+      - name: Bootstrap pilot selection from the exact known READY legacy DMI generation
+        id: dmi-coverage-legacy-bootstrap
+        if: steps.dmi-coverage-cache.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v6
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1
+
+      - name: Materialize restored active DMI coverage
+        if: steps.dmi-coverage-cache.outputs.cache-matched-key != ''
+        shell: bash
+        run: |
+          test -s .cache/dmi-active-complete.json
+          mkdir -p data/live
+          cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
 
       - name: Inspect private DMI coverage availability
         id: dmi-coverage
         shell: bash
         env:
-          MATCHED_CACHE_KEY: ${{ steps.dmi-coverage-cache.outputs.cache-matched-key }}
+          MATCHED_CACHE_KEY: ${{ steps.dmi-coverage-cache.outputs.cache-matched-key || steps.dmi-coverage-legacy-bootstrap.outputs.cache-matched-key }}
         run: |
           if test -n "$MATCHED_CACHE_KEY" && test -f data/live/dmi-bulk-cache.json; then
             echo "available=true" >> "$GITHUB_OUTPUT"
@@ -433,7 +449,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -449,14 +465,88 @@ jobs:
             dmi-grib-v4-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
             dmi-grib-v4-${{ runner.os }}-
 
-      - name: Restore progressive private DMI zone cache
+      - name: Restore last complete active DMI generation
+        id: dmi-active-restore
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
+            dmi-zone-active-v1-${{ runner.os }}-
+
+      - name: Bootstrap the exact known READY legacy DMI generation
+        id: dmi-active-legacy-bootstrap
+        if: steps.dmi-active-restore.outputs.cache-matched-key == ''
         uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1
+          fail-on-cache-miss: true
+
+      - name: Strictly bind and materialize the active DMI generation
+        shell: bash
+        run: |
+          mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
+          if test -n "${{ steps.dmi-active-restore.outputs.cache-matched-key }}"; then
+            source_path=.cache/dmi-active-complete.json
+          else
+            source_path=data/live/dmi-bulk-cache.json
+          fi
+          test -s "$source_path"
+          reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
+          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
+          python scripts/build-copernicus-target-registry.py \
+            --targets data/live/coastal-parts-v2.json \
+            --dmi "$source_path" \
+            --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
+            --at "$reference"
+          cp "$source_path" .cache/dmi-active-complete.json.tmp
+          mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
+          cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+
+      - name: Restore isolated DMI candidate progress
+        id: dmi-candidate-restore
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
+            dmi-zone-candidate-v1-${{ runner.os }}-
+
+      - name: Restore legacy DMI progress only as an isolated candidate
+        id: dmi-candidate-legacy-restore
+        if: steps.dmi-candidate-restore.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v6
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-candidate-legacy-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
             dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-
             dmi-zone-cache-v1-${{ runner.os }}-
+
+      - name: Isolate restored candidate and restore active working copy
+        id: dmi-candidate-state
+        shell: bash
+        run: |
+          if test -z "${{ steps.dmi-candidate-restore.outputs.cache-matched-key }}" \
+              && test -n "${{ steps.dmi-candidate-legacy-restore.outputs.cache-matched-key }}"; then
+            cp data/live/dmi-bulk-cache.json .cache/dmi-candidate-progress.json.tmp
+            mv .cache/dmi-candidate-progress.json.tmp .cache/dmi-candidate-progress.json
+          fi
+          cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+          if test -s .cache/dmi-candidate-progress.json; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            if test "$(jq -r '.diagnostics.currentOperationalLedger.ready // false' .cache/dmi-candidate-progress.json)" = true; then
+              echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "retain_preferred=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Restore private regional current evidence for normal maintenance
         uses: actions/cache/restore@v6
@@ -484,6 +574,10 @@ jobs:
         timeout-minutes: 55
         run: python -u scripts/run-dmi-oneoff-fill.py
         env:
+          DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
+          DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
+          DMI_BULK_PREFER_OUTPUT_CACHE: true
+          DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -499,11 +593,11 @@ jobs:
           DMI_BULK_COMPLETE_HORIZON_HOURS: 118
           DMI_BULK_FORCE_REFRESH: false
           DMI_BULK_RAW_DIR: .cache/dmi-grib
-          DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
+          DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -513,12 +607,34 @@ jobs:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Save progressive DMI zone cache before any terminal decision
-        if: always() && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''
+      - name: Save isolated DMI candidate progress before any terminal decision
+        if: always() && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('.cache/dmi-candidate-progress.json') != ''
         uses: actions/cache/save@v6
         with:
-          path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Strictly snapshot only a promoted READY DMI generation
+        if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/live/dmi-bulk-cache.json
+          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
+          python scripts/build-copernicus-target-registry.py \
+            --targets data/live/coastal-parts-v2.json \
+            --dmi data/live/dmi-bulk-cache.json \
+            --output "$RUNNER_TEMP/dmi-promoted-proof.json" \
+            --at "${{ steps.operational-target.outputs.target_hour }}"
+          cp data/live/dmi-bulk-cache.json .cache/dmi-active-complete.json.tmp
+          mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
+
+      - name: Save the promoted complete active DMI generation
+        if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save private regional current evidence before any terminal decision
         if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/current-field-shadow.json') != ''
@@ -679,7 +795,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

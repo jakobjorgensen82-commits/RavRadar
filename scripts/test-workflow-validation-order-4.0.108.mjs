@@ -202,7 +202,8 @@ for (const marker of [
   'python scripts/test-copernicus-current-pilot.py',
   'python scripts/test-copernicus-shadow-retention-4.0.232.py',
   'python scripts/test-current-regional-proxy-policy.py',
-  'dmi-zone-cache-v1-${{ runner.os }}-',
+  'dmi-zone-active-v1-${{ runner.os }}-',
+  'dmi-zone-candidate-v1-${{ runner.os }}-',
   'python scripts/run-copernicus-current-pilot-with-retry.py',
   'python scripts/check-copernicus-current-range.py',
   'copernicus-current-progress-v3-',
@@ -365,11 +366,18 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Hydrate an optional independent deployed Candidate G DMI donor'),
   operationalPreflight.indexOf('--root "$donor_root"'),
   operationalPreflight.indexOf('cp "$donor_root/data/live/dmi-bulk-cache.json" .cache/deployed-dmi-bulk-cache.json'),
-  operationalPreflight.indexOf('name: Restore progressive private DMI zone cache'),
+  operationalPreflight.indexOf('name: Restore last complete active DMI generation'),
+  operationalPreflight.indexOf('name: Bootstrap the exact known READY legacy DMI generation'),
+  operationalPreflight.indexOf('name: Strictly bind and materialize the active DMI generation'),
+  operationalPreflight.indexOf('name: Restore isolated DMI candidate progress'),
+  operationalPreflight.indexOf('name: Restore legacy DMI progress only as an isolated candidate'),
+  operationalPreflight.indexOf('name: Isolate restored candidate and restore active working copy'),
   operationalPreflight.indexOf('name: Restore private regional current evidence for normal maintenance'),
   operationalPreflight.indexOf('name: Refresh all bounded official DMI collections for the proof'),
   operationalPreflight.indexOf('name: Save progressed DMI GRIB cache before any terminal decision'),
-  operationalPreflight.indexOf('name: Save progressive DMI zone cache before any terminal decision'),
+  operationalPreflight.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
+  operationalPreflight.indexOf('name: Strictly snapshot only a promoted READY DMI generation'),
+  operationalPreflight.indexOf('name: Save the promoted complete active DMI generation'),
   operationalPreflight.indexOf('name: Save private regional current evidence before any terminal decision'),
   operationalPreflight.indexOf('name: "Require DMI production ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
@@ -398,6 +406,100 @@ if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
   throw new Error('Operational-118-preflight skal følge DMI→Copernicus→source-stage-disposition→Open-Meteo-rest→friskhed→closure→live current→update:weather→provenance→integrated audit.');
 }
+const oneoffActiveRestore = operationalStep('Restore last complete active DMI generation');
+for (const marker of [
+  'id: dmi-active-restore',
+  'path: .cache/dmi-active-complete.json',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-',
+  'restore-keys: |',
+  'dmi-zone-active-v1-${{ runner.os }}-',
+]) {
+  assert.ok(oneoffActiveRestore.includes(marker), 'Engangskørslens aktive DMI-restore mangler ' + marker);
+}
+const oneoffActiveLegacyBootstrap = operationalStep('Bootstrap the exact known READY legacy DMI generation');
+for (const marker of [
+  'id: dmi-active-legacy-bootstrap',
+  "if: steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  'path: data/live/dmi-bulk-cache.json',
+  'key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1',
+  'fail-on-cache-miss: true',
+]) {
+  assert.ok(oneoffActiveLegacyBootstrap.includes(marker), 'Engangskørslens READY-bootstrap mangler ' + marker);
+}
+const oneoffActiveMaterialize = operationalStep('Strictly bind and materialize the active DMI generation');
+for (const marker of [
+  'source_path=.cache/dmi-active-complete.json',
+  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'python scripts/build-copernicus-target-registry.py',
+  'cp "$source_path" .cache/dmi-active-complete.json.tmp',
+  'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
+]) {
+  assert.ok(oneoffActiveMaterialize.includes(marker), 'Engangskørslens aktive READY-materialisering mangler ' + marker);
+}
+const oneoffCandidateRestore = operationalStep('Restore isolated DMI candidate progress');
+for (const marker of [
+  'id: dmi-candidate-restore',
+  'path: .cache/dmi-candidate-progress.json',
+  'dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-',
+  'dmi-zone-candidate-v1-${{ runner.os }}-',
+]) {
+  assert.ok(oneoffCandidateRestore.includes(marker), 'Engangskørslens kandidat-restore mangler ' + marker);
+}
+const oneoffCandidateLegacyRestore = operationalStep('Restore legacy DMI progress only as an isolated candidate');
+for (const marker of [
+  'id: dmi-candidate-legacy-restore',
+  "if: steps.dmi-candidate-restore.outputs.cache-matched-key == ''",
+  'key: dmi-zone-candidate-legacy-${{ runner.os }}-',
+  'dmi-zone-cache-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-',
+]) {
+  assert.ok(oneoffCandidateLegacyRestore.includes(marker), 'Engangskørslens legacy-kandidatisolering mangler ' + marker);
+}
+const oneoffCandidateState = operationalStep('Isolate restored candidate and restore active working copy');
+for (const marker of [
+  'id: dmi-candidate-state',
+  'mv .cache/dmi-candidate-progress.json.tmp .cache/dmi-candidate-progress.json',
+  'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
+  "jq -r '.diagnostics.currentOperationalLedger.ready // false' .cache/dmi-candidate-progress.json",
+  'echo "retain_preferred=true" >> "$GITHUB_OUTPUT"',
+]) {
+  assert.ok(oneoffCandidateState.includes(marker), 'Engangskørslens kandidatstate mangler ' + marker);
+}
+for (const marker of [
+  'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
+  'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
+  'DMI_BULK_PREFER_OUTPUT_CACHE: true',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
+]) {
+  assert.ok(dmiAcquisitionStep.includes(marker), 'Engangskørslens kandidatproducer mangler ' + marker);
+}
+const oneoffCandidateSave = operationalStep('Save isolated DMI candidate progress before any terminal decision');
+for (const marker of [
+  "if: always() && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('.cache/dmi-candidate-progress.json') != ''",
+  'path: .cache/dmi-candidate-progress.json',
+  'key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-',
+]) {
+  assert.ok(oneoffCandidateSave.includes(marker), 'Engangskørslens delvise kandidat-save mangler ' + marker);
+}
+const oneoffActiveSnapshot = operationalStep('Strictly snapshot only a promoted READY DMI generation');
+for (const marker of [
+  "if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
+  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  '--at "${{ steps.operational-target.outputs.target_hour }}"',
+  'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
+]) {
+  assert.ok(oneoffActiveSnapshot.includes(marker), 'Engangskørslens READY-promovering mangler ' + marker);
+}
+const oneoffActiveSave = operationalStep('Save the promoted complete active DMI generation');
+for (const marker of [
+  "if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''",
+  'path: .cache/dmi-active-complete.json',
+  'key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-',
+]) {
+  assert.ok(oneoffActiveSave.includes(marker), 'Engangskørslens aktive READY-save mangler ' + marker);
+}
+assert.ok(!oneoffCandidateSave.includes('dmi-zone-active-v1-'), 'Delvis kandidatfremdrift må aldrig gemmes i den aktive cachefamilie.');
+assert.ok(!oneoffActiveSave.includes('dmi-zone-candidate-v1-'), 'Den aktive READY-generation må aldrig gemmes i kandidatfamilien.');
 if (!operationalPreflight.includes(
   'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
 )) {
@@ -418,7 +520,7 @@ if (operationalPreflight.includes('test "$(date -u +%Y-%m-%dT%H:00:00Z)" = "$RAV
 }
 for (const saveName of [
   'Save progressed DMI GRIB cache before any terminal decision',
-  'Save progressive DMI zone cache before any terminal decision',
+  'Save isolated DMI candidate progress before any terminal decision',
   'Save private regional current evidence before any terminal decision',
 ]) {
   const start = operationalPreflight.indexOf(`name: ${saveName}`);
@@ -739,11 +841,18 @@ const positions = {
   legacySourceFetch: text.indexOf('name: Fetch exact public Candidate G source commit for first cutover attestation'),
   legacySourceAttestation: text.indexOf('name: Seal privacy-safe local attestation of the legacy Candidate G source'),
   sourceGate: text.indexOf('name: Run fast source gate before expensive data refresh'),
+  dmiActiveRestore: text.indexOf('name: Restore last complete active DMI generation'),
+  dmiActiveLegacyBootstrap: text.indexOf('name: Bootstrap the exact known READY legacy DMI generation'),
+  dmiActiveMaterialize: text.indexOf('name: Strictly bind and materialize the active DMI generation'),
+  dmiCandidateRestore: text.indexOf('name: Restore isolated DMI candidate progress for normal maintenance'),
+  dmiCandidateState: text.indexOf('name: Inspect isolated DMI candidate progress for normal maintenance'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
-  dmiZoneSave: text.indexOf('name: Save progressive private DMI zone cache'),
+  dmiCandidateSave: text.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
   dmiShadowSave: text.indexOf('name: Save private seven-day current-field research cache'),
   dmiTerminalGate: text.indexOf('name: Require successful DMI producer before current supplement'),
+  dmiActiveSnapshot: text.indexOf('name: Strictly snapshot the maintained READY active DMI generation'),
+  dmiActiveSave: text.indexOf('name: Save the maintained complete active DMI generation'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
   resolvedCurrentHour: text.indexOf('name: Bind production to resolved DMI current hour'),
   copernicusInspect: text.indexOf('name: Inspect target-bound Copernicus source stage after fresh DMI'),
@@ -800,11 +909,18 @@ const expected = [
   'legacyCutoverImport',
   'legacySourceAttestation',
   'sourceGate',
+  'dmiActiveRestore',
+  'dmiActiveLegacyBootstrap',
+  'dmiActiveMaterialize',
+  'dmiCandidateRestore',
+  'dmiCandidateState',
   'dmiBulk',
   'dmiGribSave',
-  'dmiZoneSave',
+  'dmiCandidateSave',
   'dmiShadowSave',
   'dmiTerminalGate',
+  'dmiActiveSnapshot',
+  'dmiActiveSave',
   'targetedCopernicus',
   'resolvedCurrentHour',
   'copernicusInspect',
@@ -854,7 +970,78 @@ if (!dmiProducerBlock.includes('id: dmi-bulk')
   || !dmiProducerBlock.includes('continue-on-error: true')) {
   throw new Error('DMI-producenten skal forblive continue-on-error indtil progressionscaches er gemt.');
 }
-for (const positionName of ['dmiGribSave', 'dmiZoneSave', 'dmiShadowSave']) {
+for (const marker of [
+  'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
+  'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
+  'DMI_BULK_PREFER_OUTPUT_CACHE: true',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  "DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '3' }}",
+  'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
+]) {
+  if (!dmiProducerBlock.includes(marker)) throw new Error('Normal DMI-vedligeholdelse mangler ' + marker);
+}
+const normalActiveRestore = text.slice(positions.dmiActiveRestore, positions.dmiActiveLegacyBootstrap);
+for (const marker of [
+  'id: dmi-active-restore',
+  'path: .cache/dmi-active-complete.json',
+  'dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-',
+]) {
+  if (!normalActiveRestore.includes(marker)) throw new Error('Normal aktiv DMI-restore mangler ' + marker);
+}
+assert.ok(
+  !normalActiveRestore.includes('dmi-zone-cache-v1-${{ runner.os }}-'),
+  'Normal aktiv DMI-restore må ikke bruge en generisk legacy-wildcard.',
+);
+const normalActiveLegacyBootstrap = text.slice(positions.dmiActiveLegacyBootstrap, positions.dmiActiveMaterialize);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  'path: data/live/dmi-bulk-cache.json',
+  'key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1',
+  'fail-on-cache-miss: true',
+]) {
+  if (!normalActiveLegacyBootstrap.includes(marker)) throw new Error('Normal READY-bootstrap mangler ' + marker);
+}
+const normalActiveMaterialize = text.slice(positions.dmiActiveMaterialize, positions.dmiCandidateRestore);
+for (const marker of [
+  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
+  'python scripts/build-copernicus-target-registry.py',
+  'cp "$source_path" .cache/dmi-active-complete.json.tmp',
+  'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
+]) {
+  if (!normalActiveMaterialize.includes(marker)) throw new Error('Normal aktiv READY-materialisering mangler ' + marker);
+}
+const normalCandidateRestore = text.slice(positions.dmiCandidateRestore, positions.dmiCandidateState);
+for (const marker of [
+  'id: dmi-candidate-restore',
+  'path: .cache/dmi-candidate-progress.json',
+  'key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-normal-${{ github.run_id }}-${{ github.run_attempt }}',
+  'restore-keys: |',
+  'dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-',
+  'dmi-zone-candidate-v1-${{ runner.os }}-',
+]) {
+  if (!normalCandidateRestore.includes(marker)) throw new Error('Normal kandidat-restore mangler ' + marker);
+}
+assert.ok(
+  normalCandidateRestore.indexOf('            dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-\n')
+    < normalCandidateRestore.indexOf('            dmi-zone-candidate-v1-${{ runner.os }}-\n'),
+  'Normal kandidat-restore skal prøve samme generation før den generiske OS-familie.',
+);
+const normalCandidateState = text.slice(positions.dmiCandidateState, positions.dmiBulk);
+for (const marker of [
+  'id: dmi-candidate-state',
+  'if test -s .cache/dmi-candidate-progress.json; then',
+  'echo "exists=true" >> "$GITHUB_OUTPUT"',
+  "jq -r '.diagnostics.currentOperationalLedger.ready == true' .cache/dmi-candidate-progress.json",
+  'echo "retain_preferred=false" >> "$GITHUB_OUTPUT"',
+  'echo "retain_preferred=true" >> "$GITHUB_OUTPUT"',
+  'echo "exists=false" >> "$GITHUB_OUTPUT"',
+]) {
+  if (!normalCandidateState.includes(marker)) throw new Error('Normal kandidat-state mangler ' + marker);
+}
+if (normalCandidateState.includes('data/live/dmi-bulk-cache.json')) {
+  throw new Error('Kandidatinspektionen må ikke erstatte den aktive DMI-generation før promotion.');
+}
+for (const positionName of ['dmiGribSave', 'dmiCandidateSave', 'dmiShadowSave']) {
   const start = positions[positionName];
   const end = text.indexOf('\n      - name:', start + 1);
   const block = text.slice(start, end < 0 ? text.length : end);
@@ -862,6 +1049,41 @@ for (const positionName of ['dmiGribSave', 'dmiZoneSave', 'dmiShadowSave']) {
     || !block.includes("steps.dmi-bulk.outcome != 'cancelled'")) {
     throw new Error(`${positionName} skal gemme ikke-annulleret DMI-progression før terminalbeslutningen.`);
   }
+}
+const normalCandidateSave = text.slice(positions.dmiCandidateSave, positions.dmiShadowSave);
+for (const marker of [
+  "hashFiles('.cache/dmi-candidate-progress.json') != ''",
+  'path: .cache/dmi-candidate-progress.json',
+  'key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-normal-${{ github.run_id }}-${{ github.run_attempt }}',
+]) {
+  if (!normalCandidateSave.includes(marker)) throw new Error('Normal kandidat-save mangler ' + marker);
+}
+assert.ok(!normalCandidateSave.includes('dmi-zone-active-v1-'), 'Delvis normal kandidatfremdrift må aldrig gemmes i den aktive cachefamilie.');
+const normalActiveSnapshot = text.slice(positions.dmiActiveSnapshot, positions.dmiActiveSave);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
+  'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
+  'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
+]) {
+  if (!normalActiveSnapshot.includes(marker)) throw new Error('Normal READY-snapshot mangler ' + marker);
+}
+const normalActiveSaveEnd = text.indexOf('\n      - name:', positions.dmiActiveSave + 1);
+const normalActiveSave = text.slice(
+  positions.dmiActiveSave,
+  normalActiveSaveEnd < 0 ? text.length : normalActiveSaveEnd,
+);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''",
+  'path: .cache/dmi-active-complete.json',
+  'key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-',
+]) {
+  if (!normalActiveSave.includes(marker)) throw new Error('Normal aktiv READY-save mangler ' + marker);
+}
+assert.ok(!normalActiveSave.includes('dmi-zone-candidate-v1-'), 'Normal aktiv READY-generation må aldrig gemmes i kandidatfamilien.');
+if (buildWorkflow.includes('name: Save progressive private DMI zone cache')
+  || buildWorkflow.includes('key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}')) {
+  throw new Error('Normal drift må ikke gemme partiel progression i den gamle aktive dmi-zone-cache-v1-familie.');
 }
 const dmiTerminalBlock = text.slice(
   positions.dmiTerminalGate,

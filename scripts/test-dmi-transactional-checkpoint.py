@@ -665,6 +665,52 @@ class CheckpointTests(unittest.TestCase):
 
         self.assertEqual(calls, [("cache", True), ("diagnostics", "ok")])
 
+    def test_candidate_promotion_is_atomic_and_ready_only(self) -> None:
+        document = {
+            "refreshStatus": "ok",
+            "privateReplayRetentionHours": 60,
+            "zones": {
+                "PART::example": {
+                    "hourly": {
+                        "2026-09-03T12:00:00Z": {
+                            "wave-height": 0.8,
+                            "current-u": 0.1,
+                            "current-v": -0.2,
+                        }
+                    }
+                }
+            },
+            "diagnostics": {"currentOperationalLedger": {"ready": True}},
+        }
+        with tempfile.TemporaryDirectory(prefix="ravradar-dmi-promote-") as raw:
+            root = Path(raw)
+            candidate = root / "candidate.json"
+            active = root / "active.json"
+            sticky = Mock()
+            with (
+                patch.object(producer, "OUTPUT_PATH", candidate),
+                patch.object(producer, "PROMOTION_PATH", active),
+                patch.object(producer, "write_sticky_github_output", sticky),
+            ):
+                self.assertFalse(producer.promote_ready_candidate(
+                    document,
+                    strict_current_anchor_available=False,
+                    producer_success_is_blocked=True,
+                ))
+                self.assertFalse(active.exists())
+                self.assertTrue(producer.promote_ready_candidate(
+                    document,
+                    strict_current_anchor_available=True,
+                    producer_success_is_blocked=False,
+                ))
+            self.assertEqual(json.loads(active.read_text("utf-8")), document)
+            self.assertEqual(
+                len(json.loads(active.read_text("utf-8"))["zones"]["PART::example"]["hourly"]),
+                1,
+            )
+            self.assertFalse(active.with_name(active.name + ".tmp").exists())
+            sticky.assert_called_once_with("candidate_promoted", "true")
+
 
 if __name__ == "__main__":
     unittest.main()

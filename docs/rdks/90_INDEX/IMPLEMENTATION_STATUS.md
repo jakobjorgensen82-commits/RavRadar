@@ -1,3 +1,20 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.324 active/candidate og fuld gapvedligeholdelse
+
+- [x] Lad både normal produktion og 118h-oneoff materialisere sidste strict READY-active som donor, men føre alt nyt DMI-arbejde gennem samme `dmi-zone-candidate-v1`-familie under fælles serialiserende production-concurrency.
+- [x] Bootstrap active fra den eksakte kendte READY-legacycache og afvis gamle wildcardhits som aktivt grundlag.
+- [x] Fasthold kun en partial kandidats native run over et seks timers modelskift, når den stadig har mindst normalt 96 timers moden/komplet fremtidshorisont og kataloget ikke er stale; manglende eller READY kandidat vælger nyeste komplette run, så intet pinnes til cirka +120 timers alder.
+- [x] Lad normal drift genbruge gyldige rækker og kontrollere hele target..+117 for interne huller, ugyldige/udløbne trin og hale.
+- [x] Hæv normal collectionramme til tre, så alle DKSS-currentfamilier kan lukke samme target før fallback.
+- [x] Gem ikke-annulleret partial kandidat før terminalen, men promover og gem active alene efter producer-success, allowlistet status, `DMI_READY`, strict anchor, `candidate_promoted=true` og eksakt registryvalidering.
+- [x] Bevar normal drift som updater; lad kun den store oneoff accelerere og fortsætte samme kandidatmekanisme.
+- [x] Bevar 48-timers modelhistorik samt DMI 60/minimum 54, rå zonehistorik 72 og Copernicus 168 timers retention; ingen syntese eller ændret leverandørrækkefølge.
+- [x] Bevar ekstern cron/watchdog, GitHub-reserveschedules og fælles production-concurrency uændret.
+- [x] Bestå den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
+- [x] Registrér exact-head-forsøg `33986893042`: alle kode- og kontrakttests var grønne, men releasegaten fejlede alene på manglende rootfil `CHANGELOG-4.0.324.md`. Runnet er rødt og er ikke sourcebevis.
+- [x] Registrér at den ejerbeordrede admin-bypass blev afvist af Codex-sikkerhedslaget, så ingen bypass eller merge skete. Run `33988058582` bestod releasegaten, men stoppede senere alene på håndbogs-/installationspariteten; den officielle synk retter én genereret SQL-payloadlinje.
+- [ ] Bestå ny exact-head og merge sikkert; verificér derefter første active-bootstrap/runtime, fuld produktionsgate og normal catch-up, og kør én stor kandidatopfyldning ad gangen til komplet 210/673/118.
+- [ ] Mål leverandørrækkefølge og tidsforbrug efter komplet opfyldning. Større pipeline-/kadenceændringer og modelaktivering forbliver efterfølgende arbejde.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.323 operationel currentclosure
 
 - [x] Partitionér de 984 kendte rester: 944 policypositioner til regional DMI, 40 udenfor direkte videre; bind efterfølgende regionale missing til samme Open-Meteo-plan.
@@ -154,7 +171,8 @@
 - [x] Klassificér runs `33510636195`/`33512163102` korrekt: nul DKSS-trin, men HARMONIE/WAM-behandling. Afvis derfor bred DMI-mangel som konklusion; `33498108421` er negativ cachelineage, ikke selvstændigt upstreambevis.
 - [x] Implementér den lokale rodrettelse: ét jobtarget bindes før DMI og består et UTC-timeskifte; ukendt cadence kan ikke fastholde en ældre preferred run foran en nyere moden; DKSS prioriteres og genbehandles i den normale loop uden strict anchor; en valgfri uafhængig deployed donor bruges kun efter strict kontrol, mens frisk officiel DMI kan fortsætte uden den.
 - [x] Klassificér `33520738058` som et sikkert negativt hard-gate-bevis og luk den yderligere fasefejl lokalt: tidlig `coastal_part_current_cache_reusable` bruger nu samme autoritative `samplingPoint` og top-level `current-u`/`current-v`-gridpar som den senere oprydning.
-- [x] Før samme beskyttelse ind i den nye models first cutover: den særskilt checkpointede WAM-historikbootstrap ligger fortsat før collection-loopet og kan fortsætte over flere forsøg. I den normale seks-collection-loop står DKSS foran WAM, når strict anchor mangler; ellers bevares WAM-first. Normal drift forbliver to collections. Bevar DMI-first og Copernicus alene som exact-gap-supplement.
+- [x] Før samme beskyttelse ind i den nye models first cutover: den særskilt checkpointede WAM-historikbootstrap ligger fortsat før collection-loopet og kan fortsætte over flere forsøg. I den normale seks-collection-loop står DKSS foran WAM, når strict anchor mangler; ellers bevares WAM-first. oormal drift forbliver to collections. Bevar DMI-first og Copernicus alene som exact-gap-supplement.
+- [x] **Historisk supersession:** To-collection-/preferred-run-delen i punktet ovenfor er afløst af DEC-0116 og den øverste 4.0.324-status; tre normale DKSS-collections og partial-only 96h/non-stale retention er gældende.
 - [x] Opdatér audit, activation, releasegate, workflow og de målrettede warmup/recovery/calibration/current/DMI-kontrakttests.
 - [x] Bestå de målrettede scheduler-/runvalg-, DKSS-recovery-, collectionbudget- og preflight-donor-/targetlås-tests på den samlede slutdiff samt Python-`py_compile`.
 - [ ] Kør den isolerede 118-timers datapreflight grønt på den nye eksakte kodehead; hverken `33498108421`, `33510636195`, `33512163102` eller `33520738058` beviser 673 × 118 currentdækning.

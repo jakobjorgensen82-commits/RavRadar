@@ -381,7 +381,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -539,7 +539,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -564,7 +564,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -727,15 +727,76 @@ jobs:
             dmi-grib-v4-${{ runner.os }}-
             dmi-grib-v3-${{ runner.os }}-
 
-      - name: Restore progressive private DMI zone cache
+      - name: Restore last complete active DMI generation
+        id: dmi-active-restore
         if: steps.preflight.outputs.should_run == 'true'
         uses: actions/cache/restore@v6
         with:
-          path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
-            dmi-zone-cache-v1-${{ runner.os }}-
+            dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
+            dmi-zone-active-v1-${{ runner.os }}-
+
+      - name: Bootstrap the exact known READY legacy DMI generation
+        id: dmi-active-legacy-bootstrap
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''
+        uses: actions/cache/restore@v6
+        with:
+          path: data/live/dmi-bulk-cache.json
+          key: dmi-zone-cache-v1-Linux-2026-W36-33984291027-1
+          fail-on-cache-miss: true
+
+      - name: Strictly bind and materialize the active DMI generation
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .cache data/live "$RUNNER_TEMP/dmi-active-proof"
+          if test -n "${{ steps.dmi-active-restore.outputs.cache-matched-key }}"; then
+            source_path=.cache/dmi-active-complete.json
+          else
+            source_path=data/live/dmi-bulk-cache.json
+          fi
+          test -s "$source_path"
+          reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
+          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
+          python scripts/build-copernicus-target-registry.py \
+            --targets data/live/coastal-parts-v2.json \
+            --dmi "$source_path" \
+            --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
+            --at "$reference"
+          cp "$source_path" .cache/dmi-active-complete.json.tmp
+          mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
+          cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
+
+      - name: Restore isolated DMI candidate progress for normal maintenance
+        id: dmi-candidate-restore
+        if: steps.preflight.outputs.should_run == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-
+            dmi-zone-candidate-v1-${{ runner.os }}-
+
+      - name: Inspect isolated DMI candidate progress for normal maintenance
+        id: dmi-candidate-state
+        if: steps.preflight.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          if test -s .cache/dmi-candidate-progress.json; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            if test "$(jq -r '.diagnostics.currentOperationalLedger.ready == true' .cache/dmi-candidate-progress.json)" = true; then
+              echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "retain_preferred=true" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Restore private seven-day current-field research cache
         if: steps.preflight.outputs.should_run == 'true'
@@ -753,6 +814,10 @@ jobs:
         timeout-minutes: 55
         run: python -u scripts/run-dmi-bulk-supervised.py
         env:
+          DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
+          DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
+          DMI_BULK_PREFER_OUTPUT_CACHE: true
+          DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '4096' || '2048' }}
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -760,7 +825,7 @@ jobs:
           DMI_BULK_FINALIZE_RESERVE_SECONDS: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '180' || '120' }}
           DMI_BULK_MAX_ASSETS_PER_COLLECTION: 130
           DMI_BULK_TIME_STRIDE_HOURS: 3
-          DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '2' }}
+          DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '3' }}
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
           DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180
           DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420
@@ -768,7 +833,7 @@ jobs:
           DMI_BULK_COMPLETE_HORIZON_HOURS: 96
           DMI_BULK_FORCE_REFRESH: ${{ steps.preflight.outputs.dmi_changed == 'true' || (steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true') }}
           DMI_BULK_RAW_DIR: .cache/dmi-grib
-          DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/deployed-dmi-bulk-cache.json
+          DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'none' }}
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour || env.RAVRADAR_PRODUCTION_TARGET_HOUR }}
           COASTAL_POINT_STAGE_PATH: .cache/coastal-point-staging/dmi.json
@@ -776,7 +841,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -799,12 +864,12 @@ jobs:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Save progressive private DMI zone cache
-        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('data/live/dmi-bulk-cache.json') != ''
+      - name: Save isolated DMI candidate progress before any terminal decision
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled' && hashFiles('.cache/dmi-candidate-progress.json') != ''
         uses: actions/cache/save@v6
         with:
-          path: data/live/dmi-bulk-cache.json
-          key: dmi-zone-cache-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-normal-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save private seven-day current-field research cache
         if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-bulk.outcome != 'cancelled'
@@ -845,6 +910,28 @@ jobs:
             echo "::error title=DMI terminal gate::$code"
             exit 1
           fi
+
+      - name: Strictly snapshot the maintained READY active DMI generation
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s data/live/dmi-bulk-cache.json
+          test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
+          python scripts/build-copernicus-target-registry.py \
+            --targets data/live/coastal-parts-v2.json \
+            --dmi data/live/dmi-bulk-cache.json \
+            --output "$RUNNER_TEMP/dmi-maintained-proof.json" \
+            --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          cp data/live/dmi-bulk-cache.json .cache/dmi-active-complete.json.tmp
+          mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
+
+      - name: Save the maintained complete active DMI generation
+        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/dmi-active-complete.json
+          key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.dmi-cache-generation.outputs.generation }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Require complete operational WAM handoff before first integrated cutover
         id: wam-bootstrap-readiness
@@ -1042,7 +1129,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.323 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.324 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
