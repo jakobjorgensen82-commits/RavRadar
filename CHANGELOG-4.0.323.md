@@ -17,4 +17,4 @@ Leverandørfejl, nulls, ufuldstændige batches eller stale target stopper før n
 
 ## Evidensstatus
 
-Den tidligere sikre optælling var 78.430 af 79.414 dækket og 984 rester: 944 i regional politik og 40 udenfor ved sidste forecasttime. Lokal målmatrix og fuld releasegate er grønne. En efterfølgende source-test fandt én stale reference til et fjernet CLI-felt; READY-only rettelsen og måltesten er grøn. Fuld GitHub exact-head, merge og frisk rettet engangskørsel afventer.
+Den tidligere sikre optælling var 78.430 af 79.414 dækket og 984 rester: 944 i regional politik og 40 udenfor ved sidste forecasttime. Lokal målmatrix og fuld releasegate er grønne. PR #255's første exact-head fandt to stale testbindinger efter releasegaten: et fjernet CLI-felt og den gamle interne budgettekst. Range-checkeren er READY-only, og source-stage-testen kræver nu eksakt exit 75 plus den aktuelle bounded-progress-terminalbesked; begge måltests er grønne. Ny exact-head, merge og frisk rettet engangskørsel afventer.

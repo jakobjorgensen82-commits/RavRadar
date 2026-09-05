@@ -5,9 +5,10 @@
 - [x] Bevar Copernicus-shards ved dokumenteret budgetstop, men lad timeout/fejl/`IN_PROGRESS` blokere fallback og publicering.
 - [x] Tilføj normal/oneoff-budgetter og target-friskhedsgater samt måltests for closure, liveprojektion, RavScore, workflowrækkefølge, migration og releasekontrakt.
 - [x] Regenerér integrated/rollback/continuation og fremfør dem i append-only migration `20260905090000`; tidligere migrationer er byte-urørte.
--- [x] Synkronisér 4.0.323-dokumentation/version, RDKS, håndbog, bundles, releasekontrakt og geodata-version-only-bevis; bestå fuld lokal releasegate.
+- [x] Synkronisér 4.0.323-dokumentation/version, RDKS, håndbog, bundles, releasekontrakt og geodata-version-only-bevis; bestå fuld lokal releasegate.
 - [x] Ret source-wrapperens efterfølgende ene fund: range-checker refererede til fjernet `require_closure_source_stage`; READY-only énlinjerettelse og dens måltest er grøn.
-- [ ] Commit/push/PR og bestå den ene obligatoriske fulde sourcegate på GitHubs eksakte head; merge derefter sikkert. En lokal fuld gentagelse blev stoppet efter ejerens tidsprioritet.
+- [x] Commit/push PR #255. Første exact-head `33960023127` bestod releasegate og range-checker, men fandt næste stale testtekst; bind nu budgetstop til eksakt exit 75 og den aktuelle bounded-progress-terminalbesked. Måltesten er grøn.
+- [ ] Push opfølgningen og bestå ny fuld exact-head; merge derefter sikkert. Ingen lokal fuld gentagelse.
 - [ ] Mål friske hentede/manglende antal, start derefter den allerede ejerbestilte store main-engangskørsel og følg 673 × 118-resultatet.
 - [ ] Efter komplet opfyldning: mål DMI, Baltic, AMM15, regional DMI og Open-Meteo hver for sig; justér kun normal rækkefølge/budget/interval ved konkret evidens. Supabase-kapacitet, Fase B og offentlig state-6-verifikation forbliver åbne.
 
