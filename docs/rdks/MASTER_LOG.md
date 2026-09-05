@@ -1,4 +1,12 @@
-# NYESTE EJERDELTA – 2026-09-05 – 4.0.324 active/candidate, hele vinduet og bevaret historik
+# NYESTE EJERDELTA – 2026-09-05 – 4.0.325 robust cachevalg før ny gate
+
+- Ejeren bad udtrykkeligt om et kort samlet fejlreview før næste gate. Reviewet viste, at flere gamle cirka 49 MB GitHub-cacher var forsvundet fra inventaret hurtigt; API'et kan ikke dokumentere årsagen. En ren flytning af den hardkodede pegepind ville derfor kunne fejle igen under sourcegaten.
+- Ejerkravet er fortsat at genbruge den næsten fulde cache frem for at genhente alt. 4.0.325 vælger nu seneste entydige main-key/version og kræver immutable exact-attempt samt grøn DMI-producent, progressiv cache-save og terminaltrin, før en exact-only restore på main. READY/registry og candidate-promotion lempes ikke.
+- Live read-only prøven valgte cache-id `7369179233`, version `2f5a0598…`, `33990516150` attempt 1 og 48.847.855 byte. Den er DMI-donor, ikke komplet vejrbevis; runnet fejlede først senere i Copernicus. Definitiv kandidat-404 falder videre; øvrig API-/inventar-/evidensusikkerhed stopper.
+- PR #257 bestod `33989875253` og blev merged `948ba60b`. `33991028274` blev stoppet under checkout. `33991952081` bestod sourcegaten, men ramte derefter den gamle hardkodede cachemiss og kopierede alligevel 2.778.397.542 byte GRIB til en ny key, fordi DMI var skipped. 4.0.325 gemmer nu kun GRIB, kandidat og research efter et faktisk startet, ikke-annulleret DMI-forsøg. Næste trin er én sourcegate/merge, derefter active-save, fetched/missing-status og stor main-oneoff.
+- Normal fuldvinduesvedligehold, 48-timers modelhistorik, fallbackrækkefølge, ekstern cron og Candidate G-status ændres ikke.
+
+# TIDLIGERE EJERDELTA – 2026-09-05 – 4.0.324 active/candidate, hele vinduet og bevaret historik
 
 - Ejeren godkender produktionsændringen med genbrug af gyldige data, fuld kontrol af hele prognosevinduet og målrettet udfyldning af både interne huller og hale. Mindst 48 timers verificeret historik skal fortsat bruges til mobilisering og transport.
 - DEC-0116 adskiller strict READY-active fra partial kandidat. Både normal drift og 118h-oneoff materialiserer active som donor, men alt nyt DMI-arbejde sker i samme serialiserede `dmi-zone-candidate-v1`-familie; fælles production-concurrency forhindrer parallel writer. Normal drift er updateren, mens oneoffen kun accelererer samme kandidat.

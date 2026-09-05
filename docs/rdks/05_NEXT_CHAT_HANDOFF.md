@@ -1,4 +1,13 @@
-# NYESTE CHECKPOINT – 2026-09-05 – 4.0.324 sikker cachegenbrug
+# NYESTE CHECKPOINT – 2026-09-05 – 4.0.325 terminalbevist bootstrap
+
+- PR #257 er exact-head-grøn og merged som `948ba60b`. Post-merge-run `33991028274` blev annulleret under checkout uden DMI-, cache-, protected-write- eller deployeffekt, fordi dets hardkodede legacykey var væk.
+- GitHubs cacheinventar mistede flere gamle cirka 49 MB-cacher hurtigt; API'et viser ikke hvorfor. Flyt derfor aldrig blot hardkodningen til næste run. 4.0.325 resolver live den nyeste entydige main-key/version via dens immutable exact-attempt og kræver grøn producent, save og DMI-terminal, før exact-only restore. En definitiv kandidat-404 falder videre; øvrig API-/inventarusikkerhed stopper.
+- Seneste livebevis valgte cache-id `7369179233`, version `2f5a0598…`, `33990516150` attempt 1 og 48.847.855 byte. DMI-leddet er grønt; det senere Copernicus-stop gør den ikke til komplet vejrbevis. Efter restore kræves fortsat strict READY og eksakt targetregistry. Pilot og 118h kræver main før private cache-restores.
+- Run `33991952081` bestod merged mains sourcegate, men bekræftede derefter den gamle hardkodede cachefejl. Fordi et skipped DMI-trin alligevel udløste en ny 2.778.397.542-byte GRIB-save, kræver alle GRIB-/kandidat-/research-saves nu et faktisk startet, ikke-annulleret producentforsøg.
+- Lokal resolver-unit, active/candidate-, workflow-, RDKS-, version-, håndbog/SQL-, YAML/JSON- og read-only liveprøve er grønne. Den fulde lokale releasegate blev standset uden fejl i en tung uberørt Candidate G-audit; exact-head skal køre hele sourcegaten én gang. Næste rækkefølge: commit/push/PR → sourcegate → merge → verify active-save → rapportér fetched/missing → én stor main-oneoff → normal catch-up og komplet 210/673/118.
+- Cache-, model-, historik-, fallback- og cronkrav fra DEC-0115/0116 er uændrede. Candidate G er offentlig, indtil de eksisterende vejr-, kapacitets-, Feggesund-, Supabase- og releasegates består.
+
+# TIDLIGERE CHECKPOINT – 2026-09-05 – 4.0.324 sikker cachegenbrug
 
 - Ejerens udtrykkelige produktionsgodkendelse er bindende i DEC-0116: behold alle gyldige data, kontrollér hele target..+117-vinduet i hver normal vejrkørsel, og hent kun interne huller, ugyldige/forældede rækker og ny hale.
 - Både normal drift og 118h-oneoff materialiserer `.cache/dmi-active-complete.json` som strict READY-donor og fører alt nyt DMI-arbejde gennem den samme `.cache/dmi-candidate-progress.json`/`dmi-zone-candidate-v1`-familie. Fælles production-concurrency serialiserer writers. Normalen er updateren; oneoffen accelererer kun samme kandidat.

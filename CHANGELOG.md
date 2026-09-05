@@ -1,3 +1,12 @@
+## 4.0.325 – terminalbevist active-bootstrap uden hardkodet cache (2026-09-05)
+
+- Når active-familien er tom, vælger workflowet den nyeste bevisbare main-scopede legacycache og genverificerer dens immutable exact-attempt, entydige key/version samt grøn DMI-producent, progressiv zonecache-save og terminaltrin via GitHub.
+- Kun resolverens eksakte key må restores på main, uden wildcard. Strict READY, eksakt registry, active/candidate-isolation og promotionkrav er uændrede. En kandidat-404 prøver næste cache; øvrige API-/inventar-/evidensfejl stopper fail-closed.
+- Samme resolver bruges i normal drift, 118h-oneoff og den private pilot. Kortlivet hardkodning er fjernet, og manuel pilot/oneoff kan ikke restore private caches fra en feature-branch.
+- Skipped DMI-producenttrin må ikke længere re-save GRIB-, kandidat- eller researchcache under en ny run-key. Run `33991952081` bekræftede den gamle fejl og den unødvendige 2.778.397.542-byte GRIB-kopi efter cachemiss; sourcegaten i runnet var grøn.
+- Den skærpede liveprøve valgte entydigt cache-id `7369179233`, version `2f5a0598…`, `33990516150` attempt 1 og 48.847.855 byte. DMI-leddet er terminalgrønt, mens det samlede run fejlede senere i Copernicus; cachen er derfor donor, ikke komplet produktionsbevis.
+- PR #257/4.0.324 bestod exact-head `33989875253` og blev merged `948ba60b`. Den ventende kørsel `33991028274` blev stoppet under checkout uden DMI-, cache-, protected-write- eller deployeffekt.
+
 ## 4.0.324 – active/candidate-cache uden modelrun-nulstart (2026-09-05, lokalt)
 
 - Normal vejrhentning og 118h-oneoff materialiserer begge seneste strict READY-active som donor, men skriver alt nyt DMI-arbejde til den samme `dmi-zone-candidate-v1`-familie. Fælles production-concurrency serialiserer writers; normalen er den fremtidige updater, mens oneoffen kun accelererer samme kandidat.

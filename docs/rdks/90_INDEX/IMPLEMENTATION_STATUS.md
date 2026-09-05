@@ -1,4 +1,17 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.324 active/candidate og fuld gapvedligeholdelse
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.325 terminalbevist legacyvalg
+
+- [x] PR #257 bestod exact-head `33989875253` og blev merged som `948ba60b`.
+- [x] Stop `33991028274` under checkout, før det kendte hardkodede cachemiss kunne spilde en vejrkørsel; ingen DMI-/cache-/protected-write-/deployeffekt.
+- [x] Vælg den nyeste entydige main-key/version i GitHubs inventar og verificér immutable exact-attempt, workflow/main-identitet, producent, progressiv save, steporden og kausal save-tidsbinding; kandidat-404 må falde videre, mens øvrig evidensusikkerhed stopper.
+- [x] Restore kun resolverens eksakte key uden wildcard; bevar strict READY/registry og active/candidate-promotion uændret. Scheduled forskningspilot må skippe neutralt, hvis ingen bevisbar donor findes; produktion/118h stopper fail-closed.
+- [x] Kræv main før pilotens og 118h-oneoffens private cache-restore, så branchcache ikke kan skygge main-donoren.
+- [x] Klassificér `33991952081`: sourcegate grøn, derefter gammel hardkodet cachemiss; skipped DMI re-savede 2.778.397.542 byte GRIB. Begræns GRIB-/kandidat-/research-save til faktiske ikke-annullerede producentforsøg.
+- [x] Bestå resolver-unit, active/candidate-kontrakt, workflowrækkefølge, reusable-kontrakt og read-only liveprøve; denne valgte cache-id `7369179233`, version `2f5a0598…`, `33990516150` attempt 1 og 48.847.855 byte.
+- [x] Luk releasechangelog, RDKS, version, håndbog/installation, release metadata, YAML/JSON, geodata-version-only og øvrige korte statiske kontroller.
+- [x] Stop den fulde lokale releasegate uden fejl, da den gik ind i en lang uberørt Candidate G-runtimeaudit; kræv i stedet den bindende fulde GitHub sourcegate én gang på eksakt head.
+- [ ] Bestå én exact-head sourcegate, merge, verificér active-save og mål friske fetched/missing før stor main-oneoff. Komplet vejr, fuld produktionsgate og modelaktivering er fortsat åbne.
+
+# TIDLIGERE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.324 active/candidate og fuld gapvedligeholdelse
 
 - [x] Lad både normal produktion og 118h-oneoff materialisere sidste strict READY-active som donor, men føre alt nyt DMI-arbejde gennem samme `dmi-zone-candidate-v1`-familie under fælles serialiserende production-concurrency.
 - [x] Bootstrap active fra den eksakte kendte READY-legacycache og afvis gamle wildcardhits som aktivt grundlag.

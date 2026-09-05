@@ -1,6 +1,14 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.324
+**Håndbogsversion:** 4.0.325
+
+## Første active-cache vælges ud fra live terminalbevis – 2026-09-05
+
+Cacheposter kan forsvinde fra GitHubs inventar; den konkrete årsag fremgår ikke altid. Derfor må RavRadar ikke længere være afhængig af én hardkodet cacheadresse under den første overgang til active/candidate-systemet. Når der endnu ikke findes en active-cache, gennemgår workflowet de aktuelle main-cacher fra nyeste til ældste.
+
+En legacycache kan kun vælges, hvis dens entydige main-key og version peger på et eksakt GitHub-run-attempt, og GitHub samtidig bekræfter, at den normale DMI-producent, netop den tilhørende cachegemning og DMI's terminalkontrol alle var grønne i rigtig rækkefølge. Derefter restores kun den ene eksakte key på main; der bruges ikke wildcard til active. Indholdet skal stadig bestå READY-kontrollen og det præcise register over kystdele. En definitivt slettet kandidat kan erstattes af den næste dokumenterede kandidat, mens API- eller evidensusikkerhed stopper produktion og den store opfyldning uden at erstatte active.
+
+Den private forskningspilot må springe neutralt over, hvis et komplet inventar ikke indeholder en bevisbar donor. Pilot og stor opfyldning kræver main før private caches gendannes. Cachegemning sker kun efter et DMI-producenttrin, der faktisk blev startet; et skipped trin kopierer derfor ikke en stor GRIB-cache til en ny nøgle. Efter den første nye active-save bruges active-familien som hidtil. Samme kandidat-, promotion-, historik-, kildeordens- og cronregler består. En live read-only prøve valgte cache-id `7369179233`, run `33990516150` attempt 1 og 48.847.855 byte med grøn DMI-producent, save og terminalkontrol; det efterfølgende Copernicus-stop betyder, at cachen kun er et DMI-grundlag og ikke komplet vejrbevis.
 
 ## Vejrcachen fortsætter gennem timeskift og nye modelkørsler – 2026-09-05
 
