@@ -6,8 +6,9 @@
 - [x] Lad normal drift genbruge gyldige data og kontrollere hele target..+117 for interne huller, invalid/expired og hale; løft normal DMI-vedligehold til tre DKSS-familier uden at ændre fallbackrækkefølgen.
 - [x] Bevar DMI-/Copernicus-historik og de integrerede forbrugeres 48-timers mobiliserings-/transportvindue; bevar ekstern cron som primær dispatcher og GitHub schedules som reserve.
 - [x] Luk den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
-- [ ] Push PR og bestå `validate:source` én gang på eksakt head i GitHub; kør ikke den fulde sourcegate lokalt.
-- [ ] Merge sikkert, mål fetched/missing, og start én stor main-oneoff. Kræv kandidatcheckpoint ved afbrydelse og READY-promotion før aktiv erstatning.
+- [x] Klassificér exact-head-run `33986893042`: alle kode-/kontrakttests bestod, men releasegaten fejlede alene, fordi `CHANGELOG-4.0.324.md` manglede. Det røde run er ikke exact-head-bevis.
+- [x] Målvalidér changelog/status-only-opfølgningscommitten lokalt og registrér ejerens eksplicitte ordre 2026-09-05 om admin-merge uden ny exact-head. 4.0.324 må ikke kaldes exact-head-grøn.
+- [ ] Gennemfør den ejerbeordrede admin-merge uden grønt exact-head-bevis, mål fetched/missing, verificér bootstrap/runtime og fuld produktionsgate, og start én stor main-oneoff. Kræv kandidatcheckpoint ved afbrydelse og READY-promotion før aktiv erstatning.
 - [ ] Lad normal drift indhente den nye hale, bevis frisk komplet leverandørclosure og fuld produktions-/releasegate, og fortsæt derefter den allerede dokumenterede modelrelease. Vurder først senere større pipelineparallelisering ud fra målte leverandørtider.
 
 # NYESTE ROADMAP – 2026-09-05 – 4.0.323 currentclosure og friskhed
