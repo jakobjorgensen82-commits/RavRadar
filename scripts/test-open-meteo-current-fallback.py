@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+import runpy
 
 from lib.copernicus_current import canonical_sha256
 from lib.open_meteo_current_fallback import (
@@ -172,5 +174,21 @@ rejected(lambda: build_record(
     copernicus_bounded_progress_accepted=False,
     regional_evidence_sha256=regional_sha,
 ))
+
+cli = runpy.run_path(str(Path(__file__).with_name("fill-open-meteo-current-fallback.py")))
+safe_nested = type(
+    "SafeNestedError",
+    (Exception,),
+    {"cause_code": "SHADOW_SOURCE_ASSET_HASH_MISMATCH"},
+)()
+unsafe_nested = type(
+    "UnsafeNestedError",
+    (Exception,),
+    {"cause_code": "private detail: part-id"},
+)()
+assert cli["residual_plan_error_code"](safe_nested) == (
+    "OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_SOURCE_ASSET_HASH_MISMATCH"
+)
+assert cli["residual_plan_error_code"](unsafe_nested) == "OPEN_METEO_RESIDUAL_PLAN_INVALID"
 
 print("OK: Open-Meteo current fallback is exact-residual, physical-scope bound and private.")

@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-06 – 4.0.326 regional shadow-rollover
+
+- Aktiv branch er `codex/open-meteo-shadow-rollover` fra merged main `c93fdce1`. Oneoff `34004697179` gjorde DMI/Copernicus READY og efterlod 1.104 operationelle rester, men Open-Meteo stoppede før request.
+- Den lokale rettelse gør prøver fra ældre regionale shadow-modelruns utilgængelige uden at gøre dem til aktuelle hashkonflikter; same-run mismatch er fortsat fatal. En allowlistet sikker årsagskode er tilføjet. Tre måltests er grønne.
+- Normalrun `34004873418` gemte ny DMI-fremgang, men stoppede korrekt før supplement/deploy uden terminal producer-success. Alle caches skal bevares.
+- Næste rækkefølge: exact-head sourcegate → merge → én stor main-oneoff → 79.414/79.414 current og 354/354 Feggesund → Supabase-kapacitet/full gates → særskilt integreret cutover. Candidate G er offentlig indtil alle gates består.
+
 # NYESTE CHECKPOINT – 2026-09-05 – 4.0.325 terminalbevist bootstrap
 
 - PR #257 er exact-head-grøn og merged som `948ba60b`. Post-merge-run `33991028274` blev annulleret under checkout uden DMI-, cache-, protected-write- eller deployeffekt, fordi dets hardkodede legacykey var væk.

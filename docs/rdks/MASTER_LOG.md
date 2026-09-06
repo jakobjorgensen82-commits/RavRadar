@@ -1,3 +1,11 @@
+# NYESTE EJERDELTA – 2026-09-06 – fortsæt autonomt til komplet vejr og ny model
+
+- Ejeren instruerer, at arbejdet fortsætter autonomt: hvis den aktuelle opfyldning ikke giver komplette data, skal en ny stor oneoff køres; når data er komplette, fortsættes direkte mod onlineføring af den nye model under de eksisterende gates.
+- Oneoff `34004697179` gjorde DMI og Copernicus READY. Copernicus dækkede 7.408/8.512 operationelle restpar og efterlod 1.104; rådgivende historik manglede 417. Open-Meteo stoppede før første request med den maskerede lokale kode `OPEN_METEO_RESIDUAL_PLAN_INVALID`.
+- Rodårsagen er en kontraktfejl ved modelrun-rollover: den 168-timers regionale shadow beholder korrekt gamle prøver, men de blev fejlagtigt opfattet som en hashkonflikt med den aktuelle single-run DMI-ledger. 4.0.326 ignorerer kun ældre modelruns i den aktuelle closure og lader parret gå videre som missing til Open-Meteo. Samme-run hashkonflikt forbliver fatal.
+- Normalrun `34004873418` bevarede DMI-kandidat-, GRIB- og shadowfremgang, men stoppede før supplement/deploy, fordi producenten ikke var terminal success. Ingen cache nulstilles, og der startes ikke flere uændrede runs mod den deterministiske Open-Meteo-fejl.
+- Næste sekvens er én exact-head-kildegate, sikker merge, én stor main-oneoff med de bevarede cacher, komplet 673 × 118 og derefter de allerede bindende kapacitets-, Feggesund-, fulde release- og særskilte modelaktiveringsgates. Candidate G er fortsat offentlig.
+
 # NYESTE EJERDELTA – 2026-09-05 – 4.0.325 robust cachevalg før ny gate
 
 - Ejeren bad udtrykkeligt om et kort samlet fejlreview før næste gate. Reviewet viste, at flere gamle cirka 49 MB GitHub-cacher var forsvundet fra inventaret hurtigt; API'et kan ikke dokumentere årsagen. En ren flytning af den hardkodede pegepind ville derfor kunne fejle igen under sourcegaten.

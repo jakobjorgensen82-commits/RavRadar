@@ -352,6 +352,23 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
         "A ledger-selected byte revision must supersede its older shadow sample",
     )
 
+    stale_previous_run = fixture()
+    stale_source = source_asset(0)
+    stale_source["modelRun"] = iso(-6)
+    stale_previous_run["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [sample(0, 0, stale_source)]
+    stale_result = invoke(stale_previous_run)
+    stale_refs = [
+        row for row in stale_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        len(stale_refs) == 5
+        and all(row["classification"] == evidence.MISSING for row in stale_refs),
+        "A retained prior-run sample must remain unavailable without blocking fallback",
+    )
+
     invalid_vector = fixture()
     invalid_vector["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]["layers"]["bottom"]["uMps"] = math.nan
     expect_error(invalid_vector, "SHADOW_VECTOR_PROOF_INVALID")

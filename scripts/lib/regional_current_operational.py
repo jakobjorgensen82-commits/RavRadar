@@ -373,11 +373,17 @@ def _normalize_gap_pairs(
     return normalized, pairs_sha256
 
 
-def _ledger_source_index(ledger: dict[str, Any]) -> dict[tuple[str, str, str], dict[str, Any]]:
+def _ledger_source_index(
+    ledger: dict[str, Any],
+) -> tuple[
+    dict[tuple[str, str, str], dict[str, Any]],
+    frozenset[str],
+]:
     collections = ledger.get("collections")
     if not isinstance(collections, list):
         _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
     indexed: dict[tuple[str, str, str], dict[str, Any]] = {}
+    selected_model_runs: set[str] = set()
     for collection_row in collections:
         if not isinstance(collection_row, dict):
             _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
@@ -387,6 +393,7 @@ def _ledger_source_index(ledger: dict[str, Any]) -> dict[tuple[str, str, str], d
         rows = collection_row.get("validTimes")
         if collection_run is None or not isinstance(rows, list):
             _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        selected_model_runs.add(collection_run)
         for row in rows:
             if not isinstance(row, dict):
                 _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
@@ -411,7 +418,7 @@ def _ledger_source_index(ledger: dict[str, Any]) -> dict[tuple[str, str, str], d
             if identity in indexed and indexed[identity] != source:
                 _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
             indexed[identity] = source
-    return indexed
+    return indexed, frozenset(selected_model_runs)
 
 
 def _validate_shadow_header(shadow: Any) -> dict[str, Any]:
@@ -582,6 +589,7 @@ def _samples_by_part(
     policy_sha256: str,
     target_registry_sha256: str,
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
+    selected_model_runs: frozenset[str],
 ) -> dict[str, dict[str, Any]]:
     candidate_times: dict[str, set[str]] = {part_id: set() for part_id in bound_parts}
     for gap in gaps:
@@ -626,6 +634,13 @@ def _samples_by_part(
             except RegionalCurrentOperationalError as error:
                 if error.code != "SHADOW_SOURCE_ASSET_HASH_MISMATCH":
                     raise
+                sample_model_run = canonical_time(raw_sample.get("modelRun"))
+                if sample_model_run not in selected_model_runs:
+                    # The shadow deliberately retains seven days. Samples from
+                    # an older model run are useful history, but they are not a
+                    # hash conflict with the exact run selected by this ledger.
+                    # Keep them unavailable here so the next fallback can win.
+                    continue
                 # A revised official asset legitimately leaves an older byte-bound
                 # sample beside its replacement.  Defer the mismatch: it is fatal
                 # only when no currently ledger-bound exact/hold source can win.
@@ -987,7 +1002,7 @@ def build_regional_current_operational_evidence(
         dmi_gap_pairs, bound_parts, reference_dt, validated_ledger
     )
     shadow = _validate_shadow_header(current_shadow)
-    ledger_sources = _ledger_source_index(validated_ledger)
+    ledger_sources, selected_model_runs = _ledger_source_index(validated_ledger)
     samples = _samples_by_part(
         shadow,
         gaps,
@@ -995,6 +1010,7 @@ def build_regional_current_operational_evidence(
         policy_sha256,
         target_registry_sha256,
         ledger_sources,
+        selected_model_runs,
     )
     pair_refs = _classify_pairs(gaps, samples)
     native_count = sum(

@@ -27,7 +27,10 @@ Den normale 15-minutters plan ændres ikke på forhånd. Efter den første kompl
 
 Den nye fysiske provenance ændrer de transitive modelbundter. Gældende lokale hashes er integrated `b7ac1e2b180ede66c25fcc764b344390969a772dcfbc846194166290b2430147`, Candidate G-rollback `7f5f6c93649b93f6a61892b31811c57603ff6c3a0a47cc218deae39c87960484` og continuation `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Append-only migration `20260905090000_open_meteo_current_fallback_binding.sql` fremfører kun disse bindinger og readbackversionen. Ældre migrationer ændres ikke.
 
+## Rolloverpræcisering 2026-09-06
+
+Den regionale 168-timers shadow må indeholde prøver fra tidligere DMI-modelruns. De må hverken vælges i den aktuelle closure eller behandles som en asset-hashkonflikt med et andet modelrun, som den aktuelle strict-ledger har valgt. De efterlader parret missing til Open-Meteo. Kun en hashafvigelse inden for et modelrun, der faktisk findes i den aktuelle ledger, er en fatal kildekonflikt. En sikker driftsfejl må alene tilføje en allowlistet versal domænekode; private identiteter og værdier forbliver maskerede.
+
 ## Evidensstatus
 
-Seneste sikre optælling er 79.414 samlede operationelle positioner, 78.430 dækket af DMI/Copernicus og 984 rester. Af resterne er 944 i den eksisterende regionale politik og 40 udenfor, alle 40 ved sidste forecasttime. Den nye kode og måltests lukker kontraktfejlen lokalt; tallene er ikke et nyt komplet runtimebevis. Første rettede main-engangskørsel skal genmåle dem og bestå hele 673 × 118-gaten.
-
+Oneoff `34004697179` nåede DMI READY og Copernicus READY med 7.408/8.512 dækkede operationelle restpar og 1.104 rester. Open-Meteo stoppede før første request på rolloverfejlen ovenfor; det er ikke komplet runtimebevis. Den lokale 4.0.326-regression er grøn. Første rettede main-engangskørsel skal genmåle og bestå hele 673 × 118-gaten.
