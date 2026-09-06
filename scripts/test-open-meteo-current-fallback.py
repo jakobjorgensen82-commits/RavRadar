@@ -6,6 +6,7 @@ import copy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import runpy
+from urllib.parse import parse_qs, urlparse
 
 from lib.copernicus_current import canonical_sha256
 from lib.open_meteo_current_fallback import (
@@ -190,5 +191,46 @@ assert cli["residual_plan_error_code"](safe_nested) == (
     "OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_SOURCE_ASSET_HASH_MISMATCH"
 )
 assert cli["residual_plan_error_code"](unsafe_nested) == "OPEN_METEO_RESIDUAL_PLAN_INVALID"
+
+captured_query = {}
+def fake_request_json(url, _timeout_seconds, _deadline):
+    captured_query.update(parse_qs(urlparse(url).query))
+    return {
+        "latitude": 55.0,
+        "longitude": 10.0,
+        "utc_offset_seconds": 0,
+        "timezone": "GMT",
+        "hourly_units": {
+            "time": "iso8601",
+            "ocean_current_velocity": "m/s",
+            "ocean_current_direction": "°",
+        },
+        "hourly": {
+            "time": ["2026-09-05T01:00"],
+            "ocean_current_velocity": [0.05],
+            "ocean_current_direction": [90],
+        },
+    }
+
+cli["fetch_records"].__globals__["request_json"] = fake_request_json
+fetched = cli["fetch_records"](
+    [required[0]], {"P1": targets[0]}, acquired_at, 30, 240,
+)
+assert captured_query["wind_speed_unit"] == ["ms"]
+assert "velocity_unit" not in captured_query
+assert len(fetched) == 1 and fetched[0]["speedMps"] == 0.05
+
+def wrong_unit_response(url, timeout_seconds, deadline):
+    response = fake_request_json(url, timeout_seconds, deadline)
+    response["hourly_units"]["ocean_current_velocity"] = "km/h"
+    return response
+
+cli["fetch_records"].__globals__["request_json"] = wrong_unit_response
+try:
+    cli["fetch_records"]([required[0]], {"P1": targets[0]}, acquired_at, 30, 240)
+except RuntimeError as error:
+    assert str(error) == "OPEN_METEO_RESPONSE_UNITS_INVALID"
+else:
+    raise AssertionError("A non-m/s Open-Meteo response was accepted")
 
 print("OK: Open-Meteo current fallback is exact-residual, physical-scope bound and private.")

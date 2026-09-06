@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-06 – 4.0.327 run-afgrænset Open-Meteo
+
+- Aktiv branch er codex/open-meteo-shadow-cadence-rollover fra merged main d899c6de. 4.0.326 var exact-head-grøn og merged via PR #259.
+- Oneoff 34017809629 attempt 1 gjorde DMI/Copernicus READY og gemte cacherne, men stoppede før Open-Meteo-request på en gammel ikke-valgt shadowprøves cadence. Lokal 4.0.327 ignorerer kun ikke-valgte runs før run-specifik kontrol; same-run fejl forbliver fatale.
+- Open-Meteo-audit viste, at den gamle velocity_unit=ms blev ignoreret og svarede km/t. Koden bruger nu wind_speed_unit=ms og kræver UTC/GMT, m/s og grader. Generiske live-prober bekræftede 118 timer og 50-punktsbatch.
+- Tre måltests er grønne. Vedligeholdelses-attempt 2 er startet på gammel main for alene at holde upstream-cacher varme. Næste trin er korte releasekontroller, exact-head/merge og rettet main-oneoff; komplet vejr og modelaktivering er fortsat åbne.
+
 # NYESTE CHECKPOINT – 2026-09-06 – 4.0.326 regional shadow-rollover
 
 - Aktiv branch er `codex/open-meteo-shadow-rollover` fra merged main `c93fdce1`. Oneoff `34004697179` gjorde DMI/Copernicus READY og efterlod 1.104 operationelle rester, men Open-Meteo stoppede før request.

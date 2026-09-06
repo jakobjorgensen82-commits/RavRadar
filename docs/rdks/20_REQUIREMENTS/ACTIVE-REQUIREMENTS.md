@@ -1,5 +1,11 @@
 # Aktive krav – samlet register
 
+## 4.0.327 – run-afgrænset regional shadow og Open-Meteo-SI-enhed (2026-09-06)
+
+- **REQ-REGIONAL-SHADOW-CURRENT-RUN-VALIDATION-ORDER-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Collection samt kanoniske modelRun/validTime og kausal rækkefølge valideres før runvalg. En prøve fra et modelrun, som den aktuelle strict-ledger ikke har valgt, er alene historik og skal sorteres fra før cadence-, asset-, spatial- og vektorkontrol. Prøver fra valgte runs skal fortsat bestå alle eksisterende fail-closed kontroller.
+- **REQ-OPEN-METEO-CURRENT-SI-UNIT-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Marine-requesten skal bruge wind_speed_unit=ms. Hvert payload skal eksplicit attestere UTC-offset 0, GMT, ocean_current_velocity i m/s og retning i grader. Ukendt eller anden enhed må aldrig omfortolkes eller skaleres implicit; den stopper før record og artifact.
+- **REQ-OPEN-METEO-REQUEST-SHAPE-001 – BINDENDE:** Eksakt target..+117, meteofrance_currents, cell_selection=sea, batchstørrelse højst 50 og én payload pr. bestilt punkt bevares. Live-prober kan bekræfte API-formen, men kun en frisk main-oneoff kan bevise RavRadars faktiske komplette dækning.
+
 ## 4.0.326 – regional shadow-rollover og sikker residualdiagnose (2026-09-06)
 
 - **REQ-REGIONAL-SHADOW-MODELRUN-ROLLOVER-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Den private 168-timers regionale DMI-shadow må beholde prøver fra ældre modelruns. En sådan prøve må aldrig bruges mod den aktuelle ledger og må heller ikke fejlklassificeres som en hashkonflikt med ledgerens valgte modelrun; den skal være utilgængelig og efterlade parret til næste fallback. En sample fra et modelrun, der faktisk er valgt i den aktuelle ledger, skal fortsat matche eksakt validTime og source-asset-hash eller stoppe fail-closed.

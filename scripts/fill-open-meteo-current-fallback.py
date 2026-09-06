@@ -240,7 +240,7 @@ def fetch_records(required: list[dict[str, str]], targets: dict[str, dict[str, A
             "latitude": ",".join(str(item[1]) for item in sampling_points if item is not None),
             "longitude": ",".join(str(item[0]) for item in sampling_points if item is not None),
             "hourly": "ocean_current_velocity,ocean_current_direction",
-            "velocity_unit": "ms",
+            "wind_speed_unit": "ms",
             "timezone": "GMT",
             "start_hour": start_hour,
             "end_hour": end_hour,
@@ -260,6 +260,15 @@ def fetch_records(required: list[dict[str, str]], targets: dict[str, dict[str, A
                 continue
             grid = point([payload.get("longitude"), payload.get("latitude")])
             hourly = payload.get("hourly")
+            hourly_units = payload.get("hourly_units")
+            if (
+                payload.get("utc_offset_seconds") != 0
+                or payload.get("timezone") != "GMT"
+                or not isinstance(hourly_units, dict)
+                or hourly_units.get("ocean_current_velocity") != "m/s"
+                or hourly_units.get("ocean_current_direction") != "°"
+            ):
+                raise RuntimeError("OPEN_METEO_RESPONSE_UNITS_INVALID")
             if grid is None or not isinstance(hourly, dict) or haversine_km(sampling, grid) > MAXIMUM_DISTANCE_KM:
                 continue
             times = hourly.get("time")

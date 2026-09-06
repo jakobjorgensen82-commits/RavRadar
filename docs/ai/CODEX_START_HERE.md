@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-06 – 4.0.327 currentfallback-run og SI-enhed
+
+- 4.0.326 bestod exact-head 34010245661, PR #259 og merge d899c6defac93d52826269773bcaa9a8c645261f.
+- Oneoff 34017809629 attempt 1 gjorde DMI og Copernicus READY. Open-Meteo stoppede før request med OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_NATIVE_CADENCE_INVALID; DMI- og Copernicus-cacherne blev gemt.
+- Lokal 4.0.327 sorterer prøver fra ikke-valgte regionale modelruns fra før cadence-, asset- og vektorkontrol. Samme-run fejl forbliver fatale. En leverandøraudit fandt desuden, at velocity_unit=ms blev ignoreret og gav km/t; requesten bruger nu wind_speed_unit=ms og validerer GMT/UTC, m/s og grader.
+- Officielle generiske live-prober bekræftede meteofrance_currents, 118 timer og batchstørrelse 50. Regional-, closure- og Open-Meteo-måltests er grønne. Vedligeholdelses-oneoff 34017809629 attempt 2 er startet på gammel main for at holde upstream-cacherne varme; dens Open-Meteo-stop er forventet og er ikke nyt bevis.
+- Næste rækkefølge: releasehukommelse/korte kontroller → exact-head → merge → frisk main-oneoff → 79.414/79.414 og 354/354 → kapacitet/fulde gates → særskilt modelaktivering. Candidate G er offentlig.
+
 # NYESTE CHECKPOINT – 2026-09-06 – 4.0.326 regional shadow-rollover
 
 - Oneoff `34004697179` gjorde DMI og Copernicus READY, men Open-Meteo stoppede før request på en residualplanfejl. Copernicus havde dækket 7.408/8.512 operationelle rester og efterladt 1.104; advisoryhistorik manglede 417.

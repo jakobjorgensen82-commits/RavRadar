@@ -373,13 +373,43 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     invalid_vector["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]["layers"]["bottom"]["uMps"] = math.nan
     expect_error(invalid_vector, "SHADOW_VECTOR_PROOF_INVALID")
 
-    wrong_phase = fixture()
-    phase_sample = wrong_phase["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
-    phase_sample["modelRun"] = iso(-1)
-    phase_sample["sampleKey"] = (
-        f"dkss_lf|{iso(-1)}|{iso(0)}|{phase_sample['sourceAssetSha256']}"
+    stale_wrong_phase = fixture()
+    stale_phase_sample = stale_wrong_phase["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
+    stale_phase_sample["modelRun"] = iso(-1)
+    stale_phase_sample["sampleKey"] = (
+        f"dkss_lf|{iso(-1)}|{iso(0)}|{stale_phase_sample['sourceAssetSha256']}"
     )
-    expect_error(wrong_phase, "SHADOW_NATIVE_CADENCE_INVALID")
+    stale_phase_result = invoke(stale_wrong_phase)
+    stale_phase_refs = [
+        row for row in stale_phase_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        all(row["classification"] == evidence.MISSING for row in stale_phase_refs),
+        "A retained prior-run sample with obsolete cadence must not block fallback",
+    )
+
+    irrelevant_history = fixture()
+    irrelevant_sample = irrelevant_history["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
+    irrelevant_sample["validTime"] = iso(-48)
+    irrelevant_sample["modelRun"] = "not-a-current-run"
+    irrelevant_result = invoke(irrelevant_history)
+    irrelevant_refs = [
+        row for row in irrelevant_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        all(row["classification"] == evidence.MISSING for row in irrelevant_refs),
+        "History outside every current hold candidate must remain irrelevant",
+    )
+
+    selected_wrong_phase = fixture()
+    selected_phase_sample = selected_wrong_phase["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
+    selected_phase_sample["validTime"] = iso(1)
+    selected_phase_sample["sampleKey"] = (
+        f"dkss_lf|{iso(0)}|{iso(1)}|{selected_phase_sample['sourceAssetSha256']}"
+    )
+    expect_error(selected_wrong_phase, "SHADOW_NATIVE_CADENCE_INVALID")
 
 
 def test_gap_domain_is_exact_bounded_and_ledger_bound() -> None:

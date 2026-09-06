@@ -1,3 +1,11 @@
+# NYESTE EJERDELTA – 2026-09-06 – saml Open-Meteo-fejl før næste gate
+
+- Ejeren kræver en helhedsgennemgang af Open-Meteo-vejen før rettelsen sendes gennem endnu en gate. DEC-0117 samler den resterende prior-run-cadencefejl og den livebeviste enhedsfejl i én afgrænset 4.0.327-pakke.
+- 34017809629 attempt 1 gjorde DMI/Copernicus READY og gemte cacherne, men stoppede før Open-Meteo-request på SHADOW_NATIVE_CADENCE_INVALID. Ikke-valgte runs sorteres nu fra før run-specifik kontrol; valgte runs forbliver fuldt fail-closed.
+- Den gamle velocity_unit=ms blev ignoreret og gav km/t. Rettet request bruger wind_speed_unit=ms og validerer GMT/UTC, m/s og grader. Generiske live-prober bekræftede 118 timer og batch 50.
+- En vedligeholdelses-oneoff, 34017809629 attempt 2, blev startet på gammel main for at holde upstream-cacherne varme under kodearbejdet. Den forventes ikke at kunne passere Open-Meteo før 4.0.327 og må ikke overclaims som komplet.
+- Tre måltests er grønne. Næste sekvens er releasehukommelse/korte kontroller → exact-head → merge → rettet main-oneoff → komplet vejr → eksisterende modelreleasegates.
+
 # NYESTE EJERDELTA – 2026-09-06 – fortsæt autonomt til komplet vejr og ny model
 
 - Ejeren instruerer, at arbejdet fortsætter autonomt: hvis den aktuelle opfyldning ikke giver komplette data, skal en ny stor oneoff køres; når data er komplette, fortsættes direkte mod onlineføring af den nye model under de eksisterende gates.
