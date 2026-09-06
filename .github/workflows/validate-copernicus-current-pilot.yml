@@ -256,6 +256,7 @@ jobs:
           --targets data/live/coastal-parts-v2.json
           --source-stage .cache/copernicus-current-source-stage.json
           --allow-nonmatching-seal
+          --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid restored Copernicus source disposition
@@ -463,7 +464,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -518,6 +519,7 @@ jobs:
           reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
           test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
           python scripts/build-copernicus-target-registry.py \
+            --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
             --dmi "$source_path" \
             --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
@@ -608,6 +610,7 @@ jobs:
           DMI_BULK_TIME_STRIDE_HOURS: 3
           DMI_BULK_COLLECTIONS_PER_RUN: 6
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
+          DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS: 180
           DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180
           DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420
           DMI_BULK_REFRESH_MINUTES: 60
@@ -618,7 +621,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -643,6 +646,7 @@ jobs:
           test -s data/live/dmi-bulk-cache.json
           test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
           python scripts/build-copernicus-target-registry.py \
+            --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
             --dmi data/live/dmi-bulk-cache.json \
             --output "$RUNNER_TEMP/dmi-promoted-proof.json" \
@@ -664,7 +668,7 @@ jobs:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"
+      - name: "Classify DMI availability (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"
         id: dmi-terminal-gate
         shell: bash
         env:
@@ -673,16 +677,28 @@ jobs:
           PRODUCER_CODE: ${{ steps.dmi-bulk.outputs.terminal_code }}
           STRICT_CURRENT_ANCHOR_READY: ${{ steps.dmi-bulk.outputs.strict_current_anchor_ready }}
         run: |
-          printf '%s\n' "$PRODUCER_CODE" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'
+          code="$PRODUCER_CODE"
+          if ! printf '%s\n' "$code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'; then
+            code="DMI_UNCLASSIFIED"
+          fi
+          status_ready=false
           case "$PRODUCER_STATUS" in
-            ok|partial|fresh-bulk-cache) ;;
-            *) exit 1 ;;
+            ok|partial|fresh-bulk-cache) status_ready=true ;;
           esac
-          test "$PRODUCER_OUTCOME" = "success"
-          test "$PRODUCER_CODE" = "DMI_READY"
-          test "$STRICT_CURRENT_ANCHOR_READY" = "true"
-          echo "ready=true" >> "$GITHUB_OUTPUT"
-          echo "DMI producer passed its bounded terminal gate; exact gap selection may start."
+          ready=false
+          if test "$PRODUCER_OUTCOME" = "success" \
+            && test "$code" = "DMI_READY" \
+            && test "$STRICT_CURRENT_ANCHOR_READY" = "true" \
+            && test "$status_ready" = "true"; then
+            ready=true
+          fi
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+          if test "$ready" = "true"; then
+            echo "DMI producer is READY; exact gap selection may start."
+          else
+            echo "::warning title=DMI partial availability::$code; verified pairs remain eligible and the exact residual continues to fallback providers."
+          fi
 
       - name: Expose the exact target hour already used by the DMI refresh
         shell: bash
@@ -699,6 +715,7 @@ jobs:
         run: >-
           python scripts/build-copernicus-target-registry.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
           --output .cache/copernicus-current-targets.json
           --github-output "$GITHUB_OUTPUT"
 
@@ -708,10 +725,11 @@ jobs:
           python scripts/check-copernicus-current-range.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --registry .cache/copernicus-current-targets.json
-          --dmi data/live/dmi-bulk-cache.json
+          --dmi .cache/dmi-candidate-progress.json
           --targets data/live/coastal-parts-v2.json
           --source-stage .cache/copernicus-current-source-stage.json
           --allow-nonmatching-seal
+          --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid operational Copernicus source disposition
@@ -720,20 +738,25 @@ jobs:
 
       - name: Install Copernicus acquisition dependency only when source stage is absent
         if: steps.current-range.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify Copernicus credentials only when exact gaps remain
         if: steps.current-range.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: |
-          test -n "$COPERNICUSMARINE_SERVICE_USERNAME"
-          test -n "$COPERNICUSMARINE_SERVICE_PASSWORD"
+          if [ -z "$COPERNICUSMARINE_SERVICE_USERNAME" ] || [ -z "$COPERNICUSMARINE_SERVICE_PASSWORD" ]; then
+            echo "::warning::Copernicus credentials are unavailable; the exact residual will continue to Open-Meteo."
+            exit 1
+          fi
 
       - name: Fill only the exact operational DMI gap seal
         id: copernicus-fill
         if: steps.current-range.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         timeout-minutes: 57
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -757,15 +780,15 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-118-preflight-progress-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require completed Copernicus source stage
+      - name: Require reusable Copernicus source stage
         run: >-
           python scripts/check-copernicus-current-range.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --registry .cache/copernicus-current-targets.json
-          --dmi data/live/dmi-bulk-cache.json
+          --dmi .cache/dmi-candidate-progress.json
           --targets data/live/coastal-parts-v2.json
           --source-stage .cache/copernicus-current-source-stage.json
-          --require-source-stage-ready
+          --require-source-stage-reusable
 
       - name: Save validated private Copernicus progress before downstream closure
         if: success()
@@ -780,6 +803,7 @@ jobs:
         run: >-
           python scripts/fill-open-meteo-current-fallback.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
           --timeout-seconds 45
           --runtime-seconds 900
 
@@ -793,14 +817,18 @@ jobs:
         run: >-
           python scripts/build-current-operational-closure.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
 
       - name: Build controlled live current selection
-        run: python scripts/build-live-current-pilot.py
+        run: >-
+          python scripts/build-live-current-pilot.py
+          --dmi .cache/dmi-candidate-progress.json
 
       - name: Build the integrated runtime without release or deploy
         timeout-minutes: 17
         run: npm run update:weather
         env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           DMI_MAX_RETRIES: 0
           DMI_REQUEST_GAP_MS: 12000
           DMI_REQUEST_CONCURRENCY: 1
@@ -816,10 +844,12 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: |
           npm run build:current-provenance
           node scripts/generate-public-conditions.mjs

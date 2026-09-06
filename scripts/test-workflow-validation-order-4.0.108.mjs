@@ -245,7 +245,9 @@ for (const marker of [
   'name: Save non-cancelled private Copernicus source-stage progress',
   "steps.copernicus-fill.outcome != 'cancelled'",
   '.cache/copernicus-current-source-stage.json',
-  '--require-source-stage-ready',
+  '--require-source-stage-reusable',
+  '--allow-invalid-shadow-as-absent',
+  '--dmi .cache/dmi-candidate-progress.json',
   'name: Fill only the exact remaining current gaps from Open-Meteo',
   '--runtime-seconds 900',
   'name: Refuse a stale one-off target after the extended supplier chain',
@@ -299,6 +301,13 @@ const operationalJobMinutes = timeoutMinutes(operationalPreflight.slice(0, opera
 const dmiAcquisitionStep = operationalStep('Refresh all bounded official DMI collections for the proof');
 const copernicusAcquisitionStep = operationalStep('Fill only the exact operational DMI gap seal');
 const runtimeBuildStep = operationalStep('Build the integrated runtime without release or deploy');
+const oneoffProvenanceStep = operationalStep('Attach exact current provenance and rebuild the public projection');
+for (const block of [runtimeBuildStep, oneoffProvenanceStep]) {
+  assert.ok(
+    block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json'),
+    'Engangskørslens runtime og provenance skal læse samme kandidat-DMI som leverandørkæden.',
+  );
+}
 assert.ok(
   operationalJobMinutes >= timeoutMinutes(dmiAcquisitionStep)
     + timeoutMinutes(copernicusAcquisitionStep) + timeoutMinutes(runtimeBuildStep) + 60,
@@ -381,14 +390,14 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Strictly snapshot only a promoted READY DMI generation'),
   operationalPreflight.indexOf('name: Save the promoted complete active DMI generation'),
   operationalPreflight.indexOf('name: Save private regional current evidence before any terminal decision'),
-  operationalPreflight.indexOf('name: "Require DMI production ('),
+  operationalPreflight.indexOf('name: "Classify DMI availability ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
   operationalPreflight.indexOf('name: Remove only invalid operational Copernicus source disposition'),
   operationalPreflight.indexOf('name: Install Copernicus acquisition dependency only when source stage is absent'),
   operationalPreflight.indexOf('name: Fill only the exact operational DMI gap seal'),
   operationalPreflight.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
-  operationalPreflight.indexOf('name: Require completed Copernicus source stage'),
+  operationalPreflight.indexOf('name: Require reusable Copernicus source stage'),
   operationalPreflight.indexOf('name: Save validated private Copernicus progress before downstream closure'),
   operationalPreflight.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
   operationalPreflight.indexOf('name: Refuse a stale one-off target after the extended supplier chain'),
@@ -443,6 +452,7 @@ for (const marker of [
   'source_path=.cache/dmi-active-complete.json',
   'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
   'python scripts/build-copernicus-target-registry.py',
+  '--require-strict-dmi-ledger',
   'cp "$source_path" .cache/dmi-active-complete.json.tmp',
   'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
 ]) {
@@ -497,6 +507,7 @@ const oneoffActiveSnapshot = operationalStep('Strictly snapshot only a promoted 
 for (const marker of [
   "if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
   'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  '--require-strict-dmi-ledger',
   '--at "${{ steps.operational-target.outputs.target_hour }}"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
 ]) {
@@ -510,10 +521,15 @@ for (const marker of [
 ]) {
   assert.ok(oneoffActiveSave.includes(marker), 'Engangskørslens aktive READY-save mangler ' + marker);
 }
+const oneoffTargetRegistry = operationalStep('Seal exact operational DMI gaps for target through target plus 117');
+assert.ok(
+  !oneoffTargetRegistry.includes('--require-strict-dmi-ledger'),
+  'Engangskørslens fallback-selector skal bruge availability-ledgeren som standard.',
+);
 assert.ok(!oneoffCandidateSave.includes('dmi-zone-active-v1-'), 'Delvis kandidatfremdrift må aldrig gemmes i den aktive cachefamilie.');
 assert.ok(!oneoffActiveSave.includes('dmi-zone-candidate-v1-'), 'Den aktive READY-generation må aldrig gemmes i kandidatfamilien.');
 if (!operationalPreflight.includes(
-  'name: "Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
+  'name: "Classify DMI availability (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"',
 )) {
   throw new Error('Operational-118-preflightens terminaltrin skal vise begge payloadfri DMI-koder.');
 }
@@ -707,7 +723,7 @@ for (const marker of [
   'schedule:',
   '- cron: "14,29,44,59 * * * *"',
   'current-hour-readiness:',
-  'python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"',
+  'python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"',
   'Targeted supplement pending',
   "github.event_name == 'workflow_dispatch' && inputs.force != true",
   'CHECK_CURRENT_HOUR',
@@ -738,15 +754,16 @@ for (const marker of [
   "steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'",
   'rm -f .cache/copernicus-current-source-stage.json',
   'Fill only exact-hour DMI gaps from Copernicus',
-  'Require completed Copernicus source stage before combined current closure',
+  'Require reusable Copernicus source stage before combined current closure',
   'python scripts/check-copernicus-current-range.py',
   '--source-stage .cache/copernicus-current-source-stage.json',
   '--allow-nonmatching-seal',
   '--registry .cache/copernicus-current-targets.json',
-  '--dmi data/live/dmi-bulk-cache.json',
+  '--dmi .cache/dmi-candidate-progress.json',
   '--targets data/live/coastal-parts-v2.json',
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
-  '--require-source-stage-ready',
+  '--require-source-stage-reusable',
+  '--allow-invalid-shadow-as-absent',
   'Save non-cancelled private Copernicus source-stage progress',
   'Save validated private Copernicus progress before downstream closure',
   'Fill only the exact remaining current gaps from Open-Meteo',
@@ -767,6 +784,7 @@ for (const marker of [
   '--shadow .cache/copernicus-current-shadow.json',
   '--source-stage .cache/copernicus-current-source-stage.json',
   '--allow-nonmatching-seal',
+  '--allow-invalid-shadow-as-absent',
   '--github-output "$GITHUB_OUTPUT"',
 ]) {
   if (!productionSourceInspection.includes(marker)) {
@@ -796,7 +814,7 @@ if ((productionAcquisitionSection.match(/steps\.targeted-copernicus-cache\.outpu
 }
 const productionProgressSave = text.slice(
   text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
-  text.indexOf('name: Require completed Copernicus source stage before combined current closure'),
+  text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
 );
 if (!productionProgressSave.includes("steps.copernicus-fill.outcome != 'cancelled'")
   || !productionProgressSave.includes("steps.copernicus-fill.outcome != 'skipped'")
@@ -815,6 +833,10 @@ if (!productionValidatedSave.includes('.cache/copernicus-current-shadow.json')
 }
 if (text.includes('--nearest-dmi-hour') || text.includes('--full-coast')) {
   throw new Error('Produktionsworkflowet må hverken rebindes til nearest-time eller vælge implicit full-coast.');
+}
+if (text.includes('rm -f .cache/copernicus-current-shadow.json')
+  || operationalPreflight.includes('rm -f .cache/copernicus-current-shadow.json')) {
+  throw new Error('Ugyldige private Copernicus-shadowbytes skal karantæneres atomisk af runneren og må ikke slettes af workflowet.');
 }
 for (const [role, workflowSource] of Object.entries(productionWorkflows)) {
   if (workflowSource.includes('cron-job.org')) throw new Error(`${role}-workflowet må ikke længere afhænge af cron-job.org.`);
@@ -865,7 +887,7 @@ const positions = {
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
   dmiCandidateSave: text.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
   dmiShadowSave: text.indexOf('name: Save private seven-day current-field research cache'),
-  dmiTerminalGate: text.indexOf('name: Require successful DMI producer before current supplement'),
+  dmiTerminalGate: text.indexOf('name: Classify DMI readiness before current supplement'),
   dmiActiveSnapshot: text.indexOf('name: Strictly snapshot the maintained READY active DMI generation'),
   dmiActiveSave: text.indexOf('name: Save the maintained complete active DMI generation'),
   targetedCopernicus: text.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement'),
@@ -874,7 +896,7 @@ const positions = {
   copernicusNormalize: text.indexOf('name: Remove only invalid production Copernicus source disposition'),
   copernicusFill: text.indexOf('name: Fill only exact-hour DMI gaps from Copernicus'),
   copernicusProgressSave: text.indexOf('name: Save non-cancelled private Copernicus source-stage progress'),
-  copernicusRangeGate: text.indexOf('name: Require completed Copernicus source stage before combined current closure'),
+  copernicusRangeGate: text.indexOf('name: Require reusable Copernicus source stage before combined current closure'),
   copernicusValidatedSave: text.indexOf('name: Save validated private Copernicus progress before downstream closure'),
   openMeteoFill: text.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo'),
   supplierFreshness: text.indexOf('name: Refuse a stale target after the bounded supplier chain'),
@@ -981,6 +1003,13 @@ for (let i = 1; i < expected.length; i += 1) {
     throw new Error(`Forkert rækkefølge: ${before} skal ligge før ${after}`);
   }
 }
+const normalProvenanceBlock = text.slice(positions.provenance, positions.runtime);
+const normalValidationBlock = text.slice(positions.validate, positions.gate);
+for (const block of [normalProvenanceBlock, normalValidationBlock]) {
+  if (!block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json')) {
+    throw new Error('Normal provenance og fuld spatial validering skal læse samme kandidat-DMI som leverandørkæden.');
+  }
+}
 const dmiProducerBlock = text.slice(positions.dmiBulk, positions.dmiGribSave);
 if (!dmiProducerBlock.includes('id: dmi-bulk')
   || !dmiProducerBlock.includes('continue-on-error: true')) {
@@ -1036,6 +1065,7 @@ const normalActiveMaterialize = text.slice(positions.dmiActiveMaterialize, posit
 for (const marker of [
   'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' "$source_path")" = true',
   'python scripts/build-copernicus-target-registry.py',
+  '--require-strict-dmi-ledger',
   'cp "$source_path" .cache/dmi-active-complete.json.tmp',
   'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
 ]) {
@@ -1095,6 +1125,7 @@ const normalActiveSnapshot = text.slice(positions.dmiActiveSnapshot, positions.d
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.dmi-bulk.outputs.candidate_promoted == 'true'",
   'test "$(jq -r \'.diagnostics.currentOperationalLedger.ready\' data/live/dmi-bulk-cache.json)" = true',
+  '--require-strict-dmi-ledger',
   '--at "$RAVRADAR_PRODUCTION_TARGET_HOUR"',
   'mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json',
 ]) {
@@ -1133,7 +1164,7 @@ for (const marker of [
   'test "$STRICT_CURRENT_ANCHOR_READY" = "true"',
   'echo "code=$code" >> "$GITHUB_OUTPUT"',
   'echo "ready=$ready" >> "$GITHUB_OUTPUT"',
-  'echo "::error title=DMI terminal gate::$code"',
+  'echo "::warning title=DMI partial availability::$code',
 ]) {
   if (!dmiTerminalBlock.includes(marker)) {
     throw new Error(`Den payloadfri DMI-terminalgate mangler ${marker}`);
@@ -1146,10 +1177,11 @@ const copernicusSelectorBlock = text.slice(
   positions.targetedCopernicus,
   positions.resolvedCurrentHour,
 );
-if (!copernicusSelectorBlock.includes(
-  "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'",
-)) {
-  throw new Error('Copernicus-gapudvælgelsen må kun køre efter en grøn DMI-terminalgate.');
+if (!copernicusSelectorBlock.includes("if: steps.preflight.outputs.should_run == 'true'")
+  || copernicusSelectorBlock.includes("steps.dmi-terminal-gate.outputs.ready == 'true'")
+  || copernicusSelectorBlock.includes('--require-strict-dmi-ledger')
+  || !copernicusSelectorBlock.includes('--dmi .cache/dmi-candidate-progress.json')) {
+  throw new Error('Copernicus-gapudvælgelsen skal bruge verificeret kandidat-DMI også efter en partial DMI-klassificering.');
 }
 if (copernicusSelectorBlock.includes('--nearest-dmi-hour')
   || copernicusSelectorBlock.includes('--full-coast')) {
@@ -1165,13 +1197,14 @@ for (const marker of [
   'test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the six exact integrated cutover migrations',
+  'Require only the seven exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
   'test -f "$migrations_directory/20260903010000_ravscore_checkpoint_metadata_cas.sql"',
   'test -f "$migrations_directory/20260904140000_harmonie_wind_reference_binding.sql"',
   'test -f "$migrations_directory/20260905090000_open_meteo_current_fallback_binding.sql"',
+  'test -f "$migrations_directory/20260906162332_per_pair_weather_fallback_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

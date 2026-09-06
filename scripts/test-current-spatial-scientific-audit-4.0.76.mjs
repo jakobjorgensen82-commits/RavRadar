@@ -1,20 +1,32 @@
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import {directionFromComponents,arrowDirection} from '../js/core/current-direction-audit.js';
 import {
   flattenCoastalPartsWithParentZoneId,
-  verifiedLivePilotSource,
   verifiedNativeCadenceReferenceForPart,
 } from './lib/live-current-pilot.mjs';
+import {
+  buildOperationalCurrentEntryIndex,
+  verifyCoastalPartCurrentProjection,
+} from './lib/current-spatial-runtime-proof.mjs';
+import {
+  dmiExpectedIdentityForPart,
+  verifiedBulkCurrent,
+} from './lib/ravscore-production-adapters.mjs';
 
-const [zones,conditions,bulk,publicDoc,coastalParts,pilotControl,pilotHistory]=await Promise.all([
+const bulkPath=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
+const [zones,conditions,bulkBytes,publicDoc,publicDetails,coastalParts,pilotControl,pilotHistory]=await Promise.all([
   fs.readFile('data/zones.geojson','utf8').then(JSON.parse),
   fs.readFile('data/live/conditions.json','utf8').then(JSON.parse),
-  fs.readFile('data/live/dmi-bulk-cache.json','utf8').then(JSON.parse),
+  fs.readFile(bulkPath),
   fs.readFile('data/live/public-conditions.json','utf8').then(JSON.parse),
+  fs.readFile('data/live/public-condition-details.json','utf8').then(JSON.parse),
   fs.readFile('data/live/coastal-parts-v2.json','utf8').then(JSON.parse),
   fs.readFile('data/current-live-pilot-control.json','utf8').then(JSON.parse),
   fs.readFile('data/live/current-pilot-history.json','utf8').then(JSON.parse).catch(()=>null)
 ]);
+const bulk=JSON.parse(bulkBytes.toString('utf8'));
+const bulkFileSha256=`sha256:${crypto.createHash('sha256').update(bulkBytes).digest('hex')}`;
 const norm=v=>((Number(v)%360)+360)%360;
 const diff=(a,b)=>Math.abs(((norm(a)-norm(b)+540)%360)-180);
 const finite=v=>v!==null&&v!==undefined&&v!==''&&typeof v!=='boolean'&&Number.isFinite(Number(v));
@@ -32,6 +44,9 @@ else if(pilotHistory?.mode!==liveMode)failures.push('Livehistorikken og den vers
 if(controlledLive&&pilotHistory?.enabled!==true)failures.push('Kontrolleret live-tilstand har ikke en aktiveret online strømhistorik.');
 if(dmiOnlyRollback&&pilotHistory?.enabled!==false)failures.push('DMI-only rollback har ikke slået anvendelsen af supplerende strøm fra.');
 if(pilotHistory?.credentialsIncluded!==false)failures.push('Online strømhistorik dokumenterer ikke, at credentials er udeladt.');
+const operationalEntryIndex=controlledLive&&pilotHistory?buildOperationalCurrentEntryIndex(pilotHistory):null;
+if(controlledLive&&!operationalEntryIndex)failures.push('Den private online strømhistorik består ikke den fulde operationelle closure-kontrol.');
+if(controlledLive&&pilotHistory?.operationalClosure?.dmiCurrentInputSha256!==bulkFileSha256)failures.push('Den auditerede DMI-bulkfil matcher ikke operational closure-inputtet byte for byte.');
 if(!strictCurrentSemantics)warnings.push('Lokalt snapshot er fra før strømsemantik v3; produktionskørslen skal genbygge alle strømdata før deploy.');
 const unverifiedReasons={};
 function verifiedBulkRow(bulkZone,expectedSamplingPoint,row){
@@ -49,12 +64,13 @@ function verifiedBulkRow(bulkZone,expectedSamplingPoint,row){
 }
 for(const feature of active){
   const id=feature.properties.id;const full=conditions.zones?.[id];const pub=publicDoc.zones?.[id];const bz=bulk.zones?.[id];
-  if(!full||!pub||!bz){failures.push(`${id}: mangler conditions/public/bulk`);continue;}
-  if(strictCurrentSemantics&&!near(bz.samplingPoint,full.point,1e-7))failures.push(`${id}: bulkens samplingPoint matcher ikke det aktuelle administratorpunkt`);
-  const validRows=Object.values(bz.hourly||{}).filter(r=>finite(r['current-u'])&&finite(r['current-v']));
-  if(!validRows.length)warnings.push(`${id}: hovedzonen har ingen lokal DMI-u/v; kystdelene auditeres selvstændigt.`);
-  else if(strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,full.point,row)))failures.push(`${id}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);
-  else verifiedGridZones++;
+  if(!full||!pub){failures.push(`${id}: mangler conditions/public`);continue;}
+  if(!bz)(controlledLive?warnings:failures).push(`${id}: mangler DMI-bulkpost; den eksakte fallback-closure auditeres på kystdelene.`);
+  if(bz&&strictCurrentSemantics&&!near(bz.samplingPoint,full.point,1e-7))failures.push(`${id}: bulkens samplingPoint matcher ikke det aktuelle administratorpunkt`);
+  const validRows=Object.values(bz?.hourly||{}).filter(r=>finite(r['current-u'])&&finite(r['current-v']));
+  if(bz&&!validRows.length)warnings.push(`${id}: hovedzonen har ingen lokal DMI-u/v; kystdelene auditeres selvstændigt.`);
+  else if(bz&&strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,full.point,row)))failures.push(`${id}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);
+  else if(bz)verifiedGridZones++;
   const currentProof=full.current?.currentProvenance?.status==='verified'?full.current.currentProvenance:null;
   if(currentProof&&(!near(full.flowPoints?.current,currentProof.gridPoint)||!near(pub.flowPoints?.current,currentProof.gridPoint)))failures.push(`${id}: kortets strømposition matcher ikke den aktuelle times DMI-gitterpunkt`);
 
@@ -82,27 +98,23 @@ for(const feature of active){
     verifiedHours++;
   }
 }
-if(verifiedGridZones<Math.floor(active.length*.9))failures.push(`Kun ${verifiedGridZones}/${active.length} zoner har verificerede marine u/v-gitterpunkter.`);
-if(verifiedHours<1000)failures.push(`Kun ${verifiedHours} prognosetimer kunne verificeres direkte fra u/v.`);
+if(verifiedGridZones<Math.floor(active.length*.9))(controlledLive?warnings:failures).push(`Kun ${verifiedGridZones}/${active.length} zoner har verificerede marine DMI-u/v-gitterpunkter.`);
+if(verifiedHours<1000)(controlledLive?warnings:failures).push(`Kun ${verifiedHours} hovedzone-prognosetimer kunne verificeres direkte fra DMI-u/v.`);
 const expectedParts=flattenCoastalPartsWithParentZoneId(coastalParts);
 let verifiedPartGridPoints=0;
 let verifiedNativeCadenceHeldParts=0;
-const verifiedPartsBySource={'dmi-local':0,'copernicus-local':0,'dmi-regional-proxy':0};
-const pilotEntries=Array.isArray(pilotHistory?.entries)?pilotHistory.entries:[];
+const verifiedPartsBySource={'dmi-local':0,'copernicus-local':0,'dmi-regional-proxy':0,'open-meteo-combined-current':0};
 for(const part of expectedParts){
   const bulkId=`PART::${part.partId}`;
   const bz=bulk.zones?.[bulkId];
-  if(!bz){
-    if(strictCurrentSemantics)failures.push(`${bulkId}: mangler bulkpost efter semantik-v3-genopbygning`);
-    continue;
-  }
-  const validRows=Object.values(bz.hourly||{}).filter(row=>finite(row['current-u'])&&finite(row['current-v']));
-  if(strictCurrentSemantics&&!near(bz.samplingPoint,part.waterPoint,1e-7)){failures.push(`${bulkId}: samplingPoint matcher ikke det aktuelle flytbare vandpunkt`);continue;}
-  if(strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,part.waterPoint,row))){failures.push(`${bulkId}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);continue;}
+  const validRows=bz?Object.values(bz.hourly||{}).filter(row=>finite(row['current-u'])&&finite(row['current-v'])):[];
+  if(bz&&strictCurrentSemantics&&!near(bz.samplingPoint,part.waterPoint,1e-7)){failures.push(`${bulkId}: samplingPoint matcher ikke det aktuelle flytbare vandpunkt`);continue;}
+  if(bz&&strictCurrentSemantics&&validRows.some(row=>!verifiedBulkRow(bz,part.waterPoint,row))){failures.push(`${bulkId}: mindst én strømtime mangler selvstændigt bevis for vandkolonne, dybdelag eller afstand`);continue;}
+  if(!bz&&dmiOnlyRollback&&strictCurrentSemantics){failures.push(`${bulkId}: mangler DMI-bulkpost efter semantik-v3-genopbygning`);continue;}
   const runtimePart=conditions.coastalParts?.parts?.[part.partId];
-  const currentProof=runtimePart?.current?.weather?.currentProvenance;
+  const publicPart=publicDetails.coastalParts?.parts?.[part.partId];
   const currentWeather=runtimePart?.current?.weather;
-  if(!finite(currentWeather?.currentUMps)||!finite(currentWeather?.currentVMps)){
+  if(!finite(currentWeather?.currentSpeedMps)||!finite(currentWeather?.currentDirectionDeg)){
     const candidate=runtimePart?.candidateG;
     const currentAt=Date.parse(runtimePart?.current?.time);
     const transportAt=Date.parse(candidate?.transportReferenceAt);
@@ -124,27 +136,16 @@ for(const part of expectedParts){
     }
     continue;
   }
-  if(currentProof?.status!=='verified'){failures.push(`${bulkId}: den viste lokale strøm mangler tidsbestemt proveniens`);continue;}
-  let sourceClass=null;let expectedArrowSource=null;
-  if(String(currentProof.provider??'').toLowerCase()==='dmi'&&Number(currentProof.vectorSemanticsVersion)===3){
-    const syntheticRow={'current-u':currentWeather.currentUMps,'current-v':currentWeather.currentVMps,sources:{current:currentProof}};
-    if(!verifiedBulkRow(bz,part.waterPoint,syntheticRow)){failures.push(`${bulkId}: den viste DMI-strøm består ikke den lokale celle-/lagkontrol`);continue;}
-    sourceClass='dmi-local';expectedArrowSource='dmi-marine-grid';
-  }else{
-    const supplementalProof=verifiedLivePilotSource(currentProof,part,{requireStatus:true});
-    if(!supplementalProof){failures.push(`${bulkId}: den viste supplerende strøm består ikke celle-, lag-, afstands- og kildekontrollen`);continue;}
-    if(dmiOnlyRollback){failures.push(`${bulkId}: rollbacktilstanden viser stadig supplerende strøm`);continue;}
-    const selectedTimeMs=Date.parse(runtimePart?.current?.time);
-    if(!Number.isFinite(selectedTimeMs)){failures.push(`${bulkId}: den viste supplerende strøm mangler gyldigt tidspunkt`);continue;}
-    const selectedTime=new Date(selectedTimeMs).toISOString();
-    const historyMatch=pilotEntries.find(entry=>entry.partId===part.partId&&entry.source===currentProof.source&&Number(entry.uMps)===Number(currentWeather.currentUMps)&&Number(entry.vMps)===Number(currentWeather.currentVMps)&&Date.parse(entry.validTime)===Date.parse(selectedTime)&&near(entry.gridPoint,currentProof.gridPoint,1e-7));
-    if(!historyMatch){failures.push(`${bulkId}: den viste supplerende strøm findes ikke som eksakt U/V-post i onlinehistorikken`);continue;}
-    sourceClass=currentProof.sourceClass==='owner-approved-regional-proxy'?'dmi-regional-proxy':'copernicus-local';
-    expectedArrowSource=supplementalProof.arrowSource;
-  }
-  if(!near(runtimePart?.flowPoints?.current,currentProof.gridPoint))failures.push(`${bulkId}: den lokale strømpil matcher ikke den viste times faktiske kildecelle`);
-  if(runtimePart?.flowPoints?.sources?.current!==expectedArrowSource)failures.push(`${bulkId}: strømpilens kildeklasse matcher ikke den valgte strøm`);
-  verifiedPartsBySource[sourceClass]++;
+  const expectedDmiIdentity=dmiExpectedIdentityForPart(part,bulkId);
+  const projectionProof=verifyCoastalPartCurrentProjection({
+    part,runtimePart,publicPart,bulkZone:bz,operationalEntryIndex,
+    verifyBulkRow:(bulkZone,samplingPoint,row)=>verifiedBulkCurrent(
+      bulk,bulkZone,samplingPoint,row?.sources?.current,row?.time,expectedDmiIdentity,
+    )?row.sources.current:null,
+  });
+  if(!projectionProof.ok){failures.push(`${bulkId}: ${projectionProof.reason}`);continue;}
+  if(dmiOnlyRollback&&projectionProof.sourceClass!=='dmi-local'){failures.push(`${bulkId}: rollbacktilstanden viser stadig supplerende strøm`);continue;}
+  verifiedPartsBySource[projectionProof.sourceClass]++;
   verifiedPartGridPoints++;
 }
 const requiredPartCoverage=expectedParts.length;

@@ -18,6 +18,7 @@ from lib.dmi_native_provenance import (
     part_time_pairs_sha256,
     sanitized_current_attestation,
     strict_verified_part_current_pair_count,
+    validate_current_operational_availability_ledger,
     validate_current_operational_ledger,
 )
 
@@ -267,6 +268,22 @@ def dmi_document(
     return document
 
 
+def availability_attestation(document: dict, targets: list[dict]) -> dict:
+    ledger = document["diagnostics"]["currentOperationalLedger"]
+    allowed_source_assets = (
+        producer.processed_source_assets_from_current_operational_ledger(
+            ledger
+        )
+    )
+    return canonical_verified_part_current_attestation(
+        document,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        allowed_source_assets,
+    )
+
+
 def run(folder: Path, *extra: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run([
         sys.executable,
@@ -317,6 +334,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     github_output = folder / "github-output.txt"
     targeted = run(folder, "--nearest-dmi-hour", "--github-output", str(github_output))
     assert targeted.returncode == 0, targeted.stdout + targeted.stderr
+    strict_targeted = run(folder, "--require-strict-dmi-ledger")
+    assert strict_targeted.returncode == 0, strict_targeted.stdout + strict_targeted.stderr
     selected = json.loads((folder / "selected.json").read_text(encoding="utf-8"))
     assert selected["schemaVersion"] == 3 and selected["matrixHourCount"] == 166
     assert selected["operationalHourCount"] == 118
@@ -399,8 +418,135 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert spatial_registry["operationalRequiredPairs"] == [spatial_pair]
     assert spatial_registry["operationalRequiredPairCount"] == 1
 
+    # One locally unavailable asset in a secondary DKSS collection does not
+    # create a fallback target when dkss_idw verifies the same exact pair.
+    secondary_local_failure = dmi_document(
+        targets,
+        missing_proofs={("dkss_lf", AT)},
+    )
+    secondary_ledger = (
+        secondary_local_failure["diagnostics"]["currentOperationalLedger"]
+    )
+    secondary_attestation = availability_attestation(
+        secondary_local_failure,
+        targets,
+    )
+    assert secondary_ledger["ready"] is False
+    assert "LOCALLY_SKIPPED_DKSS_ASSET" in secondary_ledger["failureCodes"]
+    assert secondary_ledger["operationalComplementPairs"] == []
+    validate_current_operational_availability_ledger(
+        secondary_ledger,
+        secondary_attestation,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        secondary_ledger["targetRegistrySha256"],
+    )
+    try:
+        validate_current_operational_ledger(
+            secondary_ledger,
+            secondary_attestation,
+            targets,
+            REFERENCE,
+            REFERENCE + timedelta(hours=117),
+            secondary_ledger["targetRegistrySha256"],
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Partial DMI availability must not promote as READY")
+    write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})
+    write(folder / "dmi.json", secondary_local_failure)
+    secondary_selected = run(folder)
+    assert secondary_selected.returncode == 0, (
+        secondary_selected.stdout + secondary_selected.stderr
+    )
+    secondary_strict = run(folder, "--require-strict-dmi-ledger")
+    assert secondary_strict.returncode != 0
+    assert "unfinished local work" in secondary_strict.stdout, (
+        secondary_strict.stdout + secondary_strict.stderr
+    )
+    secondary_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert secondary_registry["operationalDmiVerifiedPairCount"] == 118
+    assert secondary_registry["operationalRequiredPairCount"] == 0
+
+    # If no DKSS collection verifies one locally unavailable pair, the
+    # partial ledger authorizes precisely that pair for fallback. It remains
+    # non-promotable and every other operational pair stays DMI-owned.
+    local_gap_time = utc(REFERENCE + timedelta(hours=9))
+    local_gap_pair = {
+        "partId": "dmi-ok",
+        "validTime": local_gap_time,
+    }
+    verified_without_local_gap = set(
+        producer.operational_current_valid_times(REFERENCE)
+    ) - {local_gap_time}
+    local_failure = dmi_document(
+        targets,
+        verified_hours=verified_without_local_gap,
+        missing_proofs={
+            (collection, local_gap_time)
+            for collection in producer.MARINE_COLLECTIONS
+        },
+    )
+    local_ledger = local_failure["diagnostics"]["currentOperationalLedger"]
+    local_attestation = availability_attestation(local_failure, targets)
+    assert local_ledger["ready"] is False
+    assert local_ledger["operationalComplementPairs"] == [local_gap_pair]
+    validate_current_operational_availability_ledger(
+        local_ledger,
+        local_attestation,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        local_ledger["targetRegistrySha256"],
+    )
+    try:
+        validate_current_operational_ledger(
+            local_ledger,
+            local_attestation,
+            targets,
+            REFERENCE,
+            REFERENCE + timedelta(hours=117),
+            local_ledger["targetRegistrySha256"],
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("A local DMI gap must never satisfy strict READY")
+    write(folder / "dmi.json", local_failure)
+    local_selected = run(folder)
+    assert local_selected.returncode == 0, (
+        local_selected.stdout + local_selected.stderr
+    )
+    local_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert local_registry["operationalDmiVerifiedPairCount"] == 117
+    assert local_registry["operationalRequiredPairs"] == [local_gap_pair]
+
+    tampered_local = copy.deepcopy(local_failure)
+    tampered_local_ledger = (
+        tampered_local["diagnostics"]["currentOperationalLedger"]
+    )
+    tampered_local_ledger["operationalComplementPairs"] = []
+    tampered_local_ledger["operationalComplementPairCount"] = 0
+    tampered_local_ledger["operationalComplementPairsSha256"] = (
+        part_time_pairs_sha256([])
+    )
+    write(folder / "dmi.json", tampered_local)
+    refused_local_tamper = run(folder)
+    assert refused_local_tamper.returncode != 0
+    assert "complement is not exact" in refused_local_tamper.stdout
+
     # Outcome proof tampering is detected independently by the selector-side
     # validator; an old authorized complement cannot survive the mutation.
+    write(folder / "targets.json", {
+        "partCount": 2,
+        "zones": {"Z1": [parts[0]], "Z2": [spatial_part]},
+    })
     tampered_proof = copy.deepcopy(spatial_dmi)
     tampered_rows = next(
         row["validTimes"]
@@ -414,11 +560,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     write(folder / "dmi.json", tampered_proof)
     refused_proof_tamper = run(folder)
     assert refused_proof_tamper.returncode != 0
-    assert "outcome proof" in refused_proof_tamper.stdout.lower()
+    assert "outcome proof" in (
+        refused_proof_tamper.stdout + refused_proof_tamper.stderr
+    ).lower(), refused_proof_tamper.stdout + refused_proof_tamper.stderr
 
-    # A parser/grid exception cannot manufacture negative evidence. Its absent
-    # terminal proof is LOCALLY_SKIPPED, makes the ledger red, and authorizes no
-    # Copernicus pair even though the public row itself still exists.
+    # A parser/grid exception invalidates the old public row for this run. The
+    # allowed-source boundary excludes that cached claim, so the exact pair is
+    # filled by fallback rather than counted as verified DMI.
     missing_proof_dmi = dmi_document(
         targets,
         missing_proofs={("dkss_idw", AT)},
@@ -428,11 +576,24 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     )
     assert missing_proof_ledger["ready"] is False
     assert "LOCALLY_SKIPPED_DKSS_ASSET" in missing_proof_ledger["failureCodes"]
-    assert missing_proof_ledger["operationalComplementPairs"] == []
+    assert missing_proof_ledger["operationalComplementPairs"] == [{
+        "partId": "dmi-ok",
+        "validTime": AT,
+    }]
     write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})
     write(folder / "dmi.json", missing_proof_dmi)
-    refused_missing_proof = run(folder)
-    assert refused_missing_proof.returncode != 0
+    selected_missing_proof = run(folder)
+    assert selected_missing_proof.returncode == 0, (
+        selected_missing_proof.stdout + selected_missing_proof.stderr
+    )
+    missing_proof_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert missing_proof_registry["operationalDmiVerifiedPairCount"] == 117
+    assert missing_proof_registry["operationalRequiredPairs"] == [{
+        "partId": "dmi-ok",
+        "validTime": AT,
+    }]
 
     # A stale pair from a non-selected run is a local/unattested processing gap,
     # never negative upstream evidence. It blocks readiness and cannot become a
@@ -520,9 +681,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         else:
             raise AssertionError("Missing or noncanonical selected model run must fail closed")
 
-    # The producer already marks a globally empty official inventory as a
-    # catalog collapse. The independent validator must enforce the same proof
-    # even if a forged ledger relabels every hour as an exact complement.
+    # A genuine empty official inventory remains non-READY, but the availability
+    # contract exposes its exact full operational residual to later providers.
+    # The strict contract below must still block active DMI promotion.
     all_operational_hours = set(producer.operational_current_valid_times(REFERENCE))
     empty_inventory_dmi = dmi_document(
         targets,
@@ -532,12 +693,44 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         empty_inventory_dmi["diagnostics"]["currentOperationalLedger"]
     )
     assert "OFFICIAL_DKSS_CATALOG_COLLAPSE" in empty_inventory_ledger["failureCodes"]
-    empty_inventory_attestation = canonical_verified_part_current_attestation(
+    assert empty_inventory_ledger["ready"] is False
+    assert empty_inventory_ledger["operationalComplementPairCount"] == 118
+    empty_inventory_attestation = availability_attestation(
         empty_inventory_dmi,
+        targets,
+    )
+    validate_current_operational_availability_ledger(
+        empty_inventory_ledger,
+        empty_inventory_attestation,
         targets,
         REFERENCE,
         REFERENCE + timedelta(hours=117),
+        empty_inventory_ledger["targetRegistrySha256"],
     )
+    write(folder / "dmi.json", empty_inventory_dmi)
+    empty_inventory_selected = run(folder)
+    assert empty_inventory_selected.returncode == 0, (
+        empty_inventory_selected.stdout + empty_inventory_selected.stderr
+    )
+    empty_inventory_strict = run(folder, "--require-strict-dmi-ledger")
+    assert empty_inventory_strict.returncode != 0
+    assert "official inventory lacks its native terminal asset" in empty_inventory_strict.stdout, (
+        empty_inventory_strict.stdout + empty_inventory_strict.stderr
+    )
+    empty_inventory_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert empty_inventory_registry["schemaVersion"] == 3
+    assert empty_inventory_registry["selectionMode"] == "dmi-gaps-only"
+    assert empty_inventory_registry["operationalDmiVerifiedPairCount"] == 0
+    assert empty_inventory_registry["operationalRequiredPairCount"] == 118
+    assert (
+        empty_inventory_registry["operationalRequiredPairs"]
+        == empty_inventory_ledger["operationalComplementPairs"]
+    )
+
+    # Relabelling the same partial evidence as READY cannot satisfy the strict
+    # contract, even if its exact complement and sanitized attestation remain.
     empty_inventory_ledger["operationalComplementPairs"] = copy.deepcopy(
         empty_inventory_ledger["upstreamAbsencePairs"]
     )
@@ -640,16 +833,24 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert refused_mismatch.returncode != 0
     assert "attestation mismatch" in refused_mismatch.stdout
 
-    # A fully processed official catalog with only one surviving pair is a
-    # systemic producer collapse. Its own non-ready ledger is rejected rather
-    # than becoming a near-full-coast authenticated request.
+    # A fully processed official catalog with only one surviving DMI pair is
+    # still diagnosed as a systemic producer collapse and remains non-READY.
+    # Its exact 117-pair residual is nevertheless available to later providers.
     collapse = dmi_document(targets, verified_hours={AT})
-    assert collapse["diagnostics"]["currentOperationalLedger"]["ready"] is False
-    assert "SYSTEMIC_CURRENT_TIME_COLLAPSE" in collapse["diagnostics"]["currentOperationalLedger"]["failureCodes"]
+    collapse_ledger = collapse["diagnostics"]["currentOperationalLedger"]
+    assert collapse_ledger["ready"] is False
+    assert "SYSTEMIC_CURRENT_TIME_COLLAPSE" in collapse_ledger["failureCodes"]
+    assert collapse_ledger["operationalComplementPairCount"] == 117
     write(folder / "dmi.json", collapse)
-    refused_collapse = run(folder)
-    assert refused_collapse.returncode != 0
-    assert "systemic official-time collapse" in refused_collapse.stdout
+    selected_collapse = run(folder)
+    assert selected_collapse.returncode == 0, (
+        selected_collapse.stdout + selected_collapse.stderr
+    )
+    collapse_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert collapse_registry["operationalDmiVerifiedPairCount"] == 1
+    assert collapse_registry["operationalRequiredPairCount"] == 117
 
     # The ledger's exact complement list is authoritative and is independently
     # recomputed from the same attestation before any registry is written.
@@ -675,5 +876,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert nationwide["selectionMode"] == "manual-full-coast"
     assert nationwide["operationalRequiredPairCount"] == 118
     assert nationwide["advisoryHistoryRequiredPairCount"] == 48
+
+    refused_strict_full_coast = run(
+        folder,
+        "--full-coast",
+        "--require-strict-dmi-ledger",
+    )
+    assert refused_strict_full_coast.returncode != 0
+    assert "cannot be combined" in refused_strict_full_coast.stdout
 
 print("OK: Copernicus targets only the exact attested official-DKSS complement.")

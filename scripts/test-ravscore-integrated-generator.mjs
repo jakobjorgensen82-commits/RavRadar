@@ -526,8 +526,8 @@ assert.match(updater, /deployed-private-runtime/,
   'the private deployed or bundle lineage must participate in recovery replay');
 assert.match(updater, /progressive-private-dmi/,
   'the progressive DMI lineage must participate in recovery replay');
-assert.match(updater, /const DMI_BULK_CACHE_PATH = 'data\/live\/dmi-bulk-cache\.json'/,
-  'the progressive DMI cache must remain the normal private build input');
+assert.match(updater, /const DMI_BULK_CACHE_PATH = process\.env\.DMI_BULK_CACHE_PATH \|\| 'data\/live\/dmi-bulk-cache\.json'/,
+  'the private build must accept an explicitly selected progressive candidate while preserving the active-path default');
 assert.match(updater, /const DEPLOYED_DMI_BULK_CACHE_PATH = '\.cache\/deployed-dmi-bulk-cache\.json'/,
   'the immutable deployed DMI lineage must use its own private path');
 assert.match(updater, /readDmiBulkCache\(DEPLOYED_DMI_BULK_CACHE_PATH\)/,
@@ -911,15 +911,15 @@ const wamGateStep = workflowStep(
 );
 assert.ok(
   wamGateStep.block.includes('id: wam-bootstrap-readiness')
-    && wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
+    && !wamGateStep.block.includes("steps.dmi-terminal-gate.outputs.ready == 'true'")
+    && wamGateStep.block.includes('--cache .cache/dmi-candidate-progress.json')
+    && !wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
     && wamGateStep.block.includes('validator_status=$?')
-    && wamGateStep.block.includes('wam_code="DMI_BULK_FAILED"')
-    && wamGateStep.block.includes('history_incomplete="false"')
-    && wamGateStep.block.includes('validator_status=1')
+    && !wamGateStep.block.includes('wam_code="DMI_BULK_FAILED"')
     && wamGateStep.block.includes('echo "code=$wam_code" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('exit "$validator_status"'),
-  'the operational WAM gate must expose bounded status while preserving producer failure and exit status',
+  'the operational WAM gate must validate reusable candidate history after partial DMI while preserving the validator exit status',
 );
 assert.ok(
   wamGateStep.block.includes(
@@ -950,13 +950,22 @@ const candidateDmiSaveStep = workflowStep(
   'Save isolated DMI candidate progress before any terminal decision',
 );
 const dmiTerminalGateStep = workflowStep(
-  'Require successful DMI producer before current supplement',
+  'Classify DMI readiness before current supplement',
 );
 const activeDmiSnapshotStep = workflowStep(
   'Strictly snapshot the maintained READY active DMI generation',
 );
 const activeDmiSaveStep = workflowStep(
   'Save the maintained complete active DMI generation',
+);
+const copernicusSelectorStep = workflowStep(
+  'Select exact-hour DMI gaps for targeted Copernicus supplement',
+);
+const provenanceStep = workflowStep(
+  'Attach scientific current provenance and exact DMI grid points',
+);
+const fullValidationStep = workflowStep(
+  'Validate full project after fresh weather and current provenance',
 );
 assert.ok(
   activeDmiRestoreStep.start < activeDmiMaterializeStep.start
@@ -982,6 +991,7 @@ assert.ok(
     && activeDmiMaterializeStep.block.includes(
       'python scripts/build-copernicus-target-registry.py',
     )
+    && activeDmiMaterializeStep.block.includes('--require-strict-dmi-ledger')
     && activeDmiMaterializeStep.block.includes(
       'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
     ),
@@ -1036,6 +1046,7 @@ assert.ok(
     && activeDmiSnapshotStep.block.includes(
       'python scripts/build-copernicus-target-registry.py',
     )
+    && activeDmiSnapshotStep.block.includes('--require-strict-dmi-ledger')
     && activeDmiSnapshotStep.block.includes(
       'cp data/live/dmi-bulk-cache.json .cache/dmi-active-complete.json.tmp',
     ),
@@ -1053,6 +1064,19 @@ assert.match(
   /path: \.cache\/dmi-active-complete\.json[\s\S]*key: dmi-zone-active-v1-/,
   'normal maintenance must publish only the validated READY snapshot under the active family',
 );
+assert.ok(
+  copernicusSelectorStep.block.includes("if: steps.preflight.outputs.should_run == 'true'")
+    && !copernicusSelectorStep.block.includes("steps.dmi-terminal-gate.outputs.ready == 'true'")
+    && !copernicusSelectorStep.block.includes('--require-strict-dmi-ledger')
+    && copernicusSelectorStep.block.includes('--dmi .cache/dmi-candidate-progress.json'),
+  'partial verified DMI candidate data must feed exact residual selection without weakening active promotion',
+);
+for (const step of [provenanceStep, fullValidationStep]) {
+  assert.ok(
+    step.block.includes('DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json'),
+    'post-build provenance and spatial validation must inspect the candidate used by the supplier chain',
+  );
+}
 assert.doesNotMatch(
   productionWorkflows.build,
   /Save progressive private DMI zone cache|dmi-zone-cache-v1-\$\{\{\s*runner\.os\s*\}\}/,

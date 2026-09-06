@@ -26,6 +26,11 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--at", help="UTC time used by deterministic tests; defaults to now")
     parser.add_argument("--targets", type=Path, help="Require the collection to match this central target registry")
     parser.add_argument("--github-output", type=Path, help="Optional GitHub Actions output file")
+    parser.add_argument(
+        "--invalid-cache-is-absent",
+        action="store_true",
+        help="Treat only an invalid private cache as unavailable in this non-authoritative preflight",
+    )
     return parser.parse_args()
 
 
@@ -227,13 +232,34 @@ def main() -> int:
         row["partId"]: (round(float(row["waterPoint"][0]), 7), round(float(row["waterPoint"][1]), 7))
         for row in target_rows
     } if target_rows is not None else None
-    state = inspect(
-        args.shadow,
-        target_hour,
-        expected_fingerprint,
-        expected_points,
-        range_registry,
-    )
+    try:
+        state = inspect(
+            args.shadow,
+            target_hour,
+            expected_fingerprint,
+            expected_points,
+            range_registry,
+        )
+    except (
+        AttributeError,
+        UnicodeError,
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+    ):
+        if not args.invalid_cache_is_absent:
+            raise
+        state = {
+            "cachePresent": False,
+            "currentHourPresent": False,
+            "targetFingerprintMatch": False,
+            "recordCount": 0,
+        }
+        print(
+            "Private Copernicus cache is invalid and is treated as absent by "
+            "the non-authoritative timed preflight."
+        )
     write_outputs(args.github_output, state, target_hour)
     if not state["cachePresent"]:
         print("Private Copernicus cache is absent; current-hour collection is required")

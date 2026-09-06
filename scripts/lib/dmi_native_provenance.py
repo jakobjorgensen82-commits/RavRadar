@@ -345,8 +345,15 @@ def derive_current_part_outcome_partition(
     collections: Any,
     target_ids: Any,
     valid_times: Any,
+    *,
+    allow_local_unavailable: bool = False,
 ) -> dict[str, list[dict[str, str]]]:
-    """Derive the exact verified/upstream/spatial partition from terminal rows."""
+    """Derive the exact DMI/current partition from per-asset outcomes.
+
+    A locally unavailable asset is never presented as upstream absence or as a
+    verified DMI value. Acquisition controllers may opt in to treating it as
+    an exact fallback gap; the strict READY validator deliberately does not.
+    """
     if not isinstance(collections, (list, tuple)):
         raise ValueError("Current outcome collections are malformed")
     by_collection = {
@@ -398,6 +405,11 @@ def derive_current_part_outcome_partition(
                     outcomes.append("OFFICIAL_TIME_ABSENT")
                     continue
                 proof = row.get("partOutcomeProof")
+                if state in {"EXPECTED", "LOCALLY_SKIPPED"}:
+                    if not allow_local_unavailable:
+                        raise ValueError("Current outcome contains unfinished local work")
+                    outcomes.append("DMI_LOCAL_UNAVAILABLE")
+                    continue
                 if state not in {"PROCESSED", "VERIFIED"} or not isinstance(proof, dict):
                     raise ValueError("Current outcome contains unfinished local work")
                 if part_id in unavailable_by_collection_time.get(
@@ -417,6 +429,15 @@ def derive_current_part_outcome_partition(
                 for outcome in outcomes
             ):
                 result["spatialUnavailablePairs"].append(pair)
+                result["operationalComplementPairs"].append(pair)
+            elif allow_local_unavailable and all(
+                outcome in {
+                    "OFFICIAL_TIME_ABSENT",
+                    "DMI_SPATIAL_UNAVAILABLE",
+                    "DMI_LOCAL_UNAVAILABLE",
+                }
+                for outcome in outcomes
+            ):
                 result["operationalComplementPairs"].append(pair)
             else:
                 raise ValueError("Current outcome partition is ambiguous")
@@ -1130,15 +1151,17 @@ def _canonical_official_current_asset(
     }
 
 
-def validate_current_operational_ledger(
+def _validate_current_operational_ledger(
     ledger: Any,
     attestation: Any,
     targets: Any,
     range_start: Any,
     range_end: Any,
     target_registry_sha256: Any,
+    *,
+    allow_incomplete: bool,
 ) -> dict[str, Any]:
-    """Validate a complete official-DKSS ledger and its exact Cop complement."""
+    """Validate exact per-asset evidence and its DMI/fallback partition."""
     start, end = _exact_hour_bounds(range_start, range_end)
     if not isinstance(ledger, dict) or not isinstance(attestation, dict):
         raise ValueError("DMI current operational ledger or attestation is missing")
@@ -1194,14 +1217,23 @@ def validate_current_operational_ledger(
         if not isinstance(collection_row, dict):
             raise ValueError("DMI current operational collection row is malformed")
         collection = str(collection_row.get("collection") or "")
-        model_run = canonical_time(collection_row.get("modelRun"))
-        if model_run is None or collection_row.get("modelRun") != model_run:
+        raw_model_run = collection_row.get("modelRun")
+        model_run = canonical_time(raw_model_run)
+        if (
+            model_run is None
+            and (not allow_incomplete or raw_model_run is not None)
+        ) or (
+            model_run is not None and raw_model_run != model_run
+        ):
             raise ValueError("DMI current operational collection run is invalid")
         processing_signature = collection_row.get("processingSignature")
-        if (
-            not isinstance(processing_signature, str)
-            or not processing_signature
-            or processing_signature != processing_signature.strip()
+        signature_valid = (
+            isinstance(processing_signature, str)
+            and bool(processing_signature)
+            and processing_signature == processing_signature.strip()
+        )
+        if not signature_valid and (
+            not allow_incomplete or processing_signature is not None
         ):
             raise ValueError("DMI current operational processing signature is invalid")
         rows = collection_row.get("validTimes")
@@ -1238,6 +1270,14 @@ def validate_current_operational_ledger(
                 raw_official_asset, collection, model_run, valid_time,
             )
             source_asset = canonical_current_source_asset(raw_source_asset)
+            if raw_official_asset is not None and official_asset is None:
+                raise ValueError(
+                    "DMI official asset evidence is present but non-canonical"
+                )
+            if raw_source_asset is not None and source_asset is None:
+                raise ValueError(
+                    "DMI source asset evidence is present but non-canonical"
+                )
             if state == "UPSTREAM_ABSENT":
                 if (
                     official_asset is not None
@@ -1295,11 +1335,15 @@ def validate_current_operational_ledger(
         if collection_row.get("stateCounts") != counts:
             raise ValueError("DMI current operational state counts mismatch")
         official_times = sorted(asset["validTime"] for asset in official_assets)
-        native_terminal_time = canonical_time(
-            datetime.fromisoformat(model_run.replace("Z", "+00:00"))
-            + timedelta(hours=DKSS_MAX_FORECAST_LEAD_HOURS)
+        native_terminal_time = (
+            canonical_time(
+                datetime.fromisoformat(model_run.replace("Z", "+00:00"))
+                + timedelta(hours=DKSS_MAX_FORECAST_LEAD_HOURS)
+            )
+            if model_run is not None
+            else None
         )
-        if native_terminal_time not in official_times:
+        if not allow_incomplete and native_terminal_time not in official_times:
             raise ValueError(
                 "DMI current official inventory lacks its native terminal asset"
             )
@@ -1313,13 +1357,14 @@ def validate_current_operational_ledger(
         official_asset_count += len(official_assets)
         state_by_collection[collection] = states
 
-    if official_asset_count == 0:
+    if official_asset_count == 0 and not allow_incomplete:
         raise ValueError("DMI current official inventory is empty")
 
     partition = derive_current_part_outcome_partition(
         collections,
         target_ids,
         expected_times,
+        allow_local_unavailable=allow_incomplete,
     )
     if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
         raise ValueError("DMI outcome proof and current attestation diverge")
@@ -1329,11 +1374,15 @@ def validate_current_operational_ledger(
             state_by_collection[collection][valid_time]["state"]
             for collection in sorted(MARINE_COLLECTIONS)
         ]
-        if any(state in {"EXPECTED", "LOCALLY_SKIPPED"} for state in states):
+        if (
+            any(state in {"EXPECTED", "LOCALLY_SKIPPED"} for state in states)
+            and not allow_incomplete
+        ):
             raise ValueError("DMI current ledger contains unfinished local work")
         if (
             not all(state == "UPSTREAM_ABSENT" for state in states)
             and valid_time not in verified_times
+            and not allow_incomplete
         ):
             raise ValueError("DMI current ledger has a systemic official-time collapse")
 
@@ -1380,9 +1429,64 @@ def validate_current_operational_ledger(
             != part_time_pairs_sha256(expected_complement)
     ):
         raise ValueError("DMI current operational complement identity mismatch")
-    if ledger.get("ready") is not True or ledger.get("failureCodes") != []:
+    failure_codes = ledger.get("failureCodes")
+    if (
+        not isinstance(ledger.get("ready"), bool)
+        or not isinstance(failure_codes, list)
+        or len(failure_codes) > 16
+        or failure_codes != sorted(set(failure_codes))
+        or any(
+            not isinstance(code, str)
+            or not re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", code)
+            for code in failure_codes
+        )
+        or (ledger["ready"] and failure_codes)
+        or (not ledger["ready"] and not failure_codes)
+    ):
+        raise ValueError("DMI current operational ledger disposition is invalid")
+    if not allow_incomplete and ledger["ready"] is not True:
         raise ValueError("DMI current operational ledger is not ready")
     return ledger
+
+
+def validate_current_operational_ledger(
+    ledger: Any,
+    attestation: Any,
+    targets: Any,
+    range_start: Any,
+    range_end: Any,
+    target_registry_sha256: Any,
+) -> dict[str, Any]:
+    """Validate a complete official-DKSS ledger and its exact complement."""
+    return _validate_current_operational_ledger(
+        ledger,
+        attestation,
+        targets,
+        range_start,
+        range_end,
+        target_registry_sha256,
+        allow_incomplete=False,
+    )
+
+
+def validate_current_operational_availability_ledger(
+    ledger: Any,
+    attestation: Any,
+    targets: Any,
+    range_start: Any,
+    range_end: Any,
+    target_registry_sha256: Any,
+) -> dict[str, Any]:
+    """Validate exact usable DMI pairs plus honest local/upstream fallback gaps."""
+    return _validate_current_operational_ledger(
+        ledger,
+        attestation,
+        targets,
+        range_start,
+        range_end,
+        target_registry_sha256,
+        allow_incomplete=True,
+    )
 
 
 def current_operational_ledger_ready(

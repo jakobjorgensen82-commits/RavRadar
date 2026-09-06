@@ -52,10 +52,18 @@ class DiagnosticTests(unittest.TestCase):
             self.assertNotIn(forbidden, text)
         self.assertNotIn("READY", text)
 
+    def test_in_progress_source_stage_is_valid_partial_evidence(self):
+        values = copy.deepcopy(self.inputs)
+        values["source_stage"]["status"] = "IN_PROGRESS"
+        self.assertEqual(
+            cli.residual_diagnostic(**values),
+            cli.residual_diagnostic(**self.inputs),
+        )
+
     def test_invalid_or_stale_rows_rejected(self):
         for mutate in [
             lambda x: x["source_stage"].update(productionReferenceAt=TAIL),
-            lambda x: x["source_stage"].update(status="IN_PROGRESS"),
+            lambda x: x["source_stage"].update(status="UNKNOWN"),
             lambda x: x["source_stage"]["missingPairs"].append(x["source_stage"]["missingPairs"][0]),
             lambda x: x["source_stage"]["missingPairs"][0].update(validTime="2026-09-04T15:01:00Z"),
             lambda x: x["source_stage"]["missingPairs"][0].update(partId="unknown-part"),

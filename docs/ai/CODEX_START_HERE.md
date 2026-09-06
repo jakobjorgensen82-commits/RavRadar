@@ -1,3 +1,14 @@
+# NYESTE CHECKPOINT – 2026-09-06 – 4.0.328 per-pair-verificeret vejrfallback
+
+- Ejeren har godkendt DEC-0118. Lokal 4.0.328 bevarer hvert kompatibelt, verificeret DMI-par og sender availability-ledgerens eksakte inverse rest videre; interne huller, hale, lokalt assetsvigt og registrybundet totalt DMI-udfald behandles uden at gøre partial til `DMI_READY`.
+- DMI download-/parse-/behandlingsfejl ruller kun det eksakte asset tilbage. Supervisoren binder restart/skip til collection, run, time, item, kanonisk URL-hash og revisionshash; malformed markør kan kun give bounded finalisering. Active-promotion kræver fortsat strict READY, current-anchor, `candidate_promoted=true` og registrybevis.
+- Copernicus `READY` eller target/DMI/shadow-bound `IN_PROGRESS`, også med nul attempts, kan aflevere den ærlige rest til næste provider. Det er ikke kildeudtømning eller releasebevis. Kun ugyldige private Copernicus-derivater kan karantæneres; registry, DMI-ledger og centrale targets stopper fail-closed.
+- Open-Meteo er fortsat sidste `open-meteo-combined-current`, target..+117-only, højst 15 km, UTC/m/s/grader og `calibrationEligible=false`. Rådgivende 48-timers historik kan mangle; public/runtime/deploy kræver stadig eksakt 673 × 118 = 79.414, nul overlap/missing og alle fulde gates.
+- Closure-/advisorydokumentet valideres én gang og indekseres derefter, mens hvert konkret opslag fortsat er hash-/assignmentbundet. Spatial slutgate reproducerer public strøm fra privat U/V uden at eksponere vektorer.
+- Modelclosures er genforseglet og verificeret efter adapterændringen: integrated `4346bf2d…`/55, Candidate G rollback `71a093a4…`/56 og continuation `5456d603…`.
+- Måltests er grønne lokalt: supervisor 11/11, transaction/recovery 17/17, WAM 21/21 samt ledger-, Copernicus-, regional-, Open-Meteo-, closure-, runtime- og 673-opslagsregressioner. Fuld `validate:source` skal køre én gang på PR'ens eksakte head i GitHub. Derefter: merge → frisk main-oneoff som genopfyldning → normal vedligeholdelse → 79.414/79.414 og Feggesund 354/354 → hydreret spatial audit → fulde produktionsgates/kapacitet → særskilt modelaktivering. Candidate G er offentlig; 4.0.328 er ikke stabil eller onlinebevist.
+- Ekstern cron forbliver primær dispatcher, GitHub-schedules reserve. Normale kørsler vedligeholder; oneoff vedligeholder ikke. Efter systemstabilisering og model-online måles/justeres leverandørrækkefølge, budget og kadence mod targetfriskhed. Større pipelineoptimering er udskudt.
+
 # NYESTE CHECKPOINT – 2026-09-06 – 4.0.327 currentfallback-run og SI-enhed
 
 - 4.0.326 bestod exact-head 34010245661, PR #259 og merge d899c6defac93d52826269773bcaa9a8c645261f.

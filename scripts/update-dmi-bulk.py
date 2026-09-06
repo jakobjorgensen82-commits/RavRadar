@@ -9,6 +9,7 @@ and collection rotation are persisted across runs.
 from __future__ import annotations
 
 import copy
+from contextlib import contextmanager
 import hashlib
 import json
 import math
@@ -208,7 +209,10 @@ FINALIZE_RESERVE_SECONDS = max(60, int(os.getenv("DMI_BULK_FINALIZE_RESERVE_SECO
 WORK_DEADLINE = STARTED + max(60, MAX_RUNTIME_SECONDS - FINALIZE_RESERVE_SECONDS)
 FINALIZE_ONLY = os.getenv("DMI_BULK_FINALIZE_ONLY", "").strip().lower() == "true"
 FINALIZE_REASON = os.getenv("DMI_BULK_FINALIZE_REASON", "").strip()
-ALLOWED_FINALIZE_REASONS = frozenset({"HARMONIE_ASSET_WATCHDOG_TIMEOUT"})
+ALLOWED_FINALIZE_REASONS = frozenset({
+    "ASSET_PROCESSING_WATCHDOG_LIMIT",
+    "HARMONIE_ASSET_WATCHDOG_TIMEOUT",
+})
 GRID_INDEX_CACHE: dict[tuple[Any, ...], list[dict[str, Any]]] = {}
 GRID_BATCH_WARMED: set[tuple[Any, ...]] = set()
 PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH: float | None = None
@@ -346,6 +350,120 @@ def safe_error_message(error: Any, maximum: int = 500) -> str:
     text = re.sub(r"(?i)(api[-_]?key|token|signature|sig)=([^\s&]+)", r"\1=[redacted]", text)
     text = re.sub(r"(https?://[^\s?]+)\?[^\s]+", r"\1?[redacted]", text)
     return text[:maximum] or type(error).__name__
+
+
+SUPERVISED_ASSET_IDENTITY_FIELDS = {
+    "collection", "modelRun", "validTime", "itemId", "assetIdentitySha256",
+    "assetRevisionSha256",
+}
+
+
+def supervised_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: dict[str, Any],
+) -> dict[str, str]:
+    """Return a bounded identity safe to expose to the local supervisor."""
+    canonical_run = canonical_time(model_run)
+    canonical_valid = canonical_time(asset.get("valid"))
+    item_id = str(asset.get("id") or "").strip()
+    canonical_asset_identity = asset_identity_sha256(asset.get("href"))
+    item_created_at = canonical_time(asset.get("itemCreatedAt"))
+    item_updated_at = canonical_time(asset.get("itemUpdatedAt"))
+    if (
+        collection not in COLLECTION_ORDER
+        or canonical_run is None
+        or canonical_valid is None
+        or not item_id
+        or canonical_asset_identity is None
+        or (
+            asset.get("itemCreatedAt") is not None
+            and item_created_at is None
+        )
+        or (
+            asset.get("itemUpdatedAt") is not None
+            and item_updated_at is None
+        )
+    ):
+        raise ValueError("DMI supervised asset identity is invalid")
+    revision_identity = {
+        "collection": collection,
+        "modelRun": canonical_run,
+        "validTime": canonical_valid,
+        "itemId": item_id,
+        "assetIdentitySha256": canonical_asset_identity,
+        "size": asset.get("size"),
+        "itemCreatedAt": item_created_at,
+        "itemUpdatedAt": item_updated_at,
+    }
+    return {
+        "collection": collection,
+        "modelRun": canonical_run,
+        "validTime": canonical_valid,
+        "itemId": item_id,
+        "assetIdentitySha256": canonical_asset_identity,
+        "assetRevisionSha256": hashlib.sha256(
+            json.dumps(
+                revision_identity,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode("utf-8")
+        ).hexdigest(),
+    }
+
+
+def supervised_asset_identity_key(identity: dict[str, str]) -> str:
+    return json.dumps(
+        identity,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+@contextmanager
+def supervised_asset_operation(identity: dict[str, str]):
+    """Bind one exact download or parser operation to the outer watchdog."""
+    marker = supervised_asset_identity_key(identity)
+    progress(f"DMI_ASSET_PROCESSING_START={marker}")
+    try:
+        yield
+    finally:
+        progress(f"DMI_ASSET_PROCESSING_END={marker}")
+
+
+def supervised_skipped_asset_identities() -> set[str]:
+    raw = os.getenv("DMI_BULK_SUPERVISOR_SKIPPED_ASSETS", "[]")
+    try:
+        rows = json.loads(raw)
+    except (TypeError, ValueError) as error:
+        raise ValueError("DMI supervised skip list is invalid") from error
+    if not isinstance(rows, list) or len(rows) > 12:
+        raise ValueError("DMI supervised skip list is invalid")
+    identities: set[str] = set()
+    for row in rows:
+        if (
+            not isinstance(row, dict)
+            or set(row) != SUPERVISED_ASSET_IDENTITY_FIELDS
+            or row.get("collection") not in COLLECTION_ORDER
+            or canonical_time(row.get("modelRun")) != row.get("modelRun")
+            or canonical_time(row.get("validTime")) != row.get("validTime")
+            or not str(row.get("itemId") or "").strip()
+            or not re.fullmatch(
+                r"[a-f0-9]{64}", str(row.get("assetIdentitySha256") or "")
+            )
+            or not re.fullmatch(
+                r"[a-f0-9]{64}", str(row.get("assetRevisionSha256") or "")
+            )
+        ):
+            raise ValueError("DMI supervised skip identity is invalid")
+        identities.add(
+            json.dumps(row, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        )
+    if len(identities) != len(rows):
+        raise ValueError("DMI supervised skip list contains duplicates")
+    return identities
 
 
 def collection_failure_code(error: Exception) -> str:
@@ -3609,6 +3727,7 @@ def execute_private_wave_history_bootstrap(
     *,
     registry: Any | None = None,
     checkpoint_controller: Any | None = None,
+    supervisor_skipped_assets: set[str] | None = None,
 ) -> dict[str, set[str]]:
     """Acquire and checkpoint the one bounded private WAM bridge.
 
@@ -3646,6 +3765,8 @@ def execute_private_wave_history_bootstrap(
         fresh_zone_ids,
         budget,
     )
+    supervised_skips = supervisor_skipped_assets or set()
+    supervised_skipped_hours: dict[str, set[str]] = {}
     if configuration["mode"] == WAVE_BOOTSTRAP_COLD_START_MODE:
         if registry is None:
             raise RuntimeError("private WAM cold bootstrap registry is missing")
@@ -3773,6 +3894,7 @@ def execute_private_wave_history_bootstrap(
             "partCount": len(relevant),
             "processedAssetCount": 0,
             "reusedCompleteAssetCount": 0,
+            "assetsSkippedBySupervisor": 0,
         }
         aggregate["collections"][collection] = collection_summary
         locked[collection] = set()
@@ -3793,18 +3915,55 @@ def execute_private_wave_history_bootstrap(
                 if asset.valid_time in expected_locked_hours:
                     locked[collection].add(asset.valid_time)
                 continue
-            try:
-                path, reused = download_asset(
-                    asset.href,
-                    asset.size_bytes,
-                    budget,
-                    collection=collection,
-                    model_run=asset.model_run,
-                    valid_time=asset.valid_time,
-                    item_id=asset.item_id,
-                    item_created_at=asset.item_created_at,
-                    item_updated_at=asset.item_updated_at,
+            supervised_asset = {
+                "valid": asset.valid_time,
+                "id": asset.item_id,
+                "href": asset.href,
+                "size": asset.size_bytes,
+                "itemCreatedAt": asset.item_created_at,
+                "itemUpdatedAt": asset.item_updated_at,
+            }
+            supervised_identity = supervised_asset_identity(
+                collection,
+                asset.model_run,
+                supervised_asset,
+            )
+            if supervised_asset_identity_key(supervised_identity) in supervised_skips:
+                collection_summary["assetsSkippedBySupervisor"] += 1
+                supervised_skipped_hours.setdefault(collection, set()).add(
+                    asset.valid_time
                 )
+                result["diagnostics"].setdefault(
+                    "assetsSkippedBySupervisor", []
+                ).append({
+                    **supervised_identity,
+                    "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                })
+                result["diagnostics"].setdefault("errors", []).append({
+                    "collection": collection,
+                    "validTime": supervised_identity["validTime"],
+                    "message": "one bounded private WAM asset was skipped after a timeout",
+                    "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                    "partialProgressPreserved": True,
+                })
+                progress(
+                    f"{collection}: skipping stalled private WAM asset "
+                    f"{asset_number}/{len(assets)}; later operational processing continues"
+                )
+                continue
+            try:
+                with supervised_asset_operation(supervised_identity):
+                    path, reused = download_asset(
+                        asset.href,
+                        asset.size_bytes,
+                        budget,
+                        collection=collection,
+                        model_run=asset.model_run,
+                        valid_time=asset.valid_time,
+                        item_id=asset.item_id,
+                        item_created_at=asset.item_created_at,
+                        item_updated_at=asset.item_updated_at,
+                    )
             except Exception:
                 controller.flush_if_due(force=True)
                 raise
@@ -3837,13 +3996,14 @@ def execute_private_wave_history_bootstrap(
                     )
                 )
 
-            found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
-                path, collection, asset.model_run, asset.valid_time, relevant,
-                result, result["diagnostics"],
-                failure_flush=lambda: controller.flush_if_due(force=True),
-                stage_validator=bootstrap_stage_complete,
-                validation_error="private WAM bootstrap GRIB tuple is incomplete",
-            )
+            with supervised_asset_operation(supervised_identity):
+                found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                    path, collection, asset.model_run, asset.valid_time, relevant,
+                    result, result["diagnostics"],
+                    failure_flush=lambda: controller.flush_if_due(force=True),
+                    stage_validator=bootstrap_stage_complete,
+                    validation_error="private WAM bootstrap GRIB tuple is incomplete",
+                )
             asset_processing_seconds = time.monotonic() - asset_processing_started
             result["diagnostics"]["messagesSeen"] = int(
                 result["diagnostics"].get("messagesSeen") or 0
@@ -3871,13 +4031,22 @@ def execute_private_wave_history_bootstrap(
                 progress(
                     f"{collection}: fælles progress-checkpoint gemt"
                 )
-        if locked[collection] != expected_locked_hours:
-            controller.flush_if_due(force=True)
-            raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
+        missing_locked_hours = expected_locked_hours - locked[collection]
+        if missing_locked_hours:
+            supervised_missing = supervised_skipped_hours.get(collection, set())
+            if not missing_locked_hours <= supervised_missing:
+                controller.flush_if_due(force=True)
+                raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
+            collection_summary["status"] = "history-incomplete"
+            collection_summary["missingLockedHourCount"] = len(missing_locked_hours)
+            aggregate["historyIncomplete"] = True
+            aggregate["historyIncompleteCode"] = "ASSET_PROCESSING_WATCHDOG_TIMEOUT"
     if set(locked) != set(WAVE_BOOTSTRAP_COLLECTIONS):
         controller.flush_if_due(force=True)
         raise RuntimeError("private WAM bootstrap lacks one required collection")
-    aggregate["status"] = "history-complete"
+    aggregate["status"] = (
+        "history-incomplete" if aggregate.get("historyIncomplete") else "history-complete"
+    )
     aggregate["lockedHourCount"] = sum(len(hours) for hours in locked.values())
     controller.mark_bulk_dirty()
     if owns_controller:
@@ -4005,6 +4174,100 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
         return value if isinstance(value, dict) else {}
     except Exception:
         return {}
+
+
+def reusable_cache_document_shape(document: Any) -> bool:
+    """Reject cache shapes that can fail before the first safe checkpoint."""
+    if not isinstance(document, dict) or not isinstance(document.get("zones"), dict):
+        return False
+    for key in ("runs", "collectionState", "diagnostics"):
+        value = document.get(key)
+        if value is not None and not isinstance(value, dict):
+            return False
+    for run in (document.get("runs") or {}).values():
+        if not isinstance(run, dict):
+            return False
+    for state in (document.get("collectionState") or {}).values():
+        if not isinstance(state, dict):
+            return False
+    diagnostics = document.get("diagnostics") or {}
+    errors = diagnostics.get("errors")
+    if errors is not None and (
+        not isinstance(errors, list)
+        or any(not isinstance(error, dict) for error in errors)
+    ):
+        return False
+    horizon_coverage = diagnostics.get("componentHorizonCoverage")
+    if horizon_coverage is not None and not isinstance(horizon_coverage, dict):
+        return False
+    for family in ("wind", "marine"):
+        coverage = (horizon_coverage or {}).get(family)
+        if coverage is not None and not isinstance(coverage, dict):
+            return False
+        covered_zones = (coverage or {}).get("zonesWith96Hours")
+        if covered_zones is not None and (
+            isinstance(covered_zones, bool)
+            or not isinstance(covered_zones, int)
+            or covered_zones < 0
+        ):
+            return False
+    zone_count = diagnostics.get("zoneCount")
+    if zone_count is not None and (
+        isinstance(zone_count, bool)
+        or not isinstance(zone_count, int)
+        or zone_count < 0
+    ):
+        return False
+    persistent_inventory = diagnostics.get("persistentFieldInventory")
+    if persistent_inventory is not None and not isinstance(persistent_inventory, dict):
+        return False
+    retention_hours = document.get("privateReplayRetentionHours")
+    if retention_hours is not None and (
+        isinstance(retention_hours, bool)
+        or not isinstance(retention_hours, int)
+        or retention_hours < 0
+    ):
+        return False
+    for zone in document["zones"].values():
+        if not isinstance(zone, dict):
+            return False
+        for key in ("hourly", "gridPoints", "collections"):
+            value = zone.get(key)
+            if value is not None and not isinstance(value, dict):
+                return False
+        marine_selection = zone.get("marineSelection")
+        if marine_selection is not None and not isinstance(marine_selection, dict):
+            return False
+        for grid_point in (zone.get("gridPoints") or {}).values():
+            if grid_point is not None and not isinstance(grid_point, dict):
+                return False
+        for hour in (zone.get("hourly") or {}).values():
+            if not isinstance(hour, dict):
+                return False
+            sources = hour.get("sources")
+            if sources is not None and not isinstance(sources, dict):
+                return False
+            for source in (sources or {}).values():
+                if source is not None and not isinstance(source, dict):
+                    return False
+    return True
+
+
+def quarantine_invalid_output_cache(path: pathlib.Path) -> pathlib.Path:
+    """Move untrusted candidate bytes aside without disclosing their content."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while chunk := handle.read(1024 * 1024):
+            digest.update(chunk)
+    digest_text = digest.hexdigest()
+    quarantine = path.with_name(f"{path.name}.invalid-{digest_text[:16]}")
+    os.replace(path, quarantine)
+    print(
+        "Quarantined structurally invalid private DMI candidate; "
+        f"contentSha256Prefix={digest_text[:12]}.",
+        flush=True,
+    )
+    return quarantine
 
 
 def cache_quality(document: dict[str, Any]) -> tuple[int, int, float]:
@@ -4178,7 +4441,32 @@ def load_previous(
     production_reference: datetime | None = None,
 ) -> dict[str, Any]:
     output_document = load_document(OUTPUT_PATH)
-    candidates = [output_document, load_document(DEPLOYED_FALLBACK_PATH)]
+    output_quarantined = False
+    if (
+        OUTPUT_PATH.exists()
+        and OUTPUT_PATH.stat().st_size > 0
+        and not reusable_cache_document_shape(output_document)
+    ):
+        quarantine_invalid_output_cache(OUTPUT_PATH)
+        output_document = {}
+        output_quarantined = True
+    fallback_document = load_document(DEPLOYED_FALLBACK_PATH)
+    if not reusable_cache_document_shape(fallback_document):
+        fallback_document = {}
+    if output_quarantined:
+        if (
+            coastal_part_targets is None
+            or production_reference is None
+            or not current_operational_cache_ready(
+                fallback_document,
+                coastal_part_targets,
+                production_reference,
+            )
+        ):
+            raise RuntimeError(
+                "invalid private DMI candidate has no strict READY active recovery donor"
+            )
+    candidates = [output_document, fallback_document]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
         primary = (
@@ -4209,14 +4497,22 @@ def load_previous(
                 reverse=True,
             ):
                 backfill_compatible_cache_data(merged, donor)
+        if output_quarantined:
+            atomic_write_bulk_cache(merged)
         return merged
     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
     # derfor den bedste ældre cache som kandidat; efter at det aktuelle register
     # er bygget, fjernes kun de zoner/kystdele hvis eget samplingPoint er ændret.
     reusable = [document for document in candidates if document.get("zones")]
     if reusable:
-        return max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
-    return {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
+        recovered = max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
+        if output_quarantined:
+            atomic_write_bulk_cache(recovered)
+        return recovered
+    recovered = {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
+    if output_quarantined:
+        atomic_write_bulk_cache(recovered)
+    return recovered
 
 
 def merge_previous(current: dict[str, Any], previous: dict[str, Any], allowed_zone_ids: set[str] | None = None) -> None:
@@ -4874,6 +5170,7 @@ def build_current_operational_ledger(
             collection_ledgers,
             part_ids,
             valid_times,
+            allow_local_unavailable=True,
         )
     except (TypeError, ValueError):
         partition = {
@@ -4902,9 +5199,11 @@ def build_current_operational_ledger(
 
     upstream_absence_pairs = partition["upstreamAbsencePairs"]
     spatial_unavailable_pairs = partition["spatialUnavailablePairs"]
-    authorized_complement = (
-        partition["operationalComplementPairs"] if not failure_codes else []
-    )
+    # Fallback eligibility is the exact inverse of verified DMI availability.
+    # Local parser/download failures remain failure evidence and prevent READY
+    # promotion, but they must not prevent later providers from filling the
+    # affected pairs in this run.
+    authorized_complement = partition["operationalComplementPairs"]
     ledger = {
         "schemaVersion": CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
         "contractId": CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
@@ -5636,6 +5935,7 @@ def replay_current_field_shadow_from_cache(
     generated: str,
     budget: dict[str, int],
     locked_production_reference: datetime | None = None,
+    supervisor_skipped_assets: set[str] | None = None,
 ) -> dict[str, Any]:
     """Advance the private rotation without public output mutation.
 
@@ -5659,6 +5959,7 @@ def replay_current_field_shadow_from_cache(
         "interrupted": False,
         "bootstrapDownloads": 0,
         "bootstrapDownloadedBytes": 0,
+        "assetsSkippedBySupervisor": 0,
         "errors": [],
     }
     if not research_targets:
@@ -5670,6 +5971,7 @@ def replay_current_field_shadow_from_cache(
 
     scratch_output: dict[str, Any] = {"generatedAt": generated, "zones": {}}
     bootstrap_remaining = CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN
+    supervised_skips = supervisor_skipped_assets or set()
     unrestricted = any(not target.get("requiredCollection") for target in research_targets)
     required_collections = {
         str(target.get("requiredCollection")) for target in research_targets
@@ -5775,27 +6077,38 @@ def replay_current_field_shadow_from_cache(
             # legacy-cache bootstrap cannot turn into repeated downloads.
             asset = max(candidates, key=lambda row: epoch(row.get("valid")))
             before_bytes = int(budget.get("bytes") or 0)
-            try:
-                path, reused = download_asset(
-                    str(asset.get("href") or ""),
-                    asset.get("size"),
-                    budget,
-                    collection=collection,
-                    model_run=model_run,
-                    valid_time=str(asset.get("valid") or ""),
-                    item_id=str(asset.get("id") or "") or None,
-                    item_created_at=asset.get("itemCreatedAt"),
-                    item_updated_at=asset.get("itemUpdatedAt"),
-                )
-                resolved.append((asset, path))
+            supervised_identity = supervised_asset_identity(collection, model_run, asset)
+            if supervised_asset_identity_key(supervised_identity) in supervised_skips:
                 bootstrap_remaining -= 1
-                if not reused:
-                    summary["bootstrapDownloads"] += 1
-                    summary["bootstrapDownloadedBytes"] += max(
-                        0, int(budget.get("bytes") or 0) - before_bytes
-                    )
-            except Exception as exc:
-                summary["errors"].append({"collection": collection, "message": safe_error_message(exc)})
+                summary["assetsSkippedBySupervisor"] += 1
+                summary["errors"].append({
+                    "collection": collection,
+                    "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                    "message": "one bounded current-field bootstrap asset was skipped",
+                })
+            else:
+                try:
+                    with supervised_asset_operation(supervised_identity):
+                        path, reused = download_asset(
+                            str(asset.get("href") or ""),
+                            asset.get("size"),
+                            budget,
+                            collection=collection,
+                            model_run=model_run,
+                            valid_time=str(asset.get("valid") or ""),
+                            item_id=str(asset.get("id") or "") or None,
+                            item_created_at=asset.get("itemCreatedAt"),
+                            item_updated_at=asset.get("itemUpdatedAt"),
+                        )
+                    resolved.append((asset, path))
+                    bootstrap_remaining -= 1
+                    if not reused:
+                        summary["bootstrapDownloads"] += 1
+                        summary["bootstrapDownloadedBytes"] += max(
+                            0, int(budget.get("bytes") or 0) - before_bytes
+                        )
+                except Exception as exc:
+                    summary["errors"].append({"collection": collection, "message": safe_error_message(exc)})
         if not model_run or not resolved:
             continue
         summary["attempted"] = True
@@ -5806,6 +6119,15 @@ def replay_current_field_shadow_from_cache(
                 summary["interrupted"] = True
                 summary["reason"] = "runtime-budget-reached"
                 return summary
+            supervised_identity = supervised_asset_identity(collection, model_run, asset)
+            if supervised_asset_identity_key(supervised_identity) in supervised_skips:
+                summary["assetsSkippedBySupervisor"] += 1
+                summary["errors"].append({
+                    "collection": collection,
+                    "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                    "message": "one bounded cached current-field asset was skipped",
+                })
+                continue
             try:
                 os.utime(path, None)
             except OSError:
@@ -5826,16 +6148,17 @@ def replay_current_field_shadow_from_cache(
                 "messagesSeen": 0,
                 "zoneLookups": 0,
             }
-            found, _touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
-                path,
-                collection,
-                model_run,
-                str(asset["valid"]),
-                research_targets,
-                scratch_output,
-                replay_diagnostics,
-                current_shadow,
-            )
+            with supervised_asset_operation(supervised_identity):
+                found, _touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                    path,
+                    collection,
+                    model_run,
+                    str(asset["valid"]),
+                    research_targets,
+                    scratch_output,
+                    replay_diagnostics,
+                    current_shadow,
+                )
             summary["messagesSeen"] += messages_seen
             summary["zoneLookups"] += zone_lookups
             summary["samplesWritten"] += int(
@@ -5931,6 +6254,7 @@ def write_failure_summary(error: Exception) -> None:
 
 def main() -> int:
     global PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH
+    supervisor_skipped_assets = supervised_skipped_asset_identities()
     wave_bootstrap_configuration = private_wave_bootstrap_configuration()
     if wave_bootstrap_configuration is not None:
         PRIVATE_WAVE_BOOTSTRAP_RETENTION_START_EPOCH = (
@@ -6335,6 +6659,7 @@ def main() -> int:
                 wave_bootstrap_configuration,
                 registry=load_wave_bootstrap_registry(part_doc),
                 checkpoint_controller=checkpoint_controller,
+                supervisor_skipped_assets=supervisor_skipped_assets,
             )
         except Exception:
             checkpoint_controller.flush_if_due(force=True)
@@ -6467,6 +6792,7 @@ def main() -> int:
                         "parameterMapVersion": PARAMETER_MAP_VERSION, "gridLookupVersion": GRID_LOOKUP_VERSION,
                         "processingSignature": processing_signature,
                         "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
+                        "assetsSkippedBySupervisor": 0,
                         "assetsSkippedPreviouslyProcessed": 0, "processedValidTimes": sorted(previously_processed),
                         "processedSteps": previous_steps, "recognizedParameters": []}
             result["runs"][collection] = run_info
@@ -6476,6 +6802,36 @@ def main() -> int:
                     recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             for asset_number, asset in enumerate(assets, start=1):
+                supervised_identity = supervised_asset_identity(collection, run, asset)
+                supervised_identity_key = json.dumps(
+                    supervised_identity,
+                    ensure_ascii=False,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                if supervised_identity_key in supervisor_skipped_assets:
+                    run_info["assetsSkippedBySupervisor"] += 1
+                    result["diagnostics"].setdefault(
+                        "assetsSkippedBySupervisor", []
+                    ).append({
+                        **supervised_identity,
+                        "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                    })
+                    result["diagnostics"]["errors"].append({
+                        "collection": collection,
+                        "validTime": supervised_identity["validTime"],
+                        "message": (
+                            "one bounded asset was skipped after a processing timeout"
+                        ),
+                        "failureCode": "ASSET_PROCESSING_WATCHDOG_TIMEOUT",
+                        "partialProgressPreserved": True,
+                    })
+                    progress(
+                        f"{collection}: skipping stalled forecast step "
+                        f"{asset_number}/{len(assets)} {asset['valid']}; "
+                        "later providers receive the exact residual"
+                    )
+                    continue
                 if asset["valid"] in bootstrap_locked_hours.get(collection, set()):
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
@@ -6510,24 +6866,25 @@ def main() -> int:
                                 "marineGridSearch": {},
                                 "batchedGridReads": 0,
                             }
-                            (
-                                _stage_found,
-                                _stage_touched,
-                                staged_interrupted,
-                                _stage_messages,
-                                _stage_lookups,
-                            ) = process_grib_transactionally(
-                                cached_path,
-                                collection,
-                                run,
-                                asset["valid"],
-                                coastal_point_stage_targets,
-                                {"generatedAt": generated, "zones": {}},
-                                private_diagnostics,
-                                None,
-                                coastal_point_stage,
-                                failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
-                            )
+                            with supervised_asset_operation(supervised_identity):
+                                (
+                                    _stage_found,
+                                    _stage_touched,
+                                    staged_interrupted,
+                                    _stage_messages,
+                                    _stage_lookups,
+                                ) = process_grib_transactionally(
+                                    cached_path,
+                                    collection,
+                                    run,
+                                    asset["valid"],
+                                    coastal_point_stage_targets,
+                                    {"generatedAt": generated, "zones": {}},
+                                    private_diagnostics,
+                                    None,
+                                    coastal_point_stage,
+                                    failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                                )
                             if not staged_interrupted:
                                 checkpoint_controller.mark_sidecars_dirty()
                     continue
@@ -6536,22 +6893,38 @@ def main() -> int:
                     budget_stop = "bulk runtime budget reached"
                     break
                 try:
-                    path, reused = download_asset(
-                        asset["href"],
-                        asset.get("size"),
-                        budget,
-                        collection=collection,
-                        model_run=run,
-                        valid_time=asset["valid"],
-                        item_id=str(asset.get("id") or "") or None,
-                        item_created_at=asset.get("itemCreatedAt"),
-                        item_updated_at=asset.get("itemUpdatedAt"),
-                    )
+                    with supervised_asset_operation(supervised_identity):
+                        path, reused = download_asset(
+                            asset["href"],
+                            asset.get("size"),
+                            budget,
+                            collection=collection,
+                            model_run=run,
+                            valid_time=asset["valid"],
+                            item_id=str(asset.get("id") or "") or None,
+                            item_created_at=asset.get("itemCreatedAt"),
+                            item_updated_at=asset.get("itemUpdatedAt"),
+                        )
                 except RuntimeError as exc:
                     if "budget" in str(exc).lower():
                         budget_stop = safe_error_message(exc)
                         break
-                    raise
+                    result["diagnostics"]["errors"].append({
+                        "collection": collection,
+                        "validTime": supervised_identity["validTime"],
+                        "message": safe_error_message(exc),
+                        "failureCode": collection_failure_code(exc),
+                        "failureClass": "asset-download",
+                        "partialProgressPreserved": True,
+                    })
+                    checkpoint_controller.flush_if_due(force=True)
+                    progress(
+                        f"{collection}: forecast-step "
+                        f"{asset_number}/{len(assets)} {asset['valid']} "
+                        "could not be downloaded and was skipped; later files "
+                        "and providers receive the exact residual"
+                    )
+                    continue
                 if reused:
                     result["diagnostics"]["reusedAssets"] += 1
                     run_info["assetsReused"] += 1
@@ -6618,23 +6991,51 @@ def main() -> int:
                         )
                     )
 
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
-                    path,
-                    collection,
-                    run,
-                    asset["valid"],
-                    zones,
-                    result,
-                    result["diagnostics"],
-                    current_shadow,
-                    coastal_point_stage,
-                    current_part_outcome_observation,
-                    allowed_parameters=allowed_parameters,
-                    prepare_stage=prepare_operational_wave_stage,
-                    failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
-                    stage_validator=validate_operational_wave_stage,
-                    validation_error="operational WAM asset is not exact and complete",
-                )
+                with supervised_asset_operation(supervised_identity):
+                    try:
+                        found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                            path,
+                            collection,
+                            run,
+                            asset["valid"],
+                            zones,
+                            result,
+                            result["diagnostics"],
+                            current_shadow,
+                            coastal_point_stage,
+                            current_part_outcome_observation,
+                            allowed_parameters=allowed_parameters,
+                            prepare_stage=prepare_operational_wave_stage,
+                            failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
+                            stage_validator=validate_operational_wave_stage,
+                            validation_error="operational WAM asset is not exact and complete",
+                        )
+                    except (
+                        DmiGridLookupError,
+                        KeyError,
+                        TypeError,
+                        IndexError,
+                        AttributeError,
+                        ValueError,
+                        RuntimeError,
+                        OSError,
+                    ) as exc:
+                        result["diagnostics"]["errors"].append({
+                            "collection": collection,
+                            "validTime": supervised_identity["validTime"],
+                            "message": safe_error_message(exc),
+                            "failureCode": collection_failure_code(exc),
+                            "failureClass": "asset-processing",
+                            "partialProgressPreserved": True,
+                        })
+                        checkpoint_controller.flush_if_due(force=True)
+                        progress(
+                            f"{collection}: forecast-step "
+                            f"{asset_number}/{len(assets)} {asset['valid']} "
+                            "failed transactionally and was skipped; later files "
+                            "and providers receive the exact residual"
+                        )
+                        continue
                 if bootstrap_operational_wam and not interrupted:
                     result["diagnostics"]["operationalWaveRowsCleared"] = int(
                         result["diagnostics"].get("operationalWaveRowsCleared") or 0
@@ -6872,6 +7273,7 @@ def main() -> int:
             generated,
             budget,
             locked_production_reference,
+            supervisor_skipped_assets,
         )
         result["diagnostics"]["currentFieldShadowCachedReplay"] = replay_summary
         research_run_metrics["cachedReplayAssetsThisRun"] = int(replay_summary.get("assetsCompleted") or 0)

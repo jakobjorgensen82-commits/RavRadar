@@ -1,11 +1,22 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import {
+  buildOperationalCurrentEntryIndex,
+  verifyCoastalPartCurrentProjection,
+} from './lib/current-spatial-runtime-proof.mjs';
+import {
   controlledLiveCurrentEnabled,
   mergeLiveCurrentPilotIntoRecord,
   openMeteoLiveRecordProjectionSha256,
 } from './lib/live-current-pilot.mjs';
-import { integratedInputCalibrationEligible } from './lib/ravscore-integrated-runtime.mjs';
+import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import {
+  buildIntegratedPartScoreSeries,
+  integratedInputCalibrationEligible,
+} from './lib/ravscore-integrated-runtime.mjs';
+import {
+  verifiedIntegratedPartHourly,
+} from './lib/ravscore-production-adapters.mjs';
 
 const canonicalJson = value => {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
@@ -28,7 +39,9 @@ const fingerprint = part => sha256({
   ]],
 });
 
-const part = { partId: 'P1', zoneId: 'Z1', waterPoint: [10, 55] };
+const part = {
+  partId: 'P1', zoneId: 'Z1', waterPoint: [10, 55], onshoreDirectionDeg: 90,
+};
 const referenceAt = '2026-09-05T01:00:00Z';
 const acquiredAt = '2026-09-05T01:20:00Z';
 const closureId = sha256('closure');
@@ -187,15 +200,72 @@ assert.equal(merged.hourly[0].currentProvenance.calibrationEligible, false);
 assert.equal(merged.hourly[0].currentProvenance.scoreInputPolicyId,
   'combined-current-single-channel-no-wave-or-tide-reprojection-v1');
 assert.equal(integratedInputCalibrationEligible(merged.hourly[0]), false);
+const sanitized = verifiedIntegratedPartHourly(
+  merged,
+  { zones: {} },
+  `PART::${part.partId}`,
+  part,
+);
+assert.equal(sanitized[0].currentUMps, 0.25,
+  'closure-verified Open-Meteo must survive the actual integrated sanitizer');
+assert.equal(sanitized[0].currentProvenance.provider, 'open-meteo');
+const score = buildIntegratedPartScoreSeries({
+  part,
+  zone: { id: part.zoneId, onshoreDirectionDeg: part.onshoreDirectionDeg },
+  hourly: sanitized,
+}).scores[0];
+assert.ok(score);
+assert.equal(Object.hasOwn(score.weather, 'currentUMps'), false);
+assert.equal(Object.hasOwn(score.weather, 'currentVMps'), false);
+const flowPoints = flowPointsFromForecastRecord(
+  { hourly: sanitized }, part.waterPoint, score.time, part,
+);
+const runtimePart = { flowPoints, current: { time: score.time, weather: score.weather } };
+const publicProvenanceFields = [
+  'status','reason','provider','collection','source','sourceClass','controlledLivePilot',
+  'temporalResolution','verticalLayer','vectorSelection','vectorSemanticsVersion','method',
+  'fallback','distanceKm',
+];
+const publicPart = {
+  flowPoints: structuredClone(flowPoints),
+  current: {
+    time: score.time,
+    weather: {
+      currentSpeedMps: score.weather.currentSpeedMps,
+      currentDirectionDeg: score.weather.currentDirectionDeg,
+      currentProvenance: Object.fromEntries(publicProvenanceFields
+        .filter(field => score.weather.currentProvenance?.[field] !== undefined)
+        .map(field => [field, score.weather.currentProvenance[field]])),
+    },
+  },
+};
+const spatialProof = verifyCoastalPartCurrentProjection({
+  part,
+  runtimePart,
+  publicPart,
+  bulkZone: null,
+  operationalEntryIndex: buildOperationalCurrentEntryIndex(document),
+  verifyBulkRow: () => null,
+});
+assert.deepEqual(spatialProof, {
+  ok: true,
+  sourceClass: 'open-meteo-combined-current',
+  expectedArrowSource: 'supplemental-current-grid',
+  expectedSpeedMps: 0.25,
+  expectedDirectionDeg: 90,
+});
 
 const primary = {
   hourly: [{ ...original.hourly[0], currentUMps: 0.1, currentVMps: 0.2 }],
 };
-assert.deepEqual(
-  mergeLiveCurrentPilotIntoRecord(primary, part, document, { primaryCurrentVerified: () => true }),
+const closureSelectedOverStaleDmi = mergeLiveCurrentPilotIntoRecord(
   primary,
-  'Verified DMI must supersede the final fallback.',
+  part,
+  document,
+  { primaryCurrentVerified: () => true },
 );
+assert.equal(closureSelectedOverStaleDmi.hourly[0].currentUMps, 0.25,
+  'The exact operational closure assignment must supersede stale structural DMI.');
 
 for (const mutation of [
   { physicalScope: 'ocean-current-only' },

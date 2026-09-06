@@ -1,31 +1,31 @@
-import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.327';
-import { historicalSummary } from '../services/historical-analysis.js?v=4.0.327';
-import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.327';
-import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.327';
-import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.327';
-import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.327';
-import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.327';
-import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.327';
-import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.327';
-import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.327';
-import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.327';
-import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.327';
-import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.327';
-import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.327';
-import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.327';
-import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.327';
-import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.327';
+import { analyzeObservations } from '../services/learning-analysis.js?v=4.0.328';
+import { historicalSummary } from '../services/historical-analysis.js?v=4.0.328';
+import { loadZoneRegistry } from '../services/zone-registry.js?v=4.0.328';
+import { recommendWaterStationBracket } from '../core/water-station-routing.js?v=4.0.328';
+import { loadAdminDocument, queueAdminDocumentSave, saveAdminDocumentNow, onAdminSaveStatus, centralAdminStorageEnabled, adminStorageHealth } from '../services/admin-document-store.js?v=4.0.328';
+import { listProfiles, savePermissions, PERMISSIONS, EXPERT_PERMISSIONS, myAccess, hasPermission } from '../services/permissions-service.js?v=4.0.328';
+import { authEnabled, currentSession, requireFreshSession, testConnection, signOut } from '../services/auth-service.js?v=4.0.328';
+import { auditCurrentDirection } from '../core/current-direction-audit.js?v=4.0.328';
+import { renderCoastlineEditor, destroyCoastlineEditor } from './admin-coastline-editor.js?v=4.0.328';
+import { createDirectionEditor } from './admin-direction-editor.js?v=4.0.328';
+import { runFullPersistenceTest } from '../services/persistence-test-service.js?v=4.0.328';
+import { runFullSiteFunctionTest } from '../services/site-function-test-service.js?v=4.0.328';
+import { submitHandbookReview, listHandbookReviews, updateHandbookReview, exportLocalHandbookDrafts, localHandbookDraftCount, listLocalHandbookDrafts, deleteLocalHandbookDraft, retryLocalHandbookDraft, archiveHandbookReview } from '../services/handbook-review-store.js?v=4.0.328';
+import { loadVisitorReport } from '../services/visitor-report-service.js?v=4.0.328';
+import { decodeRuntimeDiagnosticsEnvelope } from '../services/runtime-diagnostics-archive.js?v=4.0.328';
+import { sanitizeTrustedHtml } from '../services/html-sanitizer.js?v=4.0.328';
+import { projectAdminObservationDto } from '../services/calibration-eligibility.js?v=4.0.328';
 import {
  applyAdminObservationModelPolicy,
  resolveAdminActivePublicRavScore,
-} from './admin-active-ravscore.js?v=4.0.327';
+} from './admin-active-ravscore.js?v=4.0.328';
 import {
  loadConditions,
  loadDataManifest,
  loadZones,
-} from '../services/data-service.js?v=4.0.327';
+} from '../services/data-service.js?v=4.0.328';
 
-const VERSION='4.0.327';
+const VERSION='4.0.328';
 const SITE_TEST_MODE=new URLSearchParams(location.search).has('ravradarAdminSiteTest');
 const WATER_ROUTING_KEY='ravradar-water-station-routing-v1';
 const DIRECTION_REVIEW_KEY='ravradar-direction-reviews-v1';

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 import os
 from pathlib import Path
 import queue
@@ -15,19 +16,27 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCER = ROOT / "scripts/update-dmi-bulk.py"
-HARMONIE_ASSET_START = re.compile(
+LEGACY_ASSET_START = re.compile(
     r"\[DMI bulk \+[^]]+\]\s+harmonie_dini_sf: behandler forecast-step\s"
 )
-HARMONIE_ASSET_END = re.compile(
+LEGACY_ASSET_END = re.compile(
     r"\[DMI bulk \+[^]]+\]\s+harmonie_dini_sf: forecast-step behandlet\s"
 )
 WATCHDOG_FAILURE_CODE = "HARMONIE_ASSET_WATCHDOG_TIMEOUT"
+WATCHDOG_LIMIT_CODE = "ASSET_PROCESSING_WATCHDOG_LIMIT"
+ASSET_MARKER_FIELDS = {
+    "collection", "modelRun", "validTime", "itemId", "assetIdentitySha256",
+    "assetRevisionSha256",
+}
+ASSET_START_MARKER = re.compile(r"DMI_ASSET_PROCESSING_START=(\{.*\})\s*$")
+ASSET_END_MARKER = re.compile(r"DMI_ASSET_PROCESSING_END=(\{.*\})\s*$")
 
 
 @dataclass(frozen=True)
 class SupervisedResult:
     returncode: int
     watchdog_timed_out: bool
+    timed_out_asset: dict[str, str] | None = None
 
 
 def bounded_seconds(environment: dict[str, str], name: str, default: int,
@@ -48,6 +57,25 @@ def stop_process(process: subprocess.Popen, *, grace_seconds: float = 10.0) -> N
     except subprocess.TimeoutExpired:
         process.kill()
         process.wait(timeout=grace_seconds)
+
+
+def parse_asset_marker(line: str, pattern: re.Pattern[str]) -> dict[str, str] | None:
+    match = pattern.search(line)
+    if match is None:
+        return None
+    try:
+        value = json.loads(match.group(1))
+    except (TypeError, ValueError):
+        return None
+    if (
+        not isinstance(value, dict)
+        or set(value) != ASSET_MARKER_FIELDS
+        or not all(isinstance(value.get(key), str) and value[key] for key in value)
+        or not re.fullmatch(r"[a-f0-9]{64}", value["assetIdentitySha256"])
+        or not re.fullmatch(r"[a-f0-9]{64}", value["assetRevisionSha256"])
+    ):
+        return None
+    return value
 
 
 def run_supervised(
@@ -72,17 +100,20 @@ def run_supervised(
 
     reader = threading.Thread(target=pump_output, daemon=True)
     reader.start()
-    harmonie_started_at: float | None = None
+    asset_started_at: float | None = None
+    active_asset: dict[str, str] | None = None
     timed_out = False
     while True:
+        # En fastlåst parser kan fortsætte med at skrive statuslinjer. Timeouten
+        # må derfor ikke afhænge af, at outputkøen bliver tom.
+        if (asset_started_at is not None
+                and clock() - asset_started_at >= watchdog_seconds):
+            timed_out = True
+            stop_process(process)
+            break
         try:
             event, line = events.get(timeout=0.25)
         except queue.Empty:
-            if (harmonie_started_at is not None
-                    and clock() - harmonie_started_at >= watchdog_seconds):
-                timed_out = True
-                stop_process(process)
-                break
             if process.poll() is not None and not reader.is_alive():
                 break
             continue
@@ -90,14 +121,30 @@ def run_supervised(
             break
         assert line is not None
         log(line)
-        if HARMONIE_ASSET_START.search(line):
-            harmonie_started_at = clock()
-        elif HARMONIE_ASSET_END.search(line):
-            harmonie_started_at = None
+        started_asset = parse_asset_marker(line, ASSET_START_MARKER)
+        ended_asset = parse_asset_marker(line, ASSET_END_MARKER)
+        if started_asset is not None:
+            active_asset = started_asset
+            asset_started_at = clock()
+        elif ended_asset is not None:
+            if active_asset == ended_asset:
+                active_asset = None
+                asset_started_at = None
+        elif LEGACY_ASSET_START.search(line):
+            active_asset = None
+            asset_started_at = clock()
+        elif LEGACY_ASSET_END.search(line):
+            active_asset = None
+            asset_started_at = None
+        elif "DMI_ASSET_PROCESSING_START=" in line:
+            # A truncated marker must still start a generic watchdog. It may
+            # terminate/finalize safely, but it may never authorize a broad skip.
+            active_asset = None
+            asset_started_at = clock()
     reader.join(timeout=2.0)
     if process.stdout is not None:
         process.stdout.close()
-    return SupervisedResult(int(process.wait()), timed_out)
+    return SupervisedResult(int(process.wait()), timed_out, active_asset)
 
 
 def write_failure_outputs(environment: dict[str, str], code: str) -> None:
@@ -114,13 +161,17 @@ def write_failure_outputs(environment: dict[str, str], code: str) -> None:
         )
 
 
-def finalize_checkpoint(environment: dict[str, str]) -> int:
+def finalize_checkpoint(
+    environment: dict[str, str],
+    *,
+    reason: str = WATCHDOG_FAILURE_CODE,
+) -> int:
     timeout = bounded_seconds(
         environment, "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS", 420, 120, 600
     )
     final_env = dict(
         environment, DMI_BULK_FINALIZE_ONLY="true",
-        DMI_BULK_FINALIZE_REASON=WATCHDOG_FAILURE_CODE,
+        DMI_BULK_FINALIZE_REASON=reason,
         DMI_BULK_MAX_RUNTIME_SECONDS="600", DMI_BULK_FINALIZE_RESERVE_SECONDS="180",
     )
     try:
@@ -137,19 +188,68 @@ def finalize_checkpoint(environment: dict[str, str]) -> int:
 def main() -> int:
     environment = dict(os.environ)
     timeout = bounded_seconds(
-        environment, "DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS", 180, 60, 600
+        environment,
+        "DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS",
+        bounded_seconds(
+            environment, "DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS", 180, 60, 600
+        ),
+        60,
+        600,
     )
-    result = run_supervised(
-        [sys.executable, "-u", str(PRODUCER)], environment,
-        watchdog_seconds=timeout,
+    maximum_skips = bounded_seconds(
+        environment, "DMI_BULK_MAX_SUPERVISED_ASSET_SKIPS", 4, 1, 12
     )
-    if not result.watchdog_timed_out:
-        return result.returncode
-    print(
-        "DMI supervisor stopped one stalled HARMONIE asset; "
-        "finalizing the last committed checkpoint.", flush=True,
+    total_runtime = bounded_seconds(
+        environment,
+        "DMI_BULK_MAX_RUNTIME_SECONDS",
+        900,
+        60,
+        3600,
     )
-    return finalize_checkpoint(environment)
+    finalize_reserve = bounded_seconds(
+        environment, "DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS", 420, 120, 600
+    )
+    deadline = time.monotonic() + total_runtime
+    skipped_assets: list[dict[str, str]] = []
+    while True:
+        remaining = int(deadline - time.monotonic())
+        if remaining <= finalize_reserve:
+            environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"] = json.dumps(
+                skipped_assets, sort_keys=True, separators=(",", ":")
+            )
+            return finalize_checkpoint(environment, reason=WATCHDOG_LIMIT_CODE)
+        child_environment = dict(environment)
+        child_environment["DMI_BULK_MAX_RUNTIME_SECONDS"] = str(max(60, remaining))
+        child_environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"] = json.dumps(
+            skipped_assets, sort_keys=True, separators=(",", ":")
+        )
+        result = run_supervised(
+            [sys.executable, "-u", str(PRODUCER)],
+            child_environment,
+            watchdog_seconds=min(timeout, max(60, remaining)),
+        )
+        if not result.watchdog_timed_out:
+            return result.returncode
+        if (
+            result.timed_out_asset is None
+            or result.timed_out_asset in skipped_assets
+            or len(skipped_assets) >= maximum_skips
+        ):
+            environment["DMI_BULK_SUPERVISOR_SKIPPED_ASSETS"] = json.dumps(
+                skipped_assets, sort_keys=True, separators=(",", ":")
+            )
+            print(
+                "DMI supervisor reached its bounded asset-skip limit; "
+                "finalizing the last committed checkpoint.",
+                flush=True,
+            )
+            return finalize_checkpoint(environment, reason=WATCHDOG_LIMIT_CODE)
+        skipped_assets.append(result.timed_out_asset)
+        print(
+            "DMI supervisor stopped one stalled asset and will restart the "
+            "producer with only that exact asset quarantined.",
+            flush=True,
+        )
 
 
 if __name__ == "__main__":

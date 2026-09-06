@@ -281,9 +281,11 @@ export function verifiedControlledLiveCurrentSource(source, rowTime, part, rowUM
   const expectedSamplingPoint = part?.waterPoint;
   const sourceUMps = finite(source?.uMps);
   const sourceVMps = finite(source?.vMps);
+  const provider = String(source?.provider ?? '').toLowerCase();
+  const expectedFallback = provider === 'open-meteo';
   if (source?.status !== 'verified'
     || source?.vectorSemanticsVersion !== 4
-    || source?.fallback !== false
+    || source?.fallback !== expectedFallback
     || !samePoint(source?.samplingPoint, expectedSamplingPoint)
     || !samePoint(source?.gridPoint, source?.gridPoint)
     || finite(source?.distanceKm) === null
@@ -292,13 +294,14 @@ export function verifiedControlledLiveCurrentSource(source, rowTime, part, rowUM
     || sourceUMps === null || sourceVMps === null
     || finite(rowUMps) === null || finite(rowVMps) === null
     || sourceUMps !== rowUMps || sourceVMps !== rowVMps) return null;
-  const provider = String(source?.provider ?? '').toLowerCase();
   if (provider === 'copernicus') {
     if (typeof source?.productId !== 'string' || source.productId.length === 0
       || typeof source?.datasetId !== 'string' || source.datasetId.length === 0) return null;
   } else if (provider === 'dmi') {
     const modelRunMs = validTimeMs(source?.modelRun);
     if (modelRunMs === null || modelRunMs > validTimeMs(rowTime)) return null;
+  } else if (provider !== 'open-meteo') {
+    return null;
   }
   return verifiedLivePilotSource(source, part, { requireStatus: true });
 }

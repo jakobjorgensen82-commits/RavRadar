@@ -3,7 +3,7 @@ import { applyCurrentTransportToHistory } from './lib/current-transport-history.
 import { attachVerifiedCurrentToSample, historySampleReferenceAt } from './lib/weather-history-retention.mjs';
 
 const CONDITIONS='data/live/conditions.json';
-const BULK='data/live/dmi-bulk-cache.json';
+const BULK=process.env.DMI_BULK_CACHE_PATH||'data/live/dmi-bulk-cache.json';
 const FORECAST='data/live/dmi-forecast-cache.json';
 const CURRENT_VECTOR_SEMANTICS_VERSION=3;
 const CURRENT_MAX_DISTANCE_KM=5;

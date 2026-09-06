@@ -909,7 +909,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertLess(success_gate_binding, fail_closed_return)
         self.assertLess(fail_closed_return, final_return)
 
-    def test_hard_crash_after_history_cannot_bypass_workflow_gate(self) -> None:
+    def test_partial_dmi_still_runs_the_strict_wam_validator(self) -> None:
         workflow = (
             ROOT / ".github" / "workflows" / "reusable-weather-build.yml"
         ).read_text("utf-8")
@@ -922,11 +922,12 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "python -B scripts/validate_dmi_wave_history_bootstrap.py"
         )
         self.assertIn("id: wam-bootstrap-readiness", gate)
-        self.assertIn('producer_outcome="${{ steps.dmi-bulk.outcome }}"', gate)
+        self.assertIn("if: always()", gate)
+        self.assertNotIn("steps.dmi-terminal-gate.outputs.ready == 'true'", gate)
+        self.assertIn("--cache .cache/dmi-candidate-progress.json", gate)
+        self.assertNotIn('producer_outcome="${{ steps.dmi-bulk.outcome }}"', gate)
         self.assertIn("validator_status=$?", gate)
-        self.assertIn('wam_code="DMI_BULK_FAILED"', gate)
-        self.assertIn('history_incomplete="false"', gate)
-        self.assertIn("validator_status=1", gate)
+        self.assertNotIn('wam_code="DMI_BULK_FAILED"', gate)
         self.assertIn('echo "code=$wam_code" >> "$GITHUB_OUTPUT"', gate)
         self.assertIn(
             'echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"',
@@ -1020,7 +1021,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "Inspect isolated DMI candidate progress for normal maintenance",
             "Update DMI bulk model cache",
             "Save isolated DMI candidate progress before any terminal decision",
-            "Require successful DMI producer before current supplement",
+            "Classify DMI readiness before current supplement",
             "Strictly snapshot the maintained READY active DMI generation",
             "Save the maintained complete active DMI generation",
         )
@@ -1035,6 +1036,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         active_materialize = normal[normal_names[1]][1]
         self.assertIn(".diagnostics.currentOperationalLedger.ready", active_materialize)
         self.assertIn("python scripts/build-copernicus-target-registry.py", active_materialize)
+        self.assertIn("--require-strict-dmi-ledger", active_materialize)
         self.assertIn(
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             active_materialize,
@@ -1077,6 +1079,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", snapshot)
         self.assertIn(".diagnostics.currentOperationalLedger.ready", snapshot)
         self.assertIn("python scripts/build-copernicus-target-registry.py", snapshot)
+        self.assertIn("--require-strict-dmi-ledger", snapshot)
         self.assertIn("--at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"", snapshot)
 
         active = normal[normal_names[8]][1]
@@ -1114,6 +1117,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         oneoff_materialize = oneoff_steps[oneoff_names[1]][1]
         self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_materialize)
         self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_materialize)
+        self.assertIn("--require-strict-dmi-ledger", oneoff_materialize)
 
         oneoff_candidate_restore = oneoff_steps[oneoff_names[2]][1]
         self.assertIn("path: .cache/dmi-candidate-progress.json", oneoff_candidate_restore)
@@ -1147,6 +1151,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", oneoff_snapshot)
         self.assertIn(".diagnostics.currentOperationalLedger.ready", oneoff_snapshot)
         self.assertIn("python scripts/build-copernicus-target-registry.py", oneoff_snapshot)
+        self.assertIn("--require-strict-dmi-ledger", oneoff_snapshot)
         self.assertIn(
             '--at "${{ steps.operational-target.outputs.target_hour }}"',
             oneoff_snapshot,

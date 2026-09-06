@@ -149,7 +149,7 @@ def residual_diagnostic(*, ledger, source_stage, policy, targets, reference) -> 
     """
     reference = exact_reference(reference)
     reference_dt = datetime.fromisoformat(reference.replace("Z", "+00:00"))
-    if (source_stage.get("status") != "READY"
+    if (source_stage.get("status") not in {"READY", "IN_PROGRESS"}
             or source_stage.get("productionReferenceAt") != reference
             or ledger.get("productionReferenceAt") != reference):
         raise RuntimeError("RESIDUAL_DIAGNOSTIC_UNAVAILABLE")

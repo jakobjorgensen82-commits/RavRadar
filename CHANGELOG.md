@@ -1,3 +1,13 @@
+## 4.0.328 – per-pair-verificeret vejrfallback (2026-09-06, lokalt)
+
+- DMI-kandidatcachen genbruger alle kompatible verificerede currentpar. En separat availability-ledger afleverer den eksakte inverse rest, inklusive interne huller, hale, lokalt assetsvigt og registrybundet schema-3 total outage, uden at partial ommærkes som `DMI_READY`. En strukturelt ugyldig kandidat digest-karantæneres og genoprettes atomisk fra separat strict READY-active-donor.
+- DMI download-/parse-/processingfejl ruller kun det konkrete asset tilbage og lader senere assets fortsætte. Supervisoren kan bounded genstarte med kun en collection/run/time/item/URL-/revisionsbundet asset sprunget over, håndhæver tidsgrænsen selv under kontinuerligt logoutput, og en malformed markør kan aldrig autorisere skip.
+- Copernicus `READY` eller target/DMI/shadow-bound `IN_PROGRESS`, også med nul attempts, kan aflevere sin eksakte rest til regional DMI/Open-Meteo uden at påstå kildeudtømning. Ugyldige afledte private Copernicus shadow-/stagefiler kan karantæneres; centrale targets, registry og DMI-ledger forbliver fail-closed.
+- Open-Meteo forbliver sidste target-only `open-meteo-combined-current`, højst 15 km, UTC/m/s/grader og altid `calibrationEligible=false`. 48h historik er rådgivende, mens public/runtime/deploy fortsat kræver præcis 673 × 118 = 79.414, nul overlap/missing og alle fulde gates.
+- DMI-supervisor 11/11, transactional checkpoint/recovery 17/17, WAM-integration 21/21 samt ledger-, Copernicus-stage-/registry-, regional-, Open-Meteo-, closure-/diagnostik- og live-adaptermåltests er grønne lokalt. Den indekserede 673-opslagsregression undgår gentagen helscanning af 79.414 entries, og spatial slutgate reproducerer public strøm fra privat closurebundet U/V uden at publicere rå vektorer. Fuld GitHub exact-head sourcegate, merge, frisk main-oneoff, komplet closure, fulde produktionsgates og offentlig verifikation mangler; Candidate G er fortsat offentlig.
+- Modelclosures er deterministisk genforseglet og verificeret: integrated `4346bf2d…`/55 og Candidate G rollback `71a093a4…`/56.
+- Ekstern cron forbliver primær dispatcher, GitHub-schedules reserve og normal drift den varige updater. Oneoff er kun genopfyldning. Leverandørrækkefølge/tid/friskhed eftermåles efter stabilisering og model-online; pipelineoptimering er udskudt.
+
 ## 4.0.327 – run-afgrænset shadow og verificeret Open-Meteo-enhed (2026-09-06, lokalt)
 
 - Oneoff 34017809629 attempt 1 gjorde DMI og Copernicus READY, men Open-Meteo stoppede før request, fordi en bevaret prøve fra et ikke-valgt regionalt modelrun stadig blev cadencevalideret som aktuel.

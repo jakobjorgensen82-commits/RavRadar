@@ -15,9 +15,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import copernicusmarine
-import xarray as xr
-
 from lib.copernicus_current import (
     COMPONENT_PAIR,
     FUTURE_ACQUISITION_FRESHNESS_HOURS,
@@ -71,6 +68,21 @@ BOUNDED_PROGRESS_EXIT_CODE = 75
 
 class CopernicusOperationalBudgetReached(RuntimeError):
     """Signal that validated progress was saved before the wrapper deadline."""
+
+
+def quarantine_invalid_private_file(path: Path, label: str) -> None:
+    """Retain invalid private bytes under a payload-free digest before replacement."""
+    if not path.exists() or path.stat().st_size <= 0:
+        return
+    digest = file_sha256(path).removeprefix("sha256:")
+    quarantine = path.with_name(f"{path.name}.invalid-{digest[:16]}")
+    os.replace(path, quarantine)
+    print(
+        f"Quarantined invalid private Copernicus {label}; "
+        f"contentSha256Prefix={digest[:12]}.",
+        flush=True,
+    )
+
 
 PRODUCTS = [dict(row) for row in PINNED_PRODUCTS]
 ADVISORY_HISTORY_MAX_SHARDS_PER_PRODUCT = max(
@@ -158,6 +170,8 @@ def download_subset(
     output_directory: Path,
     shard_index: int,
 ) -> Path:
+    import copernicusmarine
+
     minimum_lon, maximum_lon, minimum_lat, maximum_lat = request_bounds(targets, product)
     response = copernicusmarine.subset(
         dataset_id=product["datasetId"],
@@ -367,6 +381,7 @@ def fill_bounded_advisory_history(
                     )
                     subset_sha256 = file_sha256(path)
                     raw_records: list[dict[str, Any]] = []
+                    import xarray as xr
                     with xr.open_dataset(path) as dataset:
                         for target in shard_targets:
                             raw_records.extend(nearest_shared_uv_times(
@@ -478,7 +493,27 @@ def main() -> int:
         registry["advisoryHistoryRequiredPairs"] if operational_contract else []
     )
 
-    existing = load_shadow(args.shadow, reference, target_identities)
+    shadow_was_present = args.shadow.exists() and args.shadow.stat().st_size > 0
+    shadow_recovered = False
+    try:
+        existing = load_shadow(args.shadow, reference, target_identities)
+    except (
+        AttributeError,
+        UnicodeError,
+        json.JSONDecodeError,
+        TypeError,
+        ValueError,
+        RuntimeError,
+    ):
+        quarantine_invalid_private_file(args.shadow, "shadow")
+        existing = atomic_write_shadow_checkpoint(
+            args.shadow,
+            acquisitions=[],
+            records=[],
+            updated_at=acquisition_at,
+            target_identities=target_identities,
+        )
+        shadow_recovered = True
     existing_acquisitions, existing_records = merge_cache_evidence(existing, [], [], reference, target_identities)
     existing_refs, initial_missing = select_required_records(
         required_pairs, existing_acquisitions, existing_records, reference,
@@ -492,19 +527,92 @@ def main() -> int:
         and args.source_stage.exists()
         and args.source_stage.stat().st_size > 0
     ):
-        if not args.shadow.exists() or args.shadow.stat().st_size <= 0:
-            raise RuntimeError(
-                "Copernicus source-stage evidence exists without its bound shadow cache"
-            )
-        reusable_stage = validate_reusable_source_stage(
-            json.loads(args.source_stage.read_text(encoding="utf-8")),
-            registry=registry,
-            shadow=existing,
-            target_identities=target_identities,
-            shadow_sha256=file_sha256(args.shadow),
-            allow_rebase=True,
+        if shadow_recovered or not shadow_was_present:
+            quarantine_invalid_private_file(args.source_stage, "source stage")
+        else:
+            try:
+                reusable_stage = validate_reusable_source_stage(
+                    json.loads(args.source_stage.read_text(encoding="utf-8")),
+                    registry=registry,
+                    shadow=existing,
+                    target_identities=target_identities,
+                    shadow_sha256=file_sha256(args.shadow),
+                    allow_rebase=True,
+                )
+                source_attempts = list(reusable_stage["attempts"])
+            except (
+                KeyError,
+                UnicodeError,
+                json.JSONDecodeError,
+                TypeError,
+                ValueError,
+                RuntimeError,
+            ):
+                quarantine_invalid_private_file(args.source_stage, "source stage")
+    if operational_contract and not source_attempts and existing_refs:
+        target_by_id_for_start = {
+            str(row["partId"]): row for row in registry_targets
+        }
+        baltic_for_start = next(
+            row for row in PRODUCTS
+            if row["source"] == "copernicus-baltic-nemo"
         )
-        source_attempts = list(reusable_stage["attempts"])
+        unsafe_record_ids = {
+            ref["recordId"]
+            for ref in existing_refs
+            if ref["source"] == "copernicus-nws-amm15"
+            and eligible_target(
+                target_by_id_for_start[ref["partId"]],
+                baltic_for_start,
+            )
+        }
+        if unsafe_record_ids:
+            # Preserve every other validated cache record. Only AMM15 records
+            # whose higher-priority Baltic prerequisite cannot be proven are
+            # quarantined from the new run-bound availability view.
+            existing_records = [
+                row for row in existing_records
+                if row.get("recordId") not in unsafe_record_ids
+            ]
+            retained_acquisition_ids = {
+                row["acquisitionId"] for row in existing_records
+            }
+            existing_acquisitions = [
+                row for row in existing_acquisitions
+                if row.get("acquisitionId") in retained_acquisition_ids
+            ]
+            existing = atomic_write_shadow_checkpoint(
+                args.shadow,
+                acquisitions=existing_acquisitions,
+                records=existing_records,
+                updated_at=acquisition_at,
+                target_identities=target_identities,
+            )
+            existing_refs, initial_missing = select_required_records(
+                required_pairs,
+                existing_acquisitions,
+                existing_records,
+                reference,
+            )
+            initial_missing_keys = {
+                (row["partId"], row["validTime"]) for row in initial_missing
+            }
+            remaining = set(initial_missing_keys)
+    if operational_contract:
+        # Persist a target/DMI/shadow-bound zero-attempt stage before credentials,
+        # network or the first shard. A provider outage can therefore hand the
+        # complete honest residual to Open-Meteo without claiming exhaustion.
+        existing = persist_source_stage_progress(
+            shadow_path=args.shadow,
+            source_stage_path=args.source_stage,
+            registry=registry,
+            target_identities=target_identities,
+            acquisitions=existing_acquisitions,
+            records=existing_records,
+            attempts=source_attempts,
+            updated_at=acquisition_at,
+            shadow_changed=False,
+        )
     attempted_pairs_by_source = {
         product["source"]: {
             (pair["partId"], pair["validTime"])
@@ -585,6 +693,7 @@ def main() -> int:
                 # Bind the exact downloaded bytes before xarray/netCDF parsing.
                 subset_sha256 = file_sha256(path)
                 raw_records: list[dict[str, Any]] = []
+                import xarray as xr
                 with xr.open_dataset(path) as dataset:
                     for target in shard_targets:
                         raw_records.extend(nearest_shared_uv_times(

@@ -149,7 +149,7 @@ const futureCopernicusEntry = makeCopernicusEntry(FUTURE_AT, RECORD_IDS[1], -0.1
 assert.equal(collectionId, 'sha256:466a9fda13879e285b1150b9cdcc58f8927731c0ee97eedc98d967b07d3432bc');
 assert.equal(copernicusEntry.recordProjectionSha256,
   'sha256:1bdd8d50a587d21d6d0c9ba02526a985547495fe93342d75de6d1280dcd8e767');
-const live = {
+const legacyLive = {
   schemaVersion: 1, controlledLivePilot: true, mode: 'controlled-live', enabled: true,
   credentialsIncluded: false, targetFingerprint: fingerprint(part), copernicusRangeSeal,
   entries: [copernicusEntry, futureCopernicusEntry],
@@ -173,7 +173,7 @@ const zeroGapSealIdentity = {
   acquisitionIds: [],
 };
 const zeroGapLive = {
-  ...live,
+  ...legacyLive,
   copernicusRangeSeal: {
     collectionId: sha256(zeroGapSealIdentity),
     status: 'COMPLETE',
@@ -183,8 +183,8 @@ const zeroGapLive = {
   },
   entries: [],
 };
-assert.equal(controlledLiveCurrentEnabled(zeroGapLive), true,
-  'full DMI coverage still requires and accepts an exact COMPLETE zero-gap seal');
+assert.equal(controlledLiveCurrentEnabled(zeroGapLive), false,
+  'a legacy closure-less zero-gap seal must fail closed under the mandatory operationalClosure v2 contract');
 
 const ADVISORY_AT = '2026-08-18T12:00:00Z';
 const ADVISORY_RECORD_ID = sha256('fixture-record-advisory');
@@ -238,7 +238,7 @@ const operationalLive = withMeasuredAdvisory => {
     entries.unshift(resign(makeCopernicusEntry(ADVISORY_AT, ADVISORY_RECORD_ID, 0.08, 0.03)));
   }
   return {
-    ...live,
+    ...legacyLive,
     copernicusRangeSeal: {
       collectionId: operationalCollectionId,
       status: 'OPERATIONAL_COMPLETE',
@@ -252,11 +252,11 @@ const operationalLive = withMeasuredAdvisory => {
   };
 };
 const operationWithoutHistory = operationalLive(false);
-assert.equal(controlledLiveCurrentEnabled(operationWithoutHistory), true,
-  'complete target..+117 operation must remain enabled with explicitly missing advisory history');
+assert.equal(controlledLiveCurrentEnabled(operationWithoutHistory), false,
+  'a legacy OPERATIONAL_COMPLETE seal without operationalClosure v2 must fail closed');
 const operationWithMeasuredHistory = operationalLive(true);
-assert.equal(controlledLiveCurrentEnabled(operationWithMeasuredHistory), true,
-  'measured advisory history must remain usable when it is actually present');
+assert.equal(controlledLiveCurrentEnabled(operationWithMeasuredHistory), false,
+  'legacy measured advisory history cannot replace the mandatory operationalClosure v2 proof');
 assert.equal(controlledLiveCurrentEnabled({
   ...operationWithoutHistory,
   copernicusRangeSeal: {
@@ -264,19 +264,205 @@ assert.equal(controlledLiveCurrentEnabled({
     advisoryHistoryMissingPairCount: 0,
   },
 }), false, 'tampered advisory-history completeness must fail the whole operation seal closed');
+
+const OPERATIONAL_CLOSURE_CONTRACT = 'current-operational-673x118-closure-ready-v2';
+const OPERATIONAL_ASSIGNMENT_CONTRACT = 'current-operational-source-assignment-v2';
+const TOTAL_OPERATIONAL_PAIRS = 673 * 118;
+const REGIONAL_SOURCE_ASSET_SHA = sha256('fixture-regional-source-asset');
+const REGIONAL_SOURCE_PROOF_SHA = sha256('fixture-regional-source-proof');
+const exactHour = value => new Date(value).toISOString().replace('.000Z', 'Z');
+const regionalVectorCommitmentSha = entry => sha256({
+  schemaVersion: 1,
+  contractId: 'regional-dmi-private-vector-commitment-v1',
+  partId: entry.partId,
+  collection: 'dkss_lf',
+  modelRun: entry.modelRun,
+  validTime: entry.sourceValidTime,
+  sourceAssetSha256: entry.sourceAssetSha256,
+  verticalLayer: entry.verticalLayer,
+  verticalLayerRankM: entry.verticalLayerRankM.toFixed(3),
+  uMps: entry.uMps.toFixed(5),
+  vMps: entry.vMps.toFixed(5),
+});
+const buildOperationalLive = rawEntries => {
+  const closureId = sha256({
+    fixture: 'legacy-live-current-v2-closure',
+    pairs: rawEntries.map(entry => [entry.partId, entry.validTime, entry.source]),
+  });
+  const entries = rawEntries.map(rawEntry => {
+    if (rawEntry.provider === 'copernicus') {
+      const entry = {
+        ...rawEntry,
+        collectionId: closureId,
+        productionReferenceAt: REFERENCE_AT,
+        validTime: exactHour(rawEntry.validTime),
+        closureContractId: OPERATIONAL_CLOSURE_CONTRACT,
+        closureId,
+        classification: rawEntry.source === 'copernicus-nws-amm15'
+          ? 'COPERNICUS_AMM15'
+          : 'COPERNICUS_BALTIC',
+      };
+      const recordRef = {
+        partId: entry.partId,
+        validTime: entry.validTime,
+        recordId: entry.recordId,
+        acquisitionId: entry.acquisitionId,
+        source: entry.source,
+      };
+      entry.recordRefSha256 = sha256({
+        contractId: 'current-operational-copernicus-record-ref-v1',
+        recordRef,
+      });
+      entry.closureAssignmentSha256 = sha256({
+        schemaVersion: 1,
+        contractId: OPERATIONAL_ASSIGNMENT_CONTRACT,
+        assignment: {
+          ...recordRef,
+          classification: entry.classification,
+          recordRefSha256: entry.recordRefSha256,
+        },
+      });
+      entry.recordProjectionSha256 = sha256(projectionPayload(entry));
+      return entry;
+    }
+
+    const entry = {
+      ...rawEntry,
+      productionReferenceAt: REFERENCE_AT,
+      validTime: exactHour(rawEntry.validTime),
+      sourceValidTime: exactHour(rawEntry.sourceValidTime ?? rawEntry.validTime),
+      modelRun: exactHour(rawEntry.modelRun),
+      sourceAssetSha256: rawEntry.sourceAssetSha256 ?? REGIONAL_SOURCE_ASSET_SHA,
+      sourceProofSha256: rawEntry.sourceProofSha256 ?? REGIONAL_SOURCE_PROOF_SHA,
+      classification: 'REGIONAL_DMI_NATIVE',
+      closureContractId: OPERATIONAL_CLOSURE_CONTRACT,
+      closureId,
+    };
+    entry.vectorCommitmentSha256 = regionalVectorCommitmentSha(entry);
+    entry.closureAssignmentSha256 = sha256({
+      schemaVersion: 1,
+      contractId: OPERATIONAL_ASSIGNMENT_CONTRACT,
+      assignment: {
+        partId: entry.partId,
+        validTime: entry.validTime,
+        classification: entry.classification,
+        sourceValidTime: entry.sourceValidTime,
+        sourceModelRun: entry.modelRun,
+        sourceAssetSha256: entry.sourceAssetSha256,
+        sourceProofSha256: entry.sourceProofSha256,
+        vectorCommitmentSha256: entry.vectorCommitmentSha256,
+      },
+    });
+    return entry;
+  }).sort((left, right) => left.validTime.localeCompare(right.validTime)
+    || left.partId.localeCompare(right.partId));
+  const copernicusBalticPairCount = entries
+    .filter(entry => entry.classification === 'COPERNICUS_BALTIC').length;
+  const copernicusAmm15PairCount = entries
+    .filter(entry => entry.classification === 'COPERNICUS_AMM15').length;
+  const regionalNativePairCount = entries
+    .filter(entry => entry.classification === 'REGIONAL_DMI_NATIVE').length;
+  const supplementalAssignments = entries.map(entry => entry.closureAssignmentSha256);
+  const copernicusRefs = entries
+    .filter(entry => entry.provider === 'copernicus')
+    .map(entry => ({
+      partId: entry.partId,
+      validTime: entry.validTime,
+      recordId: entry.recordId,
+      acquisitionId: entry.acquisitionId,
+      source: entry.source,
+    }));
+  const operationalClosure = {
+    schemaVersion: 2,
+    contractId: 'current-operational-673x118-closure-safe-v2',
+    closureId,
+    status: 'READY',
+    productionReferenceAt: REFERENCE_AT,
+    operationalRangeEndAt: FUTURE_AT,
+    targetCount: 673,
+    operationalHourCount: 118,
+    totalPairCount: TOTAL_OPERATIONAL_PAIRS,
+    sourceOrderContractId:
+      'dmi-verified-then-copernicus-baltic-then-amm15-then-regional-dmi-then-open-meteo-v2',
+    dmiVerifiedPairCount: TOTAL_OPERATIONAL_PAIRS - entries.length,
+    copernicusBalticPairCount,
+    copernicusAmm15PairCount,
+    regionalNativePairCount,
+    regionalDerivedHoldPairCount: 0,
+    regionalResidualPairCount: regionalNativePairCount,
+    openMeteoRequiredPairCount: 0,
+    openMeteoPairCount: 0,
+    supplementalAssignmentCount: entries.length,
+    missingPairCount: 0,
+    copernicusCompleteWithoutSourceStage: false,
+    copernicusSourceStageStatus: 'READY',
+    copernicusBoundedProgressAccepted: false,
+    targetRegistrySha256: fingerprint(part),
+    dmiCurrentInputSha256: sha256('fixture-v2-dmi-input'),
+    dmiLedgerSha256: sha256('fixture-v2-dmi-ledger'),
+    dmiAttestationSha256: sha256('fixture-v2-dmi-attestation'),
+    copernicusRegistrySha256: sha256('fixture-v2-copernicus-registry'),
+    copernicusShadowSha256: sha256('fixture-v2-copernicus-shadow'),
+    copernicusSourceStageSha256: sha256('fixture-v2-copernicus-source-stage'),
+    copernicusRecordRefsSha256: sha256(copernicusRefs),
+    regionalEvidenceSha256: sha256('fixture-v2-regional-evidence'),
+    regionalPolicySha256: sha256('fixture-v2-regional-policy'),
+    regionalPairRefsSha256: sha256('fixture-v2-regional-pairs'),
+    openMeteoDocumentSha256: sha256('fixture-v2-open-meteo-document'),
+    openMeteoRecordRefsSha256: sha256([]),
+    openMeteoPhysicalScope: 'eulerian-waves-and-tides-combined-surface-current',
+    openMeteoScoreInputPolicyId:
+      'combined-current-single-channel-no-wave-or-tide-reprojection-v1',
+    openMeteoCalibrationEligible: false,
+    advisoryHistoryRequiredPairCount: 0,
+    advisoryHistoryRequiredPairsSha256: sha256({
+      contractId: 'copernicus-required-part-time-pairs-v1',
+      pairs: [],
+    }),
+    advisoryHistoryAvailablePairCount: 0,
+    advisoryHistoryMissingPairCount: 0,
+    advisoryHistoryRecordRefsSha256: sha256([]),
+    advisoryHistoryAssignmentCount: 0,
+    advisoryHistoryAssignmentsSha256: sha256([]),
+    supplementalAssignmentsSha256: sha256(supplementalAssignments),
+    assignmentsSha256: sha256('fixture-v2-all-assignments'),
+    coordinatesIncluded: false,
+    rawVectorsIncluded: false,
+    partIdsIncluded: false,
+    pairRefsIncluded: false,
+  };
+  operationalClosure.safeProjectionSha256 = sha256(operationalClosure);
+  return {
+    schemaVersion: 1,
+    controlledLivePilot: true,
+    mode: 'controlled-live',
+    enabled: true,
+    credentialsIncluded: false,
+    targetFingerprint: fingerprint(part),
+    operationalClosure,
+    copernicusRangeSeal: null,
+    entries,
+    advisoryEntries: [],
+  };
+};
+const live = buildOperationalLive([copernicusEntry, futureCopernicusEntry]);
+
 const regionalPart = { partId: 'R1', zoneId: 'ZR', waterPoint: [11, 56] };
 const regionalEntry = {
-  partId: 'R1', parentZoneId: 'ZR', validTime: '2026-08-18T12:00:00.000Z',
-  capturedAt: '2026-08-18T12:20:00.000Z',
+  partId: 'R1', parentZoneId: 'ZR', validTime: REFERENCE_AT,
+  sourceValidTime: REFERENCE_AT, productionReferenceAt: REFERENCE_AT,
+  capturedAt: '2026-08-18T13:20:00Z',
   targetIdentityFingerprint: fingerprint(regionalPart),
   samplingPoint: regionalPart.waterPoint, provider: 'dmi', sourceClass: 'owner-approved-regional-proxy',
   source: 'dmi-dkss-lf-regional-proxy', collection: 'dkss_lf',
-  modelRun: '2026-08-18T00:00:00.000Z', gridPoint: [11.1, 56],
+  modelRun: '2026-08-18T00:00:00Z', gridPoint: [11.1, 56],
   distanceKm: 6.2, verticalLayer: 'depthbelowsea:5', verticalLayerRankM: 5,
   componentPair: 'same-time-cell-layer', interpolation: false, vectorSemanticsVersion: 4,
   uMps: 0.1, vMps: 0.2,
 };
-const regionalLive = { ...live, entries: [...live.entries, regionalEntry] };
+const regionalLive = buildOperationalLive([
+  copernicusEntry, futureCopernicusEntry, regionalEntry,
+]);
 const flattenedRegionalParts = flattenCoastalPartsWithParentZoneId({
   zones: { ZR: [{ partId: 'R1', zoneId: 'STALE', waterPoint: regionalPart.waterPoint }] },
 });
@@ -284,15 +470,16 @@ assert.equal(flattenedRegionalParts.length, 1);
 assert.equal(flattenedRegionalParts[0].zoneId, 'ZR',
   'the authoritative parent-zone map key must survive flattening and override stale embedded context');
 assert.equal(verifiedNativeCadenceReferenceForPart(
-  flattenedRegionalParts[0], regionalLive, '2026-08-18T12:00:00.000Z'), true,
+  flattenedRegionalParts[0], regionalLive, '2026-08-18T13:00:00.000Z'), true,
   'the final audit must recognize native-cadence evidence after flattening coastal parts');
-assert.equal(nativeCadenceHoldHoursForPart(regionalPart, regionalLive), 3);
+assert.equal(nativeCadenceHoldHoursForPart(regionalPart, regionalLive), 0,
+  'a native regional row is evidence, but only an explicit closure-bound state-only row authorizes held hours');
 const regionalReferenceSample = latestVerifiedNativeCadenceSampleForPart(
   { ...regionalPart, onshoreDirectionDeg: 45 },
   regionalLive,
   '2026-08-18T13:00:00.000Z',
 );
-assert.equal(regionalReferenceSample?.time, '2026-08-18T12:00:00.000Z');
+assert.equal(regionalReferenceSample?.time, '2026-08-18T13:00:00.000Z');
 assert.equal(regionalReferenceSample?.currentVerified, true);
 assert.ok(Number.isFinite(regionalReferenceSample?.currentSpeedMps));
 assert.ok(Number.isFinite(regionalReferenceSample?.currentAlignment));
@@ -319,13 +506,11 @@ for (const [exactNormalSpeedMps, expectedLegacySpeedMps] of [
   [0.0349, 0.03],
   [0.035, 0.04],
 ]) {
-  const boundaryDocument = {
-    ...regionalLive,
-    entries: [
-      ...live.entries,
-      { ...regionalEntry, uMps: exactNormalSpeedMps, vMps: 0 },
-    ],
-  };
+  const boundaryDocument = buildOperationalLive([
+    copernicusEntry,
+    futureCopernicusEntry,
+    { ...regionalEntry, uMps: exactNormalSpeedMps, vMps: 0 },
+  ]);
   const exactProjection = latestVerifiedNativeCadenceSampleForPart(
     { ...regionalPart, onshoreDirectionDeg: 90 },
     boundaryDocument,
@@ -363,9 +548,9 @@ assert.equal(latestVerifiedNativeCadenceSampleForPart(
   { ...regionalPart, onshoreDirectionDeg: 45 }, regionalLive, '2026-08-18T16:00:01.000Z'), null,
 'a native measurement older than three hours must not seed Candidate G');
 assert.equal(verifiedNativeCadenceReferenceForPart(
-  regionalPart, regionalLive, '2026-08-18T12:00:00.000Z'), true);
+  regionalPart, regionalLive, '2026-08-18T13:00:00.000Z'), true);
 assert.equal(verifiedNativeCadenceReferenceForPart(
-  regionalPart, regionalLive, '2026-08-18T13:00:00.000Z'), false,
+  regionalPart, regionalLive, '2026-08-18T14:00:00.000Z'), false,
 'a held state must reference a real native source row, not an invented intermediate hour');
 assert.equal(nativeCadenceHoldHoursForPart(part, live), 0,
   'Copernicus entries must not receive native-cadence hold permission');
@@ -422,9 +607,8 @@ assert.equal(mergeLiveCurrentPilotIntoRecord(record, part, mutableLive, {
 const replacedLive = structuredClone(live);
 mergeLiveCurrentPilotIntoRecord(record, part, replacedLive, { primaryCurrentVerified: () => false });
 replacedLive.entries[1] = replacedLive.entries[0];
-assert.equal(mergeLiveCurrentPilotIntoRecord(record, part, replacedLive, {
-  primaryCurrentVerified: () => false,
-}).hourly[1].currentUMps, null, 'a cached proof must not survive in-place array-member replacement');
+assert.equal(controlledLiveCurrentEnabled(replacedLive), false,
+  'the explicit document gate must reject cached proof reuse after in-place array-member replacement');
 for (const malformedEntry of [
   { ...copernicusEntry, uMps: '0.3' },
   { ...copernicusEntry, distanceKm: '1.28' },
@@ -468,8 +652,8 @@ for (const poisonedDocument of [
 assert.equal(mergeLiveCurrentPilotIntoRecord(record, part, {
   ...live,
   copernicusRangeSeal: null,
-}, { primaryCurrentVerified: () => false }).hourly[1].currentUMps, null,
-'controlled-live must fail closed when the exact -48..+117 Copernicus range seal is absent');
+}, { primaryCurrentVerified: () => false }).hourly[1].currentUMps, 0.3,
+'operationalClosure v2 is authoritative for target..+117 when advisory history is explicitly empty');
 
 const flow = flowPointsFromForecastRecord(
   merged,

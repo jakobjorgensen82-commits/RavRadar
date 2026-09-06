@@ -390,6 +390,23 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         raise AssertionError(
             "In-domain AMM15 without a Baltic attempt must fail closed"
         )
+    try:
+        build_source_stage_progress(
+            registry=json.loads(
+                (amm15 / "registry.json").read_text(encoding="utf-8")
+            ),
+            shadow=amm15_shadow_document,
+            target_identities={TARGET["partId"]: TARGET},
+            shadow_sha256=file_sha256(amm15 / "shadow.json"),
+            attempts=[],
+            updated_at=REFERENCE + timedelta(minutes=10),
+        )
+    except CopernicusSourceStageError:
+        pass
+    else:
+        raise AssertionError(
+            "Zero-attempt IN_PROGRESS cannot authorize an in-domain AMM15 record"
+        )
 
     # Outside Baltic's pinned domain, the exact AMM15 pair is accepted only
     # with a deterministic, target-bound NOT_APPLICABLE disposition.
@@ -545,7 +562,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert len(progress["attempts"]) == 1
     assert progress["attempts"][0]["parsedRecordCount"] == 0
     assert progress["shadowSha256"] == file_sha256(unfinished / "shadow.json")
-    reusable = run_checker(unfinished)
+    reusable = run_checker(unfinished, "--require-source-stage-reusable")
     assert reusable.returncode == 0 and "valid IN_PROGRESS" in reusable.stdout
     not_ready = run_checker(unfinished, "--require-source-stage-ready")
     assert not_ready.returncode != 0
@@ -574,6 +591,12 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     )
     assert invalid.returncode == 0
     assert "source_stage_reusable=false" in invalid_output.read_text(encoding="utf-8")
+    invalid_strict = run_checker(
+        unfinished,
+        "--allow-nonmatching-seal",
+        "--require-source-stage-reusable",
+    )
+    assert invalid_strict.returncode != 0
     write(unfinished / "source-stage.json", progress_document)
 
     # A fresh DMI file with unchanged current gaps must retain completed work.
@@ -581,7 +604,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     fresh_registry = registry(file_sha256(unfinished / "dmi.json"))
     write(unfinished / "registry.json", fresh_registry)
     fresh_output = unfinished / "fresh-github-output.txt"
-    fresh_check = run_checker(unfinished, "--allow-nonmatching-seal", "--github-output", str(fresh_output))
+    fresh_check = run_checker(
+        unfinished,
+        "--allow-nonmatching-seal",
+        "--require-source-stage-reusable",
+        "--github-output",
+        str(fresh_output),
+    )
     assert fresh_check.returncode == 0
     assert "source_stage_reusable=true" in fresh_output.read_text(encoding="utf-8")
     assert run_checker(unfinished, "--require-source-stage-ready").returncode != 0
@@ -678,9 +707,22 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     )
     assert stopped_at_boundary.returncode == 75
     assert "bounded progress was saved at a shard boundary" in stopped_at_boundary.stderr
-    assert json.loads(
+    stopped_progress_document = json.loads(
         (unfinished / "source-stage.json").read_text(encoding="utf-8")
-    ) == progress_document
+    )
+    stopped_progress = validate_source_stage_progress(
+        stopped_progress_document,
+        registry=fresh_registry,
+        shadow=progress_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(unfinished / "shadow.json"),
+    )
+    assert stopped_progress["status"] == "IN_PROGRESS"
+    assert stopped_progress["attempts"] == progress_document["attempts"]
+    assert (
+        stopped_progress["dmiCurrentInputSha256"]
+        == fresh_registry["dmiCurrentInputSha256"]
+    )
     resumed = run_runner(unfinished, unfinished_fixtures)
     assert resumed.returncode == 0, resumed.stdout + resumed.stderr
     resumed_stage = json.loads(
@@ -804,7 +846,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert monotone_ready["status"] == "READY"
     assert len(monotone_ready["attempts"]) == 3
 
-    # A real TimeoutError follows the same pre-sidecar exception path.
+    # Provider failure occurs only after a zero-attempt, exact residual stage
+    # has been committed. It is reusable partial evidence, never READY.
     timed_out = root / "timed-out"
     shim = timed_out / "shim"
     shim.mkdir(parents=True)
@@ -819,7 +862,72 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     timeout_env["COPERNICUSMARINE_SERVICE_PASSWORD"] = "fixture-password"
     timeout = run_runner(timed_out, None, env=timeout_env)
     assert timeout.returncode != 0 and "fixture timeout" in timeout.stderr
-    assert not (timed_out / "source-stage.json").exists()
+    timeout_stage_document = json.loads(
+        (timed_out / "source-stage.json").read_text(encoding="utf-8")
+    )
+    timeout_shadow = json.loads(
+        (timed_out / "shadow.json").read_text(encoding="utf-8")
+    )
+    timeout_stage = validate_source_stage_progress(
+        timeout_stage_document,
+        registry=json.loads(
+            (timed_out / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=timeout_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(timed_out / "shadow.json"),
+    )
+    assert timeout_stage["attempts"] == []
+    assert timeout_stage["selectedRecordRefCount"] == 0
+    assert timeout_stage["missingPairCount"] == 1
+    assert run_checker(
+        timed_out,
+        "--require-source-stage-reusable",
+    ).returncode == 0
+    assert run_checker(
+        timed_out,
+        "--require-source-stage-ready",
+    ).returncode != 0
+
+    # Missing credentials has the same safe handoff: the complete current
+    # residual is durable before any provider client is imported.
+    no_credentials = root / "no-credentials"
+    prepare(no_credentials)
+    no_credentials_env = dict(os.environ)
+    no_credentials_env.pop("COPERNICUSMARINE_SERVICE_USERNAME", None)
+    no_credentials_env.pop("COPERNICUSMARINE_SERVICE_PASSWORD", None)
+    missing_credentials = run_runner(
+        no_credentials,
+        None,
+        env=no_credentials_env,
+    )
+    assert missing_credentials.returncode != 0
+    assert "credentials are required" in missing_credentials.stderr
+    no_credentials_stage = json.loads(
+        (no_credentials / "source-stage.json").read_text(encoding="utf-8")
+    )
+    no_credentials_shadow = json.loads(
+        (no_credentials / "shadow.json").read_text(encoding="utf-8")
+    )
+    validated_no_credentials = validate_source_stage_progress(
+        no_credentials_stage,
+        registry=json.loads(
+            (no_credentials / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=no_credentials_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(no_credentials / "shadow.json"),
+    )
+    assert validated_no_credentials["attempts"] == []
+    assert validated_no_credentials["missingPairCount"] == 1
+    assert run_checker(
+        no_credentials,
+        "--require-source-stage-reusable",
+    ).returncode == 0
+    assert run_checker(
+        no_credentials,
+        "--require-source-stage-ready",
+    ).returncode != 0
 
     # Rebuilding from incomplete or absent attempt evidence cannot manufacture READY.
     first_attempt_only = [row for row in stage["attempts"] if row["source"] == "copernicus-baltic-nemo"]

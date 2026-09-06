@@ -2,6 +2,12 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {
+  buildOperationalCurrentEntryIndex,
+  verifyCoastalPartCurrentProjection,
+} from './lib/current-spatial-runtime-proof.mjs';
+import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
+import {
   RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
   RAVSCORE_LOCAL_MARGIN_POINTS,
   RAVSCORE_WAM_MAX_DISTANCE_KM,
@@ -187,6 +193,87 @@ assert.equal(verified[0].currentSpeedMps, 0.08);
 assert.equal(verified[0].currentDirectionDeg, 104);
 assert.ok(Math.abs(verified[0].currentCoastNormalSpeedMps - 0.08) < 1e-12,
   'state input must retain the exact verified coast-normal U/V projection');
+const dmiScore = buildIntegratedPartScoreSeries({
+  part: partContext,
+  zone: { id: partContext.zoneId, onshoreDirectionDeg: partContext.onshoreDirectionDeg },
+  hourly: [{
+    ...verified[0],
+    windSpeedMps: 5,
+    windDirectionDeg: 270,
+    waveHeightM: 1,
+    wavePeriodS: 6,
+    waveDirectionDeg: 270,
+  }],
+}).scores[0];
+assert.equal(Object.hasOwn(dmiScore.weather, 'currentUMps'), false);
+assert.equal(Object.hasOwn(dmiScore.weather, 'currentVMps'), false);
+const dmiFlowRecord = {
+  hourly: verified,
+  model: { completeness: {
+    currentVectorSemanticsVersion: RAVSCORE_CURRENT_VECTOR_SEMANTICS_VERSION,
+    currentVectorSelection: bulkCache.currentVectorSelection,
+    currentMaxDistanceKm: bulkCache.currentMaxDistanceKm,
+    samplingPoint: point,
+  } },
+};
+const dmiFlowPoints = flowPointsFromForecastRecord(
+  dmiFlowRecord, point, dmiScore.time, partContext,
+);
+const dmiRuntimePart = {
+  flowPoints: dmiFlowPoints,
+  current: { time: dmiScore.time, weather: dmiScore.weather },
+};
+const publicProvenanceFields = [
+  'status','reason','provider','collection','source','sourceClass','controlledLivePilot',
+  'temporalResolution','verticalLayer','vectorSelection','vectorSemanticsVersion','method',
+  'fallback','distanceKm',
+];
+const dmiPublicPart = {
+  flowPoints: structuredClone(dmiFlowPoints),
+  current: {
+    time: dmiScore.time,
+    weather: {
+      currentSpeedMps: dmiScore.weather.currentSpeedMps,
+      currentDirectionDeg: dmiScore.weather.currentDirectionDeg,
+      currentProvenance: Object.fromEntries(publicProvenanceFields
+        .filter(field => dmiScore.weather.currentProvenance?.[field] !== undefined)
+        .map(field => [field, dmiScore.weather.currentProvenance[field]])),
+    },
+  },
+};
+const dmiAuditBulkZone = {
+  ...bulkCache.zones[bulkId],
+  hourly: {
+    [sourceTime]: {
+      time: sourceTime,
+      'current-u': 0.08,
+      'current-v': -0.02,
+      sources: { current: source },
+    },
+  },
+};
+const dmiSpatialProof = verifyCoastalPartCurrentProjection({
+  part: partContext,
+  runtimePart: dmiRuntimePart,
+  publicPart: dmiPublicPart,
+  bulkZone: dmiAuditBulkZone,
+  operationalEntryIndex: buildOperationalCurrentEntryIndex(null),
+  verifyBulkRow: (zone, samplingPoint, row) => verifiedBulkCurrent(
+    bulkCache,
+    zone,
+    samplingPoint,
+    row.sources.current,
+    row.time,
+    expectedDmiIdentity,
+  ) ? row.sources.current : null,
+});
+assert.deepEqual(dmiSpatialProof, {
+  ok: true,
+  sourceClass: 'dmi-local',
+  expectedArrowSource: 'dmi-marine-grid',
+  expectedSpeedMps: 0.08,
+  expectedDirectionDeg: 104,
+});
 
 const justAboveDeadband = verifiedIntegratedPartHourly({
   hourly: [{

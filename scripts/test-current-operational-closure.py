@@ -168,7 +168,10 @@ def build_fixture(
         cop_ref("copernicus-baltic-nemo", ADVISORY_REQUIRED[0], "advisory"),
     ]
     advisory_missing = ADVISORY_REQUIRED[1:]
-    stage = {"sourceStageId": HASH_C, "status": "READY"}
+    stage = {
+        "sourceStageId": HASH_C,
+        "status": "READY" if pure_copernicus else "IN_PROGRESS",
+    }
     if pure_dmi:
         selected = []
         residual = []
@@ -218,8 +221,15 @@ def build_fixture(
     open_meteo_document = {
         "records": open_meteo_records,
         "recordRefsSha256": canonical_sha256(open_meteo_refs),
-        "copernicusBoundedProgressAccepted": False,
+        "copernicusBoundedProgressAccepted": (
+            stage is not None and stage["status"] == "IN_PROGRESS"
+        ),
     }
+
+    def open_meteo_validator(value, **kwargs):
+        assert value is open_meteo_document
+        captured["openMeteoValidation"] = copy.deepcopy(kwargs)
+        return open_meteo_document
 
     operational_required = [] if pure_dmi else COMPLEMENT
     advisory_required = [] if pure_dmi else ADVISORY_REQUIRED
@@ -229,7 +239,11 @@ def build_fixture(
         advisory_required=advisory_required,
     )
     with (
-        patch.object(closure, "validate_current_operational_ledger", return_value=ledger),
+        patch.object(
+            closure,
+            "validate_current_operational_availability_ledger",
+            return_value=ledger,
+        ),
         patch.object(closure, "validate_target_registry", return_value=document_registry),
         patch.object(
             closure,
@@ -256,7 +270,7 @@ def build_fixture(
         patch.object(
             closure,
             "validate_open_meteo_document",
-            return_value=open_meteo_document,
+            side_effect=open_meteo_validator,
         ),
     ):
         result = closure.build_current_operational_closure(
@@ -286,6 +300,58 @@ def assert_error(code: str, callback) -> None:
         assert error.code == code, error.code
     else:
         raise AssertionError(f"Expected {code}")
+
+
+progress_residual = [COMPLEMENT[0]]
+progress_stage = {
+    "sourceStageId": HASH_C,
+    "status": "IN_PROGRESS",
+    "selectedRecordRefCount": 0,
+    "selectedRecordRefsSha256": canonical_sha256([]),
+    "missingPairCount": len(progress_residual),
+    "missingPairsSha256": required_pairs_sha256(progress_residual),
+}
+progress_registry = {
+    "productionReferenceAt": REFERENCE_TEXT,
+    "operationalRequiredPairs": progress_residual,
+    "advisoryHistoryRequiredPairs": [],
+}
+
+
+def inspect_progress_stage(stage: dict):
+    with (
+        patch.object(
+            closure,
+            "validate_shadow",
+            return_value={"acquisitions": [], "records": []},
+        ),
+        patch.object(
+            closure,
+            "validate_reusable_source_stage",
+            return_value=stage,
+        ),
+    ):
+        return closure._copernicus_state(
+            registry=progress_registry,
+            shadow={},
+            shadow_sha256=HASH_B,
+            source_stage=stage,
+            target_by_id={row["partId"]: row for row in TARGETS},
+            reference=REFERENCE,
+        )
+
+
+progress_state = inspect_progress_stage(progress_stage)
+assert progress_state[1] == progress_residual
+assert progress_state[4] == progress_stage
+assert "missingPairs" not in progress_stage
+assert_error(
+    "SOURCE_STAGE_RESIDUAL_INVALID",
+    lambda: inspect_progress_stage({
+        **progress_stage,
+        "missingPairsSha256": HASH_A,
+    }),
+)
 
 
 with patch.object(
@@ -324,6 +390,8 @@ assert private["regionalDerivedHoldPairCount"] == 1
 assert private["openMeteoRequiredPairCount"] == 1
 assert private["openMeteoPairCount"] == 1
 assert private["missingPairCount"] == 0
+assert private["copernicusSourceStageStatus"] == "IN_PROGRESS"
+assert private["copernicusBoundedProgressAccepted"] is True
 assert private["advisoryHistoryRequiredPairCount"] == 2
 assert private["advisoryHistoryAvailablePairCount"] == 1
 assert private["advisoryHistoryMissingPairCount"] == 1
@@ -332,6 +400,30 @@ assert len(private["advisoryHistoryAssignments"]) == 1
 assert private["totalPairCount"] == len(private["assignments"])
 assert captured["regionalPairs"] == COMPLEMENT[2:4]
 assert captured["allowTargetRebindingAsMissing"] is True
+assert captured["openMeteoValidation"] == {
+    "targets": TARGETS,
+    "required_pairs": [COMPLEMENT[4]],
+    "production_reference_at": REFERENCE_TEXT,
+    "copernicus_source_stage_status": "IN_PROGRESS",
+    "copernicus_source_stage_sha256": canonical_sha256({
+        "sourceStageId": HASH_C,
+        "status": "IN_PROGRESS",
+    }),
+    "copernicus_bounded_progress_accepted": True,
+    "regional_evidence_sha256": canonical_sha256({
+        "missingPairCount": 0,
+        "policySha256": HASH_A,
+        "pairRefsSha256": canonical_sha256([
+            regional_ref(COMPLEMENT[2], REGIONAL_DMI_NATIVE),
+            regional_ref(COMPLEMENT[3], REGIONAL_DMI_DERIVED_HOLD),
+        ]),
+        "pairRefs": [
+            regional_ref(COMPLEMENT[2], REGIONAL_DMI_NATIVE),
+            regional_ref(COMPLEMENT[3], REGIONAL_DMI_DERIVED_HOLD),
+        ],
+    }),
+    "require_complete": True,
+}
 assert {row["validTime"] for row in private["assignments"]} == {
     (REFERENCE + timedelta(hours=offset)).strftime("%Y-%m-%dT%H:00:00Z")
     for offset in range(118)
@@ -353,6 +445,8 @@ assert not any(isinstance(value, (dict, list)) for value in safe.values())
 pure, pure_capture = build_fixture(pure_copernicus=True)
 assert pure["privateProof"]["copernicusCompleteWithoutSourceStage"] is False
 assert pure["privateProof"]["copernicusSourceStageId"] == HASH_C
+assert pure["privateProof"]["copernicusSourceStageStatus"] == "READY"
+assert pure["privateProof"]["copernicusBoundedProgressAccepted"] is False
 assert pure["privateProof"]["regionalResidualPairCount"] == 0
 assert pure_capture["regionalPairs"] == []
 assert_error(
