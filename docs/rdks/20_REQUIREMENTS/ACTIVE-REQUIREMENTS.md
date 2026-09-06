@@ -1,5 +1,10 @@
 # Aktive krav – samlet register
 
+## 4.0.326 – regional shadow-rollover og sikker residualdiagnose (2026-09-06)
+
+- **REQ-REGIONAL-SHADOW-MODELRUN-ROLLOVER-001 – BINDENDE / LOKALT IMPLEMENTERET OG MÅLTESTET / RUNTIMEBEVIS ÅBENT:** Den private 168-timers regionale DMI-shadow må beholde prøver fra ældre modelruns. En sådan prøve må aldrig bruges mod den aktuelle ledger og må heller ikke fejlklassificeres som en hashkonflikt med ledgerens valgte modelrun; den skal være utilgængelig og efterlade parret til næste fallback. En sample fra et modelrun, der faktisk er valgt i den aktuelle ledger, skal fortsat matche eksakt validTime og source-asset-hash eller stoppe fail-closed.
+- **REQ-OPEN-METEO-RESIDUAL-SAFE-CAUSE-001 – BINDENDE:** Når residualplanen stopper før Open-Meteo-request, må driftsloggen ud over den generiske fejl kun vise en allowlistet versal domænekode. Del-id''er, koordinater, rå U/V, payloads og fritekst er forbudt. Ukendt eller ikke-allowlistet årsag forbliver den generiske `OPEN_METEO_RESIDUAL_PLAN_INVALID`.
+
 ## 4.0.324 – active/candidate-cache og fuld gapvedligeholdelse (2026-09-05)
 
 - **REQ-DMI-ACTIVE-CANDIDATE-GENERATION-001 – BINDENDE / LOKALT IMPLEMENTERET / RUNTIMEBEVIS ÅBENT:** Både normal produktion og 118h-oneoff skal materialisere seneste strict `DMI_READY`-active-generation som donor. Alt nyt DMI-arbejde skal ske i den samme `dmi-zone-candidate-v1`-familie. Normal og oneoff må genbruge samme kandidat, fordi den fælles production-concurrency serialiserer alle writers. Normal drift er den varige updater; oneoffen accelererer samme mekanisme og er ikke en fremtidig updater.

@@ -1,3 +1,10 @@
+## 4.0.326 – regional shadow-rollover åbner korrekt Open-Meteo-rest (2026-09-06, lokalt)
+
+- Oneoff `34004697179` gjorde DMI og Copernicus READY og efterlod 1.104 eksakte currentpar, men Open-Meteo stoppede før netværkskald, fordi den syv-dages regionale shadow fejlklassificerede prøver fra ældre modelruns som aktuelle asset-hashkonflikter.
+- En gammel modelrun-prøve er nu fortsat utilgængelig for den aktuelle closure, men blokerer ikke næste fallback. Samme-run hashmismatch forbliver fatal, og reviderede assets kræver fortsat en eksakt ledgerbundet erstatningsprøve.
+- En allowlistet versal domænekode kan nu følge den generiske residualplanfejl uden del-id''er, koordinater, rå U/V, payloads eller fritekst. Tre korte måltests er grønne; exact-head, merge og frisk main-oneoff afventer.
+- Normalrun `34004873418` gemte DMI-fremgang, men stoppede korrekt før supplement/deploy, da DMI-producenten ikke var terminal success. Kildeorden, 673 × 118, historik, cron, geometri, punkter og model er uændrede.
+
 ## 4.0.325 – terminalbevist active-bootstrap uden hardkodet cache (2026-09-05)
 
 - Når active-familien er tom, vælger workflowet den nyeste bevisbare main-scopede legacycache og genverificerer dens immutable exact-attempt, entydige key/version samt grøn DMI-producent, progressiv zonecache-save og terminaltrin via GitHub.

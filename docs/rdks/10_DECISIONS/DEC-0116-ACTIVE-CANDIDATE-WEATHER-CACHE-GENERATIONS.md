@@ -40,3 +40,7 @@ Dette er den afgrænsede stabilitetsrettelse før modelstart. Oneoffen accelerer
 - Efter merge skal første normale kørsel bootstrappe eller ramme active-familien, fortsætte den fælles kandidat og gemme ikke-annulleret delprogression før terminalen uden at gemme den som active.
 - Derefter køres én stor opfyldning ad gangen. Fælles candidate-save, eventuel promotion og efterfølgende normal catch-up skal verificeres før næste store kørsel.
 - Komplethed kræver fortsat frisk 210/673/118-evidens gennem DMI, Copernicus, regional fallback og Open-Meteo. Først derefter må den nye modelaktivering fortsætte.
+
+## Runtimeevidens 2026-09-06
+
+Oneoff `34004697179` materialiserede og gemte en strict READY-active-generation, og den efterfølgende normale kørsel `34004873418` gemte kandidat-, GRIB- og regional shadowfremgang før sit korrekte terminalstop uden producer-success. Det beviser den berørte save-/isoleringsvej, men ikke komplet vejr, fordi normalrunnet ikke nåede supplement, og oneoffen senere stoppede før Open-Meteo-request. Cacherne genbruges i næste rettede main-oneoff.

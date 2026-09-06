@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-06 – 4.0.326 regional shadow-rollover
+
+- Oneoff `34004697179` gjorde DMI og Copernicus READY, men Open-Meteo stoppede før request på en residualplanfejl. Copernicus havde dækket 7.408/8.512 operationelle rester og efterladt 1.104; advisoryhistorik manglede 417.
+- 168-timers regional shadow beholdt korrekt gamle modelruns, men de blev behandlet som aktuelle hashkonflikter. Lokal 4.0.326 ignorerer kun gamle runs i den aktuelle closure; de kan ikke levere data, men parret kan fortsætte til Open-Meteo. Samme-run hashmismatch forbliver fatal.
+- Open-Meteo kan nu vise en allowlistet versal årsagskode uden private id''er, koordinater, rå U/V, payloads eller fritekst. Måltests er grønne.
+- Normalrun `34004873418` gemte DMI-fremgang og stoppede korrekt før downstream uden terminal producer-success. Næste rækkefølge er exact-head → merge → stor main-oneoff → komplet 673 × 118/Feggesund → kapacitet og fulde gates → særskilt modelaktivering. Candidate G er fortsat offentlig.
+
 # NYESTE CHECKPOINT – 2026-09-05 – 4.0.325 terminalbevist cachebootstrap
 
 - PR #257 bestod exact-head-run `33989875253` og blev merged som `948ba60b365dc604056ac0c719bd67645b3e3478`. Den ventende post-merge-kørsel `33991028274` blev derefter stoppet under checkout, før DMI, cachewrite, protected write eller deploy, fordi den hardkodede bootstrapcache ikke længere fandtes.

@@ -34,6 +34,7 @@ from .regional_current_operational import (
     MISSING,
     REGIONAL_DMI_DERIVED_HOLD,
     REGIONAL_DMI_NATIVE,
+    RegionalCurrentOperationalError,
     build_regional_current_operational_evidence,
 )
 from .open_meteo_current_fallback import (
@@ -157,13 +158,14 @@ SAFE_FIELDS = {
 class CurrentOperationalClosureError(ValueError):
     """Privacy-safe fail-closed error."""
 
-    def __init__(self, code: str) -> None:
+    def __init__(self, code: str, *, cause_code: str | None = None) -> None:
         self.code = code
+        self.cause_code = cause_code
         super().__init__(code)
 
 
-def _fail(code: str) -> None:
-    raise CurrentOperationalClosureError(code)
+def _fail(code: str, *, cause_code: str | None = None) -> None:
+    raise CurrentOperationalClosureError(code, cause_code=cause_code)
 
 
 def _exact_hour(value: Any, code: str) -> tuple[str, datetime]:
@@ -537,6 +539,8 @@ def build_regional_residual_plan(
             dmi_gap_pairs=regional_candidates,
             allow_target_rebinding_as_missing=True,
         )
+    except RegionalCurrentOperationalError as error:
+        _fail("REGIONAL_EVIDENCE_INVALID", cause_code=error.code)
     except (KeyError, TypeError, ValueError, RuntimeError):
         _fail("REGIONAL_EVIDENCE_INVALID")
     regional_private = regional_result.get("privateProof")

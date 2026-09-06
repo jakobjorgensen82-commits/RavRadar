@@ -1,3 +1,12 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.326 regional modelrun-adskillelse
+
+- [x] Klassificér oneoff `34004697179`: DMI READY, Copernicus READY 7.408/8.512, 1.104 operationelle rester, Open-Meteo-stop før request og ingen artifact/deploy.
+- [x] Ret regional shadowklassifikation, så prøver fra tidligere modelruns ikke bruges og ikke blokerer næste fallback; bevar fatal same-run asset-hashmismatch og eksakt replacement-regel.
+- [x] Før kun en allowlistet versal regional domænekode gennem Open-Meteo-residualfejlen; al privat kontekst forbliver maskeret.
+- [x] Kør målrettede regionale-, closure- og Open-Meteo-tests; alle er grønne lokalt.
+- [ ] Bestå én exact-head `validate:source`, merge 4.0.326 og kør én stor main-oneoff med de bevarede active/candidate/Copernicus/shadowcacher.
+- [ ] Kræv komplet 79.414/79.414 currentclosure og separat Feggesund 354/354; kør derefter kapacitetsmåling, fuld validate/releasegate og den særskilt autoriserede integrerede modelaktivering. Candidate G forbliver offentlig indtil da.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-05 – 4.0.325 terminalbevist legacyvalg
 
 - [x] PR #257 bestod exact-head `33989875253` og blev merged som `948ba60b`.

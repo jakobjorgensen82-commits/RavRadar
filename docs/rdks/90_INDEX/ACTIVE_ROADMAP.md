@@ -1096,3 +1096,10 @@ Kandidat G er privat og score-neutral. Aktiv RavScore 25/40/35, DMI-first, geome
 - [x] Regenerér/synkronisér integrated til `a226e7d1…`/`d5796289…` over 55 filer og bevis actual-source browserclosure over 78 offentlige moduler; bevar Candidate G `7c7f2b…`/56 uændret.
 - [x] Dokumentér remote read-only `false/false/false`: migrationsledger og begge nye RPC'er er fraværende, så migrationerne er ikke live.
 - [ ] Kør linked migration list/dry-run som definitiv pre-write-gate uden passwordreset/gæt; gennemfør derefter den låste data-, kapacitets-, merge-, Fase B-, produktions- og browserrækkefølge.
+# AKTUELT – 2026-09-06 – 4.0.326 til komplet vejr og modelstart
+
+- [x] Bevar DMI/Copernicus-fremgangen fra `34004697179` og DMI-kandidatfremgangen fra `34004873418`; undgå blind genkørsel på uændret deterministisk fejl.
+- [x] Ret modelrun-rollover i regional shadow uden at tillade stale data eller svække same-run hashbinding; tilføj privacy-sikker årsagskode og måltests.
+- [ ] Kør én exact-head-kildegate, merge sikkert og start derefter én stor main-oneoff. Gentag kun efter ny bevaret fremgang eller en rettet konkret fejl.
+- [ ] Bevis DMI/Copernicus/regional/Open-Meteo-closure 79.414/79.414 og Feggesund-bølger 354/354.
+- [ ] Fortsæt direkte med Supabase-kapacitetsbevis, fulde produktionsgates og særskilt integreret Fase B. Offentlig model må først skifte efter alle eksisterende stopgates.

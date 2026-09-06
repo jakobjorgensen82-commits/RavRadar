@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-06 – 4.0.326 regional shadow-rollover
+
+- Oneoff `34004697179` bestod strict DMI READY og Copernicus READY. Copernicus dækkede 7.408/8.512 operationelle restpar og efterlod 1.104 til regional DMI/Open-Meteo; advisoryhistorikken havde 417 rester. Open-Meteo stoppede før første netværkskald med `OPEN_METEO_RESIDUAL_PLAN_INVALID`, så intet komplet artifact eller deploy blev skabt.
+- Den private regionale shadow beholder korrekt 168 timer og dermed prøver fra flere modelruns. Den hidtidige classifier markerede en gammel prøves validTime som aktuel asset-hashmismatch, selv når den strict-validerede DMI-ledger havde valgt et andet modelrun. 4.0.326 gør sådanne gamle prøver utilgængelige for closure og bevarer parret som missing til næste fallback. Samme-run asset-hashmismatch er fortsat fatal; ingen stale prøve kan vælges.
+- Den dobbelte wrapper kan nu bevare alene en allowlistet versal årsagskode under Open-Meteo-prefixet. Private del-id''er, koordinater, rå U/V, payloads og fritekst forbliver skjult.
+- Normalrun `34004873418` gemte ny DMI-kandidat-, GRIB- og regional shadowfremgang, men stoppede korrekt før downstream, fordi DMI-producenten ikke var terminal success. Cacherne er bevaret; det er ikke komplethedsbevis.
+- Regional-, closure- og Open-Meteo-måltests er grønne. Exact-head, merge, ny stor main-oneoff og komplet 673 × 118 mangler. Derefter følger eksisterende Feggesund-, Supabase-kapacitets-, fuld release- og særskilte modelaktiveringsgates. Candidate G er fortsat offentlig.
+
 # NYESTE SANDHED – 2026-09-05 – 4.0.325 terminalbevist bootstrap uden nøglekapløb
 
 - DEC-0116 er bindende: både normal produktion og 118h-oneoff materialiserer sidste strict `DMI_READY`-active som donor, mens alt nyt DMI-arbejde sker i den samme `dmi-zone-candidate-v1`-familie. Fælles production-concurrency serialiserer normal og oneoff, så de sikkert kan fortsætte samme kandidat uden parallel writer.

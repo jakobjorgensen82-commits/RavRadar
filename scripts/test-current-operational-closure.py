@@ -23,6 +23,7 @@ from lib.copernicus_target_identity import target_fingerprint
 from lib.regional_current_operational import (
     REGIONAL_DMI_DERIVED_HOLD,
     REGIONAL_DMI_NATIVE,
+    RegionalCurrentOperationalError,
 )
 
 
@@ -285,6 +286,29 @@ def assert_error(code: str, callback) -> None:
         assert error.code == code, error.code
     else:
         raise AssertionError(f"Expected {code}")
+
+
+with patch.object(
+    closure,
+    "build_regional_current_operational_evidence",
+    side_effect=RegionalCurrentOperationalError("SHADOW_SOURCE_ASSET_HASH_MISMATCH"),
+):
+    try:
+        closure.build_regional_residual_plan(
+            residual_pairs=[],
+            regional_policy={"parts": []},
+            targets=[],
+            regional_shadow={},
+            dmi_ledger={},
+            dmi_attestation={},
+            locked_reference=REFERENCE_TEXT,
+        )
+    except closure.CurrentOperationalClosureError as error:
+        assert error.code == "REGIONAL_EVIDENCE_INVALID"
+        assert error.cause_code == "SHADOW_SOURCE_ASSET_HASH_MISMATCH"
+        assert str(error) == "REGIONAL_EVIDENCE_INVALID"
+    else:
+        raise AssertionError("Expected regional residual evidence to fail closed")
 
 
 # Full mixed-source closure: every exact target..+117 pair is assigned once.

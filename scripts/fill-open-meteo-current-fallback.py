@@ -8,6 +8,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -52,6 +53,7 @@ DEFAULT_OUTPUT = ROOT / ".cache/open-meteo-current-fallback.json"
 DEFAULT_REPORT = ROOT / "data/diagnostics/open-meteo-current-fallback.json"
 DEFAULT_BASE_URL = "https://marine-api.open-meteo.com/v1/marine"
 BATCH_SIZE = 50
+SAFE_CAUSE_CODE = re.compile(r"^[A-Z][A-Z0-9_]{0,127}$")
 
 
 def arguments() -> argparse.Namespace:
@@ -109,6 +111,13 @@ def exact_time(value: Any) -> str | None:
     if parsed.minute or parsed.second or parsed.microsecond:
         return None
     return parsed.strftime("%Y-%m-%dT%H:00:00Z")
+
+
+def residual_plan_error_code(error: BaseException) -> str:
+    cause_code = getattr(error, "cause_code", None)
+    if isinstance(cause_code, str) and SAFE_CAUSE_CODE.fullmatch(cause_code):
+        return f"OPEN_METEO_RESIDUAL_PLAN_INVALID_{cause_code}"
+    return "OPEN_METEO_RESIDUAL_PLAN_INVALID"
 
 
 def point(value: Any) -> list[float] | None:
@@ -187,8 +196,8 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
             dmi_attestation=attestation,
             locked_reference=reference,
         )
-    except (KeyError, TypeError, ValueError, RuntimeError):
-        raise RuntimeError("OPEN_METEO_RESIDUAL_PLAN_INVALID") from None
+    except (KeyError, TypeError, ValueError, RuntimeError) as error:
+        raise RuntimeError(residual_plan_error_code(error)) from None
     result = plan["openMeteoRequiredPairs"]
     if len({(row["partId"], row["validTime"]) for row in result}) != len(result):
         raise RuntimeError("OPEN_METEO_RESIDUAL_DUPLICATE")
