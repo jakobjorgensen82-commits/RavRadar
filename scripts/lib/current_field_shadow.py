@@ -22,6 +22,7 @@ REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS = 117.0
 MAX_GRID_DISTANCE_KM = 5.0
 REGIONAL_PROXY_POLICY_SCHEMA_VERSION = 1
 REGIONAL_PROXY_REQUIRED_COLLECTION = "dkss_lf"
+REGIONAL_PROXY_NATIVE_CADENCE_HOURS = 3
 REGIONAL_PROXY_MAX_GRID_DISTANCE_KM = 15.0
 REGIONAL_PROXY_TARGET_PREFIX = "REGIONAL_PROXY::"
 
@@ -39,6 +40,37 @@ def _valid_source_asset_sha256(value: Any) -> bool:
         text.startswith("sha256:")
         and len(text) == 71
         and all(character in "0123456789abcdef" for character in text[7:])
+    )
+
+
+def _exact_utc_hour_or_none(value: Any) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    parsed = parsed.astimezone(timezone.utc)
+    if parsed.minute or parsed.second or parsed.microsecond:
+        return None
+    if value != parsed.strftime("%Y-%m-%dT%H:00:00Z"):
+        return None
+    return parsed
+
+
+def _regional_proxy_off_native_cadence(
+    model_run: Any,
+    valid_time: Any,
+) -> bool:
+    run_at = _exact_utc_hour_or_none(model_run)
+    valid_at = _exact_utc_hour_or_none(valid_time)
+    if run_at is None or valid_at is None or valid_at < run_at:
+        return False
+    lead_seconds = int((valid_at - run_at).total_seconds())
+    return bool(
+        lead_seconds % (REGIONAL_PROXY_NATIVE_CADENCE_HOURS * 3600)
     )
 
 
@@ -532,6 +564,14 @@ def record_profiles(
         # score-neutral transect research, every such sample must therefore be
         # bound to the exact canonical DMI bytes that were processed.
         if regional_operational_target and not _valid_source_asset_sha256(source_asset_sha256):
+            continue
+        # The operational regional contract permits only the collection's
+        # native 3-hour phase. Exact off-phase assets are normal DMI catalog
+        # rows, but they can never be regional fallback evidence and must not
+        # enter the private operational shadow.
+        if regional_operational_target and _regional_proxy_off_native_cadence(
+            model_run, valid_time,
+        ):
             continue
         maximum_lead_hours = (
             REGIONAL_PROXY_OPERATIONAL_FORECAST_LEAD_MAX_HOURS

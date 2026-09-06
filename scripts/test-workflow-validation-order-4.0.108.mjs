@@ -478,19 +478,21 @@ for (const marker of [
 }
 const oneoffCandidateState = operationalStep('Isolate restored candidate and restore active working copy');
 for (const marker of [
-  'id: dmi-candidate-state',
   'mv .cache/dmi-candidate-progress.json.tmp .cache/dmi-candidate-progress.json',
   'cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json',
-  "jq -r '.diagnostics.currentOperationalLedger.ready // false' .cache/dmi-candidate-progress.json",
-  'echo "retain_preferred=true" >> "$GITHUB_OUTPUT"',
 ]) {
   assert.ok(oneoffCandidateState.includes(marker), 'Engangskørslens kandidatstate mangler ' + marker);
 }
+assert.ok(
+  !oneoffCandidateState.includes('retain_preferred')
+    && !oneoffCandidateState.includes('id: dmi-candidate-state'),
+  'Engangskørslens isolering må ikke udlede native-run pinning af partial-ledger readiness.',
+);
 for (const marker of [
   'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
-  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
   assert.ok(dmiAcquisitionStep.includes(marker), 'Engangskørslens kandidatproducer mangler ' + marker);
@@ -882,7 +884,6 @@ const positions = {
   dmiActiveLegacyBootstrap: text.indexOf('name: Bootstrap the terminal-proven exact legacy DMI generation'),
   dmiActiveMaterialize: text.indexOf('name: Strictly bind and materialize the active DMI generation'),
   dmiCandidateRestore: text.indexOf('name: Restore isolated DMI candidate progress for normal maintenance'),
-  dmiCandidateState: text.indexOf('name: Inspect isolated DMI candidate progress for normal maintenance'),
   dmiBulk: text.indexOf('name: Update DMI bulk model cache'),
   dmiGribSave: text.indexOf('name: Save progressed DMI GRIB download cache'),
   dmiCandidateSave: text.indexOf('name: Save isolated DMI candidate progress before any terminal decision'),
@@ -951,7 +952,6 @@ const expected = [
   'dmiActiveLegacyBootstrap',
   'dmiActiveMaterialize',
   'dmiCandidateRestore',
-  'dmiCandidateState',
   'dmiBulk',
   'dmiGribSave',
   'dmiCandidateSave',
@@ -1019,7 +1019,7 @@ for (const marker of [
   'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
-  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
   "DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '3' }}",
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
@@ -1071,7 +1071,7 @@ for (const marker of [
 ]) {
   if (!normalActiveMaterialize.includes(marker)) throw new Error('Normal aktiv READY-materialisering mangler ' + marker);
 }
-const normalCandidateRestore = text.slice(positions.dmiCandidateRestore, positions.dmiCandidateState);
+const normalCandidateRestore = text.slice(positions.dmiCandidateRestore, positions.dmiBulk);
 for (const marker of [
   'id: dmi-candidate-restore',
   'path: .cache/dmi-candidate-progress.json',
@@ -1087,20 +1087,8 @@ assert.ok(
     < normalCandidateRestore.indexOf('            dmi-zone-candidate-v1-${{ runner.os }}-\n'),
   'Normal kandidat-restore skal prøve samme generation før den generiske OS-familie.',
 );
-const normalCandidateState = text.slice(positions.dmiCandidateState, positions.dmiBulk);
-for (const marker of [
-  'id: dmi-candidate-state',
-  'if test -s .cache/dmi-candidate-progress.json; then',
-  'echo "exists=true" >> "$GITHUB_OUTPUT"',
-  "jq -r '.diagnostics.currentOperationalLedger.ready == true' .cache/dmi-candidate-progress.json",
-  'echo "retain_preferred=false" >> "$GITHUB_OUTPUT"',
-  'echo "retain_preferred=true" >> "$GITHUB_OUTPUT"',
-  'echo "exists=false" >> "$GITHUB_OUTPUT"',
-]) {
-  if (!normalCandidateState.includes(marker)) throw new Error('Normal kandidat-state mangler ' + marker);
-}
-if (normalCandidateState.includes('data/live/dmi-bulk-cache.json')) {
-  throw new Error('Kandidatinspektionen må ikke erstatte den aktive DMI-generation før promotion.');
+if (text.includes('name: Inspect isolated DMI candidate progress for normal maintenance')) {
+  throw new Error('Normal vedligeholdelse må ikke udlede native-run pinning af partial-ledger readiness.');
 }
 for (const positionName of ['dmiGribSave', 'dmiCandidateSave', 'dmiShadowSave']) {
   const start = positions[positionName];

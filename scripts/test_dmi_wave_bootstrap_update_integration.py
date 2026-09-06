@@ -1018,7 +1018,6 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "Restore last complete active DMI generation",
             "Strictly bind and materialize the active DMI generation",
             "Restore isolated DMI candidate progress for normal maintenance",
-            "Inspect isolated DMI candidate progress for normal maintenance",
             "Update DMI bulk model cache",
             "Save isolated DMI candidate progress before any terminal decision",
             "Classify DMI readiness before current supplement",
@@ -1047,34 +1046,33 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("key: dmi-zone-candidate-v1-", candidate_restore)
         self.assertIn("restore-keys:", candidate_restore)
 
-        candidate_state = normal[normal_names[3]][1]
-        self.assertIn("id: dmi-candidate-state", candidate_state)
-        self.assertIn("currentOperationalLedger.ready == true", candidate_state)
-        self.assertIn('echo "retain_preferred=true"', candidate_state)
-        self.assertIn('echo "retain_preferred=false"', candidate_state)
+        self.assertNotIn(
+            "Inspect isolated DMI candidate progress for normal maintenance",
+            workflow,
+        )
 
-        dmi = normal[normal_names[4]][1]
+        dmi = normal[normal_names[3]][1]
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
             "DMI_BULK_PREFER_OUTPUT_CACHE: true",
-            "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}",
+            "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false",
             "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json",
         ):
             self.assertIn(marker, dmi)
 
-        candidate = normal[normal_names[5]][1]
+        candidate = normal[normal_names[4]][1]
         self.assertIn("if: always()", candidate)
         self.assertIn("steps.dmi-bulk.outcome != 'cancelled'", candidate)
         self.assertIn("path: .cache/dmi-candidate-progress.json", candidate)
         self.assertIn("key: dmi-zone-candidate-v1-", candidate)
         self.assertNotIn("dmi-zone-cache-v1-", candidate)
 
-        terminal = normal[normal_names[6]][1]
+        terminal = normal[normal_names[5]][1]
         self.assertIn('test "$code" = "DMI_READY"', terminal)
         self.assertIn('test "$STRICT_CURRENT_ANCHOR_READY" = "true"', terminal)
 
-        snapshot = normal[normal_names[7]][1]
+        snapshot = normal[normal_names[6]][1]
         self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", snapshot)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", snapshot)
         self.assertIn(".diagnostics.currentOperationalLedger.ready", snapshot)
@@ -1082,7 +1080,7 @@ class ResumeAndFailClosedTests(unittest.TestCase):
         self.assertIn("--require-strict-dmi-ledger", snapshot)
         self.assertIn("--at \"$RAVRADAR_PRODUCTION_TARGET_HOUR\"", snapshot)
 
-        active = normal[normal_names[8]][1]
+        active = normal[normal_names[7]][1]
         self.assertNotIn("if: always()", active)
         self.assertIn("steps.dmi-terminal-gate.outputs.ready == 'true'", active)
         self.assertIn("steps.dmi-bulk.outputs.candidate_promoted == 'true'", active)
@@ -1128,13 +1126,14 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json",
             oneoff_candidate_state,
         )
-        self.assertIn("retain_preferred", oneoff_candidate_state)
+        self.assertNotIn("retain_preferred", oneoff_candidate_state)
 
         dmi = oneoff_steps[oneoff_names[4]][1]
         for marker in (
             "DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json",
             "DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json",
             "DMI_BULK_PREFER_OUTPUT_CACHE: true",
+            "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false",
             "DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json",
         ):
             self.assertIn(marker, dmi)

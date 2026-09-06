@@ -30,7 +30,7 @@ from lib.copernicus_current import (
 from lib.copernicus_target_identity import target_fingerprint
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
-    processed_source_assets_from_current_operational_ledger,
+    current_attestation_authorization_from_operational_ledger,
     validate_current_operational_availability_ledger,
     validate_current_operational_ledger,
     verified_part_current_pair,
@@ -121,8 +121,8 @@ def build_registry(
         operational_verified_count = 0
     else:
         ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
-        allowed_source_assets = processed_source_assets_from_current_operational_ledger(
-            ledger
+        allowed_source_assets, allowed_retained_pair_sources = (
+            current_attestation_authorization_from_operational_ledger(ledger)
         )
         attestation = canonical_verified_part_current_attestation(
             dmi,
@@ -130,6 +130,7 @@ def build_registry(
             reference,
             hours[-1],
             allowed_source_assets,
+            allowed_retained_pair_sources,
         )
         ledger_validator = (
             validate_current_operational_ledger

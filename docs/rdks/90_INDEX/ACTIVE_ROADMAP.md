@@ -1,4 +1,17 @@
-# NYESTE ROADMAP – 2026-09-06 – 4.0.328 per-pair weather closure
+# NYESTE ROADMAP – 2026-09-06 – 4.0.329 kontinuerlig cacheattestation
+
+- [x] Bevis, at 4.0.328 er merged efter exact-head, men at main-runtime stopper før fallback på attestation/proof-divergens.
+- [x] Bevar cacheevidensen: `34041885030` gemte progression ved 8.918/9.541 (delta 623), og `34044178502` gemte progression ved 22.357/25.826 (delta 3.469) efter det observerede kanoniske modelrunskift.
+- [x] Registrér gammel-main `34049794693` og `34051318868` på `31b9842`: DMI+Copernicus nået, Open-Meteo stoppet deterministisk på `OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_NATIVE_CADENCE_INVALID` ved 18:16:28Z/18:42:49Z, artifact/deploy korrekt skipped. De beviser kun producer/consumer-mismatch på hourly off-phase regional `dkss_lf`; retained-proof-pathen har alene lokale tests. Begge runtimebeviser er åbne.
+- [x] Bind designet til faktisk rækkeejerskab: validated retained per-pair/source-proof følger kompatible cached rækker over modelrun med kompatibel processing-signatur og højst 120 timers native source-lead; nye selected-asset-proofs må ikke overtage gamle rækker.
+- [x] Bind fallback til actual attestation og dens eksakte inverse over alle 79.414 registrypar uden antal- eller procentgrænse. Bevar partial som non-READY og slutclosure som strict.
+- [x] Supersedér designet, der udledte `RETAIN_PREFERRED_NATIVE_RUN` af `ledger.ready`: exact retained pair/source-proofs bærer kontinuiteten, og normal/oneoff skal vælge selectorens nyeste modne, native-complete run med `RETAIN_PREFERRED_NATIVE_RUN=false`, også ved non-READY kandidat, så gammel 96h-pinning ikke forsinker refresh eller skaber unødig fallback-tail. `True`-path er kun dormant test/helper.
+- [x] Implementér og fokustest fælles normal/oneoff-rettelse: donorens egen reference/+117-gate, retained proofs, actual inverse, latest native-complete run, gap-first, revised asset, sealed checkpoints, komponentatomar currenttuple-merge samt producer-skip/consumer-early-ignore af canonical regional off-phase. Malformed/on-phase forbliver fatal; fysisk prune er ikke indført. Final grøn matrix: `py_compile` 8, provenance, current-field-shadow, regional-current-operational, Open-Meteo-fallback, targetregistry, transactional 19/19 og diff-check.
+- [ ] Synkronisér kun de release-/modelbindingsartefakter, som den faktiske kodeclosure kræver; afslut 4.0.329-releasehukommelse og korte statiske kontroller.
+- [ ] Kør én exact-head sourcegate og merge kun den eksakte grønne head. Start ingen ny uændret main-kørsel mod den kendte deterministiske fejl.
+- [ ] Kør stor main-oneoff eller normal continuation på rettet kode og kræv, at den eksakte rest faktisk når Copernicus/regional/Open-Meteo. Først 79.414/79.414, Feggesund 354/354, fulde gates/kapacitet og særskilt modelaktivering afslutter roadmapet. Candidate G forbliver offentlig indtil da.
+
+# HISTORISK ROADMAP – 2026-09-06 – 4.0.328 per-pair weather closure, supersederet af 4.0.329
 
 - [x] Erstat provider-all-or-nothing med en registrybundet availability-ledger: genbrug hvert verificeret DMI-par og send den eksakte inverse rest videre, også ved interne huller, hale eller totalt DMI-udfald.
 - [x] Generalisér assetwatchdoggen til eksakt, revisionsbundet DMI-asset skip/restart; isolér øvrige download-/parse-/behandlingsfejl transaktionelt og fortsæt senere assets.
@@ -35,7 +48,7 @@
 
 - [x] Bind normal og 118h-oneoff til samme serialiserede active/candidate-kontrakt: materialisér strict READY-active som donor, men før alt nyt DMI-arbejde gennem fælles `dmi-zone-candidate-v1`. Normalen er updateren; oneoffen accelererer kun.
 - [x] Gem ikke-annulleret partial kandidat før terminalen, og kræv producer-success, allowlistet status, `DMI_READY`, strict anchor, `candidate_promoted=true` og eksakt registrybevis før active eller deploykæden må fortsætte.
-- [x] Fasthold kun partial kandidats native run over seks timers modelskift ved mindst normalt 96 timers moden/komplet fremtidshorisont og ikke-stale katalog; manglende/READY kandidat vælger nyeste komplette run, uden cirka +120 timers pinning.
+- [x] Historisk 4.0.324-trin, supersederet af 4.0.329: partial-only 96h-runretention blev indført, men gældende drift vælger selectorens nyeste modne, native-complete run med retentionflag `false`; exact retained pair/source-proof bærer kontinuiteten.
 - [x] Lad normal drift genbruge gyldige data og kontrollere hele target..+117 for interne huller, invalid/expired og hale; løft normal DMI-vedligehold til tre DKSS-familier uden at ændre fallbackrækkefølgen.
 - [x] Bevar DMI-/Copernicus-historik og de integrerede forbrugeres 48-timers mobiliserings-/transportvindue; bevar ekstern cron som primær dispatcher og GitHub schedules som reserve.
 - [x] Luk den målrettede lokale matrix: producer, provenance, rollover, active/candidate, workflow, downstream, atomic/history, `py_compile`, YAML-/JSON-parse, RDKS/security samt releaseversion/geodata.
@@ -104,7 +117,7 @@
 - [x] Implementér og kontrakttest branch-dispatch 118h-preflight samt DMI atomic compatible-cache backfill, save-before-terminal-gate og selector-after-ready.
 - [x] Klassificér `33510636195`/`33512163102`: nul DKSS-behandling afslører lokal cache-/runudsultning; `33498108421` er negativ run-/cachelineage, ikke bevis for bred upstream-DMI-fejl.
 - [x] Ret lokalt preferred-ruo-fremskift også ved ukeodt cadeoce, jobafgræoset target over UTC-timeskifte, betioget DKSS-first/geobehaodliog i deo oormale loop udeo strict aochor og eo valgfri strict-valideret deployed dooor, som ikke må blokere frisk officiel DMI. Ved første cutover ligger deo særskilt checkpoiotede WAM-historikbootstrap før deo oormale seks-collectioo-loop og kao fortsætte over flere forsøg; oormal drift bevarer to collectioos.
-- [x] **Historisk supersession:** Punktets to-collection-/preferred-run-del er afløst af DEC-0116 og øverste 4.0.324-roadmap; gældende normal drift bruger fælles kandidat, partial-only 96h/non-stale retention og tre DKSS-collections.
+- [x] **Historisk supersession:** DEC-0116 afløste punktets to-collection-/preferred-run-del med fælles kandidat, partial-only 96h/non-stale retention og tre DKSS-collections. 4.0.329 supersederer siden retentionen med nyeste modne native-complete run og exact retained pair/source-proof; tre DKSS-collections består.
 - [x] Klassificér `33520738058` som negativt fasebevis og gør tidlig current-cache-health konsistent med senere autoritativ sampling-/gridvektoroprydning. Bevar DMI som primær i både nuværende og ny model; Copernicus er kun exact-gap-supplement efter grøn DMI-terminalgate.
 - [x] Bestå de målrettede scheduler-/bulk-/workflowkontrakttests samt Python-syntakskontrollen.
 - [ ] Få et grønt frisk 118-timers datapreflightbevis på den nye eksakte kodehead. Copernicus må fortsat kun supplere eksakte resterende DMI-huller.

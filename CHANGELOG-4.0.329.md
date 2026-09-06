@@ -1,0 +1,37 @@
+# RavRadar 4.0.329 – DMI-modelrun-kontinuitet uden kunstig restgrænse
+
+Dato: 2026-09-06
+
+## Bevist produktionsfejl
+
+- 4.0.328 bestod exact-head-run `34040547841` og blev merged via PR #261 som `31b98428dea163c11ded1fc1e428e27a0218a8f2`.
+- Main-run `34041885030` gemte den progressive DMI-cache, men stoppede før Copernicus/Open-Meteo: den kanoniske attestation indeholdt 8.918 faktiske DMI-par, mens asset-outcome-proof klassificerede 9.541 som verificerede. Differencen var 623.
+- Main-run `34044178502` gemte igen cacheprogression, men stoppede med samme kontraktfejl efter det observerede kanoniske modelrunskift: 22.357 faktisk attesterede par mod 25.826 proof-klassificerede, en difference på 3.469.
+- Gammel-main runs `34049794693` og `34051318868` på head `31b9842` nåede DMI og Copernicus, men Open-Meteo fejlede deterministisk med `OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_NATIVE_CADENCE_INVALID` henholdsvis `2026-09-06 18:16:28Z` og `18:42:49Z`; artifact/deploy blev korrekt skipped. Producenten havde skrevet en hourly off-phase regional `dkss_lf`-prøve, mens consumeren gjorde selected-run `lead % 3 != 0` fatal. Runsene er præcis negativ runtimeevidens for regional producer/consumer off-phase-mismatch, ikke for retained-proof-admission. Begge 4.0.329-rettelser er lokalt fokustestede, men mangler exact-head runtimebevis.
+- Cachen blev altså ikke dokumenteret slettet eller nulstillet. Fejlen var, at gyldige ældre cached rækker mistede et fortsat validerbart kildebevis, mens det nye valgte modelruns asset-proof samtidig kunne overklassificere par, som den faktiske attestation ikke kunne se.
+
+## Bindende hotfixdesign
+
+- Hvert kompatibelt cached `(partId, validTime)`-par, som genbruges over et modelrunskift, skal beholde et valideret proof for den konkrete kildeassetidentitet, der faktisk ejer rækken. Proofet skal genverificeres mod række, target, centralt register, collection, modelrun, validTime, kompatibel processing-signatur og immutable assetidentitet. Native source-lead må højst være 120 timer; ukendt, ufuldstændigt eller manipuleret bevis giver missing, aldrig dækning.
+- En active-donor skal først valideres ved sin egen ledgers `productionReferenceAt` og det dertil hørende eksakte target..+117-vindue. Først derefter må dens kompatible actual per-pair/source-rækker projekteres som mulige retained rækker til det nye target.
+- `RETAIN_PREFERRED_NATIVE_RUN` må ikke længere udledes af `ledger.ready`; den tidligere regel er supersederet. Exact retained per-pair/source-proofs gør kontinuiteten uafhængig af kandidatens READY-status. Derfor vælger både normal og oneoff selectorens nyeste modne, native-complete run med `RETAIN_PREFERRED_NATIVE_RUN=false`, også for en non-READY kandidat, så en gammel 96-timers-pin ikke kan forsinke officiel refresh op til cirka 24 timer eller efterlade en unødvendig fallback-hale. Selectorens `true`-path er kun dormant test/helper, ikke driftsregel.
+- DMI's verificerede positive mængde skal være den kanoniske attestation af faktiske cached rækker, som har et gyldigt aktuelt eller bevaret per-pair/source-proof. Et aktuelt assets part-outcome må ikke alene skabe positiv dækning for en række fra et andet modelrun.
+- Den operationelle rest er altid den eksakte inverse af denne faktiske attestation i de 673 × 118 = 79.414 registrybundne par. Ingen antalstærskel, procentgrænse eller krav om et bestemt minimum af DMI-par må forhindre resten i at gå videre til Copernicus, regional DMI og Open-Meteo.
+- Et mismatch mellem faktisk attestation og ledger/proof stopper fortsat fail-closed og bevarer cacheprogressionen. Det må ikke repareres ved at gætte ejerskab, fjerne rækker eller kalde en partial kandidat READY. Same-modelrun retained availability er tilladt som non-READY, når rækkens source matcher den aktuelt valgte immutable officielle assetidentitet eksakt. Hvis den officielle identitet er revideret, må den gamle revision ikke regnes dækket; currenttuple skiftes først atomisk, når nyt asset, outcome og provenance er verificeret.
+- Den tidligere absolutte whole-row-regel er supersederet. En strict READY-donor må kun levere en exact-proof-gated currenttuple, hvor U, V og `sources.current` merges atomisk og aldrig som et halvt par. Et allerede eksakt attesteret primary-currentproof vinder. Bølge, vind, øvrige felter og kilder samt `processedSteps` i primary-rækken bevares. En komplet donor-current-summary erstatter current-summary; mangler den, bevares kun en komplet same-grid primary-summary, mens partial eller grid-mismatch fjernes.
+- Den tidligere selected-run off-phase blanket-fatal-regel er scoped supersederet. Producenten skriver ikke en kanonisk off-phase regional prøve. Consumeren validerer først dict, eksakt collection/modelRun/validTime og `run <= validTime`; er prøven derefter kanonisk off-phase, ignoreres den før `capturedAt`, hash, `sampleKey`, spatial og vector, og parret sendes som missing til Open-Meteo. Der udføres bevidst ingen fysisk prune af legacybytes. Malformed collection/time/run og alle on-phase hash-/binding-/spatial-/vektorbeviser forbliver fatal.
+- Hvert progressivt bulkcheckpoint skal før write forsegles med en ny availability-ledger, der bygges af allerede validerede retained proofs samt aktuelle kanoniske `processedStep`-poster og det officielle katalog. Den persistente kandidat skal være selvkonsistent og valideres som helhed efter timeout/crash; et ledgerløst checkpoint må aldrig rekonstrueres til betroet state. `processedValidTimes` og tidligere complement er ikke selvstændigt bevis. Dermed kan gyldigt checkpointet arbejde fortsætte uden falsk dækning.
+
+## Bevarede grænser
+
+- DMI-first og den aftalte providerorden består. En senere kørsel må erstatte et Open-Meteo-par med et højere prioriteret, faktisk verificeret DMI- eller Copernicus-par.
+- Retained par kan styre den eksakte positive mængde og residual, men medfører fortsat `ready=false` for DMI-ledgeren. Resten må gå videre til fallback; active-promotion kræver fortsat producent-success, strict `DMI_READY`, current-anchor, `candidate_promoted=true` og eksakt registrybevis.
+- Offentlig runtime, artifact, deploy og modelaktivering kræver fortsat 79.414/79.414, én og kun én gyldig kilde pr. par, nul overlap/missing samt fuld validate/releasegate. De op til 48 timers verificerede historik forbliver rådgivende og syntetiseres ikke.
+- Providerkæden, dens ydre tidsbudgetter, ekstern cron og GitHub-reserve-dispatchkadence ændres ikke. Kun den interne regionale sample-admission afgrænses som ovenfor: canonical off-phase er ineligible/missing, mens malformed og on-phase proofs forbliver fatal. Den interne DMI-arbejdsprioritet sætter reelt manglende/udløbne par, interne huller og hale før sekundær opfriskning af allerede gyldige retained par. Ingen score-, state-, geometri-, kystnormal- eller land-/vandpunktændring er en del af hotfixdesignet.
+
+## Status
+
+- Driftsårsag og løsningskontrakt er dokumenteret.
+- Lokal implementering er færdig, og den endelige fokuserede matrix er grøn: `py_compile` for otte produktionsscripts; provenance, current-field-shadow, regional-current-operational, Open-Meteo-fallback og targetregistry; transactional 19/19 samt diff-check.
+- Ny GitHub exact-head `validate:source`, merge, frisk main-runtime, 79.414/79.414, fuld validate/releasegate og deploy afventer.
+- Først et run, der passerer DMI-attestation/ledger-paritet, sender den eksakte rest gennem fallbackkæden og afslutter 79.414/79.414, er komplet vejrbevis. Candidate G er fortsat offentlig.

@@ -1,6 +1,32 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.328
+**Håndbogsversion:** 4.0.329
+
+## Vejrcachen skal kunne genbruges gennem et nyt DMI-modelrun – 2026-09-06
+
+4.0.328 kom sikkert på `main`, men de første rigtige kørsler viste en grundlæggende kontinuitetsfejl. Den ene kontrol talte de DMI-par, som faktisk kunne bevises i den gemte cache. En anden kontrol udledte dækning fra de nye valgte DMI-filers generelle dækningsbevis. Efter et modelrunskift kunne en cached række stadig høre til den tidligere kildefil. Dermed kunne den nye filkontrol påstå flere verificerede par, end cacheattestationen faktisk kunne bevise, og kæden stoppede før Copernicus og Open-Meteo.
+
+Det første run havde 8.918 attesterede DMI-par mod 9.541 i proof-partitionen, altså 623 i forskel. Efter det næste observerede kanoniske modelrunskift voksede forskellen i næste run til 22.357 mod 25.826, altså 3.469. Cachegemningerne gennemførte i begge runs. Det er derfor ikke bevis for, at selve cachen blev nulstillet; problemet er, at systemet mistede evnen til at anerkende dele af det gemte arbejde sikkert på tværs af modelruns.
+
+To senere runs på den gamle main-kode, `34049794693` og `34051318868`, nåede både DMI og Copernicus. Open-Meteo stoppede deterministisk med den samme præcise fejl `OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_NATIVE_CADENCE_INVALID` kl. 18:16:28 og 18:42:49 UTC; artifact og deploy blev korrekt sprunget over. Producenten havde gemt en regional `dkss_lf`-prøve på en time, som ikke lå på kildens gyldige tre-timersfase, mens den næste kontrol gjorde netop dette fravalg fatalt. Det beviser en særskilt regional producer/consumer-fejl, ikke retained-proof-fejlen og ikke at 4.0.329 allerede virker i produktion.
+
+4.0.329 skal binde et valideret kildebevis til hvert genbrugt kystdel/time-par. Når et par stammer fra et tidligere modelrun, skal netop dette tidligere kildebevis følge rækken og genkontrolleres. Behandlingssignaturen skal stadig være kompatibel, og kildens native prognoseafstand må højst være 120 timer. En ny fil må ikke automatisk få æren for en gammel cached række. Hvis beviset ikke holder, regnes parret som manglende og sendes videre – det slettes eller gættes ikke til gyldigt.
+
+En active-donor kontrolleres ved den reference og det +117-timersvindue, som donorens egen ledger faktisk blev bygget til. Først derefter vælges kompatible rækker til det nye target. DMI bruger sin afgrænsede arbejdstid på reelt manglende eller udløbne par, huller midt i vinduet og halen, før allerede gyldige retained par eventuelt opfriskes. En retained række fra samme modelrun må fortsat bruges som non-READY availability, når kilden matcher den aktuelt valgte officielle filidentitet eksakt. Hvis DMI reviderer filidentiteten, kan den gamle revision ikke fortsætte som dækning; strømparret skiftes først atomisk, når den nye fil, dens outcome og provenance er verificeret.
+
+Den gamle regel krævede, at hele vejrtimen kom fra donoren. Den er supersederet, fordi det kunne kassere gyldig vind eller bølge og samtidig efterlade trinmarkører, som gjorde tabet varigt. Nu genbruges kun et fuldt og eksakt bevist strømpar: U, V og strømkilden flyttes samlet. Et allerede bevist strømpar i primary vinder; et halvt eller uattesteret donorpar afvises. Vind, bølger, andre felter, deres kildeoplysninger og behandlede trin bevares. En komplet donor-strømopsummering erstatter den gamle; ellers beholdes kun en komplet primary-opsummering fra samme gitter, mens en ufuldstændig eller gitteruoverensstemmende strømopsummering fjernes.
+
+En velformet regional prøve uden for den valgte modelkørsels gyldige fase er ikke en datafejl og må ikke blokere Open-Meteo. Producenten gemmer den ikke. Hvis den allerede ligger som legacydata, kontrollerer consumeren først collection, modelrun, validTime og at modelrun ikke ligger efter gyldighedstiden. Derefter ignoreres en entydigt off-phase prøve tidligt, og det eksakte par fortsætter som manglende til Open-Meteo. Filen slettes ikke fysisk, fordi en sådan oprydning kunne skjule malformed data. Malformed identitet og alle hash-, bindings-, afstands- og vektorfelter på en gyldig on-phase prøve stopper fortsat fail-closed.
+
+Den gamle regel om at fastholde en partial kandidats foretrukne native modelrun ud fra READY-status er supersederet. De validerede kildebeviser bevarer nu de brugbare cached rækker, mens både normal og oneoff vælger den nyeste komplette native modelkørsel, også når kandidaten er non-READY. Derved undgår RavRadar, at en gammel 96-timers-præference forsinker opfriskningen op til cirka et døgn eller efterlader en unødvendig fallback-hale.
+
+Hvert progressivt checkpoint får sin egen nye availability-ledger, før det skrives. Ledgeren bygges kun af allerede validerede retained kildebeviser, aktuelle kanoniske trinposter og det officielle DMI-katalog. Kandidaten og ledgeren gemmes derfor som én selvkonsistent helhed, der kan valideres efter timeout eller crash. Et gammelt checkpoint uden sin egen gyldige ledger må ikke bagefter “genskabes” til betroet state, og en løs liste over behandlede tider eller en gammel restoptælling er aldrig nok. Dermed bevares sikkert checkpointet arbejde uden falsk dækning.
+
+Der er ingen antalgrænse for fallback. Om der mangler 1, 1.144 eller 50.000 par, er princippet det samme: DMI-mængden er præcis de faktiske attesterede par, og resten er den matematiske inverse inden for alle 79.414 positioner. Denne rest skal kunne fortsætte til Copernicus, regional DMI og Open-Meteo under deres almindelige tids- og datakrav. Et stort antal mangler må ikke i sig selv blokere næste leverandør.
+
+Smidighed gælder kun indsamlingen. En DMI-ledger med retained par er fortsat ikke READY, men dens eksakte rest må gå videre til fallback. Intet ufuldstændigt datasæt må publiceres. Den afsluttende gate kræver stadig præcis 79.414/79.414, én gyldig kilde pr. par, nul overlap eller missing og alle normale releasekontroller. Cache-, score-, geometri-, punkt- og 48-timers historikkrav lempes ikke. Providerkæde, cron og ydre dispatchkadence består; kun den interne behandling af entydigt off-phase regionale prøver ændres som beskrevet ovenfor.
+
+Status: 4.0.328 bestod exact-head `34040547841` og blev merged via PR #261. Runs `34041885030`, `34044178502`, `34049794693` og `34051318868` er negativ runtimeevidens for to adskilte fejl. 4.0.329 er implementeret lokalt; syntakskontrol af otte produktionsscripts, provenance-, shadow-, regional-, Open-Meteo-, targetregistry- og 19/19 transaktionstests samt diff-check er grønne. Ny GitHub exact-head-kildegate, merge, positiv runtime, 79.414/79.414, fuld releasegate og deploy afventer. Candidate G er fortsat offentlig.
 
 ## En defekt fil stopper ikke længere hele currentkæden – 2026-09-06
 
@@ -18,7 +44,7 @@ Closurebeviset kontrolleres samlet én gang og indekseres derefter pr. kystdel o
 
 Ekstern cron er fortsat den primære dispatcher, fordi GitHubs egne planlagte jobs kan stå i kø eller udeblive; GitHub-tiderne er reserve. De almindelige kørsler vedligeholder hele vinduet fremover. Oneoff er kun en stor genopfyldning. Når systemet er stabilt og den nye model er online, måles DMI, Baltic, AMM15, regional DMI og Open-Meteo hver for sig, så rækkefølge, tidsbudget og interval kan justeres, hvis target ellers bliver for gammelt. En større pipelineombygning er bevidst udskudt.
 
-Status: den målrettede lokale kontraktmatrix er grøn. 4.0.328 er ikke endnu exact-head-verificeret, merged, kørt til 79.414/79.414 eller bevist i produktion. Candidate G er fortsat offentlig.
+Historisk status, supersederet af 4.0.329-checkpointet ovenfor: Den målrettede lokale 4.0.328-kontraktmatrix var grøn. 4.0.328 bestod senere exact-head `34040547841` og blev merged via PR #261; de efterfølgende negative main-runs førte de uafsluttede runtime-, 79.414/79.414- og produktionskrav videre til 4.0.329. Candidate G er fortsat offentlig.
 
 ## Gamle runs sorteres fra, og Open-Meteo skal bevise m/s – 2026-09-06
 
@@ -50,7 +76,7 @@ RavRadar holder sidste fuldt kontrollerede DMI-cache adskilt fra den næste cach
 
 Efter et ikke-annulleret forsøg gemmes kandidatens reelle delarbejde før slutkontrollen. Den aktive cache bliver stående, og publiceringskæden må først fortsætte, når producenten er lykkedes, `DMI_READY` og det strenge currentanker består, kandidaten faktisk er promoveret, og et nyt eksakt registerbevis dækker alle mål. En fejl eller partial kandidat kan derfor ikke erstatte det brugbare aktive grundlag.
 
-En partial kandidat må holde fast i sit native modelrun over det normale seks timers modelskift, men kun mens det stadig har mindst den krævede modne og komplette fremtidshorisont, normalt 96 timer, og leverandørens samlede katalog ikke er dokumenteret forældet. Findes ingen kandidat, eller er den allerede READY, vælges den nyeste komplette native run. Reglen kan derfor ikke holde et run fast til cirka +120 timers alder.
+Historisk gjaldt en 4.0.324-regel, hvor en partial kandidat kunne holde fast i sit native modelrun ved mindst normalt 96 timers moden og komplet fremtidshorisont. Den regel er supersederet af 4.0.329. Gældende drift vælger den nyeste modne og komplette native modelkørsel i både normal og oneoff, mens validerede kildebeviser bevarer de kompatible cached rækker.
 
 Den almindelige vejrhentning genbruger alle gyldige timer og kontrollerer hele target..+117 — ikke kun den nyeste hale. Manglende timer midt i vinduet, ufuldstændige komponenter samt ugyldige eller udløbne trin hentes igen målrettet. Tre DKSS-havsamlinger kan behandles i samme normale kørsel. Den store opfyldning accelererer den samme kandidatmekanisme; den er ikke den fremtidige updater, for det er de normale kørsler.
 
@@ -148,7 +174,7 @@ Currentkæden skelner nu teknisk mellem de to tidsretninger. Den private Coperni
 
 En særskilt branch-valgt 118-timers preflight med inputtet `operational_118_preflight` kan kontrollere hele data- og runtimekæden før release: DMI, de persistente caches, terminalkontrol, operationel Copernicus-range, vejrbygning og den integrerede 210/673/118-audit. Den kører bevidst ikke sourcegate, fuld validate, releasegate, adminsync, Pages, deploy eller browserkontrol og kan derfor ikke kaldes produktion. Den må kun gemme én filtreret, privacy-sikker rapport i syv dage; original audit, conditions og vejrcaches uploades ikke.
 
-DMI-cachegenbrug er data-bevarende, men må ikke skabe et kunstigt strømpar. Nyere progressions- og rotationsmetadata forbliver grundlag, og kun en strict-verificeret cache fra samme samplingregistergeneration må udfylde manglende timer. Hver vejrtime kopieres som én samlet række — aldrig som komplementære U/V- eller bølgefelter fra forskellige runs eller acquisitions. De tre eksisterende caches gemmes før en payloadfri terminalgate; Copernicus-selector kører kun efter `DMI_READY` og et verificeret strømanker.
+DMI-cachegenbrug er data-bevarende, men må ikke skabe et kunstigt strømpar. Dette historiske 4.0.320-afsnits absolutte hel-række-regel er supersederet af 4.0.329. Gældende drift må kun merge et samlet U+V+strømkilde-tuple med eksakt proof; vind, bølge, øvrige felter, kilder og trinmarkører bevares, og et halvt eller uattesteret donorpar afvises. De tre eksisterende caches gemmes fortsat før den payloadfri terminalgate; strict promotion kræver stadig `DMI_READY` og et verificeret strømanker.
 
 De isolerede runs `33510636195` og `33512163102` behandlede HARMONIE og WAM, men nul trin i de tre DKSS-currentfamilier. Fejlen `DMI_STRICT_CURRENT_ANCHOR_MISSING` betyder derfor ikke, at DMI generelt manglede strømdata. RavRadar havde fastholdt en ældre foretrukken run, som senere blev afvist som stale uden at skifte til en nyere moden run. Samtidig var preflightens “deployed donor” blot en kopi af den samme progressive cache, og gamle DKSS-stepmarkører kunne forhindre den nødvendige genbehandling.
 

@@ -943,9 +943,6 @@ const activeDmiMaterializeStep = workflowStep(
 const candidateDmiRestoreStep = workflowStep(
   'Restore isolated DMI candidate progress for normal maintenance',
 );
-const candidateDmiStateStep = workflowStep(
-  'Inspect isolated DMI candidate progress for normal maintenance',
-);
 const candidateDmiSaveStep = workflowStep(
   'Save isolated DMI candidate progress before any terminal decision',
 );
@@ -970,8 +967,7 @@ const fullValidationStep = workflowStep(
 assert.ok(
   activeDmiRestoreStep.start < activeDmiMaterializeStep.start
     && activeDmiMaterializeStep.start < candidateDmiRestoreStep.start
-    && candidateDmiRestoreStep.start < candidateDmiStateStep.start
-    && candidateDmiStateStep.start < dmiBulkStep.start
+    && candidateDmiRestoreStep.start < dmiBulkStep.start
     && dmiBulkStep.start < candidateDmiSaveStep.start
     && candidateDmiSaveStep.start < dmiTerminalGateStep.start
     && dmiTerminalGateStep.start < activeDmiSnapshotStep.start
@@ -1003,16 +999,14 @@ assert.match(
   'normal maintenance must restore the shared isolated candidate-v1 family',
 );
 assert.ok(
-  candidateDmiStateStep.block.includes("jq -r '.diagnostics.currentOperationalLedger.ready == true'")
-    && candidateDmiStateStep.block.includes('echo "retain_preferred=true"')
-    && candidateDmiStateStep.block.includes('echo "retain_preferred=false"'),
-  'normal maintenance must retain only an unfinished candidate run and permit a READY candidate to roll forward',
+  !productionWorkflows.build.includes('name: Inspect isolated DMI candidate progress for normal maintenance'),
+  'normal maintenance must not derive native-run pinning from partial-ledger readiness',
 );
 for (const marker of [
   'DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json',
   'DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json',
   'DMI_BULK_PREFER_OUTPUT_CACHE: true',
-  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}',
+  'DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false',
   'DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json',
 ]) {
   assert.ok(

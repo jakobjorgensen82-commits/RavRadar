@@ -135,7 +135,8 @@ jobs:
           )
           from scripts.lib.dmi_native_provenance import (
               canonical_verified_part_current_attestation,
-              processed_source_assets_from_current_operational_ledger,
+              current_attestation_authorization_from_operational_ledger,
+              validate_current_operational_availability_ledger,
               validate_current_operational_ledger,
           )
 
@@ -167,17 +168,26 @@ jobs:
           targets_path = Path('data/live/coastal-parts-v2.json')
           targets = targets_from_registry(targets_path)
           range_end = reference + timedelta(hours=117)
-          allowed_source_assets = processed_source_assets_from_current_operational_ledger(ledger)
+          allowed_source_assets, allowed_retained_pair_sources = (
+              current_attestation_authorization_from_operational_ledger(ledger)
+          )
           attestation = canonical_verified_part_current_attestation(
               dmi,
               targets,
               reference,
               range_end,
               allowed_source_assets,
+              allowed_retained_pair_sources,
           )
+          ready = ledger['ready']
           validation_error = None
           try:
-              validate_current_operational_ledger(
+              ledger_validator = (
+                  validate_current_operational_ledger
+                  if ready
+                  else validate_current_operational_availability_ledger
+              )
+              ledger_validator(
                   ledger,
                   attestation,
                   targets,
@@ -188,16 +198,11 @@ jobs:
           except (TypeError, ValueError) as error:
               validation_error = str(error)
 
-          ready = ledger['ready']
-          if ready and validation_error is not None:
-              raise SystemExit(f'Restored ready DMI ledger is invalid: {validation_error}')
-          bounded_continuation_errors = {
-              'Current outcome contains unfinished local work',
-              'DMI current ledger contains unfinished local work',
-          }
-          if not ready and validation_error not in bounded_continuation_errors:
-              reason = validation_error or 'ledger unexpectedly validates as ready'
-              raise SystemExit(f'Restored non-ready DMI ledger is not a bounded continuation: {reason}')
+          if validation_error is not None:
+              disposition = 'ready' if ready else 'non-ready'
+              raise SystemExit(
+                  f'Restored {disposition} DMI ledger is invalid: {validation_error}'
+              )
           requested = os.environ.get('PILOT_SAMPLE_TIME', '').strip()
           if requested and exact_hour(requested, 'requested sample time') != reference:
               raise SystemExit('Requested pilot sample time does not match the restored DMI ledger')
@@ -464,7 +469,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -550,7 +555,6 @@ jobs:
             dmi-zone-cache-v1-${{ runner.os }}-
 
       - name: Isolate restored candidate and restore active working copy
-        id: dmi-candidate-state
         shell: bash
         run: |
           if test -z "${{ steps.dmi-candidate-restore.outputs.cache-matched-key }}" \
@@ -559,17 +563,6 @@ jobs:
             mv .cache/dmi-candidate-progress.json.tmp .cache/dmi-candidate-progress.json
           fi
           cp .cache/dmi-active-complete.json data/live/dmi-bulk-cache.json
-          if test -s .cache/dmi-candidate-progress.json; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            if test "$(jq -r '.diagnostics.currentOperationalLedger.ready // false' .cache/dmi-candidate-progress.json)" = true; then
-              echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
-            else
-              echo "retain_preferred=true" >> "$GITHUB_OUTPUT"
-            fi
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "retain_preferred=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Restore private regional current evidence for normal maintenance
         uses: actions/cache/restore@v6
@@ -600,7 +593,7 @@ jobs:
           DMI_BULK_OUTPUT_PATH: .cache/dmi-candidate-progress.json
           DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
           DMI_BULK_PREFER_OUTPUT_CACHE: true
-          DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: ${{ steps.dmi-candidate-state.outputs.retain_preferred }}
+          DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -621,7 +614,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Save progressed DMI GRIB cache before any terminal decision
@@ -844,7 +837,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.328 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
