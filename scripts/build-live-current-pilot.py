@@ -44,7 +44,7 @@ from lib.current_operational_closure import (
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
-    processed_source_assets_from_current_operational_ledger,
+    current_attestation_authorization_from_operational_ledger,
 )
 from lib.regional_current_operational import VECTOR_COMMITMENT_CONTRACT_ID
 from lib.open_meteo_current_fallback import (
@@ -665,12 +665,16 @@ def main() -> int:
         if not isinstance(ledger, dict):
             raise RuntimeError("DMI_LEDGER_MISSING")
         try:
+            allowed_assets, allowed_retained_pair_sources = (
+                current_attestation_authorization_from_operational_ledger(ledger)
+            )
             attestation = canonical_verified_part_current_attestation(
                 dmi,
                 targets_list,
                 coverage_reference_iso,
                 registry.get("operationalRangeEndAt"),
-                processed_source_assets_from_current_operational_ledger(ledger),
+                allowed_assets,
+                allowed_retained_pair_sources,
             )
         except (TypeError, ValueError):
             raise RuntimeError("DMI_ATTESTATION_INVALID") from None

@@ -61,20 +61,28 @@ from lib.dmi_native_provenance import (
     MARINE_COLLECTIONS,
     SPATIAL_PROVENANCE_VERSION,
     build_current_part_outcome_proof,
+    build_retained_current_asset_proof,
     canonical_time,
     canonical_current_source_asset,
     canonical_verified_part_current_attestation,
     complete_native_source_for_hour,
     component_collection_allowed,
+    current_attestation_authorization_from_operational_ledger,
     current_official_assets_sha256,
     current_source_asset_sha256,
+    current_source_matches_official_asset,
     current_operational_ledger_ready,
     derive_current_part_outcome_partition,
+    exact_current_operational_complement,
     part_time_pairs_sha256,
     processed_source_assets_from_current_operational_ledger,
+    retained_current_asset_proofs_sha256,
     sampling_identity,
     sanitized_current_attestation,
+    validate_current_operational_availability_ledger,
+    validate_current_operational_ledger,
     validate_current_part_outcome_proof,
+    validate_retained_current_asset_proofs,
     valid_times_sha256,
     wave_distance_allowed,
 )
@@ -998,6 +1006,8 @@ def reusable_processed_steps(
     required_asset_provenance: dict[str, dict[str, Any]] | None = None,
     current_target_ids: list[str] | None = None,
     current_target_registry_sha256: str | None = None,
+    actual_pair_source_keys: set[tuple[str, str, str]] | None = None,
+    covered_pair_keys: set[tuple[str, str]] | None = None,
 ) -> dict[str, Any]:
     """Reuse only current-parser checkpoints bound to the selected STAC asset."""
     if not same_processing or not same_run:
@@ -1021,6 +1031,8 @@ def reusable_processed_steps(
         or not isinstance(required_asset_provenance, dict)
         or not isinstance(current_target_ids, list)
         or not current_target_registry_sha256
+        or not isinstance(actual_pair_source_keys, set)
+        or not isinstance(covered_pair_keys, set)
     ):
         return {}
     required = {
@@ -1044,7 +1056,7 @@ def reusable_processed_steps(
         if source is None:
             continue
         try:
-            validate_current_part_outcome_proof(
+            outcome = validate_current_part_outcome_proof(
                 step.get("currentPartOutcomeProof"),
                 current_target_ids,
                 current_target_registry_sha256,
@@ -1053,9 +1065,91 @@ def reusable_processed_steps(
             )
         except ValueError:
             continue
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        positive_part_ids = set(current_target_ids) - set(
+            outcome["spatialUnavailablePartIds"]
+        )
+        if any(
+            (
+                (part_id, valid_time, source_key) not in actual_pair_source_keys
+                and (part_id, valid_time) not in covered_pair_keys
+            )
+            for part_id in positive_part_ids
+        ):
+            # A processed-step proof cannot suppress a retry when the actual
+            # cache is missing an outcome-positive pair.
+            continue
         reusable[valid_time] = step
     _ = strict_current_anchor_available
     return reusable
+
+
+def current_pair_evidence_from_retained_proofs(
+    proofs: list[dict[str, Any]],
+    selected_model_runs: dict[str, str | None] | None = None,
+    selected_official_assets: dict[
+        str, dict[str, dict[str, Any]]
+    ] | None = None,
+) -> tuple[set[tuple[str, str, str]], set[tuple[str, str]]]:
+    """Return exact actual cache identities, excluding future-run evidence."""
+    pair_sources: set[tuple[str, str, str]] = set()
+    pairs: set[tuple[str, str]] = set()
+    for proof in proofs:
+        source = canonical_current_source_asset(proof.get("sourceAsset"))
+        if source is None:
+            continue
+        selected_run = canonical_time(
+            (selected_model_runs or {}).get(source["collection"])
+        )
+        if selected_run is not None and epoch(source["modelRun"]) > epoch(selected_run):
+            continue
+        if (
+            selected_run is not None
+            and epoch(source["modelRun"]) == epoch(selected_run)
+            and not current_source_matches_official_asset(
+                source,
+                ((selected_official_assets or {}).get(
+                    source["collection"],
+                ) or {}).get(source["validTime"]),
+            )
+        ):
+            # A same-run STAC revision is not the selected official asset any
+            # more. Its numeric row may remain physically cached, but cannot
+            # be trusted as a winner or suppress an exact provider residual.
+            continue
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        for part_id in proof.get("attestedPartIds") or []:
+            identity = (str(part_id), source["validTime"])
+            pair_sources.add((*identity, source_key))
+            pairs.add(identity)
+    return pair_sources, pairs
+
+
+def prioritize_marine_assets_for_current_gaps(
+    assets: list[dict[str, Any]],
+    target_ids: list[str],
+    covered_pair_keys: set[tuple[str, str]],
+) -> list[dict[str, Any]]:
+    """Process internal holes/tail before refresh-only assets, deterministically."""
+    def priority(asset: dict[str, Any]) -> tuple[int, int, float, str, str]:
+        valid_time = str(canonical_time(asset.get("valid")) or "")
+        missing_count = sum(
+            (part_id, valid_time) not in covered_pair_keys
+            for part_id in target_ids
+        )
+        return (
+            0 if missing_count else 1,
+            -missing_count,
+            epoch(valid_time),
+            str(asset.get("id") or ""),
+            str(asset.get("assetIdentitySha256") or ""),
+        )
+
+    return sorted(assets, key=priority)
 
 
 def _bounded_stac_inventory(
@@ -2704,6 +2798,8 @@ def prefer_current_hour_candidate(
     collection: str,
     model_run: str,
     candidate_choice: dict[str, Any],
+    candidate_source_capture: dict[str, Any] | None = None,
+    existing_source_trusted: bool = True,
     distance_tolerance_km: float = 1e-6,
 ) -> bool:
     """Choose current independently for one native forecast time.
@@ -2730,6 +2826,51 @@ def prefer_current_hour_candidate(
         and isinstance(source.get("distanceKm"), (int, float))
         and math.isfinite(float(source["distanceKm"]))
     ):
+        return True
+    if not existing_source_trusted:
+        # An unproved or superseded row must never block a valid official
+        # candidate. This decision happens inside the copy-on-write stage, so
+        # a later parser/provenance failure still leaves the original intact.
+        return True
+
+    candidate_item_id = str(
+        (candidate_source_capture or {}).get("itemId") or ""
+    ).strip()
+    candidate_asset_identity = str(
+        (candidate_source_capture or {}).get("assetIdentitySha256") or ""
+    )
+    candidate_official_identity_valid = bool(
+        candidate_item_id
+        and len(candidate_asset_identity) == 64
+        and all(character in "0123456789abcdef" for character in candidate_asset_identity)
+        and (
+            (candidate_source_capture or {}).get("assetSizeBytes") is None
+            or isinstance(
+                (candidate_source_capture or {}).get("assetSizeBytes"), int,
+            )
+            and not isinstance(
+                (candidate_source_capture or {}).get("assetSizeBytes"), bool,
+            )
+            and int((candidate_source_capture or {}).get("assetSizeBytes")) > 0
+        )
+    )
+    if (
+        str(source.get("collection") or "") == collection
+        and epoch(source.get("modelRun")) == epoch(model_run)
+        and candidate_official_identity_valid
+        and any(
+            source.get(field) != (candidate_source_capture or {}).get(field)
+            for field in (
+                "itemId",
+                "assetIdentitySha256",
+                "assetSizeBytes",
+                "itemCreatedAt",
+                "itemUpdatedAt",
+            )
+        )
+    ):
+        # The same-run candidate is the currently selected official STAC
+        # revision. It must replace an earlier capture before geometry ties.
         return True
 
     existing_distance = float(source["distanceKm"])
@@ -2995,7 +3136,10 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                  current_shadow: dict[str, Any] | None = None,
                  private_stage_output: dict[str, Any] | None = None,
                  current_part_outcomes: dict[str, Any] | None = None,
-                 allowed_parameters: set[str] | None = None) -> tuple[set[str], set[str], bool, int, int]:
+                 allowed_parameters: set[str] | None = None,
+                 trusted_current_pair_source_keys: set[
+                     tuple[str, str, str]
+                 ] | None = None) -> tuple[set[str], set[str], bool, int, int]:
     found, touched = set(), set()
     vector_candidates: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     scalar_tuple_candidates: dict[tuple[str, str], dict[str, list[dict[str, Any]]]] = {}
@@ -3162,12 +3306,39 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                                 current_candidate_available_part_zone_ids.add(
                                     str(zone["id"])
                                 )
+                            existing_source_trusted = True
+                            if (
+                                zone["id"] in operational_part_zone_ids
+                                and trusted_current_pair_source_keys is not None
+                            ):
+                                existing_hour = (
+                                    (point.get("hourly") or {}).get(valid_time)
+                                    or {}
+                                )
+                                existing_source = canonical_current_source_asset(
+                                    (existing_hour.get("sources") or {}).get(
+                                        "current"
+                                    )
+                                )
+                                existing_source_key = json.dumps(
+                                    existing_source,
+                                    sort_keys=True,
+                                    separators=(",", ":"),
+                                    ensure_ascii=False,
+                                ) if existing_source is not None else ""
+                                existing_source_trusted = (
+                                    str(zone["id"])[len("PART::"):],
+                                    valid_time,
+                                    existing_source_key,
+                                ) in trusted_current_pair_source_keys
                             if not prefer_current_hour_candidate(
                                 point,
                                 valid_time,
                                 collection,
                                 model_run,
                                 candidate_choice,
+                                source_capture,
+                                existing_source_trusted,
                             ):
                                 search["rejectedReason"] = "CLOSER_CURRENT_COLUMN_SELECTED_FOR_NATIVE_TIME"
                                 continue
@@ -3527,6 +3698,10 @@ def process_grib_transactionally(
     prepare_stage: Any | None = None,
     failure_flush: Any | None = None,
     stage_validator: Any | None = None,
+    current_stage_validator: Any | None = None,
+    trusted_current_pair_source_keys: set[
+        tuple[str, str, str]
+    ] | None = None,
     validation_error: str = "GRIB asset stage validation failed",
 ) -> tuple[set[str], set[str], bool, int, int]:
     """Parse one asset against copy-on-write state and commit only at EOF.
@@ -3573,6 +3748,10 @@ def process_grib_transactionally(
             private_output_stage,
             part_outcomes_stage,
             allowed_parameters=allowed_parameters,
+            **({
+                "trusted_current_pair_source_keys":
+                    trusted_current_pair_source_keys,
+            } if trusted_current_pair_source_keys is not None else {}),
         )
         found, touched, interrupted, messages_seen, zone_lookups = outcome
         if interrupted:
@@ -3584,6 +3763,13 @@ def process_grib_transactionally(
             output_stage,
             private_output_stage,
             outcome,
+        ):
+            raise RuntimeError(validation_error)
+        if current_stage_validator is not None and not current_stage_validator(
+            output_stage,
+            private_output_stage,
+            outcome,
+            part_outcomes_stage,
         ):
             raise RuntimeError(validation_error)
     except Exception:
@@ -4301,6 +4487,8 @@ def cache_progress_time(document: dict[str, Any]) -> float:
 def backfill_compatible_cache_data(
     primary: dict[str, Any],
     donor: dict[str, Any],
+    validated_donor_current_asset_proofs: list[dict[str, Any]] | None = None,
+    validated_primary_current_asset_proofs: list[dict[str, Any]] | None = None,
 ) -> None:
     """Backfill missing cache data without replacing newer progress metadata.
 
@@ -4331,11 +4519,101 @@ def backfill_compatible_cache_data(
         if not isinstance(primary_container, dict) or not isinstance(donor_container, dict):
             continue
         for key, value in donor_container.items():
-            primary_container.setdefault(key, copy.deepcopy(value))
+            existing = primary_container.setdefault(key, copy.deepcopy(value))
+            if (
+                container_name == "runs"
+                and key in MARINE_COLLECTIONS
+                and isinstance(existing, dict)
+                and isinstance(value, dict)
+                and all(
+                    existing.get(field) == value.get(field)
+                    for field in (
+                        "referenceTime",
+                        "parserVersion",
+                        "parameterMapVersion",
+                        "gridLookupVersion",
+                        "processingSignature",
+                    )
+                )
+                and isinstance(existing.get("processedSteps"), dict)
+                and isinstance(value.get("processedSteps"), dict)
+            ):
+                for valid_time, step in value["processedSteps"].items():
+                    existing["processedSteps"].setdefault(
+                        valid_time, copy.deepcopy(step)
+                    )
+                existing["processedValidTimes"] = sorted(
+                    str(valid_time)
+                    for valid_time in existing["processedSteps"]
+                )
     primary_zones = primary.setdefault("zones", {})
     donor_zones = donor.get("zones") or {}
     if not isinstance(primary_zones, dict) or not isinstance(donor_zones, dict):
         return
+    def proof_pair_source_keys(
+        proofs: list[dict[str, Any]] | None,
+    ) -> set[tuple[str, str, str]]:
+        return {
+            (
+                str(part_id or "").strip(),
+                source["validTime"],
+                json.dumps(
+                    source,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ),
+            )
+            for proof in (proofs or [])
+            for source in [
+                canonical_current_source_asset(proof.get("sourceAsset"))
+            ]
+            if source is not None
+            for part_id in (proof.get("attestedPartIds") or [])
+        }
+
+    trusted_donor_current_pair_sources = proof_pair_source_keys(
+        validated_donor_current_asset_proofs
+    )
+    trusted_primary_current_pair_sources = proof_pair_source_keys(
+        validated_primary_current_asset_proofs
+    )
+
+    def row_has_trusted_current(
+        row: dict[str, Any],
+        zone_id: str,
+        valid_time: str,
+        trusted_keys: set[tuple[str, str, str]],
+    ) -> bool:
+        raw_source = ((row.get("sources") or {}).get("current"))
+        source = canonical_current_source_asset(raw_source)
+        canonical_valid_time = canonical_time(valid_time)
+        if (
+            source is None
+            or canonical_valid_time is None
+            or canonical_time(row.get("time")) != canonical_valid_time
+            or source["validTime"] != canonical_valid_time
+            or not all(
+                isinstance(row.get(field), (int, float))
+                and not isinstance(row.get(field), bool)
+                and math.isfinite(float(row[field]))
+                for field in ("current-u", "current-v")
+            )
+        ):
+            return False
+        source_key = json.dumps(
+            source,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        )
+        return bool(
+            (
+                zone_id[len("PART::"):],
+                source["validTime"],
+                source_key,
+            ) in trusted_keys
+        )
     for zone_id, donor_zone in donor_zones.items():
         if not isinstance(donor_zone, dict):
             continue
@@ -4372,10 +4650,91 @@ def backfill_compatible_cache_data(
                 and set(primary_row) <= {"time"}
             )
             if primary_row is None or structurally_empty:
-                # A weather row is one atomic acquisition/provenance unit.
-                # Never compose complementary vector or wave fields across
-                # caches, model runs or source attestations.
+                # A wholly empty slot may inherit the donor's complete row.
+                # Nonempty slots follow the independently proof-bound current
+                # tuple rule below and never receive half a vector.
                 primary_hourly[valid_time] = copy.deepcopy(donor_row)
+                continue
+            if not isinstance(primary_row, dict) or not str(zone_id).startswith(
+                "PART::"
+            ):
+                continue
+            if row_has_trusted_current(
+                primary_row,
+                str(zone_id),
+                valid_time,
+                trusted_primary_current_pair_sources,
+            ) or not row_has_trusted_current(
+                donor_row,
+                str(zone_id),
+                valid_time,
+                trusted_donor_current_pair_sources,
+            ):
+                continue
+            # Current is an independently source-bound component, but its U/V
+            # values and source proof are one indivisible tuple. Preserve every
+            # unrelated primary component and source; copy both current values
+            # together only from the exact proof-backed donor. A proof-backed
+            # primary current tuple always wins.
+            primary_sources = primary_row.get("sources")
+            if not isinstance(primary_sources, dict):
+                primary_sources = {}
+            updated_sources = copy.deepcopy(primary_sources)
+            updated_sources["current"] = copy.deepcopy(
+                (donor_row.get("sources") or {})["current"]
+            )
+            primary_row.update({
+                "current-u": copy.deepcopy(donor_row["current-u"]),
+                "current-v": copy.deepcopy(donor_row["current-v"]),
+                "sources": updated_sources,
+            })
+
+            # Zone-level current summaries are also one U/V unit. Preserve all
+            # other component summaries. A complete donor pair may be copied;
+            # otherwise remove only the two current summaries so the ordinary
+            # post-merge clean pass regenerates them from the proven hourly
+            # sources instead of deleting the tuple as mismatched.
+            donor_grid_points = donor_zone.get("gridPoints") or {}
+            donor_collections = donor_zone.get("collections") or {}
+            donor_u_point = donor_grid_points.get("current-u")
+            donor_v_point = donor_grid_points.get("current-v")
+            donor_source = canonical_current_source_asset(
+                ((donor_row.get("sources") or {}).get("current"))
+            )
+            donor_collection = (
+                donor_source.get("collection") if donor_source is not None else None
+            )
+            donor_summary_complete = bool(
+                same_grid_point(donor_u_point, donor_v_point)
+                and donor_collections.get("current-u") == donor_collection
+                and donor_collections.get("current-v") == donor_collection
+            )
+            primary_grid_points = primary_zone.setdefault("gridPoints", {})
+            primary_collections = primary_zone.setdefault("collections", {})
+            if not isinstance(primary_grid_points, dict):
+                primary_grid_points = {}
+                primary_zone["gridPoints"] = primary_grid_points
+            if not isinstance(primary_collections, dict):
+                primary_collections = {}
+                primary_zone["collections"] = primary_collections
+            primary_u_point = primary_grid_points.get("current-u")
+            primary_v_point = primary_grid_points.get("current-v")
+            primary_u_collection = primary_collections.get("current-u")
+            primary_v_collection = primary_collections.get("current-v")
+            primary_summary_complete = bool(
+                same_grid_point(primary_u_point, primary_v_point)
+                and primary_u_collection in MARINE_COLLECTIONS
+                and primary_v_collection == primary_u_collection
+            )
+            if donor_summary_complete:
+                primary_grid_points["current-u"] = copy.deepcopy(donor_u_point)
+                primary_grid_points["current-v"] = copy.deepcopy(donor_v_point)
+                primary_collections["current-u"] = donor_collection
+                primary_collections["current-v"] = donor_collection
+            elif not primary_summary_complete:
+                for field in ("current-u", "current-v"):
+                    primary_grid_points.pop(field, None)
+                    primary_collections.pop(field, None)
 
 
 def sampling_registry_signature() -> str:
@@ -4434,11 +4793,318 @@ def sampling_registry_signature() -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:16]
 
 
+def current_marine_processing_signature(zone_registry_signature: Any) -> str:
+    signature = str(zone_registry_signature or "").strip()
+    if not signature:
+        raise ValueError("Current marine zone registry signature is missing")
+    return (
+        f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}"
+        f"|grid:{GRID_LOOKUP_VERSION}|eccodes-api:{ECCODES_API_VERSION}"
+        f"|eccodes-binding:{ECCODES_BINDING_VERSION}|zones:{signature}"
+    )
+
+
+def _strict_current_donor_ready(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+) -> bool:
+    """Validate a donor against the exact reference to which its ledger is bound."""
+    try:
+        ledger = ((document.get("diagnostics") or {}).get(
+            "currentOperationalLedger"
+        ))
+        if not isinstance(ledger, dict):
+            return False
+        reference = production_reference_hour(ledger.get("productionReferenceAt"))
+    except (TypeError, ValueError):
+        return False
+    return current_operational_cache_ready(document, targets, reference)
+
+
+def _validated_candidate_retained_current_asset_proofs(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    expected_processing_signature: str,
+) -> list[dict[str, Any]]:
+    """Revalidate canonical pair/source evidence without trusting a legacy complement."""
+    ledger = copy.deepcopy(
+        ((document.get("diagnostics") or {}).get("currentOperationalLedger"))
+    )
+    if not isinstance(ledger, dict):
+        return []
+    donor_reference = production_reference_hour(ledger.get("productionReferenceAt"))
+    donor_end = production_reference_hour(ledger.get("operationalRangeEndAt"))
+    if donor_end != donor_reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS):
+        return []
+    registry_sha256 = target_fingerprint(targets)
+    current_assets, retained_pair_sources = (
+        current_attestation_authorization_from_operational_ledger(ledger)
+    )
+    actual_attestation = coastal_part_current_attestation(
+        document,
+        targets,
+        donor_reference,
+        donor_end,
+        current_assets,
+        retained_pair_sources,
+    )
+    if ledger.get("attestation") != sanitized_current_attestation(actual_attestation):
+        return []
+
+    partition = derive_current_part_outcome_partition(
+        ledger.get("collections"),
+        sorted(str(target.get("partId") or "").strip() for target in targets),
+        [
+            canonical_time(donor_reference + timedelta(hours=offset))
+            for offset in range(
+                int((donor_end - donor_reference).total_seconds() // 3600) + 1
+            )
+        ],
+        allow_local_unavailable=True,
+    )
+    complement = exact_current_operational_complement(
+        sorted(str(target.get("partId") or "").strip() for target in targets),
+        [
+            canonical_time(donor_reference + timedelta(hours=offset))
+            for offset in range(
+                int((donor_end - donor_reference).total_seconds() // 3600) + 1
+            )
+        ],
+        actual_attestation.get("verifiedPairs") or [],
+    )
+    complement_keys = {
+        (row["partId"], row["validTime"]) for row in complement
+    }
+    for prefix, rows in (
+        (
+            "upstreamAbsence",
+            [
+                row for row in partition["upstreamAbsencePairs"]
+                if (row["partId"], row["validTime"]) in complement_keys
+            ],
+        ),
+        (
+            "spatialUnavailable",
+            [
+                row for row in partition["spatialUnavailablePairs"]
+                if (row["partId"], row["validTime"]) in complement_keys
+            ],
+        ),
+        ("operationalComplement", complement),
+    ):
+        ledger[f"{prefix}PairCount"] = len(rows)
+        ledger[f"{prefix}PairsSha256"] = part_time_pairs_sha256(rows)
+        ledger[f"{prefix}Pairs"] = rows
+    failure_codes = {
+        str(code)
+        for code in (ledger.get("failureCodes") or [])
+        if isinstance(code, str)
+    }
+    if partition["verifiedPairs"] != (actual_attestation.get("verifiedPairs") or []):
+        failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+    if ledger.get("retainedCurrentAssetProofs"):
+        failure_codes.add("RETAINED_CURRENT_PART_TIME")
+    ledger["ready"] = not failure_codes
+    ledger["failureCodes"] = sorted(failure_codes)
+    validate_current_operational_availability_ledger(
+        ledger,
+        actual_attestation,
+        targets,
+        donor_reference,
+        donor_end,
+        registry_sha256,
+    )
+
+    evidence_by_source: dict[str, tuple[dict[str, Any], str, dict[str, Any]]] = {}
+    for collection_row in ledger["collections"]:
+        signature = collection_row.get("processingSignature")
+        for row in collection_row["validTimes"]:
+            source = canonical_current_source_asset(row.get("sourceAsset"))
+            outcome = row.get("partOutcomeProof")
+            if row.get("state") not in {"PROCESSED", "VERIFIED"} or source is None:
+                continue
+            if signature != expected_processing_signature:
+                continue
+            evidence_by_source[json.dumps(
+                source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+            )] = (source, signature, outcome)
+    for proof in validate_retained_current_asset_proofs(
+        ledger.get("retainedCurrentAssetProofs", []),
+        sorted(str(target.get("partId") or "").strip() for target in targets),
+        donor_reference,
+        donor_end,
+        registry_sha256,
+    ):
+        if proof["processingSignature"] != expected_processing_signature:
+            continue
+        source = proof["sourceAsset"]
+        evidence_by_source[json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )] = (source, proof["processingSignature"], proof["partOutcomeProof"])
+
+    range_end = reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    grouped: dict[str, dict[str, Any]] = {}
+    for pair_source in actual_attestation.get("verifiedPairSources") or []:
+        valid_time = canonical_time(pair_source.get("validTime"))
+        source = canonical_current_source_asset(pair_source.get("source"))
+        if (
+            valid_time is None
+            or source is None
+            or epoch(valid_time) < reference.timestamp()
+            or epoch(valid_time) > range_end.timestamp()
+        ):
+            continue
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        evidence = evidence_by_source.get(source_key)
+        if evidence is None:
+            raise ValueError("Attested retained current row lacks canonical asset proof")
+        entry = grouped.setdefault(source_key, {
+            "source": evidence[0],
+            "signature": evidence[1],
+            "outcome": evidence[2],
+            "partIds": set(),
+        })
+        entry["partIds"].add(str(pair_source.get("partId") or "").strip())
+    proofs = [
+        build_retained_current_asset_proof(
+            entry["source"],
+            entry["signature"],
+            entry["outcome"],
+            sorted(entry["partIds"]),
+            sorted(str(target.get("partId") or "").strip() for target in targets),
+            registry_sha256,
+        )
+        for entry in grouped.values()
+    ]
+    proofs.sort(key=lambda proof: (
+        proof["sourceAsset"]["validTime"],
+        proof["sourceAsset"]["collection"],
+        proof["sourceAsset"]["modelRun"],
+        proof["sourceAsset"]["itemId"],
+        proof["sourceAsset"]["contentSha256"],
+    ))
+    return validate_retained_current_asset_proofs(
+        proofs,
+        sorted(str(target.get("partId") or "").strip() for target in targets),
+        reference,
+        range_end,
+        registry_sha256,
+    )
+
+
+def _select_retained_current_asset_proofs_for_document(
+    document: dict[str, Any],
+    targets: list[dict[str, Any]],
+    reference: datetime,
+    proof_candidates: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Keep only exact proof identities selected by the merged cache's actual rows."""
+    if not proof_candidates:
+        return []
+    registry_sha256 = target_fingerprint(targets)
+    target_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
+    evidence: dict[tuple[str, str, str], dict[str, Any]] = {}
+    evidence_by_source: dict[str, dict[str, Any]] = {}
+    authorization: list[dict[str, Any]] = []
+    for proof in proof_candidates:
+        source = proof["sourceAsset"]
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        # Different compatible caches may aggregate the same exact asset proof
+        # over different part subsets.  The subset count/hash is not evidence
+        # identity: union candidate authorization here, then rebuild the final
+        # canonical subset solely from the merged document's actual rows below.
+        source_evidence = {
+            "sourceAsset": source,
+            "processingSignature": proof["processingSignature"],
+            "partOutcomeProof": proof["partOutcomeProof"],
+        }
+        existing_source_evidence = evidence_by_source.get(source_key)
+        if (
+            existing_source_evidence is not None
+            and existing_source_evidence != source_evidence
+        ):
+            raise ValueError("Conflicting retained current asset proof")
+        evidence_by_source[source_key] = source_evidence
+        for part_id in proof["attestedPartIds"]:
+            key = (part_id, source["validTime"], source_key)
+            evidence[key] = source_evidence
+            authorization.append({
+                "partId": part_id,
+                "validTime": source["validTime"],
+                "source": source,
+            })
+    unique_authorization = {
+        (row["partId"], row["validTime"], json.dumps(
+            row["source"], sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )): row
+        for row in authorization
+    }
+    attestation = current_operational_attestation(
+        document,
+        targets,
+        reference,
+        [],
+        list(unique_authorization.values()),
+    )
+    grouped: dict[str, dict[str, Any]] = {}
+    for pair_source in attestation.get("verifiedPairSources") or []:
+        source = canonical_current_source_asset(pair_source.get("source"))
+        if source is None:
+            continue
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        key = (
+            str(pair_source.get("partId") or "").strip(),
+            str(pair_source.get("validTime") or ""),
+            source_key,
+        )
+        proof = evidence.get(key)
+        if proof is None:
+            raise ValueError("Merged retained current row lacks exact proof")
+        entry = grouped.setdefault(source_key, {
+            "proof": proof,
+            "partIds": set(),
+        })
+        entry["partIds"].add(key[0])
+    selected = [
+        build_retained_current_asset_proof(
+            entry["proof"]["sourceAsset"],
+            entry["proof"]["processingSignature"],
+            entry["proof"]["partOutcomeProof"],
+            sorted(entry["partIds"]),
+            target_ids,
+            registry_sha256,
+        )
+        for entry in grouped.values()
+    ]
+    selected.sort(key=lambda proof: (
+        proof["sourceAsset"]["validTime"],
+        proof["sourceAsset"]["collection"],
+        proof["sourceAsset"]["modelRun"],
+        proof["sourceAsset"]["itemId"],
+        proof["sourceAsset"]["contentSha256"],
+    ))
+    return validate_retained_current_asset_proofs(
+        selected,
+        target_ids,
+        reference,
+        reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+        registry_sha256,
+    )
+
+
 def load_previous(
     expected_signature: str,
     *,
     coastal_part_targets: list[dict[str, Any]] | None = None,
     production_reference: datetime | None = None,
+    retained_current_asset_proofs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     output_document = load_document(OUTPUT_PATH)
     output_quarantined = False
@@ -4456,11 +5122,9 @@ def load_previous(
     if output_quarantined:
         if (
             coastal_part_targets is None
-            or production_reference is None
-            or not current_operational_cache_ready(
+            or not _strict_current_donor_ready(
                 fallback_document,
                 coastal_part_targets,
-                production_reference,
             )
         ):
             raise RuntimeError(
@@ -4469,6 +5133,27 @@ def load_previous(
     candidates = [output_document, fallback_document]
     compatible = [document for document in candidates if document.get("zoneRegistrySignature") == expected_signature and document.get("zones")]
     if compatible:
+        proof_candidates: list[dict[str, Any]] = []
+        proof_candidates_by_document: dict[int, list[dict[str, Any]]] = {}
+        if coastal_part_targets is not None and production_reference is not None:
+            expected_processing_signature = current_marine_processing_signature(
+                expected_signature
+            )
+            for document in compatible:
+                try:
+                    document_proofs = (
+                        _validated_candidate_retained_current_asset_proofs(
+                            document,
+                            coastal_part_targets,
+                            production_reference,
+                            expected_processing_signature,
+                        )
+                    )
+                    proof_candidates_by_document[id(document)] = document_proofs
+                    proof_candidates.extend(document_proofs)
+                except (TypeError, ValueError):
+                    proof_candidates_by_document[id(document)] = []
+                    continue
         primary = (
             output_document
             if PREFER_OUTPUT_CACHE and output_document in compatible
@@ -4480,15 +5165,17 @@ def load_previous(
             )
         )
         merged = copy.deepcopy(primary)
+        merged_current_proofs = list(
+            proof_candidates_by_document.get(id(primary), [])
+        )
         if coastal_part_targets is not None and production_reference is not None:
             strict_donors = [
                 document
                 for document in compatible
                 if document is not primary
-                and coastal_part_current_cache_reusable(
+                and _strict_current_donor_ready(
                     document,
                     coastal_part_targets,
-                    production_reference,
                 )
             ]
             for donor in sorted(
@@ -4496,7 +5183,24 @@ def load_previous(
                 key=lambda document: (cache_quality(document), cache_progress_time(document)),
                 reverse=True,
             ):
-                backfill_compatible_cache_data(merged, donor)
+                backfill_compatible_cache_data(
+                    merged,
+                    donor,
+                    proof_candidates_by_document.get(id(donor), []),
+                    merged_current_proofs,
+                )
+                merged_current_proofs.extend(
+                    proof_candidates_by_document.get(id(donor), [])
+                )
+        if retained_current_asset_proofs is not None:
+            retained_current_asset_proofs.extend(
+                _select_retained_current_asset_proofs_for_document(
+                    merged,
+                    coastal_part_targets or [],
+                    production_reference,
+                    proof_candidates,
+                ) if production_reference is not None else []
+            )
         if output_quarantined:
             atomic_write_bulk_cache(merged)
         return merged
@@ -4884,6 +5588,7 @@ def coastal_part_current_attestation(
     range_start: datetime,
     range_end: datetime,
     allowed_source_assets: list[dict[str, Any]] | None = None,
+    allowed_retained_pair_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Attest the same structurally sanitized view before and after merge."""
     zones = document.get("zones") if isinstance(document, dict) else None
@@ -4927,6 +5632,7 @@ def coastal_part_current_attestation(
         range_start,
         range_end,
         allowed_source_assets,
+        allowed_retained_pair_sources,
     )
 
 
@@ -4935,6 +5641,7 @@ def current_operational_attestation(
     targets: list[dict[str, Any]],
     reference: datetime,
     allowed_source_assets: list[dict[str, Any]] | None = None,
+    allowed_retained_pair_sources: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     return coastal_part_current_attestation(
         document,
@@ -4942,6 +5649,7 @@ def current_operational_attestation(
         reference,
         reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
         allowed_source_assets,
+        allowed_retained_pair_sources,
     )
 
 
@@ -4953,6 +5661,7 @@ def build_current_operational_ledger(
         str,
         tuple[str | None, list[dict[str, Any]], dict[str, Any]],
     ],
+    retained_current_asset_proofs: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Close every official DKSS asset/hour without inventing fallback gaps."""
     valid_times = operational_current_valid_times(reference)
@@ -4960,6 +5669,12 @@ def build_current_operational_ledger(
     range_end = reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
     part_ids = sorted(str(target.get("partId") or "").strip() for target in targets)
     registry_sha256 = target_fingerprint(targets)
+    try:
+        expected_processing_signature = current_marine_processing_signature(
+            document.get("zoneRegistrySignature")
+        )
+    except ValueError:
+        expected_processing_signature = None
     provisional_collections: list[dict[str, Any]] = []
     failure_codes: set[str] = set()
     for collection in sorted(MARINE_COLLECTIONS):
@@ -5040,8 +5755,7 @@ def build_current_operational_ledger(
             and run_info.get("parserVersion") == PARSER_VERSION
             and run_info.get("parameterMapVersion") == PARAMETER_MAP_VERSION
             and run_info.get("gridLookupVersion") == GRID_LOOKUP_VERSION
-            and isinstance(processing_signature, str)
-            and bool(processing_signature)
+            and processing_signature == expected_processing_signature
         )
         processed_steps = run_info.get("processedSteps") if run_matches else {}
         if not isinstance(processed_steps, dict):
@@ -5105,11 +5819,154 @@ def build_current_operational_ledger(
         for row in collection_row["validTimes"]
         if row["state"] == "PROCESSED" and row["sourceAsset"] is not None
     ]
+    retained_proofs = validate_retained_current_asset_proofs(
+        retained_current_asset_proofs or [],
+        part_ids,
+        reference,
+        range_end,
+        registry_sha256,
+    )
+    eligible_retained_proofs: list[dict[str, Any]] = []
+    provisional_by_collection = {
+        row["collection"]: row for row in provisional_collections
+    }
+    for proof in retained_proofs:
+        source = proof["sourceAsset"]
+        collection_row = provisional_by_collection.get(source["collection"])
+        if collection_row is None:
+            raise ValueError("Retained current proof collection is unavailable")
+        if proof["processingSignature"] != expected_processing_signature:
+            raise ValueError("Retained current proof uses incompatible processing semantics")
+        selected_model_run = canonical_time(collection_row.get("modelRun"))
+        locally_unavailable = all(
+            row.get("state") == "LOCALLY_SKIPPED"
+            for row in collection_row["validTimes"]
+        )
+        if selected_model_run is None:
+            if not locally_unavailable:
+                raise ValueError("Retained current proof lacks catalog-outage evidence")
+        else:
+            source_run_epoch = epoch(source["modelRun"])
+            selected_run_epoch = epoch(selected_model_run)
+            if source_run_epoch > selected_run_epoch:
+                raise ValueError("Retained current proof is newer than selected model run")
+            if source_run_epoch == selected_run_epoch:
+                selected_row = next(
+                    (
+                        row for row in collection_row["validTimes"]
+                        if row["validTime"] == source["validTime"]
+                    ),
+                    None,
+                )
+                if (
+                    selected_row is None
+                    or selected_row["state"] != "LOCALLY_SKIPPED"
+                    or not current_source_matches_official_asset(
+                        source, selected_row["officialAsset"],
+                    )
+                ):
+                    # A processed current step already supplies the row, while
+                    # a revised official identity must become exact residual.
+                    continue
+        eligible_retained_proofs.append(proof)
+
+    retained_authorization = [
+        {
+            "partId": part_id,
+            "validTime": proof["sourceAsset"]["validTime"],
+            "source": proof["sourceAsset"],
+        }
+        for proof in eligible_retained_proofs
+        for part_id in proof["attestedPartIds"]
+    ]
+    current_attestation = current_operational_attestation(
+        document,
+        targets,
+        reference,
+        processed_assets,
+        [],
+    )
     attestation = current_operational_attestation(
         document,
         targets,
         reference,
         processed_assets,
+        retained_authorization,
+    )
+    current_pair_source_keys = {
+        (
+            row["partId"],
+            row["validTime"],
+            json.dumps(
+                canonical_current_source_asset(row["source"]),
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+        )
+        for row in current_attestation.get("verifiedPairSources") or []
+    }
+    retained_evidence = {
+        (
+            part_id,
+            proof["sourceAsset"]["validTime"],
+            json.dumps(
+                proof["sourceAsset"],
+                sort_keys=True,
+                separators=(",", ":"),
+                ensure_ascii=False,
+            ),
+        ): proof
+        for proof in eligible_retained_proofs
+        for part_id in proof["attestedPartIds"]
+    }
+    used_retained_by_source: dict[str, dict[str, Any]] = {}
+    for pair_source in attestation.get("verifiedPairSources") or []:
+        source = canonical_current_source_asset(pair_source.get("source"))
+        if source is None:
+            continue
+        source_key = json.dumps(
+            source, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        )
+        identity = (
+            str(pair_source.get("partId") or "").strip(),
+            str(pair_source.get("validTime") or ""),
+            source_key,
+        )
+        if identity in current_pair_source_keys:
+            continue
+        proof = retained_evidence.get(identity)
+        if proof is None:
+            raise ValueError("Actual current row has no exact current or retained proof")
+        entry = used_retained_by_source.setdefault(source_key, {
+            "proof": proof,
+            "partIds": set(),
+        })
+        entry["partIds"].add(identity[0])
+    retained_proofs = [
+        build_retained_current_asset_proof(
+            entry["proof"]["sourceAsset"],
+            entry["proof"]["processingSignature"],
+            entry["proof"]["partOutcomeProof"],
+            sorted(entry["partIds"]),
+            part_ids,
+            registry_sha256,
+        )
+        for entry in used_retained_by_source.values()
+    ]
+    retained_proofs.sort(key=lambda proof: (
+        proof["sourceAsset"]["validTime"],
+        proof["sourceAsset"]["collection"],
+        proof["sourceAsset"]["modelRun"],
+        proof["sourceAsset"]["itemId"],
+        proof["sourceAsset"]["contentSha256"],
+    ))
+    retained_proofs = validate_retained_current_asset_proofs(
+        retained_proofs,
+        part_ids,
+        reference,
+        range_end,
+        registry_sha256,
     )
     attested_source_keys = {
         json.dumps(source, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
@@ -5181,8 +6038,25 @@ def build_current_operational_ledger(
         }
         failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
 
-    if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
+    partition_verified_keys = {
+        (row["partId"], row["validTime"])
+        for row in partition["verifiedPairs"]
+    }
+    attested_keys = {
+        (row["partId"], row["validTime"])
+        for row in attestation.get("verifiedPairs") or []
+    }
+    retained_keys = {
+        (part_id, proof["sourceAsset"]["validTime"])
+        for proof in retained_proofs
+        for part_id in proof["attestedPartIds"]
+    }
+    if not attested_keys <= partition_verified_keys | retained_keys:
+        failure_codes.add("CURRENT_LEDGER_CONTRACT_INVALID")
+    if partition_verified_keys - attested_keys:
         failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
+    if retained_proofs:
+        failure_codes.add("RETAINED_CURRENT_PART_TIME")
 
     verified_times = {
         row["validTime"] for row in partition["verifiedPairs"]
@@ -5197,13 +6071,26 @@ def build_current_operational_ledger(
             # but not silently turn the whole national matrix into Copernicus.
             failure_codes.add("SYSTEMIC_CURRENT_TIME_COLLAPSE")
 
-    upstream_absence_pairs = partition["upstreamAbsencePairs"]
-    spatial_unavailable_pairs = partition["spatialUnavailablePairs"]
+    authorized_complement = exact_current_operational_complement(
+        part_ids,
+        valid_times,
+        attestation.get("verifiedPairs") or [],
+    )
+    complement_keys = {
+        (row["partId"], row["validTime"]) for row in authorized_complement
+    }
+    upstream_absence_pairs = [
+        row for row in partition["upstreamAbsencePairs"]
+        if (row["partId"], row["validTime"]) in complement_keys
+    ]
+    spatial_unavailable_pairs = [
+        row for row in partition["spatialUnavailablePairs"]
+        if (row["partId"], row["validTime"]) in complement_keys
+    ]
     # Fallback eligibility is the exact inverse of verified DMI availability.
     # Local parser/download failures remain failure evidence and prevent READY
     # promotion, but they must not prevent later providers from filling the
     # affected pairs in this run.
-    authorized_complement = partition["operationalComplementPairs"]
     ledger = {
         "schemaVersion": CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
         "contractId": CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
@@ -5213,6 +6100,11 @@ def build_current_operational_ledger(
         "targetCount": len(targets),
         "targetRegistrySha256": registry_sha256,
         "attestation": sanitized_current_attestation(attestation),
+        "retainedCurrentAssetProofCount": len(retained_proofs),
+        "retainedCurrentAssetProofsSha256": retained_current_asset_proofs_sha256(
+            retained_proofs
+        ),
+        "retainedCurrentAssetProofs": retained_proofs,
         "collections": collection_ledgers,
         "upstreamAbsencePairCount": len(upstream_absence_pairs),
         "upstreamAbsencePairsSha256": part_time_pairs_sha256(
@@ -5232,6 +6124,18 @@ def build_current_operational_ledger(
         "ready": not failure_codes,
         "failureCodes": sorted(failure_codes),
     }
+    try:
+        validate_current_operational_availability_ledger(
+            ledger,
+            attestation,
+            targets,
+            reference,
+            range_end,
+            registry_sha256,
+        )
+    except (TypeError, ValueError):
+        ledger["ready"] = False
+        ledger["failureCodes"] = ["CURRENT_LEDGER_CONTRACT_INVALID"]
     if ledger["ready"] and not current_operational_ledger_ready(
         ledger,
         attestation,
@@ -5252,12 +6156,15 @@ def current_operational_cache_ready(
 ) -> bool:
     try:
         ledger = ((document.get("diagnostics") or {}).get("currentOperationalLedger"))
-        allowed_source_assets = processed_source_assets_from_current_operational_ledger(ledger)
+        allowed_source_assets, allowed_retained_pair_sources = (
+            current_attestation_authorization_from_operational_ledger(ledger)
+        )
         attestation = current_operational_attestation(
             document,
             targets,
             reference,
             allowed_source_assets,
+            allowed_retained_pair_sources,
         )
         registry_sha256 = target_fingerprint(targets)
     except (TypeError, ValueError):
@@ -5375,6 +6282,7 @@ def producer_terminal_code(
             "LOCALLY_SKIPPED_DKSS_ASSET",
             "SYSTEMIC_CURRENT_TIME_COLLAPSE",
             "UNATTESTED_CURRENT_PART_TIME",
+            "RETAINED_CURRENT_PART_TIME",
             "CURRENT_LEDGER_CONTRACT_INVALID",
         )
         observed_ledger_codes = {
@@ -5802,11 +6710,13 @@ class ProgressCheckpointController:
         fresh_zone_ids: set[str],
         budget: dict[str, int],
         sidecar_flush: Any | None = None,
+        prepare_bulk_checkpoint: Any | None = None,
     ) -> None:
         self.result = result
         self.fresh_zone_ids = fresh_zone_ids
         self.budget = budget
         self.sidecar_flush = sidecar_flush
+        self.prepare_bulk_checkpoint = prepare_bulk_checkpoint
         self.committed_assets_since_write = 0
         self.last_write_monotonic = time.monotonic()
         self.bulk_dirty = False
@@ -5853,6 +6763,8 @@ class ProgressCheckpointController:
             return False
         if self.bulk_dirty:
             started = time.monotonic()
+            if self.prepare_bulk_checkpoint is not None:
+                self.prepare_bulk_checkpoint()
             write_checkpoint(
                 self.result,
                 self.fresh_zone_ids,
@@ -6270,10 +7182,12 @@ def main() -> int:
         part_doc = json.loads(COASTAL_PART_POINTS_PATH.read_text("utf-8"))
     coastal_part_targets = load_coastal_part_targets(COASTAL_PART_POINTS_PATH)
     locked_production_reference = production_reference_hour()
+    retained_current_asset_proofs: list[dict[str, Any]] = []
     previous = load_previous(
         current_zone_registry_signature,
         coastal_part_targets=coastal_part_targets,
         production_reference=locked_production_reference,
+        retained_current_asset_proofs=retained_current_asset_proofs,
     )
     zone_coast_types = {
         str((feature.get("properties") or {}).get("id")): (feature.get("properties") or {}).get("coastType") or "east"
@@ -6541,6 +7455,14 @@ def main() -> int:
     # influencing a later candidate while avoiding a full-cache rescan after
     # every single hourly asset.
     clean_and_summarize(result, set(), budget)
+    retained_current_asset_proofs = (
+        _select_retained_current_asset_proofs_for_document(
+            result,
+            coastal_part_targets,
+            locked_production_reference,
+            retained_current_asset_proofs,
+        )
+    )
     # Local coastal parts use the same downloaded GRIB fields as parent zones.
     # They must remain in the coverage denominator; excluding them allowed the
     # scheduler to stop while most public local scores still lacked current.
@@ -6620,6 +7542,106 @@ def main() -> int:
                 "collection": collection,
                 "message": safe_message,
             })
+    selected_marine_runs = {
+        collection: details[0]
+        for collection, details in prefetched_marine.items()
+    }
+    selected_official_current_assets: dict[
+        str, dict[str, dict[str, Any]]
+    ] = {}
+    for collection, (selected_run, _assets, stats) in prefetched_marine.items():
+        official_by_time: dict[str, dict[str, Any]] = {}
+        raw_official_assets = (
+            stats.get("officialRequiredAssets")
+            if isinstance(stats, dict)
+            and isinstance(stats.get("officialRequiredAssets"), list)
+            else []
+        )
+        official_map_valid = bool(
+            isinstance(stats, dict)
+            and stats.get("catalogInventoryComplete") is True
+            and stats.get("rejectedStaleRun") is not True
+            and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
+        )
+        for raw_asset in raw_official_assets:
+            identity = official_current_asset_identity(
+                collection, selected_run, raw_asset,
+            )
+            if identity is None or identity["validTime"] in official_by_time:
+                official_map_valid = False
+                continue
+            official_by_time[identity["validTime"]] = identity
+        declared_times = {
+            canonical_time(value)
+            for value in (
+                stats.get("officialRequiredValidTimes")
+                if isinstance(stats, dict)
+                and isinstance(stats.get("officialRequiredValidTimes"), list)
+                else []
+            )
+            if canonical_time(value) is not None
+        }
+        if (
+            declared_times != set(official_by_time)
+            or not isinstance(stats, dict)
+            or stats.get("officialRequiredValidTimeCount")
+                != len(official_by_time)
+        ):
+            official_map_valid = False
+        selected_official_current_assets[collection] = (
+            official_by_time if official_map_valid else {}
+        )
+    actual_current_pair_source_keys, covered_current_pair_keys = (
+        current_pair_evidence_from_retained_proofs(
+            retained_current_asset_proofs,
+            selected_marine_runs,
+            selected_official_current_assets,
+        )
+    )
+    # Two-pass same-run continuity: first prove actual owner rows against the
+    # still-selected official asset. Those exact owners may then satisfy cache
+    # completeness for a secondary collection whose valid outcome had no public
+    # winners. A revised item/content identity fails this first pass and retries.
+    for owner_collection, details in prefetched_marine.items():
+        selected_run, selected_assets, _stats = details
+        previous_run = (previous.get("runs") or {}).get(owner_collection) or {}
+        required_asset_provenance = {
+            str(identity["validTime"]): identity
+            for asset in selected_assets
+            for identity in [official_current_asset_identity(
+                owner_collection, selected_run, asset,
+            )]
+            if identity is not None
+            and identity["validTime"] in required_current_valid_times
+        }
+        owner_steps = reusable_processed_steps(
+            previous_run,
+            collection=owner_collection,
+            same_processing=(
+                previous_run.get("processingSignature")
+                == current_marine_processing_signature(
+                    current_zone_registry_signature
+                )
+            ),
+            same_run=previous_run.get("referenceTime") == selected_run,
+            strict_current_anchor_available=coastal_part_current_cache_healthy,
+            required_valid_times=required_current_valid_times,
+            required_asset_provenance=required_asset_provenance,
+            current_target_ids=current_target_ids,
+            current_target_registry_sha256=current_target_registry_sha256,
+            actual_pair_source_keys=actual_current_pair_source_keys,
+            covered_pair_keys=set(),
+        )
+        for valid_time, step in owner_steps.items():
+            unavailable = set(
+                (step.get("currentPartOutcomeProof") or {}).get(
+                    "spatialUnavailablePartIds"
+                ) or []
+            )
+            covered_current_pair_keys.update(
+                (part_id, valid_time)
+                for part_id in set(current_target_ids) - unavailable
+            )
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
     regional_proxy_collection_completed = False
@@ -6646,8 +7668,45 @@ def main() -> int:
                 coastal_point_stage,
             )
 
+    def seal_current_operational_progress() -> None:
+        """Bind every persisted bulk checkpoint to its exact usable DMI rows."""
+        ledger = build_current_operational_ledger(
+            result,
+            coastal_part_targets,
+            locked_production_reference,
+            prefetched_marine,
+            retained_current_asset_proofs,
+        )
+        allowed_assets, retained_pair_sources = (
+            current_attestation_authorization_from_operational_ledger(ledger)
+        )
+        attestation = current_operational_attestation(
+            result,
+            coastal_part_targets,
+            locked_production_reference,
+            allowed_assets,
+            retained_pair_sources,
+        )
+        validate_current_operational_availability_ledger(
+            ledger,
+            attestation,
+            coastal_part_targets,
+            locked_production_reference,
+            locked_production_reference
+                + timedelta(hours=PUBLIC_END_OFFSET_HOURS),
+            current_target_registry_sha256,
+        )
+        result["diagnostics"]["currentOperationalLedger"] = ledger
+        result["diagnostics"]["currentOperationalAttestation"] = (
+            sanitized_current_attestation(attestation)
+        )
+
     checkpoint_controller = ProgressCheckpointController(
-        result, fresh_zone_ids, budget, flush_private_progress_sidecars,
+        result,
+        fresh_zone_ids,
+        budget,
+        flush_private_progress_sidecars,
+        seal_current_operational_progress,
     )
     if wave_bootstrap_configuration is not None:
         try:
@@ -6719,11 +7778,8 @@ def main() -> int:
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
             zone_registry_signature = current_zone_registry_signature
-            processing_signature = (
-                f"parser:{PARSER_VERSION}|params:{PARAMETER_MAP_VERSION}"
-                f"|grid:{GRID_LOOKUP_VERSION}|eccodes-api:{ECCODES_API_VERSION}"
-                f"|eccodes-binding:{ECCODES_BINDING_VERSION}"
-                f"|zones:{zone_registry_signature}"
+            processing_signature = current_marine_processing_signature(
+                zone_registry_signature
             )
             if collection == "harmonie_dini_sf":
                 processing_signature += f"|wind-reference:{WIND_VECTOR_VERSION}"
@@ -6766,7 +7822,46 @@ def main() -> int:
                     if collection in MARINE_COLLECTIONS
                     else None
                 ),
+                actual_pair_source_keys=(
+                    actual_current_pair_source_keys
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                covered_pair_keys=(
+                    covered_current_pair_keys
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                ),
             )
+            if collection in MARINE_COLLECTIONS:
+                priority_covered_pair_keys = set(covered_current_pair_keys)
+                for valid_time, step in previous_steps.items():
+                    source = canonical_current_source_asset(step.get("sourceAsset"))
+                    if source is None:
+                        continue
+                    source_key = json.dumps(
+                        source,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                        ensure_ascii=False,
+                    )
+                    unavailable = set(
+                        (step.get("currentPartOutcomeProof") or {}).get(
+                            "spatialUnavailablePartIds"
+                        ) or []
+                    )
+                    for part_id in set(current_target_ids) - unavailable:
+                        if (
+                            part_id,
+                            valid_time,
+                            source_key,
+                        ) in actual_current_pair_source_keys:
+                            priority_covered_pair_keys.add((part_id, valid_time))
+                assets = prioritize_marine_assets_for_current_gaps(
+                    assets,
+                    current_target_ids,
+                    priority_covered_pair_keys,
+                )
             if (
                 collection in MARINE_COLLECTIONS
                 and not coastal_part_current_cache_healthy
@@ -6931,6 +8026,18 @@ def main() -> int:
                 progress(f"{collection}: behandler forecast-step {asset_number}/{len(assets)} {asset['valid']} ({'genbrugt' if reused else 'downloadet'})")
                 asset_processing_started = time.monotonic()
                 current_part_outcome_observation: dict[str, Any] = {}
+                source_capture = (
+                    raw_cache_source_capture(path, collection, run, asset["valid"])
+                    if collection in MARINE_COLLECTIONS
+                    else None
+                )
+                step_source_asset = canonical_current_source_asset({
+                    "collection": collection,
+                    "modelRun": run,
+                    "validTime": asset["valid"],
+                    **(source_capture or {}),
+                }) if source_capture is not None else None
+                validated_current_stage: dict[str, Any] = {}
                 allowed_parameters = operational_asset_parameter_filter(
                     collection,
                     asset["valid"],
@@ -6991,6 +8098,117 @@ def main() -> int:
                         )
                     )
 
+                def validate_operational_current_stage(
+                    staged_result: dict[str, Any],
+                    _private_stage: dict[str, Any] | None,
+                    outcome: tuple[set[str], set[str], bool, int, int],
+                    part_outcomes: dict[str, Any] | None,
+                ) -> bool:
+                    if collection not in MARINE_COLLECTIONS:
+                        return True
+                    if (
+                        step_source_asset is None
+                        or not REQUIRED_TARGETS["marine"] <= set(outcome[0])
+                        or not outcome[1]
+                        or not isinstance(part_outcomes, dict)
+                        or part_outcomes.get("complete") is not True
+                        or part_outcomes.get("targetPartIds") != current_target_ids
+                    ):
+                        return False
+                    try:
+                        proof = build_current_part_outcome_proof(
+                            part_outcomes.get("spatialUnavailablePartIds"),
+                            current_target_ids,
+                            current_target_registry_sha256,
+                            processing_signature,
+                            step_source_asset,
+                        )
+                        valid_at = datetime.fromisoformat(
+                            asset["valid"].replace("Z", "+00:00")
+                        )
+                        staged_attestation = coastal_part_current_attestation(
+                            staged_result,
+                            coastal_part_targets,
+                            valid_at,
+                            valid_at,
+                            [step_source_asset],
+                            [],
+                        )
+                    except (TypeError, ValueError):
+                        return False
+                    expected_part_ids = set(current_target_ids) - set(
+                        proof["spatialUnavailablePartIds"]
+                    )
+                    new_source_part_ids = {
+                        row["partId"]
+                        for row in staged_attestation.get("verifiedPairs") or []
+                    }
+                    if not new_source_part_ids <= expected_part_ids:
+                        return False
+                    for part_id in current_target_ids:
+                        zone_id = f"PART::{part_id}"
+                        before_hour = (
+                            (((result.get("zones") or {}).get(zone_id) or {}).get(
+                                "hourly"
+                            ) or {}).get(asset["valid"])
+                        )
+                        after_hour = (
+                            (((staged_result.get("zones") or {}).get(zone_id) or {}).get(
+                                "hourly"
+                            ) or {}).get(asset["valid"])
+                        )
+                        before_tuple = (
+                            before_hour.get("current-u"),
+                            before_hour.get("current-v"),
+                            (before_hour.get("sources") or {}).get("current"),
+                        ) if isinstance(before_hour, dict) else None
+                        after_tuple = (
+                            after_hour.get("current-u"),
+                            after_hour.get("current-v"),
+                            (after_hour.get("sources") or {}).get("current"),
+                        ) if isinstance(after_hour, dict) else None
+                        if part_id in new_source_part_ids:
+                            continue
+                        if part_id not in expected_part_ids:
+                            before_source = canonical_current_source_asset(
+                                before_tuple[2] if before_tuple is not None else None
+                            )
+                            before_source_key = json.dumps(
+                                before_source,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                                ensure_ascii=False,
+                            ) if before_source is not None else ""
+                            before_trusted = (
+                                part_id,
+                                asset["valid"],
+                                before_source_key,
+                            ) in actual_current_pair_source_keys
+                            if before_trusted and after_tuple != before_tuple:
+                                return False
+                            continue
+                        if after_tuple != before_tuple:
+                            return False
+                        retained_source = canonical_current_source_asset(
+                            after_tuple[2] if after_tuple is not None else None
+                        )
+                        if retained_source is None:
+                            return False
+                        retained_source_key = json.dumps(
+                            retained_source,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                            ensure_ascii=False,
+                        )
+                        if (
+                            part_id,
+                            asset["valid"],
+                            retained_source_key,
+                        ) not in actual_current_pair_source_keys:
+                            return False
+                    validated_current_stage["partOutcomeProof"] = proof
+                    return True
+
                 with supervised_asset_operation(supervised_identity):
                     try:
                         found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
@@ -7008,7 +8226,17 @@ def main() -> int:
                             prepare_stage=prepare_operational_wave_stage,
                             failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
                             stage_validator=validate_operational_wave_stage,
-                            validation_error="operational WAM asset is not exact and complete",
+                            current_stage_validator=validate_operational_current_stage,
+                            trusted_current_pair_source_keys=(
+                                actual_current_pair_source_keys
+                                if collection in MARINE_COLLECTIONS
+                                else None
+                            ),
+                            validation_error=(
+                                "operational DKSS asset lacks exact pre-commit provenance"
+                                if collection in MARINE_COLLECTIONS
+                                else "operational WAM asset is not exact and complete"
+                            ),
                         )
                     except (
                         DmiGridLookupError,
@@ -7071,34 +8299,9 @@ def main() -> int:
                 result["diagnostics"]["zoneLookups"] += zone_lookups
                 required_for_family = REQUIRED_TARGETS[COLLECTION_FAMILY[collection]]
                 step_recognized = sorted(set(found) & set(TARGETS[COLLECTION_FAMILY[collection]]))
-                source_capture = (
-                    raw_cache_source_capture(path, collection, run, asset["valid"])
-                    if collection in MARINE_COLLECTIONS
-                    else None
+                step_part_outcome_proof = validated_current_stage.get(
+                    "partOutcomeProof"
                 )
-                step_source_asset = canonical_current_source_asset({
-                    "collection": collection,
-                    "modelRun": run,
-                    "validTime": asset["valid"],
-                    **(source_capture or {}),
-                }) if source_capture is not None else None
-                step_part_outcome_proof = None
-                if (
-                    collection in MARINE_COLLECTIONS
-                    and step_source_asset is not None
-                    and current_part_outcome_observation.get("complete") is True
-                    and current_part_outcome_observation.get("targetPartIds")
-                        == current_target_ids
-                ):
-                    step_part_outcome_proof = build_current_part_outcome_proof(
-                        current_part_outcome_observation.get(
-                            "spatialUnavailablePartIds"
-                        ),
-                        current_target_ids,
-                        current_target_registry_sha256,
-                        processing_signature,
-                        step_source_asset,
-                    )
                 step_complete = bool(
                     set(step_recognized) >= required_for_family
                     and len(touched) > 0
@@ -7129,6 +8332,40 @@ def main() -> int:
                         **({"currentPartOutcomeProof": step_part_outcome_proof}
                            if collection in MARINE_COLLECTIONS else {}),
                     }
+                    if (
+                        collection in MARINE_COLLECTIONS
+                        and step_complete
+                        and step_source_asset is not None
+                    ):
+                        step_attestation = current_operational_attestation(
+                            result,
+                            coastal_part_targets,
+                            locked_production_reference,
+                            [step_source_asset],
+                            [],
+                        )
+                        for pair_source in (
+                            step_attestation.get("verifiedPairSources") or []
+                        ):
+                            selected_source = canonical_current_source_asset(
+                                pair_source.get("source")
+                            )
+                            if selected_source is None:
+                                continue
+                            selected_source_key = json.dumps(
+                                selected_source,
+                                sort_keys=True,
+                                separators=(",", ":"),
+                                ensure_ascii=False,
+                            )
+                            pair_identity = (
+                                str(pair_source.get("partId") or "").strip(),
+                                str(pair_source.get("validTime") or ""),
+                            )
+                            actual_current_pair_source_keys.add(
+                                (*pair_identity, selected_source_key)
+                            )
+                            covered_current_pair_keys.add(pair_identity)
                 fresh_zone_ids.update(touched)
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
@@ -7309,6 +8546,7 @@ def main() -> int:
         coastal_part_targets,
         locked_production_reference,
         prefetched_marine,
+        retained_current_asset_proofs,
     )
     result["diagnostics"]["currentOperationalLedger"] = current_operational_ledger
     result["diagnostics"]["currentOperationalAttestation"] = (

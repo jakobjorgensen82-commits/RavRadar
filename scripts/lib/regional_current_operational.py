@@ -20,6 +20,9 @@ from typing import Any
 
 try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
     from .copernicus_target_identity import target_fingerprint
+    from .current_field_shadow import (
+        REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
+    )
     from .dmi_native_provenance import (
         canonical_current_source_asset,
         canonical_time,
@@ -29,6 +32,9 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
     )
 except ImportError:  # pragma: no cover - exercised by production-style import.
     from copernicus_target_identity import target_fingerprint
+    from current_field_shadow import (
+        REGIONAL_PROXY_NATIVE_CADENCE_HOURS as NATIVE_CADENCE_HOURS,
+    )
     from dmi_native_provenance import (
         canonical_current_source_asset,
         canonical_time,
@@ -49,7 +55,6 @@ PAIR_REFS_CONTRACT_ID = "regional-dmi-operational-pair-refs-v1"
 EXPECTED_PART_COUNT = 8
 OPERATIONAL_HOUR_COUNT = 118
 OPERATIONAL_END_OFFSET_HOURS = 117
-NATIVE_CADENCE_HOURS = 3
 MAXIMUM_HOLD_HOURS = 3
 REGULAR_MAXIMUM_DISTANCE_KM = 5.0
 REGIONAL_MAXIMUM_DISTANCE_KM = 15.0
@@ -474,7 +479,7 @@ def _validated_sample(
     policy_sha256: str,
     target_registry_sha256: str,
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     if not isinstance(sample, dict):
         _fail("SHADOW_SAMPLE_INVALID")
     collection = sample.get("collection")
@@ -487,8 +492,16 @@ def _validated_sample(
     if collection != REQUIRED_COLLECTION or model_run_dt > valid_time_dt:
         _fail("SHADOW_SOURCE_BINDING_INVALID")
     lead_seconds = (valid_time_dt - model_run_dt).total_seconds()
-    if lead_seconds % (NATIVE_CADENCE_HOURS * 3600):
-        _fail("SHADOW_NATIVE_CADENCE_INVALID")
+    off_native_cadence = bool(
+        lead_seconds % (NATIVE_CADENCE_HOURS * 3600)
+    )
+    # A canonical selected-run row outside the collection's native phase can
+    # never become regional evidence. Ignore it before deeper proof parsing so
+    # stale private bytes cannot deny the exact handoff to Open-Meteo. Invalid
+    # collection/time/run identity above remains fatal; every on-phase proof
+    # continues through all strict checks below.
+    if off_native_cadence:
+        return None
     if canonical_time(sample.get("capturedAt")) is None:
         _fail("SHADOW_SAMPLE_INVALID")
 
@@ -653,6 +666,8 @@ def _samples_by_part(
                 # sample beside its replacement.  Defer the mismatch: it is fatal
                 # only when no currently ledger-bound exact/hold source can win.
                 source_mismatch_times.add(sample_time)
+                continue
+            if sample is None:
                 continue
             sample_key = str(raw_sample.get("sampleKey") or "")
             if sample_key in seen_sample_keys:

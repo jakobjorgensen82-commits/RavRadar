@@ -415,13 +415,68 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
         "History outside every current hold candidate must remain irrelevant",
     )
 
-    selected_wrong_phase = fixture()
-    selected_phase_sample = selected_wrong_phase["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
-    selected_phase_sample["validTime"] = iso(1)
-    selected_phase_sample["sampleKey"] = (
-        f"dkss_lf|{iso(0)}|{iso(1)}|{selected_phase_sample['sourceAssetSha256']}"
+    selected_off_phase = fixture()
+    selected_off_phase_source = source_asset(1)
+    selected_off_phase["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [sample(0, 1, selected_off_phase_source)]
+    selected_off_phase["dmi_ledger"]["collections"][0]["validTimes"].append({
+        "validTime": iso(1),
+        "state": "VERIFIED",
+        "sourceAsset": selected_off_phase_source,
+    })
+    selected_off_phase_result = invoke(selected_off_phase)
+    selected_off_phase_refs = [
+        row for row in selected_off_phase_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        len(selected_off_phase_refs) == 5
+        and all(
+            row["classification"] == evidence.MISSING
+            for row in selected_off_phase_refs
+        ),
+        "A fully bound selected-run off-phase sample must pass to fallback",
     )
-    expect_error(selected_wrong_phase, "SHADOW_NATIVE_CADENCE_INVALID")
+
+    mismatched_off_phase = fixture()
+    mismatched_off_phase_source = source_asset(1)
+    mismatched_off_phase_sample = sample(0, 1, mismatched_off_phase_source)
+    mismatched_off_phase_sample["sourceAssetSha256"] = "sha256:" + "a" * 64
+    mismatched_off_phase_sample["sampleKey"] = (
+        f"dkss_lf|{iso(0)}|{iso(1)}|"
+        f"{mismatched_off_phase_sample['sourceAssetSha256']}"
+    )
+    mismatched_off_phase["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [mismatched_off_phase_sample]
+    mismatched_off_phase["dmi_ledger"]["collections"][0]["validTimes"].append({
+        "validTime": iso(1),
+        "state": "VERIFIED",
+        "sourceAsset": mismatched_off_phase_source,
+    })
+    mismatched_off_phase_result = invoke(mismatched_off_phase)
+    mismatched_off_phase_refs = [
+        row for row in mismatched_off_phase_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        len(mismatched_off_phase_refs) == 5
+        and all(
+            row["classification"] == evidence.MISSING
+            for row in mismatched_off_phase_refs
+        ),
+        "An off-phase row cannot deny fallback through irrelevant deep proof",
+    )
+
+    malformed_selected_run = fixture()
+    malformed_selected_run["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"][0]["modelRun"] = "2026-01-01T00:30:00Z"
+    expect_error(
+        malformed_selected_run,
+        "SHADOW_SOURCE_BINDING_INVALID",
+    )
 
 
 def test_gap_domain_is_exact_bounded_and_ledger_bound() -> None:

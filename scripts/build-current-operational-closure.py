@@ -14,7 +14,7 @@ from lib.copernicus_current import file_sha256, load_targets
 from lib.current_operational_closure import build_current_operational_closure
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
-    processed_source_assets_from_current_operational_ledger,
+    current_attestation_authorization_from_operational_ledger,
 )
 
 
@@ -105,13 +105,16 @@ def main() -> int:
     ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
     if not isinstance(ledger, dict):
         raise RuntimeError("DMI_LEDGER_MISSING")
-    allowed_assets = processed_source_assets_from_current_operational_ledger(ledger)
+    allowed_assets, allowed_retained_pair_sources = (
+        current_attestation_authorization_from_operational_ledger(ledger)
+    )
     attestation = canonical_verified_part_current_attestation(
         dmi,
         targets,
         reference,
         registry.get("operationalRangeEndAt"),
         allowed_assets,
+        allowed_retained_pair_sources,
     )
     result = build_with_residual_diagnostic(
         targets=targets,

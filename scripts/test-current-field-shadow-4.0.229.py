@@ -230,6 +230,28 @@ regional_choices = [
     choice(regional_lon + 0.1, regional_lat, 8.0, "depthbelowsea:5", 5, 0.11, 0.12),
     choice(regional_lon + 0.1, regional_lat, 8.0, "depthbelowsea:20", 20, 0.21, 0.22),
 ]
+regional_model_run = now.replace(minute=0, second=0, microsecond=0)
+regional_model_run_iso = regional_model_run.isoformat().replace("+00:00", "Z")
+regional_off_phase_iso = (
+    regional_model_run + timedelta(hours=1)
+).isoformat().replace("+00:00", "Z")
+regional_on_phase_iso = (
+    regional_model_run + timedelta(hours=3)
+).isoformat().replace("+00:00", "Z")
+regional_off_phase_document = empty_document()
+assert record_profiles(
+    regional_off_phase_document,
+    {regional_target["id"]: regional_target},
+    {regional_target["id"]: regional_choices},
+    "dkss_lf",
+    regional_model_run_iso,
+    regional_off_phase_iso,
+    now_iso,
+    "sha256:" + "a" * 64,
+) == 0
+assert regional_target["id"] not in regional_off_phase_document["anchors"]
+assert regional_target["id"] not in regional_off_phase_document["coverageAudits"]
+
 regional_document = empty_document()
 assert record_profiles(
     regional_document,
@@ -247,8 +269,8 @@ assert record_profiles(
     {regional_target["id"]: regional_target},
     {regional_target["id"]: regional_choices},
     "dkss_lf",
-    now_iso,
-    valid_iso,
+    regional_model_run_iso,
+    regional_on_phase_iso,
     now_iso,
     "sha256:" + "a" * 64,
 ) == 1
@@ -492,7 +514,12 @@ with tempfile.TemporaryDirectory() as directory:
         bulk.CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = 1
         replay = bulk.replay_current_field_shadow_from_cache(
             {"dkss_idw": {"modelRun": captured_iso, "assets": [
-                {"valid": (captured + timedelta(hours=1)).isoformat().replace("+00:00", "Z"), "href": "https://example.test/bootstrap.grib", "size": 7}
+                {
+                    "id": "bootstrap-replay-asset",
+                    "valid": (captured + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+                    "href": "https://example.test/bootstrap.grib",
+                    "size": 7,
+                }
             ]}},
             targets,
             empty_document(),

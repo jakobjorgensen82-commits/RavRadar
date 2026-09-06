@@ -80,6 +80,9 @@ CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-
 CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4
 DKSS_MAX_FORECAST_LEAD_HOURS = 120
 CURRENT_PART_OUTCOME_CONTRACT_ID = "dmi-official-asset-current-part-outcomes-v1"
+CURRENT_RETAINED_ASSET_PROOF_CONTRACT_ID = (
+    "dmi-retained-current-asset-proof-v1"
+)
 CURRENT_OPERATIONAL_LEDGER_STATES = (
     "EXPECTED",
     "PROCESSED",
@@ -341,6 +344,130 @@ def validate_current_part_outcome_proof(
     return expected
 
 
+def _part_ids_sha256(part_ids: Any) -> str:
+    if not isinstance(part_ids, (list, tuple)):
+        raise ValueError("Retained current part ids must be an array")
+    normalized = sorted(str(value or "").strip() for value in part_ids)
+    if any(not value for value in normalized) or len(set(normalized)) != len(
+        normalized
+    ):
+        raise ValueError("Retained current part ids are invalid")
+    return _canonical_sha256({
+        "contractId": "dmi-retained-current-attested-parts-v1",
+        "partIds": normalized,
+    })
+
+
+def build_retained_current_asset_proof(
+    source_asset: Any,
+    processing_signature: Any,
+    part_outcome_proof: Any,
+    attested_part_ids: Any,
+    target_ids: Any,
+    target_registry_sha256: Any,
+) -> dict[str, Any]:
+    """Bind prior actual attested rows to their canonical processed asset proof."""
+    source = canonical_current_source_asset(source_asset)
+    signature = str(processing_signature or "")
+    if source is None or not signature or signature != signature.strip():
+        raise ValueError("Retained current source identity is invalid")
+    if _epoch(source["validTime"]) < _epoch(source["modelRun"]) or (
+        _epoch(source["validTime"]) - _epoch(source["modelRun"])
+    ) > DKSS_MAX_FORECAST_LEAD_HOURS * 3600:
+        raise ValueError("Retained current source lead time is invalid")
+    canonical_targets = sorted(str(value or "").strip() for value in target_ids)
+    if (
+        any(not value for value in canonical_targets)
+        or len(set(canonical_targets)) != len(canonical_targets)
+    ):
+        raise ValueError("Retained current target ids are invalid")
+    attested = sorted(str(value or "").strip() for value in attested_part_ids)
+    if (
+        not attested
+        or any(not value for value in attested)
+        or len(set(attested)) != len(attested)
+        or not set(attested) <= set(canonical_targets)
+    ):
+        raise ValueError("Retained current attested part ids are invalid")
+    outcome = validate_current_part_outcome_proof(
+        part_outcome_proof,
+        canonical_targets,
+        target_registry_sha256,
+        signature,
+        source,
+    )
+    if set(attested) & set(outcome["spatialUnavailablePartIds"]):
+        raise ValueError("Retained current attestation contradicts outcome proof")
+    return {
+        "contractId": CURRENT_RETAINED_ASSET_PROOF_CONTRACT_ID,
+        "sourceAsset": source,
+        "processingSignature": signature,
+        "partOutcomeProof": outcome,
+        "attestedPartCount": len(attested),
+        "attestedPartIdsSha256": _part_ids_sha256(attested),
+        "attestedPartIds": attested,
+    }
+
+
+def validate_retained_current_asset_proofs(
+    rows: Any,
+    target_ids: Any,
+    range_start: Any,
+    range_end: Any,
+    target_registry_sha256: Any,
+) -> list[dict[str, Any]]:
+    """Validate bounded carry-forward proof from an earlier accepted ledger."""
+    if rows is None:
+        rows = []
+    if not isinstance(rows, list):
+        raise ValueError("Retained current asset proofs must be an array")
+    start, end = _exact_hour_bounds(range_start, range_end)
+    normalized: list[dict[str, Any]] = []
+    identities: set[str] = set()
+    for raw in rows:
+        if not isinstance(raw, dict):
+            raise ValueError("Retained current asset proof is malformed")
+        expected = build_retained_current_asset_proof(
+            raw.get("sourceAsset"),
+            raw.get("processingSignature"),
+            raw.get("partOutcomeProof"),
+            raw.get("attestedPartIds"),
+            target_ids,
+            target_registry_sha256,
+        )
+        if raw != expected:
+            raise ValueError("Retained current asset proof is not canonical")
+        valid_time = datetime.fromisoformat(
+            expected["sourceAsset"]["validTime"].replace("Z", "+00:00")
+        )
+        if valid_time < start or valid_time > end:
+            raise ValueError("Retained current asset proof is out of range")
+        identity = _canonical_json(expected["sourceAsset"])
+        if identity in identities:
+            raise ValueError("Retained current asset proof is duplicated")
+        identities.add(identity)
+        normalized.append(expected)
+    normalized.sort(key=lambda row: (
+        row["sourceAsset"]["validTime"],
+        row["sourceAsset"]["collection"],
+        row["sourceAsset"]["modelRun"],
+        row["sourceAsset"]["itemId"],
+        row["sourceAsset"]["contentSha256"],
+    ))
+    if rows != normalized:
+        raise ValueError("Retained current asset proofs are not canonical")
+    return normalized
+
+
+def retained_current_asset_proofs_sha256(rows: Any) -> str:
+    if not isinstance(rows, (list, tuple)):
+        raise ValueError("Retained current asset proofs must be an array")
+    return _canonical_sha256({
+        "contractId": "dmi-retained-current-asset-proofs-v1",
+        "proofs": list(rows),
+    })
+
+
 def derive_current_part_outcome_partition(
     collections: Any,
     target_ids: Any,
@@ -442,6 +569,49 @@ def derive_current_part_outcome_partition(
             else:
                 raise ValueError("Current outcome partition is ambiguous")
     return result
+
+
+def exact_current_operational_complement(
+    target_ids: Any,
+    valid_times: Any,
+    verified_pairs: Any,
+) -> list[dict[str, str]]:
+    """Return the unbounded exact matrix inverse of actual DMI attestation."""
+    if not isinstance(target_ids, (list, tuple)) or not isinstance(
+        valid_times, (list, tuple)
+    ) or not isinstance(verified_pairs, (list, tuple)):
+        raise ValueError("Current operational matrix is malformed")
+    targets = sorted(str(value or "").strip() for value in target_ids)
+    times = sorted(
+        str(value) for value in (canonical_time(value) for value in valid_times)
+        if value is not None
+    )
+    if (
+        len(targets) != len(target_ids)
+        or any(not value for value in targets)
+        or len(set(targets)) != len(targets)
+        or len(times) != len(valid_times)
+        or len(set(times)) != len(times)
+    ):
+        raise ValueError("Current operational matrix identity is invalid")
+    matrix = {(part_id, valid_time) for valid_time in times for part_id in targets}
+    verified: set[tuple[str, str]] = set()
+    for raw in verified_pairs:
+        if not isinstance(raw, dict) or set(raw) != {"partId", "validTime"}:
+            raise ValueError("Verified current pair is malformed")
+        identity = (
+            str(raw.get("partId") or "").strip(),
+            str(canonical_time(raw.get("validTime")) or ""),
+        )
+        if identity not in matrix or identity in verified:
+            raise ValueError("Verified current pair is outside the exact matrix")
+        verified.add(identity)
+    return [
+        {"partId": part_id, "validTime": valid_time}
+        for valid_time in times
+        for part_id in targets
+        if (part_id, valid_time) not in verified
+    ]
 
 
 def current_pair_sources_sha256(rows: Any) -> str:
@@ -652,6 +822,8 @@ def complete_native_source_for_hour(
     if component == "current":
         return bool(
             canonical_current_source_asset(source) is not None
+            and float(source["leadTimeHours"])
+                <= DKSS_MAX_FORECAST_LEAD_HOURS + 0.002
             and source.get("vectorSelection") == CURRENT_VECTOR_SELECTION
             and source.get("vectorSemanticsVersion") == CURRENT_VECTOR_SEMANTICS_VERSION
             and str(source.get("verticalLayer") or "").strip()
@@ -839,6 +1011,7 @@ def canonical_verified_part_current_attestation(
     range_start: Any,
     range_end: Any,
     allowed_source_assets: Any = None,
+    allowed_retained_pair_sources: Any = None,
 ) -> dict[str, Any]:
     """Build the one canonical, payload-free current proof used by every gate."""
     start, end = _exact_hour_bounds(range_start, range_end)
@@ -868,6 +1041,30 @@ def canonical_verified_part_current_attestation(
                 raise ValueError("Selected current source asset is invalid")
             allowed_asset_keys.add(_canonical_json(source_asset))
 
+    allowed_retained_keys: set[tuple[str, str, str]] | None = None
+    if allowed_retained_pair_sources is not None:
+        if not isinstance(allowed_retained_pair_sources, (list, tuple)):
+            raise ValueError("Retained current pair sources must be an array")
+        allowed_retained_keys = set()
+        for raw in allowed_retained_pair_sources:
+            if not isinstance(raw, dict):
+                raise ValueError("Retained current pair source is malformed")
+            part_id = str(raw.get("partId") or "").strip()
+            valid_time = canonical_time(raw.get("validTime"))
+            source_asset = canonical_current_source_asset(raw.get("source"))
+            if (
+                not part_id
+                or valid_time is None
+                or raw.get("validTime") != valid_time
+                or source_asset is None
+                or source_asset["validTime"] != valid_time
+            ):
+                raise ValueError("Retained current pair source is invalid")
+            identity = (part_id, valid_time, _canonical_json(source_asset))
+            if identity in allowed_retained_keys:
+                raise ValueError("Retained current pair source is duplicated")
+            allowed_retained_keys.add(identity)
+
     verified_pairs: list[dict[str, str]] = []
     verified_pair_sources: list[dict[str, Any]] = []
     source_times: set[tuple[str, str, str]] = set()
@@ -882,7 +1079,18 @@ def canonical_verified_part_current_attestation(
             source_asset = canonical_current_source_asset(source)
             if source_asset is None:
                 continue
-            if allowed_asset_keys is not None and _canonical_json(source_asset) not in allowed_asset_keys:
+            source_key = _canonical_json(source_asset)
+            current_asset_allowed = bool(
+                allowed_asset_keys is not None and source_key in allowed_asset_keys
+            )
+            retained_pair_allowed = bool(
+                allowed_retained_keys is not None
+                and (part_id, valid_time, source_key) in allowed_retained_keys
+            )
+            if (
+                allowed_asset_keys is not None
+                or allowed_retained_keys is not None
+            ) and not (current_asset_allowed or retained_pair_allowed):
                 continue
             verified_pairs.append({"partId": part_id, "validTime": valid_time})
             verified_pair_sources.append({
@@ -1108,6 +1316,40 @@ def processed_source_assets_from_current_operational_ledger(ledger: Any) -> list
     return [unique[key] for key in sorted(unique)]
 
 
+def current_attestation_authorization_from_operational_ledger(
+    ledger: Any,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Return current assets plus exact retained part/time/source authorizations."""
+    current_assets = processed_source_assets_from_current_operational_ledger(ledger)
+    if not isinstance(ledger, dict):
+        return current_assets, []
+    raw_proofs = ledger.get("retainedCurrentAssetProofs", [])
+    if not isinstance(raw_proofs, list):
+        raise ValueError("Retained current asset proofs must be an array")
+    retained: list[dict[str, Any]] = []
+    pair_identities: set[tuple[str, str]] = set()
+    for raw in raw_proofs:
+        if not isinstance(raw, dict):
+            raise ValueError("Retained current asset proof is malformed")
+        source = canonical_current_source_asset(raw.get("sourceAsset"))
+        part_ids = raw.get("attestedPartIds")
+        if source is None or not isinstance(part_ids, list):
+            raise ValueError("Retained current asset proof identity is invalid")
+        for raw_part_id in part_ids:
+            part_id = str(raw_part_id or "").strip()
+            identity = (part_id, source["validTime"])
+            if not part_id or identity in pair_identities:
+                raise ValueError("Retained current pair authorization is invalid")
+            pair_identities.add(identity)
+            retained.append({
+                "partId": part_id,
+                "validTime": source["validTime"],
+                "source": source,
+            })
+    retained.sort(key=lambda row: (row["validTime"], row["partId"]))
+    return current_assets, retained
+
+
 def _canonical_official_current_asset(
     raw: Any,
     collection: str,
@@ -1149,6 +1391,26 @@ def _canonical_official_current_asset(
         "itemCreatedAt": item_created_at,
         "itemUpdatedAt": item_updated_at,
     }
+
+
+def current_source_matches_official_asset(
+    source_asset: Any,
+    official_asset: Any,
+) -> bool:
+    """Match a content-proven source to every field of its official identity."""
+    source = canonical_current_source_asset(source_asset)
+    if source is None:
+        return False
+    official = _canonical_official_current_asset(
+        official_asset,
+        source["collection"],
+        source["modelRun"],
+        source["validTime"],
+    )
+    return official is not None and all(
+        source[field] == official[field]
+        for field in CURRENT_OFFICIAL_ASSET_FIELDS
+    )
 
 
 def _validate_current_operational_ledger(
@@ -1201,6 +1463,43 @@ def _validate_current_operational_ledger(
     ):
         raise ValueError("DMI current operational target ids are invalid")
 
+    retained_fields = (
+        "retainedCurrentAssetProofCount",
+        "retainedCurrentAssetProofsSha256",
+        "retainedCurrentAssetProofs",
+    )
+    retained_fields_present = [field in ledger for field in retained_fields]
+    if any(retained_fields_present) and not all(retained_fields_present):
+        raise ValueError("DMI retained current proof header is incomplete")
+    retained_proofs = validate_retained_current_asset_proofs(
+        ledger.get("retainedCurrentAssetProofs", []),
+        target_ids,
+        start,
+        end,
+        target_registry_sha256,
+    )
+    if all(retained_fields_present) and (
+        ledger.get("retainedCurrentAssetProofCount") != len(retained_proofs)
+        or ledger.get("retainedCurrentAssetProofsSha256")
+            != retained_current_asset_proofs_sha256(retained_proofs)
+    ):
+        raise ValueError("DMI retained current proof identity mismatch")
+    retained_pair_source_keys = {
+        (
+            part_id,
+            proof["sourceAsset"]["validTime"],
+            _canonical_json(proof["sourceAsset"]),
+        )
+        for proof in retained_proofs
+        for part_id in proof["attestedPartIds"]
+    }
+    retained_pair_keys = {
+        (part_id, valid_time)
+        for part_id, valid_time, _source in retained_pair_source_keys
+    }
+    if len(retained_pair_source_keys) != len(retained_pair_keys):
+        raise ValueError("DMI retained current pair has multiple source assets")
+
     collections = ledger.get("collections")
     if not isinstance(collections, list) or [row.get("collection") for row in collections if isinstance(row, dict)] != sorted(MARINE_COLLECTIONS):
         raise ValueError("DMI current operational collection ledger is incomplete")
@@ -1212,6 +1511,9 @@ def _validate_current_operational_ledger(
         if source is not None
     }
     state_by_collection: dict[str, dict[str, dict[str, Any]]] = {}
+    model_run_by_collection: dict[str, str | None] = {}
+    processing_signature_by_collection: dict[str, str | None] = {}
+    locally_unavailable_collection: dict[str, bool] = {}
     official_asset_count = 0
     for collection_row in collections:
         if not isinstance(collection_row, dict):
@@ -1356,6 +1658,13 @@ def _validate_current_operational_ledger(
             raise ValueError("DMI current official valid-time identity mismatch")
         official_asset_count += len(official_assets)
         state_by_collection[collection] = states
+        model_run_by_collection[collection] = model_run
+        processing_signature_by_collection[collection] = (
+            processing_signature if signature_valid else None
+        )
+        locally_unavailable_collection[collection] = bool(states) and all(
+            value["state"] == "LOCALLY_SKIPPED" for value in states.values()
+        )
 
     if official_asset_count == 0 and not allow_incomplete:
         raise ValueError("DMI current official inventory is empty")
@@ -1366,8 +1675,73 @@ def _validate_current_operational_ledger(
         expected_times,
         allow_local_unavailable=allow_incomplete,
     )
-    if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
-        raise ValueError("DMI outcome proof and current attestation diverge")
+    attested_pair_keys = {
+        (row["partId"], row["validTime"])
+        for row in (attestation.get("verifiedPairs") or [])
+    }
+    outcome_verified_keys = {
+        (row["partId"], row["validTime"])
+        for row in partition["verifiedPairs"]
+    }
+    attested_pair_source_keys = {
+        (
+            str(row.get("partId") or "").strip(),
+            str(canonical_time(row.get("validTime")) or ""),
+            _canonical_json(canonical_current_source_asset(row.get("source"))),
+        )
+        for row in (attestation.get("verifiedPairSources") or [])
+        if isinstance(row, dict)
+        and canonical_current_source_asset(row.get("source")) is not None
+    }
+    if not retained_pair_source_keys <= attested_pair_source_keys:
+        raise ValueError("DMI retained current proof is unused by actual attestation")
+    retained_requires_catalog_outage = False
+    retained_requires_local_failure = False
+    for proof in retained_proofs:
+        source = proof["sourceAsset"]
+        collection = source["collection"]
+        if proof["processingSignature"] != processing_signature_by_collection.get(
+            collection
+        ):
+            raise ValueError("DMI retained current processing semantics mismatch")
+        selected_model_run = model_run_by_collection.get(collection)
+        if selected_model_run is None:
+            if not locally_unavailable_collection.get(collection):
+                raise ValueError("DMI retained current source lacks catalog-outage evidence")
+            retained_requires_catalog_outage = True
+            continue
+        source_run_epoch = _epoch(source["modelRun"])
+        selected_run_epoch = _epoch(selected_model_run)
+        if source_run_epoch > selected_run_epoch:
+            raise ValueError("DMI retained current source is newer than selected run")
+        if source_run_epoch == selected_run_epoch:
+            state_row = state_by_collection.get(collection, {}).get(
+                source["validTime"]
+            )
+            if (
+                state_row is None
+                or state_row["state"] != "LOCALLY_SKIPPED"
+                or not current_source_matches_official_asset(
+                    source, state_row["officialAsset"],
+                )
+            ):
+                raise ValueError(
+                    "DMI same-run retained source is not the selected official asset"
+                )
+            retained_requires_local_failure = True
+    if not allow_incomplete:
+        if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
+            raise ValueError("DMI outcome proof and current attestation diverge")
+    else:
+        if not attested_pair_keys <= outcome_verified_keys | retained_pair_keys:
+            raise ValueError("DMI attestation is not backed by current or retained proof")
+        unattested_outcome_pairs = outcome_verified_keys - attested_pair_keys
+        raw_failure_codes = ledger.get("failureCodes")
+        if unattested_outcome_pairs and (
+            not isinstance(raw_failure_codes, list)
+            or "UNATTESTED_CURRENT_PART_TIME" not in raw_failure_codes
+        ):
+            raise ValueError("DMI unattested outcome is missing failure evidence")
     verified_times = {row["validTime"] for row in partition["verifiedPairs"]}
     for valid_time in expected_times:
         states = [
@@ -1393,18 +1767,38 @@ def _validate_current_operational_ledger(
         if source is None:
             raise ValueError("DMI canonical pair/source identity is invalid")
         state_row = state_by_collection.get(source["collection"], {}).get(source["validTime"])
-        if (
-            not state_row
-            or state_row["state"] != "VERIFIED"
-            or state_row["sourceAsset"] != source
-            or str(raw.get("partId") or "").strip()
-                in state_row["spatialUnavailablePartIds"]
-        ):
+        part_id = str(raw.get("partId") or "").strip()
+        current_bound = bool(
+            state_row
+            and state_row["state"] == "VERIFIED"
+            and state_row["sourceAsset"] == source
+            and part_id not in state_row["spatialUnavailablePartIds"]
+        )
+        retained_bound = (
+            part_id,
+            source["validTime"],
+            _canonical_json(source),
+        ) in retained_pair_source_keys
+        if not current_bound and not (allow_incomplete and retained_bound):
             raise ValueError("DMI pair/source is not bound to a selected processed ledger state")
 
-    expected_upstream_absence = partition["upstreamAbsencePairs"]
-    expected_spatial_unavailable = partition["spatialUnavailablePairs"]
-    expected_complement = partition["operationalComplementPairs"]
+    expected_complement = exact_current_operational_complement(
+        target_ids,
+        expected_times,
+        attestation.get("verifiedPairs") or [],
+    )
+    complement_keys = {
+        (row["partId"], row["validTime"])
+        for row in expected_complement
+    }
+    expected_upstream_absence = [
+        row for row in partition["upstreamAbsencePairs"]
+        if (row["partId"], row["validTime"]) in complement_keys
+    ]
+    expected_spatial_unavailable = [
+        row for row in partition["spatialUnavailablePairs"]
+        if (row["partId"], row["validTime"]) in complement_keys
+    ]
     if (
         ledger.get("upstreamAbsencePairs") != expected_upstream_absence
         or ledger.get("upstreamAbsencePairCount") != len(expected_upstream_absence)
@@ -1444,6 +1838,15 @@ def _validate_current_operational_ledger(
         or (not ledger["ready"] and not failure_codes)
     ):
         raise ValueError("DMI current operational ledger disposition is invalid")
+    if retained_requires_catalog_outage and (
+        "OFFICIAL_DKSS_CATALOG_INCOMPLETE" not in failure_codes
+        and "OFFICIAL_DKSS_CATALOG_COLLAPSE" not in failure_codes
+    ):
+        raise ValueError("DMI retained current catalog-outage evidence is missing")
+    if retained_requires_local_failure and (
+        "LOCALLY_SKIPPED_DKSS_ASSET" not in failure_codes
+    ):
+        raise ValueError("DMI retained current local-failure evidence is missing")
     if not allow_incomplete and ledger["ready"] is not True:
         raise ValueError("DMI current operational ledger is not ready")
     return ledger

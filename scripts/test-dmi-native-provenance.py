@@ -1,6 +1,7 @@
 """Producer/verifier parity for native DMI component provenance."""
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 import os
@@ -465,6 +466,7 @@ finally:
 required_hours = producer.operational_current_valid_times(reference)
 ledger_document = json.loads(json.dumps(document))
 ledger_document["runs"] = {}
+ledger_document["zoneRegistrySignature"] = "test-registry"
 official_catalogs = {}
 
 
@@ -489,7 +491,9 @@ def ledger_asset(collection: str, hour: str) -> tuple[dict, dict]:
 
 
 for collection in sorted(producer.MARINE_COLLECTIONS):
-    processing_signature = f"test-{collection}"
+    processing_signature = producer.current_marine_processing_signature(
+        "test-registry"
+    )
     official_assets = []
     processed_steps = {
         hour: {
@@ -617,6 +621,613 @@ except ValueError as error:
 else:
     raise AssertionError("A reduced partial-DMI complement must fail closed")
 
+# Cache continuity is pair-exact. An older fully proven row remains usable in
+# availability mode, while strict DMI READY still rejects any retained proof.
+continuity_signature = producer.current_marine_processing_signature(
+    "test-registry"
+)
+continuity_catalogs = {}
+continuity_runs = {}
+for continuity_collection in sorted(producer.MARINE_COLLECTIONS):
+    continuity_assets = [
+        ledger_asset(continuity_collection, hour)[0]
+        for hour in required_hours
+    ]
+    continuity_catalogs[continuity_collection] = (
+        "2026-01-01T00:00:00Z",
+        continuity_assets,
+        {
+            "catalogInventoryComplete": True,
+            "requiredHorizonEndCovered": True,
+            "requiredRowsTruncatedByAssetLimit": 0,
+            "officialRequiredValidTimeCount": len(required_hours),
+            "officialRequiredValidTimes": required_hours,
+            "officialRequiredAssets": continuity_assets,
+        },
+    )
+    continuity_runs[continuity_collection] = {
+        "referenceTime": "2026-01-01T00:00:00Z",
+        "parserVersion": producer.PARSER_VERSION,
+        "parameterMapVersion": producer.PARAMETER_MAP_VERSION,
+        "gridLookupVersion": producer.GRID_LOOKUP_VERSION,
+        "processingSignature": continuity_signature,
+        "processedSteps": {},
+    }
+
+
+def continuity_document(actual_source: dict) -> dict:
+    return {
+        "schemaVersion": 2,
+        "generatedAt": valid_time,
+        "zoneRegistrySignature": "test-registry",
+        "zones": {
+            "PART::TEST": {
+                "samplingPoint": [2.0, 1.0],
+                "parentZoneId": "ZONE-TEST",
+                "entityType": "coastal-part",
+                "samplingContext": "coastal-part-water-point",
+                "hourly": {
+                    valid_time: {
+                        "time": valid_time,
+                        "current-u": 0.1,
+                        "current-v": -0.2,
+                        "sources": {"current": actual_source},
+                    },
+                },
+                "gridPoints": {},
+                "collections": {},
+            },
+        },
+        "runs": json.loads(json.dumps(continuity_runs)),
+        "collectionState": {},
+        "diagnostics": {},
+    }
+
+
+def retained_proof(actual_source: dict) -> dict:
+    outcome = producer.build_current_part_outcome_proof(
+        [],
+        [target["partId"]],
+        producer.target_fingerprint(targets),
+        continuity_signature,
+        actual_source,
+    )
+    return producer.build_retained_current_asset_proof(
+        actual_source,
+        continuity_signature,
+        outcome,
+        [target["partId"]],
+        [target["partId"]],
+        producer.target_fingerprint(targets),
+    )
+
+
+def assert_retained_availability(actual_source: dict) -> tuple[dict, dict]:
+    continuity = continuity_document(actual_source)
+    ledger = producer.build_current_operational_ledger(
+        continuity,
+        targets,
+        reference,
+        continuity_catalogs,
+        [retained_proof(actual_source)],
+    )
+    allowed, retained = (
+        producer.current_attestation_authorization_from_operational_ledger(
+            ledger
+        )
+    )
+    actual = producer.current_operational_attestation(
+        continuity, targets, reference, allowed, retained,
+    )
+    validate_current_operational_availability_ledger(
+        ledger,
+        actual,
+        targets,
+        reference,
+        reference + timedelta(hours=117),
+        producer.target_fingerprint(targets),
+    )
+    assert ledger["ready"] is False
+    assert "RETAINED_CURRENT_PART_TIME" in ledger["failureCodes"]
+    assert ledger["attestation"]["verifiedPairCount"] == 1
+    assert ledger["operationalComplementPairCount"] == 117
+    try:
+        validate_current_operational_ledger(
+            ledger,
+            actual,
+            targets,
+            reference,
+            reference + timedelta(hours=117),
+            producer.target_fingerprint(targets),
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("Retained availability must never satisfy strict READY")
+    return continuity, ledger
+
+
+older_retained_source = producer.native_component_source(
+    "dkss_lf",
+    "2025-12-31T18:00:00Z",
+    valid_time,
+    component="current",
+    zone=zone,
+    grid_candidate=candidate,
+    capture=capture,
+    spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+    verticalLayer="depthBelowSea:1",
+    verticalLayerRankM=1.0,
+    vectorSelection=CURRENT_VECTOR_SELECTION,
+    vectorSemanticsVersion=3,
+)
+assert older_retained_source is not None
+older_continuity, older_ledger = assert_retained_availability(
+    older_retained_source
+)
+
+# Proof donors may aggregate one exact asset over different part subsets. The
+# selector must union those candidate authorizations and then derive the final
+# subset only from rows that are actually present in the merged document.
+overlap_target = {
+    "partId": "TEST-B",
+    "parentZoneId": "ZONE-TEST",
+    "name": "Test B",
+    "waterPoint": [2.0, 1.0],
+}
+overlap_targets = [target, overlap_target]
+overlap_target_ids = sorted(row["partId"] for row in overlap_targets)
+overlap_zone = {
+    **zone,
+    "id": "PART::TEST-B",
+}
+overlap_source = producer.native_component_source(
+    "dkss_lf",
+    "2025-12-31T18:00:00Z",
+    valid_time,
+    component="current",
+    zone=overlap_zone,
+    grid_candidate=candidate,
+    capture=capture,
+    spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+    verticalLayer="depthBelowSea:1",
+    verticalLayerRankM=1.0,
+    vectorSelection=CURRENT_VECTOR_SELECTION,
+    vectorSemanticsVersion=3,
+)
+assert overlap_source is not None
+assert producer.canonical_current_source_asset(overlap_source) == (
+    producer.canonical_current_source_asset(older_retained_source)
+)
+overlap_registry_sha256 = producer.target_fingerprint(overlap_targets)
+overlap_outcome = producer.build_current_part_outcome_proof(
+    [],
+    overlap_target_ids,
+    overlap_registry_sha256,
+    continuity_signature,
+    older_retained_source,
+)
+overlap_proof_ab = producer.build_retained_current_asset_proof(
+    older_retained_source,
+    continuity_signature,
+    overlap_outcome,
+    overlap_target_ids,
+    overlap_target_ids,
+    overlap_registry_sha256,
+)
+overlap_proof_a = producer.build_retained_current_asset_proof(
+    older_retained_source,
+    continuity_signature,
+    overlap_outcome,
+    [target["partId"]],
+    overlap_target_ids,
+    overlap_registry_sha256,
+)
+overlap_document = continuity_document(older_retained_source)
+overlap_document["zones"]["PART::TEST-B"] = {
+    "samplingPoint": [2.0, 1.0],
+    "parentZoneId": "ZONE-TEST",
+    "entityType": "coastal-part",
+    "samplingContext": "coastal-part-water-point",
+    "hourly": {
+        valid_time: {
+            "time": valid_time,
+            "current-u": 0.1,
+            "current-v": -0.2,
+            "sources": {"current": overlap_source},
+        },
+    },
+    "gridPoints": {},
+    "collections": {},
+}
+selected_overlap = producer._select_retained_current_asset_proofs_for_document(
+    overlap_document,
+    overlap_targets,
+    reference,
+    [overlap_proof_ab, overlap_proof_a],
+)
+assert len(selected_overlap) == 1
+assert selected_overlap[0]["attestedPartIds"] == overlap_target_ids
+
+overlap_subset_document = json.loads(json.dumps(overlap_document))
+overlap_subset_document["zones"]["PART::TEST-B"]["hourly"] = {}
+selected_overlap_subset = (
+    producer._select_retained_current_asset_proofs_for_document(
+        overlap_subset_document,
+        overlap_targets,
+        reference,
+        [overlap_proof_ab, overlap_proof_a],
+    )
+)
+assert len(selected_overlap_subset) == 1
+assert selected_overlap_subset[0]["attestedPartIds"] == [target["partId"]]
+
+conflicting_overlap_signature = f"{continuity_signature}|conflict"
+conflicting_overlap_outcome = producer.build_current_part_outcome_proof(
+    [],
+    overlap_target_ids,
+    overlap_registry_sha256,
+    conflicting_overlap_signature,
+    older_retained_source,
+)
+conflicting_overlap_proof = producer.build_retained_current_asset_proof(
+    older_retained_source,
+    conflicting_overlap_signature,
+    conflicting_overlap_outcome,
+    [target["partId"]],
+    overlap_target_ids,
+    overlap_registry_sha256,
+)
+try:
+    producer._select_retained_current_asset_proofs_for_document(
+        overlap_document,
+        overlap_targets,
+        reference,
+        [overlap_proof_ab, conflicting_overlap_proof],
+    )
+except ValueError as error:
+    assert "Conflicting retained current asset proof" in str(error)
+else:
+    raise AssertionError("Conflicting retained asset evidence must fail closed")
+
+# A newer candidate hour can already contain unrelated wave/wind fields while
+# still lacking current. An unproved or half-vector donor cannot add anything;
+# a proved donor adds U/V/source as one current tuple while preserving all other
+# independently proven components. A proof-backed primary current tuple wins.
+partial_primary = continuity_document(older_retained_source)
+partial_hour = partial_primary["zones"]["PART::TEST"]["hourly"][valid_time]
+partial_hour.pop("current-u")
+partial_hour.pop("current-v")
+partial_hour.pop("sources")
+partial_hour.update({
+    "wind-u-10m": 1.25,
+    "wind-v-10m": -0.75,
+    "significant-wave-height": 0.8,
+    "sources": {"wave": {"fixture": "preserved-wave-source"}},
+})
+partial_zone = partial_primary["zones"]["PART::TEST"]
+partial_zone["gridPoints"].update({
+    "current-u": {"longitude": 2.0, "latitude": 1.0},
+    "current-v": {"longitude": 2.5, "latitude": 1.0},
+    "significant-wave-height": {"fixture": "preserved-wave-summary"},
+})
+partial_zone["collections"].update({
+    "current-u": "dkss_idw",
+    "current-v": "dkss_nsbs",
+    "significant-wave-height": "wam_nsb",
+})
+donor_current = continuity_document(older_retained_source)
+unproved_merge = json.loads(json.dumps(partial_primary))
+producer.backfill_compatible_cache_data(unproved_merge, donor_current, [])
+unproved_hour = unproved_merge["zones"]["PART::TEST"]["hourly"][valid_time]
+assert "current-u" not in unproved_hour
+assert "current-v" not in unproved_hour
+half_vector_donor = json.loads(json.dumps(donor_current))
+half_vector_donor["zones"]["PART::TEST"]["hourly"][valid_time].pop(
+    "current-v"
+)
+half_vector_merge = json.loads(json.dumps(partial_primary))
+producer.backfill_compatible_cache_data(
+    half_vector_merge,
+    half_vector_donor,
+    [retained_proof(older_retained_source)],
+)
+half_vector_hour = half_vector_merge["zones"]["PART::TEST"]["hourly"][
+    valid_time
+]
+assert "current-u" not in half_vector_hour
+assert "current-v" not in half_vector_hour
+proved_merge = json.loads(json.dumps(partial_primary))
+producer.backfill_compatible_cache_data(
+    proved_merge,
+    donor_current,
+    [retained_proof(older_retained_source)],
+)
+proved_hour = proved_merge["zones"]["PART::TEST"]["hourly"][valid_time]
+assert proved_hour["wind-u-10m"] == partial_hour["wind-u-10m"]
+assert proved_hour["wind-v-10m"] == partial_hour["wind-v-10m"]
+assert proved_hour["significant-wave-height"] == partial_hour[
+    "significant-wave-height"
+]
+assert proved_hour["sources"]["wave"] == partial_hour["sources"]["wave"]
+assert proved_hour["current-u"] == donor_current["zones"]["PART::TEST"][
+    "hourly"
+][valid_time]["current-u"]
+assert proved_hour["current-v"] == donor_current["zones"]["PART::TEST"][
+    "hourly"
+][valid_time]["current-v"]
+assert producer.canonical_current_source_asset(
+    proved_hour["sources"]["current"]
+) == producer.canonical_current_source_asset(older_retained_source)
+proved_zone = proved_merge["zones"]["PART::TEST"]
+assert "current-u" not in proved_zone["gridPoints"]
+assert "current-v" not in proved_zone["gridPoints"]
+assert proved_zone["gridPoints"]["significant-wave-height"] == (
+    partial_zone["gridPoints"]["significant-wave-height"]
+)
+assert "current-u" not in proved_zone["collections"]
+assert "current-v" not in proved_zone["collections"]
+assert proved_zone["collections"]["significant-wave-height"] == "wam_nsb"
+assert producer.sanitize_vector_integrity(proved_zone) == []
+assert "current-u" in proved_hour and "current-v" in proved_hour
+complete_summary_primary = json.loads(json.dumps(partial_primary))
+complete_summary_zone = complete_summary_primary["zones"]["PART::TEST"]
+complete_summary_zone["gridPoints"]["current-v"] = copy.deepcopy(
+    complete_summary_zone["gridPoints"]["current-u"]
+)
+complete_summary_zone["collections"]["current-v"] = (
+    complete_summary_zone["collections"]["current-u"]
+)
+expected_primary_current_summary = {
+    field: copy.deepcopy(complete_summary_zone["gridPoints"][field])
+    for field in ("current-u", "current-v")
+}
+producer.backfill_compatible_cache_data(
+    complete_summary_primary,
+    donor_current,
+    [retained_proof(older_retained_source)],
+)
+for field in ("current-u", "current-v"):
+    assert complete_summary_zone["gridPoints"][field] == (
+        expected_primary_current_summary[field]
+    )
+    assert complete_summary_zone["collections"][field] == "dkss_idw"
+assert producer.sanitize_vector_integrity(complete_summary_zone) == []
+assert "current-u" in complete_summary_zone["hourly"][valid_time]
+assert "current-v" in complete_summary_zone["hourly"][valid_time]
+proof_backed_primary = continuity_document(source)
+producer.backfill_compatible_cache_data(
+    proof_backed_primary,
+    donor_current,
+    [retained_proof(older_retained_source)],
+    [retained_proof(source)],
+)
+assert producer.canonical_current_source_asset(
+    proof_backed_primary["zones"]["PART::TEST"]["hourly"][valid_time][
+        "sources"
+    ]["current"]
+) == producer.canonical_current_source_asset(source)
+
+# Same-run carry is safe only for the exact currently selected official asset.
+same_run_continuity, same_run_ledger = assert_retained_availability(source)
+revised_catalogs = json.loads(json.dumps(continuity_catalogs))
+for asset_surface in (
+    revised_catalogs["dkss_lf"][1],
+    revised_catalogs["dkss_lf"][2]["officialRequiredAssets"],
+):
+    selected = next(row for row in asset_surface if row["validTime"] == valid_time)
+    selected["itemId"] = "revised-official-item"
+    selected["assetIdentitySha256"] = "e" * 64
+revised_ledger = producer.build_current_operational_ledger(
+    same_run_continuity,
+    targets,
+    reference,
+    revised_catalogs,
+    [retained_proof(source)],
+)
+assert revised_ledger["retainedCurrentAssetProofCount"] == 0
+assert revised_ledger["attestation"]["verifiedPairCount"] == 0
+assert revised_ledger["operationalComplementPairCount"] == 118
+
+# An unscheduled collection cannot smuggle old parser/eccodes/zone semantics
+# into a newly sealed checkpoint merely by keeping current version fields.
+stale_signature_document = continuity_document(source)
+stale_signature = "stale-processing-signature"
+stale_source_asset = producer.canonical_current_source_asset(source)
+assert stale_source_asset is not None
+stale_signature_step = {
+    "complete": True,
+    "recognizedParameters": ["current-u", "current-v"],
+    "zonesTouched": 1,
+    "parserVersion": producer.PARSER_VERSION,
+    "processingSignature": stale_signature,
+    "sourceAsset": stale_source_asset,
+}
+stale_signature_step["currentPartOutcomeProof"] = (
+    producer.build_current_part_outcome_proof(
+        [],
+        [target["partId"]],
+        producer.target_fingerprint(targets),
+        stale_signature,
+        stale_source_asset,
+    )
+)
+stale_signature_document["runs"]["dkss_lf"]["processingSignature"] = (
+    stale_signature
+)
+stale_signature_document["runs"]["dkss_lf"]["processedSteps"] = {
+    valid_time: stale_signature_step,
+}
+stale_signature_ledger = producer.build_current_operational_ledger(
+    stale_signature_document,
+    targets,
+    reference,
+    continuity_catalogs,
+)
+assert stale_signature_ledger["attestation"]["verifiedPairCount"] == 0
+assert stale_signature_ledger["operationalComplementPairCount"] == 118
+assert stale_signature_ledger["ready"] is False
+
+# A donor ledger is proof-bearing only for its exact 118-hour window.
+short_donor = json.loads(json.dumps(older_continuity))
+short_donor.setdefault("diagnostics", {})["currentOperationalLedger"] = (
+    json.loads(json.dumps(older_ledger))
+)
+short_donor["diagnostics"]["currentOperationalLedger"][
+    "operationalRangeEndAt"
+] = (reference + timedelta(hours=116)).isoformat().replace("+00:00", "Z")
+assert producer._validated_candidate_retained_current_asset_proofs(
+    short_donor,
+    targets,
+    reference,
+    continuity_signature,
+) == []
+
+# Every persisted progress checkpoint is sealed with an availability-valid
+# ledger before its atomic write; restart recovers the exact retained row.
+with tempfile.TemporaryDirectory() as continuity_directory:
+    continuity_output = Path(continuity_directory) / "checkpoint.json"
+    continuity_fallback = Path(continuity_directory) / "missing.json"
+    progress_document = continuity_document(older_retained_source)
+
+    def seal_continuity_checkpoint() -> None:
+        sealed = producer.build_current_operational_ledger(
+            progress_document,
+            targets,
+            reference,
+            continuity_catalogs,
+            [retained_proof(older_retained_source)],
+        )
+        allowed, retained = (
+            producer.current_attestation_authorization_from_operational_ledger(
+                sealed
+            )
+        )
+        sealed_actual = producer.current_operational_attestation(
+            progress_document, targets, reference, allowed, retained,
+        )
+        validate_current_operational_availability_ledger(
+            sealed,
+            sealed_actual,
+            targets,
+            reference,
+            reference + timedelta(hours=117),
+            producer.target_fingerprint(targets),
+        )
+        progress_document["diagnostics"]["currentOperationalLedger"] = sealed
+        progress_document["diagnostics"]["currentOperationalAttestation"] = (
+            sealed["attestation"]
+        )
+
+    original_output = producer.OUTPUT_PATH
+    original_fallback = producer.DEPLOYED_FALLBACK_PATH
+    producer.OUTPUT_PATH = continuity_output
+    producer.DEPLOYED_FALLBACK_PATH = continuity_fallback
+    try:
+        controller = producer.ProgressCheckpointController(
+            progress_document,
+            set(),
+            {"bytes": 0},
+            prepare_bulk_checkpoint=seal_continuity_checkpoint,
+        )
+        controller.mark_bulk_dirty()
+        assert controller.flush_if_due(force=True)
+        persisted = json.loads(continuity_output.read_text("utf-8"))
+        assert persisted["diagnostics"]["currentOperationalLedger"][
+            "attestation"
+        ]["verifiedPairCount"] == 1
+        recovered_proofs = []
+        producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=reference,
+            retained_current_asset_proofs=recovered_proofs,
+        )
+        assert sum(
+            proof["attestedPartCount"] for proof in recovered_proofs
+        ) == 1
+    finally:
+        producer.OUTPUT_PATH = original_output
+        producer.DEPLOYED_FALLBACK_PATH = original_fallback
+
+# The full 673 x 118 matrix has no hidden threshold or truncation.
+matrix_part_ids = [f"P{index:03d}" for index in range(673)]
+full_inverse = producer.exact_current_operational_complement(
+    matrix_part_ids, required_hours, [],
+)
+assert len(full_inverse) == 79_414
+assert len({(row["partId"], row["validTime"]) for row in full_inverse}) == 79_414
+assert producer.exact_current_operational_complement(
+    matrix_part_ids, required_hours, full_inverse,
+) == []
+
+# Exact-official same-run rows count as covered refresh work. A revised STAC
+# identity is untrusted and cannot rank ahead of real internal/tail gaps.
+exact_same_run_official = next(
+    row for row in continuity_catalogs["dkss_lf"][1]
+    if row["validTime"] == valid_time
+)
+same_run_sources, same_run_pairs = (
+    producer.current_pair_evidence_from_retained_proofs(
+        [retained_proof(source)],
+        {"dkss_lf": "2026-01-01T00:00:00Z"},
+        {"dkss_lf": {valid_time: exact_same_run_official}},
+    )
+)
+assert len(same_run_sources) == 1
+assert same_run_pairs == {(target["partId"], valid_time)}
+revised_official = {
+    **exact_same_run_official,
+    "itemId": "revised-official-item",
+    "assetIdentitySha256": "e" * 64,
+}
+assert producer.current_pair_evidence_from_retained_proofs(
+    [retained_proof(source)],
+    {"dkss_lf": "2026-01-01T00:00:00Z"},
+    {"dkss_lf": {valid_time: revised_official}},
+) == (set(), set())
+
+priority_assets = [
+    {"valid": required_hours[index], "id": f"asset-{index}"}
+    for index in (0, 10, 117)
+]
+priority_covered = {
+    (part_id, required_hours[0]) for part_id in ("A", "B")
+} | {("A", required_hours[10])}
+ordered_priority_assets = producer.prioritize_marine_assets_for_current_gaps(
+    priority_assets,
+    ["A", "B"],
+    priority_covered,
+)
+assert [row["valid"] for row in ordered_priority_assets] == [
+    required_hours[117],
+    required_hours[10],
+    required_hours[0],
+]
+
+untrusted_existing_point = {
+    "hourly": {
+        valid_time: {
+            "current-u": 0.1,
+            "current-v": -0.2,
+            "sources": {"current": source},
+        },
+    },
+}
+assert producer.prefer_current_hour_candidate(
+    untrusted_existing_point,
+    valid_time,
+    "dkss_lf",
+    "2026-01-01T00:00:00Z",
+    {
+        "distanceKm": 1.0,
+        "pointKey": (1.0, 2.01),
+        "layerRank": 1.0,
+    },
+    capture,
+    False,
+)
+
 # A checkpoint is reusable only with the current parser/signature and the exact
 # selected official asset capture. Unsigned legacy rows are always reprocessed.
 reuse_hour = required_hours[0]
@@ -651,6 +1262,17 @@ reuse_args = {
     "required_asset_provenance": {reuse_hour: reuse_official},
     "current_target_ids": [target["partId"]],
     "current_target_registry_sha256": producer.target_fingerprint(targets),
+    "actual_pair_source_keys": {(
+        target["partId"],
+        reuse_hour,
+        json.dumps(
+            reuse_source,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ),
+    )},
+    "covered_pair_keys": set(),
 }
 assert producer.reusable_processed_steps(reuse_run, **reuse_args) == {
     reuse_hour: signed_step,
@@ -675,10 +1297,24 @@ size_less_run = {
 size_less_args = {
     **reuse_args,
     "required_asset_provenance": {reuse_hour: size_less_official},
+    "actual_pair_source_keys": {(
+        target["partId"],
+        reuse_hour,
+        json.dumps(
+            size_less_source,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ),
+    )},
 }
 assert producer.reusable_processed_steps(size_less_run, **size_less_args) == {
     reuse_hour: size_less_step,
 }
+outcome_overclaim_args = {**reuse_args, "actual_pair_source_keys": set()}
+assert producer.reusable_processed_steps(
+    reuse_run, **outcome_overclaim_args
+) == {}
 unsigned_run = json.loads(json.dumps(reuse_run))
 unsigned_run["processedSteps"][reuse_hour].pop("processingSignature")
 assert producer.reusable_processed_steps(unsigned_run, **reuse_args) == {}
@@ -1219,6 +1855,80 @@ try:
         assert part_outcome["spatialUnavailablePartIds"] == []
         retained = losing_output["zones"][zone["id"]]["hourly"][valid_time]
         assert retained["current-u"] == 0.4 and retained["current-v"] == -0.3
+
+        # A superseded same-run A row stays physically intact when revised A
+        # is spatially unavailable, but it is not trusted as a winner. A valid
+        # slightly farther B asset can therefore replace it in the next stage.
+        revised_output = json.loads(json.dumps(losing_output))
+        handles = iter((21, 22, None))
+        producer.codes_grib_new_from_file = lambda _handle: next(handles)
+        producer.classify_parameter = lambda gid, _collection: {
+            21: "current-u",
+            22: "current-v",
+        }[gid]
+        producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
+            item["id"]: [] for item in wanted
+        }
+        producer.raw_cache_source_capture = lambda *_args: {
+            **capture,
+            "itemId": "revised-a",
+            "assetIdentitySha256": "e" * 64,
+            "contentSha256": "f" * 64,
+        }
+        revised_a_outcome = {}
+        producer.process_grib(
+            asset_path,
+            "dkss_idw",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            [zone],
+            revised_output,
+            {},
+            current_part_outcomes=revised_a_outcome,
+            trusted_current_pair_source_keys=set(),
+        )
+        assert revised_a_outcome["spatialUnavailablePartIds"] == ["TEST"]
+        unchanged_after_a = revised_output["zones"][zone["id"]]["hourly"][
+            valid_time
+        ]
+        assert unchanged_after_a["sources"]["current"] == existing_source
+
+        farther_candidate = {
+            **candidate,
+            "longitude": 2.01,
+            "distanceKm": producer.haversine_km(1.0, 2.0, 1.0, 2.01),
+            "index": 31,
+        }
+        handles = iter((31, 32, None))
+        producer.codes_grib_new_from_file = lambda _handle: next(handles)
+        producer.classify_parameter = lambda gid, _collection: {
+            31: "current-u",
+            32: "current-v",
+        }[gid]
+        producer.valid_candidates_batch = lambda _gid, _collection, wanted: {
+            item["id"]: [dict(farther_candidate)] for item in wanted
+        }
+        producer.raw_cache_source_capture = lambda *_args: {
+            **capture,
+            "itemId": "official-b",
+            "assetIdentitySha256": "9" * 64,
+            "contentSha256": "8" * 64,
+        }
+        producer.process_grib(
+            asset_path,
+            "dkss_lf",
+            "2026-01-01T00:00:00Z",
+            valid_time,
+            [zone],
+            revised_output,
+            {},
+            current_part_outcomes={},
+            trusted_current_pair_source_keys=set(),
+        )
+        selected_after_b = revised_output["zones"][zone["id"]]["hourly"][
+            valid_time
+        ]
+        assert selected_after_b["sources"]["current"]["collection"] == "dkss_lf"
 finally:
     producer.codes_grib_new_from_file = original_codes_grib_new_from_file
     producer.codes_release = original_codes_release
@@ -1612,8 +2322,11 @@ try:
     assert endpoint_stats["nativeCompleteRunCount"] == 0
 
     # Operational DMI-first selection always uses the newest complete native
-    # cycle; an older cached preferred run may not create a larger Copernicus
-    # tail merely because it remains within one publication cadence.
+    # cycle, even when the retained cache is intentionally non-READY. Exact
+    # pair/source continuity makes the switch lossless; pinning the old cycle
+    # would instead create a larger fallback tail.
+    assert older_ledger["ready"] is False
+    assert "RETAINED_CURRENT_PART_TIME" in older_ledger["failureCodes"]
     preferred_reference = older_run + timedelta(hours=13)
     middle_run = older_run + timedelta(hours=6)
     newest_run = older_run + timedelta(hours=12)
@@ -1637,6 +2350,7 @@ try:
     )
     assert preferred_selected_run == middle_run.isoformat().replace("+00:00", "Z")
     assert preferred_stats["nativeCompleteRunCount"] == 2
+    assert preferred_stats["officialRequiredGapCount"] == 4
 
     pinned_selected_run, _, pinned_stats = producer.list_latest_assets(
         "dkss_idw",
@@ -1649,6 +2363,7 @@ try:
     )
     assert pinned_selected_run == older_run.isoformat().replace("+00:00", "Z")
     assert pinned_stats["preferredNativeRunPinned"] is True
+    assert pinned_stats["officialRequiredGapCount"] == 10
     assert pinned_stats.get("rejectedStaleRun") is not True
 
     # Candidate retention has its own 96-hour bound.  Tightening ordinary
@@ -1746,6 +2461,7 @@ finally:
 # and expose exactly four tail pairs—not a national Copernicus substitution.
 tail_direct_hours = sorted(tail_hours, key=producer.epoch)[:-4]
 tail_ledger_document = {
+    "zoneRegistrySignature": "test-registry",
     "zones": {
         "PART::TEST": {
             "samplingPoint": [2.0, 1.0],
@@ -1756,7 +2472,9 @@ tail_ledger_document = {
 }
 tail_official_catalogs = {}
 for collection in sorted(producer.MARINE_COLLECTIONS):
-    processing_signature = f"tail-{collection}"
+    processing_signature = producer.current_marine_processing_signature(
+        "test-registry"
+    )
     official_assets = []
     processed_steps = {}
     for hour in tail_direct_hours:
@@ -1961,7 +2679,7 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             targets,
             reference - timedelta(hours=48),
             reference + timedelta(hours=117),
-        ) == 1
+        ) == 0
         producer.atomic_write_bulk_cache(selected)
         materialized = json.loads(producer.OUTPUT_PATH.read_text("utf-8"))
         assert strict_verified_part_current_pair_count(
@@ -1969,7 +2687,7 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             targets,
             reference - timedelta(hours=48),
             reference + timedelta(hours=117),
-        ) == 1
+        ) == 0
 
         partial_primary = json.loads(json.dumps(progressive_document))
         mismatched_source = json.loads(json.dumps(source))
@@ -2001,6 +2719,125 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             reference - timedelta(hours=48),
             reference + timedelta(hours=117),
         ) == 0
+
+        # Positive load_previous integration: a genuinely strict READY donor
+        # restores an attested current row even when a newer candidate already
+        # has a nonempty partial weather row at that time. U/V/source are copied
+        # atomically, unrelated fields survive, and retained selection carries
+        # the exact proof.
+        strict_donor_hour = tail_direct_hours[0]
+        strict_partial_primary = json.loads(json.dumps(progressive_document))
+        strict_partial_primary["generatedAt"] = producer.canonical_time(
+            tail_reference + timedelta(hours=1)
+        )
+        strict_partial_primary["checkpointedAt"] = producer.canonical_time(
+            tail_reference + timedelta(hours=2)
+        )
+        strict_partial_primary["zones"]["PART::TEST"].update({
+            "samplingPoint": [2.0, 1.0],
+            "parentZoneId": "TEST",
+            "entityType": "coastal-part",
+            "samplingContext": "coastal-part-water-point",
+        })
+        strict_partial_primary["zones"]["PART::TEST"]["hourly"] = {
+            strict_donor_hour: {
+                "time": strict_donor_hour,
+                "wind-u-10m": 1.25,
+                "wind-v-10m": -0.75,
+            },
+        }
+        strict_partial_primary["zones"]["PART::TEST"]["gridPoints"].update({
+            "current-u": {"longitude": 2.0, "latitude": 1.0},
+            "current-v": {"longitude": 2.5, "latitude": 1.0},
+            "wind-u-10m": {"longitude": 2.0, "latitude": 1.0},
+            "wind-v-10m": {"longitude": 2.0, "latitude": 1.0},
+        })
+        strict_partial_primary["zones"]["PART::TEST"]["collections"].update({
+            "current-u": "dkss_idw",
+            "current-v": "dkss_nsbs",
+            "wind-u-10m": "harmonie_dini_sf",
+            "wind-v-10m": "harmonie_dini_sf",
+        })
+        producer.OUTPUT_PATH.write_text(
+            json.dumps(strict_partial_primary),
+            encoding="utf-8",
+        )
+        producer.DEPLOYED_FALLBACK_PATH.write_text(
+            json.dumps(tail_ledger_document),
+            encoding="utf-8",
+        )
+        strict_selected_proofs: list[dict] = []
+        strict_selected = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=tail_reference,
+            retained_current_asset_proofs=strict_selected_proofs,
+        )
+        strict_selected_row = strict_selected["zones"]["PART::TEST"][
+            "hourly"
+        ][strict_donor_hour]
+        strict_donor_row = tail_ledger_document["zones"]["PART::TEST"][
+            "hourly"
+        ][strict_donor_hour]
+        assert strict_selected_row["wind-u-10m"] == 1.25
+        assert strict_selected_row["wind-v-10m"] == -0.75
+        assert strict_selected_row["current-u"] == strict_donor_row["current-u"]
+        assert strict_selected_row["current-v"] == strict_donor_row["current-v"]
+        strict_selected_source = producer.canonical_current_source_asset(
+            strict_selected_row["sources"]["current"]
+        )
+        assert strict_selected_source is not None
+        assert any(
+            proof["sourceAsset"] == strict_selected_source
+            and target["partId"] in proof["attestedPartIds"]
+            for proof in strict_selected_proofs
+        )
+        strict_selected_zone = strict_selected["zones"]["PART::TEST"]
+        assert "current-u" not in strict_selected_zone["gridPoints"]
+        assert "current-v" not in strict_selected_zone["gridPoints"]
+        assert strict_selected_zone["gridPoints"]["wind-u-10m"] == {
+            "longitude": 2.0,
+            "latitude": 1.0,
+        }
+        assert strict_selected_zone["gridPoints"]["wind-v-10m"] == {
+            "longitude": 2.0,
+            "latitude": 1.0,
+        }
+        assert producer.sanitize_vector_integrity(strict_selected_zone) == []
+        assert "current-u" in strict_selected_row
+        assert "current-v" in strict_selected_row
+
+        # A current row whose primary ledger already supplies the same exact
+        # validated pair/source proof remains authoritative during donor merge.
+        proof_backed_primary = json.loads(json.dumps(tail_ledger_document))
+        proof_backed_primary["checkpointedAt"] = producer.canonical_time(
+            tail_reference + timedelta(hours=2)
+        )
+        proof_backed_primary["zones"]["PART::TEST"]["hourly"][
+            strict_donor_hour
+        ]["primaryProofBackedMarker"] = True
+        proof_backed_donor = json.loads(json.dumps(tail_ledger_document))
+        proof_backed_donor["zones"]["PART::TEST"]["hourly"][
+            strict_donor_hour
+        ]["donorReplacementMarker"] = True
+        producer.OUTPUT_PATH.write_text(
+            json.dumps(proof_backed_primary),
+            encoding="utf-8",
+        )
+        producer.DEPLOYED_FALLBACK_PATH.write_text(
+            json.dumps(proof_backed_donor),
+            encoding="utf-8",
+        )
+        preserved_primary = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=tail_reference,
+        )
+        preserved_row = preserved_primary["zones"]["PART::TEST"]["hourly"][
+            strict_donor_hour
+        ]
+        assert preserved_row["primaryProofBackedMarker"] is True
+        assert "donorReplacementMarker" not in preserved_row
 
         incompatible_fallback = {
             **fallback_document,

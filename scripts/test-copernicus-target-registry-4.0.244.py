@@ -124,7 +124,9 @@ def processed_run(
     spatial_unavailable_pairs: set[tuple[str, str]] | None = None,
     missing_proofs: set[tuple[str, str]] | None = None,
 ) -> dict:
-    processing_signature = f"test-{collection}"
+    processing_signature = producer.current_marine_processing_signature(
+        "test-registry"
+    )
     target_ids = sorted(str(target["partId"]) for target in targets)
     target_registry_sha256 = producer.target_fingerprint(targets)
     unavailable = set(spatial_unavailable_pairs or set())
@@ -226,6 +228,7 @@ def dmi_document(
             "gridPoints": {},
         }
     document = {
+        "zoneRegistrySignature": "test-registry",
         "zones": zones,
         "runs": {
             collection: processed_run(
@@ -270,10 +273,8 @@ def dmi_document(
 
 def availability_attestation(document: dict, targets: list[dict]) -> dict:
     ledger = document["diagnostics"]["currentOperationalLedger"]
-    allowed_source_assets = (
-        producer.processed_source_assets_from_current_operational_ledger(
-            ledger
-        )
+    allowed_source_assets, allowed_retained_pair_sources = (
+        producer.current_attestation_authorization_from_operational_ledger(ledger)
     )
     return canonical_verified_part_current_attestation(
         document,
@@ -281,6 +282,7 @@ def availability_attestation(document: dict, targets: list[dict]) -> dict:
         REFERENCE,
         REFERENCE + timedelta(hours=117),
         allowed_source_assets,
+        allowed_retained_pair_sources,
     )
 
 
@@ -370,6 +372,93 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert output_values["target_hour"] == AT
     assert output_values["required_pair_count"] == "1"
     assert output_values["advisory_history_required_pair_count"] == "48"
+
+    # A provenance-verified older DMI row is availability, not fallback. The
+    # selector excludes that exact retained pair while strict DMI READY remains
+    # false until a current processed step replaces it.
+    retained_dmi = dmi_document(targets)
+    retained_ledger = retained_dmi["diagnostics"]["currentOperationalLedger"]
+    retained_public_source = source(
+        targets[0], REFERENCE, model_run=STALE_MODEL_RUN,
+    )
+    retained_dmi["zones"]["PART::dmi-ok"]["hourly"][AT]["sources"][
+        "current"
+    ] = retained_public_source
+    idw_collection = next(
+        row for row in retained_ledger["collections"]
+        if row["collection"] == "dkss_idw"
+    )
+    idw_row = next(
+        row for row in idw_collection["validTimes"]
+        if row["validTime"] == AT
+    )
+    idw_row["state"] = "PROCESSED"
+    idw_collection["stateCounts"] = {
+        state: sum(
+            row["state"] == state for row in idw_collection["validTimes"]
+        )
+        for state in producer.CURRENT_OPERATIONAL_LEDGER_STATES
+    }
+    retained_signature = idw_collection["processingSignature"]
+    retained_outcome = producer.build_current_part_outcome_proof(
+        [],
+        ["dmi-ok"],
+        producer.target_fingerprint(targets),
+        retained_signature,
+        retained_public_source,
+    )
+    retained_proof = producer.build_retained_current_asset_proof(
+        retained_public_source,
+        retained_signature,
+        retained_outcome,
+        ["dmi-ok"],
+        ["dmi-ok"],
+        producer.target_fingerprint(targets),
+    )
+    retained_ledger.update({
+        "retainedCurrentAssetProofCount": 1,
+        "retainedCurrentAssetProofsSha256": (
+            producer.retained_current_asset_proofs_sha256([retained_proof])
+        ),
+        "retainedCurrentAssetProofs": [retained_proof],
+        "ready": False,
+        "failureCodes": ["RETAINED_CURRENT_PART_TIME"],
+    })
+    retained_allowed, retained_authorization = (
+        producer.current_attestation_authorization_from_operational_ledger(
+            retained_ledger
+        )
+    )
+    retained_actual = canonical_verified_part_current_attestation(
+        retained_dmi,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        retained_allowed,
+        retained_authorization,
+    )
+    retained_ledger["attestation"] = sanitized_current_attestation(
+        retained_actual
+    )
+    validate_current_operational_availability_ledger(
+        retained_ledger,
+        retained_actual,
+        targets,
+        REFERENCE,
+        REFERENCE + timedelta(hours=117),
+        retained_ledger["targetRegistrySha256"],
+    )
+    write(folder / "dmi.json", retained_dmi)
+    retained_selected = run(folder)
+    assert retained_selected.returncode == 0, (
+        retained_selected.stdout + retained_selected.stderr
+    )
+    retained_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert retained_registry["operationalDmiVerifiedPairCount"] == 118
+    assert retained_registry["operationalRequiredPairCount"] == 0
+    assert retained_registry["operationalRequiredPairs"] == []
 
     # One exact part may be unavailable in all three fully processed official
     # sources while another part verifies the same hour. The national guard
@@ -595,9 +684,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         "validTime": AT,
     }]
 
-    # A stale pair from a non-selected run is a local/unattested processing gap,
-    # never negative upstream evidence. It blocks readiness and cannot become a
-    # Copernicus target, even when another part verifies that official hour.
+    # An unproven stale pair remains an honest local processing gap. It blocks
+    # strict DMI readiness but becomes the exact Copernicus residual instead of
+    # aborting the entire matrix.
     stale_parts = [
         parts[0],
         {
@@ -622,15 +711,27 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert stale_ledger["ready"] is False
     assert "UNATTESTED_CURRENT_PART_TIME" in stale_ledger["failureCodes"]
     assert stale_ledger["upstreamAbsencePairs"] == []
-    assert stale_ledger["operationalComplementPairs"] == []
+    assert stale_ledger["operationalComplementPairs"] == [{
+        "partId": "dmi-stale",
+        "validTime": stale_time,
+    }]
     write(folder / "targets.json", {
         "partCount": 2,
         "zones": {"Z1": [stale_parts[0]], "Z2": [stale_parts[1]]},
     })
     write(folder / "dmi.json", stale_dmi)
     stale_targeted = run(folder)
-    assert stale_targeted.returncode != 0
-    assert "selection failed" in stale_targeted.stdout.lower()
+    assert stale_targeted.returncode == 0, (
+        stale_targeted.stdout + stale_targeted.stderr
+    )
+    stale_registry = json.loads(
+        (folder / "selected.json").read_text(encoding="utf-8")
+    )
+    assert stale_registry["operationalDmiVerifiedPairCount"] == 235
+    assert stale_registry["operationalRequiredPairs"] == [{
+        "partId": "dmi-stale",
+        "validTime": stale_time,
+    }]
 
     # Restore the one-target fixture for independent tamper regressions below.
     write(folder / "targets.json", {"partCount": 1, "zones": {"Z1": parts}})

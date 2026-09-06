@@ -32,7 +32,7 @@ from lib.copernicus_current_source_stage import (
 from lib.current_operational_closure import build_regional_residual_plan
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
-    processed_source_assets_from_current_operational_ledger,
+    current_attestation_authorization_from_operational_ledger,
 )
 from lib.open_meteo_current_fallback import (
     MAXIMUM_DISTANCE_KM,
@@ -185,9 +185,16 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
     ledger = ((dmi.get("diagnostics") or {}).get("currentOperationalLedger"))
     if not isinstance(ledger, dict):
         raise RuntimeError("OPEN_METEO_DMI_LEDGER_MISSING")
-    allowed_assets = processed_source_assets_from_current_operational_ledger(ledger)
+    allowed_assets, allowed_retained_pair_sources = (
+        current_attestation_authorization_from_operational_ledger(ledger)
+    )
     attestation = canonical_verified_part_current_attestation(
-        dmi, targets, reference, registry.get("operationalRangeEndAt"), allowed_assets,
+        dmi,
+        targets,
+        reference,
+        registry.get("operationalRangeEndAt"),
+        allowed_assets,
+        allowed_retained_pair_sources,
     )
     _, copernicus_residual = select_required_records(
         registry["operationalRequiredPairs"],

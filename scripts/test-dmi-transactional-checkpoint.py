@@ -288,6 +288,32 @@ class TransactionalAssetTests(unittest.TestCase):
     def test_validator_rejection_rolls_back_every_staged_surface(self) -> None:
         self.run_failed_asset("validator")
 
+    def test_current_provenance_rejection_rolls_back_every_staged_surface(
+        self,
+    ) -> None:
+        result, private, diagnostics, shadow, outcomes = durable_documents()
+        before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
+        failure_flush = Mock()
+        with patch.object(producer, "process_grib", side_effect=mutate_stages):
+            with self.assertRaisesRegex(RuntimeError, "current proof rejected"):
+                producer.process_grib_transactionally(
+                    Path("synthetic.grib"),
+                    COLLECTION,
+                    MODEL_RUN,
+                    FIRST_TIME,
+                    zones(),
+                    result,
+                    diagnostics,
+                    shadow,
+                    private,
+                    outcomes,
+                    failure_flush=failure_flush,
+                    current_stage_validator=lambda *_args: False,
+                    validation_error="current proof rejected",
+                )
+        self.assertEqual((result, private, diagnostics, shadow, outcomes), before)
+        failure_flush.assert_called_once_with()
+
     def test_absent_research_target_stays_absent_after_success(self) -> None:
         result, private, diagnostics, shadow, outcomes = durable_documents()
         self.assertNotIn(RESEARCH_ID, result["zones"])
@@ -517,7 +543,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
                 patch.object(producer, "PREFER_OUTPUT_CACHE", True),
                 patch.object(
-                    producer, "current_operational_cache_ready", return_value=True,
+                    producer, "_strict_current_donor_ready", return_value=True,
                 ) as strict_ready,
             ):
                 recovered = producer.load_previous(
@@ -590,7 +616,7 @@ class CheckpointTests(unittest.TestCase):
                     patch.object(producer, "OUTPUT_PATH", output),
                     patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
                     patch.object(
-                        producer, "current_operational_cache_ready", return_value=True,
+                        producer, "_strict_current_donor_ready", return_value=True,
                     ),
                 ):
                     recovered = producer.load_previous(
@@ -618,7 +644,7 @@ class CheckpointTests(unittest.TestCase):
                 patch.object(producer, "OUTPUT_PATH", output),
                 patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
                 patch.object(
-                    producer, "current_operational_cache_ready", return_value=False,
+                    producer, "_strict_current_donor_ready", return_value=False,
                 ),
                 self.assertRaisesRegex(RuntimeError, "strict READY active recovery donor"),
             ):
@@ -726,6 +752,46 @@ class CheckpointTests(unittest.TestCase):
             self.assertEqual(checkpoint_calls, ["bulk", "bulk", "bulk"])
             self.assertFalse(controller.flush_if_due(force=True))
             self.assertEqual(checkpoint_calls, ["bulk", "bulk", "bulk"])
+
+    def test_checkpoint_prepare_seals_before_write_and_failure_preserves_last(
+        self,
+    ) -> None:
+        result = {"diagnostics": {}, "zones": {}}
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "checkpoint.json"
+            with (
+                patch.object(producer, "OUTPUT_PATH", output),
+                patch.object(producer, "CHECKPOINT_MAX_ASSETS", 1),
+                patch.object(producer, "CHECKPOINT_MAX_SECONDS", 10_000),
+            ):
+                def seal() -> None:
+                    result["diagnostics"]["sealed"] = True
+
+                controller = producer.ProgressCheckpointController(
+                    result,
+                    set(),
+                    {"bytes": 0},
+                    prepare_bulk_checkpoint=seal,
+                )
+                self.assertTrue(controller.note_committed_asset(seconds=1.0))
+                persisted = output.read_bytes()
+                self.assertTrue(
+                    json.loads(persisted)["diagnostics"]["sealed"]
+                )
+
+                failing = producer.ProgressCheckpointController(
+                    result,
+                    set(),
+                    {"bytes": 0},
+                    prepare_bulk_checkpoint=lambda: (_ for _ in ()).throw(
+                        ValueError("synthetic ledger invalid")
+                    ),
+                )
+                failing.mark_bulk_dirty()
+                with self.assertRaisesRegex(ValueError, "ledger invalid"):
+                    failing.flush_if_due(force=True)
+                self.assertEqual(output.read_bytes(), persisted)
+                self.assertTrue(failing.bulk_dirty)
 
     def test_resume_from_progress_checkpoint_matches_uninterrupted_assets(self) -> None:
         def empty_result() -> dict:

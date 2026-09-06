@@ -314,8 +314,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-current-controlled-cli-") as r
             patch.object(sys, "argv", cli_args),
             patch.object(
                 builder,
-                "processed_source_assets_from_current_operational_ledger",
-                return_value=[],
+                "current_attestation_authorization_from_operational_ledger",
+                return_value=([], []),
             ),
             patch.object(
                 builder,

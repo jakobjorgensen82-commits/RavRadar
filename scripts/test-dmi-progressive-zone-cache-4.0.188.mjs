@@ -33,7 +33,6 @@ const normalLegacyResolve = stepIndex(buildWorkflow, 'Resolve newest terminal-pr
 const normalLegacyBootstrap = stepIndex(buildWorkflow, 'Bootstrap the terminal-proven exact legacy DMI generation');
 const normalMaterialize = stepIndex(buildWorkflow, 'Strictly bind and materialize the active DMI generation');
 const normalCandidateRestore = stepIndex(buildWorkflow, 'Restore isolated DMI candidate progress for normal maintenance');
-const normalCandidateState = stepIndex(buildWorkflow, 'Inspect isolated DMI candidate progress for normal maintenance');
 const normalUpdate = stepIndex(buildWorkflow, 'Update DMI bulk model cache');
 const normalGribSave = stepIndex(buildWorkflow, 'Save progressed DMI GRIB download cache');
 const normalCandidateSave = stepIndex(buildWorkflow, 'Save isolated DMI candidate progress before any terminal decision');
@@ -50,8 +49,7 @@ assert.ok(
     && normalLegacyResolve < normalLegacyBootstrap
     && normalLegacyBootstrap < normalMaterialize
     && normalMaterialize < normalCandidateRestore
-    && normalCandidateRestore < normalCandidateState
-    && normalCandidateState < normalUpdate
+    && normalCandidateRestore < normalUpdate
     && normalUpdate < normalGribSave
     && normalGribSave < normalCandidateSave
     && normalCandidateSave < normalShadowSave
@@ -90,17 +88,14 @@ const normalCandidateRestoreBlock = stepBlock(buildWorkflow, 'Restore isolated D
 assert.match(normalCandidateRestoreBlock, /path: \.cache\/dmi-candidate-progress\.json/);
 assert.match(normalCandidateRestoreBlock, /key: dmi-zone-candidate-v1-.*-normal-/);
 assert.match(normalCandidateRestoreBlock, /restore-keys:[\s\S]*dmi-zone-candidate-v1-/);
-const normalCandidateStateBlock = stepBlock(buildWorkflow, 'Inspect isolated DMI candidate progress for normal maintenance');
-assert.match(normalCandidateStateBlock, /\.cache\/dmi-candidate-progress\.json/);
-assert.match(normalCandidateStateBlock, /\.diagnostics\.currentOperationalLedger\.ready == true/);
-assert.match(normalCandidateStateBlock, /echo "retain_preferred=true"/);
-assert.match(normalCandidateStateBlock, /echo "retain_preferred=false"/);
+assert.doesNotMatch(buildWorkflow, /name: Inspect isolated DMI candidate progress for normal maintenance/);
 
 const normalUpdateBlock = stepBlock(buildWorkflow, 'Update DMI bulk model cache');
 assert.match(normalUpdateBlock, /DMI_BULK_OUTPUT_PATH: \.cache\/dmi-candidate-progress\.json/);
 assert.match(normalUpdateBlock, /DMI_BULK_PROMOTION_PATH: data\/live\/dmi-bulk-cache\.json/);
 assert.match(normalUpdateBlock, /DMI_BULK_PREFER_OUTPUT_CACHE: true/);
-assert.match(normalUpdateBlock, /DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: \$\{\{ steps\.dmi-candidate-state\.outputs\.retain_preferred \}\}/);
+assert.match(normalUpdateBlock, /DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false/);
+assert.doesNotMatch(normalUpdateBlock, /dmi-candidate-state\.outputs\.retain_preferred/);
 assert.match(
   normalUpdateBlock,
   /DMI_BULK_COLLECTIONS_PER_RUN: \$\{\{ steps\.operational-action\.outputs\.action == 'integrated-cutover' && steps\.legacy-bootstrap\.outputs\.required == 'true' && '6' \|\| '3' \}\}/,
@@ -234,14 +229,14 @@ assert.match(candidateRestoreBlock, /restore-keys:[\s\S]*dmi-zone-candidate-v1-/
 const candidateStateBlock = stepBlock(oneoffWorkflow, 'Isolate restored candidate and restore active working copy');
 assert.match(candidateStateBlock, /cp \.cache\/dmi-active-complete\.json data\/live\/dmi-bulk-cache\.json/);
 assert.match(candidateStateBlock, /\.cache\/dmi-candidate-progress\.json/);
-assert.match(candidateStateBlock, /\.diagnostics\.currentOperationalLedger\.ready \/\/ false/);
-assert.match(candidateStateBlock, /echo "retain_preferred=true"/);
+assert.doesNotMatch(candidateStateBlock, /currentOperationalLedger\.ready|retain_preferred/);
 
 const oneoffUpdateBlock = stepBlock(oneoffWorkflow, 'Refresh all bounded official DMI collections for the proof');
 assert.match(oneoffUpdateBlock, /DMI_BULK_OUTPUT_PATH: \.cache\/dmi-candidate-progress\.json/);
 assert.match(oneoffUpdateBlock, /DMI_BULK_PROMOTION_PATH: data\/live\/dmi-bulk-cache\.json/);
 assert.match(oneoffUpdateBlock, /DMI_BULK_PREFER_OUTPUT_CACHE: true/);
-assert.match(oneoffUpdateBlock, /DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: \$\{\{ steps\.dmi-candidate-state\.outputs\.retain_preferred \}\}/);
+assert.match(oneoffUpdateBlock, /DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false/);
+assert.doesNotMatch(oneoffUpdateBlock, /dmi-candidate-state\.outputs\.retain_preferred/);
 assert.match(oneoffUpdateBlock, /DMI_BULK_DEPLOYED_FALLBACK_PATH: \.cache\/dmi-active-complete\.json/);
 
 const candidateSaveBlock = stepBlock(oneoffWorkflow, 'Save isolated DMI candidate progress before any terminal decision');

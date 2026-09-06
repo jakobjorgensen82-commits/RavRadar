@@ -263,8 +263,8 @@ with patch.dict(cli["residual_plan"].__globals__, {
     "validate_reusable_source_stage": (
         lambda *_args, **_kwargs: partial_stage
     ),
-    "processed_source_assets_from_current_operational_ledger": (
-        lambda _ledger: set()
+    "current_attestation_authorization_from_operational_ledger": (
+        lambda _ledger: (set(), set())
     ),
     "canonical_verified_part_current_attestation": (
         lambda *_args, **_kwargs: {"fixture": "availability-attestation"}
