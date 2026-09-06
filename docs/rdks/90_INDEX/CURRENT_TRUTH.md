@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-06 – 4.0.327 runscope og verificeret Open-Meteo-enhed
+
+- 4.0.326 bestod exact-head 34010245661, blev merged via PR #259 og er main d899c6defac93d52826269773bcaa9a8c645261f.
+- Oneoff 34017809629 attempt 1 gjorde strict DMI og Copernicus READY. Det efterfølgende stop OPEN_METEO_RESIDUAL_PLAN_INVALID_SHADOW_NATIVE_CADENCE_INVALID skete før Open-Meteo-request; upstream-cacherne blev gemt, men komplet closure/artifact blev ikke skabt.
+- Resterende shadowfejl var samme valideringsrækkefølge som hashfejlen: ikke-valgt historik blev stadig cadencevalideret som aktuel. Lokal 4.0.327 validerer minimal identitet og sorterer derefter ikke-valgte runs fra før run-specifik kontrol; valgte runs forbliver fail-closed.
+- Open-Meteos aktuelle Marine API ignorerede velocity_unit=ms og returnerede km/t. Den rettede request bruger wind_speed_unit=ms; response må kun optages med GMT, UTC-offset 0, m/s og grader. Generiske live-prober bekræftede også 118 timer og 50-punktsbatch.
+- Active/candidate, fuldvinduesgenbrug, 48-timers mobiliseringshistorik, kildeorden, cron og modelstatus er uændrede. Tre måltests er grønne; exact-head, merge, rettet main-oneoff og komplet 79.414/79.414 er åbne. Candidate G er offentlig.
+
 # NYESTE SANDHED – 2026-09-06 – 4.0.326 regional shadow-rollover
 
 - Oneoff `34004697179` bestod strict DMI READY og Copernicus READY. Copernicus dækkede 7.408/8.512 operationelle restpar og efterlod 1.104 til regional DMI/Open-Meteo; advisoryhistorikken havde 417 rester. Open-Meteo stoppede før første netværkskald med `OPEN_METEO_RESIDUAL_PLAN_INVALID`, så intet komplet artifact eller deploy blev skabt.

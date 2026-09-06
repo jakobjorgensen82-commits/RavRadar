@@ -622,6 +622,21 @@ def _samples_by_part(
                 _fail("SHADOW_SOURCE_BINDING_INVALID")
             if sample_time not in candidate_times[part_id]:
                 continue
+            collection = raw_sample.get("collection")
+            sample_model_run, sample_model_run_dt = _exact_utc_hour(
+                raw_sample.get("modelRun"), "SHADOW_SOURCE_BINDING_INVALID"
+            )
+            sample_time, sample_time_dt = _exact_utc_hour(
+                raw_sample.get("validTime"), "SHADOW_SOURCE_BINDING_INVALID"
+            )
+            if collection != REQUIRED_COLLECTION or sample_model_run_dt > sample_time_dt:
+                _fail("SHADOW_SOURCE_BINDING_INVALID")
+            if sample_model_run not in selected_model_runs:
+                # The seven-day shadow intentionally spans several model runs.
+                # A prior run is retained history, not current ledger evidence.
+                # Ignore it before run-specific cadence, asset and vector checks;
+                # only the exact run selected by this ledger may affect closure.
+                continue
             try:
                 sample = _validated_sample(
                     raw_sample,
@@ -634,13 +649,6 @@ def _samples_by_part(
             except RegionalCurrentOperationalError as error:
                 if error.code != "SHADOW_SOURCE_ASSET_HASH_MISMATCH":
                     raise
-                sample_model_run = canonical_time(raw_sample.get("modelRun"))
-                if sample_model_run not in selected_model_runs:
-                    # The shadow deliberately retains seven days. Samples from
-                    # an older model run are useful history, but they are not a
-                    # hash conflict with the exact run selected by this ledger.
-                    # Keep them unavailable here so the next fallback can win.
-                    continue
                 # A revised official asset legitimately leaves an older byte-bound
                 # sample beside its replacement.  Defer the mismatch: it is fatal
                 # only when no currently ledger-bound exact/hold source can win.

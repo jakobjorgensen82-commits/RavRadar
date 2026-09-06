@@ -1,6 +1,6 @@
 # DEC-0115 – Open-Meteo lukker kun validerede operationelle strømhuller
 
-- **Status:** Ejerbesluttet, bindende og lokalt implementeret/måltestet; exact-head, merge og frisk runtimebevis afventer
+- **Status:** Ejerbesluttet, bindende og merged på main; faktisk Open-Meteo-request og komplet runtimebevis afventer
 - **Dato:** 2026-09-05
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0030, DEC-0041, DEC-0112 og DEC-0114

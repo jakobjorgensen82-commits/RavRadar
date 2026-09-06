@@ -1,6 +1,6 @@
 # DEC-0116 – Aktiv og kandidatbaseret vejrcache uden modelrun-nulstart
 
-- **Status:** Bindende, lokalt implementeret; exact-head-, main- og runtimebevis afventer
+- **Status:** Bindende og merged; active/candidate-save er delvist runtimebevist, komplethedsbevis afventer
 - **Besluttet:** 2026-09-05
 - **Ejerbeslutning:** Normal drift skal genbruge gyldige data, kontrollere hele prognosevinduet og målrettet lukke både interne huller og hale. Mindst 48 timers verificeret historik til mobilisering og transport skal bevares.
 
@@ -44,3 +44,5 @@ Dette er den afgrænsede stabilitetsrettelse før modelstart. Oneoffen accelerer
 ## Runtimeevidens 2026-09-06
 
 Oneoff `34004697179` materialiserede og gemte en strict READY-active-generation, og den efterfølgende normale kørsel `34004873418` gemte kandidat-, GRIB- og regional shadowfremgang før sit korrekte terminalstop uden producer-success. Det beviser den berørte save-/isoleringsvej, men ikke komplet vejr, fordi normalrunnet ikke nåede supplement, og oneoffen senere stoppede før Open-Meteo-request. Cacherne genbruges i næste rettede main-oneoff.
+
+Oneoff `34017809629` attempt 1 genbrugte derefter generationerne, gjorde DMI og Copernicus READY og gemte begge led før et senere regionalt residualstop. Det styrker beviset for, at same-run-genbrug og promotion fortsætter frem for nulstart; komplet currentclosure er fortsat åbent.

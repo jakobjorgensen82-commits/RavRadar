@@ -1,3 +1,14 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.327 currentfallback-kontrakt
+
+- [x] Registrér 4.0.326 exact-head 34010245661, PR #259 og merge d899c6de.
+- [x] Klassificér oneoff 34017809629 attempt 1 som DMI/Copernicus READY med gemte caches og deterministisk Open-Meteo-stop før request.
+- [x] Flyt ikke-valgt regional modelrun-historik foran run-specifik cadence-, asset- og vektorkontrol; bevar minimal binding og fatal same-run kontrol.
+- [x] Ret den ignorerede Open-Meteo-enhedsparameter og bind responses eksplicit til GMT/UTC, m/s og grader.
+- [x] Verificér live modelnavn, 118 timer, multilocation og batch 50 uden private RavRadar-punkter.
+- [x] Bestå regionale-, closure- og Open-Meteo-måltests.
+- [ ] Bestå korte releasekontroller og én exact-head sourcegate, merge 4.0.327 og kør en rettet main-oneoff med bevarede caches.
+- [ ] Dokumentér 79.414/79.414 current og 354/354 Feggesund, derefter live kapacitet, fulde gates og særskilt modelaktivering. Candidate G forbliver offentlig.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.326 regional modelrun-adskillelse
 
 - [x] Klassificér oneoff `34004697179`: DMI READY, Copernicus READY 7.408/8.512, 1.104 operationelle rester, Open-Meteo-stop før request og ingen artifact/deploy.

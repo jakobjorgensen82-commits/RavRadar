@@ -1,3 +1,13 @@
+# NYESTE ROADMAP – 2026-09-06 – 4.0.327 Open-Meteo uden endnu en deterministisk stopfejl
+
+- [x] Klassificér 34017809629 attempt 1: DMI/Copernicus READY og gemt, Open-Meteo-stop før request på gammel ikke-valgt shadowcadence.
+- [x] Gennemgå hele requestvejen og bekræft live model, SI-enhedsparameter, GMT/UTC, 118-timersvindue, multi-location og batch 50.
+- [x] Sortér ikke-valgte regionale runs fra før cadence/asset/vektor, men bevar alle same-run fail-closed værn.
+- [x] Ret Open-Meteo til wind_speed_unit=ms og kræv eksplicit m/s/grader/UTC; tilføj regressioner.
+- [x] Bestå de tre målrettede regionale-, closure- og Open-Meteo-tests.
+- [ ] Luk releasehukommelse og korte versions-/RDKS-/privacy-/workflowkontroller; bestå derefter én exact-head sourcegate og merge.
+- [ ] Kør rettet main-oneoff med bevarede cacher til 79.414/79.414. Kræv derefter Feggesund 354/354, kapacitetsmåling, fulde produktionsgates og særskilt modelaktivering.
+
 # NYESTE ROADMAP – 2026-09-05 – 4.0.325 robust første active-bootstrap
 
 - [x] Registrér PR #257 exact-head `33989875253` og merge `948ba60b`; annullér den kendt fejlagtige ventende post-merge-kørsel `33991028274` før DMI eller writes.

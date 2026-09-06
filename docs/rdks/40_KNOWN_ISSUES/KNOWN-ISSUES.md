@@ -1,3 +1,9 @@
+# NYESTE DRIFTSFUND – 2026-09-06 – cadence før runvalg og ignoreret Open-Meteo-enhed
+
+- **ISSUE-REGIONAL-SHADOW-PRIOR-RUN-CADENCE – P0 / LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** Oneoff 34017809629 attempt 1 gjorde DMI/Copernicus READY, men en gammel ikke-valgt regional shadowprøve blev cadencevalideret før modelrun-afgrænsningen og stoppede Open-Meteo. 4.0.327 sorterer ikke-valgte runs fra før run-specifik kontrol; same-run cadence forbliver fatal.
+- **ISSUE-OPEN-METEO-VELOCITY-UNIT-IGNORED – P0 / LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** velocity_unit=ms blev ignoreret af Marine API'et og gav km/t, som koden kunne behandle som m/s. 4.0.327 bruger dokumenteret wind_speed_unit=ms og afviser payloads uden eksplicit GMT/UTC, m/s og grader.
+- **AUDITRESULTAT:** Generiske live-prober bekræftede modelnavn, 118-timers start/end, multi-location og batch 50. Der blev ikke fundet en tredje deterministisk request-/batchfejl. Faktiske nuller, afstande, rate limits og leverandørudfald er fortsat runtimeforhold og skal dokumenteres i rettet main-oneoff.
+
 # NYESTE DRIFTSFUND – 2026-09-05 – operationel currentrest og targetfriskhed
 
 - **ISSUE-CURRENT-RESIDUAL-OUTSIDE-POLICY – LOKALT RETTET OG MÅLTESTET / RUNTIME ÅBENT:** Seneste sikre status var 78.430/79.414 DMI+Copernicus-dækkede positioner og 984 rester. 944 var i otte-delspolitikken; 40 lå udenfor ved +117. Regionalbyggeren modtog fejlagtigt hele restmængden. Den nye partition sender kun policyrester regionalt og lader Open-Meteo lukke de derefter resterende eksakte operationelle par. Exact-head og frisk 673 × 118-mainkørsel mangler.

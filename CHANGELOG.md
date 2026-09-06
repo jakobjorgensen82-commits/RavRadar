@@ -1,3 +1,10 @@
+## 4.0.327 – run-afgrænset shadow og verificeret Open-Meteo-enhed (2026-09-06, lokalt)
+
+- Oneoff 34017809629 attempt 1 gjorde DMI og Copernicus READY, men Open-Meteo stoppede før request, fordi en bevaret prøve fra et ikke-valgt regionalt modelrun stadig blev cadencevalideret som aktuel.
+- Ikke-valgte runs sorteres nu fra før run-specifik cadence/asset/vektorkontrol; valgte runs forbliver fuldt fail-closed.
+- Open-Meteo bruger nu wind_speed_unit=ms og kræver eksplicit GMT/UTC, m/s og grader. Live-prober bekræftede model, 118 timer og 50-punktsbatch; tre måltests er grønne.
+- Active/candidate, historik, kildeorden, cron, geometri, punkter og model er uændrede. Exact-head, merge og frisk komplet main-oneoff afventer.
+
 ## 4.0.326 – regional shadow-rollover åbner korrekt Open-Meteo-rest (2026-09-06, lokalt)
 
 - Oneoff `34004697179` gjorde DMI og Copernicus READY og efterlod 1.104 eksakte currentpar, men Open-Meteo stoppede før netværkskald, fordi den syv-dages regionale shadow fejlklassificerede prøver fra ældre modelruns som aktuelle asset-hashkonflikter.
