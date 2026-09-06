@@ -264,10 +264,12 @@ def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[s
         _fail("OPEN_METEO_ACQUISITION_TIME_INVALID")
     if abs((datetime.fromisoformat(acquired.replace("Z", "+00:00")) - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
         _fail("OPEN_METEO_ACQUISITION_STALE")
+    progress_accepted = copernicus_source_stage_status == "IN_PROGRESS"
     if (
-        copernicus_source_stage_status not in {"READY", "NOT_APPLICABLE"}
+        copernicus_source_stage_status
+            not in {"READY", "IN_PROGRESS", "NOT_APPLICABLE"}
         or not valid_sha256(regional_evidence_sha256)
-        or copernicus_bounded_progress_accepted is not False
+        or copernicus_bounded_progress_accepted is not progress_accepted
         or (
             copernicus_source_stage_status == "NOT_APPLICABLE"
             and copernicus_source_stage_sha256 is not None

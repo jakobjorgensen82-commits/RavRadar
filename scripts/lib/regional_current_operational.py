@@ -25,7 +25,7 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
         canonical_time,
         current_source_asset_sha256,
         part_time_pairs_sha256,
-        validate_current_operational_ledger,
+        validate_current_operational_availability_ledger,
     )
 except ImportError:  # pragma: no cover - exercised by production-style import.
     from copernicus_target_identity import target_fingerprint
@@ -34,7 +34,7 @@ except ImportError:  # pragma: no cover - exercised by production-style import.
         canonical_time,
         current_source_asset_sha256,
         part_time_pairs_sha256,
-        validate_current_operational_ledger,
+        validate_current_operational_availability_ledger,
     )
 
 
@@ -993,7 +993,7 @@ def build_regional_current_operational_evidence(
     if not isinstance(dmi_ledger, dict) or not isinstance(dmi_attestation, dict):
         _fail("LEDGER_ATTESTATION_INVALID")
     try:
-        validated_ledger = validate_current_operational_ledger(
+        validated_ledger = validate_current_operational_availability_ledger(
             dmi_ledger,
             dmi_attestation,
             targets,

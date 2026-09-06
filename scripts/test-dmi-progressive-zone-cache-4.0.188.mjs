@@ -38,7 +38,7 @@ const normalUpdate = stepIndex(buildWorkflow, 'Update DMI bulk model cache');
 const normalGribSave = stepIndex(buildWorkflow, 'Save progressed DMI GRIB download cache');
 const normalCandidateSave = stepIndex(buildWorkflow, 'Save isolated DMI candidate progress before any terminal decision');
 const normalShadowSave = stepIndex(buildWorkflow, 'Save private seven-day current-field research cache');
-const normalTerminal = stepIndex(buildWorkflow, 'Require successful DMI producer before current supplement');
+const normalTerminal = stepIndex(buildWorkflow, 'Classify DMI readiness before current supplement');
 const normalSnapshot = stepIndex(buildWorkflow, 'Strictly snapshot the maintained READY active DMI generation');
 const normalActiveSave = stepIndex(buildWorkflow, 'Save the maintained complete active DMI generation');
 const validate = stepIndex(buildWorkflow, 'Validate full project after fresh weather and current provenance');
@@ -156,7 +156,7 @@ const oneoffUpdate = stepIndex(oneoffWorkflow, 'Refresh all bounded official DMI
 const candidateSave = stepIndex(oneoffWorkflow, 'Save isolated DMI candidate progress before any terminal decision');
 const promotedSnapshot = stepIndex(oneoffWorkflow, 'Strictly snapshot only a promoted READY DMI generation');
 const promotedActiveSave = stepIndex(oneoffWorkflow, 'Save the promoted complete active DMI generation');
-const oneoffTerminal = stepIndex(oneoffWorkflow, '"Require DMI production (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"');
+const oneoffTerminal = stepIndex(oneoffWorkflow, '"Classify DMI availability (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"');
 const oneoffNodeSetup = oneoffWorkflow.lastIndexOf('- name: Set up Node.js', oneoffLegacyResolve);
 
 assert.ok(

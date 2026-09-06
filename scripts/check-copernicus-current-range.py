@@ -53,11 +53,28 @@ def arguments() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--require-source-stage-reusable",
+        action="store_true",
+        help=(
+            "Fail unless a current target/DMI/shadow-bound READY or "
+            "IN_PROGRESS source-stage sidecar exists"
+        ),
+    )
+    parser.add_argument(
         "--allow-nonmatching-seal",
         action="store_true",
         help=(
             "Report a valid cache without the locked reference/status seal as incomplete "
             "so a bounded acquisition may replace it"
+        ),
+    )
+    parser.add_argument(
+        "--allow-invalid-shadow-as-absent",
+        action="store_true",
+        help=(
+            "After registry, DMI and central-target validation, classify only "
+            "an invalid private shadow as absent so the acquisition runner can "
+            "quarantine and replace it"
         ),
     )
     return parser.parse_args()
@@ -78,16 +95,8 @@ def inspect(
     expected_reference: str | None,
     allow_nonmatching_seal: bool = False,
     source_stage_path: Path | None = None,
+    allow_invalid_shadow_as_absent: bool = False,
 ) -> dict[str, Any]:
-    if not shadow_path.exists() or shadow_path.stat().st_size <= 0:
-        return {
-            "cachePresent": False,
-            "completeRangePresent": False,
-            "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
-            "sourceStageReady": False,
-            "sourceStageReusable": False,
-            "requiredPairCount": 0,
-        }
     registry = validate_target_registry(json.loads(registry_path.read_text(encoding="utf-8")))
     operational_contract = registry["schemaVersion"] == 3
     required_pair_count = (
@@ -103,24 +112,63 @@ def inspect(
     if target_fingerprint(targets) != registry["targetRegistrySha256"]:
         raise RuntimeError("Central target registry no longer matches the sealed gap matrix")
     target_identities = {row["partId"]: row for row in targets}
-    document = json.loads(shadow_path.read_text(encoding="utf-8"))
-    if document.get("schemaVersion") == 1 and not isinstance(document.get("schemaVersion"), bool):
-        validate_legacy_shadow_for_migration(document)
+    if not shadow_path.exists() or shadow_path.stat().st_size <= 0:
         return {
-            "cachePresent": True,
+            "cachePresent": False,
             "completeRangePresent": False,
             "operationalSealPresent": False,
-            "sourceStagePresent": bool(source_stage_path and source_stage_path.exists()),
+            "sourceStagePresent": bool(
+                source_stage_path and source_stage_path.exists()
+            ),
             "sourceStageReady": False,
             "sourceStageReusable": False,
+            "shadowInvalid": False,
             "productionReferenceAt": reference,
             "requiredPairCount": required_pair_count,
         }
-    cache = validate_shadow(
-        document,
-        target_identities,
-        require_collection=False,
-    )
+    try:
+        document = json.loads(shadow_path.read_text(encoding="utf-8"))
+        if not isinstance(document, dict):
+            raise ValueError("Private Copernicus shadow is not an object")
+        if (
+            document.get("schemaVersion") == 1
+            and not isinstance(document.get("schemaVersion"), bool)
+        ):
+            validate_legacy_shadow_for_migration(document)
+            return {
+                "cachePresent": True,
+                "completeRangePresent": False,
+                "operationalSealPresent": False,
+                "sourceStagePresent": bool(
+                    source_stage_path and source_stage_path.exists()
+                ),
+                "sourceStageReady": False,
+                "sourceStageReusable": False,
+                "shadowInvalid": False,
+                "productionReferenceAt": reference,
+                "requiredPairCount": required_pair_count,
+            }
+        cache = validate_shadow(
+            document,
+            target_identities,
+            require_collection=False,
+        )
+    except (UnicodeError, json.JSONDecodeError, TypeError, ValueError):
+        if not allow_invalid_shadow_as_absent:
+            raise
+        return {
+            "cachePresent": False,
+            "completeRangePresent": False,
+            "operationalSealPresent": False,
+            "sourceStagePresent": bool(
+                source_stage_path and source_stage_path.exists()
+            ),
+            "sourceStageReady": False,
+            "sourceStageReusable": False,
+            "shadowInvalid": True,
+            "productionReferenceAt": reference,
+            "requiredPairCount": required_pair_count,
+        }
     expected_status = "OPERATIONAL_COMPLETE" if operational_contract else "COMPLETE"
     matches = [
         row for row in cache["collections"]
@@ -293,6 +341,7 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
         handle.write(f"operational_seal_present={'true' if state.get('operationalSealPresent', state['completeRangePresent']) else 'false'}\n")
         handle.write(f"source_stage_ready={'true' if state.get('sourceStageReady') else 'false'}\n")
         handle.write(f"source_stage_reusable={'true' if state.get('sourceStageReusable') else 'false'}\n")
+        handle.write(f"shadow_invalid={'true' if state.get('shadowInvalid') else 'false'}\n")
         handle.write(
             "source_stage_status="
             f"{state.get('sourceStageStatus') or 'ABSENT'}\n"
@@ -312,7 +361,10 @@ def write_outputs(path: Path | None, state: dict[str, Any]) -> None:
 def main() -> int:
     args = arguments()
     source_stage_path = args.source_stage
-    if args.require_source_stage_ready and source_stage_path is None:
+    if (
+        args.require_source_stage_ready
+        or args.require_source_stage_reusable
+    ) and source_stage_path is None:
         source_stage_path = DEFAULT_SOURCE_STAGE
     state = inspect(
         args.shadow,
@@ -322,12 +374,20 @@ def main() -> int:
         args.at,
         args.allow_nonmatching_seal,
         source_stage_path,
+        args.allow_invalid_shadow_as_absent,
     )
     write_outputs(args.github_output, state)
     if args.require_complete and not state["completeRangePresent"]:
         raise RuntimeError("The exact activation-complete Copernicus seal is required but absent")
     if args.require_source_stage_ready and not state.get("sourceStageReady"):
         raise RuntimeError("The exact Copernicus source-stage READY evidence is required but absent")
+    if (
+        args.require_source_stage_reusable
+        and not state.get("sourceStageReusable")
+    ):
+        raise RuntimeError(
+            "Exact Copernicus READY/IN_PROGRESS source-stage evidence is required but absent"
+        )
     if state["completeRangePresent"]:
         print(
             "Private Copernicus range seal is COMPLETE/OPERATIONAL_COMPLETE: "

@@ -19,10 +19,13 @@ from lib.copernicus_current import (
     canonical_sha256,
     file_sha256,
     load_targets,
+    required_pairs_sha256,
+    select_required_records,
     validate_shadow,
     validate_target_registry,
 )
 from lib.copernicus_current_source_stage import (
+    SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_STAGE_STATUS,
     validate_reusable_source_stage,
 )
@@ -172,7 +175,10 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
         shadow_sha256=file_sha256(copernicus_path),
         allow_rebase=False,
     )
-    if stage.get("status") != SOURCE_STAGE_STATUS:
+    if stage.get("status") not in {
+        SOURCE_STAGE_STATUS,
+        SOURCE_STAGE_PROGRESS_STATUS,
+    }:
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_INVALID")
     if stage.get("productionReferenceAt") != reference:
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_TARGET_MISMATCH")
@@ -183,8 +189,21 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
     attestation = canonical_verified_part_current_attestation(
         dmi, targets, reference, registry.get("operationalRangeEndAt"), allowed_assets,
     )
-    copernicus_residual = stage.get("missingPairs")
-    if not isinstance(copernicus_residual, list):
+    _, copernicus_residual = select_required_records(
+        registry["operationalRequiredPairs"],
+        list(cache.get("acquisitions") or []),
+        list(cache.get("records") or []),
+        datetime.fromisoformat(reference.replace("Z", "+00:00")),
+    )
+    copernicus_residual = sorted(
+        copernicus_residual,
+        key=lambda row: (row["validTime"], row["partId"]),
+    )
+    if (
+        stage.get("missingPairCount") != len(copernicus_residual)
+        or stage.get("missingPairsSha256")
+            != required_pairs_sha256(copernicus_residual)
+    ):
         raise RuntimeError("OPEN_METEO_SOURCE_STAGE_INVALID")
     try:
         plan = build_regional_residual_plan(
@@ -205,7 +224,9 @@ def residual_plan(*, targets: list[dict[str, Any]], dmi: dict[str, Any],
         "requiredPairs": result,
         "sourceStageStatus": stage["status"],
         "sourceStageSha256": canonical_sha256(stage),
-        "boundedProgressAccepted": False,
+        "boundedProgressAccepted": (
+            stage["status"] == SOURCE_STAGE_PROGRESS_STATUS
+        ),
         "regionalEvidenceSha256": canonical_sha256(plan["regionalPrivate"]),
     }
 

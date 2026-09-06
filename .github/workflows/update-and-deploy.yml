@@ -1248,7 +1248,7 @@ jobs:
       - name: Inspect timed UTC hour without exposing raw vectors
         if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)
         id: cache-state
-        run: python3 scripts/check-copernicus-current-hour.py --github-output "$GITHUB_OUTPUT"
+        run: python3 scripts/check-copernicus-current-hour.py --invalid-cache-is-absent --github-output "$GITHUB_OUTPUT"
 
       - name: Decide whether production may start
         id: readiness

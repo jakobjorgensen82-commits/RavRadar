@@ -381,7 +381,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -539,7 +539,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -564,7 +564,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -769,6 +769,7 @@ jobs:
           reference="$(jq -er '.diagnostics.currentOperationalLedger.productionReferenceAt' "$source_path")"
           test "$(jq -r '.diagnostics.currentOperationalLedger.ready' "$source_path")" = true
           python scripts/build-copernicus-target-registry.py \
+            --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
             --dmi "$source_path" \
             --output "$RUNNER_TEMP/dmi-active-proof/targets.json" \
@@ -834,6 +835,7 @@ jobs:
           DMI_BULK_TIME_STRIDE_HOURS: 3
           DMI_BULK_COLLECTIONS_PER_RUN: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && '6' || '3' }}
           DMI_BULK_REQUEST_TIMEOUT_SECONDS: 90
+          DMI_BULK_ASSET_PROCESSING_TIMEOUT_SECONDS: 180
           DMI_BULK_HARMONIE_ASSET_TIMEOUT_SECONDS: 180
           DMI_BULK_SUPERVISED_FINALIZE_TIMEOUT_SECONDS: 420
           DMI_BULK_REFRESH_MINUTES: 60
@@ -848,7 +850,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -885,7 +887,7 @@ jobs:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require successful DMI producer before current supplement
+      - name: Classify DMI readiness before current supplement
         id: dmi-terminal-gate
         if: always() && steps.preflight.outputs.should_run == 'true'
         shell: bash
@@ -914,8 +916,7 @@ jobs:
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
           echo "strict_current_anchor_ready=$STRICT_CURRENT_ANCHOR_READY" >> "$GITHUB_OUTPUT"
           if test "$ready" != "true"; then
-            echo "::error title=DMI terminal gate::$code"
-            exit 1
+            echo "::warning title=DMI partial availability::$code; verified pairs remain eligible and the exact residual continues to fallback providers."
           fi
 
       - name: Strictly snapshot the maintained READY active DMI generation
@@ -926,6 +927,7 @@ jobs:
           test -s data/live/dmi-bulk-cache.json
           test "$(jq -r '.diagnostics.currentOperationalLedger.ready' data/live/dmi-bulk-cache.json)" = true
           python scripts/build-copernicus-target-registry.py \
+            --require-strict-dmi-ledger \
             --targets data/live/coastal-parts-v2.json \
             --dmi data/live/dmi-bulk-cache.json \
             --output "$RUNNER_TEMP/dmi-maintained-proof.json" \
@@ -942,28 +944,22 @@ jobs:
 
       - name: Require complete operational WAM handoff before first integrated cutover
         id: wam-bootstrap-readiness
-        if: always() && steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success'
+        if: always() && steps.preflight.outputs.should_run == 'true' && steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outcome == 'success'
         shell: bash
         run: |
-          producer_outcome="${{ steps.dmi-bulk.outcome }}"
           set +e
           attestation="$(python -B scripts/validate_dmi_wave_history_bootstrap.py \
             --mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}" \
             --target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}" \
             --production-target-hour "$RAVRADAR_PRODUCTION_TARGET_HOUR" \
             --forecast-hour-count 118 \
-            --cache data/live/dmi-bulk-cache.json \
+            --cache .cache/dmi-candidate-progress.json \
             --registry data/live/coastal-parts-v2.json)"
           validator_status=$?
           set -e
           printf '%s\n' "$attestation"
           wam_code="$(printf '%s' "$attestation" | jq -r 'if .status == "invalid" then .code else "NONE" end')"
           history_incomplete="$(printf '%s' "$attestation" | jq -r 'if .status == "ok" and .historyIncomplete == true then "true" else "false" end')"
-          if [ "$producer_outcome" != "success" ]; then
-            wam_code="DMI_BULK_FAILED"
-            history_incomplete="false"
-            validator_status=1
-          fi
           test "$wam_code" = "NONE" || printf '%s\n' "$wam_code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'
           echo "code=$wam_code" >> "$GITHUB_OUTPUT"
           echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"
@@ -985,7 +981,7 @@ jobs:
           fi
 
       - name: Refresh private Copernicus cache after DMI cache churn
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'
+        if: steps.preflight.outputs.should_run == 'true'
         id: copernicus-shadow-post-dmi
         uses: actions/cache/restore@v6
         with:
@@ -999,11 +995,12 @@ jobs:
             copernicus-current-range-v2-
 
       - name: Select exact-hour DMI gaps for targeted Copernicus supplement
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-terminal-gate.outputs.ready == 'true'
+        if: steps.preflight.outputs.should_run == 'true'
         id: copernicus-targets
         run: >-
           python scripts/build-copernicus-target-registry.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
           --output .cache/copernicus-current-targets.json
           --github-output "$GITHUB_OUTPUT"
 
@@ -1019,10 +1016,11 @@ jobs:
           --shadow .cache/copernicus-current-shadow.json
           --source-stage .cache/copernicus-current-source-stage.json
           --registry .cache/copernicus-current-targets.json
-          --dmi data/live/dmi-bulk-cache.json
+          --dmi .cache/dmi-candidate-progress.json
           --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --allow-nonmatching-seal
+          --allow-invalid-shadow-as-absent
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid production Copernicus source disposition
@@ -1031,22 +1029,25 @@ jobs:
 
       - name: Install targeted Copernicus dependencies
         if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify targeted Copernicus credentials
         if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
         run: |
           if [ -z "$COPERNICUSMARINE_SERVICE_USERNAME" ] || [ -z "$COPERNICUSMARINE_SERVICE_PASSWORD" ]; then
-            echo "::error::Targeted Copernicus credentials are unavailable."
+            echo "::warning::Targeted Copernicus credentials are unavailable; the exact residual will continue to Open-Meteo."
             exit 1
           fi
 
       - name: Fill only exact-hour DMI gaps from Copernicus
         id: copernicus-fill
         if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
           COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
@@ -1069,17 +1070,17 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-production-progress-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require completed Copernicus source stage before combined current closure
+      - name: Require reusable Copernicus source stage before combined current closure
         if: steps.preflight.outputs.should_run == 'true'
         run: >-
           python scripts/check-copernicus-current-range.py
           --shadow .cache/copernicus-current-shadow.json
           --source-stage .cache/copernicus-current-source-stage.json
           --registry .cache/copernicus-current-targets.json
-          --dmi data/live/dmi-bulk-cache.json
+          --dmi .cache/dmi-candidate-progress.json
           --targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
-          --require-source-stage-ready
+          --require-source-stage-reusable
 
       - name: Save validated private Copernicus progress before downstream closure
         if: steps.preflight.outputs.should_run == 'true' && success()
@@ -1095,6 +1096,7 @@ jobs:
         run: >-
           python scripts/fill-open-meteo-current-fallback.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
           --timeout-seconds 30
           --runtime-seconds 240
 
@@ -1110,10 +1112,13 @@ jobs:
         run: >-
           python scripts/build-current-operational-closure.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
+          --dmi .cache/dmi-candidate-progress.json
 
       - name: Build public seven-day current history and controlled live selection
         if: steps.preflight.outputs.should_run == 'true'
-        run: python scripts/build-live-current-pilot.py
+        run: >-
+          python scripts/build-live-current-pilot.py
+          --dmi .cache/dmi-candidate-progress.json
 
       - name: Update central weather cache
         if: steps.preflight.outputs.should_run == 'true'
@@ -1121,6 +1126,7 @@ jobs:
         timeout-minutes: 17
         run: npm run update:weather
         env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
           DMI_MAX_RETRIES: 0
           DMI_REQUEST_GAP_MS: 12000
           DMI_REQUEST_CONCURRENCY: 1
@@ -1136,7 +1142,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.327 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.328 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1152,6 +1158,8 @@ jobs:
 
       - name: Attach scientific current provenance and exact DMI grid points
         if: steps.preflight.outputs.should_run == 'true'
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: npm run build:current-provenance
 
       - name: Rebuild deterministic public weather runtime before validation and deploy
@@ -1224,6 +1232,8 @@ jobs:
       - name: Validate full project after fresh weather and current provenance
         id: full-validation
         if: steps.preflight.outputs.should_run == 'true'
+        env:
+          DMI_BULK_CACHE_PATH: .cache/dmi-candidate-progress.json
         run: npm run validate
 
       - name: Run release governance gate after refreshed data validation

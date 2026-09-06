@@ -141,6 +141,91 @@ def mutate_stages(
 
 
 class TransactionalAssetTests(unittest.TestCase):
+    def test_supervised_identity_ignores_query_rotation_but_binds_revision(self) -> None:
+        asset = {
+            "valid": FIRST_TIME,
+            "id": "synthetic-stac-item",
+            "href": (
+                "https://opendata.dmi.dk/file/synthetic.grib"
+                "?token=must-not-leak"
+            ),
+            "size": 1024,
+            "itemCreatedAt": MODEL_RUN,
+            "itemUpdatedAt": None,
+        }
+        original = producer.supervised_asset_identity(
+            COLLECTION,
+            MODEL_RUN,
+            asset,
+        )
+        rotated_query = producer.supervised_asset_identity(
+            COLLECTION,
+            MODEL_RUN,
+            {
+                **asset,
+                "href": (
+                    "https://opendata.dmi.dk/file/synthetic.grib"
+                    "?token=rotated-secret#fragment"
+                ),
+            },
+        )
+        self.assertEqual(rotated_query, original)
+        self.assertNotIn("token", json.dumps(original))
+        self.assertNotIn("secret", json.dumps(original))
+
+        changed_revision = producer.supervised_asset_identity(
+            COLLECTION,
+            MODEL_RUN,
+            {**asset, "size": 2048},
+        )
+        self.assertEqual(
+            changed_revision["assetIdentitySha256"],
+            original["assetIdentitySha256"],
+        )
+        self.assertNotEqual(
+            changed_revision["assetRevisionSha256"],
+            original["assetRevisionSha256"],
+        )
+
+        changed_path = producer.supervised_asset_identity(
+            COLLECTION,
+            MODEL_RUN,
+            {
+                **asset,
+                "href": "https://opendata.dmi.dk/file/replaced.grib",
+            },
+        )
+        self.assertNotEqual(
+            changed_path["assetIdentitySha256"],
+            original["assetIdentitySha256"],
+        )
+        self.assertNotEqual(
+            changed_path["assetRevisionSha256"],
+            original["assetRevisionSha256"],
+        )
+
+        encoded = json.dumps([original], sort_keys=True, separators=(",", ":"))
+        with patch.dict(
+            producer.os.environ,
+            {"DMI_BULK_SUPERVISOR_SKIPPED_ASSETS": encoded},
+        ):
+            parsed = producer.supervised_skipped_asset_identities()
+        self.assertEqual(
+            parsed,
+            {json.dumps(original, sort_keys=True, separators=(",", ":"))},
+        )
+
+        with (
+            patch.dict(
+                producer.os.environ,
+                {"DMI_BULK_SUPERVISOR_SKIPPED_ASSETS": json.dumps(
+                    [original, original]
+                )},
+            ),
+            self.assertRaisesRegex(ValueError, "duplicates"),
+        ):
+            producer.supervised_skipped_asset_identities()
+
     def run_failed_asset(self, mode: str) -> None:
         result, private, diagnostics, shadow, outcomes = durable_documents()
         before = copy.deepcopy((result, private, diagnostics, shadow, outcomes))
@@ -399,6 +484,152 @@ class TransactionalAssetTests(unittest.TestCase):
 
 
 class CheckpointTests(unittest.TestCase):
+    def test_structurally_invalid_preferred_candidate_is_quarantined_and_recovered(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "candidate.json"
+            fallback = Path(directory) / "active.json"
+            invalid = {
+                "schemaVersion": 2,
+                "zoneRegistrySignature": "synthetic-signature",
+                "zones": "broken",
+            }
+            active = {
+                "schemaVersion": 2,
+                "generatedAt": MODEL_RUN,
+                "zoneRegistrySignature": "synthetic-signature",
+                "zones": {
+                    PUBLIC_ID: {
+                        "hourly": {},
+                        "gridPoints": {},
+                        "collections": {},
+                    },
+                },
+                "runs": {},
+                "collectionState": {},
+                "diagnostics": {},
+            }
+            invalid_bytes = json.dumps(invalid, sort_keys=True).encode("utf-8")
+            output.write_bytes(invalid_bytes)
+            fallback.write_text(json.dumps(active), "utf-8")
+
+            with (
+                patch.object(producer, "OUTPUT_PATH", output),
+                patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
+                patch.object(producer, "PREFER_OUTPUT_CACHE", True),
+                patch.object(
+                    producer, "current_operational_cache_ready", return_value=True,
+                ) as strict_ready,
+            ):
+                recovered = producer.load_previous(
+                    "synthetic-signature",
+                    coastal_part_targets=[],
+                    production_reference=Mock(),
+                )
+
+            self.assertEqual(recovered, active)
+            strict_ready.assert_called_once()
+            self.assertEqual(json.loads(output.read_text("utf-8")), active)
+            quarantines = list(Path(directory).glob("candidate.json.invalid-*"))
+            self.assertEqual(len(quarantines), 1)
+            self.assertEqual(quarantines[0].read_bytes(), invalid_bytes)
+
+    def test_nested_precheckpoint_shape_poisons_are_quarantined(self) -> None:
+        def valid_document() -> dict:
+            return {
+                "schemaVersion": 2,
+                "generatedAt": MODEL_RUN,
+                "zoneRegistrySignature": "synthetic-signature",
+                "privateReplayRetentionHours": 54,
+                "zones": {
+                    PUBLIC_ID: {
+                        "hourly": {}, "gridPoints": {}, "collections": {},
+                    },
+                },
+                "runs": {},
+                "collectionState": {},
+                "diagnostics": {
+                    "errors": [],
+                    "zoneCount": 1,
+                    "componentHorizonCoverage": {
+                        "wind": {"zonesWith96Hours": 1},
+                        "marine": {"zonesWith96Hours": 1},
+                    },
+                    "persistentFieldInventory": {},
+                },
+            }
+
+        poisons = {
+            "errors-container": lambda document: document["diagnostics"].update(errors="x"),
+            "errors-row": lambda document: document["diagnostics"].update(errors=["x"]),
+            "horizon-container": lambda document: document["diagnostics"].update(
+                componentHorizonCoverage="x"
+            ),
+            "horizon-family": lambda document: document["diagnostics"][
+                "componentHorizonCoverage"
+            ].update(wind="x"),
+            "horizon-count": lambda document: document["diagnostics"][
+                "componentHorizonCoverage"
+            ]["wind"].update(zonesWith96Hours="x"),
+            "zone-count": lambda document: document["diagnostics"].update(zoneCount="x"),
+            "inventory": lambda document: document["diagnostics"].update(
+                persistentFieldInventory="x"
+            ),
+            "retention": lambda document: document.update(privateReplayRetentionHours="x"),
+        }
+        for label, poison in poisons.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                output = Path(directory) / "candidate.json"
+                fallback = Path(directory) / "active.json"
+                candidate = valid_document()
+                poison(candidate)
+                active = valid_document()
+                candidate_bytes = json.dumps(candidate, sort_keys=True).encode("utf-8")
+                output.write_bytes(candidate_bytes)
+                fallback.write_text(json.dumps(active), "utf-8")
+                with (
+                    patch.object(producer, "OUTPUT_PATH", output),
+                    patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
+                    patch.object(
+                        producer, "current_operational_cache_ready", return_value=True,
+                    ),
+                ):
+                    recovered = producer.load_previous(
+                        "synthetic-signature",
+                        coastal_part_targets=[],
+                        production_reference=Mock(),
+                    )
+                self.assertEqual(recovered, active)
+                quarantines = list(Path(directory).glob("candidate.json.invalid-*"))
+                self.assertEqual(len(quarantines), 1)
+                self.assertEqual(quarantines[0].read_bytes(), candidate_bytes)
+
+    def test_quarantined_candidate_without_strict_ready_active_stops(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "candidate.json"
+            fallback = Path(directory) / "active.json"
+            output.write_text(json.dumps({"zones": "broken"}), "utf-8")
+            fallback.write_text(json.dumps({
+                "schemaVersion": 2,
+                "zoneRegistrySignature": "synthetic-signature",
+                "zones": {PUBLIC_ID: {"hourly": {}, "gridPoints": {}, "collections": {}}},
+                "diagnostics": {},
+            }), "utf-8")
+            with (
+                patch.object(producer, "OUTPUT_PATH", output),
+                patch.object(producer, "DEPLOYED_FALLBACK_PATH", fallback),
+                patch.object(
+                    producer, "current_operational_cache_ready", return_value=False,
+                ),
+                self.assertRaisesRegex(RuntimeError, "strict READY active recovery donor"),
+            ):
+                producer.load_previous(
+                    "synthetic-signature",
+                    coastal_part_targets=[],
+                    production_reference=Mock(),
+                )
+            self.assertFalse(output.exists())
+            self.assertEqual(len(list(Path(directory).glob("candidate.json.invalid-*"))), 1)
+
     def test_progress_checkpoint_is_compact_atomic_and_light(self) -> None:
         result = {
             "generatedAt": MODEL_RUN,

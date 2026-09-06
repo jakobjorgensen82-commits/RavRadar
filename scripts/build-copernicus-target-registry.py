@@ -31,6 +31,7 @@ from lib.copernicus_target_identity import target_fingerprint
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
     processed_source_assets_from_current_operational_ledger,
+    validate_current_operational_availability_ledger,
     validate_current_operational_ledger,
     verified_part_current_pair,
 )
@@ -50,6 +51,11 @@ def arguments() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--at", help="Locked productionReferenceAt; defaults to current UTC hour")
     parser.add_argument("--full-coast", action="store_true", help="Explicit manual full-coast research matrix")
+    parser.add_argument(
+        "--require-strict-dmi-ledger",
+        action="store_true",
+        help="Require strict DMI_READY evidence; reserved for active-generation validation",
+    )
     # Compatibility-only flags. They intentionally cannot rebind the reference.
     parser.add_argument("--nearest-dmi-hour", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--max-hour-offset", type=int, default=3, help=argparse.SUPPRESS)
@@ -93,7 +99,10 @@ def build_registry(
     dmi_sha256: str,
     *,
     full_coast: bool,
+    require_strict_dmi_ledger: bool = False,
 ) -> dict[str, Any]:
+    if full_coast and require_strict_dmi_ledger:
+        raise ValueError("--require-strict-dmi-ledger cannot be combined with --full-coast")
     hours = matrix_hours(reference)
     targets = [{
         "partId": row["partId"],
@@ -122,7 +131,12 @@ def build_registry(
             hours[-1],
             allowed_source_assets,
         )
-        validate_current_operational_ledger(
+        ledger_validator = (
+            validate_current_operational_ledger
+            if require_strict_dmi_ledger
+            else validate_current_operational_availability_ledger
+        )
+        ledger_validator(
             ledger,
             attestation,
             targets,
@@ -259,7 +273,12 @@ def main() -> int:
     if not isinstance(dmi, dict):
         raise RuntimeError("DMI coverage input must be an object")
     document = build_registry(
-        all_targets, dmi, reference, file_sha256(args.dmi), full_coast=args.full_coast,
+        all_targets,
+        dmi,
+        reference,
+        file_sha256(args.dmi),
+        full_coast=args.full_coast,
+        require_strict_dmi_ledger=args.require_strict_dmi_ledger,
     )
     atomic_write(args.output, document)
     write_github_output(args.github_output, document)

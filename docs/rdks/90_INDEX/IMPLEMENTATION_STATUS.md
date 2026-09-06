@@ -1,3 +1,20 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.328 per-pair fallback
+
+- [x] Bind ejerbeslutningen i DEC-0118 og adskil availability under indsamling fra strict READY-promotion og endelig publiceringsclosure.
+- [x] Genbrug kompatible verificerede DMI-par i kandidatcachen; isolér download-/parse-/behandlingsfejl transaktionelt pr. asset og lad senere assets fortsætte. Digest-karantæner en strukturelt ugyldig kandidat og genopret den atomisk alene fra separat strict READY-active-donor.
+- [x] Bind supervisorrestart til eksakt collection/run/time/item, kanonisk URL-hash og revisionshash; håndhæv watchdogtid også under kontinuerligt logoutput. Malformed markør kan kun udløse bounded finalisering, aldrig et gættet skip.
+- [x] Valider partial DMI-availability som eksakt verificeret/rest-partition, inklusive interne huller, hale, local failure og registrybundet schema-3 total outage, uden at lempe strict READY-validatoren.
+- [x] Accepter Copernicus `READY` eller target/DMI/shadow-bound `IN_PROGRESS`, også med nul attempts, som ærlig availability; bevar Baltic-prioritet og eksakt residual til Open-Meteo.
+- [x] Begræns karantæne til ugyldige afledte private Copernicus shadow-/stagefiler; registry, DMI-ledger og centrale targets forbliver fail-closed.
+- [x] Bevar Open-Meteo som target-only combined-current med SI/UTC, `calibrationEligible=false`, og kræv eksakt 79.414-pars closure før public/runtime/deploy.
+- [x] Fuldvalider operational/advisory-dokumentet én gang, indeksér `(partId, validTime)` og behold konkret entry-hash samt objekt-/indeks-/assignmentkontrol ved opslag. 673-opslagsregressionen genitererer ikke 79.414 entries.
+- [x] Bind den rumlige slutgate til privat closure-/DMI-U/V og reproducer public hastighed, retning, proveniens og pilplacering uden rå U/V i public/runtime.
+- [x] Genforsegl og verificér modelclosures efter adapterændringen: integrated `4346bf2d…`/55 og Candidate G rollback `71a093a4…`/56.
+- [x] Bestå den målrettede lokale DMI-supervisor 11/11, transactional checkpoint/recovery 17/17, WAM-integration 21/21 samt ledger-, Copernicus-stage-/registry-, regional-, Open-Meteo-, closure-/diagnostik- og live-adaptermatrix.
+- [ ] Luk 4.0.328 releasehukommelse/version og kør én fuld `validate:source` i GitHub på PR'ens eksakte head; merge ikke på ældre grønt bevis.
+- [ ] Kør frisk main-oneoff og normal vedligeholdelse til 79.414/79.414 current og Feggesund 354/354; gennemfør derefter fuld validate/releasegate, artifact/deploy, kapacitetsbevis og særskilt modelaktivering. Candidate G forbliver offentlig indtil da.
+- [ ] Når systemet er stabilt og den nye model er online, mål og justér om nødvendigt normaldriftens leverandørrækkefølge, budgetter og kadence. Ekstern cron forbliver primær; pipelineopdeling er et senere spor.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.327 currentfallback-kontrakt
 
 - [x] Registrér 4.0.326 exact-head 34010245661, PR #259 og merge d899c6de.

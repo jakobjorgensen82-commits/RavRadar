@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-06 – 4.0.328 per-pair weather closure
+
+- [x] Erstat provider-all-or-nothing med en registrybundet availability-ledger: genbrug hvert verificeret DMI-par og send den eksakte inverse rest videre, også ved interne huller, hale eller totalt DMI-udfald.
+- [x] Generalisér assetwatchdoggen til eksakt, revisionsbundet DMI-asset skip/restart; isolér øvrige download-/parse-/behandlingsfejl transaktionelt og fortsæt senere assets.
+- [x] Tillad bound Copernicus `IN_PROGRESS`, inklusive nul attempts, at aflevere den ærlige rest til regional DMI/Open-Meteo uden at påstå kildeudtømning.
+- [x] Karantæner kun ugyldige private Copernicus-derivater; bevar fail-closed registry-, DMI-, centrale target-, selected-run- og final closure-grænser.
+- [x] Bevar Open-Meteo som særskilt combined-current/`calibrationEligible=false`, rådgivende 48h-historik og strict active-promotion; bestå de målrettede lokale kontrakttests.
+- [x] Indeksér closurebeviset uden gentagen 79.414-helsanning og bind spatial slutgate til privat U/V uden offentlig vektoreksponering.
+- [ ] Afslut docs/version/diff og få én fuld exact-head sourcegate i GitHub. Merge først efter grønt bevis på netop det endelige head.
+- [ ] Kør stor main-oneoff som genopfyldning og lad normal drift fortsætte samme cache. Kræv 79.414/79.414 current, Feggesund 354/354, fuld validate/releasegate, artifact/deploy, kapacitet og særskilt modelaktivering; Candidate G forbliver offentlig indtil da.
+- [ ] Efter stabilisering og model-online: mål DMI, Baltic, AMM15, regional DMI og Open-Meteo pr. normal kørsel og justér rækkefølge/budget/kadence kun ved friskhedsevidens. Ekstern cron forbliver primær; større pipelineoptimering udskydes.
+
 # NYESTE ROADMAP – 2026-09-06 – 4.0.327 Open-Meteo uden endnu en deterministisk stopfejl
 
 - [x] Klassificér 34017809629 attempt 1: DMI/Copernicus READY og gemt, Open-Meteo-stop før request på gammel ikke-valgt shadowcadence.

@@ -563,7 +563,11 @@ def required_pairs_sha256(pairs: list[dict[str, Any]]) -> str:
     return canonical_sha256({"contractId": "copernicus-required-part-time-pairs-v1", "pairs": normalized})
 
 
-def _validate_legacy_target_registry(document: Any) -> dict[str, Any]:
+def _validate_legacy_target_registry(
+    document: Any,
+    *,
+    allow_bound_full_coast: bool = False,
+) -> dict[str, Any]:
     registry = _require_exact_fields(document, TARGET_REGISTRY_FIELDS, "Copernicus range target registry")
     schema_version = registry.get("schemaVersion")
     if (
@@ -642,7 +646,7 @@ def _validate_legacy_target_registry(document: Any) -> dict[str, Any]:
     if registry["selectionMode"] == "manual-full-coast":
         if verified != 0 or len(pairs) != total:
             raise ValueError("Manual full-coast Copernicus matrix is incomplete")
-    elif targets and verified == 0:
+    elif targets and verified == 0 and not allow_bound_full_coast:
         raise ValueError("Implicit full-coast Copernicus collection is forbidden")
     expected_zones: dict[str, list[dict[str, Any]]] = {}
     for target in targets:
@@ -772,12 +776,10 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
             + registry["advisoryHistoryDmiVerifiedPairCount"]
     ):
         raise ValueError("Copernicus operational/advisory cardinality does not close")
-    if (
-        registry["selectionMode"] == "dmi-gaps-only"
-        and target_count > 0
-        and registry["operationalDmiVerifiedPairCount"] == 0
-    ):
-        raise ValueError("Implicit full-coast operational Copernicus collection is forbidden")
+    # Schema 3 binds its exact pair complement to a validated DMI input hash,
+    # and final closure revalidates the ledger. A total DMI supplier outage may
+    # therefore honestly produce a full-coast fallback matrix; this is distinct
+    # from the unbound legacy full-coast research mode above.
 
     combined_pairs = sorted(
         [*operational_pairs, *advisory_pairs],
@@ -810,7 +812,10 @@ def validate_target_registry(document: Any) -> dict[str, Any]:
         "requiredPairs": combined_pairs,
         "zones": registry["zones"],
     }
-    _validate_legacy_target_registry(legacy_projection)
+    _validate_legacy_target_registry(
+        legacy_projection,
+        allow_bound_full_coast=True,
+    )
     operational_ids = {str(row["partId"]) for row in operational_pairs}
     advisory_ids = {str(row["partId"]) for row in advisory_pairs}
     if registry.get("operationalPartCount") != len(operational_ids):

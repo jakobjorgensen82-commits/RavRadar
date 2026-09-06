@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 
 import {
+  buildOperationalCurrentEntryIndex,
+  verifyCoastalPartCurrentProjection,
+} from './lib/current-spatial-runtime-proof.mjs';
+import {
   controlledLiveCurrentEnabled,
   copernicusLiveRecordProjectionSha256,
   latestVerifiedNativeCadenceSampleForPart,
@@ -11,6 +15,8 @@ import {
   verifiedNativeCadenceReferenceForPart,
   verifiedStateOnlyCurrentHold,
 } from './lib/live-current-pilot.mjs';
+import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
+import { buildIntegratedPartScoreSeries } from './lib/ravscore-integrated-runtime.mjs';
 import { verifiedIntegratedPartHourly } from './lib/ravscore-production-adapters.mjs';
 
 const canonicalJson = value => {
@@ -42,6 +48,53 @@ const fingerprint = part => sha256({
     part.waterPoint[1].toFixed(7),
   ]],
 });
+const publicProvenanceFields = [
+  'status','reason','provider','collection','source','sourceClass','controlledLivePilot',
+  'temporalResolution','verticalLayer','vectorSelection','vectorSemanticsVersion','method',
+  'fallback','distanceKm',
+];
+const spatialProjectionProof = ({ part, hour, live }) => {
+  const score = buildIntegratedPartScoreSeries({
+    part,
+    zone: { id: part.zoneId, onshoreDirectionDeg: part.onshoreDirectionDeg },
+    hourly: [{
+      ...hour,
+      windSpeedMps: 5,
+      windDirectionDeg: 270,
+      waveHeightM: 1,
+      wavePeriodS: 6,
+      waveDirectionDeg: 270,
+    }],
+  }).scores[0];
+  const flowPoints = flowPointsFromForecastRecord(
+    { hourly: [hour] }, part.waterPoint, score.time, part,
+  );
+  const runtimePart = { flowPoints, current: { time: score.time, weather: score.weather } };
+  const publicPart = {
+    flowPoints: structuredClone(flowPoints),
+    current: {
+      time: score.time,
+      weather: {
+        currentSpeedMps: score.weather.currentSpeedMps,
+        currentDirectionDeg: score.weather.currentDirectionDeg,
+        currentProvenance: Object.fromEntries(publicProvenanceFields
+          .filter(field => score.weather.currentProvenance?.[field] !== undefined)
+          .map(field => [field, score.weather.currentProvenance[field]])),
+      },
+    },
+  };
+  return {
+    score,
+    proof: verifyCoastalPartCurrentProjection({
+      part,
+      runtimePart,
+      publicPart,
+      bulkZone: null,
+      operationalEntryIndex: buildOperationalCurrentEntryIndex(live),
+      verifyBulkRow: () => null,
+    }),
+  };
+};
 const assignmentSha = assignment => sha256({
   schemaVersion: 1,
   contractId: ASSIGNMENT_CONTRACT,
@@ -61,7 +114,10 @@ const regionalVectorSha = ({ partId, validTime, uMps, vMps }) => sha256({
   vMps: vMps.toFixed(5),
 });
 
-const copPart = { partId: 'FIXTURE-COP', zoneId: 'FIXTURE-ZONE-COP', waterPoint: [0, 0] };
+const copPart = {
+  partId: 'FIXTURE-COP', zoneId: 'FIXTURE-ZONE-COP',
+  waterPoint: [0, 0], onshoreDirectionDeg: 90,
+};
 const regionalPart = {
   partId: 'FIXTURE-REGIONAL', zoneId: 'FIXTURE-ZONE-REGIONAL',
   waterPoint: [0, 0], onshoreDirectionDeg: 45,
@@ -213,8 +269,34 @@ const live = {
   operationalClosure: safeClosure, copernicusRangeSeal: null, entries, advisoryEntries: [],
 };
 
+const liveWithSourceStageDisposition = (status, boundedProgressAccepted) => {
+  const operationalClosure = {
+    ...safeClosure,
+    copernicusSourceStageStatus: status,
+    copernicusBoundedProgressAccepted: boundedProgressAccepted,
+  };
+  delete operationalClosure.safeProjectionSha256;
+  operationalClosure.safeProjectionSha256 = sha256(operationalClosure);
+  return { ...live, operationalClosure };
+};
+
 assert.equal(controlledLiveCurrentEnabled(live), true,
   'missing past model fields must not block operational readiness');
+assert.equal(
+  controlledLiveCurrentEnabled(liveWithSourceStageDisposition('IN_PROGRESS', true)),
+  true,
+  'a complete 79,414-pair closure may be live with reusable bounded Copernicus progress',
+);
+assert.equal(
+  controlledLiveCurrentEnabled(liveWithSourceStageDisposition('READY', true)),
+  false,
+  'READY must not be mislabeled as bounded progress',
+);
+assert.equal(
+  controlledLiveCurrentEnabled(liveWithSourceStageDisposition('IN_PROGRESS', false)),
+  false,
+  'IN_PROGRESS must carry its exact bounded-progress disposition',
+);
 assert.equal(controlledLiveCurrentEnabled({ ...live, operationalClosure: null }), false);
 assert.equal(controlledLiveCurrentEnabled({ ...live, entries: entries.slice(1) }), false);
 assert.equal(controlledLiveCurrentEnabled({
@@ -267,6 +349,39 @@ assert.equal(controlledLiveCurrentEnabled({
 const copRecord = { hourly: [{ time: REFERENCE, currentUMps: null, currentVMps: null }] };
 const mergedCop = mergeLiveCurrentPilotIntoRecord(copRecord, copPart, live);
 assert.equal(mergedCop.hourly[0].currentUMps, 0.3);
+const sanitizedCop = verifiedIntegratedPartHourly(
+  mergedCop,
+  { zones: {} },
+  `PART::${copPart.partId}`,
+  copPart,
+);
+const copSpatial = spatialProjectionProof({ part: copPart, hour: sanitizedCop[0], live });
+assert.equal(Object.hasOwn(copSpatial.score.weather, 'currentUMps'), false);
+assert.equal(Object.hasOwn(copSpatial.score.weather, 'currentVMps'), false);
+assert.deepEqual(copSpatial.proof, {
+  ok: true,
+  sourceClass: 'copernicus-local',
+  expectedArrowSource: 'copernicus-current-grid',
+  expectedSpeedMps: 0.5,
+  expectedDirectionDeg: 143,
+});
+const staleButStructuralDmi = {
+  hourly: [{
+    time: REFERENCE,
+    currentUMps: 0.91,
+    currentVMps: -0.82,
+    sources: { current: { provider: 'dmi' } },
+  }],
+};
+const closureAuthoritativeCop = mergeLiveCurrentPilotIntoRecord(
+  staleButStructuralDmi,
+  copPart,
+  live,
+  { primaryCurrentVerified: () => true },
+);
+assert.equal(closureAuthoritativeCop.hourly[0].currentUMps, 0.3,
+  'an operational closure assignment must replace stale structural DMI for the exact pair');
+assert.equal(closureAuthoritativeCop.hourly[0].currentProvenance.source, copRef.source);
 
 const regionalRecord = { hourly: [
   {
@@ -337,6 +452,20 @@ assert.equal(sanitizedRegional[0].currentStateOnlyHold.sourceValidTime, SOURCE_T
 assert.equal(sanitizedRegional[0].currentStateOnlyHold.partId, regionalPart.partId);
 assert.deepEqual(stateOnlyCurrentRowForbiddenFields(sanitizedRegional[0]), [],
   'integrated sanitizer must retain only the state marker, never a current projection');
+const regionalSpatial = spatialProjectionProof({
+  part: regionalPart,
+  hour: sanitizedRegional[1],
+  live,
+});
+assert.equal(Object.hasOwn(regionalSpatial.score.weather, 'currentUMps'), false);
+assert.equal(Object.hasOwn(regionalSpatial.score.weather, 'currentVMps'), false);
+assert.deepEqual(regionalSpatial.proof, {
+  ok: true,
+  sourceClass: 'dmi-regional-proxy',
+  expectedArrowSource: 'dmi-regional-proxy-grid',
+  expectedSpeedMps: 0.27,
+  expectedDirectionDeg: 152,
+});
 for (const [field, poison] of [
   ['gridPoint', [1, 2]],
   ['arrow', { directionDeg: 123 }],
@@ -355,6 +484,14 @@ for (const [field, poison] of [
   `integrated sanitizer must reject state-only ${field}`);
 }
 assert.equal(mergedRegional.hourly[1].currentProvenance.classification, 'REGIONAL_DMI_NATIVE');
+const verifiedPrimaryRegional = mergeLiveCurrentPilotIntoRecord(
+  regionalRecord,
+  regionalPart,
+  live,
+  { primaryCurrentVerified: () => true },
+);
+assert.deepEqual(stateOnlyCurrentRowForbiddenFields(verifiedPrimaryRegional.hourly[0]), [],
+  'an exact operational state-only assignment must strip stale structural DMI even when its row shape verifies');
 assert.equal(nativeCadenceHoldHoursForPart(regionalPart, live), 1,
   'only the maximum explicit closure-authorized state hold may be retained');
 assert.equal(verifiedNativeCadenceReferenceForPart(regionalPart, live, NATIVE_TIME), true);
@@ -515,6 +652,37 @@ const poisonedHold = sourceTimeTamper.entries.find(entry => entry.classification
 poisonedHold.sourceValidTime = '2026-09-02T04:00:00Z';
 poisonedHold.holdAgeHours = 4;
 assert.equal(controlledLiveCurrentEnabled(sourceTimeTamper), false);
+
+// One full trust-boundary validation may build the indexes. Subsequent per-part
+// production lookups must use those indexes instead of rescanning either array.
+const indexedLookupLive = structuredClone(live);
+assert.equal(controlledLiveCurrentEnabled(indexedLookupLive), true);
+const countIterations = array => {
+  const inheritedIterator = array[Symbol.iterator];
+  let count = 0;
+  Object.defineProperty(array, Symbol.iterator, {
+    configurable: true,
+    value() {
+      count += 1;
+      return inheritedIterator.call(this);
+    },
+  });
+  return {
+    count: () => count,
+    restore: () => delete array[Symbol.iterator],
+  };
+};
+const operationalIterations = countIterations(indexedLookupLive.entries);
+const advisoryIterations = countIterations(indexedLookupLive.advisoryEntries);
+for (let partIndex = 0; partIndex < 673; partIndex += 1) {
+  mergeLiveCurrentPilotIntoRecord(copRecord, copPart, indexedLookupLive);
+}
+assert.equal(operationalIterations.count(), 0,
+  '673 indexed part lookups must not rescan all operational assignments');
+assert.equal(advisoryIterations.count(), 0,
+  '673 indexed part lookups must not rescan all advisory assignments');
+operationalIterations.restore();
+advisoryIterations.restore();
 
 // A proof may be cached only while both entry contents and array membership stay exact.
 const cachedEntryMutation = structuredClone(live);

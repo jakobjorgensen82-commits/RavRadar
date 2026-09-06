@@ -207,13 +207,6 @@ const CURRENT_OPERATIONAL_CLOSURE_SAFE_FIELDS = Object.freeze([
   'supplementalAssignmentsSha256', 'assignmentsSha256', 'coordinatesIncluded',
   'rawVectorsIncluded', 'partIdsIncluded', 'pairRefsIncluded',
 ]);
-const SOURCE_ORDER = new Map([
-  ['copernicus-baltic-nemo', 0],
-  ['copernicus-nws-amm15', 1],
-  [REGIONAL_SOURCE, 2],
-  [OPEN_METEO_SOURCE, 3],
-]);
-
 // This module is a model-input trust boundary. JSON numbers are accepted;
 // numeric strings, booleans and other coercible values are not evidence.
 const finite = value => typeof value === 'number' && Number.isFinite(value)
@@ -652,15 +645,16 @@ function copernicusDocumentProof(document) {
   }
 }
 
-function verifiedCopernicusDocumentEntry(document, entry) {
-  const closureProof = operationalClosureDocumentProof(document);
-  const advisoryProof = advisoryDocumentProof(document);
+function verifiedCopernicusDocumentEntry(document, entry, proofs = null) {
+  const closureProof = proofs?.closureProof ?? operationalClosureDocumentProof(document);
+  const advisoryProof = proofs?.advisoryProof ?? advisoryDocumentProof(document);
   const closureMember = closureProof?.entryMembership.has(entry);
   const advisoryMember = advisoryProof?.entryMembership.has(entry);
   if (!closureMember && !advisoryMember) return false;
   try {
     const proof = closureMember ? closureProof : advisoryProof;
-    return proof.entrySha256ByObject.get(entry) === canonicalSha256(entry)
+    return proofEntryStillBound(proof, entry)
+      && proof.entrySha256ByObject.get(entry) === canonicalSha256(entry)
       && proof.assignmentShaByObject.get(entry) === entry.closureAssignmentSha256
       && verifiedCopernicusRecordProjection(entry);
   } catch {
@@ -668,11 +662,12 @@ function verifiedCopernicusDocumentEntry(document, entry) {
   }
 }
 
-function verifiedOpenMeteoDocumentEntry(document, entry) {
-  const proof = operationalClosureDocumentProof(document);
+function verifiedOpenMeteoDocumentEntry(document, entry, proofs = null) {
+  const proof = proofs?.closureProof ?? operationalClosureDocumentProof(document);
   if (!proof?.entryMembership.has(entry)) return false;
   try {
-    return proof.entrySha256ByObject.get(entry) === canonicalSha256(entry)
+    return proofEntryStillBound(proof, entry)
+      && proof.entrySha256ByObject.get(entry) === canonicalSha256(entry)
       && proof.assignmentShaByObject.get(entry) === entry.closureAssignmentSha256
       && verifiedOpenMeteoRecordProjection(entry);
   } catch {
@@ -857,12 +852,16 @@ function buildOperationalClosureDocumentProof(document) {
       || value.copernicusAmm15PairCount !== 0) return null;
   } else if (value.copernicusCompleteWithoutSourceStage !== false
     || !SHA256_PATTERN.test(value.copernicusSourceStageSha256 ?? '')
-    || value.copernicusSourceStageStatus !== 'READY'
-    || value.copernicusBoundedProgressAccepted !== false) return null;
+    || !['READY', 'IN_PROGRESS'].includes(value.copernicusSourceStageStatus)
+    || value.copernicusBoundedProgressAccepted
+      !== (value.copernicusSourceStageStatus === 'IN_PROGRESS')) return null;
 
   const entryMembership = new Set();
   const entrySha256ByObject = new Map();
   const assignmentShaByObject = new Map();
+  const entryIndexByObject = new WeakMap();
+  const entriesByPartId = new Map();
+  const entryByPartAndTime = new Map();
   const assignmentHashes = [];
   const seenPairs = new Set();
   const classCounts = new Map([
@@ -873,7 +872,7 @@ function buildOperationalClosureDocumentProof(document) {
     [OPEN_METEO_CLASSIFICATION, 0],
   ]);
   let previousKey = null;
-  for (const entry of document.entries) {
+  for (const [entryIndex, entry] of document.entries.entries()) {
     const identity = closureAssignmentIdentity(entry);
     if (!identity
       || entry.closureContractId !== CURRENT_OPERATIONAL_CLOSURE_CONTRACT_ID
@@ -896,6 +895,13 @@ function buildOperationalClosureDocumentProof(document) {
     entryMembership.add(entry);
     entrySha256ByObject.set(entry, canonicalSha256(entry));
     assignmentShaByObject.set(entry, assignmentSha);
+    entryIndexByObject.set(entry, entryIndex);
+    const partEntries = entriesByPartId.get(entry.partId) ?? [];
+    partEntries.push(entry);
+    entriesByPartId.set(entry.partId, partEntries);
+    const partTimes = entryByPartAndTime.get(entry.partId) ?? new Map();
+    partTimes.set(entry.validTime, entry);
+    entryByPartAndTime.set(entry.partId, partTimes);
   }
   if (classCounts.get(COPERNICUS_BALTIC_CLASSIFICATION) !== value.copernicusBalticPairCount
     || classCounts.get(COPERNICUS_AMM15_CLASSIFICATION) !== value.copernicusAmm15PairCount
@@ -910,20 +916,31 @@ function buildOperationalClosureDocumentProof(document) {
     entryMembership,
     entrySha256ByObject,
     assignmentShaByObject,
+    entryIndexByObject,
+    entriesByPartId,
+    entryByPartAndTime,
     closureSha256: canonicalSha256(value),
   });
 }
 
-function operationalClosureDocumentProof(document) {
+function operationalClosureDocumentProof(document, { revalidate = false } = {}) {
   if (!document || typeof document !== 'object') return null;
+  if (!basicControlledLiveDocument(document)) {
+    CLOSURE_DOCUMENT_PROOFS.delete(document);
+    return null;
+  }
   const cached = CLOSURE_DOCUMENT_PROOFS.get(document);
   try {
     if (cached
       && cached.entries === document.entries
       && cached.entryCount === document.entries?.length
-      && cached.entryOrder.every((entry, index) => document.entries[index] === entry)
       && cached.closureSha256 === canonicalSha256(document.operationalClosure)
-      && cached.entryOrder.every(entry => cached.entrySha256ByObject.get(entry) === canonicalSha256(entry))) {
+      && (!revalidate || (
+        cached.entryOrder.every((entry, index) => document.entries[index] === entry)
+        && cached.entryOrder.every(
+          entry => cached.entrySha256ByObject.get(entry) === canonicalSha256(entry)
+        )
+      ))) {
       return cached;
     }
     const proof = buildOperationalClosureDocumentProof(document);
@@ -977,11 +994,14 @@ function buildAdvisoryDocumentProof(document) {
   const entryMembership = new WeakSet();
   const entrySha256ByObject = new WeakMap();
   const assignmentShaByObject = new WeakMap();
+  const entryIndexByObject = new WeakMap();
+  const entriesByPartId = new Map();
+  const entryByPartAndTime = new Map();
   const refs = [];
   const assignmentHashes = [];
   const seenPairs = new Set();
   let previousKey = null;
-  for (const entry of advisory) {
+  for (const [entryIndex, entry] of advisory.entries()) {
     const identity = advisoryClosureAssignmentIdentity(entry);
     const assignmentSha = identity && canonicalSha256({
       schemaVersion: 1,
@@ -1031,6 +1051,13 @@ function buildAdvisoryDocumentProof(document) {
     entryMembership.add(entry);
     entrySha256ByObject.set(entry, canonicalSha256(entry));
     assignmentShaByObject.set(entry, assignmentSha);
+    entryIndexByObject.set(entry, entryIndex);
+    const partEntries = entriesByPartId.get(entry.partId) ?? [];
+    partEntries.push(entry);
+    entriesByPartId.set(entry.partId, partEntries);
+    const partTimes = entryByPartAndTime.get(entry.partId) ?? new Map();
+    partTimes.set(entry.validTime, entry);
+    entryByPartAndTime.set(entry.partId, partTimes);
   }
   if (refs.length !== value.advisoryHistoryAvailablePairCount
     || refs.length + value.advisoryHistoryMissingPairCount
@@ -1057,13 +1084,20 @@ function buildAdvisoryDocumentProof(document) {
     entryMembership,
     entrySha256ByObject,
     assignmentShaByObject,
+    entryIndexByObject,
+    entriesByPartId,
+    entryByPartAndTime,
     closureSha256: canonicalSha256(value),
     sealSha256: seal === null ? null : canonicalSha256(seal),
   });
 }
 
-function advisoryDocumentProof(document) {
+function advisoryDocumentProof(document, { revalidate = false } = {}) {
   if (!document || typeof document !== 'object') return null;
+  if (!basicControlledLiveDocument(document)) {
+    ADVISORY_DOCUMENT_PROOFS.delete(document);
+    return null;
+  }
   const cached = ADVISORY_DOCUMENT_PROOFS.get(document);
   try {
     const sealSha256 = document.copernicusRangeSeal == null
@@ -1072,10 +1106,14 @@ function advisoryDocumentProof(document) {
     if (cached
       && cached.entries === document.advisoryEntries
       && cached.entryCount === document.advisoryEntries?.length
-      && cached.entryOrder.every((entry, index) => document.advisoryEntries[index] === entry)
       && cached.closureSha256 === canonicalSha256(document.operationalClosure)
       && cached.sealSha256 === sealSha256
-      && cached.entryOrder.every(entry => cached.entrySha256ByObject.get(entry) === canonicalSha256(entry))) {
+      && (!revalidate || (
+        cached.entryOrder.every((entry, index) => document.advisoryEntries[index] === entry)
+        && cached.entryOrder.every(
+          entry => cached.entrySha256ByObject.get(entry) === canonicalSha256(entry)
+        )
+      ))) {
       return cached;
     }
     const proof = buildAdvisoryDocumentProof(document);
@@ -1086,6 +1124,31 @@ function advisoryDocumentProof(document) {
     ADVISORY_DOCUMENT_PROOFS.delete(document);
     return null;
   }
+}
+
+function controlledDocumentProofs(document, { revalidate = false } = {}) {
+  const closureProof = operationalClosureDocumentProof(document, { revalidate });
+  if (!closureProof) return null;
+  const advisoryProof = advisoryDocumentProof(document, { revalidate });
+  return advisoryProof ? { closureProof, advisoryProof } : null;
+}
+
+function proofEntryStillBound(proof, entry) {
+  const index = proof?.entryIndexByObject?.get(entry);
+  return Number.isInteger(index) && proof.entries?.[index] === entry;
+}
+
+function proofEntriesForPart(proof, part) {
+  const partId = exactString(part?.partId);
+  return partId === null ? [] : (proof?.entriesByPartId?.get(partId) ?? []);
+}
+
+function proofEntryForPartAndTime(proof, part, validTime) {
+  const partId = exactString(part?.partId);
+  const hour = exactUtcHour(validTime);
+  return partId === null || hour === null
+    ? null
+    : (proof?.entryByPartAndTime?.get(partId)?.get(hour) ?? null);
 }
 
 function point(value) {
@@ -1160,8 +1223,7 @@ function haversineKm(first, second) {
 }
 
 export function controlledLiveCurrentEnabled(document) {
-  return operationalClosureDocumentProof(document) !== null
-    && advisoryDocumentProof(document) !== null;
+  return controlledDocumentProofs(document, { revalidate: true }) !== null;
 }
 
 /**
@@ -1286,15 +1348,16 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
   return { gridPoint, distanceKm, maximumDistanceKm, arrowSource };
 }
 
-function verifiedEntry(entry, part, document) {
-  const closureProof = operationalClosureDocumentProof(document);
-  const advisoryProof = advisoryDocumentProof(document);
+function verifiedEntry(entry, part, document, proofs = null) {
+  const closureProof = proofs?.closureProof ?? operationalClosureDocumentProof(document);
+  const advisoryProof = proofs?.advisoryProof ?? advisoryDocumentProof(document);
   const closureMember = closureProof?.entryMembership.has(entry);
   const advisoryMember = advisoryProof?.entryMembership.has(entry);
   if (!closureMember && !advisoryMember) return null;
   try {
     const proof = closureMember ? closureProof : advisoryProof;
-    if (proof.entrySha256ByObject.get(entry) !== canonicalSha256(entry)
+    if (!proofEntryStillBound(proof, entry)
+      || proof.entrySha256ByObject.get(entry) !== canonicalSha256(entry)
       || proof.assignmentShaByObject.get(entry) !== entry?.closureAssignmentSha256) return null;
   } catch {
     return null;
@@ -1340,7 +1403,7 @@ function verifiedEntry(entry, part, document) {
   if (provider === 'copernicus') {
     if (typeof entry?.productId !== 'string' || entry.productId.length === 0
       || typeof entry?.datasetId !== 'string' || entry.datasetId.length === 0
-      || !verifiedCopernicusDocumentEntry(document, entry)) return null;
+      || !verifiedCopernicusDocumentEntry(document, entry, { closureProof, advisoryProof })) return null;
   } else if (provider === 'dmi') {
     if (!closureMember) return null;
     const modelRun = canonicalTime(entry?.modelRun);
@@ -1350,7 +1413,7 @@ function verifiedEntry(entry, part, document) {
   } else if (provider === 'open-meteo') {
     if (!closureMember
       || entry?.classification !== OPEN_METEO_CLASSIFICATION
-      || !verifiedOpenMeteoDocumentEntry(document, entry)) return null;
+      || !verifiedOpenMeteoDocumentEntry(document, entry, { closureProof, advisoryProof })) return null;
   } else {
     return null;
   }
@@ -1466,24 +1529,25 @@ export function verifiedStateOnlyCurrentHold(source, rowTime, part) {
  * authorization by itself; each held hour must also carry its exact marker.
  */
 export function nativeCadenceHoldHoursForPart(part, document) {
-  if (!controlledLiveCurrentEnabled(document)) return 0;
-  return Math.max(0, ...(document.entries ?? [])
-    .map(raw => verifiedEntry(raw, part, document))
+  const proofs = controlledDocumentProofs(document);
+  if (!proofs) return 0;
+  return Math.max(0, ...proofEntriesForPart(proofs.closureProof, part)
+    .map(raw => verifiedEntry(raw, part, document, proofs))
     .filter(candidate => candidate?.stateOnly === true)
     .map(candidate => candidate.entry.holdAgeHours));
 }
 
 export function verifiedNativeCadenceReferenceForPart(part, document, referenceAt) {
   const reference = canonicalTime(referenceAt);
-  if (!reference || !controlledLiveCurrentEnabled(document)) return false;
-  return (document.entries ?? []).some(raw => {
-    const candidate = verifiedEntry(raw, part, document);
-    return candidate?.validTime === reference
-      && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
-      && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
-      && candidate.entry.source === REGIONAL_SOURCE
-      && candidate.entry.collection === 'dkss_lf';
-  });
+  const proofs = controlledDocumentProofs(document);
+  if (!reference || !proofs) return false;
+  const raw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
+  const candidate = raw ? verifiedEntry(raw, part, document, proofs) : null;
+  return candidate?.validTime === reference
+    && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
+    && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
+    && candidate.entry.source === REGIONAL_SOURCE
+    && candidate.entry.collection === 'dkss_lf';
 }
 
 /**
@@ -1502,14 +1566,17 @@ export function latestVerifiedNativeCadenceSampleForPart(
   }
   const reference = canonicalTime(referenceAt);
   const onshoreDirectionDeg = finite(part?.onshoreDirectionDeg);
-  if (!reference || onshoreDirectionDeg === null || !controlledLiveCurrentEnabled(document)) return null;
-  const latest = (document.entries ?? [])
-    .map(raw => verifiedEntry(raw, part, document))
-    .find(candidate => candidate?.validTime === reference
-      && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
-      && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
-      && candidate.entry.source === REGIONAL_SOURCE
-      && candidate.entry.collection === 'dkss_lf') ?? null;
+  const proofs = controlledDocumentProofs(document);
+  if (!reference || onshoreDirectionDeg === null || !proofs) return null;
+  const raw = proofEntryForPartAndTime(proofs.closureProof, part, reference);
+  const candidate = raw ? verifiedEntry(raw, part, document, proofs) : null;
+  const latest = candidate?.validTime === reference
+    && candidate.entry.classification === REGIONAL_NATIVE_CLASSIFICATION
+    && candidate.entry.sourceClass === 'owner-approved-regional-proxy'
+    && candidate.entry.source === REGIONAL_SOURCE
+    && candidate.entry.collection === 'dkss_lf'
+    ? candidate
+    : null;
   if (!latest) return null;
   const exactCurrentSpeedMps = Math.hypot(latest.uMps, latest.vMps);
   const exactCurrentDirectionDeg = ((Math.atan2(latest.uMps, latest.vMps) * 180 / Math.PI) + 360) % 360;
@@ -1535,24 +1602,30 @@ export function latestVerifiedNativeCadenceSampleForPart(
 }
 
 export function mergeLiveCurrentPilotIntoRecord(record, part, document, { primaryCurrentVerified = () => false } = {}) {
-  if (!record || !Array.isArray(record.hourly) || !controlledLiveCurrentEnabled(document)) return record;
-  const candidates = new Map();
-  for (const raw of [...(document.advisoryEntries ?? []), ...(document.entries ?? [])]) {
-    const candidate = verifiedEntry(raw, part, document);
-    if (!candidate) continue;
-    const previous = candidates.get(candidate.validTime);
-    if (!previous || (SOURCE_ORDER.get(candidate.entry.source) ?? 99) < (SOURCE_ORDER.get(previous.entry.source) ?? 99)) {
-      candidates.set(candidate.validTime, candidate);
-    }
-  }
-  if (!candidates.size) return record;
+  if (!record || !Array.isArray(record.hourly)) return record;
+  const proofs = controlledDocumentProofs(document);
+  if (!proofs) return record;
+  const candidateAt = (proof, validTime) => {
+    const raw = proofEntryForPartAndTime(proof, part, validTime);
+    return raw ? verifiedEntry(raw, part, document, proofs) : null;
+  };
+  if (!proofEntriesForPart(proofs.closureProof, part).length
+    && !proofEntriesForPart(proofs.advisoryProof, part).length) return record;
 
   let supplementalHours = 0;
   let stateOnlyHoldHours = 0;
   const hourly = record.hourly.map(row => {
-    if (finite(row?.currentUMps) !== null && finite(row?.currentVMps) !== null && primaryCurrentVerified(row)) return row;
-    const candidate = candidates.get(canonicalTime(row?.time));
+    const validTime = canonicalTime(row?.time);
+    const operationalCandidate = candidateAt(proofs.closureProof, validTime);
+    const candidate = operationalCandidate ?? candidateAt(proofs.advisoryProof, validTime);
     if (!candidate) return row;
+    // An operational entry is already authorized by the exact 79,414-pair
+    // closure and must therefore replace any stale-but-structural DMI row for
+    // the same pair. Advisory history remains subordinate to verified DMI.
+    if (!operationalCandidate
+      && finite(row?.currentUMps) !== null
+      && finite(row?.currentVMps) !== null
+      && primaryCurrentVerified(row)) return row;
     if (candidate.stateOnly === true) {
       const currentStateOnlyHold = verifiedStateOnlyCurrentHold(
         candidate.source,

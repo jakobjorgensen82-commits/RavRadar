@@ -4,6 +4,7 @@ import { readProductionWorkflowSource } from './lib/production-workflow-sources.
 
 const buildWorkflow = await readProductionWorkflowSource('build');
 const packageDoc = JSON.parse(await fs.readFile('package.json', 'utf8'));
+const copernicusRunner = await fs.readFile('scripts/run-copernicus-current-pilot.py', 'utf8');
 
 const refreshStart = buildWorkflow.indexOf('- name: Refresh private Copernicus cache before DMI cache churn');
 const dmiRestoreStart = buildWorkflow.indexOf('- name: Restore bounded DMI GRIB download cache');
@@ -15,7 +16,7 @@ const targetInspectStart = buildWorkflow.indexOf('- name: Inspect target-bound C
 const targetNormalizeStart = buildWorkflow.indexOf('- name: Remove only invalid production Copernicus source disposition');
 const targetRunStart = buildWorkflow.indexOf('- name: Fill only exact-hour DMI gaps from Copernicus');
 const targetProgressSaveStart = buildWorkflow.indexOf('- name: Save non-cancelled private Copernicus source-stage progress');
-const sourceStageGateStart = buildWorkflow.indexOf('- name: Require completed Copernicus source stage before combined current closure');
+const sourceStageGateStart = buildWorkflow.indexOf('- name: Require reusable Copernicus source stage before combined current closure');
 const targetSaveStart = buildWorkflow.indexOf('- name: Save validated private Copernicus progress before downstream closure');
 const openMeteoStart = buildWorkflow.indexOf('- name: Fill only the exact remaining current gaps from Open-Meteo');
 const freshnessStart = buildWorkflow.indexOf('- name: Refuse a stale target after the bounded supplier chain');
@@ -57,9 +58,12 @@ assert.match(postDmiRefreshBlock, /key: copernicus-current-progress-v3-post-dmi-
 assert.match(postDmiRefreshBlock, /build-copernicus-target-registry\.py/);
 assert.match(postDmiRefreshBlock, /check-copernicus-current-range\.py/);
 assert.match(postDmiRefreshBlock, /--allow-nonmatching-seal/);
+assert.match(postDmiRefreshBlock, /--allow-invalid-shadow-as-absent/);
+assert.match(postDmiRefreshBlock, /--dmi \.cache\/dmi-candidate-progress\.json/);
 assert.match(postDmiRefreshBlock, /source_stage_reusable != 'true'/);
 assert.match(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-source-stage\.json/);
-assert.match(postDmiRefreshBlock, /--require-source-stage-ready/);
+assert.doesNotMatch(postDmiRefreshBlock, /rm -f \.cache\/copernicus-current-shadow\.json/);
+assert.match(postDmiRefreshBlock, /--require-source-stage-reusable/);
 assert.match(postDmiRefreshBlock, /fill-open-meteo-current-fallback\.py/);
 assert.match(postDmiRefreshBlock, /--runtime-seconds 240/);
 assert.match(postDmiRefreshBlock, /--at "\$RAVRADAR_PRODUCTION_TARGET_HOUR"/);
@@ -68,6 +72,18 @@ assert.match(postDmiRefreshBlock, /--authoritative-targets data\/live\/coastal-p
 assert.match(postDmiRefreshBlock, /uses: actions\/cache\/save@v6/);
 assert.doesNotMatch(postDmiRefreshBlock, /current_hour_present|--require-complete/);
 assert.doesNotMatch(postDmiRefreshBlock, /actions\/upload-artifact|uMps|vMps/);
+assert.match(copernicusRunner, /def quarantine_invalid_private_file\(path: Path, label: str\)/);
+assert.match(copernicusRunner, /os\.replace\(path, quarantine\)/);
+assert.match(
+  copernicusRunner,
+  /quarantine_invalid_private_file\(args\.shadow, "shadow"\)[\s\S]{0,400}existing = atomic_write_shadow_checkpoint\([\s\S]{0,180}acquisitions=\[\],[\s\S]{0,80}records=\[\]/,
+  'Invalid private shadow bytes must be digest-quarantined before an atomic empty checkpoint replaces them.',
+);
+assert.match(
+  copernicusRunner,
+  /Persist a target\/DMI\/shadow-bound zero-attempt stage before credentials,[\s\S]{0,300}persist_source_stage_progress\(/,
+  'The recovered clean shadow must be bound to reusable zero-attempt evidence before provider access.',
+);
 
 const supportStart = buildWorkflow.indexOf('- name: Build RavRadar support package');
 const supportEnd = buildWorkflow.indexOf('- name: Sync protected admin data to Supabase');

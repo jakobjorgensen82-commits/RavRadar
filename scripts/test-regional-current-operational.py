@@ -208,7 +208,11 @@ def invoke(bundle: dict[str, object]) -> dict[str, dict[str, object]]:
         need(args[5] == target_fingerprint(bundle["targets"]), "Core must bind the target registry hash")
         return ledger
 
-    with patch.object(evidence, "validate_current_operational_ledger", side_effect=validate) as validator:
+    with patch.object(
+        evidence,
+        "validate_current_operational_availability_ledger",
+        side_effect=validate,
+    ) as validator:
         result = evidence.build_regional_current_operational_evidence(**bundle)
     need(validator.call_count == 1, "Official ledger/attestation validation must run exactly once")
     return result
@@ -219,7 +223,11 @@ def expect_error(
     code: str,
 ) -> evidence.RegionalCurrentOperationalError:
     ledger = bundle["dmi_ledger"]
-    with patch.object(evidence, "validate_current_operational_ledger", return_value=ledger):
+    with patch.object(
+        evidence,
+        "validate_current_operational_availability_ledger",
+        return_value=ledger,
+    ):
         try:
             evidence.build_regional_current_operational_evidence(**bundle)
         except evidence.RegionalCurrentOperationalError as error:
@@ -300,7 +308,11 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     moved_runtime_target["targets"][0]["waterPoint"][0] += 0.0001
     expect_error(moved_runtime_target, "POLICY_TARGET_BINDING_INVALID")
     ledger = moved_runtime_target["dmi_ledger"]
-    with patch.object(evidence, "validate_current_operational_ledger", return_value=ledger):
+    with patch.object(
+        evidence,
+        "validate_current_operational_availability_ledger",
+        return_value=ledger,
+    ):
         fallback_result = evidence.build_regional_current_operational_evidence(
             **moved_runtime_target,
             allow_target_rebinding_as_missing=True,
@@ -496,7 +508,7 @@ def test_future_samples_vector_commitment_and_stored_proof_tamper() -> None:
     rejected_attestation = fixture()
     with patch.object(
         evidence,
-        "validate_current_operational_ledger",
+        "validate_current_operational_availability_ledger",
         side_effect=ValueError("synthetic private validator detail"),
     ):
         try:

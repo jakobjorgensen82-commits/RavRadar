@@ -16,6 +16,8 @@ from lib.dmi_native_provenance import (
     complete_native_source_for_hour,
     sampling_identity,
     strict_verified_part_current_pair_count,
+    validate_current_operational_availability_ledger,
+    validate_current_operational_ledger,
 )
 
 
@@ -547,12 +549,73 @@ collapsed_ledger = producer.build_current_operational_ledger(
 assert collapsed_ledger["ready"] is False
 assert "SYSTEMIC_CURRENT_TIME_COLLAPSE" in collapsed_ledger["failureCodes"]
 assert collapsed_ledger["attestation"]["verifiedPairCount"] == 1
+assert collapsed_ledger["operationalComplementPairCount"] == 117
 ledger_document.setdefault("diagnostics", {})["currentOperationalLedger"] = collapsed_ledger
 assert not producer.current_operational_cache_ready(
     ledger_document,
     targets,
     reference,
 )
+collapsed_allowed_assets = (
+    producer.processed_source_assets_from_current_operational_ledger(
+        collapsed_ledger
+    )
+)
+collapsed_attestation = producer.current_operational_attestation(
+    ledger_document,
+    targets,
+    reference,
+    collapsed_allowed_assets,
+)
+validate_current_operational_availability_ledger(
+    collapsed_ledger,
+    collapsed_attestation,
+    targets,
+    reference,
+    reference + timedelta(hours=117),
+    producer.target_fingerprint(targets),
+)
+try:
+    validate_current_operational_ledger(
+        collapsed_ledger,
+        collapsed_attestation,
+        targets,
+        reference,
+        reference + timedelta(hours=117),
+        producer.target_fingerprint(targets),
+    )
+except ValueError as error:
+    assert "systemic official-time collapse" in str(error)
+else:
+    raise AssertionError("Partial availability must never satisfy strict DMI READY")
+
+# Even internally self-consistent count/hash tampering cannot shrink the exact
+# fallback complement derived from the per-collection outcome matrix.
+tampered_collapsed_ledger = json.loads(json.dumps(collapsed_ledger))
+tampered_collapsed_ledger["operationalComplementPairs"] = (
+    tampered_collapsed_ledger["operationalComplementPairs"][:-1]
+)
+tampered_collapsed_ledger["operationalComplementPairCount"] = len(
+    tampered_collapsed_ledger["operationalComplementPairs"]
+)
+tampered_collapsed_ledger["operationalComplementPairsSha256"] = (
+    producer.part_time_pairs_sha256(
+        tampered_collapsed_ledger["operationalComplementPairs"]
+    )
+)
+try:
+    validate_current_operational_availability_ledger(
+        tampered_collapsed_ledger,
+        collapsed_attestation,
+        targets,
+        reference,
+        reference + timedelta(hours=117),
+        producer.target_fingerprint(targets),
+    )
+except ValueError as error:
+    assert "complement is not exact" in str(error)
+else:
+    raise AssertionError("A reduced partial-DMI complement must fail closed")
 
 # A checkpoint is reusable only with the current parser/signature and the exact
 # selected official asset capture. Unsigned legacy rows are always reprocessed.

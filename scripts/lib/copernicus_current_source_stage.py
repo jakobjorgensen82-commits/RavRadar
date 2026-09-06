@@ -571,10 +571,6 @@ def validate_source_stage_progress(
         required_set=required_set,
         targets=targets,
     )
-    if not attempts:
-        raise CopernicusSourceStageError(
-            "Copernicus source-stage progress contains no completed shard"
-        )
     if stage.get("attemptsSha256") != canonical_sha256(attempts):
         raise CopernicusSourceStageError(
             "Copernicus source-stage progress attempt hash mismatch"
@@ -592,6 +588,16 @@ def validate_source_stage_progress(
         row for row in PINNED_PRODUCTS
         if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
     )
+    for ref in record_refs:
+        pair = (ref["partId"], ref["validTime"])
+        if (
+            ref["source"] == SOURCE_ORDER_SELECTED_SOURCE
+            and eligible_target(target_by_id[ref["partId"]], baltic)
+            and pair not in attempted_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE]
+        ):
+            raise CopernicusSourceStageError(
+                "IN_PROGRESS selected AMM15 record lacks its exact Baltic prerequisite"
+            )
     for part_id, valid_time in attempted_by_source[SOURCE_ORDER_SELECTED_SOURCE]:
         if (
             (part_id, valid_time) in required_set
@@ -952,7 +958,7 @@ def build_source_stage_progress(
     attempts: list[dict[str, Any]],
     updated_at: datetime,
 ) -> dict[str, Any]:
-    """Build resumable private evidence after at least one completed shard."""
+    """Build resumable private evidence, including a bound zero-attempt start."""
     registry = validate_target_registry(registry)
     reference = _time(
         registry["productionReferenceAt"],

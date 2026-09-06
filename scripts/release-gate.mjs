@@ -213,7 +213,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260905090000_open_meteo_current_fallback_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -719,8 +719,8 @@ for(const marker of [
   'copernicus-current-progress-v3-',
   'Remove only invalid production Copernicus source disposition',
   'rm -f .cache/copernicus-current-source-stage.json',
-  'Require completed Copernicus source stage before combined current closure',
-  '--require-source-stage-ready',
+  'Require reusable Copernicus source stage before combined current closure',
+  '--require-source-stage-reusable',
   'Save validated private Copernicus progress before downstream closure',
 ]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler privat Copernicus-progressave: ${marker}`);
@@ -748,22 +748,35 @@ for(const marker of [
   'MODEL = "meteofrance_currents"',
   'PHYSICAL_SCOPE = "eulerian-waves-and-tides-combined-surface-current"',
   'SCORE_INPUT_POLICY_ID = "combined-current-single-channel-no-wave-or-tide-reprojection-v1"',
-  'copernicus_source_stage_status not in {"READY", "NOT_APPLICABLE"}',
-  'copernicus_bounded_progress_accepted is not False',
+  'progress_accepted = copernicus_source_stage_status == "IN_PROGRESS"',
+  '{"READY", "IN_PROGRESS", "NOT_APPLICABLE"}',
+  'copernicus_bounded_progress_accepted is not progress_accepted',
 ]){
-  ok(openMeteoFallback.includes(marker),`Open-Meteo-kontrakten mangler fysisk/READY-only binding: ${marker}`);
+  ok(openMeteoFallback.includes(marker),`Open-Meteo-kontrakten mangler fysisk/statusbundet fallback: ${marker}`);
 }
 for(const marker of [
-  'stage.get("status") != SOURCE_STAGE_STATUS',
+  'SOURCE_STAGE_PROGRESS_STATUS',
+  'select_required_records(',
+  'required_pairs_sha256(copernicus_residual)',
   'plan = build_regional_residual_plan(',
-  '"boundedProgressAccepted": False',
+  'stage["status"] == SOURCE_STAGE_PROGRESS_STATUS',
 ]){
-  ok(openMeteoFill.includes(marker),`Open-Meteo-fyldningen mangler eksakt residual/READY-only gate: ${marker}`);
+  ok(openMeteoFill.includes(marker),`Open-Meteo-fyldningen mangler eksakt, statusbundet residual: ${marker}`);
+}
+for(const marker of [
+  'validate_current_operational_availability_ledger(',
+  'require_complete=True',
+  'cop_keys | regional_keys | open_meteo_keys != complement_keys',
+  'open_meteo_keys != open_meteo_required_keys',
+  'if len(assignments) != EXPECTED_TOTAL_PAIR_COUNT:',
+]){
+  ok(currentOperationalClosure.includes(marker),`Den endelige current-closure mangler strict 79.414-pars lukning: ${marker}`);
 }
 for(const marker of [
   'OPEN_METEO_SCORE_INPUT_POLICY_ID',
   'entry.calibrationEligible !== false',
-  'SOURCE_ORDER.get(candidate.entry.source)',
+  'value.sourceOrderContractId !== CURRENT_OPERATIONAL_SOURCE_ORDER_CONTRACT_ID',
+  'proof.assignmentShaByObject.get(entry) !== entry?.closureAssignmentSha256',
 ]){
   ok(liveCurrentPilot.includes(marker),`Live-current-runtime mangler Open-Meteo-prioritet eller scopeværn: ${marker}`);
 }

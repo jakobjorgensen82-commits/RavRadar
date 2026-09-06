@@ -1,4 +1,14 @@
-# AI Roadmap – RavRadar 4.0.320; Candidate G er offentlig – opdateret 2026-09-03
+# AI Roadmap – RavRadar 4.0.328; Candidate G er offentlig – opdateret 2026-09-06
+
+## Nyeste releasehale – 4.0.328
+
+1. [x] Bind DEC-0118: per-pair availability genbruger alle verificerede DMI-par og sender den eksakte inverse rest videre ved interne huller, hale, local asset failure og registrybundet total outage.
+2. [x] Isolér DMI download-/parse-/processingfejl transaktionelt pr. asset; genstart watchdog bounded med kun eksakt URL-/revisionsbundet asset skipped, mens malformed marker aldrig kan autorisere skip.
+3. [x] Accepter target/DMI/shadow-bound Copernicus `READY` eller `IN_PROGRESS`, også nul attempts, som availability uden kildeudtømningspåstand; karantæner kun ugyldige private Copernicus-derivater.
+4. [x] Bevar Open-Meteo som target-only combined-current med SI/UTC og `calibrationEligible=false`; bevar strict DMI-promotion, 48h advisory history og eksakt 79.414-pars slutclosure. De målrettede lokale tests er grønne.
+5. [ ] Afslut releasehukommelse/version og få fuld `validate:source` til at bestå én gang i GitHub på PR'ens eksakte head. Merge ikke på et ældre grønt resultat.
+6. [ ] Efter merge: kør oneoff som genopfyldning, lad normal drift fortsætte cachen og dokumentér 79.414/79.414 current samt Feggesund 354/354. Kør derefter fuld validate/releasegate, artifact/deploy, kapacitetsbevis og særskilt Phase B/offentlig kontrol.
+7. [ ] Bevar ekstern cron som primær dispatcher og GitHub-schedules som reserve. Når modellen er online og driften stabil, mål/justér normal DMI/Baltic/AMM15/regional/Open-Meteo-rækkefølge, tidsbudget og kadence; udskyd større pipelineoptimering.
 
 ## Nyeste releasehale – 4.0.320
 

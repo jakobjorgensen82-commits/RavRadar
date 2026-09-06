@@ -21,6 +21,7 @@ from .copernicus_current import (
     valid_sha256,
 )
 from .copernicus_current_source_stage import (
+    SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_STAGE_STATUS,
     validate_reusable_source_stage,
 )
@@ -28,7 +29,7 @@ from .copernicus_target_identity import target_fingerprint
 from .dmi_native_provenance import (
     canonical_time,
     current_source_asset_sha256,
-    validate_current_operational_ledger,
+    validate_current_operational_availability_ledger,
 )
 from .regional_current_operational import (
     MISSING,
@@ -363,9 +364,24 @@ def _copernicus_state(
             )
         except (KeyError, TypeError, ValueError, RuntimeError):
             _fail("SOURCE_STAGE_INVALID")
-        if validated.get("status") != SOURCE_STAGE_STATUS:
+        if validated.get("status") not in {
+            SOURCE_STAGE_STATUS,
+            SOURCE_STAGE_PROGRESS_STATUS,
+        }:
             _fail("SOURCE_STAGE_INVALID")
         return validated
+
+    def require_stage_residual(validated_stage: dict[str, Any]) -> None:
+        if validated_stage.get("status") == SOURCE_STAGE_STATUS:
+            if validated_stage.get("missingPairs") != missing_pairs:
+                _fail("SOURCE_STAGE_RESIDUAL_INVALID")
+            return
+        if (
+            validated_stage.get("missingPairCount") != len(missing_pairs)
+            or validated_stage.get("missingPairsSha256")
+                != required_pairs_sha256(missing_pairs)
+        ):
+            _fail("SOURCE_STAGE_RESIDUAL_INVALID")
 
     if not missing_pairs:
         if not registry["operationalRequiredPairs"]:
@@ -379,8 +395,7 @@ def _copernicus_state(
                     True,
                 )
         validated_stage = reusable_stage()
-        if validated_stage.get("missingPairs") != missing_pairs:
-            _fail("SOURCE_STAGE_RESIDUAL_INVALID")
+        require_stage_residual(validated_stage)
         if (
             validated_stage.get("selectedRecordRefCount") != len(record_refs)
             or validated_stage.get("selectedRecordRefsSha256")
@@ -414,8 +429,7 @@ def _copernicus_state(
             False,
         )
     validated_stage = reusable_stage()
-    if validated_stage.get("missingPairs") != missing_pairs:
-        _fail("SOURCE_STAGE_RESIDUAL_INVALID")
+    require_stage_residual(validated_stage)
     if (
         validated_stage.get("selectedRecordRefCount") != len(record_refs)
         or validated_stage.get("selectedRecordRefsSha256") != canonical_sha256(record_refs)
@@ -851,8 +865,13 @@ def _validate_private_structure(value: Any) -> dict[str, Any]:
         value.get("copernicusCompleteWithoutSourceStage") is not False
         or not valid_sha256(stage_id)
         or not valid_sha256(stage_sha)
-        or value.get("copernicusSourceStageStatus") != SOURCE_STAGE_STATUS
-        or value.get("copernicusBoundedProgressAccepted") is not False
+        or value.get("copernicusSourceStageStatus")
+            not in {SOURCE_STAGE_STATUS, SOURCE_STAGE_PROGRESS_STATUS}
+        or value.get("copernicusBoundedProgressAccepted")
+            is not (
+                value.get("copernicusSourceStageStatus")
+                == SOURCE_STAGE_PROGRESS_STATUS
+            )
     ):
         _fail("CLOSURE_BINDING_INVALID")
     if (
@@ -992,7 +1011,7 @@ def build_current_operational_closure(
     if not valid_sha256(dmi_current_input_sha256) or not valid_sha256(copernicus_shadow_sha256):
         _fail("INPUT_FILE_BINDING_INVALID")
     try:
-        ledger = validate_current_operational_ledger(
+        ledger = validate_current_operational_availability_ledger(
             dmi_ledger,
             dmi_attestation,
             targets,
@@ -1076,7 +1095,9 @@ def build_current_operational_closure(
         source_stage.get("status") if source_stage else "NOT_APPLICABLE"
     )
     source_stage_sha256 = canonical_sha256(source_stage) if source_stage else None
-    bounded_progress_accepted = False
+    bounded_progress_accepted = (
+        source_stage_status == SOURCE_STAGE_PROGRESS_STATUS
+    )
     try:
         open_meteo = validate_open_meteo_document(
             open_meteo_fallback,

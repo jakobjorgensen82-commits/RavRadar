@@ -6,9 +6,10 @@ import copy
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import runpy
+from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
-from lib.copernicus_current import canonical_sha256
+from lib.copernicus_current import canonical_sha256, required_pairs_sha256
 from lib.open_meteo_current_fallback import (
     OpenMeteoCurrentFallbackError,
     build_document,
@@ -90,7 +91,7 @@ safe = safe_projection(validated)
 assert safe["coordinatesIncluded"] is False and safe["rawVectorsIncluded"] is False
 assert "records" not in safe and "missingPairs" not in safe
 
-rejected(lambda: build_document(
+progress_document = build_document(
     targets=targets,
     required_pairs=required,
     records=records,
@@ -100,7 +101,63 @@ rejected(lambda: build_document(
     copernicus_source_stage_sha256=stage_sha,
     copernicus_bounded_progress_accepted=True,
     regional_evidence_sha256=regional_sha,
-))
+)
+validated_progress = validate_document(
+    progress_document,
+    targets=targets,
+    required_pairs=required,
+    production_reference_at=iso(REFERENCE),
+    copernicus_source_stage_status="IN_PROGRESS",
+    copernicus_source_stage_sha256=stage_sha,
+    copernicus_bounded_progress_accepted=True,
+    regional_evidence_sha256=regional_sha,
+)
+assert validated_progress["copernicusSourceStageStatus"] == "IN_PROGRESS"
+assert validated_progress["copernicusBoundedProgressAccepted"] is True
+
+not_applicable_document = build_document(
+    targets=targets,
+    required_pairs=required,
+    records=records,
+    acquired_at=acquired_at,
+    production_reference_at=iso(REFERENCE),
+    copernicus_source_stage_status="NOT_APPLICABLE",
+    copernicus_source_stage_sha256=None,
+    copernicus_bounded_progress_accepted=False,
+    regional_evidence_sha256=regional_sha,
+)
+assert validate_document(
+    not_applicable_document,
+    targets=targets,
+    required_pairs=required,
+    production_reference_at=iso(REFERENCE),
+    copernicus_source_stage_status="NOT_APPLICABLE",
+    copernicus_source_stage_sha256=None,
+    copernicus_bounded_progress_accepted=False,
+    regional_evidence_sha256=regional_sha,
+)["copernicusSourceStageStatus"] == "NOT_APPLICABLE"
+
+for status, source_stage_sha256, bounded_progress in (
+    ("READY", stage_sha, True),
+    ("READY", None, False),
+    ("IN_PROGRESS", stage_sha, False),
+    ("IN_PROGRESS", None, True),
+    ("NOT_APPLICABLE", stage_sha, False),
+    ("NOT_APPLICABLE", None, True),
+    ("UNKNOWN", stage_sha, False),
+):
+    rejected(lambda status=status, source_stage_sha256=source_stage_sha256,
+             bounded_progress=bounded_progress: build_document(
+        targets=targets,
+        required_pairs=required,
+        records=records,
+        acquired_at=acquired_at,
+        production_reference_at=iso(REFERENCE),
+        copernicus_source_stage_status=status,
+        copernicus_source_stage_sha256=source_stage_sha256,
+        copernicus_bounded_progress_accepted=bounded_progress,
+        regional_evidence_sha256=regional_sha,
+    ))
 
 incomplete = build_document(
     targets=targets,
@@ -144,17 +201,6 @@ for field, replacement in (
         regional_evidence_sha256=regional_sha,
     ))
 
-rejected(lambda: build_document(
-    targets=targets,
-    required_pairs=required,
-    records=records,
-    acquired_at=acquired_at,
-    production_reference_at=iso(REFERENCE),
-    copernicus_source_stage_status="IN_PROGRESS",
-    copernicus_source_stage_sha256=stage_sha,
-    copernicus_bounded_progress_accepted=False,
-    regional_evidence_sha256=regional_sha,
-))
 rejected(lambda: build_record(
     part_id="P1",
     valid_time=iso(REFERENCE - timedelta(hours=1)),
@@ -177,6 +223,78 @@ rejected(lambda: build_record(
 ))
 
 cli = runpy.run_path(str(Path(__file__).with_name("fill-open-meteo-current-fallback.py")))
+
+# A reusable partial Copernicus stage is an upstream availability checkpoint,
+# not an all-or-nothing gate. Recompute its exact shadow residual, pass that
+# through regional DMI, and give Open-Meteo only what remains.
+partial_stage = {
+    "status": "IN_PROGRESS",
+    "productionReferenceAt": iso(REFERENCE),
+    "missingPairCount": len(required),
+    "missingPairsSha256": required_pairs_sha256(required),
+}
+dmi_sha = canonical_sha256({"fixture": "partial-dmi"})
+copernicus_sha = canonical_sha256({"fixture": "partial-copernicus"})
+partial_registry = {
+    "dmiCurrentInputSha256": dmi_sha,
+    "operationalRangeEndAt": iso(REFERENCE + timedelta(hours=117)),
+    "operationalRequiredPairs": copy.deepcopy(required),
+}
+captured_partial_residual = {}
+
+def fake_regional_plan(**kwargs):
+    captured_partial_residual["pairs"] = copy.deepcopy(
+        kwargs["residual_pairs"]
+    )
+    return {
+        "openMeteoRequiredPairs": [copy.deepcopy(required[1])],
+        "regionalPrivate": {
+            "fixture": "regional-partial",
+            "consumedPairs": [copy.deepcopy(required[0])],
+        },
+    }
+
+with patch.dict(cli["residual_plan"].__globals__, {
+    "validate_target_registry": lambda value: value,
+    "file_sha256": lambda path: (
+        dmi_sha if Path(path).name == "dmi.json" else copernicus_sha
+    ),
+    "validate_shadow": lambda value, *_args, **_kwargs: value,
+    "validate_reusable_source_stage": (
+        lambda *_args, **_kwargs: partial_stage
+    ),
+    "processed_source_assets_from_current_operational_ledger": (
+        lambda _ledger: set()
+    ),
+    "canonical_verified_part_current_attestation": (
+        lambda *_args, **_kwargs: {"fixture": "availability-attestation"}
+    ),
+    "select_required_records": (
+        lambda *_args, **_kwargs: ([], copy.deepcopy(required))
+    ),
+    "build_regional_residual_plan": fake_regional_plan,
+}):
+    partial_plan = cli["residual_plan"](
+        targets=targets,
+        dmi={"diagnostics": {"currentOperationalLedger": {
+            "fixture": "partial-ledger",
+        }}},
+        registry=partial_registry,
+        copernicus={"fixture": "partial-shadow"},
+        source_stage=partial_stage,
+        regional={"fixture": "regional-shadow"},
+        policy={"fixture": "regional-policy"},
+        reference=iso(REFERENCE),
+        copernicus_path=Path("copernicus.json"),
+        dmi_path=Path("dmi.json"),
+    )
+
+assert captured_partial_residual["pairs"] == required
+assert partial_plan["requiredPairs"] == [required[1]]
+assert partial_plan["sourceStageStatus"] == "IN_PROGRESS"
+assert partial_plan["sourceStageSha256"] == canonical_sha256(partial_stage)
+assert partial_plan["boundedProgressAccepted"] is True
+
 safe_nested = type(
     "SafeNestedError",
     (Exception,),

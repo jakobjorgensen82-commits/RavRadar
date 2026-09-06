@@ -1,6 +1,6 @@
-import './learn-i18n-de.js?v=4.0.327';
-import './learn-i18n-en.js?v=4.0.327';
-import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.327';
+import './learn-i18n-de.js?v=4.0.328';
+import './learn-i18n-en.js?v=4.0.328';
+import { initialiseI18n, registerI18nMessages } from '../i18n.js?v=4.0.328';
 
 registerI18nMessages({ da:{
   'static.back':'Tilbage til RavRadar', 'learn.meta.title':'Lær ravjagt – RavRadar',

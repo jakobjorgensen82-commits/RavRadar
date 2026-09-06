@@ -392,7 +392,7 @@ const dmiProducer = build.indexOf('name: Update DMI bulk model cache');
 const dmiGribSave = build.indexOf('name: Save progressed DMI GRIB download cache');
 const dmiCandidateSave = build.indexOf('name: Save isolated DMI candidate progress before any terminal decision');
 const dmiShadowSave = build.indexOf('name: Save private seven-day current-field research cache');
-const dmiTerminalGate = build.indexOf('name: Require successful DMI producer before current supplement');
+const dmiTerminalGate = build.indexOf('name: Classify DMI readiness before current supplement');
 const dmiActiveSnapshot = build.indexOf('name: Strictly snapshot the maintained READY active DMI generation');
 const dmiActiveSave = build.indexOf('name: Save the maintained complete active DMI generation');
 const copernicusSelector = build.indexOf('name: Select exact-hour DMI gaps for targeted Copernicus supplement');
@@ -439,7 +439,9 @@ const selectorBlock = build.slice(
   copernicusSelector,
   build.indexOf('name: Bind production to resolved DMI current hour'),
 );
-assert.match(selectorBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.match(selectorBlock, /if: steps\.preflight\.outputs\.should_run == 'true'/);
+assert.doesNotMatch(selectorBlock, /steps\.dmi-terminal-gate\.outputs\.ready == 'true'/);
+assert.match(selectorBlock, /--dmi \.cache\/dmi-candidate-progress\.json/);
 assert.doesNotMatch(selectorBlock, /--nearest-dmi-hour|--full-coast/);
 assert.match(hydrator, /data\/live\/dmi-bulk-cache\.json/);
 assert.match(hydrator, /ravradar-runtime-diagnostics\.json/);
