@@ -84,15 +84,20 @@ assert.match(
   'Progress-checkpointcadencen skal som default være højst 60 sekunder.',
 );
 const bulkMainStart = bulk.indexOf('def main()');
-const processingSignatureStart = bulk.indexOf('processing_signature = (', bulkMainStart);
-const processingSignatureEnd = bulk.indexOf('required_asset_provenance = {', processingSignatureStart);
-assert.ok(
-  bulkMainStart >= 0
-    && processingSignatureStart > bulkMainStart
-    && processingSignatureEnd > processingSignatureStart,
-  'DMI-producentens aktive processing-signatur skal kunne afgrænses i main.'
+const processingSignatureHelperStart = bulk.indexOf('def current_marine_processing_signature(');
+const processingSignatureHelperEnd = bulk.indexOf(
+  'def _strict_current_donor_ready(',
+  processingSignatureHelperStart,
 );
-const processingSignatureBlock = bulk.slice(processingSignatureStart, processingSignatureEnd);
+assert.ok(
+  processingSignatureHelperStart >= 0
+    && processingSignatureHelperEnd > processingSignatureHelperStart,
+  'Den fælles DMI processing-signatur skal kunne afgrænses.',
+);
+const processingSignatureBlock = bulk.slice(
+  processingSignatureHelperStart,
+  processingSignatureHelperEnd,
+);
 const processingGridVersion = processingSignatureBlock.indexOf('|grid:{GRID_LOOKUP_VERSION}');
 const processingApiVersion = processingSignatureBlock.indexOf('|eccodes-api:{ECCODES_API_VERSION}');
 const processingBindingVersion = processingSignatureBlock.indexOf('|eccodes-binding:{ECCODES_BINDING_VERSION}');
@@ -101,6 +106,24 @@ assert.ok(
     && processingGridVersion < processingApiVersion
     && processingApiVersion < processingBindingVersion,
   'Processing-signaturen skal binde grid-, ecCodes API- og Python-bindingsversion i den rækkefølge.'
+);
+const activeProcessingSignatureStart = bulk.indexOf(
+  'processing_signature = current_marine_processing_signature(',
+  bulkMainStart,
+);
+const activeProcessingSignatureEnd = bulk.indexOf(
+  'required_asset_provenance = {',
+  activeProcessingSignatureStart,
+);
+assert.ok(
+  bulkMainStart >= 0
+    && activeProcessingSignatureStart > bulkMainStart
+    && activeProcessingSignatureEnd > activeProcessingSignatureStart,
+  'DMI-producentens aktive processing-signatur skal bruge den fælles signaturfunktion i main.',
+);
+assert.match(
+  bulk.slice(activeProcessingSignatureStart, activeProcessingSignatureEnd),
+  /current_marine_processing_signature\(\s*zone_registry_signature\s*\)/,
 );
 
 const progressWriterStart = bulk.indexOf('def write_checkpoint(');
