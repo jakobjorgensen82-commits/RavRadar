@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.331 sourcehistorik før vejrstart
+
+- 4.0.330 nåede `main` som `8020cdfe539df0841246714c22705d78927c8bdb`, men er supersederet før nogen 4.0.330-vejrruntime af den snævre 4.0.331-sourceprecondition.
+- 118h-oneoff `34077360903` bestod releasegaten inde i `validate:source`, men fejlede derefter i legacy Candidate G-sourceverifikationen, fordi det shallow checkout ikke indeholdt `49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}`. Klassificér dette som pre-weather workflow/source-fejl, ikke provider-, cache- eller databevis.
+- Alle trin fra central adminhydrering og første vejrcache-restore til DMI, Copernicus, Open-Meteo, closure, runtime, kapacitet, artifact/deploy og modelcutover blev skipped. Det senere røde `always()`-Open-Meteo-krav er kun en følge af skipped fill. Ingen vejrcachedata blev læst ind, opdateret eller gemt af runnet.
+- Lokal 4.0.331 materialiserer og verificerer det fastlåste historiske Candidate G-sourcehead før hvert workflowkald, som kan udføre `validate:source`, uafhængigt af operational action. Det er read-only Git-input og ændrer ikke checkout-head eller runtime. Den fokuserede lokale matrix er grøn; exact-head-CI og runtimebevis mangler.
+- 4.0.330's vejrcache-/providerkontrakt består uændret. Normal workflow er fortsat deaktiveret under den kontrollerede genopfyldning. Frisk main-oneoff, 79.414/79.414, Feggesund 354/354, spatial audit, live kapacitet, fulde post-data gates, deploy og særskilt Phase B er fortsat åbne; Candidate G er offentlig.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.330 helkæde-cachevedligeholdelse
 
 - 4.0.329 er merged på `main` som `b3865eb9`, men komplet positiv vejrruntime er ikke bevist. Candidate G er fortsat offentlig.

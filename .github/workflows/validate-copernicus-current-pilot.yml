@@ -73,6 +73,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Prepare exact pinned Candidate G source before source validation
+        if: steps.source-proof.outputs.required != 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r legacy_source_head legacy_source_tree < <(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD, LEGACY_CANDIDATE_G_SOURCE_TREE } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD + ' ' + LEGACY_CANDIDATE_G_SOURCE_TREE + '\n');")
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
+
       - name: Install source-gate dependencies
         if: steps.source-proof.outputs.required != 'false'
         run: >-
@@ -509,6 +521,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+      - name: Prepare exact pinned Candidate G source before source validation
+        if: steps.source-proof.outputs.required != 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          read -r legacy_source_head legacy_source_tree < <(node --input-type=module -e "import { LEGACY_CANDIDATE_G_SOURCE_HEAD, LEGACY_CANDIDATE_G_SOURCE_TREE } from './scripts/lib/ravscore-legacy-candidate-g-source.mjs'; process.stdout.write(LEGACY_CANDIDATE_G_SOURCE_HEAD + ' ' + LEGACY_CANDIDATE_G_SOURCE_TREE + '\n');")
+          [[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]
+          git fetch --no-tags --depth=1 origin "$legacy_source_head"
+          test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"
+          test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"
+
       - name: Install source-gate dependencies
         if: steps.source-proof.outputs.required != 'false'
         run: >-
@@ -592,7 +616,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -738,7 +762,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -1009,8 +1033,17 @@ jobs:
       - name: Require complete Open-Meteo residual before freshness and closure
         if: always()
         shell: bash
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+          DMI_ACQUISITION_OUTCOME: ${{ steps.dmi-bulk.outcome }}
+          COPERNICUS_ACQUISITION_OUTCOME: ${{ steps.copernicus-fill.outcome }}
+          OPEN_METEO_ACQUISITION_OUTCOME: ${{ steps.open-meteo-fill.outcome }}
         run: |
           set -euo pipefail
+          if [ "$OPEN_METEO_ACQUISITION_OUTCOME" = "skipped" ]; then
+            echo "::error title=Weather provider chain stopped upstream::Open-Meteo was not evaluated because an earlier required step failed or was skipped (source_gate=$SOURCE_GATE_OUTCOME, dmi=$DMI_ACQUISITION_OUTCOME, copernicus=$COPERNICUS_ACQUISITION_OUTCOME)."
+            exit 1
+          fi
           test "${{ steps.open-meteo-fill.outcome }}" = "success"
           test "${{ steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"
           test "${{ steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"
@@ -1052,7 +1085,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

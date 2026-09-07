@@ -38,6 +38,18 @@ const sourceGateRequirementMarkers = [
   '-r requirements-geometry.txt',
   '-r requirements-copernicus.txt',
 ];
+const pinnedSourceHeadMarkers = [
+  'LEGACY_CANDIDATE_G_SOURCE_HEAD',
+  '[[ "$legacy_source_head" =~ ^[a-f0-9]{40}$ ]]',
+  'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
+];
+const pinnedSourceTreeMarkers = [
+  'LEGACY_CANDIDATE_G_SOURCE_TREE',
+  "LEGACY_CANDIDATE_G_SOURCE_TREE + '\\n'",
+  '[[ "$legacy_source_tree" =~ ^[a-f0-9]{40}$ ]]',
+  'test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"',
+  'test "$(git rev-parse "${legacy_source_head}^{tree}")" = "$legacy_source_tree"',
+];
 const sourceGateWorkflowNames = workflowFiles.filter((name) => fs
   .readFileSync(`${workflowDirectory}/${name}`, 'utf8')
   .includes('npm run validate:source'));
@@ -46,12 +58,14 @@ assert.deepEqual(
   ['deploy-trip-storage.yml', 'reusable-weather-build.yml', 'validate-copernicus-current-pilot.yml', 'validate-pull-request.yml'],
   'Alle workflows med validate:source skal være kendte og dækket af dependency-paritetsgaten.',
 );
+let sourceGatePathCount = 0;
 for (const workflowName of sourceGateWorkflowNames) {
   const workflow = fs.readFileSync(`${workflowDirectory}/${workflowName}`, 'utf8').replace(/\r\n/g, '\n');
   let searchFrom = 0;
   while (true) {
     const sourceGateRun = workflow.indexOf('npm run validate:source', searchFrom);
     if (sourceGateRun < 0) break;
+    sourceGatePathCount += 1;
     const sourceGateStep = workflow.lastIndexOf('\n      - name:', sourceGateRun);
     const dependencyStep = workflow.lastIndexOf('\n      - name:', sourceGateStep - 1);
     if (sourceGateStep < 0 || dependencyStep < 0) {
@@ -73,9 +87,50 @@ for (const workflowName of sourceGateWorkflowNames) {
     if (dependencyCondition !== sourceGateCondition) {
       throw new Error(`${workflowName}: dependency-step og validate:source skal have samme if-betingelse.`);
     }
+    const checkoutUse = workflow.lastIndexOf('uses: actions/checkout@v7', sourceGateStep);
+    const checkoutStep = workflow.lastIndexOf('\n      - ', checkoutUse);
+    const checkoutEnd = workflow.indexOf('\n      - ', checkoutUse);
+    const checkoutBlock = checkoutStep >= 0
+      ? workflow.slice(checkoutStep, checkoutEnd < 0 ? workflow.length : checkoutEnd)
+      : '';
+    if (!checkoutBlock.includes('fetch-depth: 0')) {
+      const exactTreePrepare = workflow.lastIndexOf(
+        '\n      - name: Prepare exact pinned Candidate G source before source validation',
+        dependencyStep,
+      );
+      const existingHeadPrepare = workflow.lastIndexOf(
+        '\n      - name: Fetch exact public Candidate G source commit before source validation',
+        dependencyStep,
+      );
+      const prepareStep = Math.max(exactTreePrepare, existingHeadPrepare);
+      if (checkoutStep < 0 || prepareStep <= checkoutStep || prepareStep >= dependencyStep) {
+        throw new Error(`${workflowName}: shallow validate:source mangler pinned source-forberedelse før dependency-step.`);
+      }
+      const prepareEnd = workflow.indexOf('\n      - ', prepareStep + 1);
+      const prepareBlock = workflow.slice(prepareStep, prepareEnd < 0 ? workflow.length : prepareEnd);
+      for (const marker of pinnedSourceHeadMarkers) {
+        if (!prepareBlock.includes(marker)) {
+          throw new Error(`${workflowName}: pinned source-forberedelsen mangler ${marker}.`);
+        }
+      }
+      const prepareCondition = prepareBlock.match(/^\s+if:\s+(.+)$/m)?.[1] || '';
+      if (prepareCondition !== sourceGateCondition) {
+        throw new Error(`${workflowName}: pinned source-forberedelse og validate:source skal have samme if-betingelse.`);
+      }
+      if (exactTreePrepare === prepareStep) {
+        for (const marker of pinnedSourceTreeMarkers) {
+          if (!prepareBlock.includes(marker)) {
+            throw new Error(`${workflowName}: HEAD+TREE-forberedelsen mangler ${marker}.`);
+          }
+        }
+      } else if (workflowName !== 'deploy-trip-storage.yml') {
+        throw new Error(`${workflowName}: kun det eksisterende storage-deploy må bruge den ældre exact-HEAD-forberedelse.`);
+      }
+    }
     searchFrom = sourceGateRun + 1;
   }
 }
+assert.equal(sourceGatePathCount, 5, 'Præcis fem kendte validate:source-stier skal have dependency- og historikdækning.');
 const historicalWavePilot = fs.readFileSync(`${workflowDirectory}/build-ravscore-historical-wave-pilot.yml`, 'utf8').replace(/\r\n/g, '\n');
 for (const marker of [
   'workflow_dispatch:',
@@ -352,6 +407,11 @@ const oneoffOpenMeteoFill = operationalStep('Fill only the exact remaining curre
 const oneoffOpenMeteoAuthority = operationalStep('Reconfirm exact main before shared Open-Meteo progress cache');
 const oneoffOpenMeteoSave = operationalStep('Save shared private Open-Meteo current progress');
 const oneoffOpenMeteoTerminal = operationalStep('Require complete Open-Meteo residual before freshness and closure');
+assert.match(
+  oneoffOpenMeteoTerminal,
+  /^\s+if: always\(\)\s*$/m,
+  'Oneoff Open-Meteo terminalgaten skal altid køre og klassificere upstream-stop fail-closed.',
+);
 assert.ok(dmiAcquisitionStep.includes('DMI_BULK_DKSS_PRIMARY_MODE: true'),
   'Engangskørslen skal bruge DKSS-primary ved den store DMI-opfyldning.');
 for (const marker of [
@@ -382,10 +442,30 @@ for (const marker of [
 ]) assert.ok(oneoffOpenMeteoSave.includes(marker), `Oneoff Open-Meteo save mangler ${marker}`);
 for (const marker of [
   'if: always()',
+  'SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}',
+  'DMI_ACQUISITION_OUTCOME: ${{ steps.dmi-bulk.outcome }}',
+  'COPERNICUS_ACQUISITION_OUTCOME: ${{ steps.copernicus-fill.outcome }}',
+  'OPEN_METEO_ACQUISITION_OUTCOME: ${{ steps.open-meteo-fill.outcome }}',
+  'if [ "$OPEN_METEO_ACQUISITION_OUTCOME" = "skipped" ]; then',
+  'Weather provider chain stopped upstream',
+  'source_gate=$SOURCE_GATE_OUTCOME',
   'steps.open-meteo-fill.outcome }}" = "success"',
   'steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"',
   'steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"',
 ]) assert.ok(oneoffOpenMeteoTerminal.includes(marker), `Oneoff Open-Meteo terminalgate mangler ${marker}`);
+const oneoffOpenMeteoSkippedGuard = oneoffOpenMeteoTerminal.indexOf(
+  'if [ "$OPEN_METEO_ACQUISITION_OUTCOME" = "skipped" ]; then',
+);
+const oneoffOpenMeteoSkippedExit = oneoffOpenMeteoTerminal.indexOf('exit 1', oneoffOpenMeteoSkippedGuard);
+const oneoffOpenMeteoCompleteness = oneoffOpenMeteoTerminal.indexOf(
+  'test "${{ steps.open-meteo-fill.outcome }}" = "success"',
+);
+assert.ok(
+  oneoffOpenMeteoSkippedGuard >= 0
+    && oneoffOpenMeteoSkippedExit > oneoffOpenMeteoSkippedGuard
+    && oneoffOpenMeteoCompleteness > oneoffOpenMeteoSkippedExit,
+  'Oneoff terminalgaten skal fejle eksplicit på upstream-skip og stadig kræve normal Open-Meteo-komplethed bagefter.',
+);
 assert.doesNotMatch(
   operationalPreflight.slice(
     operationalPreflight.indexOf('name: Restore shared private Open-Meteo current progress'),
@@ -1347,9 +1427,7 @@ for (const marker of [
   'workflow_dispatch:',
   'permissions:\n  contents: read',
   'SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}',
-  'Fetch exact public Candidate G source commit before source validation',
   'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
-  'test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"',
   'npm run validate:source',
   'Validate exact source head before external writes',
   'Require only the seven exact integrated cutover migrations',
@@ -1384,8 +1462,9 @@ if (tripStorageDeployment.includes('pages: write') || tripStorageDeployment.incl
   throw new Error('Turlager-deploymentet må ikke kunne deploye Pages.');
 }
 const exactSourceValidation = tripStorageDeployment.indexOf('name: Validate exact source head before external writes');
-const legacySourceFetchBeforeValidation = tripStorageDeployment.indexOf(
-  'name: Fetch exact public Candidate G source commit before source validation',
+const legacySourceFetchBeforeValidation = Math.max(
+  tripStorageDeployment.indexOf('name: Fetch exact public Candidate G source commit before source validation'),
+  tripStorageDeployment.indexOf('name: Prepare exact pinned Candidate G source before source validation'),
 );
 if (!(legacySourceFetchBeforeValidation >= 0 && legacySourceFetchBeforeValidation < exactSourceValidation)
   || tripStorageDeployment.split('git fetch --no-tags --depth=1 origin "$legacy_source_head"').length - 1 !== 1) {
@@ -1788,11 +1867,12 @@ if (!(positions.legacyCutoverImport < positions.legacySourceFetch
   throw new Error('Den eksakte Candidate G Git-kilde skal hentes efter isoleret public import og før lokal attestation.');
 }
 const legacyFetchCommand = 'git fetch --no-tags --depth=1 origin "$legacy_source_head"';
-if (buildWorkflow.split(legacyFetchCommand).length - 1 !== 1
+if (buildWorkflow.split(legacyFetchCommand).length - 1 !== 2
   || deployWorkflow.split(legacyFetchCommand).length - 1 !== 1
   || buildWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1
+  || buildWorkflow.split('test "$(git rev-parse FETCH_HEAD^{commit})" = "$legacy_source_head"').length - 1 !== 1
   || deployWorkflow.split('test "$(git rev-parse FETCH_HEAD)" = "$legacy_source_head"').length - 1 !== 1) {
-  throw new Error('Både build-attestation og deploy-verifikation skal hente og bekræfte præcis den pinnede Candidate G-sourcecommit.');
+  throw new Error('Buildets sourcegate og first-cutover-attestation samt deploy-verifikationen skal hver hente og bekræfte den pinnede Candidate G-sourcecommit.');
 }
 const legacyDeployFetch = deployWorkflow.indexOf(
   'name: Fetch exact public Candidate G source commit for first cutover verification',

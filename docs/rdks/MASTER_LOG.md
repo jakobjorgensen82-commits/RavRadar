@@ -1,3 +1,12 @@
+# NYESTE IMPLEMENTERINGSDELTA – 2026-09-07 – 4.0.331 sourcehistorik før vejrkæden
+
+- 4.0.330 blev merged på `main` som `8020cdfe539df0841246714c22705d78927c8bdb`. Den første autoriserede 118h-oneoff `34077360903` startede på netop denne head, men nåede ingen vejrhentning.
+- Den fulde releasegate inde i `validate:source` bestod. Derefter fejlede legacy Candidate G-sourceverifikationen på `git rev-parse 49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}`, fordi oneoff-jobbets standardcheckout var shallow og ikke havde det fastlåste historiske objekt.
+- Alle efterfølgende admin-, cache-, provider-, closure-, runtime-, kapacitets-, artifact-, deploy- og modeltrin blev skipped. Det terminale `always()`-krav blev sekundært rødt på skipped Open-Meteo-fill; det er ikke en providerfejl. Ingen provider- eller vejrcachedata blev ændret.
+- Helhedsauditen fandt samme fejlklasse i manuel pilot og normal reusable weather-build. PR-gaten har fuld historik. Trip-storage havde allerede eksakt HEAD-fetch og er harmoniseret til samme fail-closed HEAD+TREE-forhåndskontrol; dermed er alle sourcegate-workflows beskyttet. Post-source-auditen fandt ingen anden dependency, som kun fandtes i PR-miljøet.
+- 4.0.331 materialiserer exact pinned Candidate G-head og tree før alle mulige weather-`validate:source`-kald og verificerer SHA/`FETCH_HEAD` uden at flytte checkout-head. Oneoffens terminalbesked skelner samtidig upstream stop fra en faktisk Open-Meteo-fejl. Den fokuserede lokale kode-, workflow-, versions-, RDKS-, håndbogs-/SQL- og protected-metadata-matrix er grøn; exact-head-CI og runtime mangler.
+- 4.0.330 er dermed supersederet før runtime, ikke historisk omskrevet. Dens provider-/cache-/fallbackkontrakt består. Normal workflow er fortsat deaktiveret. Exact-head, merge, frisk main-oneoff, 79.414/79.414, Feggesund, spatial audit, kapacitet, fulde post-data gates, deploy og Phase B er fortsat åbne; Candidate G er offentlig.
+
 # NYESTE EJERDELTA – 2026-09-07 – autonom helkædeafslutning og model-online
 
 - Ejeren beordrer autonomt og kontinuerligt arbejde: få først styr på hele vejrdatastrømmen og dens vedligeholdelse, og få derefter den nye integrerede scoremodel online. Nødvendige ændringer inden for de allerede godkendte krav er autoriseret.

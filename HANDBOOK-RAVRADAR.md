@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.330
+**Håndbogsversion:** 4.0.331
+
+## Kildekontrollen skal have sit historiske sammenligningsgrundlag – 2026-09-07
+
+RavRadars kildekontrol sammenligner ikke kun den aktuelle kode. Den beviser også den fastlåste offentlige Candidate G-kilde fra et bestemt historisk Git-head. Det gør modelovergangen reproducerbar, men betyder, at workflowet skal hente netop dette historiske sourceobjekt, når GitHub starter med et overfladisk checkout.
+
+118-timerskørslen `34077360903` kørte på den korrekte `main`-commit og bestod selve releasegaten. Den stoppede derefter, fordi det historiske Candidate G-head `49dd4cb454656bdf629e5df760176705e38d2cb0` ikke fandtes i runnerens lokale Git-historik. Fejlen skete før central konfiguration, vejrcacher og leverandører blev åbnet. DMI, Copernicus og Open-Meteo blev derfor ikke prøvet, og ingen vejrcachedata blev ændret. Den efterfølgende røde Open-Meteo-slutlinje var kun en følge af, at fill-trinnet var sprunget over; den beviser ikke en fejl hos Open-Meteo.
+
+4.0.331 henter det eksakte fastlåste sourcehead, når den fulde kildegate faktisk skal køres, og kontrollerer både commit og tree før gaten. Det gælder den almindelige vejrbygning, den manuelle Copernicus-pilot og den store oneoff. Hentningen er read-only og flytter ikke den aktuelle checkout-commit, ændrer ikke cache og skriver ikke til RavRadars beskyttede runtime. En allerede live-verificeret exact-main-kildekontrol kan fortsat genbruges efter de eksisterende regler.
+
+Dette ændrer ikke vejrsystemets logik. Den almindelige kørsel skal fortsat vedligeholde hele cachen, oneoff er kun accelerator, og kildeordenen er fortsat DMI, Baltic, AMM15, regional DMI og Open-Meteo. Før publicering kræves stadig præcis 79.414/79.414 currentpar, én kilde pr. par og nul overlap eller mangler. De foregående højst 48 timers verificerede historik er fortsat rådgivende. Normal workflow er fortsat deaktiveret under den kontrollerede opfyldning.
+
+Status: 4.0.330 blev merged, men nåede ingen vejrruntime og er derfor supersederet af den snævre 4.0.331-rettelse. Ny exact-head-kontrol, merge, frisk main-oneoff, Feggesund 354/354, spatial audit, live kapacitet, fulde produktionsgates, deploy og den særskilte modelaktivering mangler fortsat. Candidate G er offentlig.
 
 ## Almindelige vejrkørsler vedligeholder hele cachen – 2026-09-07
 
@@ -293,7 +305,7 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.330 first-cutover-kandidat
+## Aktuel status – RavScore 4.0.331 first-cutover-kandidat
 
 Candidate G er fortsat den eneste offentlige model. Den samlede first-cutover-kode ligger på main, men den lokale 4.0.322-driftspakke med HARMONIE-assetwatchdog er endnu ikke exact-head-valideret, merged eller kørt i frisk produktion. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy-, rollback- og watchdogtests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
 
@@ -391,7 +403,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.330-cutoverkandidat, ikke produktion
+## Status for det aktuelle modelarbejde – lokal 4.0.331-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver state 6 og den lokale 4.0.321-cutoverkandidat. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig; den additive checkpointmigration og de resterende data-, kapacitets- og produktionsbeviser er endnu ikke lukket.
 
@@ -1497,7 +1509,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 Den implementerede lokale 4.0.321-cutoverkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Fase A-appkoden blev exact-head-valideret og merged med Candidate G fortsat offentlig; indtil 4.0.321 selv har bestået de resterende data-, kapacitets-, produktions- og offentlige kontroller, er Candidate G fortsat eneste offentlige model.
 
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.330 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
+Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.331 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
 
 ### 18.1 Hovedformel
 

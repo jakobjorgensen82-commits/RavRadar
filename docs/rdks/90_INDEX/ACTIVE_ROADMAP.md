@@ -1,3 +1,15 @@
+# NYESTE ROADMAP – 2026-09-07 – 4.0.331 fra sourceprecondition til vejrruntime
+
+- [x] Stop og klassificér `34077360903` som pre-weather shallow-checkout-fejl; påstå ikke DMI-, Copernicus-, Open-Meteo-, cache- eller runtimebevis.
+- [x] Gennemgå hele sourceplanen, alle workflowkaldesteder og oneoffens post-source-afhængigheder, så rettelsen dækker fejlklassen frem for kun ét symptom.
+- [x] Materialisér exact pinned Candidate G-head/tree før sourcegaten i normal reusable weather-build, manuel pilot og 118h-oneoff; bevar PR-gatens fulde checkout og harmonisér trip-storage fra eksakt HEAD-fetch til fail-closed HEAD+TREE-forhåndskontrol, så alle sourcegate-workflows er dækket.
+- [x] Gør den terminale oneoff-fejl tydelig om upstream stop, når Open-Meteo ikke blev evalueret.
+- [x] Afslut kun de målrettede sourcehistorik-/workflow-, version-, RDKS-, håndbogs-/SQL- og protected-metadata-tests. Den fokuserede lokale matrix er grøn; den lange lokale `validate:source` er ikke gentaget.
+- [ ] Commit/push 4.0.331, få én exact-head sourcegate i GitHub og merge kun den eksakte grønne head.
+- [ ] Start derefter en frisk main-oneoff på 4.0.331. Følg cachegenbrug og faktisk DMI → Baltic → AMM15 → regional DMI → Open-Meteo-progression; run `34077360903` indeholder ingen weatherbaseline.
+- [ ] Kræv præcis 79.414/79.414 med én kilde pr. par og nul overlap/missing samt Feggesund 354/354. Genaktivér ikke det deaktiverede normale workflow under den kontrollerede opfyldning uden ejerens plan.
+- [ ] Fortsæt med hydreret spatial audit, live Supabase-kapacitet, fulde post-data gates, artifact/deploy og først derefter særskilt autoriseret Phase B og offentlig modelverifikation. Candidate G er offentlig indtil hele kæden er grøn.
+
 # NYESTE ROADMAP – 2026-09-07 – 4.0.330 fra cachekontinuitet til model-online
 
 - [x] Løft problemet fra enkeltfejl til hele providerkæden: adskil robust partial indsamling fra strict 79.414/79.414-releaseclosure.
