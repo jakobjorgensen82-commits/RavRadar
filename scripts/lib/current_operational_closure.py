@@ -23,6 +23,7 @@ from .copernicus_current import (
 from .copernicus_current_source_stage import (
     SOURCE_STAGE_PROGRESS_STATUS,
     SOURCE_STAGE_STATUS,
+    select_source_order_admissible_records,
     validate_reusable_source_stage,
 )
 from .copernicus_target_identity import target_fingerprint
@@ -371,6 +372,19 @@ def _copernicus_state(
             _fail("SOURCE_STAGE_INVALID")
         return validated
 
+    def select_with_stage(
+        validated_stage: dict[str, Any],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, str]]]:
+        refs, residual, _ = select_source_order_admissible_records(
+            registry["operationalRequiredPairs"],
+            list(cache.get("acquisitions") or []),
+            list(cache.get("records") or []),
+            reference,
+            list(target_by_id.values()),
+            list(validated_stage.get("attempts") or []),
+        )
+        return refs, residual
+
     def require_stage_residual(validated_stage: dict[str, Any]) -> None:
         if validated_stage.get("status") == SOURCE_STAGE_STATUS:
             if validated_stage.get("missingPairs") != missing_pairs:
@@ -395,6 +409,7 @@ def _copernicus_state(
                     True,
                 )
         validated_stage = reusable_stage()
+        record_refs, missing_pairs = select_with_stage(validated_stage)
         require_stage_residual(validated_stage)
         if (
             validated_stage.get("selectedRecordRefCount") != len(record_refs)
@@ -429,6 +444,7 @@ def _copernicus_state(
             False,
         )
     validated_stage = reusable_stage()
+    record_refs, missing_pairs = select_with_stage(validated_stage)
     require_stage_residual(validated_stage)
     if (
         validated_stage.get("selectedRecordRefCount") != len(record_refs)
@@ -586,6 +602,7 @@ def build_regional_residual_plan(
     return {
         "regionalPrivate": regional_private,
         "regionalAssignments": regional_assignments,
+        "regionalDiagnostics": regional_result.get("shadowDiagnostics") or {},
         "openMeteoRequiredPairs": open_meteo_required,
     }
 

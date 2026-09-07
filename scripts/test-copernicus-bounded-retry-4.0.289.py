@@ -84,6 +84,29 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-retry-") as raw:
         "bounded_progress=true",
         "source_stage_disposition=IN_PROGRESS",
     ]
+    github_output.write_text("", encoding="utf-8")
+    os.environ["GITHUB_OUTPUT"] = str(github_output)
+    try:
+        module.write_github_outputs(
+            {
+                "ok": True,
+                "attempt": 1,
+                "reason": "completed",
+                "boundedProgress": False,
+            },
+            refresh_mode=True,
+        )
+    finally:
+        if previous_output is None:
+            os.environ.pop("GITHUB_OUTPUT", None)
+        else:
+            os.environ["GITHUB_OUTPUT"] = previous_output
+    refresh_outputs = github_output.read_text(encoding="utf-8").splitlines()
+    assert refresh_outputs == [
+        "bounded_progress=false",
+        "maintenance_completed=true",
+    ]
+    assert all("source_stage_disposition" not in row for row in refresh_outputs)
 
 timed_out = module.run_bounded(
     [sys.executable, "-c", "import time; time.sleep(1)"],

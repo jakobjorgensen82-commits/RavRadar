@@ -26,6 +26,7 @@ try:  # Support both ``lib.foo`` tests and direct ``scripts/lib`` imports.
     from .dmi_native_provenance import (
         canonical_current_source_asset,
         canonical_time,
+        current_attestation_authorization_from_operational_ledger,
         current_source_asset_sha256,
         part_time_pairs_sha256,
         validate_current_operational_availability_ledger,
@@ -38,6 +39,7 @@ except ImportError:  # pragma: no cover - exercised by production-style import.
     from dmi_native_provenance import (
         canonical_current_source_asset,
         canonical_time,
+        current_attestation_authorization_from_operational_ledger,
         current_source_asset_sha256,
         part_time_pairs_sha256,
         validate_current_operational_availability_ledger,
@@ -382,6 +384,7 @@ def _ledger_source_index(
     ledger: dict[str, Any],
 ) -> tuple[
     dict[tuple[str, str, str], dict[str, Any]],
+    dict[tuple[str, str, str, str], dict[str, Any]],
     frozenset[str],
 ]:
     collections = ledger.get("collections")
@@ -423,7 +426,36 @@ def _ledger_source_index(
             if identity in indexed and indexed[identity] != source:
                 _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
             indexed[identity] = source
-    return indexed, frozenset(selected_model_runs)
+    try:
+        _, retained_pair_sources = (
+            current_attestation_authorization_from_operational_ledger(ledger)
+        )
+    except (TypeError, ValueError):
+        _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+    retained_index: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for row in retained_pair_sources:
+        if not isinstance(row, dict):
+            _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        part_id = str(row.get("partId") or "").strip()
+        source = canonical_current_source_asset(row.get("source"))
+        if not part_id or source is None:
+            _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        if source["collection"] != REQUIRED_COLLECTION:
+            continue
+        try:
+            source_sha256 = current_source_asset_sha256(source)
+        except ValueError:
+            _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        identity = (
+            part_id,
+            source["modelRun"],
+            source["validTime"],
+            source_sha256,
+        )
+        if identity in retained_index and retained_index[identity] != source:
+            _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        retained_index[identity] = source
+    return indexed, retained_index, frozenset(selected_model_runs)
 
 
 def _validate_shadow_header(shadow: Any) -> dict[str, Any]:
@@ -479,6 +511,7 @@ def _validated_sample(
     policy_sha256: str,
     target_registry_sha256: str,
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
+    retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
 ) -> dict[str, Any] | None:
     if not isinstance(sample, dict):
         _fail("SHADOW_SAMPLE_INVALID")
@@ -519,6 +552,12 @@ def _validated_sample(
     if sample.get("sampleKey") != expected_key:
         _fail("SHADOW_SOURCE_BINDING_INVALID")
     source = ledger_sources.get((model_run, valid_time, source_asset_sha256))
+    authorization_rank = 0
+    if source is None:
+        source = retained_sources.get(
+            (part_id, model_run, valid_time, source_asset_sha256)
+        )
+        authorization_rank = 1
     if source is None:
         _fail("SHADOW_SOURCE_ASSET_HASH_MISMATCH")
 
@@ -589,6 +628,7 @@ def _validated_sample(
         "modelRunAt": model_run_dt,
         "validTime": valid_time,
         "validTimeAt": valid_time_dt,
+        "authorizationRank": authorization_rank,
         "sourceAssetSha256": source_asset_sha256,
         "sourceProofSha256": source_proof_sha256,
         "vectorCommitmentSha256": vector_commitment_sha256,
@@ -602,8 +642,9 @@ def _samples_by_part(
     policy_sha256: str,
     target_registry_sha256: str,
     ledger_sources: dict[tuple[str, str, str], dict[str, Any]],
+    retained_sources: dict[tuple[str, str, str, str], dict[str, Any]],
     selected_model_runs: frozenset[str],
-) -> dict[str, dict[str, Any]]:
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
     candidate_times: dict[str, set[str]] = {part_id: set() for part_id in bound_parts}
     for gap in gaps:
         _, gap_dt = _exact_utc_hour(gap["validTime"], "DMI_GAP_TIME_INVALID")
@@ -615,42 +656,58 @@ def _samples_by_part(
 
     anchors = shadow["anchors"]
     result: dict[str, dict[str, Any]] = {}
+    quarantine_codes: dict[str, int] = {}
+
+    def quarantine(code: str) -> None:
+        quarantine_codes[code] = quarantine_codes.get(code, 0) + 1
+
     for part_id, part in bound_parts.items():
         if part.get("regionalEvidenceEligible") is False:
-            result[part_id] = {
-                "validated": [],
-                "sourceMismatchTimes": set(),
-            }
+            result[part_id] = {"validated": []}
             continue
         anchor = anchors.get(f"{TARGET_PREFIX}{part_id}")
-        raw_samples = _validate_anchor(anchor, part, part_id)
-        validated: list[dict[str, Any]] = []
-        source_mismatch_times: set[str] = set()
-        seen_sample_keys: set[str] = set()
+        try:
+            raw_samples = _validate_anchor(anchor, part, part_id)
+        except RegionalCurrentOperationalError as error:
+            quarantine(error.code)
+            result[part_id] = {"validated": []}
+            continue
+        validated_by_key: dict[str, dict[str, Any]] = {}
+        ambiguous_sample_keys: set[str] = set()
         for raw_sample in raw_samples:
-            if not isinstance(raw_sample, dict):
-                _fail("SHADOW_SAMPLE_INVALID")
-            sample_time = canonical_time(raw_sample.get("validTime"))
-            if sample_time is None:
-                _fail("SHADOW_SOURCE_BINDING_INVALID")
-            if sample_time not in candidate_times[part_id]:
-                continue
-            collection = raw_sample.get("collection")
-            sample_model_run, sample_model_run_dt = _exact_utc_hour(
-                raw_sample.get("modelRun"), "SHADOW_SOURCE_BINDING_INVALID"
-            )
-            sample_time, sample_time_dt = _exact_utc_hour(
-                raw_sample.get("validTime"), "SHADOW_SOURCE_BINDING_INVALID"
-            )
-            if collection != REQUIRED_COLLECTION or sample_model_run_dt > sample_time_dt:
-                _fail("SHADOW_SOURCE_BINDING_INVALID")
-            if sample_model_run not in selected_model_runs:
-                # The seven-day shadow intentionally spans several model runs.
-                # A prior run is retained history, not current ledger evidence.
-                # Ignore it before run-specific cadence, asset and vector checks;
-                # only the exact run selected by this ledger may affect closure.
-                continue
             try:
+                if not isinstance(raw_sample, dict):
+                    _fail("SHADOW_SAMPLE_INVALID")
+                sample_time = canonical_time(raw_sample.get("validTime"))
+                if sample_time is None:
+                    _fail("SHADOW_SOURCE_BINDING_INVALID")
+                if sample_time not in candidate_times[part_id]:
+                    continue
+                collection = raw_sample.get("collection")
+                sample_model_run, sample_model_run_dt = _exact_utc_hour(
+                    raw_sample.get("modelRun"), "SHADOW_SOURCE_BINDING_INVALID"
+                )
+                sample_time, sample_time_dt = _exact_utc_hour(
+                    raw_sample.get("validTime"), "SHADOW_SOURCE_BINDING_INVALID"
+                )
+                if collection != REQUIRED_COLLECTION or sample_model_run_dt > sample_time_dt:
+                    _fail("SHADOW_SOURCE_BINDING_INVALID")
+                if sample_model_run not in selected_model_runs:
+                    source_sha256 = raw_sample.get("sourceAssetSha256")
+                    retained_identity = (
+                        part_id,
+                        sample_model_run,
+                        sample_time,
+                        source_sha256,
+                    )
+                    if (
+                        not isinstance(source_sha256, str)
+                        or retained_identity not in retained_sources
+                    ):
+                        # Old unproved shadow bytes are irrelevant data-plane
+                        # history. Only an exact retained per-pair proof may
+                        # make a prior run eligible for current classification.
+                        continue
                 sample = _validated_sample(
                     raw_sample,
                     part_id=part_id,
@@ -658,27 +715,30 @@ def _samples_by_part(
                     policy_sha256=policy_sha256,
                     target_registry_sha256=target_registry_sha256,
                     ledger_sources=ledger_sources,
+                    retained_sources=retained_sources,
                 )
             except RegionalCurrentOperationalError as error:
-                if error.code != "SHADOW_SOURCE_ASSET_HASH_MISMATCH":
-                    raise
-                # A revised official asset legitimately leaves an older byte-bound
-                # sample beside its replacement.  Defer the mismatch: it is fatal
-                # only when no currently ledger-bound exact/hold source can win.
-                source_mismatch_times.add(sample_time)
+                # The shadow is optional provider data, never a control plane.
+                # A bad sample cannot be admitted, but it also cannot prevent
+                # the exact pair from continuing as MISSING to Open-Meteo.
+                quarantine(error.code)
                 continue
             if sample is None:
                 continue
             sample_key = str(raw_sample.get("sampleKey") or "")
-            if sample_key in seen_sample_keys:
-                _fail("SHADOW_SAMPLE_AMBIGUOUS")
-            seen_sample_keys.add(sample_key)
-            validated.append(sample)
-        result[part_id] = {
-            "validated": validated,
-            "sourceMismatchTimes": source_mismatch_times,
-        }
-    return result
+            if sample_key in ambiguous_sample_keys:
+                continue
+            if sample_key in validated_by_key:
+                validated_by_key.pop(sample_key, None)
+                ambiguous_sample_keys.add(sample_key)
+                quarantine("SHADOW_SAMPLE_AMBIGUOUS")
+                continue
+            validated_by_key[sample_key] = sample
+        result[part_id] = {"validated": list(validated_by_key.values())}
+    return result, {
+        "quarantinedAnchorOrSampleCount": sum(quarantine_codes.values()),
+        "quarantineCodes": dict(sorted(quarantine_codes.items())),
+    }
 
 
 def _classify_pairs(
@@ -691,10 +751,27 @@ def _classify_pairs(
         valid_time, gap_dt = _exact_utc_hour(gap["validTime"], "DMI_GAP_TIME_INVALID")
         part_samples = samples_by_part.get(part_id) or {}
         candidates = part_samples.get("validated") or []
-        source_mismatch_times = part_samples.get("sourceMismatchTimes") or set()
         exact = [sample for sample in candidates if sample["validTime"] == valid_time]
         if exact:
-            selected = max(exact, key=lambda row: (row["modelRun"], row["sourceAssetSha256"]))
+            newest_run = max(row["modelRunAt"] for row in exact)
+            preferred = [row for row in exact if row["modelRunAt"] == newest_run]
+            best_authorization = min(row["authorizationRank"] for row in preferred)
+            preferred = [
+                row for row in preferred
+                if row["authorizationRank"] == best_authorization
+            ]
+            selected = (
+                preferred[0]
+                if len({row["sourceAssetSha256"] for row in preferred}) == 1
+                else None
+            )
+            if selected is None:
+                rows.append({
+                    "partId": part_id,
+                    "validTime": valid_time,
+                    "classification": MISSING,
+                })
+                continue
             rows.append({
                 "partId": part_id,
                 "validTime": valid_time,
@@ -715,37 +792,41 @@ def _classify_pairs(
             if 1 <= age_hours <= MAXIMUM_HOLD_HOURS:
                 prior.append((age_hours, sample))
         if prior:
-            age_hours, selected = min(
-                prior,
-                key=lambda item: (
-                    item[0],
-                    -item[1]["modelRunAt"].timestamp(),
-                    item[1]["sourceAssetSha256"],
-                ),
+            youngest_age = min(item[0] for item in prior)
+            preferred = [item for item in prior if item[0] == youngest_age]
+            newest_run = max(item[1]["modelRunAt"] for item in preferred)
+            preferred = [
+                item for item in preferred
+                if item[1]["modelRunAt"] == newest_run
+            ]
+            best_authorization = min(
+                item[1]["authorizationRank"] for item in preferred
             )
-            rows.append({
-                "partId": part_id,
-                "validTime": valid_time,
-                "classification": REGIONAL_DMI_DERIVED_HOLD,
-                "sourceValidTime": selected["validTime"],
-                "sourceModelRun": selected["modelRun"],
-                "holdAgeHours": age_hours,
-                "sourceAssetSha256": selected["sourceAssetSha256"],
-                "sourceProofSha256": selected["sourceProofSha256"],
-                "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
-            })
-        elif any(
-            (gap_dt - datetime.fromisoformat(value.replace("Z", "+00:00"))).total_seconds()
-            in {0, 3600, 7200, 10800}
-            for value in source_mismatch_times
-        ):
-            _fail("SHADOW_SOURCE_ASSET_HASH_MISMATCH")
-        else:
-            rows.append({
-                "partId": part_id,
-                "validTime": valid_time,
-                "classification": MISSING,
-            })
+            preferred = [
+                item for item in preferred
+                if item[1]["authorizationRank"] == best_authorization
+            ]
+            if len({
+                item[1]["sourceAssetSha256"] for item in preferred
+            }) == 1:
+                age_hours, selected = preferred[0]
+                rows.append({
+                    "partId": part_id,
+                    "validTime": valid_time,
+                    "classification": REGIONAL_DMI_DERIVED_HOLD,
+                    "sourceValidTime": selected["validTime"],
+                    "sourceModelRun": selected["modelRun"],
+                    "holdAgeHours": age_hours,
+                    "sourceAssetSha256": selected["sourceAssetSha256"],
+                    "sourceProofSha256": selected["sourceProofSha256"],
+                    "vectorCommitmentSha256": selected["vectorCommitmentSha256"],
+                })
+                continue
+        rows.append({
+            "partId": part_id,
+            "validTime": valid_time,
+            "classification": MISSING,
+        })
     return rows
 
 
@@ -1024,15 +1105,35 @@ def build_regional_current_operational_evidence(
     gaps, gaps_sha256 = _normalize_gap_pairs(
         dmi_gap_pairs, bound_parts, reference_dt, validated_ledger
     )
-    shadow = _validate_shadow_header(current_shadow)
-    ledger_sources, selected_model_runs = _ledger_source_index(validated_ledger)
-    samples = _samples_by_part(
+    shadow_header_quarantined = False
+    try:
+        shadow = _validate_shadow_header(current_shadow)
+    except RegionalCurrentOperationalError:
+        # This private shadow is an optional provider data plane. A malformed
+        # envelope yields no regional assignments, while the independently
+        # validated policy, targets, DMI ledger/attestation and gap matrix
+        # continue to bind the exact Open-Meteo residual.
+        shadow = {
+            "schemaVersion": 1,
+            "retentionHours": 168,
+            "scoreImpact": False,
+            "publicRuntime": False,
+            "anchors": {},
+        }
+        shadow_header_quarantined = True
+    (
+        ledger_sources,
+        retained_sources,
+        selected_model_runs,
+    ) = _ledger_source_index(validated_ledger)
+    samples, shadow_diagnostics = _samples_by_part(
         shadow,
         gaps,
         bound_parts,
         policy_sha256,
         target_registry_sha256,
         ledger_sources,
+        retained_sources,
         selected_model_runs,
     )
     pair_refs = _classify_pairs(gaps, samples)
@@ -1084,6 +1185,10 @@ def build_regional_current_operational_evidence(
     return {
         "privateProof": private_proof,
         "safeProjection": safe_regional_current_operational_projection(private_proof),
+        "shadowDiagnostics": {
+            "shadowHeaderQuarantined": shadow_header_quarantined,
+            **shadow_diagnostics,
+        },
     }
 
 

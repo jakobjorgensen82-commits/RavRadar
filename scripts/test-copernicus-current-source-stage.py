@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import json
 import copy
+import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import xarray as xr
@@ -18,10 +21,12 @@ from lib.copernicus_current import (
     DMI_VERIFIER_CONTRACT_ID,
     OPERATIONAL_MATRIX_CONTRACT_ID,
     file_sha256,
+    atomic_write_shadow_checkpoint,
     required_pairs_sha256,
     select_required_records,
     canonical_sha256,
     make_acquisition,
+    make_record,
 )
 from lib.copernicus_current_source_stage import (
     SOURCE_STAGE_CONTRACT_ID,
@@ -39,13 +44,23 @@ from lib.copernicus_current_source_stage import (
     build_source_stage_progress,
     make_source_attempt,
     PINNED_PRODUCTS,
+    spatial_shards,
 )
 from lib.copernicus_target_identity import target_fingerprint
+from lib.current_operational_closure import _copernicus_state
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNNER = ROOT / "scripts/run-copernicus-current-pilot.py"
 CHECKER = ROOT / "scripts/check-copernicus-current-range.py"
+RUNNER_SPEC = importlib.util.spec_from_file_location(
+    "copernicus_current_runner_under_test",
+    RUNNER,
+)
+if RUNNER_SPEC is None or RUNNER_SPEC.loader is None:
+    raise RuntimeError("Cannot load the Copernicus current runner for focused tests")
+RUNNER_MODULE = importlib.util.module_from_spec(RUNNER_SPEC)
+RUNNER_SPEC.loader.exec_module(RUNNER_MODULE)
 REFERENCE = datetime(2026, 9, 2, 8, tzinfo=timezone.utc)
 VALID_TIME = REFERENCE + timedelta(hours=117)
 HISTORY_TIME = REFERENCE - timedelta(hours=1)
@@ -133,6 +148,7 @@ def dataset(
     available: bool,
     advisory_available: bool = False,
     target: dict = TARGET,
+    depth_m: float = 5.0,
 ) -> None:
     current_value = 0.1 if available else np.nan
     history_value = 0.05 if advisory_available else np.nan
@@ -150,9 +166,40 @@ def dataset(
                 HISTORY_TIME.replace(tzinfo=None).isoformat(),
                 VALID_TIME.replace(tzinfo=None).isoformat(),
             ], dtype="datetime64[s]"),
-            "depth": [5.0],
+            "depth": [depth_m],
             "latitude": [target["waterPoint"][1]],
             "longitude": [target["waterPoint"][0]],
+        },
+    )
+    document.to_netcdf(path)
+
+
+def mixed_shard_dataset(
+    path: Path,
+    *,
+    targets: list[dict],
+    second_available: bool,
+) -> None:
+    current_second = 0.2 if second_available else np.nan
+    document = xr.Dataset(
+        data_vars={
+            "uo": (("time", "depth", "latitude", "longitude"), np.array([
+                [[[np.nan, np.nan]]],
+                [[[0.1, current_second]]],
+            ], dtype=float)),
+            "vo": (("time", "depth", "latitude", "longitude"), np.array([
+                [[[np.nan, np.nan]]],
+                [[[0.1, current_second]]],
+            ], dtype=float)),
+        },
+        coords={
+            "time": np.array([
+                HISTORY_TIME.replace(tzinfo=None).isoformat(),
+                VALID_TIME.replace(tzinfo=None).isoformat(),
+            ], dtype="datetime64[s]"),
+            "depth": [5.0],
+            "latitude": [targets[0]["waterPoint"][1]],
+            "longitude": [row["waterPoint"][0] for row in targets],
         },
     )
     document.to_netcdf(path)
@@ -237,7 +284,11 @@ def run_runner(
     fixture_directory: Path | None,
     *,
     env: dict[str, str] | None = None,
+    reference: datetime = REFERENCE,
+    acquisition_at: datetime | None = None,
+    refresh_only: bool = False,
 ) -> subprocess.CompletedProcess[str]:
+    actual_acquisition_at = acquisition_at or (reference + timedelta(minutes=10))
     command = [
         sys.executable,
         "-B",
@@ -255,12 +306,14 @@ def run_runner(
         "--summary",
         str(folder / "safe-summary.txt"),
         "--at",
-        REFERENCE.isoformat().replace("+00:00", "Z"),
+        reference.isoformat().replace("+00:00", "Z"),
         "--acquisition-at",
-        (REFERENCE + timedelta(minutes=10)).isoformat().replace("+00:00", "Z"),
+        actual_acquisition_at.isoformat().replace("+00:00", "Z"),
     ]
     if fixture_directory is not None:
         command.extend(["--fixture-directory", str(fixture_directory)])
+    if refresh_only:
+        command.append("--refresh-only")
     return subprocess.run(
         command,
         cwd=ROOT,
@@ -316,10 +369,31 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     fixtures = full / "fixtures"
     fixtures.mkdir(parents=True)
     prepare(full)
-    dataset(fixtures / "copernicus-baltic-nemo.nc", available=True)
+    dataset(
+        fixtures / "copernicus-baltic-nemo.nc",
+        available=True,
+        advisory_available=True,
+    )
     completed = run_runner(full, fixtures)
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert (full / "source-stage.json").exists()
+    full_shadow = json.loads((full / "shadow.json").read_text(encoding="utf-8"))
+    full_advisory_refs, full_advisory_missing = select_required_records(
+        json.loads((full / "registry.json").read_text(encoding="utf-8"))[
+            "advisoryHistoryRequiredPairs"
+        ],
+        full_shadow["acquisitions"],
+        full_shadow["records"],
+        REFERENCE,
+    )
+    assert full_advisory_refs == []
+    assert len(full_advisory_missing) == 1
+    full_report = json.loads(
+        (full / "safe-report.json").read_text(encoding="utf-8")
+    )
+    assert full_report["advisoryHistoryFill"]["status"] == "BOUNDED_INCOMPLETE"
+    assert full_report["advisoryHistoryFill"]["attemptedShardCount"] == 0
+    assert full_report["advisoryHistoryFill"]["acquiredPairCount"] == 0
     full_check = run_checker(full, "--require-complete", "--require-source-stage-ready")
     assert full_check.returncode == 0 and "OPERATIONAL_COMPLETE" in full_check.stdout
     full_stage_text = (full / "source-stage.json").read_text(encoding="utf-8")
@@ -390,23 +464,88 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         raise AssertionError(
             "In-domain AMM15 without a Baltic attempt must fail closed"
         )
-    try:
-        build_source_stage_progress(
-            registry=json.loads(
-                (amm15 / "registry.json").read_text(encoding="utf-8")
-            ),
-            shadow=amm15_shadow_document,
-            target_identities={TARGET["partId"]: TARGET},
-            shadow_sha256=file_sha256(amm15 / "shadow.json"),
-            attempts=[],
-            updated_at=REFERENCE + timedelta(minutes=10),
-        )
-    except CopernicusSourceStageError:
-        pass
-    else:
-        raise AssertionError(
-            "Zero-attempt IN_PROGRESS cannot authorize an in-domain AMM15 record"
-        )
+    amm15_record_ids = {
+        row["recordId"] for row in amm15_shadow_document["records"]
+    }
+    excluded_progress = build_source_stage_progress(
+        registry=json.loads(
+            (amm15 / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=amm15_shadow_document,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+        attempts=[],
+        updated_at=REFERENCE + timedelta(minutes=10),
+    )
+    assert excluded_progress["selectedRecordRefCount"] == 0
+    assert excluded_progress["missingPairCount"] == 1
+    assert excluded_progress["excludedRecordRefCount"] == 1
+    assert amm15_record_ids == {
+        row["recordId"] for row in amm15_shadow_document["records"]
+    }
+    assert amm15_stage["excludedRecordRefCount"] == 0
+    assert amm15_stage["selectedRecordRefCount"] == 1
+    excluded_state = _copernicus_state(
+        registry=json.loads(
+            (amm15 / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=amm15_shadow_document,
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+        source_stage=excluded_progress,
+        target_by_id={TARGET["partId"]: TARGET},
+        reference=REFERENCE,
+    )
+    assert excluded_state[0] == []
+    assert excluded_state[1] == [{
+        "partId": TARGET["partId"],
+        "validTime": VALID_TIME.isoformat().replace("+00:00", "Z"),
+    }]
+    reactivated_state = _copernicus_state(
+        registry=json.loads(
+            (amm15 / "registry.json").read_text(encoding="utf-8")
+        ),
+        shadow=amm15_shadow_document,
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+        source_stage=amm15_stage,
+        target_by_id={TARGET["partId"]: TARGET},
+        reference=REFERENCE,
+    )
+    assert len(reactivated_state[0]) == 1
+    assert reactivated_state[1] == []
+    # The post-closure cache-only phase accepts IN_PROGRESS. It retries the
+    # missing Baltic prerequisite before any row refresh; a completed zero
+    # result reactivates the physically retained AMM15 record and seals READY.
+    amm15_refresh = root / "amm15-in-progress-refresh"
+    shutil.copytree(amm15, amm15_refresh)
+    write(amm15_refresh / "source-stage.json", excluded_progress)
+    amm15_refresh_env = os.environ.copy()
+    amm15_refresh_env["COPERNICUS_OPERATIONAL_REFRESH_MAX_SHARDS"] = "1"
+    refreshed_exclusion = run_runner(
+        amm15_refresh,
+        amm15_refresh / "fixtures",
+        env=amm15_refresh_env,
+        acquisition_at=REFERENCE + timedelta(minutes=20),
+        refresh_only=True,
+    )
+    assert refreshed_exclusion.returncode == 0, (
+        refreshed_exclusion.stdout + refreshed_exclusion.stderr
+    )
+    after_exclusion_shadow = json.loads(
+        (amm15_refresh / "shadow.json").read_text(encoding="utf-8")
+    )
+    after_exclusion_stage = validate_source_stage(
+        json.loads((amm15_refresh / "source-stage.json").read_text(encoding="utf-8")),
+        registry=json.loads((amm15_refresh / "registry.json").read_text(encoding="utf-8")),
+        shadow=after_exclusion_shadow,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15_refresh / "shadow.json"),
+    )
+    assert amm15_record_ids.issubset({
+        row["recordId"] for row in after_exclusion_shadow["records"]
+    })
+    assert after_exclusion_stage["missingPairCount"] == 0
+    assert after_exclusion_stage["excludedRecordRefCount"] == 0
+    assert after_exclusion_stage["selectedRecordRefCount"] == 1
 
     # Outside Baltic's pinned domain, the exact AMM15 pair is accepted only
     # with a deterministic, target-bound NOT_APPLICABLE disposition.
@@ -468,7 +607,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
                 "partId": selected_target["partId"],
                 "validTime": VALID_TIME.isoformat().replace("+00:00", "Z"),
                 "source": selected_source,
-            }], [selected_target], [])
+            }], [selected_target], [], REFERENCE)
         except CopernicusSourceStageError:
             pass
         else:
@@ -512,10 +651,11 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
         shadow_document["records"],
         REFERENCE,
     )
-    assert advisory_missing == []
-    assert len(advisory_refs) == 1
-    assert advisory_refs[0]["validTime"] == HISTORY_TIME.isoformat().replace("+00:00", "Z")
-    assert advisory_refs[0]["source"] == "copernicus-baltic-nemo"
+    assert advisory_refs == []
+    assert advisory_missing == [{
+        "partId": TARGET["partId"],
+        "validTime": HISTORY_TIME.isoformat().replace("+00:00", "Z"),
+    }]
     ready = run_checker(residual, "--require-source-stage-ready")
     assert ready.returncode == 0 and "source stage is READY" in ready.stdout
     not_complete = run_checker(residual, "--require-complete")
@@ -523,8 +663,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
 
     # The artifact-facing report is counts/hashes only.
     safe_report = json.loads((residual / "safe-report.json").read_text(encoding="utf-8"))
-    assert safe_report["advisoryHistoryFill"]["status"] == "COMPLETE"
-    assert safe_report["advisoryHistoryFill"]["acquiredPairCount"] == 1
+    assert safe_report["advisoryHistoryFill"]["status"] == "BOUNDED_INCOMPLETE"
+    assert safe_report["advisoryHistoryFill"]["acquiredPairCount"] == 0
+    assert safe_report["advisoryHistoryFill"]["attemptedShardCount"] == 0
     assert safe_report["advisoryHistoryFill"]["exhaustionAttested"] is False
     safe_text = json.dumps(safe_report, sort_keys=True).lower()
     assert not has_forbidden_safe_key(safe_report)
@@ -627,11 +768,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert rebound["attempts"] == progress_document["attempts"]
     assert rebound["dmiCurrentInputSha256"] == fresh_registry["dmiCurrentInputSha256"]
     legacy = {**progress_document, "schemaVersion": 1, "contractId": "copernicus-current-source-stage-in-progress-v1"}
+    legacy.pop("excludedRecordRefCount")
+    legacy.pop("excludedRecordRefsSha256")
     legacy["sourceStageId"] = canonical_sha256({k: v for k, v in legacy.items() if k != "sourceStageId"})
     assert rebase(legacy)["attempts"] == progress_document["attempts"]
 
-    def shifted_matrix(hours):
-        shifted = copy.deepcopy(fresh_registry)
+    def shifted_matrix(hours, matrix=fresh_registry):
+        shifted = copy.deepcopy(matrix)
         for key in ("productionReferenceAt", "targetHour", "rangeStartAt", "rangeEndAt",
                     "operationalRangeStartAt", "operationalRangeEndAt", "advisoryHistoryStartAt", "advisoryHistoryEndAt"):
             shifted[key] = (datetime.fromisoformat(shifted[key].replace("Z", "+00:00"))
@@ -682,6 +825,35 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert positive_rebased["status"] == "IN_PROGRESS"
     assert positive_rebased["attempts"] == amm15_stage["attempts"]
     assert positive_rebased["missingPairCount"] == 0
+
+    # A production-reference rollover must not invalidate a still-fresh AMM15
+    # row merely because its exact-pair Baltic prerequisite was completed in
+    # the preceding source-stage. The immutable attempt timestamps stay honest;
+    # only the journal envelope is rebound to the current DMI matrix.
+    positive_rolled_registry = shifted_matrix(1)
+    positive_rolled = validate_reusable_source_stage(
+        amm15_stage,
+        registry=positive_rolled_registry,
+        shadow=amm15_shadow_document,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+        allow_rebase=True,
+    )
+    assert positive_rolled["status"] == "IN_PROGRESS"
+    assert positive_rolled["attempts"] == amm15_stage["attempts"]
+    assert positive_rolled["missingPairCount"] == 0
+    assert positive_rolled["excludedRecordRefCount"] == 0
+    positive_rolled_ready = build_source_stage(
+        registry=positive_rolled_registry,
+        shadow=amm15_shadow_document,
+        target_identities={TARGET["partId"]: TARGET},
+        shadow_sha256=file_sha256(amm15 / "shadow.json"),
+        attempts=positive_rolled["attempts"],
+        sealed_at=REFERENCE + timedelta(hours=1),
+    )
+    assert positive_rolled_ready["status"] == "READY"
+    assert positive_rolled_ready["missingPairCount"] == 0
+    assert positive_rolled_ready["excludedRecordRefCount"] == 0
     for bad_document, bad_matrix in [
         ({**progress_document, "attemptsSha256": "sha256:" + "0" * 64}, fresh_registry),
         ({**progress_document, "shadowSha256": "sha256:" + "0" * 64}, fresh_registry),
@@ -846,6 +1018,440 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     assert monotone_ready["status"] == "READY"
     assert len(monotone_ready["attempts"]) == 3
 
+    # On the next production reference, fresh records still obey the unchanged
+    # four-hour acquisition window. A zero-result old attempt is audit evidence,
+    # not retry suppression: the exact shard is fetched again and its immutable
+    # old attempt is replaced only after the new request completes.
+    before_roll_shadow = json.loads(
+        (monotone / "shadow.json").read_text(encoding="utf-8")
+    )
+    before_roll_record_ids = {
+        row["recordId"] for row in before_roll_shadow["records"]
+    }
+    old_zero_attempt = next(
+        row for row in monotone_ready["attempts"]
+        if row["parsedRecordCount"] == 0
+    )
+    dataset(
+        monotone_fixtures / "copernicus-baltic-nemo-001.nc",
+        available=True,
+        target=monotone_targets[1],
+    )
+    write(monotone / "registry.json", rolled_registry)
+    rolled_run = run_runner(
+        monotone,
+        monotone_fixtures,
+        reference=rolled_reference,
+    )
+    assert rolled_run.returncode == 0, rolled_run.stdout + rolled_run.stderr
+    after_roll_shadow = json.loads(
+        (monotone / "shadow.json").read_text(encoding="utf-8")
+    )
+    after_roll_stage = json.loads(
+        (monotone / "source-stage.json").read_text(encoding="utf-8")
+    )
+    rolled_refs, rolled_missing = select_required_records(
+        rolled_registry["operationalRequiredPairs"],
+        after_roll_shadow["acquisitions"],
+        after_roll_shadow["records"],
+        rolled_reference,
+    )
+    assert len(rolled_refs) == len(monotone_targets) and rolled_missing == []
+    assert before_roll_record_ids.issubset({
+        row["recordId"] for row in after_roll_shadow["records"]
+    })
+    assert old_zero_attempt["attemptId"] not in {
+        row["attemptId"] for row in after_roll_stage["attempts"]
+    }
+    replacement = next(
+        row for row in after_roll_stage["attempts"]
+        if row["shardId"] == old_zero_attempt["shardId"]
+    )
+    assert replacement["productionReferenceAt"] == rolled_registry["productionReferenceAt"]
+    assert replacement["parsedRecordCount"] == 1
+    assert any(
+        row["productionReferenceAt"] == monotone_registry["productionReferenceAt"]
+        and row["parsedRecordCount"] > 0
+        for row in after_roll_stage["attempts"]
+    )
+
+    # A single old shard attempt may contain both a positive pair and a
+    # zero-result pair. After rollover only the actual current residual is
+    # retried; the unrelated still-selectable row remains physically reusable.
+    mixed = root / "mixed-positive-zero-rollover"
+    mixed_fixtures = mixed / "fixtures"
+    mixed_fixtures.mkdir(parents=True)
+    mixed_targets = [
+        {
+            **TARGET,
+            "partId": "fixture-private-mixed-a",
+            "waterPoint": [9.1, 57.2],
+        },
+        {
+            **TARGET,
+            "partId": "fixture-private-mixed-b",
+            "waterPoint": [10.0, 57.2],
+        },
+    ]
+    prepare_multi(mixed, mixed_targets)
+    mixed_shard_dataset(
+        mixed_fixtures / "copernicus-baltic-nemo-000.nc",
+        targets=mixed_targets,
+        second_available=False,
+    )
+    mixed_first = run_runner(mixed, mixed_fixtures)
+    assert mixed_first.returncode == 0, mixed_first.stdout + mixed_first.stderr
+    mixed_old_stage = json.loads(
+        (mixed / "source-stage.json").read_text(encoding="utf-8")
+    )
+    mixed_old_shadow = json.loads(
+        (mixed / "shadow.json").read_text(encoding="utf-8")
+    )
+    mixed_old_attempt = mixed_old_stage["attempts"][0]
+    assert mixed_old_attempt["requestedPairCount"] == 2
+    assert mixed_old_attempt["parsedRecordCount"] == 1
+    mixed_old_record_ids = {
+        row["recordId"] for row in mixed_old_shadow["records"]
+    }
+    mixed_registry = json.loads(
+        (mixed / "registry.json").read_text(encoding="utf-8")
+    )
+    mixed_rolled_registry = shifted_matrix(1, mixed_registry)
+    write(mixed / "registry.json", mixed_rolled_registry)
+    mixed_shard_dataset(
+        mixed_fixtures / "copernicus-baltic-nemo-000.nc",
+        targets=mixed_targets,
+        second_available=True,
+    )
+    mixed_rolled_run = run_runner(
+        mixed,
+        mixed_fixtures,
+        reference=rolled_reference,
+    )
+    assert mixed_rolled_run.returncode == 0, (
+        mixed_rolled_run.stdout + mixed_rolled_run.stderr
+    )
+    mixed_new_stage = json.loads(
+        (mixed / "source-stage.json").read_text(encoding="utf-8")
+    )
+    mixed_new_shadow = json.loads(
+        (mixed / "shadow.json").read_text(encoding="utf-8")
+    )
+    assert len(mixed_new_stage["attempts"]) == 1
+    mixed_new_attempt = mixed_new_stage["attempts"][0]
+    assert mixed_new_attempt["productionReferenceAt"] == mixed_rolled_registry[
+        "productionReferenceAt"
+    ]
+    assert mixed_new_attempt["requestedPairs"] == [{
+        "partId": mixed_targets[1]["partId"],
+        "validTime": mixed_rolled_registry["operationalRequiredPairs"][1][
+            "validTime"
+        ],
+    }]
+    assert mixed_new_attempt["requestedPairCount"] == 1
+    assert mixed_new_attempt["parsedRecordCount"] == 1
+    assert mixed_old_attempt["attemptId"] != mixed_new_attempt["attemptId"]
+    assert mixed_old_record_ids.issubset({
+        row["recordId"] for row in mixed_new_shadow["records"]
+    })
+    mixed_refs, mixed_missing = select_required_records(
+        mixed_rolled_registry["operationalRequiredPairs"],
+        mixed_new_shadow["acquisitions"],
+        mixed_new_shadow["records"],
+        rolled_reference,
+    )
+    assert len(mixed_refs) == 2 and mixed_missing == []
+
+    # A separate post-closure refresh job processes the oldest still-selectable
+    # acquisition first. A provider failure is non-fatal and leaves the exact
+    # original READY cache/stage bytes untouched; success appends a fresh record
+    # without deleting either old record.
+    refresh = root / "bounded-refresh-only"
+    refresh_fixtures = refresh / "fixtures"
+    refresh_fixtures.mkdir(parents=True)
+    refresh_targets = [
+        {
+            **TARGET,
+            "partId": "fixture-private-refresh-a-oldest",
+            "waterPoint": [9.1, 57.2],
+        },
+        {
+            **TARGET,
+            "partId": "fixture-private-refresh-b-newer",
+            "waterPoint": [10.4, 57.2],
+        },
+    ]
+    prepare_multi(refresh, refresh_targets)
+    refresh_registry = json.loads(
+        (refresh / "registry.json").read_text(encoding="utf-8")
+    )
+    refresh_acquisitions = []
+    refresh_records = []
+    for ordinal, target in enumerate(refresh_targets, start=1):
+        acquired_at = REFERENCE + timedelta(minutes=ordinal * 3)
+        acquisition = make_acquisition(
+            source="copernicus-baltic-nemo",
+            acquisition_at=acquired_at,
+            request_start_at=VALID_TIME,
+            request_end_at=VALID_TIME,
+            targets=[target],
+            native_valid_times=[VALID_TIME],
+            subset_sha256=canonical_sha256({"refreshFixture": ordinal}),
+            record_count=1,
+        )
+        refresh_acquisitions.append(acquisition)
+        refresh_records.append(make_record({
+            "partId": target["partId"],
+            "parentZoneId": target["parentZoneId"],
+            "validTime": VALID_TIME,
+            "samplingPoint": target["waterPoint"],
+            "gridPoint": target["waterPoint"],
+            "distanceKm": 0.0,
+            "verticalLayerM": 0.5,
+            "layerQuality": "surface-only",
+            "sharedLayerCount": 1,
+            "uMps": 0.1 * ordinal,
+            "vMps": 0.2 * ordinal,
+        }, acquisition, target))
+    refresh_shadow = atomic_write_shadow_checkpoint(
+        refresh / "shadow.json",
+        acquisitions=refresh_acquisitions,
+        records=refresh_records,
+        updated_at=REFERENCE + timedelta(minutes=6),
+        target_identities={row["partId"]: row for row in refresh_targets},
+    )
+    refresh_stage = build_source_stage(
+        registry=refresh_registry,
+        shadow=refresh_shadow,
+        target_identities={row["partId"]: row for row in refresh_targets},
+        shadow_sha256=file_sha256(refresh / "shadow.json"),
+        attempts=[],
+        sealed_at=REFERENCE + timedelta(minutes=6),
+    )
+    write(refresh / "source-stage.json", refresh_stage)
+    refresh_shadow_before = (refresh / "shadow.json").read_bytes()
+    refresh_stage_before = (refresh / "source-stage.json").read_bytes()
+    no_deadline_env = os.environ.copy()
+    no_deadline_env.pop("RAVRADAR_COPERNICUS_SOFT_DEADLINE_EPOCH", None)
+    no_deadline_env.pop("COPERNICUSMARINE_SERVICE_USERNAME", None)
+    no_deadline_env.pop("COPERNICUSMARINE_SERVICE_PASSWORD", None)
+    no_deadline_refresh = run_runner(
+        refresh,
+        None,
+        env=no_deadline_env,
+        acquisition_at=REFERENCE + timedelta(minutes=15),
+        refresh_only=True,
+    )
+    assert no_deadline_refresh.returncode == 0, (
+        no_deadline_refresh.stdout + no_deadline_refresh.stderr
+    )
+    assert "bounded time unavailable" in no_deadline_refresh.stdout
+    assert (refresh / "shadow.json").read_bytes() == refresh_shadow_before
+    assert (refresh / "source-stage.json").read_bytes() == refresh_stage_before
+    refresh_env = os.environ.copy()
+    refresh_env["COPERNICUS_OPERATIONAL_REFRESH_MAX_SHARDS"] = "1"
+    failed_refresh = run_runner(
+        refresh,
+        refresh_fixtures,
+        env=refresh_env,
+        acquisition_at=REFERENCE + timedelta(minutes=20),
+        refresh_only=True,
+    )
+    assert failed_refresh.returncode == 0, (
+        failed_refresh.stdout + failed_refresh.stderr
+    )
+    assert "refresh shard failed safely" in failed_refresh.stderr
+    assert (refresh / "shadow.json").read_bytes() == refresh_shadow_before
+    assert (refresh / "source-stage.json").read_bytes() == refresh_stage_before
+
+    baltic_refresh_shards = spatial_shards(refresh_targets, PINNED_PRODUCTS[0])
+    oldest_shard_index = next(
+        index for index, shard in enumerate(baltic_refresh_shards)
+        if any(
+            row["partId"] == refresh_targets[0]["partId"]
+            for row in shard["targets"]
+        )
+    )
+    dataset(
+        refresh_fixtures
+        / f"copernicus-baltic-nemo-{oldest_shard_index:03d}.nc",
+        available=True,
+        advisory_available=True,
+        target=refresh_targets[0],
+    )
+    completed_refresh = run_runner(
+        refresh,
+        refresh_fixtures,
+        env=refresh_env,
+        acquisition_at=REFERENCE + timedelta(minutes=20),
+        refresh_only=True,
+    )
+    assert completed_refresh.returncode == 0, (
+        completed_refresh.stdout + completed_refresh.stderr
+    )
+    refreshed_shadow = json.loads(
+        (refresh / "shadow.json").read_text(encoding="utf-8")
+    )
+    refreshed_stage = validate_source_stage(
+        json.loads((refresh / "source-stage.json").read_text(encoding="utf-8")),
+        registry=refresh_registry,
+        shadow=refreshed_shadow,
+        target_identities={row["partId"]: row for row in refresh_targets},
+        shadow_sha256=file_sha256(refresh / "shadow.json"),
+    )
+    old_refresh_record_ids = {row["recordId"] for row in refresh_records}
+    assert old_refresh_record_ids.issubset({
+        row["recordId"] for row in refreshed_shadow["records"]
+    })
+    refreshed_refs, refreshed_missing = select_required_records(
+        refresh_registry["operationalRequiredPairs"],
+        refreshed_shadow["acquisitions"],
+        refreshed_shadow["records"],
+        REFERENCE,
+    )
+    assert refreshed_missing == []
+    refreshed_acquisition_by_id = {
+        row["acquisitionId"]: row for row in refreshed_shadow["acquisitions"]
+    }
+    selected_acquired_at = {
+        row["partId"]: refreshed_acquisition_by_id[row["acquisitionId"]][
+            "acquisitionAt"
+        ]
+        for row in refreshed_refs
+    }
+    assert selected_acquired_at[refresh_targets[0]["partId"]] == (
+        REFERENCE + timedelta(minutes=20)
+    ).isoformat().replace("+00:00", "Z")
+    assert selected_acquired_at[refresh_targets[1]["partId"]] == (
+        REFERENCE + timedelta(minutes=6)
+    ).isoformat().replace("+00:00", "Z")
+    assert refreshed_stage["status"] == "READY"
+    assert refreshed_stage["missingPairCount"] == 0
+    assert refreshed_stage["excludedRecordRefCount"] == 0
+    advisory_refs, advisory_missing = select_required_records(
+        refresh_registry["advisoryHistoryRequiredPairs"],
+        refreshed_shadow["acquisitions"],
+        refreshed_shadow["records"],
+        REFERENCE,
+    )
+    assert len(advisory_refs) == 1
+    assert len(advisory_missing) == 1
+    assert "advisoryHistoryAcquiredPairCount=1" in completed_refresh.stdout
+
+    # A malformed raw row that reaches the record builder cannot stop a later
+    # independent Baltic shard and
+    # cannot authorize AMM15 for the failed in-domain pair. The valid later
+    # record and its COMPLETE attempt are checkpointed; the failed shard has no
+    # attempt and remains retryable IN_PROGRESS evidence.
+    isolated = root / "isolated-operational-shard"
+    isolated_fixtures = isolated / "fixtures"
+    isolated_fixtures.mkdir(parents=True)
+    isolated_targets = [
+        {
+            **TARGET,
+            "partId": "fixture-private-isolated-a-shared",
+            "waterPoint": [9.1, 57.2],
+        },
+        {
+            **TARGET,
+            "partId": "fixture-private-isolated-b-later",
+            "waterPoint": [10.4, 57.2],
+        },
+    ]
+    prepare_multi(isolated, isolated_targets)
+    dataset(
+        isolated_fixtures / "copernicus-baltic-nemo-000.nc",
+        available=True,
+        target=isolated_targets[0],
+        depth_m=float("inf"),
+    )
+    dataset(
+        isolated_fixtures / "copernicus-baltic-nemo-001.nc",
+        available=True,
+        target=isolated_targets[1],
+    )
+    dataset(
+        isolated_fixtures / "copernicus-nws-amm15-000.nc",
+        available=True,
+        target=isolated_targets[0],
+    )
+    isolated_run = run_runner(isolated, isolated_fixtures)
+    assert isolated_run.returncode == 75, isolated_run.stdout + isolated_run.stderr
+    assert "source=copernicus-baltic-nemo, shardIndex=0" in isolated_run.stderr
+    assert "errorType=ValueError" in isolated_run.stderr
+    isolated_shadow = json.loads(
+        (isolated / "shadow.json").read_text(encoding="utf-8")
+    )
+    isolated_stage_document = json.loads(
+        (isolated / "source-stage.json").read_text(encoding="utf-8")
+    )
+    isolated_registry = json.loads(
+        (isolated / "registry.json").read_text(encoding="utf-8")
+    )
+    isolated_stage = validate_source_stage_progress(
+        isolated_stage_document,
+        registry=isolated_registry,
+        shadow=isolated_shadow,
+        target_identities={row["partId"]: row for row in isolated_targets},
+        shadow_sha256=file_sha256(isolated / "shadow.json"),
+    )
+    assert isolated_stage["selectedRecordRefCount"] == 1
+    assert isolated_stage["missingPairCount"] == 1
+    assert len(isolated_stage["attempts"]) == 1
+    assert isolated_stage["attempts"][0]["source"] == "copernicus-baltic-nemo"
+    assert isolated_stage["attempts"][0]["targetPartIds"] == [
+        isolated_targets[1]["partId"]
+    ]
+    assert all(
+        row["source"] != "copernicus-nws-amm15"
+        for row in isolated_shadow["acquisitions"]
+    )
+    assert run_checker(
+        isolated,
+        "--require-source-stage-reusable",
+    ).returncode == 0
+    assert run_checker(
+        isolated,
+        "--require-source-stage-ready",
+    ).returncode != 0
+
+    # Durable checkpoint writer failures are outside the shard data-error
+    # boundary. They must propagate instead of being reported as a safely
+    # quarantined provider row.
+    writer_failure = root / "writer-failure"
+    prepare(writer_failure)
+    writer_targets = {TARGET["partId"]: TARGET}
+    writer_shadow = atomic_write_shadow_checkpoint(
+        writer_failure / "shadow.json",
+        acquisitions=[],
+        records=[],
+        updated_at=REFERENCE + timedelta(minutes=10),
+        target_identities=writer_targets,
+    )
+    with patch.object(
+        RUNNER_MODULE,
+        "atomic_write_source_stage_progress",
+        side_effect=OSError("fixture durable writer failure"),
+    ):
+        try:
+            RUNNER_MODULE.persist_source_stage_progress(
+                shadow_path=writer_failure / "shadow.json",
+                source_stage_path=writer_failure / "source-stage.json",
+                registry=json.loads(
+                    (writer_failure / "registry.json").read_text(encoding="utf-8")
+                ),
+                target_identities=writer_targets,
+                acquisitions=list(writer_shadow["acquisitions"]),
+                records=list(writer_shadow["records"]),
+                attempts=[],
+                updated_at=REFERENCE + timedelta(minutes=10),
+                shadow_changed=False,
+            )
+        except OSError as error:
+            assert "durable writer failure" in str(error)
+        else:
+            raise AssertionError("Durable Copernicus writer failure must be fatal")
+
     # Provider failure occurs only after a zero-attempt, exact residual stage
     # has been committed. It is reusable partial evidence, never READY.
     timed_out = root / "timed-out"
@@ -861,7 +1467,9 @@ with tempfile.TemporaryDirectory(prefix="ravradar-cop-source-stage-") as raw_roo
     timeout_env["COPERNICUSMARINE_SERVICE_USERNAME"] = "fixture-user"
     timeout_env["COPERNICUSMARINE_SERVICE_PASSWORD"] = "fixture-password"
     timeout = run_runner(timed_out, None, env=timeout_env)
-    assert timeout.returncode != 0 and "fixture timeout" in timeout.stderr
+    assert timeout.returncode == 75
+    assert "Copernicus shard failed safely" in timeout.stderr
+    assert "failedShardCount=1" in timeout.stderr
     timeout_stage_document = json.loads(
         (timed_out / "source-stage.json").read_text(encoding="utf-8")
     )

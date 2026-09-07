@@ -1,3 +1,15 @@
+## 4.0.330 – vedligeholdelig vejrcache gennem hele fallbackkæden (2026-09-07, lokal kandidat)
+
+- DMI prioriterer manglende/ugyldige/udløbne rækker og hale før bounded vedligeholdelsesrefresh af stadig gyldige rækker; en nyere currenttuple erstatter først atomisk efter fuld validering.
+- Copernicus isolerer fejl pr. shard, bevarer genbrugelig incomplete progress uden stale residualudvidelse og sletter ikke validerede records ved rollover. Primærkørslen genbruger kun eksisterende 48t-historik; al history/advisory-netværksrefresh ligger i et ikke-blokerende, kandidat-atomisk postbuild-job.
+- Et gyldigt Baltic-forudsætningsforsøg kan ved reference-rebase fortsat bære et overlappende AMM15-par inden for højst fire timer, men kun exact-current-reference-forsøg må undertrykke frisk Baltic-retry/upgrade; fallback er ikke kildelåst.
+- Valgfri regional shadowevidens kan isoleres som pair-level missing, mens policy, targets, registry, DMI-ledger/attestation og gapmatrix fortsat stopper fail-closed.
+- Open-Meteo schema v2 deler durable cache mellem normal/oneoff, checkpoint'er løbende, bruger fair bounded batchretry og opfrisker først mindst to timer gamle records, når den kritiske rest er nul.
+- Normal og oneoff har samme sikkerhedskontrakt. Eksakt main-write-authority beskytter shared cache, den planlagte Copernicus-pilot fjernes, ekstern cron forbliver primær og GitHub-schedule reserve.
+- Slutkravet er uændret 79.414/79.414; 48 timers historik er rådgivende. Candidate G forbliver offentlig, indtil frisk vejr, alle produktionsgates og særskilt Phase B-cutover er bevist.
+
+Se `CHANGELOG-4.0.330.md`.
+
 ## 4.0.329 – DMI-modelrun-kontinuitet uden kunstig restgrænse (2026-09-06, planlagt hotfix)
 
 - 4.0.328 bestod exact-head-kildegaten i run `34040547841`, blev merged via PR #261 som `31b98428dea163c11ded1fc1e428e27a0218a8f2` og nåede derefter DMI på `main`. Produktionsruns `34041885030` og `34044178502` stoppede imidlertid før Copernicus/Open-Meteo, fordi DMI's aktuelle attestation og assetbaserede outcome-proof divergerede.

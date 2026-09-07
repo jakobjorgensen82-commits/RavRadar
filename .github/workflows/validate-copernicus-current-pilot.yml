@@ -1,9 +1,6 @@
 name: Validate private Copernicus current pilot
 
 on:
-  schedule:
-    # Byg den nye UTC-time før produktionskadencens første kørsel ved :14.
-    - cron: "6 * * * *"
   workflow_dispatch:
     inputs:
       sample_time:
@@ -41,7 +38,14 @@ jobs:
 
       - name: Require exact main before private DMI cache selection
         shell: bash
-        run: test "$GITHUB_REF" = "refs/heads/main"
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -54,6 +58,47 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Restore exact-main source validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-pilot
+          restore-keys: |
+            weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Verify previous exact-main source validation with GitHub
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install source-gate dependencies
+        if: steps.source-proof.outputs.required != 'false'
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+
+      - name: Run exact-main source gate before private acquisition
+        id: source-gate
+        if: steps.source-proof.outputs.required != 'false'
+        run: npm run validate:source
+
+      - name: Record actual source validation outcome
+        id: source-record
+        if: always() && github.ref == 'refs/heads/main' && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+
+      - name: Preserve latest exact-main source validation outcome
+        if: always() && steps.source-record.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-pilot
 
       - name: Install central geometry dependencies
         run: |
@@ -308,8 +353,21 @@ jobs:
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "${{ steps.target-registry.outputs.target_hour }}"
 
-      - name: Save non-cancelled Copernicus source-stage progress
+      - name: Reconfirm exact main before pilot Copernicus progress cache
+        id: pilot-copernicus-progress-write-authority
         if: always() && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save non-cancelled Copernicus source-stage progress
+        if: always() && steps.pilot-copernicus-progress-write-authority.outcome == 'success' && steps.target-registry.outcome == 'success' && steps.acquisition.outcome != 'cancelled' && steps.acquisition.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
           path: |
@@ -329,8 +387,21 @@ jobs:
           --require-source-stage-ready
           --github-output "$GITHUB_OUTPUT"
 
-      - name: Save validated private Copernicus source stage
+      - name: Reconfirm exact main before pilot validated Copernicus cache
+        id: pilot-copernicus-ready-write-authority
         if: steps.target-registry.outcome == 'success' && success()
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save validated private Copernicus source stage
+        if: steps.pilot-copernicus-ready-write-authority.outcome == 'success' && steps.target-registry.outcome == 'success' && success()
         uses: actions/cache/save@v6
         with:
           path: |
@@ -399,6 +470,17 @@ jobs:
       - name: Check out requested model branch
         uses: actions/checkout@v7
 
+      - name: Require requested one-off HEAD to equal current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
@@ -412,6 +494,47 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 22
+
+      - name: Restore exact-main source validation locator
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-oneoff
+          restore-keys: |
+            weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-
+
+      - name: Verify previous exact-main source validation with GitHub
+        id: source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install source-gate dependencies
+        if: steps.source-proof.outputs.required != 'false'
+        run: >-
+          python -m pip install --disable-pip-version-check
+          -r requirements-dmi.txt
+          -r requirements-geometry.txt
+          -r requirements-copernicus.txt
+
+      - name: Run exact-main source gate before one-off acquisition
+        id: source-gate
+        if: steps.source-proof.outputs.required != 'false'
+        run: npm run validate:source
+
+      - name: Record actual source validation outcome
+        id: source-record
+        if: always() && github.ref == 'refs/heads/main' && (steps.source-gate.outcome == 'success' || steps.source-gate.outcome == 'failure' || steps.source-gate.outcome == 'cancelled')
+        run: node scripts/weather-source-gate.mjs record
+        env:
+          SOURCE_GATE_OUTCOME: ${{ steps.source-gate.outcome }}
+
+      - name: Preserve latest exact-main source validation outcome
+        if: always() && steps.source-record.outcome == 'success'
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/weather-source-validation.json
+          key: weather-source-proof-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}-oneoff
 
       - name: Validate the operational request and bind the exact target hour
         id: operational-target
@@ -469,7 +592,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -594,6 +717,7 @@ jobs:
           DMI_BULK_PROMOTION_PATH: data/live/dmi-bulk-cache.json
           DMI_BULK_PREFER_OUTPUT_CACHE: true
           DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN: false
+          DMI_BULK_DKSS_PRIMARY_MODE: true
           DMI_BULK_HOURS: 118
           DMI_BULK_MAX_DOWNLOAD_MB: 4096
           DMI_BULK_RAW_CACHE_MAX_MB: 4096
@@ -614,18 +738,31 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
-      - name: Save progressed DMI GRIB cache before any terminal decision
+      - name: Reconfirm exact main before one-off shared DMI progress caches
+        id: oneoff-dmi-progress-write-authority
         if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save progressed DMI GRIB cache before any terminal decision
+        if: always() && steps.oneoff-dmi-progress-write-authority.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped'
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-grib
           key: dmi-grib-v4-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save isolated DMI candidate progress before any terminal decision
-        if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/dmi-candidate-progress.json') != ''
+        if: always() && steps.oneoff-dmi-progress-write-authority.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/dmi-candidate-progress.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-candidate-progress.json
@@ -647,15 +784,28 @@ jobs:
           cp data/live/dmi-bulk-cache.json .cache/dmi-active-complete.json.tmp
           mv .cache/dmi-active-complete.json.tmp .cache/dmi-active-complete.json
 
-      - name: Save the promoted complete active DMI generation
+      - name: Reconfirm exact main before one-off shared active DMI cache
+        id: oneoff-dmi-active-write-authority
         if: steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save the promoted complete active DMI generation
+        if: steps.oneoff-dmi-active-write-authority.outcome == 'success' && steps.dmi-bulk.outcome == 'success' && steps.dmi-bulk.outputs.candidate_promoted == 'true' && hashFiles('.cache/dmi-active-complete.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/dmi-active-complete.json
           key: dmi-zone-active-v1-${{ runner.os }}-${{ steps.operational-target.outputs.cache_generation }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Save private regional current evidence before any terminal decision
-        if: always() && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/current-field-shadow.json') != ''
+        if: always() && steps.oneoff-dmi-progress-write-authority.outcome == 'success' && steps.dmi-bulk.outcome != 'cancelled' && steps.dmi-bulk.outcome != 'skipped' && hashFiles('.cache/current-field-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
           path: .cache/current-field-shadow.json
@@ -764,8 +914,21 @@ jobs:
           --authoritative-targets data/live/coastal-parts-v2.json
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
 
-      - name: Save non-cancelled private Copernicus source-stage progress
+      - name: Reconfirm exact main before one-off shared Copernicus progress cache
+        id: oneoff-copernicus-progress-write-authority
         if: always() && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save non-cancelled private Copernicus source-stage progress
+        if: always() && steps.oneoff-copernicus-progress-write-authority.outcome == 'success' && steps.copernicus-fill.outcome != 'cancelled' && steps.copernicus-fill.outcome != 'skipped' && hashFiles('.cache/copernicus-current-shadow.json') != ''
         uses: actions/cache/save@v6
         with:
           path: |
@@ -783,8 +946,21 @@ jobs:
           --source-stage .cache/copernicus-current-source-stage.json
           --require-source-stage-reusable
 
-      - name: Save validated private Copernicus progress before downstream closure
+      - name: Reconfirm exact main before one-off shared validated Copernicus cache
+        id: oneoff-copernicus-ready-write-authority
         if: success()
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save validated private Copernicus progress before downstream closure
+        if: steps.oneoff-copernicus-ready-write-authority.outcome == 'success' && success()
         uses: actions/cache/save@v6
         with:
           path: |
@@ -792,13 +968,52 @@ jobs:
             .cache/copernicus-current-source-stage.json
           key: copernicus-current-progress-v3-118-preflight-ready-${{ github.run_id }}-${{ github.run_attempt }}
 
+      - name: Restore shared private Open-Meteo current progress
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            open-meteo-current-fallback-v2-${{ runner.os }}-
+
       - name: Fill only the exact remaining current gaps from Open-Meteo
+        id: open-meteo-fill
+        continue-on-error: true
         run: >-
           python scripts/fill-open-meteo-current-fallback.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --dmi .cache/dmi-candidate-progress.json
           --timeout-seconds 45
           --runtime-seconds 900
+
+      - name: Reconfirm exact main before shared Open-Meteo progress cache
+        id: open-meteo-progress-write-authority
+        if: always() && steps.open-meteo-fill.outcome != 'cancelled' && steps.open-meteo-fill.outcome != 'skipped' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save shared private Open-Meteo current progress
+        if: always() && steps.open-meteo-progress-write-authority.outcome == 'success' && steps.open-meteo-fill.outputs.checkpoint_written == 'true' && hashFiles('.cache/open-meteo-current-fallback.json') != ''
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-${{ runner.os }}-oneoff-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require complete Open-Meteo residual before freshness and closure
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.open-meteo-fill.outcome }}" = "success"
+          test "${{ steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"
+          test "${{ steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"
 
       - name: Refuse a stale one-off target after the extended supplier chain
         run: >-
@@ -837,7 +1052,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.329 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.330 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

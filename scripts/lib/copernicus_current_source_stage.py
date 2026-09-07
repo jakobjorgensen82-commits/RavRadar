@@ -31,17 +31,18 @@ from .copernicus_current import (
 from .copernicus_target_identity import target_fingerprint
 
 
-SOURCE_STAGE_SCHEMA_VERSION = 3
+SOURCE_STAGE_SCHEMA_VERSION = 4
 SOURCE_STAGE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_SOURCE_STAGE"
-SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v3"
+SOURCE_STAGE_CONTRACT_ID = "copernicus-current-source-stage-ready-v4"
 SOURCE_STAGE_STATUS = "READY"
-SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 2
-SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v2"
+SOURCE_STAGE_PROGRESS_SCHEMA_VERSION = 3
+SOURCE_STAGE_PROGRESS_CONTRACT_ID = "copernicus-current-source-stage-in-progress-v3"
 SOURCE_STAGE_PROGRESS_STATUS = "IN_PROGRESS"
 SOURCE_ORDER_SELECTED_SOURCE = "copernicus-nws-amm15"
 SOURCE_ORDER_PREREQUISITE_SOURCE = "copernicus-baltic-nemo"
 SOURCE_ORDER_ATTEMPTED_EXHAUSTED = "ATTEMPTED_EXHAUSTED"
 SOURCE_ORDER_NOT_APPLICABLE = "NOT_APPLICABLE"
+SOURCE_ORDER_EXCLUSION_REASON = "BALTIC_PREREQUISITE_NOT_ATTESTED"
 SPATIAL_SHARD_LONGITUDE_DEGREES = 1.25
 SPATIAL_SHARD_LATITUDE_DEGREES = 0.75
 SPATIAL_SHARD_MAX_TARGETS = 24
@@ -96,6 +97,7 @@ SOURCE_STAGE_FIELDS = {
     "requiredPairCount", "requiredPairsSha256",
     "selectedRecordRefCount", "selectedRecordRefsSha256",
     "missingPairs", "missingPairCount", "missingPairsSha256",
+    "excludedRecordRefCount", "excludedRecordRefsSha256",
     "attempts", "attemptsSha256", "products", "productsSha256",
     "sourceOrderEvidence", "sourceOrderEvidenceCount",
     "sourceOrderEvidenceSha256",
@@ -109,6 +111,7 @@ SOURCE_STAGE_PROGRESS_FIELDS = {
     "requiredPairCount", "requiredPairsSha256",
     "selectedRecordRefCount", "selectedRecordRefsSha256",
     "missingPairCount", "missingPairsSha256",
+    "excludedRecordRefCount", "excludedRecordRefsSha256",
     "attempts", "attemptsSha256", "shadowSha256",
     "scoreImpact", "publicRuntime", "coordinatesIncluded",
     "rawVectorsIncluded",
@@ -117,6 +120,16 @@ PAIR_FIELDS = {"partId", "validTime"}
 SOURCE_ORDER_EVIDENCE_FIELDS = {
     "partId", "validTime", "selectedSource", "prerequisiteSource",
     "disposition", "attemptId", "evidenceSha256",
+}
+SOURCE_ORDER_EXCLUSION_FIELDS = {
+    "partId", "validTime", "recordId", "selectedSource",
+    "prerequisiteSource", "reason",
+}
+LEGACY_SOURCE_STAGE_FIELDS = SOURCE_STAGE_FIELDS - {
+    "excludedRecordRefCount", "excludedRecordRefsSha256",
+}
+LEGACY_SOURCE_STAGE_PROGRESS_FIELDS = SOURCE_STAGE_PROGRESS_FIELDS - {
+    "excludedRecordRefCount", "excludedRecordRefsSha256",
 }
 
 
@@ -367,11 +380,14 @@ def _source_order_evidence(
     record_refs: list[dict[str, Any]],
     targets: list[dict[str, Any]],
     attempts: list[dict[str, Any]],
+    production_reference_at: datetime,
 ) -> list[dict[str, Any]]:
     """Prove the Baltic prerequisite for every selected AMM15 pair.
 
-    An in-domain pair needs one completed Baltic attempt and no selected
-    Baltic record.  An out-of-domain pair gets an explicit NOT_APPLICABLE
+    An in-domain pair needs one completed Baltic attempt, validated against
+    the current journal reference, and no selected Baltic record. The attempt
+    may retain its immutable preceding reference while it remains inside the
+    pinned reuse window. An out-of-domain pair gets an explicit NOT_APPLICABLE
     disposition derived only from the pinned Baltic domain; a timeout or
     failed request can never produce that disposition.
     """
@@ -383,6 +399,10 @@ def _source_order_evidence(
     )
     attempt_by_pair: dict[tuple[str, str], str] = {}
     for attempt in attempts:
+        # Stage builders and validators bind every immutable attempt to
+        # production_reference_at through _validate_attempts(). Requiring the
+        # attempt's original envelope to equal the current envelope here would
+        # discard still-fresh Baltic proof at every hourly rollover.
         if attempt.get("source") != SOURCE_ORDER_PREREQUISITE_SOURCE:
             continue
         for pair in attempt.get("requestedPairs") or []:
@@ -437,6 +457,100 @@ def _source_order_evidence(
             "evidenceSha256": canonical_sha256(identity),
         })
     return evidence
+
+
+def select_source_order_admissible_records(
+    required_pairs: list[dict[str, Any]],
+    acquisitions: list[dict[str, Any]],
+    records: list[dict[str, Any]],
+    production_reference_at: datetime,
+    targets: list[dict[str, Any]],
+    attempts: list[dict[str, Any]],
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, str]],
+    list[dict[str, str]],
+]:
+    """Select records while quarantining only unproved AMM15 precedence.
+
+    Shadow bytes remain immutable retention evidence.  A fresh in-domain AMM15
+    record is operationally ineligible until the exact pair has a completed
+    Baltic attempt that is valid for this source-stage, including immutable
+    prior-reference evidence still inside the pinned reuse window. Every
+    skipped record is bound by an exact deterministic identity so a later
+    Baltic attempt automatically makes it eligible again without rewriting
+    the cache.
+    """
+    target_by_id = {str(row["partId"]): row for row in targets}
+    baltic = next(
+        row for row in PINNED_PRODUCTS
+        if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
+    )
+    baltic_attempted = {
+        (str(pair["partId"]), str(pair["validTime"]))
+        for attempt in attempts
+        if attempt.get("source") == SOURCE_ORDER_PREREQUISITE_SOURCE
+        for pair in attempt.get("requestedPairs") or []
+    }
+    eligible_records = list(records)
+    exclusions: list[dict[str, str]] = []
+    excluded_ids: set[str] = set()
+    while True:
+        record_refs, missing_pairs = select_required_records(
+            required_pairs,
+            acquisitions,
+            eligible_records,
+            production_reference_at,
+        )
+        newly_excluded: list[dict[str, str]] = []
+        for ref in record_refs:
+            pair = (str(ref["partId"]), str(ref["validTime"]))
+            target = target_by_id.get(pair[0])
+            if target is None:
+                raise CopernicusSourceStageError(
+                    "A selected Copernicus pair has no bound target"
+                )
+            if (
+                ref["source"] == SOURCE_ORDER_SELECTED_SOURCE
+                and eligible_target(target, baltic)
+                and pair not in baltic_attempted
+            ):
+                exclusion = {
+                    "partId": pair[0],
+                    "validTime": pair[1],
+                    "recordId": str(ref["recordId"]),
+                    "selectedSource": SOURCE_ORDER_SELECTED_SOURCE,
+                    "prerequisiteSource": SOURCE_ORDER_PREREQUISITE_SOURCE,
+                    "reason": SOURCE_ORDER_EXCLUSION_REASON,
+                }
+                if set(exclusion) != SOURCE_ORDER_EXCLUSION_FIELDS:
+                    raise CopernicusSourceStageError(
+                        "Copernicus source-order exclusion fields differ"
+                    )
+                newly_excluded.append(exclusion)
+        if not newly_excluded:
+            return (
+                sorted(record_refs, key=lambda row: (row["validTime"], row["partId"])),
+                sorted(missing_pairs, key=lambda row: (row["validTime"], row["partId"])),
+                sorted(
+                    exclusions,
+                    key=lambda row: (
+                        row["validTime"], row["partId"], row["recordId"]
+                    ),
+                ),
+            )
+        for exclusion in newly_excluded:
+            record_id = exclusion["recordId"]
+            if record_id in excluded_ids:
+                raise CopernicusSourceStageError(
+                    "Copernicus source-order exclusion did not converge"
+                )
+            excluded_ids.add(record_id)
+            exclusions.append(exclusion)
+        eligible_records = [
+            row for row in eligible_records
+            if row.get("recordId") not in excluded_ids
+        ]
 
 
 def _source_stage_id(document: dict[str, Any]) -> str:
@@ -522,15 +636,23 @@ def validate_source_stage_progress(
         "Operational required pairs",
     )
     required_set = {(row["partId"], row["validTime"]) for row in required_pairs}
-    record_refs, missing_pairs = select_required_records(
+    attempts = _validate_attempts(
+        stage.get("attempts"),
+        reference=reference,
+        required_set=required_set,
+        targets=targets,
+    )
+    if stage.get("attemptsSha256") != canonical_sha256(attempts):
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage progress attempt hash mismatch"
+        )
+    record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
         required_pairs,
         list(shadow.get("acquisitions") or []),
         list(shadow.get("records") or []),
         reference,
-    )
-    missing_pairs = sorted(
-        missing_pairs,
-        key=lambda row: (row["validTime"], row["partId"]),
+        targets,
+        attempts,
     )
     if (
         stage.get("schemaVersion") != SOURCE_STAGE_PROGRESS_SCHEMA_VERSION
@@ -559,26 +681,20 @@ def validate_source_stage_progress(
         "selectedRecordRefsSha256": canonical_sha256(record_refs),
         "missingPairCount": len(missing_pairs),
         "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "excludedRecordRefCount": len(excluded_refs),
+        "excludedRecordRefsSha256": canonical_sha256(excluded_refs),
         "shadowSha256": shadow_sha256,
     }
     if any(stage.get(key) != value for key, value in expected_bindings.items()):
         raise CopernicusSourceStageError(
             "Copernicus source-stage progress registry/cache binding is invalid"
         )
-    attempts = _validate_attempts(
-        stage.get("attempts"),
-        reference=reference,
-        required_set=required_set,
-        targets=targets,
-    )
-    if stage.get("attemptsSha256") != canonical_sha256(attempts):
-        raise CopernicusSourceStageError(
-            "Copernicus source-stage progress attempt hash mismatch"
-        )
-    attempted_by_source = {
+    current_attempted_by_source = {
         source: {
             (pair["partId"], pair["validTime"])
-            for attempt in attempts if attempt["source"] == source
+            for attempt in attempts
+            if attempt["source"] == source
+            and attempt["productionReferenceAt"] == utc_iso(reference)
             for pair in attempt["requestedPairs"]
         }
         for source in (row["source"] for row in PINNED_PRODUCTS)
@@ -588,22 +704,16 @@ def validate_source_stage_progress(
         row for row in PINNED_PRODUCTS
         if row["source"] == SOURCE_ORDER_PREREQUISITE_SOURCE
     )
-    for ref in record_refs:
-        pair = (ref["partId"], ref["validTime"])
-        if (
-            ref["source"] == SOURCE_ORDER_SELECTED_SOURCE
-            and eligible_target(target_by_id[ref["partId"]], baltic)
-            and pair not in attempted_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE]
-        ):
-            raise CopernicusSourceStageError(
-                "IN_PROGRESS selected AMM15 record lacks its exact Baltic prerequisite"
-            )
-    for part_id, valid_time in attempted_by_source[SOURCE_ORDER_SELECTED_SOURCE]:
+    for part_id, valid_time in current_attempted_by_source[
+        SOURCE_ORDER_SELECTED_SOURCE
+    ]:
         if (
             (part_id, valid_time) in required_set
             and eligible_target(target_by_id[part_id], baltic)
             and (part_id, valid_time)
-                not in attempted_by_source[SOURCE_ORDER_PREREQUISITE_SOURCE]
+                not in current_attempted_by_source[
+                    SOURCE_ORDER_PREREQUISITE_SOURCE
+                ]
         ):
             raise CopernicusSourceStageError(
                 "IN_PROGRESS AMM15 evidence lacks its exact Baltic prerequisite"
@@ -688,12 +798,29 @@ def rebase_source_stage_progress(
     if not isinstance(document, dict):
         raise CopernicusSourceStageError("Source journal is malformed")
     ready = document.get("status") == SOURCE_STAGE_STATUS
-    fields = SOURCE_STAGE_FIELDS if ready else SOURCE_STAGE_PROGRESS_FIELDS
+    version_contract = (document.get("schemaVersion"), document.get("contractId"))
+    if ready:
+        fields = (
+            SOURCE_STAGE_FIELDS
+            if version_contract == (SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID)
+            else LEGACY_SOURCE_STAGE_FIELDS
+        )
+    else:
+        fields = (
+            SOURCE_STAGE_PROGRESS_FIELDS
+            if version_contract == (
+                SOURCE_STAGE_PROGRESS_SCHEMA_VERSION,
+                SOURCE_STAGE_PROGRESS_CONTRACT_ID,
+            )
+            else LEGACY_SOURCE_STAGE_PROGRESS_FIELDS
+        )
     stage = _exact_dict(document, fields, "Original source journal")
     supported = (
         {(2, "copernicus-current-source-stage-ready-v2"),
+         (3, "copernicus-current-source-stage-ready-v3"),
          (SOURCE_STAGE_SCHEMA_VERSION, SOURCE_STAGE_CONTRACT_ID)} if ready else
         {(1, "copernicus-current-source-stage-in-progress-v1"),
+         (2, "copernicus-current-source-stage-in-progress-v2"),
          (SOURCE_STAGE_PROGRESS_SCHEMA_VERSION, SOURCE_STAGE_PROGRESS_CONTRACT_ID)}
     )
     if ((stage.get("schemaVersion"), stage.get("contractId")) not in supported
@@ -769,13 +896,22 @@ def validate_source_stage(
     reference = _time(registry["productionReferenceAt"], "Registry reference", exact_hour=True)
     required_pairs = _canonical_pairs(registry["operationalRequiredPairs"], "Operational required pairs")
     required_set = {(row["partId"], row["validTime"]) for row in required_pairs}
-    record_refs, missing_pairs = select_required_records(
+    attempts = _validate_attempts(
+        stage.get("attempts"),
+        reference=reference,
+        required_set=required_set,
+        targets=targets,
+    )
+    if stage.get("attemptsSha256") != canonical_sha256(attempts):
+        raise CopernicusSourceStageError("Copernicus source-stage attempt hash mismatch")
+    record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
         required_pairs,
         list(shadow.get("acquisitions") or []),
         list(shadow.get("records") or []),
         reference,
+        targets,
+        attempts,
     )
-    missing_pairs = sorted(missing_pairs, key=lambda row: (row["validTime"], row["partId"]))
     if (
         stage.get("schemaVersion") != SOURCE_STAGE_SCHEMA_VERSION
         or stage.get("kind") != SOURCE_STAGE_KIND
@@ -802,18 +938,16 @@ def validate_source_stage(
         "missingPairs": missing_pairs,
         "missingPairCount": len(missing_pairs),
         "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "excludedRecordRefCount": len(excluded_refs),
+        "excludedRecordRefsSha256": canonical_sha256(excluded_refs),
         "shadowSha256": shadow_sha256,
     }
     if any(stage.get(key) != value for key, value in expected_bindings.items()):
         raise CopernicusSourceStageError("Copernicus source-stage registry/cache binding is invalid")
-    attempts = _validate_attempts(
-        stage.get("attempts"),
-        reference=reference,
-        required_set=required_set,
-        targets=targets,
-    )
-    if stage.get("attemptsSha256") != canonical_sha256(attempts):
-        raise CopernicusSourceStageError("Copernicus source-stage attempt hash mismatch")
+    if excluded_refs:
+        raise CopernicusSourceStageError(
+            "Copernicus source-stage READY cannot retain source-order exclusions"
+        )
     product_by_source = {row["source"]: row for row in PINNED_PRODUCTS}
     expected_products = _derive_products(required_pairs, targets, attempts)
     if stage.get("products") != expected_products or stage.get("productsSha256") != canonical_sha256(expected_products):
@@ -822,6 +956,7 @@ def validate_source_stage(
         record_refs,
         targets,
         attempts,
+        reference,
     )
     source_order_evidence = stage.get("sourceOrderEvidence")
     if not isinstance(source_order_evidence, list):
@@ -855,7 +990,9 @@ def validate_source_stage(
     attempted_by_source = {
         source: {
             (pair["partId"], pair["validTime"])
-            for attempt in attempts if attempt["source"] == source
+            for attempt in attempts
+            if attempt["source"] == source
+            and attempt["productionReferenceAt"] == utc_iso(reference)
             for pair in attempt["requestedPairs"]
         }
         for source in product_by_source
@@ -889,12 +1026,6 @@ def build_source_stage(
     registry = validate_target_registry(registry)
     reference = _time(registry["productionReferenceAt"], "Registry reference", exact_hour=True)
     required_pairs = registry["operationalRequiredPairs"]
-    record_refs, missing_pairs = select_required_records(
-        required_pairs,
-        list(shadow.get("acquisitions") or []),
-        list(shadow.get("records") or []),
-        reference,
-    )
     canonical_attempts = sorted(
         attempts,
         key=lambda row: (
@@ -903,11 +1034,20 @@ def build_source_stage(
         ),
     )
     targets = sorted(target_identities.values(), key=lambda row: (row["parentZoneId"], row["partId"]))
+    record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
+        required_pairs,
+        list(shadow.get("acquisitions") or []),
+        list(shadow.get("records") or []),
+        reference,
+        targets,
+        canonical_attempts,
+    )
     products = _derive_products(required_pairs, targets, canonical_attempts)
     source_order_evidence = _source_order_evidence(
         record_refs,
         targets,
         canonical_attempts,
+        reference,
     )
     value: dict[str, Any] = {
         "schemaVersion": SOURCE_STAGE_SCHEMA_VERSION,
@@ -926,6 +1066,8 @@ def build_source_stage(
         "missingPairs": missing_pairs,
         "missingPairCount": len(missing_pairs),
         "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "excludedRecordRefCount": len(excluded_refs),
+        "excludedRecordRefsSha256": canonical_sha256(excluded_refs),
         "attempts": canonical_attempts,
         "attemptsSha256": canonical_sha256(canonical_attempts),
         "products": products,
@@ -966,12 +1108,6 @@ def build_source_stage_progress(
         exact_hour=True,
     )
     required_pairs = registry["operationalRequiredPairs"]
-    record_refs, missing_pairs = select_required_records(
-        required_pairs,
-        list(shadow.get("acquisitions") or []),
-        list(shadow.get("records") or []),
-        reference,
-    )
     source_rank = {row["source"]: index for index, row in enumerate(PINNED_PRODUCTS)}
     try:
         canonical_attempts = sorted(
@@ -982,6 +1118,18 @@ def build_source_stage_progress(
         raise CopernicusSourceStageError(
             "Copernicus source-stage progress contains an unknown attempt"
         ) from error
+    targets = sorted(
+        target_identities.values(),
+        key=lambda row: (row["parentZoneId"], row["partId"]),
+    )
+    record_refs, missing_pairs, excluded_refs = select_source_order_admissible_records(
+        required_pairs,
+        list(shadow.get("acquisitions") or []),
+        list(shadow.get("records") or []),
+        reference,
+        targets,
+        canonical_attempts,
+    )
     value: dict[str, Any] = {
         "schemaVersion": SOURCE_STAGE_PROGRESS_SCHEMA_VERSION,
         "kind": SOURCE_STAGE_KIND,
@@ -998,6 +1146,8 @@ def build_source_stage_progress(
         "selectedRecordRefsSha256": canonical_sha256(record_refs),
         "missingPairCount": len(missing_pairs),
         "missingPairsSha256": required_pairs_sha256(missing_pairs),
+        "excludedRecordRefCount": len(excluded_refs),
+        "excludedRecordRefsSha256": canonical_sha256(excluded_refs),
         "attempts": canonical_attempts,
         "attemptsSha256": canonical_sha256(canonical_attempts),
         "shadowSha256": shadow_sha256,
@@ -1111,6 +1261,8 @@ def safe_source_stage_summary(document: dict[str, Any]) -> dict[str, Any]:
         "selectedRecordRefsSha256": document["selectedRecordRefsSha256"],
         "missingPairCount": document["missingPairCount"],
         "missingPairsSha256": document["missingPairsSha256"],
+        "excludedRecordRefCount": document["excludedRecordRefCount"],
+        "excludedRecordRefsSha256": document["excludedRecordRefsSha256"],
         "attemptCount": len(document["attempts"]),
         "attemptsSha256": document["attemptsSha256"],
         "productCount": len(document["products"]),

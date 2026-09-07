@@ -204,6 +204,13 @@ PREFERRED_RUN_MIN_FUTURE_HOURS = max(
 )
 HARMONIE_RUN_RETENTION_HOURS = max(24, int(os.getenv("DMI_HARMONIE_RUN_RETENTION_HOURS", "48")))
 FORCE_REFRESH = os.getenv("DMI_BULK_FORCE_REFRESH", "false").lower() in {"1", "true", "yes", "on"}
+DKSS_PRIMARY_MODE = os.getenv(
+    "DMI_BULK_DKSS_PRIMARY_MODE", "false"
+).lower() in {"1", "true", "yes", "on"}
+DKSS_PRIMARY_REFRESH_MAX_ASSETS = max(
+    0,
+    min(16, int(os.getenv("DMI_BULK_DKSS_PRIMARY_REFRESH_MAX_ASSETS", "2"))),
+)
 RETAIN_PREFERRED_NATIVE_RUN = os.getenv(
     "DMI_BULK_RETAIN_PREFERRED_NATIVE_RUN", "false"
 ).lower() in {"1", "true", "yes", "on"}
@@ -1150,6 +1157,200 @@ def prioritize_marine_assets_for_current_gaps(
         )
 
     return sorted(assets, key=priority)
+
+
+DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS = {
+    "waterLevel": ("sea-mean-deviation",),
+    "current": ("current-u", "current-v"),
+}
+DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS = {
+    "waterTemperature": ("water-temperature",),
+    "windTail": ("wind-tail-u-10m", "wind-tail-v-10m"),
+}
+
+
+def _exact_validated_dmi_component_present(
+    zone_id: str,
+    zone: Any,
+    valid_time: str,
+    component: str,
+    fields: tuple[str, ...],
+) -> bool:
+    """Require finite fields and their exact native DMI provenance on one row."""
+    if not isinstance(zone, dict):
+        return False
+    hour = (zone.get("hourly") or {}).get(valid_time)
+    if not isinstance(hour, dict):
+        return False
+    if not all(
+        isinstance(hour.get(field), (int, float))
+        and not isinstance(hour.get(field), bool)
+        and math.isfinite(float(hour[field]))
+        for field in fields
+    ):
+        return False
+    sources = hour.get("sources") or {}
+    return complete_native_source_for_hour(
+        sources.get(component),
+        component,
+        zone_id,
+        zone,
+        valid_time,
+    )
+
+
+def classify_dkss_primary_asset(
+    *,
+    collection: str,
+    model_run: str,
+    asset: dict[str, Any],
+    target_ids: list[str],
+    covered_pair_keys: set[tuple[str, str]],
+    cached_zones: dict[str, Any],
+    active_zone_ids: list[str],
+    enabled: bool,
+) -> dict[str, Any]:
+    """Classify one DKSS asset as critical work or safe refresh-only work.
+
+    The cache passed here has already been normalized by ``clean_and_summarize``.
+    Current still requires the independent exact operational pair proof, while
+    every component additionally requires finite values and complete native DMI
+    provenance on the asset's exact valid hour. Optional DKSS temperature and
+    wind-tail fields are critical only on the hours selected by the established
+    stride contract.
+    """
+    if not enabled or collection not in MARINE_COLLECTIONS:
+        return {
+            "critical": True,
+            "deferValidRefresh": False,
+            "currentMissingPairCount": 0,
+            "missingComponentKinds": [],
+        }
+
+    valid_time = canonical_time(asset.get("valid"))
+    canonical_run = canonical_time(model_run)
+    normalized_targets = sorted({str(value or "").strip() for value in target_ids if str(value or "").strip()})
+    normalized_zones = sorted({str(value or "").strip() for value in active_zone_ids if str(value or "").strip()})
+    missing_components: set[str] = set()
+    if not valid_time or not canonical_run or not normalized_targets or not normalized_zones:
+        missing_components.add("configuration")
+        current_missing_pair_count = len(normalized_targets)
+    else:
+        current_missing_pair_count = sum(
+            (target_id, valid_time) not in covered_pair_keys
+            for target_id in normalized_targets
+        )
+        required_components = dict(DKSS_PRIMARY_ALWAYS_REQUIRED_COMPONENTS)
+        if stride_selected(valid_time, canonical_run):
+            required_components.update(DKSS_PRIMARY_STRIDE_REQUIRED_COMPONENTS)
+        for component, fields in required_components.items():
+            if any(
+                not _exact_validated_dmi_component_present(
+                    zone_id,
+                    cached_zones.get(zone_id),
+                    valid_time,
+                    component,
+                    fields,
+                )
+                for zone_id in normalized_zones
+            ):
+                missing_components.add(component)
+        if current_missing_pair_count:
+            missing_components.add("current")
+
+    critical = bool(missing_components)
+    return {
+        "critical": critical,
+        "deferValidRefresh": not critical,
+        "currentMissingPairCount": current_missing_pair_count,
+        "missingComponentKinds": sorted(missing_components),
+    }
+
+
+def dkss_collection_deferred_only(run_info: dict[str, Any], asset_count: int) -> bool:
+    """True only when every selected asset was a validated refresh-only asset."""
+    return bool(
+        asset_count > 0
+        and int(run_info.get("assetsDeferredValidRefresh") or 0) == asset_count
+        and int(run_info.get("assetsProcessed") or 0) == 0
+        and int(run_info.get("assetsReused") or 0) == 0
+        and int(run_info.get("assetsSkippedBySupervisor") or 0) == 0
+        and int(run_info.get("assetsSkippedPreviouslyProcessed") or 0) == 0
+    )
+
+
+def order_dkss_primary_refresh_collections(
+    scheduled: list[str],
+    refresh_only_collections: set[str],
+) -> list[str]:
+    """Keep every potentially critical collection ahead of maintenance-only DKSS."""
+    return [
+        *[
+            collection for collection in scheduled
+            if collection not in refresh_only_collections
+        ],
+        *[
+            collection for collection in scheduled
+            if collection in refresh_only_collections
+        ],
+    ]
+
+
+def should_attempt_dkss_primary_refresh(
+    *,
+    valid_time: str,
+    previously_processed: set[str],
+    collection_refresh_only: bool,
+    critical_work_observed: bool,
+    remaining_asset_budget: int,
+) -> bool:
+    """Admit only new-run/revised maintenance after all critical work is clear."""
+    return bool(
+        collection_refresh_only
+        and not critical_work_observed
+        and remaining_asset_budget > 0
+        and valid_time not in previously_processed
+    )
+
+
+def dkss_bounded_refresh_failed_only(
+    run_info: dict[str, Any],
+    *,
+    collection_refresh_only: bool,
+) -> bool:
+    """Detect maintenance-only failure so the prior validated run is retained."""
+    return bool(
+        collection_refresh_only
+        and int(run_info.get("assetsBoundedRefreshAttempted") or 0) > 0
+        and int(run_info.get("assetsBoundedRefreshCompleted") or 0) == 0
+    )
+
+
+def should_skip_previously_processed_asset(
+    valid_time: str,
+    previously_processed: set[str],
+    primary_requirement: dict[str, Any] | None,
+) -> bool:
+    """Keep exact terminal DKSS outcomes closed while reopening other holes.
+
+    ``reusable_processed_steps`` admits a DKSS step only after every
+    outcome-positive current pair is present in validated cache evidence. A
+    current-only deficit seen by primary mode is therefore the step's validated
+    ``spatialUnavailable`` partition and must not reopen the same asset. Missing
+    water level, temperature or wind tail remains independently actionable.
+    """
+    if valid_time not in previously_processed:
+        return False
+    if not isinstance(primary_requirement, dict):
+        return True
+    missing_components = set(
+        primary_requirement.get("missingComponentKinds") or []
+    )
+    actionable_non_current = missing_components - {"current"}
+    return not (
+        primary_requirement.get("critical") is True
+        and bool(actionable_non_current)
+    )
 
 
 def _bounded_stac_inventory(
@@ -7419,7 +7620,9 @@ def main() -> int:
               "diagnostics": {"collectionsAttempted": [], "collectionsSucceeded": [], "collectionsPartial": [], "errors": [],
                               "downloadedBytes": 0, "reusedAssets": 0, "parametersByCollection": {}, "stacByCollection": {},
                               "removedSamplingPointMismatches": removed_sampling_mismatches,
-                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0, "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
+                              "assetsSkippedPreviouslyProcessed": 0, "assetsRetriedIncomplete": 0,
+                              "assetsDeferredValidDkssRefresh": 0, "collectionsDeferredValidDkssRefresh": [],
+                              "zeroProgressCollections": [], "collectionsUnchanged": [], "messagesSeen": 0, "zoneLookups": 0, "batchedGridReads": 0, "marineGridSearch": {},
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
@@ -7470,6 +7673,11 @@ def main() -> int:
         zone for zone in zones
         if not zone.get("waterSource") and not zone.get("researchCurrent") and not zone.get("privateStage")
     ]
+    active_production_zone_ids = sorted(
+        str(zone.get("id") or "").strip()
+        for zone in active_zones_config
+        if str(zone.get("id") or "").strip()
+    )
     scheduled, schedule_coverage = collection_schedule(previous, active_zones_config)
     scheduled = prioritize_strict_current_recovery(
         scheduled,
@@ -7642,6 +7850,58 @@ def main() -> int:
                 (part_id, valid_time)
                 for part_id in set(current_target_ids) - unavailable
             )
+
+    # Primary mode separates maintenance from critical acquisition. A DKSS
+    # collection is refresh-only only when every selected official asset is
+    # already complete in the validated cache. Those collections are moved
+    # behind all potentially critical collections, and no maintenance runs in
+    # a cycle that started with any unresolved DKSS asset.
+    primary_refresh_only_collections: set[str] = set()
+    primary_critical_work_observed = False
+    if DKSS_PRIMARY_MODE:
+        for collection in (
+            value for value in scheduled if value in MARINE_COLLECTIONS
+        ):
+            selected_run, selected_assets, _stats = prefetched_marine.get(
+                collection,
+                (None, [], {}),
+            )
+            requirements = [
+                classify_dkss_primary_asset(
+                    collection=collection,
+                    model_run=selected_run,
+                    asset=asset,
+                    target_ids=current_target_ids,
+                    covered_pair_keys=covered_current_pair_keys,
+                    cached_zones=result.get("zones") or {},
+                    active_zone_ids=active_production_zone_ids,
+                    enabled=True,
+                )
+                for asset in selected_assets
+            ]
+            if requirements and all(
+                row["deferValidRefresh"] for row in requirements
+            ):
+                primary_refresh_only_collections.add(collection)
+            else:
+                primary_critical_work_observed = True
+        scheduled = order_dkss_primary_refresh_collections(
+            scheduled,
+            primary_refresh_only_collections,
+        )
+        schedule_coverage["dkssPrimaryRefreshOnlyCollections"] = sorted(
+            primary_refresh_only_collections,
+            key=COLLECTION_ORDER.index,
+        )
+        schedule_coverage["dkssPrimaryCriticalAtRunStart"] = (
+            primary_critical_work_observed
+        )
+        schedule_coverage["dkssPrimaryRefreshAssetBudget"] = (
+            DKSS_PRIMARY_REFRESH_MAX_ASSETS
+        )
+        result["diagnostics"]["scheduledCollections"] = scheduled
+        result["diagnostics"]["scheduleCoverageBeforeRun"] = schedule_coverage
+    primary_refresh_assets_remaining = DKSS_PRIMARY_REFRESH_MAX_ASSETS
     replay_summary: dict[str, Any] = {"samplesWritten": 0}
     research_rotation_completed = False
     regional_proxy_collection_completed = False
@@ -7737,6 +7997,11 @@ def main() -> int:
         result["diagnostics"]["collectionsAttempted"].append(collection)
         collection_start_bytes = budget["bytes"]
         collection_start_reused = int(result["diagnostics"].get("reusedAssets") or 0)
+        collection_start_error_count = len(result["diagnostics"]["errors"])
+        collection_refresh_only = (
+            DKSS_PRIMARY_MODE
+            and collection in primary_refresh_only_collections
+        )
         state = result["collectionState"].setdefault(collection, {})
         state["lastAttemptAt"] = generated
         # Progress cadence is shared across collections by checkpoint_controller.
@@ -7833,6 +8098,7 @@ def main() -> int:
                     else None
                 ),
             )
+            priority_covered_pair_keys: set[tuple[str, str]] = set()
             if collection in MARINE_COLLECTIONS:
                 priority_covered_pair_keys = set(covered_current_pair_keys)
                 for valid_time, step in previous_steps.items():
@@ -7888,7 +8154,11 @@ def main() -> int:
                         "processingSignature": processing_signature,
                         "assetsDiscovered": len(assets), "assetsProcessed": 0, "assetsReused": 0,
                         "assetsSkippedBySupervisor": 0,
-                        "assetsSkippedPreviouslyProcessed": 0, "processedValidTimes": sorted(previously_processed),
+                        "assetsSkippedPreviouslyProcessed": 0, "assetsDeferredValidRefresh": 0,
+                        "assetsBoundedRefreshAttempted": 0,
+                        "assetsBoundedRefreshCompleted": 0,
+                        "assetsBoundedRefreshFailed": 0,
+                        "processedValidTimes": sorted(previously_processed),
                         "processedSteps": previous_steps, "recognizedParameters": []}
             result["runs"][collection] = run_info
             recognized: set[str] = set()
@@ -7897,6 +8167,7 @@ def main() -> int:
                     recognized.update(previous_step.get("recognizedParameters") or [])
             budget_stop = None
             for asset_number, asset in enumerate(assets, start=1):
+                bounded_primary_refresh = False
                 supervised_identity = supervised_asset_identity(collection, run, asset)
                 supervised_identity_key = json.dumps(
                     supervised_identity,
@@ -7927,6 +8198,40 @@ def main() -> int:
                         "later providers receive the exact residual"
                     )
                     continue
+                primary_requirement = None
+                if DKSS_PRIMARY_MODE and collection in MARINE_COLLECTIONS:
+                    primary_requirement = classify_dkss_primary_asset(
+                        collection=collection,
+                        model_run=run,
+                        asset=asset,
+                        target_ids=current_target_ids,
+                        covered_pair_keys=priority_covered_pair_keys,
+                        cached_zones=result.get("zones") or {},
+                        active_zone_ids=active_production_zone_ids,
+                        enabled=True,
+                    )
+                    if primary_requirement["deferValidRefresh"]:
+                        bounded_primary_refresh = (
+                            should_attempt_dkss_primary_refresh(
+                                valid_time=asset["valid"],
+                                previously_processed=previously_processed,
+                                collection_refresh_only=collection_refresh_only,
+                                critical_work_observed=(
+                                    primary_critical_work_observed
+                                ),
+                                remaining_asset_budget=(
+                                    primary_refresh_assets_remaining
+                                ),
+                            )
+                        )
+                        if not bounded_primary_refresh:
+                            run_info["assetsDeferredValidRefresh"] += 1
+                            result["diagnostics"]["assetsDeferredValidDkssRefresh"] += 1
+                            progress(
+                                f"{collection}: forecast-step {asset_number}/{len(assets)} "
+                                f"{asset['valid']} deferred; exact validated cache remains usable"
+                            )
+                            continue
                 if asset["valid"] in bootstrap_locked_hours.get(collection, set()):
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
@@ -7934,7 +8239,11 @@ def main() -> int:
                         result["diagnostics"].get("bootstrapLockedStepsSkipped") or 0
                     ) + 1
                     continue
-                if asset["valid"] in previously_processed:
+                if should_skip_previously_processed_asset(
+                    asset["valid"],
+                    previously_processed,
+                    primary_requirement,
+                ):
                     run_info["assetsSkippedPreviouslyProcessed"] += 1
                     result["diagnostics"]["assetsSkippedPreviouslyProcessed"] += 1
                     if (
@@ -7987,6 +8296,14 @@ def main() -> int:
                     checkpoint_controller.flush_if_due(force=True)
                     budget_stop = "bulk runtime budget reached"
                     break
+                if bounded_primary_refresh:
+                    primary_refresh_assets_remaining -= 1
+                    run_info["assetsBoundedRefreshAttempted"] += 1
+                    result["diagnostics"]["assetsBoundedDkssRefreshAttempted"] = int(
+                        result["diagnostics"].get(
+                            "assetsBoundedDkssRefreshAttempted"
+                        ) or 0
+                    ) + 1
                 try:
                     with supervised_asset_operation(supervised_identity):
                         path, reused = download_asset(
@@ -8001,6 +8318,13 @@ def main() -> int:
                             item_updated_at=asset.get("itemUpdatedAt"),
                         )
                 except RuntimeError as exc:
+                    if bounded_primary_refresh:
+                        run_info["assetsBoundedRefreshFailed"] += 1
+                        result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
+                            result["diagnostics"].get(
+                                "assetsBoundedDkssRefreshFailed"
+                            ) or 0
+                        ) + 1
                     if "budget" in str(exc).lower():
                         budget_stop = safe_error_message(exc)
                         break
@@ -8248,6 +8572,13 @@ def main() -> int:
                         RuntimeError,
                         OSError,
                     ) as exc:
+                        if bounded_primary_refresh:
+                            run_info["assetsBoundedRefreshFailed"] += 1
+                            result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
+                                result["diagnostics"].get(
+                                    "assetsBoundedDkssRefreshFailed"
+                                ) or 0
+                            ) + 1
                         result["diagnostics"]["errors"].append({
                             "collection": collection,
                             "validTime": supervised_identity["validTime"],
@@ -8370,6 +8701,13 @@ def main() -> int:
                 if collection in MARINE_COLLECTIONS:
                     fresh_marine_zone_ids.update(touched)
                 if interrupted:
+                    if bounded_primary_refresh:
+                        run_info["assetsBoundedRefreshFailed"] += 1
+                        result["diagnostics"]["assetsBoundedDkssRefreshFailed"] = int(
+                            result["diagnostics"].get(
+                                "assetsBoundedDkssRefreshFailed"
+                            ) or 0
+                        ) + 1
                     checkpoint_status = "afbrudt asset kasseret"
                 else:
                     checkpoint_written = (
@@ -8383,6 +8721,13 @@ def main() -> int:
                         else "checkpoint samler "
                             f"{checkpoint_controller.committed_assets_since_write} assets"
                     )
+                    if bounded_primary_refresh:
+                        run_info["assetsBoundedRefreshCompleted"] += 1
+                        result["diagnostics"]["assetsBoundedDkssRefreshCompleted"] = int(
+                            result["diagnostics"].get(
+                                "assetsBoundedDkssRefreshCompleted"
+                            ) or 0
+                        ) + 1
                 progress(
                     f"{collection}: forecast-step behandlet på "
                     f"{asset_processing_seconds:.1f}s; {checkpoint_status}; "
@@ -8412,7 +8757,28 @@ def main() -> int:
                 and selected_valid_times <= completed_or_locked
             )
             made_progress = (run_info["assetsProcessed"] > 0 or int(result["diagnostics"].get("reusedAssets") or 0) > collection_start_reused or budget["bytes"] > collection_start_bytes)
-            if not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
+            deferred_only = (
+                DKSS_PRIMARY_MODE
+                and collection in MARINE_COLLECTIONS
+                and dkss_collection_deferred_only(run_info, len(assets))
+            )
+            refresh_maintenance_no_progress = dkss_bounded_refresh_failed_only(
+                run_info,
+                collection_refresh_only=collection_refresh_only,
+            )
+            if deferred_only or refresh_maintenance_no_progress:
+                state["lastCheckedAt"] = generated
+                result["diagnostics"]["collectionsDeferredValidDkssRefresh"].append(collection)
+                result["diagnostics"]["zeroProgressCollections"].append(collection)
+                if refresh_maintenance_no_progress:
+                    result["diagnostics"].setdefault(
+                        "collectionsFailedBoundedDkssRefresh", []
+                    ).append(collection)
+                if previous_run:
+                    result["runs"][collection] = previous_run
+                else:
+                    result["runs"].pop(collection, None)
+            elif not made_progress and collection_assets_complete and recognized >= required and run_info["assetsSkippedPreviouslyProcessed"] == len(assets):
                 state["lastCheckedAt"] = generated
                 state["referenceTime"] = run
                 state["lastError"] = None
@@ -8440,7 +8806,17 @@ def main() -> int:
                 state["nextEligibleAt"] = None
             else:
                 raise RuntimeError("GRIB downloaded but no required RavRadar parameters were recognized")
-            if made_progress:
+            if (
+                not collection_refresh_only
+                and (
+                    made_progress
+                    or budget_stop
+                    or len(result["diagnostics"]["errors"])
+                        > collection_start_error_count
+                )
+            ):
+                primary_critical_work_observed = True
+            if made_progress and not refresh_maintenance_no_progress:
                 productive_collections += 1
             if budget_stop:
                 state["lastBudgetInterruptedAt"] = generated
@@ -8453,6 +8829,8 @@ def main() -> int:
             if budget_stop:
                 checkpoint_controller.flush_if_due(force=True)
         except Exception as exc:
+            if not collection_refresh_only:
+                primary_critical_work_observed = True
             message = safe_error_message(exc)
             failure_code = collection_failure_code(exc)
             failures = int(state.get("consecutiveFailures") or 0) + 1

@@ -1,3 +1,23 @@
+# NYESTE ROADMAP – 2026-09-07 – 4.0.330 fra cachekontinuitet til model-online
+
+- [x] Løft problemet fra enkeltfejl til hele providerkæden: adskil robust partial indsamling fra strict 79.414/79.414-releaseclosure.
+- [x] Gør DMI critical-first og afgræns vedligeholdelsesrefresh af stadig gyldige rækker; bevar gammel tuple til atomisk valideret replacement.
+- [x] Isolér Copernicus-datafejl pr. shard, bevar bound incomplete progress og nul-resultatforsøg, stop stale residualudvidelse og fysisk cacheprune ved rollover.
+- [x] Luk hourly-reference-P1: genbrug et fortsat validt Baltic-prerequisite højst fire timer til AMM15-admission, men behold frisk retry/postbuild-upgrade, medmindre attemptet matcher den eksakte aktuelle reference.
+- [x] Lad Copernicus-primary kun genbruge eksisterende 48t-historik uden netværksfetch; læg al history/advisory-refresh i et bounded, ikke-blokerende postbuild-job med separat kandidatvalidering og atomisk promotion.
+- [x] Skeln regional optional data plane fra fatal control plane, så én defekt optional prøve bliver missing til næste provider uden at skjule centrale kontraktfejl.
+- [x] Gør Open-Meteo-progress durable på tværs af normal/oneoff med schema v2, per-record acquisitiontid, target-rebase og start-/batchcheckpoints.
+- [x] Fordel Open-Meteo breadth-first med bounded batchretry og én deadline; isolér HTTP-/provider-/payloadfejl til batchen.
+- [x] Tillad først proaktiv Open-Meteo-refresh ved nul kritiske huller, ældst først og mindst to timers alder; bevar gammel record på refreshfejl.
+- [x] Bring normal/oneoff på samme cache-/provider-/closurekontrakt og bind shared saves til exact-main write authority.
+- [x] Fjern scheduled Copernicus-pilot; bevar ekstern cron som primær dispatcher, GitHub-schedule som reserve og serialiseret produktionskø.
+- [ ] Afslut kun de fokuserede lokale kontrakt-/workflow-/RDKS-/JSON-kontroller, som 4.0.330 ændrer. Registrér præcis faktisk teststatus og gennemgå diffen fra helikopterperspektiv før releasehead.
+- [ ] Løft version/bindingsmetadata på den samlede eksakte head, bevis geodata version-only og kør én GitHub exact-head sourcegate. Ret kun konkret evidens; start ikke en ny reparationskarussel af spekulative ændringer.
+- [ ] Merge sikkert og kør stor main-oneoff eller normal continuation på rettet kode. Mål DMI-, Baltic-, AMM15-, regional- og Open-Meteo-fremgang samt cachegenbrug; gentag oneoff alene ved ærlig partial fremgang.
+- [ ] Stop ikke ved provider-success. Kræv præcis 79.414/79.414, én kilde pr. par, nul overlap/missing samt Feggesund 354/354. Lad derefter almindelige cron-kørsler bevise, at cachen kan vedligeholdes med tidsmæssigt overskud.
+- [ ] Gennemfør hydreret spatial audit, live Supabase-kapacitetsmåling med den bindende reserve, fuld post-data `validate` og `release:gate`, artifact/deploy og offentlig verifikation.
+- [ ] Kør først derefter den særskilte autoriserede Phase B og verificér den integrerede scoremodel online. Candidate G er offentlig indtil hele kæden er grøn.
+
 # NYESTE ROADMAP – 2026-09-06 – 4.0.329 kontinuerlig cacheattestation
 
 - [x] Bevis, at 4.0.328 er merged efter exact-head, men at main-runtime stopper før fallback på attestation/proof-divergens.

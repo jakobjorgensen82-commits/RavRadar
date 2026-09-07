@@ -1,3 +1,16 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.330 helkæde-cachevedligeholdelse
+
+- 4.0.329 er merged på `main` som `b3865eb9`, men komplet positiv vejrruntime er ikke bevist. Candidate G er fortsat offentlig.
+- 4.0.330 er en lokal kandidat under fokuseret validering. Dens kontrakt gør critical missing/invalid/expired, interne huller og hale til første kø hos alle providers; gyldige rækker opfriskes bounded bagefter og bevares til atomisk valideret replacement.
+- Copernicus isolerer provider-/datafejl pr. shard, fortsætter senere shards, bevarer eksakt bound `IN_PROGRESS` og nul-resultatforsøg, forhindrer stale residualudvidelse og sletter ikke validerede records ved rollover. Primary må kun genbruge eksisterende 48t-historik og må ikke netværkshente den; et kort ikke-deployblokerende postbuild-job ejer history/advisory-refresh gennem separat kandidatvalidering og atomisk promotion.
+- Hourly rebase må genbruge et fortsat kryptografisk/domæne/tidsvalidt Baltic-prerequisite i højst fire timer til et overlappende AMM15-par, men kun exact-current-reference-attempt må undertrykke frisk Baltic-retry/postbuild-upgrade. Det forhindrer falsk missing uden at kildelåse fallback.
+- Regional optional shadowdata kan isoleres til pair-level missing; centrale targets, registry, DMI-ledger/attestation, policy og gapmatrix forbliver fatal control plane.
+- Open-Meteo schema v2 deler durable progress mellem normal/oneoff med per-record `acquiredAt`, target-overlap-rebase, checkpoint før requests og efter batches, breadth-first batches på højst 50, bounded retry og batchisolerede HTTP-/provider-/payloadfejl.
+- Proaktiv Open-Meteo-refresh åbner kun ved nul kritisk residual, ældst først og mindst to timers alder. Fejl bevarer den tidligere validerede record. DMI/Baltic/AMM15/regional DMI kan senere erstatte fallback efter normal kildeprioritet.
+- Normal og oneoff bruger samme provider-/cache-/closurekontrakt; normal vedligeholder, oneoff accelererer uden deploy. Shared cachewrites kræver exact-main authority. Scheduled Copernicus-pilot fjernes; ekstern cron er primær normal-dispatcher og GitHub-schedule reserve.
+- Slutbeviset er fortsat 79.414/79.414, kildeunikhed og nul overlap/missing. De foregående højst 48 timers verificerede historik er rådgivende. Den integrerede scoremodel må først aktiveres efter Feggesund 354/354, spatial audit, live kapacitet, fuld post-data validate/releasegate, artifact/deploy og særskilt Phase B.
+- Statusord skal være præcise: lokal kandidat, ikke CI-valideret, merged eller produktionsverificeret. Exact-head, frisk main-runtime og hele modelkæden afventer. Ingen geometri, kystnormal, punkter eller scoreformel ændres.
+
 # NYESTE CHECKPOINT – 2026-09-06 – 4.0.329 DMI-attestationskontinuitet
 
 - 4.0.328 bestod exact-head `34040547841` og blev merged via PR #261 som `31b98428dea163c11ded1fc1e428e27a0218a8f2`. Den første rettede main-kørsel nåede DMI, men ikke Copernicus/Open-Meteo.
