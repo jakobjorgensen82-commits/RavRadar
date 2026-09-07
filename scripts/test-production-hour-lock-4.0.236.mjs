@@ -42,10 +42,28 @@ for (const marker of [
 for (const marker of [
   'RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ inputs.production_target_hour }}',
   'Bind production to resolved DMI current hour',
-  'RAVRADAR_PRODUCTION_TARGET_HOUR=${{ steps.copernicus-targets.outputs.target_hour }}',
 ]) {
   assert.ok(build.includes(marker), `Build-workflowet mangler timeslåsen: ${marker}`);
 }
+const productionHourBindingStart = build.indexOf('name: Bind production to resolved DMI current hour');
+const productionHourBindingEnd = build.indexOf('\n      - name:', productionHourBindingStart + 1);
+const productionHourBinding = build.slice(
+  productionHourBindingStart,
+  productionHourBindingEnd < 0 ? undefined : productionHourBindingEnd,
+);
+for (const marker of [
+  'resolved_target="${{ steps.copernicus-targets.outputs.target_hour }}"',
+  'if test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"; then',
+  'test "$resolved_target" = "${{ steps.weather-source-handoff.outputs.target_hour }}"',
+  'echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"',
+]) {
+  assert.ok(productionHourBinding.includes(marker), `Build-workflowets timeslås mangler: ${marker}`);
+}
+assert.ok(
+  productionHourBinding.indexOf('test "$resolved_target" = "${{ steps.weather-source-handoff.outputs.target_hour }}"')
+    < productionHourBinding.indexOf('echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"'),
+  'Et genbrugt handoff-target skal bevises identisk før produktionstimen bindes.',
+);
 const productionTargetCondition = "if: github.event_name != 'workflow_dispatch' || (inputs.geometry_v2_pilot != true && inputs.geometry_v2_national != true)";
 assert.equal(
   orchestrator.split(productionTargetCondition).length - 1,
@@ -70,4 +88,4 @@ assert.match(updater, /forecastFromOpenMeteo\(feature, generatedAt\)/);
 assert.match(updater, /past_hours: String\(fallbackPastHours\)/);
 assert.match(liveBuilder, /default=os\.getenv\("RAVRADAR_PRODUCTION_TARGET_HOUR"\)/);
 
-console.log('OK: produktionen låser først triggerens time og binder derefter sikkert til nærmeste verificerede DMI-strømtime.');
+console.log('OK: produktionen låser triggerens time og bevarer samme eksakte target gennem DMI, handoff og fallback.');
