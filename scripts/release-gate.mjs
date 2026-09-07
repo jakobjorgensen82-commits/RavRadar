@@ -756,7 +756,7 @@ for(const marker of [
 }
 for(const marker of [
   'SOURCE_STAGE_PROGRESS_STATUS',
-  'select_required_records(',
+  'select_source_order_admissible_records(',
   'required_pairs_sha256(copernicus_residual)',
   'plan = build_regional_residual_plan(',
   'stage["status"] == SOURCE_STAGE_PROGRESS_STATUS',
