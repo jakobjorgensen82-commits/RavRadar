@@ -16,10 +16,15 @@ from .copernicus_target_identity import target_fingerprint
 from .dmi_native_provenance import canonical_time
 
 
-SCHEMA_VERSION = 1
+DOCUMENT_SCHEMA_VERSION = 2
+RECORD_SCHEMA_VERSION = 1
+# Kept as the public document-schema alias for existing imports. Record
+# identity deliberately remains on v1 so a checkpoint rebase never rewrites a
+# record or its acquiredAt timestamp.
+SCHEMA_VERSION = DOCUMENT_SCHEMA_VERSION
 KIND = "RAVRADAR_PRIVATE_OPEN_METEO_CURRENT_FALLBACK"
-CONTRACT_ID = "open-meteo-current-exact-residual-v1"
-SAFE_CONTRACT_ID = "open-meteo-current-exact-residual-safe-v1"
+CONTRACT_ID = "open-meteo-current-exact-residual-v2"
+SAFE_CONTRACT_ID = "open-meteo-current-exact-residual-safe-v2"
 RECORD_CONTRACT_ID = "open-meteo-current-derived-uv-record-v1"
 RECORD_REF_CONTRACT_ID = "open-meteo-current-record-ref-v1"
 LIVE_RECORD_PROJECTION_CONTRACT_ID = "open-meteo-live-current-record-fixed-decimal-v1"
@@ -44,7 +49,8 @@ PRIVATE_FIELDS = {
     "operationalHourCount", "targetRegistrySha256", "requiredPairCount",
     "requiredPairsSha256", "recordCount", "recordRefsSha256",
     "recordsSha256", "records", "missingPairCount", "missingPairsSha256",
-    "missingPairs", "acquiredAt", "maximumDistanceKm",
+    "missingPairs", "checkpointedAt", "oldestRecordAcquiredAt",
+    "newestRecordAcquiredAt", "maximumDistanceKm",
     "calibrationEligible", "coordinatesIncluded", "rawVectorsIncluded",
     "publicRuntime", "copernicusSourceStageStatus",
     "copernicusSourceStageSha256", "copernicusBoundedProgressAccepted",
@@ -56,7 +62,8 @@ SAFE_FIELDS = {
     "vectorDerivation", "productionReferenceAt", "operationalRangeEndAt",
     "operationalHourCount", "targetRegistrySha256", "requiredPairCount",
     "requiredPairsSha256", "recordCount", "recordRefsSha256",
-    "recordsSha256", "missingPairCount", "missingPairsSha256", "acquiredAt",
+    "recordsSha256", "missingPairCount", "missingPairsSha256", "checkpointedAt",
+    "oldestRecordAcquiredAt", "newestRecordAcquiredAt",
     "maximumDistanceKm", "calibrationEligible", "coordinatesIncluded",
     "rawVectorsIncluded", "partIdsIncluded", "pairRefsIncluded",
     "publicRuntime", "copernicusSourceStageStatus",
@@ -118,6 +125,17 @@ def _exact_hour(value: Any, code: str) -> tuple[str, datetime]:
     return text, parsed
 
 
+def _exact_instant(value: Any, code: str) -> tuple[str, datetime]:
+    normalized = canonical_time(value)
+    if normalized is None or normalized != value:
+        _fail(code)
+    try:
+        parsed = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        _fail(code)
+    return normalized, parsed.astimezone(timezone.utc)
+
+
 def _canonical_pairs(value: Any, code: str) -> list[dict[str, str]]:
     if not isinstance(value, list):
         _fail(code)
@@ -177,7 +195,7 @@ def build_record(*, part_id: str, valid_time: str, acquired_at: str,
     u_value = round(speed * math.sin(radians), 5)
     v_value = round(speed * math.cos(radians), 5)
     identity = {
-        "schemaVersion": SCHEMA_VERSION,
+        "schemaVersion": RECORD_SCHEMA_VERSION,
         "contractId": RECORD_CONTRACT_ID,
         "partId": part_id,
         "validTime": valid_time,
@@ -204,8 +222,8 @@ def build_record(*, part_id: str, valid_time: str, acquired_at: str,
 
 
 def _validate_record(record: Any, targets: dict[str, dict[str, Any]],
-                     required: set[tuple[str, str]], reference: datetime,
-                     acquired_at: str) -> dict[str, Any]:
+                      required: set[tuple[str, str]], reference: datetime,
+                      checkpointed_at: datetime) -> dict[str, Any]:
     if not isinstance(record, dict) or set(record) != RECORD_FIELDS:
         _fail("OPEN_METEO_RECORD_INVALID")
     part_id = str(record.get("partId") or "").strip()
@@ -219,11 +237,21 @@ def _validate_record(record: Any, targets: dict[str, dict[str, Any]],
     u_value = _finite(record.get("uMps"))
     v_value = _finite(record.get("vMps"))
     acquired_text = canonical_time(record.get("acquiredAt"))
+    try:
+        acquired = datetime.fromisoformat(acquired_text.replace("Z", "+00:00")) \
+            if acquired_text == record.get("acquiredAt") else None
+    except (TypeError, ValueError):
+        acquired = None
     if (
-        target is None or (part_id, valid_time) not in required
+        record.get("schemaVersion") != RECORD_SCHEMA_VERSION
+        or record.get("contractId") != RECORD_CONTRACT_ID
+        or target is None or (part_id, valid_time) not in required
         or valid_dt < reference
         or valid_dt > reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
-        or acquired_text != acquired_at
+        or acquired is None
+        or abs((acquired - reference).total_seconds())
+            > MAXIMUM_ACQUISITION_AGE_HOURS * 3600
+        or acquired > checkpointed_at
         or record.get("source") != SOURCE or record.get("model") != MODEL
         or record.get("requestContractId") != REQUEST_CONTRACT_ID
         or record.get("selectionPolicyId") != SELECTION_POLICY_ID
@@ -250,7 +278,7 @@ def _validate_record(record: Any, targets: dict[str, dict[str, Any]],
 
 
 def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[str, str]],
-                   records: list[dict[str, Any]], acquired_at: str,
+                   records: list[dict[str, Any]], checkpointed_at: str,
                    production_reference_at: str,
                    copernicus_source_stage_status: str,
                    copernicus_source_stage_sha256: str | None,
@@ -259,11 +287,11 @@ def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[s
     reference_text, reference = _exact_hour(
         production_reference_at, "OPEN_METEO_REFERENCE_INVALID"
     )
-    acquired = canonical_time(acquired_at)
-    if acquired is None or acquired != acquired_at:
-        _fail("OPEN_METEO_ACQUISITION_TIME_INVALID")
-    if abs((datetime.fromisoformat(acquired.replace("Z", "+00:00")) - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
-        _fail("OPEN_METEO_ACQUISITION_STALE")
+    checkpoint_text, checkpoint = _exact_instant(
+        checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID"
+    )
+    if abs((checkpoint - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
+        _fail("OPEN_METEO_CHECKPOINT_STALE")
     progress_accepted = copernicus_source_stage_status == "IN_PROGRESS"
     if (
         copernicus_source_stage_status
@@ -292,13 +320,17 @@ def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[s
     if len(target_map) != len(targets) or target_fingerprint(targets) is None:
         _fail("OPEN_METEO_TARGETS_INVALID")
     required = {(row["partId"], row["validTime"]) for row in pairs}
-    validated = [_validate_record(row, target_map, required, reference, acquired_at) for row in records]
+    validated = [
+        _validate_record(row, target_map, required, reference, checkpoint)
+        for row in records
+    ]
     validated.sort(key=lambda row: (row["validTime"], row["partId"]))
     if len({(row["partId"], row["validTime"]) for row in validated}) != len(validated):
         _fail("OPEN_METEO_RECORD_DUPLICATE")
     present = {(row["partId"], row["validTime"]) for row in validated}
     missing = [row for row in pairs if (row["partId"], row["validTime"]) not in present]
     refs = [record_ref(row) for row in validated]
+    acquisition_times = sorted(row["acquiredAt"] for row in validated)
     document = {
         "schemaVersion": SCHEMA_VERSION,
         "kind": KIND,
@@ -324,7 +356,9 @@ def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[s
         "missingPairCount": len(missing),
         "missingPairsSha256": required_pairs_sha256(missing),
         "missingPairs": missing,
-        "acquiredAt": acquired_at,
+        "checkpointedAt": checkpoint_text,
+        "oldestRecordAcquiredAt": acquisition_times[0] if acquisition_times else None,
+        "newestRecordAcquiredAt": acquisition_times[-1] if acquisition_times else None,
         "maximumDistanceKm": MAXIMUM_DISTANCE_KM,
         "calibrationEligible": False,
         "coordinatesIncluded": True,
@@ -353,7 +387,7 @@ def validate_document(document: Any, *, targets: list[dict[str, Any]],
         targets=targets,
         required_pairs=required_pairs,
         records=document.get("records"),
-        acquired_at=document.get("acquiredAt"),
+        checkpointed_at=document.get("checkpointedAt"),
         production_reference_at=production_reference_at,
         copernicus_source_stage_status=copernicus_source_stage_status,
         copernicus_source_stage_sha256=copernicus_source_stage_sha256,
@@ -365,6 +399,150 @@ def validate_document(document: Any, *, targets: list[dict[str, Any]],
     if require_complete and (document["status"] != "COMPLETE" or document["missingPairCount"] != 0):
         _fail("OPEN_METEO_RESIDUAL_INCOMPLETE")
     return document
+
+
+def checkpoint_required_pairs(document: Any) -> list[dict[str, str]]:
+    """Reconstruct the exact residual sealed by a private v2 checkpoint."""
+    if not isinstance(document, dict) or set(document) != PRIVATE_FIELDS:
+        _fail("OPEN_METEO_DOCUMENT_INVALID")
+    records = document.get("records")
+    if not isinstance(records, list):
+        _fail("OPEN_METEO_DOCUMENT_INVALID")
+    present_pairs = []
+    for record in records:
+        if not isinstance(record, dict):
+            _fail("OPEN_METEO_DOCUMENT_INVALID")
+        present_pairs.append({
+            "partId": record.get("partId"),
+            "validTime": record.get("validTime"),
+        })
+    pairs = sorted(
+        [
+            *present_pairs,
+            *_canonical_pairs(
+                document.get("missingPairs"), "OPEN_METEO_DOCUMENT_INVALID"
+            ),
+        ],
+        key=lambda row: (
+            str(row.get("validTime") or ""),
+            str(row.get("partId") or ""),
+        ),
+    )
+    return _canonical_pairs(pairs, "OPEN_METEO_DOCUMENT_INVALID")
+
+
+def validate_checkpoint_document(document: Any, *,
+                                 targets: list[dict[str, Any]]) -> dict[str, Any]:
+    """Validate a v2 checkpoint against its own sealed residual and bindings."""
+    pairs = checkpoint_required_pairs(document)
+    return validate_document(
+        document,
+        targets=targets,
+        required_pairs=pairs,
+        production_reference_at=document.get("productionReferenceAt"),
+        copernicus_source_stage_status=document.get(
+            "copernicusSourceStageStatus"
+        ),
+        copernicus_source_stage_sha256=document.get(
+            "copernicusSourceStageSha256"
+        ),
+        copernicus_bounded_progress_accepted=document.get(
+            "copernicusBoundedProgressAccepted"
+        ),
+        regional_evidence_sha256=document.get("regionalEvidenceSha256"),
+        require_complete=False,
+    )
+
+
+def reusable_records(document: Any, *, targets: list[dict[str, Any]],
+                     required_pairs: list[dict[str, str]],
+                     production_reference_at: str,
+                     checkpointed_at: str) -> list[dict[str, Any]]:
+    """Select immutable donor records eligible for a newly computed residual."""
+    donor = validate_checkpoint_document(document, targets=targets)
+    _reference_text, reference = _exact_hour(
+        production_reference_at, "OPEN_METEO_REFERENCE_INVALID"
+    )
+    _checkpoint_text, checkpoint = _exact_instant(
+        checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID"
+    )
+    if abs((checkpoint - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
+        _fail("OPEN_METEO_CHECKPOINT_STALE")
+    pairs = _canonical_pairs(required_pairs, "OPEN_METEO_REQUIRED_PAIRS_INVALID")
+    target_map = {
+        row.get("partId"): row for row in targets if isinstance(row, dict)
+    }
+    fingerprint = target_fingerprint(targets)
+    if len(target_map) != len(targets) or fingerprint is None:
+        _fail("OPEN_METEO_TARGETS_INVALID")
+    if donor.get("targetRegistrySha256") != fingerprint:
+        _fail("OPEN_METEO_TARGET_BINDING_INVALID")
+    required = {(row["partId"], row["validTime"]) for row in pairs}
+    selected = []
+    for record in donor["records"]:
+        key = (record["partId"], record["validTime"])
+        if key not in required:
+            continue
+        acquired_text = canonical_time(record.get("acquiredAt"))
+        try:
+            acquired = datetime.fromisoformat(
+                acquired_text.replace("Z", "+00:00")
+            ) if acquired_text == record.get("acquiredAt") else None
+        except (TypeError, ValueError):
+            acquired = None
+        if (
+            acquired is None
+            or abs((acquired - reference).total_seconds())
+                > MAXIMUM_ACQUISITION_AGE_HOURS * 3600
+        ):
+            continue
+        selected.append(_validate_record(
+            record, target_map, required, reference, checkpoint,
+        ))
+    selected.sort(key=lambda row: (row["validTime"], row["partId"]))
+    return selected
+
+
+def merge_records(*groups: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    """Choose the newest immutable record per pair without hiding revisions."""
+    by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for group in groups:
+        if not isinstance(group, list):
+            _fail("OPEN_METEO_RECORD_INVALID")
+        for record in group:
+            if not isinstance(record, dict):
+                _fail("OPEN_METEO_RECORD_INVALID")
+            key = (
+                str(record.get("partId") or ""),
+                str(record.get("validTime") or ""),
+            )
+            by_pair.setdefault(key, []).append(record)
+    selected = []
+    conflicts = 0
+    for candidates in by_pair.values():
+        candidates_with_instants = [
+            (
+                _exact_instant(
+                    row.get("acquiredAt"), "OPEN_METEO_RECORD_INVALID",
+                )[1],
+                row,
+            )
+            for row in candidates
+        ]
+        newest = max(instant for instant, _row in candidates_with_instants)
+        newest_candidates = [
+            row for instant, row in candidates_with_instants
+            if instant == newest
+        ]
+        by_id = {
+            str(row.get("recordId") or ""): row for row in newest_candidates
+        }
+        if len(by_id) != 1:
+            conflicts += 1
+            continue
+        selected.append(next(iter(by_id.values())))
+    selected.sort(key=lambda row: (row["validTime"], row["partId"]))
+    return selected, conflicts
 
 
 def live_record_projection_payload(entry: dict[str, Any]) -> dict[str, Any]:
@@ -447,10 +625,14 @@ def safe_projection(document: dict[str, Any]) -> dict[str, Any]:
 
 
 __all__ = [
-    "CONTRACT_ID", "LIVE_RECORD_PROJECTION_CONTRACT_ID", "MAXIMUM_DISTANCE_KM", "MODEL",
+    "CONTRACT_ID", "DOCUMENT_SCHEMA_VERSION", "LIVE_RECORD_PROJECTION_CONTRACT_ID",
+    "MAXIMUM_ACQUISITION_AGE_HOURS", "MAXIMUM_DISTANCE_KM", "MODEL",
     "OpenMeteoCurrentFallbackError", "PHYSICAL_SCOPE", "SCORE_INPUT_POLICY_ID",
-    "RECORD_REF_CONTRACT_ID", "REQUEST_CONTRACT_ID", "SAFE_CONTRACT_ID",
+    "RECORD_CONTRACT_ID", "RECORD_REF_CONTRACT_ID", "RECORD_SCHEMA_VERSION",
+    "REQUEST_CONTRACT_ID", "SAFE_CONTRACT_ID", "SCHEMA_VERSION",
     "SELECTION_POLICY_ID", "SOURCE", "build_document", "build_record",
-    "live_record_projection_sha256", "record_ref", "record_ref_sha256",
-    "safe_projection", "validate_document",
+    "checkpoint_required_pairs",
+    "live_record_projection_sha256", "merge_records", "record_ref", "record_ref_sha256",
+    "reusable_records", "safe_projection", "validate_checkpoint_document",
+    "validate_document",
 ]

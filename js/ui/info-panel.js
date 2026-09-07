@@ -1,8 +1,8 @@
-import { scoreRating } from "../core/score-presentation.js?v=4.0.329";
-import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.329";
-import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.329";
-import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.329";
-import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.329";
+import { scoreRating } from "../core/score-presentation.js?v=4.0.330";
+import { formatNumber as localizedNumber, getLanguage, getLocale, t } from "../i18n.js?v=4.0.330";
+import { forecastDateKeyInTimeZone, visibleForecastDays } from "../core/forecast-calendar.js?v=4.0.330";
+import { presentActiveRavScoreExplanation } from "../core/ravscore-integrated-explanation-presenter.js?v=4.0.330";
+import { bestTimeSelectionReasonI18nKey } from "../core/best-time-policy.js?v=4.0.330";
 
 const hasNumber = value => value !== null && value !== undefined && value !== '' && typeof value !== 'boolean' && Number.isFinite(Number(value));
 const formatMetric = (value, suffix, digits = 1) => hasNumber(value) ? `${localizedNumber(value, { minimumFractionDigits:digits, maximumFractionDigits:digits })} ${suffix}` : t('common.missing');

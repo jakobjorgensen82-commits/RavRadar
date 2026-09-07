@@ -85,13 +85,20 @@ def run_bounded(
     return {"ok": False, "attempt": attempts, "reason": reason}
 
 
-def write_github_outputs(result: dict[str, int | bool | str]) -> None:
+def write_github_outputs(
+    result: dict[str, int | bool | str],
+    *,
+    refresh_mode: bool = False,
+) -> None:
     output_path = os.getenv("GITHUB_OUTPUT")
     if not output_path:
         return
     bounded_progress = bool(result.get("boundedProgress"))
     with Path(output_path).open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(f"bounded_progress={'true' if bounded_progress else 'false'}\n")
+        if refresh_mode:
+            handle.write("maintenance_completed=true\n")
+            return
         handle.write(
             "source_stage_disposition="
             f"{'IN_PROGRESS' if bounded_progress else 'READY'}\n"
@@ -113,7 +120,14 @@ def main() -> int:
         backoff_seconds=args.backoff_seconds,
     )
     if result["ok"]:
-        write_github_outputs(result)
+        refresh_mode = "--refresh-only" in pilot_args
+        write_github_outputs(result, refresh_mode=refresh_mode)
+        if refresh_mode:
+            print(
+                "Copernicus cache-only maintenance completed without changing "
+                "the current artifact disposition."
+            )
+            return 0
         if result.get("boundedProgress"):
             print(
                 "Copernicus pilot reached its controlled work budget after saving "

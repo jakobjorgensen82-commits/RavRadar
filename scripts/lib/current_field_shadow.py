@@ -431,7 +431,11 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
         value = json.loads(path.read_text("utf-8"))
     except Exception:
         return empty_document()
-    if value.get("schemaVersion") != SCHEMA_VERSION or not isinstance(value.get("anchors"), dict):
+    if (
+        not isinstance(value, dict)
+        or value.get("schemaVersion") != SCHEMA_VERSION
+        or not isinstance(value.get("anchors"), dict)
+    ):
         return empty_document()
     value["retentionHours"] = RETENTION_HOURS
     value["scoreImpact"] = False

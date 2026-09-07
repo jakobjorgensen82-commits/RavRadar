@@ -2,8 +2,8 @@ name: Update weather and deploy RavRadar
 
 on:
   schedule:
-    # GitHub-ejet 15-minutterskadence. Minutterne ligger forskudt fra
-    # timeskiftet, så den private Copernicus-pilot normalt er færdig først.
+    # Ekstern cron-dispatch er den primære 15-minutterskadence.
+    # GitHub schedule er reserve, hvis den eksterne dispatcher er forsinket eller nede.
     - cron: "14,29,44,59 * * * *"
   workflow_dispatch:
     inputs:
@@ -1784,6 +1784,166 @@ jobs:
           retention-days: 14
           if-no-files-found: warn
           include-hidden-files: true
+
+  copernicus-post-build-refresh:
+    name: Maintain private Copernicus cache after sealed weather build
+    needs: build-and-prepare
+    if: ${{ !cancelled() && needs.build-and-prepare.result == 'success' && needs.build-and-prepare.outputs.preflight_should_run == 'true' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Require refresh HEAD to equal GITHUB_SHA and current origin/main
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-copernicus.txt
+
+      - name: Restore exact private Copernicus post-build refresh input
+        id: copernicus-refresh-input
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+            .cache/copernicus-current-targets.json
+            .cache/copernicus-post-build-authoritative-targets.json
+            .cache/copernicus-post-build-refresh-manifest.json
+            .cache/weather-source-validation.json
+          key: copernicus-current-post-build-input-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          fail-on-cache-miss: true
+
+      - name: Verify exact private Copernicus post-build refresh input
+        id: verified-copernicus-refresh-input
+        shell: bash
+        env:
+          EXPECTED_CACHE_KEY: copernicus-current-post-build-input-v1-${{ runner.os }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          MATCHED_CACHE_KEY: ${{ steps.copernicus-refresh-input.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          manifest=.cache/copernicus-post-build-refresh-manifest.json
+          test "$MATCHED_CACHE_KEY" = "$EXPECTED_CACHE_KEY"
+          test "$(jq -er '.schemaVersion' "$manifest")" = "1"
+          test "$(jq -er '.kind' "$manifest")" = "RAVRADAR_PRIVATE_COPERNICUS_POST_BUILD_REFRESH_INPUT"
+          test "$(jq -er '.sourceHead' "$manifest")" = "$GITHUB_SHA"
+          test "$(jq -er '.privacyClass' "$manifest")" = "PRIVATE_WEATHER_CACHE"
+          test "$(jq -er '.containsPrivatePayload' "$manifest")" = "true"
+          target_hour="$(jq -er '.productionReferenceAt | select(type == "string" and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$"))' "$manifest")"
+          test "$(sha256sum .cache/copernicus-current-shadow.json | awk '{print $1}')" = "$(jq -er '.shadowSha256' "$manifest")"
+          test "$(sha256sum .cache/copernicus-current-source-stage.json | awk '{print $1}')" = "$(jq -er '.sourceStageSha256' "$manifest")"
+          test "$(sha256sum .cache/copernicus-current-targets.json | awk '{print $1}')" = "$(jq -er '.targetRegistrySha256' "$manifest")"
+          test "$(sha256sum .cache/copernicus-post-build-authoritative-targets.json | awk '{print $1}')" = "$(jq -er '.authoritativeTargetsSha256' "$manifest")"
+          test "$(sha256sum .cache/weather-source-validation.json | awk '{print $1}')" = "$(jq -er '.sourceProofSha256' "$manifest")"
+          test "$(jq -er '.productionReferenceAt' .cache/copernicus-current-targets.json)" = "$target_hour"
+          echo "target_hour=$target_hour" >> "$GITHUB_OUTPUT"
+
+      - name: Revalidate packaged exact-main source proof before maintenance acquisition
+        id: copernicus-refresh-source-proof
+        run: node scripts/weather-source-gate.mjs check
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Require reusable exact-main source proof for advisory maintenance
+        shell: bash
+        env:
+          SOURCE_GATE_REQUIRED: ${{ steps.copernicus-refresh-source-proof.outputs.required }}
+        run: test "$SOURCE_GATE_REQUIRED" = "false"
+
+      - name: Install private Copernicus maintenance dependency
+        run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
+
+      - name: Refresh only the next-run private Copernicus cache
+        id: copernicus-refresh
+        continue-on-error: true
+        timeout-minutes: 10
+        env:
+          COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
+          COPERNICUSMARINE_SERVICE_PASSWORD: ${{ secrets.COPERNICUSMARINE_SERVICE_PASSWORD }}
+        run: >-
+          python scripts/run-copernicus-current-pilot-with-retry.py
+          --attempts 1
+          --timeout-seconds 540
+          --backoff-seconds 0
+          --
+          --refresh-only
+          --at "${{ steps.verified-copernicus-refresh-input.outputs.target_hour }}"
+          --targets .cache/copernicus-current-targets.json
+          --authoritative-targets .cache/copernicus-post-build-authoritative-targets.json
+
+      - name: Validate refreshed private Copernicus package without changing artifact outcome
+        if: steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import sys
+          from datetime import datetime
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          from lib.copernicus_current import file_sha256, load_targets, validate_shadow, validate_target_registry
+          from lib.copernicus_current_source_stage import validate_reusable_source_stage
+
+          registry = validate_target_registry(json.loads(Path('.cache/copernicus-current-targets.json').read_text(encoding='utf-8')))
+          targets = load_targets(Path('.cache/copernicus-post-build-authoritative-targets.json'))
+          identities = {row['partId']: row for row in targets}
+          shadow_path = Path('.cache/copernicus-current-shadow.json')
+          shadow = validate_shadow(json.loads(shadow_path.read_text(encoding='utf-8')), identities, require_collection=False)
+          reference = datetime.fromisoformat(registry['productionReferenceAt'].replace('Z', '+00:00'))
+          if reference.isoformat().replace('+00:00', 'Z') != registry['productionReferenceAt']:
+              raise SystemExit('Non-canonical Copernicus refresh reference')
+          validate_reusable_source_stage(
+              json.loads(Path('.cache/copernicus-current-source-stage.json').read_text(encoding='utf-8')),
+              registry=registry,
+              shadow=shadow,
+              target_identities=identities,
+              shadow_sha256=file_sha256(shadow_path),
+              allow_rebase=False,
+          )
+          PY
+
+      - name: Reconfirm exact main immediately before refreshed Copernicus cache save
+        id: copernicus-refresh-write-authority
+        if: steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true' && success()
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Save successful post-build Copernicus maintenance under shared progress prefix
+        if: steps.copernicus-refresh-write-authority.outcome == 'success' && steps.copernicus-refresh.outcome == 'success' && steps.copernicus-refresh.outputs.maintenance_completed == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .cache/copernicus-current-shadow.json
+            .cache/copernicus-current-source-stage.json
+          key: copernicus-current-progress-v3-post-build-refresh-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
   deploy-pages:
     name: Deploy prepared Pages artifact through reusable workflow

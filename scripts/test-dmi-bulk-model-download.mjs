@@ -233,7 +233,7 @@ assert.equal(
 );
 
 const completionGateStart = mainCheckpointScope.indexOf('selected_valid_time_values = [');
-const completionGateEnd = mainCheckpointScope.indexOf('if made_progress:', completionGateStart);
+const completionGateEnd = mainCheckpointScope.indexOf('productive_collections += 1', completionGateStart);
 assert.ok(
   completionGateStart >= 0 && completionGateEnd > completionGateStart,
   'Collectionens komplette assetmængde skal klassificeres eksplicit.',

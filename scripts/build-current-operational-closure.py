@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from lib.copernicus_current import file_sha256, load_targets
+from lib.current_field_shadow import load_document as load_regional_shadow
 from lib.current_operational_closure import build_current_operational_closure
 from lib.dmi_native_provenance import (
     canonical_verified_part_current_attestation,
@@ -98,7 +99,7 @@ def main() -> int:
     registry = read_object(args.registry)
     copernicus = read_object(args.copernicus)
     source_stage = read_object(args.source_stage, optional=True)
-    regional = read_object(args.regional)
+    regional = load_regional_shadow(args.regional)
     policy = read_object(args.policy)
     open_meteo = read_object(args.open_meteo)
     reference = exact_reference(args.at or registry.get("productionReferenceAt"))

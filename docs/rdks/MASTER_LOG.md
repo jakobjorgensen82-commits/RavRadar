@@ -1,3 +1,16 @@
+# NYESTE EJERDELTA – 2026-09-07 – autonom helkædeafslutning og model-online
+
+- Ejeren beordrer autonomt og kontinuerligt arbejde: få først styr på hele vejrdatastrømmen og dens vedligeholdelse, og få derefter den nye integrerede scoremodel online. Nødvendige ændringer inden for de allerede godkendte krav er autoriseret.
+- Ejeren afviser flere isolerede quick fixes og kræver løbende helhedsvurdering af input, providerorden, cache, scheduler/kø, tidsbudget, closure, produktionsgates og modelcutover. Ved ny fejl skal den konkrete årsag og beslægtede fejlklasser gennemgås før endnu en rettelse.
+- Den gældende løsning er 4.0.330: DMI, Copernicus og Open-Meteo behandler reelle missing/invalid/expired, interne huller og hale før sekundær refresh. En stadig gyldig række bliver stående, mens nyere data hentes, og udskiftes først atomisk efter fuld validering.
+- DMI får critical-first primary-mode og bounded vedligeholdelse. Copernicus isolerer datafejl pr. shard, bevarer eksakt bundet incomplete progress, forhindrer stale residualudvidelse og bevarer records gennem rollover. Primærkørslen genbruger kun eksisterende 48t-historik og netværkshenter den ikke; et separat kort postbuild-job ejer history/advisory-refresh, validerer en kandidat før atomisk promotion og blokerer ikke artifact/deploy.
+- Den bekræftede rollover-P1 lukkes uden kildelås: et fortsat kryptografisk/domæne/tidsvalidt Baltic-prerequisite må bære et overlappende AMM15-par over en times reference-rebase inden for højst fire timer, men kun exact-current-reference-attempt må undertrykke frisk Baltic-retry eller postbuild source-upgrade.
+- Regional optional shadowevidens må blive pair-level missing, mens policy, target, registry, DMI-ledger/attestation og gapmatrix fortsat er fatal control plane. Open-Meteo schema v2 deler durable cache mellem normal/oneoff, checkpoint'er løbende og bruger fair bounded batchretry.
+- Open-Meteo fylder altid den kritiske rest først. Kun når den er nul, opfriskes ældste stadig gyldige records på mindst to timers alder; en fejlet refresh bevarer gammel record. HTTP-/provider-/payloadfejl isoleres til batchen.
+- Normal og oneoff skal have samme provider-, cache-, residual-, provenance- og closurekontrakt. Normal drift er updater; oneoff er accelerator. Shared cachewrites bindes til exact main. Den separate scheduled Copernicus-pilot fjernes; ekstern cron forbliver primær og GitHub-schedule reserve.
+- Udgivelseskravet er uændret: præcis 79.414/79.414, én kilde pr. par og nul overlap/missing. Højst 48 timers verificeret historik er rådgivende. Candidate G forbliver offentlig, indtil frisk komplet vejr, Feggesund, spatial audit, kapacitet, fulde post-data gates, deploy og særskilt Phase B er bevist.
+- Status ved logcheckpointet: 4.0.329 er merged som `b3865eb9`. 4.0.330 er en lokal kandidat under fokuseret validering og er ikke endnu CI-valideret, merged eller produktionsverificeret. Ingen scoreformel, geometri, kystnormal eller land-/vandpunkter ændres i vejrpakkens scope.
+
 # NYESTE EJERDELTA – 2026-09-06 – cachekontinuitet og fallback uden antalgrænse
 
 - Ejeren præciserer, at fallback aldrig må bindes af et bestemt antal manglende par. Formålet er netop, at Copernicus og Open-Meteo kan overtage hele den eksakte rest, uanset om den er lille eller stor, mens den afsluttende publiceringsgate forbliver streng.

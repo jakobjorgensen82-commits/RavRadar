@@ -329,12 +329,25 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
 
     moved_anchor = fixture()
     moved_anchor["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["targetPoint"][0] += 0.0001
-    expect_error(moved_anchor, "SHADOW_TARGET_BINDING_INVALID")
+    moved_anchor_result = invoke(moved_anchor)
+    need(
+        all(
+            row["classification"] == evidence.MISSING
+            for row in moved_anchor_result["privateProof"]["pairRefs"]
+            if row["partId"] == "SYNTHETIC-PART-00"
+        ),
+        "A stale optional regional anchor must be quarantined to MISSING",
+    )
 
     missing_hash = fixture()
     missing_hash["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0].pop("sourceAssetSha256")
-    error = expect_error(missing_hash, "SHADOW_SOURCE_ASSET_HASH_MISSING")
-    need(error.required_hook == evidence.REQUIRED_SOURCE_ASSET_HOOK, "Missing source hash must name the exact later producer hook")
+    missing_hash_result = invoke(missing_hash)
+    need(
+        missing_hash_result["shadowDiagnostics"]["quarantineCodes"].get(
+            "SHADOW_SOURCE_ASSET_HASH_MISSING"
+        ) == 1,
+        "A missing optional sample hash must be diagnosed without stopping fallback",
+    )
 
     changed_hash = fixture()
     changed_sample = changed_hash["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
@@ -342,11 +355,45 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     changed_sample["sampleKey"] = (
         f"dkss_lf|{iso(0)}|{iso(0)}|{changed_sample['sourceAssetSha256']}"
     )
-    expect_error(changed_hash, "SHADOW_SOURCE_ASSET_HASH_MISMATCH")
+    changed_hash_result = invoke(changed_hash)
+    need(
+        changed_hash_result["shadowDiagnostics"]["quarantineCodes"].get(
+            "SHADOW_SOURCE_ASSET_HASH_MISMATCH"
+        ) == 1,
+        "An unauthorized optional sample must be quarantined",
+    )
+
+    pre_target_hold = fixture()
+    pre_target_run = iso(-8)
+    for ledger_row in pre_target_hold["dmi_ledger"]["collections"][0]["validTimes"]:
+        ledger_row["sourceAsset"]["modelRun"] = pre_target_run
+    pre_target_hold["dmi_ledger"]["collections"][0]["modelRun"] = pre_target_run
+    pre_target_source = source_asset(-2)
+    pre_target_source["modelRun"] = pre_target_run
+    pre_target_hold["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [sample(0, -2, pre_target_source)]
+    pre_target_result = invoke(pre_target_hold)
+    need(
+        pre_target_result["privateProof"]["pairRefs"][0]["classification"]
+            == evidence.MISSING
+        and pre_target_result["shadowDiagnostics"]["quarantineCodes"].get(
+            "SHADOW_SOURCE_ASSET_HASH_MISMATCH"
+        ) == 1,
+        "A target-minus-two hold sample outside the ledger may not block Open-Meteo",
+    )
 
     changed_ledger_asset = fixture()
     changed_ledger_asset["dmi_ledger"]["collections"][0]["validTimes"][0]["sourceAsset"]["contentSha256"] = "c" * 64
-    expect_error(changed_ledger_asset, "SHADOW_SOURCE_ASSET_HASH_MISMATCH")
+    changed_ledger_result = invoke(changed_ledger_asset)
+    need(
+        all(
+            row["classification"] == evidence.MISSING
+            for row in changed_ledger_result["privateProof"]["pairRefs"]
+            if row["partId"] != "SYNTHETIC-PART-07"
+        ),
+        "A revised source may never admit old shadow bytes",
+    )
 
     revised_asset = fixture()
     revised_source = deepcopy(
@@ -381,9 +428,50 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
         "A retained prior-run sample must remain unavailable without blocking fallback",
     )
 
+    retained_previous_run = fixture()
+    retained_source = source_asset(0)
+    retained_source["modelRun"] = iso(-6)
+    retained_previous_run["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [sample(0, 0, retained_source)]
+    retained_previous_run["dmi_ledger"]["retainedCurrentAssetProofs"] = [{
+        "sourceAsset": retained_source,
+        "attestedPartIds": ["SYNTHETIC-PART-00"],
+    }]
+    retained_result = invoke(retained_previous_run)
+    retained_refs = [
+        row for row in retained_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        retained_refs[0]["classification"] == evidence.REGIONAL_DMI_NATIVE
+        and all(
+            row["classification"] == evidence.REGIONAL_DMI_DERIVED_HOLD
+            for row in retained_refs[1:4]
+        )
+        and retained_refs[4]["classification"] == evidence.MISSING,
+        "An exact retained part/time/source proof must authorize only its bounded rows",
+    )
+
     invalid_vector = fixture()
     invalid_vector["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]["layers"]["bottom"]["uMps"] = math.nan
-    expect_error(invalid_vector, "SHADOW_VECTOR_PROOF_INVALID")
+    invalid_vector_result = invoke(invalid_vector)
+    need(
+        invalid_vector_result["shadowDiagnostics"]["quarantineCodes"].get(
+            "SHADOW_VECTOR_PROOF_INVALID"
+        ) == 1,
+        "An invalid optional vector must be quarantined rather than admitted",
+    )
+
+    invalid_shadow = fixture()
+    invalid_shadow["current_shadow"] = {"schemaVersion": 999}
+    invalid_shadow_result = invoke(invalid_shadow)
+    need(
+        invalid_shadow_result["shadowDiagnostics"]["shadowHeaderQuarantined"] is True
+        and invalid_shadow_result["privateProof"]["missingPairCount"]
+            == invalid_shadow_result["privateProof"]["fallbackEligiblePairCount"],
+        "An invalid optional shadow envelope must yield an all-MISSING regional proof",
+    )
 
     stale_wrong_phase = fixture()
     stale_phase_sample = stale_wrong_phase["current_shadow"]["anchors"]["REGIONAL_PROXY::SYNTHETIC-PART-00"]["samples"][0]
@@ -473,9 +561,12 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     malformed_selected_run["current_shadow"]["anchors"][
         "REGIONAL_PROXY::SYNTHETIC-PART-00"
     ]["samples"][0]["modelRun"] = "2026-01-01T00:30:00Z"
-    expect_error(
-        malformed_selected_run,
-        "SHADOW_SOURCE_BINDING_INVALID",
+    malformed_result = invoke(malformed_selected_run)
+    need(
+        malformed_result["shadowDiagnostics"]["quarantineCodes"].get(
+            "SHADOW_SOURCE_BINDING_INVALID"
+        ) == 1,
+        "A malformed optional sample identity must be quarantined",
     )
 
 

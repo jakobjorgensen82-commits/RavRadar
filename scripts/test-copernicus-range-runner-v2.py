@@ -191,8 +191,15 @@ def legacy_record(valid_time: datetime) -> dict:
     }
 
 
-def run(folder: Path, shadow_name: str = "cache.json", fixture_name: str = "fixtures") -> subprocess.CompletedProcess[str]:
-    return subprocess.run([
+def run(
+    folder: Path,
+    shadow_name: str = "cache.json",
+    fixture_name: str = "fixtures",
+    *,
+    refresh_only: bool = False,
+    acquisition_minutes: int = 10,
+) -> subprocess.CompletedProcess[str]:
+    command = [
         sys.executable, "-B", str(RUNNER),
         "--targets", str(folder / "registry.json"),
         "--authoritative-targets", str(folder / "targets.json"),
@@ -201,9 +208,14 @@ def run(folder: Path, shadow_name: str = "cache.json", fixture_name: str = "fixt
         "--report", str(folder / f"{shadow_name}.report.json"),
         "--summary", str(folder / f"{shadow_name}.summary.txt"),
         "--at", REFERENCE.isoformat().replace("+00:00", "Z"),
-        "--acquisition-at", (REFERENCE + timedelta(minutes=10)).isoformat().replace("+00:00", "Z"),
+        "--acquisition-at", (REFERENCE + timedelta(minutes=acquisition_minutes)).isoformat().replace("+00:00", "Z"),
         "--fixture-directory", str(folder / fixture_name),
-    ], cwd=ROOT, capture_output=True, text=True, check=False)
+    ]
+    if refresh_only:
+        command.append("--refresh-only")
+    return subprocess.run(
+        command, cwd=ROOT, capture_output=True, text=True, check=False,
+    )
 
 
 def require_complete(folder: Path, shadow_name: str) -> subprocess.CompletedProcess[str]:
@@ -309,6 +321,52 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     advisory_data.to_netcdf(advisory_fixtures / "copernicus-baltic-nemo.nc")
     advisory_run = run(folder, "advisory-cache.json", "advisory-fixtures")
     assert advisory_run.returncode == 0, advisory_run.stdout + advisory_run.stderr
+    primary_advisory_cache = validate_shadow(
+        json.loads((folder / "advisory-cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    primary_advisory_seal = primary_advisory_cache["collections"][0]
+    assert primary_advisory_seal["advisoryHistoryRecordRefs"] == []
+    assert primary_advisory_seal["advisoryHistoryMissingPairCount"] == 1
+    primary_advisory_report = json.loads(
+        (folder / "advisory-cache.json.report.json").read_text(encoding="utf-8")
+    )
+    assert primary_advisory_report["advisoryHistoryFill"]["status"] == (
+        "BOUNDED_INCOMPLETE"
+    )
+    assert primary_advisory_report["advisoryHistoryFill"]["acquiredPairCount"] == 0
+    assert primary_advisory_report["advisoryHistoryFill"]["attemptedShardCount"] == 0
+
+    advisory_refresh = run(
+        folder,
+        "advisory-cache.json",
+        "advisory-fixtures",
+        refresh_only=True,
+        acquisition_minutes=20,
+    )
+    assert advisory_refresh.returncode == 0, (
+        advisory_refresh.stdout + advisory_refresh.stderr
+    )
+    refreshed_before_primary = validate_shadow(
+        json.loads((folder / "advisory-cache.json").read_text(encoding="utf-8")),
+        {"p1": TARGET},
+        require_collection=True,
+    )
+    advisory_record_ids_before_primary = {
+        row["recordId"] for row in refreshed_before_primary["records"]
+        if row["validTime"]
+        == (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    }
+    assert len(advisory_record_ids_before_primary) == 1
+
+    advisory_run = run(
+        folder,
+        "advisory-cache.json",
+        "advisory-fixtures",
+        acquisition_minutes=30,
+    )
+    assert advisory_run.returncode == 0, advisory_run.stdout + advisory_run.stderr
     advisory_cache = validate_shadow(
         json.loads((folder / "advisory-cache.json").read_text(encoding="utf-8")),
         {"p1": TARGET},
@@ -320,25 +378,30 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     assert len(advisory_seal["advisoryHistoryRecordRefs"]) == 1
     assert advisory_seal["advisoryHistoryMissingPairCount"] == 0
     assert advisory_seal["advisoryHistoryComplete"] is True
+    assert advisory_record_ids_before_primary == {
+        row["recordId"] for row in advisory_cache["records"]
+        if row["validTime"]
+        == (REFERENCE - timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+    }
     advisory_report = json.loads(
         (folder / "advisory-cache.json.report.json").read_text(encoding="utf-8")
     )
     assert advisory_report["advisoryHistoryFill"] == {
         "status": "COMPLETE",
         "requiredPairCount": 1,
-        "initialAvailablePairCount": 0,
-        "acquiredPairCount": 1,
+        "initialAvailablePairCount": 1,
+        "acquiredPairCount": 0,
         "availablePairCount": 1,
         "missingPairCount": 0,
-        "attemptedShardCount": 1,
-        "completedShardCount": 1,
+        "attemptedShardCount": 0,
+        "completedShardCount": 0,
         "failedShardCount": 0,
         "boundedWorkRemaining": False,
         "budgetReached": False,
         "exhaustionAttested": False,
         "regionalHistoryUsed": False,
         "interpolationCarryOrLoanUsed": False,
-        "newAcquisitionCount": 1,
+        "newAcquisitionCount": 0,
     }
     advisory_gate = require_complete(folder, "advisory-cache.json")
     assert advisory_gate.returncode == 0, advisory_gate.stdout + advisory_gate.stderr
@@ -448,7 +511,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     incomplete_dir.mkdir()
     data.isel(time=[0]).to_netcdf(incomplete_dir / "copernicus-baltic-nemo.nc")
     failed = run(folder, "incomplete-cache.json", "incomplete")
-    assert failed.returncode != 0 and "missing 1 exact requested native hour" in failed.stderr
+    assert failed.returncode != 0
+    assert "Copernicus shard failed safely" in failed.stderr
     assert not (folder / "incomplete-cache.json").exists()
     assert not (folder / "incomplete-cache.json.tmp").exists()
 
@@ -495,7 +559,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-runner-") as 
     data.assign_coords(longitude=[10.0]).to_netcdf(partial_fixtures / f"{source}-000.nc")
 
     interrupted = run(resume_folder, "cache.json", "partial-fixtures")
-    assert interrupted.returncode != 0 and "shard 1" in interrupted.stderr
+    assert interrupted.returncode == 75
+    assert "source=copernicus-baltic-nemo, shardIndex=1" in interrupted.stderr
     checkpoint = validate_shadow(
         json.loads((resume_folder / "cache.json").read_text(encoding="utf-8")),
         {row["partId"]: row for row in RESUME_TARGETS},

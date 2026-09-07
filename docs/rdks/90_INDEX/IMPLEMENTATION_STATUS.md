@@ -1,3 +1,22 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.330 helkæde-cachevedligeholdelse
+
+- [x] Fastlæg én samlet critical-first-kontrakt: missing/invalid/expired, interne huller og hale før refresh af stadig gyldige rækker; gyldig gammel currenttuple bevares til atomisk valideret replacement.
+- [x] Implementér lokal DMI-primary-mode med critical-first og bounded valid-row maintenance uden ændret strict READY-promotion.
+- [x] Implementér lokal Copernicus per-shard datafejlisolation, genbrugelig `IN_PROGRESS`, ingen stale residualudvidelse og cachebevarende target-/modelrunrollover.
+- [x] Bevar et kryptografisk/domæne/tidsvalidt Baltic-prerequisite over en times reference-rebase inden for højst fire timer, men lad kun exact-current-reference-attempt undertrykke frisk Baltic-retry/postbuild-upgrade.
+- [x] Afgræns Copernicus-ejerskab: primary genbruger kun eksisterende 48t-historik og netværkshenter den aldrig; et bounded, ikke-blokerende postbuild-job ejer history/advisory-refresh via separat kandidat og atomisk promotion.
+- [x] Implementér lokal regional klassifikation, hvor defekt optional shadowevidens bliver pair-level missing, mens policy, target, registry, DMI-ledger/attestation og gapmatrix fortsat er fatal control plane.
+- [x] Implementér lokal Open-Meteo schema v2 med per-record `acquiredAt`, delt normal/oneoff-cache, target-overlap-rebase samt atomisk start- og batchcheckpoint.
+- [x] Implementér lokal Open-Meteo breadth-first batchplan, bounded retry, shared deadline og batchisoleret HTTP-/provider-/payloadfejl.
+- [x] Implementér lokal critical-first Open-Meteo og proaktiv refresh alene ved nul residual, ældst først og mindst to timers alder; mislykket refresh bevarer gammel record.
+- [x] Bring normal og oneoff på samme cache-/provider-/closurekontrakt med exact-main write authority og save-before-terminal. Oneoff er fortsat ikke-deployende accelerator.
+- [x] Fjern den særskilte scheduled Copernicus-pilot; bevar ekstern cron som primær normal-dispatcher, GitHub-schedule som reserve og fælles serialiseret writerkø.
+- [x] Synkronisér 4.0.330 RDKS, beslutning, status, roadmap, changelogs og Markdown-/webhåndbog uden at ændre model, geometri eller punkter.
+- [x] Afslut den fokuserede lokale kontraktmatrix samt versions-, RDKS-, håndbogs- og workflowkontroller; de er grønne, og den særskilte geodatadiff beviser kun de autoriserede topversionsfelter.
+- [ ] Bevar den nu versionerede samlede releasehead uændret og bestå én fuld GitHub exact-head `validate:source` før merge; version og geodatadiff er afsluttet, men CI-beviset mangler.
+- [ ] Merge kun den grønne eksakte head og kør frisk main-oneoff/normal continuation. Kræv cachegenbrug, providerprogression og faktisk Open-Meteo-fill uden stale widening eller pilotkøkollision.
+- [ ] Kræv 79.414/79.414, Feggesund 354/354, hydreret spatial audit, live kapacitet, fuld post-data `validate` og `release:gate`, artifact/deploy og offentlig kontrol. Gennemfør først derefter særskilt autoriseret Phase B; Candidate G er offentlig indtil da.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-06 – 4.0.329 DMI-proof-kontinuitet
 
 - [x] Registrér 4.0.328 exact-head `34040547841`, PR #261 og merge `31b98428dea163c11ded1fc1e428e27a0218a8f2`.

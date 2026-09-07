@@ -1,6 +1,26 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.329
+**Håndbogsversion:** 4.0.330
+
+## Almindelige vejrkørsler vedligeholder hele cachen – 2026-09-07
+
+4.0.330 samler cachevedligeholdelsen på tværs af DMI, Copernicus og Open-Meteo. Målet er ikke, at hver leverandør skal være komplet alene, men at alle allerede validerede kystdel/time-par bevares, mens kun den eksakte rest går videre. Først den samlede closure må være alt-eller-intet: præcis 673 kystdele × 118 timer = 79.414 par, én gyldig kilde pr. par og nul overlap eller mangler.
+
+DMI bruger den bounded arbejdstid på reelle huller, ugyldige eller udløbne rækker og den nye hale først. Når den kritiske kø er tom, må et lille bounded antal stadig gyldige rækker opfriskes. Den eksisterende række forbliver brugbar, mens den nyere fil hentes; U, V og strømkilden erstattes først samlet, når det nye resultat og dets provenance er fuldt valideret. Et nyt time- eller modelrunskift må derfor ikke gøre cachen praktisk tom igen.
+
+Copernicus behandler Baltic og derefter AMM15 pr. shard. En fejl i én leverandørfil eller shard registreres for netop dette arbejde, mens senere shards fortsætter. Validerede records og afsluttede forsøg – også legitime nul-resultater – gemmes som bundet incomplete progress. En gammel forsøgsjournal må ikke gøre den aktuelle rest større, og rollover sletter ikke fysisk gyldige records. Når referencetimen flyttes én time, må et tidligere Baltic-forudsætningsforsøg fortsat bære et overlappende AMM15-fallbackpar i højst fire timer, hvis kryptografi, produktdomæne, del og validTime stadig passer. Dermed bliver en gyldig række ikke falsk missing ved et rent envelopeskift. Kun et Baltic-forsøg fra den eksakte aktuelle reference må dog springe et nyt retry eller postbuild-upgrade over, så AMM15 kan erstattes af Baltic senere, og fallbacken aldrig bliver kildelåst. Den primære kørsel må genbruge allerede verificeret historik fra de foregående højst 48 timer, men må ikke bruge netværkstiden på at hente historikken. Det korte postbuild-job ejer al rådgivende history-refresh, bygger først en separat kandidat og udskifter kun aktiv historik atomisk efter fuld validering. En fejl dér bevarer den aktive historik og blokerer ikke publicering; virkelige operationelle huller har altid førsteprioritet.
+
+Den regionale DMI-vej behandler en defekt valgfri shadowheader, anchor eller sample som missing for netop det berørte par, så Open-Meteo stadig kan forsøges. Centrale regler og beviser er noget andet: policy, targets, register, DMI-ledger/attestation og gapmatrix stopper fortsat hele kæden ved fejl og må ikke skjules som et almindeligt leverandørhul.
+
+Open-Meteo har sin egen delte private progresscache for både almindelig drift og oneoff. Hver record bærer sin faktiske hentetid. Ved et nyt target genbruges kun valideret overlap, og cachen checkpointes før første netværkskald samt efter hver færdig batch. Den kritiske rest fordeles bredt over batches på højst 50 lokationer med bounded retry, så én vanskelig batch ikke bruger hele kørslen. HTTP-afkortning, leverandørfejl eller et ugyldigt svar rammer kun den konkrete batch; gemt fremgang og senere batches bevares.
+
+Når der ikke længere er kritiske huller, kan Open-Meteo bruge den resterende deadline på de ældste stadig gyldige records, som er mindst to timer gamle. Friske records hentes ikke igen ved hvert 15-minutterskald, og en fejlet opfriskning efterlader den hidtidige validerede record. DMI, Baltic, AMM15 og regional DMI kan i en senere kørsel fortsat erstatte Open-Meteo efter kildeprioriteten; en række låses aldrig til fallbackleverandøren.
+
+Normal og oneoff bruger samme kilde-, cache-, provenance- og closurelogik. Normal drift er den varige vedligeholder og har kortere ydre budgetter. Oneoff har mere tid, men er kun accelerator og deployer ikke. Shared cache må kun gemmes fra den eksakte autoriserede `main`-commit, og en gemt partial cache er aldrig et releasebevis.
+
+Den særskilte planlagte Copernicus-pilot fjernes, så den ikke konkurrerer med de almindelige kørsler i produktionskøen. Ekstern cron er fortsat den primære payloadfri dispatcher, fordi GitHubs native schedules kan stå i kø eller udeblive; GitHub-planen er reserve. De foregående højst 48 timers verificerede currenthistorik gemmes fortsat til mobilisering og transport. Den er rådgivende: et hul giver `HISTORY_INCOMPLETE` og kan aldrig udfyldes med gæt, men må heller ikke blokere en komplet fremadrettet prognose.
+
+Status ved checkpointet: 4.0.330 er en lokalt valideret releasekandidat. Den fokuserede kontraktmatrix samt versions-, RDKS-, håndbogs- og workflowkontroller er grønne, og geodatadiffen viser kun de autoriserede topversionsfelter. Exact-head CI, merge og produktionsruntime mangler fortsat. Candidate G er offentlig. Den integrerede scoremodel må først gå online efter frisk 79.414/79.414-vejrclosure, Feggesund 354/354, hydreret spatial audit, live kapacitetsbevis, fuld post-data validering og releasegate, artifact/deploy og den særskilte autoriserede Phase B-cutover. Vejrcacheændringen flytter ingen geometri eller land-/vandpunkter og ændrer ikke scoreformlen.
 
 ## Vejrcachen skal kunne genbruges gennem et nyt DMI-modelrun – 2026-09-06
 
@@ -273,7 +293,7 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.328 first-cutover-kandidat
+## Aktuel status – RavScore 4.0.330 first-cutover-kandidat
 
 Candidate G er fortsat den eneste offentlige model. Den samlede first-cutover-kode ligger på main, men den lokale 4.0.322-driftspakke med HARMONIE-assetwatchdog er endnu ikke exact-head-valideret, merged eller kørt i frisk produktion. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy-, rollback- og watchdogtests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
 
@@ -371,7 +391,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.328-cutoverkandidat, ikke produktion
+## Status for det aktuelle modelarbejde – lokal 4.0.330-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver state 6 og den lokale 4.0.321-cutoverkandidat. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig; den additive checkpointmigration og de resterende data-, kapacitets- og produktionsbeviser er endnu ikke lukket.
 
@@ -874,13 +894,13 @@ Den landsdækkende test gennemgår 210 zoner, alle 673 kystdele, begge jagtforme
 
 Den centrale kørsel `#32249770288` bestod derefter frisk 673/673, fuld validering, releasegate, Supabase og Pages. Det aktive datasæt `rr-20260819115558-210` er hash- og runtimekontrolleret for 420 aktuelle visninger og 2.100 femdøgnsvisninger. En visning bruger enten én komplet lokal kontekst eller en tydeligt mærket, samlet hovedzonefallback. Den faktiske automatiserede kliktest i DOM'en forsøges først med Codex-browserpluginet og målrettet diagnostik; hvis der ikke findes en konkret reparationsvej, bruges den ejer-godkendte Chromium/Playwright-fallback.
 
-## GitHub ejer 15-minuttersproduktionen – 4.0.234
+## Historisk: GitHub ejede 15-minuttersproduktionen – 4.0.234
 
-RavRadar starter nu selv den normale vejropdatering i GitHub Actions ved minut 14, 29, 44 og 59. Copernicus-piloten kører ved minut 6, så den nye UTC-time normalt er klar før den første produktion efter et timeskifte.
+Dette afsnit beskriver 4.0.234-perioden og er supersederet af 4.0.330: ekstern cron er nu primær dispatcher, GitHubs 15-minuttersplan er reserve, og den særskilte planlagte Copernicus-pilot er fjernet. I 4.0.234 startede RavRadar den normale vejropdatering i GitHub Actions ved minut 14, 29, 44 og 59, mens Copernicus-piloten kørte ved minut 6.
 
 En lille gate kontrollerer den private cache, før det tunge job starter. Mangler den eksakte aktuelle time, bygges der intet vejr, Supabase-dokument eller Pages-artifact. Det private heartbeat bestiller piloten, og næste planlagte 15-minutterskørsel prøver igen. Fra 4.0.236 følger den time, som gaten faktisk godkendte, med gennem hele bygningen; det lukker også løbet, hvor jobbet starter før og fortsætter efter et timeskifte. Manuelle og push-udløste releases er fortsat fail-closed.
 
-Ejeren har slettet RavRadar-jobbene i cron-job.org. GitHubs efterfølgende naturlige produktion `#32272470720`, Copernicus-pilot `#32273634626` og cachebevaring `#32272473716`/`#32272598725` er grønne, så GitHub Actions er eneste normale scheduler. Ændringen flytter ingen land-/vandpunkter og ændrer hverken kildeorden, score, pile eller kravet om præcis 673/673.
+På daværende tidspunkt slettede ejeren RavRadar-jobbene i cron-job.org. GitHubs efterfølgende naturlige produktion `#32272470720`, Copernicus-pilot `#32273634626` og cachebevaring `#32272473716`/`#32272598725` var grønne, så GitHub Actions var periodens eneste normale scheduler. 4.0.330 genindfører ekstern cron som primær dispatcher uden at ændre land-/vandpunkter, kildeorden, score, pile eller slutkravet 79.414/79.414.
 
 ## Supabase gemmer den fulde diagnostik kompakt og tabsfrit – 4.0.234
 
@@ -1477,7 +1497,7 @@ Ekspertpunkt E-14: Valider wadersgrænserne for forskellige kyster og vurder om 
 
 Den implementerede lokale 4.0.321-cutoverkandidat hedder `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0` og bruger stateformat `6.0.0`, variant `COASTAL-SUPPLY-MOBILISATION-BOUNDED-WAVE-APPROACH-HUNTABILITY-2`, profil `cn-003-015-in10-out8-full24-cos48-gap3-wave4-48-historybounds12d-lastmileewma4-tail40-atten15-v5`, komponentskema `ravscore-components-huntability-delivery-mobilisation-bounds-v5` og forklaringsskema `ravscore-explanation-integrated-bounds-v5`. Beregningen ligger i `js/core/ravscore-integrated.js`, strømtilstanden i `js/core/ravscore-current-supply-memory.js`, mobiliseringen i `js/core/ravscore-wave-mobilisation-state.js`, bølgeapproach i `js/core/ravscore-wave-approach-state.js` og den samlede kæde i `js/core/ravscore-integrated-state-pipeline.js`. Cutover-kontrakten håndhæves af `js/core/ravscore-public-model.js` og `js/core/ravscore-public-runtime-contract.js`. Fase A-appkoden blev exact-head-valideret og merged med Candidate G fortsat offentlig; indtil 4.0.321 selv har bestået de resterende data-, kapacitets-, produktions- og offentlige kontroller, er Candidate G fortsat eneste offentlige model.
 
-Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.328 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
+Den fælles 11-feltsbinding omfatter også ranking `direction-broad-19-history-tie-v2`, bedste tidspunkt `score-history-water-tie-earliest-v3` og præsentation `score-bands-35-55-75-exceptional90-v1`. 4.0.330 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d` over 55 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Den faktiske offentlige browserlukning kontrolleres særskilt over 78 transitive deploymoduler. Bindingen og den fokuserede lokale slutmatrix er grønne; det er ikke i sig selv bevis for offentlig aktivering.
 
 ### 18.1 Hovedformel
 
