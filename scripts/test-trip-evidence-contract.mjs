@@ -39,6 +39,10 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
 } from '../js/core/ravscore-public-runtime-contract.js';
+import {
+  RAVSCORE_PUBLIC_WEATHER_SOURCE_PART_COUNT,
+  buildPublicWeatherSourceAge,
+} from '../js/core/ravscore-public-weather-source-age.js';
 
 class MemoryStorage {
   values = new Map();
@@ -77,7 +81,7 @@ function createScoreAvailability(allCurrentScoresFullHistory = true) {
     fullHistoryModeCount: historyIncomplete ? 419 : 420,
     historyIncompleteModeCount: historyIncomplete ? 1 : 0,
     historyIncompleteZoneCount: historyIncomplete ? 1 : 0,
-    evaluatedAt: '2026-08-21T02:50:00.000Z',
+    evaluatedAt: '2026-08-21T03:05:00.000Z',
     unavailableZones: [],
     historyIncompleteZones: historyIncomplete ? [{
       zoneId: 'zone-99',
@@ -91,12 +95,35 @@ function createScoreAvailability(allCurrentScoresFullHistory = true) {
 const fullHistoryScoreAvailability = createScoreAvailability(true);
 const globalWarmupScoreAvailability = createScoreAvailability(false);
 
+function knownDmiWeatherSourceAge(productionReferenceAt) {
+  const provenance = Object.freeze({
+    status: 'verified',
+    provider: 'dmi',
+    modelRun: productionReferenceAt,
+  });
+  return buildPublicWeatherSourceAge({
+    productionReferenceAt,
+    partSourceRows: Array.from(
+      { length: RAVSCORE_PUBLIC_WEATHER_SOURCE_PART_COUNT },
+      (_, index) => ({
+        partId: `fixture-part-${index + 1}`,
+        selectedReferenceAt: productionReferenceAt,
+        windProvenance: provenance,
+        waveProvenance: provenance,
+        currentProvenance: provenance,
+        waterLevelProvenance: provenance,
+      }),
+    ),
+  });
+}
+
 function createPublicManifest({
   datasetId,
   generatedAt,
   productionReferenceAt,
   evidenceTrust = verifiedOnlyTrust,
   scoreAvailability = fullHistoryScoreAvailability,
+  weatherSourceAge = knownDmiWeatherSourceAge(productionReferenceAt),
 }) {
   return {
     datasetId,
@@ -109,6 +136,7 @@ function createPublicManifest({
     ravScoreModelBinding: publicBinding,
     ravScoreEvidenceTrust: evidenceTrust,
     ravScoreAvailability: scoreAvailability,
+    weatherSourceAge,
     publicConditionsSha256: 'a'.repeat(64),
     publicConditionsBytes: 1,
     publicConditionDetailsSha256: 'b'.repeat(64),
@@ -479,9 +507,9 @@ assert.equal(controller.active(), null);
 assert.equal(listPendingTripEvidence(controllerStorage).length, 0);
 
 const freshManifest = createPublicManifest({
-  datasetId: 'rr-20260821025000-210',
-  generatedAt: '2026-08-21T02:50:00.000Z',
-  productionReferenceAt: '2026-08-21T02:00:00.000Z',
+  datasetId: 'rr-20260821030500-210',
+  generatedAt: '2026-08-21T03:05:00.000Z',
+  productionReferenceAt: '2026-08-21T03:00:00.000Z',
 });
 const freshConditions = {
   available: true,

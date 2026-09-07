@@ -4,6 +4,7 @@ import { buildPublicConditions, buildPublicConditionDetails } from './public-con
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { resolvePublicRavScoreProfile } from '../js/core/ravscore-public-model.js';
+import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 
 const failures=[];
 const need=(ok,message)=>{if(!ok)failures.push(message);};
@@ -17,14 +18,34 @@ const part=(zoneId,name,point,currentDirectionDeg,windDirectionDeg,overrides={})
   zoneId,name,waterPoint:point,landPoint:[point[0]+.01,point[1]+.01],flowPoints,
   current:{time:'2026-08-15T12:00:00.000Z',weather:{currentDirectionDeg,windDirectionDeg}},...overrides
 });
+const fullHistoryScore=(score,winningPartId,winningPartName)=>{
+  const scoreBounds={lower:score,upper:score,modelUncertaintyPoints:0,rawLower:score,rawUpper:score};
+  return {
+    available:true,status:'only-part',score,scoreQuality:'FULL_HISTORY',calibrationEligible:true,
+    scoreSemantics:'EXACT_POINT_SCORE',conservativeTailResetApplied:false,
+    scoreBounds,historyCoverageHours:48,historyReasonCodes:[],
+    winningPartId,winningPartName,winningPartUncertain:false,
+    possibleWinningPartCount:1,
+    possibleWinningParts:[{partId:winningPartId,name:winningPartName,score,scoreBounds:{...scoreBounds}}],
+    comparisonPartCount:3,validPartCount:3,expectedPartCount:3,modelBinding,
+    components:{huntability:70,transport:70,release:70}
+  };
+};
+const scoreAvailability={
+  schemaVersion:2,policy:'integrated-model-local-fail-closed',allZonesActive:true,
+  activeZoneCount:1,unavailableZoneCount:0,totalZoneCount:1,
+  allCurrentScoresFullHistory:true,fullHistoryModeCount:2,
+  historyIncompleteModeCount:0,historyIncompleteZoneCount:0,
+  evaluatedAt:'2026-08-15T12:00:00.000Z',unavailableZones:[],historyIncompleteZones:[]
+};
 const full={
-  datasetId:'rr-arrow-density-test',generatedAt:'2026-08-15T12:00:00.000Z',
+  datasetId:'rr-arrow-density-test',generatedAt:'2026-08-15T12:00:00.000Z',productionReferenceAt:'2026-08-15T12:00:00.000Z',
   zones:{Z1:{provider:'dmi',flowPoints,current:{currentDirectionDeg:80,windDirectionDeg:260},forecast:{hourly:[]}}},
-  coastalParts:{schemaVersion:2,enabled:true,modelBinding,scoreProfile,scoreAvailability:{schemaVersion:1,policy:'integrated-model-local-fail-closed',allZonesActive:true,activeZoneCount:1,unavailableZoneCount:0,totalZoneCount:1,unavailableZones:[]},expectedPartCount:3,scoredPartCount:3,parts:{
+  coastalParts:{schemaVersion:2,enabled:true,modelBinding,scoreProfile,evidenceTrust:ravScoreVerifiedEvidenceTrust(),scoreAvailability,expectedPartCount:3,scoredPartCount:3,parts:{
     P1:part('Z1','Del 1',[10,56],90,270,{flowPoints:{...flowPoints,sources:{current:'dmi-marine-grid',wind:'dmi-marine-wind-grid'}}}),
     P2:part('Z1','Del 2',[10.5,56.5],100,280,{flowPoints:{...flowPoints,sources:{current:'zone-marine-anchor',wind:'zone-marine-anchor'}}}),
     P3:part('Z1','Del 3',[11,57],110,290,{flowPoints:{current:[11.1,57.1],wind:[11.2,57.2],sources:{current:'dmi-marine-grid',wind:'dmi-atmospheric-grid'}}})
-  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:{available:true,status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1',modelBinding},beach:{available:true,status:'only-part',score:70,comparisonPartCount:3,winningPartId:'P1',modelBinding}}]}}}
+  },zones:{Z1:{expectedPartCount:3,scoredPartCount:3,hourly:[{time:'2026-08-15T12:00:00.000Z',waders:fullHistoryScore(70,'P1','Del 1'),beach:fullHistoryScore(70,'P1','Del 1')}]}}}
 };
 const startup=buildPublicConditions(full),details=buildPublicConditionDetails(full);
 need(Object.keys(startup.coastalParts.parts).join(',')==='P1','Startpakken skal kun bære det aktuelle vinderpunkts flowdata.');

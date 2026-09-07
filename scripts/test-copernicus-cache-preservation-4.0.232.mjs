@@ -76,8 +76,18 @@ assert.match(copernicusRunner, /def quarantine_invalid_private_file\(path: Path,
 assert.match(copernicusRunner, /os\.replace\(path, quarantine\)/);
 assert.match(
   copernicusRunner,
-  /quarantine_invalid_private_file\(args\.shadow, "shadow"\)[\s\S]{0,400}existing = atomic_write_shadow_checkpoint\([\s\S]{0,180}acquisitions=\[\],[\s\S]{0,80}records=\[\]/,
-  'Invalid private shadow bytes must be digest-quarantined before an atomic empty checkpoint replaces them.',
+  /existing, shadow_salvage = load_shadow_with_salvage\([\s\S]{0,260}existing_acquisitions, existing_records = merge_cache_evidence\([\s\S]{0,220}shadow_rewritten = bool\(shadow_salvage\["salvaged"\]\)[\s\S]{0,160}existing = atomic_write_shadow_checkpoint\(/,
+  'A parseable private shadow must preserve valid evidence while atomically resealing only its salvaged rows.',
+);
+assert.doesNotMatch(
+  copernicusRunner,
+  /quarantine_invalid_private_file\(args\.shadow/,
+  'The runner must not replace a parseable partially damaged shadow with an all-empty checkpoint.',
+);
+assert.match(
+  copernicusRunner,
+  /if shadow_rewritten or not shadow_was_present:[\s\S]{0,120}quarantine_invalid_private_file\(args\.source_stage, "source stage"\)/,
+  'A source-stage binding must be invalidated when its shadow was granularly resealed.',
 );
 assert.match(
   copernicusRunner,

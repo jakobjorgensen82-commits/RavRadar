@@ -32,7 +32,8 @@
 
 - 4.0.331-run `34083611297` nåede `78.856/79.414`, efterlod `558` missing og deployede ikke. Det er positivt progressionsbevis, men ikke kompletheds- eller releasebevis.
 - Run `34093354004` sluttede sikkert efter et succesfuldt Copernicus-led. Open-Meteo havde 2.735 krævede par, bevarede 1.873, hentede 750 og udfyldte samlet 2.623; præcis 112 kritiske par manglede fortsat. Cachen blev gemt, men closure, artifact og deploy skete ikke.
-- Run `34104536681` er aktivt på eksakt `main` `c2ce63ff`. Det normale workflow er fortsat deaktiveret.
+- Run `34104536681` afsluttede på eksakt `main` `c2ce63ff` med target `2026-09-07T09:00:00Z`. DMI genbrugte cachen og nåede 67.897/79.414 på 5m24s; Copernicus dækkede 8.372 af resten og efterlod 3.145. Kæden stoppede før Open-Meteos første request med `OPEN_METEO_RESIDUAL_PLAN_INVALID_DMI_LEDGER_SOURCE_INDEX_INVALID`, fordi en ærlig DMI-katalogtilstand uden valgt `modelRun` blev afvist af det regionale source-index. Copernicus-fremgangen blev gemt; ingen closure, artifact eller deploy blev skabt.
+- Det regionale source-index accepterer nu kun `modelRun=null`, når samtlige rækker er negative og uden `sourceAsset`. Eksakte retained old-run-proofs bevares, og hele restlisten går videre; enhver `PROCESSED`/`VERIFIED` eller kildebærende null-run-række stopper fortsat fail-closed. Det normale workflow er fortsat deaktiveret.
 - Det normale workflow forbliver deaktiveret under den kontrollerede cutover. Genaktivering følger ejerens plan efter den konkrete modelrelease.
 - Kildeoverganges eventuelle scorehop og behov for overlap/hysterese samt en varig, immutable historik med flere komplette weather-artifacts er separate post-launch-issues. De er ikke skjult implementeret i 4.0.332.
 

@@ -2,7 +2,7 @@
 
 - **Status:** Bindende og merged; active/candidate-save er delvist runtimebevist, komplethedsbevis afventer
 - **Besluttet:** 2026-09-05
-- **Ejerbeslutning:** Normal drift skal genbruge gyldige data, kontrollere hele prognosevinduet og målrettet lukke både interne huller og hale. Mindst 48 timers verificeret historik til mobilisering og transport skal bevares.
+- **Ejerbeslutning:** Normal drift skal genbruge gyldige data, kontrollere hele prognosevinduet og målrettet lukke både interne huller og hale. Op til 48 timers verificeret historik til mobilisering og transport bevares, når den findes; manglende historik markeres ærligt som `HISTORY_INCOMPLETE`, men må ikke blokere aktuelle numeriske scorer eller deploy af et ellers gyldigt artifact.
 
 ## Problem
 

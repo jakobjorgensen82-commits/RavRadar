@@ -40,7 +40,7 @@ assert.match(bulk,/codes_get_array\(gid, "latitudes"\)/);
 assert.match(bulk,/buckets\.setdefault\(key, \[\]\)\.append/);
 assert.match(bulk,/\[:ATMOSPHERIC_GRID_CANDIDATE_TARGET\]/);
 assert.match(bulk,/ATMOSPHERIC_GRID_CANDIDATE_TARGET = max\(32/);
-assert.match(bulk,/warm_atmospheric_grid_cache\(gid, collection, zones\)/);
+assert.match(bulk,/warm_atmospheric_grid_cache\(gid, collection, zones, cache_signature\)/);
 assert.match(bulk,/collection != "harmonie_dini_sf"/);
 assert.match(bulk,/GRID_INDEX_CACHE\[cache_key\] = \[/);
 const weather=fs.readFileSync('scripts/update-weather.mjs','utf8');
@@ -55,7 +55,7 @@ assert.match(app,/return selectLocalBestForDay\(\{coastalParts:state\.conditions
 assert.match(app,/renderZones\(map,zones,/);
 assert.doesNotMatch(app,/_mapId|_partName|mapZoneCollection/,'Lokale beregningsdele må ikke blive til synlige kortzoner.');
 
-const projected=buildPublicConditions({datasetId:'test',generatedAt:'2026-08-11T00:00:00Z',zones:{}});
+const projected=buildPublicConditions({datasetId:'test',generatedAt:'2026-08-11T00:00:00Z',productionReferenceAt:'2026-08-11T00:00:00.000Z',zones:{}});
 assert.equal(projected.schemaVersion,3);
 assert.equal(projected.coastalParts,null);
 assert.equal(projected.nationalForecast.schemaVersion,2);

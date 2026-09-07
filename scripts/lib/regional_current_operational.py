@@ -399,8 +399,22 @@ def _ledger_source_index(
             continue
         collection_run = canonical_time(collection_row.get("modelRun"))
         rows = collection_row.get("validTimes")
-        if collection_run is None or not isinstance(rows, list):
+        if not isinstance(rows, list):
             _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+        if collection_run is None:
+            for row in rows:
+                if (
+                    not isinstance(row, dict)
+                    or row.get("state") in {"PROCESSED", "VERIFIED"}
+                    or row.get("sourceAsset") is not None
+                ):
+                    _fail("DMI_LEDGER_SOURCE_INDEX_INVALID")
+            # The official availability ledger permits an honest catalog
+            # outage to retain its full negative outcome matrix without
+            # inventing a selected model run.  Such a collection contributes
+            # no positive source authorization; every exact complement pair
+            # remains available to the downstream fallback chain.
+            continue
         selected_model_runs.add(collection_run)
         for row in rows:
             if not isinstance(row, dict):

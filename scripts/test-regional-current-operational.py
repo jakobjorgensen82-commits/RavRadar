@@ -4,16 +4,52 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime, timedelta, timezone
+import importlib.util
 import json
 import math
+from pathlib import Path
+import sys
+import types
 from unittest.mock import patch
 
 from lib.copernicus_target_identity import target_fingerprint
-from lib.dmi_native_provenance import current_source_asset_sha256
+from lib.current_operational_closure import build_regional_residual_plan
+from lib.dmi_native_provenance import (
+    current_attestation_authorization_from_operational_ledger,
+    current_source_asset_sha256,
+    validate_current_operational_availability_ledger,
+)
 from lib import regional_current_operational as evidence
 
 
 REFERENCE = datetime(2026, 1, 1, 0, tzinfo=timezone.utc)
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def load_script_module(name: str, path: Path) -> object:
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+eccodes = types.ModuleType("eccodes")
+eccodes.OutOfAreaError = type("OutOfAreaError", (Exception,), {})
+for eccodes_name in (
+    "codes_get", "codes_get_array", "codes_get_elements",
+    "codes_grib_find_nearest", "codes_grib_new_from_file", "codes_release",
+):
+    setattr(eccodes, eccodes_name, lambda *args, **kwargs: None)
+sys.modules["eccodes"] = eccodes
+producer = load_script_module(
+    "ravradar_update_dmi_bulk_for_regional_test",
+    ROOT / "scripts/update-dmi-bulk.py",
+)
+registry_builder = load_script_module(
+    "ravradar_copernicus_registry_for_regional_test",
+    ROOT / "scripts/build-copernicus-target-registry.py",
+)
 
 
 def need(condition: bool, message: str) -> None:
@@ -429,6 +465,17 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
     )
 
     retained_previous_run = fixture()
+    retained_selected_row = next(
+        row
+        for row in retained_previous_run["dmi_ledger"]["collections"][0][
+            "validTimes"
+        ]
+        if row["validTime"] == iso(0)
+    )
+    retained_selected_row.update({
+        "state": "LOCALLY_SKIPPED",
+        "sourceAsset": None,
+    })
     retained_source = source_asset(0)
     retained_source["modelRun"] = iso(-6)
     retained_previous_run["current_shadow"]["anchors"][
@@ -450,7 +497,43 @@ def test_policy_target_source_and_shadow_tamper_fail_closed() -> None:
             for row in retained_refs[1:4]
         )
         and retained_refs[4]["classification"] == evidence.MISSING,
-        "An exact retained part/time/source proof must authorize only its bounded rows",
+        "An exact retained proof may authorize bounded rows when the newer tuple is unavailable",
+    )
+
+    retained_during_catalog_outage = fixture()
+    outage_collection = retained_during_catalog_outage["dmi_ledger"][
+        "collections"
+    ][0]
+    outage_collection["modelRun"] = None
+    for row in outage_collection["validTimes"]:
+        row.update({
+            "state": "LOCALLY_SKIPPED",
+            "sourceAsset": None,
+        })
+    retained_outage_source = source_asset(0)
+    retained_outage_source["modelRun"] = iso(-6)
+    retained_during_catalog_outage["current_shadow"]["anchors"][
+        "REGIONAL_PROXY::SYNTHETIC-PART-00"
+    ]["samples"] = [sample(0, 0, retained_outage_source)]
+    retained_during_catalog_outage["dmi_ledger"][
+        "retainedCurrentAssetProofs"
+    ] = [{
+        "sourceAsset": retained_outage_source,
+        "attestedPartIds": ["SYNTHETIC-PART-00"],
+    }]
+    retained_outage_result = invoke(retained_during_catalog_outage)
+    retained_outage_refs = [
+        row for row in retained_outage_result["privateProof"]["pairRefs"]
+        if row["partId"] == "SYNTHETIC-PART-00"
+    ]
+    need(
+        retained_outage_refs[0]["classification"] == evidence.REGIONAL_DMI_NATIVE
+        and all(
+            row["classification"] == evidence.REGIONAL_DMI_DERIVED_HOLD
+            for row in retained_outage_refs[1:4]
+        )
+        and retained_outage_refs[4]["classification"] == evidence.MISSING,
+        "A null selected run must preserve exact retained old-run authorization",
     )
 
     invalid_vector = fixture()
@@ -666,11 +749,124 @@ def test_future_samples_vector_commitment_and_stored_proof_tamper() -> None:
             raise AssertionError("Expected official ledger/attestation rejection")
 
 
+def test_null_run_catalog_outage_reaches_open_meteo_residual() -> None:
+    bundle = fixture()
+    targets = bundle["targets"]
+    document = {
+        "schemaVersion": 2,
+        "generatedAt": iso(0),
+        "zoneRegistrySignature": "regional-null-run-test",
+        "zones": {},
+        "runs": {},
+        "collectionState": {},
+        "diagnostics": {},
+    }
+    ledger = producer.build_current_operational_ledger(
+        document,
+        targets,
+        REFERENCE,
+        {},
+    )
+    need(
+        all(
+            row["modelRun"] is None
+            and row["stateCounts"]["LOCALLY_SKIPPED"] == 118
+            and all(
+                valid_row["sourceAsset"] is None
+                and valid_row["state"] not in {"PROCESSED", "VERIFIED"}
+                for valid_row in row["validTimes"]
+            )
+            for row in ledger["collections"]
+        ),
+        "The real empty-catalog producer fixture must remain an honest null-run ledger",
+    )
+    allowed_sources, retained_sources = (
+        current_attestation_authorization_from_operational_ledger(ledger)
+    )
+    attestation = producer.current_operational_attestation(
+        document,
+        targets,
+        REFERENCE,
+        allowed_sources,
+        retained_sources,
+    )
+    validate_current_operational_availability_ledger(
+        ledger,
+        attestation,
+        targets,
+        iso(0),
+        iso(117),
+        target_fingerprint(targets),
+    )
+    document["diagnostics"]["currentOperationalLedger"] = ledger
+    registry = registry_builder.build_registry(
+        targets,
+        document,
+        REFERENCE,
+        "a" * 64,
+        full_coast=False,
+    )
+    gaps = registry["operationalRequiredPairs"]
+    need(
+        gaps == ledger["operationalComplementPairs"]
+        and len(gaps) == len(targets) * 118,
+        "The actual registry must seal every null-run DMI tuple as one exact gap",
+    )
+    plan = build_regional_residual_plan(
+        residual_pairs=gaps,
+        regional_policy=bundle["policy"],
+        targets=targets,
+        regional_shadow=bundle["current_shadow"],
+        dmi_ledger=ledger,
+        dmi_attestation=attestation,
+        locked_reference=iso(0),
+    )
+    need(
+        plan["regionalAssignments"] == []
+        and plan["openMeteoRequiredPairs"] == gaps,
+        "An honest null-run catalog outage must reach the exact Open-Meteo residual",
+    )
+
+    for label, mutate in (
+        (
+            "positive state",
+            lambda row: row.update({"state": "PROCESSED", "sourceAsset": None}),
+        ),
+        (
+            "source-bearing negative state",
+            lambda row: row.update({"sourceAsset": {"unexpected": True}}),
+        ),
+    ):
+        tampered = deepcopy(ledger)
+        row = next(
+            collection for collection in tampered["collections"]
+            if collection["collection"] == evidence.REQUIRED_COLLECTION
+        )["validTimes"][0]
+        mutate(row)
+        try:
+            validate_current_operational_availability_ledger(
+                tampered,
+                attestation,
+                targets,
+                iso(0),
+                iso(117),
+                target_fingerprint(targets),
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"Official validation accepted null-run {label}")
+        tampered_bundle = fixture()
+        tampered_bundle["dmi_ledger"] = tampered
+        expect_error(tampered_bundle, "DMI_LEDGER_SOURCE_INDEX_INVALID")
+
+
 def main() -> None:
     test_native_hold_missing_offsets_and_privacy()
     test_policy_target_source_and_shadow_tamper_fail_closed()
     test_gap_domain_is_exact_bounded_and_ledger_bound()
     test_future_samples_vector_commitment_and_stored_proof_tamper()
+    test_null_run_catalog_outage_reaches_open_meteo_residual()
     print("OK: standalone regional DMI 118h evidence is bounded, hash-bound, and privacy-safe")
 
 

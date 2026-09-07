@@ -16,13 +16,18 @@ for(const mode of ['beach','waders']){
   assert.equal(after.explanation.transportEvent.shadowState.eventPhase,'efterstorm/indtransport');
   assert.equal(after.explanation.transportEvent.shadowState.nearshorePotential,79);
 }
-const full={datasetId:'shadow-test',generatedAt:'2026-08-05T20:00:00.000Z',zones:{'test-zone':{provider:'dmi',providerLabel:'DMI',current:weather,history:shadowHistory,forecast:{provider:'dmi',hourly:[]}}}};
+const full={datasetId:'shadow-test',generatedAt:'2026-08-05T20:00:00.000Z',productionReferenceAt:'2026-08-05T20:00:00.000Z',zones:{'test-zone':{provider:'dmi',providerLabel:'DMI',current:weather,history:shadowHistory,forecast:{provider:'dmi',hourly:[]}}}};
 const publicDoc=buildPublicConditions(full);
-assert.equal(publicDoc.zones['test-zone'].history.stateModelMode,'shadow-v1');
-assert.equal(publicDoc.zones['test-zone'].history.inboundCurrentDurationHours,6);
-assert.equal(publicDoc.zones['test-zone'].history.nearshorePotential,79);
-const projectedBytes=Buffer.byteLength(JSON.stringify(publicDoc));
-assert(projectedBytes<2500,'Skyggetilstandens kompakte offentlige felter må ikke skabe en stor payload.');
+assert.deepEqual(publicDoc.zones['test-zone'].history,{
+  maxWave24hM:baselineHistory.maxWave24hM,
+  hoursSinceHighEnergy:baselineHistory.hoursSinceHighEnergy
+},'Public runtime må kun projicere de modeluafhængige historikkovariater.');
+for(const privateField of ['stateModelMode','inboundCurrentDurationHours','nearshorePotential']){
+  assert.equal(publicDoc.zones['test-zone'].history[privateField],undefined,`${privateField} må forblive privat modeltilstand.`);
+}
+const publicBaseline=buildPublicConditions({...full,zones:{'test-zone':{...full.zones['test-zone'],history:baselineHistory}}});
+assert.deepEqual(publicDoc,publicBaseline,'Privat skyggetilstand må hverken ændre eller forøge den offentlige payload.');
+assert.equal(Buffer.byteLength(JSON.stringify(publicDoc)),Buffer.byteLength(JSON.stringify(publicBaseline)),'Privat skyggetilstand må ikke koste offentlige payloadbytes.');
 
 const updateSource=await fs.readFile('scripts/update-weather.mjs','utf8');
 const transportSource=await fs.readFile('scripts/lib/current-transport-history.mjs','utf8');
@@ -30,4 +35,4 @@ for(const token of ['currentAlignment','strongEventDurationHours']) assert(updat
 for(const token of ['inboundCurrentDurationHours','inboundCurrentMomentum','outboundCurrentPressure','nearshorePotential','stateModelMode']) assert(transportSource.includes(token),`Transporthistorikken mangler ${token}`);
 
 assert(!/strømbånd|current\s*band|general\s*current\s*band/i.test(updateSource),'Pipelinen må ikke bruge generelle strømbånd som fallback.');
-console.log('4.0.107 skyggetilstandsmodel: score-neutralitet, kompakt public projection og DMI-baseret historik bestået.');
+console.log('4.0.107 skyggetilstandsmodel: score-neutralitet, privat state og kompakt offentlig kovariatprojektion bestået.');

@@ -12,7 +12,7 @@ RavRadar havde flere aldersregler, som kunne kassere eller blokere et ellers kom
 
 Ejeren præciserer, at den eneste og nyeste tilgængelige prognose skal bruges, uanset alder, når den stadig er strukturelt valid og ikke har passeret sin egen sidste gyldige prognosetime. Alder skal fortsat vises ærligt og påvirke tillid, nødstatus og kalibrering, men må ikke i sig selv blive til missing eller utilgængelighed.
 
-Run `34083611297` dokumenterer samtidig den fortsat hårde slutgrænse: 4.0.331 nåede 78.856 af 79.414 par og efterlod 558 missing; artifact/deploy fortsatte ikke. Ved beslutningscheckpointet er run `34093354004` aktivt, og der registreres bevidst intet slutresultat endnu.
+Run `34083611297` dokumenterer samtidig den fortsat hårde slutgrænse: 4.0.331 nåede 78.856 af 79.414 par og efterlod 558 missing; artifact/deploy fortsatte ikke. Run `34093354004` sluttede med 112 missing efter faktisk Open-Meteo-fremgang. Run `34104536681` genbrugte DMI-cachen og nåede Copernicus, men stoppede før første Open-Meteo-request, fordi regionalleddet afviste en ærlig valgt DMI-collection med `modelRun=null` og nul positive/source-bærende rækker. 4.0.332 retter denne consumerkonflikt uden at lempe positive kildebeviser.
 
 ## Bindende beslutning
 
@@ -27,6 +27,7 @@ Run `34083611297` dokumenterer samtidig den fortsat hårde slutgrænse: 4.0.331 
 9. **Nyeste verificerede tuple vinder uden kildelås.** En ældre horizon-gyldig tuple bliver brugbar, indtil en nyere tuple fra en højere prioriteret kilde er fuldt verificeret og kan erstatte den atomisk. DMI → Baltic → AMM15 → policybundet regional DMI → Open-Meteo består. En Open-Meteo-række kan derfor senere erstattes; source-transitionen må aldrig blande tuplekomponenter eller gætte proveniens.
 10. **Historik er advisory.** Den integrerede model kan gå online med alle 210 zoner aktive og numeriske `FULL_HISTORY`-/`HISTORY_INCOMPLETE`-optællinger, når den direkte 79.414-akse er komplet. Ufuldstændig 48-timers mobiliserings-/transporthistorik giver forklarende reason codes, konservative bounds, advarsel og `calibrationEligible=false`, ikke `UNAVAILABLE`. Historik må ikke syntetiseres. Den gamle generelle rå 72-timersretention er ikke længere en aktiverings-, availability- eller scoreforudsætning.
 11. **Kontrolleret drift under cutover.** Det normale workflow forbliver deaktiveret under den kontrollerede cutover. Oneoff/118-timerskørslen er accelerator og sourceproducent; almindelige, eksternt cron-dispatchede kørsler er fortsat den varige updater efter genaktivering. GitHubs schedule er reserve, og tunge writers forbliver serialiserede.
+12. **Ærligt DMI-katalogudfald fortsætter.** En valgt DMI-collection med `modelRun=null` kan kun accepteres, når dens validerede ledger har nul `PROCESSED`/`VERIFIED` og ingen `sourceAsset`. Den giver ingen positiv kildeautorisation og sender alle sine eksakte huller videre. Eksakte retained old-run-proofs må stadig indekseres. Enhver positiv eller kildebærende null-run-række er control-plane-konflikt og stopper fail-closed.
 
 ## Eksplicit supersession
 
@@ -50,7 +51,6 @@ Historiske runbeskrivelser, hvor 72-timersreglen faktisk forklarede daværende a
 
 1. Mål scorekontinuitet ved providertransitioner og vurder dokumenteret overlap/hysterese, så skift fra Open-Meteo til Copernicus/DMI ikke giver unødige spring. Ingen sådan glatning eller blanding er godkendt i 4.0.332.
 2. Design en durable, immutable multi-artifact-historik og selector for den nyeste komplette horizon-gyldige weatherpakke. 4.0.332's handoff er bevidst exact-run-bundet og er ikke denne generelle historik.
-3. Afslut og klassificér run `34093354004`; denne beslutning påstår ikke dets outcome.
 
 ## Evidensgrænse
 
