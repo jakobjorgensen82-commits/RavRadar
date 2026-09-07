@@ -1,3 +1,14 @@
+## 4.0.333 – exact-unresolved Open-Meteo og adaptiv isolation (2026-09-07, lokal kandidat)
+
+- 4.0.332 bestod exact-head sourcegate `34125927405` og blev merged via PR #265 som `1e1093de…`. Main-oneoff `34127986853` genbrugte cache og sluttede 79.132/79.414; Open-Meteo required 472, retained 76, fetched 114, filled 190 og missing 282. Ingen artifact/deploy/cutover.
+- Open-Meteo checkpoint'er hvert succespar straks og genbestiller kun eksakte uløste `(partId, validTime)` gennem en bounded FIFO/BFS-kø. Binært split har fan-out højst to og fortsætter til singleton, så én defekt del/time ikke strander raske søskende.
+- Transport er max tre forsøg pr. exact work, content ét same-work retry, total requests max 1.024, pending queue max 2.048 og én fælles monotonic deadline. Alle stop bevarer `required − selected` ærligt.
+- Retrybar HTTP bruger provider-wide cooldown, også efter sidste work-forsøg. Numerisk/HTTP-date Retry-After begrænses til 15 sekunder. HTTP 400 og ukendt permanent status stopper globalt; kun 413/414 isoleres ved split.
+- Privacy-safe diagnostik viser alene aggregater og budgetbooleans. Uændret gælder 15 km, target..+117, UTC/GMT, m/s/grader, combined-current-only, ingen syntese, `calibrationEligible=false` og hard 79.414/79.414 closure.
+- Py_compile, udvidet Open-Meteo-test, den målrettede DMI/Copernicus/regional/closure-kæde og live builder/adapter/runtime er grønne; to uafhængige reviews er GO. Exact-head CI, merge og runtimebevis mangler endnu.
+
+Se `CHANGELOG-4.0.333.md` og DEC-0118's bindende 4.0.333-tillæg.
+
 ## 4.0.332 – horizon-gyldigt vejr og run-bundet modelcutover (2026-09-07, lokal kandidat)
 
 - En komplet prognoserække er brugbar uanset acquisition-/genereringsalder, så længe den eksakte forespurgte time ligger i pakkens forseglede horizon. 90/150/240-minuttersgrænserne giver nu `STALE_TARGET_VALID`-advarsel i stedet for missing/deploystop; præcis `validUntil` er gyldig, og +1 ms er udløbet.

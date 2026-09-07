@@ -2,6 +2,12 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.333-læring
+
+- “Batchen er isoleret” er utilstrækkeligt, hvis en delvis batch genbestilles samlet eller køen stopper før singleton. Isolation skal bevises under batchniveau og over maksimal realistisk dybde.
+- Retryloft, splitdybde og samlet requestbudget er tre forskellige forhold. Et globalt rundeloft kan efterlade raske søskende uprøvede; per-work retry plus bounded FIFO/BFS bevarer fairness.
+- Providerens Retry-After gælder også søskende efter det aktuelle work er udtømt. Deadline-/budgetstop skal altid returnere `required − selected`, aldrig en antaget komplet status.
+
 ## Aktuel 4.0.332-læring
 
 Datakvalitet og dataalder er forskellige dimensioner. En gammel, strukturelt valid prognoserække, som stadig dækker den konkrete fremtidstime, må ikke blive til missing alene på grund af en klokkegrænse. Horizon er availability; alder skal vises og bruges til tillid, nødstatus, turbinding og kalibreringsudelukkelse.

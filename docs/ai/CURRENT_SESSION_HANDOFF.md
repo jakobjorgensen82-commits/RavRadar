@@ -1,3 +1,10 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 exact-unresolved kø
+
+- **Status:** 4.0.332 exact-head-grøn og merged; oneoff `34127986853` sluttede 79.132/79.414 med 282 missing og gemt cache. Ingen deploy/cutover; Candidate G offentlig; normal workflow deaktiveret.
+- **Lokal rettelse:** Bounded FIFO/BFS over exact unresolved; max-to binært split til singleton; 3 transportforsøg/work, 1 content-retry, 1.024 requests, 2.048 pending, fælles deadline, provider-wide HTTP-cooldown, global 400/ukendt stop og kun 413/414-split.
+- **Lokal evidens:** Udvidet Open-Meteo + fuld målrettet provider/closure/live-runtime grøn; to reviews GO; version/geodata synkroniseret. Ingen CI/runtime-GO endnu.
+- **Næste:** exact-head sourcegate → merge → main-oneoff → kun ved 79.414/79.414 handoff og fuld kontrolleret modelcutover.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-valid weather/cutover
 
 - **Ejerregel:** Brug nyeste strukturelt valide data uanset acquisition/generation-alder, indtil egen verificeret horizon udløber. Eksakt slutinstant accepteres, `+1 ms` afvises. De gamle hårde 72h- og 90/150/240-minutters regler er supersederet; alder er warning/emergency/tillid/tur/kalibrering.
@@ -19,7 +26,7 @@
 - **Åbent:** Exact-head-CI og merge for 4.0.331, frisk main-oneoff, faktisk DMI/Copernicus/Open-Meteo-progression, 79.414/79.414 med nul overlap/missing, Feggesund 354/354, hydreret spatial audit, live Supabase-kapacitet, fuld post-data `validate`/`release:gate`, artifact/deploy, særskilt Phase B og offentlig modelverifikation. Candidate G er offentlig.
 - **Scope:** Ingen scoreformel, modelstate, geometri, kystnormal, land-/vandpunkter, cacheformat, providerorden eller tidsbudget ændres. `.cache/` og `.tmp-run-*` er private/untracked og må aldrig stages.
 
-# NYESTE CHECKPOINT – 2026-09-07 – 4.0.330 vejrcache først, integreret model bagefter
+# HISTORISK CHECKPOINT – 2026-09-07 – 4.0.330 vejrcache først, integreret model bagefter; supersederet af 4.0.333-topblokken
 
 - **Ejerordre:** Arbejd autonomt og kontinuerligt til vejrcachen kan fyldes og vedligeholdes sikkert; få derefter den integrerede scoremodel online. Undgå reparationskarussel: ved ny fejl gennemgås hele kæden og beslægtede fejlklasser før endnu en rettelse.
 - **Repository:** Worktree `a442/RavRadar`, branch `codex/weather-provider-continuity-4.0.330`, base/main `b3865eb9` (4.0.329). Working tree indeholder samtidige lokale kode-, workflow-, test- og dokumentationsændringer. `.cache/` og `.tmp-run-*` er private/untracked og må aldrig stages.
@@ -29,7 +36,7 @@
 - **Regional vej:** Optional shadowheader/anchor/sampledefekt bliver pair-level missing. Policy, centrale targets, targetregistry, DMI-ledger/attestation og gapmatrix stopper fortsat fail-closed.
 - **Open-Meteo:** Schema v2, faktisk `acquiredAt` pr. record, delt normal/oneoff-cache, target-overlap-rebase, checkpoint før første request og efter hver batch, breadth-first batches på højst 50, bounded retry og fælles deadline. HTTP-truncation/provider/payloadfejl isoleres til batch. Proaktiv refresh sker kun ved nul residual, ældst først og mindst to timers alder; fejl bevarer gammel record.
 - **Workflow:** Normal og oneoff bruger samme cache-/provider-/closurepath; normal updater, oneoff ikke-deployende accelerator. Shared save kræver exact-main write authority og ligger før terminal failure. Scheduled Copernicus-pilot fjernes; ekstern cron er primær, GitHub-schedule reserve, én serialiseret writerkø består.
-- **Releasegrænse:** 4.0.330 er en lokalt valideret releasekandidat. Den fokuserede kontraktmatrix samt versions-, RDKS-, håndbogs- og workflowkontroller er grønne; geodatadiffen viser kun de autoriserede topversionsfelter. Den er ikke exact-head-CI-valideret, merged eller produktionsverificeret. Kræv exact-head én gang, sikker merge og frisk main-oneoff/normal continuation. Derefter 79.414/79.414, Feggesund 354/354, spatial audit, live Supabase-kapacitet, fuld post-data validate/releasegate, artifact/deploy og offentlig kontrol.
+- **Historisk releasegrænse på dette checkpoint:** 4.0.330 var en lokalt valideret releasekandidat. Den fokuserede kontraktmatrix samt versions-, RDKS-, håndbogs- og workflowkontroller var grønne; geodatadiffen viste kun de autoriserede topversionsfelter. Den var på dette tidspunkt ikke exact-head-CI-valideret, merged eller produktionsverificeret. Den aktuelle 4.0.333-status står alene i topblokken.
 - **Model:** Candidate G er fortsat offentlig. Start kun den særskilte autoriserede Phase B efter alle vejr-/kapacitets-/produktionsbeviser. Vejrpakkens scope ændrer ikke scoreformel, modelstate, geometri, kystnormal eller land-/vandpunkter.
 - **Teststatus:** Den fokuserede lokale kontrakt-/workflow-/versions-/RDKS-/håndbogs-/JSON-matrix er grøn. Den fulde `validate:source` skal fortsat bestå én gang på PR'ens eksakte head i GitHub; fuld `validate` og `release:gate` skal bestå efter frisk vejr før artifact/deploy. Anbefalet model/indsats er Sol/Ultra gennem ukendt runtimeårsag, slutreview og modelcutover; billigere model er kun forsvarlig ved ren overvågning.
 

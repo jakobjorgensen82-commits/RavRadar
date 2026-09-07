@@ -1,3 +1,9 @@
+## 2026-09-07 4.0.333 exact-residual execution
+
+- Open-Meteo arbejder som en bounded FIFO/BFS-kø over disjunkte `(partId, validTime)`-mængder. Accepterede par fjernes og checkpointes; uløste mængder splittes højst i to, først parts og derefter timer, til singleton.
+- Transportretry er pr. work-item; total requests, pending queue og monotonic deadline er separate hårde loft. Retryable HTTP sætter provider-wide cooldown. Permanente globale kontraktfejl stopper hele køen; kun request-size-status 413/414 isoleres.
+- Autoritativ slutstatus er altid `required − selected`; enhver deadline/cap/providerstop bevarer current og kø som ærlig residual. 79.414-closure og downstream cutoverarkitektur ændres ikke.
+
 ## 2026-09-07 4.0.332 horizon-validitet og exact-run source-handoff
 
 - Weather availability er nu `requestedTime <= operationalRangeEndAt/validUntil`, inklusive eksakt slutinstant; `+1 ms` er udløbet. Alder klassificerer fresh/stale/emergency og låser kalibrering, men skaber ikke missing eller deploystop.

@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 exact-residual før modelcutover
+
+- 4.0.332 er sourcegate-grøn (`34125927405`, `f23f306b…`) og merged via PR #265 (`1e1093de…`). Main-oneoff `34127986853` genbrugte cachen, men sluttede 79.132/79.414: DMI 65.409, Copernicus +12.661, regionalled og Open-Meteo efterlod 282. Open-Meteo required 472 / retained 76 / fetched 114 / filled 190. Ingen artifact/deploy/cutover.
+- Lokal 4.0.333 fjerner en identificeret under-batch-risiko: checkpoint succespar straks; requeue kun exact unresolved i bounded FIFO/BFS; binært split max to til singleton; tre transportforsøg, ét content-retry, requestcap 1.024, queuecap 2.048, fælles deadline og provider-wide HTTP-cooldown. Det historiske run havde ikke den nye diagnostik og beviser derfor ikke den konkrete payload-/stopårsag; den skal klassificeres i næste main-oneoff.
+- HTTP 400/ukendt permanent stopper providerfamilien; kun 413/414 splittes. Retry-After kan være sekunder eller HTTP-date og begrænses til 15 sekunder. Alle stop bevarer ærlig residual, og diagnostik er kun aggregeret/privacy-safe.
+- Py_compile, udvidet Open-Meteo, målrettet DMI/Copernicus/regional/closure og live builder/adapter/runtime er grønne; to uafhængige reviews er GO. Dette er lokal releasekandidat, ikke CI-/runtimebevis.
+- Uændret afslutning: exact-head sourcegate → merge → main-oneoff → præcis 79.414/79.414 → run-bundet handoff → central hydrering, Feggesund/spatial, kapacitet, fuld validate/releasegate, artifact/deploy og Phase B. Candidate G er offentlig; normal workflow er deaktiveret.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-validitet uden svækket integritet
 
 - DEC-0119 er bindende: en strukturelt valid future-række bruges uanset acquisition/generation-alder, indtil dens egen verificerede horizon udløber. Eksakt sidste instant er gyldig; `+1 ms` er udløbet. De gamle hårde 72h- og 90/150/240-minutters regler er **SUPERSEDERET** som availability-/deploygates. Alder er warning/emergency/tillid/tur/kalibrering.

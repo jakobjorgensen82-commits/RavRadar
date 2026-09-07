@@ -4,7 +4,7 @@
 - Åbn den eksisterende lokale RavRadar Git-mappe; opret ikke et nyt tomt projekt.
 - Kontrollér at `git status` viser de forventede dokumentationsændringer, og at `.git` stadig tilhører det eksisterende repository.
 - Læs `docs/ai/CODEX_START_HERE.md` og `AGENTS.md` før første kodeopgave.
-- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Candidate G er fortsat offentlig. 4.0.328 er kun lokalt implementeret og måltestet; exact-head, merge, frisk 79.414/79.414-currentclosure, Feggesund 354/354, fulde produktionsgates/deploy, kapacitet og særskilt modelaktivering mangler. Den gamle 4.0.117-bootstrap og rekonstruktionsplanen er historik.
+- Bekræft den aktuelle offentlige produktionssandhed og det aktuelle handoff. Candidate G er fortsat offentlig. 4.0.332 bestod exact-head og blev merged, men main-oneoff `34127986853` stoppede sikkert ved 79.132/79.414. Den lokale 4.0.333-kandidat mangler exact-head, merge, frisk 79.414/79.414-currentclosure, Feggesund 354/354, fulde produktionsgates/deploy, kapacitet og særskilt modelaktivering. Den gamle 4.0.117-bootstrap og rekonstruktionsplanen er historik.
 - Kør `npm run validate:rdks`; brug `npm run validate` før første ændringsrelease.
 - Den historiske 4.0.117-workflowbypass er lukket; genåbn kun sporet ved konkret regressionsbevis. Kræv fortsat, at ethvert nyt produktionsartifact har `npm run validate` og `npm run release:gate` som faktiske `success` efter frisk data. Topniveauets grønne runstatus alene tæller ikke.
 

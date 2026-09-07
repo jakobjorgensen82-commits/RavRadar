@@ -2,10 +2,25 @@
 
 > **Bindende tillæg 2026-09-07:** DEC-0119 ophæver absolutte 72-timers- og 90/150/240-minutters aldersgates. Future-valid rækker er brugbare til og med deres eksakte `validUntil`; `validUntil + 1 ms` er udløbet. Alder er alene advarsel og tillids-/tur-/kalibreringssignal. Eksakt 79.414-lukning, én kilde pr. par, provenance, targetbinding og alle integritetsgates består. DMI-, Copernicus- og Open-Meteo-cache kan kun granular-salvages efter DEC-0119's proof-unit-kontrakt.
 
-- **Status:** Ejerbesluttet og bindende; 4.0.330 er merged på `main` som `8020cdfe539df0841246714c22705d78927c8bdb`, men supersederet før sin første vejrruntime af lokalt implementeret og målrettet valideret 4.0.331. Exact-head-CI, positiv komplet vejrruntime, 79.414/79.414 og modelcutover mangler fortsat
+> **Bindende 4.0.333-tillæg 2026-09-07:** Et delvist Open-Meteo-svar må aldrig genbestille allerede accepterede par eller standse isolation ved et globalt rundeloft. Succesfulde par checkpointes straks; alene den eksakte uløste rest behandles videre i bounded FIFO/BFS med binært split helt ned til kystdel/time-singleton. De nedenstående retry-, budget-, privacy- og stopregler er en præcisering af DEC-0118, ikke en lempelse af slutclosure.
+
+- **Status:** Ejerbesluttet og bindende. 4.0.332 bestod exact-head sourcegate `34125927405` på `f23f306b7181b0502f1560e3eea37bfa32542bcc` og blev merged via PR #265 som `1e1093dead7fbbf5adcd401592d11c6b1c21d746`. Main-oneoff `34127986853` beviste cachegenbrug og faktisk Open-Meteo-fremgang, men sluttede med 282 missing. 4.0.333 er lokalt implementeret, måltestet og dobbeltreviewet; exact-head-CI, merge, positiv komplet runtime, 79.414/79.414 og modelcutover mangler
 - **Besluttet:** 2026-09-06
 - **Ejer:** RavRadar
 - **Formål:** Bevar alle gyldige vejrdata, isolér én defekt fil eller én utilgængelig leverandør og lad den eksakte rest fortsætte gennem fallbackkæden uden at svække den afsluttende publiceringsgate.
+
+## Bindende 4.0.333-præcisering – unresolved-only adaptiv rest
+
+1. Hvert accepteret Open-Meteo-par fjernes fra workmængden og checkpointes atomisk med sin faktiske acquisitiontid. Et allerede accepteret par må ikke genbestilles under samme fetchforløb.
+2. Uløst work ligger i en FIFO-kø. En tvetydig flerparts- eller flertimegruppe splittes deterministisk i højst to disjunkte børn, hvis union er identisk med forælderen. Parts splittes før timer. Isolationen fortsætter til singleton, så en defekt lokation eller time ikke kan efterlade en rask søskende uprøvet.
+3. Retrybar transport har højst tre forsøg pr. eksakt work-item. Et strukturelt modtaget, men ufuldstændigt singleton-/partial-svar får ét same-work content-retry før videre split eller ærlig terminal residual. Børn starter egne bounded forsøg; der findes intet globalt tre-runders loft.
+4. Hele fetchforløbet har højst 1.024 providerrequests, højst 2.048 pending work-items og én fælles monotonic deadline. Et nået loft bevarer current samt hele køen som uløst. Autoritativ slutstatus er altid `required − selected`; budgetstop kan aldrig blive falsk complete.
+5. HTTP 408/425/429/500/502/503/504 bruger bounded eksponentiel backoff. `Retry-After` må være numeriske sekunder eller HTTP-date, men begrænses til 15 sekunder. Retrybar HTTP sætter provider-wide cooldown, også når det aktuelle work har brugt sit sidste forsøg.
+6. HTTP 413/414 kan isoleres ved binært split, fordi requeststørrelsen kan være lokal til gruppen. HTTP 400 og enhver anden ukendt permanent status behandles som fælles query-/providerfejl og stopper providerfamilien uden fan-out. Permanente fejl sover ikke.
+7. Diagnostik er alene aggregerede tællere og booleans for uløste par/work-items, splits, retry-/HTTP-klasser, container/cardinality, payloadkontrakt/enheder/tidszone/afstand/timeakse, manglende/ugyldig værdi, buildfejl, sleep og nåede budgets. Id'er, koordinater, URL'er, API-nøgler, headers, providersvar og rå U/V må aldrig logges eller eksporteres.
+8. Uændret gælder `meteofrance_currents`, target..+117, UTC/GMT, m/s/grader, samme punkt/time, højst 15 km, combined-current-only og `calibrationEligible=false`; ingen historiksyntese, interpolation, carry, nabolån eller bølge-/tidevandsreprojektion. Slutgaten er fortsat præcis 79.414/79.414, én kilde pr. par og nul overlap/missing.
+
+Main-oneoff `34127986853` er det negative runtimegrundlag: target 13Z; DMI 65.409/79.414 og 14.005 rest; Copernicus 12.661/14.005 og 1.344 rest; Open-Meteo modtog 472 efter regionalleddet, retained 76, fetched 114, filled 190 og missing 282. Cacheprogression blev gemt, men closure/artifact/deploy/cutover blev korrekt skipped. 4.0.333's nye diagnostik fandtes ikke i dette historiske run, så den konkrete payloadårsag må først klassificeres i næste main-oneoff.
 
 ## Problem
 

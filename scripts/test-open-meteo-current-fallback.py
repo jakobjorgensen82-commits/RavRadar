@@ -671,6 +671,19 @@ def response_payload(target, *, times=None, speeds=None, directions=None):
     }
 
 
+class FakeClock:
+    def __init__(self):
+        self.value = 100.0
+        self.sleeps = []
+
+    def monotonic(self):
+        return self.value
+
+    def sleep(self, seconds):
+        self.sleeps.append(seconds)
+        self.value += seconds
+
+
 isolation_targets = [{
     "partId": f"I{index}",
     "parentZoneId": "ZI",
@@ -749,6 +762,7 @@ batch_required = [
 ]
 batch_calls = []
 batch_sequence = [0, 1, 2, 3, 1, 2]
+batch_clock = FakeClock()
 
 
 def locally_failing_request(*_args):
@@ -765,7 +779,15 @@ def locally_failing_request(*_args):
 with patch.dict(cli["fetch_records"].__globals__, {
     "BATCH_SIZE": 1,
     "request_json": locally_failing_request,
-}):
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "monotonic",
+    side_effect=batch_clock.monotonic,
+), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=batch_clock.sleep,
+):
     batch_local_records = cli["fetch_records"](
         batch_required, batch_target_map, acquired_at, 30, 240,
     )
@@ -774,12 +796,14 @@ assert [record["partId"] for record in batch_local_records] == [
     "I1", "I2", "I3", "I4",
 ]
 assert batch_calls == [0, 1, 2, 3, 1, 2]
+assert batch_clock.sleeps == [1]
 
 # A truncated HTTP body is supplier-local: the failed first batch is requeued,
 # the later batch checkpoints, and the retry converges without losing it.
 incomplete_calls = []
 incomplete_checkpoints = []
 incomplete_diagnostics = {}
+incomplete_clock = FakeClock()
 incomplete_sequence = [
     None,
     response_payload(batch_targets[1]),
@@ -816,7 +840,15 @@ with patch.dict(cli["fetch_records"].__globals__, {
     "BATCH_SIZE": 1,
     "request_json": cli["request_json"],
     "urlopen": incomplete_urlopen,
-}):
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "monotonic",
+    side_effect=incomplete_clock.monotonic,
+), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=incomplete_clock.sleep,
+):
     incomplete_records = cli["fetch_records"](
         batch_required[:2],
         batch_target_map,
@@ -835,6 +867,707 @@ assert incomplete_checkpoints == [["I2"], ["I1", "I2"]]
 assert incomplete_diagnostics["batchAttemptCount"] == 3
 assert incomplete_diagnostics["batchCompletedCount"] == 2
 assert incomplete_diagnostics["batchUnresolvedCount"] == 0
+assert incomplete_clock.sleeps == [1]
+
+
+def requested_part_ids(url, candidates):
+    query = parse_qs(urlparse(url).query)
+    longitudes = [float(value) for value in query["longitude"][0].split(",")]
+    latitudes = [float(value) for value in query["latitude"][0].split(",")]
+    part_by_point = {
+        tuple(target["waterPoint"]): target["partId"]
+        for target in candidates
+    }
+    return [
+        part_by_point[(longitude, latitude)]
+        for longitude, latitude in zip(longitudes, latitudes)
+    ], query["start_hour"][0], query["end_hour"][0]
+
+
+# A successful subset of a same-cardinality multi-location response is
+# checkpointed immediately. The next request contains only the exact unresolved
+# part/hour; already accepted siblings and hours are never fetched again.
+partial_targets = batch_targets[:2]
+partial_target_map = {
+    target["partId"]: target for target in partial_targets
+}
+partial_required = [
+    {"partId": target["partId"], "validTime": valid_time}
+    for target in partial_targets
+    for valid_time in (first_hour, second_hour)
+]
+partial_calls = []
+partial_checkpoints = []
+partial_diagnostics = {}
+
+
+def partial_request(url, *_args):
+    part_ids, start_hour, end_hour = requested_part_ids(
+        url, partial_targets,
+    )
+    partial_calls.append((part_ids, start_hour, end_hour))
+    if len(partial_calls) == 1:
+        assert part_ids == ["I1", "I2"]
+        return [
+            response_payload(
+                partial_targets[0],
+                times=[first_hour, second_hour],
+            ),
+            response_payload(partial_targets[1], times=[first_hour]),
+        ]
+    assert part_ids == ["I2"]
+    return response_payload(partial_targets[1], times=[second_hour])
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": partial_request,
+}):
+    partial_records = cli["fetch_records"](
+        partial_required,
+        partial_target_map,
+        acquired_at,
+        30,
+        240,
+        checkpoint=lambda rows, _stats: partial_checkpoints.append(
+            copy.deepcopy(rows)
+        ),
+        diagnostics=partial_diagnostics,
+    )
+
+assert len(partial_calls) == 2
+assert partial_calls[1] == (
+    ["I2"],
+    second_hour.removesuffix("Z"),
+    second_hour.removesuffix("Z"),
+)
+assert [len(rows) for rows in partial_checkpoints] == [3, 4]
+assert {
+    (row["partId"], row["validTime"])
+    for row in partial_checkpoints[0]
+} == {
+    ("I1", first_hour),
+    ("I1", second_hour),
+    ("I2", first_hour),
+}
+assert {
+    (row["partId"], row["validTime"])
+    for row in partial_records
+} == {
+    (target["partId"], valid_time)
+    for target in partial_targets
+    for valid_time in (first_hour, second_hour)
+}
+assert partial_diagnostics["batchAttemptCount"] == 2
+assert partial_diagnostics["batchCompletedCount"] == 1
+assert partial_diagnostics["batchUnresolvedCount"] == 0
+assert partial_diagnostics["partialResponseBatchCount"] == 1
+assert partial_diagnostics["pairHourMissingCount"] == 1
+assert partial_diagnostics["adaptiveSplitCount"] == 0
+assert partial_diagnostics["unresolvedPartCount"] == 0
+assert partial_diagnostics["unresolvedPairCount"] == 0
+
+# A cardinality mismatch is never positionally accepted. It is split
+# breadth-first until each response can be bound unambiguously.
+cardinality_targets = batch_targets
+cardinality_target_map = batch_target_map
+cardinality_calls = []
+cardinality_checkpoints = []
+cardinality_diagnostics = {}
+
+
+def cardinality_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, cardinality_targets,
+    )
+    cardinality_calls.append(part_ids)
+    if part_ids == ["I1", "I2", "I3", "I4"]:
+        return [
+            response_payload(cardinality_target_map[part_id])
+            for part_id in part_ids[:3]
+        ]
+    if part_ids == ["I3", "I4"]:
+        return [response_payload(cardinality_target_map["I3"])]
+    payloads = [
+        response_payload(cardinality_target_map[part_id])
+        for part_id in part_ids
+    ]
+    return payloads[0] if len(payloads) == 1 else payloads
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": cardinality_request,
+}):
+    cardinality_records = cli["fetch_records"](
+        batch_required,
+        cardinality_target_map,
+        acquired_at,
+        30,
+        240,
+        checkpoint=lambda rows, _stats: cardinality_checkpoints.append([
+            row["partId"] for row in rows
+        ]),
+        diagnostics=cardinality_diagnostics,
+    )
+
+assert cardinality_calls == [
+    ["I1", "I2", "I3", "I4"],
+    ["I1", "I2"],
+    ["I3", "I4"],
+    ["I3"],
+    ["I4"],
+]
+assert cardinality_checkpoints == [
+    ["I1", "I2"],
+    ["I1", "I2", "I3"],
+    ["I1", "I2", "I3", "I4"],
+]
+assert [row["partId"] for row in cardinality_records] == [
+    "I1", "I2", "I3", "I4",
+]
+assert cardinality_diagnostics["responseCardinalityInvalidBatchCount"] == 2
+assert cardinality_diagnostics["adaptiveSplitCount"] == 2
+assert cardinality_diagnostics["batchAttemptCount"] == 5
+assert cardinality_diagnostics["batchCompletedCount"] == 1
+assert cardinality_diagnostics["batchUnresolvedCount"] == 0
+
+# Retry-After from a retryable 429 is bounded and recorded without a real
+# sleep. The provider error text and request URL never enter diagnostics.
+retry_after_calls = []
+retry_after_clock = FakeClock()
+retry_after_diagnostics = {}
+
+
+class RetryAfterHttpResponse:
+    def __init__(self, status, payload=None, headers=None):
+        self.status = status
+        self.payload = payload
+        self.headers = headers or {}
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self):
+        return json.dumps(self.payload).encode("utf-8")
+
+
+def retry_after_urlopen(request, *, timeout):
+    assert timeout >= 1
+    retry_after_calls.append(request.full_url)
+    if len(retry_after_calls) == 1:
+        return RetryAfterHttpResponse(
+            429,
+            headers={"Retry-After": "7", "X-Private": "never-log-this"},
+        )
+    return RetryAfterHttpResponse(
+        200, response_payload(batch_targets[0]),
+    )
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 1,
+    "request_json": cli["request_json"],
+    "urlopen": retry_after_urlopen,
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "monotonic",
+    side_effect=retry_after_clock.monotonic,
+), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=retry_after_clock.sleep,
+):
+    retry_after_records = cli["fetch_records"](
+        [batch_required[0]],
+        {"I1": batch_target_map["I1"]},
+        acquired_at,
+        30,
+        240,
+        diagnostics=retry_after_diagnostics,
+    )
+
+assert [row["partId"] for row in retry_after_records] == ["I1"]
+assert len(retry_after_calls) == 2
+assert retry_after_clock.sleeps == [7]
+assert retry_after_diagnostics["httpRetryableBatchCount"] == 1
+assert retry_after_diagnostics["transportRetryableBatchCount"] == 0
+assert retry_after_diagnostics["httpPermanentBatchCount"] == 0
+assert retry_after_diagnostics["retrySleepSeconds"] == 7
+assert retry_after_diagnostics["batchAttemptCount"] == 2
+assert retry_after_diagnostics["batchUnresolvedCount"] == 0
+assert "never-log-this" not in repr(retry_after_diagnostics)
+assert all(url not in repr(retry_after_diagnostics) for url in retry_after_calls)
+retry_date_now = datetime(2026, 9, 5, 1, tzinfo=timezone.utc)
+retry_date_value = (retry_date_now + timedelta(seconds=9)).strftime(
+    "%a, %d %b %Y %H:%M:%S GMT"
+)
+assert cli["retry_after_seconds"](
+    {"Retry-After": retry_date_value}, now=retry_date_now,
+) == 9
+
+# A permanent provider failure is split down to one bad singleton. Successful
+# siblings remain checkpointed, and permanent failures never sleep.
+permanent_calls = []
+permanent_sleeps = []
+permanent_checkpoints = []
+permanent_diagnostics = {}
+
+
+def permanent_isolation_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, batch_targets,
+    )
+    permanent_calls.append(part_ids)
+    if part_ids in (
+        ["I1", "I2", "I3", "I4"],
+        ["I3", "I4"],
+        ["I4"],
+    ):
+        raise cli["OpenMeteoRequestFailure"](
+            "OPEN_METEO_REQUEST_FAILED",
+            retryable=False,
+            http=True,
+        )
+    payloads = [
+        response_payload(batch_target_map[part_id])
+        for part_id in part_ids
+    ]
+    return payloads[0] if len(payloads) == 1 else payloads
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": permanent_isolation_request,
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=lambda seconds: permanent_sleeps.append(seconds),
+):
+    permanent_records = cli["fetch_records"](
+        batch_required,
+        batch_target_map,
+        acquired_at,
+        30,
+        240,
+        checkpoint=lambda rows, _stats: permanent_checkpoints.append([
+            row["partId"] for row in rows
+        ]),
+        diagnostics=permanent_diagnostics,
+    )
+
+assert permanent_calls == [
+    ["I1", "I2", "I3", "I4"],
+    ["I1", "I2"],
+    ["I3", "I4"],
+    ["I3"],
+    ["I4"],
+]
+assert [row["partId"] for row in permanent_records] == [
+    "I1", "I2", "I3",
+]
+assert permanent_checkpoints == [
+    ["I1", "I2"],
+    ["I1", "I2", "I3"],
+]
+assert permanent_sleeps == []
+assert permanent_diagnostics["httpPermanentBatchCount"] == 3
+assert permanent_diagnostics["adaptiveSplitCount"] == 2
+assert permanent_diagnostics["batchAttemptCount"] == 5
+assert permanent_diagnostics["batchCompletedCount"] == 0
+assert permanent_diagnostics["batchUnresolvedCount"] == 1
+assert permanent_diagnostics["unresolvedPartCount"] == 1
+assert permanent_diagnostics["unresolvedPairCount"] == 1
+
+# Binary isolation must continue beyond the old three-round ceiling. One bad
+# eighth sibling cannot strand any of the seven healthy locations.
+deep_targets = [{
+    "partId": f"D{index}",
+    "parentZoneId": "ZD",
+    "name": f"Deep {index}",
+    "waterPoint": [11.0 + index / 1000, 55.0],
+} for index in range(1, 9)]
+deep_target_map = {target["partId"]: target for target in deep_targets}
+deep_required = [{
+    "partId": target["partId"],
+    "validTime": first_hour,
+} for target in deep_targets]
+deep_calls = []
+deep_diagnostics = {}
+
+
+def deep_poison_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, deep_targets,
+    )
+    deep_calls.append(part_ids)
+    if "D8" in part_ids:
+        if len(part_ids) == 1:
+            return []
+        return [
+            response_payload(deep_target_map[part_id])
+            for part_id in part_ids[:-1]
+        ]
+    payloads = [
+        response_payload(deep_target_map[part_id])
+        for part_id in part_ids
+    ]
+    return payloads[0] if len(payloads) == 1 else payloads
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": deep_poison_request,
+}):
+    deep_records = cli["fetch_records"](
+        deep_required,
+        deep_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=deep_diagnostics,
+    )
+
+assert deep_calls == [
+    ["D1", "D2", "D3", "D4", "D5", "D6", "D7", "D8"],
+    ["D1", "D2", "D3", "D4"],
+    ["D5", "D6", "D7", "D8"],
+    ["D5", "D6"],
+    ["D7", "D8"],
+    ["D7"],
+    ["D8"],
+    ["D8"],
+]
+assert [row["partId"] for row in deep_records] == [
+    f"D{index}" for index in range(1, 8)
+]
+assert deep_diagnostics["adaptiveSplitCount"] == 3
+assert deep_diagnostics["batchAttemptCount"] == 8
+assert deep_diagnostics["batchUnresolvedCount"] == 1
+assert deep_diagnostics["unresolvedWorkItemCount"] == 1
+assert deep_diagnostics["unresolvedPairCount"] == 1
+
+# The maximum 50-location provider batch also converges through a depth greater
+# than three. Every split has at most two disjoint children, even when every
+# part has a distinct unresolved time signature.
+wide_targets = [{
+    "partId": f"W{index:02d}",
+    "parentZoneId": "ZW",
+    "name": f"Wide {index}",
+    "waterPoint": [12.0 + index / 1000, 55.0],
+} for index in range(1, 51)]
+wide_target_map = {target["partId"]: target for target in wide_targets}
+wide_required = [{
+    "partId": target["partId"],
+    "validTime": first_hour,
+} for target in wide_targets]
+signature_work = {
+    target["partId"]: [iso(REFERENCE + timedelta(hours=index))]
+    for index, target in enumerate(wide_targets)
+}
+signature_children = cli["split_unresolved_work"](signature_work)
+assert len(signature_children) == 2
+signature_parent_keys = cli["work_pair_keys"](signature_work)
+signature_child_keys = [
+    cli["work_pair_keys"](child) for child in signature_children
+]
+assert signature_child_keys[0].isdisjoint(signature_child_keys[1])
+assert set().union(*signature_child_keys) == signature_parent_keys
+
+wide_calls = []
+wide_diagnostics = {}
+
+
+def wide_last_sibling_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, wide_targets,
+    )
+    wide_calls.append(part_ids)
+    if "W50" in part_ids and len(part_ids) > 1:
+        return [
+            response_payload(wide_target_map[part_id])
+            for part_id in part_ids[:-1]
+        ]
+    payloads = [
+        response_payload(wide_target_map[part_id])
+        for part_id in part_ids
+    ]
+    return payloads[0] if len(payloads) == 1 else payloads
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": wide_last_sibling_request,
+}):
+    wide_records = cli["fetch_records"](
+        wide_required,
+        wide_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=wide_diagnostics,
+    )
+
+assert len(wide_records) == 50
+assert wide_calls[0] == [f"W{index:02d}" for index in range(1, 51)]
+assert wide_calls[-1] == ["W50"]
+assert len(wide_calls) == 13
+assert [len(call) for call in wide_calls] == [
+    50, 25, 25, 12, 13, 6, 7, 3, 4, 2, 2, 1, 1,
+]
+assert all(1 <= len(call) <= 50 for call in wide_calls)
+assert wide_diagnostics["adaptiveSplitCount"] == 6
+assert wide_diagnostics["batchAttemptCount"] == 13
+assert wide_diagnostics["batchUnresolvedCount"] == 0
+assert wide_diagnostics["unresolvedPairCount"] == 0
+
+# Isolation also descends through the time axis. A single poisoned hour leaves
+# only that exact pair unresolved; seven healthy hours are retained.
+hour_required = [{
+    "partId": "P1",
+    "validTime": iso(REFERENCE + timedelta(hours=index)),
+} for index in range(8)]
+poison_hour = hour_required[-1]["validTime"]
+hour_calls = []
+hour_diagnostics = {}
+
+
+def hour_poison_request(url, *_args):
+    query = parse_qs(urlparse(url).query)
+    start_value = datetime.fromisoformat(query["start_hour"][0]).replace(
+        tzinfo=timezone.utc,
+    )
+    end_value = datetime.fromisoformat(query["end_hour"][0]).replace(
+        tzinfo=timezone.utc,
+    )
+    requested_times = []
+    cursor = start_value
+    while cursor <= end_value:
+        requested_times.append(iso(cursor))
+        cursor += timedelta(hours=1)
+    hour_calls.append(requested_times)
+    if poison_hour in requested_times:
+        return response_payload(targets[0], times=[])
+    return response_payload(targets[0], times=requested_times)
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": hour_poison_request,
+}):
+    hour_records = cli["fetch_records"](
+        hour_required,
+        {"P1": targets[0]},
+        acquired_at,
+        30,
+        240,
+        diagnostics=hour_diagnostics,
+    )
+
+assert [row["validTime"] for row in hour_records] == [
+    row["validTime"] for row in hour_required[:-1]
+]
+assert len(hour_calls) == 11
+assert hour_calls[-1] == [poison_hour]
+assert hour_diagnostics["adaptiveSplitCount"] == 3
+assert hour_diagnostics["batchUnresolvedCount"] == 1
+assert hour_diagnostics["unresolvedPairCount"] == 1
+
+# Explicit request and queue caps never convert unattempted work into success.
+attempt_cap_calls = []
+attempt_cap_diagnostics = {}
+attempt_cap_targets = batch_targets[:3]
+attempt_cap_target_map = {
+    target["partId"]: target for target in attempt_cap_targets
+}
+attempt_cap_required = batch_required[:3]
+
+
+def attempt_cap_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, attempt_cap_targets,
+    )
+    attempt_cap_calls.append(part_ids)
+    return response_payload(attempt_cap_target_map[part_ids[0]])
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 1,
+    "MAX_TOTAL_REQUEST_ATTEMPTS": 2,
+    "request_json": attempt_cap_request,
+}):
+    attempt_cap_records = cli["fetch_records"](
+        attempt_cap_required,
+        attempt_cap_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=attempt_cap_diagnostics,
+    )
+
+assert attempt_cap_calls == [["I1"], ["I2"]]
+assert [row["partId"] for row in attempt_cap_records] == ["I1", "I2"]
+assert attempt_cap_diagnostics["attemptBudgetReached"] is True
+assert attempt_cap_diagnostics["runtimeBudgetReached"] is False
+assert attempt_cap_diagnostics["batchUnresolvedCount"] == 1
+assert attempt_cap_diagnostics["unresolvedPairCount"] == 1
+
+queue_cap_diagnostics = {}
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "MAX_PENDING_WORK_ITEMS": 1,
+    "request_json": lambda *_args: [],
+}):
+    assert cli["fetch_records"](
+        batch_required,
+        batch_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=queue_cap_diagnostics,
+    ) == []
+
+assert queue_cap_diagnostics["queueBudgetReached"] is True
+assert queue_cap_diagnostics["batchAttemptCount"] == 1
+assert queue_cap_diagnostics["adaptiveSplitCount"] == 0
+assert queue_cap_diagnostics["batchUnresolvedCount"] == 1
+assert queue_cap_diagnostics["unresolvedPairCount"] == 4
+
+# Transport retries are per exact work item, not global rounds. A permanently
+# failing first location is tried exactly three times while its healthy sibling
+# still completes before the delayed retries.
+transport_limit_calls = []
+transport_limit_clock = FakeClock()
+transport_limit_diagnostics = {}
+
+
+def transport_limit_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, batch_targets[:2],
+    )
+    transport_limit_calls.append(part_ids)
+    if part_ids == ["I1"]:
+        raise cli["OpenMeteoRequestFailure"](
+            "OPEN_METEO_REQUEST_FAILED",
+            retryable=True,
+        )
+    return response_payload(batch_target_map[part_ids[0]])
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 1,
+    "request_json": transport_limit_request,
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "monotonic",
+    side_effect=transport_limit_clock.monotonic,
+), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=transport_limit_clock.sleep,
+):
+    transport_limit_records = cli["fetch_records"](
+        batch_required[:2],
+        batch_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=transport_limit_diagnostics,
+    )
+
+assert transport_limit_calls == [["I1"], ["I2"], ["I1"], ["I1"]]
+assert [row["partId"] for row in transport_limit_records] == ["I2"]
+assert transport_limit_clock.sleeps == [1, 2]
+assert transport_limit_diagnostics["transportRetryableBatchCount"] == 3
+assert transport_limit_diagnostics["batchAttemptCount"] == 4
+assert transport_limit_diagnostics["batchUnresolvedCount"] == 1
+assert transport_limit_diagnostics["unresolvedPairCount"] == 1
+
+# An exhausted 429 still establishes provider-wide cooldown for a queued
+# sibling; the per-item retry ceiling cannot cancel Retry-After.
+exhausted_http_calls = []
+exhausted_http_clock = FakeClock()
+exhausted_http_diagnostics = {}
+
+
+def exhausted_http_request(url, *_args):
+    part_ids, _start_hour, _end_hour = requested_part_ids(
+        url, batch_targets[:2],
+    )
+    exhausted_http_calls.append(part_ids)
+    if part_ids == ["I1"]:
+        raise cli["OpenMeteoRequestFailure"](
+            "OPEN_METEO_REQUEST_FAILED",
+            retryable=True,
+            http=True,
+            retry_after_seconds=7,
+        )
+    return response_payload(batch_target_map[part_ids[0]])
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 1,
+    "MAX_TRANSPORT_ATTEMPTS": 1,
+    "request_json": exhausted_http_request,
+}), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "monotonic",
+    side_effect=exhausted_http_clock.monotonic,
+), patch.object(
+    cli["fetch_records"].__globals__["time"],
+    "sleep",
+    side_effect=exhausted_http_clock.sleep,
+):
+    exhausted_http_records = cli["fetch_records"](
+        batch_required[:2],
+        batch_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=exhausted_http_diagnostics,
+    )
+
+assert exhausted_http_calls == [["I1"], ["I2"]]
+assert [row["partId"] for row in exhausted_http_records] == ["I2"]
+assert exhausted_http_clock.sleeps == [7]
+assert exhausted_http_diagnostics["httpRetryableBatchCount"] == 1
+assert exhausted_http_diagnostics["batchUnresolvedCount"] == 1
+assert exhausted_http_diagnostics["unresolvedPairCount"] == 1
+
+# A global permanent provider/contract failure stops the family once, while a
+# size-local permanent failure remains eligible for binary isolation.
+global_failure_calls = []
+global_failure_diagnostics = {}
+
+
+def global_failure_urlopen(_request, *, timeout):
+    assert timeout >= 1
+    global_failure_calls.append(True)
+    return RetryAfterHttpResponse(400)
+
+
+with patch.dict(cli["fetch_records"].__globals__, {
+    "BATCH_SIZE": 50,
+    "request_json": cli["request_json"],
+    "urlopen": global_failure_urlopen,
+}):
+    assert cli["fetch_records"](
+        batch_required,
+        batch_target_map,
+        acquired_at,
+        30,
+        240,
+        diagnostics=global_failure_diagnostics,
+    ) == []
+
+assert len(global_failure_calls) == 1
+assert global_failure_diagnostics["globalProviderFailure"] is True
+assert global_failure_diagnostics["httpPermanentBatchCount"] == 1
+assert global_failure_diagnostics["adaptiveSplitCount"] == 0
+assert global_failure_diagnostics["unresolvedPairCount"] == 4
 
 # The post-critical refresh queue preserves its oldest-first part order instead
 # of reverting to the ordinary alphabetical critical-batch order.
@@ -932,15 +1665,18 @@ def main_fetch(_required, _targets, _acquired_at, _timeout, _runtime, *,
                preserve_input_order=False):
     assert isinstance(deadline_monotonic, float)
     assert preserve_input_order is False
-    stats = {
-        "batchCount": 3,
+    stats = cli["initial_fetch_diagnostics"](3)
+    stats.update({
         "batchAttemptCount": 1,
         "batchCompletedCount": 1,
         "batchUnresolvedCount": 2,
+        "unresolvedWorkItemCount": 2,
         "retryRoundCount": 0,
         "conflictPairCount": 0,
         "runtimeBudgetReached": True,
-    }
+        "unresolvedPartCount": 2,
+        "unresolvedPairCount": 2,
+    })
     diagnostics.update(stats)
     result = copy.deepcopy(deadline_records)
     checkpoint(result, stats)
@@ -991,8 +1727,19 @@ assert main_prints == [
     "Open-Meteo current residual: required=3; filled=1; missing=2; "
     "retained=0; fetched=1; refreshed=0; criticalMissing=2; "
     "batchAttempts=1; batchCompleted=1; batchUnresolved=2; "
+    "workUnresolved=2; "
     "checkpointWritten=true; cacheReuse=absent; "
-    "regionalQuarantined=2; headerQuarantined=true."
+    "regionalQuarantined=2; headerQuarantined=true.",
+    "Open-Meteo safe rejection aggregates: unresolvedParts=2; "
+    "unresolvedPairs=2; adaptiveSplits=0; partialResponses=0; "
+    "transportRetryable=0; httpRetryable=0; httpPermanent=0; "
+    "containerInvalid=0; cardinalityInvalid=0; "
+    "payloadContractInvalid=0; payloadUnitsInvalid=0; "
+    "payloadTimezoneInvalid=0; payloadGridDistanceInvalid=0; "
+    "payloadTimeAxisInvalid=0; pairHourMissing=0; "
+    "pairValueInvalid=0; pairBuildInvalid=0; retrySleepSeconds=0; "
+    "runtimeBudgetReached=true; attemptBudgetReached=false; "
+    "queueBudgetReached=false; globalProviderFailure=false."
 ]
 assert "PRIVATE_FIXTURE_CODE" not in main_prints[0]
 

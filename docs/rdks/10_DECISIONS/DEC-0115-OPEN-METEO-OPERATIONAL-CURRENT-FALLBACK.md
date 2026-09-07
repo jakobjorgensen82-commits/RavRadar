@@ -1,6 +1,6 @@
 # DEC-0115 – Open-Meteo lukker kun validerede operationelle strømhuller
 
-- **Status:** Ejerbesluttet, bindende og merged på main; faktisk Open-Meteo-request og komplet runtimebevis afventer
+- **Status:** Ejerbesluttet, bindende og merged på main; faktiske Open-Meteo-requests og cacheprogression er bevist i flere partial runs, senest `34127986853`, mens komplet 79.414-runtimebevis fortsat afventer
 - **Dato:** 2026-09-05
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0030, DEC-0041, DEC-0112 og DEC-0114
@@ -35,4 +35,6 @@ Den regionale 168-timers shadow må indeholde prøver fra tidligere DMI-modelrun
 
 ## Evidensstatus
 
-Oneoff `34004697179` nåede DMI READY og Copernicus READY med 7.408/8.512 dækkede operationelle restpar og 1.104 rester. Open-Meteo stoppede før første request på rolloverfejlen ovenfor; det er ikke komplet runtimebevis. Den lokale 4.0.326-regression er grøn. Første rettede main-engangskørsel skal genmåle og bestå hele 673 × 118-gaten.
+Oneoff `34004697179` nåede DMI READY og Copernicus READY med 7.408/8.512 dækkede operationelle restpar og 1.104 rester. Open-Meteo stoppede før første request på rolloverfejlen ovenfor; det er historisk negativt bevis.
+
+Main-oneoff `34127986853` på merged 4.0.332 beviste derimod faktisk Open-Meteo-adgang og progressiv cache: efter DMI, Copernicus og regional DMI krævedes 472 par; 76 blev retained, 114 hentet og 190 udfyldt, mens 282 forblev missing. Slutgaten stoppede korrekt uden artifact/deploy. Runnet havde ikke 4.0.333-diagnostikken og klassificerer derfor ikke den konkrete payload-/stopårsag. DEC-0118's 4.0.333-tillæg fjerner den særskilt identificerede under-batch-risiko lokalt; komplet runtimebevis og faktisk restklassifikation kræver fortsat hele 673 × 118-gaten i en ny merged main-kørsel.
