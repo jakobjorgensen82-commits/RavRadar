@@ -38,7 +38,6 @@ VECTOR_DERIVATION = "u=speed*sin(toward_direction);v=speed*cos(toward_direction)
 OPERATIONAL_HOUR_COUNT = 118
 OPERATIONAL_END_OFFSET_HOURS = 117
 MAXIMUM_DISTANCE_KM = 15.0
-MAXIMUM_ACQUISITION_AGE_HOURS = 4
 
 
 PRIVATE_FIELDS = {
@@ -245,12 +244,11 @@ def _validate_record(record: Any, targets: dict[str, dict[str, Any]],
     if (
         record.get("schemaVersion") != RECORD_SCHEMA_VERSION
         or record.get("contractId") != RECORD_CONTRACT_ID
+        or not part_id or record.get("partId") != part_id
         or target is None or (part_id, valid_time) not in required
         or valid_dt < reference
         or valid_dt > reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
         or acquired is None
-        or abs((acquired - reference).total_seconds())
-            > MAXIMUM_ACQUISITION_AGE_HOURS * 3600
         or acquired > checkpointed_at
         or record.get("source") != SOURCE or record.get("model") != MODEL
         or record.get("requestContractId") != REQUEST_CONTRACT_ID
@@ -290,8 +288,6 @@ def build_document(*, targets: list[dict[str, Any]], required_pairs: list[dict[s
     checkpoint_text, checkpoint = _exact_instant(
         checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID"
     )
-    if abs((checkpoint - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
-        _fail("OPEN_METEO_CHECKPOINT_STALE")
     progress_accepted = copernicus_source_stage_status == "IN_PROGRESS"
     if (
         copernicus_source_stage_status
@@ -454,20 +450,114 @@ def validate_checkpoint_document(document: Any, *,
     )
 
 
-def reusable_records(document: Any, *, targets: list[dict[str, Any]],
-                     required_pairs: list[dict[str, str]],
-                     production_reference_at: str,
-                     checkpointed_at: str) -> list[dict[str, Any]]:
-    """Select immutable donor records eligible for a newly computed residual."""
-    donor = validate_checkpoint_document(document, targets=targets)
+def _validate_reusable_envelope(
+    document: Any,
+    *,
+    targets: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Fail closed on cache identity/registry corruption, not leaf damage."""
+    if not isinstance(document, dict) or set(document) != PRIVATE_FIELDS:
+        _fail("OPEN_METEO_DOCUMENT_INVALID")
+    if (
+        document.get("schemaVersion") != DOCUMENT_SCHEMA_VERSION
+        or document.get("kind") != KIND
+        or document.get("contractId") != CONTRACT_ID
+        or document.get("status") not in {"COMPLETE", "INCOMPLETE"}
+        or document.get("source") != SOURCE
+        or document.get("model") != MODEL
+        or document.get("requestContractId") != REQUEST_CONTRACT_ID
+        or document.get("selectionPolicyId") != SELECTION_POLICY_ID
+        or document.get("physicalScope") != PHYSICAL_SCOPE
+        or document.get("scoreInputPolicyId") != SCORE_INPUT_POLICY_ID
+        or document.get("vectorDerivation") != VECTOR_DERIVATION
+        or document.get("operationalHourCount") != OPERATIONAL_HOUR_COUNT
+        or document.get("maximumDistanceKm") != MAXIMUM_DISTANCE_KM
+        or document.get("calibrationEligible") is not False
+        or document.get("coordinatesIncluded") is not True
+        or document.get("rawVectorsIncluded") is not True
+        or document.get("publicRuntime") is not False
+        or not isinstance(document.get("records"), list)
+        or not isinstance(document.get("missingPairs"), list)
+    ):
+        _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+
+    _reference_text, reference = _exact_hour(
+        document.get("productionReferenceAt"), "OPEN_METEO_DOCUMENT_IDENTITY_INVALID",
+    )
+    end_text, _end = _exact_hour(
+        document.get("operationalRangeEndAt"), "OPEN_METEO_DOCUMENT_IDENTITY_INVALID",
+    )
+    if end_text != (
+        reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
+    ).strftime("%Y-%m-%dT%H:00:00Z"):
+        _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+    _checkpoint_text, checkpoint = _exact_instant(
+        document.get("checkpointedAt"), "OPEN_METEO_DOCUMENT_IDENTITY_INVALID",
+    )
+
+    target_map = {
+        row.get("partId"): row for row in targets if isinstance(row, dict)
+    }
+    fingerprint = target_fingerprint(targets)
+    if len(target_map) != len(targets) or fingerprint is None:
+        _fail("OPEN_METEO_TARGETS_INVALID")
+    if document.get("targetRegistrySha256") != fingerprint:
+        _fail("OPEN_METEO_TARGET_BINDING_INVALID")
+
+    for field in ("requiredPairCount", "recordCount", "missingPairCount"):
+        value = document.get(field)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+    for field in (
+        "requiredPairsSha256", "recordRefsSha256", "recordsSha256",
+        "missingPairsSha256", "regionalEvidenceSha256", "documentSha256",
+    ):
+        if not valid_sha256(document.get(field)):
+            _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+
+    stage_status = document.get("copernicusSourceStageStatus")
+    stage_sha = document.get("copernicusSourceStageSha256")
+    bounded_progress = document.get("copernicusBoundedProgressAccepted")
+    if (
+        stage_status not in {"READY", "IN_PROGRESS", "NOT_APPLICABLE"}
+        or bounded_progress is not (stage_status == "IN_PROGRESS")
+        or (stage_status == "NOT_APPLICABLE" and stage_sha is not None)
+        or (stage_status != "NOT_APPLICABLE" and not valid_sha256(stage_sha))
+    ):
+        _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+
+    for field in ("oldestRecordAcquiredAt", "newestRecordAcquiredAt"):
+        value = document.get(field)
+        if value is not None:
+            _text, instant = _exact_instant(
+                value, "OPEN_METEO_DOCUMENT_IDENTITY_INVALID",
+            )
+            if instant > checkpoint:
+                _fail("OPEN_METEO_DOCUMENT_IDENTITY_INVALID")
+    return document
+
+
+def reusable_records_with_salvage(
+    document: Any,
+    *,
+    targets: list[dict[str, Any]],
+    required_pairs: list[dict[str, str]],
+    production_reference_at: str,
+    checkpointed_at: str,
+) -> tuple[list[dict[str, Any]], dict[str, int | bool]]:
+    """Select independently valid donor records and expose damaged rows as gaps."""
+    strict_checkpoint_valid = True
+    try:
+        validate_checkpoint_document(document, targets=targets)
+    except OpenMeteoCurrentFallbackError:
+        strict_checkpoint_valid = False
+    donor = _validate_reusable_envelope(document, targets=targets)
     _reference_text, reference = _exact_hour(
         production_reference_at, "OPEN_METEO_REFERENCE_INVALID"
     )
     _checkpoint_text, checkpoint = _exact_instant(
         checkpointed_at, "OPEN_METEO_CHECKPOINT_TIME_INVALID"
     )
-    if abs((checkpoint - reference).total_seconds()) > MAXIMUM_ACQUISITION_AGE_HOURS * 3600:
-        _fail("OPEN_METEO_CHECKPOINT_STALE")
     pairs = _canonical_pairs(required_pairs, "OPEN_METEO_REQUIRED_PAIRS_INVALID")
     target_map = {
         row.get("partId"): row for row in targets if isinstance(row, dict)
@@ -477,29 +567,75 @@ def reusable_records(document: Any, *, targets: list[dict[str, Any]],
         _fail("OPEN_METEO_TARGETS_INVALID")
     if donor.get("targetRegistrySha256") != fingerprint:
         _fail("OPEN_METEO_TARGET_BINDING_INVALID")
+    if any(
+        row["partId"] not in target_map
+        or datetime.fromisoformat(row["validTime"].replace("Z", "+00:00")) < reference
+        or datetime.fromisoformat(row["validTime"].replace("Z", "+00:00"))
+            > reference + timedelta(hours=OPERATIONAL_END_OFFSET_HOURS)
+        for row in pairs
+    ):
+        _fail("OPEN_METEO_REQUIRED_PAIRS_OUTSIDE_OPERATIONAL_RANGE")
     required = {(row["partId"], row["validTime"]) for row in pairs}
-    selected = []
+    candidates_by_pair: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    dropped_record_count = 0
+    dropped_pairs: set[tuple[str, str]] = set()
+    ignored_record_count = 0
     for record in donor["records"]:
-        key = (record["partId"], record["validTime"])
-        if key not in required:
-            continue
-        acquired_text = canonical_time(record.get("acquiredAt"))
         try:
-            acquired = datetime.fromisoformat(
-                acquired_text.replace("Z", "+00:00")
-            ) if acquired_text == record.get("acquiredAt") else None
-        except (TypeError, ValueError):
-            acquired = None
-        if (
-            acquired is None
-            or abs((acquired - reference).total_seconds())
-                > MAXIMUM_ACQUISITION_AGE_HOURS * 3600
-        ):
+            if not isinstance(record, dict):
+                raise OpenMeteoCurrentFallbackError("OPEN_METEO_RECORD_INVALID")
+            part_id = str(record.get("partId") or "").strip()
+            valid_time, _valid_dt = _exact_hour(
+                record.get("validTime"), "OPEN_METEO_RECORD_INVALID",
+            )
+            key = (part_id, valid_time)
+        except OpenMeteoCurrentFallbackError:
+            dropped_record_count += 1
             continue
-        selected.append(_validate_record(
-            record, target_map, required, reference, checkpoint,
-        ))
+        if key not in required:
+            ignored_record_count += 1
+            continue
+        try:
+            validated = _validate_record(
+                record, target_map, required, reference, checkpoint,
+            )
+        except OpenMeteoCurrentFallbackError:
+            dropped_record_count += 1
+            dropped_pairs.add(key)
+            continue
+        candidates_by_pair.setdefault(key, []).append(validated)
+
+    selected = []
+    for key, candidates in candidates_by_pair.items():
+        by_id = {row["recordId"]: row for row in candidates}
+        if len(by_id) != 1:
+            dropped_record_count += len(candidates)
+            dropped_pairs.add(key)
+            continue
+        selected.append(next(iter(by_id.values())))
     selected.sort(key=lambda row: (row["validTime"], row["partId"]))
+    retained_pairs = {(row["partId"], row["validTime"]) for row in selected}
+    dropped_pairs.difference_update(retained_pairs)
+    return selected, {
+        "salvaged": not strict_checkpoint_valid or dropped_record_count > 0,
+        "droppedRecordCount": dropped_record_count,
+        "droppedPairCount": len(dropped_pairs),
+        "ignoredRecordCount": ignored_record_count,
+    }
+
+
+def reusable_records(document: Any, *, targets: list[dict[str, Any]],
+                     required_pairs: list[dict[str, str]],
+                     production_reference_at: str,
+                     checkpointed_at: str) -> list[dict[str, Any]]:
+    """Select immutable donor records eligible for a newly computed residual."""
+    selected, _salvage = reusable_records_with_salvage(
+        document,
+        targets=targets,
+        required_pairs=required_pairs,
+        production_reference_at=production_reference_at,
+        checkpointed_at=checkpointed_at,
+    )
     return selected
 
 
@@ -626,13 +762,14 @@ def safe_projection(document: dict[str, Any]) -> dict[str, Any]:
 
 __all__ = [
     "CONTRACT_ID", "DOCUMENT_SCHEMA_VERSION", "LIVE_RECORD_PROJECTION_CONTRACT_ID",
-    "MAXIMUM_ACQUISITION_AGE_HOURS", "MAXIMUM_DISTANCE_KM", "MODEL",
+    "MAXIMUM_DISTANCE_KM", "MODEL",
     "OpenMeteoCurrentFallbackError", "PHYSICAL_SCOPE", "SCORE_INPUT_POLICY_ID",
     "RECORD_CONTRACT_ID", "RECORD_REF_CONTRACT_ID", "RECORD_SCHEMA_VERSION",
     "REQUEST_CONTRACT_ID", "SAFE_CONTRACT_ID", "SCHEMA_VERSION",
     "SELECTION_POLICY_ID", "SOURCE", "build_document", "build_record",
     "checkpoint_required_pairs",
     "live_record_projection_sha256", "merge_records", "record_ref", "record_ref_sha256",
-    "reusable_records", "safe_projection", "validate_checkpoint_document",
+    "reusable_records", "reusable_records_with_salvage", "safe_projection",
+    "validate_checkpoint_document",
     "validate_document",
 ]

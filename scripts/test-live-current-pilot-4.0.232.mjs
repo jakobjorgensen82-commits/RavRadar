@@ -446,6 +446,22 @@ const buildOperationalLive = rawEntries => {
   };
 };
 const live = buildOperationalLive([copernicusEntry, futureCopernicusEntry]);
+const OLD_BUT_VALID_ACQUISITION_AT = '2026-08-18T01:00:00Z';
+const oldButFutureValidCopernicusLive = buildOperationalLive([
+  copernicusEntry,
+  futureCopernicusEntry,
+].map(entry => ({
+  ...entry,
+  acquisitionAt: OLD_BUT_VALID_ACQUISITION_AT,
+  capturedAt: OLD_BUT_VALID_ACQUISITION_AT,
+})));
+assert.equal(controlledLiveCurrentEnabled(oldButFutureValidCopernicusLive), true,
+  'structurally valid future Copernicus rows remain available when acquired more than four hours before the target');
+const beyondOperationalHorizonCopernicusLive = buildOperationalLive([
+  makeCopernicusEntry('2026-08-23T11:00:00Z', sha256('beyond-horizon-record'), 0.2, 0.1),
+]);
+assert.equal(controlledLiveCurrentEnabled(beyondOperationalHorizonCopernicusLive), false,
+  'Copernicus rows beyond target plus 117 hours remain unavailable');
 
 const regionalPart = { partId: 'R1', zoneId: 'ZR', waterPoint: [11, 56] };
 const regionalEntry = {
@@ -463,6 +479,28 @@ const regionalEntry = {
 const regionalLive = buildOperationalLive([
   copernicusEntry, futureCopernicusEntry, regionalEntry,
 ]);
+const oldButFutureValidRegionalLive = buildOperationalLive([
+  copernicusEntry,
+  futureCopernicusEntry,
+  { ...regionalEntry, capturedAt: OLD_BUT_VALID_ACQUISITION_AT },
+]);
+assert.equal(controlledLiveCurrentEnabled(oldButFutureValidRegionalLive), true,
+  'structurally valid future regional rows remain available when captured more than four hours before the target');
+assert.equal(verifiedNativeCadenceReferenceForPart(
+  regionalPart,
+  oldButFutureValidRegionalLive,
+  '2026-08-18T13:00:00.000Z',
+), true, 'the runtime trust boundary must retain an old-but-future-valid regional row');
+const beyondOperationalHorizonRegionalLive = buildOperationalLive([
+  {
+    ...regionalEntry,
+    validTime: '2026-08-23T11:00:00Z',
+    sourceValidTime: '2026-08-23T11:00:00Z',
+    capturedAt: OLD_BUT_VALID_ACQUISITION_AT,
+  },
+]);
+assert.equal(controlledLiveCurrentEnabled(beyondOperationalHorizonRegionalLive), false,
+  'regional rows beyond target plus 117 hours remain unavailable');
 const flattenedRegionalParts = flattenCoastalPartsWithParentZoneId({
   zones: { ZR: [{ partId: 'R1', zoneId: 'STALE', waterPoint: regionalPart.waterPoint }] },
 });
@@ -535,7 +573,7 @@ for (const [label, poisonedEntry] of [
   ['wrong grid', { ...regionalEntry, gridPoint: [12, 56] }],
   ['future model run', { ...regionalEntry, modelRun: '2026-08-18T13:00:00.000Z' }],
   ['wrong valid time', { ...regionalEntry, validTime: '2026-08-18T13:00:00.000Z' }],
-  ['stale acquisition', { ...regionalEntry, capturedAt: '2026-08-17T12:00:00.000Z' }],
+  ['non-canonical acquisition', { ...regionalEntry, capturedAt: '2026-08-17T12:00:00.000Z' }],
   ['wrong distance', { ...regionalEntry, distanceKm: 15.1 }],
 ]) {
   assert.equal(latestVerifiedNativeCadenceSampleForPart(
@@ -578,6 +616,18 @@ assert.equal(merged.hourly[3].currentUMps, -0.12,
   'Target+117 must remain valid because acquisition freshness is measured against productionReferenceAt, not validTime.');
 assert.ok(verifiedLivePilotSource(merged.hourly[1].currentProvenance, part, { requireStatus: true }));
 assert.ok(verifiedLivePilotSource(merged.hourly[3].currentProvenance, part, { requireStatus: true }));
+const oldButFutureValidMerged = mergeLiveCurrentPilotIntoRecord(
+  record,
+  part,
+  oldButFutureValidCopernicusLive,
+  { primaryCurrentVerified: row => row.time === '2026-08-18T12:00:00.000Z' },
+);
+assert.equal(oldButFutureValidMerged.hourly[3].currentUMps, -0.12);
+assert.ok(verifiedLivePilotSource(
+  oldButFutureValidMerged.hourly[3].currentProvenance,
+  part,
+  { requireStatus: true },
+), 'the runtime projection must retain an old-but-future-valid Copernicus row');
 const resignedProjection = overrides => {
   const value = { ...merged.hourly[1].currentProvenance, ...overrides };
   value.recordProjectionSha256 = sha256(projectionPayload(value));

@@ -1,5 +1,15 @@
 # AI Working Rules – RavRadar
 
+## Aktuel 4.0.332 horizon-, integritets- og cutoverregel
+
+- Brug den nyeste strukturelt valide future-række, mens den konkrete time ligger i pakkens egen verificerede horizon. Eksakt slutinstant accepteres, `+1 ms` afvises. Alder er warning/emergency/tillid/tur/kalibrering og må ikke alene skabe missing, `UNAVAILABLE` eller deploystop.
+- Bevar præcis 79.414/79.414, én kilde pr. par, nul overlap/missing og alle target-/registry-/model-/provenance-/hash-/privacygates. Lemp aldrig integritet sammen med en age gate.
+- Salvage DMI/Copernicus/Open-Meteo pr. proof-enhed; fail closed på topidentitet/control plane. Bevar verified positives og genbyg canonical bevismateriale. Nyeste verified tuple vinder atomisk efter kildeprioriteten.
+- Første cutover må kun genbruge fem private sourcecacher via exact run-/head-/attempt-/target-/registry-/hashbundet handoff. Consumeren genbeviser. Bounded `update:weather` og alle øvrige gates består.
+- Historik er op til 48 timer advisory. `HISTORY_INCOMPLETE` er numerisk med alle zoner aktive, reason codes og calibration off. Normal workflow forbliver deaktiveret under cutover.
+
+> Alle ældre aktive formuleringer i dette dokument om højst 72 timers same-model-pakke/checkpoint er **SUPERSEDERET** af DEC-0119. Historiske checkpoints bevares som revisionsspor.
+
 ## Aktuel 4.0.316 fallback-, scorekvalitets- og release-regel
 
 - Behandl frisk primary og last-verified fallback som separate kontrakter. En gyldig fallback kan stages; forventet fravær må ikke blokere en ellers gyldig primary; gammel/udløbet fallback skal fjernes fra manifest/public files og må aldrig vises.
@@ -44,7 +54,7 @@
 - Sammenlign ikke `pg_get_constraintdef` med en flad tekstregex, når parentesering kan ændres af PostgreSQLs deparser. Udtræk den relevante JSONPath strukturelt, kræv præcis én eksakt kanonisk path, og afvis reorder, duplicate, extra og ambiguous fail-closed.
 - Ved lagercutover sættes existing-D1/fresh Edge-predeploy-intent efter capacity/CAS før første Edge-write. Existing D1 bruger 20-/30-minutters lease, femsekunders prober, 600 sekunders restlease og samlet syvminutters Worker-gate; partial deploy går D1 roll-forward. Fresh partial deploy går exact-main/Supabase-secret/eksakt Edge/dobbelt Supabase-attestation. Uden intent ingen recoverymutation.
 - Migreringsværktøjer må kun læse eksplicitte server-side safe blade. Data, som ikke må logges eller lagres, må heller ikke hentes “for en sikkerheds skyld”.
-- `calibration_eligible` åbner ikke læring uden server-side signeret manifestbinding. Den integrerede model skal bevare en atomisk målt-only 210/673-nødvej i højst 72 timer og aldrig efter kortere forecastudløb.
+- `calibration_eligible` åbner ikke læring uden server-side signeret manifestbinding. Den integrerede model skal bevare en atomisk measured-only 210/673-nødvej fra samme model, som kun bruges inden for pakkens egen verificerede prognosehorizon; alder markeres og emergency/trips kalibrerer ikke.
 - Det historiske checkpoint endte således: 4.0.312 bestod PR #225 exact-head `33266087776`, blev merged som `a5ece10d` og fik no-op push `33266184326`; backend `33266229687` passerede D1/Edge/Worker, men fejlede migrationssynken og er ikke readiness. Den operative fortsættelse er udelukkende det aktuelle 4.0.314-checkpoint ovenfor. Offentlig version er fortsat 4.0.310, og trip protocol/header forbliver 4.0.311.
 
 ## 1. Systemisk fejlretning

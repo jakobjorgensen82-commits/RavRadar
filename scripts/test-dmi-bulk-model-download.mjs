@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { readProductionWorkflowSources } from './lib/production-workflow-sources.mjs';
 
-const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJson, smoke] = await Promise.all([
+const [bulkRaw, nativeProvenance, updater, workflows, hydrator, preflight, packageJson, smoke] = await Promise.all([
   fs.readFile('scripts/update-dmi-bulk.py', 'utf8'),
   fs.readFile('scripts/lib/dmi_native_provenance.py', 'utf8'),
   fs.readFile('scripts/update-weather.mjs', 'utf8'),
@@ -13,6 +13,7 @@ const [bulk, nativeProvenance, updater, workflows, hydrator, preflight, packageJ
   fs.readFile('package.json', 'utf8'),
   fs.readFile('scripts/smoke-test-eccodes.py', 'utf8')
 ]);
+const bulk = bulkRaw.replace(/\r\n?/g, '\n');
 const { orchestrator, build } = workflows;
 const { version: appVersion } = JSON.parse(packageJson);
 
@@ -287,7 +288,13 @@ assert.match(bulk, /select_common_grid_tuple/);
 assert.match(bulk, /nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation/);
 assert.match(bulk, /observed_run_cadence_hours/);
 assert.match(bulk, /catalogScheduleFresh/);
-assert.match(bulk, /rejectedStaleRun/);
+assert.match(bulk, /scheduleFreshnessWarning/);
+assert.match(bulk, /CATALOG_PUBLICATION_LAG/);
+assert.doesNotMatch(
+  bulk,
+  /and stats\.get\("rejectedStaleRun"\) is not True/,
+  'Schedule/publication age must remain diagnostic and cannot invalidate an otherwise usable official DMI run.',
+);
 assert.match(bulk, /assetIdentitySha256/);
 assert.match(bulk, /Registration\/last-use time is not acquisition time/);
 assert.match(bulk, /invalidatedIncompleteComponentProvenance/);
@@ -338,7 +345,6 @@ assert.match(bulk, /not strict_current_anchor_available/);
 assert.match(bulk, /def producer_terminal_code\(/);
 for (const code of [
   'DMI_READY',
-  'DMI_CATALOG_SCHEDULE_STALE',
   'DMI_CURRENT_LEDGER_INCOMPLETE',
   'DMI_WAVE_BOOTSTRAP_INCOMPLETE',
   'DMI_PRODUCER_EXCEPTION',

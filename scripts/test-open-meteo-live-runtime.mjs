@@ -8,6 +8,7 @@ import {
   controlledLiveCurrentEnabled,
   mergeLiveCurrentPilotIntoRecord,
   openMeteoLiveRecordProjectionSha256,
+  verifiedLivePilotSource,
 } from './lib/live-current-pilot.mjs';
 import { flowPointsFromForecastRecord } from './lib/flow-points-from-forecast-record.mjs';
 import {
@@ -180,6 +181,48 @@ const document = {
 };
 
 assert.equal(controlledLiveCurrentEnabled(document), true);
+const oldButFutureValidAcquiredAt = '2026-09-04T12:00:00Z';
+const oldButFutureValidAssignment = {
+  ...assignmentIdentity,
+  acquiredAt: oldButFutureValidAcquiredAt,
+};
+const oldButFutureValidEntry = {
+  ...entry,
+  acquiredAt: oldButFutureValidAcquiredAt,
+  acquisitionAt: oldButFutureValidAcquiredAt,
+  capturedAt: oldButFutureValidAcquiredAt,
+  closureAssignmentSha256: sha256({
+    schemaVersion: 1,
+    contractId: 'current-operational-source-assignment-v2',
+    assignment: oldButFutureValidAssignment,
+  }),
+};
+oldButFutureValidEntry.recordProjectionSha256 =
+  openMeteoLiveRecordProjectionSha256(oldButFutureValidEntry);
+const oldButFutureValidClosure = {
+  ...closure,
+  supplementalAssignmentsSha256: sha256([
+    oldButFutureValidEntry.closureAssignmentSha256,
+  ]),
+};
+delete oldButFutureValidClosure.safeProjectionSha256;
+oldButFutureValidClosure.safeProjectionSha256 = sha256(oldButFutureValidClosure);
+const oldButFutureValidDocument = {
+  ...document,
+  operationalClosure: oldButFutureValidClosure,
+  entries: [oldButFutureValidEntry],
+};
+assert.equal(controlledLiveCurrentEnabled(oldButFutureValidDocument), true,
+  'structurally valid future Open-Meteo rows remain available when acquired more than four hours before the target');
+for (const invalidValidTime of [
+  '2026-09-05T00:00:00Z',
+  '2026-09-09T23:00:00Z',
+]) {
+  const outsideHorizon = { ...oldButFutureValidEntry, validTime: invalidValidTime };
+  outsideHorizon.recordProjectionSha256 = openMeteoLiveRecordProjectionSha256(outsideHorizon);
+  assert.equal(verifiedLivePilotSource(outsideHorizon, part), null,
+    'expired and out-of-horizon Open-Meteo rows remain unavailable');
+}
 const original = {
   hourly: [{
     time: '2026-09-05T01:00:00.000Z',
@@ -199,6 +242,17 @@ assert.equal(merged.hourly[0].sources.waterLevel.provider, 'dmi');
 assert.equal(merged.hourly[0].currentProvenance.calibrationEligible, false);
 assert.equal(merged.hourly[0].currentProvenance.scoreInputPolicyId,
   'combined-current-single-channel-no-wave-or-tide-reprojection-v1');
+const oldButFutureValidMerged = mergeLiveCurrentPilotIntoRecord(
+  original,
+  part,
+  oldButFutureValidDocument,
+);
+assert.equal(oldButFutureValidMerged.hourly[0].currentUMps, 0.25);
+assert.ok(verifiedLivePilotSource(
+  oldButFutureValidMerged.hourly[0].currentProvenance,
+  part,
+  { requireStatus: true },
+), 'the runtime projection must retain an old-but-future-valid Open-Meteo row');
 assert.equal(integratedInputCalibrationEligible(merged.hourly[0]), false);
 const sanitized = verifiedIntegratedPartHourly(
   merged,

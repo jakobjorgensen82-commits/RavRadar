@@ -1,3 +1,19 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.332 horizon-validitet og kontrolleret cutover
+
+- [x] Erstat alder som availability-/promotion-/deploygate med egen verificeret prognosehorizon; acceptér eksakt sidste instant og afvis `+1 ms`.
+- [x] Bevar 90/150/240-minutters tærskler som warnings/tillid og emergencyklassifikation, og hold gammel/emergency/historikufuldstændig evidens ude af kalibrering.
+- [x] Bevar den hårde 79.414/79.414-closure og samtlige target-/registry-/model-/provenance-/hash-/privacygates for hvert nyt weather-artifact.
+- [x] Implementér eksakt run-bundet, privat fem-cache source-handoff til den første integrerede cutover; consumer genverificerer run/head/attempt/artifact/cache/inputhashes og closure. Bounded `update:weather` og alle øvrige gates springes ikke over.
+- [x] Salvage DMI-, Copernicus- og Open-Meteo-cache pr. uafhængig proof-enhed; fail closed på control plane/topidentitet og genbyg canonical positive beviser uden at skabe falsk availability.
+- [x] Bevar nyeste verificerede tuple atomisk efter providerprioriteten, og lad en senere højere prioriteret kilde erstatte Open-Meteo.
+- [x] Gør ufuldstændig 48-timers historik scorebærende som numerisk `HISTORY_INCOMPLETE` for alle aktive zoner med reason codes og `calibrationEligible=false`; sitekontrol klassificerer alder som warning.
+- [x] Registrér run `34083611297` som 78.856/79.414, 558 missing og intet deploy. Klassificér `34093354004` som sikkert partial stop: Copernicus success; Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing; cache gemt; ingen closure/artifact/deploy.
+- [x] Klassificér `34104536681` på eksakt `main` `c2ce63ff`: target 09Z; DMI 67.897/79.414 på 5m24s med cachegenbrug; Copernicus 8.372 og 3.145 rester; stop før første Open-Meteo-request på `OPEN_METEO_RESIDUAL_PLAN_INVALID_DMI_LEDGER_SOURCE_INDEX_INVALID`; Copernicus-cache gemt; ingen closure/artifact/deploy.
+- [x] Ret det regionale source-index, så kun en ærlig valgt DMI-collection med `modelRun=null`, nul positive states og nul `sourceAsset` går videre som fuld residual. Bevar eksakte retained old-run-proofs; afvis fortsat positive eller kildebærende null-run-rækker. Målrettet producer→ledger→registry→regional→Open-Meteo-regression beviser 944/944 residualpar og tamper-stop.
+- [ ] Afslut dokumentationsvalidatorer, exact-head-CI og merge af den eksakte 4.0.332-head.
+- [ ] Kræv en komplet grøn producentkørsel, brug kun dens eksakte handoff ved den autoriserede cutover, og gennemfør central hydrering, sourcegate, bounded `update:weather`, Feggesund/spatial audit, live kapacitet, fuld validate/releasegate, artifact/deploy, Phase B og offentlig verifikation.
+- [ ] Genaktivér først normal cron-dispatch efter den kontrollerede cutover. Auditér source-transition-overlap/hysterese og durable immutable multi-artifact-historik i separate post-launch-releases.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.331 exact-source-precondition
 
 - [x] Klassificér `34077360903` præcist: exact-main `8020cdfe539df0841246714c22705d78927c8bdb`, releasegate grøn, derefter legacy-sourcefejl på manglende `49dd…^{tree}` i shallow checkout og alle vejr-/cache-/runtime-/kapacitets-/deploytrin skipped.

@@ -313,8 +313,10 @@ for (const marker of [
   '--dmi .cache/dmi-candidate-progress.json',
   'name: Fill only the exact remaining current gaps from Open-Meteo',
   '--runtime-seconds 900',
-  'name: Refuse a stale one-off target after the extended supplier chain',
+  'name: Classify one-off target freshness after the extended supplier chain',
+  'id: oneoff-target-freshness',
   '--maximum-age-minutes 240',
+  '--github-output "$GITHUB_OUTPUT"',
   'name: Remove only invalid operational Copernicus source disposition',
   "steps.current-range.outputs.source_stage_reusable != 'true'",
   'rm -f .cache/copernicus-current-source-stage.json',
@@ -400,6 +402,7 @@ const timeoutMinutes = (block) => {
 const operationalJobMinutes = timeoutMinutes(operationalPreflight.slice(0, operationalPreflight.indexOf('    steps:')));
 const dmiAcquisitionStep = operationalStep('Refresh all bounded official DMI collections for the proof');
 const copernicusAcquisitionStep = operationalStep('Fill only the exact operational DMI gap seal');
+const oneoffCopernicusDisposition = operationalStep('Require reusable Copernicus source stage');
 const runtimeBuildStep = operationalStep('Build the integrated runtime without release or deploy');
 const oneoffProvenanceStep = operationalStep('Attach exact current provenance and rebuild the public projection');
 const oneoffOpenMeteoRestore = operationalStep('Restore shared private Open-Meteo current progress');
@@ -407,6 +410,11 @@ const oneoffOpenMeteoFill = operationalStep('Fill only the exact remaining curre
 const oneoffOpenMeteoAuthority = operationalStep('Reconfirm exact main before shared Open-Meteo progress cache');
 const oneoffOpenMeteoSave = operationalStep('Save shared private Open-Meteo current progress');
 const oneoffOpenMeteoTerminal = operationalStep('Require complete Open-Meteo residual before freshness and closure');
+assert.ok(
+  oneoffCopernicusDisposition.includes('--require-source-stage-reusable')
+    && !oneoffCopernicusDisposition.includes('--require-source-stage-ready'),
+  'Oneoff skal acceptere eksakt IN_PROGRESS/partial Copernicus-evidens før Open-Meteo; READY må ikke kræves.',
+);
 assert.match(
   oneoffOpenMeteoTerminal,
   /^\s+if: always\(\)\s*$/m,
@@ -469,7 +477,7 @@ assert.ok(
 assert.doesNotMatch(
   operationalPreflight.slice(
     operationalPreflight.indexOf('name: Restore shared private Open-Meteo current progress'),
-    operationalPreflight.indexOf('name: Refuse a stale one-off target after the extended supplier chain'),
+    operationalPreflight.indexOf('name: Classify one-off target freshness after the extended supplier chain'),
   ),
   /upload-artifact/,
   'Den private Open-Meteo-cache må ikke uploades som artifact.',
@@ -576,7 +584,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
   operationalPreflight.indexOf('name: Save shared private Open-Meteo current progress'),
   operationalPreflight.indexOf('name: Require complete Open-Meteo residual before freshness and closure'),
-  operationalPreflight.indexOf('name: Refuse a stale one-off target after the extended supplier chain'),
+  operationalPreflight.indexOf('name: Classify one-off target freshness after the extended supplier chain'),
   operationalPreflight.indexOf('name: Build exact DMI-first target through target plus 117 current closure'),
   operationalPreflight.indexOf('name: Build controlled live current selection'),
   operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
@@ -809,10 +817,10 @@ const privacySafeUpload = operationalPreflight.slice(
   privacySafeUploadEnd < 0 ? operationalPreflight.length : privacySafeUploadEnd,
 );
 if (privacySafeUploadStart < 0
-  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 1
+  || (operationalPreflight.match(/uses: actions\/upload-artifact@v7/g) || []).length !== 2
   || !privacySafeUpload.includes('uses: actions/upload-artifact@v7')
   || !privacySafeUpload.includes('path: .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json')) {
-  throw new Error('Operational-118-preflight skal uploade præcis én filtreret privacy-safe 118h-rapport.');
+  throw new Error('Operational-118-preflight skal uploade præcis de to filtrerede privacy-safe beviser.');
 }
 const privacySafeUploadPaths = [...privacySafeUpload.matchAll(/^\s*path:\s*(.+?)\s*$/gm)]
   .map((match) => match[1]);
@@ -848,6 +856,69 @@ for (const forbidden of [
 ]) {
   if (operationalPreflight.includes(forbidden)) {
     throw new Error(`Operational-118-preflight må ikke indeholde ${forbidden}`);
+  }
+}
+const weatherHandoffSealStart = operationalPreflight.indexOf(
+  'name: Seal exact run-bound verified weather source handoff',
+);
+const weatherHandoffCacheStart = operationalPreflight.indexOf(
+  'name: Save exact run-bound verified weather source cache',
+);
+const weatherHandoffUploadStart = operationalPreflight.indexOf(
+  'name: Upload only aggregate verified weather source handoff attestation',
+);
+const weatherHandoffUploadEnd = operationalPreflight.indexOf(
+  '\n      - name:', weatherHandoffUploadStart + 1,
+);
+const weatherHandoffUpload = operationalPreflight.slice(
+  weatherHandoffUploadStart,
+  weatherHandoffUploadEnd < 0 ? operationalPreflight.length : weatherHandoffUploadEnd,
+);
+if (!(weatherHandoffSealStart > operationalPreflight.indexOf('name: Report only privacy-safe 118-hour evidence')
+  && weatherHandoffCacheStart > weatherHandoffSealStart
+  && weatherHandoffUploadStart > weatherHandoffCacheStart
+  && privacySafeUploadStart > weatherHandoffUploadStart)) {
+  throw new Error('Run-bound weather handoff skal først forsegles efter komplet privacy-safe 118h-evidens.');
+}
+for (const marker of [
+  '--source-head "$GITHUB_SHA"',
+  '--run-id "$GITHUB_RUN_ID"',
+  '--run-attempt "$GITHUB_RUN_ATTEMPT"',
+  '--closure data/diagnostics/current-operational-closure.json',
+  'path: .cache/verified-weather-source-handoff-cache',
+  'key: ${{ steps.weather-source-handoff-seal.outputs.cache_key }}',
+]) {
+  if (!operationalPreflight.slice(weatherHandoffSealStart, weatherHandoffUploadStart).includes(marker)) {
+    throw new Error(`Run-bound weather handoff mangler ${marker}`);
+  }
+}
+for (const marker of [
+  'uses: actions/upload-artifact@v7',
+  'name: ravradar-weather-source-handoff-${{ github.run_id }}-${{ github.run_attempt }}',
+  'include-hidden-files: true',
+  'path: .cache/verified-weather-source-handoff-cache/attestation.json',
+]) {
+  if (!weatherHandoffUpload.includes(marker)) {
+    throw new Error(`Den aggregate weather-handoff-upload mangler ${marker}`);
+  }
+}
+const weatherHandoffUploadPaths = [...weatherHandoffUpload.matchAll(/^\s*path:\s*(.+?)\s*$/gm)]
+  .map((match) => match[1]);
+assert.deepEqual(
+  weatherHandoffUploadPaths,
+  ['.cache/verified-weather-source-handoff-cache/attestation.json'],
+  'Weather handoff artifact må kun indeholde den aggregate attestering.',
+);
+for (const forbidden of [
+  '.cache/dmi-candidate-progress.json',
+  '.cache/copernicus-current-shadow.json',
+  '.cache/copernicus-current-source-stage.json',
+  '.cache/current-field-shadow.json',
+  '.cache/open-meteo-current-fallback.json',
+  'data/live/dmi-bulk-cache.json',
+]) {
+  if (weatherHandoffUpload.includes(forbidden)) {
+    throw new Error(`Weather handoff artifact må ikke indeholde privat source-input: ${forbidden}`);
   }
 }
 if (/npm run validate(?:\s|$)/.test(operationalPreflight)) {
@@ -955,10 +1026,13 @@ for (const marker of [
   'Reconfirm exact main before shared Open-Meteo progress cache',
   'Save shared private Open-Meteo current progress',
   'Require complete Open-Meteo residual before freshness and closure',
-  'Refuse a stale target after the bounded supplier chain',
+  'Classify target freshness after the bounded supplier chain',
+  'id: supplier-target-freshness',
   '--maximum-age-minutes 90',
-  'Refuse stale weather before protected writes and Pages artifact',
+  'Reclassify target freshness before protected writes and Pages artifact',
+  'id: prewrite-target-freshness',
   '--maximum-age-minutes 150',
+  '--github-output "$GITHUB_OUTPUT"',
   'Build exact DMI-first current operational closure',
 ]) {
   if (!text.includes(marker)) throw new Error(`Den GitHub-ejede 15-minuttersproduktion mangler ${marker}`);
@@ -970,11 +1044,17 @@ const productionStep = (name) => {
   return text.slice(start, end < 0 ? undefined : end);
 };
 const normalDmiAcquisition = productionStep('Update DMI bulk model cache');
+const normalCopernicusDisposition = productionStep('Require reusable Copernicus source stage before combined current closure');
 const normalOpenMeteoRestore = productionStep('Restore shared private Open-Meteo current progress');
 const normalOpenMeteoFill = productionStep('Fill only the exact remaining current gaps from Open-Meteo');
 const normalOpenMeteoAuthority = productionStep('Reconfirm exact main before shared Open-Meteo progress cache');
 const normalOpenMeteoSave = productionStep('Save shared private Open-Meteo current progress');
 const normalOpenMeteoTerminal = productionStep('Require complete Open-Meteo residual before freshness and closure');
+assert.ok(
+  normalCopernicusDisposition.includes('--require-source-stage-reusable')
+    && !normalCopernicusDisposition.includes('--require-source-stage-ready'),
+  'Normal/handoff skal acceptere eksakt IN_PROGRESS/partial Copernicus-evidens før Open-Meteo; READY må ikke kræves.',
+);
 assert.ok(normalDmiAcquisition.includes('DMI_BULK_DKSS_PRIMARY_MODE: true'),
   'Normalproduktionen skal bruge DKSS-primary ved DMI-vedligeholdelsen.');
 for (const marker of [
@@ -1012,7 +1092,7 @@ for (const marker of [
 assert.doesNotMatch(
   text.slice(
     text.indexOf('name: Restore shared private Open-Meteo current progress'),
-    text.indexOf('name: Refuse a stale target after the bounded supplier chain'),
+    text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   ),
   /upload-artifact/,
   'Den private Open-Meteo-cache må ikke uploades som artifact.',
@@ -1143,7 +1223,7 @@ const positions = {
   openMeteoAuthority: text.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
   openMeteoSave: text.indexOf('name: Save shared private Open-Meteo current progress'),
   openMeteoTerminal: text.indexOf('name: Require complete Open-Meteo residual before freshness and closure'),
-  supplierFreshness: text.indexOf('name: Refuse a stale target after the bounded supplier chain'),
+  supplierFreshness: text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   currentClosure: text.indexOf('name: Build exact DMI-first current operational closure'),
   liveCurrentBuild: text.indexOf('name: Build public seven-day current history and controlled live selection'),
   weather: text.indexOf('name: Update central weather cache'),
@@ -1155,7 +1235,7 @@ const positions = {
   validate: text.indexOf('name: Validate full project after fresh weather and current provenance'),
   gate: text.indexOf('name: Run release governance gate after refreshed data validation'),
   validateData: text.indexOf('name: Validate updated weather cache'),
-  deployFreshness: text.indexOf('name: Refuse stale weather before protected writes and Pages artifact'),
+  deployFreshness: text.indexOf('name: Reclassify target freshness before protected writes and Pages artifact'),
   protectedWriteHeadCheck: text.indexOf('name: Reconfirm current origin/main before protected writes and Pages artifact'),
   pointPromotion: text.indexOf('name: Atomically promote the validated point candidate in central admin storage'),
   continuationBuild: text.indexOf('name: Build atomic schema-6 and Candidate G rollback checkpoint after final gates'),
@@ -1286,7 +1366,7 @@ assert.ok(
 );
 const normalActiveLegacyResolver = text.slice(positions.dmiActiveLegacyResolve, positions.dmiActiveLegacyBootstrap);
 for (const marker of [
-  "if: steps.preflight.outputs.should_run == 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''",
+  "if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''",
   'id: dmi-active-legacy-key',
   'node scripts/resolve-terminal-dmi-cache.mjs',
   'GITHUB_TOKEN: ${{ github.token }}',
@@ -1430,7 +1510,7 @@ for (const marker of [
   'git fetch --no-tags --depth=1 origin "$legacy_source_head"',
   'npm run validate:source',
   'Validate exact source head before external writes',
-  'Require only the seven exact integrated cutover migrations',
+  'Require only the eight exact integrated cutover migrations',
   'test -f "$migrations_directory/20260829010000_ravscore_operational_documents_no_history.sql"',
   'test -f "$migrations_directory/20260829020000_integrated_trip_calibration_binding.sql"',
   'test -f "$migrations_directory/20260901010000_integrated_trip_measured_warmup_admission.sql"',
@@ -1438,6 +1518,7 @@ for (const marker of [
   'test -f "$migrations_directory/20260904140000_harmonie_wind_reference_binding.sql"',
   'test -f "$migrations_directory/20260905090000_open_meteo_current_fallback_binding.sql"',
   'test -f "$migrations_directory/20260906162332_per_pair_weather_fallback_binding.sql"',
+  'test -f "$migrations_directory/20260907084343_horizon_valid_weather_binding.sql"',
   'Reconfirm current origin/main before the Candidate G database contract',
   'Atomically apply and verify the Candidate G trip-quality contract',
   'Reconfirm current origin/main before D1 schema and phase inspection',

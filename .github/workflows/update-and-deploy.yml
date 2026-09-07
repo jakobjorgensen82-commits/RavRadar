@@ -46,6 +46,11 @@ on:
         required: false
         default: ""
         type: string
+      ravscore_integrated_weather_handoff_run_id:
+        description: "Kun første cutover: eksakt grønt 118h-preflight run-id på samme main-commit"
+        required: false
+        default: ""
+        type: string
       ravscore_integrated_return:
         description: "Eksplicit samlet retur fra aktiv Candidate G til integreret RavScore"
         required: false
@@ -98,6 +103,7 @@ jobs:
       ravscore_candidate_g_rollback_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_confirmation || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_confirmation }}
       ravscore_integrated_first_cutover: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover }}
       ravscore_integrated_first_cutover_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_first_cutover_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_first_cutover_confirmation }}
+      ravscore_integrated_weather_handoff_run_id: ${{ steps.validated-dispatch.outputs.ravscore_integrated_weather_handoff_run_id || steps.dispatch-defaults.outputs.ravscore_integrated_weather_handoff_run_id }}
       ravscore_integrated_return: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return || steps.dispatch-defaults.outputs.ravscore_integrated_return }}
       ravscore_integrated_return_confirmation: ${{ steps.validated-dispatch.outputs.ravscore_integrated_return_confirmation || steps.dispatch-defaults.outputs.ravscore_integrated_return_confirmation }}
     steps:
@@ -112,6 +118,7 @@ jobs:
           echo "ravscore_candidate_g_rollback_confirmation=" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_first_cutover=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_first_cutover_confirmation=" >> "$GITHUB_OUTPUT"
+          echo "ravscore_integrated_weather_handoff_run_id=" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_integrated_return_confirmation=" >> "$GITHUB_OUTPUT"
 
@@ -134,6 +141,7 @@ jobs:
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
           FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
           FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
+          WEATHER_HANDOFF_RUN_ID: ${{ inputs.ravscore_integrated_weather_handoff_run_id }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -173,6 +181,16 @@ jobs:
             echo "Integrated first cutover confirmation is accepted only by an integrated first cutover." >&2
             exit 1
           fi
+          if [ -n "$WEATHER_HANDOFF_RUN_ID" ]; then
+            if [ "$FIRST_CUTOVER_REQUESTED" != "true" ]; then
+              echo "A verified weather handoff is accepted only by an integrated first cutover." >&2
+              exit 1
+            fi
+            if [[ ! "$WEATHER_HANDOFF_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]; then
+              echo "Verified weather handoff run id is malformed." >&2
+              exit 1
+            fi
+          fi
           if [ "$RETURN_REQUESTED" = "true" ] && [ "$RETURN_CONFIRMATION" != "EXECUTE-INTEGRATED-RAVSCORE-RETURN" ]; then
             echo "Integrated return confirmation is not exact."
             exit 1
@@ -194,6 +212,7 @@ jobs:
           ROLLBACK_CONFIRMATION: ${{ inputs.ravscore_candidate_g_rollback_confirmation }}
           FIRST_CUTOVER_REQUESTED: ${{ inputs.ravscore_integrated_first_cutover }}
           FIRST_CUTOVER_CONFIRMATION: ${{ inputs.ravscore_integrated_first_cutover_confirmation }}
+          WEATHER_HANDOFF_RUN_ID: ${{ inputs.ravscore_integrated_weather_handoff_run_id }}
           RETURN_REQUESTED: ${{ inputs.ravscore_integrated_return }}
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
@@ -204,6 +223,7 @@ jobs:
           printf '%s\n' "ravscore_candidate_g_rollback_confirmation=$ROLLBACK_CONFIRMATION" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_first_cutover=$FIRST_CUTOVER_REQUESTED" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_first_cutover_confirmation=$FIRST_CUTOVER_CONFIRMATION" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "ravscore_integrated_weather_handoff_run_id=$WEATHER_HANDOFF_RUN_ID" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return=$RETURN_REQUESTED" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_integrated_return_confirmation=$RETURN_CONFIRMATION" >> "$GITHUB_OUTPUT"
 
@@ -1351,6 +1371,7 @@ jobs:
       ravscore_candidate_g_rollback_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_confirmation }}
       ravscore_integrated_first_cutover: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover == 'true' }}
       ravscore_integrated_first_cutover_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover_confirmation }}
+      ravscore_integrated_weather_handoff_run_id: ${{ needs.validate-dispatch.outputs.ravscore_integrated_weather_handoff_run_id }}
       ravscore_integrated_return: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return == 'true' }}
       ravscore_integrated_return_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_integrated_return_confirmation }}
     secrets:

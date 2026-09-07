@@ -52,6 +52,7 @@ from lib.dmi_native_provenance import (
     COMPONENT_SPATIAL_SELECTION,
     CURRENT_MAX_DISTANCE_KM,
     CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID,
+    CURRENT_OPERATIONAL_NON_FATAL_CODES,
     CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION,
     CURRENT_OPERATIONAL_LEDGER_STATES,
     CURRENT_PREFERRED_DISTANCE_KM,
@@ -1711,10 +1712,11 @@ def list_latest_assets(
     publication_lag_hours = observed_publication_lag_hours(runs)
     latest_run_age_hours = max(0.0, (time.time() - epoch(latest_run)) / 3600.0)
     selected_run_lag_hours = max(0.0, (epoch(latest_run) - epoch(run)) / 3600.0)
-    # A partial preferred run may trail the latest generation by multiple
-    # observed cadences, but only while it retains the bounded minimum future
-    # horizon. Entire-catalog freshness remains mandatory when cadence and
-    # explicit STAC creation lag are observable; absent metadata stays unknown.
+    # Schedule/publication lag is maintenance telemetry only. A complete
+    # official run with usable future valid times must not become unavailable
+    # merely because a newer generation is incomplete or the catalog arrived
+    # later than its observed cadence. Horizon and exact STAC identity remain
+    # enforced below for every selected asset.
     preferred_native_run_pinned = bool(
         run_selection.get("preferredProgressiveRunPinned") is True
         and run == preferred_run
@@ -1738,14 +1740,20 @@ def list_latest_assets(
         "selectedWithinObservedSchedule": selected_within_observed_schedule,
         "catalogScheduleFresh": catalog_schedule_fresh if cadence_hours is not None and publication_lag_hours is not None else None,
         "preferredNativeRunPinned": preferred_native_run_pinned,
+        "scheduleFreshnessWarning": bool(
+            not selected_within_observed_schedule
+            or catalog_schedule_fresh is False
+        ),
+        "scheduleFreshnessWarningCodes": [
+            code
+            for code, active in (
+                ("SELECTED_RUN_BEHIND_OBSERVED_SCHEDULE", not selected_within_observed_schedule),
+                ("CATALOG_PUBLICATION_LAG", catalog_schedule_fresh is False),
+            )
+            if active
+        ],
+        "rejectedStaleRun": False,
     })
-    if (
-        not selected_within_observed_schedule
-        or catalog_schedule_fresh is False
-    ):
-        stats.update(run_selection)
-        stats["rejectedStaleRun"] = True
-        return None, [], stats
     stats.update(run_selection)
     selected_official_required = sorted({
         str(iso(row.get("valid")))
@@ -4563,6 +4571,139 @@ def load_document(path: pathlib.Path) -> dict[str, Any]:
         return {}
 
 
+def sanitize_reusable_cache_document_leaves(document: Any) -> dict[str, Any]:
+    """Drop malformed cache leaves without weakening document/proof identity.
+
+    The report is aggregate-only.  It deliberately contains no zone ids, times,
+    coordinates, values or source payloads.  Invalid component provenance and
+    its values are removed together, so sanitation can only create real gaps.
+    The ordinary exact ledger/attestation pass still decides which retained
+    current pairs are authorized after this structural pass.
+    """
+    counters = {
+        "droppedZoneCount": 0,
+        "resetContainerCount": 0,
+        "droppedHourCount": 0,
+        "droppedSourceComponentCount": 0,
+        "droppedGridPointCount": 0,
+    }
+    if not isinstance(document, dict) or not isinstance(document.get("zones"), dict):
+        return {}
+    component_fields = {
+        "current": ("current-u", "current-v"),
+        "wind": ("wind-u-10m", "wind-v-10m", "wind-speed-10m", "wind-dir-10m"),
+        "windTail": ("wind-tail-u-10m", "wind-tail-v-10m", "wind-tail-speed-10m", "wind-tail-dir-10m"),
+        "wave": ("significant-wave-height", "dominant-wave-period", "mean-wave-dir"),
+        "waterLevel": ("sea-mean-deviation",),
+        "waterTemperature": ("water-temperature",),
+    }
+    vector_summary_pairs = {
+        "current-u": ("current-u", "current-v"),
+        "current-v": ("current-u", "current-v"),
+        "wind-u-10m": ("wind-u-10m", "wind-v-10m"),
+        "wind-v-10m": ("wind-u-10m", "wind-v-10m"),
+        "wind-tail-u-10m": ("wind-tail-u-10m", "wind-tail-v-10m"),
+        "wind-tail-v-10m": ("wind-tail-u-10m", "wind-tail-v-10m"),
+    }
+
+    zones = document["zones"]
+    for zone_id in list(zones):
+        zone = zones.get(zone_id)
+        if not isinstance(zone, dict):
+            zones.pop(zone_id, None)
+            counters["droppedZoneCount"] += 1
+            continue
+        for container_name in ("hourly", "gridPoints", "collections"):
+            value = zone.get(container_name)
+            if value is not None and not isinstance(value, dict):
+                zone[container_name] = {}
+                counters["resetContainerCount"] += 1
+        if zone.get("marineSelection") is not None and not isinstance(
+            zone.get("marineSelection"), dict
+        ):
+            zone.pop("marineSelection", None)
+            counters["resetContainerCount"] += 1
+
+        grid_points = zone.get("gridPoints") or {}
+        collections = zone.get("collections") or {}
+        invalid_summary_keys = [
+            key for key, value in grid_points.items()
+            if value is not None and not isinstance(value, dict)
+        ]
+        summary_keys_to_remove: set[str] = set()
+        for key in invalid_summary_keys:
+            summary_keys_to_remove.update(vector_summary_pairs.get(key, (key,)))
+        for key in summary_keys_to_remove:
+            if key in grid_points:
+                counters["droppedGridPointCount"] += 1
+            grid_points.pop(key, None)
+            collections.pop(key, None)
+
+        hourly = zone.get("hourly") or {}
+        for valid_time in list(hourly):
+            hour = hourly.get(valid_time)
+            if (
+                not isinstance(hour, dict)
+                or canonical_time(valid_time) is None
+                or canonical_time(hour.get("time")) != canonical_time(valid_time)
+            ):
+                hourly.pop(valid_time, None)
+                counters["droppedHourCount"] += 1
+                continue
+            sources = hour.get("sources")
+            if sources is None:
+                continue
+            if not isinstance(sources, dict):
+                for fields in component_fields.values():
+                    for field in fields:
+                        hour.pop(field, None)
+                hour.pop("sources", None)
+                counters["droppedSourceComponentCount"] += 1
+                continue
+            for component in list(sources):
+                source = sources.get(component)
+                grid_point = source.get("gridPoint") if isinstance(source, dict) else None
+                invalid_grid_point = (
+                    isinstance(source, dict)
+                    and "gridPoint" in source
+                    and not (
+                        isinstance(grid_point, (list, tuple))
+                        and len(grid_point) == 2
+                        and all(
+                            isinstance(value, (int, float))
+                            and not isinstance(value, bool)
+                            and math.isfinite(float(value))
+                            for value in grid_point
+                        )
+                    )
+                )
+                if source is None:
+                    sources.pop(component, None)
+                    continue
+                if not isinstance(source, dict) or invalid_grid_point:
+                    for field in component_fields.get(component, ()):
+                        hour.pop(field, None)
+                    sources.pop(component, None)
+                    counters["droppedSourceComponentCount"] += 1
+            if not sources:
+                hour.pop("sources", None)
+
+    dropped_total = sum(counters.values())
+    if dropped_total == 0:
+        return {}
+    report = {
+        "schemaVersion": 1,
+        "status": "SALVAGED_INVALID_LEAVES",
+        "code": "DMI_CACHE_INVALID_LEAVES_DROPPED",
+        **counters,
+        "droppedLeafCount": dropped_total,
+    }
+    diagnostics = document.setdefault("diagnostics", {})
+    if isinstance(diagnostics, dict):
+        diagnostics["cacheLeafSanitization"] = report
+    return report
+
+
 def reusable_cache_document_shape(document: Any) -> bool:
     """Reject cache shapes that can fail before the first safe checkpoint."""
     if not isinstance(document, dict) or not isinstance(document.get("zones"), dict):
@@ -5102,11 +5243,21 @@ def _validated_candidate_retained_current_asset_proofs(
         for code in (ledger.get("failureCodes") or [])
         if isinstance(code, str)
     }
-    if partition["verifiedPairs"] != (actual_attestation.get("verifiedPairs") or []):
+    partition_verified_keys = {
+        (row["partId"], row["validTime"])
+        for row in partition["verifiedPairs"]
+    }
+    actual_attested_keys = {
+        (row["partId"], row["validTime"])
+        for row in actual_attestation.get("verifiedPairs") or []
+    }
+    if partition_verified_keys - actual_attested_keys:
         failure_codes.add("UNATTESTED_CURRENT_PART_TIME")
     if ledger.get("retainedCurrentAssetProofs"):
         failure_codes.add("RETAINED_CURRENT_PART_TIME")
-    ledger["ready"] = not failure_codes
+    ledger["ready"] = not (
+        failure_codes - CURRENT_OPERATIONAL_NON_FATAL_CODES
+    )
     ledger["failureCodes"] = sorted(failure_codes)
     validate_current_operational_availability_ledger(
         ledger,
@@ -5309,6 +5460,9 @@ def load_previous(
 ) -> dict[str, Any]:
     output_document = load_document(OUTPUT_PATH)
     output_quarantined = False
+    output_leaf_sanitized = bool(
+        sanitize_reusable_cache_document_leaves(output_document)
+    )
     if (
         OUTPUT_PATH.exists()
         and OUTPUT_PATH.stat().st_size > 0
@@ -5318,6 +5472,7 @@ def load_previous(
         output_document = {}
         output_quarantined = True
     fallback_document = load_document(DEPLOYED_FALLBACK_PATH)
+    sanitize_reusable_cache_document_leaves(fallback_document)
     if not reusable_cache_document_shape(fallback_document):
         fallback_document = {}
     if output_quarantined:
@@ -5402,7 +5557,7 @@ def load_previous(
                     proof_candidates,
                 ) if production_reference is not None else []
             )
-        if output_quarantined:
+        if output_quarantined or output_leaf_sanitized:
             atomic_write_bulk_cache(merged)
         return merged
     # Et enkelt flyttet administratorpunkt ændrer hele registersignaturen. Genbrug
@@ -5411,11 +5566,11 @@ def load_previous(
     reusable = [document for document in candidates if document.get("zones")]
     if reusable:
         recovered = max(reusable, key=lambda document: (cache_progress_time(document), cache_quality(document)))
-        if output_quarantined:
+        if output_quarantined or output_leaf_sanitized:
             atomic_write_bulk_cache(recovered)
         return recovered
     recovered = {"schemaVersion": 2, "zones": {}, "runs": {}, "zoneRegistrySignature": expected_signature}
-    if output_quarantined:
+    if output_quarantined or output_leaf_sanitized:
         atomic_write_bulk_cache(recovered)
     return recovered
 
@@ -5942,7 +6097,6 @@ def build_current_operational_ledger(
                     and stats.get("requiredWindowInventoryComplete") is True
                 )
             )
-            and stats.get("rejectedStaleRun") is not True
             and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
             and official_assets_valid
             and selected_assets_valid
@@ -6069,6 +6223,40 @@ def build_current_operational_ledger(
                     # A processed current step already supplies the row, while
                     # a revised official identity must become exact residual.
                     continue
+            elif source_run_epoch < selected_run_epoch:
+                selected_row = next(
+                    (
+                        row for row in collection_row["validTimes"]
+                        if row["validTime"] == source["validTime"]
+                    ),
+                    None,
+                )
+                selected_unavailable = set(
+                    ((selected_row or {}).get("partOutcomeProof") or {}).get(
+                        "spatialUnavailablePartIds"
+                    ) or []
+                )
+                eligible_part_ids = [
+                    part_id for part_id in proof["attestedPartIds"]
+                    if selected_row is None
+                    or selected_row.get("state") != "PROCESSED"
+                    or part_id in selected_unavailable
+                ]
+                if not eligible_part_ids:
+                    # A newer selected asset has a usable processed outcome for
+                    # every retained part/time. Never let an older cache row
+                    # invert source priority; leave the tuple unresolved until
+                    # the newer row is atomically materialized and attested.
+                    continue
+                if eligible_part_ids != proof["attestedPartIds"]:
+                    proof = build_retained_current_asset_proof(
+                        proof["sourceAsset"],
+                        proof["processingSignature"],
+                        proof["partOutcomeProof"],
+                        eligible_part_ids,
+                        part_ids,
+                        registry_sha256,
+                    )
         eligible_retained_proofs.append(proof)
 
     retained_authorization = [
@@ -6260,7 +6448,7 @@ def build_current_operational_ledger(
         failure_codes.add("RETAINED_CURRENT_PART_TIME")
 
     verified_times = {
-        row["validTime"] for row in partition["verifiedPairs"]
+        row["validTime"] for row in attestation.get("verifiedPairs") or []
     }
     for valid_time, states in states_by_time.items():
         if (
@@ -6322,7 +6510,9 @@ def build_current_operational_ledger(
             authorized_complement
         ),
         "operationalComplementPairs": authorized_complement,
-        "ready": not failure_codes,
+        "ready": not (
+            failure_codes - CURRENT_OPERATIONAL_NON_FATAL_CODES
+        ),
         "failureCodes": sorted(failure_codes),
     }
     try:
@@ -6428,16 +6618,6 @@ def producer_terminal_code(
             if str(collection) in MARINE_COLLECTIONS
         ]
         stac = diagnostics.get("stacByCollection") or {}
-        if (
-            attempted
-            and isinstance(stac, dict)
-            and all(
-                isinstance(stac.get(collection), dict)
-                and stac[collection].get("rejectedStaleRun") is True
-                for collection in attempted
-            )
-        ):
-            return "DMI_CATALOG_SCHEDULE_STALE"
         if isinstance(stac, dict) and any(
             isinstance(stac.get(collection), dict)
             and stac[collection].get("prefetchFailed") is True
@@ -7626,6 +7806,13 @@ def main() -> int:
                               "runtimeBudgetSeconds": MAX_RUNTIME_SECONDS, "finalizeReserveSeconds": FINALIZE_RESERVE_SECONDS,
                               "currentFieldShadow": current_field_shadow_status(current_shadow, selected_research_part_ids, research_run_metrics),
                               "persistentFieldInventory": dict(((previous.get("diagnostics") or {}).get("persistentFieldInventory") or {}))}}
+    cache_leaf_sanitization = (
+        (previous.get("diagnostics") or {}).get("cacheLeafSanitization")
+    )
+    if isinstance(cache_leaf_sanitization, dict):
+        result["diagnostics"]["cacheLeafSanitization"] = copy.deepcopy(
+            cache_leaf_sanitization
+        )
     coastal_point_stage.update({
         "generatedAt": generated,
         "timeStrideHours": TIME_STRIDE_HOURS,
@@ -7768,7 +7955,6 @@ def main() -> int:
         official_map_valid = bool(
             isinstance(stats, dict)
             and stats.get("catalogInventoryComplete") is True
-            and stats.get("rejectedStaleRun") is not True
             and int(stats.get("requiredRowsTruncatedByAssetLimit") or 0) == 0
         )
         for raw_asset in raw_official_assets:

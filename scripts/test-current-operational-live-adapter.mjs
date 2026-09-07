@@ -617,6 +617,28 @@ assert.equal(controlledLiveCurrentEnabled({
   ...pastModelHistoryLive,
   copernicusRangeSeal: rangeSeal,
 }), true, 'legacy OPERATIONAL_COMPLETE proof must remain accepted');
+const oldButStructurallyValidSealLive = structuredClone(pastModelHistoryLive);
+for (const source of [
+  ...oldButStructurallyValidSealLive.entries,
+  ...oldButStructurallyValidSealLive.advisoryEntries,
+]) {
+  source.acquisitionAt = '2026-09-01T20:00:00Z';
+  source.capturedAt = source.acquisitionAt;
+  source.recordProjectionSha256 = copernicusLiveRecordProjectionSha256(source);
+}
+oldButStructurallyValidSealLive.copernicusRangeSeal = {
+  ...rangeSeal,
+  sealedAt: '2026-09-01T20:30:00Z',
+};
+assert.equal(controlledLiveCurrentEnabled(oldButStructurallyValidSealLive), true,
+  'a structurally valid Copernicus seal older than four hours remains usable while its future horizon is valid');
+const acquisitionAfterSeal = structuredClone(oldButStructurallyValidSealLive);
+acquisitionAfterSeal.entries[0].acquisitionAt = '2026-09-01T21:00:00Z';
+acquisitionAfterSeal.entries[0].capturedAt = acquisitionAfterSeal.entries[0].acquisitionAt;
+acquisitionAfterSeal.entries[0].recordProjectionSha256 =
+  copernicusLiveRecordProjectionSha256(acquisitionAfterSeal.entries[0]);
+assert.equal(controlledLiveCurrentEnabled(acquisitionAfterSeal), false,
+  'acquisition after the exact seal remains fail-closed regardless of age policy');
 const advisoryTamper = structuredClone(pastModelHistoryLive);
 advisoryTamper.advisoryEntries[0].uMps = 0.08;
 assert.equal(controlledLiveCurrentEnabled(advisoryTamper), false);

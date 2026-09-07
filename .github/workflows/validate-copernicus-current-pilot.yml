@@ -616,7 +616,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -762,7 +762,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -1048,11 +1048,13 @@ jobs:
           test "${{ steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"
           test "${{ steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"
 
-      - name: Refuse a stale one-off target after the extended supplier chain
+      - name: Classify one-off target freshness after the extended supplier chain
+        id: oneoff-target-freshness
         run: >-
           node scripts/check-production-target-freshness.mjs
           --target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --maximum-age-minutes 240
+          --github-output "$GITHUB_OUTPUT"
 
       - name: Build exact DMI-first target through target plus 117 current closure
         run: >-
@@ -1085,7 +1087,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection
@@ -1285,6 +1287,47 @@ jobs:
           jq -e '.coverage.feggesundWave.coverageSha256 | strings | test("^[0-9a-f]{64}$")' \
             .geometry-v2-work/ravscore-integrated-118h-preflight-safe.json > /dev/null
           echo "Integrated weather preflight passed for its one exact bounded target: 210 zones, 673 parts and 118 available forecast hours; no deploy was attempted."
+
+      - name: Reconfirm exact main before sealing verified weather source handoff
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+
+      - name: Seal exact run-bound verified weather source handoff
+        id: weather-source-handoff-seal
+        shell: bash
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs seal
+          --root "$GITHUB_WORKSPACE"
+          --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache"
+          --repository "$GITHUB_REPOSITORY"
+          --source-head "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --runner-os "$RUNNER_OS"
+          --closure data/diagnostics/current-operational-closure.json
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Save exact run-bound verified weather source cache
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/verified-weather-source-handoff-cache
+          key: ${{ steps.weather-source-handoff-seal.outputs.cache_key }}
+
+      - name: Upload only aggregate verified weather source handoff attestation
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-weather-source-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          path: .cache/verified-weather-source-handoff-cache/attestation.json
 
       - name: Upload only the privacy-safe preflight evidence
         uses: actions/upload-artifact@v7

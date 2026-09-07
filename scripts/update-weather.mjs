@@ -12,6 +12,7 @@ import {
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   ravScoreModelBinding,
 } from '../js/core/ravscore-model-contract.js';
+import { buildPublicWeatherSourceAge } from '../js/core/ravscore-public-weather-source-age.js';
 import { ravScoreVerifiedEvidenceTrust } from '../js/core/ravscore-evidence-trust-contract.js';
 import { recommendWaterStationBracket } from '../js/core/water-station-routing.js';
 import {
@@ -1842,6 +1843,7 @@ function scoreCoastalPartsRuntime(
   }
   const expectedByZone = new Map();
   const partRows = [];
+  const sourceAgeRows = [];
   const partForecastStartAt = new Date(Math.floor(Date.parse(generatedAt) / 3600000) * 3600000).toISOString();
   const feggesundSourcesByTime = feggesundNeighborSourcesByTime(
     parentForecastStore,
@@ -1949,6 +1951,7 @@ function scoreCoastalPartsRuntime(
         )),
       });
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
+      const sourceAgeHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
         const endMs = Date.parse(partForecastStartAt)
           + (RAVSCORE_PUBLIC_FORECAST_HOURS - 1) * 3_600_000;
@@ -2078,6 +2081,17 @@ function scoreCoastalPartsRuntime(
           ),
       });
       if (scores.length) {
+        if (!sourceAgeHour) {
+          throw new Error('Integrated RavScore source-age proof lacks the exact selected H0 row');
+        }
+        sourceAgeRows.push({
+          partId: part.partId,
+          selectedReferenceAt: sourceAgeHour.time,
+          windProvenance: sourceAgeHour.windProvenance ?? null,
+          waveProvenance: sourceAgeHour.waveProvenance ?? null,
+          currentProvenance: sourceAgeHour.currentProvenance ?? null,
+          waterLevelProvenance: sourceAgeHour.waterLevelProvenance ?? null,
+        });
         partRows.push({
           zoneId, partId: part.partId, name: part.name, marineCoverage: part.marineCoverage,
           landPoint: part.landPoint, waterPoint: part.waterPoint,
@@ -2233,6 +2247,10 @@ function scoreCoastalPartsRuntime(
       .filter(Boolean),
     entries: feggesundWaveProofEntries,
   });
+  const weatherSourceAge = buildPublicWeatherSourceAge({
+    productionReferenceAt: partForecastStartAt,
+    partSourceRows: sourceAgeRows,
+  });
   const integratedRuntime = {
     schemaVersion: 1, enabled: true, datasetVersion: contract.datasetVersion, sourceRunId: contract.sourceRunId,
     modelBinding: ravScoreModelBinding(),
@@ -2258,6 +2276,7 @@ function scoreCoastalPartsRuntime(
   );
   return {
     integratedRuntime,
+    weatherSourceAge,
     candidateGRollbackRuntime: rollbackReady ? candidateGRollbackRuntime : null,
     candidateGWarmupRuntime: rollbackReady
       ? null
@@ -3449,6 +3468,10 @@ const coastalPartScoreBuild = coastalPartsContract.enabled
   : null;
 output.coastalParts = coastalPartScoreBuild?.integratedRuntime
   ?? { schemaVersion: 1, enabled: false, datasetVersion: coastalPartsContract.datasetVersion, sourceRunId: coastalPartsContract.sourceRunId, generatedAt, marginPoints: 7, expectedPartCount: coastalPartsContract.partCount, scoredPartCount: 0, parts: {}, zones: {} };
+if (!coastalPartScoreBuild?.weatherSourceAge) {
+  throw new Error('Det offentlige RavScore-artifact mangler sin samlede kildealderbinding.');
+}
+output.weatherSourceAge = coastalPartScoreBuild.weatherSourceAge;
 if (coastalPartScoreBuild?.candidateGRollbackRuntime) {
   output.ravScoreCandidateGRollback = {
     schemaVersion: '1.0.0',

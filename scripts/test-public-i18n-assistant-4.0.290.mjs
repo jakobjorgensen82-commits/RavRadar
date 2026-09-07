@@ -35,12 +35,15 @@ assert.equal(i18n.getLanguage(), 'da', 'Dansk skal være standard uden et gemt v
 assert.equal(i18n.t('header.trip.start'), 'Start ravtur');
 assert.equal(i18n.t('header.trip.start', {}, 'de'), 'Bernsteintour starten');
 assert.equal(i18n.t('header.trip.start', {}, 'en'), 'Start amber trip');
-assert.match(i18n.t('data.emergency', { time:'29/08 12:00' }, 'da'),
-  /Nøddrift:[\s\S]*29\/08 12:00[\s\S]*uden kalibreringsberettigelse/);
-assert.match(i18n.t('data.emergency', { time:'29.08. 12:00' }, 'de'),
-  /Notbetrieb:[\s\S]*29\.08\. 12:00[\s\S]*ohne Kalibrierungsberechtigung/);
-assert.match(i18n.t('data.emergency', { time:'29 Aug, 12:00' }, 'en'),
-  /Emergency mode:[\s\S]*29 Aug, 12:00[\s\S]*without calibration eligibility/);
+const emergencyParameters = {
+  time:'29/08 12:00', source:'29/08 03:00', age:'81,0', known:1800, unknown:892, total:2692,
+};
+assert.match(i18n.t('data.emergency', emergencyParameters, 'da'),
+  /Nøddrift:[\s\S]*29\/08 12:00[\s\S]*29\/08 03:00[\s\S]*81,0[\s\S]*1800[\s\S]*2692[\s\S]*892[\s\S]*uden kalibreringsberettigelse/);
+assert.match(i18n.t('data.emergency', { ...emergencyParameters, time:'29.08. 12:00', source:'29.08. 03:00', age:'81,0' }, 'de'),
+  /Notbetrieb:[\s\S]*29\.08\. 12:00[\s\S]*29\.08\. 03:00[\s\S]*81,0[\s\S]*1800[\s\S]*2692[\s\S]*892[\s\S]*ohne Kalibrierungsberechtigung/);
+assert.match(i18n.t('data.emergency', { ...emergencyParameters, time:'29 Aug, 12:00', source:'29 Aug, 03:00', age:'81.0' }, 'en'),
+  /Emergency mode:[\s\S]*29 Aug, 12:00[\s\S]*29 Aug, 03:00[\s\S]*81\.0[\s\S]*1800[\s\S]*2692[\s\S]*892[\s\S]*without calibration eligibility/);
 const searchableZones = [
   { id: 'lynaes', name: 'Hundested og Lynæs' },
   { id: 'lyngsaa', name: 'Lyngså' },

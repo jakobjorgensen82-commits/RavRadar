@@ -19,7 +19,6 @@ from typing import Any
 from lib.copernicus_current import (
     COPERNICUS_SOURCE_CONTRACTS,
     DMI_VERIFIER_CONTRACT_ID,
-    FUTURE_ACQUISITION_FRESHNESS_HOURS,
     OPERATIONAL_SEAL_CONTRACT_ID,
     PUBLIC_END_OFFSET_HOURS,
     RECORD_PROJECTION_CONTRACT_ID,
@@ -185,15 +184,15 @@ def regional_sample_time_valid(sample: dict[str, Any], reference: datetime) -> b
         model_run = parse_time(sample.get("modelRun"))
     except Exception:
         return False
-    if model_run > valid or not in_capture_window(sample.get("capturedAt"), reference):
+    if model_run > valid:
         return False
     if valid >= reference:
-        return (
-            valid <= reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
-            and abs((captured - reference).total_seconds())
-                <= FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600
-        )
-    return abs((valid - captured).total_seconds()) <= REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS * 3600
+        return valid <= reference + timedelta(hours=PUBLIC_END_OFFSET_HOURS)
+    return (
+        in_capture_window(sample.get("capturedAt"), reference)
+        and abs((valid - captured).total_seconds())
+            <= REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS * 3600
+    )
 
 
 def valid_dmi_parts(document: dict[str, Any], targets: dict[str, dict[str, Any]]) -> tuple[set[str], dict[str, set[str]]]:

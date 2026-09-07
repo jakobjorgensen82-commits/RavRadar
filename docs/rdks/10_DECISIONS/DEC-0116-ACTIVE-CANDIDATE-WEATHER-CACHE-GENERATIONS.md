@@ -2,7 +2,7 @@
 
 - **Status:** Bindende og merged; active/candidate-save er delvist runtimebevist, komplethedsbevis afventer
 - **Besluttet:** 2026-09-05
-- **Ejerbeslutning:** Normal drift skal genbruge gyldige data, kontrollere hele prognosevinduet og målrettet lukke både interne huller og hale. Mindst 48 timers verificeret historik til mobilisering og transport skal bevares.
+- **Ejerbeslutning:** Normal drift skal genbruge gyldige data, kontrollere hele prognosevinduet og målrettet lukke både interne huller og hale. Op til 48 timers verificeret historik til mobilisering og transport bevares, når den findes; manglende historik markeres ærligt som `HISTORY_INCOMPLETE`, men må ikke blokere aktuelle numeriske scorer eller deploy af et ellers gyldigt artifact.
 
 ## Problem
 
@@ -23,7 +23,7 @@ Det var ikke acceptabelt at løse dette ved at lempe provenance, blande modelrun
 7. Efter ethvert faktisk startet, ikke-annulleret producentforsøg gemmes den partial kandidat før terminalbeslutningen. GRIB-, kandidat- og researchcache må ikke re-saves til en ny run-key, når producenttrinnet var skipped; run `33991952081` viste ellers en unødvendig kopi på 2.778.397.542 byte efter et tidligere cachemiss. Active-familien og deploykæden må først ændres eller fortsætte efter producer-success, allowlistet status, `DMI_READY`, strict current-anchor, `candidate_promoted=true` og et nyt eksakt registrybevis. Fejl, timeout, annullering eller ufuldstændig ledger må ikke overskrive active.
 8. Promotion er atomisk på jobbets låste target. En allerede READY kandidat må ikke fastholdes som preferred arbejdsrun; næste producentforsøg vælger den nyeste komplette native run. Oneoffens øvrige 210/673/118-gates er uændrede, og DMI-promotion alene er ikke komplet vejr-, release- eller produktionsbevis.
 9. Normal drift er den varige updater. Den store oneoff accelererer den samme kandidatmekanisme og kan fortsætte dens partial progression, men den er ikke en særskilt eller fremtidig updater.
-10. Historikkontrakten ændres ikke. DMI's private replaybuffer er fortsat normalt 60 timer og aldrig under 54, rå zonehistorik mindst 72 timer, Copernicus-retention 168 timer med den eksakte target−48..target+117-matrix, og den integrerede mobiliserings-/transportmodel bruger højst 48 timers verificeret forløb. Promotion kopierer hele dokumentet; valid historik må ikke beskæres til kun prognosehalen. Manglende historik forbliver missing og må ikke syntetiseres.
+10. Historikkontrakten bruger efter DEC-0119 højst 48 timers verificeret, rådgivende mobiliserings-/transportforløb; det tidligere krav om mindst 72 timers rå zonehistorik er **SUPERSEDERET**. DMI's private replaybuffer er fortsat normalt 60 timer og aldrig under 54, og Copernicus-retention er fortsat 168 timer med den eksakte target−48..target+117-matrix. Promotion kopierer hele dokumentet; valid historik må ikke beskæres til kun prognosehalen. Manglende historik forbliver ærligt `HISTORY_INCOMPLETE`, må ikke syntetiseres og deaktiverer kalibrering uden at lukke aktuelle numeriske scorer.
 11. Kildeordenen ændres ikke: DMI → Baltic → AMM15 → policybundet regional DMI → Open-Meteo. Fallback lukker kun de dokumenterede rester efter DMI-terminalen.
 12. Schedulerarkitekturen ændres ikke i denne rettelse. Det eksterne cron-job 8348098 kalder den eksisterende payloadfri watchdog ved 04,19,34,49 UTC. GitHub-schedules for produktion, pilot og intern watchdog bevares som reserve. Alle tunge vejrjobs deler fortsat den eksisterende production-concurrency og må ikke startes som en burst.
 

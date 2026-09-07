@@ -1,3 +1,17 @@
+# NYESTE ROADMAP – 2026-09-07 – 4.0.332 fra horizon-gyldigt weather-artifact til model-online
+
+- [x] Gør egen prognosehorizon til availabilitygrænse: gammel men future-valid række bevares; eksakt slutinstant accepteres og `+1 ms` afvises.
+- [x] Flyt 90/150/240-minutters og 72-timers aldersregler til warning/emergency/tillid/tur/kalibrering uden at svække 79.414-integritet, provenance eller privacy.
+- [x] Implementér granulær DMI/Copernicus/Open-Meteo-salvage og atomisk newest-verified tuple replacement efter uændret providerprioritet.
+- [x] Gør 48-timers historik rådgivende: numerisk `HISTORY_INCOMPLETE` for alle aktive zoner, reason codes og kalibrering fra; ingen syntese.
+- [x] Bind et source-handoff til én eksakt grøn komplet `main`-producentkørsel og lad cutover-consumeren genverificere alle fem private cacher og closure. Bevar bounded `update:weather` og alle fulde gates.
+- [x] Klassificér `34083611297`: 78.856/79.414, 558 missing, intet deploy. Klassificér `34093354004`: Copernicus success; Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing; cache gemt; ingen closure/artifact/deploy. Klassificér `34104536681`: DMI 67.897/79.414 på 5m24s med cachegenbrug; Copernicus 8.372; 3.145 rester; null-run-source-index-stop før Open-Meteo; Copernicus-cache gemt; ingen closure/artifact/deploy.
+- [x] Ret og måltest null-run-source-indexet, så kun ærlig nul-positiv DMI-katalogtilstand går videre som eksakt residual, retained old-run-proofs bevares, og positive/source-bærende null-run-rækker fortsat stopper.
+- [ ] Afslut 4.0.332's dokumentationstest, exact-head-CI og merge uden at kalde lokal grøn status produktionsbevis.
+- [ ] Brug kun et komplet, horizon-gyldigt 79.414/79.414-run som handoffkilde. Gennemfør derefter central hydrering, sourcegate, bounded general-weather/update, Feggesund 354/354, spatial audit, live kapacitet, fuld validate/releasegate, artifact/deploy, særskilt Phase B og offentlig desktop-/mobilverifikation.
+- [ ] Hold normal workflow deaktiveret under cutover; genaktivér ekstern cron-dispatch som varig updater efter kontrolleret afslutning.
+- [ ] Efter launch: mål providertransitioner og beslut eventuelt overlap/hysterese uden tupleblanding; design separat durable immutable multi-artifact-historik/selector.
+
 # NYESTE ROADMAP – 2026-09-07 – 4.0.331 fra sourceprecondition til vejrruntime
 
 - [x] Stop og klassificér `34077360903` som pre-weather shallow-checkout-fejl; påstå ikke DMI-, Copernicus-, Open-Meteo-, cache- eller runtimebevis.

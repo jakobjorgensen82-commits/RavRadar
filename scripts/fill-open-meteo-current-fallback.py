@@ -43,7 +43,7 @@ from lib.open_meteo_current_fallback import (
     build_document,
     build_record,
     merge_records,
-    reusable_records,
+    reusable_records_with_salvage,
     safe_projection,
 )
 
@@ -99,8 +99,10 @@ def read_optional_progress(path: Path) -> tuple[dict[str, Any] | None, str]:
     except FileNotFoundError:
         return None, "absent"
     except (OSError, UnicodeError, json.JSONDecodeError):
-        return None, "invalid"
-    return (value, "present") if isinstance(value, dict) else (None, "invalid")
+        raise RuntimeError("OPEN_METEO_CACHE_UNPARSEABLE") from None
+    if not isinstance(value, dict):
+        raise RuntimeError("OPEN_METEO_CACHE_UNPARSEABLE")
+    return value, "present"
 
 
 def atomic_write(path: Path, value: dict[str, Any]) -> None:
@@ -557,20 +559,23 @@ def main() -> int:
     required = plan["requiredPairs"]
     previous, cache_reuse_status = read_optional_progress(args.output)
     retained: list[dict[str, Any]] = []
+    cache_salvage: dict[str, int | bool] = {
+        "salvaged": False,
+        "droppedRecordCount": 0,
+        "droppedPairCount": 0,
+        "ignoredRecordCount": 0,
+    }
     if previous is not None:
-        try:
-            retained = reusable_records(
-                previous,
-                targets=targets,
-                required_pairs=required,
-                production_reference_at=reference,
-                checkpointed_at=canonical_now(),
-            )
-        except OpenMeteoCurrentFallbackError:
-            cache_reuse_status = "invalid"
-            retained = []
-        else:
-            cache_reuse_status = "valid"
+        retained, cache_salvage = reusable_records_with_salvage(
+            previous,
+            targets=targets,
+            required_pairs=required,
+            production_reference_at=reference,
+            checkpointed_at=canonical_now(),
+        )
+        cache_reuse_status = (
+            "salvaged" if cache_salvage["salvaged"] else "valid"
+        )
 
     latest_document: dict[str, Any] | None = None
     latest_conflict_count = 0
@@ -772,6 +777,9 @@ def main() -> int:
         "conflict_pair_count": conflict_pair_count,
         "runtime_budget_reached": runtime_budget_reached,
         "cache_reuse_status": cache_reuse_status,
+        "cache_salvaged": cache_salvage["salvaged"],
+        "cache_dropped_record_count": cache_salvage["droppedRecordCount"],
+        "cache_dropped_pair_count": cache_salvage["droppedPairCount"],
     })
     return 0 if document["status"] == "COMPLETE" else 1
 

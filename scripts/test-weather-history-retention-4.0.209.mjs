@@ -29,7 +29,7 @@ assert.equal(latest.currentSpeedMps,.23);
 assert.equal(verified72.find(row=>row.at===at(1)).currentVerified,false,'ældre uverificeret fortid må ikke omskrives');
 
 const publicDoc = buildPublicConditions({
-  datasetId: 'history-retention-test', generatedAt: at(0),
+  datasetId: 'history-retention-test', generatedAt: at(0), productionReferenceAt: at(0),
   zones: { Z: { current: {}, history: {}, samples24h: retained.samples24h, samples72h: retained.samples72h, forecast: { hourly: [] } } }
 });
 assert(!('samples24h' in publicDoc.zones.Z));

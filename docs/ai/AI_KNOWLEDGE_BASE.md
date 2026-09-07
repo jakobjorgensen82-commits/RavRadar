@@ -1,5 +1,15 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-07 – DEC-0119 horizon-gyldigt vejr
+
+- Availability følger pakkens egen verificerede horizon, ikke acquisition-/generation-/targetalder. Eksakt slutinstant accepteres, `+1 ms` afvises. Alder er warning/emergency-/tillids-/tur-/kalibreringssignal; gamle 72h- og 90/150/240-minutters hard gates er **SUPERSEDERET**.
+- 79.414/79.414, én kilde pr. par, nul overlap/missing og target-/registry-/model-/hash-/privacybinding forbliver hårdt. `34083611297` endte 78.856/79.414 med 558 missing og intet deploy. `34093354004` sluttede sikkert med 112 missing efter faktisk Open-Meteo-fremgang. `34104536681` på eksakt `main` `c2ce63ff` genbrugte DMI-cachen til 67.897/79.414 på 5m24s, fik 8.372 Copernicus-par og efterlod 3.145, men stoppede før første Open-Meteo-request på null-run-source-index-fejlen; Copernicus-fremgang blev gemt uden closure/artifact/deploy.
+- Første cutover kan genbruge fem private sourcecacher fra et eksakt grønt runbundet `main`-handoff, men consumeren genbeviser alt, og bounded `update:weather` samt alle fulde gates består.
+- DMI/Copernicus/Open-Meteo salvages granulært. En DMI-collection med `modelRun=null` kan kun bidrage nul dækning og fortsætte residualen, når alle rækker er negative uden sourceAsset; retained old-run-proofs bevares, og positive/kildebærende null-run-rækker afvises. Newest verified tuple vinder atomisk efter DMI → Baltic → AMM15 → policyregional DMI → Open-Meteo. Ufuldstændig op til 48t historik er numerisk `HISTORY_INCOMPLETE` med alle zoner aktive og kalibrering fra.
+- Normal workflow er deaktiveret under cutover. Source-transition-overlap/hysterese og immutable multi-artifact-historik er separate post-launch-emner.
+
+> Blokken fra 2026-09-05 nedenfor er historisk. Dens READY-only- og hard-freshness-formuleringer er supersederet af DEC-0118/DEC-0119.
+
 ## Nyeste sandhed 2026-09-05 – DEC-0115 operationel currentclosure
 
 - Eksakt kildeorden: DMI → Baltic → AMM15 → otte policydele regional DMI → Open-Meteo. Sidste led kræver terminalt READY, udfylder kun target..+117 og er combined-surface-current, højst 15 km og altid ikke-kalibreringsegnet. Ingen historik, interpolation, nabolån eller bølge-/tidevandsreprojektion.

@@ -19,7 +19,6 @@ import {
   buildIntegratedZoneHourlyProjection,
 } from './lib/ravscore-production-adapters.mjs';
 import {
-  RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS,
   RAVSCORE_PUBLIC_FORECAST_HOURS,
   assertPublicRuntimeEnvelope,
   assertPublicRuntimeManifest,
@@ -36,6 +35,11 @@ import {
 import {
   assertExactPublicRavScoreProfile,
 } from '../js/core/ravscore-public-profile-contract.js';
+import {
+  RAVSCORE_PUBLIC_WEATHER_SOURCE_TOTAL_COUNT,
+  assertPublicWeatherSourceAge,
+  buildPublicWeatherSourceAge,
+} from '../js/core/ravscore-public-weather-source-age.js';
 
 const generatedAt = '2026-08-29T00:00:00.000Z';
 const horizonTimes = Array.from({ length: RAVSCORE_PUBLIC_FORECAST_HOURS }, (_, index) =>
@@ -251,6 +255,25 @@ for (let zoneIndex = 0; zoneIndex < 210; zoneIndex += 1) {
 }
 assert.equal(partIndex, 673);
 
+function sourceAgeRows(modelRun = generatedAt) {
+  return Object.keys(parts).map(partId => {
+    const provenance = { status: 'verified', provider: 'dmi', modelRun };
+    return {
+      partId,
+      selectedReferenceAt: generatedAt,
+      windProvenance: { ...provenance },
+      waveProvenance: { ...provenance },
+      currentProvenance: { ...provenance },
+      waterLevelProvenance: { ...provenance },
+    };
+  });
+}
+
+const weatherSourceAge = buildPublicWeatherSourceAge({
+  productionReferenceAt: generatedAt,
+  partSourceRows: sourceAgeRows(),
+});
+
 const scoreAvailability = {
   schemaVersion: 2,
   policy: 'integrated-model-local-fail-closed',
@@ -270,6 +293,7 @@ const full = {
   datasetId: 'integrated-public-contract-test',
   generatedAt,
   productionReferenceAt: generatedAt,
+  weatherSourceAge,
   zones,
   coastalParts: {
     schemaVersion: 2,
@@ -453,6 +477,15 @@ assert.equal(startup.coastalParts.expectedPartCount, 673);
 assert.deepEqual(startup.ravScoreRuntime.modelBinding, binding);
 assert.deepEqual(details.ravScoreRuntime.modelBinding, binding);
 assert.deepEqual(manifest.ravScoreModelBinding, binding);
+assert.deepEqual(startup.weatherSourceAge, weatherSourceAge);
+assert.deepEqual(details.weatherSourceAge, weatherSourceAge);
+assert.deepEqual(manifest.weatherSourceAge, weatherSourceAge);
+assert.equal(weatherSourceAge.knownCount, RAVSCORE_PUBLIC_WEATHER_SOURCE_TOTAL_COUNT);
+assert.equal(weatherSourceAge.unknownComparableAgeCount, 0);
+for (const forbidden of ['partId', 'provider', 'modelRun', 'samplingPoint', 'uMps', 'vMps']) {
+  assert.equal(JSON.stringify(weatherSourceAge).includes(forbidden), false,
+    `public weather source-age aggregate must not expose ${forbidden}`);
+}
 assert.equal(manifest.publicConditionsSha256, sha256Text(startupText));
   assert.equal(manifest.publicConditionDetailsSha256, sha256Text(detailsText));
 const freshAvailability = selectPublicRuntimeAvailability(manifest, {
@@ -460,7 +493,8 @@ const freshAvailability = selectPublicRuntimeAvailability(manifest, {
   modelBinding: binding,
 });
 assert.equal(freshAvailability.mode, 'FRESH');
-assert.equal(freshAvailability.selectedReferenceAt, generatedAt);
+assert.equal(freshAvailability.selectedReferenceAt, horizonTimes[1],
+  'freshness must not keep the previous UTC hour selected after an hour boundary');
 assert.equal(assertPublicRuntimeAvailability(freshAvailability, manifest, { modelBinding: binding }), true);
 const emergencyAvailability = selectPublicRuntimeAvailability(manifest, {
   now: Date.parse(generatedAt) + 9 * 3_600_000 + 20 * 60_000,
@@ -468,21 +502,114 @@ const emergencyAvailability = selectPublicRuntimeAvailability(manifest, {
 });
 assert.equal(emergencyAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
 assert.equal(emergencyAvailability.selectedReferenceAt, horizonTimes[9]);
-const lastAllowedEmergencyAvailability = selectPublicRuntimeAvailability(manifest, {
-  now: Date.parse(generatedAt) + RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS * 3_600_000,
+
+const oldSourceReferenceAt = new Date(Date.parse(generatedAt) - 24 * 3_600_000).toISOString();
+const oldSourceFull = structuredClone(full);
+oldSourceFull.weatherSourceAge = buildPublicWeatherSourceAge({
+  productionReferenceAt: generatedAt,
+  partSourceRows: sourceAgeRows(oldSourceReferenceAt),
+});
+const oldSourceStartupText = compactJson(buildPublicConditions(oldSourceFull));
+const oldSourceDetailsText = compactJson(buildPublicConditionDetails(oldSourceFull));
+const oldSourceManifest = buildPublicManifest(
+  oldSourceFull,
+  oldSourceStartupText,
+  oldSourceDetailsText,
+  '{}\n',
+  zoneRegistryText,
+);
+const oldSourceAvailability = selectPublicRuntimeAvailability(oldSourceManifest, {
+  now: Date.parse(generatedAt) + 30 * 60_000,
   modelBinding: binding,
 });
-assert.equal(lastAllowedEmergencyAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
-assert.equal(lastAllowedEmergencyAvailability.selectedReferenceAt, horizonTimes[72]);
-assert.throws(() => selectPublicRuntimeAvailability(manifest, {
-  now: Date.parse(generatedAt)
-    + RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS * 3_600_000 + 1,
+assert.equal(oldSourceAvailability.mode, 'EMERGENCY_LAST_COMPLETE',
+  'a current forecast target must not hide an old retained model source');
+assert.equal(oldSourceAvailability.ageReferenceAt, oldSourceReferenceAt);
+assert.equal(oldSourceAvailability.ageHours, 24.5);
+
+const unknownSourceRows = sourceAgeRows();
+unknownSourceRows[0].currentProvenance = {
+  status: 'verified',
+  provider: 'open-meteo',
+  acquiredAt: generatedAt,
+};
+const unknownSourceFull = structuredClone(full);
+unknownSourceFull.weatherSourceAge = buildPublicWeatherSourceAge({
+  productionReferenceAt: generatedAt,
+  partSourceRows: unknownSourceRows,
+});
+const unknownSourceStartupText = compactJson(buildPublicConditions(unknownSourceFull));
+const unknownSourceDetailsText = compactJson(buildPublicConditionDetails(unknownSourceFull));
+const unknownSourceManifest = buildPublicManifest(
+  unknownSourceFull,
+  unknownSourceStartupText,
+  unknownSourceDetailsText,
+  '{}\n',
+  zoneRegistryText,
+);
+const unknownSourceAvailability = selectPublicRuntimeAvailability(unknownSourceManifest, {
+  now: Date.parse(generatedAt) + 30 * 60_000,
   modelBinding: binding,
-}), /emergency maximum age has expired/);
+});
+assert.equal(unknownSourceAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(unknownSourceAvailability.reason,
+  'LATEST_COMPLETE_DATASET_WITH_UNKNOWN_SOURCE_AGE');
+assert.equal(unknownSourceAvailability.weatherSourceAge.unknownComparableAgeCount, 1,
+  'acquisitionAt must never masquerade as a comparable model issuance');
+
+const delayedBuildFull = structuredClone(oldSourceFull);
+delayedBuildFull.generatedAt = new Date(Date.parse(generatedAt) + 96 * 3_600_000).toISOString();
+const delayedStartupText = compactJson(buildPublicConditions(delayedBuildFull));
+const delayedDetailsText = compactJson(buildPublicConditionDetails(delayedBuildFull));
+const delayedManifest = buildPublicManifest(
+  delayedBuildFull,
+  delayedStartupText,
+  delayedDetailsText,
+  '{}\n',
+  zoneRegistryText,
+);
+const delayedAvailability = selectPublicRuntimeAvailability(delayedManifest, {
+  now: Date.parse(delayedBuildFull.generatedAt) + 30 * 60_000,
+  modelBinding: binding,
+});
+assert.equal(delayedAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(delayedAvailability.ageHours, 120.5,
+  'a newly packaged artifact must retain the age of its oldest attested model source');
+
+const countTamperedManifest = structuredClone(manifest);
+countTamperedManifest.weatherSourceAge.knownCount -= 1;
+assert.throws(() => selectPublicRuntimeAvailability(countTamperedManifest, {
+  now: Date.parse(generatedAt) + 30 * 60_000,
+  modelBinding: binding,
+}), /does not close conservatively/);
+assert.throws(() => assertPublicWeatherSourceAge({
+  ...weatherSourceAge,
+  totalCount: weatherSourceAge.totalCount - 1,
+}), /does not close conservatively/);
+const olderThanSeventyTwoHoursAvailability = selectPublicRuntimeAvailability(manifest, {
+  now: Date.parse(generatedAt) + 96 * 3_600_000 + 30 * 60_000,
+  modelBinding: binding,
+});
+assert.equal(olderThanSeventyTwoHoursAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(olderThanSeventyTwoHoursAvailability.selectedReferenceAt, horizonTimes[96]);
+assert.ok(olderThanSeventyTwoHoursAvailability.ageHours > 72,
+  'generation age may label emergency data but must not expire a covered future horizon');
+const exactHorizonBoundaryAvailability = selectPublicRuntimeAvailability(manifest, {
+  now: Date.parse(manifest.validUntil),
+  modelBinding: binding,
+});
+assert.equal(exactHorizonBoundaryAvailability.selectedReferenceAt, horizonTimes.at(-1));
 assert.throws(() => selectPublicRuntimeAvailability(manifest, {
   now: Date.parse(manifest.validUntil) + 1,
   modelBinding: binding,
 }), /horizon has expired/);
+const partialManifest = structuredClone(manifest);
+partialManifest.complete = false;
+assert.throws(() => selectPublicRuntimeAvailability(partialManifest, {
+  now: Date.parse(generatedAt) + 96 * 3_600_000,
+  modelBinding: binding,
+}), /complete 210\/673 manifest/,
+'age tolerance must never relax structural completeness');
 assert.equal(
   startup.ravScoreRuntime.payloadBodySha256,
   sha256Text(canonicalPublicRuntimeJson(publicRuntimeDocumentBody(startup))),

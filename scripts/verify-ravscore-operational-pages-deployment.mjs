@@ -65,6 +65,10 @@ const PUBLIC_FILES = Object.freeze([
   'data/zones.geojson',
 ]);
 const SHA256_PATTERN = /^[a-f0-9]{64}$/;
+const HISTORY_REASON_CODE_PATTERN = /^[A-Z0-9_]+$/;
+const PUBLIC_SCORE_MODES = Object.freeze(['waders', 'beach']);
+const EXACT_PUBLIC_ZONE_COUNT = 210;
+const EXACT_PUBLIC_MODE_COUNT = EXACT_PUBLIC_ZONE_COUNT * PUBLIC_SCORE_MODES.length;
 const REQUIRED_PUBLIC_CLOSURE_FILES = Object.freeze([
   'js/core/best-time-selector.js',
   'js/core/local-zone-score.js',
@@ -90,7 +94,70 @@ function bodySha256(document) {
   return sha256(JSON.stringify(canonical(body)));
 }
 
-function assertOperationalProfileControls(profile, mode, label) {
+function assertIntegratedOperationalAvailability(availability, label) {
+  const expectedKeys = [
+    'activeZoneCount', 'allCurrentScoresFullHistory', 'allZonesActive', 'evaluatedAt',
+    'fullHistoryModeCount', 'historyIncompleteModeCount', 'historyIncompleteZoneCount',
+    'historyIncompleteZones', 'policy', 'schemaVersion', 'totalZoneCount',
+    'unavailableZoneCount', 'unavailableZones',
+  ].sort();
+  if (!availability || typeof availability !== 'object' || Array.isArray(availability)
+    || Object.keys(availability).sort().join(',') !== expectedKeys.join(',')
+    || availability.schemaVersion !== 2
+    || availability.policy !== 'integrated-model-local-fail-closed'
+    || availability.allZonesActive !== true
+    || availability.activeZoneCount !== EXACT_PUBLIC_ZONE_COUNT
+    || availability.unavailableZoneCount !== 0
+    || availability.totalZoneCount !== EXACT_PUBLIC_ZONE_COUNT
+    || !Array.isArray(availability.unavailableZones)
+    || availability.unavailableZones.length !== 0
+    || typeof availability.evaluatedAt !== 'string'
+    || !Number.isFinite(Date.parse(availability.evaluatedAt))
+    || !Number.isSafeInteger(availability.fullHistoryModeCount)
+    || !Number.isSafeInteger(availability.historyIncompleteModeCount)
+    || availability.fullHistoryModeCount < 0
+    || availability.historyIncompleteModeCount < 0
+    || availability.fullHistoryModeCount + availability.historyIncompleteModeCount
+      !== EXACT_PUBLIC_MODE_COUNT
+    || !Number.isSafeInteger(availability.historyIncompleteZoneCount)
+    || !Array.isArray(availability.historyIncompleteZones)
+    || availability.historyIncompleteZoneCount !== availability.historyIncompleteZones.length) {
+    throw new Error(`${label} has an incompatible integrated availability contract`);
+  }
+  const seenZones = new Set();
+  let declaredModeCount = 0;
+  for (const zone of availability.historyIncompleteZones) {
+    const exactKeys = [
+      'historyCoverageHours', 'historyReasonCodes', 'modes', 'zoneId', 'zoneName',
+    ].sort();
+    if (!zone || typeof zone !== 'object' || Array.isArray(zone)
+      || Object.keys(zone).sort().join(',') !== exactKeys.join(',')
+      || typeof zone.zoneId !== 'string' || zone.zoneId.length === 0
+      || seenZones.has(zone.zoneId)
+      || typeof zone.zoneName !== 'string' || zone.zoneName.length === 0
+      || !Array.isArray(zone.modes) || zone.modes.length === 0
+      || zone.modes.some(value => !PUBLIC_SCORE_MODES.includes(value))
+      || new Set(zone.modes).size !== zone.modes.length
+      || !Number.isFinite(zone.historyCoverageHours)
+      || zone.historyCoverageHours < 0 || zone.historyCoverageHours > 48
+      || !Array.isArray(zone.historyReasonCodes) || zone.historyReasonCodes.length === 0
+      || zone.historyReasonCodes.some(value => typeof value !== 'string'
+        || !HISTORY_REASON_CODE_PATTERN.test(value))
+      || new Set(zone.historyReasonCodes).size !== zone.historyReasonCodes.length) {
+      throw new Error(`${label} has a malformed HISTORY_INCOMPLETE zone summary`);
+    }
+    seenZones.add(zone.zoneId);
+    declaredModeCount += zone.modes.length;
+  }
+  if (declaredModeCount !== availability.historyIncompleteModeCount
+    || availability.historyIncompleteZoneCount > availability.historyIncompleteModeCount
+    || availability.allCurrentScoresFullHistory
+      !== (availability.historyIncompleteModeCount === 0)) {
+    throw new Error(`${label} does not close its HISTORY_INCOMPLETE counts`);
+  }
+}
+
+function assertOperationalProfileControls(profile, mode, availability, label) {
   const expected = MODEL_MODES[mode].profile;
   if (profile.schemaVersion !== expected.schemaVersion
     || profile.switchVersion !== expected.switchVersion
@@ -99,10 +166,22 @@ function assertOperationalProfileControls(profile, mode, label) {
     || profile.activationState !== expected.activationState
     || profile.publicAvailabilityPolicy !== expected.publicAvailabilityPolicy
     || profile.modelCoverageReady !== true
-    || profile.modelMemoryReady !== true
-    || profile.modelMigrationReady !== true
-    || profile.advisories.length !== 0) {
+    || profile.modelMigrationReady !== true) {
     throw new Error(`${label} has incompatible operational controls`);
+  }
+  if (mode === 'candidate-g') {
+    if (profile.modelMemoryReady !== true || profile.advisories.length !== 0) {
+      throw new Error(`${label} has incompatible Candidate G operational controls`);
+    }
+    return;
+  }
+  assertIntegratedOperationalAvailability(availability, `${label} availability`);
+  const fullHistory = availability.allCurrentScoresFullHistory === true;
+  if ((fullHistory && (profile.modelMemoryReady !== true || profile.advisories.length !== 0))
+    || (!fullHistory && (profile.modelMemoryReady !== false
+      || profile.advisories.length !== 1
+      || profile.advisories[0] !== 'LOCAL_MODEL_MEMORY_INCOMPLETE'))) {
+    throw new Error(`${label} has incompatible integrated history controls`);
   }
 }
 
@@ -374,6 +453,7 @@ function assertPublicDocuments({ manifest, startup, details, coastalParts, zoneR
   assertExactPublicRavScoreProfile(startup?.coastalParts?.scoreProfile, expected,
     'Deployed startup score profile');
   assertOperationalProfileControls(startup.coastalParts.scoreProfile, mode,
+    manifest.ravScoreAvailability,
     'Deployed startup score profile');
   assertSameExactPublicRavScoreProfile(details?.coastalParts?.scoreProfile,
     startup?.coastalParts?.scoreProfile, expected, 'Deployed detail score profile');

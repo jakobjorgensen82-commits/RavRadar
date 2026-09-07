@@ -7,6 +7,8 @@
 **Scorepåvirkning:** Ingen
 **Offentlig runtimepåvirkning:** Ja, stærkere kontinuitet og afgrænset nøddrift
 
+> **SUPERSEDERET alderskrav 2026-09-07:** DEC-0119 ophæver punkt 4–5 og supersessionstekstens absolutte 72-timersgrænse. Checkpoint/fallback skal fortsat være komplet, atomisk, samme-model, hash-/registry-/targetbundet og dække den valgte time i sin egen verificerede prognosehorizon. Alder er warning/tillid/tur/kalibrering, ikke availability- eller deploygate. Den kausale target-øvre grænse, bounded recovery og alle integritetskrav består.
+
 ## Ny rodårsagsevidens
 
 Run `33051959643` startede 07:58 UTC. DMI-bulksteget lykkedes og gav verificeret lokal strøm til 622 af 673 kystdele. Målresolveren valgte alligevel 09 UTC, fordi den historiske 4.0.246-regel tillod timer inden for plus/minus tre timer og ved lighed foretrak en fremtidig prognosetime. Den efterfølgende målrettede Copernicus-hentning stoppede efter cirka 11,5 minutter med exit 1. Samme Copernicus-kæde lykkedes senere ved 09 UTC; der er derfor ikke evidens for et varigt DMI- eller credentialnedbrud.

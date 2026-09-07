@@ -17,6 +17,11 @@ for(const marker of [
 for(const forbidden of ['mRes.json()','cRes.json()','details=await response.json()']){
  if(service.includes(forbidden))throw new Error(`Helhedstesten må ikke omgå den fælles verificerede loader: ${forbidden}`);
 }
+if(service.includes('if(ageHours>24)throw'))throw new Error('Helhedstesten må ikke gøre en gammel, stadig verificeret prognose utilgængelig alene på grund af alder.');
+for(const marker of ["runtimeMode==='EMERGENCY_LAST_COMPLETE'","status:warning?'warning':'passed'","runtimeMode!=='FRESH'&&runtimeMode!=='EMERGENCY_LAST_COMPLETE'","ageHours=availability?.ageHours","ageReferenceAt=availability?.ageReferenceAt","unknownComparableAgeCount:sourceAge.unknownComparableAgeCount"]){
+ if(!service.includes(marker))throw new Error(`Helhedstesten mangler verificeret warning/fail-closed runtime-tilstand: ${marker}`);
+}
+if(/Date\.now\(\)-generated\.getTime\(\)/.test(service))throw new Error('Helhedstesten må ikke bruge artifact generatedAt som vejrdataalder.');
 for(const marker of ['loadVerifiedPublicRuntime','loadDataManifest','loadConditions({manifest})','loadZones({manifest})']){
  if(!dashboard.includes(marker))throw new Error(`Admin skal bruge den fælles verificerede public loader: ${marker}`);
 }

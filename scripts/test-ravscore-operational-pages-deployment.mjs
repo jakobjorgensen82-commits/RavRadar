@@ -281,13 +281,53 @@ function buildFixture(binding, mode) {
       },
     },
     ravScoreProfile: scoreProfile,
-    ravScoreAvailability: {
+    ravScoreAvailability: mode === 'integrated' ? {
+      schemaVersion: 2,
+      policy: 'integrated-model-local-fail-closed',
+      allZonesActive: true,
+      activeZoneCount: 210,
+      unavailableZoneCount: 0,
+      totalZoneCount: 210,
+      allCurrentScoresFullHistory: true,
+      fullHistoryModeCount: 420,
+      historyIncompleteModeCount: 0,
+      historyIncompleteZoneCount: 0,
+      evaluatedAt: productionReferenceAt,
+      unavailableZones: [],
+      historyIncompleteZones: [],
+    } : {
       allZonesActive: true,
       unavailableZoneCount: 0,
     },
   };
   files.set('/data/live/manifest.json', jsonBytes(manifest));
   return { datasetId, files, manifest, startup, details };
+}
+
+function installHistoryIncompleteIntegratedState(fixture) {
+  const incompleteProfile = {
+    ...fixture.startup.coastalParts.scoreProfile,
+    modelMemoryReady: false,
+    advisories: ['LOCAL_MODEL_MEMORY_INCOMPLETE'],
+  };
+  fixture.startup.coastalParts.scoreProfile = structuredClone(incompleteProfile);
+  fixture.details.coastalParts.scoreProfile = structuredClone(incompleteProfile);
+  fixture.manifest.ravScoreProfile = structuredClone(incompleteProfile);
+  fixture.manifest.ravScoreAvailability = {
+    ...fixture.manifest.ravScoreAvailability,
+    allCurrentScoresFullHistory: false,
+    fullHistoryModeCount: 419,
+    historyIncompleteModeCount: 1,
+    historyIncompleteZoneCount: 1,
+    historyIncompleteZones: [{
+      zoneId: 'zone-1',
+      zoneName: 'Zone 1',
+      modes: ['waders'],
+      historyCoverageHours: 24,
+      historyReasonCodes: ['CURRENT_HISTORY_INCOMPLETE'],
+    }],
+  };
+  resealPublicDocuments(fixture);
 }
 
 function mockFetch(files) {
@@ -510,6 +550,111 @@ for (const [mode, baseBinding] of [
     attempts: 1,
   }), /executable extra syntax|manifest is not JSON/);
 }
+
+const historyImplementation = sealedImplementation(integratedModelBinding(), 'integrated');
+const attachIntegratedImplementation = fixture => {
+  fixture.files.set('/js/core/ravscore-model-contract.js',
+    Buffer.from(historyImplementation.contractText));
+  fixture.files.set('/js/core/ravscore-model-bundle.generated.js',
+    Buffer.from(historyImplementation.bundleText));
+  for (const [relative, source] of historyImplementation.sources) {
+    fixture.files.set(`/${relative}`, Buffer.from(source));
+  }
+  return fixture;
+};
+const verifyIntegratedFixture = fixture => verifyRavScoreOperationalPagesDeployment({
+  baseUrl: 'https://ravradar.example.test/',
+  sourceHead,
+  expectedManifest: fixture.manifest,
+  expectedModel: 'integrated',
+  expectedBinding: historyImplementation.binding,
+  expectedContractText: historyImplementation.contractText,
+  expectedBundleText: historyImplementation.bundleText,
+  expectedPublicClosure: historyImplementation.publicClosure,
+  observationNonce: 'fixture-history-incomplete',
+  fetchImpl: mockFetch(fixture.files),
+  attempts: 1,
+});
+
+const historyIncomplete = attachIntegratedImplementation(
+  buildFixture(historyImplementation.binding, 'integrated'),
+);
+installHistoryIncompleteIntegratedState(historyIncomplete);
+assert.equal((await verifyIntegratedFixture(historyIncomplete)).status, 'passed',
+  'an exact all-active HISTORY_INCOMPLETE deployment remains operational');
+
+for (const [label, mutate] of [
+  ['malformed history counts', fixture => {
+    fixture.manifest.ravScoreAvailability.historyIncompleteModeCount = 2;
+    fixture.manifest.ravScoreAvailability.fullHistoryModeCount = 418;
+  }],
+  ['malformed history zone summary', fixture => {
+    fixture.manifest.ravScoreAvailability.historyIncompleteZones[0]
+      .historyReasonCodes = [];
+  }],
+  ['unavailable zone', fixture => {
+    fixture.manifest.ravScoreAvailability.allZonesActive = false;
+    fixture.manifest.ravScoreAvailability.activeZoneCount = 209;
+    fixture.manifest.ravScoreAvailability.unavailableZoneCount = 1;
+    fixture.manifest.ravScoreAvailability.unavailableZones = [{ zoneId: 'zone-2' }];
+  }],
+  ['migration not ready', fixture => {
+    for (const profile of [
+      fixture.startup.coastalParts.scoreProfile,
+      fixture.details.coastalParts.scoreProfile,
+      fixture.manifest.ravScoreProfile,
+    ]) profile.modelMigrationReady = false;
+  }],
+  ['coverage not ready', fixture => {
+    for (const profile of [
+      fixture.startup.coastalParts.scoreProfile,
+      fixture.details.coastalParts.scoreProfile,
+      fixture.manifest.ravScoreProfile,
+    ]) profile.modelCoverageReady = false;
+  }],
+]) {
+  const invalid = attachIntegratedImplementation(
+    buildFixture(historyImplementation.binding, 'integrated'),
+  );
+  installHistoryIncompleteIntegratedState(invalid);
+  mutate(invalid);
+  resealPublicDocuments(invalid);
+  await assert.rejects(() => verifyIntegratedFixture(invalid),
+    /availability|history|operational controls|malformed|incompatible/i, label);
+}
+
+const strictCandidateImplementation = sealedImplementation(candidateModelBinding(), 'candidate-g');
+const candidateMemoryIncomplete = buildFixture(
+  strictCandidateImplementation.binding, 'candidate-g',
+);
+candidateMemoryIncomplete.startup.coastalParts.scoreProfile.modelMemoryReady = false;
+candidateMemoryIncomplete.startup.coastalParts.scoreProfile.advisories =
+  ['LOCAL_MODEL_MEMORY_INCOMPLETE'];
+candidateMemoryIncomplete.details.coastalParts.scoreProfile = structuredClone(
+  candidateMemoryIncomplete.startup.coastalParts.scoreProfile,
+);
+candidateMemoryIncomplete.manifest.ravScoreProfile = structuredClone(
+  candidateMemoryIncomplete.startup.coastalParts.scoreProfile,
+);
+resealPublicDocuments(candidateMemoryIncomplete);
+candidateMemoryIncomplete.files.set('/js/core/ravscore-model-contract.js',
+  Buffer.from(strictCandidateImplementation.contractText));
+candidateMemoryIncomplete.files.set('/js/core/ravscore-model-bundle.generated.js',
+  Buffer.from(strictCandidateImplementation.bundleText));
+for (const [relative, source] of strictCandidateImplementation.sources) {
+  candidateMemoryIncomplete.files.set(`/${relative}`, Buffer.from(source));
+}
+await assert.rejects(() => verifyRavScoreOperationalPagesDeployment({
+  baseUrl: 'https://ravradar.example.test/', sourceHead,
+  expectedManifest: candidateMemoryIncomplete.manifest,
+  expectedModel: 'candidate-g', expectedBinding: strictCandidateImplementation.binding,
+  expectedContractText: strictCandidateImplementation.contractText,
+  expectedBundleText: strictCandidateImplementation.bundleText,
+  expectedPublicClosure: strictCandidateImplementation.publicClosure,
+  observationNonce: 'fixture-candidate-strict',
+  fetchImpl: mockFetch(candidateMemoryIncomplete.files), attempts: 1,
+}), /Candidate G operational controls/,
+'Candidate G must remain strict when memory is incomplete');
 
 const mixedImplementation = sealedImplementation(integratedModelBinding(), 'integrated');
 const integrated = buildFixture(mixedImplementation.binding, 'integrated');

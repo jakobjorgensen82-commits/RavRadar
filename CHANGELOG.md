@@ -1,3 +1,15 @@
+## 4.0.332 – horizon-gyldigt vejr og run-bundet modelcutover (2026-09-07, lokal kandidat)
+
+- En komplet prognoserække er brugbar uanset acquisition-/genereringsalder, så længe den eksakte forespurgte time ligger i pakkens forseglede horizon. 90/150/240-minuttersgrænserne giver nu `STALE_TARGET_VALID`-advarsel i stedet for missing/deploystop; præcis `validUntil` er gyldig, og +1 ms er udløbet.
+- Den absolutte 72-timersgrænse for same-model emergency/continuation og det gamle generelle rå 72-timershistorikkrav er supersederet. Alder er fortsat nød-/confidence-/trip-/kalibreringsadvarsel, mens horizon, model, registry, hashes, completeness og trust stadig stopper fail-closed.
+- Første integrerede cutover kan genbruge fem private weather-source-cacher fra ét eksakt grønt 118h-`main`-run via repository/head/run/attempt/cache/artifact/hashbundet, privacy-safe handoff og genbygget identisk closure. Det omgår ingen source-, kapacitets-, full validate-, release-, artifact-, Pages- eller offentlig gate, og `update:weather` forbliver bounded.
+- DMI, Copernicus og Open-Meteo salvager parsebare cacher pr. proof-enhed: ugyldige leaves bliver ærlige huller, mens uafhængige verificerede positive par og canonical genopbygning bevares. Topidentitet, target/registry/control plane og manipulation er fortsat fatale.
+- Exact `79.414/79.414`, én kilde pr. par og nul overlap/missing består. Ufuldstændig 48h historik holder alle zoner aktive med numerisk `HISTORY_INCOMPLETE`, advarsel, konservative bounds og kalibreringslås.
+- 4.0.331-run `34083611297` endte 78.856/79.414 med 558 missing og intet deploy. Run `34093354004` sluttede sikkert med Copernicus success og Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; præcis 112 critical missing stod tilbage. Run `34104536681` på eksakt `main` `c2ce63ff` genbrugte DMI-cachen til 67.897/79.414 på 5m24s, fik 8.372 Copernicus-par og efterlod 3.145, men stoppede før første Open-Meteo-request på den lokalt rettede null-run-source-index-fejl. Copernicus-fremgangen blev gemt; ingen closure/artifact/deploy. Normal workflow er fortsat deaktiveret.
+- Provider-overgangens overlap/hysterese og durable immutable multi-artifact-historik er eksplicit separate post-launch-issues.
+
+Se `CHANGELOG-4.0.332.md` og `DEC-0119`.
+
 ## 4.0.331 – historisk sourceprecondition før kildegaten (2026-09-07, lokalt implementeret og målrettet valideret)
 
 - Oneoff `34077360903` på eksakt `main`-head `8020cdfe539df0841246714c22705d78927c8bdb` stoppede før vejrhentning: releasegaten bestod, men `validate:source` kunne ikke slå det fastlåste historiske Candidate G-head `49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}` op i workflowets shallow checkout.

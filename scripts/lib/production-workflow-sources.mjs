@@ -21,6 +21,7 @@ export const PRODUCTION_WORKFLOW_INTERFACES = Object.freeze({
       'ravscore_candidate_g_rollback_confirmation',
       'ravscore_integrated_first_cutover',
       'ravscore_integrated_first_cutover_confirmation',
+      'ravscore_integrated_weather_handoff_run_id',
       'ravscore_integrated_return',
       'ravscore_integrated_return_confirmation',
     ]),

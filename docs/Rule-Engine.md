@@ -1,5 +1,9 @@
 # Regelværksted og scoreændringer
 
+## Bindende 4.0.332-datakvalitetsregel
+
+En komplet future-række er brugbar inden for sin egen verificerede prognosehorizon uanset acquisition-/generation-alder. Eksakt slutinstant er gyldig; `+1 ms` er udløbet. Alder er warning og tillids-/tur-/kalibreringssignal, ikke `UNAVAILABLE` eller modelreleaseblokering. Den tidligere 72-timersgrænse er **SUPERSEDERET**; same-model-, atomisk pakke-, hash-, direkte input- og horizonkrav består. Ufuldstændig rådgivende historik giver numerisk `HISTORY_INCOMPLETE` og kalibrering fra, mens manglende direkte input fortsat er `UNAVAILABLE`.
+
 ## Gældende status
 
 Det tidligere Regelværksted er pensioneret som aktiv administratorfunktion. Det kunne gemme og afprøve enkle betingelser i browseren, men det var ikke koblet til den offentlige score på en måde, der kunne garantere RavRadars samlede kontrakt. Candidate G er fortsat den produktionsverificerede offentlige model i 4.0.316; `RRS-COASTAL-PROCESS-INTEGRATED-1.1.0`/state `6.0.0` er kun lokalt implementeret kandidat, indtil exact-head, merge, frisk produktion og offentlig kontrol er grønne. Efter det atomiske DEC-0110/0112-cutover er den integrerede model eneste offentlige scoreejer.
@@ -21,7 +25,7 @@ En sikker ændring af RavScore kræver mere end en enkelt betingelse og en point
 - adskillelsen mellem direkte inputmissing (`UNAVAILABLE`) og historikmissing (`HISTORY_INCOMPLETE` med konservativ lower/upper, coverage/reasons og fortsat prognose);
 - aktiv 48-timers scorehistorik, 168-timers score-neutral researchretention, 288-timers wave-tail og 40-timers last-mile-closure med eksplicit `conservativeResetAt`;
 - at numerisk score rangeres først, `FULL_HISTORY` kun bryder eksakt scorelighed og eksisterende ranking-/vand-/tidsregler først anvendes derefter;
-- same-model atomisk nøddrift højst 72 timer, ingen cross-model fallback/interpolation og trustgrænsen `VERIFIED_ONLY`/reconstructed/emergency;
+- same-model atomisk nøddrift inden for pakkens egen prognosehorizon, ingen cross-model fallback/interpolation og trustgrænsen `VERIFIED_ONLY`/reconstructed/emergency;
 - alle 673 kyststrækninger, 210 zoner og begge søgemåder;
 - forklaringer, ranglister, deployment og versionsbundet rollback af kode.
 

@@ -78,6 +78,7 @@ try {
     publicAdapter,
     stagedCalibration,
     stagedPublicRuntime,
+    stagedPublicWeatherSourceAge,
   ] =
     await Promise.all([
       import(stagedUrl('js/core/ravscore-model-contract.js')),
@@ -85,6 +86,7 @@ try {
       import(stagedUrl('js/services/trip-evidence-public-adapter.js')),
       import(stagedUrl('js/services/calibration-eligibility.js')),
       import(stagedUrl('js/core/ravscore-public-runtime-contract.js')),
+      import(stagedUrl('js/core/ravscore-public-weather-source-age.js')),
     ]);
   assert.deepEqual(stagedModelBinding(), candidateBinding,
     'Candidate Pages overlay must replace the canonical client contract');
@@ -99,6 +101,23 @@ try {
     ),
     zoneCount: 210,
     coastalPartCount: 673,
+    weatherSourceAge: stagedPublicWeatherSourceAge.buildPublicWeatherSourceAge({
+      productionReferenceAt: '2026-08-29T11:00:00.000Z',
+      partSourceRows: Array.from({ length: 673 }, (_, index) => ({
+        partId: `part-${index}`,
+        selectedReferenceAt: '2026-08-29T11:00:00.000Z',
+        ...Object.fromEntries(
+          stagedPublicWeatherSourceAge.RAVSCORE_PUBLIC_WEATHER_SOURCE_COMPONENTS.map(field => [
+            field,
+            {
+              status: 'verified',
+              provider: 'dmi',
+              modelRun: '2026-08-29T11:00:00.000Z',
+            },
+          ]),
+        ),
+      })),
+    }),
     ravScoreModelBinding: candidateBinding,
     ravScoreEvidenceTrust: verifiedEvidenceTrust,
     ravScoreAvailability: candidateScoreAvailability,
@@ -156,6 +175,17 @@ try {
     ...candidateReadyMode,
     modelBinding: { ...candidateBinding, modelBundleSha256: 'f'.repeat(64) },
   }, candidateReadyState), /incompatible modelBundleSha256/);
+  const candidateWeather = {
+    windSpeedMps: 7.2,
+    windDirectionDeg: 260,
+    waveHeightM: 1.1,
+    wavePeriodS: 6.2,
+    waveDirectionDeg: 270,
+    currentSpeedMps: 0.2,
+    currentDirectionDeg: 255,
+    waterLevelCm: -12,
+    waterLevelTrendCm3h: -7,
+  };
   const publicState = {
     manifest: candidateManifest,
     conditions: {
@@ -176,17 +206,7 @@ try {
       ),
       zones: {
         'zone-rollback': {
-          current: {
-            windSpeedMps: 7.2,
-            windDirectionDeg: 260,
-            waveHeightM: 1.1,
-            wavePeriodS: 6.2,
-            waveDirectionDeg: 270,
-            currentSpeedMps: 0.2,
-            currentDirectionDeg: 255,
-            waterLevelCm: -12,
-            waterLevelTrendCm3h: -7,
-          },
+          current: candidateWeather,
           history: { maxWave24hM: 1.8, hoursSinceHighEnergy: 6 },
         },
       },
@@ -200,6 +220,8 @@ try {
       },
     },
   };
+  assert.equal(publicState.conditions.publicRuntimeAvailability.mode, 'FRESH',
+    'Complete current DMI source attestation must preserve this Candidate G binding scenario as fresh');
   const start = publicAdapter.createTripStartFromPublicState({
     tripId: '11111111-1111-4111-8111-111111111111',
     startedAt,
@@ -743,9 +765,10 @@ try {
   assert.match(migrationSql,
     /warmup_reason_count = 1 or quality_reasons <> '\[\]'::jsonb[\s\S]{0,120}return p_calibration_eligible = false/,
     'SQL truth must retain FULL_HISTORY captured under global warmup as false');
-  const candidateReasonBlock = migrationSql.slice(
-    migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END'),
-    migrationSql.indexOf('else false\n  end;', migrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END')),
+  const normalizedMigrationSql = migrationSql.replace(/\r\n?/g, '\n');
+  const candidateReasonBlock = normalizedMigrationSql.slice(
+    normalizedMigrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END'),
+    normalizedMigrationSql.indexOf('else false\n  end;', normalizedMigrationSql.indexOf('-- RAVSCORE_CANDIDATE_G_ROLLBACK_BINDING_END')),
   );
   assert.doesNotMatch(candidateReasonBlock, /'\["ravscore-history-incomplete"\]'::jsonb/,
     'Candidate G rollback must not accept the new integrated-only history quality');

@@ -392,7 +392,13 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         row for row in idw_collection["validTimes"]
         if row["validTime"] == AT
     )
-    idw_row["state"] = "PROCESSED"
+    selected_newer_source = copy.deepcopy(idw_row["sourceAsset"])
+    selected_newer_outcome = copy.deepcopy(idw_row["partOutcomeProof"])
+    idw_row.update({
+        "state": "LOCALLY_SKIPPED",
+        "sourceAsset": None,
+        "partOutcomeProof": None,
+    })
     idw_collection["stateCounts"] = {
         state: sum(
             row["state"] == state for row in idw_collection["validTimes"]
@@ -422,7 +428,10 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
         ),
         "retainedCurrentAssetProofs": [retained_proof],
         "ready": False,
-        "failureCodes": ["RETAINED_CURRENT_PART_TIME"],
+        "failureCodes": [
+            "LOCALLY_SKIPPED_DKSS_ASSET",
+            "RETAINED_CURRENT_PART_TIME",
+        ],
     })
     retained_allowed, retained_authorization = (
         producer.current_attestation_authorization_from_operational_ledger(
@@ -459,6 +468,45 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
     assert retained_registry["operationalDmiVerifiedPairCount"] == 118
     assert retained_registry["operationalRequiredPairCount"] == 0
     assert retained_registry["operationalRequiredPairs"] == []
+
+    priority_inversion_ledger = copy.deepcopy(retained_ledger)
+    priority_inversion_collection = next(
+        row for row in priority_inversion_ledger["collections"]
+        if row["collection"] == "dkss_idw"
+    )
+    priority_inversion_row = next(
+        row for row in priority_inversion_collection["validTimes"]
+        if row["validTime"] == AT
+    )
+    priority_inversion_row.update({
+        "state": "PROCESSED",
+        "sourceAsset": selected_newer_source,
+        "partOutcomeProof": selected_newer_outcome,
+    })
+    priority_inversion_collection["stateCounts"] = {
+        state: sum(
+            row["state"] == state
+            for row in priority_inversion_collection["validTimes"]
+        )
+        for state in producer.CURRENT_OPERATIONAL_LEDGER_STATES
+    }
+    priority_inversion_ledger.update({
+        "ready": True,
+        "failureCodes": ["RETAINED_CURRENT_PART_TIME"],
+    })
+    try:
+        validate_current_operational_availability_ledger(
+            priority_inversion_ledger,
+            retained_actual,
+            targets,
+            REFERENCE,
+            REFERENCE + timedelta(hours=117),
+            priority_inversion_ledger["targetRegistrySha256"],
+        )
+    except ValueError as error:
+        assert "inverts newer usable tuple priority" in str(error)
+    else:
+        raise AssertionError("Older retained DMI inverted a newer verified tuple")
 
     # One exact part may be unavailable in all three fully processed official
     # sources while another part verifies the same hour. The national guard

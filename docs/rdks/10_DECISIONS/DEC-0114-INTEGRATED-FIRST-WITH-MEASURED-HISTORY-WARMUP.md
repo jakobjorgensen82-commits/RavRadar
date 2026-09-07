@@ -7,6 +7,7 @@
 - **Erstatter snævert:** DEC-0113 punkt 10's krav om, at en non-READY Candidate G-rollback-companion stopper selve første integrerede release; DEC-0110's eventuelle læsning af 40 timers coherent historisk WAM som krav til `genuine-cold-start`
 - **Ejerpræcisering 2026-09-02:** Den tidligere pensionering af Feggesund-nabozonehypotesen i denne beslutnings første udgave er supersederet alene af den faste bølgeundtagelse nedenfor. Alle generelle forbud mod nabolån består.
 - **Ejerpræcisering 2026-09-05:** DEC-0115 supersederer alene denne beslutnings tidligere operationelle currentclosure efter regional DMI og de tilhørende ubetingede Open-Meteo-forbud. Historik-, direct-input-, fysisk-scope-, kalibrerings-, privacy- og releasegaterne består.
+- **Ejerpræcisering 2026-09-07:** DEC-0119 supersederer punkt 6's absolutte 72-timersgrænse. Same-model nødvisning kræver fortsat én komplet, atomisk og hashverificeret pakke inden for sin egen prognosehorizon; alder er advarsel og tillids-/tur-/kalibreringssignal, ikke availability- eller deploygate.
 
 ## Bindende releasepræcisering 2026-09-03 – kapacitetsbevis før særskilt manuel aktivering
 
