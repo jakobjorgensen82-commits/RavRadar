@@ -5,10 +5,15 @@ import { ravScoreModelBinding } from '../js/core/ravscore-model-contract.js';
 import { ravScoreModelBinding as rollbackBinding } from './rollback-assets/ravscore-model-contract.js';
 import { ravScoreContinuationImplementationSha256 } from './lib/ravscore-continuation-implementation-contract.mjs';
 
-const read = async name => (await fs.readFile(`supabase/migrations/${name}.sql`, 'utf8')).replaceAll('\r\n', '\n');
+const canonicalLf = source => {
+  const canonical = source.replaceAll('\r\n', '\n');
+  assert.equal(canonical.includes('\r'), false, 'Migration sources must not contain lone carriage returns');
+  return canonical;
+};
+const read = async name => canonicalLf(await fs.readFile(`supabase/migrations/${name}.sql`, 'utf8'));
 const PER_PAIR_MIGRATION = '20260906162332_per_pair_weather_fallback_binding';
 const HORIZON_VALID_MIGRATION = '20260907084343_horizon_valid_weather_binding';
-const PER_PAIR_MIGRATION_SHA256 = '9cc07a1108e8379e84025f4d93e2e5deaa21811ab1e67ac3bf461ce14624fff7';
+const PER_PAIR_MIGRATION_SHA256 = '6a0653f96096b02d5552117eea1b44b3d27b35aedde582e4cc87876608ef6233';
 const PER_PAIR_INTEGRATED_BUNDLE_SHA256 = '4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d';
 const PER_PAIR_ROLLBACK_BUNDLE_SHA256 = '71a093a4b419891cb41f582de2ab926a2ea23e5abbe16015cc2b6f4b3ae8be0f';
 const PER_PAIR_CONTINUATION_SHA256 = '5456d603a687e03b8983b5a97712b4acd305011a6029edb90df72d1d3e4f702f';
@@ -32,11 +37,13 @@ for (const [before, after, count] of [
 assert.equal(body(await read('20260905090000_open_meteo_current_fallback_binding')), expected,
   'Open-Meteo migration must change only exact seals/readback version, never SQL behaviour or row data');
 
-const immutablePerPairBytes = await fs.readFile(`supabase/migrations/${PER_PAIR_MIGRATION}.sql`);
+const immutablePerPairCanonicalSource = canonicalLf(
+  await fs.readFile(`supabase/migrations/${PER_PAIR_MIGRATION}.sql`, 'utf8'),
+);
 assert.equal(
-  crypto.createHash('sha256').update(immutablePerPairBytes).digest('hex'),
+  crypto.createHash('sha256').update(immutablePerPairCanonicalSource, 'utf8').digest('hex'),
   PER_PAIR_MIGRATION_SHA256,
-  'Historical per-pair migration bytes must remain immutable',
+  'Historical per-pair migration canonical LF bytes must remain immutable',
 );
 
 let perPairExpected = body(await read('20260905090000_open_meteo_current_fallback_binding'));
