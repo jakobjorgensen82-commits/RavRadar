@@ -1,3 +1,9 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 adaptiv Open-Meteo-rest
+
+- 4.0.332 bestod sourcegate `34125927405` på exact head `f23f306b…` og blev merged via PR #265 som `1e1093de…`.
+- Main-oneoff `34127986853` genbrugte cachen og sluttede ved 79.132/79.414: DMI 65.409, Copernicus +12.661 og Open-Meteo 190/472 efter regionalleddet; 282 manglede, så intet artifact/deploy/cutover.
+- Helikopterreview identificerede en koderisiko med under-batch-retry under et globalt tre-runders loft; det historiske run havde ikke den nye diagnostik og beviser ikke den konkrete restårsag. Lokal 4.0.333 bruger bounded FIFO/BFS af exact unresolved, binært split til singleton, særskilte retries/caps/deadline og provider-wide HTTP-cooldown. Måltests og to reviews er GO; exact-head CI og ny runtimeklassifikation afventer.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-validitet og run-bundet cutover
 
 - Ejeren ophævede de absolutte 72-timers- og 90/150/240-minutters availability-/deploygates. En strukturelt valid future-række bruges til og med pakkens eksakte sidste prognoseinstant; `+1 ms` er udløbet. Alder er fortsat warning, emergency-/tillids-/tur-/kalibreringssignal.

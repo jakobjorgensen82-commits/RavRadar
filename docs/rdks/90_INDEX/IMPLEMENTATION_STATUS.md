@@ -1,3 +1,15 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.333 adaptiv Open-Meteo-rest
+
+- [x] Luk 4.0.332 exact-head/merge: sourcegate `34125927405` grøn på `f23f306b…`; PR #265 merged som `1e1093de…`.
+- [x] Klassificér main-oneoff `34127986853` præcist: DMI 65.409/79.414, 14.005 rest; Copernicus 12.661, 1.344 rest; Open-Meteo required 472 / retained 76 / fetched 114 / filled 190 / missing 282; cache genbrugt og checkpointet; ingen closure/artifact/deploy/cutover.
+- [x] Erstat Open-Meteos globale tre-runders genbestilling med bounded FIFO/BFS af kun uløste eksakte par, binært split med fan-out højst to og isolation til kystdel/time-singleton.
+- [x] Bind tre transportforsøg pr. exact work, ét content-retry, 1.024 requests, 2.048 pending work-items, fælles monotonic deadline, provider-wide HTTP-cooldown, bounded Retry-After og globalt stop på 400/ukendt permanent HTTP.
+- [x] Bevar atomiske checkpoints og privacy-safe aggregater; intet id, koordinat, URL, header, providersvar eller rå U/V logges.
+- [x] Bestå py_compile, udvidet Open-Meteo-test, målrettet provider-/closurekæde, live builder/adapter/runtime, diff-check og to uafhængige GO-reviews. Synkronisér version 4.0.333; geodata ændrer kun topversionsfelterne.
+- [ ] Bestå én GitHub sourcegate på PR'ens eksakte head og merge kun den uændrede grønne head.
+- [ ] Kør frisk main-oneoff. Kræv præcis 79.414/79.414 før handoff; ved enhver rest bevares progressionen, og den nye diagnostik afgør næste systemiske skridt uden at lempe 15 km, provenance eller closure.
+- [ ] Gennemfør derefter run-bundet handoff, central hydrering, bounded weather/runtime, Feggesund/spatial audit, kapacitet, fuld validate/releasegate, artifact/deploy, Phase B og offentlig verifikation. Genaktivér først normal cron-dispatch efter den kontrollerede cutover.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.332 horizon-validitet og kontrolleret cutover
 
 - [x] Erstat alder som availability-/promotion-/deploygate med egen verificeret prognosehorizon; acceptér eksakt sidste instant og afvis `+1 ms`.
@@ -10,7 +22,7 @@
 - [x] Registrér run `34083611297` som 78.856/79.414, 558 missing og intet deploy. Klassificér `34093354004` som sikkert partial stop: Copernicus success; Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing; cache gemt; ingen closure/artifact/deploy.
 - [x] Klassificér `34104536681` på eksakt `main` `c2ce63ff`: target 09Z; DMI 67.897/79.414 på 5m24s med cachegenbrug; Copernicus 8.372 og 3.145 rester; stop før første Open-Meteo-request på `OPEN_METEO_RESIDUAL_PLAN_INVALID_DMI_LEDGER_SOURCE_INDEX_INVALID`; Copernicus-cache gemt; ingen closure/artifact/deploy.
 - [x] Ret det regionale source-index, så kun en ærlig valgt DMI-collection med `modelRun=null`, nul positive states og nul `sourceAsset` går videre som fuld residual. Bevar eksakte retained old-run-proofs; afvis fortsat positive eller kildebærende null-run-rækker. Målrettet producer→ledger→registry→regional→Open-Meteo-regression beviser 944/944 residualpar og tamper-stop.
-- [ ] Afslut dokumentationsvalidatorer, exact-head-CI og merge af den eksakte 4.0.332-head.
+- [x] Afslut dokumentationsvalidatorer, exact-head-CI og merge af den eksakte 4.0.332-head: `34125927405` grøn på `f23f306b…`, PR #265 merged som `1e1093de…`.
 - [ ] Kræv en komplet grøn producentkørsel, brug kun dens eksakte handoff ved den autoriserede cutover, og gennemfør central hydrering, sourcegate, bounded `update:weather`, Feggesund/spatial audit, live kapacitet, fuld validate/releasegate, artifact/deploy, Phase B og offentlig verifikation.
 - [ ] Genaktivér først normal cron-dispatch efter den kontrollerede cutover. Auditér source-transition-overlap/hysterese og durable immutable multi-artifact-historik i separate post-launch-releases.
 

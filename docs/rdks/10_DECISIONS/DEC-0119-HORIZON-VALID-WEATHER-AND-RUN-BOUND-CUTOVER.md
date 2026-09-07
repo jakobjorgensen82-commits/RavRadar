@@ -1,6 +1,6 @@
 # DEC-0119 – horizon-gyldigt vejr og run-bundet første modelcutover
 
-- **Status:** Ejerbesluttet og bindende; lokalt implementeret og målrettet valideret i 4.0.332. Exact-head-CI, merge og positiv komplet produktionsruntime afventer
+- **Status:** Ejerbesluttet og bindende; 4.0.332 bestod exact-head sourcegate `34125927405` og blev merged via PR #265 som `1e1093dead7fbbf5adcd401592d11c6b1c21d746`. Oneoff `34127986853` beviste horizon-/cacheprogression, men sluttede 79.132/79.414 med 282 missing; komplet runtime og cutover afventer
 - **Besluttet:** 2026-09-07
 - **Ejer:** RavRadar
 - **Supplerer:** DEC-0110, DEC-0112, DEC-0114 og DEC-0118
@@ -13,6 +13,8 @@ RavRadar havde flere aldersregler, som kunne kassere eller blokere et ellers kom
 Ejeren præciserer, at den eneste og nyeste tilgængelige prognose skal bruges, uanset alder, når den stadig er strukturelt valid og ikke har passeret sin egen sidste gyldige prognosetime. Alder skal fortsat vises ærligt og påvirke tillid, nødstatus og kalibrering, men må ikke i sig selv blive til missing eller utilgængelighed.
 
 Run `34083611297` dokumenterer samtidig den fortsat hårde slutgrænse: 4.0.331 nåede 78.856 af 79.414 par og efterlod 558 missing; artifact/deploy fortsatte ikke. Run `34093354004` sluttede med 112 missing efter faktisk Open-Meteo-fremgang. Run `34104536681` genbrugte DMI-cachen og nåede Copernicus, men stoppede før første Open-Meteo-request, fordi regionalleddet afviste en ærlig valgt DMI-collection med `modelRun=null` og nul positive/source-bærende rækker. 4.0.332 retter denne consumerkonflikt uden at lempe positive kildebeviser.
+
+Efter merge beviste main-oneoff `34127986853` igen, at gamle men horizon-gyldige sourcecacher kan genbruges uden at blive nulstillet. Runnet nåede 79.132/79.414 og stoppede korrekt på 282 eksakte missing før handoff, artifact og deploy. Det er positivt horizon-/cachebevis og negativt completenessbevis; det kan ikke åbne modelcutover.
 
 ## Bindende beslutning
 

@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 Open-Meteo exact-residual
+
+- **Main:** 4.0.332 sourcegate `34125927405` var grøn på `f23f306b…`; PR #265 er merged som `1e1093de…`.
+- **Seneste runtime:** Oneoff `34127986853`, target `2026-09-07T13:00:00Z`: DMI 65.409/79.414 og rest 14.005; Copernicus +12.661 og rest 1.344; Open-Meteo modtog 472 efter regionalleddet, retained 76, fetched 114, filled 190 og missing 282. Cacheprogressionen blev gemt; closure/artifact/deploy/cutover blev skipped. 70.280-linjen var donorrestore på gammel reference.
+- **Rettelse:** Lokal 4.0.333 genbestiller kun uløste eksakte par gennem FIFO/BFS med binær fan-out højst to til singleton. Tre transportforsøg pr. work, ét content-retry, requestcap 1.024, queuecap 2.048, fælles deadline og provider-wide HTTP-cooldown er hårde sikkerhedslofter; 400/ukendt permanent stopper globalt, 413/414 må isoleres.
+- **Bevis:** Udvidet dybde-/50-del-/time-/budget-/429-/400-test samt hele den målrettede provider-, closure- og live-runtime-kæde er grøn. To uafhængige reviews er GO. Ingen CI-, merge- eller produktionspåstand for 4.0.333 endnu.
+- **Næste:** GitHub exact-head sourcegate → merge → main-oneoff. Kun 79.414/79.414 kan forsegle handoff og åbne cutover/full gates. Candidate G er offentlig; normal workflow er deaktiveret. Ved rest må diagnostikken styre næste helhedsvurdering uden at lempe kildeintegritet, 15 km eller completeness.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-gyldigt vejr og source-handoff
 
 - **Bindende ejerregel:** Brug den nyeste strukturelt valide prognoserække uanset acquisition/generation-alder, mens den konkrete time stadig ligger i pakkens verificerede horizon. Eksakt `validUntil` er gyldig; `+1 ms` er udløbet. De gamle 72h- og 90/150/240-minutters availability-/deploygates er **SUPERSEDERET**; alder er warning/emergency/tillid/tur/kalibrering.

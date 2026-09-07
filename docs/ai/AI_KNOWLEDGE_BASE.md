@@ -1,5 +1,11 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-07 – 4.0.333 exact-unresolved Open-Meteo
+
+- 4.0.332 er merged. Oneoff `34127986853` genbrugte cache og sluttede 79.132/79.414 med 282 Open-Meteo-rester; ingen artifact/deploy/cutover.
+- 4.0.333 er lokalt implementeret: atomisk checkpoint af succes, FIFO/BFS kun af uløste par, binær isolation til singleton, tre transportforsøg pr. work, ét content-retry, requestcap 1.024, queuecap 2.048, fælles deadline og provider-wide bounded HTTP-cooldown.
+- Lokal målmatrix og to reviews er GO; exact-head CI, merge, komplet main-runtime og modelcutover er åbne. Candidate G er offentlig, normal workflow deaktiveret.
+
 ## Nyeste sandhed 2026-09-07 – DEC-0119 horizon-gyldigt vejr
 
 - Availability følger pakkens egen verificerede horizon, ikke acquisition-/generation-/targetalder. Eksakt slutinstant accepteres, `+1 ms` afvises. Alder er warning/emergency-/tillids-/tur-/kalibreringssignal; gamle 72h- og 90/150/240-minutters hard gates er **SUPERSEDERET**.

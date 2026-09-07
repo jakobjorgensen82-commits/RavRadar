@@ -1,4 +1,12 @@
-# AI Roadmap – RavRadar 4.0.332; Candidate G er offentlig – opdateret 2026-09-07
+# AI Roadmap – RavRadar 4.0.333; Candidate G er offentlig – opdateret 2026-09-07
+
+## Nyeste releasehale – 4.0.333
+
+1. [x] Klassificér 4.0.332 exact-head/merge og oneoff `34127986853`: 79.132/79.414, 282 missing, gemt cache, intet deploy.
+2. [x] Ret Open-Meteo til exact-unresolved bounded FIFO/BFS med max-to split, per-work retry, request-/queue-/deadlinecaps og provider-wide cooldown; afslut måltests og to reviews.
+3. [ ] GitHub sourcegate én gang på exact PR-head; merge kun samme grønne head.
+4. [ ] Kør main-oneoff. Ved 79.414/79.414: seal/handoff → central hydrering/runtime/Feggesund/spatial/kapacitet → fuld validate/releasegate → artifact/deploy → Phase B/offentlig kontrol.
+5. [ ] Genaktivér normal ekstern cron efter cutover og mål providerbidrag/tid før eventuelle pipelineændringer.
 
 ## Nyeste releasehale – 4.0.332
 
@@ -7,9 +15,10 @@
 3. [x] Tillad numerisk `HISTORY_INCOMPLETE` for alle aktive zoner med reason codes og calibration off; ingen syntese.
 4. [x] Implementér exact-run source-handoff af fem private cacher til første cutover uden at omgå bounded `update:weather` eller fulde gates.
 5. [x] Registrér `34083611297` = 78.856/79.414, 558 missing, intet deploy, og klassificér `34093354004`: Copernicus success; Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing; cache gemt; ingen closure/artifact/deploy. Klassificér `34104536681`: DMI 67.897/79.414 på 5m24s med cachegenbrug, Copernicus 8.372, 3.145 rester og null-run-source-index-stop før Open-Meteo; Copernicus-cache gemt; ingen closure/artifact/deploy. Ret null-run-pathen lokalt med nul positiv dækning, retained-proof-bevarelse og fortsat fail-closed positive/source-bærende rækker.
-6. [ ] Afslut exact-head-CI/merge, få 79.414/79.414 og brug kun dette konkrete grønne run som handoffkilde til central hydrering, gates, Feggesund/spatial audit, live kapacitet, artifact/deploy, Phase B og offentlig kontrol.
-7. [ ] Hold normal workflow deaktiveret under cutover; genaktivér derefter ekstern cron som varig updater.
-8. [ ] Efter launch: særskilt providertransition-overlap/hysterese-audit og durable immutable multi-artifact-historik/selector.
+6. [x] Afslut exact-head-CI/merge af 4.0.332: sourcegate `34125927405` grøn, PR #265 merged.
+7. [ ] Få 79.414/79.414 med den aktuelle 4.0.333-kandidat og brug kun dette konkrete grønne run som handoffkilde til central hydrering, gates, Feggesund/spatial audit, live kapacitet, artifact/deploy, Phase B og offentlig kontrol.
+8. [ ] Hold normal workflow deaktiveret under cutover; genaktivér derefter ekstern cron som varig updater.
+9. [ ] Efter launch: særskilt providertransition-overlap/hysterese-audit og durable immutable multi-artifact-historik/selector.
 
 ## Nyeste releasehale – 4.0.328
 

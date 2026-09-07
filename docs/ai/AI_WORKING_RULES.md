@@ -1,5 +1,11 @@
 # AI Working Rules – RavRadar
 
+## Aktuel 4.0.333 residual- og release-regel
+
+- Overclaim aldrig cache-reset fra en større ny targetrest. Brug exact reference og slutoptælling; donorrestore på gammel reference er ikke runresultat.
+- Open-Meteo-success checkpointes pr. eksakt par. Genbestil kun uløst work, breadth-first og bounded; global HTTP-/kontraktfejl må ikke eksplodere gennem splits.
+- Lokal GO er ikke CI/runtime-GO. Merge kun exact-head-grøn PR; forsegl kun handoff ved 79.414/79.414 og behold Candidate G ellers.
+
 ## Aktuel 4.0.332 horizon-, integritets- og cutoverregel
 
 - Brug den nyeste strukturelt valide future-række, mens den konkrete time ligger i pakkens egen verificerede horizon. Eksakt slutinstant accepteres, `+1 ms` afvises. Alder er warning/emergency/tillid/tur/kalibrering og må ikke alene skabe missing, `UNAVAILABLE` eller deploystop.

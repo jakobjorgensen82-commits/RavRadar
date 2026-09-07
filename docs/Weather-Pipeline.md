@@ -1,5 +1,13 @@
 # Weather Pipeline 1.0
 
+## 4.0.333 – exact-unresolved Open-Meteo-kø, 2026-09-07
+
+4.0.332 bestod exact-head `34125927405`, blev merged via PR #265 og kørte main-oneoff `34127986853`. Cacherne blev genbrugt: DMI dækkede 65.409/79.414, Copernicus 12.661 af de 14.005 rester, og efter regional DMI modtog Open-Meteo 472 par. Open-Meteo retained 76, fetched 114, filled 190 og efterlod 282. Slutgaten stoppede korrekt uden closure, artifact, deploy eller cutover.
+
+4.0.333 gør Open-Meteo-progress per exact pair: accepterede par checkpointes straks; kun `required − selected` går videre i en bounded FIFO/BFS-kø. Split er binært med maksimal fan-out to, parts før timer, helt ned til singleton. Transport har max tre forsøg pr. exact work og content ét same-work retry. Total requests er max 1.024, pending work max 2.048 og alle kald deler én monotonic deadline. Retrybar HTTP sætter provider-wide cooldown; Retry-After sekunder/HTTP-date begrænses til 15 sekunder. 400/ukendt permanent HTTP stopper globalt, mens kun 413/414 må isoleres.
+
+Alle deadline-/budget-/providerstop bevarer den aktuelle kø som ærlig residual. Safe outputs er kun aggregater. 15 km, `meteofrance_currents`, UTC/GMT, m/s/grader, combined-current-only, `calibrationEligible=false`, ingen syntese og eksakt 79.414/79.414 closure er uændret. Lokal udvidet køtest, målrettet provider-/closure-/live-runtime-kæde og to reviews er grønne; exact-head CI, merge og ny main-oneoff afventer. Candidate G er offentlig, og normal workflow er deaktiveret.
+
 ## 4.0.332 – horizon-gyldighed, granular salvage og run-bundet cutover, 2026-09-07
 
 En future-række er availability-gyldig uanset acquisition-/generation-/targetalder, når dens time og alle identitets-, registry-, provenance-, hash- og scopebeviser er valide, og den valgte time ligger i pakkens egen horizon. Eksakt `validUntil`/`operationalRangeEndAt` accepteres; `+1 ms` afvises. De gamle 90/150/240-minutters og 72-timers hard gates er **SUPERSEDERET**. Alder giver warning, emergency-/tillidsklassifikation og `calibrationEligible=false`, men skaber ikke missing.
