@@ -1,10 +1,10 @@
-import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.331';
+import { normalizeZoneRegistry } from './zone-registry.js?v=4.0.332';
 import {
   RAVSCORE_CALIBRATION_ELIGIBLE,
   RAVSCORE_CURRENT_SUPPLY_POLICY,
   assertRavScoreModelBinding,
   ravScoreModelBinding,
-} from '../core/ravscore-model-contract.js?v=4.0.331';
+} from '../core/ravscore-model-contract.js?v=4.0.332';
 import {
   RAVSCORE_PUBLIC_COASTAL_PART_COUNT,
   RAVSCORE_PUBLIC_DETAILS_KIND,
@@ -19,15 +19,18 @@ import {
   ravScorePublicHorizonValidUntil,
   selectPublicRuntimeAvailability,
   sameRavScoreModelBinding,
-} from '../core/ravscore-public-runtime-contract.js?v=4.0.331';
+} from '../core/ravscore-public-runtime-contract.js?v=4.0.332';
 import {
   assertExactPublicRavScoreProfile,
-} from '../core/ravscore-public-profile-contract.js?v=4.0.331';
+} from '../core/ravscore-public-profile-contract.js?v=4.0.332';
 import {
   assertRavScoreVerifiedEvidenceTrust,
-} from '../core/ravscore-evidence-trust-contract.js?v=4.0.331';
+} from '../core/ravscore-evidence-trust-contract.js?v=4.0.332';
+import {
+  assertPublicWeatherSourceAge,
+} from '../core/ravscore-public-weather-source-age.js?v=4.0.332';
 
-export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.331';
+export { createForecastSnapshotReference } from './trip-evidence-contract.js?v=4.0.332';
 
 const DEFAULT_PUBLIC_CONDITIONS_URL = './data/live/public-conditions.json';
 const DEFAULT_PUBLIC_DETAILS_URL = './data/live/public-condition-details.json';
@@ -217,6 +220,9 @@ function assertManifest(manifest) {
     manifest.ravScoreEvidenceTrust,
     'manifestets RavScore-evidenstillid',
   );
+  assertPublicWeatherSourceAge(manifest.weatherSourceAge, {
+    productionReferenceAt: manifest.productionReferenceAt,
+  });
   assertExactPublicRavScoreProfile(manifest.ravScoreProfile,
     manifest.ravScoreModelBinding, 'manifestets RavScore-scoreprofil');
   const runtime = manifest.ravScoreRuntime;
@@ -303,7 +309,15 @@ function assertCoastalPartsDocument(document, manifest, zones) {
   return document;
 }
 
-async function assertLoadedPayload(document, { kind, descriptor, datasetId, productionReferenceAt, modelBinding, label }) {
+async function assertLoadedPayload(document, {
+  kind,
+  descriptor,
+  datasetId,
+  productionReferenceAt,
+  weatherSourceAge,
+  modelBinding,
+  label,
+}) {
   assertPublicRuntimeEnvelope(document, {
     kind,
     datasetId,
@@ -315,6 +329,12 @@ async function assertLoadedPayload(document, { kind, descriptor, datasetId, prod
   const actualBodySha256 = await sha256Text(canonicalPublicRuntimeJson(publicRuntimeDocumentBody(document)));
   if (actualBodySha256 !== document.ravScoreRuntime.payloadBodySha256) {
     throw new Error(`${label} har en ugyldig intern body-hash.`);
+  }
+  assertPublicWeatherSourceAge(document.weatherSourceAge, { productionReferenceAt });
+  assertPublicWeatherSourceAge(weatherSourceAge, { productionReferenceAt });
+  if (canonicalPublicRuntimeJson(document.weatherSourceAge)
+      !== canonicalPublicRuntimeJson(weatherSourceAge)) {
+    throw new Error(`${label} har en anden samlet kildealderbinding end manifestet.`);
   }
   assertNestedModelBindings(document, modelBinding, label);
   assertPublicVerifiedEvidenceTrust(document, label);
@@ -620,7 +640,7 @@ function emergencyWeatherCurrent(row) {
   return current;
 }
 
-function projectEmergencyConditions(startup, details, availability, manifest) {
+function projectCurrentHourConditions(startup, details, availability, manifest) {
   assertRavScoreVerifiedEvidenceTrust(
     manifest?.ravScoreEvidenceTrust,
     'Nøddriftsmanifestets RavScore-evidenstillid',
@@ -682,11 +702,15 @@ function projectEmergencyConditions(startup, details, availability, manifest) {
       ...startup.zones[zoneId],
       currentReferenceAt: selectedReferenceAt,
       current: emergencyWeatherCurrent(weatherRow),
-      forecast: details.zones[zoneId].forecast,
+      forecast: {
+        ...details.zones[zoneId].forecast,
+        hourly: details.zones[zoneId].forecast.hourly.slice(selectedIndex),
+      },
     };
     scoreZones[zoneId] = {
       ...scoreZone,
       currentReferenceAt: selectedReferenceAt,
+      hourly: scoreZone.hourly.slice(selectedIndex),
     };
 
     for (const mode of ['waders', 'beach']) {
@@ -733,6 +757,27 @@ function projectEmergencyConditions(startup, details, availability, manifest) {
     detailsAvailable: true,
     publicRuntimeAvailability: availability,
   };
+}
+
+async function loadManifestBoundStartup(manifest) {
+  const url = publicConditionsUrl(manifest);
+  const data = await fetchJson(url, {
+    ttlMs: 2 * 60 * 1000,
+    cache: contentAddressedCache(url),
+    expectedSha256: manifest.publicConditionsSha256,
+    expectedBytes: manifest.publicConditionsBytes,
+  });
+  await assertLoadedPayload(data, {
+    kind: RAVSCORE_PUBLIC_STARTUP_KIND,
+    descriptor: manifest.ravScoreRuntime.startup,
+    datasetId: manifest.datasetId,
+    productionReferenceAt: manifest.productionReferenceAt ?? null,
+    weatherSourceAge: manifest.weatherSourceAge,
+    modelBinding: manifest.ravScoreModelBinding,
+    label: 'Startpakken',
+  });
+  assertStartupCoverage(data, manifest);
+  return data;
 }
 
 export async function loadZones({ manifest = null } = {}) {
@@ -788,35 +833,22 @@ export async function loadConditions({ manifest = null, now = Date.now() } = {})
     if (!sameRavScoreModelBinding(manifest.ravScoreModelBinding, canonicalBinding)) {
       throw new Error('Appen og datamanifestet bruger forskellige RavScore-modelbundles.');
     }
-    const url = publicConditionsUrl(manifest);
-    const data = await fetchJson(url, {
-      ttlMs: 2 * 60 * 1000,
-      cache: contentAddressedCache(url),
-      expectedSha256: manifest.publicConditionsSha256,
-      expectedBytes: manifest.publicConditionsBytes,
-    });
-    await assertLoadedPayload(data, {
-      kind: RAVSCORE_PUBLIC_STARTUP_KIND,
-      descriptor: manifest.ravScoreRuntime.startup,
-      datasetId: manifest.datasetId,
-      productionReferenceAt: manifest.productionReferenceAt ?? null,
-      modelBinding: manifest.ravScoreModelBinding,
-      label: 'Startpakken',
-    });
-    assertStartupCoverage(data, manifest);
+    const data = await loadManifestBoundStartup(manifest);
     const publicRuntimeAvailability = selectPublicRuntimeAvailability(manifest, {
       now,
       modelBinding: ravScoreModelBinding(),
     });
-    if (publicRuntimeAvailability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY) {
-      // Emergency is not a second model or a partial fallback. Before one old
-      // score is exposed, all four files named by this same manifest are fetched
-      // and verified as one 210/673/118-hour package.
+    const requiresCurrentHourProjection = publicRuntimeAvailability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
+      || publicRuntimeAvailability.selectedReferenceAt !== manifest.productionReferenceAt;
+    if (requiresCurrentHourProjection) {
+      // A later current hour is projected only from this manifest's exact
+      // four-file package. No second model, partial fallback or past forecast
+      // row is exposed as if it were still current.
       const [_zones, details] = await Promise.all([
         loadZones({ manifest }),
         loadConditionDetails({ manifest, conditions: data }),
       ]);
-      return projectEmergencyConditions(data, details, publicRuntimeAvailability, manifest);
+      return projectCurrentHourConditions(data, details, publicRuntimeAvailability, manifest);
     }
     return { ...data, available: true, publicRuntimeAvailability };
   } catch (error) {
@@ -840,6 +872,7 @@ export async function loadConditionDetails({ manifest = null, conditions = null 
     descriptor: manifest.ravScoreRuntime.details,
     datasetId: manifest.datasetId,
     productionReferenceAt: manifest.productionReferenceAt ?? null,
+    weatherSourceAge: manifest.weatherSourceAge,
     modelBinding: manifest.ravScoreModelBinding,
     label: 'Detaljepakken',
   });
@@ -870,24 +903,21 @@ export async function reevaluatePublicConditions({
       label: 'Den indlæste startpakke',
     });
     assertPublicVerifiedEvidenceTrust(conditions, 'Den indlæste startpakke');
-    if (conditions.detailsAvailable === true) assertDetailedCoverage(conditions, manifest);
-    else assertStartupCoverage(conditions, manifest);
     const availability = selectPublicRuntimeAvailability(manifest, {
       now,
       modelBinding: ravScoreModelBinding(),
     });
-    if (availability.mode !== RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY) {
-      return { ...conditions, publicRuntimeAvailability: availability };
-    }
-    if (conditions.detailsAvailable === true) {
-      assertDetailedCoverage(conditions, manifest);
-      return projectEmergencyConditions(conditions, conditions, availability, manifest);
+    const startup = await loadManifestBoundStartup(manifest);
+    const requiresCurrentHourProjection = availability.mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
+      || availability.selectedReferenceAt !== manifest.productionReferenceAt;
+    if (!requiresCurrentHourProjection) {
+      return { ...startup, available: true, publicRuntimeAvailability: availability };
     }
     const [_zones, details] = await Promise.all([
       loadZones({ manifest }),
-      loadConditionDetails({ manifest, conditions }),
+      loadConditionDetails({ manifest, conditions: startup }),
     ]);
-    return projectEmergencyConditions(conditions, details, availability, manifest);
+    return projectCurrentHourConditions(startup, details, availability, manifest);
   } catch (error) {
     console.warn('Den offentlige RavScore-runtime er udløbet eller kunne ikke genvalideres', error);
     return {
@@ -908,6 +938,16 @@ export function mergeConditionDetails(conditions, details) {
     throw new Error('Vejrdetaljer og startdata bruger ikke samme produktionstidspunkt.');
   }
   if (conditions.generatedAt !== details.generatedAt) throw new Error('Vejrdetaljer og startdata er ikke bygget samtidigt.');
+  assertPublicWeatherSourceAge(conditions.weatherSourceAge, {
+    productionReferenceAt: conditions.productionReferenceAt,
+  });
+  assertPublicWeatherSourceAge(details.weatherSourceAge, {
+    productionReferenceAt: details.productionReferenceAt,
+  });
+  if (canonicalPublicRuntimeJson(conditions.weatherSourceAge)
+      !== canonicalPublicRuntimeJson(details.weatherSourceAge)) {
+    throw new Error('Vejrdetaljer og startdata bruger ikke samme samlede kildealderbinding.');
+  }
   if (!sameRavScoreModelBinding(conditions.ravScoreRuntime.modelBinding, details.ravScoreRuntime.modelBinding)) {
     throw new Error('Vejrdetaljer og startdata bruger ikke samme RavScore-modelbundle.');
   }

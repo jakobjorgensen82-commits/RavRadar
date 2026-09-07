@@ -51,6 +51,32 @@ const forbidMarkers = (label, text, markers) => {
   }
 };
 
+const horizonValidWeather = byId('horizon-valid-weather-run-bound-cutover-2026-09-07');
+requireMarkers('Det aktive 4.0.332-kapitel om horizon-gyldigt vejr',
+  `${horizonValidWeather?.title || ''}\n${horizonValidWeather?.summary || ''}\n${horizonValidWeather?.body || ''}`, [
+    'Brugbare vejrdata afgøres af deres prognosehorizon',
+    '<strong>SUPERSEDERET:</strong>',
+    '<code>validUntil + 1 ms</code> er udløbet',
+    '90/150/240-minutters freshnessgates',
+    '673 × 118 = 79.414',
+    '<code>34083611297</code>',
+    '78.856/79.414 med 558 missing',
+    '<code>34093354004</code> sluttede sikkert',
+    '2.735 krævede par',
+    'bevarede 1.873',
+    'hentede 750',
+    'udfyldte samlet 2.623',
+    '112 kritiske par manglede fortsat',
+    '<code>34104536681</code> er aktivt',
+    '<code>c2ce63ff</code>',
+    'fem private sourcecacher',
+    'bounded <code>update:weather</code>',
+    'DMI → Baltic → AMM15 → policyregional DMI → Open-Meteo',
+    'numeriske <code>HISTORY_INCOMPLETE</code>-scorer med alle zoner aktive',
+    'Normal workflow er deaktiveret',
+    'durable immutable multi-artifact-historik',
+  ]);
+
 
 const operational318 = byId('ravscore-operational-recovery-and-historical-maintenance-4-0-318');
 requireMarkers('Den historiske 4.0.318-driftsevidens', `${operational318?.title || ''}\n${operational318?.body || ''}`, [
@@ -301,7 +327,6 @@ requireMarkers('Runtime- og migrationskapitlet', runtime?.body || '', [
   'integrated-schema5-to-candidate-g-schema2-v2',
   'samme targettid uden dobbelt recovery-credit',
   'same-model, komplet, atomisk og hashbundet nøddrift',
-  'højst 72 timer eller kortere forecastudløb',
   'Cross-model fallback og interpolation er forbudt',
   '<code>VERIFIED_ONLY</code> er kalibreringsegnet',
   'før descriptor, apply, mutation eller offentliggørelse',
@@ -511,6 +536,21 @@ for (const historicalId of [
 }
 
 requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
+  'Brugbare vejrdata afgøres af deres prognosehorizon – 4.0.332',
+  '**SUPERSEDERET:** Alle ældre håndbogskrav om højst 72 timers pakke-/checkpointalder',
+  'Den præcise sidste gyldige instant accepteres; én millisekund senere er pakken udløbet',
+  'Run `34083611297` nåede 78.856/79.414 og havde 558 mangler',
+  'Run `34093354004` sluttede sikkert',
+  'Open-Meteo havde 2.735 krævede par',
+  'bevarede 1.873',
+  'hentede 750',
+  'udfyldte samlet 2.623',
+  'præcis 112 kritiske par manglede fortsat',
+  'Run `34104536681` er aktivt på eksakt `main` `c2ce63ff`',
+  'fem private kildecacher',
+  'bounded `update:weather`',
+  'numeriske `HISTORY_INCOMPLETE`-scorer med alle zoner aktive',
+  'Normal workflow forbliver deaktiveret',
   'Frisk vejrvisning kræver ikke en gyldig ældre reserve – offentlig 4.0.316',
   '33345476979',
   'rr-20260831010337-210',
@@ -555,7 +595,7 @@ requireMarkers('Markdown-håndbogens aktuelle status og kontrakt', markdown, [
   'collapsed bounds og 48 timers coverage',
   '`calibrationEligible=false` består',
   'cross-model fallback og interpolation er forbudt',
-  'højst 72 timer eller kortere forecastudløb',
+  'den valgte time ligger inden for statepakkens egen verificerede prognosehorizon',
   'Feggesund/`DK-B05-11` har et vedvarende lokalt bølgehul',
   'Den nye regel er direct-first',
   'Kun når hele tupletten med signifikant bølgehøjde, periode og middelretning mangler',

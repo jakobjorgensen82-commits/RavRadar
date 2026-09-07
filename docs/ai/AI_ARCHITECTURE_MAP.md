@@ -1,3 +1,11 @@
+## 2026-09-07 4.0.332 horizon-validitet og exact-run source-handoff
+
+- Weather availability er nu `requestedTime <= operationalRangeEndAt/validUntil`, inklusive eksakt slutinstant; `+1 ms` er udløbet. Alder klassificerer fresh/stale/emergency og låser kalibrering, men skaber ikke missing eller deploystop.
+- Slutclosure er fortsat eksakt 673 × 118 = 79.414. Provider-cacher salvages pr. proof-enhed med fatal top-/target-/registry-/control-plane-korruption; canonical ledgers/hashes/seals/source-stage genbygges fra de tilbageværende positive beviser.
+- Første cutover har en producent/consumer-bro: fem private sourcefiler bindes til exact repo/workflow/main/head/run/attempt/OS/cachekey/target/registry/closure/filehashes. Det offentlige artifact bærer kun en aggregeret privacy-safe attest; consumeren installerer atomisk og genbygger identisk closure.
+- Handoffet erstatter ikke central hydrering, sourcegate, bounded `update:weather`, runtime, Feggesund/spatial audit, kapacitet, validate/releasegate, artifact/privacy, Pages eller offentlig verifikation. Det er heller ikke en generel multi-artifact-selector.
+- Alle zoner kan være aktive med numeriske `FULL_HISTORY`/`HISTORY_INCOMPLETE`-counts; partial advisoryhistorik giver reason codes og `calibrationEligible=false`.
+
 ## 2026-09-03 actual-source modelbundle og pre-write databasegrænse
 
 - `scripts/build-ravscore-model-bundle.mjs` binder nu de direkte public entrypoints `js/services/rav-assistant.js` og `js/services/trip-evidence-public-adapter.js`. Det blev nødvendigt, da backendrun `33736292211` stoppede sikkert ved public implementation seal før Supabase/Edge/database, artifact og Pages.
@@ -8,6 +16,8 @@
 # AI Architecture Map – RavRadar
 
 ## 2026-09-05 4.0.323 currentfallback
+
+> Historisk kontrakt: READY-only og hårde friskhedsgates i denne blok er supersederet af DEC-0118/DEC-0119; kildeorden, scope og slutclosure består.
 
 - Fælles currentclosure partitionerer eksakte rester efter DMI → Baltic → AMM15. Kun otte policydele går til regional DMI; resten og konkrete regional-missing går til Open-Meteo efter terminalt READY.
 - Open-Meteo er privat/provenancebundet target..+117-only combined surface current, højst 15 km og altid `calibrationEligible=false`. Ingen historik eller bølge-/tidevandsreprojektion. Normal/oneoff bruger samme closure med egne bounded budgetter og friskhedsgater.

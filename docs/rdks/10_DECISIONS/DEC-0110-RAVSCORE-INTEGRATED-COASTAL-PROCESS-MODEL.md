@@ -6,6 +6,8 @@
 - **Erstatter ved sikker cutover:** Candidate G som offentlig RavScore-model
 - **Kildekontrakt:** `js/core/ravscore-model-contract.js`
 
+> **SUPERSEDERET alderskrav 2026-09-07:** De absolutte 72-timersgrænser for et strukturelt gyldigt checkpoint og same-model nødpakke i denne beslutning er ophævet af DEC-0119. Alder er nu kun advarsel samt input til tillid, turbinding og kalibrering. Egen prognosehorizon, eksakt model-/state-/hashbinding, komplethed, provenance og tamperkontrol er fortsat hårde krav.
+
 ## Bindende operationelt tillæg 2026-09-03 – merge og første aktivering er to adskilte faser
 
 Dette tillæg supersederer alene beslutningens ældre formuleringer om, at første integrerede cutover er **push-only**, eller at et almindeligt merge/push selv må vælge `integrated-cutover`. Den faglige model, state 6, migration, rollback, controllerens 30/4/6-kontrakt, observationsatomiske `PENDING`→`ACTIVE`-protokol og alle øvrige gates består.

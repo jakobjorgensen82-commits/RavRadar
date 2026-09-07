@@ -8,6 +8,7 @@ from http.client import IncompleteRead
 import json
 from pathlib import Path
 import runpy
+import tempfile
 from types import SimpleNamespace
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
@@ -22,6 +23,7 @@ from lib.open_meteo_current_fallback import (
     build_record,
     merge_records,
     reusable_records,
+    reusable_records_with_salvage,
     safe_projection,
     validate_checkpoint_document,
     validate_document,
@@ -187,7 +189,7 @@ rejected(lambda: validate_document(
     require_complete=False,
 ))
 
-# Four hours is inclusive per record; a later checkpoint never extends it.
+# Acquisition age never turns a structurally valid future record into missing.
 boundary_pairs = [
     {"partId": "P1", "validTime": iso(REFERENCE + timedelta(hours=4))},
     {"partId": "P1", "validTime": iso(REFERENCE + timedelta(hours=5))},
@@ -231,7 +233,16 @@ assert reusable_records(
     required_pairs=[boundary_pairs[1]],
     production_reference_at=iso(REFERENCE + timedelta(hours=5)),
     checkpointed_at=iso(REFERENCE + timedelta(hours=5)),
-) == []
+) == [boundary_records[1]]
+
+# validTime expiration remains a hard availability boundary.
+rejected(lambda: reusable_records(
+    boundary_document,
+    targets=targets,
+    required_pairs=[boundary_pairs[0]],
+    production_reference_at=iso(REFERENCE + timedelta(hours=5)),
+    checkpointed_at=iso(REFERENCE + timedelta(hours=5)),
+))
 
 # Exact target-registry binding is mandatory even when the pair id survives.
 changed_targets = copy.deepcopy(targets)
@@ -300,6 +311,64 @@ tampered_checkpoint["documentSha256"] = canonical_sha256({
 rejected(lambda: validate_checkpoint_document(
     tampered_checkpoint, targets=targets,
 ))
+
+# A tampered record is now isolated: the unrelated positive survives, while
+# the affected pair is explicit missing input for the current fetch queue.
+salvaged_records, salvage = reusable_records_with_salvage(
+    tampered_checkpoint,
+    targets=targets,
+    required_pairs=required,
+    production_reference_at=iso(REFERENCE),
+    checkpointed_at=iso(REFERENCE + timedelta(hours=1)),
+)
+assert salvaged_records == [later_second_record]
+assert salvage == {
+    "salvaged": True,
+    "droppedRecordCount": 1,
+    "droppedPairCount": 1,
+    "ignoredRecordCount": 0,
+}
+salvaged_document = build_document(
+    targets=targets,
+    required_pairs=required,
+    records=salvaged_records,
+    checkpointed_at=iso(REFERENCE + timedelta(hours=1)),
+    production_reference_at=iso(REFERENCE),
+    copernicus_source_stage_status="READY",
+    copernicus_source_stage_sha256=stage_sha,
+    copernicus_bounded_progress_accepted=False,
+    regional_evidence_sha256=regional_sha,
+)
+assert salvaged_document["recordCount"] == 1
+assert salvaged_document["missingPairs"] == [required[0]]
+assert validate_document(
+    salvaged_document,
+    targets=targets,
+    required_pairs=required,
+    production_reference_at=iso(REFERENCE),
+    copernicus_source_stage_status="READY",
+    copernicus_source_stage_sha256=stage_sha,
+    copernicus_bounded_progress_accepted=False,
+    regional_evidence_sha256=regional_sha,
+    require_complete=False,
+)
+
+# Schema/contract/container and target-registry corruption is not salvageable.
+for malformed_top in (
+    {**copy.deepcopy(mixed_document), "kind": "WRONG"},
+    {**copy.deepcopy(mixed_document), "records": {}},
+    {
+        **copy.deepcopy(mixed_document),
+        "targetRegistrySha256": canonical_sha256({"wrong": "registry"}),
+    },
+):
+    rejected(lambda malformed_top=malformed_top: reusable_records_with_salvage(
+        malformed_top,
+        targets=targets,
+        required_pairs=required,
+        production_reference_at=iso(REFERENCE),
+        checkpointed_at=iso(REFERENCE + timedelta(hours=1)),
+    ))
 
 progress_document = build_document(
     targets=targets,
@@ -433,6 +502,15 @@ rejected(lambda: build_record(
 ))
 
 cli = runpy.run_path(str(Path(__file__).with_name("fill-open-meteo-current-fallback.py")))
+
+with tempfile.TemporaryDirectory(prefix="ravradar-open-meteo-cache-") as raw_folder:
+    unparseable_path = Path(raw_folder) / "progress.json"
+    unparseable_path.write_text("{", encoding="utf-8")
+    runtime_rejected(
+        lambda: cli["read_optional_progress"](unparseable_path),
+        "OPEN_METEO_CACHE_UNPARSEABLE",
+    )
+    assert unparseable_path.read_text(encoding="utf-8") == "{"
 
 # A reusable partial Copernicus stage is an upstream availability checkpoint,
 # not an all-or-nothing gate. Recompute its exact shadow residual, pass that

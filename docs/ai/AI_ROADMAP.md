@@ -1,4 +1,15 @@
-# AI Roadmap – RavRadar 4.0.328; Candidate G er offentlig – opdateret 2026-09-06
+# AI Roadmap – RavRadar 4.0.332; Candidate G er offentlig – opdateret 2026-09-07
+
+## Nyeste releasehale – 4.0.332
+
+1. [x] Brug egen verificeret prognosehorizon som availabilitygrænse; acceptér eksakt end instant og afvis `+1 ms`. Bevar alder som warning/tillid/tur/kalibrering og markér 72h samt 90/150/240 minutter supersederet som hard gates.
+2. [x] Bevar exact 79.414 closure, providerprioritet og alle integritets-/privacygates; salvage DMI/Copernicus/Open-Meteo granulært og erstat kun tuple atomisk med en nyere verificeret tuple.
+3. [x] Tillad numerisk `HISTORY_INCOMPLETE` for alle aktive zoner med reason codes og calibration off; ingen syntese.
+4. [x] Implementér exact-run source-handoff af fem private cacher til første cutover uden at omgå bounded `update:weather` eller fulde gates.
+5. [x] Registrér `34083611297` = 78.856/79.414, 558 missing, intet deploy, og klassificér `34093354004`: Copernicus success; Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing; cache gemt; ingen closure/artifact/deploy. `34104536681` er aktivt på eksakt `main` `c2ce63ff`.
+6. [ ] Afslut exact-head-CI/merge, få 79.414/79.414 og brug kun dette konkrete grønne run som handoffkilde til central hydrering, gates, Feggesund/spatial audit, live kapacitet, artifact/deploy, Phase B og offentlig kontrol.
+7. [ ] Hold normal workflow deaktiveret under cutover; genaktivér derefter ekstern cron som varig updater.
+8. [ ] Efter launch: særskilt providertransition-overlap/hysterese-audit og durable immutable multi-artifact-historik/selector.
 
 ## Nyeste releasehale – 4.0.328
 

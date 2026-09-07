@@ -22,6 +22,7 @@ from lib.copernicus_current import (
     make_record,
     merge_cache_evidence,
     safe_shadow_summary,
+    salvage_shadow,
     select_required_records,
     validate_shadow,
 )
@@ -115,8 +116,8 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-cache-") as r
     assert "samplingpoint" not in serialized_summary and "gridpoint" not in serialized_summary
     assert summary["completeCoverageCollectionCount"] == 1
 
-    # Current/future evidence is fresh versus productionReferenceAt, not versus
-    # its future valid time. An old acquisition cannot authorize +117.
+    # A structurally valid future row remains available regardless acquisition
+    # age. Age changes refresh urgency; validTime and integrity decide use.
     stale_future_acquisition, stale_future_record = evidence(
         future_time, REFERENCE - timedelta(hours=5), "stale-future",
     )
@@ -127,8 +128,25 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-cache-") as r
         REFERENCE,
         TARGETS,
     )
-    _, stale_missing = select_required_records(required, stale_acquisitions, stale_records, REFERENCE)
-    assert stale_missing == [{"partId": TARGET["partId"], "validTime": future_record["validTime"]}]
+    stale_refs, stale_missing = select_required_records(
+        required, stale_acquisitions, stale_records, REFERENCE,
+    )
+    assert stale_missing == [] and len(stale_refs) == 2
+    stale_collection = make_coverage_collection(
+        production_reference_at=REFERENCE,
+        target_registry_sha256=target_fingerprint([TARGET]),
+        dmi_current_input_sha256=canonical_sha256({"dmi": "stale-valid-fixture"}),
+        required_pairs=required,
+        record_refs=stale_refs,
+        sealed_at=REFERENCE + timedelta(hours=5),
+    )
+    stale_valid_cache = empty_shadow(REFERENCE)
+    stale_valid_cache.update({
+        "acquisitions": stale_acquisitions,
+        "records": stale_records,
+        "collections": [stale_collection],
+    })
+    assert validate_shadow(stale_valid_cache, TARGETS, require_collection=True)
 
     legacy_future_acquisition = make_acquisition(
         source=SOURCE,
@@ -223,6 +241,71 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-range-cache-") as r
             pass
         else:
             raise AssertionError("Damaged Copernicus schema-2 evidence must fail closed")
+
+    # A damaged leaf no longer erases unrelated positive cache evidence. Its
+    # acquisition is detached, the old activation seal is removed, and the
+    # exact affected pair returns to the missing queue.
+    damaged_record_cache = copy.deepcopy(cache)
+    damaged_pair = {
+        "partId": damaged_record_cache["records"][0]["partId"],
+        "validTime": damaged_record_cache["records"][0]["validTime"],
+    }
+    damaged_record_cache["records"][0]["uMps"] = 999
+    salvaged, salvage = salvage_shadow(damaged_record_cache, TARGETS)
+    assert salvage == {
+        "salvaged": True,
+        "droppedAcquisitionCount": 1,
+        "droppedRecordCount": 1,
+        "droppedCollectionCount": 1,
+        "droppedPairCount": 1,
+    }
+    assert len(salvaged["acquisitions"]) == 1
+    assert len(salvaged["records"]) == 1
+    assert salvaged["collections"] == []
+    assert validate_shadow(salvaged, TARGETS)
+    salvaged_refs, salvaged_missing = select_required_records(
+        required,
+        salvaged["acquisitions"],
+        salvaged["records"],
+        REFERENCE,
+    )
+    assert len(salvaged_refs) == 1 and salvaged_missing == [damaged_pair]
+
+    damaged_acquisition_cache = copy.deepcopy(cache)
+    damaged_acquisition_id = damaged_acquisition_cache["acquisitions"][0]["acquisitionId"]
+    damaged_acquisition_cache["acquisitions"][0]["subsetSha256"] = "invalid"
+    acquisition_salvaged, acquisition_salvage = salvage_shadow(
+        damaged_acquisition_cache, TARGETS,
+    )
+    assert acquisition_salvage["salvaged"] is True
+    assert acquisition_salvage["droppedAcquisitionCount"] == 1
+    assert all(
+        row["acquisitionId"] != damaged_acquisition_id
+        for row in acquisition_salvaged["records"]
+    )
+    assert validate_shadow(acquisition_salvaged, TARGETS)
+
+    # Cache identity and array-container corruption remains globally fatal.
+    for malformed_top in (
+        {**copy.deepcopy(cache), "kind": "WRONG"},
+        {**copy.deepcopy(cache), "records": {}},
+    ):
+        try:
+            salvage_shadow(malformed_top, TARGETS)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("Malformed Copernicus cache identity must fail closed")
+
+    unparseable_path = folder / "unparseable.json"
+    unparseable_path.write_text("{", encoding="utf-8")
+    try:
+        load_shadow(unparseable_path, REFERENCE, TARGETS)
+    except json.JSONDecodeError:
+        pass
+    else:
+        raise AssertionError("Unparseable Copernicus cache must fail closed")
+    assert unparseable_path.read_text(encoding="utf-8") == "{"
 
     # Validation happens before replace: an invalid attempted write must leave
     # the previously sealed cache byte-for-byte intact.

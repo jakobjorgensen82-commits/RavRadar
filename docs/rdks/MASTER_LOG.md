@@ -1,3 +1,12 @@
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-07 – 4.0.332 horizon-gyldigt vejr
+
+- Ejeren præciserer, at den eneste og nyeste strukturelt valide prognose skal bruges, uanset hvor gammel dens acquisition/generation er, indtil dens egen verificerede horizon udløber. Eksakt slutinstant er gyldig; `+1 ms` er udløbet. De gamle hårde 72-timers- og 90/150/240-minutters regler er **SUPERSEDERET** som availability-, promotion- og deploygates.
+- 4.0.332 bevarer alder som warning/emergency-/tillids-/tur-/kalibreringssignal og bevarer uændret den hårde 79.414-pars integritetslukning. Run `34083611297` nåede 78.856/79.414 med 558 missing og deployede ikke. Run `34093354004` sluttede sikkert med Copernicus success og Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; præcis 112 critical missing stod tilbage, cachen blev gemt, og closure/artifact/deploy skete ikke. Run `34104536681` er aktivt på eksakt `main` `c2ce63ff`; normal workflow er fortsat deaktiveret.
+- Første modelcutover kan modtage de fem private sourcecacher fra én eksakt grøn, komplet og runbundet `main`-producent. Consumeren genbeviser bytes/hashes, run/head/attempt/target/registry og closure; kun den lange gentagne providerindsamling erstattes. Central hydrering, sourcegate, bounded `update:weather`, Feggesund/spatial audit, kapacitet, fulde gates, artifact/privacy, Pages og offentlig verifikation består.
+- DMI, Copernicus og Open-Meteo salvages granulært: en ugyldig leaf bliver et ærligt hul; uafhængige verificerede positives bevares og canonical bevismateriale genbygges. Control-plane-, topidentitets-, target- og registrykorruption forbliver fatal. Nyeste verificerede tuple erstatter ældre atomisk efter uændret providerprioritet.
+- Ufuldstændig verificeret historik giver alle zoner numeriske `HISTORY_INCOMPLETE`-scorer, forklarende reason codes og kalibreringslås, ikke nationalt availability-stop. Det gamle generelle rå 72-timerskrav er supersederet; op til 48 timer anvendes rådgivende uden syntese.
+- Normal workflow forbliver deaktiveret under den kontrollerede cutover. Candidate G er offentlig, indtil hele kæden faktisk er verificeret. Source-transition-overlap/hysterese og durable immutable multi-artifact-historik er udskudte, særskilte post-launch-issues.
+
 # NYESTE IMPLEMENTERINGSDELTA – 2026-09-07 – 4.0.331 sourcehistorik før vejrkæden
 
 - 4.0.330 blev merged på `main` som `8020cdfe539df0841246714c22705d78927c8bdb`. Den første autoriserede 118h-oneoff `34077360903` startede på netop denne head, men nåede ingen vejrhentning.

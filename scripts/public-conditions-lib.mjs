@@ -35,6 +35,10 @@ import {
   assertRavScoreVerifiedEvidenceTrust,
   ravScoreVerifiedEvidenceTrust,
 } from '../js/core/ravscore-evidence-trust-contract.js';
+import {
+  assertPublicWeatherSourceAge,
+  conservativeUnknownPublicWeatherSourceAge,
+} from '../js/core/ravscore-public-weather-source-age.js';
 
 const HOURLY_FIELDS = [
   'time','windSpeedMps','windDirectionDeg','airTemperatureC','waveHeightM','waveDirectionDeg','wavePeriodS',
@@ -200,6 +204,15 @@ function publicEvidenceTrust(full) {
     source.evidenceTrust,
     'coastal-parts RavScore evidence trust',
   );
+}
+
+function publicWeatherSourceAge(full) {
+  const value = full?.weatherSourceAge
+    ?? conservativeUnknownPublicWeatherSourceAge(full?.productionReferenceAt);
+  assertPublicWeatherSourceAge(value, {
+    productionReferenceAt: full?.productionReferenceAt,
+  });
+  return Object.freeze({ ...value });
 }
 
 function projectModelBinding(value) {
@@ -911,6 +924,7 @@ function bindDocument(body, kind, binding) {
 export function buildPublicConditions(full) {
   const binding = publicModelBinding(full);
   const evidenceTrust = publicEvidenceTrust(full);
+  const weatherSourceAge = publicWeatherSourceAge(full);
   const zones = {};
   for (const [zoneId, zone] of Object.entries(full?.zones || {})) {
     const forecast = zone?.forecast || {};
@@ -937,6 +951,7 @@ export function buildPublicConditions(full) {
     productionReferenceAt: full?.productionReferenceAt || null,
     source: 'RavRadar public runtime projection',
     ravScoreEvidenceTrust: evidenceTrust,
+    weatherSourceAge,
     nationalForecast: buildPublicNationalForecast(full),
     zones,
     coastalParts: buildStartupCoastalParts(full),
@@ -949,6 +964,7 @@ export function buildPublicConditions(full) {
 export function buildPublicConditionDetails(full) {
   const binding = publicModelBinding(full);
   const evidenceTrust = publicEvidenceTrust(full);
+  const weatherSourceAge = publicWeatherSourceAge(full);
   const zones = Object.fromEntries(Object.entries(full?.zones || {}).map(([zoneId, zone]) => {
     const forecast = zone?.forecast || {};
     return [zoneId, { forecast: {
@@ -965,6 +981,7 @@ export function buildPublicConditionDetails(full) {
     generatedAt: full?.generatedAt || null,
     productionReferenceAt: full?.productionReferenceAt || null,
     ravScoreEvidenceTrust: evidenceTrust,
+    weatherSourceAge,
     zones,
     coastalParts: buildDetailedCoastalParts(full),
   };
@@ -1105,6 +1122,7 @@ export function buildPublicManifest(full, publicText, detailsText, coastalPartsT
   const zoneRegistryDocument = JSON.parse(zoneRegistryText);
   const binding = publicModelBinding(full);
   const evidenceTrust = publicEvidenceTrust(full);
+  const weatherSourceAge = publicWeatherSourceAge(full);
   const scoreHorizon = assertCompletePublicRavScoreHorizon(full);
   assertPublicRuntimeEnvelope(publicDocument, {
     kind: RAVSCORE_PUBLIC_STARTUP_KIND,
@@ -1125,6 +1143,18 @@ export function buildPublicManifest(full, publicText, detailsText, coastalPartsT
     || sha256Text(canonicalPublicRuntimeJson(publicRuntimeDocumentBody(detailsDocument)))
       !== detailsDocument.ravScoreRuntime.payloadBodySha256) {
     throw new Error('Public payload body hash does not match its runtime envelope');
+  }
+  assertPublicWeatherSourceAge(publicDocument.weatherSourceAge, {
+    productionReferenceAt: full?.productionReferenceAt,
+  });
+  assertPublicWeatherSourceAge(detailsDocument.weatherSourceAge, {
+    productionReferenceAt: full?.productionReferenceAt,
+  });
+  if (canonicalPublicRuntimeJson(publicDocument.weatherSourceAge)
+      !== canonicalPublicRuntimeJson(weatherSourceAge)
+    || canonicalPublicRuntimeJson(detailsDocument.weatherSourceAge)
+      !== canonicalPublicRuntimeJson(weatherSourceAge)) {
+    throw new Error('Public payloads do not share the exact weather source-age aggregate');
   }
   assertPublicRuntimePrivacy(publicDocument, 'startup');
   assertPublicRuntimePrivacy(detailsDocument, 'details');
@@ -1176,6 +1206,7 @@ export function buildPublicManifest(full, publicText, detailsText, coastalPartsT
     ravScoreEvidenceTrust: evidenceTrust,
     ravScoreProfile: projectScoreProfile(full?.coastalParts?.scoreProfile, binding),
     ravScoreAvailability: projectScoreAvailability(full?.coastalParts?.scoreAvailability),
+    weatherSourceAge,
     publicConditionsSha256,
     publicConditionsBytes,
     publicConditionDetailsSha256,

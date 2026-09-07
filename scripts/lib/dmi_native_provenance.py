@@ -78,6 +78,7 @@ HASH_PREFIX = "sha256:"
 CURRENT_ATTESTATION_CONTRACT_ID = "dmi-canonical-part-current-attestation-v2"
 CURRENT_OPERATIONAL_LEDGER_CONTRACT_ID = "dmi-official-dkss-operational-current-ledger-v4"
 CURRENT_OPERATIONAL_LEDGER_SCHEMA_VERSION = 4
+CURRENT_OPERATIONAL_NON_FATAL_CODES = frozenset({"RETAINED_CURRENT_PART_TIME"})
 DKSS_MAX_FORECAST_LEAD_HOURS = 120
 CURRENT_PART_OUTCOME_CONTRACT_ID = "dmi-official-asset-current-part-outcomes-v1"
 CURRENT_RETAINED_ASSET_PROOF_CONTRACT_ID = (
@@ -1714,6 +1715,21 @@ def _validate_current_operational_ledger(
         selected_run_epoch = _epoch(selected_model_run)
         if source_run_epoch > selected_run_epoch:
             raise ValueError("DMI retained current source is newer than selected run")
+        if source_run_epoch < selected_run_epoch:
+            state_row = state_by_collection.get(collection, {}).get(
+                source["validTime"]
+            )
+            if state_row is not None and state_row["state"] in {
+                "PROCESSED", "VERIFIED",
+            }:
+                spatial_unavailable = state_row["spatialUnavailablePartIds"]
+                if any(
+                    part_id not in spatial_unavailable
+                    for part_id in proof["attestedPartIds"]
+                ):
+                    raise ValueError(
+                        "DMI retained current source inverts newer usable tuple priority"
+                    )
         if source_run_epoch == selected_run_epoch:
             state_row = state_by_collection.get(collection, {}).get(
                 source["validTime"]
@@ -1729,20 +1745,18 @@ def _validate_current_operational_ledger(
                     "DMI same-run retained source is not the selected official asset"
                 )
             retained_requires_local_failure = True
-    if not allow_incomplete:
-        if partition["verifiedPairs"] != (attestation.get("verifiedPairs") or []):
-            raise ValueError("DMI outcome proof and current attestation diverge")
-    else:
-        if not attested_pair_keys <= outcome_verified_keys | retained_pair_keys:
-            raise ValueError("DMI attestation is not backed by current or retained proof")
-        unattested_outcome_pairs = outcome_verified_keys - attested_pair_keys
-        raw_failure_codes = ledger.get("failureCodes")
-        if unattested_outcome_pairs and (
-            not isinstance(raw_failure_codes, list)
-            or "UNATTESTED_CURRENT_PART_TIME" not in raw_failure_codes
-        ):
-            raise ValueError("DMI unattested outcome is missing failure evidence")
-    verified_times = {row["validTime"] for row in partition["verifiedPairs"]}
+    if not attested_pair_keys <= outcome_verified_keys | retained_pair_keys:
+        raise ValueError("DMI attestation is not backed by current or retained proof")
+    unattested_outcome_pairs = outcome_verified_keys - attested_pair_keys
+    raw_failure_codes = ledger.get("failureCodes")
+    if unattested_outcome_pairs and (
+        not isinstance(raw_failure_codes, list)
+        or "UNATTESTED_CURRENT_PART_TIME" not in raw_failure_codes
+    ):
+        raise ValueError("DMI unattested outcome is missing failure evidence")
+    if not allow_incomplete and unattested_outcome_pairs:
+        raise ValueError("DMI outcome proof and current attestation diverge")
+    verified_times = {row["validTime"] for row in attestation.get("verifiedPairs") or []}
     for valid_time in expected_times:
         states = [
             state_by_collection[collection][valid_time]["state"]
@@ -1779,7 +1793,7 @@ def _validate_current_operational_ledger(
             source["validTime"],
             _canonical_json(source),
         ) in retained_pair_source_keys
-        if not current_bound and not (allow_incomplete and retained_bound):
+        if not current_bound and not retained_bound:
             raise ValueError("DMI pair/source is not bound to a selected processed ledger state")
 
     expected_complement = exact_current_operational_complement(
@@ -1824,6 +1838,13 @@ def _validate_current_operational_ledger(
     ):
         raise ValueError("DMI current operational complement identity mismatch")
     failure_codes = ledger.get("failureCodes")
+    disposition_ready = (
+        isinstance(failure_codes, list)
+        and not any(
+            code not in CURRENT_OPERATIONAL_NON_FATAL_CODES
+            for code in failure_codes
+        )
+    )
     if (
         not isinstance(ledger.get("ready"), bool)
         or not isinstance(failure_codes, list)
@@ -1834,8 +1855,7 @@ def _validate_current_operational_ledger(
             or not re.fullmatch(r"[A-Z][A-Z0-9_]{2,63}", code)
             for code in failure_codes
         )
-        or (ledger["ready"] and failure_codes)
-        or (not ledger["ready"] and not failure_codes)
+        or ledger["ready"] is not disposition_ready
     ):
         raise ValueError("DMI current operational ledger disposition is invalid")
     if retained_requires_catalog_outage and (

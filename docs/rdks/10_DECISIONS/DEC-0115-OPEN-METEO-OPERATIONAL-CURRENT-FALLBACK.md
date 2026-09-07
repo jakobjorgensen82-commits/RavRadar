@@ -6,6 +6,8 @@
 - **Supplerer:** DEC-0030, DEC-0041, DEC-0112 og DEC-0114
 - **Erstatter snævert:** tidligere aktive formuleringer, som ubetinget udelukkede Open-Meteo-current efter den regionale DMI-vej. Alle øvrige krav til DMI-first, fysisk semantik, provenance, privacy, 673 × 118 og fail-closed publicering består.
 
+> **SUPERSEDERET delkontrakt 2026-09-07:** DEC-0118 ophævede READY-only-kravet og tillader eksakt residualoverdragelse fra en runbundet `IN_PROGRESS` availability-ledger. DEC-0119 ophæver denne beslutnings 90/150/240-minutters aldersgrænser som availability-, promotion- og deploygates. Tidsbudgetterne består; alder udløser advarsel og degraderet tillid, mens egen prognosehorizon og 79.414-integritetslukning fortsat er hårde.
+
 ## Beslutning
 
 1. Den eksakte operationelle prioritet for hvert `(partId, validTime)` er DMI DKSS, Copernicus Baltic, Copernicus AMM15, den allerede godkendte regionale DMI-vej for dens præcise otte policydele og derefter Open-Meteo for alle resterende operationelle huller.
@@ -19,9 +21,9 @@
 
 ## Driftstid og friskhed
 
-Normal drift og engangsopfyldning bruger samme kilde- og sikkerhedslogik, men forskellige bounded rammer. Normal Copernicus får højst 360 sekunder og Open-Meteo højst 240 sekunder. Forecasttarget må højst være 90 minutter gammelt efter leverandørleddene og 150 minutter gammelt før beskyttede writes/artifact. Engangsopfyldning får højst 3.300 sekunder til Copernicus, 900 sekunder til Open-Meteo, et samlet jobloft på 200 minutter og højst 240 minutter gammelt target efter leverandørleddene.
+Normal drift og engangsopfyldning bruger samme kilde- og sikkerhedslogik, men forskellige bounded rammer. Normal Copernicus får højst 360 sekunder og Open-Meteo højst 240 sekunder. De tidligere 90/150-minutters targetgrænser er kun advarsels- og tillidssignaler. Engangsopfyldning får højst 3.300 sekunder til Copernicus, 900 sekunder til Open-Meteo og et samlet jobloft på 200 minutter; den tidligere 240-minutters targetgrænse er tilsvarende kun et advarselssignal. En række er availability-gyldig til og med sit eksakte `validUntil`.
 
-Den normale 15-minutters plan ændres ikke på forhånd. Efter den første komplette engangskørsel måles varighed, rækkefølge, cachegenbrug og bidrag fra DMI, Baltic, AMM15, regional DMI og Open-Meteo. Budgetter eller scheduler ændres kun på konkret evidens; friskhedsgaterne forhindrer i mellemtiden et langt gammelt snapshot i at blive publiceret.
+Den normale 15-minutters plan ændres ikke på forhånd. Efter den første komplette engangskørsel måles varighed, rækkefølge, cachegenbrug og bidrag fra DMI, Baltic, AMM15, regional DMI og Open-Meteo. Budgetter eller scheduler ændres kun på konkret evidens; egen prognosehorizon og den eksakte slutclosure forhindrer et udløbet eller ufuldstændigt snapshot i at blive publiceret.
 
 ## Binding og migration
 

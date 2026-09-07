@@ -213,7 +213,7 @@ const sync=await read('scripts/sync-protected-admin-assets.mjs');
 const operationalActivation=await read('scripts/ravscore-operational-activation.mjs');
 const activeWeatherGenerator=await read('scripts/update-weather.mjs');
 const operationalCasMigration=await read('supabase/migrations/20260829010000_ravscore_operational_documents_no_history.sql');
-const checkpointMetadataCasMigration=await read('supabase/migrations/20260906162332_per_pair_weather_fallback_binding.sql');
+const checkpointMetadataCasMigration=await read('supabase/migrations/20260907084343_horizon_valid_weather_binding.sql');
 const supabaseAdminRest=await read('scripts/lib/supabase-admin-rest.mjs');
 const pythonAdminSync=await read('scripts/sync-admin-config.py');
 ok(sync.includes('createSupabaseAdminRequester'),'Supabase sync bruger ikke den fælles fail-closed requester');
@@ -273,6 +273,7 @@ const productionWorkflows=await readProductionWorkflowSources({root});
 const orchestratorWorkflow=productionWorkflows.orchestrator;
 const buildWorkflow=productionWorkflows.build;
 const deployWorkflow=productionWorkflows.deploy;
+const weatherSourceProducerWorkflow=await read('.github/workflows/validate-copernicus-current-pilot.yml');
 const dmiBulkProducer=await read('scripts/update-dmi-bulk.py');
 const candidateOperationalPlanBuilder=await read('scripts/prepare-candidate-g-operational-rollback.mjs');
 const workflowContractTest=await read('scripts/test-workflow-validation-order-4.0.108.mjs');
@@ -571,11 +572,14 @@ ok(workflowActionChain.includes('node scripts/test-source-validation-once.mjs'),
 ok(workflowActionChain.includes('test:ravscore-dispatch-contract')
   && workflowActionChain.includes('test:candidate-g-gap-retirement')
   && workflowActionChain.includes('test:reusable-production-workflows')
+  && workflowActionChain.includes('test:verified-weather-source-handoff')
   && workflowActionChain.includes('test-workflow-validation-order-4.0.108.mjs')
   && workflowActionChain.includes('test-ravscore-operational-pages-recovery.mjs')
   && workflowActionChain.includes('test:production-workflow-outcome')
   && workflowActionChain.includes('test-release-gate-error-aggregation.mjs'),
 'Workflowkontrakten skal teste reusable rollegrænser, dispatchmatrix, historical/recovery-routing, Pages-recovery, DEC-0109-pensionering, maskinlæsbar terminalstatus og releasegate-fejlaggregering');
+ok(packageScripts['test:verified-weather-source-handoff']==='node scripts/test-verified-weather-source-handoff.mjs',
+'Den eksakte weather-source-handoff mangler sin isolerede tamper/privacy/identity-test');
 ok(packageScripts['test:production-workflow-outcome']==='node scripts/test-production-workflow-outcome.mjs',
 'Den maskinlæsbare produktionsslutstatus mangler sin isolerede kontrakttest');
 ok(packageScripts['test:release-contract-metadata']==='node scripts/test-release-contract-metadata.mjs && node scripts/test-harmonie-binding-migration.mjs && node scripts/test-open-meteo-binding-migration.mjs',
@@ -625,6 +629,8 @@ const openMeteoFill=await read('scripts/fill-open-meteo-current-fallback.py');
 const liveCurrentPilot=await read('scripts/lib/live-current-pilot.mjs');
 const integratedRavScore=await read('scripts/lib/ravscore-integrated-runtime.mjs');
 const productionTargetFreshness=await read('scripts/check-production-target-freshness.mjs');
+const weatherSourceHandoff=await read('scripts/verified-weather-source-handoff.mjs');
+const weatherSourceHandoffTest=await read('scripts/test-verified-weather-source-handoff.mjs');
 const continuationCheckpoint=await read('scripts/ravscore-continuation-checkpoint.mjs');
 const protectedContinuationCheckpoint=await read('scripts/protected-ravscore-continuation-checkpoint.mjs');
 const privateRuntimeBundle=await read('scripts/private-production-runtime-bundle.mjs');
@@ -728,9 +734,9 @@ for(const marker of [
 for(const marker of [
   'Fill only the exact remaining current gaps from Open-Meteo',
   '--runtime-seconds 240',
-  'Refuse a stale target after the bounded supplier chain',
+  'Classify target freshness after the bounded supplier chain',
   '--maximum-age-minutes 90',
-  'Refuse stale weather before protected writes and Pages artifact',
+  'Reclassify target freshness before protected writes and Pages artifact',
   '--maximum-age-minutes 150',
 ]){
   ok(buildWorkflow.includes(marker),`Produktionsworkflowet mangler bounded fallback/friskhed: ${marker}`);
@@ -787,10 +793,56 @@ for(const marker of [
   ok(integratedRavScore.includes(marker),`RavScore mangler Open-Meteo-kalibreringsværnet: ${marker}`);
 }
 for(const marker of [
-  "throw new Error('PRODUCTION_TARGET_STALE')",
+  "status: ageMinutes > maximumAgeMinutes ? 'STALE_TARGET_VALID' : 'FRESH'",
+  '::warning title=Stale but valid weather target::',
   'maximumAgeMinutes < 15 || maximumAgeMinutes > 360',
+  "throw new Error('PRODUCTION_TARGET_EXPIRED')",
+  'Date.parse(canonicalNow) > Date.parse(derivedOperationalRangeEnd)',
 ]){
-  ok(productionTargetFreshness.includes(marker),`Produktionsfriskhedsgaten mangler ${marker}`);
+  ok(productionTargetFreshness.includes(marker),`Produktionsfriskhedsklassificeringen mangler ${marker}`);
+}
+ok(!productionTargetFreshness.includes("throw new Error('PRODUCTION_TARGET_STALE')"),
+  'Gyldige vejrrækker må ikke kasseres alene på targetalder');
+for(const marker of [
+  "export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v1'",
+  "export const WEATHER_SOURCE_HANDOFF_CACHE_PATH =",
+  'artifactList.total_count !== artifactList.artifacts.length',
+  "fail('HANDOFF_ARTIFACT_PAGINATION_INCOMPLETE')",
+  "fail('HANDOFF_CACHE_ROOT_INVALID')",
+  "fail('HANDOFF_EXPIRED')",
+  "fail('HANDOFF_INPUT_HASH_INVALID')",
+  'validateArtifactInventoryEntries(entries)',
+  'verifyRebuiltClosure({',
+]){
+  ok(weatherSourceHandoff.includes(marker),`Weather-source-handoff mangler fail-closed værn: ${marker}`);
+}
+for(const marker of [
+  'HANDOFF_ARTIFACT_DIGEST_INVALID',
+  'HANDOFF_ARTIFACT_PAGINATION_INCOMPLETE',
+  'HANDOFF_CACHE_ROOT_INVALID',
+  'HANDOFF_CACHE_INVENTORY_INVALID',
+  'HANDOFF_INPUT_HASH_INVALID',
+  'HANDOFF_EXPIRED',
+  "['../attestation.json']",
+]){
+  ok(weatherSourceHandoffTest.includes(marker),`Weather-source-handoff-test mangler negativ regression: ${marker}`);
+}
+for(const marker of [
+  'name: Seal exact run-bound verified weather source handoff',
+  'name: Save exact run-bound verified weather source cache',
+  'name: Upload only aggregate verified weather source handoff attestation',
+  'path: .cache/verified-weather-source-handoff-cache/attestation.json',
+]){
+  ok(weatherSourceProducerWorkflow.includes(marker),`Oneoff-producenten mangler eksakt handoff-bevis: ${marker}`);
+}
+for(const marker of [
+  'name: Resolve exact verified weather source producer run',
+  'name: Restore exact run-bound verified weather source cache',
+  'fail-on-cache-miss: true',
+  'name: Install exact verified weather sources atomically',
+  'name: Verify rebuilt closure exactly matches the run-bound source handoff',
+]){
+  ok(buildWorkflow.includes(marker),`Produktionsforbrugeren mangler eksakt weather-source-handoff: ${marker}`);
 }
 ok((packageScripts['test:live-current-pilot']??'').includes('test-open-meteo-live-runtime.mjs'),
 'Live-current-testkæden mangler Open-Meteo-runtimeværnet');

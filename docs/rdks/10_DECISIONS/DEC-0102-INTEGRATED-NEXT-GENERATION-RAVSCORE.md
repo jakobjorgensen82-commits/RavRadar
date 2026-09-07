@@ -5,6 +5,8 @@
 - **Udgangspunkt:** Produktionsverificeret 4.0.305 på `main`
 - **Offentlig påvirkning nu:** Ingen
 
+> **SUPERSEDERET alderskrav 2026-09-07:** Punkt 2 under "Measured-only nødtilstand" er historisk. DEC-0119 ophæver den absolutte 72-timersgrænse. Den nyeste komplette og hashverificerede same-model-pakke er brugbar, så længe den valgte time stadig ligger i pakkens egen verificerede prognosehorisont. Integritet, modelbinding, fuldstændighed, provenance og fail-closed ved udløbet horizon består uændret.
+
 ## Baggrund
 
 En ekstern faglig gennemgang rejste et relevant spørgsmål: vand, som bølger fører ind i surfzonen, skal også tilbage, og den lokale bundnære returtransport kan ophøre et andet sted end RavRadars nuværende modelpunkt. Spørgsmålet viser ikke i sig selv, at Candidate G er forkert, men det rammer en kendt begrænsning: den verificerede modelstrøm ved nærmeste tilladte vandkolonne er en repræsentation af lokal bundnær strøm og ikke en bølgeopløst model af de sidste meter gennem revler, render, brydningszone, undertow og ripstrømme.

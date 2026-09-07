@@ -18,6 +18,9 @@ import {
   publicRuntimeDocumentBody,
   ravScorePublicHorizonValidUntil,
 } from '../js/core/ravscore-public-runtime-contract.js';
+import {
+  buildPublicWeatherSourceAge,
+} from '../js/core/ravscore-public-weather-source-age.js';
 import { createTripStartFromPublicState } from '../js/services/trip-evidence-public-adapter.js';
 import {
   completeTripEvidence,
@@ -75,6 +78,26 @@ const partsByZone = Object.fromEntries(zoneIds.map((zoneId, zoneIndex) => {
 }));
 const allPartRows = Object.values(partsByZone).flat();
 assert.equal(allPartRows.length, 673, 'The synthetic package must cover all 673 coastal parts.');
+function sourceAgeAggregate(modelRun = generatedAt, { unknownCurrent = false } = {}) {
+  const rows = allPartRows.map((part, index) => {
+    const provenance = { status: 'verified', provider: 'dmi', modelRun };
+    return {
+      partId: part.partId,
+      selectedReferenceAt: generatedAt,
+      windProvenance: { ...provenance },
+      waveProvenance: { ...provenance },
+      currentProvenance: unknownCurrent && index === 0
+        ? { status: 'verified', provider: 'open-meteo', acquiredAt: generatedAt }
+        : { ...provenance },
+      waterLevelProvenance: { ...provenance },
+    };
+  });
+  return buildPublicWeatherSourceAge({
+    productionReferenceAt: generatedAt,
+    partSourceRows: rows,
+  });
+}
+const freshSourceAge = sourceAgeAggregate();
 const coastalPartsDocument = {
   schemaVersion: 2,
   enabled: true,
@@ -169,6 +192,7 @@ function full(datasetId, scoreValue) {
     datasetId,
     generatedAt,
     productionReferenceAt: generatedAt,
+    weatherSourceAge: freshSourceAge,
     zones: Object.fromEntries(zoneIds.map((zoneId, zoneIndex) => [zoneId, {
         provider: 'dmi',
         current: { windSpeedMps: 4 },
@@ -218,8 +242,9 @@ function full(datasetId, scoreValue) {
   };
 }
 
-function bundle(datasetId, scoreValue) {
+function bundle(datasetId, scoreValue, { weatherSourceAge = null } = {}) {
   const source = full(datasetId, scoreValue);
+  if (weatherSourceAge) source.weatherSourceAge = weatherSourceAge;
   const startup = buildPublicConditions(source);
   const details = buildPublicConditionDetails(source);
   const startupText = compactJson(startup);
@@ -243,6 +268,10 @@ function zoneUrl(manifest) {
 }
 
 const primary = bundle('primary-integrated', 61);
+const oldSourceReferenceAt = new Date(Date.parse(generatedAt) - 24 * 3_600_000).toISOString();
+const oldSource = bundle('old-source-integrated', 61, {
+  weatherSourceAge: sourceAgeAggregate(oldSourceReferenceAt),
+});
 const publicProfileBinding = {
   modelId: primary.startup.coastalParts.scoreProfile.activeProfileId,
   stateSchemaVersion: primary.startup.coastalParts.scoreProfile.stateSchemaVersion,
@@ -264,6 +293,10 @@ const documents = new Map([
   [primaryUrl(primary.manifest, true), primary.detailsText],
   [coastalUrl(primary.manifest), coastalPartsText],
   [zoneUrl(primary.manifest), zoneRegistryText],
+  [primaryUrl(oldSource.manifest), oldSource.startupText],
+  [primaryUrl(oldSource.manifest, true), oldSource.detailsText],
+  [coastalUrl(oldSource.manifest), coastalPartsText],
+  [zoneUrl(oldSource.manifest), zoneRegistryText],
 ]);
 const requests = [];
 globalThis.fetch = async (url, options = {}) => {
@@ -308,12 +341,13 @@ for (const mutate of [
   manifest => { delete manifest.ravScoreEvidenceTrust; },
   manifest => { manifest.ravScoreEvidenceTrust = structuredClone(reconstructedTrust); },
   manifest => { manifest.ravScoreEvidenceTrust.unexpected = true; },
+  manifest => { manifest.weatherSourceAge.knownCount -= 1; },
 ]) {
   const invalidManifest = structuredClone(primary.manifest);
   mutate(invalidManifest);
   await assert.rejects(
     () => service.loadZones({ manifest: invalidManifest }),
-    /manifest|filhash|byteantal|ufuldstændig|runtime|scoreprofil|profile|evidens|trust|VERIFIED_ONLY/i,
+    /manifest|filhash|byteantal|ufuldstændig|runtime|scoreprofil|profile|evidens|trust|VERIFIED_ONLY|source-age|kildealder|conservatively/i,
   );
 }
 
@@ -334,6 +368,9 @@ for (const [label, mutate] of [
   }],
   ['missing part trust', startup => {
     delete startup.coastalParts.parts['part-1'].ravScoreEvidenceTrust;
+  }],
+  ['mixed source-age aggregate', startup => {
+    startup.weatherSourceAge.oldestKnownSourceReferenceAt = oldSourceReferenceAt;
   }],
 ]) {
   service.clearDataMemoryCache();
@@ -472,6 +509,31 @@ assert.equal(tripStart.calibrationFeatures.modelContractSha256, binding.modelCon
 assert.equal(tripStart.calibrationFeatures.modelStateVersion, binding.stateSchemaVersion);
 assert.equal(tripStart.calibrationFeatures.modelPresentationPolicyId, binding.presentationPolicyId);
 assert.equal(tripStart.calibrationFeatures.windSpeedMs, 5, 'Trip snapshot must use the winning coastal part weather.');
+
+service.clearDataMemoryCache();
+const oldSourceConditions = await service.loadConditions({
+  manifest: oldSource.manifest,
+  now: freshNow,
+});
+assert.equal(oldSourceConditions.available, true,
+  'old but horizon-valid source data must remain numerically available');
+assert.equal(oldSourceConditions.publicRuntimeAvailability.mode, 'EMERGENCY_LAST_COMPLETE');
+assert.equal(oldSourceConditions.publicRuntimeAvailability.ageReferenceAt, oldSourceReferenceAt);
+assert.equal(oldSourceConditions.publicRuntimeAvailability.ageHours, 24.5);
+assert.equal(oldSourceConditions.coastalParts.parts['part-1'].current.waders.score, 61);
+const oldSourceTrip = createTripStartFromPublicState({
+  tripId: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  startedAt: new Date(freshNow + 60_000).toISOString(),
+  mode: 'waders', zoneId: 'zone-1', coastalPartId: 'part-1',
+  manifest: oldSource.manifest, conditions: oldSourceConditions,
+  coastalPart: oldSourceConditions.coastalParts.parts['part-1'], appVersion: '4.0.999',
+  modelVersion: binding.modelId, modelBinding: binding,
+});
+assert.equal(oldSourceTrip.forecastCalibrationEligible, false,
+  'truthful source-age emergency must keep trip evidence out of calibration');
+assert.deepEqual(oldSourceTrip.calibrationFeatures.reasonCodes,
+  ['public-emergency-last-complete']);
+
 assert.throws(() => createTripStartFromPublicState({
   tripId: '22222222-2222-4222-8222-222222222222',
   startedAt: new Date(Date.parse(generatedAt) + 5 * 60000).toISOString(),
@@ -502,8 +564,14 @@ assert.equal(emergency.publicRuntimeAvailability.selectedReferenceAt, horizonTim
 assert.equal(emergency.detailsAvailable, true);
 assert.equal(emergency.zones['zone-1'].currentReferenceAt, horizonTimes[9]);
 assert.equal(emergency.zones['zone-1'].current.windSpeedMps, 4.9);
+assert.equal(emergency.zones['zone-1'].forecast.hourly[0].time, horizonTimes[9]);
+assert.equal(emergency.zones['zone-1'].forecast.hourly.length, horizonTimes.length - 9,
+  'past weather rows must not be exposed as remaining forecast rows');
 assert.equal(emergency.coastalParts.zones['zone-1'].currentReferenceAt, horizonTimes[9]);
-assert.equal(emergency.coastalParts.zones['zone-1'].hourly[9].waders.score, 70);
+assert.equal(emergency.coastalParts.zones['zone-1'].hourly[0].time, horizonTimes[9]);
+assert.equal(emergency.coastalParts.zones['zone-1'].hourly[0].waders.score, 70);
+assert.equal(emergency.coastalParts.zones['zone-1'].hourly.length, horizonTimes.length - 9,
+  'past score rows must not be exposed as remaining forecast rows');
 assert.equal(emergency.coastalParts.parts['part-1'].current.time, horizonTimes[9]);
 assert.equal(emergency.coastalParts.parts['part-1'].current.waders.score, 70);
 assert.equal(emergency.coastalParts.parts['part-1'].current.weather.windSpeedMps, 5.9);
@@ -553,16 +621,42 @@ const nextEmergencyHour = await service.reevaluatePublicConditions({
 assert.equal(nextEmergencyHour.available, true, warnings.join('\n'));
 assert.equal(nextEmergencyHour.publicRuntimeAvailability.selectedReferenceAt, horizonTimes[10]);
 assert.equal(nextEmergencyHour.coastalParts.parts['part-1'].current.waders.score, 71);
-const expired = await service.reevaluatePublicConditions({
+assert.equal(nextEmergencyHour.zones['zone-1'].forecast.hourly[0].time, horizonTimes[10]);
+assert.equal(nextEmergencyHour.coastalParts.zones['zone-1'].hourly[0].time, horizonTimes[10]);
+const oldButFutureValid = await service.reevaluatePublicConditions({
   manifest: primary.manifest,
   conditions: nextEmergencyHour,
+  now: Date.parse(generatedAt) + 96 * 3_600_000 + 30 * 60_000,
+});
+assert.equal(oldButFutureValid.available, true,
+  'a complete package older than 72 hours must remain visible while its horizon covers now');
+assert.ok(oldButFutureValid.publicRuntimeAvailability.ageHours > 72);
+assert.equal(oldButFutureValid.publicRuntimeAvailability.selectedReferenceAt, horizonTimes[96]);
+assert.equal(oldButFutureValid.coastalParts.parts['part-1'].current.waders.score, 77,
+  'generation age must not numerically penalize the sealed hourly RavScore');
+assert.equal(oldButFutureValid.zones['zone-1'].forecast.hourly[0].time, horizonTimes[96]);
+const exactHorizonBoundary = await service.reevaluatePublicConditions({
+  manifest: primary.manifest,
+  conditions: oldButFutureValid,
+  now: Date.parse(primary.manifest.validUntil),
+});
+assert.equal(exactHorizonBoundary.available, true,
+  'validUntil itself is the last valid exact hour anchor');
+assert.equal(exactHorizonBoundary.publicRuntimeAvailability.selectedReferenceAt, horizonTimes.at(-1));
+assert.equal(exactHorizonBoundary.zones['zone-1'].forecast.hourly.length, 1);
+const expired = await service.reevaluatePublicConditions({
+  manifest: primary.manifest,
+  conditions: exactHorizonBoundary,
   now: Date.parse(primary.manifest.validUntil) + 1,
 });
 assert.equal(expired.available, false, 'The last score row must disappear one millisecond after its horizon.');
 
 assert.match(appSource,
-  /availability\?\.mode==='EMERGENCY_LAST_COMPLETE'[\s\S]{0,220}t\('data\.emergency',[\s\S]{0,180}selectedReferenceAt/,
-  'The public status line must identify same-model emergency data and its projected hour');
+  /availability\?\.mode==='EMERGENCY_LAST_COMPLETE'[\s\S]{0,300}t\('data\.emergency',[\s\S]{0,420}selectedReferenceAt[\s\S]{0,420}ageReferenceAt[\s\S]{0,420}ageHours[\s\S]{0,420}knownCount[\s\S]{0,420}unknownComparableAgeCount[\s\S]{0,420}totalCount/,
+  'The public status line must identify projected hour, conservative source age, and closed aggregate counts');
+assert.match(appSource,
+  /availability\.mode==='FRESH'[\s\S]{0,220}ageReferenceAt\)\+3600000\+1[\s\S]{0,220}selectedReferenceAt\)\+3600000/,
+  'fresh data must be re-evaluated at the source-age and selected-hour boundaries');
 assert.match(appSource,
   /conditionDetailsReady=conditions\.detailsAvailable===true;[\s\S]{0,100}scheduleConditionRuntimeGate\(\)/,
   'An atomically loaded emergency detail bundle must not be fetched a second time');

@@ -79,6 +79,11 @@ export const REQUIRED_CUTOVER_MIGRATIONS = Object.freeze([
     id: '20260906162332_per_pair_weather_fallback_binding',
     filename: '20260906162332_per_pair_weather_fallback_binding.sql',
   }),
+  Object.freeze({
+    version: '20260907084343',
+    id: '20260907084343_horizon_valid_weather_binding',
+    filename: '20260907084343_horizon_valid_weather_binding.sql',
+  }),
 ]);
 
 export const ASSISTANT_BINDING_HEADERS = Object.freeze({
@@ -290,7 +295,7 @@ export async function inspectMigrationSources({ migrationsDirectory = MIGRATIONS
       // RavRadar's historical repository used date-only migration names and
       // therefore contains pre-cutover duplicates. They are never passed to db
       // push: the workflow builds a temporary normalized view from remote
-      // applied history plus the seven exact cutover migrations. New duplicates are
+      // applied history plus the eight exact cutover migrations. New duplicates are
       // still a hard error.
       assert.ok(version.length === 8 && version <= '20260828',
         `duplicate Supabase migration version ${version}: ${versionToFilename.get(version)} and ${filename}`);

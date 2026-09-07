@@ -1,9 +1,9 @@
-import { getLocalObservations } from './observation-service.js?v=4.0.331';
-import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.331';
+import { getLocalObservations } from './observation-service.js?v=4.0.332';
+import { ravScoreModelBinding } from '../core/ravscore-model-contract.js?v=4.0.332';
 import {
   calibrationEligibilityIssues,
   isCalibrationEligibleForBinding,
-} from './calibration-eligibility.js?v=4.0.331';
+} from './calibration-eligibility.js?v=4.0.332';
 const finite=v=>typeof v==='number'&&Number.isFinite(v);
 const found=row=>row.result&&!['none','no'].includes(row.result);
 const average=values=>values.length?values.reduce((a,b)=>a+b,0)/values.length:null;

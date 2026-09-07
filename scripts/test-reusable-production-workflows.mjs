@@ -235,6 +235,7 @@ const dispatchOutputs = [
   'ravscore_candidate_g_rollback_confirmation',
   'ravscore_integrated_first_cutover',
   'ravscore_integrated_first_cutover_confirmation',
+  'ravscore_integrated_weather_handoff_run_id',
   'ravscore_integrated_return',
   'ravscore_integrated_return_confirmation',
 ];
@@ -262,6 +263,7 @@ for (const literal of [
   'ravscore_candidate_g_rollback_confirmation=',
   'ravscore_integrated_first_cutover=false',
   'ravscore_integrated_first_cutover_confirmation=',
+  'ravscore_integrated_weather_handoff_run_id=',
   'ravscore_integrated_return=false',
   'ravscore_integrated_return_confirmation=',
 ]) {
@@ -279,6 +281,86 @@ for (const [jobId, output] of [
     jobId + ' uses normalized dispatch',
   );
 }
+
+assert.equal(
+  buildCaller.includes(
+    'ravscore_integrated_weather_handoff_run_id: ' +
+      gh('needs.validate-dispatch.outputs.ravscore_integrated_weather_handoff_run_id'),
+  ),
+  true,
+  'exact weather handoff run id is forwarded from validated dispatch',
+);
+for (const marker of [
+  'WEATHER_HANDOFF_RUN_ID: ' + gh('inputs.ravscore_integrated_weather_handoff_run_id'),
+  'A verified weather handoff is accepted only by an integrated first cutover.',
+  '[[ ! "$WEATHER_HANDOFF_RUN_ID" =~ ^[1-9][0-9]{0,19}$ ]]',
+]) {
+  assert.equal(validateDispatch.includes(marker), true, 'dispatch handoff authorization: ' + marker);
+}
+
+const handoffResolve = indentedBody(build, '      - name: Resolve exact verified weather source producer run');
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != ''",
+  'GITHUB_TOKEN: ' + gh('github.token'),
+  'verified-weather-source-handoff.mjs resolve-run',
+  '--expected-head "$GITHUB_SHA"',
+  '--first-cutover ' + '"' + gh('inputs.ravscore_integrated_first_cutover') + '"',
+  '--confirmation ' + '"' + gh('inputs.ravscore_integrated_first_cutover_confirmation') + '"',
+]) assert.equal(handoffResolve.includes(marker), true, 'verified handoff resolve: ' + marker);
+
+const handoffRestore = indentedBody(build, '      - name: Restore exact run-bound verified weather source cache');
+assert.equal(handoffRestore.includes('path: .cache/verified-weather-source-handoff-cache'), true, 'fixed handoff cache root');
+assert.equal(handoffRestore.includes('fail-on-cache-miss: true'), true, 'handoff cache miss fails closed');
+assert.equal(handoffRestore.includes('restore-keys:'), false, 'handoff cache has no prefix fallback');
+
+const handoffInstall = indentedBody(build, '      - name: Install exact verified weather sources atomically');
+for (const marker of [
+  'test ' + '"' + gh('steps.weather-source-handoff-cache.outputs.cache-matched-key') + '" = ' + '"' + gh('steps.weather-source-handoff-resolve.outputs.cache_key') + '"',
+  'verified-weather-source-handoff.mjs install',
+  '--artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"',
+  '--github-env "$GITHUB_ENV"',
+]) assert.equal(handoffInstall.includes(marker), true, 'verified handoff install: ' + marker);
+
+for (const stepName of [
+  'Update DMI bulk model cache',
+  'Fill only exact-hour DMI gaps from Copernicus',
+  'Fill only the exact remaining current gaps from Open-Meteo',
+]) {
+  assert.equal(
+    indentedBody(build, '      - name: ' + stepName).includes("steps.weather-source-handoff.outputs.reused != 'true'"),
+    true,
+    'verified handoff skips only long forecast acquisition: ' + stepName,
+  );
+}
+for (const stepName of [
+  'Select exact-hour DMI gaps for targeted Copernicus supplement',
+  'Inspect target-bound Copernicus source stage after fresh DMI',
+  'Require reusable Copernicus source stage before combined current closure',
+  'Build exact DMI-first current operational closure',
+  'Build public seven-day current history and controlled live selection',
+  'Update central weather cache',
+  'Validate full project after fresh weather and current provenance',
+  'Run release governance gate after refreshed data validation',
+]) {
+  assert.equal(
+    indentedBody(build, '      - name: ' + stepName).includes("steps.weather-source-handoff.outputs.reused != 'true'"),
+    false,
+    'verified handoff retains rebuild/gate step: ' + stepName,
+  );
+}
+assert.equal(
+  build.indexOf('name: Install exact verified weather sources atomically')
+    < build.indexOf('name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint'),
+  true,
+  'attested target is installed before every target-bound restore',
+);
+assert.equal(
+  build.indexOf('name: Build exact DMI-first current operational closure')
+    < build.indexOf('name: Verify rebuilt closure exactly matches the run-bound source handoff'),
+  true,
+  'rebuilt closure is matched after reconstruction',
+);
+assert.equal(build.includes('single-use'), false, 'run-bound replay-safe handoff is not falsely described as single-use');
 
 const outcome = jobBlock(orchestrator, 'production-outcome');
 assert.equal(outcome.includes('if: always()'), true, 'outcome runs after callee failure');

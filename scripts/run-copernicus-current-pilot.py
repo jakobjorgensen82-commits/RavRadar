@@ -17,14 +17,13 @@ from typing import Any, Callable
 
 from lib.copernicus_current import (
     COMPONENT_PAIR,
-    FUTURE_ACQUISITION_FRESHNESS_HOURS,
     LOCAL_MAX_DISTANCE_KM,
     REQUEST_CONTRACT_ID,
     SELECTION_POLICY_ID,
     atomic_write_shadow,
     atomic_write_shadow_checkpoint,
     file_sha256,
-    load_shadow,
+    load_shadow_with_salvage,
     load_targets,
     make_acquisition,
     make_coverage_collection,
@@ -1086,8 +1085,6 @@ def main() -> int:
     registry = validate_target_registry(json.loads(args.targets.read_text(encoding="utf-8")))
     reference = selected_reference(args.at, registry)
     acquisition_at = parse_time(args.acquisition_at, "acquisition time") if args.acquisition_at else datetime.now(timezone.utc)
-    if abs((acquisition_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
-        raise RuntimeError("Actual Copernicus acquisition clock is outside four hours of the locked production reference")
 
     authoritative_targets = load_targets(args.authoritative_targets)
     authoritative_by_part = {row["partId"]: row for row in authoritative_targets}
@@ -1110,27 +1107,28 @@ def main() -> int:
     )
 
     shadow_was_present = args.shadow.exists() and args.shadow.stat().st_size > 0
-    shadow_recovered = False
-    try:
-        existing = load_shadow(args.shadow, reference, target_identities)
-    except (
-        AttributeError,
-        UnicodeError,
-        json.JSONDecodeError,
-        TypeError,
-        ValueError,
-        RuntimeError,
-    ):
-        quarantine_invalid_private_file(args.shadow, "shadow")
+    existing, shadow_salvage = load_shadow_with_salvage(
+        args.shadow, reference, target_identities,
+    )
+    existing_acquisitions, existing_records = merge_cache_evidence(
+        existing, [], [], reference, target_identities,
+    )
+    shadow_rewritten = bool(shadow_salvage["salvaged"])
+    if shadow_rewritten:
         existing = atomic_write_shadow_checkpoint(
             args.shadow,
-            acquisitions=[],
-            records=[],
+            acquisitions=existing_acquisitions,
+            records=existing_records,
             updated_at=acquisition_at,
             target_identities=target_identities,
         )
-        shadow_recovered = True
-    existing_acquisitions, existing_records = merge_cache_evidence(existing, [], [], reference, target_identities)
+        print(
+            "Copernicus shadow salvaged safely: "
+            f"retainedRecords={len(existing_records)}, "
+            f"droppedRecords={shadow_salvage['droppedRecordCount']}, "
+            f"droppedPairs={shadow_salvage['droppedPairCount']}; "
+            "activation seal and source stage will be rebuilt."
+        )
 
     source_attempts: list[dict[str, Any]] = []
     reusable_stage: dict[str, Any] | None = None
@@ -1139,7 +1137,7 @@ def main() -> int:
         and args.source_stage.exists()
         and args.source_stage.stat().st_size > 0
     ):
-        if shadow_recovered or not shadow_was_present:
+        if shadow_rewritten or not shadow_was_present:
             quarantine_invalid_private_file(args.source_stage, "source stage")
         else:
             try:

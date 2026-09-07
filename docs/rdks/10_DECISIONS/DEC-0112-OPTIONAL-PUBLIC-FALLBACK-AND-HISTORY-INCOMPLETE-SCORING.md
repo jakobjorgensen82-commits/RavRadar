@@ -4,6 +4,8 @@
 
 **Dato:** 2026-08-30
 
+> **SUPERSEDERET alderskrav 2026-09-07:** Beslutningspunkt 2's absolutte 72-timersgrænse er ophævet af DEC-0119. En fallback skal fortsat være den nyeste komplette, auditerede, measured-only pakke og ligge inden for sin egen verificerede prognosehorizon. De historiske runbeskrivelser nedenfor ændres ikke.
+
 ## Operativ status 2026-09-03
 
 Fase A er afsluttet for den samlede modelkode, mens den offentlige profil bevidst forbliver Candidate G. Det lokale 4.0.321-delta reducerer checkpointets normale database-egress med version-only read efterfulgt af server-side CAS og højst 4 KiB metadataresponse; en fuld checkpointpayload på højst 16 MiB læses kun ved restore, når Actions-cachen mangler. Databasen validerer eksakt 673 integrerede states og 673 `READY` Candidate G-companionstates samt privacy/envelope/binding, men JavaScript er fortsat eneautoritet for replay og kanoniske hashes. Checkpointet skaber ingen nye historikrækker, og direkte læsning/funktionsudførelse er låst af RLS/ACL til den afgrænsede service-role-vej.

@@ -1,20 +1,20 @@
-import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.331";
-import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, reevaluatePublicConditions } from "./js/services/data-service.js?v=4.0.331";
-import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.331";
-import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.331";
-import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.331";
-import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.331";
-import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.331";
-import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.331";
-import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.331";
-import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.331";
-import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.331";
-import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.331";
-import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.331";
-import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.331';
-import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.331';
-import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.331';
-import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.331';
+import { exceptionalScoreMark, scoreRating } from "./js/core/score-presentation.js?v=4.0.332";
+import { loadConditions, loadConditionDetails, mergeConditionDetails, loadZones, loadDataManifest, reevaluatePublicConditions } from "./js/services/data-service.js?v=4.0.332";
+import { submitTripEvidenceObservation, syncPendingObservations } from "./js/services/observation-service.js?v=4.0.332";
+import { consumeAuthCallback } from "./js/services/auth-service.js?v=4.0.332";
+import { createMap, installFlowArrows, refreshZoneStyles, renderZones } from "./js/map/map-view.js?v=4.0.332";
+import { projectPublicCoastlines } from "./js/map/public-coast-projection.js?v=4.0.332";
+import { bindZoneInfoInteractions, showZoneInfo } from "./js/ui/info-panel.js?v=4.0.332";
+import { openAccountDialog } from "./js/ui/account-panel.js?v=4.0.332";
+import { openDeveloperDialog } from "./js/ui/developer-panel.js?v=4.0.332";
+import { askRavRadar, quickQuestions, ravQuestionNeedsConditionDetails } from "./js/services/rav-assistant.js?v=4.0.332";
+import { formatDateTime, formatNumber, getLanguage, getLocale, t } from "./js/i18n.js?v=4.0.332";
+import { buildLocalZoneScore, selectLocalBestForDay } from "./js/core/local-zone-score.js?v=4.0.332";
+import { addNationalRanking, compareNationalRankingRows } from "./js/core/zone-ranking.js?v=4.0.332";
+import { createPublicTripEvidenceRuntime } from './js/services/trip-evidence-runtime.js?v=4.0.332';
+import { createPublicPageResumeHandler, createServiceWorkerControllerChangeHandler } from './js/core/public-page-resume.js?v=4.0.332';
+import { forecastDateKeyInTimeZone, visibleForecastDays } from './js/core/forecast-calendar.js?v=4.0.332';
+import { assertRavScoreModelBinding } from './js/core/ravscore-model-contract.js?v=4.0.332';
 
 const state = { mode:"waders", selectedZone:null, zoneLayer:null, zones:null, conditions:{ available:false,zones:{} }, flowArrows:null, currentScores:new Map(), forecastGroups:new Map(), forecastRenderId:0 };
 const map = createMap("map");
@@ -230,7 +230,10 @@ function ensureConditionDetails(){
 function nextConditionRuntimeGateAt(conditions){
   const availability=conditions?.publicRuntimeAvailability;
   if(!conditions?.available||!availability)return null;
-  if(availability.mode==='FRESH')return Date.parse(availability.generatedAt)+3600000+1;
+  if(availability.mode==='FRESH')return Math.min(
+    Date.parse(availability.ageReferenceAt)+3600000+1,
+    Date.parse(availability.selectedReferenceAt)+3600000
+  );
   if(availability.mode==='EMERGENCY_LAST_COMPLETE')return Math.min(
     Date.parse(availability.validUntil)+1,
     Date.parse(availability.selectedReferenceAt)+3600000
@@ -242,9 +245,14 @@ function updatePublicDataStatus(conditions){
   if(conditions?.available&&availability?.mode==='EMERGENCY_LAST_COMPLETE'){
     dataStatus.textContent=t('data.emergency',{
       time:formatDateTime(availability.selectedReferenceAt),
+      source:formatDateTime(availability.ageReferenceAt),
+      age:formatNumber(availability.ageHours,{minimumFractionDigits:1,maximumFractionDigits:1}),
+      known:availability.weatherSourceAge.knownCount,
+      unknown:availability.weatherSourceAge.unknownComparableAgeCount,
+      total:availability.weatherSourceAge.totalCount,
     });
-  }else if(conditions?.available&&conditions.generatedAt){
-    dataStatus.textContent=t('data.updated',{time:formatDateTime(conditions.generatedAt)});
+  }else if(conditions?.available&&availability?.ageReferenceAt){
+    dataStatus.textContent=t('data.updated',{time:formatDateTime(availability.ageReferenceAt)});
   }else{
     dataStatus.textContent=t('data.failed');
   }
@@ -346,7 +354,10 @@ try {
   // kontrakten, datasættet og modelbundlen er valideret.
   const manifest=await loadDataManifest();activeManifest=manifest;
   performance.mark?.('ravradar:manifest-loaded');
-  if(manifest?.generatedAt)dataStatus.textContent=t('data.updatedFetching',{time:formatDateTime(manifest.generatedAt)});
+  const manifestSourceAge=manifest?.weatherSourceAge;
+  if(manifestSourceAge?.unknownComparableAgeCount===0&&manifestSourceAge.oldestKnownSourceReferenceAt){
+    dataStatus.textContent=t('data.updatedFetching',{time:formatDateTime(manifestSourceAge.oldestKnownSourceReferenceAt)});
+  }
   // 2: zonegrundlag og kystdele indlæses som ét manifestbundet datasæt.
   const zones=projectPublicCoastlines(await loadZones({manifest}));state.zones=zones;
   performance.mark?.('ravradar:zones-loaded');
@@ -403,11 +414,11 @@ try {
   syncPendingObservations().catch(()=>{});updateTripUi();
 } catch(error){console.error(error);infoPanel.hidden=false;infoPanel.innerHTML=`<div class="notice">${t('data.couldNotLoad')}</div>`;dataStatus.textContent=t('data.loadError');}
 
-// RavRadar 4.0.331: versionsmanifest + sikker service-worker-opdatering.
+// RavRadar 4.0.332: versionsmanifest + sikker service-worker-opdatering.
 function installAppUpdateFlow() {
   if (!("serviceWorker" in navigator)) return;
   const banner=document.querySelector("#updateBanner"), updateButton=document.querySelector("#updateAppButton");
-  const version=window.RAVRADAR_VERSION||"4.0.331"; document.querySelector("#appVersion").textContent=version;
+  const version=window.RAVRADAR_VERSION||"4.0.332"; document.querySelector("#appVersion").textContent=version;
   let registration=null, waitingWorker=null;
   const showUpdate=worker=>{waitingWorker=worker||waitingWorker;if(waitingWorker){waitingWorker.postMessage({type:'SKIP_WAITING'});return;}if(!banner||!updateButton)return;banner.hidden=false;updateButton.disabled=false;updateButton.textContent=t('update.now');};
   const activate=()=>{updateButton.disabled=true;updateButton.textContent=t('update.updating');(waitingWorker||registration?.waiting)?.postMessage({type:"SKIP_WAITING"});};
@@ -447,8 +458,8 @@ function publicTripEvidenceContext(selection = null) {
   const coastalPart = partsById[coastalPartId];
   if (!coastalPart) throw new Error('Den valgte kyststrækning findes ikke længere. Vælg område og kyststrækning igen.');
 
-  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.331');
-  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.331';
+  const versionText = String(globalThis.RAVRADAR_VERSION || document.querySelector('#appVersion')?.textContent || '4.0.332');
+  const appVersion = versionText.match(/\d+\.\d+\.\d+/)?.[0] || '4.0.332';
   const modelBinding = state.conditions?.ravScoreRuntime?.modelBinding;
   try {
     assertRavScoreModelBinding(modelBinding, 'Turens aktive RavScore-modelbinding');

@@ -421,7 +421,7 @@ with tempfile.TemporaryDirectory(prefix="ravradar-copernicus-targets-") as raw:
             producer.retained_current_asset_proofs_sha256([retained_proof])
         ),
         "retainedCurrentAssetProofs": [retained_proof],
-        "ready": False,
+        "ready": True,
         "failureCodes": ["RETAINED_CURRENT_PART_TIME"],
     })
     retained_allowed, retained_authorization = (

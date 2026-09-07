@@ -2,6 +2,18 @@
 
 Dette dokument samler tværgående læring, som skal påvirke fremtidige tekniske beslutninger. Historiske detaljer findes i RDKS/chatarkivet; her står de generelle arbejdsregler.
 
+## Aktuel 4.0.332-læring
+
+Datakvalitet og dataalder er forskellige dimensioner. En gammel, strukturelt valid prognoserække, som stadig dækker den konkrete fremtidstime, må ikke blive til missing alene på grund af en klokkegrænse. Horizon er availability; alder skal vises og bruges til tillid, nødstatus, turbinding og kalibreringsudelukkelse.
+
+At lempe en forkert age gate må aldrig lempe integritet. Hver ny pakke skal stadig lukke præcis 79.414 par med én kilde pr. par, target-/registry-/model-/hashbinding og alle gates. Exact end instant og `+1 ms` skal testes særskilt, fordi en upræcis boundary kan være både falsk stop og fail-open.
+
+Cachefejl skal isoleres på den mindste kryptografisk beviselige enhed. En ugyldig leaf bliver et hul; uafhængige positive beviser bevares og canonical metadata genbygges. Autoritativ control-plane-korruption kan ikke salvages sikkert og skal fortsat stoppe.
+
+Et runbundet source-handoff kan fjerne unødvendig gentagen providerindsamling uden at blive gatebypass, når producent og consumer begge binder og genverificerer run, head, attempt, target, registry, bytes, hashes og closure. Det er ikke en erstatning for en senere durable immutable artifact-historik.
+
+Historikmangel må beskrives ærligt og lokalt: numeriske `HISTORY_INCOMPLETE`-scorer, reason codes, konservative bounds og kalibrering fra er sikrere end at gøre hele landet utilgængeligt. Providertransitioners fysiske scorekontinuitet kræver efterfølgende måling; den må ikke løses med uautoriseret blending i en akut release.
+
 ## Aktuel 4.0.316-læring
 
 En valgfri recoverykapacitet må ikke blive en skjult forudsætning for en frisk primary. Systemet skal skelne maskinelt mellem **gyldig fallback**, **forventet ingen fallback** og **integritetsfejl**. Kun den midterste tilstand kan fortsætte uden reservedatasæt; gammel eller udløbet fallback skal fjernes, mens primary accounting og audit forbliver fail-closed.

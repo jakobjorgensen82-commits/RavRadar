@@ -1,3 +1,13 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-gyldigt vejr og source-handoff
+
+- **Bindende ejerregel:** Brug den nyeste strukturelt valide prognoserække uanset acquisition/generation-alder, mens den konkrete time stadig ligger i pakkens verificerede horizon. Eksakt `validUntil` er gyldig; `+1 ms` er udløbet. De gamle 72h- og 90/150/240-minutters availability-/deploygates er **SUPERSEDERET**; alder er warning/emergency/tillid/tur/kalibrering.
+- **Integritet:** Nyt weather-artifact kræver fortsat præcis 79.414/79.414, én kilde pr. par, nul overlap/missing samt eksakt target/registry/model/provenance/hash/privacy. Run `34083611297` stoppede korrekt ved 78.856/79.414 og 558 missing uden deploy.
+- **Cache:** DMI/Copernicus/Open-Meteo salvages per proof-enhed. En ugyldig leaf bliver et hul; øvrige verificerede positives og deres canonical bevis bevares. Autoritativ top-/target-/registry-/control-plane-korruption stopper. Nyeste verificerede tuple vinder atomisk efter uændret providerorden.
+- **Historik:** Op til 48 timer er rådgivende. Ufuldstændighed giver alle aktive zoner numeriske `HISTORY_INCOMPLETE`-scorer, reason codes og `calibrationEligible=false`; ingen syntese og intet nationalt availability-stop.
+- **Cutover:** Ét eksakt grønt komplet `main`-producerrun kan aflevere fem private sourcecacher gennem run-/head-/attempt-/target-/registry-/hashbundet handoff. Consumeren genbeviser alt. Dette sparer kun gentaget providerindsamling; central hydrering, sourcegate, bounded `update:weather`, Feggesund/spatial audit, kapacitet, fuld validate/releasegate, artifact/privacy, Pages, Phase B og offentlig verifikation består.
+- **Runtime:** `34093354004` sluttede sikkert med Copernicus success og Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; præcis 112 critical missing stod tilbage. Cachen blev gemt uden closure, artifact eller deploy. `34104536681` er aktivt på eksakt `main` `c2ce63ff`. Normal workflow er fortsat deaktiveret under cutover, og Candidate G er offentlig.
+- **Efter launch:** Source-transition-overlap/hysterese og durable immutable multi-artifact-historik er separate issues. Ingen blending eller generel artifactselector er del af 4.0.332.
+
 # NYESTE CHECKPOINT – 2026-09-06 – 4.0.327 run-afgrænset Open-Meteo
 
 - Aktiv branch er codex/open-meteo-shadow-cadence-rollover fra merged main d899c6de. 4.0.326 var exact-head-grøn og merged via PR #259.

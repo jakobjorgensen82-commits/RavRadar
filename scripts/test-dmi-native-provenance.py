@@ -338,7 +338,7 @@ assert producer.producer_terminal_code(
     bootstrap_complete=False,
     productive=False,
     diagnostics=all_stale,
-) == "DMI_CATALOG_SCHEDULE_STALE"
+) == "DMI_CURRENT_LEDGER_INCOMPLETE"
 assert producer.producer_terminal_code(
     strict_current_anchor_available=False,
     wave_bootstrap_requested=False,
@@ -622,7 +622,7 @@ else:
     raise AssertionError("A reduced partial-DMI complement must fail closed")
 
 # Cache continuity is pair-exact. An older fully proven row remains usable in
-# availability mode, while strict DMI READY still rejects any retained proof.
+# availability mode, while unrelated local failures still keep DMI non-READY.
 continuity_signature = producer.current_marine_processing_signature(
     "test-registry"
 )
@@ -743,7 +743,7 @@ def assert_retained_availability(actual_source: dict) -> tuple[dict, dict]:
     except ValueError:
         pass
     else:
-        raise AssertionError("Retained availability must never satisfy strict READY")
+        raise AssertionError("Unfinished local DMI work must remain non-READY")
     return continuity, ledger
 
 
@@ -2394,8 +2394,9 @@ try:
     assert stricter_stats["selectedRunFutureHorizonHours"] == 107.0
     assert stricter_stats["preferredProgressiveRunPinned"] is True
 
-    # A bounded candidate pin may exceed one observed cadence, but it must
-    # never overrule explicit evidence that the complete STAC catalog is stale.
+    # Schedule/publication lag is diagnostic only. The older complete official
+    # run remains available behind a newer incomplete generation; exact asset
+    # identity and remaining valid-time coverage are still enforced.
     stale_catalog_reference = older_run + timedelta(hours=20)
     producer.time.time = lambda: stale_catalog_reference.timestamp()
     stale_catalog_hours = set(
@@ -2413,11 +2414,16 @@ try:
         allow_documented_required_gaps=True,
         retain_preferred_native_run=True,
     )
-    assert stale_selected_run is None
-    assert stale_assets == []
+    assert stale_selected_run == older_run.isoformat().replace("+00:00", "Z")
+    assert stale_assets
     assert stale_stats["preferredNativeRunPinned"] is True
     assert stale_stats["catalogScheduleFresh"] is False
-    assert stale_stats["rejectedStaleRun"] is True
+    assert stale_stats["selectedWithinObservedSchedule"] is True
+    assert stale_stats["scheduleFreshnessWarning"] is True
+    assert stale_stats["scheduleFreshnessWarningCodes"] == [
+        "CATALOG_PUBLICATION_LAG"
+    ]
+    assert stale_stats["rejectedStaleRun"] is False
 
     # Retention is bounded by the configured complete horizon.  A preferred
     # native run can still expose its exact +120 endpoint while having less
@@ -2571,6 +2577,92 @@ assert producer.current_operational_cache_ready(
     tail_ledger_document,
     targets,
     tail_reference,
+)
+
+# A structurally valid future row from an older model generation remains usable
+# only where the newer selected official tuple is locally unavailable. A newer
+# usable processed outcome must win and leave an unresolved gap until its row is
+# atomically materialized; an older cache row may never invert source priority.
+retained_tail_document = copy.deepcopy(tail_ledger_document)
+retained_tail_hour = tail_direct_hours[0]
+retained_tail_source = producer.native_component_source(
+    "dkss_lf",
+    "2025-12-31T18:00:00Z",
+    retained_tail_hour,
+    component="current",
+    zone=zone,
+    grid_candidate=candidate,
+    capture={
+        "itemId": "retained-old-stac-item",
+        "assetIdentitySha256": "e" * 64,
+        "assetSizeBytes": 1024,
+        "acquiredAt": "2026-01-01T02:00:00Z",
+        "contentLengthBytes": 1024,
+        "contentSha256": "f" * 64,
+        "itemCreatedAt": "2025-12-31T19:00:00Z",
+    },
+    spatial_selection="nearest-shared-grid-cell-no-spatial-interpolation",
+    verticalLayer="depthBelowSea:1",
+    verticalLayerRankM=1.0,
+    vectorSelection=CURRENT_VECTOR_SELECTION,
+    vectorSemanticsVersion=3,
+)
+assert retained_tail_source is not None
+retained_tail_document["zones"]["PART::TEST"]["hourly"][retained_tail_hour][
+    "sources"
+]["current"] = retained_tail_source
+priority_inversion_ledger = producer.build_current_operational_ledger(
+    retained_tail_document,
+    targets,
+    tail_reference,
+    tail_official_catalogs,
+    [retained_proof(retained_tail_source)],
+)
+assert priority_inversion_ledger["ready"] is False
+assert "UNATTESTED_CURRENT_PART_TIME" in priority_inversion_ledger["failureCodes"]
+assert priority_inversion_ledger["retainedCurrentAssetProofCount"] == 0
+
+selected_newer_step = retained_tail_document["runs"]["dkss_lf"][
+    "processedSteps"
+][retained_tail_hour]
+selected_newer_source = selected_newer_step["sourceAsset"]
+selected_newer_step["currentPartOutcomeProof"] = (
+    producer.build_current_part_outcome_proof(
+        [target["partId"]],
+        [target["partId"]],
+        producer.target_fingerprint(targets),
+        selected_newer_step["processingSignature"],
+        selected_newer_source,
+    )
+)
+retained_tail_ledger = producer.build_current_operational_ledger(
+    retained_tail_document,
+    targets,
+    tail_reference,
+    tail_official_catalogs,
+    [retained_proof(retained_tail_source)],
+)
+retained_allowed, retained_authorization = (
+    producer.current_attestation_authorization_from_operational_ledger(
+        retained_tail_ledger
+    )
+)
+retained_tail_attestation = producer.current_operational_attestation(
+    retained_tail_document,
+    targets,
+    tail_reference,
+    retained_allowed,
+    retained_authorization,
+)
+assert retained_tail_ledger["ready"] is True
+assert retained_tail_ledger["failureCodes"] == ["RETAINED_CURRENT_PART_TIME"]
+validate_current_operational_ledger(
+    retained_tail_ledger,
+    retained_tail_attestation,
+    targets,
+    tail_reference,
+    tail_reference + timedelta(hours=117),
+    producer.target_fingerprint(targets),
 )
 
 # Recomputed counts and hashes cannot make a v4 ledger valid after one
@@ -2862,6 +2954,84 @@ with tempfile.TemporaryDirectory() as temporary_directory:
             reference - timedelta(hours=48),
             reference + timedelta(hours=117),
         ) == 0
+
+        # A parseable cache with isolated malformed leaves is salvaged in
+        # place. The invalid current tuple becomes a real gap, while another
+        # valid current hour and unrelated components remain reusable. The
+        # aggregate diagnostic contains no zone/time/source payload.
+        granular = json.loads(json.dumps(tail_ledger_document))
+        granular_hours = list(granular["zones"]["PART::TEST"]["hourly"])
+        invalid_current_hour, preserved_current_hour = granular_hours[:2]
+        granular_invalid_row = granular["zones"]["PART::TEST"]["hourly"][
+            invalid_current_hour
+        ]
+        granular_invalid_row["sources"]["current"]["gridPoint"] = "invalid"
+        granular_preserved_row = granular["zones"]["PART::TEST"]["hourly"][
+            preserved_current_hour
+        ]
+        granular_preserved_row["significant-wave-height"] = 1.2
+        granular_preserved_row["sources"]["wave"] = "invalid"
+        granular["zones"]["PART::TEST"]["hourly"][
+            "2030-01-01T00:00:00Z"
+        ] = "invalid"
+        granular["zones"]["PART::TEST"].setdefault("gridPoints", {})[
+            "water-temperature"
+        ] = "invalid"
+        producer.OUTPUT_PATH.write_text(json.dumps(granular), encoding="utf-8")
+        producer.DEPLOYED_FALLBACK_PATH.write_text("{}", encoding="utf-8")
+        granular_proofs: list[dict] = []
+        granular_selected = producer.load_previous(
+            "test-registry",
+            coastal_part_targets=targets,
+            production_reference=tail_reference,
+            retained_current_asset_proofs=granular_proofs,
+        )
+        granular_zone = granular_selected["zones"]["PART::TEST"]
+        assert "current-u" not in granular_zone["hourly"][invalid_current_hour]
+        assert "current-v" not in granular_zone["hourly"][invalid_current_hour]
+        assert "current" not in granular_zone["hourly"][invalid_current_hour].get(
+            "sources", {}
+        )
+        assert "current-u" in granular_zone["hourly"][preserved_current_hour]
+        assert "current-v" in granular_zone["hourly"][preserved_current_hour]
+        assert "significant-wave-height" not in granular_zone["hourly"][
+            preserved_current_hour
+        ]
+        assert "2030-01-01T00:00:00Z" not in granular_zone["hourly"]
+        assert "water-temperature" not in granular_zone["gridPoints"]
+        granular_report = granular_selected["diagnostics"][
+            "cacheLeafSanitization"
+        ]
+        assert granular_report["code"] == "DMI_CACHE_INVALID_LEAVES_DROPPED"
+        assert granular_report["droppedHourCount"] == 1
+        assert granular_report["droppedSourceComponentCount"] == 2
+        assert granular_report["droppedGridPointCount"] == 1
+        report_text = json.dumps(granular_report)
+        assert "PART::TEST" not in report_text
+        assert invalid_current_hour not in report_text
+        assert "gridPoint" not in report_text
+        assert strict_verified_part_current_pair_count(
+            granular_selected,
+            targets,
+            tail_reference,
+            tail_reference + timedelta(hours=117),
+        ) == len(granular_hours) - 1
+        assert granular_proofs == [], (
+            "a changed exact ledger attestation must not remain positive evidence"
+        )
+
+        # Truncated/unparseable bytes are still document-level corruption:
+        # quarantine and fail closed when no strict READY donor exists.
+        producer.OUTPUT_PATH.write_text('{"schemaVersion":2,', encoding="utf-8")
+        producer.DEPLOYED_FALLBACK_PATH.write_text("{}", encoding="utf-8")
+        try:
+            producer.load_previous("test-registry")
+            raise AssertionError("truncated cache unexpectedly survived")
+        except RuntimeError as exc:
+            assert "no strict READY active recovery donor" in str(exc)
+        assert list(producer.OUTPUT_PATH.parent.glob(
+            f"{producer.OUTPUT_PATH.name}.invalid-*"
+        ))
     finally:
         producer.OUTPUT_PATH = original_output
         producer.DEPLOYED_FALLBACK_PATH = original_fallback

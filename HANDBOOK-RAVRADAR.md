@@ -1,6 +1,20 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.331
+**Håndbogsversion:** 4.0.332
+
+## Brugbare vejrdata afgøres af deres prognosehorizon – 4.0.332
+
+RavRadar bruger nu den nyeste strukturelt kontrollerede prognose, også når den er ældre end de tidligere faste aldersgrænser. En række er brugbar, hvis den konkrete time stadig ligger i pakkens egen verificerede prognosehorizon. Den præcise sidste gyldige instant accepteres; én millisekund senere er pakken udløbet. Alder vises fortsat ærligt som advarsel og bruges til nødstatus, tillid, turbinding og til at holde data ude af kalibrering. Alder alene gør ikke længere en future-række manglende eller blokerer en udgivelse.
+
+**SUPERSEDERET:** Alle ældre håndbogskrav om højst 72 timers pakke-/checkpointalder, mindst 72 timers rå historik som aktiveringskrav og hårde 90/150/240-minutters friskhedsgrænser er erstattet af ejerens beslutning i DEC-0119. Historiske hændelsesbeskrivelser nedenfor står fortsat som revisionsspor for, hvordan systemet virkede dengang. Kravene om samme komplette pakke, rigtig model og target, verificeret provenance, hashes, privacy og egen prognosehorizon gælder fortsat.
+
+Et nyt weather-artifact må stadig kun bygges ved præcis 673 kystdele × 118 timer = 79.414 entydige par, én godkendt kilde pr. par og nul overlap eller mangler. Run `34083611297` nåede 78.856/79.414 og havde 558 mangler; derfor blev der korrekt ikke deployet. Run `34093354004` sluttede sikkert med et succesfuldt Copernicus-led. Open-Meteo havde 2.735 krævede par, bevarede 1.873, hentede 750 og udfyldte samlet 2.623; præcis 112 kritiske par manglede fortsat. Cachen blev gemt, men closure, artifact og deploy skete ikke. Run `34104536681` er aktivt på eksakt `main` `c2ce63ff`, mens det normale workflow fortsat er deaktiveret.
+
+Ved første integrerede modelskift kan en komplet grøn `main`-producent aflevere sine fem private kildecacher gennem et handoff, der er bundet til netop repository, workflow, branch, commit, run, attempt, target, register, closure og filhashes. Cutover-kørslen kontrollerer alle bindinger igen og installerer filerne samlet. Det sparer alene den gentagne lange leverandørindsamling: central konfiguration, sourcegate, bounded `update:weather`, Feggesund- og spatial kontrol, live kapacitet, fuld validate/releasegate, artifact/privacy, Pages og offentlig kontrol springes ikke over.
+
+DMI-, Copernicus- og Open-Meteo-cacher kontrolleres i små uafhængige bevisenheder. En enkelt ugyldig record fjernes som et ærligt hul, mens andre verificerede rækker og deres genbyggede hashes/seals bevares. Ugyldig topidentitet, target, register eller anden central kontrolinformation stopper fortsat. En ældre gyldig tuple står, indtil en nyere tuple er fuldt kontrolleret og kan erstatte den samlet efter DMI → Baltic → AMM15 → policyregional DMI → Open-Meteo. Open-Meteo låser ikke rækken til sig selv.
+
+Op til 48 timers verificeret mobiliserings-/transporthistorik er rådgivende. Mangler giver numeriske `HISTORY_INCOMPLETE`-scorer med alle zoner aktive, forklarende årsager, konservative grænser og `calibrationEligible=false`; historik opfindes aldrig. Normal workflow forbliver deaktiveret under det kontrollerede modelskift. Efter lancering behandles scorekontinuitet ved leverandørskift og en permanent immutable historik over flere artifacts som to separate forbedringer, ikke som skjulte dele af 4.0.332.
 
 ## Kildekontrollen skal have sit historiske sammenligningsgrundlag – 2026-09-07
 
@@ -112,13 +126,13 @@ Historisk gjaldt en 4.0.324-regel, hvor en partial kandidat kunne holde fast i s
 
 Den almindelige vejrhentning genbruger alle gyldige timer og kontrollerer hele target..+117 — ikke kun den nyeste hale. Manglende timer midt i vinduet, ufuldstændige komponenter samt ugyldige eller udløbne trin hentes igen målrettet. Tre DKSS-havsamlinger kan behandles i samme normale kørsel. Den store opfyldning accelererer den samme kandidatmekanisme; den er ikke den fremtidige updater, for det er de normale kørsler.
 
-Historikken beskæres ikke ved modelrunskifte eller promotion. Den private DMI-cache beholder normalt 60 timer og mindst 54 timer, rå zonehistorik mindst 72 timer og Copernicus-cachen 168 timer. Den nye model bruger højst 48 timers verificeret forløb til mobilisering og transport. Manglende fortid opfindes ikke. Kildeordenen er fortsat DMI, Baltic, AMM15, den godkendte regionale DMI-vej og Open-Meteo. Ekstern cron/watchdog og GitHubs reservetider er uændrede. Den målrettede lokale matrix er grøn. Run `33986893042` fejlede alene på den manglende releasechangelog. Ejeren beordrede derefter et admin-bypass, men Codex-sikkerhedslaget afviste handlingen, så ingen bypass eller merge skete. Run `33988058582` bestod releasegaten, men stoppede senere alene på håndbogs-/installationspariteten. Den officielle synk retter én genereret SQL-payloadlinje; ny exact-head, cachebootstrap/runtime, fuld produktionsgate og frisk 210/673/118-kørsel afventer.
+Historikken beskæres ikke ved modelrunskifte eller promotion. Den private DMI-cache beholder normalt 60 timer og mindst 54 timer, og Copernicus-cachen 168 timer. Det gamle krav om mindst 72 timers rå zonehistorik er **SUPERSEDERET**; den nye model bruger op til 48 timers verificeret, rådgivende forløb til mobilisering og transport og kan være numerisk `HISTORY_INCOMPLETE`. Manglende fortid opfindes ikke. Kildeordenen er fortsat DMI, Baltic, AMM15, den godkendte regionale DMI-vej og Open-Meteo. Ekstern cron/watchdog og GitHubs reservetider er uændrede. Den målrettede lokale matrix er grøn. Run `33986893042` fejlede alene på den manglende releasechangelog. Ejeren beordrede derefter et admin-bypass, men Codex-sikkerhedslaget afviste handlingen, så ingen bypass eller merge skete. Run `33988058582` bestod releasegaten, men stoppede senere alene på håndbogs-/installationspariteten. Den officielle synk retter én genereret SQL-payloadlinje; ny exact-head, cachebootstrap/runtime, fuld produktionsgate og frisk 210/673/118-kørsel afventer.
 
 ## Open-Meteo lukker kun de sidste præcise strømhuller – 2026-09-05
 
 RavRadar prøver strøm i denne rækkefølge: DMI, Copernicus Baltic, Copernicus AMM15, den godkendte regionale DMI-vej for otte Limfjordsdele og til sidst Open-Meteo. Sidste reserve bruges kun, når de forudgående kilder er fuldt og sikkert afsluttet. En timeout eller leverandørfejl tæller ikke som “ingen data” og kan ikke sende et ufuldstændigt resultat videre.
 
-Open-Meteo må kun udfylde de 118 aktuelle prognosetimer, aldrig manglende fortid. Der kopieres ikke fra andre timer eller kystdele. Feltet er en kombineret overfladestrøm og bruges kun som strøm; det må ikke tælles igen som bølge eller tidevand. Timerne er ikke kalibreringsegnede. Når DMI eller Copernicus senere kan levere samme time, vinder den kilde automatisk. Brugeren får ikke en ekstra leverandøretiket, men systemet beholder intern provenance og stopper før publicering ved fejl eller for gammelt forecasttarget.
+Open-Meteo må kun udfylde de 118 aktuelle prognosetimer, aldrig manglende fortid. Der kopieres ikke fra andre timer eller kystdele. Feltet er en kombineret overfladestrøm og bruges kun som strøm; det må ikke tælles igen som bølge eller tidevand. Timerne er ikke kalibreringsegnede. Når DMI eller Copernicus senere kan levere samme time, vinder den kilde automatisk. Brugeren får ikke en ekstra leverandøretiket, men systemet beholder intern provenance og stopper før publicering ved integritetsfejl eller efter pakkens egen prognosehorizon; targetalder alene er kun en advarsel.
 
 Normal drift får korte, faste leverandørrammer og to friskhedskontroller. Den store engangskørsel får mere tid, men samme sikkerhedsregler. Efter den første komplette opfyldning måles rækkefølge og tid hos hver leverandør, før den normale plan eventuelt justeres. Seneste sikre status før ny kørsel var 78.430 af 79.414 dækket og 984 rester; den nye løsning er lokalt måltestet, men endnu ikke bevist i en frisk mainkørsel.
 
@@ -136,7 +150,7 @@ Kildekontrollen gentog tidligere mange model- og sikkerhedstests i den afslutten
 
 ## DMI-vind skal både kunne læses og pege rigtigt – 2026-09-04
 
-Aktuel teknisk rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=71a093a4b419891cb41f582de2ab926a2ea23e5abbe16015cc2b6f4b3ae8be0f` over 56 transitive filer. Integrated er `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=4346bf2de26a0dde25c3ef8dc72e741d6259f15282801e62a95a31a8f6594c0d` over 55 filer; continuation er `5456d603a687e03b8983b5a97712b4acd305011a6029edb90df72d1d3e4f702f`. Tidligere bindingsafsnit er historiske.
+4.0.332 er låst med `modelContractSha256=a226e7d10f5c9fa94e122c0e4e3dc1367f1d5e44e763593e4568ac8a3ed1b14b` og `modelBundleSha256=155fd8f4f9ea59f0dfed01ebe25c5e923e16228db4c9f2cf9cf71415d4047cd9` over 56 kanonisk normaliserede transitive implementeringsfiler og otte deklarerede forbrugere. Aktuel teknisk rollbackbinding er `modelContractSha256=c73dac1b4376005e792580791d84eb79c9370e905a2a7fd0bdee857506a20cf8` og `modelBundleSha256=4da64d0c8d09a0a32c8b10526f39f58a4acef131a359d31edc2fbca1e3eb20c8` over 57 transitive filer; continuation er `260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb`. Tidligere bindingsafsnit er historiske.
 
 En konkret læsefejl afviste DMI's primære HARMONIE-vind, selv om vindfilerne var hentet. Filtypen bruger et Lambert-kortnet, hvor fire felter fra en anden nettype ikke findes. Rettelsen accepterer kun denne dokumenterede forskel; øvrige identitetskontroller består. Vindretningen omregnes samtidig fra kortnettets retning til geografisk øst/nord efter filens egen beskrivelse. Vindhastigheden og alle land-/vandpunkter bevares.
 
@@ -166,7 +180,7 @@ PR #246 er merged som Phase A-kodegrundlag, men Candidate G er fortsat den enest
 
 Et komplet RavScore-checkpoint kan være flere megabyte. Tidligere læste RavRadar hele checkpointet tilbage fra Supabase efter hver succesfuld publicering. Nu foretager databasen i stedet en atomisk compare-and-swap og returnerer kun et lille metadataresultat på højst 4 KiB. Selve den kanonisk serialiserede checkpointpayload er begrænset til højst 16 MiB; HTTP-wrapperen kan være lidt større. Fuld payload hentes kun ved reel restore, når GitHub-cachen mangler. Et retry med præcis samme payload efter et tabt HTTP-svar er idempotent; en gammel version, et ældre target eller andet indhold på samme target stoppes.
 
-Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `5456d603a687e03b8983b5a97712b4acd305011a6029edb90df72d1d3e4f702f` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
+Der er én snæver historisk overgangsundtagelse til same-target-reglen. Et eksakt checkpoint fra 4.0.320-koden på sourcehead `7198b685f4bc9d86bd6432b049380f4279ab797c` med continuation-hash `082a5187f569518c0474590e924ccd17fce760d494a1da4a593de551e440cf91` må kun genattesteres til den daværende overgangshash `08f0a635a0460c2afe196200e7b786245608f006624b17d984cac1ae603fd48f`. Kilden normaliseres som `utf8-bomless-lf-v2`, så Windows og GitHub/Linux er enige. Den aktuelle continuationidentitet `260efa3b94759ff7d5816d3c93889b8e27c8fdd2ef09b166e952d387a0d5a5cb` kræver den nye eksakte append-only binding og fuld modelvalidering; broen må ikke bruges til direkte eller tavs ommærkning. Alle states, bindinger, target, privacy og øvrige felter skal være identiske.
 
 Checkpointet er operationel replacement-state og opretter derfor ikke længere en ny kopi i adminhistorikken ved hver opdatering. Eksisterende historik slettes ikke. Restriktiv adgangskontrol skjuler både den aktuelle checkpointpayload og eventuelle ældre checkpointversioner for almindelig authenticated-læsning; kun service role kan publicere eller attestere kontrakten.
 
@@ -305,7 +319,9 @@ PR #233 bestod exact-head `33299676128` og blev merged som `63d789a4`. Run `3329
 
 ## Historisk: Policybundet cadence og samlet READY-bevis – 4.0.314 lokalt rettet
 
-## Aktuel status – RavScore 4.0.331 first-cutover-kandidat
+## Aktuel status – RavScore 4.0.332 first-cutover-kandidat
+
+> **SUPERSEDERET i 4.0.332:** Den absolutte 72-timersgrænse i den længere state-/cold-start-beskrivelse nedenfor er historisk. Same-model-pakken skal i stedet dække den valgte time i sin egen verificerede prognosehorizon; atomisk model-/state-/hashbinding og forbuddet mod cross-model fallback/interpolation består.
 
 Candidate G er fortsat den eneste offentlige model. Den samlede first-cutover-kode ligger på main, men den lokale 4.0.322-driftspakke med HARMONIE-assetwatchdog er endnu ikke exact-head-valideret, merged eller kørt i frisk produktion. State 6 er derfor ikke offentlig. Målrettede model-, cutover-, privacy-, rollback- og watchdogtests er grønne; komplet 673 × 118, Feggesund 3 × 118, live Supabase-kapacitetsbevis, sikker merge, frisk fuld produktion og offentlig mobil-/desktopkontrol mangler fortsat. Schema 5 var en aldrig-offentlig kandidat og er kun en eksakt 5→6-migrationskilde.
 
@@ -393,7 +409,7 @@ Backendudgivelsen sker på samme eksakte main-head som Pages. Efter kapacitetsko
 
 4.0.312 bestod derefter PR #225 exact-head CI `33266087776`/job `99136292810`, blev merged som `a5ece10d` og fik en korrekt grøn no-op-push `33266184326`. Backend `33266229687`/job `99136669571` bestod kilde, constraint, D1-klargøring, Edge og Worker, men stoppede fail-closed i Supabase→D1-synk med `TRIP_GATEWAY_UNAVAILABLE`; den nåede ikke rekonstruktion, vejrbyg, artifact eller Pages. Syntetisk regression viste, at historiske 4.0.310-rækker kan have kendte null-blade, som den sikre 4.0.311-bladprojektion korrekt udelader og derfor giver en anden migrationshash. 4.0.313 tillader kun migration→migration-genafspilning, når alle kerne- og ikke-null-felter er eksakt ens, og den bevarer eksisterende D1-række, oprindelig hash og registrybinding uden mutation. Live-kilder og ukendte felter får ingen undtagelse; fejl returneres kun som faste kategorier uden upstream-detaljer.
 
-Den kommende samlede RavScore-model får sin egen nøddrift som bindende acceptkrav. Kun den seneste komplette, målt-only, atomiske og hash-/model-/statebundne 210/673-pakke må bruges. Den vises tydeligt som ældre på dansk, tysk og engelsk, må højst være 72 timer gammel og må aldrig overskride en kortere prognose-/produktudløbsgrænse. Ture er ikke-kalibrerbare, og en ny komplet primary overtager automatisk og atomisk. Ukendt, blandet, rekonstrueret, manipuleret eller udløbet state lukkes fail-closed; nøddriften interpolerer ikke huller og aktiverer ikke en anden offentlig model.
+Den kommende samlede RavScore-model får sin egen nøddrift som bindende acceptkrav. Kun den seneste komplette, målt-only, atomiske og hash-/model-/statebundne 210/673-pakke må bruges. Den vises tydeligt som ældre på dansk, tysk og engelsk og må aldrig overskride sin egen prognose-/produktudløbsgrænse; den tidligere absolutte 72-timersgrænse er **SUPERSEDERET**. Ture er ikke-kalibrerbare, og en ny komplet primary overtager automatisk og atomisk. Ukendt, blandet, rekonstrueret, manipuleret eller horizon-udløbet state lukkes fail-closed; nøddriften interpolerer ikke huller og aktiverer ikke en anden offentlig model.
 
 Ved dette historiske checkpoint var 4.0.313 den lokale roll-forward-kandidat med grønne migration-, idempotens-, registry-, privacy-, workflow- og lokale releasegates. Den blev senere exact-head-valideret i PR #226, merged som `ff62ba11` og fik et helt grønt exact-main D1-backendbevis i `33269631305`. Den efterfølgende read-only inspect stoppede før descriptor eller mutation. Den daværende fortsættelsesplan stod i 4.0.314-afsnittene ovenfor, men er siden trukket tilbage af DEC-0111 og må ikke udføres. Morgenhullet blev ikke ændret i produktion. Se den historiske [DEC-0109](docs/rdks/10_DECISIONS/DEC-0109-ONE-TIME-CANDIDATE-G-GAP-RECONSTRUCTION.md) og den gældende DEC-0111.
 
@@ -403,7 +419,7 @@ RavRadar forsøger fortsat den normale vejrproduktion hvert kvarter i GitHub. Et
 
 Vagthunden bestiller kun én almindelig produktion, når ingen kørsel er aktiv, og både seneste produktionshistorik og det offentlige manifest er gamle. Det eksplicitte eksterne kald bruger fra 4.0.310 mere end 15 minutter og kan derfor overtage efter ét manglende native interval; GitHubs interne vagt beholder 45 minutter. Præcis grænsealder, aktiv/queued produktion, frisk runhistorik eller friskt manifest giver no-op, og alle tunge builds deler fortsat én concurrency. Den eksterne tjeneste får kun repository, workflow, `main` og et boolsk intent; ingen koordinater, rå strømvektorer, private data eller Candidate G-state. Candidate G, RavScore, DMI/Copernicus, state/cache/recovery, geometri og land-/vandpunkter er uændrede. Se [DEC-0107](docs/rdks/10_DECISIONS/DEC-0107-EXTERNAL-PRODUCTION-SILENCE-WATCHDOG.md) og [DEC-0108](docs/rdks/10_DECISIONS/DEC-0108-EXTERNAL-WATCHDOG-ONE-MISSED-INTERVAL.md).
 
-## Status for det aktuelle modelarbejde – lokal 4.0.331-cutoverkandidat, ikke produktion
+## Status for det aktuelle modelarbejde – lokal 4.0.332-cutoverkandidat, ikke produktion
 
 Håndbogen har to tydeligt adskilte lag. De versionsmærkede afsnit om 4.0.308 og tidligere udgaver dokumenterer den offentlige historik. Kapitel 18, 54 og 55 beskriver state 6 og den lokale 4.0.321-cutoverkandidat. Fase A-appkoden er exact-head-verificeret og merged, men Candidate G er fortsat offentlig; den additive checkpointmigration og de resterende data-, kapacitets- og produktionsbeviser er endnu ikke lukket.
 
@@ -523,7 +539,7 @@ RavRadar må aldrig vælge en prognosetime efter den UTC-time, som produktionsk�
 
 Når en runtime er bygget, gemmes kun dens kompakte afledte Candidate G-hukommelse i et privat, hashkontrolleret checkpoint. Et senere fejlet gate- eller deploytrin mister derfor ikke den virkelige recoveryfremdrift. Checkpointet indeholder ikke vejr, scoreoutput, rå strømvektorer, koordinater, geometri, land-/vandpunkter eller private data.
 
-Nøddriften viser ét komplet, auditeret dataset med tydelig besked om, at dataene ikke er aktuelle. Den må højst bruges i 72 timer og aldrig efter datasættets egen seneste prognosetime. En fejlet, timeoutet eller før-start-fejlet planlagt kørsel får ét automatisk genforsøg; et separat watchdog reagerer først efter 45 minutters dokumenteret stilhed og starter aldrig et parallelt tungt build. Watchdoget er internt i GitHub og kan derfor ikke alene opdage total stilhed i hele GitHubs scheduler; det kræver fortsat ekstern overvågning. Når alle 673 kystdele igen er `READY`, og den faktiske runtimeaudit er grøn, skifter siden atomisk.
+Nøddriften viser ét komplet, auditeret dataset med tydelig besked om, at dataene ikke er aktuelle. Den tidligere 72-timersgrænse er **SUPERSEDERET**; datasættet kan kun bruges, mens den valgte time ligger i dets egen verificerede prognosehorizon. En fejlet, timeoutet eller før-start-fejlet planlagt kørsel får ét automatisk genforsøg; et separat watchdog reagerer først efter 45 minutters dokumenteret stilhed og starter aldrig et parallelt tungt build. Watchdoget er internt i GitHub og kan derfor ikke alene opdage total stilhed i hele GitHubs scheduler; det kræver fortsat ekstern overvågning. Når alle 673 kystdele igen er `READY`, og den faktiske runtimeaudit er grøn, skifter siden atomisk.
 
 Et reelt hul over tre timer genstarter Candidate G fra de verificerede prøver efter hullet. RavRadar opfinder eller interpolerer ikke manglende timer. Candidate G 20/50/30, scorefysikken, DMI-først, vejr, normal sortering, konto-/turdata, geometri og land-/vandpunkter er uændrede. Se [DEC-0085](docs/rdks/10_DECISIONS/DEC-0085-CAUSAL-PRODUCTION-AND-BOUNDED-RECOVERY.md).
 
@@ -1010,7 +1026,7 @@ RavRadar vælger én DMI-havmodel ad gangen for en zone. Fra 4.0.218 kan en ande
 
 RavRadar gemmer den samme aktuelle vejrprøve i et aktivt 24-timersvindue og et score-neutralt 72-timersvindue til senere forskning. En efterkontrol viste, at selve DMI-strømmen var verificeret, men at mærket kun blev skrevet tilbage til 24-timerslisten. Da næste kørsel viderefører den lange liste, gik mærket tabt igen.
 
-Den aktuelle prøve gemmes nu med samme strenge DMI-verifikation i begge vinduer. Gamle uverificerede prøver ændres ikke, så systemet opfinder ingen historik. RavScore, kilder og fallback er uændrede; 72-timersvinduet skal fortsat opbygges naturligt over tre døgn før faglig brug.
+Historisk blev den aktuelle prøve gemt med samme strenge DMI-verifikation i begge vinduer. Gamle uverificerede prøver blev ikke ændret, så systemet opfandt ingen historik. Det daværende krav om naturlig opbygning af et 72-timersvindue er **SUPERSEDERET**; gældende state-6 bruger op til 48 timers verificeret advisoryhistorik, som gerne må være ufuldstændig med korrekt kvalitetsstatus.
 
 ## Gamle temperaturer uden lagmærkning fjernes – 4.0.214
 
@@ -1046,7 +1062,7 @@ Det første produktionsmål er at genhente de 200 hovedzoner, som 4.0.209 fejlag
 
 Den hidtidige pipeline gemte 101 rå prøver pr. zone over præcis cirka 24 timer. Det bærer den aktive døgnbaserede mobiliseringsscore, men ikke en senere faglig analyse af storm, transport og faldende energi gennem flere døgn.
 
-RavRadar bevarer derfor nu to adskilte vinduer. `samples24h` er fortsat det eneste rå vindue, som RavScore og `shadow-v2` bruger. `samples72h` bevarer tre døgn med vind, bølger, strøm, vandstand og temperatur til senere mobiliseringsanalyse. Det længere vindue ændrer ingen score, vægt eller tærskel.
+Historisk bevarede RavRadar to adskilte vinduer: `samples24h` til den daværende RavScore/`shadow-v2` og `samples72h` som score-neutral forskning. Det gamle generelle 72-timerskrav er **SUPERSEDERET**. Gældende integreret state bruger op til 48 timers verificeret advisoryhistorik; ufuldstændighed giver `HISTORY_INCOMPLETE` og kalibrering fra, ikke en syntetisk række eller availabilityblokering.
 
 Rå historik sendes fortsat ikke i den kompakte `public-conditions.json`. En fremtidig scorebrug af timerne 24–72 kræver særskilt faglig analyse, regressioner og ejerbeslutning. Vandstands-continuity bevarer samtidig DMI-timens fulde identitet.
 
@@ -1559,7 +1575,7 @@ Strøm bruger fortsat kun 48 aktive timer. Ukendte ældre intervaller omsluttes 
 
 RavRadar må beholde 168 timers datasikker researchhistorik til replay, audit og senere undersøgelse, men den har ingen scoreeffekt og forlænger ikke 48-timers currentvinduet. `HISTORY_INCOMPLETE` er altid ikke-kalibrerbar. Ranglister bruger den viste numeriske score først; kun ved præcis samme score kommer `FULL_HISTORY` før `HISTORY_INCOMPLETE`. Advarslen vises på dansk, tysk og engelsk og forsvinder automatisk, når alle historikgrænser er lukket.
 
-Nøddrift må kun fortsætte en komplet, atomisk og hashbundet state fra samme integrerede model i højst 72 timer eller kortere forecastudløb. Cross-model fallback og interpolation er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke i sig selv kalibreringsgrundlag. Den planlagte fiktive udførelse af morgenhullet blev opgivet før descriptor, apply, mutation eller offentliggørelse; den afgrænsede DEC-0109-kontrakt bevares kun som historisk sikkerhedsreference.
+Nøddrift må kun fortsætte en komplet, atomisk og hashbundet state fra samme integrerede model, mens den valgte time ligger inden for statepakkens egen verificerede prognosehorizon. Den tidligere 72-timersgrænse er **SUPERSEDERET**. Cross-model fallback og interpolation er forbudt. Kun `VERIFIED_ONLY` er kalibreringsegnet; reconstructed/emergency og ture er ikke i sig selv kalibreringsgrundlag. Den planlagte fiktive udførelse af morgenhullet blev opgivet før descriptor, apply, mutation eller offentliggørelse; den afgrænsede DEC-0109-kontrakt bevares kun som historisk sikkerhedsreference.
 
 
 ## 19. Procesindikatoren for hændelsesfase
@@ -1632,7 +1648,7 @@ Vind, bølger, strøm, vandstand og temperatur behandles som separate tidsserier
 
 En horisont på cirka 118–119 sammenhængende timer er acceptabel. Det er bedre end at gentage sidste værdi for at ramme 120.
 
-Hver scoreforklaring bør vise datakilde, modelkørsel, forecasttid, alder, fallback og mangler. Dataældre end friskhedsgrænsen må ikke vises som aktuelle.
+Hver scoreforklaring bør vise datakilde, modelkørsel, forecasttid, alder, fallback og mangler. Ældre data må ikke kaldes friske, men en strukturelt valid række vises med tydelig aldersadvarsel, så længe den valgte time ligger i pakkens egen prognosehorizon.
 
 
 ## 24. DMI-vandstandsstationer, observationer og cachelivscyklus
@@ -1805,7 +1821,7 @@ Scenario D – skrå eller langskyst strøm ved en odde
 Den lokale komponent mod land kan være lille, selv om materiale transporteres langs kysten. Hvis transporten samles på læsiden, kan modellen undervurdere stedet; hvis materialet passerer odden, kan den overvurdere det. Det er et åbent ekspert- og kalibreringspunkt.
 
 Scenario E – gammel browsercache
-Data ældre end friskhedsgrænsen må ikke vises som aktuelle. Siden skal hente friske data eller vise tydelig utilgængelighed. Gamle scores må ikke stå som om de er nuværende.
+Data ældre end friskhedsgrænsen må ikke kaldes friske. Siden skal først forsøge nyere data og ellers vise den nyeste komplette horizon-gyldige pakke med tydelig aldersadvarsel. Kun manglende direkte input, integritetsfejl eller passeret prognosehorizon giver utilgængelighed.
 
 
 ## 32. Faglige hovedkilder, analogier og læsevej
@@ -2106,7 +2122,7 @@ En lille bugt eller havnelæ kan være god, selv om zonens repræsentative model
 Skift mellem DMI og fallback time for time kan skabe kunstige vandstandsspring eller retningsskift. Kontinuitet og kildeproveniens skal kontrolleres før scoring.
 
 ### 45.5 Gammel browsercache
-Gamle prognoser må ikke fremstå som aktuelle. Dataalder valideres, og for gammel cache skal give en tydelig fejltilstand frem for normal visning.
+Gamle prognoser må ikke fremstå som friske. Dataalder vises tydeligt; en komplet cache bruges fortsat med advarsel inden for egen horizon, mens integritetsfejl eller passeret horizon giver en tydelig utilgængelighed.
 
 
 ## 46. Sporbarhed fra faglig påstand til kode og data
@@ -2336,7 +2352,7 @@ Hvis scoretimens direkte strøm-, bølge- eller søgeinput mangler eller er ugyl
 
 Bølgemobiliseringens langsomme 48-timers aftagning kræver en længere matematisk usikkerhedshale end current: state 6 lukker den efter 288 timer, hvor den størst mulige resterende rå scorepåvirkning er `0,46875` point. Last-mile-retningen lukkes efter 40 timer med højst `1/1024` udeladt momentandel. Den private retention på 168 timer er kun research-/auditgrundlag og giver ingen scorepoint. Det er altså ikke en forlængelse af currentvinduet fra 48 timer til syv dage.
 
-En komplet tidligere state kan kun bruges som nøddrift, når hele 210/673-pakken er atomisk hashbundet til den samme integrerede model, og kun i højst 72 timer eller kortere forecastudløb. Candidate G kan ikke være automatisk fallback, og manglende timer interpoleres ikke. Kun evidenstilliden `VERIFIED_ONLY` er kalibreringsegnet. Rekonstrueret eller emergency-båret score kan godt bevares som tydeligt markeret brugerhistorik, men må ikke kalibrere modellen; almindelige ture er heller ikke i sig selv et kalibreringsgrundlag.
+En komplet tidligere state kan kun bruges som nøddrift, når hele 210/673-pakken er atomisk hashbundet til den samme integrerede model, og den valgte time fortsat ligger i pakkens egen verificerede prognosehorizon. Den tidligere absolutte 72-timersgrænse er **SUPERSEDERET**. Candidate G kan ikke være automatisk fallback, og manglende timer interpoleres ikke. Kun evidenstilliden `VERIFIED_ONLY` er kalibreringsegnet. Rekonstrueret eller emergency-båret score kan godt bevares som tydeligt markeret brugerhistorik, men må ikke kalibrere modellen; almindelige ture er heller ikke i sig selv et kalibreringsgrundlag.
 
 ### 54.3 Hvad modellen bevidst ikke gør
 

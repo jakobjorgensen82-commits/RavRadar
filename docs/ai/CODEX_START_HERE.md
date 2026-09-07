@@ -1,3 +1,11 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.332 horizon-validitet uden svækket integritet
+
+- DEC-0119 er bindende: en strukturelt valid future-række bruges uanset acquisition/generation-alder, indtil dens egen verificerede horizon udløber. Eksakt sidste instant er gyldig; `+1 ms` er udløbet. De gamle hårde 72h- og 90/150/240-minutters regler er **SUPERSEDERET** som availability-/deploygates. Alder er warning/emergency/tillid/tur/kalibrering.
+- Nyt weather-artifact kræver stadig præcis 79.414/79.414, én kilde pr. par, nul overlap/missing og alle target-/registry-/model-/provenance-/hash-/privacygates. `34083611297` stoppede korrekt ved 78.856/79.414 og 558 missing uden deploy. `34093354004` sluttede sikkert med Copernicus success og Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing stod tilbage, cache blev gemt, og closure/artifact/deploy skete ikke. `34104536681` er aktivt på eksakt `main` `c2ce63ff`.
+- Første integrerede cutover kan bruge et exact-run-/head-/attempt-/target-/registry-/hashbundet handoff af fem private sourcecacher fra én grøn komplet `main`-producent. Consumeren genbeviser closure. Central hydrering, sourcegate, bounded `update:weather`, Feggesund/spatial audit, kapacitet, fulde gates, artifact/privacy, Pages og offentlig verifikation består.
+- DMI/Copernicus/Open-Meteo salvages per proof-enhed med fail-closed control plane. Nyeste verificerede tuple vinder atomisk efter uændret providerorden; fallback låser ikke kilden. Ufuldstændig 48t-historik giver numeriske `HISTORY_INCOMPLETE`-scorer, reason codes og kalibrering fra, ikke availability-stop.
+- Normal workflow forbliver deaktiveret under kontrolleret cutover. Candidate G er offentlig. Providertransitioners scorekontinuitet og durable immutable multi-artifact-historik er særskilte post-launch-issues.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.331 sourcehistorik før vejrstart
 
 - 4.0.330 nåede `main` som `8020cdfe539df0841246714c22705d78927c8bdb`, men er supersederet før nogen 4.0.330-vejrruntime af den snævre 4.0.331-sourceprecondition.

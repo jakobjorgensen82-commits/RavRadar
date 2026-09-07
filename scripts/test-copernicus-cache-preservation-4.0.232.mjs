@@ -19,7 +19,7 @@ const targetProgressSaveStart = buildWorkflow.indexOf('- name: Save non-cancelle
 const sourceStageGateStart = buildWorkflow.indexOf('- name: Require reusable Copernicus source stage before combined current closure');
 const targetSaveStart = buildWorkflow.indexOf('- name: Save validated private Copernicus progress before downstream closure');
 const openMeteoStart = buildWorkflow.indexOf('- name: Fill only the exact remaining current gaps from Open-Meteo');
-const freshnessStart = buildWorkflow.indexOf('- name: Refuse a stale target after the bounded supplier chain');
+const freshnessStart = buildWorkflow.indexOf('- name: Classify target freshness after the bounded supplier chain');
 const closureStart = buildWorkflow.indexOf('- name: Build exact DMI-first current operational closure');
 const historyBuildStart = buildWorkflow.indexOf('- name: Build public seven-day current history and controlled live selection');
 

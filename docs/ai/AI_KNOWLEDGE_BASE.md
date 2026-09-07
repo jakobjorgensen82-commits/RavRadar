@@ -1,5 +1,15 @@
 # AI Knowledge Base – RavRadar
 
+## Nyeste sandhed 2026-09-07 – DEC-0119 horizon-gyldigt vejr
+
+- Availability følger pakkens egen verificerede horizon, ikke acquisition-/generation-/targetalder. Eksakt slutinstant accepteres, `+1 ms` afvises. Alder er warning/emergency-/tillids-/tur-/kalibreringssignal; gamle 72h- og 90/150/240-minutters hard gates er **SUPERSEDERET**.
+- 79.414/79.414, én kilde pr. par, nul overlap/missing og target-/registry-/model-/hash-/privacybinding forbliver hårdt. `34083611297` endte 78.856/79.414 med 558 missing og intet deploy. `34093354004` sluttede sikkert med Copernicus success og Open-Meteo 2.735 required / 1.873 retained / 750 fetched / 2.623 filled; 112 critical missing stod tilbage, cache blev gemt, og closure/artifact/deploy skete ikke. `34104536681` er aktivt på eksakt `main` `c2ce63ff`.
+- Første cutover kan genbruge fem private sourcecacher fra et eksakt grønt runbundet `main`-handoff, men consumeren genbeviser alt, og bounded `update:weather` samt alle fulde gates består.
+- DMI/Copernicus/Open-Meteo salvages granulært; newest verified tuple vinder atomisk efter DMI → Baltic → AMM15 → policyregional DMI → Open-Meteo. Ufuldstændig op til 48t historik er numerisk `HISTORY_INCOMPLETE` med alle zoner aktive og kalibrering fra.
+- Normal workflow er deaktiveret under cutover. Source-transition-overlap/hysterese og immutable multi-artifact-historik er separate post-launch-emner.
+
+> Blokken fra 2026-09-05 nedenfor er historisk. Dens READY-only- og hard-freshness-formuleringer er supersederet af DEC-0118/DEC-0119.
+
 ## Nyeste sandhed 2026-09-05 – DEC-0115 operationel currentclosure
 
 - Eksakt kildeorden: DMI → Baltic → AMM15 → otte policydele regional DMI → Open-Meteo. Sidste led kræver terminalt READY, udfylder kun target..+117 og er combined-surface-current, højst 15 km og altid ikke-kalibreringsegnet. Ingen historik, interpolation, nabolån eller bølge-/tidevandsreprojektion.

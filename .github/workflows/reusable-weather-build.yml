@@ -21,6 +21,9 @@ on:
       ravscore_integrated_first_cutover_confirmation:
         required: true
         type: string
+      ravscore_integrated_weather_handoff_run_id:
+        required: true
+        type: string
       ravscore_integrated_return:
         required: true
         type: boolean
@@ -382,7 +385,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -438,6 +441,64 @@ jobs:
       - name: Materialize the authoritative active coastal-part registry
         if: steps.preflight.outputs.should_run == 'true'
         run: node scripts/build-public-coastal-parts-v2.mjs
+
+      - name: Resolve exact verified weather source producer run
+        id: weather-source-handoff-resolve
+        if: steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != ''
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs resolve-run
+          --repository "$GITHUB_REPOSITORY"
+          --expected-head "$GITHUB_SHA"
+          --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}"
+          --runner-os "$RUNNER_OS"
+          --first-cutover "${{ inputs.ravscore_integrated_first_cutover }}"
+          --confirmation "${{ inputs.ravscore_integrated_first_cutover_confirmation }}"
+          --output-dir "$RUNNER_TEMP/ravradar-weather-source-handoff"
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Validate and extract only aggregate handoff attestation
+        if: steps.weather-source-handoff-resolve.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          handoff_root="$RUNNER_TEMP/ravradar-weather-source-handoff"
+          unzip -Z1 "$handoff_root/producer-artifact.zip" > "$handoff_root/artifact-inventory.txt"
+          node scripts/verified-weather-source-handoff.mjs validate-artifact-inventory \
+            --entries-file "$handoff_root/artifact-inventory.txt"
+          mkdir -p "$handoff_root/artifact"
+          unzip -qq "$handoff_root/producer-artifact.zip" -d "$handoff_root/artifact"
+          test -f "$handoff_root/artifact/attestation.json"
+
+      - name: Restore exact run-bound verified weather source cache
+        id: weather-source-handoff-cache
+        if: steps.weather-source-handoff-resolve.outcome == 'success'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/verified-weather-source-handoff-cache
+          key: ${{ steps.weather-source-handoff-resolve.outputs.cache_key }}
+          fail-on-cache-miss: true
+
+      - name: Install exact verified weather sources atomically
+        id: weather-source-handoff
+        if: steps.weather-source-handoff-cache.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ steps.weather-source-handoff-cache.outputs.cache-matched-key }}" = "${{ steps.weather-source-handoff-resolve.outputs.cache_key }}"
+          node scripts/verified-weather-source-handoff.mjs install \
+            --root "$GITHUB_WORKSPACE" \
+            --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache" \
+            --artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json" \
+            --resolved "$RUNNER_TEMP/ravradar-weather-source-handoff/resolved.json" \
+            --repository "$GITHUB_REPOSITORY" \
+            --expected-head "$GITHUB_SHA" \
+            --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}" \
+            --runner-os "$RUNNER_OS" \
+            --github-output "$GITHUB_OUTPUT" \
+            --github-env "$GITHUB_ENV"
 
       - name: Restore the latest atomic schema-6 and Candidate G rollback checkpoint
         if: steps.preflight.outputs.should_run == 'true'
@@ -508,6 +569,20 @@ jobs:
           --restored "$RAVRADAR_PRIVATE_RUNTIME_RESTORE"
           --repository-root "$GITHUB_WORKSPACE"
 
+      - name: Reapply exact verified weather sources after private runtime installation
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'
+        shell: bash
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs install
+          --root "$GITHUB_WORKSPACE"
+          --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache"
+          --artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"
+          --resolved "$RUNNER_TEMP/ravradar-weather-source-handoff/resolved.json"
+          --repository "$GITHUB_REPOSITORY"
+          --expected-head "$GITHUB_SHA"
+          --run-id "${{ inputs.ravscore_integrated_weather_handoff_run_id }}"
+          --runner-os "$RUNNER_OS"
+
       - name: Resolve the one-time Candidate G bootstrap gate
         if: steps.preflight.outputs.should_run == 'true'
         id: legacy-bootstrap
@@ -540,7 +615,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -565,7 +640,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -703,7 +778,7 @@ jobs:
         run: echo "generation=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Refresh private Copernicus cache before DMI cache churn
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: copernicus-shadow-refresh
         uses: actions/cache/restore@v6
         with:
@@ -717,7 +792,7 @@ jobs:
             copernicus-current-range-v2-
 
       - name: Report private Copernicus cache preservation
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         shell: bash
         env:
           MATCHED_CACHE_KEY: ${{ steps.copernicus-shadow-refresh.outputs.cache-matched-key }}
@@ -729,7 +804,7 @@ jobs:
           fi
 
       - name: Restore bounded DMI GRIB download cache
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         id: dmi-grib-cache-restore
         with:
@@ -742,7 +817,7 @@ jobs:
 
       - name: Restore last complete active DMI generation
         id: dmi-active-restore
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/dmi-active-complete.json
@@ -753,14 +828,14 @@ jobs:
 
       - name: Resolve newest terminal-proven exact-main legacy DMI generation
         id: dmi-active-legacy-key
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-active-restore.outputs.cache-matched-key == ''
         run: node scripts/resolve-terminal-dmi-cache.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Bootstrap the terminal-proven exact legacy DMI generation
         id: dmi-active-legacy-bootstrap
-        if: steps.preflight.outputs.should_run == 'true' && steps.dmi-active-restore.outputs.cache-matched-key == '' && steps.dmi-active-legacy-key.outputs.available == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.dmi-active-restore.outputs.cache-matched-key == '' && steps.dmi-active-legacy-key.outputs.available == 'true'
         uses: actions/cache/restore@v6
         with:
           path: data/live/dmi-bulk-cache.json
@@ -768,7 +843,7 @@ jobs:
           fail-on-cache-miss: true
 
       - name: Strictly bind and materialize the active DMI generation
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -793,7 +868,7 @@ jobs:
 
       - name: Restore isolated DMI candidate progress for normal maintenance
         id: dmi-candidate-restore
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/dmi-candidate-progress.json
@@ -803,7 +878,7 @@ jobs:
             dmi-zone-candidate-v1-${{ runner.os }}-
 
       - name: Restore private seven-day current-field research cache
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/current-field-shadow.json
@@ -812,7 +887,7 @@ jobs:
             current-field-shadow-v1-${{ runner.os }}-
 
       - name: Update DMI bulk model cache
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: dmi-bulk
         continue-on-error: true
         timeout-minutes: 55
@@ -847,7 +922,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -902,11 +977,19 @@ jobs:
         if: always() && steps.preflight.outputs.should_run == 'true'
         shell: bash
         env:
+          VERIFIED_HANDOFF_REUSED: ${{ steps.weather-source-handoff.outputs.reused || 'false' }}
           PRODUCER_OUTCOME: ${{ steps.dmi-bulk.outcome || 'skipped' }}
           PRODUCER_STATUS: ${{ steps.dmi-bulk.outputs.status || 'unknown' }}
           PRODUCER_CODE: ${{ steps.dmi-bulk.outputs.terminal_code || 'DMI_UNCLASSIFIED' }}
           STRICT_CURRENT_ANCHOR_READY: ${{ steps.dmi-bulk.outputs.strict_current_anchor_ready || 'false' }}
         run: |
+          if test "$VERIFIED_HANDOFF_REUSED" = "true"; then
+            echo "code=DMI_HANDOFF_VERIFIED" >> "$GITHUB_OUTPUT"
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "strict_current_anchor_ready=true" >> "$GITHUB_OUTPUT"
+            echo "The exact DMI source input was restored from the verified run-bound handoff."
+            exit 0
+          fi
           code="$PRODUCER_CODE"
           if ! printf '%s\n' "$code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'; then
             code="DMI_UNCLASSIFIED"
@@ -1004,7 +1087,7 @@ jobs:
           fi
 
       - name: Refresh private Copernicus cache after DMI cache churn
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         id: copernicus-shadow-post-dmi
         uses: actions/cache/restore@v6
         with:
@@ -1029,7 +1112,14 @@ jobs:
 
       - name: Bind production to resolved DMI current hour
         if: steps.preflight.outputs.should_run == 'true'
-        run: echo "RAVRADAR_PRODUCTION_TARGET_HOUR=${{ steps.copernicus-targets.outputs.target_hour }}" >> "$GITHUB_ENV"
+        shell: bash
+        run: |
+          set -euo pipefail
+          resolved_target="${{ steps.copernicus-targets.outputs.target_hour }}"
+          if test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"; then
+            test "$resolved_target" = "${{ steps.weather-source-handoff.outputs.target_hour }}"
+          fi
+          echo "RAVRADAR_PRODUCTION_TARGET_HOUR=$resolved_target" >> "$GITHUB_ENV"
 
       - name: Inspect target-bound Copernicus source stage after fresh DMI
         if: steps.preflight.outputs.should_run == 'true'
@@ -1047,16 +1137,16 @@ jobs:
           --github-output "$GITHUB_OUTPUT"
 
       - name: Remove only invalid production Copernicus source disposition
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_reusable != 'true'
         run: rm -f .cache/copernicus-current-source-stage.json
 
       - name: Install targeted Copernicus dependencies
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         continue-on-error: true
         run: python -m pip install --disable-pip-version-check -r requirements-copernicus.txt
 
       - name: Verify targeted Copernicus credentials
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -1069,7 +1159,7 @@ jobs:
 
       - name: Fill only exact-hour DMI gaps from Copernicus
         id: copernicus-fill
-        if: steps.preflight.outputs.should_run == 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true' && steps.targeted-copernicus-cache.outputs.source_stage_ready != 'true'
         continue-on-error: true
         env:
           COPERNICUSMARINE_SERVICE_USERNAME: ${{ secrets.COPERNICUSMARINE_SERVICE_USERNAME }}
@@ -1141,7 +1231,7 @@ jobs:
           key: copernicus-current-progress-v3-production-ready-${{ runner.os }}-${{ github.run_id }}-${{ github.run_attempt }}
 
       - name: Restore shared private Open-Meteo current progress
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         uses: actions/cache/restore@v6
         with:
           path: .cache/open-meteo-current-fallback.json
@@ -1151,7 +1241,7 @@ jobs:
 
       - name: Fill only the exact remaining current gaps from Open-Meteo
         id: open-meteo-fill
-        if: steps.preflight.outputs.should_run == 'true'
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused != 'true'
         continue-on-error: true
         run: >-
           python scripts/fill-open-meteo-current-fallback.py
@@ -1185,16 +1275,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if test "${{ steps.weather-source-handoff.outputs.reused }}" = "true"; then
+            test -s .cache/dmi-candidate-progress.json
+            test -s .cache/copernicus-current-shadow.json
+            test -s .cache/copernicus-current-source-stage.json
+            test -s .cache/current-field-shadow.json
+            test -s .cache/open-meteo-current-fallback.json
+            echo "The exact zero-missing provider inputs came from the verified run-bound handoff; provider acquisition was intentionally skipped."
+            exit 0
+          fi
           test "${{ steps.open-meteo-fill.outcome }}" = "success"
           test "${{ steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"
           test "${{ steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"
 
-      - name: Refuse a stale target after the bounded supplier chain
+      - name: Classify target freshness after the bounded supplier chain
         if: steps.preflight.outputs.should_run == 'true'
+        id: supplier-target-freshness
         run: >-
           node scripts/check-production-target-freshness.mjs
           --target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --maximum-age-minutes 90
+          --github-output "$GITHUB_OUTPUT"
 
       - name: Build exact DMI-first current operational closure
         if: steps.preflight.outputs.should_run == 'true'
@@ -1202,6 +1303,13 @@ jobs:
           python scripts/build-current-operational-closure.py
           --at "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --dmi .cache/dmi-candidate-progress.json
+
+      - name: Verify rebuilt closure exactly matches the run-bound source handoff
+        if: steps.preflight.outputs.should_run == 'true' && steps.weather-source-handoff.outputs.reused == 'true'
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs verify-closure
+          --attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"
+          --closure data/diagnostics/current-operational-closure.json
 
       - name: Build public seven-day current history and controlled live selection
         if: steps.preflight.outputs.should_run == 'true'
@@ -1231,7 +1339,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.331 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.332 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1372,12 +1480,14 @@ jobs:
           CLOUDFLARE_TRIP_GATEWAY_URL: ${{ secrets.CLOUDFLARE_TRIP_GATEWAY_URL }}
           TRIP_GATEWAY_SHARED_SECRET: ${{ secrets.TRIP_GATEWAY_SHARED_SECRET }}
 
-      - name: Refuse stale weather before protected writes and Pages artifact
+      - name: Reclassify target freshness before protected writes and Pages artifact
         if: steps.preflight.outputs.should_run == 'true'
+        id: prewrite-target-freshness
         run: >-
           node scripts/check-production-target-freshness.mjs
           --target "$RAVRADAR_PRODUCTION_TARGET_HOUR"
           --maximum-age-minutes 150
+          --github-output "$GITHUB_OUTPUT"
 
       - name: Reconfirm current origin/main before protected writes and Pages artifact
         if: steps.preflight.outputs.should_run == 'true'

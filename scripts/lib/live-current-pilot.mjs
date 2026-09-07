@@ -26,7 +26,6 @@ const REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS = 12;
 const COPERNICUS_COLD_BRIDGE_HOURS = 48;
 const COPERNICUS_PUBLIC_HOUR_COUNT = 118;
 const COPERNICUS_PUBLIC_END_OFFSET_HOURS = COPERNICUS_PUBLIC_HOUR_COUNT - 1;
-const COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS = 4;
 const COPERNICUS_DMI_VERIFIER_CONTRACT_ID = 'dmi-native-current-provenance-v1';
 const COPERNICUS_SELECTION_POLICY_ID = 'per-native-time-nearest-shared-uv-column-then-deepest-common-layer-v1';
 const COPERNICUS_REQUEST_CONTRACT_ID = 'copernicus-current-multitime-bounded-spatial-shards-v1';
@@ -487,9 +486,7 @@ function buildCopernicusDocumentProof(document) {
     || rangeEndAt !== shiftedHour(referenceAt, COPERNICUS_PUBLIC_END_OFFSET_HOURS)
     || (operationalSeal
       && (exactUtcHour(seal.operationalRangeStartAt) !== referenceAt
-        || exactUtcHour(seal.advisoryHistoryEndAt) !== shiftedHour(referenceAt, -1)))
-    || Math.abs(Date.parse(sealedAt) - Date.parse(referenceAt))
-      > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000) return null;
+        || exactUtcHour(seal.advisoryHistoryEndAt) !== shiftedHour(referenceAt, -1)))) return null;
 
   const copernicusEntries = document.entries.filter(entry => (
     entry?.provider === 'copernicus'
@@ -533,9 +530,7 @@ function buildCopernicusDocumentProof(document) {
       || entry.verticalLayerM !== entry.verticalLayerRankM) return null;
     const validAtOrAfterReference = Date.parse(validTime) >= Date.parse(referenceAt);
     if (validAtOrAfterReference
-      && (entry.requestContractId !== COPERNICUS_REQUEST_CONTRACT_ID
-        || Math.abs(Date.parse(acquisitionAt) - Date.parse(referenceAt))
-          > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000)) return null;
+      && entry.requestContractId !== COPERNICUS_REQUEST_CONTRACT_ID) return null;
     if (!validAtOrAfterReference
       && ![COPERNICUS_REQUEST_CONTRACT_ID, COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID]
         .includes(entry.requestContractId)) return null;
@@ -1202,9 +1197,7 @@ function regionalSampleTimeValid(source) {
     return Date.parse(validTime) <= Date.parse(shiftedHour(
       referenceAt,
       COPERNICUS_PUBLIC_END_OFFSET_HOURS,
-    ))
-      && Math.abs(Date.parse(capturedAt) - Date.parse(referenceAt))
-        <= COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000;
+    ));
   }
   return captureMatchesValidTime(source, REGIONAL_CAPTURE_VALID_TOLERANCE_HOURS);
 }
@@ -1286,9 +1279,7 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
       || Date.parse(validTime) < Date.parse(shiftedHour(productionReferenceAt, -COPERNICUS_COLD_BRIDGE_HOURS))
       || Date.parse(validTime) > Date.parse(shiftedHour(productionReferenceAt, COPERNICUS_PUBLIC_END_OFFSET_HOURS))) return null;
     if (Date.parse(validTime) >= Date.parse(productionReferenceAt)) {
-      if (source.requestContractId !== COPERNICUS_REQUEST_CONTRACT_ID
-        || Math.abs(Date.parse(acquisitionAt) - Date.parse(productionReferenceAt))
-          > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000) return null;
+      if (source.requestContractId !== COPERNICUS_REQUEST_CONTRACT_ID) return null;
     } else if (![COPERNICUS_REQUEST_CONTRACT_ID, COPERNICUS_LEGACY_HISTORY_REQUEST_CONTRACT_ID]
       .includes(source.requestContractId)) return null;
     maximumDistanceKm = 5;
@@ -1316,9 +1307,7 @@ export function verifiedLivePilotSource(source, part, { requireStatus = false } 
       || Date.parse(validTime) < Date.parse(productionReferenceAt)
       || Date.parse(validTime) > Date.parse(shiftedHour(
         productionReferenceAt, COPERNICUS_PUBLIC_END_OFFSET_HOURS,
-      ))
-      || Math.abs(Date.parse(acquisitionAt) - Date.parse(productionReferenceAt))
-        > COPERNICUS_FUTURE_ACQUISITION_FRESHNESS_HOURS * 3_600_000) return null;
+      ))) return null;
     maximumDistanceKm = 15;
     arrowSource = 'supplemental-current-grid';
   } else if (

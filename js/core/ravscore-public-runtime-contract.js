@@ -6,6 +6,10 @@ import {
 import {
   assertRavScoreVerifiedEvidenceTrust,
 } from './ravscore-evidence-trust-contract.js';
+import {
+  assertPublicWeatherSourceAge,
+  publicWeatherAgeReferenceAt,
+} from './ravscore-public-weather-source-age.js';
 
 export const RAVSCORE_PUBLIC_RUNTIME_SCHEMA_VERSION = '1.0.0';
 export const RAVSCORE_PUBLIC_STARTUP_KIND = 'RAVSCORE_PUBLIC_STARTUP';
@@ -39,9 +43,8 @@ export const RAVSCORE_PUBLIC_FORECAST_HOURS = 118;
 // Four missed 15-minute production opportunities cover the 45-minute watchdog
 // without presenting a multi-hour outage as fresh data.
 export const RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS = 1;
-export const RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS = 72;
 export const RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_SCHEMA_VERSION =
-  'ravscore-public-runtime-availability-v1';
+  'ravscore-public-runtime-availability-v2';
 export const RAVSCORE_PUBLIC_RUNTIME_MODE_FRESH = 'FRESH';
 export const RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY = 'EMERGENCY_LAST_COMPLETE';
 export const RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_FIELDS = Object.freeze([
@@ -51,10 +54,12 @@ export const RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_FIELDS = Object.freeze([
   'datasetId',
   'generatedAt',
   'productionReferenceAt',
+  'ageReferenceAt',
   'selectedReferenceAt',
   'validUntil',
   'evaluatedAt',
   'ageHours',
+  'weatherSourceAge',
   'modelBinding',
 ]);
 
@@ -260,6 +265,9 @@ export function selectPublicRuntimeAvailability(manifest, {
     manifest.ravScoreEvidenceTrust,
     'public manifest RavScore evidence trust',
   );
+  assertPublicWeatherSourceAge(manifest.weatherSourceAge, {
+    productionReferenceAt,
+  });
   assertPublicRuntimeManifest(manifest.ravScoreRuntime, {
     modelBinding: manifest.ravScoreModelBinding,
     startup: {
@@ -272,8 +280,9 @@ export function selectPublicRuntimeAvailability(manifest, {
     },
     label: 'Public RavScore availability manifest runtime',
   });
-  const ageMs = evaluatedMs - Date.parse(generatedAt);
-  if (ageMs < 0) throw new Error('Public RavScore manifest is from the future');
+  if (evaluatedMs < Date.parse(generatedAt)) {
+    throw new Error('Public RavScore manifest is from the future');
+  }
   const referenceMs = Date.parse(productionReferenceAt);
   if (evaluatedMs < referenceMs) {
     throw new Error('Public RavScore has no score hour at or before the requested time');
@@ -281,30 +290,42 @@ export function selectPublicRuntimeAvailability(manifest, {
   if (evaluatedMs > Date.parse(expectedValidUntil)) {
     throw new Error('Public RavScore score horizon has expired');
   }
-  const ageHours = ageMs / 3_600_000;
-  if (ageHours > RAVSCORE_PUBLIC_EMERGENCY_MAXIMUM_AGE_HOURS) {
-    throw new Error('Public RavScore emergency maximum age has expired');
-  }
-  const mode = ageHours <= RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS
+  // generatedAt is only packaging time. The conservative source-age reference
+  // is the oldest comparable attested model run (bounded by H0). Providers
+  // without a true comparable model issuance remain explicitly unknown.
+  const ageReferenceAt = publicWeatherAgeReferenceAt(manifest.weatherSourceAge);
+  const ageHours = (evaluatedMs - Date.parse(ageReferenceAt)) / 3_600_000;
+  const hasUnknownComparableAge = manifest.weatherSourceAge.unknownComparableAgeCount > 0;
+  const mode = !hasUnknownComparableAge
+    && ageHours <= RAVSCORE_PUBLIC_FRESH_MAXIMUM_AGE_HOURS
     ? RAVSCORE_PUBLIC_RUNTIME_MODE_FRESH
     : RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY;
-  const selectedHourIndex = mode === RAVSCORE_PUBLIC_RUNTIME_MODE_EMERGENCY
-    ? Math.floor((evaluatedMs - referenceMs) / 3_600_000)
-    : 0;
+  const selectedHourIndex = Math.floor((evaluatedMs - referenceMs) / 3_600_000);
+  if (selectedHourIndex < 0 || selectedHourIndex >= RAVSCORE_PUBLIC_FORECAST_HOURS) {
+    throw new Error('Public RavScore does not cover the requested UTC hour');
+  }
   const selectedReferenceAt = new Date(referenceMs + selectedHourIndex * 3_600_000).toISOString();
+  const requestedUtcHour = new Date(Math.floor(evaluatedMs / 3_600_000) * 3_600_000).toISOString();
+  if (selectedReferenceAt !== requestedUtcHour) {
+    throw new Error('Public RavScore does not cover the exact requested UTC hour');
+  }
   return Object.freeze({
     schemaVersion: RAVSCORE_PUBLIC_RUNTIME_AVAILABILITY_SCHEMA_VERSION,
     mode,
     reason: mode === RAVSCORE_PUBLIC_RUNTIME_MODE_FRESH
       ? 'COMPLETE_DATASET_WITHIN_FRESH_WINDOW'
-      : 'LATEST_COMPLETE_DATASET_WITHIN_SCORE_HORIZON',
+      : hasUnknownComparableAge
+        ? 'LATEST_COMPLETE_DATASET_WITH_UNKNOWN_SOURCE_AGE'
+        : 'LATEST_COMPLETE_DATASET_WITHIN_SCORE_HORIZON',
     datasetId: manifest.datasetId,
     generatedAt,
     productionReferenceAt,
+    ageReferenceAt,
     selectedReferenceAt,
     validUntil: expectedValidUntil,
     evaluatedAt: new Date(evaluatedMs).toISOString(),
     ageHours,
+    weatherSourceAge: Object.freeze({ ...manifest.weatherSourceAge }),
     modelBinding: manifest.ravScoreModelBinding,
   });
 }

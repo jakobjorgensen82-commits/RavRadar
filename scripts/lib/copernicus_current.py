@@ -27,6 +27,9 @@ COLD_BRIDGE_HOURS = 48
 PUBLIC_HOUR_COUNT = 118
 PUBLIC_END_OFFSET_HOURS = PUBLIC_HOUR_COUNT - 1
 LOCAL_MAX_DISTANCE_KM = 5.0
+# Positive, integrity-valid records remain usable until their validTime leaves
+# the requested window. This bound is retained for the separate negative
+# attempt/exhaustion evidence in copernicus_current_source_stage.py.
 FUTURE_ACQUISITION_FRESHNESS_HOURS = 4
 CACHE_SCHEMA_VERSION = 2
 CACHE_KIND = "RAVRADAR_PRIVATE_COPERNICUS_CURRENT_RANGE_CACHE"
@@ -1064,9 +1067,6 @@ def _validate_legacy_collection(
         if _parse_shadow_time(pair[1]) >= reference:
             if acquisition["requestContractId"] != REQUEST_CONTRACT_ID:
                 raise ValueError("Current/future Copernicus record requires the multi-time request contract")
-            age = abs((acquisition["_acquisitionAt"] - reference).total_seconds()) / 3600
-            if age > FUTURE_ACQUISITION_FRESHNESS_HOURS:
-                raise ValueError("Current/future Copernicus acquisition is stale versus production reference")
         referenced_acquisitions.add(ref["acquisitionId"])
         pairs.append({"partId": pair[0], "validTime": pair[1]})
     if (
@@ -1082,8 +1082,6 @@ def _validate_legacy_collection(
     if collection["acquisitionIds"] != sorted(referenced_acquisitions):
         raise ValueError("Copernicus coverage acquisition ids are not the exact referenced set")
     sealed_at = _parse_shadow_time(collection["sealedAt"])
-    if abs((sealed_at - reference).total_seconds()) > FUTURE_ACQUISITION_FRESHNESS_HOURS * 3600:
-        raise ValueError("Copernicus coverage seal is stale versus production reference")
     if any(acquisitions[value]["_acquisitionAt"] > sealed_at for value in referenced_acquisitions):
         raise ValueError("Copernicus coverage seal predates one of its referenced acquisitions")
     if collection["collectionId"] != collection_id(collection):
@@ -1239,12 +1237,8 @@ def _validate_collection(
     return {**collection, "_reference": reference}
 
 
-def validate_shadow(
-    document: Any,
-    target_identities: dict[str, dict[str, Any]] | None = None,
-    *,
-    require_collection: bool = False,
-) -> dict[str, Any]:
+def _validate_shadow_envelope(document: Any) -> dict[str, Any]:
+    """Validate the cache identity and containers before inspecting proof units."""
     cache = _require_exact_fields(document, TOP_LEVEL_FIELDS, "Copernicus range cache")
     integer_contract = (
         cache["schemaVersion"], cache["retentionHours"],
@@ -1266,6 +1260,16 @@ def validate_shadow(
     _parse_shadow_time(cache["updatedAt"])
     if not all(isinstance(cache[field], list) for field in ("acquisitions", "collections", "records")):
         raise ValueError("Copernicus range cache arrays are malformed")
+    return cache
+
+
+def validate_shadow(
+    document: Any,
+    target_identities: dict[str, dict[str, Any]] | None = None,
+    *,
+    require_collection: bool = False,
+) -> dict[str, Any]:
+    cache = _validate_shadow_envelope(document)
     if cache["acquisitions"] != sorted(cache["acquisitions"], key=lambda row: row.get("acquisitionId", "")):
         raise ValueError("Copernicus acquisitions are not canonical")
     validated_acquisitions: dict[str, dict[str, Any]] = {}
@@ -1309,6 +1313,130 @@ def validate_shadow(
     if require_collection and not cache["collections"]:
         raise ValueError("Copernicus range cache has no activation-complete coverage collection")
     return cache
+
+
+def salvage_shadow(
+    document: Any,
+    target_identities: dict[str, dict[str, Any]] | None = None,
+) -> tuple[dict[str, Any], dict[str, int | bool]]:
+    """Retain only independently valid schema-2 proof units.
+
+    The top-level cache identity and array containers remain fail-closed. A
+    malformed acquisition, record, or activation collection is local damage:
+    its positive evidence is removed, every now-unproved pair is thereby
+    exposed as a gap, and callers can reseal the canonical retained checkpoint.
+    """
+    try:
+        validated = validate_shadow(document, target_identities)
+    except (AttributeError, TypeError, ValueError):
+        pass
+    else:
+        return validated, {
+            "salvaged": False,
+            "droppedAcquisitionCount": 0,
+            "droppedRecordCount": 0,
+            "droppedCollectionCount": 0,
+            "droppedPairCount": 0,
+        }
+
+    cache = _validate_shadow_envelope(document)
+    raw_acquisitions = cache["acquisitions"]
+    raw_records = cache["records"]
+
+    declared_acquisition_ids: dict[str, int] = {}
+    for raw in raw_acquisitions:
+        if isinstance(raw, dict) and isinstance(raw.get("acquisitionId"), str):
+            identifier = raw["acquisitionId"]
+            declared_acquisition_ids[identifier] = declared_acquisition_ids.get(identifier, 0) + 1
+
+    validated_acquisitions: dict[str, dict[str, Any]] = {}
+    retained_acquisitions: dict[str, dict[str, Any]] = {}
+    for raw in raw_acquisitions:
+        try:
+            acquisition = _validate_acquisition(raw)
+            if declared_acquisition_ids.get(acquisition["acquisitionId"], 0) != 1:
+                raise ValueError("Duplicate Copernicus acquisition identity")
+            if target_identities is not None:
+                acquisition_targets = [
+                    target_identities[part_id]
+                    for part_id in acquisition["targetPartIds"]
+                ]
+                if acquisition["targetFingerprint"] != geometry_fingerprint(acquisition_targets):
+                    raise ValueError(
+                        "Copernicus acquisition target fingerprint does not match central identities"
+                    )
+        except (AttributeError, KeyError, TypeError, ValueError):
+            continue
+        validated_acquisitions[acquisition["acquisitionId"]] = acquisition
+        retained_acquisitions[acquisition["acquisitionId"]] = dict(raw)
+
+    declared_record_ids: dict[str, int] = {}
+    for raw in raw_records:
+        if isinstance(raw, dict) and isinstance(raw.get("recordId"), str):
+            identifier = raw["recordId"]
+            declared_record_ids[identifier] = declared_record_ids.get(identifier, 0) + 1
+
+    retained_records: dict[str, dict[str, Any]] = {}
+    raw_pair_keys: set[tuple[str, str]] = set()
+    for raw in raw_records:
+        if isinstance(raw, dict):
+            try:
+                raw_pair_keys.add((
+                    str(raw["partId"]),
+                    utc_iso(_hour(raw["validTime"], "Copernicus salvaged record time")),
+                ))
+            except (KeyError, TypeError, ValueError):
+                pass
+        try:
+            record = _validate_record(raw, validated_acquisitions, target_identities)
+            if declared_record_ids.get(record["recordId"], 0) != 1:
+                raise ValueError("Duplicate Copernicus record identity")
+        except (AttributeError, KeyError, TypeError, ValueError):
+            continue
+        retained_records[record["recordId"]] = dict(raw)
+
+    count_by_acquisition: dict[str, int] = {}
+    for record in retained_records.values():
+        acquisition_id = record["acquisitionId"]
+        count_by_acquisition[acquisition_id] = count_by_acquisition.get(acquisition_id, 0) + 1
+    detached_acquisition_ids = {
+        acquisition_id
+        for acquisition_id, acquisition in validated_acquisitions.items()
+        if count_by_acquisition.get(acquisition_id, 0) < 1
+        or count_by_acquisition[acquisition_id] > acquisition["recordCount"]
+    }
+    for acquisition_id in detached_acquisition_ids:
+        retained_acquisitions.pop(acquisition_id, None)
+    retained_records = {
+        record_id: record
+        for record_id, record in retained_records.items()
+        if record["acquisitionId"] in retained_acquisitions
+    }
+
+    rebuilt = empty_shadow(_parse_shadow_time(cache["updatedAt"]))
+    rebuilt["acquisitions"] = [
+        retained_acquisitions[key] for key in sorted(retained_acquisitions)
+    ]
+    rebuilt["records"] = sorted(
+        retained_records.values(),
+        key=lambda row: (row["validTime"], row["partId"], row["recordId"]),
+    )
+    # A collection is an activation seal over the exact former record set. It
+    # can never survive a repair; the runner rebuilds it only after closure.
+    rebuilt["collections"] = []
+    validate_shadow(rebuilt, target_identities)
+
+    retained_pair_keys = {
+        (record["partId"], record["validTime"])
+        for record in retained_records.values()
+    }
+    return rebuilt, {
+        "salvaged": True,
+        "droppedAcquisitionCount": len(raw_acquisitions) - len(retained_acquisitions),
+        "droppedRecordCount": len(raw_records) - len(retained_records),
+        "droppedCollectionCount": len(cache["collections"]),
+        "droppedPairCount": len(raw_pair_keys - retained_pair_keys),
+    }
 
 
 def empty_shadow(updated_at: datetime) -> dict[str, Any]:
@@ -1450,15 +1578,23 @@ def _migrate_schema1_history(
     return migrated
 
 
-def load_shadow(
+def load_shadow_with_salvage(
     path: Path,
     production_reference_at: datetime | None = None,
     target_identities: dict[str, dict[str, Any]] | None = None,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], dict[str, int | bool]]:
     reference = production_reference_at or datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
     if not path.exists():
-        return empty_shadow(reference)
+        return empty_shadow(reference), {
+            "salvaged": False,
+            "droppedAcquisitionCount": 0,
+            "droppedRecordCount": 0,
+            "droppedCollectionCount": 0,
+            "droppedPairCount": 0,
+        }
     document = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(document, dict):
+        raise RuntimeError("Invalid Copernicus range cache: top-level value is not an object")
     if (
         isinstance(document.get("schemaVersion"), int)
         and not isinstance(document.get("schemaVersion"), bool)
@@ -1467,13 +1603,33 @@ def load_shadow(
         if production_reference_at is None:
             raise RuntimeError("Schema-1 Copernicus cache needs a locked production reference for safe history migration")
         try:
-            return _migrate_schema1_history(document, reference, target_identities)
+            migrated = _migrate_schema1_history(document, reference, target_identities)
         except (TypeError, ValueError) as error:
             raise RuntimeError(f"Invalid legacy Copernicus cache: {error}") from None
+        return migrated, {
+            "salvaged": True,
+            "droppedAcquisitionCount": 0,
+            "droppedRecordCount": max(
+                0, len(document.get("records") or []) - len(migrated["records"]),
+            ),
+            "droppedCollectionCount": len(document.get("collections") or []),
+            "droppedPairCount": 0,
+        }
     try:
-        return validate_shadow(document, target_identities)
+        return salvage_shadow(document, target_identities)
     except (TypeError, ValueError) as error:
         raise RuntimeError(f"Invalid schema-2 Copernicus range cache: {error}") from None
+
+
+def load_shadow(
+    path: Path,
+    production_reference_at: datetime | None = None,
+    target_identities: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    shadow, _salvage = load_shadow_with_salvage(
+        path, production_reference_at, target_identities,
+    )
+    return shadow
 
 
 def merge_cache_evidence(
@@ -1524,10 +1680,6 @@ def select_required_records(
         for record in by_pair.get((normalized["partId"], normalized["validTime"]), []):
             acquisition = acquisition_by_id.get(record["acquisitionId"])
             if acquisition is None:
-                continue
-            valid_time = _parse_shadow_time(normalized["validTime"])
-            freshness = abs((acquisition["_acquisitionAt"] - production_reference_at).total_seconds()) / 3600
-            if valid_time >= production_reference_at and freshness > FUTURE_ACQUISITION_FRESHNESS_HOURS:
                 continue
             candidates.append((
                 source_rank.get(acquisition["source"], len(source_rank)),

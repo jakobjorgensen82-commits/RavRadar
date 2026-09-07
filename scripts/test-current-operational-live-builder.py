@@ -95,6 +95,20 @@ regional_cache = {
     "anchors": {f"REGIONAL_PROXY::{PART_ID}": {"samples": [sample]}},
 }
 closure_proof = {"closureId": HASH_B, "productionReferenceAt": REFERENCE_TEXT}
+old_but_future_sample = {
+    "capturedAt": (REFERENCE - timedelta(hours=200)).isoformat().replace("+00:00", "Z"),
+    "modelRun": (REFERENCE - timedelta(hours=3)).isoformat().replace("+00:00", "Z"),
+    "validTime": (REFERENCE + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
+}
+assert builder.regional_sample_time_valid(old_but_future_sample, REFERENCE)
+assert not builder.regional_sample_time_valid({
+    **old_but_future_sample,
+    "validTime": (REFERENCE + timedelta(hours=118)).isoformat().replace("+00:00", "Z"),
+}, REFERENCE)
+assert not builder.regional_sample_time_valid({
+    **old_but_future_sample,
+    "modelRun": (REFERENCE + timedelta(hours=2)).isoformat().replace("+00:00", "Z"),
+}, REFERENCE)
 regional = builder.regional_entries(
     regional_cache, {PART_ID: TARGET}, [assignment], closure_proof, REFERENCE,
 )
