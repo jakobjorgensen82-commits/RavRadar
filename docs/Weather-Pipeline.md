@@ -1,5 +1,17 @@
 # Weather Pipeline 1.0
 
+## 4.0.331 – sourcehistorik er en precondition, ikke et vejrtrin, 2026-09-07
+
+Før en vejrkørsel må begynde, skal den relevante sourcegate kunne bevise både den aktuelle checkout-kode og den fastlåste historiske Candidate G-source. `validate:source` læser commit `49dd4cb454656bdf629e5df760176705e38d2cb0`, dens eksakte tree og dens transitive public blobs. Et standard shallow checkout indeholder ikke nødvendigvis disse objekter.
+
+118h-oneoff `34077360903` på exact main `8020cdfe539df0841246714c22705d78927c8bdb` bestod releasegaten, men stoppede derefter ved opslaget af `49dd…^{tree}`. Derfor blev central adminhydrering, cache-restore, DMI, Copernicus, Open-Meteo, cache-save, closure, runtime, kapacitet, artifact og deploy aldrig kørt. Den efterfølgende røde Open-Meteo-slutkontrol skyldtes alene, at fill-trinnet var skipped. Runnet er ikke provider- eller cachebevis og ændrede ingen vejrcachedata.
+
+4.0.331 gør den historiske source til en eksplicit precondition ved alle weather-kaldesteder, som kan køre den fulde sourcegate: normal reusable build, manuel Copernicus-pilot og operationel 118h-oneoff. Et shallow job henter kun det deklarerede head, verificerer `FETCH_HEAD^{commit}` og det forventede tree og beholder den aktuelle checkout-head uændret. Fetch sker alene, når sourcegaten faktisk kræves; en live-verificeret exact-main-sourceproof kan fortsat undgå en gentagelse efter den eksisterende politik.
+
+Oneoffens terminale kontrol skelner nu mellem et upstream stop og en faktisk Open-Meteo-fejl. Det ændrer kun fejldiagnosen, ikke provideradmission eller slutkrav. 4.0.330's DMI → Baltic → AMM15 → regional DMI → Open-Meteo-kæde, delte progresscacher, critical-first-regel, 48-timers rådgivende historik og eksakte 79.414-slutclosure består uændret. Normal workflow er fortsat deaktiveret under den kontrollerede genopfyldning og må ikke genaktiveres automatisk.
+
+Status: 4.0.331 er lokalt implementeret og målrettet valideret. Exact-head, merge og frisk main-oneoff mangler. Derfor er 79.414/79.414, Feggesund 354/354, spatial audit, live kapacitet, fulde post-data gates, deploy og Phase B fortsat åbne; Candidate G er offentlig.
+
 ## 4.0.330 – vedligeholdelig cache og progressiv fallback, 2026-09-07
 
 Det bindende operationelle domæne er fortsat 673 kystdele × 118 timer = 79.414 currentpar. DMI forsøges først, derefter Baltic, AMM15, den policybundne regionale DMI-vej og til sidst Open-Meteo. Hvert led afleverer den eksakte verificerede rest videre; en lokal providerfil, shard, batch eller bounded timeout må ikke slette andre gyldige par eller kræve, at hele leverandøren er terminalt komplet. Robust indsamling er ikke en lempet releasegate: public/runtime/deploy kræver stadig én og kun én gyldig kilde pr. par, nul overlap, nul missing og alle fulde produktionsgates.

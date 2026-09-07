@@ -1,3 +1,11 @@
+# NYESTE SANDHED – 2026-09-07 – 4.0.331 lukker pre-weather sourceprecondition lokalt
+
+- 4.0.330 er merged på `main` som `8020cdfe539df0841246714c22705d78927c8bdb`, men blev supersederet før sin første vejrruntime. Dens vejrcache-/providerlogik er videreført uændret i lokal 4.0.331.
+- 118h-oneoff `34077360903` bestod releasegaten i `validate:source` og stoppede derefter alene, fordi det shallow checkout manglede det fastlåste legacy Candidate G-head/tree `49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}`.
+- Runnet nåede ikke central adminhydrering, weather-cache-restore/save, DMI, Copernicus, Open-Meteo, closure, runtime, kapacitet, artifact, deploy eller modelcutover og ændrede ingen provider-/vejrcachedata. Den efterfølgende røde Open-Meteo-terminal er sekundær til skipped fill, ikke providerbevis.
+- Lokal 4.0.331 materialiserer og verificerer exact pinned sourcehead/tree før alle mulige weather-`validate:source`-kald i normal reusable build, manuel pilot og 118h-oneoff. Fetch er read-only og flytter ikke checkout-head. PR's fulde checkout består, mens trip-storage er harmoniseret fra eksakt HEAD-fetch til samme fail-closed HEAD+TREE-forhåndskontrol. Alle sourcegate-workflows er dermed beskyttet. Den fokuserede lokale kode-, workflow-, versions-, RDKS-, håndbogs-/SQL- og protected-metadata-matrix er grøn; det er ikke GitHub- eller runtimebevis.
+- Normal workflow er fortsat deaktiveret under kontrolleret genopfyldning. Exact-head-CI, merge, frisk main-oneoff, 79.414/79.414, nul overlap/missing, Feggesund 354/354, spatial audit, live kapacitet, fulde post-data gates, deploy og særskilt Phase B er åbne. Candidate G er offentlig.
+
 # NYESTE SANDHED – 2026-09-07 – 4.0.330 helkædevedligeholdelse er lokal og uverificeret
 
 - 4.0.329 er merged på `main` som `b3865eb9`. Det lukker dens merge-status, men ikke behovet for et positivt komplet vejrrun. Candidate G er fortsat den offentlige scoremodel.

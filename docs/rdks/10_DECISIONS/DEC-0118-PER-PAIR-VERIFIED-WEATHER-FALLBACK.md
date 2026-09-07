@@ -1,6 +1,6 @@
 # DEC-0118 – Per-pair-verificeret vejrfallback uden leverandørblokering
 
-- **Status:** Ejerbesluttet og bindende; 4.0.329 er merged på `main` som `b3865eb9`, men positiv komplet vejrruntime mangler. 4.0.330-tillægget er en lokal kandidat under fokuseret validering; GitHub exact-head sourcegate, merge og produktionsbevis afventer
+- **Status:** Ejerbesluttet og bindende; 4.0.330 er merged på `main` som `8020cdfe539df0841246714c22705d78927c8bdb`, men supersederet før sin første vejrruntime af lokalt implementeret og målrettet valideret 4.0.331. Exact-head-CI, positiv komplet vejrruntime, 79.414/79.414 og modelcutover mangler fortsat
 - **Besluttet:** 2026-09-06
 - **Ejer:** RavRadar
 - **Formål:** Bevar alle gyldige vejrdata, isolér én defekt fil eller én utilgængelig leverandør og lad den eksakte rest fortsætte gennem fallbackkæden uden at svække den afsluttende publiceringsgate.
@@ -73,6 +73,19 @@ Adapterændringen er bundet append-only i `20260906162332_per_pair_weather_fallb
 10. Operationel completeness er fortsat præcis 79.414/79.414 med én kilde pr. par og nul overlap/missing. Højst 48 timers verificeret historik bevares rådgivende og må mangle som `HISTORY_INCOMPLETE`, men må aldrig syntetiseres eller bruges som operationel closure. Den integrerede scoremodel aktiveres først efter frisk komplet weather closure, Feggesund 354/354, hydreret spatial audit, live kapacitet, fuld post-data `validate` og `release:gate`, artifact/deploy samt særskilt Phase B.
 
 Status ved 4.0.330-dokumentationscheckpointet: implementeringen er lokal og under afsluttende fokuseret validering. Den er ikke endnu CI-valideret, merged eller produktionsverificeret. Candidate G forbliver offentlig, og der ændres ingen scoreformel, geometri, kystnormal eller land-/vandpunkter.
+
+## Bindende 4.0.331-tillæg – sourceprecondition før providerkæden
+
+118h-oneoff `34077360903` på eksakt `main`-head `8020cdfe539df0841246714c22705d78927c8bdb` nåede aldrig DEC-0118's providerkæde. Releasegaten i `validate:source` bestod, men legacy Candidate G-sourceverifikationen kunne ikke slå `49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}` op, fordi workflowets checkout var shallow. Alle admin-, cache-, provider-, closure-, runtime-, kapacitets-, artifact-, deploy- og modeltrin blev skipped; ingen vejrcachedata blev ændret. Den efterfølgende røde Open-Meteo-terminal var alene en konsekvens af skipped fill og er ikke providerbevis.
+
+Følgende er bindende precondition for punkt 10 og alle workflows, som håndhæver DEC-0118 gennem den fulde sourcegate:
+
+1. Ethvert job, som faktisk kan køre `npm run validate:source`, skal først have det fastlåste historiske Candidate G-sourcehead med dets eksakte tree og blobs lokalt tilgængeligt. Kravet må ikke afhænge af en bestemt modelhandling; normal weather-maintenance, manuel pilot og 118h-oneoff er omfattet.
+2. Et shallow checkout må hente alene det eksakte historiske sourcehead read-only. Den deklarerede 40-tegns SHA, `FETCH_HEAD^{commit}` og det forventede tree skal verificeres før sourcegaten. Fetch må ikke flytte checkout-head, skrive cache eller central runtime eller erstatte selve sourcegaten.
+3. En målrettet regression skal gennemgå alle source-gate-kaldesteder. PR-gatens fulde historik bevares. Trip-storage harmoniseres fra sin eksisterende eksakte HEAD-fetch til samme fail-closed HEAD+TREE-forhåndskontrol, og normal reusable weather-build samt begge jobs i Copernicus/oneoff-workflowet skal have samme precondition. Dermed er alle sourcegate-workflows beskyttet.
+4. Et skipped Open-Meteo-trin efter upstream source- eller providerstop skal rapporteres som upstream stop og må ikke klassificeres som en faktisk Open-Meteo-providerfejl.
+
+Tillægget ændrer ingen provideradmission, kildeprioritet, cacheidentitet, tidsbudget, 48-timers historik, 79.414-slutclosure, score, geometri eller punkter. 4.0.330 er historisk merged, men supersederet før runtime; dens bindende provider-/cachekontrakt videreføres uændret i 4.0.331. Normal workflow forbliver deaktiveret under den kontrollerede opfyldning. Exact-head-CI, merge og alle positive runtime-/kapacitets-/deploy-/Phase B-beviser er fortsat åbne.
 
 ## Præcis supersession og bevarelse
 

@@ -1,3 +1,15 @@
+# NYESTE CHECKPOINT – 2026-09-07 – 4.0.331 sourceprecondition efter pre-weather-stop
+
+- **Ejerordre:** Arbejd autonomt frem mod komplet vejrcache og derefter integreret model-online, men undgå reparationskarussel og bevar de strenge slutgates.
+- **Faktisk run:** 118h-oneoff `34077360903`, job `101605996778`, kørte på eksakt `main`-head `8020cdfe539df0841246714c22705d78927c8bdb`. Releasegaten inde i `validate:source` bestod; den efterfølgende legacy-source-test fejlede på `git rev-parse 49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}`, fordi checkoutet var shallow.
+- **Korrekt klassifikation:** Dette er en manglende historisk Git-sourceprecondition før vejrstart. Det er ikke en DMI-, Copernicus-, Open-Meteo-, cache-, runtime- eller modelregression. Den røde terminale Open-Meteo-kontrol var sekundær, fordi fill-trinnet var skipped.
+- **Ingen datamutation:** Central adminhydrering, alle weather-cache-restores/-saves, DMI, Copernicus, Open-Meteo, closure, integreret runtime, kapacitetsmåling, artifact, deploy og modelaktivering blev skipped. Runnet ændrede ingen provider- eller vejrcachedata.
+- **4.0.331:** Alle mulige `validate:source`-kald i vejrworkflowet materialiserer det eksakte historiske Candidate G-sourcehead lokalt før gaten, også ved almindelig vedligeholdelse og pilot/oneoff. Den målrettede fetch er read-only, verificerer exact SHA/`FETCH_HEAD` og flytter ikke checkout-head. Kode-, workflow-, versions- og dokumentationsfokustestene er grønne lokalt; GitHub exact-head og runtime mangler.
+- **Supersession:** 4.0.330 er merged, men supersederet før sin første vejrruntime. Dens cache-, provider-, provenance-, history- og closurelogik består uændret i 4.0.331; historiske 4.0.330-statuslinjer omskrives ikke.
+- **Drift:** Normal workflow er fortsat deaktiveret under den kontrollerede oneoff/opfyldning. Genaktivér ikke automatisk. Oneoff forbliver ikke-deployende accelerator; normal drift er efter genaktivering den varige updater.
+- **Åbent:** Exact-head-CI og merge for 4.0.331, frisk main-oneoff, faktisk DMI/Copernicus/Open-Meteo-progression, 79.414/79.414 med nul overlap/missing, Feggesund 354/354, hydreret spatial audit, live Supabase-kapacitet, fuld post-data `validate`/`release:gate`, artifact/deploy, særskilt Phase B og offentlig modelverifikation. Candidate G er offentlig.
+- **Scope:** Ingen scoreformel, modelstate, geometri, kystnormal, land-/vandpunkter, cacheformat, providerorden eller tidsbudget ændres. `.cache/` og `.tmp-run-*` er private/untracked og må aldrig stages.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.330 vejrcache først, integreret model bagefter
 
 - **Ejerordre:** Arbejd autonomt og kontinuerligt til vejrcachen kan fyldes og vedligeholdes sikkert; få derefter den integrerede scoremodel online. Undgå reparationskarussel: ved ny fejl gennemgås hele kæden og beslægtede fejlklasser før endnu en rettelse.

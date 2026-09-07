@@ -1,3 +1,12 @@
+## 4.0.331 – historisk sourceprecondition før kildegaten (2026-09-07, lokalt implementeret og målrettet valideret)
+
+- Oneoff `34077360903` på eksakt `main`-head `8020cdfe539df0841246714c22705d78927c8bdb` stoppede før vejrhentning: releasegaten bestod, men `validate:source` kunne ikke slå det fastlåste historiske Candidate G-head `49dd4cb454656bdf629e5df760176705e38d2cb0^{tree}` op i workflowets shallow checkout.
+- Fejlen er en sourceprecondition, ikke en provider-/cachefejl. Adminhydrering, alle vejrcacher, DMI, Copernicus, Open-Meteo, closure, runtime, kapacitet, artifact, deploy og modelcutover blev skipped; ingen vejrcachedata blev ændret. Den efterfølgende røde Open-Meteo-slutkontrol var alene sekundær til det skipped fill-trin.
+- Alle vejrworkflows, som kan køre `validate:source`, materialiserer og verificerer nu det eksakte historiske sourcehead før gaten, også når operationen ikke er et modelcutover. PR-gatens fulde checkout bevares, og trip-storage harmoniseres fra eksakt HEAD-fetch til samme fail-closed HEAD+TREE-forhåndskontrol; dermed er alle sourcegate-workflows beskyttet. Checkout-head, private caches og centrale data ændres ikke af den målrettede fetch. Den fokuserede lokale matrix er grøn; exact-head-CI og runtimebevis mangler.
+- 4.0.330 er supersederet før runtime, men dens provider-/cache-/fallbacklogik består uændret. Normal workflow er fortsat deaktiveret under den kontrollerede opfyldning. Frisk main-oneoff, 79.414/79.414, Feggesund 354/354, spatial audit, live kapacitet, fulde post-data gates, deploy og særskilt Phase B er fortsat åbne; Candidate G er offentlig.
+
+Se `CHANGELOG-4.0.331.md`.
+
 ## 4.0.330 – vedligeholdelig vejrcache gennem hele fallbackkæden (2026-09-07, lokal kandidat)
 
 - DMI prioriterer manglende/ugyldige/udløbne rækker og hale før bounded vedligeholdelsesrefresh af stadig gyldige rækker; en nyere currenttuple erstatter først atomisk efter fuld validering.

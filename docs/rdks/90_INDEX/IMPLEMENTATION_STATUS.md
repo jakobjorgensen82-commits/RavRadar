@@ -1,3 +1,16 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.331 exact-source-precondition
+
+- [x] Klassificér `34077360903` præcist: exact-main `8020cdfe539df0841246714c22705d78927c8bdb`, releasegate grøn, derefter legacy-sourcefejl på manglende `49dd…^{tree}` i shallow checkout og alle vejr-/cache-/runtime-/kapacitets-/deploytrin skipped.
+- [x] Auditér hele `validate:source` for Git-historikafhængigheder: kun legacy Candidate G-sourceverifikationen kræver historiske commit/tree/blobs; tracked-runtime-auditens `git ls-files` er shallow-sikker, og øvrige SHA-/Git-tekster er fixtures eller statiske workflowassertions.
+- [x] Auditér alle source-gate-kaldesteder og post-source-miljøet: PR-gatens fulde checkout var allerede sikkert; trip-storage havde eksakt HEAD-fetch og er nu harmoniseret med fail-closed HEAD+TREE-forhåndskontrol; normal reusable weather-build samt pilot og oneoff manglede sourcepreconditionen og har den nu. Alle sourcegate-workflows er dækket. Der blev ikke fundet en særskilt PR-only Python-/Node-dependencyblokker efter gaten.
+- [x] Materialisér og verificér exact pinned Candidate G-head og tree før hvert muligt weather-`validate:source`-kald uden at flytte checkout-head eller gøre fetch afhængig af modelhandling.
+- [x] Gør oneoffens terminale providerkrav eksplicit om upstream source/provider-stop, når Open-Meteo er skipped, så et source-stop ikke fejlklassificeres som Open-Meteo-providerfejl.
+- [x] Løft version til 4.0.331 og viderefør 4.0.330's provider-/cache-/fallbackkontrakt uden ændring af score, geometri, punkter, cacheformat, providerorden eller budget.
+- [x] Afslut målrettet workflow/sourcehistorik-regression samt versions-, RDKS-, håndbogs-/SQL-paritets- og protected-metadata-kontroller. Den fokuserede lokale matrix er grøn; ingen fuld lokal sourcegate er gentaget.
+- [ ] Commit/push og bestå én GitHub exact-head sourcegate; merge kun den eksakte grønne head.
+- [ ] Kør frisk main-oneoff og kræv faktisk providerprogression, 79.414/79.414, nul overlap/missing og Feggesund 354/354. Normal workflow forbliver deaktiveret under den kontrollerede opfyldning.
+- [ ] Gennemfør derefter hydreret spatial audit, live kapacitet, fuld post-data `validate`/`release:gate`, artifact/deploy og særskilt Phase B. Candidate G er offentlig indtil da.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.330 helkæde-cachevedligeholdelse
 
 - [x] Fastlæg én samlet critical-first-kontrakt: missing/invalid/expired, interne huller og hale før refresh af stadig gyldige rækker; gyldig gammel currenttuple bevares til atomisk valideret replacement.
