@@ -198,7 +198,7 @@ assert.doesNotMatch(
   'Collection-lokale checkpointtællere må ikke genindføres.',
 );
 const assetCommit = mainCheckpointScope.indexOf('checkpoint_controller.note_committed_asset(');
-const budgetGuard = mainCheckpointScope.indexOf('if not checkpoint_controller.can_start_asset():');
+const budgetGuard = mainCheckpointScope.indexOf('if not checkpoint_controller.can_start_asset(');
 const budgetFlush = mainCheckpointScope.indexOf('checkpoint_controller.flush_if_due(force=True)', budgetGuard);
 const transactionFailureFlush = mainCheckpointScope.indexOf(
   'failure_flush=lambda: checkpoint_controller.flush_if_due(force=True)',

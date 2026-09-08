@@ -1,3 +1,12 @@
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 lokal WAM-readiness-kandidat
+
+- Offentlig sandhed er fortsat 4.0.316 / Candidate G. 4.0.334 er lokal og måltestet, men endnu ikke committed, exact-head-CI-testet, merged, main-runtime-testet, fuldt releasevalideret, deployet eller cuttet over.
+- Oneoff `34161930631` beviste 79.414/79.414 operationelle strømpar (61.860 DMI, 16.593 Copernicus, 944 regional, 17 Open-Meteo, 0 missing), men stoppede korrekt på Feggesund 3 × 118. Closure må ikke forveksles med samlet artifact-/release-readiness.
+- Den lokale løsning giver fair runtime til begge WAM-familier, bounded eksakt bridge på højst fire inklusive timer, source-attesteret cold-start-rebase ved ældre Candidate G-target, eksakt 118-timersakse med `MISSING`, atomiske tuples, hashbundet Feggesund-proof og konkret runbundet første cutover.
+- Næste gyldige vej er version/commit → exact-head `validate:source` → merge/main-oneoff → 354/354 og runtimeproof → fuld validate/releasegate → deploy/Phase B/offentlig cutover. Ingen gate må omgås.
+- Normale kørsler er den permanente cachevedligeholder efter reaktivering; oneoff er accelerator. Ekstern cron er primær dispatch og GitHub schedule reserve.
+- De to åbne P2-effektivitetsforhold (proxy ikke krediteret som native WAM; live ForecastEDR-budget kan ikke sættes helt til nul) er ikke dokumenterede correctness- eller releaseblockere.
+
 # NYESTE CHECKPOINT – 2026-09-07 – 4.0.333 exact-residual før modelcutover
 
 - 4.0.332 er sourcegate-grøn (`34125927405`, `f23f306b…`) og merged via PR #265 (`1e1093de…`). Main-oneoff `34127986853` genbrugte cachen, men sluttede 79.132/79.414: DMI 65.409, Copernicus +12.661, regionalled og Open-Meteo efterlod 282. Open-Meteo required 472 / retained 76 / fetched 114 / filled 190. Ingen artifact/deploy/cutover.

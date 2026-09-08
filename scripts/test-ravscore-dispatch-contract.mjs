@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { validateRavScoreDispatchContract } from './lib/ravscore-dispatch-contract.mjs';
 import { readProductionWorkflowSource } from './lib/production-workflow-sources.mjs';
 
@@ -15,11 +16,22 @@ assert.ok(checkoutIndex >= 0 && setupIndex > checkoutIndex && validatorIndex > s
   'manual dispatch must checkout the exact repository and set up Node before its validator');
 assert.match(dispatchJob, /actions\/setup-node@v7[\s\S]*?node-version: '24'/,
   'manual dispatch validator must use the repository Node 24 contract');
+assert.match(
+  dispatchJob,
+  /if \[ "\$FIRST_CUTOVER_REQUESTED" = "true" \]; then[\s\S]*?\[\[ ! "\$WEATHER_HANDOFF_RUN_ID" =~ \^\[1-9\]\[0-9\]\{0,19\}\$ \]\]/,
+  'first cutover must require a concrete positive weather source producer run id',
+);
+assert.match(
+  dispatchJob,
+  /elif \[ -n "\$WEATHER_HANDOFF_RUN_ID" \]; then[\s\S]*?A verified weather handoff is accepted only by an integrated first cutover\./,
+  'non-first-cutover dispatch must reject a weather source producer run id',
+);
 
 const base = {
   force: 'false', geometryPilot: 'false', geometryNational: 'false',
   rollbackMode: 'none', rollbackConfirmation: '',
   firstCutoverRequested: 'false', firstCutoverConfirmation: '',
+  weatherHandoffRunId: '',
   returnRequested: 'false', returnConfirmation: '',
 };
 const operations = [
@@ -28,7 +40,7 @@ const operations = [
   { name: 'geometry-national', patch: { geometryNational: 'true' } },
   { name: 'candidate-dry-run', patch: { rollbackMode: 'dry-run' } },
   { name: 'candidate-execute', patch: { rollbackMode: 'execute', rollbackConfirmation: 'EXECUTE-CANDIDATE-G-ROLLBACK' } },
-  { name: 'integrated-first-cutover', patch: { firstCutoverRequested: 'true', firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE' } },
+  { name: 'integrated-first-cutover', patch: { firstCutoverRequested: 'true', firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE', weatherHandoffRunId: '34161930631' } },
   { name: 'integrated-return', patch: { returnRequested: 'true', returnConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-RETURN' } },
 ];
 
@@ -49,6 +61,53 @@ assert.throws(() => validateRavScoreDispatchContract({ ...base, rollbackMode: 'e
 assert.throws(() => validateRavScoreDispatchContract({ ...base, rollbackConfirmation: 'EXTRA' }), /accepted only by execute/);
 assert.throws(() => validateRavScoreDispatchContract({ ...base, firstCutoverRequested: 'true' }), /confirmation is not exact/);
 assert.throws(() => validateRavScoreDispatchContract({ ...base, firstCutoverConfirmation: 'EXTRA' }), /accepted only by an integrated first cutover/);
+assert.throws(() => validateRavScoreDispatchContract({
+  ...base,
+  firstCutoverRequested: 'true',
+  firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
+}), /handoff run id is malformed/);
+for (const weatherHandoffRunId of ['0', '-1', '1.5', '123456789012345678901']) {
+  assert.throws(() => validateRavScoreDispatchContract({
+    ...base,
+    firstCutoverRequested: 'true',
+    firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
+    weatherHandoffRunId,
+  }), /handoff run id is malformed/, `invalid weather handoff run id must fail closed: ${weatherHandoffRunId}`);
+}
+assert.throws(() => validateRavScoreDispatchContract({
+  ...base,
+  weatherHandoffRunId: '34161930631',
+}), /accepted only by an integrated first cutover/);
+
+const cliEnv = {
+  ...process.env,
+  GITHUB_REF: 'refs/heads/main',
+  FORCE: 'false',
+  GEOMETRY_PILOT: 'false',
+  GEOMETRY_NATIONAL: 'false',
+  ROLLBACK_MODE: 'none',
+  ROLLBACK_CONFIRMATION: '',
+  FIRST_CUTOVER_REQUESTED: 'true',
+  FIRST_CUTOVER_CONFIRMATION: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
+  WEATHER_HANDOFF_RUN_ID: '',
+  RETURN_REQUESTED: 'false',
+  RETURN_CONFIRMATION: '',
+};
+const missingCliRunId = spawnSync(process.execPath, ['scripts/validate-ravscore-dispatch.mjs'], {
+  cwd: process.cwd(),
+  encoding: 'utf8',
+  env: cliEnv,
+});
+assert.notEqual(missingCliRunId.status, 0, 'CLI validator must reject first cutover without a run id');
+assert.match(missingCliRunId.stderr, /handoff run id is malformed/);
+const validCliRunId = spawnSync(process.execPath, ['scripts/validate-ravscore-dispatch.mjs'], {
+  cwd: process.cwd(),
+  encoding: 'utf8',
+  env: { ...cliEnv, WEATHER_HANDOFF_RUN_ID: '34161930631' },
+});
+assert.equal(validCliRunId.status, 0, validCliRunId.stderr);
+assert.match(validCliRunId.stdout, /integrated-first-cutover/);
+
 assert.throws(() => validateRavScoreDispatchContract({ ...base, returnConfirmation: 'EXTRA' }), /accepted only by an integrated return/);
 for (const retiredInput of [
   { reconstructionMode: 'none' },
@@ -73,6 +132,7 @@ assert.throws(() => validateRavScoreDispatchContract({
   ...base,
   firstCutoverRequested: 'true',
   firstCutoverConfirmation: 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE',
+  weatherHandoffRunId: '34161930631',
 }, { githubRef: 'refs/heads/feature' }), /only on main/);
 
 console.log('RavScore manual dispatch matrix: passed.');

@@ -332,6 +332,13 @@ for (const marker of [
   'name: Apply centrally approved zone reviews locally',
   'python scripts/apply-central-zone-reviews.py',
   'name: Materialize the centrally hydrated authoritative coastal-part registry',
+  'name: Resolve one aggregate Candidate G wave-bootstrap target',
+  '--source-registry "$RUNNER_TEMP/ravradar-118-deployed-donor/.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"',
+  'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}',
+  'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}',
+  'name: Require complete operational WAM handoff before one-off downstream providers',
+  'python -B scripts/validate_dmi_wave_history_bootstrap.py',
+  '--forecast-hour-count 118',
   'Validate the operational request and bind the exact target hour',
   'test "$GITHUB_REF" = "refs/heads/main"',
   'Expose the exact target hour already used by the DMI refresh',
@@ -374,8 +381,11 @@ assertMarkersOrdered(operationalPreflight, [
   'name: Refresh all bounded official DMI collections for the proof',
   'name: Reconfirm exact main before one-off shared DMI progress caches',
   'name: Save progressed DMI GRIB cache before any terminal decision',
+  'name: Save isolated DMI candidate progress before any terminal decision',
   'name: Reconfirm exact main before one-off shared active DMI cache',
   'name: Save the promoted complete active DMI generation',
+  'name: Save private regional current evidence before any terminal decision',
+  'name: Require complete operational WAM handoff before one-off downstream providers',
   'name: Fill only the exact operational DMI gap seal',
   'name: Reconfirm exact main before one-off shared Copernicus progress cache',
   'name: Save non-cancelled private Copernicus source-stage progress',
@@ -401,6 +411,8 @@ const timeoutMinutes = (block) => {
 };
 const operationalJobMinutes = timeoutMinutes(operationalPreflight.slice(0, operationalPreflight.indexOf('    steps:')));
 const dmiAcquisitionStep = operationalStep('Refresh all bounded official DMI collections for the proof');
+const waveBootstrapTargetStep = operationalStep('Resolve one aggregate Candidate G wave-bootstrap target');
+const wamReadinessStep = operationalStep('Require complete operational WAM handoff before one-off downstream providers');
 const copernicusAcquisitionStep = operationalStep('Fill only the exact operational DMI gap seal');
 const oneoffCopernicusDisposition = operationalStep('Require reusable Copernicus source stage');
 const runtimeBuildStep = operationalStep('Build the integrated runtime without release or deploy');
@@ -422,6 +434,24 @@ assert.match(
 );
 assert.ok(dmiAcquisitionStep.includes('DMI_BULK_DKSS_PRIMARY_MODE: true'),
   'Engangskørslen skal bruge DKSS-primary ved den store DMI-opfyldning.');
+for (const marker of [
+  '--conditions "$RUNNER_TEMP/ravradar-118-deployed-donor/data/live/conditions.json"',
+  '--source-registry "$RUNNER_TEMP/ravradar-118-deployed-donor/.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"',
+  '--registry data/live/coastal-parts-v2.json',
+  '--production-target "${{ steps.operational-target.outputs.target_hour }}"',
+]) assert.ok(waveBootstrapTargetStep.includes(marker), `Oneoffens Candidate G WAM-target mangler ${marker}`);
+for (const marker of [
+  'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}',
+  'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}',
+]) assert.ok(dmiAcquisitionStep.includes(marker), `Oneoffens private WAM-bootstrap mangler ${marker}`);
+for (const marker of [
+  'if: always()',
+  'python -B scripts/validate_dmi_wave_history_bootstrap.py',
+  '--cache .cache/dmi-candidate-progress.json',
+  '--registry data/live/coastal-parts-v2.json',
+  '--forecast-hour-count 118',
+  'exit "$validator_status"',
+]) assert.ok(wamReadinessStep.includes(marker), `Oneoffens WAM-readiness-gate mangler ${marker}`);
 for (const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/open-meteo-current-fallback.json',
@@ -556,6 +586,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Hydrate an optional independent deployed Candidate G DMI donor'),
   operationalPreflight.indexOf('--root "$donor_root"'),
   operationalPreflight.indexOf('cp "$donor_root/data/live/dmi-bulk-cache.json" .cache/deployed-dmi-bulk-cache.json'),
+  operationalPreflight.indexOf('name: Resolve one aggregate Candidate G wave-bootstrap target'),
   operationalPreflight.indexOf('name: Restore last complete active DMI generation'),
   operationalPreflight.indexOf('name: Resolve newest terminal-proven exact-main legacy DMI generation'),
   operationalPreflight.indexOf('name: Bootstrap the terminal-proven exact legacy DMI generation'),
@@ -570,6 +601,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Strictly snapshot only a promoted READY DMI generation'),
   operationalPreflight.indexOf('name: Save the promoted complete active DMI generation'),
   operationalPreflight.indexOf('name: Save private regional current evidence before any terminal decision'),
+  operationalPreflight.indexOf('name: Require complete operational WAM handoff before one-off downstream providers'),
   operationalPreflight.indexOf('name: "Classify DMI availability ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
@@ -599,7 +631,7 @@ const operationalPositions = [
 ];
 if (operationalPositions.some((position) => position < 0)
   || operationalPositions.some((position, index) => index > 0 && operationalPositions[index - 1] >= position)) {
-  throw new Error('Operational-118-preflight skal følge DMI→Copernicus→source-stage-disposition→Open-Meteo-rest→friskhed→closure→live current→update:weather→provenance→integrated audit.');
+  throw new Error('Operational-118-preflight skal følge Candidate G-target→DMI→cache-save→WAM-gate→Copernicus→source-stage-disposition→Open-Meteo-rest→friskhed→closure→live current→update:weather→provenance→integrated audit.');
 }
 const oneoffActiveRestore = operationalStep('Restore last complete active DMI generation');
 for (const marker of [

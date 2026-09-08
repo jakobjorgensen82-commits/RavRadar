@@ -71,6 +71,7 @@ import {
   verifiedIntegratedPartHourly,
 } from './lib/ravscore-production-adapters.mjs';
 import {
+  FEGGESUND_WAVE_DISPOSITIONS,
   FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS,
   FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
   bindVerifiedFeggesundWaveSource,
@@ -990,7 +991,11 @@ function bulkZoneToForecastRecord(
   bulkCache,
   generatedAt,
   previousRecord = null,
-  { startAt = generatedAt, expectedIdentity = null } = {},
+  {
+    startAt = generatedAt,
+    expectedIdentity = null,
+    materializeMissingHorizon = false,
+  } = {},
 ) {
   const zoneId = feature.properties?.id;
   const bulkZone = bulkCache?.zones?.[zoneId];
@@ -1009,7 +1014,7 @@ function bulkZoneToForecastRecord(
   const currentSemanticsValid = bulkCache?.currentVectorSemanticsVersion === CURRENT_VECTOR_SEMANTICS_VERSION
     && samePoint(bulkZone?.samplingPoint, point);
   const rows = Object.values(bulkZone?.hourly ?? {}).filter(row => Number.isFinite(Date.parse(row?.time))).sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
-  if (!rows.length) return null;
+  if (!rows.length && !materializeMissingHorizon) return null;
   const provenance = row => ({ ...(row.sources ?? {}) });
   const wind = rows.filter(row => ravScoreNumber(row['wind-speed-10m']) !== null
     && ravScoreNumber(row['wind-dir-10m']) !== null
@@ -1090,11 +1095,12 @@ function bulkZoneToForecastRecord(
   const waveAvailable = waves.some(item => ravScoreNumber(item['significant-wave-height']) !== null
     && ravScoreNumber(item['dominant-wave-period']) !== null);
   const waveCollection = waves.find(item => item.provenance?.wave?.collection)?.provenance?.wave?.collection ?? null;
-  if (!marine && !windAvailable && !windTailAvailable && !waveAvailable) return null;
+  if (!marine && !windAvailable && !windTailAvailable && !waveAvailable
+    && !materializeMissingHorizon) return null;
   const mergedDmiHourly = mergeHourlyPreferDmi(
     built.hourly,
     compatiblePrevious?.hourly ?? [],
-    { generatedAt },
+    { generatedAt, expectedIdentity: dmiIdentity },
   );
   const mergedHourly = FEGGESUND_WAVE_PROXY_SOURCE_ZONE_IDS.includes(zoneId)
     ? mergedDmiHourly.map(hour => {
@@ -1121,7 +1127,7 @@ function bulkZoneToForecastRecord(
     model: {
       ...(compatiblePrevious?.model ?? {}),
       wind: windAvailable ? 'harmonie_dini_sf-stac-grib' : compatiblePrevious?.model?.wind ?? null,
-      windTail: windTailAvailable ? `${bulkZone.collections?.['wind-tail-u-10m'] ?? 'dkss'}-stac-grib` : compatiblePrevious?.model?.windTail ?? null,
+      windTail: windTailAvailable ? `${bulkZone?.collections?.['wind-tail-u-10m'] ?? 'dkss'}-stac-grib` : compatiblePrevious?.model?.windTail ?? null,
       wave: waveAvailable && waveCollection ? `${waveCollection}-stac-grib` : compatiblePrevious?.model?.wave ?? null,
       ocean: marine ? `${dmiCollections(feature.properties?.coastType).ocean}-stac-grib` : compatiblePrevious?.model?.ocean ?? null,
       completeness: {
@@ -1138,14 +1144,14 @@ function bulkZoneToForecastRecord(
         sourceCadenceMinutes,
         samplingPoint: point,
         currentVectorSemanticsVersion: currentAvailable && currentSemanticsValid ? CURRENT_VECTOR_SEMANTICS_VERSION : null,
-        currentVectorSelection: currentAvailable && currentSemanticsValid ? bulkCache.currentVectorSelection : null,
-        currentPreferredDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache.currentPreferredDistanceKm : null,
-        currentMaxDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache.currentMaxDistanceKm : null,
+        currentVectorSelection: currentAvailable && currentSemanticsValid ? bulkCache?.currentVectorSelection : null,
+        currentPreferredDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache?.currentPreferredDistanceKm : null,
+        currentMaxDistanceKm: currentAvailable && currentSemanticsValid ? bulkCache?.currentMaxDistanceKm : null,
         temporalInterpolation: built.interpolation,
         spatialInterpolation: false,
-        gridPoints: bulkZone.gridPoints ?? {},
-        collections: bulkZone.collections ?? {},
-        bulkCacheGeneratedAt: bulkCache.generatedAt ?? null
+        gridPoints: bulkZone?.gridPoints ?? {},
+        collections: bulkZone?.collections ?? {},
+        bulkCacheGeneratedAt: bulkCache?.generatedAt ?? null
       }
     }
   });
@@ -1234,6 +1240,128 @@ function applyFeggesundOperationalWaveProxy(record, part, sourcesByTime) {
     }
   });
   return { ...record, hourly };
+}
+
+function missingFeggesundWaveHour(time) {
+  return {
+    time,
+    waveHeightM: null,
+    wavePeriodS: null,
+    waveDirectionDeg: null,
+    waveProvenance: {
+      status: 'unverified',
+      reason: 'no-exact-authorized-wave-source',
+    },
+    waveInputSource: null,
+    waveInputUncertainty: null,
+    waveInputNoticeId: null,
+  };
+}
+
+function feggesundWaveProofEntriesForPart(
+  hourly,
+  partId,
+  forecastStartAt,
+) {
+  const startMs = Date.parse(forecastStartAt);
+  if (!Number.isFinite(startMs) || typeof partId !== 'string' || !partId) {
+    throw new Error('FEGGESUND_WAVE_DOMAIN_INVALID');
+  }
+  const byTime = new Map(normalizeForecastHourly(hourly, {
+    limit: Number.MAX_SAFE_INTEGER,
+  }).map(hour => [hour.time, hour]));
+  return Array.from({ length: RAVSCORE_PUBLIC_FORECAST_HOURS }, (_, index) => {
+    const time = new Date(startMs + index * 3_600_000).toISOString();
+    return buildFeggesundWaveInputProofEntry({
+      partId,
+      time,
+      hour: byTime.get(time) ?? missingFeggesundWaveHour(time),
+    });
+  });
+}
+
+function preflightFeggesundOperationalWaveReadiness({
+  contract,
+  parentById,
+  bulkCache,
+  generatedAt,
+  forecastStartAt,
+  sourcesByTime,
+}) {
+  const parts = contract?.zones?.[FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID];
+  const partIds = Array.isArray(parts)
+    ? parts.map(part => part?.partId).filter(Boolean)
+    : [];
+  if (!Array.isArray(parts) || parts.length !== 3
+    || partIds.length !== 3 || new Set(partIds).size !== 3) {
+    throw new Error('FEGGESUND_WAVE_DOMAIN_INVALID');
+  }
+  const entries = [];
+  for (const part of parts) {
+    const parent = parentById.get(FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID);
+    const bulkId = `PART::${part.partId}`;
+    const partWithZone = {
+      ...part,
+      zoneId: FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID,
+    };
+    const expectedIdentity = dmiExpectedIdentityForPart(partWithZone, bulkId);
+    if (!parent || !expectedIdentity) {
+      throw new Error('FEGGESUND_WAVE_DOMAIN_INVALID');
+    }
+    const feature = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: part.waterPoint },
+      properties: localPartRuntimeProperties(parent.properties, part, bulkId),
+    };
+    const dmiRecord = bulkZoneToForecastRecord(
+      feature,
+      bulkCache,
+      generatedAt,
+      null,
+      {
+        startAt: forecastStartAt,
+        expectedIdentity,
+        materializeMissingHorizon: true,
+      },
+    );
+    if (!dmiRecord) {
+      throw new Error('FEGGESUND_WAVE_MATERIALIZATION_INVARIANT');
+    }
+    const operationalRecord = applyFeggesundOperationalWaveProxy(
+      dmiRecord,
+      partWithZone,
+      sourcesByTime,
+    );
+    const hourly = verifiedIntegratedPartHourly(
+      operationalRecord,
+      bulkCache,
+      bulkId,
+      partWithZone,
+    );
+    entries.push(...feggesundWaveProofEntriesForPart(
+      hourly,
+      part.partId,
+      forecastStartAt,
+    ));
+  }
+  const proof = buildFeggesundWaveCoverageProof({
+    forecastStartAt,
+    forecastHours: RAVSCORE_PUBLIC_FORECAST_HOURS,
+    partIds,
+    entries,
+  });
+  const direct = proof.counts[FEGGESUND_WAVE_DISPOSITIONS.direct] ?? 0;
+  const proxy = proof.counts[FEGGESUND_WAVE_DISPOSITIONS.proxy] ?? 0;
+  const missing = proof.counts[FEGGESUND_WAVE_DISPOSITIONS.missing] ?? 0;
+  const expected = partIds.length * RAVSCORE_PUBLIC_FORECAST_HOURS;
+  if (direct + proxy !== expected || missing !== 0) {
+    const error = new Error(
+      `FEGGESUND_WAVE_READINESS_INCOMPLETE expected=${expected} direct=${direct} proxy=${proxy} missing=${missing}`,
+    );
+    error.code = 'FEGGESUND_WAVE_READINESS_INCOMPLETE';
+    throw error;
+  }
+  return proof;
 }
 
 function mergeBulkCacheIntoForecastStore(features, bulkCache, store, generatedAt) {
@@ -1849,12 +1977,22 @@ function scoreCoastalPartsRuntime(
     parentForecastStore,
     partForecastStartAt,
   );
+  const feggesundWavePreflight = preflightFeggesundOperationalWaveReadiness({
+    contract,
+    parentById,
+    bulkCache,
+    generatedAt,
+    forecastStartAt: partForecastStartAt,
+    sourcesByTime: feggesundSourcesByTime,
+  });
   const feggesundWaveProofEntries = [];
   const nearestIndex = rows => rows.reduce((best, row, index) => Math.abs(Date.parse(row.time) - Date.parse(generatedAt)) < Math.abs(Date.parse(rows[best]?.time) - Date.parse(generatedAt)) ? index : best, 0);
   for (const [zoneId, parts] of Object.entries(contract?.zones ?? {})) {
     expectedByZone.set(zoneId, parts.length);
     const parent = parentById.get(zoneId);
-    if (!parent) continue;
+    if (!parent) {
+      throw new Error('COASTAL_PART_PARENT_DOMAIN_INVALID');
+    }
     for (const part of parts) {
       const bulkId = `PART::${part.partId}`;
       const partDmiIdentity = dmiExpectedIdentityForPart({ ...part, zoneId }, bulkId);
@@ -1933,8 +2071,11 @@ function scoreCoastalPartsRuntime(
       const dmiRecord = bulkZoneToForecastRecord(feature, bulkCache, generatedAt, null, {
         startAt: partForecastStartAt,
         expectedIdentity: partDmiIdentity,
+        materializeMissingHorizon: true,
       });
-      if (!dmiRecord) continue;
+      if (!dmiRecord) {
+        throw new Error('COASTAL_PART_HORIZON_MATERIALIZATION_INVARIANT');
+      }
       const operationalDmiRecord = applyFeggesundOperationalWaveProxy(
         dmiRecord,
         { ...part, zoneId },
@@ -1953,18 +2094,11 @@ function scoreCoastalPartsRuntime(
       const hourly = verifiedIntegratedPartHourly(record, bulkCache, bulkId, { ...part, zoneId });
       const sourceAgeHour = hourly.find(hour => hour?.time === partForecastStartAt) ?? null;
       if (zoneId === FEGGESUND_WAVE_PROXY_TARGET_ZONE_ID) {
-        const endMs = Date.parse(partForecastStartAt)
-          + (RAVSCORE_PUBLIC_FORECAST_HOURS - 1) * 3_600_000;
-        for (const hour of hourly.filter(candidate => (
-          Date.parse(candidate.time) >= Date.parse(partForecastStartAt)
-          && Date.parse(candidate.time) <= endMs
-        ))) {
-          feggesundWaveProofEntries.push(buildFeggesundWaveInputProofEntry({
-            partId: part.partId,
-            time: hour.time,
-            hour,
-          }));
-        }
+        feggesundWaveProofEntries.push(...feggesundWaveProofEntriesForPart(
+          hourly,
+          part.partId,
+          partForecastStartAt,
+        ));
       }
       const nativeCadenceHoldHours = nativeCadenceHoldHoursForPart({ ...part, zoneId }, liveCurrentPilot);
       const zone = localPartRuntimeProperties(parent.properties, part, part.partId);
@@ -2247,6 +2381,10 @@ function scoreCoastalPartsRuntime(
       .filter(Boolean),
     entries: feggesundWaveProofEntries,
   });
+  if (feggesundWaveCoverage.coverageSha256
+    !== feggesundWavePreflight.coverageSha256) {
+    throw new Error('FEGGESUND_WAVE_RUNTIME_PREFLIGHT_MISMATCH');
+  }
   const weatherSourceAge = buildPublicWeatherSourceAge({
     productionReferenceAt: partForecastStartAt,
     partSourceRows: sourceAgeRows,
@@ -2417,7 +2555,72 @@ async function fromDmi(feature, generatedAt, { includeAtmosphere = false } = {})
   };
 }
 
-function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt = null } = {}) {
+const ATOMIC_COMPONENT_TUPLE_KEYS = Object.freeze({
+  wind: Object.freeze(['windSpeedMps', 'windDirectionDeg']),
+  wave: Object.freeze(['waveHeightM', 'wavePeriodS', 'waveDirectionDeg']),
+  current: Object.freeze(['currentSpeedMps', 'currentDirectionDeg']),
+});
+
+function atomicComponentTupleValues(row, component) {
+  const keys = ATOMIC_COMPONENT_TUPLE_KEYS[component];
+  if (!keys) return null;
+  if (component === 'wave') {
+    const height = ravScoreNumber(row?.waveHeightM);
+    const period = ravScoreNumber(row?.wavePeriodS);
+    const direction = row?.waveDirectionDeg === null
+      || row?.waveDirectionDeg === undefined
+      ? null
+      : ravScoreNumber(row.waveDirectionDeg);
+    const directionValid = direction === null
+      || (direction >= 0 && direction < 360);
+    if (height === null || height < 0 || period === null || period < 0
+      || !directionValid
+      || (height > 0 && (period <= 0 || direction === null))) {
+      return null;
+    }
+    return {
+      waveHeightM: height,
+      wavePeriodS: period,
+      waveDirectionDeg: direction,
+    };
+  }
+  const values = Object.fromEntries(keys.map(key => [key, ravScoreNumber(row?.[key])]));
+  const speed = values[keys[0]];
+  const direction = values[keys[1]];
+  if (speed === null || speed < 0
+    || direction === null || direction < 0 || direction >= 360) {
+    return null;
+  }
+  return values;
+}
+
+function selectAtomicComponentTuple(
+  primary,
+  fallback,
+  component,
+  { attest = () => true } = {},
+) {
+  for (const candidate of [
+    { row: primary, retained: false },
+    { row: fallback, retained: true },
+  ]) {
+    const values = atomicComponentTupleValues(candidate.row, component);
+    if (!values) continue;
+    const attestation = attest(candidate.row, {
+      component,
+      retained: candidate.retained,
+    });
+    if (!attestation) continue;
+    return { ...candidate, values, attestation };
+  }
+  return null;
+}
+
+function mergeHourlyPreferDmi(
+  dmiHourly = [],
+  fallbackHourly = [],
+  { generatedAt = null, expectedIdentity = null } = {},
+) {
   const cutoffMs = Number.isFinite(Date.parse(generatedAt)) ? Date.parse(generatedAt) - 65 * 60000 : -Infinity;
   const future = rows => normalizeForecastHourly(rows, { limit: Number.MAX_SAFE_INTEGER }).filter(item => Date.parse(item.time) >= cutoffMs);
   const dmiByTime = new Map(future(dmiHourly).map(item => [item.time, item]));
@@ -2426,22 +2629,60 @@ function mergeHourlyPreferDmi(dmiHourly = [], fallbackHourly = [], { generatedAt
   const merged = times.map(time => {
     const item = dmiByTime.get(time) ?? {};
     const fallback = fallbackByTime.get(time) ?? {};
+    const tupleSource = (row, component, retained) => {
+      if (expectedIdentity && component === 'current'
+        && (ravScoreNumber(row?.currentUMps) === null
+          || ravScoreNumber(row?.currentVMps) === null)) {
+        return null;
+      }
+      return expectedIdentity
+        ? verifiedDmiForecastComponentSource(
+          row?.sources?.[component],
+          time,
+          component,
+          expectedIdentity,
+        )
+        : row?.sources?.[component] ?? (retained
+          ? { provider: row?.source ?? 'open-meteo', fallback: true }
+          : { provider: 'dmi', fallback: false });
+    };
+    const select = component => selectAtomicComponentTuple(
+      item,
+      fallback,
+      component,
+      {
+        attest: (row, candidate) => tupleSource(
+          row,
+          component,
+          candidate.retained,
+        ),
+      },
+    );
+    const selectedWind = select('wind');
+    const selectedWave = select('wave');
+    const selectedCurrent = select('current');
+    const selectedCurrentU = ravScoreNumber(selectedCurrent?.row?.currentUMps);
+    const selectedCurrentV = ravScoreNumber(selectedCurrent?.row?.currentVMps);
+    const selectedCurrentVectorAvailable = selectedCurrentU !== null
+      && selectedCurrentV !== null;
     const mergedRow = {
       ...fallback, ...item, time,
-      windSpeedMps: item.windSpeedMps ?? fallback.windSpeedMps ?? null,
-      windDirectionDeg: item.windDirectionDeg ?? fallback.windDirectionDeg ?? null,
-      waveHeightM: item.waveHeightM ?? fallback.waveHeightM ?? null,
-      waveDirectionDeg: item.waveDirectionDeg ?? fallback.waveDirectionDeg ?? null,
-      wavePeriodS: item.wavePeriodS ?? fallback.wavePeriodS ?? null,
+      windSpeedMps: selectedWind?.values.windSpeedMps ?? null,
+      windDirectionDeg: selectedWind?.values.windDirectionDeg ?? null,
+      waveHeightM: selectedWave?.values.waveHeightM ?? null,
+      waveDirectionDeg: selectedWave?.values.waveDirectionDeg ?? null,
+      wavePeriodS: selectedWave?.values.wavePeriodS ?? null,
       waterLevelCm: null,
       waterLevelTrendCm3h: null,
-      currentSpeedMps: item.currentSpeedMps ?? fallback.currentSpeedMps ?? null,
-      currentDirectionDeg: item.currentDirectionDeg ?? fallback.currentDirectionDeg ?? null,
+      currentSpeedMps: selectedCurrent?.values.currentSpeedMps ?? null,
+      currentDirectionDeg: selectedCurrent?.values.currentDirectionDeg ?? null,
+      currentUMps: selectedCurrentVectorAvailable ? selectedCurrentU : null,
+      currentVMps: selectedCurrentVectorAvailable ? selectedCurrentV : null,
       waterTemperatureC: item.waterTemperatureC ?? fallback.waterTemperatureC ?? null,
       sources: {
-        wind: (item.windSpeedMps != null && item.windDirectionDeg != null) ? (item.sources?.wind ?? { provider: 'dmi', fallback: false }) : (fallback.windSpeedMps != null && fallback.windDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
-        wave: item.waveHeightM != null ? (item.sources?.wave ?? { provider: 'dmi', fallback: false }) : fallback.waveHeightM != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
-        current: (item.currentSpeedMps != null && item.currentDirectionDeg != null) ? (item.sources?.current ?? { provider: 'dmi', fallback: false }) : (fallback.currentSpeedMps != null && fallback.currentDirectionDeg != null) ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false },
+        wind: selectedWind?.attestation ?? { provider: 'missing', fallback: false },
+        wave: selectedWave?.attestation ?? { provider: 'missing', fallback: false },
+        current: selectedCurrent?.attestation ?? { provider: 'missing', fallback: false },
         waterLevel: { provider: 'pending', fallback: false },
         waterTemperature: item.waterTemperatureC != null ? (item.sources?.waterTemperature ?? { provider: 'dmi', fallback: false }) : fallback.waterTemperatureC != null ? { provider: fallback.source ?? 'open-meteo', fallback: true } : { provider: 'missing', fallback: false }
       }
@@ -2470,12 +2711,18 @@ function componentSource(provider, zone, component, generatedAt, extra = {}) {
 }
 
 function componentHasValue(zone, component) {
+  return componentRowHasValue(zone?.current, component);
+}
+
+function componentRowHasValue(row, component) {
+  if (ATOMIC_COMPONENT_TUPLE_KEYS[component]) {
+    return atomicComponentTupleValues(row, component) !== null;
+  }
   const keys = component === 'wind' ? ['windSpeedMps','windDirectionDeg']
-    : component === 'wave' ? ['waveHeightM']
     : component === 'current' ? ['currentSpeedMps','currentDirectionDeg']
     : component === 'waterLevel' ? ['waterLevelCm']
     : ['waterTemperatureC'];
-  return keys.every(key => zone?.current?.[key] !== null && zone?.current?.[key] !== undefined);
+  return keys.every(key => row?.[key] !== null && row?.[key] !== undefined);
 }
 
 function sourceForComponent(zone, component, generatedAt) {
@@ -2503,9 +2750,34 @@ function mergeDmiWithFallback(dmiResult, fallbackZone) {
   const mergedCurrent = {};
   const sources = {};
   for (const [component, keys] of Object.entries(groups)) {
-    const dmiHas = keys.every(key => dmiResult.current?.[key] !== null && dmiResult.current?.[key] !== undefined);
-    const fallbackHas = keys.every(key => fallbackZone.current?.[key] !== null && fallbackZone.current?.[key] !== undefined);
-    for (const key of keys) mergedCurrent[key] = dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
+    const isAtomicComponent = Boolean(ATOMIC_COMPONENT_TUPLE_KEYS[component]);
+    const atomicSelection = isAtomicComponent
+      ? selectAtomicComponentTuple(
+        dmiResult.current,
+        fallbackZone.current,
+        component,
+      )
+      : null;
+    const dmiHas = isAtomicComponent
+      ? atomicSelection?.retained === false
+      : keys.every(key => dmiResult.current?.[key] !== null
+        && dmiResult.current?.[key] !== undefined);
+    const fallbackHas = isAtomicComponent
+      ? atomicSelection?.retained === true
+      : keys.every(key => fallbackZone.current?.[key] !== null
+        && fallbackZone.current?.[key] !== undefined);
+    for (const key of keys) {
+      mergedCurrent[key] = isAtomicComponent
+        ? atomicSelection?.values?.[key] ?? null
+        : dmiResult.current?.[key] ?? fallbackZone.current?.[key] ?? null;
+    }
+    if (component === 'current') {
+      const currentU = ravScoreNumber(atomicSelection?.row?.currentUMps);
+      const currentV = ravScoreNumber(atomicSelection?.row?.currentVMps);
+      const vectorAvailable = currentU !== null && currentV !== null;
+      mergedCurrent.currentUMps = vectorAvailable ? currentU : null;
+      mergedCurrent.currentVMps = vectorAvailable ? currentV : null;
+    }
     sources[component] = dmiHas
       ? componentSource('dmi', dmiResult, component, dmiResult.generatedAt ?? new Date().toISOString(), { fallback: false })
       : fallbackHas
@@ -2546,6 +2818,20 @@ function componentForecastHorizonHours(record, generatedAt, keys) {
   return validTimes.length ? Math.max(0, (Math.max(...validTimes) - start) / 3600000) : 0;
 }
 
+function atomicComponentForecastHorizonHours(record, generatedAt, component) {
+  const start = Date.parse(generatedAt);
+  if (!Number.isFinite(start)) return 0;
+  const validTimes = normalizeForecastHourly(record?.hourly ?? [], {
+    limit: Number.MAX_SAFE_INTEGER,
+  })
+    .filter(row => componentRowHasValue(row, component))
+    .map(row => Date.parse(row.time))
+    .filter(time => Number.isFinite(time) && time >= start - 65 * 60000);
+  return validTimes.length
+    ? Math.max(0, (Math.max(...validTimes) - start) / 3600000)
+    : 0;
+}
+
 function recordHasMarine(record, generatedAt) {
   const coverage = dmiForecastCoverage(record, generatedAt);
   const completeness = record?.model?.completeness ?? {};
@@ -2557,7 +2843,7 @@ function recordHasAtmosphere(record, generatedAt) {
   const coverage = dmiForecastCoverage(record, generatedAt);
   const completeness = record?.model?.completeness ?? {};
   const windHours = componentForecastHorizonHours(record, generatedAt, ['windSpeedMps','windDirectionDeg']);
-  const waveHours = componentForecastHorizonHours(record, generatedAt, ['waveHeightM']);
+  const waveHours = atomicComponentForecastHorizonHours(record, generatedAt, 'wave');
   return coverage.available && completeness.wind === true && completeness.wave === true
     && windHours >= 96 && waveHours >= 24;
 }
@@ -3295,8 +3581,10 @@ function buildRuntimeDiagnostics(output, health) {
 function summarizeDmiComponentCoverage(records, generatedAt) {
   const rows = Object.values(records ?? {}).filter(record => dmiForecastCoverage(record, generatedAt).available);
   const has = (record, predicate) => normalizeForecastHourly(record?.hourly ?? []).some(predicate);
-  const horizonStats = keys => {
-    const values = rows.map(record => componentForecastHorizonHours(record, generatedAt, keys));
+  const horizonStats = (keys, component = null) => {
+    const values = rows.map(record => component
+      ? atomicComponentForecastHorizonHours(record, generatedAt, component)
+      : componentForecastHorizonHours(record, generatedAt, keys));
     return {
       zonesWithAnyData: values.filter(value => value > 0).length,
       zonesWith24Hours: values.filter(value => value >= 24).length,
@@ -3309,17 +3597,17 @@ function summarizeDmiComponentCoverage(records, generatedAt) {
   const summary = {
     availableZones: rows.length,
     windZones: rows.filter(record => has(record, item => item.windSpeedMps !== null && item.windDirectionDeg !== null)).length,
-    waveZones: rows.filter(record => has(record, item => item.waveHeightM !== null)).length,
+    waveZones: rows.filter(record => has(record, item => componentRowHasValue(item, 'wave'))).length,
     currentZones: rows.filter(record => has(record, item => item.currentSpeedMps !== null && item.currentDirectionDeg !== null)).length,
     waterLevelZones: rows.filter(record => has(record, item => item.waterLevelCm !== null)).length,
     componentHorizonCoverage: {
       wind: horizonStats(['windSpeedMps','windDirectionDeg']),
-      wave: horizonStats(['waveHeightM']),
+      wave: horizonStats(null, 'wave'),
       current: horizonStats(['currentSpeedMps','currentDirectionDeg']),
       waterLevel: horizonStats(['waterLevelCm'])
     },
     completeZones: rows.filter(record => componentForecastHorizonHours(record, generatedAt, ['windSpeedMps','windDirectionDeg']) >= 96
-      && componentForecastHorizonHours(record, generatedAt, ['waveHeightM']) >= 24
+      && atomicComponentForecastHorizonHours(record, generatedAt, 'wave') >= 24
       && componentForecastHorizonHours(record, generatedAt, ['currentSpeedMps','currentDirectionDeg']) >= 24
       && componentForecastHorizonHours(record, generatedAt, ['waterLevelCm']) >= 24).length,
     duplicateTimestampZones: rows.filter(record => {

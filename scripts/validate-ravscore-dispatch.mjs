@@ -8,6 +8,7 @@ const result = validateRavScoreDispatchContract({
   rollbackConfirmation: process.env.ROLLBACK_CONFIRMATION,
   firstCutoverRequested: process.env.FIRST_CUTOVER_REQUESTED,
   firstCutoverConfirmation: process.env.FIRST_CUTOVER_CONFIRMATION,
+  weatherHandoffRunId: process.env.WEATHER_HANDOFF_RUN_ID,
   returnRequested: process.env.RETURN_REQUESTED,
   returnConfirmation: process.env.RETURN_CONFIRMATION,
 }, { githubRef: process.env.GITHUB_REF });

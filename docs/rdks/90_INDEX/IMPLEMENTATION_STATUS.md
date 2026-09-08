@@ -1,3 +1,18 @@
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.334 WAM-readiness
+
+- [x] Lokal WAM-scheduler giver begge kritiske collections fair reserve og bevarer den globale runtimegrænse.
+- [x] Lokal bootstrap/normal updater genbruger run-/processing-signatur og springer allerede behandlede assets over.
+- [x] Lokal Candidate G-resolver håndhæver mixed-target-stop, bro på højst fire inklusive timer og cold-start-rebase ved ældre ensartet target.
+- [x] Lokal runtime materialiserer 118 timer med eksplicit `MISSING`, atomiske tuples og hashbundet Feggesund-preflight/slutproof.
+- [x] Lokal dispatchkontrakt binder første cutover til et konkret positivt run-id og afviser run-id ved senere kørsler.
+- [x] Relevante måltests og `git diff --check` er grønne; to uafhængige reviews fandt ingen P0/P1.
+- [x] Versionér 4.0.334, synkronisér RDKS/håndbøger/changelog og bevis, at geodata kun ændrer topversionsfelterne.
+- [ ] Commit og én exact-head GitHub `validate:source`.
+- [ ] Merge til `main`, main-runtime og Feggesund 354/354.
+- [ ] Fuld `npm run validate`, `npm run release:gate`, artifact/deploy, Phase B og offentlig cutover.
+- [ ] Genaktivér og observer normale kørsler som permanent vedligeholder; ekstern cron er primær, GitHub schedule reserve.
+- [ ] Mål og prioriter de to åbne P2-latenspunkter efter launch; de er ikke releaseblockere.
+
 # NYESTE IMPLEMENTERINGSSTATUS – 2026-09-07 – 4.0.333 adaptiv Open-Meteo-rest
 
 - [x] Luk 4.0.332 exact-head/merge: sourcegate `34125927405` grøn på `f23f306b…`; PR #265 merged som `1e1093de…`.

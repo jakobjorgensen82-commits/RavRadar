@@ -780,6 +780,12 @@ class _NativeWaveRow:
     source: Mapping[str, Any]
 
 
+@dataclass(frozen=True)
+class _WaveCacheEntity:
+    cache_key: str
+    provenance_entity: Mapping[str, Any]
+
+
 def _validate_wave_values(
     height: Any,
     period: Any,
@@ -938,6 +944,120 @@ def _resolve_required_hour(
         raise WaveBootstrapError("FUTURE_RUN")
     _safe_interpolated_tuple(before, after, wanted)
     return "interpolated", (before, after)
+
+
+def resolved_native_wave_hours(
+    hourly: Any,
+    *,
+    entity_id: str,
+    provenance_entity: Mapping[str, Any],
+    collection: str,
+    required_hours: Sequence[str],
+    exact_required_hours: Iterable[str] = (),
+    maximum_interpolation_hours: int = MAX_INTERPOLATION_HOURS,
+    require_single_group: bool = False,
+) -> tuple[str, ...]:
+    """Resolve one coherent native run/cell without duplicating WAM semantics.
+
+    Invalid native rows are ignored here so a scheduler can report a residual;
+    the strict history/handoff validators continue to reject the same rows.
+    A returned hour is exact or safely bracketed by at most four hours inside
+    one collection, model run, grid definition and physical cell. Normal
+    maintenance may combine exact rows from different groups; cutover callers
+    can require one group to resolve the complete requested axis.
+    """
+    if (
+        not isinstance(hourly, dict)
+        or not isinstance(entity_id, str)
+        or not entity_id
+        or collection not in WAM_COLLECTIONS
+        or isinstance(maximum_interpolation_hours, bool)
+        or not isinstance(maximum_interpolation_hours, int)
+        or maximum_interpolation_hours < 0
+        or maximum_interpolation_hours > MAX_INTERPOLATION_HOURS
+        or not isinstance(require_single_group, bool)
+    ):
+        return ()
+    try:
+        required = tuple(
+            format_utc_hour(parse_utc_hour(value)) for value in required_hours
+        )
+        exact_required = {
+            format_utc_hour(parse_utc_hour(value))
+            for value in exact_required_hours
+        }
+    except WaveBootstrapError:
+        return ()
+    if not required or len(set(required)) != len(required):
+        return ()
+    entity = _WaveCacheEntity(
+        cache_key=entity_id,
+        provenance_entity=provenance_entity,
+    )
+    grouped: dict[
+        tuple[str, str, tuple[float, float]], list[_NativeWaveRow]
+    ] = {}
+    for valid_time, hour in hourly.items():
+        if not _wave_bearing_hour(hour):
+            continue
+        try:
+            canonical_valid = format_utc_hour(parse_utc_hour(valid_time))
+            if canonical_valid != valid_time:
+                continue
+            row = _validate_native_wave_row(
+                valid_time=valid_time,
+                hour=hour,
+                part=entity,
+            )
+        except WaveBootstrapError:
+            continue
+        if row.collection != collection:
+            continue
+        grouped.setdefault((
+            row.model_run,
+            row.grid_definition_sha256,
+            row.grid_point,
+        ), []).append(row)
+
+    policy = WaveHistoryPolicy(
+        mode=MIGRATION_MODE,
+        history_hours=1,
+        include_target=False,
+        require_single_run_per_collection=True,
+        allow_exact_multi_run=False,
+        maximum_interpolation_hours=maximum_interpolation_hours,
+    )
+    resolved_union: set[str] = set()
+    best: set[str] = set()
+    for rows in grouped.values():
+        rows.sort(key=lambda row: row.valid_datetime)
+        resolved: set[str] = set()
+        exact_native = {row.valid_time for row in rows}
+        for required_hour in required:
+            if (
+                required_hour in exact_required
+                and required_hour not in exact_native
+            ):
+                continue
+            try:
+                _resolve_required_hour(
+                    rows,
+                    parse_utc_hour(required_hour),
+                    policy,
+                )
+            except WaveBootstrapError:
+                continue
+            resolved.add(required_hour)
+        if len(resolved) > len(best):
+            best = resolved
+        resolved_union.update(resolved)
+        if (
+            len(best if require_single_group else resolved_union)
+            == len(required)
+        ):
+            break
+    accepted = best if require_single_group else resolved_union
+    return tuple(hour for hour in required if hour in accepted)
 
 
 @dataclass(frozen=True)

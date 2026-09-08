@@ -1,5 +1,32 @@
 # Weather Pipeline 1.0
 
+## 4.0.334 – fair WAM-readiness, eksakt 118-timersakse og runbundet cutover
+
+4.0.334 er kun en lokal, måltestet kandidat. Oneoff `34161930631` beviste 79.414/79.414 operationelle strømpar, men stoppede korrekt før runtime/artifact, fordi Feggesund ikke havde præcis 3 × 118 bølgetimer.
+
+### Hente- og vedligeholdelsesrækkefølge
+
+1. Den fælles scheduler vedligeholder et aktivt parent-/part-register og beregner reel 118-timersrest særskilt for `wam_dw` og `wam_nsb`.
+2. Når current-anchor mangler, må højst ét egnet DKSS-lead gå først. Derefter får begge kritiske WAM-familier en fair reserve af den faktisk resterende globale runtime.
+3. Eksakte rækker foretrækkes. Interpolation må kun bygge bro over højst fire timer og kun inden for samme collection, modelrun, grid og celle.
+4. `CRITICAL_WAM_RUNTIME_RESERVED` betyder, at scheduleren gav plads til den anden familie eller næste fase; det er ikke en providerfejl.
+5. Allerede behandlede assets genkendes via processing-signatur/`processedSteps` og downloades eller dekodes ikke igen i samme run. Cache- og GRIB-progression gemmes før den strenge WAM-gate.
+6. Først når WAM-readiness er grøn, fortsætter oneoff til Copernicus, Open-Meteo og runtime. Et ufuldstændigt run bevarer derfor brugbar progression uden at publicere et halvfærdigt artifact.
+
+Normale kørsler bruger samme residual-, fairness- og cachegenbrugsprincip og er den permanente updater efter reaktivering. Oneoff er accelerator/source-producer, ikke driftspilot. Ekstern cron er primær dispatch; GitHub schedule er reserve.
+
+### Runtime- og cutoverkontrakt
+
+- Alle primære integrerede dele materialiseres på en eksakt 118-timersakse. Fravær er en eksplicit `MISSING`-række, aldrig et stille `continue`.
+- Vind-, bølge- og strømtuples valideres og udskiftes atomisk. Current U/V beholdes kun som par; en valideret speed/direction-tuple kan eksistere uden U/V i generisk visningskontekst.
+- Feggesund skal have en preflight med præcis tre dele × 118 timer før scoring. Slutproof skal have samme hash som preflight.
+- Candidate G-target højst tre timer bag produktion må bridges; den inklusive bro er dermed højst fire timer. Ældre ensartet target rebases til source-attesteret `genuine-cold-start`; mixed target eller manglende obligatorisk source-attestation stopper fail-closed.
+- Første cutover kræver et konkret positivt handoff-run-id. Senere kørsler kræver tomt id.
+
+### Kendte ikke-blokerende effektivitetsforhold
+
+Native WAM-rest krediterer endnu ikke en gyldig Feggesund-proxy og kan derfor udløse ekstra bounded inventoryarbejde. Oneoffens live ForecastEDR-budget kan heller ikke sættes helt til nul og kan give ekstra kald, latenstid eller 429. Begge følges som P2 efter launch; de er ikke dokumenteret som target-, provenance- eller fallbackfejl.
+
 ## 4.0.333 – exact-unresolved Open-Meteo-kø, 2026-09-07
 
 4.0.332 bestod exact-head `34125927405`, blev merged via PR #265 og kørte main-oneoff `34127986853`. Cacherne blev genbrugt: DMI dækkede 65.409/79.414, Copernicus 12.661 af de 14.005 rester, og efter regional DMI modtog Open-Meteo 472 par. Open-Meteo retained 76, fetched 114, filled 190 og efterlod 282. Slutgaten stoppede korrekt uden closure, artifact, deploy eller cutover.

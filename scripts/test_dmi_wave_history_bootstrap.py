@@ -33,6 +33,7 @@ from lib.dmi_wave_history_bootstrap import (  # noqa: E402
     load_coastal_part_registry,
     parse_utc_hour,
     policy_utc_hours,
+    resolved_native_wave_hours,
     select_stac_wave_history_assets,
     validate_wave_history_cache,
     validate_wave_operational_handoff_cache,
@@ -565,6 +566,68 @@ class CacheValidationTests(unittest.TestCase):
         )
         self.assertEqual(summary.exact_tuple_count, 2)
         self.assertEqual(summary.interpolated_tuple_count, 6)
+
+    def test_scheduler_resolution_interpolates_only_within_one_native_run_and_cell(self) -> None:
+        part = self.registry.parts[0]
+        run = utc_offset(TARGET, -12)
+        required = tuple(utc_offset(TARGET, offset) for offset in range(4))
+        hourly = {
+            required[0]: native_hour(
+                part, required[0], run, direction=359.0,
+            ),
+            required[3]: native_hour(
+                part, required[3], run, direction=3.0,
+            ),
+        }
+        resolved = resolved_native_wave_hours(
+            hourly,
+            entity_id=part.cache_key,
+            provenance_entity=part.provenance_entity,
+            collection=COLLECTION,
+            required_hours=required,
+            exact_required_hours={required[0]},
+        )
+        self.assertEqual(resolved, required)
+        exact_bridge = resolved_native_wave_hours(
+            hourly,
+            entity_id=part.cache_key,
+            provenance_entity=part.provenance_entity,
+            collection=COLLECTION,
+            required_hours=required,
+            exact_required_hours={required[1]},
+        )
+        self.assertNotIn(required[1], exact_bridge)
+
+        changed_cell = copy.deepcopy(hourly)
+        changed_cell[required[3]] = native_hour(
+            part,
+            required[3],
+            run,
+            direction=3.0,
+            grid_sha="d" * 64,
+        )
+        normal_resolved = resolved_native_wave_hours(
+            changed_cell,
+            entity_id=part.cache_key,
+            provenance_entity=part.provenance_entity,
+            collection=COLLECTION,
+            required_hours=required,
+        )
+        self.assertEqual(
+            normal_resolved,
+            (required[0], required[3]),
+        )
+        self.assertEqual(
+            len(resolved_native_wave_hours(
+                changed_cell,
+                entity_id=part.cache_key,
+                provenance_entity=part.provenance_entity,
+                collection=COLLECTION,
+                required_hours=required,
+                require_single_group=True,
+            )),
+            1,
+        )
 
     def test_exact_multi_run_seam_is_allowed_only_without_interpolation(self) -> None:
         policy = WaveHistoryPolicy(

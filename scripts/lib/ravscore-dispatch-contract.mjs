@@ -1,5 +1,6 @@
 const BOOLEAN_VALUES = new Set(['true', 'false']);
 const ROLLBACK_MODES = new Set(['none', 'dry-run', 'execute']);
+const POSITIVE_RUN_ID_PATTERN = /^[1-9][0-9]{0,19}$/;
 
 function text(value) {
   return value === null || value === undefined ? '' : String(value);
@@ -71,10 +72,17 @@ export function validateRavScoreDispatchContract(input = {}, { githubRef = 'refs
       !== 'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE') {
       throw new Error('Integrated first cutover confirmation is not exact');
     }
+    if (!POSITIVE_RUN_ID_PATTERN.test(text(input.weatherHandoffRunId))) {
+      throw new Error('Verified weather handoff run id is malformed');
+    }
   } else {
     requireEmpty(
       input.firstCutoverConfirmation,
       'Integrated first cutover confirmation is accepted only by an integrated first cutover',
+    );
+    requireEmpty(
+      input.weatherHandoffRunId,
+      'A verified weather handoff is accepted only by an integrated first cutover',
     );
   }
 

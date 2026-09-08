@@ -786,6 +786,66 @@ class ResumeAndFailClosedTests(unittest.TestCase):
                 )
         self.assertEqual(calls, 0, "No retrying STAC call may consume the finalization reserve.")
 
+    def test_tight_runtime_preserves_a_real_attempt_for_the_second_wam_family(self) -> None:
+        asset = SimpleNamespace(valid_time=utc_offset(TARGET, -1))
+        attempted: list[str] = []
+
+        def fake_list(collection: str, _configuration: dict):
+            attempted.append(collection)
+            return fake_plan(), (asset,)
+
+        def already_complete(
+            _result: dict,
+            _zone: dict,
+            collection: str,
+            _asset: object,
+        ) -> bool:
+            return collection == "wam_nsb"
+
+        result = {"zones": {}, "diagnostics": {}}
+        with (
+            patch.object(
+                producer,
+                "list_private_wave_bootstrap_assets",
+                side_effect=fake_list,
+            ),
+            patch.object(
+                producer,
+                "private_wave_bootstrap_hour_complete",
+                side_effect=already_complete,
+            ),
+            patch.object(producer, "runtime_remaining", return_value=100.0),
+            patch.object(producer, "should_stop_work", return_value=False),
+            patch.object(producer, "write_checkpoint"),
+        ):
+            locked = producer.execute_private_wave_history_bootstrap(
+                result,
+                synthetic_parts(unique=True),
+                {"bytes": 0},
+                set(),
+                {
+                    "mode": MIGRATION_MODE,
+                    "targetHour": TARGET,
+                    "productionTargetHour": TARGET,
+                },
+                post_bootstrap_reserve_seconds=10.0,
+            )
+
+        self.assertEqual(attempted, ["wam_dw", "wam_nsb"])
+        self.assertEqual(locked["wam_dw"], set())
+        self.assertEqual(locked["wam_nsb"], {asset.valid_time})
+        aggregate = result["diagnostics"]["privateWaveHistoryBootstrap"]
+        self.assertEqual(aggregate["postBootstrapRuntimeReserveSeconds"], 10.0)
+        self.assertEqual(
+            aggregate["historyIncompleteCode"],
+            "CRITICAL_WAM_RUNTIME_RESERVED",
+        )
+        self.assertEqual(
+            result["diagnostics"]["schedulerYields"][0]["reasonCode"],
+            "CRITICAL_WAM_RUNTIME_RESERVED",
+        )
+        self.assertNotIn("errors", result["diagnostics"])
+
     def test_truncated_download_is_not_registered_for_resume(self) -> None:
         class Response:
             headers = {"content-length": "10"}
@@ -945,6 +1005,74 @@ class ResumeAndFailClosedTests(unittest.TestCase):
             "operational = validate_wave_operational_handoff_cache(",
             validator_source,
         )
+
+    def test_oneoff_reuses_candidate_target_and_gates_wam_after_progress_save(self) -> None:
+        workflow = (
+            ROOT / ".github" / "workflows" / "validate-copernicus-current-pilot.yml"
+        ).read_text("utf-8")
+
+        resolver_start = workflow.index(
+            "- name: Resolve one aggregate Candidate G wave-bootstrap target",
+        )
+        resolver_end = workflow.index("\n      - name:", resolver_start + 1)
+        resolver = workflow[resolver_start:resolver_end]
+        for marker in (
+            "node scripts/resolve-candidate-g-wave-bootstrap-target.mjs",
+            '--conditions "$RUNNER_TEMP/ravradar-118-deployed-donor/data/live/conditions.json"',
+            '--source-registry "$RUNNER_TEMP/ravradar-118-deployed-donor/.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"',
+            "--registry data/live/coastal-parts-v2.json",
+            '--production-target "${{ steps.operational-target.outputs.target_hour }}"',
+        ):
+            self.assertIn(marker, resolver)
+
+        dmi_start = workflow.index(
+            "- name: Refresh all bounded official DMI collections for the proof",
+        )
+        dmi_end = workflow.index("\n      - name:", dmi_start + 1)
+        dmi = workflow[dmi_start:dmi_end]
+        self.assertIn(
+            "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: "
+            "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}",
+            dmi,
+        )
+        self.assertIn(
+            "DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: "
+            "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}",
+            dmi,
+        )
+
+        gate_start = workflow.index(
+            "- name: Require complete operational WAM handoff before one-off downstream providers",
+        )
+        gate_end = workflow.index("\n      - name:", gate_start + 1)
+        gate = workflow[gate_start:gate_end]
+        for marker in (
+            "id: wam-bootstrap-readiness",
+            "if: always()",
+            "python -B scripts/validate_dmi_wave_history_bootstrap.py",
+            '--mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}"',
+            '--target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}"',
+            '--production-target-hour "${{ steps.operational-target.outputs.target_hour }}"',
+            "--forecast-hour-count 118",
+            "--cache .cache/dmi-candidate-progress.json",
+            "--registry data/live/coastal-parts-v2.json",
+            'exit "$validator_status"',
+        ):
+            self.assertIn(marker, gate)
+
+        ordered = (
+            resolver_start,
+            dmi_start,
+            workflow.index("- name: Save progressed DMI GRIB cache before any terminal decision"),
+            workflow.index("- name: Save isolated DMI candidate progress before any terminal decision"),
+            workflow.index("- name: Save private regional current evidence before any terminal decision"),
+            gate_start,
+            workflow.index("- name: Seal exact operational DMI gaps for target through target plus 117"),
+            workflow.index("- name: Fill only the exact operational DMI gap seal"),
+            workflow.index("- name: Restore shared private Open-Meteo current progress"),
+            workflow.index("- name: Build the integrated runtime without release or deploy"),
+        )
+        self.assertEqual(ordered, tuple(sorted(ordered)))
 
     def test_candidate_maintenance_cannot_enable_integrated_wave_bootstrap(self) -> None:
         workflow = (

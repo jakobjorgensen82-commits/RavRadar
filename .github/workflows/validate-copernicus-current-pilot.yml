@@ -616,7 +616,16 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.333 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+
+      - name: Resolve one aggregate Candidate G wave-bootstrap target
+        id: ravscore-wave-bootstrap-target
+        run: >-
+          node scripts/resolve-candidate-g-wave-bootstrap-target.mjs
+          --conditions "$RUNNER_TEMP/ravradar-118-deployed-donor/data/live/conditions.json"
+          --source-registry "$RUNNER_TEMP/ravradar-118-deployed-donor/.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"
+          --registry data/live/coastal-parts-v2.json
+          --production-target "${{ steps.operational-target.outputs.target_hour }}"
 
       - name: Refresh the official DMI water-source registry
         run: node scripts/update-water-source-registry.mjs
@@ -759,10 +768,11 @@ jobs:
           DMI_BULK_FORCE_REFRESH: false
           DMI_BULK_RAW_DIR: .cache/dmi-grib
           DMI_BULK_DEPLOYED_FALLBACK_PATH: .cache/dmi-active-complete.json
-          DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: none
+          DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}
+          DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.333 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -834,6 +844,29 @@ jobs:
         with:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Require complete operational WAM handoff before one-off downstream providers
+        id: wam-bootstrap-readiness
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          attestation="$(python -B scripts/validate_dmi_wave_history_bootstrap.py \
+            --mode "${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}" \
+            --target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}" \
+            --production-target-hour "${{ steps.operational-target.outputs.target_hour }}" \
+            --forecast-hour-count 118 \
+            --cache .cache/dmi-candidate-progress.json \
+            --registry data/live/coastal-parts-v2.json)"
+          validator_status=$?
+          set -e
+          printf '%s\n' "$attestation"
+          wam_code="$(printf '%s' "$attestation" | jq -r 'if .status == "invalid" then .code else "NONE" end')"
+          history_incomplete="$(printf '%s' "$attestation" | jq -r 'if .status == "ok" and .historyIncomplete == true then "true" else "false" end')"
+          test "$wam_code" = "NONE" || printf '%s\n' "$wam_code" | grep -Eq '^[A-Z][A-Z0-9_]{2,63}$'
+          echo "code=$wam_code" >> "$GITHUB_OUTPUT"
+          echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"
+          exit "$validator_status"
 
       - name: "Classify DMI availability (${{ steps.dmi-bulk.outputs.terminal_code }}; ${{ steps.dmi-bulk.outputs.collection_failure_codes }})"
         id: dmi-terminal-gate
@@ -1087,7 +1120,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.333 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

@@ -57,3 +57,10 @@ Historiske runbeskrivelser, hvor 72-timersreglen faktisk forklarede daværende a
 ## Evidensgrænse
 
 4.0.332's målrettede kontrakttests er lokale beviser for implementeringen, ikke exact-head-, GitHub-, provider- eller produktionsbevis. Candidate G forbliver offentlig, indtil den samlede autoriserede cutover har bestået den reelle kæde og er verificeret online.
+
+## Tillæg 2026-09-08 – konkret runbundet handoff
+
+- Første cutover skal have et positivt konkret handoff-run-id, der matcher `^[1-9][0-9]{0,19}$`. Et tomt, nulstillet eller symbolsk id er ikke tilstrækkeligt.
+- Ikke-første-cutover skal have tomt handoff-run-id. Workflow og JavaScript-kontrakt skal håndhæve samme symmetriske regel.
+- Handoff-evidensen er runbundet: en closure fra et andet run kan ikke alene åbne artifact, deploy, Phase B eller offentlig cutover.
+- Oneoff `34161930631` beviste eksakt strømclosure 79.414/79.414, men stoppede på Feggesund 3 × 118 og leverede derfor ikke et gyldigt samlet handoff-/cutoverbevis.

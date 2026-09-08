@@ -1,5 +1,7 @@
 # Feggesund: privat Copernicus-bølgefeasibility
 
+> **HISTORISK OG SUPERSEDERET:** Dette feasibilityspor er ikke den gældende produktionsvej. DEC-0114 fastlægger nu den eneste tilladte Feggesund-undtagelse: direkte DMI WAM først og ellers den faste to-nabo DMI-WAM-proxy med et privacy-sikkert 3 × 118-bevis. Dokumentet nedenfor bevares alene som revisionsspor.
+
 **Status:** Afgrænset, manuel feasibility. Ikke produktionskilde, ikke modelændring og ikke cutover-godkendelse.
 
 ## Hvorfor piloten findes
