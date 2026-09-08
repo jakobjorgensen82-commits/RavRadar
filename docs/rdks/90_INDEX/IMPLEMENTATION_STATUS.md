@@ -7,7 +7,9 @@
 - [x] Forsegl kun efter providerclosure, WAM/Feggesund, fuld validate, releasegate og exact-main-reconfirm; bevar partial caches uden handoff ved missing/fejl.
 - [x] Klassificér `34229976645`: 2.015 par tilbage til Open-Meteo, cacher bevaret, intet handoff.
 - [x] Måltests grønne og uafhængigt review GO; ingen runtime-, rollback-, score-, geometri- eller punktændring.
-- [ ] RDKS-validering, commit/push og én GitHub `validate:source` på eksakt head.
+- [x] RDKS-validering, commit/push, PR #269 og merge som `269db74b…`.
+- [x] Klassificér exact-head `34245761528`: releasegaten grøn; senere protected-handbook-test stoppede alene på usynkroniseret statisk Supabase-kopi. Synkronisér kopien og bevis den præcise test lokalt.
+- [ ] Commit/push den snævre synkronisering og bestå en ny GitHub `validate:source` på dens eksakte head.
 - [ ] Merged main-runtime, 79.414/79.414, WAM/Feggesund 354/354, spatial/kapacitet, fulde gates, artifact/deploy, Phase B og offentlig verifikation.
 
 # HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.335 klar til exact-head
