@@ -1,37 +1,24 @@
 name: Read-only weather cache forensics
-
 on:
   workflow_dispatch:
-
 permissions:
   contents: read
   actions: read
-
 jobs:
-  inspect-dmi:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - label: active-donor
-            key: dmi-zone-active-v1-Linux-2026-W36-118-preflight-34056999485-1
-            path: .cache/dmi-active-complete.json
-          - label: previous-candidate
-            key: dmi-zone-candidate-v1-Linux-2026-W37-normal-34229976645-1
-            path: .cache/dmi-candidate-progress.json
-          - label: latest-candidate
-            key: dmi-zone-candidate-v1-Linux-2026-W37-normal-34252960481-1
-            path: .cache/dmi-candidate-progress.json
-    name: Inspect ${{ matrix.label }} without changing it
+        probe: [recovery-union, lossless-storage]
+    name: Read-only ${{ matrix.probe }}
     steps:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: Require reviewed diagnostic branch and unchanged production reader
-        shell: bash
+      - name: Require isolated branch and unchanged production code
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/codex/weather-cache-forensic
@@ -39,25 +26,39 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
-      - name: Install existing reader dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
-      - name: Restore exact existing cache read-only
-        id: restored
+      - run: python -m pip install --disable-pip-version-check -r requirements-dmi.txt
+      - name: Restore exact latest candidate read-only
+        id: latest
         uses: actions/cache/restore@v6
         with:
-          path: ${{ matrix.path }}
-          key: ${{ matrix.key }}
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-normal-34252960481-1
           fail-on-cache-miss: true
-      - name: Require exact cache identity
+      - name: Require exact latest cache identity
         env:
-          EXPECTED_KEY: ${{ matrix.key }}
-          ACTUAL_KEY: ${{ steps.restored.outputs.cache-matched-key }}
-        run: test "$EXPECTED_KEY" = "$ACTUAL_KEY"
-      - name: Measure structure and duplicate metadata using safe aggregates
-        run: python -B scripts/inspect-dmi-cache-aggregate.py --cache '${{ matrix.path }}'
-      - name: Examine historic and current overlap proof using safe aggregates
-        if: always() && steps.restored.outcome == 'success'
-        run: python -B scripts/inspect-dmi-reuse-proof.py --cache '${{ matrix.path }}' --target 2026-09-08T16:00:00Z
+          ACTUAL_KEY: ${{ steps.latest.outputs.cache-matched-key }}
+        run: test "$ACTUAL_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-normal-34252960481-1
+      - name: Keep isolated runner copy of latest input
+        if: matrix.probe == 'recovery-union'
+        run: mv .cache/dmi-candidate-progress.json .cache/diagnostic-latest-candidate.json
+      - name: Restore exact newer historical candidate read-only
+        id: historical
+        if: matrix.probe == 'recovery-union'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/dmi-candidate-progress.json
+          key: dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34212820037-1
+          fail-on-cache-miss: true
+      - name: Require exact historical cache identity
+        if: matrix.probe == 'recovery-union'
+        env:
+          ACTUAL_KEY: ${{ steps.historical.outputs.cache-matched-key }}
+        run: test "$ACTUAL_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34212820037-1
+      - name: Measure independently proved overlap and union without saving
+        if: matrix.probe == 'recovery-union'
+        run: python -B scripts/inspect-dmi-reuse-proof.py --cache .cache/dmi-candidate-progress.json --supplement .cache/diagnostic-latest-candidate.json --target 2026-09-08T16:00:00Z --compatibility-probe
+      - name: Measure lossless roundtrip without saving cache
+        if: matrix.probe == 'lossless-storage'
+        run: python -B scripts/inspect-dmi-source-codec.py --cache .cache/dmi-candidate-progress.json
 
-# Intentionally no cache save, private artifact upload, producer, source gate,
-# central/admin mutation, production write, model change or deploy. Never merge.
+# Diagnostic branch only. No saved cache, uploaded data, producer or deploy.
