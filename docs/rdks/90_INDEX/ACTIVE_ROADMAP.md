@@ -1,4 +1,13 @@
-# NYESTE ROADMAP – 2026-09-08 – 4.0.335 fra vedvarende cache til model-online
+# NYESTE ROADMAP – 2026-09-08 – 4.0.336 fra kompakt cache til verificeret main-runtime
+
+- [x] Gør alle DMI/WAM-cachewrites kompakte og atomiske uden at hæve 256 MiB-loftet; log kun aggregerede byteantal.
+- [x] Allowlist normal- og oneoff-sourceproducenter og invalidér same-SHA-proof ved senere fejl/manglende gate på tværs af begge livehistorikker.
+- [x] Giv kun en eksplicit manuel normal kørsel i DEC-0121's tre tidlige modeltilstande og to maintenance-actions mulighed for at forsegle samme handoff som oneoff efter alle gates.
+- [x] Bevar partial caches; registrér `34229976645` som 2.015 par tilbage til Open-Meteo og intet handoff. Måltests og uafhængigt review er grønne.
+- [ ] Bestå exact-head GitHub sourcegate, merge og bevis 79.414/79.414 samt WAM/Feggesund 354/354 på main.
+- [ ] Luk spatial/kapacitet, fulde produktionsgates, artifact/deploy, Phase B og offentlig verifikation før Candidate G erstattes.
+
+# HISTORISK ROADMAP – 2026-09-08 – 4.0.335 fra vedvarende cache til model-online
 
 - [x] Afslut Astra-helkædeaudit af WAM-admission, parserklassifikation, genbrug, Feggesund og gateplacering.
 - [x] Implementér granulær bølgesalvage, atomisk replacement, exact-proof WAM-resume og operationel multi-run-kontinuitet uden cross-run interpolation.

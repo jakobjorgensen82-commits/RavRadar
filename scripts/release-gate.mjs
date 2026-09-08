@@ -808,6 +808,7 @@ for(const marker of [
   "export const WEATHER_SOURCE_HANDOFF_CACHE_PATH =",
   'artifactList.total_count !== artifactList.artifacts.length',
   "fail('HANDOFF_ARTIFACT_PAGINATION_INCOMPLETE')",
+  "fail('HANDOFF_PRODUCER_WORKFLOW_INVALID')",
   "fail('HANDOFF_CACHE_ROOT_INVALID')",
   "fail('HANDOFF_EXPIRED')",
   "fail('HANDOFF_INPUT_HASH_INVALID')",
@@ -815,6 +816,14 @@ for(const marker of [
   'verifyRebuiltClosure({',
 ]){
   ok(weatherSourceHandoff.includes(marker),`Weather-source-handoff mangler fail-closed værn: ${marker}`);
+}
+for(const marker of [
+  'name: Seal normal exact run-bound verified weather source handoff',
+  'candidate-maintenance|candidate-legacy-maintenance',
+  '--producer-workflow ".github/workflows/update-and-deploy.yml"',
+  "if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true",
+]){
+  ok(buildWorkflow.includes(marker),`Almindelig weather-handoff-producent mangler ${marker}`);
 }
 for(const marker of [
   'HANDOFF_ARTIFACT_DIGEST_INVALID',
@@ -829,6 +838,7 @@ for(const marker of [
 }
 for(const marker of [
   'name: Seal exact run-bound verified weather source handoff',
+  '--producer-workflow ".github/workflows/validate-copernicus-current-pilot.yml"',
   'name: Save exact run-bound verified weather source cache',
   'name: Upload only aggregate verified weather source handoff attestation',
   'path: .cache/verified-weather-source-handoff-cache/attestation.json',
@@ -1328,9 +1338,12 @@ for(const marker of [
   'commit_asset_stage_document(output, output_stage)',
   'def write_checkpoint(',
   '"validation": "pending-finalization"',
-  'atomic_write_bulk_cache(result, pretty=False)',
+  'atomic_write_bulk_cache(result)',
   'def write_finalized_cache(',
-  'atomic_write_bulk_cache(result, pretty=True)',
+  'raw_bytes = atomic_write_bulk_cache(result)',
+  'write_final_cache_size_telemetry(raw_bytes)',
+  'separators=(",", ":")',
+  'return destination.stat().st_size',
   'write_ocean_diagnostics(result)',
   'class ProgressCheckpointController:',
 ]){

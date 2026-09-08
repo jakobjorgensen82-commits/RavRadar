@@ -3,12 +3,14 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import io
 import json
 import math
 import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from dataclasses import replace
 from datetime import timedelta
 from pathlib import Path
@@ -1278,6 +1280,45 @@ class BootstrapCliClassificationTests(unittest.TestCase):
                 )
         self.assertEqual(raised.exception.code, "OPERATIONAL_HANDOFF_INVALID")
         history.assert_not_called()
+
+    def test_cache_size_failure_reports_only_aggregate_byte_counts(self) -> None:
+        self.assertEqual(bootstrap_cli.MAX_CACHE_BYTES, 256 * 1024 * 1024)
+        with tempfile.TemporaryDirectory() as temporary:
+            folder = Path(temporary)
+            registry_path = folder / "registry.json"
+            cache_path = folder / "cache.json"
+            registry_path.write_text("{}", encoding="utf-8")
+            cache_path.write_text("{}\n", encoding="utf-8", newline="\n")
+            output = io.StringIO()
+            with (
+                patch.object(bootstrap_cli, "MAX_CACHE_BYTES", 2),
+                redirect_stdout(output),
+            ):
+                return_code = bootstrap_cli.main([
+                    "--registry",
+                    str(registry_path),
+                    "--cache",
+                    str(cache_path),
+                    "--target-hour",
+                    TARGET,
+                    "--production-target-hour",
+                    TARGET,
+                    "--mode",
+                    MIGRATION_MODE,
+                ])
+
+        self.assertEqual(return_code, 1)
+        self.assertEqual(
+            json.loads(output.getvalue()),
+            {
+                "actualBytes": 3,
+                "code": "CACHE_SIZE_INVALID",
+                "maximumBytes": 2,
+                "status": "invalid",
+            },
+        )
+        self.assertNotIn(str(cache_path), output.getvalue())
+        self.assertNotIn(str(registry_path), output.getvalue())
 
 
 class OperationalHandoffTests(unittest.TestCase):

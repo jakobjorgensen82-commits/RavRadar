@@ -1,5 +1,15 @@
 # Aktive krav – samlet register
 
+# 4.0.336 – kompakt WAM-cache, tværgående sourceproof og normalt handoff (2026-09-08)
+
+- **REQ-4.0.336-WAM-COMPACT-ATOMIC-WRITE-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** Alle progress-, final-, promotion- og reuse-writes skal være atomisk kompakt UTF-8-JSON. Pretty-print må ikke skabe et falsk cache-size-stop.
+- **REQ-4.0.336-WAM-RAW-SIZE-PRIVACY-001 – BINDENDE P0:** WAM-validatorens maksimum forbliver 256 MiB rå bytes. Kun aggregeret faktisk/maksimalt byteantal må rapporteres; payload, stier, ids, koordinater og rå U/V er forbudt.
+- **REQ-4.0.336-SOURCE-PROOF-CROSS-PRODUCER-001 – BINDENDE P0:** Samme-SHA-proof må kun komme fra de eksakte allowlistede source-steps i normalworkflowet eller oneoff-workflowets `validate`/`operational-118-preflight`. Intet andet workflow/job/step må autorisere genbrug.
+- **REQ-4.0.336-SOURCE-PROOF-LIVE-INVALIDATION-001 – BINDENDE P0:** Locator er ikke bevis. Begge workflowhistorikker livevalideres; senere failure/cancellation eller en udført producentvej uden gate invaliderer ældre proof på tværs. Ukendt evidens kræver ny sourcegate.
+- **REQ-4.0.336-NORMAL-WEATHER-HANDOFF-001 – BINDENDE FØRSTE-CUTOVER-GATE:** Kun eksplicit manuel exact-main-dispatch med flag og eksakt bekræftelse må producere normalt handoff. Early-state er `candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false`; action er `candidate-maintenance|candidate-legacy-maintenance`. Forsegling kræver komplet providerclosure, WAM/Feggesund, fuld validate, releasegate og exact-main-reconfirm.
+- **REQ-4.0.336-PARTIAL-SAVE-NO-HANDOFF-001 – BINDENDE:** Partial caches gemmes før terminale gates. Missing, provider-/WAM-/gatefejl eller SHA-drift giver intet handoff/artifact/cutover og ingen nulstilling.
+- **REQ-4.0.336-RUNTIME-EVIDENCE-001 – BINDENDE ÅBEN:** `34229976645` efterlod 2.015 par til Open-Meteo med bevarede cacher og uden handoff. Exact-head CI, komplet runtime og produktions-/cutoverkæden mangler; Candidate G er offentlig.
+
 # 4.0.335 – vedvarende WAM-cache og sen slutgate (2026-09-08)
 
 - **REQ-4.0.335-WAM-GRANULAR-SALVAGE-001 – BINDENDE P0 / LOKALT IMPLEMENTERET / RUNTIME ÅBENT:** En ugyldig bølgerække må kun fjerne den konkrete bølgekomponent. Uafhængigt gyldige bølge-, vind-, strøm- og historikrækker skal bevares; ingen bred PART-bølgenulstilling må findes.

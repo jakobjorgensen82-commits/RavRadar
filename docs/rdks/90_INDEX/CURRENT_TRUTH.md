@@ -1,4 +1,13 @@
-# NYESTE SANDHED – 2026-09-08 – 4.0.335 lokalt grøn, runtime åben
+# NYESTE SANDHED – 2026-09-08 – 4.0.336 kompakt cache og strengt tværgående proof
+
+- DMI/WAM-cachen skrives atomisk som kompakt UTF-8-JSON på alle progress-, final-, promotion- og reuse-veje. Pretty-JSON-udvidelsen set i oneoff er løst uden at hæve den hårde `256 MiB` rå-bytevalidator; telemetrien er kun aggregeret faktisk/maksimalt byteantal.
+- Sourceproof kan på samme uændrede `main`-SHA genbruges fra præcis de allowlistede source-steps i `.github/workflows/update-and-deploy.yml` og `.github/workflows/validate-copernicus-current-pilot.yml`. Locatorcache er ikke bevis; ukendt/ufuldstændig livehistorik eller senere failure/cancellation/manglende gate i en udført producentvej på tværs af begge workflows kræver ny sourcegate.
+- Kildegaten er ikke fjernet. Ny/ukendt kode kører fortsat fuld `validate:source`; hvert nyt artifact kræver central hydrering, komplet vejr/proveniens, fuld `npm run validate` og `npm run release:gate`.
+- En eksplicit manuel normal kørsel på eksakt `main` kan med flag og præcis bekræftelse forsegle samme handoff som oneoff. Tilladt tidlig modeltilstand er præcis `candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false`, og efterfølgende action er `candidate-maintenance|candidate-legacy-maintenance`. Forsegling ligger efter komplet providerclosure, WAM/Feggesund, fuld validate, releasegate og exact-main-reconfirm.
+- Partial caches gemmes før terminale gates. Normalrun `34229976645` efterlod 2.015 par til Open-Meteo med bevarede cacher, men uden closure/handoff.
+- Måltests og uafhængigt review er grønne. GitHub exact-head- og positivt runtimebevis mangler. Candidate G er offentlig; 79.414/79.414, WAM/Feggesund 354/354, spatial/kapacitet, fulde gates, deploy, Phase B og offentlig verifikation er åbne. Ingen runtime-ombygning, rollback/nulstilling, score-, geometri- eller punktændring indgår.
+
+# HISTORISK SANDHED – 2026-09-08 – 4.0.335 lokalt grøn, runtime åben
 
 - 4.0.335 implementerer den samlede WAM-helkæderettelse fra auditen: ingen global bølgenulstilling, granulær row-salvage, atomisk tuple-admission, korrekt parser/dækningsklassifikation og exact-proof checkpointgenbrug.
 - Den operationelle cache må beholde eksakte validerede WAM-rækker på tværs af modelkørsler/celler. Interpolation må fortsat kun ske inden for samme collection, modelrun, gitter og fysiske celle og højst fire timer.

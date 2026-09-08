@@ -1,3 +1,12 @@
+## 4.0.336 – kompakt WAM-cache og verificeret handoff fra normal kørsel (2026-09-08)
+
+- Skriver DMI/WAM-cachen atomisk som kompakt UTF-8-JSON på alle persistensveje, så formatering ikke alene kan sprænge den uændrede hårde grænse på 256 MiB.
+- Tillader, at præcis de godkendte source-steps i normal- og oneoff-workflowet genbruger ét live-verificeret grønt sourceproof på samme uændrede `main`-commit. Kildegaten er ikke fjernet, og en senere fejl invaliderer beviset på tværs.
+- Gør den manuelle normale vejrkørsel til en eksplicit handoff-producent ved korrekt bekræftelse. Handoff forsegles først efter komplet providerclosure, WAM/Feggesund, fuld validate, releasegate og fornyet exact-main-kontrol.
+- Bevarer partial providercacher før terminale stop. Mangler eller fejl skaber intet handoff og nulstiller ikke den validerede progression.
+- Lokal målmatrix og uafhængigt P0/P1-review er grønne. Exact-head GitHub-kildegate, merge, positiv normal main-runtime, fulde produktionsgates og offentlig modelcutover er åbne.
+- Se `CHANGELOG-4.0.336.md` og DEC-0121.
+
 ## 4.0.335 – vedvarende WAM-cache og sen completeness-gate (2026-09-08)
 
 - Bevarer alle uafhængigt gyldige vejrdata og salvager kun den konkrete ugyldige bølgerække; ingen bred PART-bølgenulstilling.

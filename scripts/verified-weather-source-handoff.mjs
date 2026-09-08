@@ -7,6 +7,10 @@ import { fileURLToPath } from 'node:url';
 export const HANDOFF_KIND = 'RAVRADAR_VERIFIED_WEATHER_SOURCE_HANDOFF';
 export const HANDOFF_CONTRACT_ID = 'verified-weather-source-handoff-v1';
 export const PRODUCER_WORKFLOW = '.github/workflows/validate-copernicus-current-pilot.yml';
+export const PRODUCER_WORKFLOWS = Object.freeze([
+  PRODUCER_WORKFLOW,
+  '.github/workflows/update-and-deploy.yml',
+]);
 export const PRODUCER_ARTIFACT_PREFIX = 'ravradar-weather-source-handoff';
 export const FIRST_CUTOVER_CONFIRMATION =
   'EXECUTE-INTEGRATED-RAVSCORE-FIRST-CUTOVER-AFTER-CAPACITY-GATE';
@@ -93,6 +97,11 @@ function validateRunId(value) {
   const text = String(value ?? '');
   if (!RUN_ID.test(text)) fail('HANDOFF_RUN_ID_INVALID');
   return text;
+}
+
+function validateProducerWorkflow(value) {
+  if (!PRODUCER_WORKFLOWS.includes(value)) fail('HANDOFF_PRODUCER_WORKFLOW_INVALID');
+  return value;
 }
 
 function validatePositiveInteger(value, code) {
@@ -204,7 +213,7 @@ export function validateAttestation(attestation, expected = {}) {
     || attestation.schemaVersion !== 1
     || attestation.kind !== HANDOFF_KIND
     || attestation.contractId !== HANDOFF_CONTRACT_ID
-    || attestation.producerWorkflow !== PRODUCER_WORKFLOW
+    || !PRODUCER_WORKFLOWS.includes(attestation.producerWorkflow)
     || attestation.producerEvent !== 'workflow_dispatch'
     || attestation.producerRef !== 'refs/heads/main'
     || attestation.targetCount !== EXACT_TARGET_COUNT
@@ -268,7 +277,8 @@ export function validateAttestation(attestation, expected = {}) {
 
 export function sealWeatherSourceHandoff({
   root = process.cwd(), cacheRoot, repository, sourceHeadSha, runId, runAttempt,
-  runnerOs, closurePath = 'data/diagnostics/current-operational-closure.json',
+  runnerOs, producerWorkflow,
+  closurePath = 'data/diagnostics/current-operational-closure.json',
   createdAt = new Date().toISOString(),
 }) {
   const resolvedRoot = path.resolve(root);
@@ -286,6 +296,7 @@ export function sealWeatherSourceHandoff({
   validateHead(sourceHeadSha);
   const canonicalRunId = validateRunId(runId);
   const canonicalAttempt = validatePositiveInteger(Number(runAttempt), 'HANDOFF_ATTEMPT_INVALID');
+  const canonicalProducerWorkflow = validateProducerWorkflow(producerWorkflow);
   canonicalInstant(createdAt, 'HANDOFF_ATTESTATION_INVALID');
   if (typeof repository !== 'string' || !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
     fail('HANDOFF_REPOSITORY_INVALID');
@@ -309,7 +320,7 @@ export function sealWeatherSourceHandoff({
     kind: HANDOFF_KIND,
     contractId: HANDOFF_CONTRACT_ID,
     repository,
-    producerWorkflow: PRODUCER_WORKFLOW,
+    producerWorkflow: canonicalProducerWorkflow,
     producerEvent: 'workflow_dispatch',
     producerRef: 'refs/heads/main',
     sourceHeadSha,
@@ -388,7 +399,7 @@ export async function resolveProducerRun({
   if (String(run.id) !== canonicalRunId
     || run.repository?.full_name !== repository
     || run.head_repository?.full_name !== repository
-    || run.path !== PRODUCER_WORKFLOW
+    || !PRODUCER_WORKFLOWS.includes(run.path)
     || run.event !== 'workflow_dispatch'
     || run.head_branch !== 'main'
     || run.head_sha !== expectedHeadSha
@@ -429,7 +440,7 @@ export async function resolveProducerRun({
   return {
     schemaVersion: 1,
     repository,
-    producerWorkflow: PRODUCER_WORKFLOW,
+    producerWorkflow: run.path,
     producerEvent: 'workflow_dispatch',
     producerRef: 'refs/heads/main',
     sourceHeadSha: expectedHeadSha,
@@ -497,9 +508,11 @@ export function installWeatherSourceHandoff({
     runAttempt: resolved.runAttempt,
     runnerOs,
     cacheKey: resolved.cacheKey,
+    producerWorkflow: resolved.producerWorkflow,
   });
   if (resolved.repository !== expectedRepository || resolved.sourceHeadSha !== expectedHeadSha
-    || resolved.runId !== String(expectedRunId) || resolved.producerWorkflow !== PRODUCER_WORKFLOW
+    || resolved.runId !== String(expectedRunId)
+    || !PRODUCER_WORKFLOWS.includes(resolved.producerWorkflow)
     || resolved.producerEvent !== 'workflow_dispatch' || resolved.producerRef !== 'refs/heads/main'
     || resolved.artifactName !== expectedArtifactName(resolved.runId, resolved.runAttempt)
     || resolved.artifactDigest !== resolved.downloadedZipSha256
@@ -592,6 +605,7 @@ async function main() {
       root: args.root,
       cacheRoot: args['cache-root'],
       repository: args.repository,
+      producerWorkflow: args['producer-workflow'],
       sourceHeadSha: args['source-head'],
       runId: args['run-id'],
       runAttempt: args['run-attempt'],

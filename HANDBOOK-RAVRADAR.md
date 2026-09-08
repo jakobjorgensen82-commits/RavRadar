@@ -1,6 +1,18 @@
 # RavRadar Håndbog
 
-**Håndbogsversion:** 4.0.335
+**Håndbogsversion:** 4.0.336
+
+## 88.38 4.0.336 – normal vejrkørsel kan aflevere det verificerede handoff
+
+Den normale vejrkørsel kan nu, ved et eksplicit manuelt valg og en eksakt bekræftelse, udføre den sidste opfyldning og aflevere samme runbundne vejrhandoff som engangskørslen. Der kræves derfor ikke en ekstra oneoff alene for at føre en komplet normal kørsel videre til den kontrollerede modelaktivering.
+
+- Alle delresultater fra DMI, Copernicus, regional DMI og Open-Meteo gemmes før de afsluttende stop. En ufuldstændig kørsel giver intet handoff, men sletter heller ikke den validerede cacheprogression.
+- Handoff forsegles kun ved fuld 673 × 118-closure, godkendt WAM/Feggesund, fuld validering, releasegate og en ny kontrol af den eksakte `main`-commit.
+- Et grønt kildekodebevis kan genbruges mellem de præcist godkendte source-steps i normal- og oneoff-workflowet, når committen er uændret. En senere fejl eller manglende forventet kontrol invaliderer beviset. Kildegaten er altså ikke fjernet, men den behøver ikke gentages for hver vejropdatering på samme dokumenteret grønne kode.
+- DMI/WAM-cachen gemmes kompakt og atomisk på alle skriveveje. Den hårde sikkerhedsgrænse på 256 MiB består, men JSON-formatering må ikke længere gøre den samme cache kunstigt større.
+- Engangskørslen består som accelerator. De normale cron-startede kørsler er fortsat den permanente vedligeholder efter modelaktiveringen.
+
+Status: 4.0.336 er lokalt måltestet og reviewet uden P0/P1. Exact-head GitHub-kildegate, merge, positiv normal `main`-kørsel, fulde produktionskontroller og offentlig aktivering af den integrerede model mangler endnu. Candidate G er fortsat offentlig.
 
 ## 88.37 4.0.335 – behold brugbare vejrdata og reparér kun det konkrete hul
 

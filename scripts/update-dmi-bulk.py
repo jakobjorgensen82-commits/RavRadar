@@ -7447,20 +7447,41 @@ def write_ocean_diagnostics(result: dict[str, Any]) -> None:
 def atomic_write_bulk_cache(
     document: dict[str, Any],
     *,
-    pretty: bool = True,
     path: pathlib.Path | None = None,
-) -> None:
+) -> int:
+    """Write the private bulk cache atomically as compact UTF-8 JSON.
+
+    Pretty-printing this provenance-rich document can add substantial bytes
+    without adding information. Keep one serialization contract for progress,
+    terminal and promotion writes so a formatting-only expansion can never make
+    a valid cache fail a downstream raw-byte bound.
+    """
     destination = OUTPUT_PATH if path is None else path
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(destination.name + ".tmp")
-    payload = json.dumps(
-        document,
-        ensure_ascii=False,
-        indent=2 if pretty else None,
-        separators=None if pretty else (",", ":"),
-    )
-    temporary.write_text(payload + "\n", "utf-8")
+    with temporary.open("w", encoding="utf-8", newline="\n") as handle:
+        json.dump(
+            document,
+            handle,
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        handle.write("\n")
     temporary.replace(destination)
+    return destination.stat().st_size
+
+
+def write_final_cache_size_telemetry(raw_bytes: int) -> None:
+    """Emit only the aggregate final cache size; never private cache content."""
+    print(json.dumps(
+        {
+            "event": "dmi-bulk-cache-final-write",
+            "rawBytes": raw_bytes,
+        },
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    ), flush=True)
 
 
 def write_sticky_github_output(name: str, value: str) -> None:
@@ -7480,16 +7501,18 @@ def write_checkpoint(result: dict[str, Any], fresh_zone_ids: set[str], budget: d
         "schemaVersion": 1,
         "validation": "pending-finalization",
     }
-    atomic_write_bulk_cache(result, pretty=False)
+    atomic_write_bulk_cache(result)
 
 
-def write_finalized_cache(result: dict[str, Any], status: str) -> None:
+def write_finalized_cache(result: dict[str, Any], status: str) -> int:
     """Persist the already-cleaned terminal cache and diagnostics exactly once."""
     result["refreshStatus"] = status
     result["checkpointedAt"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     result.setdefault("diagnostics", {}).pop("progressCheckpoint", None)
-    atomic_write_bulk_cache(result, pretty=True)
+    raw_bytes = atomic_write_bulk_cache(result)
+    write_final_cache_size_telemetry(raw_bytes)
     write_ocean_diagnostics(result)
+    return raw_bytes
 
 
 def promote_ready_candidate(
@@ -7506,7 +7529,7 @@ def promote_ready_candidate(
         or not strict_current_anchor_available
     ):
         return False
-    atomic_write_bulk_cache(result, pretty=True, path=PROMOTION_PATH)
+    atomic_write_bulk_cache(result, path=PROMOTION_PATH)
     write_sticky_github_output("candidate_promoted", "true")
     return True
 
@@ -8108,7 +8131,8 @@ def main() -> int:
         # En nylig parserfejl må aldrig blokere et nyt DKSS-forsøg efter en kodeopdatering.
         previous.setdefault("refreshStatus", "fresh-bulk-cache")
         previous.setdefault("diagnostics", {})
-        atomic_write_bulk_cache(previous)
+        final_cache_bytes = atomic_write_bulk_cache(previous)
+        write_final_cache_size_telemetry(final_cache_bytes)
         write_ocean_diagnostics(previous)
         promote_ready_candidate(
             previous,

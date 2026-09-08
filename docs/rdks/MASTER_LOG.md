@@ -1,4 +1,11 @@
-# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.335 vedvarende WAM-cache
+# NYESTE EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.336 kompakt WAM og verificeret handoff-producent
+
+- Pretty-print udvidede DMI/WAM-cachen uden ny information. 4.0.336 bruger kompakt atomisk serialisering på alle writes og bevarer hårdt 256 MiB-loft med kun aggregeret telemetri.
+- Exact-main-sourceproof genbruges på samme SHA kun fra de allowlistede normal-/oneoff-steps. Begge historier livekontrolleres; senere fejl/manglende gate invaliderer på tværs. Kildegaten og alle data-/releasegates består.
+- En eksplicit manuel normal exact-main-kørsel kan i de tre tidlige modeltilstande og to maintenance-actions i DEC-0121 forsegle samme handoff som oneoff efter komplet providerclosure, WAM/Feggesund, fuld validate, releasegate og exact-main-reconfirm. Partial/automatisk drift kan ikke.
+- `34229976645` efterlod 2.015 par til Open-Meteo med bevarede cacher og uden handoff. Måltests/review er grønne; exact-head/runtime/produktion åbne. Ingen runtime-ombygning, rollback/nulstilling, score-, geometri- eller punktændring.
+
+# HISTORISK EJER- OG IMPLEMENTERINGSDELTA – 2026-09-08 – 4.0.335 vedvarende WAM-cache
 
 - Ejeren kræver, at eksisterende brugbare data aldrig nulstilles ved et normalt modelskift eller én defekt fil; oneoff skal fylde op, mens normale eksternt cron-startede kørsler bagefter vedligeholder hele vinduet.
 - Helkædeaudit viste all-target rollback, bred MISSING_CELL-reset, forkert parserklassifikation, utilstrækkeligt WAM-resumebevis og en for tidlig WAM-gate som samlet fejlklasse.

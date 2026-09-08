@@ -9,6 +9,12 @@ on:
       force:
         required: true
         type: boolean
+      produce_weather_handoff:
+        required: true
+        type: boolean
+      produce_weather_handoff_confirmation:
+        required: true
+        type: string
       ravscore_candidate_g_rollback_mode:
         required: true
         type: string
@@ -237,6 +243,8 @@ jobs:
           ACTIVE_DEPLOYMENT_ID: ${{ steps.operational-model.outputs.active_deployment_id }}
           ACTIVE_SOURCE_HEAD: ${{ steps.operational-model.outputs.active_source_head }}
           ACTIVE_IMPLEMENTATION_CLOSURE_SHA256: ${{ steps.operational-model.outputs.active_implementation_closure_sha256 }}
+          PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
+          PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
           ROLLBACK_MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_mode || 'none' }}
           ROLLBACK_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_candidate_g_rollback_confirmation || '' }}
           FIRST_CUTOVER_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_first_cutover || false }}
@@ -245,11 +253,26 @@ jobs:
           RETURN_CONFIRMATION: ${{ github.event_name == 'workflow_dispatch' && inputs.ravscore_integrated_return_confirmation || '' }}
         run: |
           transition_count=0
+          case "$PRODUCE_WEATHER_HANDOFF" in true|false) ;; *) echo "Unknown weather handoff producer flag."; exit 1 ;; esac
+          if [ "$PRODUCE_WEATHER_HANDOFF" = "true" ]; then
+            test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+            test "$GITHUB_REF" = "refs/heads/main"
+            test "$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" = "PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF"
+            test "$INITIAL_CUTOVER_REQUIRED" = "true"
+            case "$ACTIVE_MODEL:$BINDING_CURRENT" in
+              candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false) ;;
+              *) echo "Weather handoff production requires a current pre-cutover maintenance state."; exit 1 ;;
+            esac
+            transition_count=$((transition_count + 1))
+          elif [ -n "$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" ]; then
+            echo "Weather handoff producer confirmation requires its explicit producer flag."
+            exit 1
+          fi
           if [ "$ROLLBACK_MODE" != "none" ]; then transition_count=$((transition_count + 1)); fi
           if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then transition_count=$((transition_count + 1)); fi
           if [ "$RETURN_REQUESTED" = "true" ]; then transition_count=$((transition_count + 1)); fi
           if [ "$transition_count" -gt 1 ]; then
-            echo "Candidate G-rollback, integrated first cutover and integrated return are mutually exclusive."
+            echo "Weather handoff production, Candidate G-rollback, integrated first cutover and integrated return are mutually exclusive."
             exit 1
           fi
           case "$FIRST_CUTOVER_REQUESTED" in true|false) ;; *) echo "Unknown integrated first cutover flag."; exit 1 ;; esac
@@ -385,7 +408,7 @@ jobs:
           RAVRADAR_FORCE_UPDATE: ${{ github.event_name == 'push' || inputs.force == true || steps.operational-action.outputs.action != 'integrated' }}
           RAVRADAR_MAX_STALE_MINUTES: 30
           RAVRADAR_PREFLIGHT_TIMEOUT_SECONDS: 20
-          WEATHER_USER_AGENT: "RavRadar/4.0.335 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
           PREFLIGHT_CACHE_KEY: ${{ steps.weather-preflight-cache.outputs.cache-matched-key }}
           PUBLIC_MANIFEST_AVAILABLE: ${{ steps.public-preflight-manifest.outputs.available }}
         run: |
@@ -615,7 +638,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.335 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         if: steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true'
@@ -640,7 +663,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.335 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Fetch exact public Candidate G source commit for first cutover attestation
         if: steps.operational-model.outputs.legacy_source_required == 'true' && (steps.operational-action.outputs.action == 'integrated-cutover' || steps.operational-action.outputs.action == 'candidate-legacy-maintenance')
@@ -922,7 +945,7 @@ jobs:
           CURRENT_FIELD_SHADOW_PARTS_PER_RUN: 15
           CURRENT_FIELD_SHADOW_REPLAY_ASSETS_PER_COLLECTION: 5
           CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN: 3
-          WEATHER_USER_AGENT: "RavRadar/4.0.335 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Advance private point-candidate readiness without public score impact
@@ -1351,7 +1374,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.mode || 'auto' }}
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: ${{ steps.operational-action.outputs.action == 'integrated-cutover' && steps.legacy-bootstrap.outputs.required == 'true' && steps.ravscore-wave-bootstrap-target.outputs.source_validated || 'false' }}
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: ${{ steps.operational-action.outputs.action == 'integrated' && steps.legacy-bootstrap.outputs.stateless_integrated_recovery == 'true' && 'true' || 'false' }}
-          WEATHER_USER_AGENT: "RavRadar/4.0.335 (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.336 (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Refuse a point activation without a successful exact-point weather rebuild
@@ -1449,6 +1472,58 @@ jobs:
         id: release-gate
         if: steps.preflight.outputs.should_run == 'true'
         run: npm run release:gate
+
+      - name: Reconfirm exact main before sealing normal verified weather source handoff
+        if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --prune origin +refs/heads/main:refs/remotes/origin/main
+          test "$GITHUB_EVENT_NAME" = "workflow_dispatch"
+          test "$GITHUB_REF" = "refs/heads/main"
+          test "$(git rev-parse HEAD^{commit})" = "$EXPECTED_HEAD_SHA"
+          test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"
+          case "${{ steps.operational-action.outputs.action }}" in
+            candidate-maintenance|candidate-legacy-maintenance) ;;
+            *) echo "Weather handoff production reached an unsupported maintenance action."; exit 1 ;;
+          esac
+          test "${{ steps.operational-model.outputs.initial_cutover_required }}" = "true"
+
+      - name: Seal normal exact run-bound verified weather source handoff
+        id: normal-weather-source-handoff-seal
+        if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true
+        shell: bash
+        run: >-
+          node scripts/verified-weather-source-handoff.mjs seal
+          --root "$GITHUB_WORKSPACE"
+          --cache-root "$GITHUB_WORKSPACE/.cache/verified-weather-source-handoff-cache"
+          --repository "$GITHUB_REPOSITORY"
+          --producer-workflow ".github/workflows/update-and-deploy.yml"
+          --source-head "$GITHUB_SHA"
+          --run-id "$GITHUB_RUN_ID"
+          --run-attempt "$GITHUB_RUN_ATTEMPT"
+          --runner-os "$RUNNER_OS"
+          --closure data/diagnostics/current-operational-closure.json
+          --github-output "$GITHUB_OUTPUT"
+
+      - name: Save normal exact run-bound verified weather source cache
+        if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true
+        uses: actions/cache/save@v6
+        with:
+          path: .cache/verified-weather-source-handoff-cache
+          key: ${{ steps.normal-weather-source-handoff-seal.outputs.cache_key }}
+
+      - name: Upload only aggregate normal verified weather source handoff attestation
+        if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: ravradar-weather-source-handoff-${{ github.run_id }}-${{ github.run_attempt }}
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          path: .cache/verified-weather-source-handoff-cache/attestation.json
 
       - name: Seal exact integrated public implementation closure
         if: steps.preflight.outputs.should_run == 'true'

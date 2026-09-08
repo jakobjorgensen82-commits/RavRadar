@@ -1,4 +1,12 @@
-# NYESTE HELHEDSFUND – 2026-09-08 – 4.0.335 lokalt rettet, runtime åben
+# NYESTE HELHEDSFUND – 2026-09-08 – 4.0.336 kompakt cache og to allowlistede producenter
+
+- **ISSUE-WAM-PRETTY-JSON-RAW-BYTE-EXPANSION – LOKALT RETTET P1 / RUNTIME ÅBENT:** Oneoff viste formatteringsbetinget cachevækst. Alle cachewrites er nu kompakte/atomiske; den hårde 256 MiB-validator består med kun aggregeret byte-telemetri.
+- **ISSUE-SOURCE-PROOF-SINGLE-PRODUCER-SCOPE – LOKALT RETTET P1 / EXACT-HEAD ÅBENT:** Same-SHA-proof allowlister nu præcis normalworkflowets ene og oneoff-workflowets to source-steps. Begge historier livevalideres; senere fejl eller manglende gate i en udført producentvej invaliderer ældre proof på tværs. Ukendt evidens kører sourcegaten igen.
+- **ISSUE-NORMAL-WEATHER-RUN-COULD-NOT-SEAL-HANDOFF – LOKALT RETTET P1 / RUNTIME ÅBENT:** Eksplicit manuel normal drift kan nu forsegle samme handoff som oneoff. Kun de tre early modeltilstande og to maintenance-actions i DEC-0121 er lovlige; automatisk/scheduled eller partial drift kan ikke producere handoff.
+- **ISSUE-34229976645-OPEN-METEO-RESIDUAL – KORREKT PARTIAL STOP / OPFØLGNING ÅBEN:** Normalrunnet efterlod 2.015 par til Open-Meteo og bevarede cacherne. Intet handoff; intet komplet runtime-/releasebevis.
+- **ISSUE-4.0.336-END-TO-END-CLOSURE – ÅBEN P0:** Måltests og review er grønne, men exact-head CI, merged main-runtime, 79.414/79.414, WAM/Feggesund 354/354, spatial/kapacitet, fulde gates, deploy, Phase B og offentlig verifikation mangler. Candidate G er offentlig.
+
+# HISTORISK HELHEDSFUND – 2026-09-08 – 4.0.335 lokalt rettet, runtime åben
 
 - **ISSUE-WAM-CACHE-ADMISSION-CONTINUITY – LOKALT RETTET P1 / RUNTIME ÅBENT:** 4.0.335 erstatter all-target rollback og global MISSING_CELL-reset med atomisk per-tuple admission, granulær salvage og exact-proof resume. Positiv main-runtime mangler.
 - **ISSUE-WAM-OPERATIONAL-NATIVE-PROXY-GATE – LOKALT RETTET P1 / RUNTIME ÅBENT:** Native-gaten dækker 670 dele, Feggesunds tre dele afgøres i den eksisterende direct/proxy-slutgate, og currentfallback kan gemme progression før den endelige WAM-gate.
