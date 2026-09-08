@@ -4,6 +4,7 @@
 - **ISSUE-SOURCE-PROOF-SINGLE-PRODUCER-SCOPE – LOKALT RETTET P1 / EXACT-HEAD ÅBENT:** Same-SHA-proof allowlister nu præcis normalworkflowets ene og oneoff-workflowets to source-steps. Begge historier livevalideres; senere fejl eller manglende gate i en udført producentvej invaliderer ældre proof på tværs. Ukendt evidens kører sourcegaten igen.
 - **ISSUE-NORMAL-WEATHER-RUN-COULD-NOT-SEAL-HANDOFF – LOKALT RETTET P1 / RUNTIME ÅBENT:** Eksplicit manuel normal drift kan nu forsegle samme handoff som oneoff. Kun de tre early modeltilstande og to maintenance-actions i DEC-0121 er lovlige; automatisk/scheduled eller partial drift kan ikke producere handoff.
 - **ISSUE-34229976645-OPEN-METEO-RESIDUAL – KORREKT PARTIAL STOP / OPFØLGNING ÅBEN:** Normalrunnet efterlod 2.015 par til Open-Meteo og bevarede cacherne. Intet handoff; intet komplet runtime-/releasebevis.
+- **ISSUE-34245761528-HANDBOOK-INSTALL-COPY – LOKALT RETTET P1 / NY EXACT-HEAD ÅBEN:** PR-runnet bestod releasegaten og stoppede senere alene, fordi det nye webhåndbogsafsnit manglede i den statiske Supabase-installationskopi. Kopien er nu bytepræcist synkroniseret, og den præcise test er grøn lokalt. Ingen vejrruntime eller deploy skete.
 - **ISSUE-4.0.336-END-TO-END-CLOSURE – ÅBEN P0:** Måltests og review er grønne, men exact-head CI, merged main-runtime, 79.414/79.414, WAM/Feggesund 354/354, spatial/kapacitet, fulde gates, deploy, Phase B og offentlig verifikation mangler. Candidate G er offentlig.
 
 # HISTORISK HELHEDSFUND – 2026-09-08 – 4.0.335 lokalt rettet, runtime åben

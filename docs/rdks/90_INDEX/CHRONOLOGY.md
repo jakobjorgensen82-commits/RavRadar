@@ -4,6 +4,7 @@
 - Same-SHA-sourceproof kan genbruges mellem de præcist allowlistede normal- og oneoff-producenter. Begge livehistorikker kan invalidere proof; sourcegaten består.
 - En eksplicit manuel normal kørsel kan kun i `candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false` og `candidate-maintenance|candidate-legacy-maintenance` forsegle handoff efter komplet provider-/WAM-/validate-/releasekæde og exact-main-reconfirm.
 - `34229976645` efterlod 2.015 Open-Meteo-par med gemte cacher og intet handoff. Måltests/review er grønne; exact-head CI og positiv runtime/produktion mangler. Candidate G er offentlig.
+- PR #269 blev merged som `269db74b…`; exact-head-run `34245761528` bestod releasegaten, men stoppede før vejrruntime/deploy på en usynkroniseret statisk Supabase-håndbogskopi. Den bytepræcise SQL-kopi er lokalt rettet og kræver ny exact-head-kontrol.
 
 # HISTORISK CHECKPOINT – 2026-09-08 – 4.0.335 vedvarende WAM-cache lokalt grøn
 
