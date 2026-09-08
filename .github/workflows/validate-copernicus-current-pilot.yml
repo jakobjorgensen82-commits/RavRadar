@@ -54,9 +54,25 @@ jobs:
         env:
           ACTUAL_KEY: ${{ steps.historical.outputs.cache-matched-key }}
         run: test "$ACTUAL_KEY" = dmi-zone-candidate-v1-Linux-2026-W37-118-preflight-34212820037-1
+      - name: Restore exact Open-Meteo checkpoint read-only
+        id: open-meteo
+        if: matrix.probe == 'recovery-union'
+        uses: actions/cache/restore@v6
+        with:
+          path: .cache/open-meteo-current-fallback.json
+          key: open-meteo-current-fallback-v2-Linux-normal-34252960481-1
+          fail-on-cache-miss: true
+      - name: Require exact Open-Meteo cache identity
+        if: matrix.probe == 'recovery-union'
+        env:
+          ACTUAL_KEY: ${{ steps.open-meteo.outputs.cache-matched-key }}
+        run: test "$ACTUAL_KEY" = open-meteo-current-fallback-v2-Linux-normal-34252960481-1
       - name: Measure independently proved overlap and union without saving
         if: matrix.probe == 'recovery-union'
         run: python -B scripts/inspect-dmi-reuse-proof.py --cache .cache/dmi-candidate-progress.json --supplement .cache/diagnostic-latest-candidate.json --target 2026-09-08T16:00:00Z --compatibility-probe
+      - name: Measure which Open-Meteo gaps are already recovered by DMI
+        if: matrix.probe == 'recovery-union'
+        run: python -B scripts/inspect-dmi-open-meteo-overlap.py --historical-dmi .cache/dmi-candidate-progress.json --latest-dmi .cache/diagnostic-latest-candidate.json --open-meteo .cache/open-meteo-current-fallback.json --target 2026-09-08T16:00:00Z
       - name: Measure lossless roundtrip without saving cache
         if: matrix.probe == 'lossless-storage'
         run: python -B scripts/inspect-dmi-source-codec.py --cache .cache/dmi-candidate-progress.json
