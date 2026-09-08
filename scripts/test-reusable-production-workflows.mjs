@@ -195,6 +195,7 @@ for (const secret of buildContract.secrets) {
 }
 for (const input of [
   'force',
+  'produce_weather_handoff',
   'ravscore_integrated_first_cutover',
   'ravscore_integrated_return',
 ]) {
@@ -229,6 +230,8 @@ for (const input of deployContract.inputs) {
 
 const dispatchOutputs = [
   'force',
+  'produce_weather_handoff',
+  'produce_weather_handoff_confirmation',
   'geometry_v2_pilot',
   'geometry_v2_national',
   'ravscore_candidate_g_rollback_mode',
@@ -257,6 +260,8 @@ assert.equal(
 );
 for (const literal of [
   'force=false',
+  'produce_weather_handoff=false',
+  'produce_weather_handoff_confirmation=',
   'geometry_v2_pilot=false',
   'geometry_v2_national=false',
   'ravscore_candidate_g_rollback_mode=none',
@@ -298,6 +303,16 @@ for (const marker of [
   assert.equal(validateDispatch.includes(marker), true, 'dispatch handoff authorization: ' + marker);
 }
 
+for (const marker of [
+  'PRODUCE_WEATHER_HANDOFF: ' + gh('inputs.produce_weather_handoff'),
+  'PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ' + gh('inputs.produce_weather_handoff_confirmation'),
+  'Verified weather handoff producer confirmation is not exact.',
+  'Verified weather handoff producer confirmation requires its explicit producer flag.',
+  'PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF',
+]) {
+  assert.equal(validateDispatch.includes(marker), true, 'normal handoff producer authorization: ' + marker);
+}
+
 const handoffResolve = indentedBody(build, '      - name: Resolve exact verified weather source producer run');
 for (const marker of [
   "if: steps.preflight.outputs.should_run == 'true' && inputs.ravscore_integrated_weather_handoff_run_id != ''",
@@ -320,6 +335,29 @@ for (const marker of [
   '--artifact-attestation "$RUNNER_TEMP/ravradar-weather-source-handoff/artifact/attestation.json"',
   '--github-env "$GITHUB_ENV"',
 ]) assert.equal(handoffInstall.includes(marker), true, 'verified handoff install: ' + marker);
+
+const normalHandoffReconfirm = indentedBody(
+  build,
+  '      - name: Reconfirm exact main before sealing normal verified weather source handoff',
+);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true",
+  'test "$GITHUB_EVENT_NAME" = "workflow_dispatch"',
+  'test "$GITHUB_REF" = "refs/heads/main"',
+  'test "$(git rev-parse origin/main^{commit})" = "$EXPECTED_HEAD_SHA"',
+  'candidate-maintenance|candidate-legacy-maintenance',
+  'test "' + gh('steps.operational-model.outputs.initial_cutover_required') + '" = "true"',
+]) assert.equal(normalHandoffReconfirm.includes(marker), true, 'normal handoff producer boundary: ' + marker);
+for (const marker of [
+  'candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false',
+  'Weather handoff production requires a current pre-cutover maintenance state.',
+]) assert.equal(build.includes(marker), true, 'normal handoff current-state admission: ' + marker);
+assert.equal(
+  build.indexOf('name: Run release governance gate after refreshed data validation')
+    < build.indexOf('name: Reconfirm exact main before sealing normal verified weather source handoff'),
+  true,
+  'normal handoff remains after full validation and release gate',
+);
 
 for (const stepName of [
   'Update DMI bulk model cache',

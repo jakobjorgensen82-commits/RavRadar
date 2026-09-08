@@ -138,23 +138,32 @@ assert.ok(
 );
 const progressWriter = bulk.slice(progressWriterStart, finalWriterStart);
 const finalWriter = bulk.slice(finalWriterStart, finalWriterEnd);
-assert.match(progressWriter, /atomic_write_bulk_cache\(result, pretty=False\)/);
+assert.match(progressWriter, /atomic_write_bulk_cache\(result\)/);
 assert.match(progressWriter, /"validation": "pending-finalization"/);
 assert.doesNotMatch(
   progressWriter,
   /clean_and_summarize|write_ocean_diagnostics|build_ocean_diagnostics/,
   'Et progress-checkpoint må ikke køre fuld clean eller ocean-diagnostik.',
 );
-assert.match(finalWriter, /atomic_write_bulk_cache\(result, pretty=True\)/);
+assert.match(
+  finalWriter,
+  /raw_bytes = atomic_write_bulk_cache\(result\)[\s\S]*?write_final_cache_size_telemetry\(raw_bytes\)[\s\S]*?return raw_bytes/,
+  'Terminalcachen skal offentliggøre kun det aggregerede rå byteantal fra den eksakte atomiske write.',
+);
 assert.match(finalWriter, /write_ocean_diagnostics\(result\)/);
 assert.match(
   bulk,
-  /def atomic_write_bulk_cache\([\s\S]*?pretty: bool = True,[\s\S]*?path: pathlib\.Path \| None = None,[\s\S]*?temporary\.replace\(destination\)/,
-  'Den atomiske cachewriter skal bevare pretty=True som API-default og afslutte med replace.',
+  /def atomic_write_bulk_cache\([\s\S]*?path: pathlib\.Path \| None = None,[\s\S]*?json\.dump\([\s\S]*?separators=\(",", ":"\),[\s\S]*?temporary\.replace\(destination\)[\s\S]*?return destination\.stat\(\)\.st_size/,
+  'Alle cacheveje skal bruge én kompakt, atomisk writer og returnere det faktiske rå byteantal.',
+);
+assert.doesNotMatch(
+  bulk.slice(bulk.indexOf('def atomic_write_bulk_cache('), finalWriterEnd),
+  /pretty/,
+  'DMI-cachewriteren må ikke have en formatteringsgren, som kan udvide terminalcachen.',
 );
 assert.match(
   bulk,
-  /def promote_ready_candidate\([\s\S]*?producer_success_is_blocked[\s\S]*?strict_current_anchor_available[\s\S]*?atomic_write_bulk_cache\(result, pretty=True, path=PROMOTION_PATH\)/,
+  /def promote_ready_candidate\([\s\S]*?producer_success_is_blocked[\s\S]*?strict_current_anchor_available[\s\S]*?atomic_write_bulk_cache\(result, path=PROMOTION_PATH\)/,
   'En kandidat må kun promoveres atomisk efter den strenge READY-gate.',
 );
 
@@ -341,6 +350,11 @@ assert.match(bulk, /strict_donors = \[/);
 assert.match(bulk, /coastal_part_targets=coastal_part_targets/);
 assert.match(bulk, /production_reference=locked_production_reference/);
 assert.match(bulk, /atomic_write_bulk_cache\(previous\)/);
+assert.match(
+  bulk,
+  /final_cache_bytes = atomic_write_bulk_cache\(previous\)[\s\S]*?write_final_cache_size_telemetry\(final_cache_bytes\)/,
+  'En terminal fresh-cache-genbrug skal rapportere samme aggregerede rå byteantal.',
+);
 assert.match(bulk, /not strict_current_anchor_available/);
 assert.match(bulk, /def producer_terminal_code\(/);
 for (const code of [

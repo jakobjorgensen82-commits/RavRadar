@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-08 – 4.0.335 vedvarende WAM-cache lokalt grøn
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.336 kompakt WAM og tværgående sourceproof
+
+- DMI/WAM-cachen skrives kompakt og atomisk på alle persisted veje; pretty-JSON-udvidelsen er fjernet uden at ændre den hårde 256 MiB-validator. Telemetri er aggregate-only.
+- Same-SHA-sourceproof kan genbruges mellem de præcist allowlistede normal- og oneoff-producenter. Begge livehistorikker kan invalidere proof; sourcegaten består.
+- En eksplicit manuel normal kørsel kan kun i `candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false` og `candidate-maintenance|candidate-legacy-maintenance` forsegle handoff efter komplet provider-/WAM-/validate-/releasekæde og exact-main-reconfirm.
+- `34229976645` efterlod 2.015 Open-Meteo-par med gemte cacher og intet handoff. Måltests/review er grønne; exact-head CI og positiv runtime/produktion mangler. Candidate G er offentlig.
+
+# HISTORISK CHECKPOINT – 2026-09-08 – 4.0.335 vedvarende WAM-cache lokalt grøn
 
 - WAM-helkædeauditen er implementeret samlet: granulær salvage, atomisk tuple-admission, exact-proof resume, korrekt parser/dækningsklassifikation og sen completeness-gate.
 - Eksakte vedligeholdelsesrækker kan leve på tværs af modelkørsler; interpolation forbliver samme run/gitter/celle og højst fire timer.

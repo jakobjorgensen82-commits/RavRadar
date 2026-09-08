@@ -7,6 +7,7 @@ import path from 'node:path';
 import {
   FIRST_CUTOVER_CONFIRMATION,
   PRODUCER_WORKFLOW,
+  PRODUCER_WORKFLOWS,
   WEATHER_SOURCE_HANDOFF_CACHE_PATH,
   WEATHER_SOURCE_INPUTS,
   assertCacheInventory,
@@ -55,12 +56,17 @@ assert.deepEqual(WEATHER_SOURCE_INPUTS.map(input => input.path), [
   '.cache/open-meteo-current-fallback.json',
 ]);
 assert.equal(WEATHER_SOURCE_INPUTS.some(input => input.path.startsWith('data/live/')), false);
+assert.deepEqual(PRODUCER_WORKFLOWS, [
+  '.github/workflows/validate-copernicus-current-pilot.yml',
+  '.github/workflows/update-and-deploy.yml',
+]);
 
 const producerSeal = stepBlock(producerWorkflow, 'Seal exact run-bound verified weather source handoff');
 for (const marker of [
   '--source-head "$GITHUB_SHA"',
   '--run-id "$GITHUB_RUN_ID"',
   '--run-attempt "$GITHUB_RUN_ATTEMPT"',
+  '--producer-workflow ".github/workflows/validate-copernicus-current-pilot.yml"',
   '--closure data/diagnostics/current-operational-closure.json',
 ]) assert.equal(producerSeal.includes(marker), true, `producer seal marker: ${marker}`);
 const producerCacheSave = stepBlock(producerWorkflow, 'Save exact run-bound verified weather source cache');
@@ -75,6 +81,44 @@ for (const marker of [
 for (const forbidden of WEATHER_SOURCE_INPUTS.map(input => input.path)) {
   assert.equal(producerSafeUpload.includes(forbidden), false, `safe upload omits ${forbidden}`);
 }
+
+const normalProducerSeal = stepBlock(
+  reusableWorkflow,
+  'Seal normal exact run-bound verified weather source handoff',
+);
+for (const marker of [
+  "if: steps.preflight.outputs.should_run == 'true' && inputs.produce_weather_handoff == true",
+  '--producer-workflow ".github/workflows/update-and-deploy.yml"',
+  '--source-head "$GITHUB_SHA"',
+  '--run-id "$GITHUB_RUN_ID"',
+  '--run-attempt "$GITHUB_RUN_ATTEMPT"',
+  '--closure data/diagnostics/current-operational-closure.json',
+]) assert.equal(normalProducerSeal.includes(marker), true, `normal producer seal marker: ${marker}`);
+const normalProducerCacheSave = stepBlock(
+  reusableWorkflow,
+  'Save normal exact run-bound verified weather source cache',
+);
+assert.equal(normalProducerCacheSave.includes('restore-keys:'), false);
+const normalProducerSafeUpload = stepBlock(
+  reusableWorkflow,
+  'Upload only aggregate normal verified weather source handoff attestation',
+);
+assert.equal(normalProducerSafeUpload.includes('include-hidden-files: true'), true);
+assert.equal(normalProducerSafeUpload.includes('path: .cache/verified-weather-source-handoff-cache/attestation.json'), true);
+for (const forbidden of WEATHER_SOURCE_INPUTS.map(input => input.path)) {
+  assert.equal(normalProducerSafeUpload.includes(forbidden), false, `normal safe upload omits ${forbidden}`);
+}
+assert.equal(
+  reusableWorkflow.indexOf('name: Run release governance gate after refreshed data validation')
+    < reusableWorkflow.indexOf('name: Seal normal exact run-bound verified weather source handoff'),
+  true,
+  'normal handoff is sealed only after the full release gate',
+);
+assert.equal(
+  reusableWorkflow.includes('candidate-maintenance|candidate-legacy-maintenance'),
+  true,
+  'normal handoff supports both documented pre-cutover maintenance states',
+);
 
 const restoreBlock = stepBlock(reusableWorkflow, 'Restore exact run-bound verified weather source cache');
 assert.equal(restoreBlock.includes('fail-on-cache-miss: true'), true);
@@ -162,6 +206,9 @@ for (const marker of [
   'ravscore_integrated_weather_handoff_run_id:',
   'A verified weather handoff is accepted only by an integrated first cutover.',
   'Verified weather handoff run id is malformed.',
+  'produce_weather_handoff:',
+  'produce_weather_handoff_confirmation:',
+  'PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF',
 ]) assert.equal(orchestratorWorkflow.includes(marker), true, `orchestrator authorization marker: ${marker}`);
 assert.equal(reusableWorkflow.includes('single-use'), false);
 assert.equal(producerWorkflow.includes('single-use'), false);
@@ -242,6 +289,7 @@ try {
     root: producerRoot,
     cacheRoot,
     repository,
+    producerWorkflow: PRODUCER_WORKFLOW,
     sourceHeadSha: head,
     runId,
     runAttempt,
@@ -433,6 +481,20 @@ try {
   assert.equal(resolvedRun.cacheKey, attestation.cacheKey);
   assert.equal(resolvedRun.artifactDigest, zipDigest);
 
+  const normalResolvedRun = await resolveProducerRun({
+    repository,
+    expectedHeadSha: head,
+    runId,
+    runnerOs,
+    token: 'fixture-token',
+    firstCutover: true,
+    confirmation: FIRST_CUTOVER_CONFIRMATION,
+    fetchImpl: mockFetch({
+      run: { ...baseRun, path: PRODUCER_WORKFLOWS[1] },
+    }),
+  });
+  assert.equal(normalResolvedRun.producerWorkflow, PRODUCER_WORKFLOWS[1]);
+
   for (const [label, mutation] of [
     ['repository', { repository: { full_name: 'attacker/repo' } }],
     ['head repository', { head_repository: { full_name: 'attacker/repo' } }],
@@ -500,6 +562,7 @@ try {
       root: producerRoot,
       cacheRoot: invalidCacheRoot,
       repository,
+      producerWorkflow: PRODUCER_WORKFLOW,
       sourceHeadSha: head,
       runId,
       runAttempt,
@@ -509,12 +572,26 @@ try {
     }), 'HANDOFF_CACHE_ROOT_INVALID');
   }
 
+  expectCode(() => sealWeatherSourceHandoff({
+    root: producerRoot,
+    cacheRoot,
+    repository,
+    producerWorkflow: '.github/workflows/attacker.yml',
+    sourceHeadSha: head,
+    runId,
+    runAttempt,
+    runnerOs,
+    closurePath,
+    createdAt: '2029-12-31T23:00:00.000Z',
+  }), 'HANDOFF_PRODUCER_WORKFLOW_INVALID');
+
   const invalidCounts = safeClosure({ dmiVerifiedPairCount: (673 * 118) - 6 });
   writeJson(path.join(producerRoot, 'invalid-counts.json'), invalidCounts);
   expectCode(() => sealWeatherSourceHandoff({
     root: producerRoot,
     cacheRoot,
     repository,
+    producerWorkflow: PRODUCER_WORKFLOW,
     sourceHeadSha: head,
     runId,
     runAttempt,

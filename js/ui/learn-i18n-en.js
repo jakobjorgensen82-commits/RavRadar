@@ -1,4 +1,4 @@
-import { registerI18nMessages } from '../i18n.js?v=4.0.335';
+import { registerI18nMessages } from '../i18n.js?v=4.0.336';
 
 registerI18nMessages({ en:{
   'static.back':'Back to RavRadar', 'learn.meta.title':'Learn amber hunting – RavRadar',

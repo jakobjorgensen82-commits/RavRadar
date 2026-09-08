@@ -37,6 +37,15 @@ HISTORY_INCOMPLETE_CODES = frozenset({
 })
 
 
+class _BoundedJsonSizeError(WaveBootstrapError):
+    """A cache-size rejection with aggregate-only diagnostics."""
+
+    def __init__(self, actual_bytes: int, maximum_bytes: int) -> None:
+        super().__init__("CACHE_SIZE_INVALID")
+        self.actual_bytes = actual_bytes
+        self.maximum_bytes = maximum_bytes
+
+
 def _reject_non_finite_json(_value: str) -> None:
     raise ValueError
 
@@ -59,9 +68,9 @@ def _read_bounded_json(
             "CACHE_IO_INVALID" if detailed_cache_errors else error_code
         ) from None
     if size < 2 or size > maximum_bytes:
-        raise WaveBootstrapError(
-            "CACHE_SIZE_INVALID" if detailed_cache_errors else error_code
-        )
+        if detailed_cache_errors:
+            raise _BoundedJsonSizeError(size, maximum_bytes)
+        raise WaveBootstrapError(error_code)
     try:
         payload = path.read_bytes()
     except OSError:
@@ -180,8 +189,12 @@ def main(argv: list[str] | None = None) -> int:
         ))
         return 0
     except WaveBootstrapError as exc:
+        failure: dict[str, Any] = {"code": exc.code, "status": "invalid"}
+        if isinstance(exc, _BoundedJsonSizeError):
+            failure["actualBytes"] = exc.actual_bytes
+            failure["maximumBytes"] = exc.maximum_bytes
         print(json.dumps(
-            {"code": exc.code, "status": "invalid"},
+            failure,
             ensure_ascii=True,
             sort_keys=True,
             separators=(",", ":"),

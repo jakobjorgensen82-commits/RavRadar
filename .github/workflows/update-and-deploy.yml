@@ -12,6 +12,16 @@ on:
         required: false
         default: false
         type: boolean
+      produce_weather_handoff:
+        description: "Forsegl denne komplette almindelige vejrkørsel til første integrerede cutover"
+        required: false
+        default: false
+        type: boolean
+      produce_weather_handoff_confirmation:
+        description: "Kun handoff-producent: skriv PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF"
+        required: false
+        default: ""
+        type: string
       geometry_v2_pilot:
         description: "Kør den private, score-neutrale GeoDanmark-pilot (ingen produktion/deploy)"
         required: false
@@ -97,6 +107,8 @@ jobs:
     timeout-minutes: 2
     outputs:
       force: ${{ steps.validated-dispatch.outputs.force || steps.dispatch-defaults.outputs.force }}
+      produce_weather_handoff: ${{ steps.validated-dispatch.outputs.produce_weather_handoff || steps.dispatch-defaults.outputs.produce_weather_handoff }}
+      produce_weather_handoff_confirmation: ${{ steps.validated-dispatch.outputs.produce_weather_handoff_confirmation || steps.dispatch-defaults.outputs.produce_weather_handoff_confirmation }}
       geometry_v2_pilot: ${{ steps.validated-dispatch.outputs.geometry_v2_pilot || steps.dispatch-defaults.outputs.geometry_v2_pilot }}
       geometry_v2_national: ${{ steps.validated-dispatch.outputs.geometry_v2_national || steps.dispatch-defaults.outputs.geometry_v2_national }}
       ravscore_candidate_g_rollback_mode: ${{ steps.validated-dispatch.outputs.ravscore_candidate_g_rollback_mode || steps.dispatch-defaults.outputs.ravscore_candidate_g_rollback_mode }}
@@ -112,6 +124,8 @@ jobs:
         shell: bash
         run: |
           echo "force=false" >> "$GITHUB_OUTPUT"
+          echo "produce_weather_handoff=false" >> "$GITHUB_OUTPUT"
+          echo "produce_weather_handoff_confirmation=" >> "$GITHUB_OUTPUT"
           echo "geometry_v2_pilot=false" >> "$GITHUB_OUTPUT"
           echo "geometry_v2_national=false" >> "$GITHUB_OUTPUT"
           echo "ravscore_candidate_g_rollback_mode=none" >> "$GITHUB_OUTPUT"
@@ -135,6 +149,8 @@ jobs:
         shell: bash
         env:
           FORCE: ${{ inputs.force }}
+          PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
+          PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
           GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
@@ -152,17 +168,26 @@ jobs:
           if [ "$GEOMETRY_PILOT" = "true" ] || [ "$GEOMETRY_NATIONAL" = "true" ]; then geometry=true; fi
           operation_count=0
           if [ "$FORCE" = "true" ]; then operation_count=$((operation_count + 1)); fi
+          if [ "$PRODUCE_WEATHER_HANDOFF" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$GEOMETRY_PILOT" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$GEOMETRY_NATIONAL" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$ROLLBACK_MODE" != "none" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$FIRST_CUTOVER_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$RETURN_REQUESTED" = "true" ]; then operation_count=$((operation_count + 1)); fi
           if [ "$operation_count" -gt 1 ]; then
-            echo "Exactly one force, geometry, rollback, first cutover or return operation may be dispatched." >&2
+            echo "Exactly one force, weather handoff, geometry, rollback, first cutover or return operation may be dispatched." >&2
             exit 1
           fi
-          if { [ "$ROLLBACK_MODE" != "none" ] || [ "$FIRST_CUTOVER_REQUESTED" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
+          if { [ "$PRODUCE_WEATHER_HANDOFF" = "true" ] || [ "$ROLLBACK_MODE" != "none" ] || [ "$FIRST_CUTOVER_REQUESTED" = "true" ] || [ "$RETURN_REQUESTED" = "true" ]; } && [ "$GITHUB_REF" != "refs/heads/main" ]; then
             echo "RavScore transitions are allowed only on main." >&2
+            exit 1
+          fi
+          if [ "$PRODUCE_WEATHER_HANDOFF" = "true" ] && [ "$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" != "PRODUCE-VERIFIED-WEATHER-SOURCE-HANDOFF" ]; then
+            echo "Verified weather handoff producer confirmation is not exact." >&2
+            exit 1
+          fi
+          if [ "$PRODUCE_WEATHER_HANDOFF" != "true" ] && [ -n "$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" ]; then
+            echo "Verified weather handoff producer confirmation requires its explicit producer flag." >&2
             exit 1
           fi
           if [ "$ROLLBACK_MODE" = "execute" ] && [ "$ROLLBACK_CONFIRMATION" != "EXECUTE-CANDIDATE-G-ROLLBACK" ]; then
@@ -205,6 +230,8 @@ jobs:
         shell: bash
         env:
           FORCE: ${{ inputs.force }}
+          PRODUCE_WEATHER_HANDOFF: ${{ inputs.produce_weather_handoff }}
+          PRODUCE_WEATHER_HANDOFF_CONFIRMATION: ${{ inputs.produce_weather_handoff_confirmation }}
           GEOMETRY_PILOT: ${{ inputs.geometry_v2_pilot }}
           GEOMETRY_NATIONAL: ${{ inputs.geometry_v2_national }}
           ROLLBACK_MODE: ${{ inputs.ravscore_candidate_g_rollback_mode }}
@@ -216,6 +243,8 @@ jobs:
           RETURN_CONFIRMATION: ${{ inputs.ravscore_integrated_return_confirmation }}
         run: |
           printf '%s\n' "force=$FORCE" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "produce_weather_handoff=$PRODUCE_WEATHER_HANDOFF" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "produce_weather_handoff_confirmation=$PRODUCE_WEATHER_HANDOFF_CONFIRMATION" >> "$GITHUB_OUTPUT"
           printf '%s\n' "geometry_v2_pilot=$GEOMETRY_PILOT" >> "$GITHUB_OUTPUT"
           printf '%s\n' "geometry_v2_national=$GEOMETRY_NATIONAL" >> "$GITHUB_OUTPUT"
           printf '%s\n' "ravscore_candidate_g_rollback_mode=$ROLLBACK_MODE" >> "$GITHUB_OUTPUT"
@@ -1366,6 +1395,8 @@ jobs:
     with:
       production_target_hour: ${{ needs.current-hour-readiness.outputs.target_hour }}
       force: ${{ needs.validate-dispatch.outputs.force == 'true' }}
+      produce_weather_handoff: ${{ needs.validate-dispatch.outputs.produce_weather_handoff == 'true' }}
+      produce_weather_handoff_confirmation: ${{ needs.validate-dispatch.outputs.produce_weather_handoff_confirmation }}
       ravscore_candidate_g_rollback_mode: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_mode }}
       ravscore_candidate_g_rollback_confirmation: ${{ needs.validate-dispatch.outputs.ravscore_candidate_g_rollback_confirmation }}
       ravscore_integrated_first_cutover: ${{ needs.validate-dispatch.outputs.ravscore_integrated_first_cutover == 'true' }}

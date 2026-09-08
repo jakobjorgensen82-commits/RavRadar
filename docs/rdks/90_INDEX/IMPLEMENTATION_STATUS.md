@@ -1,4 +1,16 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.335 klar til exact-head
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.336 lokal releasekandidat
+
+- [x] Skriv alle DMI/WAM-cacheveje kompakt og atomisk; bevar hårdt 256 MiB-loft og aggregate rundown af faktisk/maksimalt byteantal.
+- [x] Allowlist exact-main-sourceproof fra normalworkflowets reusable source-step og oneoff-workflowets `validate`-/`operational-118-preflight`-steps.
+- [x] Livevalider workflow/job/step/head/run/attempt og begge historier; invalidér proof ved senere failure/cancellation eller udført producentvej uden gate.
+- [x] Tilføj eksplicit manuel normal handoff-produktion med flag/bekræftelse, early-state `candidate-g:true|legacy-candidate-g:true|legacy-candidate-g:false` og action `candidate-maintenance|candidate-legacy-maintenance`.
+- [x] Forsegl kun efter providerclosure, WAM/Feggesund, fuld validate, releasegate og exact-main-reconfirm; bevar partial caches uden handoff ved missing/fejl.
+- [x] Klassificér `34229976645`: 2.015 par tilbage til Open-Meteo, cacher bevaret, intet handoff.
+- [x] Måltests grønne og uafhængigt review GO; ingen runtime-, rollback-, score-, geometri- eller punktændring.
+- [ ] RDKS-validering, commit/push og én GitHub `validate:source` på eksakt head.
+- [ ] Merged main-runtime, 79.414/79.414, WAM/Feggesund 354/354, spatial/kapacitet, fulde gates, artifact/deploy, Phase B og offentlig verifikation.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.335 klar til exact-head
 
 - [x] Helkædeaudit omsat til én samlet kodepakke i stedet for enkeltstående runtime-quickfixes.
 - [x] Granulær bølgesalvage og atomisk replacement bevarer uafhængigt gyldig cache; brede clear/reset-veje er fjernet og releasegate-forbudt.

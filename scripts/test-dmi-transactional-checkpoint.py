@@ -712,8 +712,10 @@ class CheckpointTests(unittest.TestCase):
             )
 
             with patch.object(producer, "OUTPUT_PATH", output):
-                producer.atomic_write_bulk_cache({"outer": {"inner": 1}})
-            self.assertIn('\n  "outer": {', output.read_text("utf-8"))
+                raw_bytes = producer.atomic_write_bulk_cache({"outer": {"inner": 1}})
+            compact_payload = '{"outer":{"inner":1}}\n'
+            self.assertEqual(output.read_text("utf-8"), compact_payload)
+            self.assertEqual(raw_bytes, len(compact_payload.encode("utf-8")))
 
     def test_shared_controller_flushes_committed_assets_and_sidecars_once(self) -> None:
         result = {"diagnostics": {}, "zones": {}}
@@ -947,20 +949,33 @@ class CheckpointTests(unittest.TestCase):
         }
         calls: list[tuple[str, object]] = []
 
-        def record_cache(document, *, pretty=True):
-            calls.append(("cache", pretty))
+        def record_cache(document, *, path=None):
+            calls.append(("cache", path))
             self.assertNotIn("progressCheckpoint", document["diagnostics"])
+            return 123
+
+        def record_telemetry(raw_bytes):
+            calls.append(("telemetry", raw_bytes))
 
         def record_diagnostics(document):
             calls.append(("diagnostics", document["refreshStatus"]))
 
         with (
             patch.object(producer, "atomic_write_bulk_cache", side_effect=record_cache),
+            patch.object(
+                producer,
+                "write_final_cache_size_telemetry",
+                side_effect=record_telemetry,
+            ),
             patch.object(producer, "write_ocean_diagnostics", side_effect=record_diagnostics),
         ):
-            producer.write_finalized_cache(result, "ok")
+            raw_bytes = producer.write_finalized_cache(result, "ok")
 
-        self.assertEqual(calls, [("cache", True), ("diagnostics", "ok")])
+        self.assertEqual(
+            calls,
+            [("cache", None), ("telemetry", 123), ("diagnostics", "ok")],
+        )
+        self.assertEqual(raw_bytes, 123)
 
     def test_candidate_promotion_is_atomic_and_ready_only(self) -> None:
         document = {
