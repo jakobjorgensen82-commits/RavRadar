@@ -18,7 +18,16 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: Check out the exact 4.0.337 release candidate without executing it
+        if: matrix.probe == 'lossless-storage'
+        uses: actions/checkout@v7
+        with:
+          ref: codex/weather-handoff-runtime-4.0.337
+          path: release-source
+          persist-credentials: false
+          fetch-depth: 1
       - name: Require isolated branch and unchanged production code
+        if: matrix.probe == 'recovery-union'
         run: |
           set -euo pipefail
           test "$GITHUB_REF" = refs/heads/codex/weather-cache-forensic
@@ -75,6 +84,15 @@ jobs:
         run: python -B scripts/inspect-dmi-open-meteo-overlap.py --historical-dmi .cache/dmi-candidate-progress.json --latest-dmi .cache/diagnostic-latest-candidate.json --open-meteo .cache/open-meteo-current-fallback.json --target 2026-09-08T16:00:00Z
       - name: Measure lossless roundtrip without saving cache
         if: matrix.probe == 'lossless-storage'
-        run: python -B scripts/inspect-dmi-source-codec.py --cache .cache/dmi-candidate-progress.json
+        run: |
+          set -euo pipefail
+          encoded="$RUNNER_TEMP/dmi-production-codec-scale.json"
+          cd release-source
+          python -B scripts/inspect-dmi-source-codec.py \
+            --cache "$GITHUB_WORKSPACE/.cache/dmi-candidate-progress.json" \
+            --encoded-output "$encoded" \
+            --retain-encoded
+          node --input-type=module -e "import {readDmiBulkDocument,DMI_BULK_STORAGE_SCHEMA} from './scripts/lib/dmi-bulk-storage.mjs'; const value=await readDmiBulkDocument(process.argv[1],{expandSources:false}); if(!value?.zones||typeof value.zones!=='object') throw new Error('invalid encoded document'); console.log(JSON.stringify({contract:'DMI_NODE_PRODUCTION_STORAGE_SCALE_PROOF_V1',status:'PRODUCTION_NODE_CODEC_SCALE_VERIFIED',storageSchema:DMI_BULK_STORAGE_SCHEMA,zoneCount:Object.keys(value.zones).length,privatePayloadIncluded:false,cacheReplaced:false}));" "$encoded"
+          rm -f "$encoded"
 
 # Diagnostic branch only. No saved cache, uploaded data, producer or deploy.
