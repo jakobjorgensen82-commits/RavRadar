@@ -1191,7 +1191,7 @@ class BootstrapCliClassificationTests(unittest.TestCase):
         self.operational = _SanitizedSummary({
             "status": "ok",
             "schemaVersion": "dmi-wave-history-bootstrap-v1",
-            "mode": "operational-same-run-handoff",
+            "mode": "operational-maintained-handoff",
             "registryPartCount": 673,
             "forecastHourCount": 118,
         })
@@ -1359,6 +1359,30 @@ class OperationalHandoffTests(unittest.TestCase):
                 forecast_hour_count=118,
             ),
         )
+
+    def test_exact_rows_may_transition_between_model_runs(self) -> None:
+        newer_run = utc_offset(TARGET, -3)
+
+        def exact_rows(part) -> dict:
+            rows = {}
+            for offset in range(120):
+                valid = utc_offset(self.bootstrap_target, offset)
+                run = self.operational_run if offset < 5 else newer_run
+                rows[valid] = native_hour(part, valid, run)
+            return rows
+
+        cache = cache_for_registry(self.registry, exact_rows)
+        summary = validate_wave_operational_handoff_cache(
+            cache,
+            self.registry,
+            bootstrap_target_hour=self.bootstrap_target,
+            production_target_hour=TARGET,
+            forecast_hour_count=118,
+        )
+        self.assertEqual(summary.verified_part_hour_count, 240)
+        self.assertEqual(summary.exact_tuple_count, 240)
+        self.assertEqual(summary.interpolated_tuple_count, 0)
+        self.assertEqual(summary.coherent_run_count, 2)
 
     def test_operational_run_must_not_be_newer_than_first_bridge_hour(self) -> None:
         future_run = utc_offset(self.bootstrap_target, 1)

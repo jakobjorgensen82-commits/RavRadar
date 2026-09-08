@@ -616,7 +616,7 @@ jobs:
         env:
           RAVRADAR_DEPLOYED_BASE_URL: "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}"
           RAVRADAR_HYDRATE_TIMEOUT_SECONDS: 180
-          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.335 118h deployed DMI donor (${{ github.server_url }}/${{ github.repository }})"
 
       - name: Resolve one aggregate Candidate G wave-bootstrap target
         id: ravscore-wave-bootstrap-target
@@ -772,7 +772,7 @@ jobs:
           DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}
           RAVRADAR_PRODUCTION_TARGET_HOUR: ${{ steps.operational-target.outputs.target_hour }}
           CURRENT_FIELD_SHADOW_PATH: .cache/current-field-shadow.json
-          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.335 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Reconfirm exact main before one-off shared DMI progress caches
@@ -845,9 +845,10 @@ jobs:
           path: .cache/current-field-shadow.json
           key: current-field-shadow-v1-${{ runner.os }}-118-preflight-${{ github.run_id }}-${{ github.run_attempt }}
 
-      - name: Require complete operational WAM handoff before one-off downstream providers
+      - name: Inspect operational WAM handoff before one-off downstream providers
         id: wam-bootstrap-readiness
         if: always()
+        continue-on-error: true
         shell: bash
         run: |
           set +e
@@ -1081,6 +1082,17 @@ jobs:
           test "${{ steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"
           test "${{ steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"
 
+      - name: Require complete operational WAM after provider progress
+        if: always()
+        shell: bash
+        env:
+          WAM_OUTCOME: ${{ steps.wam-bootstrap-readiness.outcome }}
+          WAM_CODE: ${{ steps.wam-bootstrap-readiness.outputs.code }}
+        run: |
+          set -euo pipefail
+          test "$WAM_OUTCOME" = "success"
+          test "$WAM_CODE" = "NONE"
+
       - name: Classify one-off target freshness after the extended supplier chain
         id: oneoff-target-freshness
         run: >-
@@ -1120,7 +1132,7 @@ jobs:
           RAVSCORE_FIRST_CUTOVER_BOOTSTRAP_MODE: auto
           RAVSCORE_FIRST_CUTOVER_SOURCE_VALIDATED: false
           RAVSCORE_STATELESS_INTEGRATED_COLD_START_ALLOWED: true
-          WEATHER_USER_AGENT: "RavRadar/4.0.334 118h preflight (${{ github.server_url }}/${{ github.repository }})"
+          WEATHER_USER_AGENT: "RavRadar/4.0.335 118h preflight (${{ github.server_url }}/${{ github.repository }})"
           DMI_API_KEY: ${{ secrets.DMI_API_KEY }}
 
       - name: Attach exact current provenance and rebuild the public projection

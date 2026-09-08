@@ -1,4 +1,26 @@
-# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.334 WAM-readiness
+# NYESTE IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.335 klar til exact-head
+
+- [x] Helkædeaudit omsat til én samlet kodepakke i stedet for enkeltstående runtime-quickfixes.
+- [x] Granulær bølgesalvage og atomisk replacement bevarer uafhængigt gyldig cache; brede clear/reset-veje er fjernet og releasegate-forbudt.
+- [x] Operationel exact multi-run-kontinuitet med fortsat strict same-run/grid/cell interpolation.
+- [x] WAM processedSteps bundet til processing/run, officiel assetidentitet, content-size-bevis og faktisk komplet cachedækning.
+- [x] Feggesund udskudt til separat direct/proxy-proof; currentfallback gemmer progression før fail-closed WAM-slutgate.
+- [x] Aggregate afvisningskoder samt særskilt missing/size/I-O/JSON/schema-cacheklassifikation.
+- [x] Målmatrix grøn: syntaks, 32 validator-tests, 24 producenttests og to relevante Node-workflowtests.
+- [ ] Commit/push, én exact-head GitHub `validate:source`, merge og positiv main-oneoff.
+- [ ] Komplet vejr, spatial/kapacitet, fulde gates, artifact/deploy, Phase B, offentlig verifikation og genaktiveret cron-drift.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-08 – WAM-audit, rettelse åben
+
+- [x] 4.0.334 exact-head `34187779106`, PR #267 og merge `836e23ec207e56b6ed275b66f9758dcd311bbe7b`.
+- [x] Negativ main-runtime `34189720294` undersøgt; cache-save og kandidatens fortsatte eksistens genbekræftet efter genstart.
+- [x] Astra-helkædeaudit og sidste metadatarevision afsluttet; [fund, usikkerheder og næste trin gemt](../../ai/WAM_CHAIN_AUDIT_2026-09-08.md).
+- [ ] Implementér fælles per-tuple wave-admission, granulær legacy-salvage, korrekt parserklassifikation, exact-proof-genoptagelse, operationel direct/proxy-policy og uafhængig currentprogression før slutgate.
+- [ ] Bevis de åbne konkrete runtimeafvisninger med aggregate diagnostik og produktionsformede måltests; ingen blanket-gatebypass.
+- [ ] Ny exact-head/merge, positiv main-runtime, komplet current/WAM/Feggesund, fulde gates, kapacitet, Phase A/B, deploy og offentlig verifikation.
+- [ ] Genaktivér normalworkflow og watchdog og observer permanent vedligeholdelse via ekstern cron.
+
+# HISTORISK IMPLEMENTERINGSSTATUS – 2026-09-08 – 4.0.334 WAM-readiness
 
 - [x] Lokal WAM-scheduler giver begge kritiske collections fair reserve og bevarer den globale runtimegrænse.
 - [x] Lokal bootstrap/normal updater genbruger run-/processing-signatur og springer allerede behandlede assets over.

@@ -1,4 +1,11 @@
-# NYESTE CHECKPOINT – 2026-09-08 – 4.0.334 WAM-readiness efter komplet strømclosure
+# NYESTE CHECKPOINT – 2026-09-08 – 4.0.335 vedvarende WAM-cache lokalt grøn
+
+- WAM-helkædeauditen er implementeret samlet: granulær salvage, atomisk tuple-admission, exact-proof resume, korrekt parser/dækningsklassifikation og sen completeness-gate.
+- Eksakte vedligeholdelsesrækker kan leve på tværs af modelkørsler; interpolation forbliver samme run/gitter/celle og højst fire timer.
+- Feggesunds tre dele valideres af den eksisterende direct/proxy-kontrakt, mens native WAM-gaten dækker de øvrige 670 dele. Registry og slutkrav er uændret 673 og 354/354.
+- Python-syntaks, 32 validator-tests, 24 producenttests samt to workflowtests er grønne. Exact-head CI, merge og runtime mangler; Candidate G er fortsat offentlig.
+
+# HISTORISK CHECKPOINT – 2026-09-08 – 4.0.334 WAM-readiness efter komplet strømclosure
 
 - Main-oneoff `34161930631` på `57a4c914…`, target 21Z, lukkede alle 79.414 strømpar: DMI 61.860, Copernicus 16.593, regional 944 og Open-Meteo 17. Det er positivt provider-/cachebevis.
 - Runtime stoppede derefter på Feggesunds manglende 3 × 118 bølgetimer. DKSS LF havde brugt cirka 2.687 af 2.818 arbejdssekunder, så WAM ikke fik en tur; senere EDR 429 var sekundær. Intet artifact, deploy eller cutover.

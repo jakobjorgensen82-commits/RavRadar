@@ -907,10 +907,11 @@ assert.ok(
   'the WAM producer must receive the aggregate resolver target hour',
 );
 const wamGateStep = workflowStep(
-  'Require complete operational WAM handoff before first integrated cutover',
+  'Inspect operational WAM handoff before first integrated cutover',
 );
 assert.ok(
   wamGateStep.block.includes('id: wam-bootstrap-readiness')
+    && wamGateStep.block.includes('continue-on-error: true')
     && !wamGateStep.block.includes("steps.dmi-terminal-gate.outputs.ready == 'true'")
     && wamGateStep.block.includes('--cache .cache/dmi-candidate-progress.json')
     && !wamGateStep.block.includes('producer_outcome="${{ steps.dmi-bulk.outcome }}"')
@@ -919,7 +920,7 @@ assert.ok(
     && wamGateStep.block.includes('echo "code=$wam_code" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('echo "history_incomplete=$history_incomplete" >> "$GITHUB_OUTPUT"')
     && wamGateStep.block.includes('exit "$validator_status"'),
-  'the operational WAM gate must validate reusable candidate history after partial DMI while preserving the validator exit status',
+  'the operational WAM inspection must record reusable candidate history after partial DMI while preserving the validator exit status',
 );
 assert.ok(
   wamGateStep.block.includes(
@@ -932,6 +933,18 @@ assert.ok(
     '--target-hour "${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}"',
   ),
   'the WAM completion gate must validate the same resolver target as the producer',
+);
+const wamFinalGateStep = workflowStep(
+  'Require complete operational WAM after provider progress for first cutover',
+);
+assert.ok(
+  wamFinalGateStep.block.includes('if: always()')
+    && wamFinalGateStep.block.includes('WAM_OUTCOME: ${{ steps.wam-bootstrap-readiness.outcome }}')
+    && wamFinalGateStep.block.includes('WAM_CODE: ${{ steps.wam-bootstrap-readiness.outputs.code }}')
+    && wamFinalGateStep.block.includes('test "$WAM_OUTCOME" = "success"')
+    && wamFinalGateStep.block.includes('test "$WAM_CODE" = "NONE"')
+    && !wamFinalGateStep.block.includes('continue-on-error'),
+  'the final WAM gate must fail closed only after downstream provider progress is saved',
 );
 
 const activeDmiRestoreStep = workflowStep(

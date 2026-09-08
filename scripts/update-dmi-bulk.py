@@ -102,6 +102,7 @@ from lib.dmi_wave_history_bootstrap import (
     WaveBootstrapError,
     format_utc_hour as format_wave_bootstrap_hour,
     load_coastal_part_registry as load_wave_bootstrap_registry,
+    native_wave_row_error_code,
     parse_utc_hour as parse_wave_bootstrap_hour,
     policy_for_mode as wave_bootstrap_policy_for_mode,
     policy_utc_hours as wave_bootstrap_policy_utc_hours,
@@ -263,6 +264,7 @@ CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN = max(
     0, int(os.getenv("CURRENT_FIELD_SHADOW_BOOTSTRAP_DOWNLOADS_PER_RUN", "3"))
 )
 COLLECTION_ORDER = ["dkss_idw", "dkss_nsbs", "dkss_lf", "wam_dw", "wam_nsb", "harmonie_dini_sf"]
+OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS = frozenset({"DK-B05-11"})
 TARGETS = {
     "marine": ["sea-mean-deviation", "current-u", "current-v", "water-temperature", "wind-tail-u-10m", "wind-tail-v-10m"],
     "wind": ["wind-u-10m", "wind-v-10m"],
@@ -1068,6 +1070,57 @@ def official_current_asset_identity(
     }
 
 
+def official_wave_asset_identity(
+    collection: str,
+    model_run: Any,
+    asset: Any,
+) -> dict[str, Any] | None:
+    if collection not in WAVE_BOOTSTRAP_COLLECTIONS or not isinstance(asset, dict):
+        return None
+    run = canonical_time(model_run)
+    valid_time = canonical_time(asset.get("valid") or asset.get("validTime"))
+    item_id = str(asset.get("id") or asset.get("itemId") or "").strip()
+    identity = str(asset.get("assetIdentitySha256") or "")
+    asset_size = asset.get("assetSizeBytes", asset.get("size"))
+    item_created_at = canonical_time(asset.get("itemCreatedAt"))
+    item_updated_at = canonical_time(asset.get("itemUpdatedAt"))
+    if not identity:
+        identity = str(asset_identity_sha256(asset.get("href")) or "")
+    if not (
+        run
+        and valid_time
+        and item_id
+        and re.fullmatch(r"[0-9a-f]{64}", identity)
+        and (
+            asset_size is None
+            or isinstance(asset_size, int)
+            and not isinstance(asset_size, bool)
+            and asset_size > 0
+        )
+        and (asset.get("itemCreatedAt") is None or item_created_at)
+        and (asset.get("itemUpdatedAt") is None or item_updated_at)
+    ):
+        return None
+    return {
+        "collection": collection,
+        "modelRun": run,
+        "validTime": valid_time,
+        "itemId": item_id,
+        "assetIdentitySha256": identity,
+        "assetSizeBytes": asset_size,
+        "itemCreatedAt": item_created_at,
+        "itemUpdatedAt": item_updated_at,
+    }
+
+
+def wave_source_asset_matches_official(source: Any, expected: Any) -> bool:
+    return bool(
+        isinstance(source, dict)
+        and isinstance(expected, dict)
+        and source == expected
+    )
+
+
 def processed_step_source_for_official_asset(
     step: Any,
     *,
@@ -1122,8 +1175,10 @@ def reusable_processed_steps(
     current_target_registry_sha256: str | None = None,
     actual_pair_source_keys: set[tuple[str, str, str]] | None = None,
     covered_pair_keys: set[tuple[str, str]] | None = None,
+    wave_cache: dict[str, Any] | None = None,
+    wave_zones: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Reuse only current-parser checkpoints bound to the selected STAC asset."""
+    """Reuse only checkpoints bound to an exact asset and actual cache proof."""
     if not same_processing or not same_run:
         return {}
     processing_signature = previous_run.get("processingSignature")
@@ -1132,6 +1187,50 @@ def reusable_processed_steps(
     steps = previous_run.get("processedSteps") or {}
     if not isinstance(steps, dict):
         return {}
+    if collection in WAVE_BOOTSTRAP_COLLECTIONS:
+        if (
+            not isinstance(required_asset_provenance, dict)
+            or not isinstance(wave_cache, dict)
+            or not isinstance(wave_zones, list)
+            or not wave_zones
+        ):
+            return {}
+        reusable_wave: dict[str, Any] = {}
+        for raw_valid_time, step in steps.items():
+            valid_time = canonical_time(raw_valid_time)
+            expected = required_asset_provenance.get(valid_time)
+            if not (
+                valid_time
+                and isinstance(step, dict)
+                and step.get("complete") is True
+                and step.get("parserVersion") == PARSER_VERSION
+                and step.get("processingSignature") == processing_signature
+                and {"significant-wave-height", "dominant-wave-period"}
+                    <= set(step.get("recognizedParameters") or [])
+                and wave_source_asset_matches_official(
+                    step.get("sourceAsset"), expected,
+                )
+            ):
+                continue
+            asset = MappingWaveAsset({
+                "valid": expected["validTime"],
+                "id": expected["itemId"],
+                "assetIdentitySha256": expected["assetIdentitySha256"],
+            }, expected["modelRun"])
+            summary = private_wave_bootstrap_asset_summary(
+                wave_cache,
+                wave_zones,
+                collection,
+                asset,
+            )
+            if not (
+                summary["requiredCount"] > 0
+                and summary["acceptedCount"] == summary["requiredCount"]
+                and step.get("waveTargetProof") == summary
+            ):
+                continue
+            reusable_wave[valid_time] = step
+        return reusable_wave
     if collection not in MARINE_COLLECTIONS:
         return {
             valid_time: step
@@ -3926,10 +4025,9 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
                     break
             finally:
                 codes_release(gid)
-    # Wave height and period are the shared mobilisation/rollback tuple. Finalise
-    # only after all GRIB messages have been inspected, and retain direction only
-    # when it resolves to that same exact grid definition/cell. The integrated
-    # last-mile state requires that retained field and otherwise fails closed.
+    # Wave height and period are the shared mobilisation/rollback tuple. Build
+    # and validate the complete candidate before mutating the retained row. A
+    # partial or malformed new asset must never destroy an older valid tuple.
     for (component, zone_id), candidates_by_parameter in scalar_tuple_candidates.items():
         if component != "wave":
             continue
@@ -3951,10 +4049,21 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         if destination is None:
             continue
         point = destination["zones"].setdefault(zone_id, {"hourly": {}, "gridPoints": {}, "collections": {}})
-        hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
-        hour["significant-wave-height"] = height["value"]
-        hour["dominant-wave-period"] = period["value"]
-        hour.pop("mean-wave-dir", None)
+        height_value = height.get("value")
+        period_value = period.get("value")
+        if not (
+            isinstance(height_value, (int, float))
+            and not isinstance(height_value, bool)
+            and math.isfinite(float(height_value))
+            and float(height_value) >= 0
+            and isinstance(period_value, (int, float))
+            and not isinstance(period_value, bool)
+            and math.isfinite(float(period_value))
+            and float(period_value) >= 0
+            and not (float(height_value) > 0 and float(period_value) <= 0)
+        ):
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "INVALID_WAVE_TUPLE"
+            continue
         optional_fields: tuple[str, ...] = ()
         direction_by_cell = {
             candidate_cell_key(candidate): candidate
@@ -3963,8 +4072,49 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         }
         direction = direction_by_cell.get(candidate_cell_key(height))
         if direction is not None:
-            hour["mean-wave-dir"] = direction["value"]
+            direction_value = direction.get("value")
+            if not (
+                isinstance(direction_value, (int, float))
+                and not isinstance(direction_value, bool)
+                and math.isfinite(float(direction_value))
+                and 0 <= float(direction_value) < 360
+            ):
+                diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "INVALID_WAVE_DIRECTION"
+                continue
             optional_fields = ("mean-wave-dir",)
+        elif float(height_value) > 0:
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "MISSING_WAVE_DIRECTION"
+            continue
+        source = native_component_source(
+            collection,
+            model_run,
+            valid_time,
+            component="wave",
+            zone=zone,
+            grid_candidate=height,
+            capture=source_capture,
+            spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
+            optional_field_set=optional_fields,
+        )
+        if source is None or not complete_native_source_for_hour(
+            source,
+            "wave",
+            zone_id,
+            point,
+            valid_time,
+        ):
+            diagnostics.setdefault("rejectedScalarTuples", {}).setdefault(zone_id, {})["wave"] = "INVALID_WAVE_PROVENANCE"
+            continue
+
+        # Atomic commit of the complete tuple inside the transaction stage.
+        hour = point["hourly"].setdefault(valid_time, {"time": valid_time})
+        hour["significant-wave-height"] = height_value
+        hour["dominant-wave-period"] = period_value
+        if direction is not None:
+            hour["mean-wave-dir"] = direction["value"]
+        else:
+            hour.pop("mean-wave-dir", None)
+        hour.setdefault("sources", {})["wave"] = source
         for parameter, candidate in (("significant-wave-height", height), ("dominant-wave-period", period)):
             point["gridPoints"][parameter] = {
                 **{key: round(value, 5) if isinstance(value, (int, float)) else value for key, value in candidate.items() if key not in {"value", "index"}},
@@ -3978,21 +4128,6 @@ def process_grib(path: pathlib.Path, collection: str, model_run: str, valid_time
         else:
             point["gridPoints"].pop("mean-wave-dir", None)
             point["collections"].pop("mean-wave-dir", None)
-        source = native_component_source(
-            collection,
-            model_run,
-            valid_time,
-            component="wave",
-            zone=zone,
-            grid_candidate=height,
-            capture=source_capture,
-            spatial_selection="nearest-shared-wave-height-period-grid-cell-no-spatial-interpolation",
-            optional_field_set=optional_fields,
-        )
-        if source:
-            hour.setdefault("sources", {})["wave"] = source
-        else:
-            (hour.get("sources") or {}).pop("wave", None)
         if not zone.get("privateStage"):
             touched.add(zone_id)
     if (
@@ -4215,12 +4350,12 @@ def process_grib_transactionally(
     return found, touched, False, messages_seen, zone_lookups
 
 
-def private_wave_bootstrap_hour_complete(
+def private_wave_bootstrap_hour_rejection_code(
     result: dict[str, Any],
     zone: dict[str, Any],
     collection: str,
     asset: Any,
-) -> bool:
+) -> str | None:
     zone_id = str(zone.get("id") or "")
     point = (result.get("zones") or {}).get(zone_id) or {}
     hour = (point.get("hourly") or {}).get(asset.valid_time) or {}
@@ -4236,16 +4371,16 @@ def private_wave_bootstrap_hour_complete(
         and float(period) >= 0
         and not (float(height) > 0 and float(period) <= 0)
     ):
-        return False
+        return "INVALID_WAVE_TUPLE"
     direction_present = (
         isinstance(direction, (int, float))
         and not isinstance(direction, bool)
         and math.isfinite(float(direction))
     )
     if float(height) > 0 and not direction_present:
-        return False
+        return "MISSING_WAVE_DIRECTION"
     if direction_present and not (0 <= float(direction) < 360):
-        return False
+        return "INVALID_WAVE_DIRECTION"
     source = (hour.get("sources") or {}).get("wave") or {}
     if (
         source.get("collection") != collection
@@ -4256,14 +4391,57 @@ def private_wave_bootstrap_hour_complete(
         or source.get("optionalFieldSet")
             != (["mean-wave-dir"] if direction_present else [])
     ):
-        return False
-    return complete_native_source_for_hour(
+        return "ASSET_PROVENANCE_MISMATCH"
+    if not complete_native_source_for_hour(
         source,
         "wave",
         zone_id,
         point,
         asset.valid_time,
-    )
+    ):
+        return "INVALID_WAVE_PROVENANCE"
+    return None
+
+
+def private_wave_bootstrap_hour_complete(
+    result: dict[str, Any],
+    zone: dict[str, Any],
+    collection: str,
+    asset: Any,
+) -> bool:
+    return private_wave_bootstrap_hour_rejection_code(
+        result,
+        zone,
+        collection,
+        asset,
+    ) is None
+
+
+def private_wave_bootstrap_asset_summary(
+    result: dict[str, Any],
+    zones: list[dict[str, Any]],
+    collection: str,
+    asset: Any,
+) -> dict[str, Any]:
+    rejected: dict[str, int] = {}
+    accepted = 0
+    for zone in zones:
+        code = private_wave_bootstrap_hour_rejection_code(
+            result,
+            zone,
+            collection,
+            asset,
+        )
+        if code is None:
+            accepted += 1
+        else:
+            rejected[code] = rejected.get(code, 0) + 1
+    return {
+        "requiredCount": len(zones),
+        "acceptedCount": accepted,
+        "rejectedCount": len(zones) - accepted,
+        "rejectedByCode": dict(sorted(rejected.items())),
+    }
 
 
 class MappingWaveAsset:
@@ -4278,26 +4456,30 @@ class MappingWaveAsset:
         )
 
 
-def reset_private_part_wave_cache(
+def salvage_invalid_private_wave_rows(
     result: dict[str, Any],
     parts: list[dict[str, Any]],
-) -> int:
-    """Discard only private PART wave rows before a measured cold rebuild.
+    registry: Any,
+) -> dict[str, Any]:
+    """Remove only independently invalid PART/hour wave components.
 
-    Candidate G's pinned legacy cache predates the time-bound same-cell WAM
-    provenance contract.  Those rows remain useful evidence that data existed,
-    but their missing cell identity cannot be reconstructed from zone summaries.
-    Remove only the wave component and let the ordinary DMI STAC/GRIB path
-    reacquire it.  Current, wind, water level, temperatures and point identity
-    are deliberately left untouched.
+    Valid wave rows and every non-wave component remain untouched.  This makes
+    a malformed legacy row repairable without restarting the complete cache.
     """
-    reset_rows = 0
+    removed_rows = 0
+    retained_rows = 0
+    rejected_by_code: dict[str, int] = {}
+    provenance_by_id = {
+        part.cache_key: part.provenance_entity
+        for part in registry.parts
+    }
     for zone in parts:
         zone_id = str(zone.get("id") or "")
         point = (result.get("zones") or {}).get(zone_id)
         if not isinstance(point, dict):
             continue
-        for hour in (point.get("hourly") or {}).values():
+        valid_wave_rows = 0
+        for valid_time, hour in (point.get("hourly") or {}).items():
             if not isinstance(hour, dict):
                 continue
             sources = hour.get("sources")
@@ -4309,6 +4491,19 @@ def reset_private_part_wave_cache(
                     "mean-wave-dir",
                 )
             ) or (isinstance(sources, dict) and "wave" in sources)
+            if not had_wave:
+                continue
+            code = native_wave_row_error_code(
+                valid_time=valid_time,
+                hour=hour,
+                entity_id=zone_id,
+                provenance_entity=provenance_by_id.get(zone_id) or {},
+            )
+            if code is None:
+                retained_rows += 1
+                valid_wave_rows += 1
+                continue
+            rejected_by_code[code] = rejected_by_code.get(code, 0) + 1
             for key in (
                 "significant-wave-height",
                 "dominant-wave-period",
@@ -4319,16 +4514,20 @@ def reset_private_part_wave_cache(
                 sources.pop("wave", None)
                 if not sources:
                     hour.pop("sources", None)
-            if had_wave:
-                reset_rows += 1
-        for key in (
-            "significant-wave-height",
-            "dominant-wave-period",
-            "mean-wave-dir",
-        ):
-            (point.get("gridPoints") or {}).pop(key, None)
-            (point.get("collections") or {}).pop(key, None)
-    return reset_rows
+            removed_rows += 1
+        if valid_wave_rows == 0:
+            for key in (
+                "significant-wave-height",
+                "dominant-wave-period",
+                "mean-wave-dir",
+            ):
+                (point.get("gridPoints") or {}).pop(key, None)
+                (point.get("collections") or {}).pop(key, None)
+    return {
+        "removedRowCount": removed_rows,
+        "retainedValidRowCount": retained_rows,
+        "rejectedByCode": dict(sorted(rejected_by_code.items())),
+    }
 
 
 def execute_private_wave_history_bootstrap(
@@ -4392,18 +4591,27 @@ def execute_private_wave_history_bootstrap(
                 policy=configuration["policy"],
             )
         except WaveBootstrapError as exc:
-            # Cache-first is an optimisation, never a permission to infer the
-            # new same-cell provenance from legacy zone summaries.  Only the
-            # documented legacy MISSING_CELL shape is destructive-rebuildable.
-            # A valid partial history (for example MISSING_HOUR) is preserved
-            # so the integrated cold start can replay every verified real hour.
+            # Cache-first is an optimisation, never permission to infer native
+            # provenance. Salvage only independently invalid wave rows; valid
+            # rows and all other components remain reusable.
             aggregate["cacheFirst"] = {
                 "status": "incomplete",
                 "failureCode": exc.code,
             }
-            if exc.code == "MISSING_CELL":
-                reset_rows = reset_private_part_wave_cache(result, parts)
-                aggregate["cacheFirst"]["resetWaveRowCount"] = reset_rows
+            if exc.code in {
+                "MISSING_WAVE_FIELD",
+                "INVALID_WAVE_TUPLE",
+                "MISSING_DIRECTION",
+                "MISSING_PROVENANCE",
+                "MISSING_CELL",
+                "WAVE_DISTANCE_OUT_OF_BOUNDS",
+                "INVALID_PROVENANCE",
+                "FUTURE_RUN",
+            }:
+                salvage = salvage_invalid_private_wave_rows(
+                    result, parts, registry,
+                )
+                aggregate["cacheFirst"]["salvage"] = salvage
                 controller.mark_bulk_dirty()
                 controller.flush_if_due(force=True)
         else:
@@ -4662,34 +4870,58 @@ def execute_private_wave_history_bootstrap(
                 f"({'genbrugt' if reused else 'downloadet'})"
             )
             asset_processing_started = time.monotonic()
+            staged_asset_summary: dict[str, Any] = {}
 
             def bootstrap_stage_complete(
                 staged_result: dict[str, Any],
                 _private_stage: dict[str, Any] | None,
                 outcome: tuple[set[str], set[str], bool, int, int],
             ) -> bool:
+                summary = private_wave_bootstrap_asset_summary(
+                    staged_result,
+                    relevant,
+                    collection,
+                    asset,
+                )
+                staged_asset_summary.clear()
+                staged_asset_summary.update(summary)
                 return (
                     {"significant-wave-height", "dominant-wave-period"}
                     <= outcome[0]
-                    and all(
-                        private_wave_bootstrap_hour_complete(
-                            staged_result,
-                            zone,
-                            collection,
-                            asset,
-                        )
-                        for zone in relevant
-                    )
                 )
 
-            with supervised_asset_operation(supervised_identity):
-                found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
-                    path, collection, asset.model_run, asset.valid_time, relevant,
-                    result, result["diagnostics"],
-                    failure_flush=lambda: controller.flush_if_due(force=True),
-                    stage_validator=bootstrap_stage_complete,
-                    validation_error="private WAM bootstrap GRIB tuple is incomplete",
-                )
+            try:
+                with supervised_asset_operation(supervised_identity):
+                    found, touched, interrupted, messages_seen, zone_lookups = process_grib_transactionally(
+                        path, collection, asset.model_run, asset.valid_time, relevant,
+                        result, result["diagnostics"],
+                        failure_flush=lambda: controller.flush_if_due(force=True),
+                        stage_validator=bootstrap_stage_complete,
+                        validation_error="private WAM bootstrap GRIB tuple is missing",
+                    )
+            except (
+                DmiGridLookupError,
+                KeyError,
+                TypeError,
+                IndexError,
+                AttributeError,
+                ValueError,
+                RuntimeError,
+                OSError,
+            ) as exc:
+                collection_summary["failedAssetCount"] = int(
+                    collection_summary.get("failedAssetCount") or 0
+                ) + 1
+                result["diagnostics"].setdefault("errors", []).append({
+                    "collection": collection,
+                    "validTime": supervised_identity["validTime"],
+                    "message": safe_error_message(exc),
+                    "failureCode": collection_failure_code(exc),
+                    "failureClass": "private-wave-history-asset",
+                    "partialProgressPreserved": True,
+                })
+                controller.flush_if_due(force=True)
+                continue
             asset_processing_seconds = time.monotonic() - asset_processing_started
             result["diagnostics"]["messagesSeen"] = int(
                 result["diagnostics"].get("messagesSeen") or 0
@@ -4701,14 +4933,34 @@ def execute_private_wave_history_bootstrap(
                 raise RuntimeError("private WAM bootstrap runtime budget reached inside GRIB processing")
             if not {"significant-wave-height", "dominant-wave-period"} <= found:
                 raise RuntimeError("private WAM bootstrap GRIB tuple is incomplete")
-            if not all(
-                private_wave_bootstrap_hour_complete(result, zone, collection, asset)
-                for zone in relevant
-            ):
-                raise RuntimeError("private WAM bootstrap does not cover every immutable coastal part")
+            collection_summary.setdefault("assetCoverage", {
+                "completeAssetCount": 0,
+                "partialAssetCount": 0,
+                "acceptedTupleCount": 0,
+                "rejectedTupleCount": 0,
+                "rejectedByCode": {},
+            })
+            coverage = collection_summary["assetCoverage"]
+            accepted_count = int(staged_asset_summary.get("acceptedCount") or 0)
+            required_count = int(staged_asset_summary.get("requiredCount") or 0)
+            coverage["acceptedTupleCount"] += accepted_count
+            coverage["rejectedTupleCount"] += int(
+                staged_asset_summary.get("rejectedCount") or 0
+            )
+            for code, count in (
+                staged_asset_summary.get("rejectedByCode") or {}
+            ).items():
+                coverage["rejectedByCode"][code] = int(
+                    coverage["rejectedByCode"].get(code) or 0
+                ) + int(count)
             fresh_zone_ids.update(touched)
             collection_summary["processedAssetCount"] += 1
-            if asset.valid_time in expected_locked_hours:
+            complete_asset = required_count > 0 and accepted_count == required_count
+            if complete_asset:
+                coverage["completeAssetCount"] += 1
+            else:
+                coverage["partialAssetCount"] += 1
+            if complete_asset and asset.valid_time in expected_locked_hours:
                 locked[collection].add(asset.valid_time)
             checkpoint_written = controller.note_committed_asset(
                 seconds=asset_processing_seconds,
@@ -4721,7 +4973,10 @@ def execute_private_wave_history_bootstrap(
         if missing_locked_hours:
             supervised_missing = supervised_skipped_hours.get(collection, set())
             reserved_missing = runtime_reserved_hours.get(collection, set())
-            if not missing_locked_hours <= supervised_missing | reserved_missing:
+            if (
+                configuration["mode"] != WAVE_BOOTSTRAP_COLD_START_MODE
+                and not missing_locked_hours <= supervised_missing | reserved_missing
+            ):
                 controller.flush_if_due(force=True)
                 raise RuntimeError("private WAM bootstrap did not lock every selected valid hour")
             collection_summary["status"] = "history-incomplete"
@@ -4731,6 +4986,8 @@ def execute_private_wave_history_bootstrap(
                 "CRITICAL_WAM_RUNTIME_RESERVED"
                 if missing_locked_hours & reserved_missing
                 else "ASSET_PROCESSING_WATCHDOG_TIMEOUT"
+                if missing_locked_hours <= supervised_missing
+                else "PARTIAL_NATIVE_COVERAGE"
             )
     if set(locked) != set(WAVE_BOOTSTRAP_COLLECTIONS):
         controller.flush_if_due(force=True)
@@ -4743,110 +5000,6 @@ def execute_private_wave_history_bootstrap(
     if owns_controller:
         controller.flush_if_due(force=True)
     return locked
-
-def clear_operational_wave_window(
-    result: dict[str, Any],
-    zones: list[dict[str, Any]],
-    collection: str,
-    start_hour: str,
-) -> int:
-    """Clear only the future wave component owned by one WAM collection.
-
-    The immutable zone/PART registry and every sampling coordinate stay
-    untouched.  Removing the old component before processing makes the
-    operational run transactional: an interrupted refresh leaves an explicit
-    gap that the cutover gate rejects instead of a mixed-run interpolation.
-    """
-    start_epoch = epoch(start_hour)
-    cleared = 0
-    public_targets = [
-        zone for zone in zones
-        if not zone.get("waterSource")
-        and not zone.get("researchCurrent")
-        and not zone.get("privateStage")
-    ]
-    for zone in relevant_zones(collection, public_targets):
-        point = (result.get("zones") or {}).get(str(zone.get("id") or ""))
-        if not isinstance(point, dict):
-            continue
-        for valid_time, hour in (point.get("hourly") or {}).items():
-            if epoch(valid_time) < start_epoch or not isinstance(hour, dict):
-                continue
-            source = (hour.get("sources") or {}).get("wave")
-            had_wave = any(
-                key in hour
-                for key in (
-                    "significant-wave-height",
-                    "dominant-wave-period",
-                    "mean-wave-dir",
-                )
-            ) or isinstance(source, dict)
-            for key in (
-                "significant-wave-height",
-                "dominant-wave-period",
-                "mean-wave-dir",
-            ):
-                hour.pop(key, None)
-            (hour.get("sources") or {}).pop("wave", None)
-            if had_wave:
-                cleared += 1
-        for key in (
-            "significant-wave-height",
-            "dominant-wave-period",
-            "mean-wave-dir",
-        ):
-            (point.get("gridPoints") or {}).pop(key, None)
-            (point.get("collections") or {}).pop(key, None)
-    return cleared
-
-def clear_staged_operational_wave_hour(
-    staged_result: dict[str, Any],
-    zones: list[dict[str, Any]],
-    collection: str,
-    valid_time: str,
-) -> int:
-    """Clear one WAM-owned hour inside an uncommitted asset stage only."""
-    cleared = 0
-    public_targets = [
-        zone for zone in zones
-        if not zone.get("waterSource")
-        and not zone.get("researchCurrent")
-        and not zone.get("privateStage")
-    ]
-    for zone in relevant_zones(collection, public_targets):
-        point = (staged_result.get("zones") or {}).get(
-            str(zone.get("id") or "")
-        )
-        if not isinstance(point, dict):
-            continue
-        hour = (point.get("hourly") or {}).get(valid_time)
-        if not isinstance(hour, dict):
-            continue
-        sources = hour.get("sources")
-        had_wave = any(
-            key in hour
-            for key in (
-                "significant-wave-height",
-                "dominant-wave-period",
-                "mean-wave-dir",
-            )
-        ) or (isinstance(sources, dict) and "wave" in sources)
-        for key in (
-            "significant-wave-height",
-            "dominant-wave-period",
-            "mean-wave-dir",
-        ):
-            hour.pop(key, None)
-            (point.get("gridPoints") or {}).pop(key, None)
-            (point.get("collections") or {}).pop(key, None)
-        if isinstance(sources, dict):
-            sources.pop("wave", None)
-            if not sources:
-                hour.pop("sources", None)
-        if had_wave:
-            cleared += 1
-    return cleared
-
 
 def wind_from_uv(hour: dict[str, Any]) -> None:
     u, v = hour.get("wind-u-10m"), hour.get("wind-v-10m")
@@ -8556,12 +8709,30 @@ def main() -> int:
             if not assets:
                 raise RuntimeError("no forecast-step GRIB assets found in latest STAC run")
             bootstrap_operational_wam = (
-                wave_bootstrap_configuration is not None
-                and collection in WAVE_BOOTSTRAP_COLLECTIONS
+                collection in WAVE_BOOTSTRAP_COLLECTIONS
+            )
+            collection_operational_wave_zones = (
+                [
+                    zone for zone in relevant_zones(
+                        collection,
+                        [
+                            candidate for candidate in zones
+                            if not candidate.get("waterSource")
+                            and not candidate.get("researchCurrent")
+                            and not candidate.get("privateStage")
+                        ],
+                    )
+                    if str(zone.get("id") or "")
+                        not in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
+                    and str(zone.get("parentZoneId") or "")
+                        not in OPERATIONAL_WAVE_PROXY_PARENT_ZONE_IDS
+                ]
+                if bootstrap_operational_wam
+                else []
             )
             if bootstrap_operational_wam:
                 result["diagnostics"]["operationalWaveStageMode"] = (
-                    "per-asset-atomic"
+                    "per-zone-atomic-partial-progress"
                 )
             if collection in MARINE_COLLECTIONS:
                 research_replay_catalog[collection] = {"modelRun": run, "assets": assets}
@@ -8571,17 +8742,22 @@ def main() -> int:
             )
             if collection == "harmonie_dini_sf":
                 processing_signature += f"|wind-reference:{WIND_VECTOR_VERSION}"
-            required_asset_provenance = {
-                str(identity["validTime"]): identity
-                for asset in assets
-                for identity in [official_current_asset_identity(collection, run, asset)]
-                if collection in MARINE_COLLECTIONS
-                and identity is not None
-                and identity["validTime"] in required_current_valid_times
-            }
+            required_asset_provenance: dict[str, dict[str, Any]] = {}
+            for asset in assets:
+                identity = (
+                    official_current_asset_identity(collection, run, asset)
+                    if collection in MARINE_COLLECTIONS
+                    else official_wave_asset_identity(collection, run, asset)
+                    if collection in WAVE_BOOTSTRAP_COLLECTIONS
+                    else None
+                )
+                if identity is not None and (
+                    collection in WAVE_BOOTSTRAP_COLLECTIONS
+                    or identity["validTime"] in required_current_valid_times
+                ):
+                    required_asset_provenance[str(identity["validTime"])] = identity
             same_processing = (
-                not bootstrap_operational_wam
-                and previous_run.get("processingSignature") == processing_signature
+                previous_run.get("processingSignature") == processing_signature
             )
             same_run = previous_run.get("referenceTime") == run
             previous_steps = reusable_processed_steps(
@@ -8598,6 +8774,7 @@ def main() -> int:
                 required_asset_provenance=(
                     required_asset_provenance
                     if collection in MARINE_COLLECTIONS
+                    or collection in WAVE_BOOTSTRAP_COLLECTIONS
                     else None
                 ),
                 current_target_ids=(
@@ -8618,6 +8795,12 @@ def main() -> int:
                 covered_pair_keys=(
                     covered_current_pair_keys
                     if collection in MARINE_COLLECTIONS
+                    else None
+                ),
+                wave_cache=result if bootstrap_operational_wam else None,
+                wave_zones=(
+                    collection_operational_wave_zones
+                    if bootstrap_operational_wam
                     else None
                 ),
             )
@@ -8888,15 +9071,39 @@ def main() -> int:
                 source_capture = (
                     raw_cache_source_capture(path, collection, run, asset["valid"])
                     if collection in MARINE_COLLECTIONS
+                    or collection in WAVE_BOOTSTRAP_COLLECTIONS
                     else None
                 )
-                step_source_asset = canonical_current_source_asset({
-                    "collection": collection,
-                    "modelRun": run,
-                    "validTime": asset["valid"],
-                    **(source_capture or {}),
-                }) if source_capture is not None else None
+                if collection in MARINE_COLLECTIONS:
+                    step_source_asset = canonical_current_source_asset({
+                        "collection": collection,
+                        "modelRun": run,
+                        "validTime": asset["valid"],
+                        **(source_capture or {}),
+                    }) if source_capture is not None else None
+                elif collection in WAVE_BOOTSTRAP_COLLECTIONS:
+                    expected_wave_asset = official_wave_asset_identity(
+                        collection, run, asset,
+                    )
+                    step_source_asset = (
+                        expected_wave_asset
+                        if expected_wave_asset is not None
+                        and source_capture is not None
+                        and source_capture.get("itemId")
+                            == expected_wave_asset["itemId"]
+                        and source_capture.get("assetIdentitySha256")
+                            == expected_wave_asset["assetIdentitySha256"]
+                        and (
+                            expected_wave_asset["assetSizeBytes"] is None
+                            or source_capture.get("contentLengthBytes")
+                                == expected_wave_asset["assetSizeBytes"]
+                        )
+                        else None
+                    )
+                else:
+                    step_source_asset = None
                 validated_current_stage: dict[str, Any] = {}
+                validated_wave_stage: dict[str, Any] = {}
                 allowed_parameters = operational_asset_parameter_filter(
                     collection,
                     asset["valid"],
@@ -8908,34 +9115,7 @@ def main() -> int:
                     if bootstrap_operational_wam
                     else None
                 )
-                operational_wave_zones = (
-                    relevant_zones(
-                        collection,
-                        [
-                            zone for zone in zones
-                            if not zone.get("waterSource")
-                            and not zone.get("researchCurrent")
-                            and not zone.get("privateStage")
-                        ],
-                    )
-                    if bootstrap_operational_wam
-                    else []
-                )
-                staged_wave_clear = {"rows": 0}
-
-                def prepare_operational_wave_stage(
-                    staged_result: dict[str, Any],
-                    _private_stage: dict[str, Any] | None,
-                ) -> None:
-                    if bootstrap_operational_wam:
-                        staged_wave_clear["rows"] = (
-                            clear_staged_operational_wave_hour(
-                                staged_result,
-                                zones,
-                                collection,
-                                asset["valid"],
-                            )
-                        )
+                operational_wave_zones = collection_operational_wave_zones
 
                 def validate_operational_wave_stage(
                     staged_result: dict[str, Any],
@@ -8944,17 +9124,19 @@ def main() -> int:
                 ) -> bool:
                     if not bootstrap_operational_wam:
                         return True
+                    if operational_wave_asset is None:
+                        return False
+                    summary = private_wave_bootstrap_asset_summary(
+                        staged_result,
+                        operational_wave_zones,
+                        collection,
+                        operational_wave_asset,
+                    )
+                    validated_wave_stage.clear()
+                    validated_wave_stage.update(summary)
                     return (
-                        operational_wave_asset is not None
-                        and {"significant-wave-height", "dominant-wave-period"}
-                            <= outcome[0]
-                        and all(
-                            private_wave_bootstrap_hour_complete(
-                                staged_result, zone, collection,
-                                operational_wave_asset,
-                            )
-                            for zone in operational_wave_zones
-                        )
+                        {"significant-wave-height", "dominant-wave-period"}
+                        <= outcome[0]
                     )
 
                 def validate_operational_current_stage(
@@ -9082,7 +9264,6 @@ def main() -> int:
                             coastal_point_stage,
                             current_part_outcome_observation,
                             allowed_parameters=allowed_parameters,
-                            prepare_stage=prepare_operational_wave_stage,
                             failure_flush=lambda: checkpoint_controller.flush_if_due(force=True),
                             stage_validator=validate_operational_wave_stage,
                             current_stage_validator=validate_operational_current_stage,
@@ -9094,7 +9275,7 @@ def main() -> int:
                             validation_error=(
                                 "operational DKSS asset lacks exact pre-commit provenance"
                                 if collection in MARINE_COLLECTIONS
-                                else "operational WAM asset is not exact and complete"
+                                else "operational WAM asset lacks required fields"
                             ),
                         )
                     except (
@@ -9130,10 +9311,6 @@ def main() -> int:
                             "and providers receive the exact residual"
                         )
                         continue
-                if bootstrap_operational_wam and not interrupted:
-                    result["diagnostics"]["operationalWaveRowsCleared"] = int(
-                        result["diagnostics"].get("operationalWaveRowsCleared") or 0
-                    ) + staged_wave_clear["rows"]
                 asset_processing_seconds = time.monotonic() - asset_processing_started
                 scrub_private_stage_diagnostics(result["diagnostics"])
                 if coastal_point_stage_targets and not interrupted:
@@ -9168,13 +9345,28 @@ def main() -> int:
                 step_part_outcome_proof = validated_current_stage.get(
                     "partOutcomeProof"
                 )
+                step_wave_target_proof = (
+                    dict(validated_wave_stage)
+                    if bootstrap_operational_wam
+                    else None
+                )
+                wave_step_complete = bool(
+                    bootstrap_operational_wam
+                    and step_source_asset is not None
+                    and step_wave_target_proof is not None
+                    and int(step_wave_target_proof.get("requiredCount") or 0) > 0
+                    and step_wave_target_proof.get("acceptedCount")
+                        == step_wave_target_proof.get("requiredCount")
+                )
                 step_complete = bool(
                     set(step_recognized) >= required_for_family
                     and len(touched) > 0
                     and (
-                        collection not in MARINE_COLLECTIONS
+                        wave_step_complete
+                        if bootstrap_operational_wam
+                        else collection not in MARINE_COLLECTIONS
                         or step_source_asset is not None
-                        and step_part_outcome_proof is not None
+                            and step_part_outcome_proof is not None
                     )
                 )
                 if not interrupted and step_complete:
@@ -9194,9 +9386,12 @@ def main() -> int:
                         "parserVersion": PARSER_VERSION,
                         "processingSignature": processing_signature,
                         **({"sourceAsset": step_source_asset}
-                           if collection in MARINE_COLLECTIONS else {}),
+                           if collection in MARINE_COLLECTIONS
+                           or bootstrap_operational_wam else {}),
                         **({"currentPartOutcomeProof": step_part_outcome_proof}
                            if collection in MARINE_COLLECTIONS else {}),
+                        **({"waveTargetProof": step_wave_target_proof}
+                           if bootstrap_operational_wam else {}),
                     }
                     if (
                         collection in MARINE_COLLECTIONS

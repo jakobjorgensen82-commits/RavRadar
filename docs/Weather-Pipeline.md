@@ -1,5 +1,17 @@
 # Weather Pipeline 1.0
 
+## 4.0.335 – cachen vedligeholdes i stedet for at blive genopbygget
+
+Den private vejrcache er nu den vedvarende, brugbare base. En ny modelkørsel erstatter kun en ældre kystdel/time, når hele den nye tuple er valideret. En defekt bølgerække fjernes alene som bølgekomponent; andre bølger, vind, strøm og historik bliver liggende.
+
+Eksakte native WAM-rækker må komme fra flere verificerede modelkørsler. Interpolation er fortsat stram: højst fire timer og kun mellem native endepunkter fra samme collection, modelkørsel, gitter og fysiske celle. Færdige WAM-filer genbruges kun, når både officiel assetidentitet og den faktiske cachedækning matcher.
+
+Feggesunds tre dele er ikke native WAM-mål, fordi de har den særskilt godkendte wave-only direct/proxy-løsning. De øvrige 670 dele kræver native WAM, mens Feggesund stadig skal bestå sin egen slutkontrol med præcis 3 × 118 = 354 timer.
+
+Den tidlige WAM-kontrol registrerer status, men afskærer ikke den uafhængige currentkæde. DMI, Copernicus, regional DMI og Open-Meteo kan derfor udfylde og gemme deres eksakte rest. En separat WAM-slutgate stopper fortsat før closure, runtime, artifact eller deploy, hvis bølgedata ikke er komplette.
+
+Normal ekstern-cron-drift er efter cutover den permanente vedligeholder. Oneoff kan fylde hurtigt op, men er ikke den løbende pilot. 4.0.335 er lokalt måltestet; positiv main-runtime og offentlig modelcutover er endnu ikke beviste.
+
 ## 4.0.334 – fair WAM-readiness, eksakt 118-timersakse og runbundet cutover
 
 4.0.334 er kun en lokal, måltestet kandidat. Oneoff `34161930631` beviste 79.414/79.414 operationelle strømpar, men stoppede korrekt før runtime/artifact, fordi Feggesund ikke havde præcis 3 × 118 bølgetimer.

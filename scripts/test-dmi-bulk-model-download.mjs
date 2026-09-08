@@ -113,7 +113,7 @@ const activeProcessingSignatureStart = bulk.indexOf(
   bulkMainStart,
 );
 const activeProcessingSignatureEnd = bulk.indexOf(
-  'required_asset_provenance = {',
+  'required_asset_provenance',
   activeProcessingSignatureStart,
 );
 assert.ok(
@@ -453,7 +453,8 @@ assert.match(dmiActiveSaveBlock, /steps\.dmi-bulk\.outputs\.candidate_promoted =
 assert.match(dmiActiveSaveBlock, /path: \.cache\/dmi-active-complete\.json/);
 assert.match(dmiActiveSaveBlock, /key: dmi-zone-active-v1-/);
 assert.doesNotMatch(dmiActiveSaveBlock, /always\(\)|outcome != 'cancelled'/);
-const terminalGateBlock = build.slice(dmiTerminalGate, copernicusSelector);
+const dmiTerminalGateEnd = build.indexOf('\n      - name:', dmiTerminalGate + 1);
+const terminalGateBlock = build.slice(dmiTerminalGate, dmiTerminalGateEnd);
 for (const marker of [
   'id: dmi-terminal-gate',
   'steps.dmi-bulk.outputs.terminal_code',

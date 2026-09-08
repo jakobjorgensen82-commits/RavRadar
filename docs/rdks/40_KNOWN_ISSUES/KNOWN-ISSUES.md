@@ -1,4 +1,12 @@
-# NYESTE HELHEDSFUND – 2026-09-08 – 4.0.334 WAM-readiness
+# NYESTE HELHEDSFUND – 2026-09-08 – 4.0.335 lokalt rettet, runtime åben
+
+- **ISSUE-WAM-CACHE-ADMISSION-CONTINUITY – LOKALT RETTET P1 / RUNTIME ÅBENT:** 4.0.335 erstatter all-target rollback og global MISSING_CELL-reset med atomisk per-tuple admission, granulær salvage og exact-proof resume. Positiv main-runtime mangler.
+- **ISSUE-WAM-OPERATIONAL-NATIVE-PROXY-GATE – LOKALT RETTET P1 / RUNTIME ÅBENT:** Native-gaten dækker 670 dele, Feggesunds tre dele afgøres i den eksisterende direct/proxy-slutgate, og currentfallback kan gemme progression før den endelige WAM-gate.
+- **ISSUE-WAM-FALSE-PARSER-COOLDOWN – LOKALT RETTET P1 / RUNTIME ÅBENT:** Parsergenkendelse og targetaccept er adskilt; partielle assets bevares og afvisninger optælles pr. kode. En runtime skal stadig bevise leverandørens faktiske payload.
+- **ISSUE-WAM-RUNTIME-REJECTION-DIAGNOSTICS – LOKALT RETTET / RUNTIME ÅBENT:** 4.0.335 skelner assetafvisninger og cache missing/size/I-O/JSON/schema. Det historiske `34189720294` kan ikke retroaktivt forklare sin første tuple; næste main-run leverer den nye diagnostik.
+- **ISSUE-4.0.335-END-TO-END-CLOSURE – ÅBEN P0:** Exact-head CI, merge, komplet main-oneoff, WAM/Feggesund, spatial/kapacitet, fulde gates, artifact/deploy, Phase B og offentlig modelverifikation mangler. Workflows er deaktiveret; Candidate G er offentlig.
+
+# HISTORISKE HELHEDSFUND – 2026-09-08 – 4.0.334 WAM-readiness
 
 - **ISSUE-4.0.334-END-TO-END-CLOSURE – ÅBEN P0:** Oneoff `34161930631` beviste 79.414/79.414 strømpar, men stoppede korrekt, fordi Feggesund ikke havde 3 × 118 bølgetimer. Exact-head, merge, ny `main`-runtime, 354/354, spatial-/kapacitetsbevis, fulde gates, artifact/deploy og cutover mangler fortsat.
 - **ISSUE-DMI-WAM-RUNTIME-STARVATION – P0 / LOKALT RETTET / RUNTIME ÅBENT:** DKSS brugte cirka 2.687 af 2.818 arbejdssekunder i run `34161930631`, så WAM ikke fik en tur. Fair WAM-reserve og per-familie-budget er implementeret lokalt, men mangler positiv `main`-runtime.

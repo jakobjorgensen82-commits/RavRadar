@@ -336,7 +336,8 @@ for (const marker of [
   '--source-registry "$RUNNER_TEMP/ravradar-118-deployed-donor/.cache/ravscore-legacy-candidate-g-source/coastal-parts-v2.json"',
   'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_MODE: ${{ steps.ravscore-wave-bootstrap-target.outputs.mode }}',
   'DMI_BULK_PRIVATE_WAVE_BOOTSTRAP_TARGET_HOUR: ${{ steps.ravscore-wave-bootstrap-target.outputs.target_hour }}',
-  'name: Require complete operational WAM handoff before one-off downstream providers',
+  'name: Inspect operational WAM handoff before one-off downstream providers',
+  'name: Require complete operational WAM after provider progress',
   'python -B scripts/validate_dmi_wave_history_bootstrap.py',
   '--forecast-hour-count 118',
   'Validate the operational request and bind the exact target hour',
@@ -385,7 +386,7 @@ assertMarkersOrdered(operationalPreflight, [
   'name: Reconfirm exact main before one-off shared active DMI cache',
   'name: Save the promoted complete active DMI generation',
   'name: Save private regional current evidence before any terminal decision',
-  'name: Require complete operational WAM handoff before one-off downstream providers',
+  'name: Inspect operational WAM handoff before one-off downstream providers',
   'name: Fill only the exact operational DMI gap seal',
   'name: Reconfirm exact main before one-off shared Copernicus progress cache',
   'name: Save non-cancelled private Copernicus source-stage progress',
@@ -412,7 +413,8 @@ const timeoutMinutes = (block) => {
 const operationalJobMinutes = timeoutMinutes(operationalPreflight.slice(0, operationalPreflight.indexOf('    steps:')));
 const dmiAcquisitionStep = operationalStep('Refresh all bounded official DMI collections for the proof');
 const waveBootstrapTargetStep = operationalStep('Resolve one aggregate Candidate G wave-bootstrap target');
-const wamReadinessStep = operationalStep('Require complete operational WAM handoff before one-off downstream providers');
+const wamReadinessStep = operationalStep('Inspect operational WAM handoff before one-off downstream providers');
+const wamFinalStep = operationalStep('Require complete operational WAM after provider progress');
 const copernicusAcquisitionStep = operationalStep('Fill only the exact operational DMI gap seal');
 const oneoffCopernicusDisposition = operationalStep('Require reusable Copernicus source stage');
 const runtimeBuildStep = operationalStep('Build the integrated runtime without release or deploy');
@@ -446,12 +448,27 @@ for (const marker of [
 ]) assert.ok(dmiAcquisitionStep.includes(marker), `Oneoffens private WAM-bootstrap mangler ${marker}`);
 for (const marker of [
   'if: always()',
+  'continue-on-error: true',
   'python -B scripts/validate_dmi_wave_history_bootstrap.py',
   '--cache .cache/dmi-candidate-progress.json',
   '--registry data/live/coastal-parts-v2.json',
   '--forecast-hour-count 118',
   'exit "$validator_status"',
 ]) assert.ok(wamReadinessStep.includes(marker), `Oneoffens WAM-readiness-gate mangler ${marker}`);
+for (const marker of [
+  'if: always()',
+  'WAM_OUTCOME: ${{ steps.wam-bootstrap-readiness.outcome }}',
+  'WAM_CODE: ${{ steps.wam-bootstrap-readiness.outputs.code }}',
+  'test "$WAM_OUTCOME" = "success"',
+  'test "$WAM_CODE" = "NONE"',
+]) assert.ok(wamFinalStep.includes(marker), `Oneoffens udskudte WAM-slutgate mangler ${marker}`);
+assert.ok(
+  operationalPreflight.indexOf('name: Fill only the exact remaining current gaps from Open-Meteo')
+    < operationalPreflight.indexOf('name: Require complete operational WAM after provider progress')
+  && operationalPreflight.indexOf('name: Require complete operational WAM after provider progress')
+    < operationalPreflight.indexOf('name: Build the integrated runtime without release or deploy'),
+  'Oneoff skal gemme providerfremgang før WAM-slutgaten og stoppe før runtime/artifact.',
+);
 for (const marker of [
   'uses: actions/cache/restore@v6',
   'path: .cache/open-meteo-current-fallback.json',
@@ -601,7 +618,7 @@ const operationalPositions = [
   operationalPreflight.indexOf('name: Strictly snapshot only a promoted READY DMI generation'),
   operationalPreflight.indexOf('name: Save the promoted complete active DMI generation'),
   operationalPreflight.indexOf('name: Save private regional current evidence before any terminal decision'),
-  operationalPreflight.indexOf('name: Require complete operational WAM handoff before one-off downstream providers'),
+  operationalPreflight.indexOf('name: Inspect operational WAM handoff before one-off downstream providers'),
   operationalPreflight.indexOf('name: "Classify DMI availability ('),
   operationalPreflight.indexOf('name: Seal exact operational DMI gaps for target through target plus 117'),
   operationalPreflight.indexOf('name: Inspect existing exact operational Copernicus source stage'),
@@ -1058,6 +1075,7 @@ for (const marker of [
   'Reconfirm exact main before shared Open-Meteo progress cache',
   'Save shared private Open-Meteo current progress',
   'Require complete Open-Meteo residual before freshness and closure',
+  'Require complete operational WAM after provider progress for first cutover',
   'Classify target freshness after the bounded supplier chain',
   'id: supplier-target-freshness',
   '--maximum-age-minutes 90',
@@ -1082,6 +1100,7 @@ const normalOpenMeteoFill = productionStep('Fill only the exact remaining curren
 const normalOpenMeteoAuthority = productionStep('Reconfirm exact main before shared Open-Meteo progress cache');
 const normalOpenMeteoSave = productionStep('Save shared private Open-Meteo current progress');
 const normalOpenMeteoTerminal = productionStep('Require complete Open-Meteo residual before freshness and closure');
+const normalWamFinal = productionStep('Require complete operational WAM after provider progress for first cutover');
 assert.ok(
   normalCopernicusDisposition.includes('--require-source-stage-reusable')
     && !normalCopernicusDisposition.includes('--require-source-stage-ready'),
@@ -1121,6 +1140,13 @@ for (const marker of [
   'steps.open-meteo-fill.outputs.checkpoint_written }}" = "true"',
   'steps.open-meteo-fill.outputs.missing_pair_count }}" = "0"',
 ]) assert.ok(normalOpenMeteoTerminal.includes(marker), `Normal Open-Meteo terminalgate mangler ${marker}`);
+for (const marker of [
+  "steps.operational-action.outputs.action == 'integrated-cutover'",
+  "steps.legacy-bootstrap.outputs.required == 'true'",
+  'WAM_OUTCOME: ${{ steps.wam-bootstrap-readiness.outcome }}',
+  'test "$WAM_OUTCOME" = "success"',
+  'test "$WAM_CODE" = "NONE"',
+]) assert.ok(normalWamFinal.includes(marker), `Produktionsflowets WAM-slutgate mangler ${marker}`);
 assert.doesNotMatch(
   text.slice(
     text.indexOf('name: Restore shared private Open-Meteo current progress'),
@@ -1255,6 +1281,7 @@ const positions = {
   openMeteoAuthority: text.indexOf('name: Reconfirm exact main before shared Open-Meteo progress cache'),
   openMeteoSave: text.indexOf('name: Save shared private Open-Meteo current progress'),
   openMeteoTerminal: text.indexOf('name: Require complete Open-Meteo residual before freshness and closure'),
+  wamFinal: text.indexOf('name: Require complete operational WAM after provider progress for first cutover'),
   supplierFreshness: text.indexOf('name: Classify target freshness after the bounded supplier chain'),
   currentClosure: text.indexOf('name: Build exact DMI-first current operational closure'),
   liveCurrentBuild: text.indexOf('name: Build public seven-day current history and controlled live selection'),
@@ -1327,6 +1354,7 @@ const expected = [
   'openMeteoAuthority',
   'openMeteoSave',
   'openMeteoTerminal',
+  'wamFinal',
   'supplierFreshness',
   'currentClosure',
   'liveCurrentBuild',
@@ -1497,7 +1525,7 @@ if (buildWorkflow.includes('name: Save progressive private DMI zone cache')
 }
 const dmiTerminalBlock = text.slice(
   positions.dmiTerminalGate,
-  positions.targetedCopernicus,
+  text.indexOf('name: Inspect operational WAM handoff before first integrated cutover', positions.dmiTerminalGate),
 );
 for (const marker of [
   'id: dmi-terminal-gate',

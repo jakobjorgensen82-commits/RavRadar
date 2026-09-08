@@ -1,4 +1,16 @@
-# NYESTE ROADMAP – 2026-09-08 – 4.0.334 fra komplet strømclosure til model-online
+# NYESTE ROADMAP – 2026-09-08 – 4.0.335 fra vedvarende cache til model-online
+
+- [x] Afslut Astra-helkædeaudit af WAM-admission, parserklassifikation, genbrug, Feggesund og gateplacering.
+- [x] Implementér granulær bølgesalvage, atomisk replacement, exact-proof WAM-resume og operationel multi-run-kontinuitet uden cross-run interpolation.
+- [x] Udskyd Feggesund til særskilt direct/proxy-proof og currentfallback til efter cache-save, men før en ufravigelig WAM-slutgate.
+- [x] Kør den korte målmatrix: syntaks, 32 validator-tests, 24 producenttests, workflowinventar og integreret workflowadapter.
+- [x] Versionér og dokumentér 4.0.335; geodata må kun ændre topversionsfeltet.
+- [ ] Commit, bestå én exact-head GitHub `validate:source` og merge den eksakte grønne head.
+- [ ] Kør én stor corrected main-oneoff på de bevarede cacher; kræv komplet current, native WAM for 670 dele, Feggesund 354/354 og spatial-/kapacitetsbevis.
+- [ ] Brug det komplette runbundne handoff til fulde gates, artifact/deploy og Phase B; verificér den integrerede model offentligt.
+- [ ] Genaktivér normalworkflow og watchdog, og observer de eksternt cron-startede kørsler som permanent vedligeholder.
+
+# HISTORISK ROADMAP – 2026-09-08 – 4.0.334 fra komplet strømclosure til model-online
 
 - [x] Klassificér main-oneoff `34161930631`: 79.414/79.414 strømpar, men efterfølgende Feggesund-stop; kildecacher gemt, intet artifact/deploy/cutover.
 - [x] Implementér fair WAM-reserve til begge kritiske familier, same-run/cachegenbrug, højst fire inklusive brotimer og strict WAM-readiness før downstream.

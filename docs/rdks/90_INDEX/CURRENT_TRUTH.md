@@ -1,4 +1,20 @@
-# NYESTE SANDHED – 2026-09-08 – 4.0.334 WAM-readiness og runbundet cutover
+# NYESTE SANDHED – 2026-09-08 – 4.0.335 lokalt grøn, runtime åben
+
+- 4.0.335 implementerer den samlede WAM-helkæderettelse fra auditen: ingen global bølgenulstilling, granulær row-salvage, atomisk tuple-admission, korrekt parser/dækningsklassifikation og exact-proof checkpointgenbrug.
+- Den operationelle cache må beholde eksakte validerede WAM-rækker på tværs af modelkørsler/celler. Interpolation må fortsat kun ske inden for samme collection, modelrun, gitter og fysiske celle og højst fire timer.
+- Native WAM-gaten omfatter 670 dele. Feggesunds tre dele forbliver i 673-registeret og skal bestå den særskilte direct/proxy-kontrakt med 354/354 timer før scoring og ved slutproof.
+- Tidlig WAM-inspektion er advisory for cacheprogression; currentfallback kan gemme progression. Den senere WAM-gate er fail-closed før closure/runtime/artifact/deploy.
+- Lokal evidens: Python-syntaks, 32 validator-tests, 24 producent-/resume-tests, workflowinventar og integreret workflowadapter er grønne. Exact-head GitHub-kildegate, merge og positiv main-runtime mangler.
+- Begge vejrworkflows er fortsat deaktiveret under den kontrollerede cutover. Candidate G/4.0.316 er senest verificerede offentlige model.
+
+# HISTORISK SANDHED – 2026-09-08 – 4.0.334 merged, WAM-runtime negativ
+
+- PR #267 merged exact-head-verificeret 4.0.334 som `836e23ec207e56b6ed275b66f9758dcd311bbe7b`; CI-run `34187779106`. Lokal/uncommitted-status nedenfor er historisk.
+- Main-oneoff `34189720294` bestod sourcegaten og gemte GRIB-, kandidat- og regionalcache, men stoppede WAM før currentfallback/closure/handoff. Candidate G er senest verificerede offentlige model; integrated cutover er ikke sket.
+- [WAM-helkædeaudit](../../ai/WAM_CHAIN_AUDIT_2026-09-08.md) beskriver den samlede, endnu ikke implementerede rettelse. Tidligere P2-only/native-proxy-vurdering og ubetinget WAM-stepgenbrug er supersederet. Det første afviste runtimefelt og CLI'ens CACHE_INVALID-årsag er ukendte; cachetab/størrelsesoverskridelse må ikke påstås.
+- Normalworkflow og watchdog er begge midlertidigt deaktiveret og skal reaktiveres efter kontrolleret cutover. Windows-genstarten ændrede ikke tracked source eller verificeret GitHub-cacheeksistens.
+
+# HISTORISK SANDHED – 2026-09-08 – 4.0.334 WAM-readiness og runbundet cutover
 
 - **Status:** 4.0.334 findes kun som lokal, måltestet kandidat. Den er ikke committed, CI-verificeret, merged, kørt på `main`, fuldt releasevalideret, deployet eller cuttet over. Den offentlige runtime er fortsat 4.0.316 / Candidate G, indtil produktionskæden beviser andet.
 - Oneoff `34161930631` på eksakt `main`-commit `57a4c91405f0fd90353f8655315b42430ad13208`, target `2026-09-07T21:00:00Z`, beviste operationel strømclosure: **79.414/79.414** (DMI 61.860, Copernicus 16.593, regional 944, Open-Meteo 17, missing 0), hash `sha256:d6cd84a61d045a94c60e70a5b3edb3a6234712104d17003e704747d0c359daa9`.
